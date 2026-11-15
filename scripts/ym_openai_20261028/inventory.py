@@ -77,6 +77,17 @@ def _sha256_fichier(chemin: Path) -> str:
     return empreinte.hexdigest()
 
 
+def _sha256_fichier_normalise(chemin: Path) -> str:
+    """Empreinte apres normalisation des fins de ligne (CRLF/CR -> LF).
+
+    Une normalisation par checkout ne change QUE les fins de ligne. Un ecart de
+    contenu reel (fichier remplace, ligne editee) ne doit PAS etre classe
+    `normalise` : seule l'egalite apres cette normalisation compte.
+    """
+    donnees = chemin.read_bytes().replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+    return _sha256_bytes(donnees)
+
+
 def _fichiers_lean(racine: Path) -> list[Path]:
     return sorted(p for p in racine.rglob("*.lean") if p.is_file())
 
@@ -219,8 +230,12 @@ def _verifie_manifeste(racine: Path) -> dict:
                 differents.append(chemin)
             continue
         if empreinte_blob == empreinte:
-            if _sha256_fichier(cible) != empreinte:
+            if _sha256_fichier(cible) == empreinte:
+                continue
+            if _sha256_fichier_normalise(cible) == empreinte:
                 normalises.append(chemin)
+            else:
+                differents.append(chemin)
             continue
         differents.append(chemin)
 
@@ -343,6 +358,13 @@ def _construit_controles(racine: Path) -> tuple[list[Check], dict]:
     projet_ref, externes_ref = _closure_imports(racine, index, REFERENCE_MODULE)
     implementation_ref = sorted(projet_ref - set(SPECIFICATION_MODULES))
     projet_sol, externes_sol = _closure_imports(racine, index, SOLUTION_MODULE)
+    # La closure ajoute `Solution` lui-meme (voir `_closure_imports`) : un
+    # `Solution.lean` sans aucun import satisferait une epreuve sur `projet_sol`
+    # non vide. L'epreuve exige un module d'implementation HORS spec et HORS
+    # `Solution`, au miroir de `implementation_ref` ci-dessus.
+    implementation_sol = sorted(
+        projet_sol - set(SPECIFICATION_MODULES) - {SOLUTION_MODULE}
+    )
     volume = _inventaire_volume(racine, fichiers)
     volume["lignes_specification"] = sum(
         (racine / f"{nom}.lean")
@@ -388,9 +410,13 @@ def _construit_controles(racine: Path) -> tuple[list[Check], dict]:
         Check(
             "travail_dans_la_solution",
             "La solution importe bien des modules d'implementation",
-            "PASS" if projet_sol else "FAIL",
-            f"{len(projet_sol)} module(s) projet et {len(externes_sol)} module(s) externe(s) dans la closure",
-            {"modules_projet": sorted(projet_sol)[:20]},
+            "PASS" if implementation_sol else "FAIL",
+            f"{len(projet_sol)} module(s) projet, {len(implementation_sol)} d'implementation "
+            f"(hors spec/Solution), {len(externes_sol)} externe(s) dans la closure",
+            {
+                "modules_projet": sorted(projet_sol)[:20],
+                "modules_implementation": implementation_sol[:20],
+            },
         ),
         Check(
             "placeholder_unique",
