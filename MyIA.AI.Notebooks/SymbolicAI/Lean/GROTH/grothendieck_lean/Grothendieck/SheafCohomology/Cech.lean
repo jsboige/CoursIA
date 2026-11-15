@@ -116,7 +116,7 @@ noncomputable def cechComplexFunctor_type
   CategoryTheory.cechComplexFunctor U
 
 /-- Bridge : le foncteur en objet cosimplicial de Čech. C'est le
-    `FormalCoproduct.cosimplicialObjectFunctor` de Mathlib : étant
+    `FormalCoproduct.cosimplicialObjectFunctor` de Mathlib 4 : étant
     donné un objet simplicial `E` dans la complétion par coproduits
     formels `FormalCoproduct C`, il envoie un préfaisceau
     `P : Cᵒᵖ ⥤ A` sur l'objet cosimplicial des évaluations de `P`
@@ -130,7 +130,7 @@ noncomputable def cosimplicialObjectFunctor_type
   CategoryTheory.Limits.FormalCoproduct.cosimplicialObjectFunctor E
 
 /-- Bridge : le foncteur en complexe de cochaînes de Čech. C'est le
-    `FormalCoproduct.cochainComplexFunctor` de Mathlib : étant donné
+    `FormalCoproduct.cochainComplexFunctor` de Mathlib 4 : étant donné
     un objet simplicial `E` dans `FormalCoproduct C`, il envoie un
     préfaisceau `P : Cᵒᵖ ⥤ A` sur le complexe de cochaînes dont le
     degré n consiste en l'évaluation de `P` sur `E _⦋n⦌`. C'est la

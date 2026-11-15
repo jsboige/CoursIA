@@ -62,7 +62,23 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 10
+    # Plafond 10 -> 20 min (#25181). Mesure du 2026-11-14 par l'organe du
+    # depot (`scripts/ci/measure_declared_ceiling.py --workflow
+    # markdown-rendering-guard.yml --hours 96 --annotate`), meme grandeur que
+    # le mur du job (started_at -> completed_at du job nomme) :
+    #     plafond 10 min -- 36 coupe(s) sur 330 jobs (10,91 %),
+    #     annules hors mur 5, succ max 9,55 min (marge 0,45 min),
+    #     CONFIRMEES par annotation (organe natif TIMEOUT) : 5
+    #     classes : {'REAL_STEP_FAILURE': 32, 'CANCELLED_OTHER': 4, 'TIMEOUT': 5}
+    # La marge du succes le plus long (0,45 min) est le signal : le plafond
+    # est deja atteint par un run reussi. Ce qui separe les 32
+    # REAL_STEP_FAILURE (des veritables verdicts de la garde) des 5 TIMEOUT
+    # (des jobs tues, sans verdict) est le mur, pas le travail.
+    # Cout en runners : le nombre de runs ne change pas (groupe de
+    # concurrence deja par `github.sha` sur push) ; le surcout est le temps
+    # de slot d'un job lent, deja tenu jusqu'a la coupe. Rejouer la mesure :
+    #     python scripts/ci/measure_declared_ceiling.py --workflow markdown-rendering-guard.yml --hours 96 --annotate
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@v4
