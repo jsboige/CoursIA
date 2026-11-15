@@ -1029,7 +1029,7 @@ theorem shapley_uniqueness (φ : Solution N)
 
 /-! ## Voting games -/
 
-/-- A weighted voting game [q; w_1, ..., w_n] with positive quota -/
+/-- A weighted voting game [q; w₁, ..., wₙ] with positive quota -/
 noncomputable def WeightedVotingGame (weights : N → ℝ) (quota : ℝ) (hquota : 0 < quota) : TUGame_en N where
   v := fun S => if ∑ i ∈ S, weights i ≥ quota then 1 else 0
   empty_zero := by simp [hquota]
@@ -1775,7 +1775,7 @@ theorem banzhaf_raw_symmetric (G : TUGame_en N) (i j : N)
     · -- i dehors, j dedans : σ S = (S.erase j) ∪ {i}. Les deux côtés sont faux.
       have hσ : banzhafSwap i j S = (S.erase j) ∪ {i} := swap_j_only hSi hSj
       rw [hσ]
--- j not in (S.erase j) union {i} (j was erased, j != i), so `Critical G j (sigma S)` is false;
+-- j not in (S.erase j) union {i} (j was erased, j != i), so `Critical G j (σ S)` is false;
 -- `Critical G i S` is also false since i not in S.
       have hnjs : j ∉ (S.erase j) ∪ ({i} : Finset N) := by
         rw [Finset.mem_union, Finset.mem_singleton]
