@@ -390,6 +390,47 @@ def test_cli_lecture_en_panne_code_3_et_repli(capsys):
     assert f"python scripts/pick_idle_grain.py --belt --lane {LANE}" in err
 
 
+def test_cli_mesure_origami_en_panne_sort_0_et_la_cause(monkeypatch, capsysbinary):
+    """Une protection auxiliaire en panne n'eteint pas le tirage (#26528).
+
+    Le parcage Origami est une protection **auxiliaire** ; le tapis rapide est
+    le tirage de reference de toute la flotte. Une mesure impossible laisse la
+    sortie a `0`, la cause nommee, un avertissement sur stderr -- et l'EPIC
+    Origami **sert**, parce que rien n'a ete mesure.
+    """
+    lec = lecture([issue(19309, titre="[EPIC Origami] Le chantier long"),
+                   issue(7, titre="Grain ordinaire")])
+    monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: lec)
+    monkeypatch.setattr(tr.tapis_origami, "mesurer", lambda *a, **k: (
+        {}, {"active": True, "measured": False, "parked": [],
+            "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
+
+    code = tr.main(["--lane", LANE, "--cache-s", "0"], run=lambda argv, timeout: "",
+                    maintenant=NOW)
+    capture = capsysbinary.readouterr()
+    out, err = capture.out.decode("utf-8"), capture.err.decode("utf-8")
+    assert code == 0
+    assert "Parcage Origami : NON MESURE" in out and "mesure en echec" in out
+    assert "Mesure Origami impossible" in err and "mesure en echec" in err
+    assert "#19309" in out  # l'EPIC Origami est servi : rien n'a ete ecarte
+
+
+def test_cli_json_porte_la_mesure_non_faite(monkeypatch, capsysbinary):
+    """Le `--json` nomme la cause : jamais un etat vide qui se lit « rien »."""
+    lec = lecture([issue(19309, titre="[EPIC Origami] Le chantier long")])
+    monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: lec)
+    monkeypatch.setattr(tr.tapis_origami, "mesurer", lambda *a, **k: (
+        {}, {"active": True, "measured": False, "parked": [],
+            "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
+
+    code = tr.main(["--lane", LANE, "--cache-s", "0", "--json"],
+                    run=lambda argv, timeout: "", maintenant=NOW)
+    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
+    assert code == 0
+    assert sortie["origami_parking"]["measured"] is False
+    assert "mesure en echec" in sortie["origami_parking"]["reason"]
+
+
 def _dossier(tmp_path: Path, issues: list[dict], prs: list[dict]) -> Path:
     (tmp_path / "issues.json").write_text(json.dumps(issues), encoding="utf-8")
     (tmp_path / "prs_ouvertes.json").write_text(json.dumps(prs), encoding="utf-8")
@@ -464,7 +505,8 @@ def _violations(source: str) -> list[str]:
 
 
 def test_tapis_rapide_ne_lance_aucun_processus():
-    for nom in ("tapis_rapide.py", "tapis_marqueurs.py"):
+    for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "gh_cache.py",
+                "gh_cache_fichier.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -472,9 +514,15 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 
 # Plafonds releves une fois a la livraison (ecart MERGEE corrige, quota de conteneurs) ;
 # un depassement se paie en extrayant un module, pas en relevant le plafond.
-# tapis_marqueurs.py est la premiere extraction (lecture des marqueurs, 14/11).
+# tapis_marqueurs.py est la premiere extraction (lecture des marqueurs, 14/11) ;
+# gh_cache.py la seconde (cache et verrou de la lecture, #22630, 14/11) ;
+# gh_cache_fichier.py la troisieme (le fichier de cache : lire si frais, ecrire
+# atomiquement -- extraction demandee par les replis de la review Hermes,
+# #22630, 14/11 : le protocole a grandi de 41 lignes).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
-                                              ("tapis_marqueurs.py", 130)])
+                                              ("tapis_marqueurs.py", 130),
+                                              ("gh_cache.py", 130),
+                                              ("gh_cache_fichier.py", 60)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

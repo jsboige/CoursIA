@@ -69,13 +69,7 @@
       "ecosystem": "nuget",
       "canonical": "3.119.4",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "2.88.3",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 2.88.3 a une contrainte de la serie, donc l'ecart est classe « a converger »."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "Microsoft.ML.AutoML",
