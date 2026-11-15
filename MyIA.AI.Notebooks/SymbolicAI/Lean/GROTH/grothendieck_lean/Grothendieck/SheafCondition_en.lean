@@ -45,7 +45,17 @@ References:
     [MM92], Ch. III §4, equation (3) — the canonical equalizer diagram.
   - M. Kashiwara, P. Schapira, *Categories and Sheaves* [KS06] §17.
 
-All `sorry`s eliminated at creation.
+Convention i18n (EPIC #4980 ratified 2026-07-04): this module is paired with
+its canonical French version in the sibling file `SheafCondition.lean`
+(sibling pair model, see PR #6154 for the pilot on `Utility.lean`). The
+theorem statements, the lemma names, the Lean tactics and the Mathlib
+references stay in English (Mathlib 4, tactic DSL standard). Only the
+`/-- ... -/` docstrings and the `-- ...` comments differ between the two
+files. Anti-§D byte-identity guaranteed: the namespace body is preserved
+bit-for-bit (statements and proofs byte-identical between `SheafCondition.lean`
+and `SheafCondition_en.lean`).
+
+Epic #1646, Phase 2 (#2159). All `sorry`s eliminated at creation.
 -/
 
 import Mathlib.CategoryTheory.Sites.EqualizerSheafCondition
