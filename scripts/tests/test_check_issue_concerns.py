@@ -1747,5 +1747,183 @@ def test_cli_open_issue_skips_state_noise(monkeypatch, capsys):
     assert calls == []
 
 
+# --------------------------------------------------------------------------- #
+# #26791 : les PRs entrent dans le perimetre, et les tags de taxonomie d'agent
+# sont une signature de lane NON ambigue.
+# --------------------------------------------------------------------------- #
+
+
+class AgentTaxonomyTests(unittest.TestCase):
+    """Les tags ``[ACTION]`` / ``[DIAG]`` / ``[ASK]`` sont des tags
+    d'EMISSION (pr-review-discipline, « Commentaires de diagnostic ») :
+    leur emetteur est un agent, jamais le mainteneur. Les traiter comme le
+    tag generique entre crochets (ambigu, route en MANUAL_REVIEW) faisait de
+    la classe ``user-remark`` du bruit sur les PRs (164 non resolues sur
+    174 PRs ouvertes au 15/11/2026)."""
+
+    def test_les_tags_de_taxonomie_sont_des_signatures_de_lane(self):
+        for tag in ("ACTION", "DIAG", "ASK"):
+            body = f"[{tag}] Trois gardes rouges levees sur la branche."
+            self.assertEqual(
+                mod.lane_signature(body), "agent-taxonomy-tag", f"tag {tag}"
+            )
+
+    def test_le_tag_est_trouve_dans_la_premiere_ligne_non_vide(self):
+        body = "\n\n[DIAG] Diagnostic de la panne de CI."
+        self.assertEqual(mod.lane_signature(body), "agent-taxonomy-tag")
+
+    def test_un_tag_sur_une_ligne_plus_basse_ne_qualifie_pas(self):
+        """Le contrat porte sur la PREMIERE ligne non vide : un tag plus bas
+        n'est pas une signature d'emission (il peut etre cite dans une
+        prose)."""
+        body = "Voici mon analyse du correctif.\n\n[ACTION] Rebase fait."
+        self.assertNotEqual(mod.lane_signature(body), "agent-taxonomy-tag")
+
+    def test_un_post_d_agent_taggue_est_ecarte_et_compte(self):
+        report = mod.analyse_comments(
+            26807,
+            [
+                c(90, "2026-11-15T10:00:00Z",
+                  "[ACTION] Trois gardes rouges levees sur la branche."),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks, [])
+        self.assertEqual(report.excluded, {"agent-taxonomy-tag": 1})
+
+    def test_une_remarque_du_mainteneur_sans_tag_reste_candidate(self):
+        report = mod.analyse_comments(
+            26808,
+            [c(92, "2026-11-15T10:00:00Z",
+               "Reponse ecrite qui tranche : option 1 — garder l'indice.")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
+        self.assertEqual(report.excluded, {})
+
+    def test_un_tag_generique_reste_ambigu(self):
+        """La correction ne doit pas absorber le tag generique : « [NanoClaw] »
+        reste une remarque du mainteneur, routee en MANUAL_REVIEW."""
+        report = mod.analyse_comments(
+            26809,
+            [c(93, "2026-11-15T10:00:00Z", "[NanoClaw] a raison de pousser ce point.")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+
+
+def _fake_search(pages):
+    """Faux ``gh_json`` : rend une page de recherche par requete."""
+    calls = []
+
+    def _gh_json(args):
+        query = args[args.index("-f") + 1] if "-f" in args else ""
+        if query.startswith("query="):
+            query = query[len("query="):]
+        calls.append(query)
+        numbers = pages.get(query, [])
+        return {
+            "data": {
+                "search": {
+                    "nodes": [{"number": n} for n in numbers],
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                }
+            }
+        }
+
+    return _gh_json, calls
+
+
+def test_le_perimetre_par_defaut_couvre_les_issues_et_les_prs(monkeypatch):
+    """Les PRs entrent dans la lecture par defaut (#26791) : les Concerns
+    du mainteneur poses sur une PR etaient invisibles de l'organe."""
+    seen = {}
+
+    def _gh_json(args):
+        query = next(a[len("q="):] for a in args if a.startswith("q="))
+        seen[query] = seen.get(query, 0) + 1
+        numbers = {"is:issue": [1, 2], "is:pr": [26607]}[
+            "is:pr" if "is:pr" in query else "is:issue"
+        ]
+        return {
+            "data": {
+                "search": {
+                    "nodes": [{"number": n} for n in numbers],
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                }
+            }
+        }
+
+    monkeypatch.setattr(mod, "gh_json", _gh_json)
+    numbers = mod.list_issue_numbers("2026-09-25", "open")
+    assert numbers == [1, 2, 26607]
+    assert len(seen) == 2, seen
+
+
+def test_le_perimetre_issues_seul_reste_disponible(monkeypatch):
+    """`--scope issues` restitue l'ancien perimetre : une seule requete."""
+    queries = []
+
+    def _gh_json(args):
+        query = next(a[len("q="):] for a in args if a.startswith("q="))
+        queries.append(query)
+        return {
+            "data": {
+                "search": {
+                    "nodes": [{"number": 1}],
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                }
+            }
+        }
+
+    monkeypatch.setattr(mod, "gh_json", _gh_json)
+    numbers = mod.list_issue_numbers("2026-09-25", "open", "issues")
+    assert numbers == [1]
+    assert len(queries) == 1
+    assert "is:issue" in queries[0] and "is:pr" not in queries[0]
+
+
+def test_le_perimetre_prs_seul_lit_les_prs(monkeypatch):
+    queries = []
+
+    def _gh_json(args):
+        query = next(a[len("q="):] for a in args if a.startswith("q="))
+        queries.append(query)
+        return {
+            "data": {
+                "search": {
+                    "nodes": [{"number": 26607}],
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                }
+            }
+        }
+
+    monkeypatch.setattr(mod, "gh_json", _gh_json)
+    numbers = mod.list_issue_numbers("2026-09-25", "open", "prs")
+    assert numbers == [26607]
+    assert len(queries) == 1
+    assert "is:pr" in queries[0] and "is:issue" not in queries[0]
+
+
+def test_un_noeud_sans_numero_est_ignore(monkeypatch):
+    """Un noeud PR lu par un fragment `... on Issue` rend `number: null` :
+    il ne doit pas polluer la liste (et ne doit pas lever)."""
+
+    def _gh_json(args):
+        return {
+            "data": {
+                "search": {
+                    "nodes": [{"number": None}, {"number": 5}],
+                    "pageInfo": {"hasNextPage": False, "endCursor": None},
+                }
+            }
+        }
+
+    monkeypatch.setattr(mod, "gh_json", _gh_json)
+    assert mod.list_issue_numbers("2026-09-25", "open", "issues") == [5]
+
+
 if __name__ == "__main__":
     unittest.main()

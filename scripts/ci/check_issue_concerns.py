@@ -201,6 +201,22 @@ _LANE_SIGNATURES: tuple[tuple[str, re.Pattern[str]], ...] = (
 #: (comme ``classify``) : un tag de protocole entre crochets en tete de corps.
 _LANE_HEAD_TAG = re.compile(r"^\[[^\]]{1,80}\]")
 
+#: Tags de taxonomie d'AGENT, en premiere ligne non vide (``[ACTION]``,
+#: ``[DIAG]``, ``[ASK]``). Ce sont des tags d'**emission** : le contrat de
+#: la revue (pr-review-discipline, « Commentaires de diagnostic ») reserve
+#: ces trois formes aux posts d'agent, et le contrat B.0 s'appuie dessus
+#: pour distinguer un diagnostic d'une levee. Contrairement au tag generique
+#: ``_LANE_HEAD_TAG`` — dont la premiere ligne peut aussi bien etre une
+#: remarque du mainteneur (« [NanoClaw] a raison de... ») que la copie d'un
+#: en-tete de dossier — ces trois formes n'ont qu'un emetteur possible :
+#: elles constituent donc une signature de lane **non ambigue** (#26791).
+#:
+#: Mesure : sur 174 PRs ouvertes (15/11/2026), la classe ``user-remark``
+#: comptait 193 remarques dont 164 non resolues, presque toutes des posts
+#: d'agent taggues ``[ACTION]``/``[DIAG]``/``[ASK]`` routes en
+#: ``MANUAL_REVIEW`` : la classe etait du bruit sur les PRs.
+_AGENT_TAXONOMY_RE = re.compile(r"^\[(?:ACTION|DIAG|ASK)\]")
+
 #: Intention declaree d'une remarque — **enregistree, pas filtrante** : la mesure
 #: du 2026-10-20 a montre que ces marqueurs de vocabulaire sont cites par les
 #: lanes elles-memes (« décision user », « le user a tranché ») ; s'en servir comme
@@ -327,7 +343,7 @@ GRAPHQL_SEARCH = """
 query($q: String!, $after: String) {
   search(query: $q, type: ISSUE, first: 100, after: $after) {
     pageInfo { hasNextPage endCursor }
-    nodes { ... on Issue { number } }
+    nodes { ... on Issue { number } ... on PullRequest { number } }
   }
 }
 """
@@ -616,6 +632,17 @@ def lane_signature(body: str | None) -> str:
     for name, pattern in _LANE_SIGNATURES:
         if pattern.search(text):
             return name
+    # Le tag de taxonomie d'agent est cherche dans la PREMIERE LIGNE NON
+    # VIDE : le contrat le veut ainsi (#15511 P1), et une ligne vide de
+    # tete ne doit pas cacher le tag. Il est evalue AVANT le tag generique,
+    # qui reste ambigu (#21621).
+    for line in text.splitlines():
+        stripped = _DECORATION.sub("", line)
+        if not stripped:
+            continue
+        if _AGENT_TAXONOMY_RE.match(stripped):
+            return "agent-taxonomy-tag"
+        break
     if _LANE_HEAD_TAG.match(_DECORATION.sub("", text)):
         return "head-tag"
     return ""
@@ -1164,24 +1191,52 @@ def gh_json(args: list[str]):
     return json.loads(proc.stdout)
 
 
-def list_issue_numbers(since: str, state: str) -> list[int]:
-    query = f"repo:{REPO} is:issue updated:>={since}"
-    if state == "open":
-        query += " is:open"
-    elif state == "closed":
-        query += " is:closed"
-    numbers: list[int] = []
-    after = None
-    while True:
-        args = ["api", "graphql", "-f", f"query={GRAPHQL_SEARCH}", "-f", f"q={query}"]
-        if after:
-            args += ["-f", f"after={after}"]
-        data = gh_json(args)["data"]["search"]
-        numbers.extend(node["number"] for node in data["nodes"])
-        page = data["pageInfo"]
-        if not page["hasNextPage"]:
-            return numbers
-        after = page["endCursor"]
+#: Perimetre de la recherche par defaut (#26791). Les PRs **entrent** dans
+#: le perimetre : les Concerns du mainteneur poses sur une PRetaient
+#: invisibles de l'organe (le scan par defaut portait `is:issue` seul), et
+#: trois Concerns sont restes ~20 h sans reponse (mesure du 15/11/2026,
+#: PRs #26607, #26613, #26616). `issues` restitue l'ancien perimetre.
+SEARCH_SCOPES = {
+    "both": ("is:issue", "is:pr"),
+    "issues": ("is:issue",),
+    "prs": ("is:pr",),
+}
+
+
+def list_issue_numbers(since: str, state: str,
+                        scope: str = "both") -> list[int]:
+    """Numeros d'issues ET de PRs a lire, dedoublonnes et tries.
+
+    Les deux familles sont lues par DEUX requetes : la recherche GitHub ne
+    sait pas dire « is:issue OU is:pr » (les deux qualificatifs sont
+    exclusifs). Les PRs sont rendues par la meme requete de recherche
+    (`type: ISSUE` renvoie aussi les PRs) — d'ou le fragment
+    `... on PullRequest` de ``GRAPHQL_SEARCH``.
+    """
+    kinds = SEARCH_SCOPES.get(scope, SEARCH_SCOPES["both"])
+    numbers: set[int] = set()
+    for kind in kinds:
+        query = f"repo:{REPO} {kind} updated:>={since}"
+        if state == "open":
+            query += " is:open"
+        elif state == "closed":
+            query += " is:closed"
+        after = None
+        while True:
+            args = ["api", "graphql", "-f", f"query={GRAPHQL_SEARCH}",
+                    "-f", f"q={query}"]
+            if after:
+                args += ["-f", f"after={after}"]
+            data = gh_json(args)["data"]["search"]
+            for node in data["nodes"]:
+                number = node.get("number")
+                if number is not None:
+                    numbers.add(number)
+            page = data["pageInfo"]
+            if not page["hasNextPage"]:
+                break
+            after = page["endCursor"]
+    return sorted(numbers)
 
 
 def fetch_comments(number: int) -> list[Comment]:
@@ -1362,6 +1417,12 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--since", default="2026-09-25", help="issues mises a jour depuis (AAAA-MM-JJ)")
     parser.add_argument("--state", choices=["open", "closed", "all"], default="open")
+    parser.add_argument(
+        "--scope",
+        choices=sorted(SEARCH_SCOPES),
+        default="both",
+        help="perimetre de la recherche : issues, prs, ou les deux (defaut)",
+    )
     parser.add_argument("--issues", type=int, nargs="*", help="issues explicites (controles)")
     parser.add_argument("--as-of", help="figer le fil a cet instant (ISO, ex 2026-10-08T23:59:59Z)")
     parser.add_argument("--limit", type=int, default=0, help="ne lire que N issues (0 = toutes)")
@@ -1388,7 +1449,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.issues:
         numbers = list(dict.fromkeys(args.issues))
     else:
-        numbers = list_issue_numbers(args.since, args.state)
+        numbers = list_issue_numbers(args.since, args.state, args.scope)
     if args.limit:
         numbers = numbers[: args.limit]
 
@@ -1446,6 +1507,7 @@ def main(argv: list[str] | None = None) -> int:
         payload = {
             "since": args.since,
             "state": args.state,
+            "scope": args.scope,
             "as_of": args.as_of,
             "classes": list(requested),
             "issues_scanned": len(numbers),
