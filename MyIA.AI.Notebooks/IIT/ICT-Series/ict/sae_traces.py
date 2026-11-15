@@ -147,15 +147,15 @@ def densify(ids: np.ndarray, vals: np.ndarray, feature_ids: np.ndarray) -> np.nd
     dense = np.zeros((T, feature_ids.size), dtype=np.float32)
     if feature_ids.size == 0:
         return dense
-    # position de chaque id du top-k dans feature_ids (ou -1)
-    order = np.argsort(feature_ids)
-    sorted_feats = feature_ids[order]
-    pos = np.searchsorted(sorted_feats, ids)
-    pos = np.clip(pos, 0, sorted_feats.size - 1)
-    hit = sorted_feats[pos] == ids                       # [T, k] bool
+    # Une feature demandee plusieurs fois doit remplir chacune de ses colonnes.
+    unique, inverse = np.unique(feature_ids, return_inverse=True)
+    compact = np.zeros((T, unique.size), dtype=np.float32)
+    pos = np.searchsorted(unique, ids)
+    pos = np.clip(pos, 0, unique.size - 1)
+    hit = unique[pos] == ids
     rows = np.broadcast_to(np.arange(T)[:, None], ids.shape)
-    dense[rows[hit], order[pos[hit]]] = vals[hit]
-    return dense
+    compact[rows[hit], pos[hit]] = vals[hit]
+    return compact[:, inverse]
 
 
 def mean_activation_by_set(traces: dict) -> dict[str, np.ndarray]:
