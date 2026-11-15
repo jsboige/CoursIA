@@ -75,6 +75,26 @@ garde ni un test, par l'autre bout du mode de defaillance de #21899. Le meme
 passage desormais part aussi des carnets et remonte vers le registre ; une
 cellule non declaree hors du socle mesure ci-dessous fait rougir l'organe.
 
+La source EXTERNE au depot (#23499)
+-----------------------------------
+
+Une cellule peut lire un fichier qui n'est PAS dans le depot : le module d'un
+clone Lake amont, epingle par un tag. Ce fichier est IMMUABLE -- un tag ne
+bouge pas -- donc l'invariant de fraicheur n'a pas d'objet. Mais la
+resolution par nom de fichier de l'invariant inverse confond alors la source
+amont avec un fichier du depot de MEME nom (mesure : la source amont
+``DifferentialGeometry/Topology/ThreeManifold/Poincare.lean`` et le temoin
+``differential_lean/Poincare.lean`` du depot), ce qui produit un rouge sans
+remede dans le cadre d'une source repo.
+
+Une entree de registre declare alors ``source_kind: "external"``, le ``pin``
+de l'amont epingle et le ``sha256`` du fichier lu. La fraicheur est DELEGUEE
+au pin, et le lien entre la sortie commitee et le fichier lu est ferme par
+l'empreinte : la cellule doit IMPRIMER le sha256 du fichier qu'elle a lu.
+Sont rouges : une source externe sans pin, une source externe sans
+empreinte, et une source externe dont l'empreinte n'apparait pas dans la
+sortie commitee.
+
 L'axe SIGNATURE D'EXECUTION (#23390)
 ------------------------------------
 
@@ -435,6 +455,53 @@ def run(ref: str | None = None, with_signature: bool = True) -> dict:
             ]
             rows.append(row)
             stale += 1
+            continue
+
+        # Source EXTERNE au depot (#23499, Pli 2 de l'EPIC #18205) : le
+        # fichier lu vit dans un clone Lake amont, epingle par un tag. Il est
+        # donc IMMUABLE -- l'invariant de fraicheur du fichier n'a pas d'objet
+        # (rien ne bouge dans le depot) -- et la resolution par nom de fichier
+        # de l'invariant inverse confond la source amont avec un fichier du
+        # depot de MEME nom (ici `Poincare.lean`), ce qui produit un rouge
+        # sans remede dans le cadre d'une source repo. La declaration porte
+        # alors le PIN de l'amont et l'empreinte sha256 du fichier lu ; la
+        # cellule doit imprimer cette empreinte, sans quoi la sortie
+        # commitee n'est rattachee a rien.
+        if entry.get("source_kind", "repo") == "external":
+            pin = str(entry.get("pin") or "").strip()
+            expected_sha = str(entry.get("sha256") or "").strip().lower()
+            text = cell_output_text(cell)
+            if not pin:
+                row["verdict"] = "EXTERNAL_NON_ECINGLE"
+                row["findings"] = [
+                    "source externe sans pin : la fraicheur serait "
+                    "deleguee a rien -- le fichier lu peut changer sans "
+                    "que rien ne le distingue"
+                ]
+            elif not expected_sha:
+                row["verdict"] = "EXTERNAL_SANS_EMPREINTE"
+                row["findings"] = [
+                    f"source externe pinnee ({pin}) sans sha256 : la sortie "
+                    "commitee ne peut pas etre rattachee au fichier lu"
+                ]
+            elif not text.strip():
+                row["verdict"] = "NO_OUTPUT"
+                row["findings"] = ["cellule sans sortie committee"]
+            elif expected_sha not in text.lower():
+                row["verdict"] = "EXTERNAL_EMPREINTE_ABSENTE"
+                row["findings"] = [
+                    f"sha256 attendu absent de la sortie commitee "
+                    f"({expected_sha[:12]}...) -- la cellule ne prouve pas "
+                    f"qu'elle a lu le fichier epingle ({pin})"
+                ]
+            else:
+                row["verdict"] = "FRESH"
+                row["findings"] = list(sig)
+                if sig:
+                    row["verdict"] = "STALE"
+            rows.append(row)
+            if row["verdict"] != "FRESH":
+                stale += 1
             continue
 
         try:

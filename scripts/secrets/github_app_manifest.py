@@ -51,7 +51,23 @@ OWNER_ID = 3159389
 APP_PREFIX = "coursia-lane-"
 # Le pilote `coursia-lane-ai-01` existe deja (App 5036190) : il n'est pas recree,
 # il s'aligne sur PERMISSIONS depuis sa page de reglages.
-LANES = ("po-2023", "po-2024", "po-2025", "po-2026", "po-2027", "web1")
+# po-2028 (secretaire CoursIA-3 et lane CoursIA-2) ajoute le 2026-11-13 : la
+# machine n'a pas de compte GitHub, son App lui donne un quota propre.
+LANES = ("po-2023", "po-2024", "po-2025", "po-2026", "po-2027", "po-2028", "web1")
+
+# #17437 (Q187, 2026-11-14) : l'App PROPRE a la lane coordinateur
+# `myia-ai-01:CoursIA`. Creee le 2026-11-14 par le proprietaire du depot
+# (App 5763709, installee sur jsboige/CoursIA seulement, memes permissions
+# que PERMISSIONS), elle ne fait PAS partie de LANES : hors prefixe
+# `coursia-lane-`, et surtout hors du flux --serve -- elle est deja creee,
+# jamais recree. Le script ne fait que constater la presence de sa cle
+# (``coursia-coord-ai01.pem``, convention KEY_DIR) dans le listing en
+# lecture seule ; sa cle dediee est DISTINCTE de celle de l'App de machine
+# `coursia-lane-ai-01`, que la lane worker soeur lit aussi -- c'est cette
+# separation qui la rend eligible a porter la voix du coordinateur dans les
+# organes (`gh_identity.COORDINATOR_LANE_APP_LOGIN`, merge_ready,
+# check_unaddressed_nits, check_adjoint_prevalidation).
+COORDINATOR_APP_SLUG = "coursia-coord-ai01"
 
 PERMISSIONS = {
     "metadata": "read",            # obligatoire pour toute App
@@ -261,6 +277,12 @@ def main(argv: list[str] | None = None) -> int:
     status = lane_status(key_dir)
     for lane, done in status.items():
         print(f"{app_name(lane):24} {'cle deposee' if done else 'a creer'}")
+    # L'App propre a la lane coordinateur (#17437, Q187) : deja creee hors
+    # flux manifest, le listing ne fait que constater sa cle -- jamais un
+    # bouton de creation (voir le commentaire de COORDINATOR_APP_SLUG).
+    coord_done = (key_dir / f"{COORDINATOR_APP_SLUG}.pem").exists()
+    print(f"{COORDINATOR_APP_SLUG:24} "
+          f"{'cle deposee' if coord_done else 'cle absente (App 5763709 creee hors script)'}")
     if not args.serve:
         return 0
     if not is_git_ignored(key_dir / "probe.pem"):

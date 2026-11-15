@@ -15,7 +15,7 @@ Deux énoncés, soigneusement distingués dans le notebook :
 
 ## Ce que ce lake contient
 
-- **`Galois/M23Lean4Web.lean`** (8115 lignes) : version single-file Lean4Web de la preuve M₂₃, *vendored* depuis l'amont [`KitaKen1/finite-simple-groups-lean`](https://github.com/KitaKen1/finite-simple-groups-lean) (Apache-2.0). Démontre `Sporadic.card_M23 : Nat.card M23 = 10200960` et `Sporadic.simple_M23 : IsSimpleGroup M23` par une **chaîne de stabilisateurs à certificats** (Schreier–Sims matérialisé) — pas `native_decide`, pas `sorry`. La simplicité passe par le stabilisateur de point (M₂₂ embarqué) + un certificat de conjugaison excluant le cas régulier d'ordre 23.
+- **`Galois/M23Lean4Web.lean`** (fichier volumineux) : version single-file Lean4Web de la preuve M₂₃, *vendored* depuis l'amont [`KitaKen1/finite-simple-groups-lean`](https://github.com/KitaKen1/finite-simple-groups-lean) (Apache-2.0). Démontre `Sporadic.card_M23 : Nat.card M23 = 10200960` et `Sporadic.simple_M23 : IsSimpleGroup M23` par une **chaîne de stabilisateurs à certificats** (Schreier–Sims matérialisé) — pas `native_decide`, pas `sorry`. La simplicité passe par le stabilisateur de point (M₂₂ embarqué) + un certificat de conjugaison excluant le cas régulier d'ordre 23.
 - **`Galois.lean`** : agrégateur racine — importe les **cinq** modules du lake (`Galois.M23Lean4Web` plus les deux paires FR/EN `AdicCompletionLocalRing` et `LowerRamificationGroup`), donc un point d'entrée unique qui porte la couche M₂₃ *et* la couche adic-complétion.
 - **`Galois/*_en.lean`** : siblings i18n (#4980) de la couche adic-complétion — `AdicCompletionLocalRing_en` et `LowerRamificationGroup_en`. Le module vendu `M23Lean4Web` reste hors i18n (lib tierce, cf `lean-i18n`).
 
@@ -41,6 +41,6 @@ Per `sota-not-workaround` : refaire une échelle de petits groupes à côté d'u
 
 ## Voir aussi
 
-- [Lean-15-Grothendieck-Tribute](../../Lean-15-Grothendieck-Tribute.ipynb) — hommage comparable (prouve ce qu'il annonce)
+- [GROTH-02-Tribut-Python](../../GROTH/GROTH-02-Tribut-Python.ipynb) — hommage comparable (prouve ce qu'il annonce)
 - `grothendieck_lean` — angle SGA1 (π₁ étale, existence de Riemann) pour le chaînon-pont vers la réalisation galoisienne
 - EPIC i18n #4980 : siblings `_en` **livrés** pour la couche adic-complétion (`AdicCompletionLocalRing_en`, `LowerRamificationGroup_en`) ; le module vendu `M23Lean4Web` en est exclu par la règle (lib tierce).

@@ -1,15 +1,15 @@
 import Mathlib
-import EffectiveTheory.Grokking
+import EffectiveTheory.Grokking_en
 
 /-!
 # GrokkingLemmas — own contribution of the R02 grain (rescoping #16752)
 
 English mirror of `GrokkingLemmas.lean` (FR-first canonical), EPIC #4980
 (i18n Lean). Convention ratified 2026-07-04 (issue #4980): namespace
-`LearningTheory.EffectiveTheory_en`. `EffectiveTheory.Grokking` has no
-`_en` twin on `main` (deferred to #17481), so this mirror imports the FR
-module and opens its namespace — statements and proofs below are
-byte-identical to the FR canonical file.
+`LearningTheory.EffectiveTheory_en`. Imports its own `_en` base
+`EffectiveTheory.Grokking_en` (delivered on `main` via #17481;
+FR-import remediation, fournée 6 of #24019) — statements and proofs
+below are byte-identical to the FR canonical file.
 
 Sibling module of `EffectiveTheory.Grokking` (ai-01 arbitration
 c.5790650195, 2026-09-23): `Grokking.lean` on `main` already carries the
@@ -52,8 +52,6 @@ namespace LearningTheory.EffectiveTheory_en
 open Finset
 
 open scoped InnerProductSpace Topology
-
-open LearningTheory.EffectiveTheory
 
 /-! ### Generic differential-calculus lemmas -/
 

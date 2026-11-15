@@ -1,0 +1,7 @@
+date: '2026-11-11'
+by: myia-ai-01:CoursIA-2
+python_sha: 0bff9a9479b222f81c782e881b35a2b8e5a782c7
+csharp_sha: 0e388ffd499309d90973df21f1402d2137519e73
+content_python_sha: ae839d4210b5186a463dfc042d0593edb2a8ea719b37619c9712282802da937e
+content_csharp_sha: 1dada1efb80c5e9cc96ca75c2e1766fc4b920ddbedcb9c0fed573fc58c98ece6
+reason: 'PR #25737 : Search-03c recoit ses trois blocs de fin canoniques (A retenir / Verifiez votre comprehension / Pour aller plus loin). Markdown seul -- aucune cellule de code touchee, execution_count et outputs inchanges, donc pas de re-execution due (C.2). Le cote C# est inchange et le reste coherent : la parite est semantique (sac a dos 0/1, LDS bornant les ecarts a l heuristique gloutonne), et ni l algorithme ni l instance ni les sorties des deux cotes ne bougent. L ecart est documentaire (bloc de fin pedagogique) ; il sera comble par la tranche des jumeaux .NET, qui porte le genre notebook-dotnet.'

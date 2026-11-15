@@ -155,6 +155,34 @@ def parse_provenance(text: str) -> dict[str, str]:
     return proof
 
 
+def validate_runtime_proof(root: str, proof: dict[str, str]) -> None:
+    """Require complete provenance and prove the loaded runtime is under root.
+
+    ``DOTNET_ROOT`` is only a request to the host. A successful kernel launch
+    does not prove that the requested installation supplied the runtime, so
+    every measured execution must report its runtime directory and have it
+    resolve inside the selected root.
+    """
+    missing = {"description", "version", "dir"} - proof.keys()
+    if missing:
+        raise RuntimeError(
+            "preuve du runtime incomplete : " + ", ".join(sorted(missing))
+        )
+
+    # Resolve a symlinked DOTNET_ROOT to its installation directory before
+    # checking containment; the host may report the resolved path itself.
+    expected_root = Path(root).expanduser().resolve()
+    actual_dir = Path(proof["dir"]).expanduser().resolve()
+    try:
+        actual_dir.relative_to(expected_root)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"runtime charge hors de DOTNET_ROOT demande : {actual_dir} "
+            f"(racine demandee : {expected_root}; runtime annonce : "
+            f"{proof['description']} {proof['version']})"
+        ) from exc
+
+
 def read_cell_source(notebook: str, index: int | None, cell_id: str | None) -> str:
     """Source de la cellule cible. Le carnet n'est ouvert qu'en lecture."""
     with open(notebook, encoding="utf-8") as handle:
@@ -270,6 +298,11 @@ def main() -> int:
             raise SystemExit(f"--runtime attendu LABEL=ROOT, reçu {spec!r}")
         label, root = spec.split("=", 1)
         runtimes.append((label.strip(), root.strip()))
+    labels = [label for label, _ in runtimes]
+    if any(not label for label in labels):
+        raise SystemExit("les labels --runtime ne peuvent pas etre vides")
+    if len(set(labels)) != len(labels):
+        raise SystemExit("chaque --runtime doit avoir un label distinct")
     if len(runtimes) < 2:
         raise SystemExit("au moins deux runtimes sont necessaires pour comparer")
 
@@ -286,8 +319,10 @@ def main() -> int:
         env["DOTNET_ROLL_FORWARD_TO_PRERELEASE"] = ROLL_FORWARD_TO_PRERELEASE
         for attempt in range(1, args.repeats + 1):
             measured, proof = run_once(args.kernel, source, provenance_source, env, args.timeout)
+            parsed_proof = parse_provenance(proof)
+            validate_runtime_proof(root, parsed_proof)
             blocks = parse_block(measured)
-            proofs.setdefault(label, {}).update(parse_provenance(proof))
+            proofs.setdefault(label, {}).update(parsed_proof)
             collected[label].append({"attempt": attempt, "blocks": blocks})
             print(f"[{label}] execution {attempt}/{args.repeats} : "
                   f"{ {k: v.get('median') for k, v in blocks.items()} }", file=sys.stderr)

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-SemanticKernel
-pedagogical_count: 23
-breakdown: SemanticKernel=23
-maturity: BETA=18, TEMPLATE=3, DRAFT=2
+pedagogical_count: 24
+breakdown: SemanticKernel=24
+maturity: BETA=19, TEMPLATE=3, DRAFT=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Génération de texte](../Texte/README.md)
@@ -15,34 +15,52 @@ Cette série pédagogique vous guidera à travers la transition entre le prompt 
 
 **Fil rouge** : le NotebookMaker, un système à 3 agents (Admin, Coder, Reviewer) qui génère automatiquement des notebooks pédagogiques. Ce démonstrateur incarne l'essence même de Semantic Kernel : orchestrer des agents spécialisés pour résoudre des problèmes complexes.
 
-## Série principale (Python)
+## Comment lire ce README
 
-Parcours pédagogique complet sur Semantic Kernel en Python :
+Le parcours principal suit les numéros nus ; les lettres approfondissent un palier et restent facultatives. Cette série applique le principe des [parcours à plusieurs vitesses](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) présenté dans le README racine.
 
-| # | Notebook | Contenu | Durée |
-|---|----------|---------|-------|
-| 01 | [SK-1-Fundamentals](01-SemanticKernel-Intro.ipynb) | Kernel, Services, Plugins, Chat | 45 min |
-| 02 | [SK-2-Functions](02-SemanticKernel-Advanced.ipynb) | Function Calling moderne, Memory, Groundedness | 50 min |
-| 03 | [SK-3-Agents](03-SemanticKernel-Agents.ipynb) | ChatCompletionAgent, AgentGroupChat, OpenAIAssistant | 55 min |
-| 04 | [SK-4-Filters](04-SemanticKernel-Filters-Observability.ipynb) | Filtres, Logging, OpenTelemetry | 45 min |
-| 05 | [SK-5-VectorStores](05-SemanticKernel-VectorStores.ipynb) | RAG, Embeddings, Qdrant | 50 min |
-| 06 | [SK-6-ProcessFramework](06-SemanticKernel-ProcessFramework.ipynb) | Workflows, Orchestration, State | 40 min |
-| 07 | [SK-7-MultiModal](07-SemanticKernel-MultiModal.ipynb) | DALL-E, Whisper, GPT-5.6 Vision | 45 min |
-| 08 | [SK-8-MCP](08-SemanticKernel-MCP.ipynb) | Model Context Protocol, Interopérabilité | 50 min |
+- Vous découvrez Semantic Kernel : suivez le parcours principal dans l'ordre.
+- Vous creusez un palier : ouvrez sa section d'approfondissements.
+- Vous cherchez les applications et les ressources : consultez les démos, les templates et « Pour aller plus loin ».
 
-## Notebooks avancés (Python/C# Interop)
+## Parcours principal
 
-| # | Notebook | Description | Durée |
-|---|----------|-------------|-------|
-| 09 | [SK-9-Building-CLR](09-SemanticKernel-Building-CLR.ipynb) | Interop Python/C# via pythonnet, chargement DLL .NET | 40 min |
-| 10 | [SK-10-NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) | **Système 3-agents** interactif (Admin, Coder, Reviewer) avec function calling | 60 min |
-| 10a | [SK-10a-NotebookMaker-batch](10a-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch avec contexte agentique borné et budget de tours | 30 min |
-| 10b | [SK-10b-NotebookMaker-batch-param](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | Version batch paramétrée pour Papermill | 30 min |
-| 11 | [SK-11-A2A](11-SemanticKernel-A2A.ipynb) | Le protocole Agent2Agent à côté de MCP : AgentCard, serveur FastAPI local, cycle de vie des tâches, échange client réel | 40 min |
+Le parcours commence par les fondations Python, puis va des agents et de leurs outils vers le NotebookMaker et l'interopérabilité. Les numéros nus forment la progression ; les durées sont les estimations déjà associées aux carnets.
+
+| # | Notebook | Ce qu'on y apprend | Durée | Pour approfondir |
+|---|----------|-------------------|-------|-------------------|
+| 01 | [SK-1-Fundamentals](01-SemanticKernel-Intro.ipynb) | Kernel, Services, Plugins, Chat | 45 min | — |
+| 02 | [SK-2-Functions](02-SemanticKernel-Advanced.ipynb) | Function Calling moderne, Memory, Groundedness | 50 min | — |
+| 03 | [SK-3-Agents](03-SemanticKernel-Agents.ipynb) | ChatCompletionAgent, AgentGroupChat, OpenAIAssistant | 55 min | — |
+| 04 | [SK-4-Filters](04-SemanticKernel-Filters-Observability.ipynb) | Filtres, Logging, OpenTelemetry | 45 min | — |
+| 05 | [SK-5-VectorStores](05-SemanticKernel-VectorStores.ipynb) | RAG, Embeddings, Qdrant | 50 min | — |
+| 06 | [SK-6-ProcessFramework](06-SemanticKernel-ProcessFramework.ipynb) | Workflows, Orchestration, State | 40 min | — |
+| 07 | [SK-7-MultiModal](07-SemanticKernel-MultiModal.ipynb) | DALL-E, Whisper, GPT-5.6 Vision | 45 min | — |
+| 08 | [SK-8-MCP](08-SemanticKernel-MCP.ipynb) | Model Context Protocol, Interopérabilité | 50 min | — |
+| 09 | [SK-9-Building-CLR](09-SemanticKernel-Building-CLR.ipynb) | Interop Python/C# via pythonnet, chargement DLL .NET | 40 min | — |
+| 10 | [SK-10-NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) | **Système 3-agents** interactif (Admin, Coder, Reviewer) avec function calling | 60 min | [10a](10a-SemanticKernel-NotebookMaker-batch.ipynb) · [10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) |
+| 11 | [SK-11-A2A](11-SemanticKernel-A2A.ipynb) | Le protocole Agent2Agent à côté de MCP : AgentCard, serveur FastAPI local, cycle de vie des tâches, échange client réel | 40 min | — |
+
+## Parité Python / C#
+
+| Sujet | Python | C# | Particularités |
+|---|---|---|---|
+| MCP et Semantic Kernel | [SK-8](08-SemanticKernel-MCP.ipynb) | [SK-8 C#](08-SemanticKernel-MCP-CSharp.ipynb) | SDK MCP et SK natifs ; C# adapte les `AIFunction`, et teste aussi l’export SK sur stdio. Le contrôle de chemin C# est lexical et ne résout pas les liens symboliques. |
+
+## Approfondissements
+
+### Autour de 10 — NotebookMaker
+
+Ces deux variantes reprennent le NotebookMaker introduit en 10 et ajoutent des modes d'exécution distincts. Elles approfondissent le palier 10 ; elles ne sont pas des étapes requises pour continuer vers le notebook 11.
+
+| Notebook | Apport | Prérequis | Durée |
+|----------|--------|-----------|-------|
+| [SK-10a-NotebookMaker-batch](10a-SemanticKernel-NotebookMaker-batch.ipynb) | Version batch avec contexte agentique borné et budget de tours | NotebookMaker [10](10-SemanticKernel-NotebookMaker.ipynb) | 30 min |
+| [SK-10b-NotebookMaker-batch-param](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | Version batch paramétrée pour Papermill | NotebookMaker [10](10-SemanticKernel-NotebookMaker.ipynb) ; variante batch [10a](10a-SemanticKernel-NotebookMaker-batch.ipynb) ; paramètres Papermill | 30 min |
 
 ## Démos interactives (curriculum)
 
-Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font partie du curriculum (exercices stub inclus), mais sont listés à part car ils ne suivent pas la numérotation principale 01-10.
+Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font partie du curriculum (exercices stub inclus), mais sont listés à part car ils ne suivent pas la numérotation principale 01-11.
 
 | Notebook | Langage | Contenu | Exercices |
 |----------|---------|---------|-----------|
@@ -71,53 +89,6 @@ Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font p
 | `Créateur de mail personnalisé_output.ipynb` | Copie exécutée Papermill | Artefact d'exécution de [Créateur de mail personnalisé](Cr%C3%A9ateur%20de%20mail%20personnalis%C3%A9.ipynb) (suffixe `_output`, non tracké : produit local d'une exécution Papermill) |
 
 Le notebook canonique « Créateur de mail personnalisé » (sans suffixe `_output`) est, lui, un vrai notebook de curriculum (cf. table [Démos interactives](#démos-interactives-curriculum)).
-
-## Concepts clés
-
-| Concept | Description | Notebook |
-|---------|-------------|----------|
-| **Kernel** | Orchestrateur central | 01 |
-| **Services** | Connexions LLM (OpenAI, Azure) | 01 |
-| **Plugins** | Collections de fonctions | 01, 02 |
-| **Function Calling** | `FunctionChoiceBehavior.Auto()` | 02 |
-| **Agents** | Entités autonomes | 03 |
-| **AgentGroupChat** | Collaboration multi-agents | 03, 10 |
-| **Filters** | Interception avant/après | 04 |
-| **Vector Stores** | RAG, embeddings | 05 |
-| **Process Framework** | Workflows orchestrés | 06 |
-| **Multi-Modal** | Images, audio, vision | 07 |
-| **MCP** | Interopérabilité des outils | 08 |
-| **pythonnet/CLR** | Interop Python/.NET | 09 |
-| **NotebookState** | Gestion état notebook | 10 |
-| **SelectionStrategy** | Choix agent dynamique | 10 |
-
-## Parcours recommandé
-
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                     SÉRIE PRINCIPALE (Python)                       │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                     │
-│  01-Fundamentals ───> 02-Functions ───> 03-Agents                   │
-│        │                    │                │                      │
-│        v                    v                v                      │
-│  04-Filters <────────> 05-VectorStores      │                      │
-│        │                    │                │                      │
-│        v                    v                │                      │
-│  06-ProcessFramework   07-MultiModal         │                      │
-│        │                    │                │                      │
-│        └──────────> 08-MCP <─┘               │                      │
-│                                              │                      │
-├─────────────────────────────────────────────────────────────────────┤
-│                     SÉRIE AVANCÉE (Interop)                         │
-├─────────────────────────────────────────────────────────────────────┤
-│                                              │                      │
-│                                              v                      │
-│  09-Building-CLR ─────────────────> 10-NotebookMaker                │
-│  (Python/C# Interop)                (Agents générateurs)            │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
 
 ## Prérequis
 
@@ -161,14 +132,57 @@ dotnet --version
 # - Microsoft.SemanticKernel.Agents.Core
 ```
 
-## Ressources
+## Pour aller plus loin
 
-- [Semantic Kernel Documentation](https://learn.microsoft.com/en-us/semantic-kernel/)
-- [Semantic Kernel GitHub](https://github.com/microsoft/semantic-kernel)
-- [SK Blog](https://devblogs.microsoft.com/semantic-kernel/)
-- [MCP Specification](https://modelcontextprotocol.io/)
+### Concepts clés
 
-## Recette : construire le NotebookMaker (système 3 agents)
+| Concept | Description | Notebook |
+|---------|-------------|----------|
+| **Kernel** | Orchestrateur central | 01 |
+| **Services** | Connexions LLM (OpenAI, Azure) | 01 |
+| **Plugins** | Collections de fonctions | 01, 02 |
+| **Function Calling** | `FunctionChoiceBehavior.Auto()` | 02 |
+| **Agents** | Entités autonomes | 03 |
+| **AgentGroupChat** | Collaboration multi-agents | 03, 10 |
+| **Filters** | Interception avant/après | 04 |
+| **Vector Stores** | RAG, embeddings | 05 |
+| **Process Framework** | Workflows orchestrés | 06 |
+| **Multi-Modal** | Images, audio, vision | 07 |
+| **MCP** | Interopérabilité des outils | 08 |
+| **pythonnet/CLR** | Interop Python/.NET | 09 |
+| **NotebookState** | Gestion état notebook | 10 |
+| **SelectionStrategy** | Choix agent dynamique | 10 |
+
+### Parcours recommandé
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                     SÉRIE PRINCIPALE (Python)                       │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  01-Fundamentals ───> 02-Functions ───> 03-Agents                   │
+│        │                    │                │                      │
+│        v                    v                v                      │
+│  04-Filters <────────> 05-VectorStores      │                      │
+│        │                    │                │                      │
+│        v                    v                │                      │
+│  06-ProcessFramework   07-MultiModal         │                      │
+│        │                    │                │                      │
+│        └──────────> 08-MCP <─┘               │                      │
+│                                              │                      │
+├─────────────────────────────────────────────────────────────────────┤
+│                     SÉRIE AVANCÉE (Interop)                         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                              │                      │
+│                                              v                      │
+│  09-Building-CLR ─────────────────> 10-NotebookMaker ──> 11-A2A     │
+│  (Python/C# Interop)                (Agents générateurs) (Interop.)  │
+│                                      ↳ 10a batch → 10b Papermill     │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Recette : construire le NotebookMaker (système 3 agents)
 
 Le fil rouge de cette série est le NotebookMaker, un système multi-agents qui génère automatiquement des notebooks pédagogiques. Voici comment les notebooks s'articulent :
 
@@ -178,9 +192,9 @@ Le fil rouge de cette série est le NotebookMaker, un système multi-agents qui 
 
 3. **Extensions (07-08)** : [07](07-SemanticKernel-MultiModal.ipynb) ajoute les capacités multimodales (images, audio). [08](08-SemanticKernel-MCP.ipynb) connecte le Kernel au protocole MCP pour l'interopérabilité.
 
-4. **NotebookMaker (09-10)** : [09](09-SemanticKernel-Building-CLR.ipynb) prépare l'interop Python/C#. [10](10-SemanticKernel-NotebookMaker.ipynb) assemble le système 3 agents (Admin, Coder, Reviewer). Les versions [10a](10a-SemanticKernel-NotebookMaker-batch.ipynb) et [10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) ajoutent le mode batch et la paramétrisation Papermill.
+4. **Interopérabilité et NotebookMaker (09-11)** : [09](09-SemanticKernel-Building-CLR.ipynb) prépare l'interop Python/C#. [10](10-SemanticKernel-NotebookMaker.ipynb) assemble le système à 3 agents (Admin, Coder, Reviewer), puis [11](11-SemanticKernel-A2A.ipynb) explore le protocole Agent2Agent. Les versions facultatives [10a](10a-SemanticKernel-NotebookMaker-batch.ipynb) et [10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) approfondissent le mode batch et sa paramétrisation Papermill.
 
-## Changelog
+### Historique des versions
 
 ### Février 2026
 
@@ -191,15 +205,15 @@ Le fil rouge de cette série est le NotebookMaker, un système multi-agents qui 
 
 ### Janvier 2026
 
-- Modernisation complète de la série Python (8 notebooks)
+- Modernisation complète de la série Python
 - Ajout notebooks 04-08 (Filters, VectorStores, Process, MultiModal, MCP)
 - Remplacement des Planners dépréciés par `FunctionChoiceBehavior.Auto()`
 - Ajout interprétations pédagogiques style GameTheory
 - Intégration Qdrant pour Vector Stores
 
-## FAQ
+### FAQ
 
-### `semantic-kernel` installé mais `ImportError` au premier notebook
+#### `semantic-kernel` installé mais `ImportError` au premier notebook
 
 Semantic Kernel évolue rapidement et les versions sont parfois incompatibles entre elles. Si `ImportError: cannot import name 'Kernel'` ou similaire :
 
@@ -213,7 +227,7 @@ pip install semantic-kernel>=1.30.0 python-dotenv openai
 
 Les notebooks 01-03 utilisent les APIs stables (`Kernel`, `ChatCompletionAgent`, `AgentGroupChat`). Les APIs dépréciées (`Planner`, `SKContext`) ont été remplacées par `FunctionChoiceBehavior.Auto()` depuis janvier 2026. Si votre code utilise encore `Planner`, consulter le notebook [02](02-SemanticKernel-Advanced.ipynb) pour la migration.
 
-### Le NotebookMaker génère des notebooks vides ou incomplets
+#### Le NotebookMaker génère des notebooks vides ou incomplets
 
 Le NotebookMaker (notebook [10](10-SemanticKernel-NotebookMaker.ipynb)) orchestre 3 agents (Admin, Coder, Reviewer) pour générer un notebook. Si le résultat est vide ou incomplet :
 
@@ -222,7 +236,7 @@ Le NotebookMaker (notebook [10](10-SemanticKernel-NotebookMaker.ipynb)) orchestr
 - Le système nécessite généralement 3 à 5 itérations agentiques pour converger. La variante paramétrée [10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) permet en plus de piloter la tâche avec Papermill.
 - Les filtres d'observabilité (notebook [04](04-SemanticKernel-Filters-Observability.ipynb)) permettent de tracer chaque échange agentique et diagnostiquer les blocages.
 
-### Quelle différence entre Semantic Kernel et LangChain ?
+#### Quelle différence entre Semantic Kernel et LangChain ?
 
 | Critère | Semantic Kernel | LangChain |
 |---------|----------------|-----------|
@@ -236,7 +250,7 @@ Le NotebookMaker (notebook [10](10-SemanticKernel-NotebookMaker.ipynb)) orchestr
 
 Si vous travaillez dans l'écosystème Microsoft (Azure, .NET, Teams), Semantic Kernel est le choix naturel. Pour un écosystème Python pur ou du prototypage rapide, LangChain offre plus de flexibilité.
 
-### Les agents SK bouclent sans converger
+#### Les agents SK bouclent sans converger
 
 L'`AgentGroupChat` (notebook [03](03-SemanticKernel-Agents.ipynb)) peut entrer en boucle infinie si la `SelectionStrategy` ne définit pas de condition de terminaison claire. Mitigation :
 
@@ -244,7 +258,7 @@ L'`AgentGroupChat` (notebook [03](03-SemanticKernel-Agents.ipynb)) peut entrer e
 - Limiter `maximum_iterations` dans la configuration du chat.
 - La `SelectionStrategy` par défaut est round-robin — pour des agents spécialisés, implémenter une stratégie basée sur le contexte (voir NotebookMaker notebook [10](10-SemanticKernel-NotebookMaker.ipynb)).
 
-### VectorStores / RAG : Qdrant injoignable
+#### VectorStores / RAG : Qdrant injoignable
 
 Le notebook [05](05-SemanticKernel-VectorStores.ipynb) utilise Qdrant pour le RAG. Si erreur de connexion :
 
@@ -259,7 +273,7 @@ QDRANT_API_KEY=votre-cle
 
 Le notebook fonctionne en mode démo avec un magasin en mémoire si Qdrant n'est pas disponible. Pour la production, Qdrant (ou un autre store persistant) est recommandé.
 
-### Comment utiliser les filtres pour déboguer les appels LLM ?
+#### Comment utiliser les filtres pour déboguer les appels LLM ?
 
 Les filtres SK (notebook [04](04-SemanticKernel-Filters-Observability.ipynb)) interceptent chaque appel LLM avant et après exécution. Pour le debug :
 
@@ -275,6 +289,13 @@ async def log_filter(context, next):
 ```
 
 Ce pattern est essentiel pour comprendre ce que font les agents dans un système multi-agents comme le NotebookMaker.
+
+## Ressources
+
+- [Semantic Kernel Documentation](https://learn.microsoft.com/en-us/semantic-kernel/)
+- [Semantic Kernel GitHub](https://github.com/microsoft/semantic-kernel)
+- [SK Blog](https://devblogs.microsoft.com/semantic-kernel/)
+- [MCP Specification](https://modelcontextprotocol.io/)
 
 ## Licence
 

@@ -14,10 +14,20 @@ class LowBetaIndustriesAlgorithm(QCAlgorithm):
       - `bab`     : BAB neutre par industrie d'Asness, Frazzini, Pedersen (FAJ 2014),
         beta de Frazzini-Pedersen (JFE 2014), jambes a beta 1, industries equiponderees.
       - `spy`     : buy-and-hold SPY (reference).
+      - `6040`    : reference tenue 60/40 de la ligue (SPY 60 %, IEF 40 %), ajoutee
+        pour la mesure au protocole commun (#25492) : meme compte, meme capital,
+        meme modele de frais et meme horaire de reequilibrage que les bras
+        strategie.
 
-    Les trois bras partagent la fenetre, le capital, l'univers et le modele de frais.
+    Les quatre bras partagent la fenetre, le capital, l'univers et le modele de frais.
     Chaque bras trace ses rendements mensuels (graphique "Monthly") pour que les tests
     statistiques (alpha CAPM, rendement en exces du BAB) se fassent hors plateforme.
+
+    Tous les bras tracent aussi une **trace journaliere** `shadow` (contrat #18923 :
+    une valeur par seance de SPY, repartie sur les series e0..e4), qui permet de
+    rejouer le protocole de la ligue (`Paradox46Benchmarks/significance.py`) sur des
+    rendements journaliers apparies. La trace n'ecrit que dans un graphique : elle ne
+    touche ni la selection, ni les poids, ni l'horaire, ni le capital.
     """
 
     def initialize(self):
@@ -33,6 +43,7 @@ class LowBetaIndustriesAlgorithm(QCAlgorithm):
         self._assets_per_industry = self.get_parameter('assets_per_industry', 50)
         self._spy = self.add_equity('SPY', Resolution.DAILY)
         self._targets = []
+        self._closes = 0  # seances tracees, pour l'alternance e0..e4 de la trace "shadow"
 
         # Parametres du bras BAB : ceux des papiers, aucun n'est regle sur les resultats.
         self._bab_scale = self.get_parameter('bab_scale', 0.5)  # echelle du portefeuille (le Sharpe n'en depend pas)
@@ -54,6 +65,12 @@ class LowBetaIndustriesAlgorithm(QCAlgorithm):
             else:
                 self.add_universe(self._select_bab)
             self.schedule.on(self.date_rules.month_start(self._spy.symbol, 2), self.time_rules.midnight, self._rebalance)
+        elif self._arm == '6040':
+            # Reference tenue 60/40 de la ligue (#25492) : SPY 60 %, IEF 40 %.
+            # Meme horaire de reequilibrage que les bras strategie (debut de mois + 2),
+            # meme compte, meme capital, meme modele de frais.
+            self._ief = self.add_equity('IEF', Resolution.DAILY)
+            self.schedule.on(self.date_rules.month_start(self._spy.symbol, 2), self.time_rules.midnight, self._rebalance_6040)
         elif self._arm != 'spy':
             raise ValueError(f"arm inconnu : {self._arm}")
 
@@ -116,6 +133,13 @@ class LowBetaIndustriesAlgorithm(QCAlgorithm):
             # Rebalance the portfolio.
             self.set_holdings(self._targets)
             self._targets = []
+
+    # ------------------------------------------------------------------ bras 6040
+
+    def _rebalance_6040(self):
+        """Reference tenue 60/40 de la ligue : SPY 60 %, IEF 40 % (re-equilibrage mensuel)."""
+        self.set_holdings([PortfolioTarget(self._spy.symbol, 0.6),
+                           PortfolioTarget(self._ief.symbol, 0.4)])
 
     # ------------------------------------------------------------------ univers commun
 
@@ -254,3 +278,8 @@ class LowBetaIndustriesAlgorithm(QCAlgorithm):
             values = [h.holdings_value for h in self.portfolio.values() if h.invested]
             self._net_samples.append(float(sum(values)) / value)
             self._gross_samples.append(float(sum(abs(v) for v in values)) / value)
+        # Trace journaliere au contrat #18923 : une valeur par seance de SPY,
+        # repartie sur les series e0..e4 (le cycle permet a la lecture deVerifier
+        # qu'aucun point n'est perdu). Ecriture pure : aucune decision.
+        self.plot('shadow', f'e{self._closes % 5}', float(value))
+        self._closes += 1

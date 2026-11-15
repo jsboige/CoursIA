@@ -70,7 +70,6 @@ Référence tabulaire (Durée, Service, VRAM) pour les carnets de ce niveau — 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------ |
 | 1 | [01-1-Video-Operations-Basics](01-1-Video-Operations-Basics.ipynb) | Opérations de base (FFmpeg, moviepy) | Local | 0 |
-| 1b | [01-1b-Video-Slideshow-Bonus](01-1b-Video-Slideshow-Bonus.ipynb) | *Bonus* — slideshow : frames PIL, assemblage imageio (espace de travail du challenge de 01-1) | Local | 0 |
 | 2 | [01-2-GPT-5-Video-Understanding](01-2-GPT-5-Video-Understanding.ipynb) | Compréhension vidéo | OpenAI API | 0 |
 | 3 | [01-3-Qwen-VL-Video-Analysis](01-3-Qwen-VL-Video-Analysis.ipynb) | Analyse vidéo multimodale | Qwen | Variable |
 | 4 | [01-4-Video-Enhancement-ESRGAN](01-4-Video-Enhancement-ESRGAN.ipynb) | Amélioration qualité | Real-ESRGAN | ~4GB |
@@ -99,11 +98,14 @@ pip install -r requirements-video.txt
 ## Progression recommandée
 
 1. **01-1-Video-Operations-Basics** - Bases du traitement vidéo
-   - [01-1b](01-1b-Video-Slideshow-Bonus.ipynb) (optionnel) — l'espace de travail du challenge de 01-1 : à faire pour s'entraîner soi-même sur les primitives de montage, à sauter si l'on suit le fil compréhension → génération ou si PIL et `imageio` sont déjà connus — le carnet n'ajoute aucune API au-delà de 01-1.
 2. **01-2-GPT-5-Video-Understanding** - Intelligence vidéo
 3. **01-3-Qwen-VL-Video-Analysis** - Analyse multimodale
 4. **01-4-Video-Enhancement-ESRGAN** - Amélioration qualité
 5. **01-5-AnimateDiff-Introduction** - Animation de base
+
+## Bonus optionnel — [01-1b, créer un slideshow vidéo](01-1b-Video-Slideshow-Bonus.ipynb)
+
+Ce carnet prolonge l'exercice de montage de 01-1 : il sert d'espace de travail pour assembler des frames dessinées avec PIL en vidéo avec `imageio`, puis présente des exemples guidés. Il est facultatif et ne constitue pas une étape du parcours principal : passez directement de 01-1 à 01-2 pour suivre le fil manipulation → compréhension → amélioration → génération.
 
 ## Points clés
 

@@ -314,6 +314,46 @@ donc pas « le même problème résolu plus vite », c'est le prix de la
 connaissance : quand le catalogue connaît les briques, il ne cherche plus des
 cellules ; quand il ne les connaît pas, la baseline reste l'arbitre.
 
+## Frontière de la synthèse bornée — trois verdicts, jamais deux
+
+Le synthétiseur SAT de motifs (`life_synthesize_sat.py`) et son runner de campagne
+(`life_sat_cost_frontier.py`) rendent des verdicts sur des tailles croissantes de
+motif. Ce qu'une campagne fixe durablement n'est pas un temps, c'est une **façon de
+lire** — et ces règles valent pour toute recherche bornée du dépôt, pas seulement
+pour Life :
+
+1. **Trois verdicts distincts, et pas deux.** `FOUND` (une taille minimale, toutes
+   les tailles inférieures réfutées), `IMPOSSIBLE` (toutes les tailles jusqu'à
+   `max_cells` réfutées), `TIMEOUT` (les tailles listées sont réfutées, la première
+   taille non tranchée est exposée séparément). **Un timeout n'est jamais converti
+   en preuve d'impossibilité** : le préfixe réfuté est la seule information
+   conservée, et rien n'est dit des tailles supérieures.
+2. **`IMPOSSIBLE` est borné deux fois** — par `max_cells` *et* par la boîte
+   initiale. « Aucune solution jusqu'à `max_cells`, dans cette boîte » n'est pas
+   « aucune solution ».
+3. **Deux contrôles discriminants, obligatoires, aux deux bords.** Un motif connu
+   que le solveur doit retrouver (`FOUND`, minimum attendu) et une impossibilité
+   indépendamment justifiée qu'il doit déclarer (`IMPOSSIBLE`). Sans le premier, une
+   campagne où le solveur ne trouve plus rien reste plausible ; sans le second, un
+   solveur qui déclare tout satisfiable aussi. Le runner sort `2` si un contrôle
+   perd son pouvoir discriminant, et **chaque** répétition doit respecter son
+   verdict attendu — pas la médiane des répétitions.
+4. **La taille structurelle ne prédit pas le verdict ; la géométrie de la
+   contrainte le fait.** Un cas à plus grand état encodé peut être tranché quand un
+   cas plus petit atteint le budget. Un compte de variables n'est pas un budget de
+   temps, et l'écrire comme tel ferait passer une campagne non concluante pour une
+   mesure.
+5. **Le budget du solveur n'est pas le temps mural.** `--timeout-ms` s'applique à
+   chaque `solver.check()`, pas à la campagne, et il ne couvre pas la construction
+   Python du solveur ni le retour du modèle : un budget de 10 s a rendu plus de 11 s
+   de temps mural sur le cas `c/4` (mesure du 2026-09-11). Comparer des chronos à un
+   budget exige de dire lequel des deux on mesure.
+
+Campagne, tableaux de mesures et répétitions : rapport figé
+[`2026-09-11-life-sat-cost-frontier.md`](../transients/2026-09-11-life-sat-cost-frontier.md).
+Le contrôle indépendant par énumération bornée, qui rejoue les motifs trouvés, est
+décrit plus haut (§« Comparaison avec la baseline cellulaire »).
+
 ## Provenance : trois natures d'information, distinguées
 
 Le critère 8 de #15635 demande de ne pas confondre trois choses. Le catalogue

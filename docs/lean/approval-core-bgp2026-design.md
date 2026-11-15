@@ -311,4 +311,4 @@ renvoi de page. Table de correspondance :
 - Anti-régression Lean : [anti-regression.md](../../.claude/rules/anti-regression.md)
 - Petersen Tour existant : `SocialChoice/social_choice_lean_peters/PetersTour.lean` + `_en.lean`
 - Submodule upstream : `DominikPeters/SocialChoiceLean` rev `94a4c650b6`
-- PDF archivé : `GameTheory/2026 - Becker Greger Peters - committee elections approval core (arXiv 2609.11912).pdf`, gisement partagé, déposé le 2026-10-20 (20 pages)
+- PDF archivé : `GameTheory/Social Choice, Voting and Welfare/2026 - Becker Greger Peters - committee elections approval core (arXiv 2609.11912).pdf`, gisement partagé, déposé le 2026-10-20 (20 pages)

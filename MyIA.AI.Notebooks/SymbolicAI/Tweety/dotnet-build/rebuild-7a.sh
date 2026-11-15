@@ -39,23 +39,16 @@
 
 set -e
 
-# JDK resolution: the historical machine pins (Freeplane runtime, MS JDK 17)
-# are tried first for continuity; any system javac works otherwise because
-# every JDK 11+ supports --release 8.
-JAVA_HOME_RESOLVED=""
-for cand in "/c/Program Files/Freeplane/runtime" "/c/Program Files/Microsoft/jdk-17.0.18.8-hotspot"; do
-  if [ -x "$cand/bin/javac" ]; then JAVA_HOME_RESOLVED="$cand"; break; fi
-done
-if [ -z "$JAVA_HOME_RESOLVED" ]; then
-  JAVAC_BIN="$(command -v javac)" || { echo "ERR: no javac on PATH"; exit 1; }
-  JAVA_HOME_RESOLVED="$(cd "$(dirname "$JAVAC_BIN")/.." && pwd)"
-fi
-export JAVA_HOME="$JAVA_HOME_RESOLVED"
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=resolve_java_home.sh
+source "$SCRIPT_DIR/resolve_java_home.sh"
+JAVA_HOME=$(coursia_resolve_java_home) || exit 1
+export JAVA_HOME
 export PATH="$JAVA_HOME/bin:$PATH"
 echo "JAVA_HOME=$JAVA_HOME"
 javac -version
 
-cd "$(dirname "$0")"
+cd "$SCRIPT_DIR"
 WORK=$(pwd)
 
 # Bootstrap into a sibling build dir so we don't pollute dotnet-build/.

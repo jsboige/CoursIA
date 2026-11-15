@@ -89,7 +89,7 @@ def _detect_tools():
 def _find_jdk_portable():
     """Recherche le JDK portable dans l'arborescence."""
     for jdk_path in [pathlib.Path("jdk-17-portable"),
-                     pathlib.Path("../Argument_Analysis/jdk-17-portable")]:
+                     pathlib.Path("../ArgumentAnalysis/jdk-17-portable")]:
         if jdk_path.exists():
             zulu_dirs = list(jdk_path.glob("zulu*"))
             if zulu_dirs:
@@ -100,7 +100,7 @@ def _find_jdk_portable():
 def _find_libs_dir():
     """Recherche le dossier libs contenant les JARs Tweety.
 
-    Le repli `../Argument_Analysis/libs` est retire : l'arbitrage #23109 a
+    Le repli `../ArgumentAnalysis/libs` est retire : l'arbitrage #23109 a
     supprime ce dossier, et il ne portait de toute facon aucun JAR (mesure a la
     base 7e1b735ab : six `native/*`, zero `*.jar`), donc il ne pouvait jamais
     servir. Le second candidat est ancre sur __file__ : sous forme relative au
@@ -170,7 +170,7 @@ def init_tweety(verbose=True):
     # courant : lancé depuis un sous-dossier, un chemin relatif tombait sur
     # l'ancien emplacement, désormais supprimé, et l'absence de natives ne se
     # voit qu'à l'appel du solveur — silencieusement. L'ancien emplacement sous
-    # Argument_Analysis a disparu avec #23109 ; le garder ne protégerait aucun
+    # ArgumentAnalysis a disparu avec #23109 ; le garder ne protégerait aucun
     # clone, il ferait seulement croire la resolution possible.
     native_libs_dir = lib_dir / "native"
     if not native_libs_dir.exists():

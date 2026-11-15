@@ -75,7 +75,7 @@ curl -s -w "%{http_code}" "https://z-image.myia.io/health"
 ### OpenRouter (LLMs - gratuit)
 
 - `01-1-OpenAI-DALL-E-3.ipynb` - Génération d'images via API
-- `01-2-GPT-5-Image-Generation.ipynb` - Vision multimodale
+- `01-2-Generation-Image-API.ipynb` - Vision multimodale
 - `01-3-Basic-Image-Operations.ipynb` - Opérations de base
 
 **Config requise :**
@@ -99,8 +99,8 @@ FORGE_API_URL=https://turbo.stable-diffusion-webui-forge.myia.io
 
 ### ComfyUI Qwen (Édition d'images)
 
-- `01-5-Qwen-Image-Edit.ipynb` - Introduction Qwen
-- `01-5b-Qwen-Image-Edit-2509.ipynb` - Édition avancée
+- `01-5-Edition-Image-Prompt.ipynb` - Introduction Qwen
+- `01-5b-Edition-Image-Prompt-Iterations.ipynb` - Édition avancée
 
 **Config requise :**
 

@@ -52,7 +52,7 @@
          parent glob so they do not break MyIA.AI.Notebooks.dll (precedent:
          QuantConnect exclusion above). OwlAdapter/GSheetSync/DatasetUpdater
          were added in #5167 without this guard. -->
-    <Compile Remove="SymbolicAI\Argument_Analysis\CoursIA-*\**\*.cs" />
+    <Compile Remove="SymbolicAI\ArgumentAnalysis\CoursIA-*\**\*.cs" />
     <!-- Same class, never extended since #5167: each directory below holds its
          own .csproj, so its sources belong to that build unit, not to
          MyIA.AI.Notebooks.dll. Swept in by the implicit glob they fail the

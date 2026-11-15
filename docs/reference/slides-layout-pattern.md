@@ -1,5 +1,7 @@
 # Slidev — motif de mise en page des decks de cours
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Cible : les decks `slides/**` portes par la campagne **#10950**. Ecrit apres qu'un diagnostic « les grilles sont impossibles dans Slidev » ait bloque trois iterations de reparation sur un deck. Le constat qui l'a produit etait vrai ; la conclusion ne l'etait pas.
 
 ## La baseline, c'est le PPTX du user

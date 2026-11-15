@@ -1,11 +1,10 @@
 # .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI
 
 > **Issue** : #23444 (organe de mesure multi-runtime + première application).
-> **Grain de l'axe 1** : #23441 (EPIC .NET 11 #18695, P1 #18771) — le grain reste **non claimé**,
-> le plafond EPIC #22500 s'appliquant cette semaine ; le coordinateur en arbitre la clôture.
-> **Sibling** : [`net11-runtime-deltas.md`](net11-runtime-deltas.md) (bancs BDN). Ce document ne le
-> remplace pas et ne l'édite pas : il porte le **volet carnets — axe 1**, qui y est encore noté
-> `non mesuré`.
+> **Grain de l'axe 1** : #23441 (EPIC .NET 11 #18695, P1 #18771).
+> **Sibling** : [`net11-runtime-deltas.md`](net11-runtime-deltas.md) (bancs BDN). Ce document porte
+> le **volet carnets — axe 1**, avec la grandeur runtime-sensible de la §4 plutôt que le wall-clock
+> du carnet. Le renvoi croisé reste à intégrer dans le tableau de l'axe 1 du document de famille.
 > **Mesure** : myia-po-2023, 2026-10-30, hôte `myia-po-2023` (Windows 11).
 
 ## Conditions (reproductibles)
@@ -120,11 +119,9 @@ python scripts/notebook_tools/multiruntime_probe.py \
 L'organe **n'écrit jamais dans le carnet** : il lit la cellule source, exécute dans un kernel
 jetable et garde les sorties en mémoire.
 
-## Ligne à reporter dans le document de famille
+## Renvoi croisé dans le document de famille
 
-Le document de famille (`net11-runtime-deltas.md`) porte encore `non mesuré` pour
-`08-Aspire-AsyncFFI-Dotnet.ipynb`. Ses deux PRs (#23326, #23421) étant en cours sur ce fichier, le
-renvoi croisé est **laissé à qui mergera** pour éviter un conflit sur une PR déjà relue. La ligne à
-reporter, une fois le fichier déverrouillé :
+Le tableau de l'axe 1 de [`net11-runtime-deltas.md`](net11-runtime-deltas.md) porte désormais
+cette mesure, intégrée dans la même PR que le présent document. La ligne reportée est :
 
-> `08-Aspire-AsyncFFI-Dotnet.ipynb` | 11,0 s | **80,04 ms [71,82 – 103,48] (n=25, instrument §4)** | **+1,76 %** — **INCONCLUSIF** (intervalles chevauchants) ; compat .NET 11 **établie** (RC 11.0.0-rc.3.26522.148) | voir `net11-async-ffi-deltas.md`
+> `08-Aspire-AsyncFFI-Dotnet.ipynb` | 11,0 s (mur) ; **80,04 ms [71,82 – 103,48]** (n=25, instrument §4) | **81,45 ms [70,59 – 116,79]** (n=25, instrument §4) | **+1,76 %** — **INCONCLUSIF** (intervalles chevauchants) ; compat .NET 11 **établie** (RC 11.0.0-rc.3.26522.148, instrument canon de la §4) ; voir `net11-async-ffi-deltas.md`

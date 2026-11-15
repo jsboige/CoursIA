@@ -752,7 +752,7 @@ _SCAN_SLOT_RE = re.compile(
 )
 
 # Jetons noyau qui apparaissent APRES le slot et AVANT le titre
-# (`SW-10-CSharp-RDFStar` : slot `SW-10`, kernel `CSharp`, titre
+# (`SW-10-RDFStar-CSharp` : slot `SW-10`, kernel `CSharp`, titre
 # `RDFStar`). `strip_lang` ne les voit pas parce qu'ils sont en milieu
 # de nom, pas en suffixe. Le balayage les retire pour comparer deux
 # rendus du meme item. Les jetons correspondent aux suffixes noyau
@@ -837,13 +837,13 @@ def _strip_all_lang(stem: str) -> str:
 def _strip_kernel_middle(stem: str) -> str:
     """Strip un jeton noyau en milieu de nom (apres le slot, avant le titre).
 
-    Pour `SW-10-CSharp-RDFStar` la cle est `SW-10`, le noyau `CSharp`,
+    Pour `SW-10-RDFStar-CSharp` la cle est `SW-10`, le noyau `CSharp`,
     le titre `RDFStar`. La forme canonique « stem == prefix + '-' +
     kernel + '-' + rest » est ce qu'on retrouve dans toutes les series
     a jumeaux noyau (`SW-10/11/13`, `App-14`, `Tweety-03/04`). La
     comparaison retient le `prefix-rest` pour neutraliser la difference
     Python/CSharp. Echec du pattern (le token apres le slot n'est PAS un
-    noyau connu, ex. `App-14-ConnectFour-Adversarial`) : on rend le
+    noyau connu, ex. `App-14-ConnectFour-Adversarial-Python`) : on rend le
     stem inchange, et la collision est le SUJET different, pas un
     jumeau a exclure.
     """
@@ -871,7 +871,7 @@ def _same_item_scan(a: str, b: str) -> bool:
     #    le strip_lang ne le voit pas, on le retire a la main avant
     #    la comparaison. Echec du pattern (le token n'est pas un noyau
     #    connu) -> inchange, et la collision reste un vrai conflit de
-    #    sujet (ex. `App-14-ConnectFour-Adversarial` vs
+    #    sujet (ex. `App-14-ConnectFour-Adversarial-Python` vs
     #    `App-14-ConnectFour-CSharp` ne SONT PAS jumeaux).
     sa = _strip_kernel_middle(sa)
     sb = _strip_kernel_middle(sb)

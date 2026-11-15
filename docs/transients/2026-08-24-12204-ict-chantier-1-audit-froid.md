@@ -57,7 +57,7 @@ A3 a établi firsthand que `teorth/pfr` est **externe au dépôt** (find + grep 
 ## Trois gains de mesure (le froid fait tomber ET remonter)
 
 **Gain 1 — Op 9 « Élargir l'espace » passe à 2 attestations.**
-A3 (firsthand, po-2026) : `planning_lean/Planning/Admissibility.lean:50` — `relaxed_plan_admissible : reaches π s g → reachesR π s g` = `P_reel ⊆ P_relache` exactement. Ce cycle : **SW-14-Python-Coup-Ontologique** (#12263 MERGED) exécute l'élargissement du vocabulaire OWL (extension η) avec témoin = diff de triplets + verdict SHACL + delta d'inférences. Deux substrats indépendants (Lean/planning vs Python/ontologie), même loi de monotonie. L'op 9 est la première opération **promue par la mesure** de cette Epic.
+A3 (firsthand, po-2026) : `planning_lean/Planning/Admissibility.lean:50` — `relaxed_plan_admissible : reaches π s g → reachesR π s g` = `P_reel ⊆ P_relache` exactement. Ce cycle : **SW-14-Coup-Ontologique-Python** (#12263 MERGED) exécute l'élargissement du vocabulaire OWL (extension η) avec témoin = diff de triplets + verdict SHACL + delta d'inférences. Deux substrats indépendants (Lean/planning vs Python/ontologie), même loi de monotonie. L'op 9 est la première opération **promue par la mesure** de cette Epic.
 
 **Gain 2 — Loi III « les deux espèces de flèches » gagne sa seconde attestation.**
 Le body dit : « attestée une fois » (transformation vs morphisme, swap ordinal). **GT-21-Deux-Espèces-de-Flèches** (#12245 MERGED, notebook vérifié sur le disque ce cycle) pose le théorème fini transformation-vs-morphisme. La Loi III passe à 2 attestations ; le verdict de grade §3 du body (« deux lois attestées deux fois, une une fois ») devient **trois lois attestées deux fois** — sans changer la conclusion (toujours pas un grade A).

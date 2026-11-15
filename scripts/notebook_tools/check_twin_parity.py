@@ -173,6 +173,13 @@ try:
 except ImportError:  # pragma: no cover
     yaml = None
 
+# L'organe des revendications d'ordinal portees par les PRs ouvertes vit a cote
+# de ce fichier (`twin_open_claims.py`) : on l'**importe**, on ne le
+# reimplemente pas (#22299, constat du coordinateur du 2026-11-09 22:50Z).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from twin_open_claims import GhError as OpenClaimsError  # noqa: E402
+from twin_open_claims import collect_open_claims, repo_slug  # noqa: E402
+
 # --- pression de fork (#16111) ----------------------------------------------
 # Un `BlockingIOError` (EAGAIN, errno 11) au fork/clone n'est pas une erreur de
 # git : c'est le noyau qui refuse un processus de plus, table de processus
@@ -433,7 +440,7 @@ def python_twin_candidates(csharp_path: str, known_paths: set[str]) -> list[str]
 
         Tweety-10-MLN-CSharp.ipynb      <-> Tweety-10-MLN-Python.ipynb          (suffixe retire)
         Sudoku-07-Norvig-CSharp.ipynb    <-> Sudoku-07-Norvig-Python.ipynb (suffixe substitue)
-        SW-10-CSharp-RDFStar.ipynb      <-> SW-10-Python-RDFStar.ipynb   (position mediale)
+        SW-10-RDFStar-CSharp.ipynb      <-> SW-10-RDFStar-Python.ipynb   (position mediale)
 
     Fonction pure : `known_paths` est l'univers des chemins connus (typiquement
     la sortie de `git ls-files`), pas un acces disque -- testable sans depot.
@@ -1725,6 +1732,65 @@ def _audit_floor(repo_root: Path, registry_dir: Path, name: str,
     return max(_audit_indexes_at_ref(repo_root, ref, registry_dir, name), default=0)
 
 
+def _open_claim_floors(repo_root: Path) -> dict[str, int]:
+    """Ordinals revendiques par les PRs ouvertes, par paire (dossier).
+
+    Le plancher d'allocation lisait jusqu'ici la **seule** ref d'integration
+    (`origin/main`). Mesure du 2026-11-09 (constat du coordinateur) : une PR
+    ouverte peut ** deja tenir l'ordinal propose -- l'ordinal `0018` de
+    `tweety-11-causal` etait tenu par #25037, et `0013`/`0021` ont ete
+    proposes pour deux autres paires alors que la collision n'etait visible
+    qu'apres le push. Le plancher de la ref ne voit pas une PR encore
+    ouverte : il faut aussi lire les **revendications** des PRs ouvertes.
+
+    L'organe natif de cette lecture est `twin_open_claims.py` : on l'appelle,
+    on ne reimplemente ni le parsing du nom de fichier ni le controle de
+    troncature. Rend `{<dossier de paire>: <ordinal le plus haut revendique>}`.
+
+    **Lecture impossible -> plancher vide, jamais une ecriture refusee.** Le
+    plancher d'allocation est un garde, pas une mesure : un `gh` absent, un
+    reseau coupe ou une liste tronquee ne doivent pas bloquer une
+    attestation. L'ecart est dit sur stderr, et la porte d'index reste
+    l'organe unique du verdict au push.
+
+    **Depot sans remote GitHub -> plancher vide, SANS avertissement.** Le
+    plancher n'est pas *applicable* la (copie locale, bac a sable) : ce n'est
+    pas une lecture ratee, il n'y a rien a mesurer. Un avertissement dans ce
+    cas polluerait la sortie d'un outil qui fonctionne.
+    """
+    try:
+        slug = repo_slug(repo_root)
+    except (OpenClaimsError, OSError):
+        # Depot sans remote GitHub (copie locale, bac a sable, tests) ou
+        # `gh` absent : le plancher des PRs ouvertes n'est pas **applicable**
+        # ici -- ce n'est pas une lecture ratee, il n'y a rien a mesurer.
+        # Aucun avertissement : la ligne resterait dans la sortie d'un
+        # outil qui fonctionne.
+        return {}
+    try:
+        data = collect_open_claims(slug, cwd=repo_root)
+    except OpenClaimsError as exc:
+        print(f"AVERTISSEMENT : lecture des PRs ouvertes impossible ({exc}) -- "
+              "le plancher d'allocation ne couvre que la ref d'integration ; "
+              "une collision d'ordinal reste possible (la porte d'index la "
+              "verra au push).", file=sys.stderr)
+        return {}
+    except Exception as exc:  # pragma: no cover -- garde-fou d'import
+        print(f"AVERTISSEMENT : lecture des PRs ouvertes impossible ({exc!r}) -- "
+              "le plancher d'allocation ne couvre que la ref d'integration.",
+              file=sys.stderr)
+        return {}
+    floors: dict[str, int] = {}
+    for claims in (data.get("prs") or {}).values():
+        for claim in claims or []:
+            pair = str(claim.get("pair") or "")
+            index = str(claim.get("index") or "")
+            if not pair or not index.isdigit():
+                continue
+            floors[pair] = max(floors.get(pair, 0), int(index))
+    return floors
+
+
 def _refresh_allocate_ref(repo_root: Path, ref: str | None) -> None:
     """Rafraichit `<remote>/<branche>` avant la lecture du plancher (#22547).
 
@@ -2248,11 +2314,22 @@ def _main(argv=None) -> int:
                         "a son dernier fetch et la collision resterait possible. Si "
                         "le fetch echoue ou si la ref est illisible, repli sur la ref "
                         "locale -- cela ne bloque jamais l'ecriture (le plancher est "
-                        "un garde, pas une mesure).")
+                        "un garde, pas une mesure). Ce plancher ne voit pas les "
+                        "PRs encore ouvertes : l'ordinal qu'elles revendiquent "
+                        "est couvert par le second plancher (--no-open-claims-floor).")
     p.add_argument("--no-allocate-against", action="store_true",
                    help="Desactive le plancher d'allocation (comportement "
                         "historique : max local + 1). Utile dans un depot sans "
-                        "remote, ou pour reproduire un registre ancien.")
+                        "remote, ou pour reproduire un registre ancien. Desactive "
+                        "aussi le plancher des PRs ouvertes.")
+    p.add_argument("--no-open-claims-floor", action="store_true",
+                   help="Avec --update : n'alloue pas au-dessus des ordinals "
+                        "REVENDIQUES par les PRs ouvertes (lecture via "
+                        "twin_open_claims.py). Ce plancher est, lui, un garde : "
+                        "une lecture impossible (gh absent, reseau coupe, liste "
+                        "tronquee) n'annule jamais l'ecriture, elle est dite sur "
+                        "stderr. Inutilise hors ligne -- l'allocation reste "
+                        "celle du plancher d'integration.")
     p.add_argument("--verify-recorded-sha", action="store_true",
                    help="Gate CI #9399 volet b : verifie que les SHA enregistres "
                         "dans le YAML (last_audit legacy OU audits[-1] append-only) "
@@ -2773,6 +2850,14 @@ def _main(argv=None) -> int:
             # repli silencieux sur la ref locale si le remote ne repond pas.
             if updates:
                 _refresh_allocate_ref(repo_root, allocate_ref)
+            # Plancher des PRs OUVERTES (#22299) : une PR ouverte peut deja
+            # tenir l'ordinal propose. Lue UNE fois avant la boucle, via
+            # l'organe natif `twin_open_claims.py`. Un `--no-allocate-against`
+            # (comportement historique) le desactive aussi.
+            open_claims = ({} if (not updates
+                                   or args.no_allocate_against
+                                   or args.no_open_claims_floor)
+                           else _open_claim_floors(repo_root))
             for name, audit in updates.items():
                 pfile = _pair_file(reg_path, name)
                 if not pfile.exists():
@@ -2804,6 +2889,14 @@ def _main(argv=None) -> int:
                                       used_names=used, index=len(inline) + 1)
                 else:
                     floor = _audit_floor(repo_root, reg_path, name, allocate_ref)
+                    # Plancher des PRs OUVERTES (#22299) : une PR ouverte peut
+                    # deja tenir l'ordinal que l'on s'apprete a proposer.
+                    open_floor = open_claims.get(_slug(name), 0)
+                    if open_floor > floor:
+                        floor = open_floor
+                        print(f"  '{name}' : prefixe alloue au-dessus des PRs "
+                              f"ouvertes (ordinal revendique le plus haut = "
+                              f"{open_floor})")
                     if floor >= _next_audit_index(_audit_dir(reg_path, _slug(name))):
                         # Observabilite : l'index retenu n'est pas le max local,
                         # c'est le plancher publie. Sans cette ligne, le worker

@@ -1,0 +1,12 @@
+- name: "NLP-07 Cooccurrence-PPMI-SVD"
+  family: NLP/Word-Representations
+  python: MyIA.AI.Notebooks/NLP/07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb
+  csharp: MyIA.AI.Notebooks/NLP/07-Vecteurs-de-Mots-Coocc-PPMI-SVD-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux notebooks enseignent le comptage de cooccurrences et le PPMI depuis zéro puis effectuent une véritable SVD via NumPy (Python) et MathNet.Numerics 5.0.0 (C#). Le calcul pédagogique est solver-free by design, tandis que l'étape de factorisation utilise le moteur matriciel natif de chaque écosystème ; aucun pont interlangage n'est nécessaire."
+  known_differences:
+    - "Socle commun : corpus construit de 13 phrases, vocabulaire trié de 41 mots, fenêtre symétrique ±3 sans position centrale, PPMI et réduction de rang k=2 après centrage par ligne."
+    - "Parité conceptuelle, pas bitwise : le Python délègue sa SVD à NumPy.linalg.svd et le C# à MathNet.Numerics 5.0.0 (DenseMatrix.OfArray puis Svd(true)). Les comparaisons se font sur valeurs singulières, reconstruction et cosinus ; le signe des vecteurs singuliers est arbitraire."
+    - "C# from scratch pour tokenisation, cooccurrences, marges, PPMI et cosinus ; MathNet est la bibliothèque tierce requise pour la vraie SVD. Python utilise NumPy pour la SVD et ses tableaux."
+    - "Le centrage par ligne est un choix pédagogique propre à ce carnet. Le petit corpus a été construit pour illustrer les mesures et ne garantit pas la formation d'amas sémantiques sur des textes généraux."

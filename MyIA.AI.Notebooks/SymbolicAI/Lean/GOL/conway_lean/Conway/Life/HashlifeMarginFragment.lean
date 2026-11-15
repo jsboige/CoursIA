@@ -3865,6 +3865,175 @@ theorem hashlife_correct_margin_of_spaceship_formation (c : MacroCell) (k : Nat)
   rw [hsplit]
   exact hcap_of_spaceship_formation hp0 g₁ g₂ hsep v hship₁ hship₂ hcan (hsplit ▸ hdiv) hspd1 hspd2 t
 
+/-! ### Maillon 6 — la clôture n-aire : familles finies d'oscillateurs séparés
+
+Les maillons 2 à 5 closent L3 pour des unions de **deux** parties. La
+généralisation n-aire suit le même schéma : une famille finie `L` de grilles
+deux à deux distinctes (`L.Nodup` — un doublon ne peut pas être « séparé de
+lui-même »), mutuellement 3-séparées à toute phase, de même période `T`, a une
+union (`L.flatten`) T-périodique, capturée à tout horizon. La preuve de la
+scission est une induction sur la liste dont le pas est exactement
+`mem_evolve_union_sep` : la tête joue `g₁`, la queue jointe joue `g₂`, et la
+séparation tête-queue s'hérite de la séparabilité uniforme de la famille.
+C'est le dernier degré de liberté de la voie périodique : après lui, une
+famille quelconque d'oscillateurs dyadiques bas séparés par trois cellules est
+couverte en un seul énoncé. -/
+
+/-- **L'évolution préserve le vide.** Lemme utilitaire du maillon 6 : l'union
+    vide (`L = []`) évolue vers le vide à tout instant, par induction immédiate
+    sur le temps (le pas de l'évolution du vide est le vide). -/
+theorem evolve_nil (m : Nat) : evolve m ([] : Grid) = [] := by
+  induction m with
+  | zero => rfl
+  | succ m ih => rw [evolve_succ, ih]; rfl
+
+/-- **Scission n-aire à tout temps sous séparation uniforme deux à deux.**
+    Si chaque paire de membres **distincts** de la famille `L` reste 3-séparée
+    **à chaque instant** de leurs trajectoires propres, alors l'évolution de
+    l'union suit membre à membre l'union des évolutions, à tout instant :
+    `q ∈ evolve s L.flatten ↔ ∃ g ∈ L, q ∈ evolve s g`. Induction sur `L` : le
+    vide est préservé (`evolve_nil`), et le pas tête-queue est le maillon 2
+    (`mem_evolve_union_sep`) — la séparation tête-queue se déduit de la
+    séparabilité deux à deux via l'hypothèse d'induction sur la queue. -/
+theorem mem_evolve_join_sep : ∀ (L : List Grid) (_ : L.Nodup),
+    (∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r) →
+    ∀ s q, q ∈ evolve s L.flatten ↔ ∃ g ∈ L, q ∈ evolve s g := by
+  intro L
+  induction L with
+  | nil => intro _ _ s q; simp [evolve_nil]
+  | cons g L' ih =>
+    rintro hnd hsep s q
+    obtain ⟨hg', hnd'⟩ := List.nodup_cons.mp hnd
+    have hsep' : ∀ s g₁ h₁, g₁ ∈ L' → h₁ ∈ L' → g₁ ≠ h₁ →
+        ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s h₁, 3 ≤ chebDist p r :=
+      fun s g₁ h₁ hg₁ hh₁ hne =>
+        hsep s g₁ h₁ (List.mem_cons_of_mem _ hg₁) (List.mem_cons_of_mem _ hh₁) hne
+    have hsplit : ∀ s, ∀ p ∈ evolve s g, ∀ r ∈ evolve s L'.flatten, 3 ≤ chebDist p r := by
+      intro s p hp r hr
+      obtain ⟨h, hmem, hr'⟩ := (ih hnd' hsep' s r).mp hr
+      exact hsep s g h (List.Mem.head _) (List.mem_cons_of_mem _ hmem)
+        (fun heq => hg' (heq ▸ hmem)) p hp r hr'
+    rw [show (g :: L').flatten = g ++ L'.flatten from rfl,
+      mem_evolve_union_sep g L'.flatten hsplit s q, ih hnd' hsep' s q]
+    constructor
+    · rintro (hq | ⟨h, hmem, hq⟩)
+      · exact ⟨g, List.Mem.head _, hq⟩
+      · exact ⟨h, List.mem_cons_of_mem _ hmem, hq⟩
+    · rintro ⟨h, hmem, hq⟩
+      rcases List.mem_cons.1 hmem with rfl | hmem
+      · exact Or.inl hq
+      · exact Or.inr ⟨h, hmem, hq⟩
+
+/-- **Périodicité de l'union n-aire.** Une famille finie de membres tous
+    `T`-périodiques (`T > 0`), deux à deux distincts et mutuellement 3-séparés,
+    forme une union `T`-périodique au sens fort de l'égalité de listes —
+    même pont membres→égalité que `evolve_period_union` : les deux membres de
+    l'égalité sont canoniques et ont les mêmes cellules par
+    `mem_evolve_join_sep` et `List.mem_flatten`. -/
+theorem evolve_period_join {T : Nat} (hT : 0 < T) (L : List Grid) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
+    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.flatten) :
+    evolve T L.flatten = L.flatten := by
+  apply Canonical.ext (canonical_evolve_of_pos hT _) hcan
+  intro p
+  rw [mem_evolve_join_sep L hnd hsep T p, List.mem_flatten]
+  apply exists_congr
+  intro g
+  constructor
+  · rintro ⟨hg, hp⟩; exact ⟨hg, by rw [← hfix g hg]; exact hp⟩
+  · rintro ⟨hg, hp⟩; exact ⟨hg, by rw [hfix g hg]; exact hp⟩
+
+/-- **hcap des familles périodiques — le maillon 6.** Pour une famille finie
+    de membres de même période `T`, deux à deux distincts et mutuellement
+    3-séparés, **tout** instant `t` voit sa reconstruction capturée, sous la
+    condition de fenêtre `T ∣ 2^level` à l'instant `t` : l'union est
+    `T`-périodique (`evolve_period_join`), chaque phase l'est aussi
+    (`evolve_phase_fix`), reste canonique le long de la trajectoire, et la
+    capture par la voie périodique s'applique. Généralisation 2→n exacte de
+    `hcap_of_union_periodic`. -/
+theorem hcap_of_union_periodic_family {T : Nat} (hT : 0 < T) (L : List Grid)
+    (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
+    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.flatten) (t : Nat)
+    (hdiv : T ∣ 2 ^ (gridToMacroCellWithOffset (evolve t L.flatten)).2.level) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t L.flatten)).2 = true := by
+  have hperU : evolve T L.flatten = L.flatten := evolve_period_join hT L hnd hsep hfix hcan
+  have hperm : evolve T (evolve t L.flatten) = evolve t L.flatten :=
+    evolve_phase_fix _ hperU t
+  have hgcan : Canonical (evolve t L.flatten) := by
+    cases t with
+    | zero => exact hcan
+    | succ m => exact canonical_evolve_of_pos (by omega) _
+  exact jumpCapturedF_reconstruction_of_period _ hgcan hT hperm hdiv
+
+/-- **hcap des familles dyadiques basses — fenêtre gratuite.** Pour
+    `T ∈ {1, 2, 4}` (natures mortes, oscillateurs de période 2 et 4), la
+    condition de fenêtre `T ∣ 2^level` est entraînée par la seule
+    non-vacuité de l'union, exactement comme dans le cas binaire
+    `hcap_of_union_periodic_low` : la non-vacuité se propage le long de la
+    trajectoire par périodicité (`evolve_ne_of_period_ne`), la borne n-aware
+    donne `level ≥ 2`, et `1, 2, 4` divisent `2^level` dès `level ≥ 0, 1, 2`.
+    C'est la forme consommable du maillon 6 : une famille quelconque
+    d'oscillateurs de période 1, 2 ou 4, deux à deux 3-séparés, est capturée à
+    tout horizon. -/
+theorem hcap_of_union_periodic_family_low {T : Nat} (hT4 : T = 1 ∨ T = 2 ∨ T = 4)
+    (L : List Grid) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
+    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.flatten)
+    (hne : L.flatten ≠ []) (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t L.flatten)).2 = true := by
+  have hT : 0 < T := by rcases hT4 with rfl | rfl | rfl <;> omega
+  have hperU : evolve T L.flatten = L.flatten :=
+    evolve_period_join hT L hnd hsep hfix hcan
+  have hne_t : evolve t L.flatten ≠ [] :=
+    evolve_ne_of_period_ne hT L.flatten hperU hne t
+  have hlvl2 : 2 ≤ (gridToMacroCellWithOffset (evolve t L.flatten)).2.level := by
+    have hN := gridToMacroCellWithOffsetN_level_gt_n 2 (evolve t L.flatten) hne_t
+    rw [gridToMacroCellWithOffsetN_le_two_eq 2 _ (by omega)] at hN
+    cases hL : (gridToMacroCellWithOffset (evolve t L.flatten)).2.level with
+    | zero => rw [hL] at hN; exact absurd hN (by decide)
+    | succ m =>
+      cases m with
+      | zero => rw [hL] at hN; exact absurd hN (by decide)
+      | succ m' => omega
+  refine hcap_of_union_periodic_family hT L hnd hsep hfix hcan t ?_
+  rcases hT4 with rfl | rfl | rfl
+  · exact Nat.one_dvd _
+  · obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t L.flatten)).2.level
+        = j + 2 := ⟨(gridToMacroCellWithOffset (evolve t L.flatten)).2.level - 2, by omega⟩
+    rw [hj, pow_succ, pow_succ]
+    exact ⟨2 ^ j * 2, by ring⟩
+  · obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t L.flatten)).2.level
+        = j + 2 := ⟨(gridToMacroCellWithOffset (evolve t L.flatten)).2.level - 2, by omega⟩
+    rw [hj, pow_succ, pow_succ]
+    exact ⟨2 ^ j, by ring⟩
+
+/-- **L3 clos pour les familles d'oscillateurs dyadiques bas.** Corollaire
+    d'assemblage miroir de `hashlife_correct_margin_of_union_periodic` : une
+    MacroCell dont la grille rendue à l'origine est l'union d'une famille
+    finie de parties de même période `T ∈ {1, 2, 4}`, deux à deux distinctes
+    et mutuellement 3-séparées, satisfait l'égalité Hashlife à tout horizon
+    `2^k` sous `centralCorrect`. Troisième et dernier degré de la voie
+    périodique : n'importe combien de blinkers, toads et beacons séparés par
+    trois cellules — chaque membre couvert seul l'était déjà, la famille
+    entière ne l'était pas. -/
+theorem hashlife_correct_margin_of_union_periodic_family (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T : Nat} (hT4 : T = 1 ∨ T = 2 ∨ T = 4)
+    (L : List Grid) (hsplit : c.toGrid (0, 0) = L.flatten) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ p ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist p r)
+    (hfix : ∀ g ∈ L, evolve T g = g) (hcan : Canonical L.flatten)
+    (hne : L.flatten ≠ []) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_periodic_family_low hT4 L hnd hsep hfix hcan hne t
+
 /-! ### Tranche 15 — unions de périodes mixtes (voie mod, containment)
 
 Les maillons 2-4 de la chaîne des unions exigent que les deux parties partagent la

@@ -5,7 +5,7 @@ Applique la table de correspondance validee (c.5786704244 sur l'issue #17417,
 amendement WS retenu par ai-01, DM ai01-dispatch-17417-table-20260923) :
 
   T5  MyIA.AI.Notebooks/ML/DataScienceWithAgents/  -> MyIA.AI.Notebooks/ML/ML.Python/
-  T2  sous-repertoires (04b -> 05, Track1 -> 06-Agents-LangChain, Track2 -> 07-Agents-GoogleADK,
+  T2  sous-repertoires (04b -> 05, Track1 -> 06-Agents-de-Donnees, Track2 -> 07-Orchestration-d-Agents,
       aplanissement de 01-Python-For-Data-Science/notebooks/)
   T3  notebooks N.M<acc>-Titre -> <Prefixe>-<NN><acc>-<Titre>-<Noyau> (94 mappages ci-dessous)
 
@@ -41,14 +41,19 @@ HUB_NEW = "MyIA.AI.Notebooks/ML/ML.Python"
 # T2-01 (PR #20274, mergee le 2026-10-17) a deja renomme le dossier 01 sur main :
 # la cle de la table suit le nom reel du hub, sinon la branche 01 sort de la table
 # en silence (mesure c.2294 : plus aucune entree de la table ne s'appliquait a 01).
+# T2-02 (arbitrage Q10, c.6740035569 sur #25327) : les destinations sont des
+# noms pedagogiques francais -- un nom de repertoire nomme ce que le repertoire
+# ENSEIGNE, jamais l'outil qui y est utilise (LangChain, Google ADK). Les
+# exemples 06/07 viennent de l'arbitrage ; 01/03/05 suivent la meme regle ;
+# 02-ML-Cours et 04-Vision restent tels quels (deja lisibles en francais).
 DIR_MAP = {
-    "01-Python-For-Data-Science": "01-Python-For-Data-Science",
+    "01-Python-For-Data-Science": "01-Python-pour-la-Data-Science",
     "02-ML-Cours": "02-ML-Cours",
-    "03-Deep-Learning": "03-Deep-Learning",
+    "03-Deep-Learning": "03-Apprentissage-Profond",
     "04-Vision": "04-Vision",
-    "05-Wavelet-Scattering": "05-Wavelet-Scattering",
-    "Track1-LangChain": "06-Agents-LangChain",
-    "Track2-GoogleADK": "07-Agents-GoogleADK",
+    "05-Wavelet-Scattering": "05-Scattering-par-Ondelettes",
+    "06-Data-Agents": "06-Agents-de-Donnees",
+    "07-Agent-Orchestration": "07-Orchestration-d-Agents",
 }
 
 # Niveau a aplatir : ces prefixes voient leur segment "notebooks/" retire.
@@ -58,17 +63,17 @@ FLATTEN_PREFIX = "01-Python-For-Data-Science/notebooks/"
 # Suffixe noyau d'apres kernelspec LU dans chaque notebook (mesure c.5786704244).
 NOTEBOOK_MAP: dict[str, str] = {
     "01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb":
-        "01-Python-For-Data-Science/PyDS-01-Python-pour-la-Data-Science-Python.ipynb",
+        "01-Python-pour-la-Data-Science/PyDS-01-Python-pour-la-Data-Science-Python.ipynb",
     "01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb":
-        "01-Python-For-Data-Science/PyDS-02-Manipulation-de-Donnees-avec-NumPy-Python.ipynb",
+        "01-Python-pour-la-Data-Science/PyDS-02-Manipulation-de-Donnees-avec-NumPy-Python.ipynb",
     "01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb":
-        "01-Python-For-Data-Science/PyDS-03-Analyse-de-Donnees-avec-Pandas-Python.ipynb",
+        "01-Python-pour-la-Data-Science/PyDS-03-Analyse-de-Donnees-avec-Pandas-Python.ipynb",
     "01-Python-For-Data-Science/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb":
-        "01-Python-For-Data-Science/PyDS-04-Visualisation-Matplotlib-Seaborn-Python.ipynb",
+        "01-Python-pour-la-Data-Science/PyDS-04-Visualisation-Matplotlib-Seaborn-Python.ipynb",
     "01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb":
-        "01-Python-For-Data-Science/PyDS-05-Exploration-Nettoyage-Donnees-Reelles-Python.ipynb",
+        "01-Python-pour-la-Data-Science/PyDS-05-Exploration-Nettoyage-Donnees-Reelles-Python.ipynb",
     "01-Python-For-Data-Science/notebooks/1.6-Statistiques_Descriptives.ipynb":
-        "01-Python-For-Data-Science/PyDS-06-Statistiques-Descriptives-Python.ipynb",
+        "01-Python-pour-la-Data-Science/PyDS-06-Statistiques-Descriptives-Python.ipynb",
     "02-ML-Cours/2.1-Workflow-ML.ipynb": "02-ML-Cours/MLPy-01-Workflow-ML-Python.ipynb",
     "02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb": "02-ML-Cours/MLPy-10-Optimisation-Hyperparametres-Python.ipynb",
     "02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb": "02-ML-Cours/MLPy-11-Regularisation-Sparse-LASSO-Python.ipynb",
@@ -109,41 +114,41 @@ NOTEBOOK_MAP: dict[str, str] = {
     "02-ML-Cours/2.11e-CVXPY-Optimisation.ipynb": "02-ML-Cours/MLPy-11e-CVXPY-Optimisation-Python.ipynb",
     "02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb": "02-ML-Cours/MLPy-11f-Comparaison-Optimisation-Convexe-Python.ipynb",
     "02-ML-Cours/2.15-Donnee-Comme-Responsabilite-Python.ipynb": "02-ML-Cours/MLPy-15-Donnee-Comme-Responsabilite-Python.ipynb",
-    "03-Deep-Learning/3.0-Theorie-Information.ipynb": "03-Deep-Learning/DL-00-Theorie-Information-Python.ipynb",
-    "03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb": "03-Deep-Learning/DL-00b-Tenseurs-Strides-Vues-Python.ipynb",
-    "03-Deep-Learning/3.1-Retropropagation.ipynb": "03-Deep-Learning/DL-01-Retropropagation-Python.ipynb",
-    "03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb": "03-Deep-Learning/DL-10-Modeles-Generatifs-Diffusion-SOTA-Python.ipynb",
-    "03-Deep-Learning/3.2-Optimisateurs.ipynb": "03-Deep-Learning/DL-02-Optimisateurs-Python.ipynb",
-    "03-Deep-Learning/3.3-Regularisation.ipynb": "03-Deep-Learning/DL-03-Regularisation-Python.ipynb",
-    "03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb": "03-Deep-Learning/DL-04-Attention-Transformer-From-Scratch-Python.ipynb",
-    "03-Deep-Learning/3.4c-MoE-from-scratch.ipynb": "03-Deep-Learning/DL-04c-MoE-from-scratch-Python.ipynb",
-    "03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb": "03-Deep-Learning/DL-05-Phenomenes-de-Generalisation-Python.ipynb",
-    "03-Deep-Learning/3.6-Modeles-Generatifs.ipynb": "03-Deep-Learning/DL-06-Modeles-Generatifs-Python.ipynb",
-    "03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb": "03-Deep-Learning/DL-06b-Modeles-Generatifs-PyTorch-Python.ipynb",
-    "03-Deep-Learning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb": "03-Deep-Learning/DL-06c-Modeles-Generatifs-Diffusion-from-scratch-Python.ipynb",
-    "03-Deep-Learning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb": "03-Deep-Learning/DL-06d-Modeles-Generatifs-Score-SDE-from-scratch-Python.ipynb",
-    "03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb": "03-Deep-Learning/DL-06e-Modeles-Generatifs-Conditionnels-from-scratch-Python.ipynb",
-    "03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb": "03-Deep-Learning/DL-07-Distillation-Maitre-Eleve-Python.ipynb",
-    "03-Deep-Learning/3.8-Representations-Contrastives.ipynb": "03-Deep-Learning/DL-08-Representations-Contrastives-Python.ipynb",
-    "03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb": "03-Deep-Learning/DL-09-Compression-Quantization-FP-Python.ipynb",
-    "03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb": "03-Deep-Learning/DL-09b-Compression-Pruning-from-scratch-Python.ipynb",
-    "03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb": "03-Deep-Learning/DL-09c-Pruning-From-Scratch-Python.ipynb",
+    "03-Deep-Learning/3.0-Theorie-Information.ipynb": "03-Apprentissage-Profond/DL-00-Theorie-Information-Python.ipynb",
+    "03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb": "03-Apprentissage-Profond/DL-00b-Tenseurs-Strides-Vues-Python.ipynb",
+    "03-Deep-Learning/3.1-Retropropagation.ipynb": "03-Apprentissage-Profond/DL-01-Retropropagation-Python.ipynb",
+    "03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb": "03-Apprentissage-Profond/DL-10-Modeles-Generatifs-Diffusion-SOTA-Python.ipynb",
+    "03-Deep-Learning/3.2-Optimisateurs.ipynb": "03-Apprentissage-Profond/DL-02-Optimisateurs-Python.ipynb",
+    "03-Deep-Learning/3.3-Regularisation.ipynb": "03-Apprentissage-Profond/DL-03-Regularisation-Python.ipynb",
+    "03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb": "03-Apprentissage-Profond/DL-04-Attention-Transformer-From-Scratch-Python.ipynb",
+    "03-Deep-Learning/3.4c-MoE-from-scratch.ipynb": "03-Apprentissage-Profond/DL-04c-MoE-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb": "03-Apprentissage-Profond/DL-05-Phenomenes-de-Generalisation-Python.ipynb",
+    "03-Deep-Learning/3.6-Modeles-Generatifs.ipynb": "03-Apprentissage-Profond/DL-06-Modeles-Generatifs-Python.ipynb",
+    "03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb": "03-Apprentissage-Profond/DL-06b-Modeles-Generatifs-PyTorch-Python.ipynb",
+    "03-Deep-Learning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb": "03-Apprentissage-Profond/DL-06c-Modeles-Generatifs-Diffusion-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb": "03-Apprentissage-Profond/DL-06d-Modeles-Generatifs-Score-SDE-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb": "03-Apprentissage-Profond/DL-06e-Modeles-Generatifs-Conditionnels-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb": "03-Apprentissage-Profond/DL-07-Distillation-Maitre-Eleve-Python.ipynb",
+    "03-Deep-Learning/3.8-Representations-Contrastives.ipynb": "03-Apprentissage-Profond/DL-08-Representations-Contrastives-Python.ipynb",
+    "03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb": "03-Apprentissage-Profond/DL-09-Compression-Quantization-FP-Python.ipynb",
+    "03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb": "03-Apprentissage-Profond/DL-09b-Compression-Pruning-from-scratch-Python.ipynb",
+    "03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb": "03-Apprentissage-Profond/DL-09c-Pruning-From-Scratch-Python.ipynb",
     # 3.9e a ete fusionne (#22395 etape 3) : le carnet vivant est
     # `3.9e-Compression-SOTA.ipynb`, qui porte la Part A (quantization, l'ancien
     # 3.9e-Compression-Quantization-SOTA) et la Part B (pruning, l'ancien 3.9f).
-    "03-Deep-Learning/3.9e-Compression-SOTA.ipynb": "03-Deep-Learning/DL-09e-Compression-SOTA-Python.ipynb",
+    "03-Deep-Learning/3.9e-Compression-SOTA.ipynb": "03-Apprentissage-Profond/DL-09e-Compression-SOTA-Python.ipynb",
     # 3.9a, 3.9d et 3.9f sont partis dans `_archive/` (#22395 etapes 2-3) : leurs
     # cles de table sont retirees ici, et les carnets archives sortent du
     # fail-closed T3 (cf. build_plan -- convention `_archive/` : pieces de
     # provenance conservees telles quelles, sans renommage).
     # T2-a -- les 8 carnets de 03-Deep-Learning que le dry-run refusait (fail-closed mesure c.2294).
-    "03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb": "03-Deep-Learning/DL-04d-Fourier-Features-Biais-Spectral-Python.ipynb",
-    "03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb": "03-Deep-Learning/DL-09g-Compression-Comparatif-A-vs-B-Python.ipynb",
-    "03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb": "03-Deep-Learning/DL-11-Budget-Memoire-Entrainement-Python.ipynb",
-    "03-Deep-Learning/3.12-Les-Collectives.ipynb": "03-Deep-Learning/DL-12-Les-Collectives-Python.ipynb",
-    "03-Deep-Learning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb": "03-Deep-Learning/DL-13-Decouper-le-Modele-DDP-ZeRO-FSDP-Python.ipynb",
-    "03-Deep-Learning/3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb": "03-Deep-Learning/DL-13b-Deux-Cartes-Reelles-DDP-FSDP-nccl-Python.ipynb",
-    "03-Deep-Learning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb": "03-Deep-Learning/DL-14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb",
+    "03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb": "03-Apprentissage-Profond/DL-04d-Fourier-Features-Biais-Spectral-Python.ipynb",
+    "03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb": "03-Apprentissage-Profond/DL-09g-Compression-Comparatif-A-vs-B-Python.ipynb",
+    "03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb": "03-Apprentissage-Profond/DL-11-Budget-Memoire-Entrainement-Python.ipynb",
+    "03-Deep-Learning/3.12-Les-Collectives.ipynb": "03-Apprentissage-Profond/DL-12-Les-Collectives-Python.ipynb",
+    "03-Deep-Learning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb": "03-Apprentissage-Profond/DL-13-Decouper-le-Modele-DDP-ZeRO-FSDP-Python.ipynb",
+    "03-Deep-Learning/3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb": "03-Apprentissage-Profond/DL-13b-Deux-Cartes-Reelles-DDP-FSDP-nccl-Python.ipynb",
+    "03-Deep-Learning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb": "03-Apprentissage-Profond/DL-14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb",
     "04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb": "04-Vision/Vision-01-Conv-NumPy-Torch-Allclose-Python.ipynb",
     "04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb": "04-Vision/Vision-02-ConvNet-Profonde-Residuelles-Python.ipynb",
     "04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb": "04-Vision/Vision-02b-Lean-GradientFlow-Vanishing-Lean.ipynb",
@@ -162,12 +167,12 @@ NOTEBOOK_MAP: dict[str, str] = {
     "04-Vision/4.6-Detection-Ultralytics-Difficult-Scenes.ipynb": "04-Vision/Vision-06-Detection-Ultralytics-Difficult-Scenes-Python.ipynb",
     "04-Vision/4.6b-Detection-Adversarial-Camouflage.ipynb": "04-Vision/Vision-06b-Detection-Adversarial-Camouflage-Python.ipynb",
     "04-Vision/4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb": "04-Vision/Vision-06c-Detection-Dazzle-Garment-StyleTransfer-Python.ipynb",
-    "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb",
-    "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch-Python.ipynb",
-    "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch-Python.ipynb",
-    "05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb": "05-Wavelet-Scattering/WS-01-Denoising-SOTA-Python.ipynb",
-    "05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb": "05-Wavelet-Scattering/WS-02-Scattering-SOTA-Python.ipynb",
-    "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb": "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet-Python.ipynb",
+    "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb": "05-Scattering-par-Ondelettes/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb",
+    "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb": "05-Scattering-par-Ondelettes/WS-00b-Ondelettes-2D-from-scratch-Python.ipynb",
+    "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb": "05-Scattering-par-Ondelettes/WS-00c-Scattering-from-scratch-Python.ipynb",
+    "05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb": "05-Scattering-par-Ondelettes/WS-01-Denoising-SOTA-Python.ipynb",
+    "05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb": "05-Scattering-par-Ondelettes/WS-02-Scattering-SOTA-Python.ipynb",
+    "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb": "05-Scattering-par-Ondelettes/WS-03-Synthese-Scattering-vs-ResNet-Python.ipynb",
 }
 
 # Histogramme des noyaux du hub, etendu par T2-a a deux noyaux mesures sur main
@@ -210,8 +215,8 @@ def resolve_only(only: str) -> str:
     """Sous-repertoire vise -> nom REEL du hub (cle de DIR_MAP).
 
     Accepte le nom courant (cle de DIR_MAP) comme le nom cible (valeur) :
-    `04b-Wavelet-Scattering` et `05-Wavelet-Scattering` designent la meme
-    tranche. Un nom inconnu est refuse (fail-closed) : un `--only` typo
+    `05-Wavelet-Scattering` (nom reel du hub) et `05-Scattering-par-Ondelettes`
+    (cible francaise, arbitrage Q10) designent la meme tranche. Un nom inconnu est refuse (fail-closed) : un `--only` typo
     deployerait zero fichier et se lirait comme une tranche sans objet.
     """
     if only in DIR_MAP:
@@ -265,7 +270,7 @@ def build_plan(only: str | None = None) -> tuple[list[tuple[str, str]], list[str
                 # fichier a la racine du hub (README.md etc.) : suit la racine
                 pass
             if (rel.endswith(".ipynb")
-                    and not rel.startswith(("Track1-LangChain/", "Track2-GoogleADK/"))
+                    and not rel.startswith(("06-Data-Agents/", "07-Agent-Orchestration/"))
                     and not est_archive(rel)):
                 # Les Labs des Tracks suivent T4 (option retenue : deplacement de
                 # repertoire seulement, notebooks intacts -- table c.5786704244) :

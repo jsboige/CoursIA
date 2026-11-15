@@ -62,16 +62,17 @@ docstrings and comments differ.
 
 import Mathlib.CategoryTheory.Sites.Grothendieck
 
-import Grothendieck.LawvereTierney
-import Grothendieck.SieveLattice
-import Grothendieck.SieveOps
+import Grothendieck.LawvereTierney_en
+import Grothendieck.SieveLattice_en
+import Grothendieck.SieveOps_en
 
 universe u v
 
 namespace Grothendieck.TopologyDictionary_en
 
 open CategoryTheory
-open Grothendieck.LawvereTierney
+open Grothendieck.LawvereTierney_en
+open Grothendieck_en
 
 variable {C : Type u} [Category.{v} C]
 

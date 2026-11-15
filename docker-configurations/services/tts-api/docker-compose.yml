@@ -24,6 +24,12 @@ services:
     ports:
       - "127.0.0.1:${TTS_API_PORT:-8191}:8191"
 
+    # Maintenance#303 bounds: mem_limit = memswap_limit = 4g (swap disabled),
+    # pids_limit 256. Measured 2026-11-07: 1.98 GiB / 51 PIDs.
+    mem_limit: 4g
+    memswap_limit: 4g
+    pids_limit: 256
+
     volumes:
       - type: bind
         source: ${MODELS_PATH:-./models}
