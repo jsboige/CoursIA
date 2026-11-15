@@ -75,6 +75,12 @@ SCAN_SCOPES = [
     # now link-checked like everything else.
     "index.md",
     "PARCOURS.md",
+    # Quarto root entry points (#26457): the portal and parcours pages also exist
+    # as .qmd sources the site is built from. They sit at the repo root, where the
+    # scope list names the file individually -- exactly as for the .md pair above
+    # -- so a move that breaks a relative link in one is read, not silently clean.
+    "index.qmd",
+    "parcours.qmd",
     "docs/",
     ".claude/rules/",
     ".claude/agents/",
@@ -83,6 +89,17 @@ SCAN_SCOPES = [
     # main. The two former inventories drifted apart because no organ watched
     # their links -- this one is now the single inventory, so it is checked.
     "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
+    # Series landing pages (#26457): the notebook-tree index.qmd (the notebooks
+    # portal) and the five series that ship one (GameTheory, Physique, Probas,
+    # Search, Sudoku) sit outside docs/, so the docs/ glob above never opened
+    # them -- the same blind spot as the root pair. Named individually, as the
+    # entry points above, so a move that breaks a link in one becomes a finding.
+    "MyIA.AI.Notebooks/index.qmd",
+    "MyIA.AI.Notebooks/GameTheory/index.qmd",
+    "MyIA.AI.Notebooks/Physique/index.qmd",
+    "MyIA.AI.Notebooks/Probas/index.qmd",
+    "MyIA.AI.Notebooks/Search/index.qmd",
+    "MyIA.AI.Notebooks/Sudoku/index.qmd",
 ]
 
 # Deck scope (#15867). `slides/<deck>/slides.md` was watched by NO organ: the
@@ -269,11 +286,14 @@ def find_scan_files() -> list[Path]:
             files.append(p)
         elif p.is_dir():
             # Quarto ``.qmd`` pages in addition to ``.md`` (#26457): the site is
-            # built from .qmd sources (docs/index.qmd, docs/parcours.qmd, the
-            # series index.qmd), and globbing ``*.md`` alone never opened them --
-            # a move that left 19 dead links in a .qmd read as a clean scan
-            # (#26281). The union is de-duplicated, so a file matching neither
-            # pattern is simply absent, as before.
+            # built from .qmd sources, and globbing ``*.md`` alone never opened
+            # them -- a move that left 19 dead links in a .qmd read as a clean
+            # scan (#26281). This directory glob opens the .qmd under the scope
+            # directory (docs/index.qmd). The root pair (index.qmd, parcours.qmd)
+            # and the notebook-tree series index.qmd sit outside docs/, so they
+            # are named individually in SCAN_SCOPES, not reached by this glob.
+            # The union is de-duplicated, so a file matching neither pattern is
+            # simply absent, as before.
             for f in sorted(set(p.rglob("*.md")) | set(p.rglob("*.qmd"))):
                 if not _should_skip(f):
                     files.append(f)
