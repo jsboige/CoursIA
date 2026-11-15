@@ -287,6 +287,10 @@ flowchart LR
 | **File Upload** | 6, 7 | Support PDF et fichiers |
 | **Reasoning** | 2, 8 | Modèles o4-mini, gpt-5-thinking |
 
+## Décodage spéculatif — deux implémentations 10g
+
+[Python](10g_Speculative_Decoding.ipynb) · [C#](10g_Speculative_Decoding-CSharp.ipynb). Les mêmes n-grammes, corpus et budgets exposent les taux d'acceptation et les coûts modélisés. Trois exercices ouverts portent sur un sampler avec traces P/Q/résidu, le choix de k avec callback observé, et la génération d'arbres avec parcours et compteurs reconstruits. La BCL conserve les algorithmes pédagogiques du source ; aucun endpoint LLM n'est mesuré.
+
 ## Technologies et écosystème
 
 - **OpenAI API** : GPT-5, GPT-5-mini, o4-mini, gpt-5-thinking
