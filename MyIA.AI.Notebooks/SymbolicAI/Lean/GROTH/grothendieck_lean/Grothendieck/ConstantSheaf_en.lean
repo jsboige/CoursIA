@@ -24,10 +24,15 @@ sheaves and for connecting sheaf theory to cohomology (SGA 4 II, IV).
 
 Epic #1646, See #2159. All `sorry`s eliminated at creation.
 
-Convention i18n (EPIC #4980 ratified by user 2026-07-04, cf `code-style.md`
-§Lean i18n) : miroir anglais du canonical francophone `ConstantSheaf.lean`
-(sibling pair model). Les signatures, énoncés de théorèmes et tactiques
-restent byte-identiques entre les deux fichiers (invariant anti-§D).
+Convention i18n (EPIC #4980 ratified 2026-07-04, cf `code-style.md`
+§Lean i18n): this module is the canonical English twin of the module paired
+with it in the sibling file `ConstantSheaf.lean` (sibling pair model, see PR
+#6154 for the pilot on `Utility.lean`). The theorem statements, the lemma
+names, the Lean tactics and the Mathlib references stay in English (Mathlib
+4, tactic DSL standard). Only the `/-- ... -/` docstrings and the `-- ...`
+comments differ between the two files. Anti-§D byte-identity guaranteed:
+the namespace body is preserved bit-for-bit (statements and proofs
+byte-identical between `ConstantSheaf.lean` and `ConstantSheaf_en.lean`).
 -/
 
 import Mathlib.CategoryTheory.Sites.ConstantSheaf
