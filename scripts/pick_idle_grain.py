@@ -279,6 +279,26 @@ except ImportError:
     except ImportError:
         origami_parking = None  # type: ignore[assignment]
 
+# Les campagnes GELES par un veto USER (#17040). La definition PARTAGEE vit
+# dans `scripts/coordination/frozen_campaigns.py` : elle est deja lue par
+# `merge_ready` (skip de perimetre) et par le gate d'entree
+# `check_adjoint_prevalidation.py`. Le tapis, lui, ne lisait que des
+# marqueurs `[FROZEN]` poses dans un corps ou un fil -- donc une campagne
+# definie comme gelee pouvait etre servie tant que personne n'avait pose le
+# marqueur a la main (constate le 11/11 : #11601, dont la densification a
+# ete servie sous un parapluie gele, et refusee ensuite au merge).
+# Import best-effort, comme `origami_parking` : sans module, le tapis
+# tourne sans cette lecture (fail-OPEN), jamais l'inverse.
+try:
+    import frozen_campaigns
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import frozen_campaigns
+    except ImportError:
+        frozen_campaigns = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -2932,6 +2952,11 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     plus** -- et le filet des commentaires dans la requete qu'il fait de
     toute facon.
     """
+    veto = frozen_umbrella_veto(issue_number)
+    if veto is not None:
+        # Un parapluie gele par un veto USER est ecarte SANS lecture du
+        # fil : le gel ne depend d'aucun marqueur pose a la main.
+        return True
     comments, fetched_body = _issue_comments(issue_number)
     if comments is None:
         return None
@@ -3076,12 +3101,40 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     return comments, body
 
 
+def frozen_umbrella_veto(issue_number: int) -> str | None:
+    """L'item est-il un parapluie GEL par un veto user ?
+
+    Rend le numero du veto (``"17040"``) si l'issue est une cle de
+    `FROZEN_UMBRELLAS`, ``None`` sinon.
+
+    La definition est PARTAGEE (`scripts/coordination/frozen_campaigns.py`) :
+    c'est elle que lisent deja `merge_ready` et le gate d'entree. Le tapis
+    la lisait pas : un parapluie defini comme gele n'etait vu gel que si
+    un marqueur `[FROZEN]` avait ete pose a la main dans son corps ou son
+    fil -- et la main posee oublie, la densification repartait sous un
+    parapluie gele (mesure du 11/11 : #11601, parapluie gele par le veto
+    #17040, dont la densification a ete servie puis refusee au merge).
+
+    Un veto USER ne se leve pas par un `[UNFROZEN]` de lane : il se leve
+    quand la definition change. C'est pourquoi cette lecture passe AVANT
+    la lecture des marqueurs, et qu'elle ne demande aucun acces reseau.
+    """
+    if frozen_campaigns is None:
+        return None
+    try:
+        return frozen_campaigns.FROZEN_UMBRELLAS.get(str(issue_number))
+    except Exception:  # noqa: BLE001 - une definition illisible gele personne
+        return None
+
+
 def has_frozen_marker(issue_number: int) -> str | None:
     """L'item est-il GEL ? Renvoie la SOURCE du gel, ou l'absence de gel.
 
     TRI-ETAT :
     - ``"body"``    -- regle A : le corps porte la ligne `[FROZEN] ...` ;
     - ``"comment"`` -- regle B : un en-tete `[FROZEN]` dans le fil ;
+    - ``"veto #N"`` -- le parapluie est gele par un veto USER (la
+      definition partagee `FROZEN_UMBRELLAS`) ;
     - ``False``     -- l'item n'est pas gel ;
     - ``None``      -- la LECTURE a echoue (fail-OPEN).
 
@@ -3099,8 +3152,13 @@ def has_frozen_marker(issue_number: int) -> str | None:
 
     Cout : la MEME lecture que `has_recent_delivery_marker` (une requete,
     ou ZERO quand l'instantane de la passe sert le fil), et le corps vient
-    du cache du pool (`_POOL_BODIES`), que le pool paie deja.
+    du cache du pool (`_POOL_BODIES`), que le pool paie deja. La lecture
+    du veto USER, elle, ne coute **rien** : elle precede la lecture du
+    fil, et n'atteint jamais le reseau.
     """
+    veto = frozen_umbrella_veto(issue_number)
+    if veto is not None:
+        return f"veto #{veto}"
     comments, fetched_body = _issue_comments(issue_number)
     if comments is None:
         # Lecture en echec : fail-OPEN. L'appelant distingue « pas gele »
@@ -3129,6 +3187,12 @@ def gel_cause_text(gel: str | None) -> str | None:
     if gel is None:
         return ("GEL NON MESURE : la lecture du gel a echoue -- fail-OPEN "
                 "assume, l'item n'est pas ecarte pour autant")
+    if isinstance(gel, str) and gel.startswith("veto #"):
+        return (f"GEL ({gel}) : le parapluie est gele par un VETO USER. Le "
+                f"gel se leve quand la definition partagee "
+                f"(`scripts/coordination/frozen_campaigns.py::FROZEN_UMBRELLAS`) "
+                f"change -- ni un `[UNFROZEN]` de lane, ni un `[RELEASED]`, "
+                f"ni un marqueur pose a la main dans le corps ne le leve.")
     return (f"GEL ({gel}) : l'item est gele. Regle A = ligne `[FROZEN] ...` "
             f"dans le corps ; regle B = en-tete `[FROZEN]` dans le fil. Le "
             f"degel consiste a retirer la ligne du corps, ou a poster "
@@ -4669,13 +4733,16 @@ def print_frozen_unread_report(unread, lane: str | None = None) -> None:
 def print_belt_budget_report(budget_hit: bool) -> None:
     """Rend compte de l'epuisement du budget de sondes de livraison (#19969).
 
-    Le fail-OPEN du budget est assume : au-dela du plafond, la sonde de
-    livraison rend UNPROBED et le candidat est servi sans avoir ete verifie.
-    Ce qui n'est PAS assume, c'est le **silence** : une mesure qui echoue
-    doit se dire, sinon la lane lit un « pas de signal » la ou la sonde n'a
-    simplement pas eu lieu. L'issue #19969 demande explicitement que la
-    banniere reste imprimee quand le budget tombe -- « la mesure ne doit
-    pas devenir silencieuse en se repariant ».
+    Le plafond de sondes reste un plafond de COUT : au-dela, la sonde de
+    livraison rend UNPROBED. Mais un candidat dont la livraison n'a pas ete
+    lue n'est plus SERVI (c2817) : il est ecarte comme « a sonder », car la
+    lane y porterait un ordre de claim sur un travail jamais lu (mesure
+    c3128 : #23500 et #25375, deja livres). Ce qui n'est PAS assume, c'est le
+    **silence** : une mesure qui echoue doit se dire, sinon la lane lit un
+    « pas de signal » la ou la sonde n'a simplement pas eu lieu. L'issue
+    #19969 demande explicitement que la banniere reste imprimee quand le
+    budget tombe -- « la mesure ne doit pas devenir silencieuse en se
+    repariant ».
 
     La banniere est un helper (comme `print_claim_unread_report`) pour que
     ce contrat soit **verifiable sans reseau** : un test appelle la fonction
@@ -4683,14 +4750,15 @@ def print_belt_budget_report(budget_hit: bool) -> None:
     appellerait `main()` de bout en bout payerait une minute de reseau
     pour verifier trois lignes de `print`.
 
-    Texte inchange depuis l'origine du contrat (#19969) : le comparatif de
-    chaine est un test de non-regression sur la banniere elle-meme.
+    Le texte a change avec c2817 (le candidat au-dela du plafond n'est plus
+    servi) ; le comparatif de chaine reste un test de non-regression sur la
+    banniere elle-meme.
     """
     if not budget_hit:
         return
     print("   Plafond de sondes de livraison atteint : les candidats")
-    print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
-    print("   de livraison leur revient, cf check_unaddressed_nits.")
+    print("   au-dela ne sont pas sondes et ne sont donc PAS servis")
+    print("   (a sonder) -- cf c2817 et check_unaddressed_nits.")
 
 
 def draw_verdict(pool_error: str | None) -> str:
@@ -5603,7 +5671,12 @@ def check_claims(numbers: list[int], lane: str, *,
 #   - un echec de TRANSPORT n'ecrit aucun cache : le lecteur refait sa
 #     propre enumeration complete (le repli d'avant) ;
 #   - l'ecriture est ATOMIQUE (fichier temporaire + `os.replace`).
-_OPEN_PRS_CACHE_FORMAT = "open-prs-v2"
+# v3 (#26725) -- l'enveloppe suit le LECTEUR : les entrees portent
+# `baseRefName` et, pour une PR empilee, une liste `files` reduite a ce
+# qu'elle change (au lieu de la diff base-relative de `/pulls/{n}/files`).
+# Un cache v2 relu par un lecteur v3 serait rejete -- deux constantes qui
+# divergent refont payer l'enumeration a chaque candidat (#19643).
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v3"
 
 # Enumeration complete, MEMOISEE : une passe de tirage n'enumerere qu'une
 # fois, et la sonde de couverture (#16589) consomme la meme enumeration.
@@ -6887,6 +6960,32 @@ def is_aggregator_check(name: str) -> bool:
             or name.startswith(AGGREGATOR_CHECK_PREFIXES))
 
 
+def _gate_verdicts():
+    """`ci/gate_verdicts`, ou None si l'import est impossible.
+
+    Import tardif et defensif : l'organe est optionnel, son absence rend les
+    verdicts d'etat illisibles -- donc le fail-closed de l'appelant.
+    """
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+        import gate_verdicts  # noqa: PLC0415 - import tardif
+        return gate_verdicts
+    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+        return None
+
+
+def _read_check_annotations(check_run_id: int) -> list | None:
+    """Annotations d'un check-run, ou None si illisibles.
+
+    La lecture est dans `ci/gate_verdicts` (cache du picker passe en
+    rappel) : un seul endroit lit les annotations (#26564).
+    """
+    gv = _gate_verdicts()
+    if gv is None:
+        return None
+    return gv.read_annotations(check_run_id, _repair_read_annotation, _repair_store_annotation)
+
+
 def fetch_check_organs(check_run_id: int) -> list[str]:
     """Organes nommes par la banniere d'annotation de l'agregateur.
 
@@ -6896,18 +6995,8 @@ def fetch_check_organs(check_run_id: int) -> list[str]:
     annotation illisible rend [], et l'appelant exclut alors le check de la
     corroboration au lieu de le laisser corroborer par son nom.
     """
-    try:
-        cached = _repair_read_annotation(check_run_id)
-        if cached is not None:
-            annotations = cached
-        else:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-            ).stdout
-            annotations = json.loads(raw)
-            _repair_store_annotation(check_run_id, annotations)
-    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+    annotations = _read_check_annotations(check_run_id)
+    if annotations is None:
         return []
     organs: list[str] = []
     for ann in annotations or []:
@@ -6984,18 +7073,8 @@ def fetch_gate_cut_evidence(check_run_id: int) -> tuple[list[str], list[str]]:
     fail-closed comme ``fetch_check_organs`` : annotations illisibles ou
     verdict non-FAIL rendent ([], []), et SANS preuve la lane repare.
     """
-    try:
-        cached = _repair_read_annotation(check_run_id)
-        if cached is not None:
-            annotations = cached
-        else:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-            ).stdout
-            annotations = json.loads(raw)
-            _repair_store_annotation(check_run_id, annotations)
-    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+    annotations = _read_check_annotations(check_run_id)
+    if annotations is None:
         return [], []
     failed: list[str] = []
     cut: list[str] = []
@@ -7024,43 +7103,23 @@ def fetch_check_dwell(check_run_id: int) -> dict | None:
     Best-effort comme son voisin : annotation illisible -> ``None``, et
     l'appelant retombe sur le fail-closed (le rouge reste a la lane).
     """
-    parser = _dwell_message_parser()
-    if parser is None:
-        return None
-    try:
-        cached = _repair_read_annotation(check_run_id)
-        if cached is not None:
-            annotations = cached
-        else:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-            ).stdout
-            annotations = json.loads(raw)
-            _repair_store_annotation(check_run_id, annotations)
-    except Exception:  # noqa: BLE001 - reseau/parse : jamais un crash de picker
-        return None
-    for ann in annotations or []:
-        parsed = parser(ann.get("message") or "")
-        if parsed:
-            return parsed
-    return None
+    verdict = fetch_check_unknown_verdict(check_run_id)
+    return verdict if (verdict or {}).get("state") == "dwell" else None
 
 
-def _dwell_message_parser():
-    """`merge_dwell.parse_pending_message`, ou None si l'import est impossible.
+def fetch_check_unknown_verdict(check_run_id: int) -> dict | None:
+    """Verdict d'etat NON REPARABLE porte par l'annotation, ou None.
 
-    Import tardif et defensif, comme `_is_adjacency_red` : l'organe est
-    optionnel, une `ImportError` ici ne doit pas casser le tirage -- elle doit
-    seulement rendre le DWELL illisible, c'est-a-dire retomber sur le
-    fail-closed d'avant #15910 (le rouge reste a la lane).
+    DWELL (#15910, un plancher a ecouler) ou INCONCLUSIVE du gate (#26564,
+    quota d'installation epuise : l'etat des checks est INCONNU, pas faux).
+    Aucun des deux ne nomme d'organe : ce sont des ETATS, pas des defauts de
+    la PR. La lecture est dans `ci/gate_verdicts` ; le format de chaque
+    message appartient a son emetteur (`merge_dwell`, `pr_gate`).
     """
-    try:
-        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
-        from merge_dwell import parse_pending_message  # noqa: PLC0415 - import tardif
-        return parse_pending_message
-    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+    gv = _gate_verdicts()
+    if gv is None:
         return None
+    return gv.unknown_verdict(check_run_id, _repair_read_annotation, _repair_store_annotation)
 
 
 def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
@@ -8779,6 +8838,7 @@ def red_backlog(lane: str, threshold_hours: float,
     for pr in mine + others:
         lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
     organ_cache: dict[int, list[str]] = {}
+    # #26564 : cache des verdicts d'etat NON REPARABLE (DWELL, INCONCLUSIVE).
     dwell_cache: dict[int, dict] = {}
     # #15764 : cache des verdicts FAIL parsés par check-run -- partage entre
     # PRs de la lane dans ce passage, comme organ_cache.
@@ -8823,10 +8883,10 @@ def red_backlog(lane: str, threshold_hours: float,
                 ctx_name = ctx.get("name") or ctx.get("context") or "?"
                 keys_by_name.setdefault(ctx_name, set()).update(
                     failed_check_keys(ctx, organ_cache))
-        # #15910 : un agregateur rouge par DWELL n'a pas d'organe a lire. On ne
-        # paie la lecture d'annotation que pour les agregateurs dont AUCUN
-        # organe n'a pu etre resolu -- exactement le cas ambigu, jamais le cas
-        # nominal (un organe nomme tranche deja la question).
+        # #15910 / #26564 : un agregateur rouge par DWELL ou par verdict
+        # INCONCLUSIVE du gate n'a pas d'organe a lire. Une seule passe sur les
+        # agregateurs dont AUCUN organe n'a pu etre resolu -- le cas ambigu,
+        # jamais le nominal (un organe nomme tranche deja la question).
         dwell_by_name: dict[str, dict] = {}
         for ctx in _failed_contexts(state):
             ctx_name = ctx.get("name") or ctx.get("context") or "?"
@@ -8838,14 +8898,18 @@ def red_backlog(lane: str, threshold_hours: float,
             if ctx_run_id is None:
                 continue
             if ctx_run_id not in dwell_cache:
-                dwell_cache[ctx_run_id] = fetch_check_dwell(ctx_run_id) or {}
+                dwell_cache[ctx_run_id] = fetch_check_unknown_verdict(ctx_run_id) or {}
             dwell = dwell_cache[ctx_run_id]
             if dwell:
                 dwell_by_name[ctx_name] = dwell
         for ctx_name, info in sorted(dwell_by_name.items()):
-            dwell_waiting.append({"number": pr["number"], "check": ctx_name,
-                                  "lift_at": info.get("lift_at"),
-                                  "remaining_min": info.get("remaining_min")})
+            entry = {"number": pr["number"], "check": ctx_name,
+                     "state": info.get("state", "dwell"),
+                     "lift_at": info.get("lift_at"),
+                     "remaining_min": info.get("remaining_min")}
+            if info.get("detail"):
+                entry["detail"] = info["detail"]
+            dwell_waiting.append(entry)
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
                                  infra_rerun=set(infra_rerun),
@@ -9024,6 +9088,7 @@ def red_backlog(lane: str, threshold_hours: float,
             # #15910 : les agregateurs rouges par DWELL. Ni un defaut a
             # reparer, ni un rouge impute a la base : un minuteur qu'aucune
             # lane ne peut avancer en poussant (pousser le remet a zero).
+            # #26564 : meme categorie pour l'INCONCLUSIVE (`kind` distingue).
             "dwell_waiting": dwell_waiting,
             "nits_unavailable": nits_unavailable,
             # Q41 : plafond de WIP. wip_triggered porte le verdict (compte >=
@@ -9141,22 +9206,29 @@ def print_dwell_waiting(backlog: dict) -> None:
     items = backlog.get("dwell_waiting") or []
     if not items:
         return
-    print("PLANCHER DE DWELL -- un minuteur, pas un defaut, rien a reparer :")
-    for item in items:
-        # « reste » est le chiffre du gate AU MOMENT DU CHECK : sur une PR dont
-        # le plancher est deja ecoule il est perime (mesure du 2026-09-13 :
-        # #15952 annoncait « reste ~23 min » pour une levee passee depuis 20
-        # min). L'heure de levee absolue est la seule donnee qui ne vieillit
-        # pas -- c'est elle qui decide, « reste » n'est qu'un contexte.
-        reste = item.get("remaining_min")
-        reste_txt = f" (reste ~{reste} min lu au moment du check)" if reste is not None else ""
-        quand = f" -- plancher ecoule a {item['lift_at']}" if item.get("lift_at") else ""
-        print(f"  - #{item['number']} {item['check']}{quand}{reste_txt}")
-    print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
-    print("base. NE PAS repousser : un push remet le plancher a zero. Apres")
-    print("l'echeance, rejouer la jambe soi-meme (`gh run rerun <run_id> --job")
-    print("<job_id>`) ou enchainer un autre grain -- c'est la candidate qui")
-    print("attend, pas la lane.")
+    dwell = [i for i in items if i.get("state", "dwell") == "dwell"]
+    unknown = [i for i in items if i.get("state") == "inconclusive"]
+    if dwell:
+        print("PLANCHER DE DWELL -- un minuteur, pas un defaut, rien a reparer :")
+        for item in dwell:
+            # « reste » est le chiffre du gate AU MOMENT DU CHECK : sur une PR dont
+            # le plancher est deja ecoule il est perime (mesure du 2026-09-13 :
+            # #15952 annoncait « reste ~23 min » pour une levee passee depuis 20
+            # min). L'heure de levee absolue est la seule donnee qui ne vieillit
+            # pas -- c'est elle qui decide, « reste » n'est qu'un contexte.
+            reste = item.get("remaining_min")
+            reste_txt = f" (reste ~{reste} min lu au moment du check)" if reste is not None else ""
+            quand = f" -- plancher ecoule a {item['lift_at']}" if item.get("lift_at") else ""
+            print(f"  - #{item['number']} {item['check']}{quand}{reste_txt}")
+        print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
+        print("base. NE PAS repousser : un push remet le plancher a zero. Apres")
+        print("l'echeance, rejouer la jambe soi-meme (`gh run rerun <run_id> --job")
+        print("<job_id>`) ou enchainer un autre grain -- c'est la candidate qui")
+        print("attend, pas la lane.")
+    if unknown:
+        gv = _gate_verdicts()
+        if gv is not None:
+            gv.print_inconclusive_waiting(unknown)
     print()
 
 
@@ -12685,8 +12757,10 @@ def belt_probe_budget(belt_check_window: int) -> int:
     defaut), toute tete portant plus de huit candidats deja livres faisait
     rendre ``DELIVERED_SIGNAL_UNPROBED`` au-dela, et le tapis les servait
     comme des grains neufs : mesure firsthand, huit candidats d'un seul
-    tirage, tous deja livres. Le plafond remonte, la doctrine ne change pas --
-    l'epuisement reste fail-OPEN et rapporte (``budget_hit``).
+    tirage, tous deja livres. Le plafond remonte (c2817) et le fail-OPEN du
+    plafond est abroge : un candidat non lu est ecarte « a sonder », il
+    n'est plus servi. Le plafond reste un plafond de cout -- il ne change
+    pas le nombre de lectures autorisees.
     """
     return belt_check_window * 3 + 12
 
@@ -12765,7 +12839,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivery_event_probe=None,
                                 time_budget_s=None,
                                 gpu_probe=None,
-                                frozen_probe=None):
+                                frozen_probe=None,
+                                service_window=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
     Extraite de ``main`` (#19390) pour etre testable sans harnais complet :
@@ -12778,9 +12853,11 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     doctrine que ``check_claims`` : le tapis ne paie une requete commentaire
     que pour les candidats qu'il considere reellement. Le caller lui passe
     ``belt_probe_budget(belt_check_window)`` -- la valeur doit couvrir la tete
-    que la boucle peut servir, sinon les candidats au-dela sont servis sans
-    lecture (#19969). Epuisement = fail-OPEN (``DELIVERED_SIGNAL_UNPROBED``),
-    rapporte dans l'etat de retour. ``delivered_probe`` et ``merged_pr_probe``
+    que la boucle peut servir, sinon les candidats au-dela ne sont pas lus.
+    Epuisement = ``DELIVERED_SIGNAL_UNPROBED`` ; le candidat concerne est
+    alors ECARTE (« a sonder », c2817) et l'etat de retour le nomme dans
+    ``budget_unprobed``. Avant c2817, il etait servi en fail-OPEN -- le
+    tapis remettait alors un grain neuf sur un travail jamais lu (#19969). ``delivered_probe`` et ``merged_pr_probe``
     (tests) remplacent les sondes reseau ; ``claims_probe`` (tests) remplace
     la verification au fil de l'eau des items hors fenetre ;
     ``recent_marker_probe`` (tests) remplace le filtre bon marche du dernier
@@ -12853,12 +12930,35 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     son budget de run (echeance absolue, pas duree par appel) : c'est ce qui
     rend le mur du tapis deterministe au lieu de dependre du nombre de
     candidats bloques. ``None`` (defaut) = pas de mur, comportement d'avant.
+
+    ``service_window`` (#25920) est la fenetre que la boucle va parcourir
+    (`belt_service_window`). Quand il est fourni, le PLAFOND de sondes est
+    elargi pour COUVRIR cette fenetre : le plafond etait calcule sur la
+    fenetre de TETE (36 sondes pour `grains=4`), alors que la boucle parcourt
+    70 positions et que chaque candidat livre en coute 3 (livraison + PR
+    mergee + couverture). Sur une tete de tapis saturee de livraisons, le
+    plafond etait donc atteint bien avant la fin de la fenetre parcourue :
+    le tapis rendait 0 grain alors que des grains LIBRES existaient plus
+    loin dans la meme fenetre (mesure Hermes, review du 2026-11-12 sur
+    #25920). Le plafond est un PLAFOND, pas une depense -- la boucle
+    s'arrete des que `grains` grains sont servis -- l'elargissement ne
+    coute donc rien quand la tete est libre, et il reste borne par le mur
+    de temps de la boucle. ``None`` (defaut) = le plafond du caller est
+    respecte a la lettre (les tests du contrat c2817 s'appuient dessus).
     """
     budget = [int(probe_budget)]
+    if service_window is not None:
+        # Le plafond doit couvrir la fenetre PARCOURUE : trois sondes par
+        # position (livraison, PR mergee, couverture) plus la marge.
+        _cover = int(service_window) * 3 + 12
+        if _cover > budget[0]:
+            budget[0] = _cover
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
              "cover_failures": [], "time_budget_hit": False,
-             "frozen_unread": [], "frozen_filtered": 0}
+             "frozen_unread": [], "frozen_filtered": 0,
+             "probe_budget_ceiling": budget[0],
+             "probe_budget_requested": int(probe_budget)}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
@@ -12965,10 +13065,19 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
 
         # #22983 -- candidats dont une sonde n'a pas pu etre emise PARCE
         # QUE LE MUR DE TEMPS EST ATTEINT : ils seront ECARTES, pas
-        # servis (le fail-OPEN par mur de temps est retire). Le plafond
-        # de SONDES (`budget_hit`) reste fail-OPEN : plafond de cout, pas
-        # echeance -- les deux se distinguent devant la lane.
+        # servis (le fail-OPEN par mur de temps est retire).
         deadline_unprobed: set[int] = set()
+
+        # c2817 (dispatch du coordinateur, 11/11) -- candidats dont la SONDE
+        # DE LIVRAISON n'a pas pu etre emise PARCE QUE LE PLAFOND DE SONDES
+        # EST ATTEINT. Le mur de temps ecarte deja le candidat
+        # (`deadline_unprobed`) ; le plafond, lui, le SERVAIT jusqu'ici en
+        # fail-OPEN -- et la lane recevait alors « ACTION REQUISE : poser
+        # [CLAIMED] » sur un travail jamais lu (mesure c3128 : #23500 et
+        # #25375, deja livres). Le plafond reste un plafond de COUT, mais il
+        # ne peut plus produire un candidat NON VERIFIE portant un ordre de
+        # claim : un candidat non sonde est « a sonder », pas « a servir ».
+        budget_unprobed: set[int] = set()
 
         # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
         # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
@@ -13036,14 +13145,16 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         or _closure_announced_close(body))
 
         def counted_probe(number, lane_name):
-            # L'echeance passe AVANT le plafond de sondes : l'echeance
-            # est fail-CLOSED (#22983, candidat marque puis ecarte), le
-            # plafond reste fail-OPEN et reste dit a la lane.
+            # L'echeance passe AVANT le plafond de sondes : les deux sont
+            # fail-CLOSED (#22983 pour l'echeance, c2817 pour le plafond)
+            # -- un candidat non lu n'est jamais servi. Le plafond reste
+            # dit a la lane (« a sonder »).
             if expired():
                 deadline_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_probe(number, lane_name)
@@ -13054,6 +13165,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_merged_pr_probe(number, lane_name)
@@ -13067,6 +13179,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_revocation_probe(number, lane_name, merged_at)
@@ -13085,6 +13198,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_cover_probe(number)
@@ -13525,6 +13639,23 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 belt_withheld.append((it, "mur de temps atteint : sonde non "
                                       "emise -- candidat ecarte, pas servi"))
                 continue
+            if n in budget_unprobed:
+                # c2817 -- le PLAFOND DE SONDES ne peut plus servir un
+                # candidat NON VERIFIE. Le mur de temps ecarte deja le
+                # candidat (#22983) ; le plafond le servait en fail-OPEN, et
+                # la lane recevait alors « ACTION REQUISE : poser [CLAIMED] »
+                # sur un travail dont la livraison n'avait pas ete lue
+                # (mesure c3128 : #23500, #25375, deja livres -- un claim
+                # pose dessus relockait l'issue pour toute la flotte).
+                # Ici le candidat est ECARTE comme le mur, avec un motif
+                # nomme : « a sonder ». Le tapis ne refuse pas de grain --
+                # il le remplace dans la meme urne, comme les autres
+                # ecartements.
+                state.setdefault("budget_unprobed", []).append(n)
+                belt_withheld.append((it, "a sonder : plafond de sondes de "
+                                      "livraison atteint -- livraison NON "
+                                      "verifiee, candidat ecarte, pas servi"))
+                continue
             belt_picks.append(it)
         # #25522 point 4 : la sortie doit dire CE QUE la boucle a couvert,
         # pas seulement ce qu'elle a rendu. Deux nombres : les positions
@@ -13649,7 +13780,14 @@ def creation_budget_gate(pool: list[dict], *,
     try:
         import creation_budget as cb
     except Exception:  # noqa: BLE001 - module absent = porte inactive
-        return {}
+        # T3-d (#26104) : le module vit dans scripts/ci/ -- amorcage du
+        # repertoire de famille, meme motif que tirage_journal/origami_parking.
+        try:
+            sys.path.insert(0, os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "ci"))
+            import creation_budget as cb  # type: ignore[no-redef]
+        except Exception:  # noqa: BLE001 - module absent = porte inactive
+            return {}
     try:
         return cb.creation_gate(pool, open_count=open_count)
     except Exception:  # noqa: BLE001 - une porte qui leve n'ecarte personne
@@ -14532,6 +14670,11 @@ def main(argv: list[str] | None = None) -> int:
                 lambda issue_number, lane=None, _idx=merged_prs_local:
                     merged_pr_signal(issue_number, lane, index=_idx)
             )
+            # Le bandeau part sur STDERR : en mode `--json`, stdout ne doit
+            # porter QUE le document JSON -- sinon `json.load` echoue sur la
+            # sortie (#c2818, mesure du coordinateur). La branche d'echec
+            # ci-dessous ecrivant deja sur stderr, les deux messages sont
+            # desormais sur le meme flux.
             print(f"(index local des PRs mergees : {len(merged_prs_local)} "
                   f"PRs sur {MERGED_PR_WINDOW_DAYS} j -- la sonde par "
                   f"candidat ne sort plus sur le reseau, #24823)",
@@ -15116,7 +15259,16 @@ def main(argv: list[str] | None = None) -> int:
                                         delivery_event_probe=delivery_event,
                                         time_budget_s=belt_time_remaining,
                                         gpu_probe=gpu_gate_probe,
-                                        frozen_probe=frozen_probe))
+                                        frozen_probe=frozen_probe,
+                                        # #25920 -- le plafond doit couvrir la
+                                        # fenetre PARCOURUE, pas seulement la
+                                        # tete : sinon une tete saturee de
+                                        # livraisons epuise le plafond avant
+                                        # la fin de la fenetre et le tapis rend
+                                        # 0 grain alors que des grains libres
+                                        # existent plus loin (mesure Hermes du
+                                        # 2026-11-12).
+                                        service_window=belt_claim_window))
         _belt_phase(f"pick_with_replacements fait: "
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
@@ -15194,6 +15346,14 @@ def main(argv: list[str] | None = None) -> int:
                       f"{_svc_extended} ; "
                       f"{belt_pick_state.get('pending_deliveries', 0)} "
                       f"livraison(s) en attente.")
+            # #25920 -- le plafond elargi est DIT : une lane qui lit
+            # « plafond atteint » doit pouvoir distinguer « la tete est
+            # saturee » de « la fenetre parcourue n'a pas ete couverte ».
+            _ceil = belt_pick_state.get("probe_budget_ceiling")
+            _req = belt_pick_state.get("probe_budget_requested")
+            if _ceil and _req and _ceil > _req:
+                print(f"   plafond de sondes : {_req} -> {_ceil} "
+                      f"(couvre la fenetre de service parcourue)")
             if belt_dead_signal.get("applied"):
                 print(f"   tetes mortes : {belt_dead_signal['moved']} issue(s) "
                       f"deja servie(s) a cette lane sans visite, passee(s) en "
@@ -15295,6 +15455,32 @@ def main(argv: list[str] | None = None) -> int:
             print_frozen_unread_report(
                 belt_pick_state.get("frozen_unread"), args.lane)
             print_belt_budget_report(belt_probe_budget_hit[0])
+            # c2817 -- les candidats dont la livraison n'a pas pu etre lue
+            # (plafond de sondes) sont nommes comme « a sonder » : ils ne
+            # portent AUCUN ordre de claim, et la lane ne doit pas les
+            # traiter comme des grains libres.
+            unprobed_budget = belt_pick_state.get("budget_unprobed") or []
+            if unprobed_budget:
+                numbers = ", ".join(f"#{n}"
+                                    for n in sorted(set(unprobed_budget)))
+                print(f"   A SONDER : {len(set(unprobed_budget))} "
+                      "candidat(s) NON VERIFIE(S) -- plafond de sondes "
+                      f"atteint avant la lecture de livraison : {numbers}.")
+                print("   Aucun de ces candidats ne porte d'ordre de claim : "
+                      "les sonder avant de les servir (c2817).")
+                if not belt_picks:
+                    # Le mandat du 11/11 (11:45Z) : « le tapis doit servir
+                    # toutes les issues, repare ce qui doit etre repare ».
+                    # Le plafond vide la fenetre lue : le tapis ne rend
+                    # alors AUCUN grain -- il ne le doit pas (un grain non
+                    # lu = un claim sur un travail deja livre), mais il doit
+                    # DIRE comment rouvrir la fenetre.
+                    print("   AUCUN GRAIN SERVI : le plafond de sondes a "
+                          "vide la fenetre lue.")
+                    print("   Pour elargir la fenetre lue, relancer avec un "
+                          "quota plus grand")
+                    print("   (--grains N : la fenetre vaut max(N + 4, 8) et "
+                          "le plafond 3 x fenetre + 12).")
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436, #22983) : la")
                 print("   boucle a cesse de sonder a l'echeance, et les sondes")
@@ -15318,23 +15504,18 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"   ACTION REQUISE : poser [CLAIMED] lane {args.lane} sur "
                       f"#{top['number']} avant edition -- cf lane-claim-protocol.")
                 if belt_probe_budget_hit[0]:
-                    # Une tete servie au-dela du PLAFOND DE SONDES n'est pas
-                    # verifiee : la ligne ci-dessus est une INJONCTION, elle
-                    # doit donc dire a cote d'elle que son objet n'a pas ete
-                    # lu. Mesure du 2026-11-03 : le tirage a servi 4
-                    # candidats sur 4 portant chacun un marqueur de
-                    # livraison, et la lane recevait une injunction de
-                    # claimer SANS reserve.
-                    #
-                    # #22983 -- c'est le PLAFOND DE SONDES (cout) qui reste
-                    # fail-OPEN, pas le MUR DE TEMPS : le mur ecarte le
-                    # candidat, il ne le sert pas. L'avertissement suit donc
-                    # le plafond, et non le mur.
-                    print("   CANDIDAT NON VERIFIE (#19969) : le plafond de")
-                    print("   sondes a ete atteint avant les lectures de livraison")
-                    print("   et de claim. Lire le dernier commentaire AVANT de")
-                    print("   claimer. (Le mur de temps, lui, ecarte le candidat :")
-                    print("   il ne rend aucun grain non verifie.)")
+                    # c2817 -- le plafond de sondes n'est PLUS fail-OPEN : un
+                    # candidat dont la livraison n'a pas ete lue est ecarte
+                    # (« a sonder », liste nommee plus haut) et n'atteint donc
+                    # jamais cette ligne. La tete servie ici a ETE lue. Ce qui
+                    # reste a dire, c'est que le plafond a touche la fenetre
+                    # servie : d'autres candidats ont ete laisses non lus, et
+                    # ils sont nommes dans le rapport « A SONDER ».
+                    print("   Plafond de sondes atteint sur la fenetre servie :")
+                    print("   la tete ci-dessus a ETE lue ; les candidats dont la")
+                    print("   livraison n'a pas pu etre lue sont nommes « A")
+                    print("   SONDER » plus haut et ne portent AUCUN ordre de")
+                    print("   claim (c2817).")
             # #17038 (residu du 2026-10-09) -- contrat de verdict : un pick
             # dont le claim est ERROR n'est PAS un candidat libre, c'est un
             # candidat NON MESURE. Le servir reste le comportement (le tapis
