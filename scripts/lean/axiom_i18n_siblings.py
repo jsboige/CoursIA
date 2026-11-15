@@ -270,24 +270,21 @@ def decide_lake(entry, tools):
         governed = [a for a in noted if a in ALWAYS_FORBIDDEN_ANCHORS]
         if governed:
             row["reason"] = (
-                f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "
-                f"{row['i18n-declarations']} declarations) ; les ancres "
-                f"reportees ({', '.join(noted)}) sont gouvernees par la "
-                f"allow-list du lac (`axiom-allow-axioms`) -- la source ne dit "
-                f"pas si l'ancre resolue au build y est couverte, seule la CI "
-                f"le dit (le gate reel compare les noms resolus)")
+                "opt-in sur : la surface `_en` porte des ancres reportees "
+                "qui sont gouvernees par l'allow-list du lac "
+                "(`axiom-allow-axioms`) -- la source ne dit pas si l'ancre "
+                "resolue au build y est couverte, seule la CI le dit (le "
+                "gate reel compare les noms resolus)")
         else:
             row["reason"] = (
-                f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "
-                f"{row['i18n-declarations']} declarations) ne porte aucun ancrage "
-                f"qui ferait rougir la porte ; les `sorry` y sont rapportes, non "
-                f"gates (la porte ne gate pas sur sorryAx pour ce lake)")
+                "opt-in sur : la surface `_en` ne porte aucun ancrage qui "
+                "ferait rougir la porte ; les `sorry` y sont rapportes, non "
+                "gates (la porte ne gate pas sur sorryAx pour ce lake)")
     else:
         row["reason"] = (
-            f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "
-            f"{row['i18n-declarations']} declarations) est integralement "
-            f"auditable et sans ancre interdite ; la porte couvre desormais "
-            f"la surface bilingue entiere")
+            "opt-in sur : la surface `_en` est integralement auditable et "
+            "sans ancre interdite ; la porte couvre desormais la surface "
+            "bilingue entiere")
     row["decision"] = "true"
     return row
 

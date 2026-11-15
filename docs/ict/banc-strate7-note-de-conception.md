@@ -12,7 +12,7 @@ Cette note est la **phase 1** : elle fixe l'architecture du banc, avant tout car
 
   | Série | Organe importable | Preuve |
   |---|---|---|
-  | Probas / Causal-Bridges | `causal_organs.py`, `dowhy_organs.py` | `dowhy_organs.py:90` (`contrefactuel_individuel`), `:71` (`construire_scm`) ; `causal_organs.py:262` (`panel_did_two_by_two`) |
+  | Probas / Causalité | `causal_organs.py`, `dowhy_organs.py` | `dowhy_organs.py:90` (`contrefactuel_individuel`), `:71` (`construire_scm`) ; `causal_organs.py:262` (`panel_did_two_by_two`) |
   | SymbolicAI / SmartContracts | `sc2b_experience.py` | `sc2b_experience.py:212` (`deployer`), `:181` (`envoyer`), `:523` (`mecanique`) |
   | Search | `search_helpers.py` | `search_helpers.py:46` (`draw_csp_graph`), `:19` (`SearchTreeNode`) |
 
@@ -36,7 +36,7 @@ Le banc ne peut **invoquer l'organe natif** que si celui-ci est **importable dan
 
 | Mécanisme | Série | Organe natif (importable) | Interface invoquée | Contrôle attendu* |
 |---|---|---|---|---|
-| Intervention contrefactuelle `do(X=v)` | Probas / Causal-Bridges | `dowhy_organs.py` | `construire_scm(generer_donnees(n))` puis `contrefactuel_individuel(scm, ligne, "T", v)` | **latent** |
+| Intervention contrefactuelle `do(X=v)` | Probas / Causalité | `dowhy_organs.py` | `construire_scm(generer_donnees(n))` puis `contrefactuel_individuel(scm, ligne, "T", v)` | **latent** |
 | Mécanisme institutionnel persistant (on-chain) | SymbolicAI / SmartContracts | `sc2b_experience.py` | `deployer(w3, a)` → `envoyer(...)` (`soumettre`/`voter`/`cloturer` du contrat `Deliberation`) | **nouveau** |
 | Espace de contraintes qui s'étend | Search | `search_helpers.py` | `draw_csp_graph(variables, domains, constraints)` / `SearchTreeNode` | **nouveau** |
 
