@@ -70,9 +70,11 @@ def test_the_explicit_decision_matches_the_recomputed_measurement():
 
 
 def test_the_decisions_file_matches_the_recomputed_measurement():
-    """Le fichier de decisions ne doit pas deriver de la mesure (ni
-    decision, ni raison). C'est le garde-fou du drift : le manifeste porte
-    la valeur, ce fichier porte la preuve."""
+    """La DECISION de chaque lac du fichier de decisions ne doit pas
+    deriver de la mesure. La raison n'est plus comparee : elle embarque des
+    comptes, son ecart est une note non bloquante (cf
+    `_decisions_stale_reasons`). C'est le garde-fou du drift : le manifeste
+    porte la valeur, ce fichier porte la preuve."""
     drifts = axiom_i18n_siblings._decisions_drift(
         axiom_i18n_siblings.report()[1])
     assert not drifts, "derive fichier de decisions <-> mesure : " + \
