@@ -99,17 +99,17 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 20 | [ANALYSE-12: Counting perfect matchings — the permanent…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-12-Comptage-Matching-Lean-Python_en.ipynb) | BETA | Non |
 | 21 | [ANALYSE-14 : Euler et Navier–Stokes — reproduction…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb) | BETA | Non |
 | 22 | [GALOIS-01 : Le problème inverse de Galois — M₂₃ refermé…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/GALOIS-01-Probleme-Inverse-M23-Python.ipynb) | BETA | Non |
-| 23 | [GOL-01 : Hommage a John Conway — Game of Life as…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-01-Regles-Vie-Lean.ipynb) | BETA | Non |
-| 24 | [GOL-02 - Conway Game of Life : les 3 piliers, en images…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-02-Golly.ipynb) | BETA | Non |
-| 25 | [GOL-03 : Game of Life sur kernel Lean natif](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-03-Vie-Native.ipynb) | BETA | Non |
-| 26 | [GOL-04 — Canons : le barreau 2 de l'échelle des témoins…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-04-Canons.ipynb) | BETA | Non |
-| 27 | [GOL-05 : la tournée des motifs du Jeu de la Vie —…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-05-Pattern-Tour.ipynb) | BETA | Non |
-| 28 | [GOL-06 — Synthèse d'un translateur sur grille bornée](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-06-Translateur-Life.ipynb) | BETA | Non |
-| 29 | [GOL-07 : la preuve de correction Hashlife — compagnon…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-07-Hashlife-Correctness.ipynb) | BETA | Non |
-| 30 | [GOL-08 — Loi II, seconde jambe : synthétiser un…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-08-Loi-II-Translateur-Life.ipynb) | BETA | Non |
-| 31 | [GOL-08b : le certificat d'impossibilite du translateur,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-08b-Certificat-Translateur-Lean.ipynb) | BETA | Non |
-| 32 | [GOL-09 — Perplexité structurelle Hashlife : instrument,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | BETA | Non |
-| 33 | [GOL-10 — FRACTRAN : calculer avec des fractions](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/GOL-10-Fractran.ipynb) | BETA | Non |
+| 23 | [GOL-01 : Hommage a John Conway — Game of Life as…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-01-Regles-Vie-Lean.ipynb) | BETA | Non |
+| 24 | [GOL-02 - Conway Game of Life : les 3 piliers, en images…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-02-Golly.ipynb) | BETA | Non |
+| 25 | [GOL-03 : Game of Life sur kernel Lean natif](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-03-Vie-Native.ipynb) | BETA | Non |
+| 26 | [GOL-04 — Canons : le barreau 2 de l'échelle des témoins…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-04-Canons.ipynb) | BETA | Non |
+| 27 | [GOL-05 : la tournée des motifs du Jeu de la Vie —…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-05-Pattern-Tour.ipynb) | BETA | Non |
+| 28 | [GOL-06 — Synthèse d'un translateur sur grille bornée](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-06-Translateur-Life.ipynb) | BETA | Non |
+| 29 | [GOL-07 : la preuve de correction Hashlife — compagnon…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-07-Hashlife-Correctness.ipynb) | BETA | Non |
+| 30 | [GOL-08 — Loi II, seconde jambe : synthétiser un…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-08-Loi-II-Translateur-Life.ipynb) | BETA | Non |
+| 31 | [GOL-08b : le certificat d'impossibilite du translateur,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-08b-Certificat-Translateur-Lean.ipynb) | BETA | Non |
+| 32 | [GOL-09 — Perplexité structurelle Hashlife : instrument,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | BETA | Non |
+| 33 | [GOL-10 — FRACTRAN : calculer avec des fractions](../../MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/GOL-10-Fractran.ipynb) | BETA | Non |
 | 34 | [GROTH-01 : théorie des catégories en Mathlib — la…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/GROTH-01-Categories-Mathlib-Lean.ipynb) | BETA | Non |
 | 35 | [GROTH-02 : Hommage a Alexandre Grothendieck -- Le…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/GROTH-02-Tribut-Python.ipynb) | BETA | Non |
 | 36 | [GROTH-03 : Grothendieck en Lean -- Atelier pratique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/GROTH-03-Atelier-Python.ipynb) | BETA | Non |
@@ -122,11 +122,11 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 43 | [Geometry 04 — Raisonner comme un géomètre (DD + AR)](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04-DD-AR-Python.ipynb) | BETA | Non |
 | 44 | [Geometry 04b — IMO-AG-30 : la revanche de la méthode de…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-04b-IMO-AG-30-Python.ipynb) | BETA | Non |
 | 45 | [Geometry 05 — Prouvé par Gröbner, prouvé par le noyau](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-05-Pont-Formel-Python.ipynb) | BETA | Non |
-| 46 | [KNOTS-01 — Conway, les Nœuds et la Preuve de Piccirillo](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/KNOTS-01-Conway-Proofs-Lean-Python.ipynb) | BETA | Non |
-| 47 | [KNOTS-02 — Invariants de Nœuds : Calcul et Vérification](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/KNOTS-02-Invariants-Python.ipynb) | ALPHA | Non |
-| 48 | [KNOTS-03 — Le lake knot_lean par ses déclarations…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/KNOTS-03-Companion-Formel-Lean-Python.ipynb) | BETA | Non |
-| 49 | [KNOTS-04 — Géométrie hyperbolique : tétraèdres idéaux,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/KNOTS-04-Geometrie-Hyperbolique-Python.ipynb) | BETA | Non |
-| 50 | [KNOTS-05 — Dynamique des tresses : action d'Artin,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/KNOTS-05-Dynamique-Tresses-Python.ipynb) | BETA | Non |
+| 46 | [KNOTS-01 — Conway, les Nœuds et la Preuve de Piccirillo](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-01-Conway-Proofs-Lean-Python.ipynb) | BETA | Non |
+| 47 | [KNOTS-02 — Invariants de Nœuds : Calcul et Vérification](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-02-Invariants-Python.ipynb) | ALPHA | Non |
+| 48 | [KNOTS-03 — Le lake knot_lean par ses déclarations…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-03-Companion-Formel-Lean-Python.ipynb) | BETA | Non |
+| 49 | [KNOTS-04 — Géométrie hyperbolique : tétraèdres idéaux,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-04-Geometrie-Hyperbolique-Python.ipynb) | BETA | Non |
+| 50 | [KNOTS-05 — Dynamique des tresses : action d'Artin,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/KNOTS-05-Dynamique-Tresses-Python.ipynb) | BETA | Non |
 | 51 | [Langlands 01 : formes modulaires — de SL₂(ℤ) aux…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/01-formes-modulaires-sl2z-hecke.ipynb) | BETA | Non |
 | 52 | [Monstrous Moonshine : l'invariant $j$ et le monstre](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/02-monstrous-moonshine-invariant-j.ipynb) | BETA | Non |
 | 53 | [Langlands 03 : la chaîne de modularité — de l'équation…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/03-chaine-de-modularite-vers-fermat.ipynb) | BETA | Non |

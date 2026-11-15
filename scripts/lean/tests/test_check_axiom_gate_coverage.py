@@ -106,15 +106,15 @@ class TestGateProjectPaths:
             "  proof-integrity:\n"
             "    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main\n"
             "    with:\n"
-            "      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean\n"
+            "      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean\n"
             "  proof-integrity-audit:\n"
             "    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main\n"
             "    with:\n"
-            "      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean\n"
+            "      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean\n"
         )
         assert gate_project_paths(text) == [
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean",
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean",
         ]
 
     def test_commented_project_path_is_ignored(self):

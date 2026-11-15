@@ -94,5 +94,5 @@ aperçu exhaustif.
   (tactiques exercées sur Mathlib importé directement) et
   `Lean-26-Munkres-Tribute.ipynb` (cours 18.901 de Munkres, exécuté sur ce lake).
 - **Projets Lean plus complets** : [`calibration_lean/`](../calibration_lean/),
-  [`conway_lean/`](../GameOfLife/conway_lean/), [`sensitivity_lean/`](../sensitivity_lean/)
+  [`conway_lean/`](../JeuDeLaVie/conway_lean/), [`sensitivity_lean/`](../sensitivity_lean/)
   — projets Lean de production bâtis sur Mathlib.

@@ -61,9 +61,9 @@ class TestFindLeanPaths:
         assert line_no == 1
 
     def test_captures_absolute_repo_path(self):
-        src = "imported from MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/Knots/Lidman.lean"
+        src = "imported from MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean/Knots/Lidman.lean"
         out = find_lean_paths(src)
-        assert any(p == "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/Knots/Lidman.lean" for p, _ in out)
+        assert any(p == "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean/Knots/Lidman.lean" for p, _ in out)
 
     def test_captures_capstone_dir_subpath(self):
         # Le regex accepte (?:knot_lean|Knots) ; Knots en sous-chemin est OK.
@@ -98,7 +98,7 @@ class TestCheckNotebook:
         # Repo root bidon : on y pose le fichier .lean que le carnet declare
         repo = tmp_path / "repo"
         repo.mkdir()
-        lean_abs = repo / "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/Knots/Invariant.lean"
+        lean_abs = repo / "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean/Knots/Invariant.lean"
         lean_abs.parent.mkdir(parents=True, exist_ok=True)
         lean_abs.write_text("-- stub\n", encoding="utf-8")
         # Carnet qui declare ce chemin absolu
@@ -112,7 +112,7 @@ class TestCheckNotebook:
         repo.mkdir()
         # Aucun fichier cree : chemin absolu pointe dans le vide
         nb = tmp_path / "KNOTS" / "demo.ipynb"
-        _write_nb(nb, [_md("see MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/Knots/Stale.lean")])
+        _write_nb(nb, [_md("see MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean/Knots/Stale.lean")])
         findings = check_notebook(nb, repo, allow_patterns=())
         assert len(findings) == 1
         assert "STALE_PATH (abs)" in findings[0]
@@ -236,7 +236,7 @@ class TestRelativeResolutionScope:
 # ---------------------------------------------------------------------------
 # R1-fix Windows : la classe 1 stale path documentee par #21007
 #
-# Le filtre par defaut du hook (``Lean/Knots/``) est forward-slash.
+# Le filtre par defaut du hook (``Lean/Noeuds/``) est forward-slash.
 # Sur Windows, ``str(Path)`` rend des antislashs (``\``), donc
 # ``re.search(filter, str(path))`` ne matche JAMAIS un carnet KNOTS,
 # et le hook scanne 0 fichier puis sort en rc 0 sans un mot. C'est
@@ -252,10 +252,10 @@ class TestRelativeResolutionScope:
 # ---------------------------------------------------------------------------
 
 class TestPathFilterWindowsCompat:
-    """Le filtre par defaut ``Lean/Knots/`` doit attraper les chemins
+    """Le filtre par defaut ``Lean/Noeuds/`` doit attraper les chemins
     Windows antislashes comme les chemins POSIX forward-slashes."""
 
-    DEFAULT_FILTER = re.compile(r"Lean/Knots/")
+    DEFAULT_FILTER = re.compile(r"Lean/Noeuds/")
 
     def test_str_path_windows_antislashes_does_not_match(self):
         """Cas fondateur preserve : SANS le fix, le hook ne matche
@@ -279,7 +279,7 @@ class TestPathFilterWindowsCompat:
 
     def test_posix_path_forward_slashes_still_matches(self):
         """Le fix ne regresse pas le cas POSIX historique."""
-        p = Path("MyIA/AI/Notebooks/Lean/Knots/demo.ipynb")
+        p = Path("MyIA/AI/Notebooks/Lean/Noeuds/demo.ipynb")
         # ``as_posix()`` est un no-op sur POSIX, le filtre matche.
         assert self.DEFAULT_FILTER.search(p.as_posix()) is not None
 

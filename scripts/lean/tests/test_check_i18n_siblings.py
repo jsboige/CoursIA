@@ -31,7 +31,7 @@ from check_i18n_siblings import (  # noqa: E402
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-# Le lake a descendu sous `Lean/GameOfLife/` (#23164). Ce chemin est en dur : s'il
+# Le lake a descendu sous `Lean/JeuDeLaVie/` (#23164). Ce chemin est en dur : s'il
 # n'est pas suivi, la garde ne trouve plus le lake et se tait (cf. le `skip`
 # explicite du test conway ci-dessous, qui rend cette disparition visible).
 CONWAY_DIR = (
