@@ -390,6 +390,47 @@ def test_cli_lecture_en_panne_code_3_et_repli(capsys):
     assert f"python scripts/pick_idle_grain.py --belt --lane {LANE}" in err
 
 
+def test_cli_mesure_origami_en_panne_sort_0_et_la_cause(monkeypatch, capsysbinary):
+    """Une protection auxiliaire en panne n'eteint pas le tirage (#26528).
+
+    Le parcage Origami est une protection **auxiliaire** ; le tapis rapide est
+    le tirage de reference de toute la flotte. Une mesure impossible laisse la
+    sortie a `0`, la cause nommee, un avertissement sur stderr -- et l'EPIC
+    Origami **sert**, parce que rien n'a ete mesure.
+    """
+    lec = lecture([issue(19309, titre="[EPIC Origami] Le chantier long"),
+                   issue(7, titre="Grain ordinaire")])
+    monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: lec)
+    monkeypatch.setattr(tr.tapis_origami, "mesurer", lambda *a, **k: (
+        {}, {"active": True, "measured": False, "parked": [],
+            "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
+
+    code = tr.main(["--lane", LANE, "--cache-s", "0"], run=lambda argv, timeout: "",
+                    maintenant=NOW)
+    capture = capsysbinary.readouterr()
+    out, err = capture.out.decode("utf-8"), capture.err.decode("utf-8")
+    assert code == 0
+    assert "Parcage Origami : NON MESURE" in out and "mesure en echec" in out
+    assert "Mesure Origami impossible" in err and "mesure en echec" in err
+    assert "#19309" in out  # l'EPIC Origami est servi : rien n'a ete ecarte
+
+
+def test_cli_json_porte_la_mesure_non_faite(monkeypatch, capsysbinary):
+    """Le `--json` nomme la cause : jamais un etat vide qui se lit « rien »."""
+    lec = lecture([issue(19309, titre="[EPIC Origami] Le chantier long")])
+    monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: lec)
+    monkeypatch.setattr(tr.tapis_origami, "mesurer", lambda *a, **k: (
+        {}, {"active": True, "measured": False, "parked": [],
+            "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
+
+    code = tr.main(["--lane", LANE, "--cache-s", "0", "--json"],
+                    run=lambda argv, timeout: "", maintenant=NOW)
+    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
+    assert code == 0
+    assert sortie["origami_parking"]["measured"] is False
+    assert "mesure en echec" in sortie["origami_parking"]["reason"]
+
+
 def _dossier(tmp_path: Path, issues: list[dict], prs: list[dict]) -> Path:
     (tmp_path / "issues.json").write_text(json.dumps(issues), encoding="utf-8")
     (tmp_path / "prs_ouvertes.json").write_text(json.dumps(prs), encoding="utf-8")
