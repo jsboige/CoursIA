@@ -93,7 +93,19 @@ def test_attest_nome_la_violation_au_niveau_du_lot(monkeypatch, tmp_path):
     monkeypatch.setattr(alb, "current_login", lambda: "myia-ai-01")
     monkeypatch.setattr(alb, "pr_head", lambda repo, pr: "a" * 40)
     monkeypatch.setattr(alb, "pr_files", lambda repo, pr: ["x.lean"])
-    monkeypatch.setattr(alb, "lakes_for", lambda files: [LAKE])
+    # #26630 : la selection passe par le manifeste de la TETE et le pivot de
+    # cache se resout a l'execution -- les deux sont donnes ici.
+    monkeypatch.setattr(alb, "manifest_at_head", lambda repo, head: None)
+    monkeypatch.setattr(alb, "select_lakes", lambda files, head, base: [LAKE])
+    monkeypatch.setattr(
+        alb,
+        "resolve_cache_pivot",
+        lambda lake_dir, candidates: {
+            "ok": True,
+            "pivot": str(tmp_path),
+            "toolchain": "leanprover/lean4:v4.33.0",
+        },
+    )
     monkeypatch.setattr(
         alb,
         "build_lake",
@@ -209,7 +221,19 @@ def _dry_run_env(monkeypatch, verdicts):
     monkeypatch.setattr(alb, "current_login", lambda: "myia-ai-01")
     monkeypatch.setattr(alb, "pr_head", lambda repo, pr: "b" * 40)
     monkeypatch.setattr(alb, "pr_files", lambda repo, pr: ["x.lean"])
-    monkeypatch.setattr(alb, "lakes_for", lambda files: [LAKE])
+    # #26630 : manifeste de la tete, selection des lakes, pivot resolu a
+    # l'execution -- les trois sont donnes ici.
+    monkeypatch.setattr(alb, "manifest_at_head", lambda repo, head: None)
+    monkeypatch.setattr(alb, "select_lakes", lambda files, head, base: [LAKE])
+    monkeypatch.setattr(
+        alb,
+        "resolve_cache_pivot",
+        lambda lake_dir, candidates: {
+            "ok": True,
+            "pivot": str(alb.REPO_ROOT),
+            "toolchain": "leanprover/lean4:v4.33.0",
+        },
+    )
     monkeypatch.setattr(
         alb, "check_cache_compatibility", lambda lake_dir, pivot: verdicts
     )
