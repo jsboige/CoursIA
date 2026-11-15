@@ -311,7 +311,7 @@ theorem AreMutants.symm {k₁ k₂ : Knot} (h : AreMutants k₁ k₂) : AreMutan
   obtain ⟨d₁, d₂, hd₁, hd₂, hmut⟩ := h
   exact ⟨d₂, d₁, hd₂, hd₁, AreMutantDiagrams.symm hmut⟩
 
-/-! ### Controls: the definition discriminates
+/-! ### Checks: the definition discriminates
 
 A definition catching neither a mutant pair nor a counterexample would be a
 disguised `True` and removing the `sorry` would be cosmetic. Two controls:
@@ -336,7 +336,7 @@ impossible on the designated diagrams; what remains is to formally relate
 the redraw to `ReidemeisterEquiv` to close
 `AreMutants conwayKnot kinoshitaTerasakaKnot` — later sub-grain.
 NOTE update 2 (link 7): the obstruction is GRADED and measured (issue #2874,
-comment c.6258386829 — exact-decision probes, controlled against the link-5
+comment c.6258386829 — exact-decision probes, checked against the link-5
 certificate). The one-shot pair WITHOUT reattachment σ does not exist at
 gadget depth ≤ 2 either:
 (a) 11 crossings: for every redraw of C (a reordering makes any window = any
