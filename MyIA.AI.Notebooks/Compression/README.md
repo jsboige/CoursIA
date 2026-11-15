@@ -23,7 +23,7 @@ Au fil du parcours, vous apprendrez à construire et décoder un code, à justif
 | 01 | [Codes préfixes : Shannon–Fano et Huffman](Compression-01-ShannonFano-Prefixe-Python.ipynb) | Construire un arbre de code, vérifier la condition de Kraft et confronter sa longueur moyenne à l'entropie. | Découverte ; Python et probabilités discrètes. | [01b — preuves Lean](#autour-de-01--codes-et-preuves-recherche). |
 | 02 | [Huffman canonique — Python](Compression-02-HuffmanCanonique-Python.ipynb) · [C#](Compression-02-HuffmanCanonique-CSharp.ipynb) | Reconstruire les mots de code à partir de leurs longueurs ; échanger du temps de décodage contre une table en mémoire. | Découverte ; après 01. | Coût de l'en-tête, de la table et du décodage dans le carnet. |
 | 03 | [LZ77](Compression-03-LZ77-Python.ipynb) | Remplacer une répétition par une référence dans une fenêtre glissante, gérer les copies chevauchantes et combiner références et codage entropique. | Licence ; codes préfixes et entropie. | Comparer recherche exhaustive et tableau de suffixes. |
-| 04 | [ANS : codage par l'état](Compression-04-ANS-Python.ipynb) | Comprendre comment rANS et tANS accumulent des contributions fractionnaires de bits ; vérifier l'inversion des transitions. | Licence ; après 01–02, arithmétique entière. | [04b — codecs et fronts de Pareto](#autour-de-04--choisir-un-codec-recherche). |
+| 04 | [ANS : codage par l'état](Compression-04-ANS-Python.ipynb) ([C#](Compression-04-ANS-CSharp.ipynb)) | Comprendre comment rANS et tANS accumulent des contributions fractionnaires de bits ; vérifier l'inversion des transitions. | Licence ; après 01–02, arithmétique entière. | [04b — codecs et fronts de Pareto](#autour-de-04--choisir-un-codec-recherche). |
 | 05 | [Compression des modèles appris](Compression-05-MLCompression-Python.ipynb) | Quantifier les poids, les élaguer ou distiller un réseau ; mesurer taille et précision sur la même tâche. | Licence ; Python, PyTorch et apprentissage supervisé. | Distinguer poids nuls, stockage creux et taille du fichier. |
 | 06 | [MDL et complexité de Kolmogorov](Compression-06-MDL-Kolmogorov-Python.ipynb) | Minimiser la somme du coût du modèle et des données ; distinguer cette description calculable de la complexité algorithmique idéale. | Licence ; après 01–02 et leur modèle statistique. | Effet de la taille du bloc et limites des compresseurs. |
 
@@ -88,7 +88,7 @@ Dans 06, la comparaison des décimales de π et de chiffres aléatoires illustre
 
 ### Liens avec les autres parcours
 
-[Complexity](../Complexity/README.md) étudie le coût de **calculer** ; les tables de Huffman et les recherches de références LZ77 montrent ici comment ce coût s'échange contre une représentation plus courte. Le [compression-progress d'ICT-17b](../IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) prolonge le palier 05 en examinant l'apprentissage comme progrès de compression : la question devient celle de l'évolution du modèle, au-delà de sa seule taille finale.
+[Complexity](../Complexity/README.md) étudie le coût de **calculer** ; les tables de Huffman et les recherches de références LZ77 montrent ici comment ce coût s'échange contre une représentation plus courte. Le [compression-progress d'ICT-17b](../IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) prolonge le palier 05 en examinant l'apprentissage comme progrès de compression : la question devient celle de l'évolution du modèle, au-delà de sa seule taille finale.
 
 ## Ressources — tous niveaux
 
