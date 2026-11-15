@@ -880,6 +880,25 @@ class TestRead:
         assert "pas de backtest note" in par_nom["casse"]["erreur"]
         assert "pas de backtest note" in captee.err
 
+    def test_statut_rendu_est_le_statut_final(self, tmp_path, capsys):
+        """Le statut du JSON est celui ecrit dans state.json a la fin de la
+        lecture (terminee), pas la valeur figee lue avant la boucle
+        (lancee dans l'etat initial)."""
+        cloud, rundir = self._mesure_prete(tmp_path)
+        cloud.seed_backtest(888, "base", "bt-base", completed=True)
+        horloge, sommeil = duo_horloge()
+        scheduler = scheduler_fictif(horloge, sommeil)
+        rc = read_measure(
+            ThrottledGateway(cloud.gateway(), scheduler), scheduler, rundir,
+            as_json=True, poll_interval=20.0, max_wait=100.0,
+        )
+        assert rc == 0
+        charge = json.loads(capsys.readouterr().out)
+        etat = json.loads((rundir / "state.json").read_text(encoding="utf-8"))
+        assert etat["passes"]["base"]["statut"] == "terminee"
+        assert charge["passes"][0]["statut"] == "terminee"
+        assert charge["passes"][0]["statut"] == etat["passes"]["base"]["statut"]
+
     def test_passe_sans_backtest_note(self, tmp_path, capsys):
         cloud, rundir = self._mesure_prete(tmp_path)
         etat = json.loads((rundir / "state.json").read_text(encoding="utf-8"))

@@ -919,6 +919,7 @@ def read_measure(
             message = f"passe {nom} : pas de backtest note (lancez run)"
             lignes.append(message)
             resultat["erreur"] = message
+            resultat["statut"] = p.get("statut", STATUT_A_LANCER)
             lignes_json.append(resultat)
             tout_ok = False
             continue
@@ -933,6 +934,7 @@ def read_measure(
             ligne = f"passe {nom} : backtest en erreur — {message}"
             lignes.append(ligne)
             resultat["erreur"] = ligne
+            resultat["statut"] = p.get("statut", STATUT_A_LANCER)
             lignes_json.append(resultat)
             tout_ok = False
             continue
@@ -943,6 +945,7 @@ def read_measure(
             )
             lignes.append(message)
             resultat["erreur"] = message
+            resultat["statut"] = p.get("statut", STATUT_A_LANCER)
             lignes_json.append(resultat)
             tout_ok = False
             continue
@@ -966,10 +969,14 @@ def read_measure(
             )
             lignes.append(message)
             resultat["erreur"] = message
+            resultat["statut"] = p.get("statut", STATUT_A_LANCER)
             lignes_json.append(resultat)
             tout_ok = False
             continue
         resultat["statistics"] = stats
+        # Le statut rendu est le statut final (celui ecrit dans state.json),
+        # pas la valeur figee avant la boucle de lecture.
+        resultat["statut"] = p.get("statut", STATUT_A_LANCER)
         lignes_json.append(resultat)
     save_state(rundir, etat)
     for ligne in lignes:
