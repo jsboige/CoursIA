@@ -17,7 +17,7 @@ Sous-série **strate 4 → strate 5** de la série ICT : la **porte de sortie du
 
 ## Place dans l'escalier
 
-Charinière de la série : ICT-20 referme la strate 4 (ICT-14 → ICT-20) en dotant la série d'une méthode de détection calibrée, et l'accrétion 21 → 22b ouvre la **strate 5** (ICT-21 → ICT-25) — le passage des substrats GPU-free au substrat LLM, sans changer d'instruments. En amont, la batterie d'enjeu d'[ICT-19](../ICT-19-EnjeuBattery/README.md) fournit le gabarit des bancs ; en aval, le moteur d'interventions d'ICT-22b armera les carnets de la strate 5.
+Charinière de la série : ICT-20 referme la strate 4 (ICT-14 → ICT-20) en dotant la série d'une méthode de détection calibrée, et l'accrétion 21 → 22b ouvre la **strate 5** (ICT-21 → ICT-25) — le passage des substrats GPU-free au substrat LLM, sans changer d'instruments. En amont, la batterie d'enjeu d'[ICT-19](../ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) fournit le gabarit des bancs ; en aval, le moteur d'interventions d'ICT-22b armera les carnets de la strate 5.
 
 ## Instruments
 

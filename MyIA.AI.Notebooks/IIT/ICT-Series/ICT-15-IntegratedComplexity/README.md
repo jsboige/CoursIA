@@ -23,7 +23,7 @@ Sous-série **strate 4** de la série ICT : le **capstone cross-substrat**. Le c
 
 ## Place dans l'escalier
 
-Cœur de la strate 4 (ICT-14 → ICT-20) : après la jambe représentationnelle d'[ICT-14](../ICT-14-FreeEnergySurprise/README.md), la série fait converger ses trois scalaires fondateurs sur des substrats non-LLM, puis sonde les obstructions de cette convergence jusqu'au recollement (15k) et au contrôle de générateur (15l). Les ponts #1-bis (15f/h/i) ferment l'Epic #9531 par une **falsification assumée** ; le banc de recollement [ICT-34](../ICT-34-BancRecollementLectures-Python.ipynb) prolonge cette accrétion en strate 5.
+Cœur de la strate 4 (ICT-14 → ICT-20) : après la jambe représentationnelle d'[ICT-14](../ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb), la série fait converger ses trois scalaires fondateurs sur des substrats non-LLM, puis sonde les obstructions de cette convergence jusqu'au recollement (15k) et au contrôle de générateur (15l). Les ponts #1-bis (15f/h/i) ferment l'Epic #9531 par une **falsification assumée** ; le banc de recollement [ICT-34](../ICT-34-BancRecollementLectures-Python.ipynb) prolonge cette accrétion en strate 5.
 
 ## Instruments
 
