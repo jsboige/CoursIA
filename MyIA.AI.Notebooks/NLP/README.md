@@ -74,7 +74,7 @@ De même, le rappel `Recall@3` de 06 mesure les documents pertinents retrouvés 
 
 ### Passer aux systèmes de recherche et aux LLM
 
-La comparaison des unités textuelles de 01 se prolonge dans [RAG-04 — Tokenisation](../GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb). La recherche lexicale de 06 prépare [RAG-02 — Recherche avancée](../GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb), tandis que les vecteurs de 07–09 donnent des repères pour [RAG-03 — Embeddings](../GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb).
+Le carnet 09 ([Python](09-FastText-Subword-Vectors.ipynb) · [C#](09-FastText-Subword-Vectors-CSharp.ipynb)) illustre une somme pédagogique de sous-mots sans hachage. La comparaison des unités textuelles de 01 se prolonge dans [RAG-04 — Tokenisation](../GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb). La recherche lexicale de 06 prépare [RAG-02 — Recherche avancée](../GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb), tandis que les vecteurs de 07–09 donnent des repères pour [RAG-03 — Embeddings](../GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb).
 
 La série [GenAI/Texte](../GenAI/Texte/README.md) étudie ensuite l'usage des LLM : prompts, génération, outils et évaluation. [Texte-22 — Évaluer le texte généré](../GenAI/Texte/22_Evaluating_Generated_Text.ipynb) prolonge la question commune de ce parcours : quelle observation autorise réellement la conclusion annoncée ?
 
