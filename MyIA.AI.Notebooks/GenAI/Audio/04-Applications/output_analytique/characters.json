@@ -1,0 +1,65 @@
+{
+  "comte": {
+    "name": "Comte Hubert de Breville",
+    "gender": "M",
+    "role": "secondaire",
+    "utterance_count": 5,
+    "first_utterance": "garce-là"
+  },
+  "officier": {
+    "name": "Officier prussien",
+    "gender": "M",
+    "role": "antagoniste",
+    "utterance_count": 2,
+    "first_utterance": "Bonjour monsieur"
+  },
+  "loiseau": {
+    "name": "Monsieur Loiseau",
+    "gender": "M",
+    "role": "secondaire",
+    "utterance_count": 6,
+    "first_utterance": "A la bonne\nheure, madame a eu plus de précaution que nous. Il y a des personnes qui\nsavent toujours penser à tout."
+  },
+  "boule_de_suif": {
+    "name": "Elisabeth Rousset",
+    "gender": "F",
+    "role": "protagoniste",
+    "utterance_count": 1,
+    "first_utterance": "Non, monsieur."
+  },
+  "comtesse": {
+    "name": "Comtesse de Breville",
+    "gender": "F",
+    "role": "secondaire",
+    "utterance_count": 0,
+    "first_utterance": ""
+  },
+  "cornudet": {
+    "name": "Cornudet",
+    "gender": "M",
+    "role": "secondaire",
+    "utterance_count": 1,
+    "first_utterance": "Vous n'êtes pas\nfarce, vous, ce soir; vous ne dites rien, citoyen?"
+  },
+  "soeurs": {
+    "name": "Les bonnes soeurs",
+    "gender": "F",
+    "role": "figurant",
+    "utterance_count": 1,
+    "first_utterance": "C'est la faim, pas autre chose."
+  },
+  "mme_loiseau": {
+    "name": "Mme Loiseau",
+    "gender": "F",
+    "role": "secondaire",
+    "utterance_count": 2,
+    "first_utterance": "charmante compagne"
+  },
+  "carre_lamadon": {
+    "name": "Monsieur Carre-Lamadon",
+    "gender": "M",
+    "role": "secondaire",
+    "utterance_count": 0,
+    "first_utterance": ""
+  }
+}

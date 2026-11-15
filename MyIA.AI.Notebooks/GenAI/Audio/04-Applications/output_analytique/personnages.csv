@@ -1,0 +1,10 @@
+id,full_name,gender,role,mentions,segments_mentioned,utterances,words_spoken,words_in_segments,seg_type_distribution,speech_ratio
+comte,Comte Hubert de Breville,M,secondaire,86,42,5,46,2525,"{""narration"": 42}",0.018217821782178217
+officier,Officier prussien,M,antagoniste,52,42,2,27,3028,"{""narration"": 37, ""dialogue"": 4, ""description"": 1}",0.00891677675033025
+loiseau,Monsieur Loiseau,M,secondaire,50,48,6,203,2746,"{""narration"": 47, ""dialogue"": 1}",0.07392571012381646
+boule_de_suif,Elisabeth Rousset,F,protagoniste,42,38,1,2,2225,"{""narration"": 38}",0.0008988764044943821
+comtesse,Comtesse de Breville,F,secondaire,35,17,0,0,1267,"{""narration"": 17}",0.0
+cornudet,Cornudet,M,secondaire,30,28,1,12,2259,"{""narration"": 28}",0.005312084993359893
+soeurs,Les bonnes soeurs,F,figurant,21,17,1,6,1523,"{""narration"": 17}",0.003939592908732764
+mme_loiseau,Mme Loiseau,F,secondaire,8,8,2,6,398,"{""narration"": 8}",0.01507537688442211
+carre_lamadon,Monsieur Carre-Lamadon,M,secondaire,2,2,0,0,107,"{""narration"": 2}",0.0

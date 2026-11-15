@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "producer": "04-8-Lecture-Analytique.ipynb",
+  "consumer": "04-9-Voice-Casting.ipynb",
+  "source": {
+    "gutenberg_id": 10746,
+    "title": "Boule de Suif",
+    "text_source": "local",
+    "text_length": 83097
+  },
+  "files": {
+    "characters.json": 9,
+    "segments.csv": 342,
+    "utterances.csv": 39,
+    "voice_recommendations.csv": 9
+  }
+}

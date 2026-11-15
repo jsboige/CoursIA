@@ -1,0 +1,10 @@
+character_id,name,voice,model,raison
+comte,Comte Hubert de Breville,am_adam,kokoro,"Grave et diplomate - ideale pour autorite, noblesse"
+officier,Officier prussien,am_adam,kokoro,"Grave et diplomate - ideale pour autorite, noblesse"
+loiseau,Monsieur Loiseau,am_adam,kokoro,"Grave et diplomate - ideale pour autorite, noblesse"
+boule_de_suif,Elisabeth Rousset,af_bella,kokoro,Chaleureuse et expressive - ideale pour personnages centraux
+comtesse,Comtesse de Breville,af_sarah,kokoro,"Posee et distinguee - ideale pour noblesse, autorite douce"
+cornudet,Cornudet,am_adam,kokoro,"Grave et diplomate - ideale pour autorite, noblesse"
+soeurs,Les bonnes soeurs,af_sky,kokoro,Douce et aerienne - ideale pour personnages discrets ou jeunes
+mme_loiseau,Mme Loiseau,af_sarah,kokoro,"Posee et distinguee - ideale pour noblesse, autorite douce"
+carre_lamadon,Monsieur Carre-Lamadon,am_adam,kokoro,"Grave et diplomate - ideale pour autorite, noblesse"

@@ -1,0 +1,3213 @@
+{
+  "metadata": {
+    "source": "Boule de Suif - Guy de Maupassant",
+    "gutenberg_id": 10746,
+    "text_length": 83097,
+    "word_count": 13372
+  },
+  "segmentation": {
+    "total_segments": 342,
+    "type_distribution": {
+      "narration": 302,
+      "dialogue": 39,
+      "description": 1
+    },
+    "segments": [
+      {
+        "index": 0,
+        "text": "BOULE DE SUIF",
+        "seg_type": "narration",
+        "char_count": 13,
+        "word_count": 3,
+        "paragraph_idx": 0
+      },
+      {
+        "index": 1,
+        "text": "Pendant plusieurs jours de suite des lambeaux d'armée en déroute avaient\ntraversé la ville. Ce n'était point de la troupe, mais des hordes\ndébandées. Les hommes avaient la barbe longue et sale, des uniformes\nen guenilles, et ils avançaient d'une allure molle, sans drapeau, sans\nrégiment. Tous semblaient accablés, éreintés, incapables d'une pensée ou\nd'une résolution, marchant seulement par habitude, et tombant de fatigue\nsitôt qu'ils s'arrêtaient. On voyait surtout des mobilisés, gens\npacifiques, rentiers tranquilles, pliant sous le poids du fusil;\ndes petits moblots alertes, faciles à l'épouvante et prompts à\nl'enthousiasme, prêts à l'attaque comme à la fuite; puis, au milieu\nd'eux, quelques culottes rouges, débris d'une division moulue dans une\ngrande bataille; des artilleurs sombres alignés avec des fantassins\ndivers; et, parfois, le casque brillant d'un dragon au pied pesant qui\nsuivait avec peine la marche plus légère des lignards.",
+        "seg_type": "narration",
+        "char_count": 950,
+        "word_count": 143,
+        "paragraph_idx": 1
+      },
+      {
+        "index": 2,
+        "text": "Des légions de francs-tireurs aux appellations héroïques: «les\nVengeurs de la Défaite--les Citoyens de la Tombe--les Partageurs de la\nMort»--passaient à leur tour, avec des airs de bandits.",
+        "seg_type": "narration",
+        "char_count": 189,
+        "word_count": 28,
+        "paragraph_idx": 2
+      },
+      {
+        "index": 3,
+        "text": "Leurs chefs, anciens commerçants en draps ou en graines, ex-marchands de\nsuif ou de savon, guerriers de circonstance, nommés officiers pour leurs\nécus ou la longueur de leurs moustaches, couverts d'armes, de flanelle\net de galons, parlaient d'une voix retentissante, discutaient plans de\ncampagne, et prétendaient soutenir seuls la France agonisante sur\nleurs épaules de fanfarons; mais ils redoutaient parfois leurs propres\nsoldats, gens de sac et de corde, souvent braves à outrance, pillards et\ndébauchés.",
+        "seg_type": "narration",
+        "char_count": 508,
+        "word_count": 76,
+        "paragraph_idx": 3
+      },
+      {
+        "index": 4,
+        "text": "Les Prussiens allaient entrer dans Rouen, disait-on.",
+        "seg_type": "narration",
+        "char_count": 52,
+        "word_count": 7,
+        "paragraph_idx": 4
+      },
+      {
+        "index": 5,
+        "text": "La Garde nationale qui, depuis deux mois, faisait des reconnaissances\ntrès prudentes dans les bois voisins, fusillant parfois ses propres\nsentinelles, et se préparant au combat quand un petit lapin remuait\nsous des broussailles, était rentrée dans ses foyers. Ses armes, ses\nuniformes, tout son attirail meurtrier, dont elle épouvantait naguère\nles bornes des routes nationales à trois lieues à la ronde, avaient\nsubitement disparu.",
+        "seg_type": "narration",
+        "char_count": 432,
+        "word_count": 65,
+        "paragraph_idx": 5
+      },
+      {
+        "index": 6,
+        "text": "Les derniers soldats français venaient enfin de traverser la Seine pour\ngagner Pont-Audemer par Saint-Sever et Bourg-Achard; et, marchant après\ntous, le général, désespéré, ne pouvant rien tenter avec ces loques\ndisparates, éperdu lui-même dans la grande débâcle d'un peuple habitué\nà vaincre et désastreusement battu malgré sa bravoure légendaire, s'en\nallait à pied, entre deux officiers d'ordonnance.",
+        "seg_type": "narration",
+        "char_count": 403,
+        "word_count": 58,
+        "paragraph_idx": 6
+      },
+      {
+        "index": 7,
+        "text": "Puis un calme profond, une attente épouvantée et silencieuse avaient\nplané sur la cité. Beaucoup de bourgeois bedonnants, émasculés par le\ncommerce, attendaient anxieusement les vainqueurs, tremblant qu'on ne\nconsidérât comme une arme leurs broches à rôtir ou leurs grands couteaux\nde cuisine.",
+        "seg_type": "narration",
+        "char_count": 293,
+        "word_count": 43,
+        "paragraph_idx": 7
+      },
+      {
+        "index": 8,
+        "text": "La vie semblait arrêtée; les boutiques étaient closes, la rue muette.\nQuelquefois un habitant, intimidé par ce silence, filait rapidement le\nlong des murs.",
+        "seg_type": "narration",
+        "char_count": 155,
+        "word_count": 24,
+        "paragraph_idx": 8
+      },
+      {
+        "index": 9,
+        "text": "L'angoisse de l'attente faisait désirer la venue de l'ennemi.",
+        "seg_type": "narration",
+        "char_count": 61,
+        "word_count": 9,
+        "paragraph_idx": 9
+      },
+      {
+        "index": 10,
+        "text": "Dans l'après-midi du jour qui suivit le départ des troupes françaises,\nquelques uhlans, sortis on ne sait d'où, traversèrent la ville avec\ncélérité. Puis, un peu plus tard, une masse noire descendit de la\ncôte Sainte-Catherine, tandis que deux autres flots envahisseurs\napparaissaient par les routes de Darnetal et de Boisguillaume. Les\navant-gardes des trois corps, juste au même moment, se joignirent sur\nla place de l'Hôtel-de-Ville; et par toutes les rues voisines, l'armée\nallemande arrivait, déroulant ses bataillons qui faisaient sonner les\npavés sous leur pas dur et rythmé.",
+        "seg_type": "narration",
+        "char_count": 582,
+        "word_count": 90,
+        "paragraph_idx": 10
+      },
+      {
+        "index": 11,
+        "text": "Des commandements criés d'une voix inconnue et gutturale montaient le\nlong des maisons qui semblaient mortes et désertes, tandis que, derrière\nles volets fermés, des yeux guettaient ces hommes victorieux, maîtres\nde la cité, des fortunes et des vies, de par le «droit de guerre». Les\nhabitants, dans leurs chambres assombries, avaient l'affolement que\ndonnent les cataclysmes, les grands bouleversements meurtriers de la\nterre, contre lesquels toute sagesse et toute force sont inutiles. Car\nla même sensation reparaît chaque fois que l'ordre établi des choses est\nrenversé, que la sécurité n'existe plus, que tout ce que protégeaient\nles lois des hommes ou celles de la nature, se trouve à la merci d'une\nbrutalité inconsciente et féroce. Le tremblement de terre écrasant sous\nles maisons croulantes un peuple entier; le fleuve débordé qui roule les\npaysans noyés avec les cadavres des boeufs et les poutres arrachées aux\ntoits, ou l'armée glorieuse massacrant ceux qui se défendent, emmenant\nles autres prisonniers, pillant au nom du Sabre et remerciant un Dieu au\nson du canon, sont autant de fléaux effrayants qui déconcertent toute\ncroyance à la justice éternelle, toute la confiance qu'on nous enseigne\nen la protection du Ciel et en la raison de l'homme.",
+        "seg_type": "narration",
+        "char_count": 1261,
+        "word_count": 202,
+        "paragraph_idx": 11
+      },
+      {
+        "index": 12,
+        "text": "Mais à chaque porte des petits détachements frappaient, puis\ndisparaissaient dans les maisons. C'était l'occupation après l'invasion.\nLe devoir commençait pour les vaincus de se montrer gracieux envers les\nvainqueurs.",
+        "seg_type": "narration",
+        "char_count": 217,
+        "word_count": 30,
+        "paragraph_idx": 12
+      },
+      {
+        "index": 13,
+        "text": "Au bout de quelque temps, une fois la première terreur disparue, un\ncalme nouveau s'établit. Dans beaucoup de familles, l'officier prussien\nmangeait à table. Il était parfois bien élevé, et, par politesse,\nplaignait la France, disait sa répugnance en prenant part à cette\nguerre. On lui était reconnaissant de ce sentiment; puis on pouvait,\nun jour ou l'autre, avoir besoin de sa protection. En le ménageant on\nobtiendrait peut-être quelques hommes de moins à nourrir. Et pourquoi\nblesser quelqu'un dont on dépendait tout à fait? Agir ainsi serait moins\nde la bravoure que de la témérité.--Et la témérité n'est plus un défaut\ndes bourgeois de Rouen, comme au temps des défenses héroïques où\ns'illustra leur cité.--On se disait enfin, raison suprême tirée de\nl'urbanité française, qu'il demeurait bien permis d'être poli dans son\nintérieur pourvu qu'on ne se montrât pas familier, en public, avec le\nsoldat étranger. Au dehors on ne se connaissait plus, mais dans la\nmaison on causait volontiers, et l'Allemand demeurait plus longtemps,\nchaque soir, à se chauffer au foyer commun.",
+        "seg_type": "narration",
+        "char_count": 1079,
+        "word_count": 174,
+        "paragraph_idx": 13
+      },
+      {
+        "index": 14,
+        "text": "La ville même reprenait peu à peu de son aspect ordinaire. Les Français\nne sortaient guère encore, mais les soldats prussiens grouillaient dans\nles rues. Du reste, les officiers de hussards bleus, qui traînaient avec\narrogance leurs grands outils de mort sur le pavé, ne semblaient pas\navoir pour les simples citoyens énormément plus de mépris que les\nofficiers de chasseurs, qui, l'année d'avant, buvaient aux mêmes cafés.",
+        "seg_type": "narration",
+        "char_count": 423,
+        "word_count": 68,
+        "paragraph_idx": 14
+      },
+      {
+        "index": 15,
+        "text": "Il y avait cependant quelque chose dans l'air, quelque chose de subtil\net d'inconnu, une atmosphère étrangère intolérable, comme une odeur\nrépandue, l'odeur de l'invasion. Elle emplissait les demeures et les\nplaces publiques, changeait le goût des aliments, donnait l'impression\nd'être en voyage, très loin, chez des tribus barbares et dangereuses.",
+        "seg_type": "narration",
+        "char_count": 348,
+        "word_count": 51,
+        "paragraph_idx": 15
+      },
+      {
+        "index": 16,
+        "text": "Les vainqueurs exigeaient de l'argent, beaucoup d'argent. Les habitants\npayaient toujours; ils étaient riches d'ailleurs. Mais plus un négociant\nnormand devient opulent et plus il souffre de tout sacrifice, de toute\nparcelle de sa fortune qu'il voit passer aux mains d'un autre.",
+        "seg_type": "narration",
+        "char_count": 278,
+        "word_count": 42,
+        "paragraph_idx": 16
+      },
+      {
+        "index": 17,
+        "text": "Cependant, à deux ou trois lieues sous la ville, en suivant le cours de\nla rivière, vers Croisset, Dieppedalle ou Biessart, les mariniers et les\npêcheurs ramenaient souvent du fond de l'eau quelque cadavre d'Allemand\ngonflé dans son uniforme, tué d'un coup de couteau ou de savate, la tête\nécrasée par une pierre, ou jeté à l'eau d'une poussée du haut d'un pont.\nLes vases du fleuve ensevelissaient ces vengeances obscures, sauvages et\nlégitimes, héroïsmes inconnus, attaques muettes, plus périlleuses que\nles batailles au grand jour et sans le retentissement de la gloire.",
+        "seg_type": "narration",
+        "char_count": 573,
+        "word_count": 93,
+        "paragraph_idx": 17
+      },
+      {
+        "index": 18,
+        "text": "Car la haine de l'Étranger arme toujours quelques Intrépides prêts à\nmourir pour une Idée.",
+        "seg_type": "narration",
+        "char_count": 90,
+        "word_count": 15,
+        "paragraph_idx": 18
+      },
+      {
+        "index": 19,
+        "text": "Enfin, comme les envahisseurs, bien qu'assujétissant la ville à leur\ninflexible discipline, n'avaient accompli aucune des horreurs que la\nrenommée leur faisait commettre tout le long de leur marche triomphale,\non s'enhardit, et le besoin du négoce travailla de nouveau le coeur des\ncommerçants du pays. Quelques-uns avaient de gros intérêts engagés au\nHavre que l'armée française occupait, et ils voulurent tenter de gagner\nce port en allant par terre à Dieppe où ils s'embarqueraient.",
+        "seg_type": "narration",
+        "char_count": 485,
+        "word_count": 75,
+        "paragraph_idx": 19
+      },
+      {
+        "index": 20,
+        "text": "On employa l'influence des officiers allemands dont on avait fait la\nconnaissance, et une autorisation de départ fut obtenue du général en\nchef.",
+        "seg_type": "narration",
+        "char_count": 144,
+        "word_count": 23,
+        "paragraph_idx": 20
+      },
+      {
+        "index": 21,
+        "text": "Donc, une grande diligence à quatre chevaux ayant été retenue pour ce\nvoyage, et dix personnes s'étant fait inscrire chez le voiturier, on\nrésolut de partir un mardi matin, avant le jour, pour éviter tout\nrassemblement.",
+        "seg_type": "narration",
+        "char_count": 219,
+        "word_count": 36,
+        "paragraph_idx": 21
+      },
+      {
+        "index": 22,
+        "text": "Depuis quelque temps déjà la gelée avait durci la terre, et le lundi,\nvers trois heures, de gros nuages noirs venant du Nord apportèrent la\nneige qui tomba sans interruption pendant toute la soirée et toute la\nnuit.",
+        "seg_type": "narration",
+        "char_count": 215,
+        "word_count": 38,
+        "paragraph_idx": 22
+      },
+      {
+        "index": 23,
+        "text": "A quatre heures et demie du matin, les voyageurs se réunirent dans la\ncour de l'Hôtel de Normandie, où l'on devait monter en voiture.",
+        "seg_type": "narration",
+        "char_count": 133,
+        "word_count": 24,
+        "paragraph_idx": 23
+      },
+      {
+        "index": 24,
+        "text": "Ils étaient encore pleins de sommeil, et grelottaient de froid sous\nleurs couvertures. On se voyait mal dans l'obscurité; et l'entassement\ndes lourds vêtements d'hiver faisait ressembler tous ces corps à\ndes curés obèses avec leurs longues soutanes. Mais deux hommes se\nreconnurent, un troisième les aborda, ils causèrent:--",
+        "seg_type": "narration",
+        "char_count": 324,
+        "word_count": 49,
+        "paragraph_idx": 24
+      },
+      {
+        "index": 25,
+        "text": "J'emmène ma\nfemme,",
+        "seg_type": "dialogue",
+        "char_count": 18,
+        "word_count": 3,
+        "paragraph_idx": 24
+      },
+      {
+        "index": 26,
+        "text": "--dit l'un.--",
+        "seg_type": "narration",
+        "char_count": 13,
+        "word_count": 2,
+        "paragraph_idx": 24
+      },
+      {
+        "index": 27,
+        "text": "J'en fais autant.«--«Et moi aussi.",
+        "seg_type": "dialogue",
+        "char_count": 34,
+        "word_count": 5,
+        "paragraph_idx": 24
+      },
+      {
+        "index": 28,
+        "text": "--Le premier\najouta:--",
+        "seg_type": "narration",
+        "char_count": 22,
+        "word_count": 3,
+        "paragraph_idx": 24
+      },
+      {
+        "index": 29,
+        "text": "Nous ne reviendrons pas à Rouen, et si les Prussiens\napprochent du Havre nous gagnerons l'Angleterre.",
+        "seg_type": "dialogue",
+        "char_count": 101,
+        "word_count": 16,
+        "paragraph_idx": 24
+      },
+      {
+        "index": 30,
+        "text": "--Tous avaient les\nmêmes projets, étant de complexion semblable.",
+        "seg_type": "narration",
+        "char_count": 64,
+        "word_count": 9,
+        "paragraph_idx": 24
+      },
+      {
+        "index": 31,
+        "text": "Cependant on n'attelait pas la voiture. Une petite lanterne, que portait\nun valet d'écurie, sortait de temps à autre d'une porte obscure\npour disparaître immédiatement dans une autre. Des pieds de chevaux\nfrappaient la terre, amortis par le fumier des litières, et une voix\nd'homme parlant aux bêtes et jurant s'entendait au fond du bâtiment. Un\nléger murmure de grelots annonça qu'on maniait les harnais; ce murmure\ndevint bientôt un frémissement clair et continu, rythmé par le mouvement\nde l'animal, s'arrêtant parfois, puis reprenant dans une brusque\nsecousse qu'accompagnait le bruit mat d'un sabot ferré battant le sol.",
+        "seg_type": "narration",
+        "char_count": 625,
+        "word_count": 98,
+        "paragraph_idx": 25
+      },
+      {
+        "index": 32,
+        "text": "La porte subitement se ferma. Tout bruit cessa. Les bourgeois gelés\ns'étaient tus; ils demeuraient immobiles et roidis.",
+        "seg_type": "narration",
+        "char_count": 119,
+        "word_count": 18,
+        "paragraph_idx": 26
+      },
+      {
+        "index": 33,
+        "text": "Un rideau de flocons blancs ininterrompu miroitait sans cesse en\ndescendant vers la terre; il effaçait les formes, poudrait les choses\nd'une mousse de glace; et l'on n'entendait plus, dans le grand silence\nde la ville calme et ensevelie sous l'hiver, que ce froissement vague,\ninnommable et flottant, de la neige qui tombe, plutôt sensation que\nbruit, entremêlement d'atomes légers qui semblaient emplir l'espace,\ncouvrir le monde.",
+        "seg_type": "narration",
+        "char_count": 431,
+        "word_count": 67,
+        "paragraph_idx": 27
+      },
+      {
+        "index": 34,
+        "text": "L'homme reparut, avec sa lanterne, tirant au bout d'une corde un cheval\ntriste qui ne venait pas volontiers. Il le plaça contre le timon,\nattacha les traits, tourna longtemps autour pour assurer les harnais,\ncar il ne pouvait se servir que d'une main, l'autre portant sa lumière.\nComme il allait chercher la seconde bête, il remarqua tous ces voyageurs\nimmobiles, déjà blancs de neige, et leur dit:--",
+        "seg_type": "narration",
+        "char_count": 400,
+        "word_count": 67,
+        "paragraph_idx": 28
+      },
+      {
+        "index": 35,
+        "text": "Pourquoi ne montez-vous\npas dans la voiture, vous serez à l'abri, au moins.",
+        "seg_type": "dialogue",
+        "char_count": 75,
+        "word_count": 13,
+        "paragraph_idx": 28
+      },
+      {
+        "index": 36,
+        "text": "Ils n'y avaient pas songé, sans doute, et ils se précipitèrent. Les\ntrois hommes installèrent leurs femmes dans le fond, montèrent ensuite;\npuis les autres formes indécises et voilées prirent à leur tour les\ndernières places sans échanger une parole.",
+        "seg_type": "narration",
+        "char_count": 250,
+        "word_count": 40,
+        "paragraph_idx": 29
+      },
+      {
+        "index": 37,
+        "text": "Le plancher était couvert de paille où les pieds s'enfoncèrent. Les\ndames du fond, ayant apporté des petites chaufferettes en cuivre avec un\ncharbon chimique, allumèrent ces appareils, et, pendant quelque temps, à\nvoix basse, elles en énumérèrent les avantages, se répétant des choses\nqu'elles savaient déjà depuis longtemps.",
+        "seg_type": "narration",
+        "char_count": 325,
+        "word_count": 49,
+        "paragraph_idx": 30
+      },
+      {
+        "index": 38,
+        "text": "Enfin, la diligence étant attelée, avec six chevaux au lieu de quatre\nà cause du tirage plus pénible, une voix du dehors demanda:--",
+        "seg_type": "narration",
+        "char_count": 131,
+        "word_count": 23,
+        "paragraph_idx": 31
+      },
+      {
+        "index": 39,
+        "text": "Tout le\nmonde est-il monté?",
+        "seg_type": "dialogue",
+        "char_count": 27,
+        "word_count": 5,
+        "paragraph_idx": 31
+      },
+      {
+        "index": 40,
+        "text": "--Une voix du dedans répondit:--",
+        "seg_type": "narration",
+        "char_count": 32,
+        "word_count": 5,
+        "paragraph_idx": 31
+      },
+      {
+        "index": 41,
+        "text": "Oui.",
+        "seg_type": "dialogue",
+        "char_count": 4,
+        "word_count": 1,
+        "paragraph_idx": 31
+      },
+      {
+        "index": 42,
+        "text": "--On partit.",
+        "seg_type": "narration",
+        "char_count": 12,
+        "word_count": 2,
+        "paragraph_idx": 31
+      },
+      {
+        "index": 43,
+        "text": "La voiture avançait lentement, lentement, à tout petits pas. Les\nroues s'enfonçaient dans la neige; le coffre entier geignait avec des\ncraquements sourds; les bêtes glissaient, soufflaient, fumaient; et le\nfouet gigantesque du cocher claquait sans repos, voltigeait de tous les\ncôtés, se nouant et se déroulant comme un serpent mince, et cinglant\nbrusquement quelque croupe rebondie qui se tendait alors sous un effort\nplus violent.",
+        "seg_type": "narration",
+        "char_count": 432,
+        "word_count": 66,
+        "paragraph_idx": 32
+      },
+      {
+        "index": 44,
+        "text": "Mais le jour imperceptiblement grandissait. Ces flocons légers qu'un\nvoyageur, Rouennais pur sang, avait comparés à une pluie de coton, ne\ntombaient plus. Une lueur sale filtrait à travers de gros nuages obscurs\net lourds qui rendaient plus éclatante la blancheur de la campagne où\napparaissaient tantôt une ligne de grands arbres vêtus de givre, tantôt\nune chaumière avec un capuchon de neige.",
+        "seg_type": "narration",
+        "char_count": 394,
+        "word_count": 63,
+        "paragraph_idx": 33
+      },
+      {
+        "index": 45,
+        "text": "Dans la voiture, on se regardait curieusement, à la triste clarté de\ncette aurore.",
+        "seg_type": "narration",
+        "char_count": 82,
+        "word_count": 14,
+        "paragraph_idx": 34
+      },
+      {
+        "index": 46,
+        "text": "Tout au fond, aux meilleures places, sommeillaient, en face l'un de\nl'autre, M. et Mme Loiseau, des marchands de vins en gros de la rue\nGrand-Pont.",
+        "seg_type": "narration",
+        "char_count": 147,
+        "word_count": 26,
+        "paragraph_idx": 35
+      },
+      {
+        "index": 47,
+        "text": "Ancien commis d'un patron ruiné dans les affaires, Loiseau avait acheté\nle fonds et fait fortune. Il vendait à très bon marché de très\nmauvais vin aux petits débitants des campagnes et passait parmi ses\nconnaissances et ses amis pour un fripon madré, un vrai Normand plein de\nruses et de jovialité.",
+        "seg_type": "narration",
+        "char_count": 298,
+        "word_count": 52,
+        "paragraph_idx": 36
+      },
+      {
+        "index": 48,
+        "text": "Sa réputation de filou était si bien établie, qu'un soir, à la\npréfecture, M. Tournel, auteur de fables et de chansons, esprit mordant\net fin, une gloire locale, ayant proposé aux dames qu'il voyait un peu\nsomnolentes de faire une partie de «Loiseau vole», le mot lui-même vola\nà travers les salons du préfet, puis, gagnant ceux de la ville, avait\nfait rire pendant un mois toutes les mâchoires de la province.",
+        "seg_type": "narration",
+        "char_count": 410,
+        "word_count": 72,
+        "paragraph_idx": 37
+      },
+      {
+        "index": 49,
+        "text": "Loiseau était en outre célèbre par ses farces de toute nature, ses\nplaisanteries bonnes ou mauvaises; et personne ne pouvait parler de lui\nsans ajouter immédiatement:--",
+        "seg_type": "narration",
+        "char_count": 168,
+        "word_count": 26,
+        "paragraph_idx": 38
+      },
+      {
+        "index": 50,
+        "text": "Il est impayable, ce Loiseau.",
+        "seg_type": "dialogue",
+        "char_count": 29,
+        "word_count": 5,
+        "paragraph_idx": 38
+      },
+      {
+        "index": 51,
+        "text": "De taille exiguë, il présentait un ventre en ballon surmonté d'une face\nrougeaude entre deux favoris grisonnants.",
+        "seg_type": "narration",
+        "char_count": 113,
+        "word_count": 17,
+        "paragraph_idx": 39
+      },
+      {
+        "index": 52,
+        "text": "Sa femme, grande, forte, résolue, avec la voix haute et la décision\nrapide, était l'ordre et l'arithmétique de la maison de commerce, qu'il\nanimait par son activité joyeuse.",
+        "seg_type": "narration",
+        "char_count": 173,
+        "word_count": 28,
+        "paragraph_idx": 40
+      },
+      {
+        "index": 53,
+        "text": "A côté d'eux se tenait, plus digne, appartenant à une caste supérieure,\nM. Carré-Lamadon, homme considérable, posé dans les cotons, propriétaire\nde trois filatures, officier de la Légion d'honneur et membre du Conseil\ngénéral. Il était resté, tout le temps de l'Empire, chef de l'opposition\nbienveillante, uniquement pour se faire payer plus cher son ralliement\nà la cause qu'il combattait avec des armes courtoises, selon sa propre\nexpression. Mme Carré-Lamadon, beaucoup plus jeune que son mari,\ndemeurait la consolation des officiers de bonne famille envoyés à Rouen\nen garnison.",
+        "seg_type": "narration",
+        "char_count": 582,
+        "word_count": 89,
+        "paragraph_idx": 41
+      },
+      {
+        "index": 54,
+        "text": "Elle faisait vis-à-vis à son époux, toute petite, toute mignonne, toute\njolie, pelotonnée dans ses fourrures, et regardait d'un oeil navré\nl'intérieur lamentable de la voiture.",
+        "seg_type": "narration",
+        "char_count": 176,
+        "word_count": 26,
+        "paragraph_idx": 42
+      },
+      {
+        "index": 55,
+        "text": "Ses voisins, le comte et la comtesse Hubert de Bréville, portaient un\ndes noms les plus anciens et les plus nobles de Normandie. Le comte,\nvieux gentilhomme de grande tournure, s'efforçait d'accentuer, par les\nartifices de sa toilette, sa ressemblance naturelle avec le roy Henri IV\nqui, suivant une légende glorieuse pour la famille, avait rendu grosse\nune dame de Bréville dont le mari, pour ce fait, était devenu comte et\ngouverneur de province.",
+        "seg_type": "narration",
+        "char_count": 448,
+        "word_count": 74,
+        "paragraph_idx": 43
+      },
+      {
+        "index": 56,
+        "text": "Collègue de M. Carré-Lamadon au Conseil général, le comte Hubert\nreprésentait le parti orléaniste dans le département. L'histoire de\nson mariage avec la fille d'un petit armateur de Nantes était toujours\ndemeurée mystérieuse. Mais comme la comtesse avait grand air, recevait\nmieux que personne, passait même pour avoir été aimée par un des fils\nde Louis-Philippe, toute la noblesse lui faisait fête, et son salon\ndemeurait le premier du pays, le seul où se conservât la vieille\ngalanterie, et dont l'entrée fût difficile.",
+        "seg_type": "narration",
+        "char_count": 521,
+        "word_count": 83,
+        "paragraph_idx": 44
+      },
+      {
+        "index": 57,
+        "text": "La fortune des Bréville, toute en biens-fonds, atteignait, disait-on,\ncinq cent mille livres de revenu.",
+        "seg_type": "narration",
+        "char_count": 103,
+        "word_count": 15,
+        "paragraph_idx": 45
+      },
+      {
+        "index": 58,
+        "text": "Ces six personnes formaient le fond de la voiture, le côté de la société\nrentée, sereine et forte, des honnêtes gens autorisés qui ont de la\nReligion et des Principes.",
+        "seg_type": "narration",
+        "char_count": 167,
+        "word_count": 30,
+        "paragraph_idx": 46
+      },
+      {
+        "index": 59,
+        "text": "Par un hasard étrange, toutes les femmes se trouvaient sur le même\nbanc; et la comtesse avait encore pour voisines deux bonnes soeurs qui\négrenaient de longs chapelets en marmottant des _Pater_ et des _Ave_.\nL'une était vieille avec une face défoncée par la petite vérole comme si\nelle eût reçu à bout portant une bordée de mitraille en pleine figure.\nL'autre, très chétive, avait une tête jolie et maladive sur une poitrine\nde phtisique rongée par cette foi dévorante qui fait les martyrs et les\nilluminés.",
+        "seg_type": "narration",
+        "char_count": 507,
+        "word_count": 87,
+        "paragraph_idx": 47
+      },
+      {
+        "index": 60,
+        "text": "En face des deux religieuses, un homme et une femme attiraient les\nregards de tous.",
+        "seg_type": "narration",
+        "char_count": 83,
+        "word_count": 15,
+        "paragraph_idx": 48
+      },
+      {
+        "index": 61,
+        "text": "L'homme, bien connu, était Cornudet le démoc, la terreur des gens\nrespectables. Depuis vingt ans, il trempait sa grande barbe rousse dans\nles bocks de tous les cafés démocratiques. Il avait mangé avec les\nfrères et amis une assez belle fortune qu'il tenait de son père, ancien\nconfiseur, et il attendait impatiemment la République pour obtenir enfin\nla place méritée par tant de consommations révolutionnaires. Au Quatre\nSeptembre, par suite d'une farce peut-être, il s'était cru nommé préfet,\nmais quand il voulut entrer en fonctions, les garçons de bureau,\ndemeurés seuls maîtres de la place, refusèrent de le reconnaître, ce qui\nle contraignit à la retraite. Fort bon garçon, du reste, inoffensif et\nserviable, il s'était occupé avec une ardeur incomparable d'organiser la\ndéfense. Il avait fait creuser des trous dans les plaines, coucher tous\nles jeunes arbres des forêts voisines, semé des pièges sur toutes les\nroutes, et, à l'approche de l'ennemi, satisfait de ses préparatifs, il\ns'était vivement replié vers la ville.",
+        "seg_type": "narration",
+        "char_count": 1027,
+        "word_count": 164,
+        "paragraph_idx": 49
+      },
+      {
+        "index": 62,
+        "text": "Il pensait maintenant se rendre encore plus utile au Havre, où de\nnouveaux retranchements allaient être nécessaires.",
+        "seg_type": "narration",
+        "char_count": 116,
+        "word_count": 17,
+        "paragraph_idx": 50
+      },
+      {
+        "index": 63,
+        "text": "La femme, une de celles appelées galantes, était célèbre par son\nembonpoint précoce qui lui avait valu le surnom de Boule de Suif.\nPetite, ronde de partout, grasse à lard, avec des doigts bouffis,\nétranglés aux phalanges, pareils à des chapelets de courtes saucisses;\navec une peau luisante et tendue, une gorge énorme qui saillait sous sa\nrobe, elle restait cependant appétissante et courue, tant sa fraîcheur\nfaisait plaisir à voir. Sa figure était une pomme rouge, un bouton de\npivoine prêt à fleurir; et là-dedans s'ouvraient, en haut, deux yeux\nnoirs magnifiques, ombragés de grands cils épais qui mettaient une ombre\ndedans; en bas, une bouche charmante, étroite, humide pour le baiser,\nmeublée de quenottes luisantes et microscopiques.",
+        "seg_type": "narration",
+        "char_count": 742,
+        "word_count": 119,
+        "paragraph_idx": 51
+      },
+      {
+        "index": 64,
+        "text": "Elle était de plus, disait-on, pleine de qualités inappréciables.",
+        "seg_type": "narration",
+        "char_count": 65,
+        "word_count": 9,
+        "paragraph_idx": 52
+      },
+      {
+        "index": 65,
+        "text": "Aussitôt qu'elle fut reconnue, des chuchotements coururent parmi les\nfemmes honnêtes, et les mots de «prostituée», de «honte publique» furent\nchuchotés si haut qu'elle leva la tête. Alors elle promena sur ses\nvoisins un regard tellement provocant et hardi qu'un grand silence\naussitôt régna, et tout le monde baissa les yeux à l'exception de\nLoiseau, qui la guettait d'un air émoustillé.",
+        "seg_type": "narration",
+        "char_count": 387,
+        "word_count": 61,
+        "paragraph_idx": 53
+      },
+      {
+        "index": 66,
+        "text": "Mais bientôt la conversation reprit entre les trois dames, que la\nprésence de cette fille avait rendues subitement amies, presque intimes.\nElles devaient faire, leur semblait-il, comme un faisceau de leurs\ndignités d'épouses en face de cette vendue sans vergogne; car l'amour\nlégal le prend toujours de haut avec son libre confrère.",
+        "seg_type": "narration",
+        "char_count": 332,
+        "word_count": 52,
+        "paragraph_idx": 54
+      },
+      {
+        "index": 67,
+        "text": "Les trois hommes aussi, rapprochés par un instinct de conservateurs à\nl'aspect de Cornudet, parlaient argent d'un certain ton dédaigneux pour\nles pauvres. Le comte Hubert disait les dégâts que lui avaient fait\nsubir les Prussiens, les pertes qui résulteraient du bétail volé et\ndes récoltes perdues, avec une assurance de grand seigneur dix\nfois millionnaire que ces ravages gêneraient à peine une année. M.\nCarré-Lamadon, fort éprouvé dans l'industrie cotonnière, avait eu soin\nd'envoyer six cent mille francs en Angleterre, une poire pour la soif\nqu'il se ménageait à toute occasion. Quant à Loiseau, il s'était arrangé\npour vendre à l'Intendance française tous les vins communs qui lui\nrestaient en cave, de sorte que l'État lui devait une somme formidable\nqu'il comptait bien toucher au Havre.",
+        "seg_type": "narration",
+        "char_count": 797,
+        "word_count": 127,
+        "paragraph_idx": 55
+      },
+      {
+        "index": 68,
+        "text": "Et tous les trois se jetaient des coups d'oeil rapides et amicaux. Bien\nque de conditions différentes, ils se sentaient frères par l'argent, de\nla grande franc-maçonnerie de ceux qui possèdent, qui font sonner de\nl'or en mettant la main dans la poche de leur culotte.",
+        "seg_type": "narration",
+        "char_count": 267,
+        "word_count": 46,
+        "paragraph_idx": 56
+      },
+      {
+        "index": 69,
+        "text": "La voiture allait si lentement qu'à dix heures du matin on n'avait pas\nfait quatre lieues. Les hommes descendirent trois fois pour monter des\ncôtes à pied. On commençait à s'inquiéter, car on devait déjeuner à\nTôtes et l'on désespérait maintenant d'y parvenir avant la nuit. Chacun\nguettait pour apercevoir un cabaret sur la route, quand la diligence\nsombra dans un amoncellement de neige et il fallut deux heures pour la\ndégager.",
+        "seg_type": "narration",
+        "char_count": 430,
+        "word_count": 72,
+        "paragraph_idx": 57
+      },
+      {
+        "index": 70,
+        "text": "L'appétit grandissait, troublait les esprits; et aucune gargote, aucun\nmarchand de vin ne se montraient, l'approche des Prussiens et le passage\ndes troupes françaises affamées ayant effrayé toutes les industries.",
+        "seg_type": "narration",
+        "char_count": 212,
+        "word_count": 30,
+        "paragraph_idx": 58
+      },
+      {
+        "index": 71,
+        "text": "Les messieurs coururent aux provisions dans les fermes au bord du\nchemin, mais ils n'y trouvèrent pas même de pain, car le paysan défiant\ncachait ses réserves dans la crainte d'être pillé par les soldats qui,\nn'ayant rien à se mettre sous la dent, prenaient par force ce qu'ils\ndécouvraient.",
+        "seg_type": "narration",
+        "char_count": 291,
+        "word_count": 50,
+        "paragraph_idx": 59
+      },
+      {
+        "index": 72,
+        "text": "Vers une heure de l'après-midi, Loiseau annonça que décidément il se\nsentait un rude creux dans l'estomac. Tout le monde souffrait comme lui\ndepuis longtemps; et le violent besoin de manger, augmentant toujours,\navait tué les conversations.",
+        "seg_type": "narration",
+        "char_count": 240,
+        "word_count": 37,
+        "paragraph_idx": 60
+      },
+      {
+        "index": 73,
+        "text": "De temps en temps, quelqu'un bâillait; un autre presque aussitôt\nl'imitait; et chacun, à tour de rôle, suivant son caractère, son\nsavoir-vivre et sa position sociale, ouvrait la bouche avec fracas ou\nmodestement en portant vite sa main devant le trou béant d'où sortait\nune vapeur.",
+        "seg_type": "narration",
+        "char_count": 281,
+        "word_count": 46,
+        "paragraph_idx": 61
+      },
+      {
+        "index": 74,
+        "text": "Boule de Suif, à plusieurs reprises, se pencha comme si elle cherchait\nquelque chose sous ses jupons. Elle hésitait une seconde, regardait ses\nvoisins, puis se redressait tranquillement. Les figures étaient pâles et\ncrispées. Loiseau affirma qu'il payerait mille francs un jambonneau.\nSa femme fit un geste comme pour protester; puis elle se calma. Elle\nsouffrait toujours en entendant parler d'argent gaspillé, et ne\ncomprenait même pas les plaisanteries sur ce sujet. «Le fait est que je\nne me sens pas bien, dit le comte, comment n'ai-je pas songé à apporter\ndes provisions?»--Chacun se faisait le même reproche.",
+        "seg_type": "narration",
+        "char_count": 615,
+        "word_count": 98,
+        "paragraph_idx": 62
+      },
+      {
+        "index": 75,
+        "text": "Cependant, Cornudet avait une gourde pleine de rhum; il en offrit; on\nrefusa froidement. Loiseau seul en accepta deux gouttes, et, lorsqu'il\nrendit la gourde, il remercia:",
+        "seg_type": "narration",
+        "char_count": 171,
+        "word_count": 27,
+        "paragraph_idx": 63
+      },
+      {
+        "index": 76,
+        "text": "C'est bon tout de même, ça réchauffe, et\nça trompe l'appétit.",
+        "seg_type": "dialogue",
+        "char_count": 61,
+        "word_count": 11,
+        "paragraph_idx": 63
+      },
+      {
+        "index": 77,
+        "text": "--L'alcool le mit en belle humeur et il proposa de\nfaire comme sur le petit navire de la chanson: de manger le plus gras\ndes voyageurs. Cette allusion indirecte à Boule de Suif choqua les gens\nbien élevés. On ne répondit pas; Cornudet seul eut un sourire. Les deux\nbonnes soeurs avaient cessé de marmotter leur rosaire, et, les mains\nenfoncées dans leurs grandes manches, elles se tenaient immobiles,\nbaissant obstinément les yeux, offrant sans doute au Ciel la souffrance\nqu'il leur envoyait.",
+        "seg_type": "narration",
+        "char_count": 493,
+        "word_count": 83,
+        "paragraph_idx": 63
+      },
+      {
+        "index": 78,
+        "text": "Enfin, à trois heures, comme on se trouvait au milieu d'une plaine\ninterminable, sans un seul village en vue, Boule de Suif se baissant\nvivement, retira de sous la banquette un large panier couvert d'une\nserviette blanche.",
+        "seg_type": "narration",
+        "char_count": 222,
+        "word_count": 37,
+        "paragraph_idx": 64
+      },
+      {
+        "index": 79,
+        "text": "Elle en sortit d'abord une petite assiette de faïence, une fine timbale\nen argent, puis une vaste terrine dans laquelle deux poulets entiers,\ntout découpés, avaient confi sous leur gelée; et l'on apercevait encore\ndans le panier d'autres bonnes choses enveloppées, des pâtés, des\nfruits, des friandises, les provisions préparées pour un voyage de\ntrois jours, afin de ne point toucher à la cuisine des auberges. Quatre\ngoulots de bouteilles passaient entre les paquets de nourriture. Elle\nprit une aile de poulet et, délicatement, se mit à la manger avec un de\nces petits pains qu'on appelle «Régence» en Normandie.",
+        "seg_type": "narration",
+        "char_count": 615,
+        "word_count": 100,
+        "paragraph_idx": 65
+      },
+      {
+        "index": 80,
+        "text": "Tous les regards étaient tendus vers elle. Puis l'odeur se répandit,\nélargissant les narines, faisant venir aux bouches une salive abondante\navec une contraction douloureuse de la mâchoire sous les oreilles. Le\nmépris des dames pour cette fille devenait féroce, comme une envie de\nla tuer ou de la jeter en bas de la voiture, dans la neige, elle, sa\ntimbale, son panier et ses provisions.",
+        "seg_type": "narration",
+        "char_count": 388,
+        "word_count": 66,
+        "paragraph_idx": 66
+      },
+      {
+        "index": 81,
+        "text": "Mais Loiseau dévorait des yeux la terrine de poulet. Il dit:",
+        "seg_type": "narration",
+        "char_count": 60,
+        "word_count": 11,
+        "paragraph_idx": 67
+      },
+      {
+        "index": 82,
+        "text": "A la bonne\nheure, madame a eu plus de précaution que nous. Il y a des personnes qui\nsavent toujours penser à tout.",
+        "seg_type": "dialogue",
+        "char_count": 114,
+        "word_count": 23,
+        "paragraph_idx": 67
+      },
+      {
+        "index": 83,
+        "text": "Elle leva la tête vers lui: «Si vous en\ndésirez, monsieur? C'est dur de jeûner depuis le matin.» Il salua: «Ma\nfoi, franchement, je ne refuse pas, je n'en peux plus. A la guerre comme\nà la guerre, n'est-ce pas, madame?» Et, jetant un regard circulaire, il\najouta:",
+        "seg_type": "narration",
+        "char_count": 263,
+        "word_count": 48,
+        "paragraph_idx": 67
+      },
+      {
+        "index": 84,
+        "text": "Dans des moments comme celui-ci, on est bien aise de trouver\ndes gens qui vous obligent.",
+        "seg_type": "dialogue",
+        "char_count": 88,
+        "word_count": 16,
+        "paragraph_idx": 67
+      },
+      {
+        "index": 85,
+        "text": "--Il avait un journal qu'il étendit pour ne\npoint tacher son pantalon, et sur la pointe d'un couteau toujours logé\ndans sa poche, il enleva une cuisse toute vernie de gelée, la dépeça des\ndents, puis la mâcha avec une satisfaction si évidente qu'il y eut dans\nla voiture un grand soupir de détresse.",
+        "seg_type": "narration",
+        "char_count": 299,
+        "word_count": 54,
+        "paragraph_idx": 67
+      },
+      {
+        "index": 86,
+        "text": "Mais Boule de Suif, d'une voix humble et douce, proposa aux bonnes\nsoeurs de partager sa collation. Elles acceptèrent toutes les deux\ninstantanément, et, sans lever les yeux, se mirent à manger très vite\naprès avoir balbutié des remerciements. Cornudet ne refusa pas non plus\nles offres de sa voisine, et l'on forma avec les religieuses une sorte\nde table en développant des journaux sur les genoux.",
+        "seg_type": "narration",
+        "char_count": 399,
+        "word_count": 67,
+        "paragraph_idx": 68
+      },
+      {
+        "index": 87,
+        "text": "Les bouches s'ouvraient et se fermaient sans cesse, avalaient,\nmastiquaient, engloutissaient férocement. Loiseau, dans son coin,\ntravaillait dur, et, à voix basse, il engageait sa femme à l'imiter.\nElle résista longtemps, puis, après une crispation qui lui parcourut les\nentrailles, elle céda. Alors son mari, arrondissant sa phrase, demanda\nà leur",
+        "seg_type": "narration",
+        "char_count": 348,
+        "word_count": 51,
+        "paragraph_idx": 69
+      },
+      {
+        "index": 88,
+        "text": "charmante compagne",
+        "seg_type": "dialogue",
+        "char_count": 18,
+        "word_count": 2,
+        "paragraph_idx": 69
+      },
+      {
+        "index": 89,
+        "text": "si elle lui permettait d'offrir un petit\nmorceau à Mme Loiseau. Elle dit:",
+        "seg_type": "narration",
+        "char_count": 73,
+        "word_count": 13,
+        "paragraph_idx": 69
+      },
+      {
+        "index": 90,
+        "text": "Mais oui, certainement, monsieur,",
+        "seg_type": "dialogue",
+        "char_count": 33,
+        "word_count": 4,
+        "paragraph_idx": 69
+      },
+      {
+        "index": 91,
+        "text": "avec un sourire aimable, et tendit la terrine.",
+        "seg_type": "narration",
+        "char_count": 46,
+        "word_count": 8,
+        "paragraph_idx": 69
+      },
+      {
+        "index": 92,
+        "text": "Un embarras se produisit lorsqu'on eût débouché la première bouteille\nde bordeaux: il n'y avait qu'une timbale. On se la passa après l'avoir\nessuyée. Cornudet seul, par galanterie sans doute, posa ses lèvres à la\nplace humide encore des lèvres de sa voisine.",
+        "seg_type": "narration",
+        "char_count": 258,
+        "word_count": 43,
+        "paragraph_idx": 70
+      },
+      {
+        "index": 93,
+        "text": "Alors, entourés de gens qui mangeaient, suffoqués par les émanations des\nnourritures, le comte et la comtesse de Bréville, ainsi que M. et Mme\nCarré-Lamadon souffrirent ce supplice odieux qui a gardé le nom de\nTantale. Tout d'un coup la jeune femme du manufacturier poussa un soupir\nqui fit retourner les têtes; elle était aussi blanche que la neige\ndu dehors; ses yeux se fermèrent, son front tomba: elle avait perdu\nconnaissance. Son mari, affolé, implorait le secours de tout le monde.\nChacun perdait l'esprit, quand la plus âgée des bonnes soeurs, soutenant\nla tête de la malade, glissa entre ses lèvres la timbale de Boule de\nSuif et lui fit avaler quelques gouttes de vin. La jolie dame remua,\nouvrit les yeux, sourit et déclara d'une voix mourante qu'elle se\nsentait fort bien maintenant. Mais, afin que cela ne se renouvelât plus,\nla religieuse la contraignit à boire un plein verre de bordeaux, et\nelle ajouta:--",
+        "seg_type": "narration",
+        "char_count": 921,
+        "word_count": 157,
+        "paragraph_idx": 71
+      },
+      {
+        "index": 94,
+        "text": "C'est la faim, pas autre chose.",
+        "seg_type": "dialogue",
+        "char_count": 31,
+        "word_count": 6,
+        "paragraph_idx": 71
+      },
+      {
+        "index": 95,
+        "text": "Alors Boule de Suif,\nrougissante et embarrassée, balbutia en regardant les quatre voyageurs\nrestés à jeun: «Mon Dieu, si j'osais offrir à ces messieurs et à ces\ndames ...» Elle se tut, craignant un outrage. Loiseau prit la parole:\n«Eh, parbleu, dans des cas pareils tout le monde est frère et doit\ns'aider. Allons, mesdames, pas de cérémonie, acceptez, que diable!\nSavons-nous si nous trouverons seulement une maison où passer la nuit?\nDu train dont nous allons nous ne serons pas à Tôtes avant demain\nmidi.»--On hésitait, personne n'osant assumer la responsabilité du\n«oui».",
+        "seg_type": "narration",
+        "char_count": 575,
+        "word_count": 94,
+        "paragraph_idx": 71
+      },
+      {
+        "index": 96,
+        "text": "Mais le comte trancha la question. Il se tourna vers la grosse fille\nintimidée, et, prenant son grand air de gentilhomme, il lui dit:",
+        "seg_type": "narration",
+        "char_count": 133,
+        "word_count": 24,
+        "paragraph_idx": 72
+      },
+      {
+        "index": 97,
+        "text": "Nous\nacceptons avec reconnaissance, madame.",
+        "seg_type": "dialogue",
+        "char_count": 43,
+        "word_count": 5,
+        "paragraph_idx": 72
+      },
+      {
+        "index": 98,
+        "text": "Le premier pas seul coûtait. Une fois le Rubicon passé, on s'en donna\ncarrément. Le panier fut vidé. Il contenait encore un pâté de foie\ngras, un pâté de mauviettes, un morceau de langue fumée, des poires de\nCrassane, un pavé de Pont-l'Evêque, des petits-fours et une tasse pleine\nde cornichons et d'oignons au vinaigre, Boule de Suif, comme toutes les\nfemmes, adorant les crudités.",
+        "seg_type": "narration",
+        "char_count": 382,
+        "word_count": 65,
+        "paragraph_idx": 73
+      },
+      {
+        "index": 99,
+        "text": "On ne pouvait manger les provisions de cette fille sans lui parler. Donc\non causa, avec réserve d'abord, puis, comme elle se tenait fort bien, on\ns'abandonna davantage. Mmes de Bréville et Carré-Lamadon, qui avaient un\ngrand savoir-vivre, se firent gracieuses avec délicatesse. La comtesse\nsurtout montra cette condescendance aimable des très nobles dames\nqu'aucun contact ne peut salir, et fut charmante. Mais la forte Mme\nLoiseau, qui avait une âme de gendarme, resta revêche, parlant peu et\nmangeant beaucoup.",
+        "seg_type": "narration",
+        "char_count": 512,
+        "word_count": 80,
+        "paragraph_idx": 74
+      },
+      {
+        "index": 100,
+        "text": "On s'entretint de la guerre, naturellement. On raconta des faits\nhorribles des Prussiens, des traits de bravoure des Français; et tous\nces gens qui fuyaient rendirent hommage au courage des autres. Les\nhistoires personnelles commencèrent bientôt, et Boule de Suif raconta,\navec une émotion vraie, avec cette chaleur de parole qu'ont parfois les\nfilles pour exprimer leurs emportements naturels, comment elle avait\nquitté Rouen: «J'ai cru d'abord que je pourrais rester, dit-elle.\nJ'avais ma maison pleine de provisions, et j'aimais mieux nourrir\nquelques soldats que m'expatrier je ne sais où. Mais quand je les ai\nvus, ces Prussiens, ce fut plus fort que moi! Ils m'ont tourné le sang\nde colère; et j'ai pleuré de honte toute la journée. Oh! si j'étais un\nhomme, allez! Je les regardais de ma fenêtre, ces gros porcs avec leur\ncasque à pointe, et ma bonne me tenait les mains pour m'empêcher de leur\njeter mon mobilier sur le dos. Puis il en est venu pour loger chez moi;\nalors j'ai sauté à la gorge du premier. Ils ne sont pas plus difficiles\nà étrangler que d'autres! Et je l'aurais terminé, celui-là, si l'on ne\nm'avait pas tirée par les cheveux. Il a fallu me cacher après ça. Enfin,\nquand j'ai trouvé une occasion, je suis partie, et me voici.»",
+        "seg_type": "narration",
+        "char_count": 1250,
+        "word_count": 216,
+        "paragraph_idx": 75
+      },
+      {
+        "index": 101,
+        "text": "On la félicita beaucoup. Elle grandissait dans l'estime de ses\ncompagnons qui ne s'étaient pas montrés si crânes; et Cornudet, en\nl'écoutant, gardait un sourire approbateur et bienveillant d'apôtre; de\nmême un prêtre entend un dévot louer Dieu, car les démocrates à longue\nbarbe ont le monopole du patriotisme comme les hommes en soutane ont\ncelui de la religion. Il parla à son tour d'un ton doctrinaire, avec\nl'emphase apprise dans les proclamations qu'on collait chaque jour\naux murs, et il finit par un morceau d'éloquence où il étrillait\nmagistralement cette «crapule de Badinguet».",
+        "seg_type": "narration",
+        "char_count": 587,
+        "word_count": 94,
+        "paragraph_idx": 76
+      },
+      {
+        "index": 102,
+        "text": "Mais Boule de Suif aussitôt se fâcha, car elle était bonapartiste. Elle\ndevenait plus rouge qu'une guigne, et, bégayant d'indignation: «J'aurais\nbien voulu vous voir à sa place, vous autres. Ça aurait été du propre,\nah oui! C'est vous qui l'avez trahi, cet homme! On n'aurait plus qu'à\nquitter la France si l'on était gouverné par des polissons comme vous!»\nCornudet, impassible, gardait un sourire dédaigneux et supérieur, mais\non sentait que les gros mots allaient arriver quand le comte s'interposa\net calma, non sans peine, la fille exaspérée, en proclamant avec\nautorité que toutes les opinions sincères étaient respectables.\nCependant la comtesse et la manufacturière, qui avaient dans l'âme la\nhaine irraisonnée des gens comme il faut pour la République, et cette\ninstinctive tendresse que nourrissent toutes les femmes pour les\ngouvernements à panache et despotiques, se sentaient, malgré elles,\nattirées vers cette prostituée pleine de dignité, dont les sentiments\nressemblaient si fort aux leurs.",
+        "seg_type": "narration",
+        "char_count": 1006,
+        "word_count": 156,
+        "paragraph_idx": 77
+      },
+      {
+        "index": 103,
+        "text": "Le panier était vide. A dix on l'avait tari sans peine, en regrettant\nqu'il ne fût pas plus grand. La conversation continua quelque temps, un\npeu refroidie néanmoins depuis qu'on avait fini de manger.",
+        "seg_type": "narration",
+        "char_count": 200,
+        "word_count": 34,
+        "paragraph_idx": 78
+      },
+      {
+        "index": 104,
+        "text": "La nuit tombait, l'obscurité peu à peu devint profonde, et le froid,\nplus sensible pendant les digestions, faisait frissonner Boule de Suif,\nmalgré sa graisse. Alors Mme de Bréville lui proposa sa chaufferette\ndont le charbon, depuis le matin, avait été plusieurs fois renouvelé, et\nl'autre accepta tout de suite, car elle se sentait les pieds gelés. Mmes\nCarré-Lamadon et Loiseau donnèrent les leurs aux religieuses.",
+        "seg_type": "narration",
+        "char_count": 417,
+        "word_count": 66,
+        "paragraph_idx": 79
+      },
+      {
+        "index": 105,
+        "text": "Le cocher avait allumé ses lanternes. Elles éclairaient d'une lueur vive\nun nuage de buée au-dessus de la croupe en sueur des timoniers, et, des\ndeux côtés de la route, la neige qui semblait se dérouler sous le reflet\nmobile des lumières.",
+        "seg_type": "narration",
+        "char_count": 238,
+        "word_count": 42,
+        "paragraph_idx": 80
+      },
+      {
+        "index": 106,
+        "text": "On ne distinguait plus rien dans la voiture; mais tout à coup un\nmouvement se fit entre Boule de Suif et Cornudet; et Loiseau, dont\nl'oeil fouillait l'ombre, crut voir l'homme à la grande barbe s'écarter\nvivement comme s'il eût reçu quelque bon coup lancé sans bruit.",
+        "seg_type": "narration",
+        "char_count": 267,
+        "word_count": 47,
+        "paragraph_idx": 81
+      },
+      {
+        "index": 107,
+        "text": "Des petits points de feu parurent en avant sur la route. C'était Tôtes.\nOn avait marché onze heures, ce qui, avec les deux heures de repos\nlaissées en quatre fois aux chevaux pour manger l'avoine et souffler,\nfaisait quatorze. On entra dans le bourg et devant l'Hôtel du Commerce\non s'arrêta.",
+        "seg_type": "narration",
+        "char_count": 292,
+        "word_count": 51,
+        "paragraph_idx": 82
+      },
+      {
+        "index": 108,
+        "text": "La portière s'ouvrit! Un bruit bien connu fit tressaillir tous les\nvoyageurs; c'étaient les heurts d'un fourreau de sabre sur le sol.\nAussitôt la voix d'un Allemand cria quelque chose.",
+        "seg_type": "narration",
+        "char_count": 184,
+        "word_count": 30,
+        "paragraph_idx": 83
+      },
+      {
+        "index": 109,
+        "text": "Bien que la diligence fût immobile, personne ne descendait, comme si\nl'on se fût attendu à être massacré à la sortie. Alors le conducteur\napparut, tenant à la main une de ses lanternes qui éclaira subitement\njusqu'au fond de la voiture les deux rangs de têtes effarées, dont\nles bouches étaient ouvertes et les yeux écarquillés de surprise et\nd'épouvante.",
+        "seg_type": "narration",
+        "char_count": 355,
+        "word_count": 60,
+        "paragraph_idx": 84
+      },
+      {
+        "index": 110,
+        "text": "A côté du cocher se tenait, en pleine lumière, un officier allemand, un\ngrand jeune homme excessivement mince et blond, serré dans son uniforme\ncomme une fille en son corset, et portant sur le côté sa casquette plate\net cirée qui le faisait ressembler au chasseur d'un hôtel anglais. Sa\nmoustache démesurée, à longs poils droits, s'amincissant indéfiniment\nde chaque côté et terminée par un seul fil blond, si mince qu'on n'en\napercevait pas la fin, semblait peser sur les coins de sa bouche, et,\ntirant la joue, imprimait aux lèvres un pli tombant.",
+        "seg_type": "description",
+        "char_count": 549,
+        "word_count": 94,
+        "paragraph_idx": 85
+      },
+      {
+        "index": 111,
+        "text": "Il invita en français d'Alsacien les voyageurs à sortir, disant d'un ton\nraide:--",
+        "seg_type": "narration",
+        "char_count": 81,
+        "word_count": 13,
+        "paragraph_idx": 86
+      },
+      {
+        "index": 112,
+        "text": "Foulez-vous tescentre, messieurs et tames?",
+        "seg_type": "dialogue",
+        "char_count": 42,
+        "word_count": 5,
+        "paragraph_idx": 86
+      },
+      {
+        "index": 113,
+        "text": "Les deux bonnes soeurs obéirent les premières avec une docilité de\nsaintes filles habituées à toutes les soumissions. Le comte et la\ncomtesse parurent ensuite, suivis du manufacturier et de sa femme, puis\nde Loiseau poussant devant lui sa grande moitié. Celui-ci, en mettant\npied à terre, dit à l'officier:",
+        "seg_type": "narration",
+        "char_count": 306,
+        "word_count": 50,
+        "paragraph_idx": 87
+      },
+      {
+        "index": 114,
+        "text": "Bonjour monsieur",
+        "seg_type": "dialogue",
+        "char_count": 16,
+        "word_count": 2,
+        "paragraph_idx": 87
+      },
+      {
+        "index": 115,
+        "text": ", par un sentiment de\nprudence bien plus que par politesse. L'autre insolent comme les gens\ntout-puissants, le regarda sans répondre.",
+        "seg_type": "narration",
+        "char_count": 133,
+        "word_count": 21,
+        "paragraph_idx": 87
+      },
+      {
+        "index": 116,
+        "text": "Boule de Suif et Cornudet, bien que près de la portière, descendirent\nles derniers, graves et hautains devant l'ennemi. La grosse fille\ntâchait de se dominer et d'être calme: le démoc tourmentait d'une main\ntragique et un peu tremblante sa longue barbe roussâtre. Ils voulaient\ngarder de la dignité, comprenant qu'en ces rencontres-là chacun\nreprésente un peu son pays; et pareillement révoltés par la souplesse\nde leurs compagnons, elle, tâchait de se montrer plus fière que ses\nvoisines, les femmes honnêtes, tandis que lui, sentant bien qu'il devait\nl'exemple, continuait en toute son attitude sa mission de résistance\ncommencée au défoncement des routes.",
+        "seg_type": "narration",
+        "char_count": 658,
+        "word_count": 103,
+        "paragraph_idx": 88
+      },
+      {
+        "index": 117,
+        "text": "On entra dans la vaste cuisine de l'auberge, et l'Allemand, s'étant fait\nprésenter l'autorisation de départ signée par le général en chef et où\nétaient mentionnés les noms, le signalement et la profession de chaque\nvoyageur, examina longuement tout ce monde, comparant les personnes aux\nrenseignements écrits.",
+        "seg_type": "narration",
+        "char_count": 309,
+        "word_count": 47,
+        "paragraph_idx": 89
+      },
+      {
+        "index": 118,
+        "text": "Puis il dit brusquement:--",
+        "seg_type": "narration",
+        "char_count": 26,
+        "word_count": 4,
+        "paragraph_idx": 90
+      },
+      {
+        "index": 119,
+        "text": "C'est pien",
+        "seg_type": "dialogue",
+        "char_count": 10,
+        "word_count": 2,
+        "paragraph_idx": 90
+      },
+      {
+        "index": 120,
+        "text": ", et il disparut.",
+        "seg_type": "narration",
+        "char_count": 17,
+        "word_count": 4,
+        "paragraph_idx": 90
+      },
+      {
+        "index": 121,
+        "text": "Alors on respira. On avait faim encore; le souper fut commandé. Une\ndemi-heure était nécessaire pour l'apprêter; et, pendant que deux\nservantes avaient l'air de s'en occuper, on alla visiter les chambres.\nElles se trouvaient toutes dans un long couloir que terminait une porte\nvitrée marquée d'un numéro parlant.",
+        "seg_type": "narration",
+        "char_count": 312,
+        "word_count": 49,
+        "paragraph_idx": 91
+      },
+      {
+        "index": 122,
+        "text": "Enfin on allait se mettre à table, quand le patron de l'auberge\nparut lui-même. C'était un ancien marchand de chevaux, un gros homme\nasthmatique, qui avait toujours des sifflements, des enrouements, des\nchants de glaires dans le larynx. Son père lui avait transmis le nom de\nFollenvie.",
+        "seg_type": "narration",
+        "char_count": 285,
+        "word_count": 47,
+        "paragraph_idx": 92
+      },
+      {
+        "index": 123,
+        "text": "Il demanda:",
+        "seg_type": "narration",
+        "char_count": 11,
+        "word_count": 2,
+        "paragraph_idx": 93
+      },
+      {
+        "index": 124,
+        "text": "--Mademoiselle Élisabeth Rousset?",
+        "seg_type": "narration",
+        "char_count": 33,
+        "word_count": 3,
+        "paragraph_idx": 94
+      },
+      {
+        "index": 125,
+        "text": "Boule de Suif tressaillit, se retourna:",
+        "seg_type": "narration",
+        "char_count": 39,
+        "word_count": 6,
+        "paragraph_idx": 95
+      },
+      {
+        "index": 126,
+        "text": "--C'est moi.",
+        "seg_type": "narration",
+        "char_count": 12,
+        "word_count": 2,
+        "paragraph_idx": 96
+      },
+      {
+        "index": 127,
+        "text": "--Mademoiselle, l'officier prussien veut vous parler immédiatement.",
+        "seg_type": "narration",
+        "char_count": 67,
+        "word_count": 7,
+        "paragraph_idx": 97
+      },
+      {
+        "index": 128,
+        "text": "--A moi?",
+        "seg_type": "narration",
+        "char_count": 8,
+        "word_count": 2,
+        "paragraph_idx": 98
+      },
+      {
+        "index": 129,
+        "text": "--Oui, si vous êtes bien mademoiselle Élisabeth Rousset.",
+        "seg_type": "narration",
+        "char_count": 56,
+        "word_count": 8,
+        "paragraph_idx": 99
+      },
+      {
+        "index": 130,
+        "text": "Elle se troubla, réfléchit une seconde, puis déclara carrément:",
+        "seg_type": "narration",
+        "char_count": 63,
+        "word_count": 9,
+        "paragraph_idx": 100
+      },
+      {
+        "index": 131,
+        "text": "--C'est possible, mais je n'irai pas.",
+        "seg_type": "narration",
+        "char_count": 37,
+        "word_count": 6,
+        "paragraph_idx": 101
+      },
+      {
+        "index": 132,
+        "text": "Un mouvement se fit autour d'elle; chacun discutait, cherchait la cause\nde cet ordre. Le comte s'approcha:",
+        "seg_type": "narration",
+        "char_count": 106,
+        "word_count": 17,
+        "paragraph_idx": 102
+      },
+      {
+        "index": 133,
+        "text": "--Vous avez tort, madame, car votre refus peut amener des difficultés\nconsidérables, non seulement pour vous, mais même pour tous vos\ncompagnons. Il ne faut jamais résister aux gens qui sont les plus forts.\nCette démarche assurément ne peut présenter aucun danger; c'est sans\ndoute pour quelque formalité oubliée.",
+        "seg_type": "narration",
+        "char_count": 313,
+        "word_count": 49,
+        "paragraph_idx": 103
+      },
+      {
+        "index": 134,
+        "text": "Tout le monde se joignit à lui, on la pria, on la pressa, on la\nsermonna, et l'on finit par la convaincre; car tous redoutaient les\ncomplications qui pourraient résulter d'un coup de tête. Elle dit enfin:",
+        "seg_type": "narration",
+        "char_count": 204,
+        "word_count": 37,
+        "paragraph_idx": 104
+      },
+      {
+        "index": 135,
+        "text": "--C'est pour vous que je le fais, bien sûr!",
+        "seg_type": "narration",
+        "char_count": 43,
+        "word_count": 9,
+        "paragraph_idx": 105
+      },
+      {
+        "index": 136,
+        "text": "La comtesse lui prit la main:",
+        "seg_type": "narration",
+        "char_count": 29,
+        "word_count": 6,
+        "paragraph_idx": 106
+      },
+      {
+        "index": 137,
+        "text": "--Et nous vous remercions.",
+        "seg_type": "narration",
+        "char_count": 26,
+        "word_count": 4,
+        "paragraph_idx": 107
+      },
+      {
+        "index": 138,
+        "text": "Elle sortit. On l'attendit pour se mettre à table.",
+        "seg_type": "narration",
+        "char_count": 50,
+        "word_count": 9,
+        "paragraph_idx": 108
+      },
+      {
+        "index": 139,
+        "text": "Chacun se désolait de n'avoir pas été demandé à la place de cette fille\nviolente et irascible, et préparait mentalement des platitudes pour le\ncas où on l'appellerait à son tour.",
+        "seg_type": "narration",
+        "char_count": 178,
+        "word_count": 31,
+        "paragraph_idx": 109
+      },
+      {
+        "index": 140,
+        "text": "Mais, au bout de dix minutes, elle reparut, soufflant, rouge à\nsuffoquer, exaspérée. Elle balbutiait:",
+        "seg_type": "narration",
+        "char_count": 101,
+        "word_count": 15,
+        "paragraph_idx": 110
+      },
+      {
+        "index": 141,
+        "text": "Oh! la canaille! la canaille!",
+        "seg_type": "dialogue",
+        "char_count": 29,
+        "word_count": 5,
+        "paragraph_idx": 110
+      },
+      {
+        "index": 142,
+        "text": "Tous s'empressaient pour savoir, mais elle ne dit rien; et comme le\ncomte insistait, elle répondit avec une grande dignité:",
+        "seg_type": "narration",
+        "char_count": 123,
+        "word_count": 20,
+        "paragraph_idx": 111
+      },
+      {
+        "index": 143,
+        "text": "Non, cela ne\nvous regarde pas, je ne peux pas parler.",
+        "seg_type": "dialogue",
+        "char_count": 53,
+        "word_count": 11,
+        "paragraph_idx": 111
+      },
+      {
+        "index": 144,
+        "text": "Alors on s'assit autour d'une haute soupière d'où sortait un parfum de\nchoux. Malgré cette alerte, le souper fut gai. Le cidre était bon, le\nménage Loiseau et les bonnes soeurs en prirent, par économie. Les autres\ndemandèrent du vin; Cornudet réclama de la bière. Il avait une façon\nparticulière de déboucher la bouteille, de faire mousser le liquide, de\nle considérer en penchant le verre, qu'il élevait ensuite entre la lampe\net son oeil pour bien apprécier la couleur. Quand il buvait, sa grande\nbarbe, qui avait gardé la nuance de son breuvage aimé, semblait\ntressaillir de tendresse; ses yeux louchaient pour ne point perdre\nde vue sa chope, et il avait l'air de remplir l'unique fonction pour\nlaquelle il était né. On eût dit qu'il établissait en son esprit un\nrapprochement et comme une affinité entre les deux grandes passions qui\noccupaient toute sa vie: le Pale Ale et la Révolution; et assurément il\nne pouvait déguster l'un sans songer à l'autre.",
+        "seg_type": "narration",
+        "char_count": 958,
+        "word_count": 164,
+        "paragraph_idx": 112
+      },
+      {
+        "index": 145,
+        "text": "M. et Mme Follenvie dînaient tout au bout de la table. L'homme, râlant\ncomme une locomotive crevée, avait trop de tirage dans la poitrine pour\npouvoir parler en mangeant; mais la femme ne se taisait jamais. Elle\nraconta toutes ses impressions à l'arrivée des Prussiens, ce qu'ils\nfaisaient, ce qu'ils disaient, les exécrant, d'abord, parce qu'ils lui\ncoûtaient de l'argent, et, ensuite, parce qu'elle avait deux fils à\nl'armée. Elle s'adressait surtout à la comtesse, flattée de causer avec\nune dame de qualité.",
+        "seg_type": "narration",
+        "char_count": 511,
+        "word_count": 83,
+        "paragraph_idx": 113
+      },
+      {
+        "index": 146,
+        "text": "Puis elle baissait la voix pour dire des choses délicates, et son mari,\nde temps en temps, l'interrompait:",
+        "seg_type": "narration",
+        "char_count": 106,
+        "word_count": 18,
+        "paragraph_idx": 114
+      },
+      {
+        "index": 147,
+        "text": "--Tu ferais mieux de te taire, madame Follenvie. Mais elle n'en tenait\naucun compte, et continuait:",
+        "seg_type": "narration",
+        "char_count": 99,
+        "word_count": 16,
+        "paragraph_idx": 115
+      },
+      {
+        "index": 148,
+        "text": "--Oui, madame, ces gens-là ça ne fait que manger des pommes de terre et\ndu cochon, et puis du cochon et des pommes de terre. Et il ne faut pas\ncroire qu'ils sont propres.--Oh non!--Ils ordurent partout, sauf le\nrespect que je vous dois. Et si vous les voyiez faire l'exercice pendant\ndes heures et des jours; ils sont là tous dans un champ:--et marche en\navant, et marche en arrière, et tourne par-ci, et tourne par-là.--S'ils\ncultivaient la terre au moins, ou s'ils travaillaient aux routes dans\nleur pays!--Mais non, madame, ces militaires, ça n'est profitable à\npersonne! Faut-il que le pauvre peuple les nourrisse pour n'apprendre\nrien qu'à massacrer!--Je ne suis qu'une vieille femme sans éducation,\nc'est vrai, mais en les voyant qui s'esquintent le tempérament à\npiétiner du matin au soir, je me dis:--Quand il y a des gens qui font\ntant de découvertes pour être utiles, faut il que d'autres se donnent\ntant de mal pour être nuisibles! Vraiment, n'est-ce pas une abomination\nde tuer des gens qu'ils soient Prussiens, ou bien Anglais, ou bien\nPolonais, ou bien Français?--Si l'on se revenge sur quelqu'un qui vous a\nfait tort, c'est mal, puisqu'on vous condamne; mais quand on extermine\nnos garçons comme du gibier, avec des fusils, c'est donc bien, puisqu'on\ndonne des décorations à celui qui en détruit le plus?--Non, voyez-vous,\nje ne comprendrai jamais ça!",
+        "seg_type": "narration",
+        "char_count": 1366,
+        "word_count": 230,
+        "paragraph_idx": 116
+      },
+      {
+        "index": 149,
+        "text": "Cornudet éleva la voix:",
+        "seg_type": "narration",
+        "char_count": 23,
+        "word_count": 4,
+        "paragraph_idx": 117
+      },
+      {
+        "index": 150,
+        "text": "--La guerre est une barbarie quand on attaque un voisin paisible; c'est\nun devoir sacré quand on défend la patrie.",
+        "seg_type": "narration",
+        "char_count": 114,
+        "word_count": 20,
+        "paragraph_idx": 118
+      },
+      {
+        "index": 151,
+        "text": "La vieille femme baissa la tête:",
+        "seg_type": "narration",
+        "char_count": 32,
+        "word_count": 6,
+        "paragraph_idx": 119
+      },
+      {
+        "index": 152,
+        "text": "--Oui, quand on se défend, c'est autre chose; mais si l'on ne devrait\npas plutôt tuer tous les rois qui font ça pour leur plaisir?",
+        "seg_type": "narration",
+        "char_count": 130,
+        "word_count": 25,
+        "paragraph_idx": 120
+      },
+      {
+        "index": 153,
+        "text": "L'oeil de Cornudet s'enflamma:",
+        "seg_type": "narration",
+        "char_count": 30,
+        "word_count": 4,
+        "paragraph_idx": 121
+      },
+      {
+        "index": 154,
+        "text": "--Bravo, citoyenne! dit-il.",
+        "seg_type": "narration",
+        "char_count": 27,
+        "word_count": 3,
+        "paragraph_idx": 122
+      },
+      {
+        "index": 155,
+        "text": "M. Carré-Lamadon réfléchissait profondément. Bien qu'il fût fanatique\ndes illustres capitaines, le bon sens de cette paysanne le faisait\nsonger à l'opulence qu'apporteraient dans un pays tant de bras\ninoccupés et par conséquent ruineux, tant de forces qu'on entretient\nimproductives, si on les employait aux grands travaux industriels qu'il\nfaudra des siècles pour achever.",
+        "seg_type": "narration",
+        "char_count": 373,
+        "word_count": 54,
+        "paragraph_idx": 123
+      },
+      {
+        "index": 156,
+        "text": "Mais Loiseau, quittant sa place, alla causer tout bas avec l'aubergiste.\nLe gros homme riait, toussait, crachait; son énorme ventre sautillait de\njoie aux plaisanteries de son voisin, et il lui acheta six feuillettes\nde bordeaux pour le printemps, quand les Prussiens seraient partis.",
+        "seg_type": "narration",
+        "char_count": 284,
+        "word_count": 44,
+        "paragraph_idx": 124
+      },
+      {
+        "index": 157,
+        "text": "Le souper à peine achevé, comme on était brisé de fatigue, on se coucha.",
+        "seg_type": "narration",
+        "char_count": 72,
+        "word_count": 14,
+        "paragraph_idx": 125
+      },
+      {
+        "index": 158,
+        "text": "Cependant Loiseau, qui avait observé les choses, fit mettre au lit son\népouse, puis colla tantôt son oreille et tantôt son oeil au trou de la\nserrure, pour tâcher de découvrir ce qu'il appelait: «les mystères du\ncorridor». Au bout d'une heure environ, il entendit un frôlement,\nregarda bien vite, et aperçut Boule de Suif qui paraissait plus replète\nencore sous un peignoir de cachemire bleu, brodé de dentelles blanches.\nElle tenait un bougeoir à la main et se dirigeait vers le gros numéro\ntout au fond du couloir. Mais une porte, à côté, s'entr'ouvrit, et,\nquand elle revint au bout de quelques minutes, Cornudet, en bretelles,\nla suivait. Ils parlaient bas, puis ils s'arrêtèrent. Boule de Suif\nsemblait défendre l'entrée de sa chambre avec énergie. Loiseau,\nmalheureusement, n'entendait pas les paroles, mais, à la fin, comme ils\nélevaient la voix, il put en saisir quelques-unes. Cornudet insistait\navec vivacité. Il disait:",
+        "seg_type": "narration",
+        "char_count": 930,
+        "word_count": 152,
+        "paragraph_idx": 126
+      },
+      {
+        "index": 159,
+        "text": "--Voyons, vous êtes bête, qu'est-ce que ça vous fait?",
+        "seg_type": "narration",
+        "char_count": 53,
+        "word_count": 9,
+        "paragraph_idx": 127
+      },
+      {
+        "index": 160,
+        "text": "Elle avait l'air indigné et répondit:",
+        "seg_type": "narration",
+        "char_count": 37,
+        "word_count": 6,
+        "paragraph_idx": 128
+      },
+      {
+        "index": 161,
+        "text": "--Non, mon cher, il y a des moments où ces choses-là ne se font pas; et\npuis, ici, ce serait une honte.",
+        "seg_type": "narration",
+        "char_count": 103,
+        "word_count": 22,
+        "paragraph_idx": 129
+      },
+      {
+        "index": 162,
+        "text": "Il ne comprenait point, sans doute, et demanda pourquoi. Alors elle\ns'emporta, élevant encore le ton:",
+        "seg_type": "narration",
+        "char_count": 101,
+        "word_count": 16,
+        "paragraph_idx": 130
+      },
+      {
+        "index": 163,
+        "text": "--Pourquoi? Vous ne comprenez pas pourquoi? Quand il y a des Prussiens\ndans la maison, dans la chambre à côté, peut-être?",
+        "seg_type": "narration",
+        "char_count": 121,
+        "word_count": 21,
+        "paragraph_idx": 131
+      },
+      {
+        "index": 164,
+        "text": "Il se tut. Cette pudeur patriotique de catin qui ne se laissait point\ncaresser près de l'ennemi, dut réveiller en son coeur sa dignité\ndéfaillante, car, après l'avoir seulement embrassée, il regagna sa porte\nà pas de loup.",
+        "seg_type": "narration",
+        "char_count": 222,
+        "word_count": 38,
+        "paragraph_idx": 132
+      },
+      {
+        "index": 165,
+        "text": "Loiseau, très allumé, quitta la serrure, battit un entrechat dans sa\nchambre, mit son madras, souleva le drap sous lequel gisait la dure\ncarcasse de sa compagne qu'il réveilla d'un baiser en murmurant:",
+        "seg_type": "narration",
+        "char_count": 201,
+        "word_count": 33,
+        "paragraph_idx": 133
+      },
+      {
+        "index": 166,
+        "text": "M'aimes-tu, chérie?",
+        "seg_type": "dialogue",
+        "char_count": 19,
+        "word_count": 2,
+        "paragraph_idx": 133
+      },
+      {
+        "index": 167,
+        "text": "Alors toute la maison devint silencieuse. Mais bientôt s'éleva quelque\npart, dans une direction indéterminée qui pouvait être la cave aussi\nbien que le grenier, un ronflement puissant, monotone, régulier, un\nbruit sourd et prolongé, avec des tremblements de chaudière sous\npression. M. Follenvie dormait.",
+        "seg_type": "narration",
+        "char_count": 304,
+        "word_count": 45,
+        "paragraph_idx": 134
+      },
+      {
+        "index": 168,
+        "text": "Comme on avait décidé qu'on partirait à huit heures le lendemain, tout\nle monde se trouva dans la cuisine; mais la voiture, dont la bâche avait\nun toit de neige, se dressait solitaire au milieu de la cour, sans\nchevaux et sans conducteur. On chercha en vain celui-ci dans les\nécuries, dans les fourrages, dans les remises. Alors tous les hommes se\nrésolurent à battre le pays et ils sortirent. Ils se trouvèrent sur la\nplace, avec l'église au fond, et, des deux côtés, des maisons basses\noù l'on apercevait des soldats prussiens. Le premier qu'ils virent\népluchait des pommes de terre. Le second, plus loin, lavait la boutique\ndu coiffeur. Un autre, barbu jusqu'aux yeux, embrassait un mioche qui\npleurait et le berçait sur ses genoux pour tâcher de l'apaiser; et les\ngrosses paysannes dont les hommes étaient à «l'armée de la guerre»,\nindiquaient par signes à leurs vainqueurs obéissants le travail qu'il\nfallait entreprendre: fendre du bois, tremper la soupe, moudre le café;\nun d'eux même lavait le linge de son hôtesse, une aïeule tout impotente.",
+        "seg_type": "narration",
+        "char_count": 1050,
+        "word_count": 178,
+        "paragraph_idx": 135
+      },
+      {
+        "index": 169,
+        "text": "Le comte, étonné, interrogea le bedeau qui sortait du presbytère. Le\nvieux rat d'église lui répondit:",
+        "seg_type": "narration",
+        "char_count": 101,
+        "word_count": 16,
+        "paragraph_idx": 136
+      },
+      {
+        "index": 170,
+        "text": "Oh! ceux-là ne sont pas méchants;\nc'est pas des Prussiens à ce qu'on dit. Ils sont de plus loin; je ne\nsais pas bien d'où; et ils ont tous laissé une femme et des enfants au\npays; ça ne les amuse pas, la guerre, allez! Je suis sûr qu'on pleure\nbien aussi là-bas après les hommes; et ça fournira une fameuse misère\nchez eux comme chez nous. Ici, encore, on n'est pas trop malheureux pour\nle moment, parce qu'ils ne font pas de mal et qu'ils travaillent comme\ns'ils étaient dans leurs maisons. Voyez-vous, monsieur, entre pauvres\ngens, faut bien qu'on s'aide ... C'est les grands qui font la guerre.",
+        "seg_type": "dialogue",
+        "char_count": 597,
+        "word_count": 110,
+        "paragraph_idx": 136
+      },
+      {
+        "index": 171,
+        "text": "Cornudet, indigné de l'entente cordiale établie entre les vainqueurs et\nles vaincus, se retira, préférant s'enfermer dans l'auberge. Loiseau eut\nun mot pour rire: «Ils repeuplent.» M. Carré-Lamadon eut un mot grave:\n«Ils réparent.» Mais on ne trouvait pas le cocher. A la fin on le\ndécouvrit dans le café du village, attablé fraternellement avec\nl'ordonnance de l'officier. Le comte l'interpella:",
+        "seg_type": "narration",
+        "char_count": 396,
+        "word_count": 61,
+        "paragraph_idx": 137
+      },
+      {
+        "index": 172,
+        "text": "--Ne vous avait-on pas donné l'ordre d'atteler pour huit heures?",
+        "seg_type": "narration",
+        "char_count": 64,
+        "word_count": 10,
+        "paragraph_idx": 138
+      },
+      {
+        "index": 173,
+        "text": "--Ah! bien oui, mais on m'en a donné un autre depuis.",
+        "seg_type": "narration",
+        "char_count": 53,
+        "word_count": 11,
+        "paragraph_idx": 139
+      },
+      {
+        "index": 174,
+        "text": "--Lequel?",
+        "seg_type": "narration",
+        "char_count": 9,
+        "word_count": 1,
+        "paragraph_idx": 140
+      },
+      {
+        "index": 175,
+        "text": "--De ne pas atteler du tout.",
+        "seg_type": "narration",
+        "char_count": 28,
+        "word_count": 6,
+        "paragraph_idx": 141
+      },
+      {
+        "index": 176,
+        "text": "--Qui vous a donné cet ordre?",
+        "seg_type": "narration",
+        "char_count": 29,
+        "word_count": 6,
+        "paragraph_idx": 142
+      },
+      {
+        "index": 177,
+        "text": "--Ma foi! le commandant prussien.",
+        "seg_type": "narration",
+        "char_count": 33,
+        "word_count": 5,
+        "paragraph_idx": 143
+      },
+      {
+        "index": 178,
+        "text": "--Pourquoi?",
+        "seg_type": "narration",
+        "char_count": 11,
+        "word_count": 1,
+        "paragraph_idx": 144
+      },
+      {
+        "index": 179,
+        "text": "--Je n'en sais rien. Allez lui demander. On me défend d'atteler, moi je\nn'attelle pas.--Voilà.",
+        "seg_type": "narration",
+        "char_count": 94,
+        "word_count": 15,
+        "paragraph_idx": 145
+      },
+      {
+        "index": 180,
+        "text": "--C'est lui-même qui vous a dit cela?",
+        "seg_type": "narration",
+        "char_count": 37,
+        "word_count": 7,
+        "paragraph_idx": 146
+      },
+      {
+        "index": 181,
+        "text": "--Non, monsieur, c'est l'aubergiste qui m'a donné l'ordre de sa part.",
+        "seg_type": "narration",
+        "char_count": 69,
+        "word_count": 11,
+        "paragraph_idx": 147
+      },
+      {
+        "index": 182,
+        "text": "--Quand ça?",
+        "seg_type": "narration",
+        "char_count": 11,
+        "word_count": 2,
+        "paragraph_idx": 148
+      },
+      {
+        "index": 183,
+        "text": "--Hier soir, comme j'allais me coucher. Les trois hommes rentrèrent fort\ninquiets.",
+        "seg_type": "narration",
+        "char_count": 82,
+        "word_count": 12,
+        "paragraph_idx": 149
+      },
+      {
+        "index": 184,
+        "text": "On demanda M. Follenvie, mais la servante répondit que Monsieur, à cause\nde son asthme, ne se levait jamais avant dix heures. Il avait même\nformellement défendu de le réveiller plus tôt, excepté en cas\nd'incendie.",
+        "seg_type": "narration",
+        "char_count": 213,
+        "word_count": 36,
+        "paragraph_idx": 150
+      },
+      {
+        "index": 185,
+        "text": "On voulut voir l'officier, mais cela était impossible absolument, bien\nqu'il logeât dans l'auberge, M. Follenvie seul était autorisé à lui\nparler pour les affaires civiles. Alors on attendit. Les femmes\nremontèrent dans leurs chambres, et des futilités les occupèrent.",
+        "seg_type": "narration",
+        "char_count": 268,
+        "word_count": 40,
+        "paragraph_idx": 151
+      },
+      {
+        "index": 186,
+        "text": "Cornudet s'installa sous la haute cheminée de la cuisine où flambait un\ngrand feu. Il se fit apporter là une des petites tables du café, une\ncanette, et il tira sa pipe qui jouissait parmi les démocrates d'une\nconsidération presque égale à la sienne, comme si elle avait servi\nla patrie en servant à Cornudet. C'était une superbe pipe en écume\nadmirablement culottée, aussi noire que les dents de son maître, mais\nparfumée, recourbée, luisante, familière à sa main, et complétant sa\nphysionomie. Et il demeura immobile, les yeux tantôt fixés sur la flamme\ndu foyer, tantôt sur la mousse qui couronnait sa chope; et chaque fois\nqu'il avait bu, il passait d'un air satisfait ses longs doigts maigres\ndans ses longs cheveux gras pendant qu'il humait sa moustache frangée\nd'écume.",
+        "seg_type": "narration",
+        "char_count": 776,
+        "word_count": 131,
+        "paragraph_idx": 152
+      },
+      {
+        "index": 187,
+        "text": "Loiseau, sous prétexte de se dégourdir les jambes, alla placer du vin\naux débitants du pays. Le comte et le manufacturier se mirent à causer\npolitique. Ils prévoyaient l'avenir de la France. L'un croyait aux\nd'Orléans, l'autre à un sauveur inconnu, un héros qui se révèlerait\nquand tout serait désespéré: un du Guesclin, une Jeanne d'Arc peut-être?\nou un autre Napoléon Ier? Ah! si le prince impérial n'était pas si\njeune! Cornudet, les écoutant, souriait en homme qui sait le mot des\ndestinées. Sa pipe embaumait la cuisine.",
+        "seg_type": "narration",
+        "char_count": 525,
+        "word_count": 88,
+        "paragraph_idx": 153
+      },
+      {
+        "index": 188,
+        "text": "Comme dix heures sonnaient, M. Follenvie parut. On l'interrogea bien\nvite; mais il ne put que répéter deux ou trois fois, sans une variante,\nces paroles: L'officier m'a dit comme ça:",
+        "seg_type": "narration",
+        "char_count": 182,
+        "word_count": 31,
+        "paragraph_idx": 154
+      },
+      {
+        "index": 189,
+        "text": "Monsieur Follenvie, vous\ndéfendrez qu'on attelle demain la voiture de ces voyageurs. Je ne veux\npas qu'ils partent sans mon ordre. Vous entendez. Ça suffit.",
+        "seg_type": "dialogue",
+        "char_count": 156,
+        "word_count": 25,
+        "paragraph_idx": 154
+      },
+      {
+        "index": 190,
+        "text": "Alors on voulut voir l'officier. Le comte lui envoya sa carte où M.\nCarré-Lamadon ajouta son nom et tous ses titres. Le Prussien fit\nrépondre qu'il admettrait ces deux hommes à lui parler quand il aurait\ndéjeuné, c'est-à-dire vers une heure.",
+        "seg_type": "narration",
+        "char_count": 241,
+        "word_count": 41,
+        "paragraph_idx": 155
+      },
+      {
+        "index": 191,
+        "text": "Les dames reparurent et l'on mangea quelque peu, malgré l'inquiétude.\nBoule de Suif semblait malade et prodigieusement troublée.",
+        "seg_type": "narration",
+        "char_count": 128,
+        "word_count": 18,
+        "paragraph_idx": 156
+      },
+      {
+        "index": 192,
+        "text": "On achevait le café quand l'ordonnance vint chercher ces messieurs.",
+        "seg_type": "narration",
+        "char_count": 67,
+        "word_count": 10,
+        "paragraph_idx": 157
+      },
+      {
+        "index": 193,
+        "text": "Loiseau se joignit aux deux premiers; mais comme on essayait d'entraîner\nCornudet pour donner plus de solennité à leur démarche, il déclara\nfièrement qu'il entendait n'avoir jamais aucun rapport avec les\nAllemands; et il se remit dans sa cheminée, demandant une autre canette.\nLes trois hommes montèrent et furent introduits dans la plus belle\nchambre de l'auberge où l'officier les reçut, étendu dans un fauteuil,\nles pieds sur la cheminée, fumant une longue pipe de porcelaine, et\nenveloppé par une robe de chambre flamboyante, dérobée sans doute dans\nla demeure abandonnée de quelques bourgeois de mauvais goût. Il ne\nse leva pas, ne les salua pas, ne les regarda pas. Il présentait\nun magnifique échantillon de la goujaterie naturelle au militaire\nvictorieux.",
+        "seg_type": "narration",
+        "char_count": 763,
+        "word_count": 122,
+        "paragraph_idx": 158
+      },
+      {
+        "index": 194,
+        "text": "Au bout de quelques instants il dit enfin:",
+        "seg_type": "narration",
+        "char_count": 42,
+        "word_count": 8,
+        "paragraph_idx": 159
+      },
+      {
+        "index": 195,
+        "text": "--Qu'est-ce que fous foulez?",
+        "seg_type": "narration",
+        "char_count": 28,
+        "word_count": 4,
+        "paragraph_idx": 160
+      },
+      {
+        "index": 196,
+        "text": "Le comte prit la parole:",
+        "seg_type": "narration",
+        "char_count": 24,
+        "word_count": 5,
+        "paragraph_idx": 161
+      },
+      {
+        "index": 197,
+        "text": "--Nous désirons partir, Monsieur.",
+        "seg_type": "narration",
+        "char_count": 33,
+        "word_count": 4,
+        "paragraph_idx": 162
+      },
+      {
+        "index": 198,
+        "text": "--Non.",
+        "seg_type": "narration",
+        "char_count": 6,
+        "word_count": 1,
+        "paragraph_idx": 163
+      },
+      {
+        "index": 199,
+        "text": "--Oserai-je vous demander la cause de ce refus?",
+        "seg_type": "narration",
+        "char_count": 47,
+        "word_count": 8,
+        "paragraph_idx": 164
+      },
+      {
+        "index": 200,
+        "text": "--Parce que che ne feux pas.",
+        "seg_type": "narration",
+        "char_count": 28,
+        "word_count": 6,
+        "paragraph_idx": 165
+      },
+      {
+        "index": 201,
+        "text": "--Je vous ferai respectueusement observer, Monsieur, que votre général\nen chef nous a délivré une permission de départ pour gagner Dieppe; et\nje ne pense pas que nous ayons rien fait pour mériter vos rigueurs.",
+        "seg_type": "narration",
+        "char_count": 209,
+        "word_count": 35,
+        "paragraph_idx": 166
+      },
+      {
+        "index": 202,
+        "text": "--Che ne feux pas ... foilà tout ... Fous poufez tescentre.",
+        "seg_type": "narration",
+        "char_count": 59,
+        "word_count": 11,
+        "paragraph_idx": 167
+      },
+      {
+        "index": 203,
+        "text": "S'étant inclinés tous les trois, ils se retirèrent.",
+        "seg_type": "narration",
+        "char_count": 51,
+        "word_count": 8,
+        "paragraph_idx": 168
+      },
+      {
+        "index": 204,
+        "text": "L'après-midi fut lamentable. On ne comprenait rien à ce caprice\nd'Allemand; et les idées les plus singulières troublaient les têtes.\nTout le monde se tenait dans la cuisine et l'on discutait sans fin,\nimaginant des choses invraisemblables. On voulait peut-être les garder\ncomme otages--mais dans quel but?--ou les emmener prisonniers? ou,\nplutôt, leur demander une rançon considérable? A cette pensée, une\npanique les affola. Les plus riches étaient les plus épouvantés, se\nvoyant déjà contraints, pour racheter leur vie, de verser des sacs\npleins d'or entre les mains de ce soldat insolent. Ils se creusaient\nla cervelle pour découvrir des mensonges acceptables, dissimuler leurs\nrichesses, se faire passer pour pauvres, très pauvres. Loiseau enleva sa\nchaîne de montre et la cacha dans sa poche. La nuit qui tombait augmenta\nles appréhensions. La lampe fut allumée, et comme on avait encore deux\nheures avant le dîner, Mme Loiseau proposa une partie de trente-et-un.\nCe serait une distraction. On accepta. Cornudet lui-même, ayant éteint\nsa pipe par politesse, y prit part.",
+        "seg_type": "narration",
+        "char_count": 1075,
+        "word_count": 169,
+        "paragraph_idx": 169
+      },
+      {
+        "index": 205,
+        "text": "Le comte battit les cartes--donna--Boule de Suif avait trente-et-un\nd'emblée; et bientôt l'intérêt de la partie apaisa la crainte qui\nhantait les esprits. Mais Cornudet s'aperçut que le ménage Loiseau\ns'entendait pour tricher.",
+        "seg_type": "narration",
+        "char_count": 226,
+        "word_count": 33,
+        "paragraph_idx": 170
+      },
+      {
+        "index": 206,
+        "text": "Comme on allait se mettre à table, M. Follenvie reparut; et, de sa voix\ngraillonnante, il prononça: «L'officier prussien fait demander à Mlle\nElisabeth Rousset si elle n'a pas encore changé d'avis.»",
+        "seg_type": "narration",
+        "char_count": 198,
+        "word_count": 32,
+        "paragraph_idx": 171
+      },
+      {
+        "index": 207,
+        "text": "Boule de Suif resta debout, toute pâle; puis, devenant subitement\ncramoisie, elle eut un tel étouffement de colère qu'elle ne pouvait\nplus parler. Enfin elle éclata: «Vous lui direz à cette crapule, à ce\nsaligaud, à cette Charogne de Prussien, que jamais je ne voudrai; vous\nentendez bien, jamais, jamais, jamais.»",
+        "seg_type": "narration",
+        "char_count": 314,
+        "word_count": 51,
+        "paragraph_idx": 172
+      },
+      {
+        "index": 208,
+        "text": "Le gros aubergiste sortit. Alors Boule de Suif fut entourée, interrogée,\nsollicitée par tout le monde de dévoiler le mystère de sa visite. Elle\nrésista d'abord; mais l'exaspération domina bientôt: «Ce qu'il veut?...\nce qu'il veut? Il veut coucher avec moi!» cria-t-elle. Personne ne se\nchoqua du mot, tant l'indignation fut vive. Cornudet brisa sa chope en\nla reposant violemment sur la table. C'était une clameur de réprobation\ncontre ce soudard ignoble, un souffle de colère, une union de tous\npour la résistance, comme si l'on eût demandé à chacun une partie du\nsacrifice exigé d'elle. Le comte déclara avec dégoût que ces gens-là\nse conduisaient à la façon des anciens barbares. Les femmes surtout\ntémoignèrent à Boule de Suif une commisération énergique et caressante.\nLes bonnes soeurs, qui ne se montraient qu'aux repas, avaient baissé la\ntête et ne disaient rien.",
+        "seg_type": "narration",
+        "char_count": 871,
+        "word_count": 142,
+        "paragraph_idx": 173
+      },
+      {
+        "index": 209,
+        "text": "On dîna néanmoins lorsque la première fureur fut apaisée; mais on parla\npeu: on songeait.",
+        "seg_type": "narration",
+        "char_count": 89,
+        "word_count": 15,
+        "paragraph_idx": 174
+      },
+      {
+        "index": 210,
+        "text": "Les dames se retirèrent de bonne heure; et les hommes, tout en fumant,\norganisèrent un écarté auquel fut convié M. Follenvie qu'on avait\nl'intention d'interroger habilement sur les moyens à employer pour\nvaincre la résistance de l'officier. Mais il ne songeait qu'à ses\ncartes, sans rien écouter, sans rien répondre; et il répétait sans\ncesse: «Au jeu, messieurs, au jeu.» Son attention était si tendue qu'il\nen oubliait de cracher, ce qui lui mettait parfois des points d'orgue\ndans la poitrine. Ses poumons sifflants donnaient toute la gamme de\nl'asthme, depuis les notes graves et profondes jusqu'aux enrouements\naigus des jeunes coqs essayant de chanter.",
+        "seg_type": "narration",
+        "char_count": 658,
+        "word_count": 105,
+        "paragraph_idx": 175
+      },
+      {
+        "index": 211,
+        "text": "Il refusa même de monter, quand sa femme, qui tombait de sommeil, vint\nle chercher. Alors elle partit toute seule, car elle était «du matin»,\ntoujours levée avec le soleil, tandis que son homme était «du soir»,\ntoujours prêt à passer la nuit avec des amis. Il lui cria:",
+        "seg_type": "narration",
+        "char_count": 269,
+        "word_count": 49,
+        "paragraph_idx": 176
+      },
+      {
+        "index": 212,
+        "text": "Tu placeras\nmon lait de poule devant le feu,",
+        "seg_type": "dialogue",
+        "char_count": 44,
+        "word_count": 9,
+        "paragraph_idx": 176
+      },
+      {
+        "index": 213,
+        "text": "et se remit à sa partie. Quand on vit\nbien qu'on n'en pouvait rien tirer, on déclara qu'il était temps de s'en\naller, et chacun gagna son lit.",
+        "seg_type": "narration",
+        "char_count": 142,
+        "word_count": 28,
+        "paragraph_idx": 176
+      },
+      {
+        "index": 214,
+        "text": "On se leva encore d'assez bonne heure le lendemain avez un espoir\nindéterminé, un désir plus grand de s'en aller, une terreur du jour à\npasser dans cette horrible petite auberge.",
+        "seg_type": "narration",
+        "char_count": 178,
+        "word_count": 31,
+        "paragraph_idx": 177
+      },
+      {
+        "index": 215,
+        "text": "Hélas! les chevaux restaient à l'écurie, le cocher demeurait invisible.\nOn alla, par désoeuvrement, tourner autour de la voiture.",
+        "seg_type": "narration",
+        "char_count": 129,
+        "word_count": 19,
+        "paragraph_idx": 178
+      },
+      {
+        "index": 216,
+        "text": "Le déjeuner fut bien triste; et il s'était produit comme un\nrefroidissement vis-à-vis de Boule de Suif, car la nuit, qui porte\nconseil, avait un peu modifié les jugements. On en voulait presque à\ncette fille, maintenant, de n'avoir pas été trouver secrètement\nle Prussien, afin de ménager, au réveil, une bonne surprise à ses\ncompagnons. Quoi de plus simple? Qui l'eût su, d'ailleurs? Elle aurait\npu sauver les apparences en faisant dire à l'officier qu'elle prenait en\npitié leur détresse. Pour elle, ça avait si peu d'importance!",
+        "seg_type": "narration",
+        "char_count": 531,
+        "word_count": 88,
+        "paragraph_idx": 179
+      },
+      {
+        "index": 217,
+        "text": "Mais personne n'avouait encore ces pensées.",
+        "seg_type": "narration",
+        "char_count": 43,
+        "word_count": 6,
+        "paragraph_idx": 180
+      },
+      {
+        "index": 218,
+        "text": "Dans l'après-midi, comme on s'ennuyait à périr, le comte proposa de\nfaire une promenade aux alentours du village. Chacun s'enveloppa avec\nsoin et la petite société partit, à l'exception de Cornudet, qui\npréférait rester près du feu, et des bonnes soeurs, qui passaient leurs\njournées dans l'église ou chez le curé.",
+        "seg_type": "narration",
+        "char_count": 314,
+        "word_count": 51,
+        "paragraph_idx": 181
+      },
+      {
+        "index": 219,
+        "text": "Le froid, plus intense de jour en jour, piquait cruellement le nez et\nles oreilles; les pieds devenaient si douloureux que chaque pas était\nune souffrance; et lorsque la campagne se découvrit, elle leur apparut\nsi effroyablement lugubre sous cette blancheur illimitée que tout le\nmonde aussitôt retourna, l'âme glacée et le coeur serré.",
+        "seg_type": "narration",
+        "char_count": 336,
+        "word_count": 54,
+        "paragraph_idx": 182
+      },
+      {
+        "index": 220,
+        "text": "Les quatre femmes marchaient devant, les trois hommes suivaient, un peu\nderrière.",
+        "seg_type": "narration",
+        "char_count": 81,
+        "word_count": 12,
+        "paragraph_idx": 183
+      },
+      {
+        "index": 221,
+        "text": "Loiseau, qui comprenait la situation, demanda tout à coup si cette",
+        "seg_type": "narration",
+        "char_count": 66,
+        "word_count": 11,
+        "paragraph_idx": 184
+      },
+      {
+        "index": 222,
+        "text": "garce-là",
+        "seg_type": "dialogue",
+        "char_count": 8,
+        "word_count": 1,
+        "paragraph_idx": 184
+      },
+      {
+        "index": 223,
+        "text": "allait les faire rester longtemps encore dans un pareil\nendroit. Le comte, toujours courtois, dit qu'on ne pouvait exiger d'une\nfemme un sacrifice aussi pénible, et qu'il devait venir d'elle-même. M.\nCarré-Lamadon remarqua que si les Français faisaient, comme il en était\nquestion, un retour offensif par Dieppe, la rencontre ne pourrait avoir\nlieu qu'à Tôtes. Cette réflexion rendit les deux autres soucieux.--",
+        "seg_type": "narration",
+        "char_count": 411,
+        "word_count": 63,
+        "paragraph_idx": 184
+      },
+      {
+        "index": 224,
+        "text": "Si\nl'on se sauvait à pied,",
+        "seg_type": "dialogue",
+        "char_count": 26,
+        "word_count": 6,
+        "paragraph_idx": 184
+      },
+      {
+        "index": 225,
+        "text": "--dit Loiseau. Le comte haussa les épaules:--",
+        "seg_type": "narration",
+        "char_count": 45,
+        "word_count": 7,
+        "paragraph_idx": 184
+      },
+      {
+        "index": 226,
+        "text": "Y songez-vous, dans cette neige? avec nos femmes? Et puis nous\nserions tout de suite poursuivis, rattrapés en dix minutes, et ramenés\nprisonniers à la merci des soldats.",
+        "seg_type": "dialogue",
+        "char_count": 169,
+        "word_count": 28,
+        "paragraph_idx": 184
+      },
+      {
+        "index": 227,
+        "text": "--C'était vrai; on se tut.",
+        "seg_type": "narration",
+        "char_count": 26,
+        "word_count": 5,
+        "paragraph_idx": 184
+      },
+      {
+        "index": 228,
+        "text": "Les dames parlaient toilette; mais une certaine contrainte semblait les\ndésunir.",
+        "seg_type": "narration",
+        "char_count": 80,
+        "word_count": 11,
+        "paragraph_idx": 185
+      },
+      {
+        "index": 229,
+        "text": "Tout a coup, au bout de la rue, l'officier parut. Sur la neige qui\nfermait l'horizon, il profilait sa grande taille de guêpe en uniforme,\net marchait, les genoux écartés, de ce mouvement particulier\naux militaires qui s'efforcent de ne point maculer leurs bottes\nsoigneusement cirées.",
+        "seg_type": "narration",
+        "char_count": 284,
+        "word_count": 46,
+        "paragraph_idx": 186
+      },
+      {
+        "index": 230,
+        "text": "Il s'inclina en passant près des dames, et regarda dédaigneusement les\nhommes qui eurent, du reste, la dignité de ne point se découvrir, bien\nque Loiseau ébauchât un geste pour retirer sa coiffure.",
+        "seg_type": "narration",
+        "char_count": 197,
+        "word_count": 33,
+        "paragraph_idx": 187
+      },
+      {
+        "index": 231,
+        "text": "Boule de Suif était devenue rouge jusqu'aux oreilles; et les trois\nfemmes mariées ressentaient une grande humiliation d'être ainsi\nrencontrées par ce soldat, dans la compagnie de cette fille qu'il avait\nsi cavalièrement traitée.",
+        "seg_type": "narration",
+        "char_count": 228,
+        "word_count": 34,
+        "paragraph_idx": 188
+      },
+      {
+        "index": 232,
+        "text": "Alors on parla de lui, de sa tournure, de son visage. Mme Carré-Lamadon,\nqui avait connu beaucoup d'officiers et qui les jugeait en connaisseur,\ntrouvait celui-là pas mal du tout; elle regrettait même qu'il ne fût pas\nFrançais, parce qu'il ferait un fort joli hussard dont toutes les femmes\nassurément raffoleraient.",
+        "seg_type": "narration",
+        "char_count": 316,
+        "word_count": 51,
+        "paragraph_idx": 189
+      },
+      {
+        "index": 233,
+        "text": "Une fois rentrés, on ne sut plus que faire. Des paroles aigres furent\nmême échangées à propos de choses insignifiantes. Le dîner, silencieux,\ndura peu, et chacun monta se coucher, espérant dormir pour tuer le\ntemps.",
+        "seg_type": "narration",
+        "char_count": 215,
+        "word_count": 36,
+        "paragraph_idx": 190
+      },
+      {
+        "index": 234,
+        "text": "On descendit le lendemain avec des visages fatigués et des coeurs\nexaspérés. Les femmes parlaient à peine à Boule de Suif.",
+        "seg_type": "narration",
+        "char_count": 122,
+        "word_count": 21,
+        "paragraph_idx": 191
+      },
+      {
+        "index": 235,
+        "text": "Une cloche tinta. C'était pour un baptême. La grosse fille avait un\nenfant élevé chez des paysans d'Yvetot. Elle ne le voyait pas une fois\nl'an, et n'y songeait jamais; mais la pensée de celui qu'on allait\nbaptiser lui jeta au coeur une tendresse subite et violente pour le\nsien, et elle voulut absolument assister à la cérémonie.",
+        "seg_type": "narration",
+        "char_count": 330,
+        "word_count": 58,
+        "paragraph_idx": 192
+      },
+      {
+        "index": 236,
+        "text": "Aussitôt qu'elle fut partie, tout le monde se regarda, puis on rapprocha\nles chaises, car on sentait bien qu'à la fin il fallait décider quelque\nchose. Loiseau eut une inspiration: il était d'avis de proposer à\nl'officier de garder Boule de Suif toute seule, et de laisser partir\nles autres. M. Follenvie se chargea encore de la commission, mais il\nredescendit presque aussitôt. L'Allemand, qui connaissait la nature\nhumaine, l'avait mis à la porte. Il prétendait retenir tout le monde\ntant que son désir ne serait pas satisfait.",
+        "seg_type": "narration",
+        "char_count": 529,
+        "word_count": 88,
+        "paragraph_idx": 193
+      },
+      {
+        "index": 237,
+        "text": "Alors le tempérament populacier de Mme Loiseau éclata:--",
+        "seg_type": "narration",
+        "char_count": 56,
+        "word_count": 8,
+        "paragraph_idx": 194
+      },
+      {
+        "index": 238,
+        "text": "Nous n'allons\npourtant pas mourir de vieillesse ici. Puisque c'est son métier, à cette\ngueuse, de faire ça avec tous les hommes, je trouve qu'elle n'a pas le\ndroit de refuser l'un plutôt que l'autre. Je vous demande un peu, ça a\npris tout ce qu'elle a trouvé dans Rouen, même des cochers! oui, madame,\nle cocher de la préfecture! Je le sais bien, moi, il achète son vin à la\nmaison. Et aujourd'hui qu'il s'agit de nous tirer d'embarras, elle fait\nla mijaurée, cette morveuse!... Moi, je trouve qu'il se conduit très\nbien, cet officier. Il est peut-être privé depuis longtemps; et nous\nétions là trois qu'il aurait sans doute préférées. Mais non, il se\ncontente de celle à tout le monde. Il respecte les femmes mariées.\nSongez donc, il est le maître. Il n'avait qu'à dire: «Je veux",
+        "seg_type": "dialogue",
+        "char_count": 780,
+        "word_count": 140,
+        "paragraph_idx": 194
+      },
+      {
+        "index": 239,
+        "text": ", et il\npouvait nous prendre de force avec ses soldats.»",
+        "seg_type": "narration",
+        "char_count": 56,
+        "word_count": 11,
+        "paragraph_idx": 194
+      },
+      {
+        "index": 240,
+        "text": "Les deux femmes eurent un petit frisson. Les yeux de la jolie Mme\nCarré-Lamadon brillaient, et elle était un peu pâle, comme si elle se\nsentait déjà prise de force par l'officier.",
+        "seg_type": "narration",
+        "char_count": 179,
+        "word_count": 32,
+        "paragraph_idx": 195
+      },
+      {
+        "index": 241,
+        "text": "Les hommes, qui discutaient à l'écart, se rapprochèrent. Loiseau,\nfuribond, voulait livrer «cette misérable» pieds et poings liés, à\nl'ennemi. Mais le comte, issu de trois générations d'ambassadeurs, et\ndoué d'un physique de diplomate, était partisan de l'habileté: «Il\nfaudrait la décider»,--dit-il.",
+        "seg_type": "narration",
+        "char_count": 300,
+        "word_count": 42,
+        "paragraph_idx": 196
+      },
+      {
+        "index": 242,
+        "text": "Alors on conspira.",
+        "seg_type": "narration",
+        "char_count": 18,
+        "word_count": 3,
+        "paragraph_idx": 197
+      },
+      {
+        "index": 243,
+        "text": "Les femmes se serrèrent, le ton de la voix fut baissé, et la discussion\ndevint générale, chacun donnant son avis. C'était fort convenable du\nreste. Ces dames surtout trouvaient des délicatesses de tournures,\ndes subtilités d'expression charmantes, pour dire les choses les plus\nscabreuses. Un étranger n'aurait rien compris, tant les précautions du\nlangage étaient observées. Mais la légère tranche de pudeur dont\nest bardée toute femme du monde ne recouvrant que la surface, elles\ns'épanouissaient dans cette aventure polissonne, s'amusaient follement\nau fond, se sentant dans leur élément, tripotant de l'amour avec la\nsensualité d'un cuisinier gourmand qui prépare le souper d'un autre.",
+        "seg_type": "narration",
+        "char_count": 689,
+        "word_count": 104,
+        "paragraph_idx": 198
+      },
+      {
+        "index": 244,
+        "text": "La gaieté revenait d'elle-même, tant l'histoire leur semblait drôle à\nla fin. Le comte trouva des plaisanteries un peu risquées, mais si bien\ndites qu'elles faisaient sourire. A son tour Loiseau lâcha quelques\ngrivoiseries plus raides dont on ne se blessa point; et la pensée\nbrutalement exprimée par sa femme dominait tous les esprits: «Puisque\nc'est son métier à cette fille, pourquoi refuserait-elle celui-là plus\nqu'un autre?» La gentille Mme Carré-Lamadon semblait même penser qu'à sa\nplace elle refuserait celui-là moins qu'un autre.",
+        "seg_type": "narration",
+        "char_count": 539,
+        "word_count": 83,
+        "paragraph_idx": 199
+      },
+      {
+        "index": 245,
+        "text": "On prépara longuement le blocus, comme pour une forteresse investie.\nChacun convint du rôle qu'il jouerait, des arguments dont il\ns'appuierait, des manoeuvres qu'il devrait exécuter. On régla le plan\ndes attaques, les ruses à employer, et les surprises de l'assaut, pour\nforcer cette citadelle vivante à recevoir l'ennemi dans la place.",
+        "seg_type": "narration",
+        "char_count": 336,
+        "word_count": 52,
+        "paragraph_idx": 200
+      },
+      {
+        "index": 246,
+        "text": "Cornudet cependant restait à l'écart, complètement étranger à cette\naffaire.",
+        "seg_type": "narration",
+        "char_count": 76,
+        "word_count": 10,
+        "paragraph_idx": 201
+      },
+      {
+        "index": 247,
+        "text": "Une attention si profonde tendait les esprits, qu'on n'entendit point\nrentrer Boule de Suif. Mais le comte souffla un léger:",
+        "seg_type": "narration",
+        "char_count": 124,
+        "word_count": 20,
+        "paragraph_idx": 202
+      },
+      {
+        "index": 248,
+        "text": "Chut!",
+        "seg_type": "dialogue",
+        "char_count": 5,
+        "word_count": 1,
+        "paragraph_idx": 202
+      },
+      {
+        "index": 249,
+        "text": "qui\nfit relever tous les yeux. Elle était là. On se tut brusquement et\nun certain embarras empêcha d'abord de lui parler. La comtesse, plus\nassouplie que les autres aux duplicités des salons, l'interrogea:\n«Etait-ce amusant, ce baptême?»",
+        "seg_type": "narration",
+        "char_count": 237,
+        "word_count": 38,
+        "paragraph_idx": 202
+      },
+      {
+        "index": 250,
+        "text": "La grosse fille, encore émue, raconta tout, et les figures, et les\nattitudes, et l'aspect même de l'église. Elle ajouta:",
+        "seg_type": "narration",
+        "char_count": 120,
+        "word_count": 20,
+        "paragraph_idx": 203
+      },
+      {
+        "index": 251,
+        "text": "C'est si bon de\nprier quelquefois.",
+        "seg_type": "dialogue",
+        "char_count": 34,
+        "word_count": 6,
+        "paragraph_idx": 203
+      },
+      {
+        "index": 252,
+        "text": "Cependant, jusqu'au déjeuner, ces dames se contentèrent d'être aimables\navec elle, pour augmenter sa confiance et sa docilité à leurs conseils.",
+        "seg_type": "narration",
+        "char_count": 143,
+        "word_count": 21,
+        "paragraph_idx": 204
+      },
+      {
+        "index": 253,
+        "text": "Aussitôt à table, on commença les approches. Ce fut d'abord une\nconversation vague sur le dévouement. On cita des exemples anciens:\nJudith et Holopherne, puis, sans aucune raison, Lucrèce avec Sextus,\nCléopâtre faisant passer par sa couche tous les généraux ennemis, et\nles réduisant à des servilités d'esclave. Alors se déroula une histoire\nfantaisiste, éclose dans l'imagination de ces millionnaires ignorants,\noù les citoyennes de Rome allaient endormir à Capoue Annibal entre leurs\nbras, et, avec lui, ses lieutenants, et les phalanges des mercenaires.\nOn cita toutes les femmes qui ont arrêté des conquérants, fait de leur\ncorps un champ de bataille, un moyen de dominer, une arme, qui ont\nvaincu par leurs caresses héroïques des êtres hideux ou détestés, et\nsacrifié leur chasteté à la vengeance et au dévouement.",
+        "seg_type": "narration",
+        "char_count": 819,
+        "word_count": 130,
+        "paragraph_idx": 205
+      },
+      {
+        "index": 254,
+        "text": "On parla même en termes voilés de cette Anglaise de grande famille qui\ns'était laissé inoculer une horrible et contagieuse maladie pour la\ntransmettre à Bonaparte sauvé miraculeusement, par une faiblesse subite,\nà l'heure du rendez-vous fatal.",
+        "seg_type": "narration",
+        "char_count": 243,
+        "word_count": 37,
+        "paragraph_idx": 206
+      },
+      {
+        "index": 255,
+        "text": "Et tout cela s'était raconté d'une façon convenable et modérée, où\nparfois éclatait un enthousiasme voulu propre à exciter l'émulation.",
+        "seg_type": "narration",
+        "char_count": 135,
+        "word_count": 20,
+        "paragraph_idx": 207
+      },
+      {
+        "index": 256,
+        "text": "On aurait pu croire, à la fin, que le seul rôle de la femme, ici-bas,\nétait un perpétuel sacrifice de sa personne, un abandon continu aux\ncaprices des soldatesques. Les deux bonnes soeurs ne semblaient point\nentendre, perdues en des pensées profondes, Boule de Suif ne disait\nrien.",
+        "seg_type": "narration",
+        "char_count": 281,
+        "word_count": 48,
+        "paragraph_idx": 208
+      },
+      {
+        "index": 257,
+        "text": "Pendant tout l'après-midi, on la laissa réfléchir. Mais, au lieu\nde l'appeler «madame» comme on avait fait jusque-là, on lui disait\nsimplement «mademoiselle», sans que personne sût bien pourquoi, comme\nsi l'on avait voulu la faire descendre d'un degré dans l'estime qu'elle\navait escaladée, lui faire sentir sa situation honteuse.",
+        "seg_type": "narration",
+        "char_count": 330,
+        "word_count": 50,
+        "paragraph_idx": 209
+      },
+      {
+        "index": 258,
+        "text": "Au moment où l'on servit le potage, M. Follenvie reparut, répétant sa\nphrase de la veille: «L'officier prussien fait demander à Mlle Elisabeth\nRousset si elle n'a point encore changé d'avis.»",
+        "seg_type": "narration",
+        "char_count": 191,
+        "word_count": 31,
+        "paragraph_idx": 210
+      },
+      {
+        "index": 259,
+        "text": "Boule de Suif répondit sèchement:",
+        "seg_type": "narration",
+        "char_count": 33,
+        "word_count": 5,
+        "paragraph_idx": 211
+      },
+      {
+        "index": 260,
+        "text": "Non, monsieur.",
+        "seg_type": "dialogue",
+        "char_count": 14,
+        "word_count": 2,
+        "paragraph_idx": 211
+      },
+      {
+        "index": 261,
+        "text": "Mais au dîner la\ncoalition faiblit. Loiseau eut trois phrases malheureuses. Chacun se\nbattait les flancs pour découvrir des exemples nouveaux et ne trouvait\nrien, quand la comtesse, sans préméditation peut-être, éprouvant un\nvague besoin de rendre hommage à la Religion, interrogea la plus âgée\ndes bonnes soeurs sur les grands faits de la vie des saints. Or,\nbeaucoup avaient commis des actes qui seraient des crimes à nos yeux;\nmais l'Église absout sans peine ces forfaits quand ils sont accomplis\npour la gloire de Dieu, ou pour le bien du prochain. C'était un argument\npuissant: la comtesse en profita. Alors, soit par une de ces ententes\ntacites, de ces complaisances voilées, où excelle quiconque porte un\nhabit ecclésiastique, soit simplement par l'effet d'une inintelligence\nheureuse, d'une secourable bêtise, la vieille religieuse apporta à la\nconspiration un formidable appui. On la croyait timide, elle se montra\nhardie, verbeuse, violente. Celle-là n'était pas troublée par les\ntâtonnements de la casuistique; sa doctrine semblait une barre de fer;\nsa foi n'hésitait jamais; sa conscience n'avait point de scrupules.",
+        "seg_type": "narration",
+        "char_count": 1128,
+        "word_count": 176,
+        "paragraph_idx": 211
+      },
+      {
+        "index": 262,
+        "text": "Elle trouvait tout simple le sacrifice d'Abraham, car elle aurait\nimmédiatement tué père et mère sur un ordre venu d'En Haut; et rien,\nà son avis, ne pouvait déplaire au Seigneur quand l'intention était\nlouable. La comtesse, mettant à profit l'autorité sacrée de sa complice\ninattendue, lui fit faire comme une paraphrase édifiante de cet axiome\nde morale: «La fin justifie les moyens.»",
+        "seg_type": "narration",
+        "char_count": 386,
+        "word_count": 63,
+        "paragraph_idx": 212
+      },
+      {
+        "index": 263,
+        "text": "Elle l'interrogeait.",
+        "seg_type": "narration",
+        "char_count": 20,
+        "word_count": 2,
+        "paragraph_idx": 213
+      },
+      {
+        "index": 264,
+        "text": "--Alors, ma soeur, vous pensez que Dieu accepte toutes les voies, et\npardonne le fait quand le motif est pur?",
+        "seg_type": "narration",
+        "char_count": 109,
+        "word_count": 20,
+        "paragraph_idx": 214
+      },
+      {
+        "index": 265,
+        "text": "--Qui pourrait en douter, madame? Une action blâmable en soi devient\nsouvent méritoire par la pensée qui l'inspire.",
+        "seg_type": "narration",
+        "char_count": 115,
+        "word_count": 18,
+        "paragraph_idx": 215
+      },
+      {
+        "index": 266,
+        "text": "Et elles continuaient ainsi, démêlant les volontés de Dieu, prévoyant\nses décisions, le faisant s'intéresser à des choses qui, vraiment, ne le\nregardaient guère.",
+        "seg_type": "narration",
+        "char_count": 161,
+        "word_count": 24,
+        "paragraph_idx": 216
+      },
+      {
+        "index": 267,
+        "text": "Tout cela était enveloppé, habile, discret. Mais chaque parole de la\nsainte fille en cornette faisait brèche dans la résistance indignée de\nla courtisane. Puis, la conversation se détournant un peu, la femme aux\nchapelets pendants parla des maisons de son ordre, de sa supérieure,\nd'elle-même, et de sa mignonne voisine, la chère soeur Saint-Nicéphore.\nOn les avait demandées au Havre pour soigner dans les hôpitaux des\ncentaines de soldats atteints de la petite vérole. Elle les dépeignit,\nces misérables, détailla leur maladie. Et tandis qu'elles étaient\narrêtées en route par les caprices de ce Prussien, un grand nombre de\nFrançais pouvaient mourir qu'elles auraient sauvés peut-être! C'était sa\nspécialité, à elle, de soigner les militaires; elle avait été en Crimée,\nen Italie, en Autriche, et, racontant ses campagnes, elle se révéla tout\nà coup une de ces religieuses à tambours et à trompettes qui semblent\nfaites pour suivre les camps, ramasser des blessés dans des remous des\nbatailles, et, mieux qu'un chef, dompter d'un mot les grands soudards\nindisciplinés; une vraie bonne soeur Ran-tan-plan dont la figure\nravagée, crevée de trous sans nombre, paraissait une image des\ndévastations de la guerre.",
+        "seg_type": "narration",
+        "char_count": 1211,
+        "word_count": 192,
+        "paragraph_idx": 217
+      },
+      {
+        "index": 268,
+        "text": "Personne ne dit rien après elle, tant l'effet semblait excellent.",
+        "seg_type": "narration",
+        "char_count": 65,
+        "word_count": 10,
+        "paragraph_idx": 218
+      },
+      {
+        "index": 269,
+        "text": "Aussitôt le repas terminé, on remonta bien vite dans les chambres pour\nne descendre, le lendemain, qu'assez tard dans la matinée.",
+        "seg_type": "narration",
+        "char_count": 129,
+        "word_count": 21,
+        "paragraph_idx": 219
+      },
+      {
+        "index": 270,
+        "text": "Le déjeuner fut tranquille. On donnait à la graine semée la veille le\ntemps de germer et de pousser ses fruits.",
+        "seg_type": "narration",
+        "char_count": 111,
+        "word_count": 21,
+        "paragraph_idx": 220
+      },
+      {
+        "index": 271,
+        "text": "La comtesse proposa de faire une promenade dans l'après-midi; alors le\ncomte, comme il était convenu, prit le bras de Boule de Suif, et demeura\nderrière les autres, avec elle.",
+        "seg_type": "narration",
+        "char_count": 175,
+        "word_count": 30,
+        "paragraph_idx": 221
+      },
+      {
+        "index": 272,
+        "text": "Il lui parla de ce ton familier, paternel, un peu dédaigneux, que les\nhommes posés emploient avec les filles, l'appelant: «ma chère enfant»,\nla traitant du haut de sa position sociale, de son honorabilité\nindiscutée. Il pénétra tout de suite au vif de la question:",
+        "seg_type": "narration",
+        "char_count": 264,
+        "word_count": 45,
+        "paragraph_idx": 222
+      },
+      {
+        "index": 273,
+        "text": "--Donc, vous préférez nous laisser ici, exposés comme vous-même à toutes\nles violences qui suivraient un échec des troupes prussiennes, plutôt\nque de consentir à une de ces complaisances que vous avez eues si\nsouvent en votre vie?",
+        "seg_type": "narration",
+        "char_count": 230,
+        "word_count": 38,
+        "paragraph_idx": 223
+      },
+      {
+        "index": 274,
+        "text": "Boule de Suif ne répondit rien.",
+        "seg_type": "narration",
+        "char_count": 31,
+        "word_count": 6,
+        "paragraph_idx": 224
+      },
+      {
+        "index": 275,
+        "text": "Il la prit par la douceur, par le raisonnement, par les sentiments. Il\nsut rester «monsieur le comte», tout en se montrant galant quand il le\nfallut, complimenteur, aimable enfin. Il exalta le service qu'elle\nleur rendrait, parla de leur reconnaissance; puis soudain, la tutoyant\ngaiement: «Et tu sais, ma chère, il pourrait se vanter d'avoir goûté\nd'une jolie fille comme il n'en trouvera pas beaucoup dans son pays.»",
+        "seg_type": "narration",
+        "char_count": 418,
+        "word_count": 69,
+        "paragraph_idx": 225
+      },
+      {
+        "index": 276,
+        "text": "Boule de Suif ne répondit pas et rejoignit la société. Aussitôt rentrée,\nelle monta chez elle et ne reparut plus. L'inquiétude était extrême.\nQu'allait-elle faire? Si elle résistait, quel embarras!",
+        "seg_type": "narration",
+        "char_count": 197,
+        "word_count": 30,
+        "paragraph_idx": 226
+      },
+      {
+        "index": 277,
+        "text": "L'heure du dîner sonna; on l'attendit en vain. M. Follenvie, entrant\nalors, annonça que Mlle Rousset se sentait indisposée, et qu'on pouvait\nse mettre à table. Tout le monde dressa l'oreille. Le comte s'approcha\nde l'aubergiste, et, tout bas: «Ça y est?--Oui.» Par convenance, il ne\ndit rien à ses compagnons, mais il leur fit seulement un léger signe de\nla tête. Aussitôt un grand soupir de soulagement sortit de toutes\nles poitrines, une allégresse parut sur les visages. Loiseau cria:",
+        "seg_type": "narration",
+        "char_count": 487,
+        "word_count": 81,
+        "paragraph_idx": 227
+      },
+      {
+        "index": 278,
+        "text": "Saperlipopette! je paye du Champagne si l'on en trouve dans\nl'établissement",
+        "seg_type": "dialogue",
+        "char_count": 75,
+        "word_count": 11,
+        "paragraph_idx": 227
+      },
+      {
+        "index": 279,
+        "text": "; et Mme Loiseau eut une angoisse lorsque le patron\nrevint avec quatre bouteilles aux mains. Chacun était devenu subitement\ncommunicatif et bruyant; une joie égrillarde emplissait les coeurs.\nLe comte parut s'apercevoir que Mme Carré-Lamadon était charmante, le\nmanufacturier fit des compliments à la comtesse. La conversation fut\nvive, enjouée, pleine de traits.",
+        "seg_type": "narration",
+        "char_count": 363,
+        "word_count": 54,
+        "paragraph_idx": 227
+      },
+      {
+        "index": 280,
+        "text": "Tout à coup, Loiseau, la face anxieuse et levant les bras, hurla:\n«Silence!» Tout le monde se tut, surpris, presque effrayé déjà. Alors il\ntendit l'oreille en faisant",
+        "seg_type": "narration",
+        "char_count": 166,
+        "word_count": 28,
+        "paragraph_idx": 228
+      },
+      {
+        "index": 281,
+        "text": "Chut!",
+        "seg_type": "dialogue",
+        "char_count": 5,
+        "word_count": 1,
+        "paragraph_idx": 228
+      },
+      {
+        "index": 282,
+        "text": "des deux mains, leva les yeux\nvers le plafond, écouta de nouveau, et reprit, de sa voix naturelle:",
+        "seg_type": "narration",
+        "char_count": 98,
+        "word_count": 18,
+        "paragraph_idx": 228
+      },
+      {
+        "index": 283,
+        "text": "Rassurez-vous, tout va bien.",
+        "seg_type": "dialogue",
+        "char_count": 28,
+        "word_count": 4,
+        "paragraph_idx": 228
+      },
+      {
+        "index": 284,
+        "text": "On hésitait à comprendre, mais bientôt un sourire passa.",
+        "seg_type": "narration",
+        "char_count": 56,
+        "word_count": 9,
+        "paragraph_idx": 229
+      },
+      {
+        "index": 285,
+        "text": "Au bout d'un quart d'heure il recommença la même farce, la renouvela\nsouvent dans la soirée; et il faisait semblant d'interpeller quelqu'un à\nl'étage au-dessus, en lui donnant des conseils à double sens puisés dans\nson esprit de commis voyageur. Par moments il prenait un air triste pour\nsoupirer: «Pauvre fille;» ou bien il murmurait entre ses dents d'un air\nrageur:",
+        "seg_type": "narration",
+        "char_count": 367,
+        "word_count": 61,
+        "paragraph_idx": 230
+      },
+      {
+        "index": 286,
+        "text": "Gueux de Prussien, va!",
+        "seg_type": "dialogue",
+        "char_count": 22,
+        "word_count": 4,
+        "paragraph_idx": 230
+      },
+      {
+        "index": 287,
+        "text": "Quelquefois, au moment où l'on n'y\nsongeait plus, il poussait, d'une voix vibrante, plusieurs:«Assez!\nassez!» et ajoutait, comme se parlant à lui-même:",
+        "seg_type": "narration",
+        "char_count": 151,
+        "word_count": 22,
+        "paragraph_idx": 230
+      },
+      {
+        "index": 288,
+        "text": "Pourvu que nous la\nrevoyions; qu'il ne l'en fasse pas mourir, le misérable!",
+        "seg_type": "dialogue",
+        "char_count": 75,
+        "word_count": 13,
+        "paragraph_idx": 230
+      },
+      {
+        "index": 289,
+        "text": "Bien que ces plaisanteries fussent d'un goût déplorable, elles amusaient\net ne blessaient personne, car l'indignation dépend des milieux comme le\nreste, et l'atmosphère qui s'était peu à peu créée autour d'eux était\nchargée de pensées grivoises.",
+        "seg_type": "narration",
+        "char_count": 245,
+        "word_count": 37,
+        "paragraph_idx": 231
+      },
+      {
+        "index": 290,
+        "text": "Au dessert, les femmes elles-mêmes firent des allusions spirituelles et\ndiscrètes. Les regards luisaient; on avait bu beaucoup. Le comte, qui\nconservait, même en ses écarts, sa grande apparence de gravité, trouva\nune comparaison fort goûtée sur la fin des hivernages au pôle et la joie\ndes naufragés qui voient s'ouvrir une route vers le sud.",
+        "seg_type": "narration",
+        "char_count": 342,
+        "word_count": 56,
+        "paragraph_idx": 232
+      },
+      {
+        "index": 291,
+        "text": "Loiseau, lancé, se leva, un verre de Champagne à la main: «Je bois à\nnotre délivrance!» Tout le monde fut debout; on l'acclamait. Les deux\nbonnes soeurs, elles-mêmes, sollicitées par ces dames, consentirent à\ntremper leurs lèvres dans ce vin mousseux dont elles n'avaient jamais\ngoûté. Elles déclarèrent que cela ressemblait à la limonade gazeuse,\nmais que c'était plus fin cependant.",
+        "seg_type": "narration",
+        "char_count": 384,
+        "word_count": 61,
+        "paragraph_idx": 233
+      },
+      {
+        "index": 292,
+        "text": "Loiseau résuma la situation.",
+        "seg_type": "narration",
+        "char_count": 28,
+        "word_count": 4,
+        "paragraph_idx": 234
+      },
+      {
+        "index": 293,
+        "text": "--C'est malheureux de ne pas avoir de piano parce qu'on pourrait pincer\nun quadrille.",
+        "seg_type": "narration",
+        "char_count": 85,
+        "word_count": 14,
+        "paragraph_idx": 235
+      },
+      {
+        "index": 294,
+        "text": "Cornudet n'avait pas dit un mot, pas fait un geste; il paraissait même\nplongé dans des pensées très graves, et tirait parfois, d'un geste\nfurieux, sa grande barbe qu'il semblait vouloir allonger encore. Enfin,\nvers minuit, comme on allait se séparer, Loiseau, qui titubait, lui\ntapa soudain sur le ventre et lui dit en bredouillant:",
+        "seg_type": "narration",
+        "char_count": 332,
+        "word_count": 55,
+        "paragraph_idx": 236
+      },
+      {
+        "index": 295,
+        "text": "Vous n'êtes pas\nfarce, vous, ce soir; vous ne dites rien, citoyen?",
+        "seg_type": "dialogue",
+        "char_count": 66,
+        "word_count": 12,
+        "paragraph_idx": 236
+      },
+      {
+        "index": 296,
+        "text": "Mais Cornudet releva\nbrusquement la tête, et, parcourant la société d'un regard luisant et\nterrible: «Je vous dis à tous que vous venez de faire une infamie!»\nIl se leva, gagna la porte, répéta encore une fois: «Une infamie!» et\ndisparut.",
+        "seg_type": "narration",
+        "char_count": 238,
+        "word_count": 41,
+        "paragraph_idx": 236
+      },
+      {
+        "index": 297,
+        "text": "Cela jeta un froid d'abord. Loiseau, interloqué, restait bête; mais il\nreprit son aplomb, puis, tout à coup, se tordit en répétant:",
+        "seg_type": "narration",
+        "char_count": 131,
+        "word_count": 22,
+        "paragraph_idx": 237
+      },
+      {
+        "index": 298,
+        "text": "Ils sont\ntrop verts, mon vieux, ils sont trop verts.",
+        "seg_type": "dialogue",
+        "char_count": 52,
+        "word_count": 10,
+        "paragraph_idx": 237
+      },
+      {
+        "index": 299,
+        "text": "Comme on ne comprenait pas,\nil raconta les «mystères du corridor». Alors il y eut une reprise de\ngaieté formidable. Ces dames s'amusaient comme des folles. Le comte et\nM. Carré-Lamadon pleuraient à force de rire. Ils ne pouvaient croire.",
+        "seg_type": "narration",
+        "char_count": 237,
+        "word_count": 40,
+        "paragraph_idx": 237
+      },
+      {
+        "index": 300,
+        "text": "--Comment! vous êtes sûr? Il voulait....",
+        "seg_type": "narration",
+        "char_count": 40,
+        "word_count": 6,
+        "paragraph_idx": 238
+      },
+      {
+        "index": 301,
+        "text": "--Je vous dis que je l'ai vu.",
+        "seg_type": "narration",
+        "char_count": 29,
+        "word_count": 7,
+        "paragraph_idx": 239
+      },
+      {
+        "index": 302,
+        "text": "--Et, elle a refusé....",
+        "seg_type": "narration",
+        "char_count": 23,
+        "word_count": 4,
+        "paragraph_idx": 240
+      },
+      {
+        "index": 303,
+        "text": "--Parce que le Prussien était dans la chambre à côté.",
+        "seg_type": "narration",
+        "char_count": 53,
+        "word_count": 10,
+        "paragraph_idx": 241
+      },
+      {
+        "index": 304,
+        "text": "--Pas possible?",
+        "seg_type": "narration",
+        "char_count": 15,
+        "word_count": 2,
+        "paragraph_idx": 242
+      },
+      {
+        "index": 305,
+        "text": "--Je vous le jure.",
+        "seg_type": "narration",
+        "char_count": 18,
+        "word_count": 4,
+        "paragraph_idx": 243
+      },
+      {
+        "index": 306,
+        "text": "Le comte étouffait. L'industriel se comprimait le ventre à deux mains.\nLoiseau continuait:",
+        "seg_type": "narration",
+        "char_count": 90,
+        "word_count": 13,
+        "paragraph_idx": 244
+      },
+      {
+        "index": 307,
+        "text": "--Et, vous comprenez, ce soir, il ne la trouve pas drôle, mais pas du\ntout.",
+        "seg_type": "narration",
+        "char_count": 75,
+        "word_count": 15,
+        "paragraph_idx": 245
+      },
+      {
+        "index": 308,
+        "text": "Et tous les trois repartaient, malades, essoufflés.",
+        "seg_type": "narration",
+        "char_count": 51,
+        "word_count": 7,
+        "paragraph_idx": 246
+      },
+      {
+        "index": 309,
+        "text": "On se sépara là-dessus. Mais Mme Loiseau, qui était de la nature des\norties, fit remarquer à son mari, au moment où ils se couchaient, que\n«cette chipie» de petite Carré-Lamadon avait ri jaune toute la soirée:\n«Tu sais, les femmes, quand ça en tient pour l'uniforme, qu'il soit\nFrançais ou bien Prussien, ça leur est, ma foi, bien égal. Si ce n'est\npas une pitié, Seigneur Dieu!»",
+        "seg_type": "narration",
+        "char_count": 379,
+        "word_count": 68,
+        "paragraph_idx": 247
+      },
+      {
+        "index": 310,
+        "text": "Et toute la nuit, dans l'obscurité du corridor coururent comme des\nfrémissements, des bruits légers, à peine sensibles, pareils à des\nsouffles, des effleurements de pieds nus, d'imperceptibles craquements.\nEt l'on ne dormit que très tard, assurément, car des filets de lumière\nglissèrent longtemps sous les portes. Le champagne a de ces effets-là;\nil trouble, dit-on, le sommeil.",
+        "seg_type": "narration",
+        "char_count": 379,
+        "word_count": 58,
+        "paragraph_idx": 248
+      },
+      {
+        "index": 311,
+        "text": "Le lendemain, un clair soleil d'hiver rendait la neige éblouissante. La\ndiligence, attelée enfin, attendait devant la porte, tandis qu'une armée\nde pigeons blancs, rengorgés dans leurs plumes épaisses, avec un oeil\nrosé, taché, au milieu, d'un point noir, se promenaient gravement entre\nles jambes des six chevaux, et cherchaient leur vie dans le crottin\nfumant qu'ils éparpillaient.",
+        "seg_type": "narration",
+        "char_count": 383,
+        "word_count": 58,
+        "paragraph_idx": 249
+      },
+      {
+        "index": 312,
+        "text": "Le cocher, enveloppé dans sa peau de mouton, grillait une pipe sur le\nsiège, et tous les voyageurs radieux faisaient rapidement empaqueter des\nprovisions pour le reste du voyage.",
+        "seg_type": "narration",
+        "char_count": 178,
+        "word_count": 29,
+        "paragraph_idx": 250
+      },
+      {
+        "index": 313,
+        "text": "On n'attendait plus que Boule de Suif. Elle parut.",
+        "seg_type": "narration",
+        "char_count": 50,
+        "word_count": 9,
+        "paragraph_idx": 251
+      },
+      {
+        "index": 314,
+        "text": "Elle semblait un peu troublée, honteuse; et elle s'avança timidement\nvers ses compagnons, qui, tous, d'un même mouvement, se détournèrent\ncomme s'ils ne l'avaient pas aperçue. Le comte prit avec dignité le bras\nde sa femme et l'éloigna de ce contact impur.",
+        "seg_type": "narration",
+        "char_count": 256,
+        "word_count": 42,
+        "paragraph_idx": 252
+      },
+      {
+        "index": 315,
+        "text": "La grosse fille s'arrêta, stupéfaite; alors, ramassant tout son courage,\nelle aborda la femme du manufacturier d'un «bonjour, madame» humblement\nmurmuré. L'autre fit de la tête seule un petit salut impertinent qu'elle\naccompagna d'un regard de vertu outragée. Tout le monde semblait\naffairé, et l'on se tenait loin d'elle comme si elle eût apporté une\ninfection dans ses jupes. Puis on se précipita vers la voiture où elle\narriva seule, la dernière, et reprit en silence la place qu'elle avait\noccupée pendant la première partie de la route.",
+        "seg_type": "narration",
+        "char_count": 541,
+        "word_count": 88,
+        "paragraph_idx": 253
+      },
+      {
+        "index": 316,
+        "text": "On semblait ne pas la voir, ne pas la connaître; mais Mme Loiseau,\nla considérant de loin avec indignation, dit à mi-voix à son mari:",
+        "seg_type": "narration",
+        "char_count": 133,
+        "word_count": 25,
+        "paragraph_idx": 254
+      },
+      {
+        "index": 317,
+        "text": "Heureusement que je ne suis pas à côté d'elle.",
+        "seg_type": "dialogue",
+        "char_count": 46,
+        "word_count": 9,
+        "paragraph_idx": 254
+      },
+      {
+        "index": 318,
+        "text": "La lourde voiture s'ébranla, et le voyage recommença. On ne parla point\nd'abord. Boule de Suif n'osait pas lever les yeux. Elle se sentait en\nmême temps indignée contre tous ses voisins, et humiliée d'avoir cédé,\nsouillée par les baisers de ce Prussien entre les bras duquel on l'avait\nhypocritement jetée.",
+        "seg_type": "narration",
+        "char_count": 306,
+        "word_count": 51,
+        "paragraph_idx": 255
+      },
+      {
+        "index": 319,
+        "text": "Mais la comtesse, se tournant vers Mme Carré-Lamadon, rompit bientôt ce\npénible silence.",
+        "seg_type": "narration",
+        "char_count": 88,
+        "word_count": 13,
+        "paragraph_idx": 256
+      },
+      {
+        "index": 320,
+        "text": "--Vous connaissez, je crois, Mme d'Étrelles?",
+        "seg_type": "narration",
+        "char_count": 44,
+        "word_count": 6,
+        "paragraph_idx": 257
+      },
+      {
+        "index": 321,
+        "text": "--Oui, c'est une de mes amies.",
+        "seg_type": "narration",
+        "char_count": 30,
+        "word_count": 6,
+        "paragraph_idx": 258
+      },
+      {
+        "index": 322,
+        "text": "--Quelle charmante femme!",
+        "seg_type": "narration",
+        "char_count": 25,
+        "word_count": 3,
+        "paragraph_idx": 259
+      },
+      {
+        "index": 323,
+        "text": "--Ravissante! Une vraie nature d'élite, fort instruite d'ailleurs, et\nartiste jusqu'au bout des doigts; elle chante à ravir et dessine dans la\nperfection.",
+        "seg_type": "narration",
+        "char_count": 154,
+        "word_count": 23,
+        "paragraph_idx": 260
+      },
+      {
+        "index": 324,
+        "text": "Le manufacturier causait avec le comte, et au milieu du fracas des\nvitres un mot parfois jaillissait: «Coupon--échéance--prime--à terme.»",
+        "seg_type": "narration",
+        "char_count": 137,
+        "word_count": 19,
+        "paragraph_idx": 261
+      },
+      {
+        "index": 325,
+        "text": "Loiseau, qui avait chipé le vieux jeu de cartes de l'auberge, engraissé\npar cinq ans de frottement sur les tables mal essuyées, attaqua un\nbésigue avec sa femme.",
+        "seg_type": "narration",
+        "char_count": 161,
+        "word_count": 28,
+        "paragraph_idx": 262
+      },
+      {
+        "index": 326,
+        "text": "Les bonnes soeurs prirent à leur ceinture le long rosaire qui pendait,\nfirent ensemble le signe de la croix, et tout à coup leurs lèvres se\nmirent à remuer vivement, se hâtant de plus en plus, précipitant leur\nvague murmure comme pour une course d'_oremus_; et de temps en\ntemps elle baisaient une médaille, se signaient de nouveau, puis\nrecommençaient leur marmottement rapide et continu.",
+        "seg_type": "narration",
+        "char_count": 389,
+        "word_count": 65,
+        "paragraph_idx": 263
+      },
+      {
+        "index": 327,
+        "text": "Cornudet songeait, immobile.",
+        "seg_type": "narration",
+        "char_count": 28,
+        "word_count": 3,
+        "paragraph_idx": 264
+      },
+      {
+        "index": 328,
+        "text": "Au bout de trois heures de route, Loiseau ramassa ses cartes: «Il fait\nfaim», dit-il.",
+        "seg_type": "narration",
+        "char_count": 85,
+        "word_count": 15,
+        "paragraph_idx": 265
+      },
+      {
+        "index": 329,
+        "text": "Alors sa femme atteignit un paquet ficelé d'où elle fit sortir un\nmorceau de veau froid. Elle le découpa proprement par tranches minces et\nfermes, et tous deux se mirent à manger.",
+        "seg_type": "narration",
+        "char_count": 179,
+        "word_count": 32,
+        "paragraph_idx": 266
+      },
+      {
+        "index": 330,
+        "text": "--Si nous en faisions autant, dit la comtesse. On y consentit et elle\ndéballa les provisions préparées pour les deux ménages. C'était, dans un\nde ces vases allongés dont le couvercle porte un lièvre en faïence,\npour indiquer qu'un lièvre en pâté gît au-dessous, une charcuterie\nsucculente, où de blanches rivières de lard traversaient la chair brune\ndu gibier, mêlée à d'autres viandes hachées fin. Un beau carré de\ngruyère, apporté dans un journal, gardait imprimé: «faits divers» sur sa\npâte onctueuse.",
+        "seg_type": "narration",
+        "char_count": 504,
+        "word_count": 82,
+        "paragraph_idx": 267
+      },
+      {
+        "index": 331,
+        "text": "Les deux bonnes soeurs développèrent un rond de saucisson qui sentait\nl'ail; et Cornudet, plongeant les deux mains en même temps dans les\nvastes poches de son paletot sac, tira de l'une quatre oeufs durs et\nde l'autre le croûton d'un pain. Il détacha la coque, la jeta sous ses\npieds dans la paille et se mit à mordre à même les oeufs, faisant tomber\nsur sa vaste barbe des parcelles de jaune clair qui semblaient, là\ndedans, des étoiles.",
+        "seg_type": "narration",
+        "char_count": 438,
+        "word_count": 80,
+        "paragraph_idx": 268
+      },
+      {
+        "index": 332,
+        "text": "Boule de Suif, dans la hâte et l'effarement de son lever, n'avait pu\nsonger à rien; et elle regardait, exaspérée, suffoquant de rage, tous\nces gens qui mangeaient placidement. Une colère tumultueuse la crispa\nd'abord, et elle ouvrit la bouche pour leur crier leur fait avec un flot\nd'injures qui lui montait aux lèvres; mais elle ne pouvait pas parler\ntant l'exaspération l'étranglait.",
+        "seg_type": "narration",
+        "char_count": 385,
+        "word_count": 63,
+        "paragraph_idx": 269
+      },
+      {
+        "index": 333,
+        "text": "Personne ne la regardait, ne songeait à elle. Elle se sentait noyée\ndans le mépris de ces gredins honnêtes qui l'avaient sacrifiée d'abord,\nrejetée ensuite, comme une chose malpropre et inutile. Alors elle songea\nà son grand panier tout plein de bonnes choses qu'ils avaient goulûment\ndévorées, à ses deux poulets luisants de gelée, à ses pâtés, à ses\npoires, à ses quatre bouteilles de Bordeaux; et sa fureur tombant\nsoudain, comme une corde trop tendue qui casse, elle se sentit prête à\npleurer. Elle fit des efforts terribles, se raidit, avala ses sanglots\ncomme les enfants, mais les pleurs montaient, luisaient au bord de\nses paupières, et bientôt deux grosses larmes, se détachant des yeux,\nroulèrent lentement sur ses joues. D'autres les suivirent plus rapides,\ncoulant comme des gouttes d'eau qui filtrent d'une roche, et tombant\nrégulièrement sur la courbe rebondie de sa poitrine. Elle restait\ndroite, le regard fixe, la face rigide et pâle, espérant qu'on ne la\nverrait pas.",
+        "seg_type": "narration",
+        "char_count": 985,
+        "word_count": 162,
+        "paragraph_idx": 270
+      },
+      {
+        "index": 334,
+        "text": "Mais la comtesse s'en aperçut et prévint son mari d'un signe. Il haussa\nles épaules comme pour dire: «Que voulez-vous, ce n'est pas ma faute.»\nMme Loiseau eut un rire muet de triomphe et murmura:",
+        "seg_type": "narration",
+        "char_count": 195,
+        "word_count": 35,
+        "paragraph_idx": 271
+      },
+      {
+        "index": 335,
+        "text": "Elle pleure sa\nhonte.",
+        "seg_type": "dialogue",
+        "char_count": 21,
+        "word_count": 4,
+        "paragraph_idx": 271
+      },
+      {
+        "index": 336,
+        "text": "Les deux bonnes soeurs s'étaient remises à prier, après avoir roulé dans\nun papier le reste de leur saucisson.",
+        "seg_type": "narration",
+        "char_count": 110,
+        "word_count": 19,
+        "paragraph_idx": 272
+      },
+      {
+        "index": 337,
+        "text": "Alors Cornudet, qui digérait ses oeufs, étendit ses longues jambes sous\nla banquette d'en face, se renversa, croisa ses bras, sourit comme un\nhomme qui vient de trouver une bonne farce, et se mit à siffloter la\n_Marseillaise_.",
+        "seg_type": "narration",
+        "char_count": 226,
+        "word_count": 38,
+        "paragraph_idx": 273
+      },
+      {
+        "index": 338,
+        "text": "Toutes les figures se rembrunirent. Le chant populaire, assurément, ne\nplaisait point à ses voisins. Ils devinrent nerveux, agacés, et avaient\nl'air prêts à hurler comme des chiens qui entendent un orgue de\nbarbarie. Il s'en aperçut, ne s'arrêta plus. Parfois même il fredonnait\nles paroles:",
+        "seg_type": "narration",
+        "char_count": 291,
+        "word_count": 46,
+        "paragraph_idx": 274
+      },
+      {
+        "index": 339,
+        "text": "Amour sacré de la patrie,\n  Conduis, soutiens, nos bras vengeurs,\n  Liberté, liberté chérie,\n  Combats avec tes défenseurs!",
+        "seg_type": "narration",
+        "char_count": 123,
+        "word_count": 17,
+        "paragraph_idx": 275
+      },
+      {
+        "index": 340,
+        "text": "On fuyait plus vite, la neige étant plus dure; et jusqu'à Dieppe,\npendant les longues heures mornes du voyage, à travers les cahots du\nchemin, par la nuit tombante, puis dans l'obscurité profonde de la\nvoiture, il continua, avec une obstination féroce, son sifflement\nvengeur et monotone, contraignant les esprits las et exaspérés à suivre\nle chant d'un bout à l'autre, à se rappeler chaque parole qu'ils\nappliquaient sur chaque mesure.",
+        "seg_type": "narration",
+        "char_count": 436,
+        "word_count": 71,
+        "paragraph_idx": 276
+      },
+      {
+        "index": 341,
+        "text": "Et Boule de Suif pleurait toujours; et parfois un sanglot, qu'elle\nn'avait pu retenir, passait, entre deux couplets, dans les ténèbres.",
+        "seg_type": "narration",
+        "char_count": 135,
+        "word_count": 21,
+        "paragraph_idx": 277
+      }
+    ]
+  },
+  "characters": {
+    "detected": 9,
+    "profiles": {
+      "comte": {
+        "full_name": "Comte Hubert de Breville",
+        "gender": "M",
+        "role": "secondaire",
+        "mentions": 86,
+        "segments_mentioned": 42,
+        "utterances": 5,
+        "words_spoken": 46,
+        "words_in_segments": 2525,
+        "seg_type_distribution": {
+          "narration": 42
+        },
+        "speech_ratio": 0.018217821782178217
+      },
+      "officier": {
+        "full_name": "Officier prussien",
+        "gender": "M",
+        "role": "antagoniste",
+        "mentions": 52,
+        "segments_mentioned": 42,
+        "utterances": 2,
+        "words_spoken": 27,
+        "words_in_segments": 3028,
+        "seg_type_distribution": {
+          "narration": 37,
+          "dialogue": 4,
+          "description": 1
+        },
+        "speech_ratio": 0.00891677675033025
+      },
+      "loiseau": {
+        "full_name": "Monsieur Loiseau",
+        "gender": "M",
+        "role": "secondaire",
+        "mentions": 50,
+        "segments_mentioned": 48,
+        "utterances": 6,
+        "words_spoken": 203,
+        "words_in_segments": 2746,
+        "seg_type_distribution": {
+          "narration": 47,
+          "dialogue": 1
+        },
+        "speech_ratio": 0.07392571012381646
+      },
+      "boule_de_suif": {
+        "full_name": "Elisabeth Rousset",
+        "gender": "F",
+        "role": "protagoniste",
+        "mentions": 42,
+        "segments_mentioned": 38,
+        "utterances": 1,
+        "words_spoken": 2,
+        "words_in_segments": 2225,
+        "seg_type_distribution": {
+          "narration": 38
+        },
+        "speech_ratio": 0.0008988764044943821
+      },
+      "comtesse": {
+        "full_name": "Comtesse de Breville",
+        "gender": "F",
+        "role": "secondaire",
+        "mentions": 35,
+        "segments_mentioned": 17,
+        "utterances": 0,
+        "words_spoken": 0,
+        "words_in_segments": 1267,
+        "seg_type_distribution": {
+          "narration": 17
+        },
+        "speech_ratio": 0.0
+      },
+      "cornudet": {
+        "full_name": "Cornudet",
+        "gender": "M",
+        "role": "secondaire",
+        "mentions": 30,
+        "segments_mentioned": 28,
+        "utterances": 1,
+        "words_spoken": 12,
+        "words_in_segments": 2259,
+        "seg_type_distribution": {
+          "narration": 28
+        },
+        "speech_ratio": 0.005312084993359893
+      },
+      "soeurs": {
+        "full_name": "Les bonnes soeurs",
+        "gender": "F",
+        "role": "figurant",
+        "mentions": 21,
+        "segments_mentioned": 17,
+        "utterances": 1,
+        "words_spoken": 6,
+        "words_in_segments": 1523,
+        "seg_type_distribution": {
+          "narration": 17
+        },
+        "speech_ratio": 0.003939592908732764
+      },
+      "mme_loiseau": {
+        "full_name": "Mme Loiseau",
+        "gender": "F",
+        "role": "secondaire",
+        "mentions": 8,
+        "segments_mentioned": 8,
+        "utterances": 2,
+        "words_spoken": 6,
+        "words_in_segments": 398,
+        "seg_type_distribution": {
+          "narration": 8
+        },
+        "speech_ratio": 0.01507537688442211
+      },
+      "carre_lamadon": {
+        "full_name": "Monsieur Carre-Lamadon",
+        "gender": "M",
+        "role": "secondaire",
+        "mentions": 2,
+        "segments_mentioned": 2,
+        "utterances": 0,
+        "words_spoken": 0,
+        "words_in_segments": 107,
+        "seg_type_distribution": {
+          "narration": 2
+        },
+        "speech_ratio": 0.0
+      }
+    }
+  },
+  "utterances": {
+    "total": 39,
+    "entries": [
+      {
+        "index": 0,
+        "speaker": "Narrateur",
+        "text": "J'emmène ma\nfemme,",
+        "seg_index": 25,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 1,
+        "speaker": "Narrateur",
+        "text": "J'en fais autant.«--«Et moi aussi.",
+        "seg_index": 27,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 2,
+        "speaker": "Narrateur",
+        "text": "Nous ne reviendrons pas à Rouen, et si les Prussiens\napprochent du Havre nous gagnerons l'Angleterre.",
+        "seg_index": 29,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 3,
+        "speaker": "Narrateur",
+        "text": "Pourquoi ne montez-vous\npas dans la voiture, vous serez à l'abri, au moins.",
+        "seg_index": 35,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 4,
+        "speaker": "Narrateur",
+        "text": "Tout le\nmonde est-il monté?",
+        "seg_index": 39,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 5,
+        "speaker": "Narrateur",
+        "text": "Oui.",
+        "seg_index": 41,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 6,
+        "speaker": "Narrateur",
+        "text": "Il est impayable, ce Loiseau.",
+        "seg_index": 50,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 7,
+        "speaker": "Narrateur",
+        "text": "C'est bon tout de même, ça réchauffe, et\nça trompe l'appétit.",
+        "seg_index": 76,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 8,
+        "speaker": "Monsieur Loiseau",
+        "text": "A la bonne\nheure, madame a eu plus de précaution que nous. Il y a des personnes qui\nsavent toujours penser à tout.",
+        "seg_index": 82,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 9,
+        "speaker": "Monsieur Loiseau",
+        "text": "Dans des moments comme celui-ci, on est bien aise de trouver\ndes gens qui vous obligent.",
+        "seg_index": 84,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 10,
+        "speaker": "Mme Loiseau",
+        "text": "charmante compagne",
+        "seg_index": 88,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 11,
+        "speaker": "Mme Loiseau",
+        "text": "Mais oui, certainement, monsieur,",
+        "seg_index": 90,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 12,
+        "speaker": "Les bonnes soeurs",
+        "text": "C'est la faim, pas autre chose.",
+        "seg_index": 94,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 13,
+        "speaker": "Narrateur",
+        "text": "Nous\nacceptons avec reconnaissance, madame.",
+        "seg_index": 97,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 14,
+        "speaker": "Narrateur",
+        "text": "Foulez-vous tescentre, messieurs et tames?",
+        "seg_index": 112,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 15,
+        "speaker": "Officier prussien",
+        "text": "Bonjour monsieur",
+        "seg_index": 114,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 16,
+        "speaker": "Narrateur",
+        "text": "C'est pien",
+        "seg_index": 119,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 17,
+        "speaker": "Narrateur",
+        "text": "Oh! la canaille! la canaille!",
+        "seg_index": 141,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 18,
+        "speaker": "Narrateur",
+        "text": "Non, cela ne\nvous regarde pas, je ne peux pas parler.",
+        "seg_index": 143,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 19,
+        "speaker": "Narrateur",
+        "text": "M'aimes-tu, chérie?",
+        "seg_index": 166,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 20,
+        "speaker": "Narrateur",
+        "text": "Oh! ceux-là ne sont pas méchants;\nc'est pas des Prussiens à ce qu'on dit. Ils sont de plus loin; je ne\nsais pas bien d'où; et ils ont tous laissé une femme et des enfants au\npays; ça ne les amuse pas, la guerre, allez! Je suis sûr qu'on pleure\nbien aussi là-bas après les hommes; et ça fournira une fameuse misère\nchez eux comme chez nous. Ici, encore, on n'est pas trop malheureux pour\nle moment, parce qu'ils ne font pas de mal et qu'ils travaillent comme\ns'ils étaient dans leurs maisons. Voyez-vous, monsieur, entre pauvres\ngens, faut bien qu'on s'aide ... C'est les grands qui font la guerre.",
+        "seg_index": 170,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 21,
+        "speaker": "Officier prussien",
+        "text": "Monsieur Follenvie, vous\ndéfendrez qu'on attelle demain la voiture de ces voyageurs. Je ne veux\npas qu'ils partent sans mon ordre. Vous entendez. Ça suffit.",
+        "seg_index": 189,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 22,
+        "speaker": "Narrateur",
+        "text": "Tu placeras\nmon lait de poule devant le feu,",
+        "seg_index": 212,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 23,
+        "speaker": "Comte Hubert de Breville",
+        "text": "garce-là",
+        "seg_index": 222,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 24,
+        "speaker": "Comte Hubert de Breville",
+        "text": "Si\nl'on se sauvait à pied,",
+        "seg_index": 224,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 25,
+        "speaker": "Comte Hubert de Breville",
+        "text": "Y songez-vous, dans cette neige? avec nos femmes? Et puis nous\nserions tout de suite poursuivis, rattrapés en dix minutes, et ramenés\nprisonniers à la merci des soldats.",
+        "seg_index": 226,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 26,
+        "speaker": "Monsieur Loiseau",
+        "text": "Nous n'allons\npourtant pas mourir de vieillesse ici. Puisque c'est son métier, à cette\ngueuse, de faire ça avec tous les hommes, je trouve qu'elle n'a pas le\ndroit de refuser l'un plutôt que l'autre. Je vous demande un peu, ça a\npris tout ce qu'elle a trouvé dans Rouen, même des cochers! oui, madame,\nle cocher de la préfecture! Je le sais bien, moi, il achète son vin à la\nmaison. Et aujourd'hui qu'il s'agit de nous tirer d'embarras, elle fait\nla mijaurée, cette morveuse!... Moi, je trouve qu'il se conduit très\nbien, cet officier. Il est peut-être privé depuis longtemps; et nous\nétions là trois qu'il aurait sans doute préférées. Mais non, il se\ncontente de celle à tout le monde. Il respecte les femmes mariées.\nSongez donc, il est le maître. Il n'avait qu'à dire: «Je veux",
+        "seg_index": 238,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 27,
+        "speaker": "Comte Hubert de Breville",
+        "text": "Chut!",
+        "seg_index": 248,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 28,
+        "speaker": "Narrateur",
+        "text": "C'est si bon de\nprier quelquefois.",
+        "seg_index": 251,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 29,
+        "speaker": "Elisabeth Rousset",
+        "text": "Non, monsieur.",
+        "seg_index": 260,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 30,
+        "speaker": "Monsieur Loiseau",
+        "text": "Saperlipopette! je paye du Champagne si l'on en trouve dans\nl'établissement",
+        "seg_index": 278,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 31,
+        "speaker": "Narrateur",
+        "text": "Chut!",
+        "seg_index": 281,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 32,
+        "speaker": "Narrateur",
+        "text": "Rassurez-vous, tout va bien.",
+        "seg_index": 283,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 33,
+        "speaker": "Narrateur",
+        "text": "Gueux de Prussien, va!",
+        "seg_index": 286,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 34,
+        "speaker": "Narrateur",
+        "text": "Pourvu que nous la\nrevoyions; qu'il ne l'en fasse pas mourir, le misérable!",
+        "seg_index": 288,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 35,
+        "speaker": "Cornudet",
+        "text": "Vous n'êtes pas\nfarce, vous, ce soir; vous ne dites rien, citoyen?",
+        "seg_index": 295,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 36,
+        "speaker": "Comte Hubert de Breville",
+        "text": "Ils sont\ntrop verts, mon vieux, ils sont trop verts.",
+        "seg_index": 298,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 37,
+        "speaker": "Monsieur Loiseau",
+        "text": "Heureusement que je ne suis pas à côté d'elle.",
+        "seg_index": 317,
+        "utterance_type": "dialogue"
+      },
+      {
+        "index": 38,
+        "speaker": "Monsieur Loiseau",
+        "text": "Elle pleure sa\nhonte.",
+        "seg_index": 335,
+        "utterance_type": "dialogue"
+      }
+    ]
+  },
+  "voice_recommendations": {
+    "comte": {
+      "voice": "am_adam",
+      "model": "kokoro",
+      "raison": "Grave et diplomate - ideale pour autorite, noblesse"
+    },
+    "officier": {
+      "voice": "am_adam",
+      "model": "kokoro",
+      "raison": "Grave et diplomate - ideale pour autorite, noblesse"
+    },
+    "loiseau": {
+      "voice": "am_adam",
+      "model": "kokoro",
+      "raison": "Grave et diplomate - ideale pour autorite, noblesse"
+    },
+    "boule_de_suif": {
+      "voice": "af_bella",
+      "model": "kokoro",
+      "raison": "Chaleureuse et expressive - ideale pour personnages centraux"
+    },
+    "comtesse": {
+      "voice": "af_sarah",
+      "model": "kokoro",
+      "raison": "Posee et distinguee - ideale pour noblesse, autorite douce"
+    },
+    "cornudet": {
+      "voice": "am_adam",
+      "model": "kokoro",
+      "raison": "Grave et diplomate - ideale pour autorite, noblesse"
+    },
+    "soeurs": {
+      "voice": "af_sky",
+      "model": "kokoro",
+      "raison": "Douce et aerienne - ideale pour personnages discrets ou jeunes"
+    },
+    "mme_loiseau": {
+      "voice": "af_sarah",
+      "model": "kokoro",
+      "raison": "Posee et distinguee - ideale pour noblesse, autorite douce"
+    },
+    "carre_lamadon": {
+      "voice": "am_adam",
+      "model": "kokoro",
+      "raison": "Grave et diplomate - ideale pour autorite, noblesse"
+    }
+  }
+}
