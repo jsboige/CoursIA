@@ -141,6 +141,68 @@ class MultiStrategyPouchesPCM(PortfolioConstructionModel):
         self.additive = additive
 """
 
+# --- La sous-classe : un second chemin vers le defaut du canonique -----
+#
+# Reserve du coordinateur sur #25924 : une sous-classe qui forwarde
+# `**kwargs` au `super().__init__` du canonique atteint le defaut
+# `additive` sans que l'appel du consommateur ne nomme le canonique.
+
+DERIVED_CLASS_SRC = """from AlgorithmImports import *
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
+
+
+class CappedPouchesPCM(MultiStrategyPouchesPCM):
+    \"\"\"Sous-classe qui forwarde `**kwargs` au canonique.\"\"\"
+
+    def __init__(self, alpha_allocations, line_cap, **kwargs):
+        super().__init__(alpha_allocations, **kwargs)
+        self.line_cap = line_cap
+"""
+
+# La meme sous-classe, mais elle fixe le mode elle-meme : le defaut du
+# canonique n'est plus atteint par l'appel du consommateur.
+DERIVED_CLASS_PINNED_SRC = """from AlgorithmImports import *
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
+
+
+class CappedPouchesPCM(MultiStrategyPouchesPCM):
+    \"\"\"Sous-classe qui epingle le mode.\"\"\"
+
+    def __init__(self, alpha_allocations, line_cap, **kwargs):
+        kwargs["additive"] = True
+        super().__init__(alpha_allocations, **kwargs)
+        self.line_cap = line_cap
+"""
+
+DERIVED_CONSUMER_IMPLICIT_SRC = """from AlgorithmImports import *
+from SharedPCM.pouches_pcm import CappedPouchesPCM
+
+
+class DemoComposite(QCAlgorithm):
+    \"\"\"Consommateur d'une sous-classe, sans `additive`.\"\"\"
+
+    def initialize(self):
+        self.set_portfolio_construction(CappedPouchesPCM(
+            {"Demo": 1.0},
+            line_cap=0.4,
+        ))
+"""
+
+DERIVED_CONSUMER_EXPLICIT_SRC = """from AlgorithmImports import *
+from SharedPCM.pouches_pcm import CappedPouchesPCM
+
+
+class DemoComposite(QCAlgorithm):
+    \"\"\"Consommateur d'une sous-classe, `additive` ecrit.\"\"\"
+
+    def initialize(self):
+        self.set_portfolio_construction(CappedPouchesPCM(
+            {"Demo": 1.0},
+            line_cap=0.4,
+            additive=True,
+        ))
+"""
+
 
 def _digest(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -287,6 +349,50 @@ def test_signature_positionnelle_non_etablie_fait_rougir(tmp_path):
     report = analyse(root, manifest)
     assert report["verdict"] == "FAIL", report
     assert "CANONICAL_SIGNATURE_UNREADABLE" in _codes(report)
+
+
+def test_sous_classe_sans_additive_fait_rougir(tmp_path):
+    """CONTROLE POSITIF : la sous-classe est un second chemin vers le defaut.
+
+    Reserve du coordinateur sur #25924 : `composite-c1-multiasset` instancie
+    `CappedPouchesPCM`, qui forwarde `**kwargs` au `super().__init__` du
+    canonique. Sans `additive` dans l'appel, le defaut du canonique est
+    atteint par le forward — invisible a la garde, qui ne voyait que les
+    appels nommant le canonique.
+    """
+    root, manifest = _tree(tmp_path)
+    _write(root, f"{QC_ROOT}/projects/CappedComposite/portfolio_construction.py",
+           DERIVED_CLASS_SRC)
+    _write(root, f"{QC_ROOT}/projects/CappedComposite/main.py",
+           DERIVED_CONSUMER_IMPLICIT_SRC)
+    report = analyse(root, manifest)
+    assert report["verdict"] == "FAIL", report
+    assert "DERIVED_IMPLICIT_DEFAULT" in _codes(report)
+
+
+def test_sous_classe_avec_additive_passe(tmp_path):
+    """Une sous-classe dont l'appel ecrit `additive` : le defaut n'est pas atteint."""
+    root, manifest = _tree(tmp_path)
+    _write(root, f"{QC_ROOT}/projects/CappedComposite/portfolio_construction.py",
+           DERIVED_CLASS_SRC)
+    _write(root, f"{QC_ROOT}/projects/CappedComposite/main.py",
+           DERIVED_CONSUMER_EXPLICIT_SRC)
+    report = analyse(root, manifest)
+    assert report["verdict"] == "OK", report
+    assert "DERIVED_IMPLICIT_DEFAULT" not in _codes(report)
+
+
+def test_sous_classe_qui_pinne_le_mode_passe(tmp_path):
+    """Une sous-classe qui passe `additive` a `super().__init__` fixe le mode
+    elle-meme : le defaut du canonique n'est pas atteint par l'appel."""
+    root, manifest = _tree(tmp_path)
+    _write(root, f"{QC_ROOT}/projects/CappedComposite/portfolio_construction.py",
+           DERIVED_CLASS_PINNED_SRC)
+    _write(root, f"{QC_ROOT}/projects/CappedComposite/main.py",
+           DERIVED_CONSUMER_IMPLICIT_SRC)
+    report = analyse(root, manifest)
+    assert report["verdict"] == "OK", report
+    assert "DERIVED_IMPLICIT_DEFAULT" not in _codes(report)
 
 
 def test_canonique_modifie_fait_rougir(tmp_path):
