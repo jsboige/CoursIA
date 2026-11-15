@@ -39,7 +39,6 @@
       "IIT/ICT-Series/ICT-30-InhibitedInvention-Python.ipynb",
       "IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb",
       "IIT/ICT-Series/ICT-33-SoupCollisions-Python.ipynb",
-      "IIT/ICT-Series/ICT-34-BancRecollementLectures-Python.ipynb",
       "IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb",
       "IIT/ICT-Series/ICT-40a-TriangulationCausale-Python.ipynb",
       "IIT/ICT-Series/ICT-42e-InoculationNegativeWitness-Python.ipynb",
@@ -76,12 +75,14 @@
     ],
     "ML/DataScienceWithAgents/04-Vision": [
       "ML/DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb",
-      "ML/DataScienceWithAgents/04-Vision/4.3-TransferLearning-ResNet.ipynb",
-      "ML/DataScienceWithAgents/04-Vision/4.4b-Detection-AnchorFree-From-Scratch.ipynb"
+      "ML/DataScienceWithAgents/04-Vision/4.3-TransferLearning-ResNet.ipynb"
     ],
     "ML/ML.Net": [
       "ML/ML.Net/ML-01-Introduction-Python.ipynb",
       "ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb"
+    ],
+    "Physique/Chaines": [
+      "Physique/Chaines/Chaines-02-Born-Unitarite-Incertitude-Python.ipynb"
     ],
     "Probas/DecisionTheory/DecPyMC": [
       "Probas/DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb"
@@ -112,13 +113,13 @@
       "Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb"
     ],
     "Search/Part3-Cas-pratiques": [
+      "Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb",
+      "Search/Part3-Cas-pratiques/App-08-MiniZinc-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb",
-      "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb",
-      "Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
-      "Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb"
+      "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-Python.ipynb"
     ],
     "Search/Part4-Metaheuristics/MGS-vs-mealpy": [
       "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb"
@@ -144,7 +145,7 @@
     ],
     "SymbolicAI/SemanticWeb": [
       "SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb",
-      "SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb",
+      "SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-CSharp.ipynb",
       "SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb"
     ],
     "SymbolicAI/SymbolicLearning": [
@@ -160,13 +161,13 @@
   },
   "instrument": "2026-11-02.1",
   "provenance": {
-    "behind_origin_main": 0,
+    "behind_origin_main": 35,
     "branch": "refactor/20298-ict12-marchepied",
     "dirty": true,
-    "head": "fdfd3e045a352c9bb8c59160139d612e5c7a4565",
+    "head": "3254b5f718868b51b433cb38c000194b38c98fab",
     "instrument": "2026-11-02.1",
     "non_main": true,
-    "origin_main": "1f1aef2307e2125b09c7b16ef5b0f2787ce92ff7",
-    "written_at": "2026-11-13T17:27:18Z"
+    "origin_main": "ffdfd724e3fb25ee8c188a11cc0ca7adbd7528bf",
+    "written_at": "2026-11-15T07:01:52Z"
   }
 }

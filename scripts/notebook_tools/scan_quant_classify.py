@@ -19,7 +19,7 @@ et D5 v3 intra-revision, PRs #9791 + #9793 MERGED). Reutilise
 
 Toutes les valeurs quantitatives ne sont pas equivalentes. Une regle qui
 interdirait TOUTES les valeurs en prose ferait perdre de la richesse
-pedagogique (le speedup `2.78e24x` du App-11-Picross est structurellement
+pedagogique (le speedup `2.78e24x` du App-11-Picross-Python est structurellement
 stable ; le retirer = regression pedagogique). Une regle qui ne ferait rien
 laisse la derive se reconstituer apres chaque correction (vague #8052 du
 2026-08-04 : 4 PRs pour 4 notebooks, meme symptome). Le triage 4-classes

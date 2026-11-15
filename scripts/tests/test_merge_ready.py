@@ -2234,13 +2234,18 @@ def test_base_absente_fail_closed(tmp_path):
 #
 # Mesure ai-01 du 2026-11-04 : sous identite App, la porte ne trouvait pas
 # l'APPROVE — la voix du coordinateur etait cablee sur le seul login humain.
-# L'App a d'abord ete cablee comme seconde voix ; l'arbitrage ai-01 du
-# 2026-11-13 l'a RETIREE. La cle privee de ``coursia-lane-ai-01`` vit sur la
-# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
-# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
-# fichier et forge le meme jeton. Une App nommee par MACHINE ne peut pas
-# representer la lane coordinateur seule — il faut une App propre a la lane
-# coordinatrice.
+# L'App de MACHINE a d'abord ete cablee comme seconde voix ; l'arbitrage
+# ai-01 du 2026-11-13 l'a RETIREE : la cle privee de ``coursia-lane-ai-01``
+# vit sur la machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``),
+# ou tourne aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le
+# meme fichier et forge le meme jeton. Une App nommee par MACHINE ne peut
+# pas representer la lane coordinateur seule.
+#
+# L'App PROPRE existe desormais (Q187, 2026-11-14) : App 5763709, slug
+# ``coursia-coord-ai01``, cle dediee
+# ``.secrets/github-apps/coursia-coord-ai01.pem`` DISTINCTE de la cle de
+# machine — seule la lane coordinateur la lit. Elle rejoint la voix du
+# coordinateur ; l'App de machine reste refusee.
 #
 # Le mecanisme de preuve d'identite reste en place et reste teste : la
 # preuve est le TYPE PORTE PAR LA LIGNE (REST ``user.type``, GraphQL
@@ -2250,6 +2255,8 @@ def test_base_absente_fail_closed(tmp_path):
 
 APP_LOGIN_BARE = "coursia-lane-ai-01"
 APP_LOGIN_REST = "coursia-lane-ai-01[bot]"
+COORD_APP_BARE = "coursia-coord-ai01"
+COORD_APP_REST = "coursia-coord-ai01[bot]"
 
 
 def rest_review(*, login: str, type_: str = "Bot",
@@ -2357,14 +2364,74 @@ def test_17437_approve_app_d_une_autre_lane_ne_compte_pas(tmp_path):
     assert lines[-1]["reason"] == "no-coordinator-approval"
 
 
-def test_17437_voix_du_coordinateur_humain_seul():
-    """Arbitrage ai-01 du 2026-11-13 : ``COORDINATOR_VOICES`` ne porte que
-    le login humain. Le rouge est ici la potence — si une edition future y
-    ajoute ``coursia-lane-ai-01[bot]`` (App nommee par MACHINE, forgeable
-    par la lane sœur ``myia-ai-01:CoursIA-2``), ce test le dit avant que la
-    porte Q131 ne s'ouvre."""
-    assert mr.COORDINATOR_VOICES == frozenset(("myia-ai-01",))
-    assert not hasattr(mr, "COORDINATOR_APP_LOGIN")
+def test_17437_voix_du_coordinateur_humain_et_app_propre():
+    """Q187 (2026-11-14) : ``COORDINATOR_VOICES`` porte le login humain PLUS
+    l'App PROPRE a la lane coordinateur (cle dediee, hors de portee de la
+    lane sœur). Potence double : l'App de MACHINE ``coursia-lane-ai-01[bot]``
+    doit rester ABSENTE — si une edition future l'y ajoute (cle lisible par
+    ``myia-ai-01:CoursIA-2``), ce rouge le dit avant que la porte Q131 ne
+    s'ouvre."""
+    assert mr.COORDINATOR_VOICES == frozenset(("myia-ai-01", COORD_APP_REST))
+    assert APP_LOGIN_REST not in mr.COORDINATOR_VOICES
+
+
+def test_17437_approve_app_propre_surf_rest_typee_compte(tmp_path):
+    """L'App PROPRE sur la surface REST typee : login suffixe +
+    ``user.type: Bot`` — le type porte par la ligne prouve l'identite, la
+    cle dediee n'est lisible que de la lane coordinateur : l'APPROVE ouvre
+    la porte Q131."""
+    view = default_view(reviews=[])
+    runner = ScriptedRunner(
+        views={123: view},
+        rest_reviews=[rest_review(login=COORD_APP_REST, type_="Bot")],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+    # la preuve vient de la ligne, jamais d'une sonde users/
+    assert not any("users/" in f for f in runner.flat())
+    assert any("/reviews" in f for f in runner.flat())
+
+
+def test_17437_approve_app_propre_typbot_graphql_compte(tmp_path):
+    """Orthographe GraphQL : login NU ``coursia-coord-ai01`` avec
+    ``__typename: Bot`` — la normalisation reconstruit le suffixe, la ligne
+    typee est la voix du coordinateur."""
+    view = default_view(reviews=[{
+        "author": {"login": COORD_APP_BARE, "__typename": "Bot"},
+        "state": "APPROVED", "body": "",
+        "submittedAt": "2026-09-25T03:00:00Z",
+        "commit": {"oid": HEAD},
+    }])
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+    assert not any("users/" in f for f in runner.flat())
+
+
+def test_17437_approve_app_propre_homonyme_utilisateur_refuse(tmp_path):
+    """L'homonyme UTILISATEUR du slug (``__typename: User``) : la
+    normalisation laisse le login NU, il echoue la borne suffixee — un
+    compte humain nomme comme l'App ne passe pas pour elle."""
+    view = default_view(reviews=[{
+        "author": {"login": COORD_APP_BARE, "__typename": "User"},
+        "state": "APPROVED", "body": "",
+        "submittedAt": "2026-09-25T03:00:00Z",
+        "commit": {"oid": HEAD},
+    }])
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert not any("users/" in f for f in runner.flat())
+
+
+def test_17437_approve_app_propre_nu_sans_type_refuse(tmp_path):
+    """Forme NUE sans type sur la surface CLI : la preuve fait defaut, la
+    ligne n'est pas une voix — fail-closed, meme si l'App existe."""
+    view = default_view(reviews=[review_row(oid=HEAD, login=COORD_APP_BARE)])
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert not any("users/" in f for f in runner.flat())
 
 
 # --- #19002 : defense en profondeur sur la base -----------------------------
