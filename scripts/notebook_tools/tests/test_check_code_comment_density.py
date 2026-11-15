@@ -361,3 +361,26 @@ def test_py_degraded_reported_when_fallback_used():
     """Le repli S'ANNONCE : `py_degraded` est publie, plus seulement nomme."""
     assert notebook_stats(_nb(["y = (2,\nz = 1\n"]))["py_degraded"] == 1
     assert notebook_stats(_nb(["z = 1\n"]))["py_degraded"] == 0
+
+
+def test_py_degraded_propagates_to_compare_rows(tmp_path):
+    """`compare()` recopie `py_degraded` dans les rows (review #26788 pt 2).
+
+    Defaut mesure : `notebook_stats` le calculait mais `compare()` ne le
+    recopiait pas -- ni le JSON ni la sortie texte ne montraient la mesure
+    approchee, le garde publiait une densite degradee sans le dire.
+    """
+    src = "y = (2,\nz = 1\n"          # parenthese ouverte -> repli
+    _git(tmp_path, "init", "-q")
+    _write_nb(tmp_path / "carnet.ipynb", "x = 1\n")
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-qm", "base")
+    _write_nb(tmp_path / "carnet.ipynb", src)
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-qm", "degrade")
+
+    base = resolve_base("HEAD~1", cwd=tmp_path)
+    pairs = diff_notebooks(base, "HEAD", cwd=tmp_path)
+    rows = compare(base, None, pairs, cwd=tmp_path)
+    assert rows, "aucun carnet vu par le garde"
+    assert rows[0]["py_degraded"] == 1, rows[0]

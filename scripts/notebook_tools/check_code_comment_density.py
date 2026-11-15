@@ -792,6 +792,9 @@ def compare(base_ref, head_ref, paths, cwd=None):
                      if base_stats else None),
             "head": {k: head_stats[k] for k in
                      ("code_lines", "comment_lines", "density")},
+            # Cellules Python mesurees par le repli : visible en JSON comme
+            # en texte, la mesure approchee se DECLARE (review #26788 pt 2).
+            "py_degraded": head_stats["py_degraded"],
             "readability": head_stats["readability"],
             **v,
         })
@@ -1049,6 +1052,9 @@ def main(argv=None) -> int:
                     if r["head"]["density"] is not None else "n/a")
             line = (f"  {r['verdict']:<13} {dens:>6} "
                     f"{r['head']['code_lines']:5d} lignes  {r['notebook']}")
+            if r.get("py_degraded"):
+                line += (f"  -- {r['py_degraded']} cellule(s) Python au repli "
+                         "(tokenize en echec, mesure approchee)")
             if r.get("reason"):
                 line += "  -- " + r["reason"]
             print(line)
