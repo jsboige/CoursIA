@@ -51,7 +51,8 @@ une définition du lake — hors d'atteinte de Mathlib par construction. `exact?
 échoue sur l'énoncé (déf locale) ; la route vérifiée en sondage est la forme
 fermée du lake `geometricPartialSum_closed` puis `norm_num`. -/
 theorem panel_quarter_partial_sum : geometricPartialSum (1 / 4) 3 = 21 / 16 := by
-  sorry
+  rw [geometricPartialSum_closed (by norm_num : (1:ℝ) / 4 ≠ 1)]
+  norm_num
 
 /-- **Terrain P2 — monotonie d'un flux constant, reclassée bas de classe**
 (programme prover #1453, dispatch c2770 ; reclassement après review

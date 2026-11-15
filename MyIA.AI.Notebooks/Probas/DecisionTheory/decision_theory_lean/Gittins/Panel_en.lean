@@ -52,7 +52,8 @@ construction. `exact?` fails on the statement (local def); the route verified
 by probing is the lake's closed form `geometricPartialSum_closed` followed by
 `norm_num`. -/
 theorem panel_quarter_partial_sum : geometricPartialSum (1 / 4) 3 = 21 / 16 := by
-  sorry
+  rw [geometricPartialSum_closed (by norm_num : (1:ℝ) / 4 ≠ 1)]
+  norm_num
 
 /-- **P2 terrain — constant-stream monotonicity, reclassified low**
 (prover program #1453, dispatch c2770; reclassification after review
