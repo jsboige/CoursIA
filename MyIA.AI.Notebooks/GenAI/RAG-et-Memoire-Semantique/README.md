@@ -302,3 +302,7 @@ La bibliothèque `libpython` doit exister au chemin calculé ; installer une dis
 ---
 
 *Section RAG et Mémoire Sémantique — Juin 2026*
+
+### Compagnon C# du stockage vectoriel
+
+Le carnet [05-Stockage-Vectoriel-CSharp](05-Stockage-Vectoriel-CSharp.ipynb) reprend les mesures exactes, le graphe pédagogique, le filtrage et les exercices du [carnet Python](05-Stockage-Vectoriel.ipynb). Il utilise Qdrant.Client 1.20.0 et un serveur Qdrant 1.20.0 dans Docker, requis pour l'exécution : le SDK .NET ne propose pas le mode local Python. Les requêtes persistantes sont exactes ; le moteur serveur et les tirages aléatoires diffèrent du mode local Python.
