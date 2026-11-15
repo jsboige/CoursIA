@@ -1,4 +1,10 @@
-import Mathlib
+import Mathlib.Analysis.Normed.Group.Constructions
+import Mathlib.Data.Matrix.Mul
+import Mathlib.Data.Real.Basic
+import Mathlib.Algebra.Order.Archimedean.Basic
+import Mathlib.Algebra.Order.Floor.Ring
+import Mathlib.Order.ConditionallyCompleteLattice.Finset
+import Mathlib.Tactic
 
 /-!
 # Discrépance matricielle — le vocabulaire de l'assemblage k5
