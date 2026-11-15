@@ -864,6 +864,38 @@ class TestRenameProof:
         assert rename_proven("HEAD", "Lean/GALOIS4/galois4_lean",
                               "Lean/Galois4Final/galois4_lean") is True
 
+    def test_a_chained_rename_is_proven_on_a_merge_ref(self, tmp_path, monkeypatch):
+        """Le `ref` de FUSION ne doit pas perdre la filiation (mesure 2026-11-15).
+
+        La CI checkout le `ref` de fusion (``refs/pull/N/merge``), pas la tete
+        de branche. Les deux ne se comportent pas de meme facon : au `ref` de
+        fusion, l'historique limite au chemin est simplifie par TREESAME, et
+        le chemin INTERMEDIAIRE du renommage en deux temps n'a jamais existe
+        sur le premier parent -- git ne suit donc que ce parent, et le commit
+        du second hop disparait de la reponse. La filiation devenait alors
+        INPROUVABLE et la garde declarait PERDU un lake dont la couverture
+        n'a pas bouge. Mesure : PR #26381, `conway_lean` et `knot_lean`
+        PERDUS en CI, 0 PERDU sur la tete de branche.
+        """
+        from check_axiom_gate_coverage import rename_proven
+        run = self._init(tmp_path)
+        self._lake(tmp_path, where="Lean/GOL5/conway5_lean")
+        run("add", "-A")
+        run("commit", "-q", "-m", "init")
+        base_branch = run("rev-parse", "--abbrev-ref", "HEAD").strip()
+        run("checkout", "-q", "-b", "branche")
+        run("mv", "Lean/GOL5", "Lean/GameOfLife5")
+        run("commit", "-q", "-m", "rename 1")
+        run("mv", "Lean/GameOfLife5", "Lean/JeuDeLaVie5")
+        run("commit", "-q", "-m", "rename 2")
+        # Fusion de la branche dans la base : parents (base, branche) et
+        # arbre = celui de la branche -- la forme du `ref` de la CI.
+        run("checkout", "-q", base_branch)
+        run("merge", "--no-ff", "-q", "-m", "merge", "branche")
+        monkeypatch.chdir(tmp_path)
+        assert rename_proven("HEAD", "Lean/GOL5/conway5_lean",
+                              "Lean/JeuDeLaVie5/conway5_lean") is True
+
     def test_a_copied_lake_is_not_a_rename(self, tmp_path, monkeypatch):
         """Une copie n'est pas un deplacement : l'ancien chemin existe encore."""
         import shutil

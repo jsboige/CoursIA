@@ -395,8 +395,21 @@ def _rename_proven_at(cwd: str, ref: str, old_path: str, new_path: str) -> bool:
         if current in seen:
             return False
         seen.add(current)
-        commit = _git("log", "-n", "1", "--diff-filter=D", "--format=%H", ref,
-                      "--", current).strip()
+        # `--full-history` : sans lui, l'historique LIMITE AU CHEMIN est
+        # simplifie par TREESAME, et le commit qui a supprime le chemin peut
+        # disparaitre de la reponse selon la FORME du `ref`. Mesure
+        # 2026-11-15 : au `ref` de la branche, le deuxieme saut
+        # (`Lean/GameOfLife/conway_lean` -> `Lean/JeuDeLaVie/conway_lean`,
+        # commit `cb4649d`) est trouve ; au `ref` de FUSION (la forme que la
+        # CI checkout, `refs/pull/N/merge`), le meme chemin est TREESAME au
+        # premier parent (il n'a jamais existe sur `main`), git ne suit donc
+        # que ce parent, et le commit du renommage disparait de la reponse :
+        # la filiation devenait INPROUVABLE et la garde declarait PERDU un
+        # lake dont la couverture n'a pas bouge. `--full-history` desactive
+        # cette simplification : le commit qui a retire le chemin est lu
+        # quel que soit le `ref`.
+        commit = _git("log", "-n", "1", "--diff-filter=D", "--format=%H",
+                      "--full-history", ref, "--", current).strip()
         if not commit:
             return False
         out = _git("diff", "--name-status", "-M", f"{commit}^", commit)
