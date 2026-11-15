@@ -15,6 +15,13 @@ Ces tests pinnent :
 * le verrou preservant les AUTRES lanes du depot ;
 * le cablage main() : --lane pose le verrou, sans --lane rien n'est ecrit ;
 * bout en bout : un vrai processus vivant dans le verrou -> ROUGE de main().
+
+Depuis la review 5908186749 (#26634) le verrou porte le **processus de
+session du harnais** (ancetre `claude`/`node`), jamais `os.getpid()` du script :
+le cas reel -- deux executions du script, PID de script differents et morts,
+sous deux ancetres de session vivants ou sous le meme -- est pinne ci-dessous.
+Les deux tests de cablage de `main()` injectent l'ancetre (`trouver_ancetre_session`)
+la ou ils s'appuyaient auparavant sur `os.getpid()` comme porteur.
 """
 from __future__ import annotations
 
@@ -158,6 +165,104 @@ def test_creation_inconnue_le_pid_vivant_reste_rouge(tmp_path):
     assert checks[0].level == session_hygiene.RED
 
 
+# --- cas reel de la review 5908186749 : ancetre de session vs PID de script ---
+
+
+def test_deux_sessions_sous_ancetres_differents_rougit(tmp_path):
+    """Le cas mesure : deux executions du script, PID de script differents et
+    MORTS, sous deux processus de session VIVANTS (A puis B) -> ROUGE.
+
+    Avant le fix, le verrou portait le PID du script : mort au cycle suivant,
+    donc reprise silencieuse et doublon invisible. Ici le verrou porte
+    l'ancetre A (vivant) ; la seconde execution tourne sous l'ancetre B
+    (vivant) avec un PID de script 222 mort -> `session-double`.
+    """
+    etat = _etat_par_pid({111: (True, 1.0), 112: (True, 2.0), 222: (False, None)})
+    premier = session_hygiene.check_lane_lock(
+        tmp_path, LANE, session_id="sess-A", etat_pid=etat,
+        session_proc=lambda: (111, "claude.exe"))
+    assert premier[0].level == session_hygiene.GREEN
+    entree = json.loads((tmp_path / VERROU).read_text(encoding="utf-8"))[LANE]
+    assert entree["pid"] == 111, "le verrou porte l'ancetre de session, pas le PID du script"
+    assert entree["proc"] == "claude.exe"
+
+    second = session_hygiene.check_lane_lock(
+        tmp_path, LANE, session_id="sess-B", etat_pid=etat,
+        session_proc=lambda: (112, "claude.exe"))
+    assert second[0].level == session_hygiene.RED
+    assert second[0].name == "session-double"
+    assert "111" in second[0].detail and "SECONDE session" in second[0].detail
+    assert "sess-A" in second[0].detail and "sess-B" in second[0].detail
+    apres = json.loads((tmp_path / VERROU).read_text(encoding="utf-8"))[LANE]
+    assert apres["pid"] == 111, "le verrou du porteur vivant ne se reprend pas"
+
+
+def test_meme_ancetre_reste_vert(tmp_path):
+    """Meme processus de session (deux executions du script, PID de script
+    differents et morts) : vert « deja pose », aucun ROUGE."""
+    etat = _etat_par_pid({111: (True, 1.0), 221: (False, None), 222: (False, None)})
+    session_hygiene.check_lane_lock(
+        tmp_path, LANE, session_id="sess-A", etat_pid=etat,
+        session_proc=lambda: (111, "claude.exe"))
+    checks = session_hygiene.check_lane_lock(
+        tmp_path, LANE, session_id="sess-A", etat_pid=etat,
+        session_proc=lambda: (111, "claude.exe"))
+    assert checks[0].level == session_hygiene.GREEN
+    assert "deja pose" in checks[0].detail
+
+
+def test_sans_ancetre_session_non_mesurable_et_aucune_ecriture(tmp_path):
+    """Aucun ancetre claude/node : AMBER nomme, jamais vert, aucun verrou ecrit."""
+    checks = session_hygiene.check_lane_lock(
+        tmp_path, LANE, session_id="sess-A", etat_pid=_etat_par_pid({}),
+        session_proc=lambda: None)
+    assert len(checks) == 1 and checks[0].name == "session-double"
+    assert checks[0].level == session_hygiene.AMBER
+    assert checks[0].level != session_hygiene.GREEN
+    assert "non mesurable" in checks[0].detail
+    assert checks[0].data.get("mesurable") is False
+    assert not (tmp_path / VERROU).exists(), "un non-mesurable n'ecrit pas de verrou"
+
+
+def test_session_differente_mais_pid_mort_reprise_silencieuse(tmp_path):
+    """Un redemarrage change d'ID de session : un PID mort -> reprise, pas de faux ROUGE."""
+    _poser_verrou(tmp_path, LANE, pid=300, debut_proc=1.0)  # session "autre"
+    checks = session_hygiene.check_lane_lock(
+        tmp_path, LANE, session_id="sess-B",
+        etat_pid=_etat_par_pid({300: (False, None)}),
+        session_proc=lambda: (112, "claude.exe"))
+    assert checks[0].level == session_hygiene.GREEN
+    assert "repris" in checks[0].detail
+
+
+# --- remontee de la chaine des parents ---------------------------------------
+
+
+def test_remontee_prefere_claude_a_node():
+    """Un `claude*` l'emporte sur un `node*` plus proche (harnais sous Node)."""
+    table = {100: (200, "python.exe"), 200: (300, "node.exe"), 300: (1, "claude.exe")}
+    assert session_hygiene.trouver_ancetre_session(depart=100, table=table) == (
+        300, "claude.exe")
+
+
+def test_remontee_repli_sur_node():
+    """Sans `claude*` dans la chaine, le premier `node*` fait foi."""
+    table = {100: (200, "python.exe"), 200: (1, "node.exe")}
+    assert session_hygiene.trouver_ancetre_session(depart=100, table=table) == (
+        200, "node.exe")
+
+
+def test_remontee_bornee_sans_cycle_et_sans_faux_positif():
+    """Cycle -> arret ; chaine trop longue -> borne ; autre nom -> None."""
+    cycle = {100: (200, "python.exe"), 200: (100, "bash.exe")}
+    assert session_hygiene.trouver_ancetre_session(depart=100, table=cycle) is None
+    assert session_hygiene.trouver_ancetre_session(
+        depart=100, table={100: (200, "python.exe"), 200: (1, "explorer.exe")}) is None
+    longue = {i: (i + 1, "intermediaire.exe") for i in range(1000, 1100)}
+    longue[1100] = (1, "claude.exe")
+    assert session_hygiene.trouver_ancetre_session(depart=1000, table=longue) is None
+
+
 # --- verrou illisible, autres lanes preservees --------------------------------
 
 
@@ -186,9 +291,16 @@ def test_les_autres_lanes_sont_preservees(tmp_path):
 
 
 def test_main_avec_lane_pose_le_verrou(tmp_path, monkeypatch, capsys):
-    """--lane cable le check : il apparait dans le JSON et le fichier est ecrit."""
+    """--lane cable le check : il apparait dans le JSON et le fichier est ecrit.
+
+    Adapte au fix : le porteur est desormais l'ancetre de session rendu par
+    `trouver_ancetre_session` (avant, `main()` enregistrait `os.getpid()`).
+    On l'injecte pour ne pas dependre de la chaine de processus de la CI.
+    """
     monkeypatch.setattr(session_hygiene, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(session_hygiene, "check_fetch", lambda root: [])
+    monkeypatch.setattr(session_hygiene, "trouver_ancetre_session",
+                        lambda: (43210, "claude.exe"))
     rc = session_hygiene.main(["--json", "--lane", LANE, "--session-id", "s-main"])
     assert rc in (0, 1)  # d'autres checks peuvent rougir sur un depot factice
     donnees = json.loads(capsys.readouterr().out)
@@ -196,6 +308,7 @@ def test_main_avec_lane_pose_le_verrou(tmp_path, monkeypatch, capsys):
     assert "session-double" in noms
     entree = json.loads((tmp_path / VERROU).read_text(encoding="utf-8"))[LANE]
     assert entree["session"] == "s-main"
+    assert entree["pid"] == 43210, "le porteur est l'ancetre de session, pas le script"
 
 
 def test_main_sans_lane_n_ecrit_aucun_verrou(tmp_path, monkeypatch, capsys):
@@ -207,8 +320,24 @@ def test_main_sans_lane_n_ecrit_aucun_verrou(tmp_path, monkeypatch, capsys):
     assert not (tmp_path / VERROU).exists()
 
 
+def test_main_sans_ancetre_rend_amber_sans_ecrire(tmp_path, monkeypatch, capsys):
+    """Cablage du non-mesurable : AMBER dans le JSON, aucun verrou ecrit."""
+    monkeypatch.setattr(session_hygiene, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(session_hygiene, "check_fetch", lambda root: [])
+    monkeypatch.setattr(session_hygiene, "trouver_ancetre_session", lambda: None)
+    session_hygiene.main(["--json", "--lane", LANE])
+    donnees = json.loads(capsys.readouterr().out)
+    verrou = next(c for c in donnees["checks"] if c["name"] == "session-double")
+    assert verrou["level"] == "AMBER"
+    assert not (tmp_path / VERROU).exists()
+
+
 def test_main_rougit_sur_un_vrai_processus_vivant(tmp_path, monkeypatch, capsys):
-    """Bout en bout : un VRAI processus vivant dans le verrou -> ROUGE, sortie 1."""
+    """Bout en bout : un VRAI processus vivant dans le verrou -> ROUGE, sortie 1.
+
+    Adapte au fix : l'ancetre de session est injecte (celui du processus de
+    test, vivant), la ou `main()` enregistrait auparavant `os.getpid()`.
+    """
     enfant = subprocess.Popen(
         [sys.executable, "-c", "import time; time.sleep(60)"],
         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -216,6 +345,8 @@ def test_main_rougit_sur_un_vrai_processus_vivant(tmp_path, monkeypatch, capsys)
         _poser_verrou(tmp_path, LANE, pid=enfant.pid, debut_proc=None)
         monkeypatch.setattr(session_hygiene, "repo_root", lambda: tmp_path)
         monkeypatch.setattr(session_hygiene, "check_fetch", lambda root: [])
+        monkeypatch.setattr(session_hygiene, "trouver_ancetre_session",
+                            lambda: (os.getpid(), "python.exe"))
         rc = session_hygiene.main(["--json", "--lane", LANE])
         donnees = json.loads(capsys.readouterr().out)
         verrou = next(c for c in donnees["checks"] if c["name"] == "session-double")

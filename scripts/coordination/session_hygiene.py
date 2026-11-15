@@ -35,6 +35,7 @@ import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 # Motifs de noms de fichiers qui portent typiquement un secret. On ne lit JAMAIS la valeur :
 # un secret ne s'imprime pas pour prouver qu'il est la.
@@ -592,6 +593,162 @@ def pid_etat(pid: int) -> tuple[bool, float | None]:
     return _pid_posix(pid)
 
 
+# --- processus de session : le PID du harnais, pas celui du script ----------
+#
+# `os.getpid()` designe le processus de CE script, qui vit le temps d'une
+# commande : l'enregistrer rend le verrou inerte (review 5908186749, #26634).
+# Le porteur d'une lane est le processus de session du harnais
+# (`claude.exe`/`claude`, ou le `node` qui l'heberge) : on remonte la chaine
+# des parents jusqu'a lui. Aucun ancetre reconnu = mesure impossible, jamais
+# un vert (meme doctrine que `check_fetch`).
+
+MAX_ANCETRE_SAUTS = 32
+_CLAUDE_NOM = re.compile(r"^claude", re.IGNORECASE)
+_NODE_NOM = re.compile(r"^node", re.IGNORECASE)
+
+
+def _table_processus_windows() -> dict[int, tuple[int, str]]:
+    """pid -> (ppid, nom d'image) par `CreateToolhelp32Snapshot` (ctypes seul).
+
+    Aucune dependance externe, aucun sous-processus PowerShell : le harnais
+    interdit les deux pour une mesure faite a chaque debut de cycle.
+    """
+    import ctypes
+    import ctypes.wintypes as wt
+
+    th32cs_snapprocess = 0x00000002
+    invalid_handle = ctypes.c_void_p(-1).value
+
+    class ProcessEntry32W(ctypes.Structure):
+        _fields_ = [
+            ("dwSize", wt.DWORD),
+            ("cntUsage", wt.DWORD),
+            ("th32ProcessID", wt.DWORD),
+            ("th32DefaultHeapID", ctypes.c_size_t),
+            ("th32ModuleID", wt.DWORD),
+            ("cntThreads", wt.DWORD),
+            ("th32ParentProcessID", wt.DWORD),
+            ("pcPriClassBase", ctypes.c_long),
+            ("dwFlags", wt.DWORD),
+            ("szExeFile", ctypes.c_wchar * 260),
+        ]
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.CreateToolhelp32Snapshot.argtypes = [wt.DWORD, wt.DWORD]
+    k32.CreateToolhelp32Snapshot.restype = wt.HANDLE
+    k32.Process32FirstW.argtypes = [wt.HANDLE, ctypes.POINTER(ProcessEntry32W)]
+    k32.Process32FirstW.restype = wt.BOOL
+    k32.Process32NextW.argtypes = [wt.HANDLE, ctypes.POINTER(ProcessEntry32W)]
+    k32.Process32NextW.restype = wt.BOOL
+    k32.CloseHandle.argtypes = [wt.HANDLE]
+    k32.CloseHandle.restype = wt.BOOL
+
+    snapshot = k32.CreateToolhelp32Snapshot(th32cs_snapprocess, 0)
+    if not snapshot or snapshot == invalid_handle:
+        return {}
+    table: dict[int, tuple[int, str]] = {}
+    try:
+        entree = ProcessEntry32W()
+        entree.dwSize = ctypes.sizeof(ProcessEntry32W)
+        if not k32.Process32FirstW(snapshot, ctypes.byref(entree)):
+            return {}
+        while True:
+            table[int(entree.th32ProcessID)] = (
+                int(entree.th32ParentProcessID), entree.szExeFile)
+            if not k32.Process32NextW(snapshot, ctypes.byref(entree)):
+                break
+    finally:
+        k32.CloseHandle(snapshot)
+    return table
+
+
+def _table_processus_posix() -> dict[int, tuple[int, str]]:
+    """pid -> (ppid, nom) lu dans `/proc`, avec `ps -eo pid=,ppid=,comm=` en repli."""
+    table: dict[int, tuple[int, str]] = {}
+    proc = Path("/proc")
+    if proc.is_dir():
+        for dossier in proc.iterdir():
+            if not dossier.name.isdigit():
+                continue
+            try:
+                brut = (dossier / "stat").read_text(encoding="utf-8", errors="replace")
+            except OSError:
+                continue
+            try:
+                # `comm` peut contenir espaces et parentheses : on prend la
+                # DERNIERE parenthese fermante, puis les champs qui suivent.
+                gauche = brut.index("(")
+                droite = brut.rindex(")")
+                pid = int(brut[:gauche])
+                nom = brut[gauche + 1:droite]
+                champs = brut[droite + 2:].split()
+                table[pid] = (int(champs[1]), nom)  # champs[0]=etat, champs[1]=ppid
+            except (ValueError, IndexError):
+                continue
+        if table:
+            return table
+    try:
+        out = subprocess.run(
+            ["ps", "-eo", "pid=,ppid=,comm="],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=10,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return {}
+    for ligne in out.stdout.splitlines():
+        champs = ligne.split(None, 2)
+        if len(champs) == 3 and champs[0].isdigit() and champs[1].isdigit():
+            table[int(champs[0])] = (int(champs[1]), champs[2].strip())
+    return table
+
+
+def table_processus() -> dict[int, tuple[int, str]]:
+    """Table des processus de la machine : pid -> (ppid, nom d'image)."""
+    try:
+        if os.name == "nt":
+            return _table_processus_windows()
+        return _table_processus_posix()
+    except OSError:
+        return {}  # table illisible = mesure impossible, jamais un faux vert
+
+
+def trouver_ancetre_session(depart: int | None = None,
+                            table: dict[int, tuple[int, str]] | None = None,
+                            max_sauts: int = MAX_ANCETRE_SAUTS,
+                            ) -> tuple[int, str] | None:
+    """(pid, nom) du processus de session du harnais, au-dessus de `depart`.
+
+    Remonte la chaine des parents (`ParentProcessId`), bornee (`max_sauts`) et
+    protegee contre les cycles. Un ancetre `claude*` l'emporte sur un `node*`
+    (le harnais peut tourner sous Node : `node .../claude`). `depart` lui-meme
+    n'est jamais candidat : c'est le processus de CE script. Aucun ancetre
+    reconnu -> None : l'appelant rend une mesure impossible, pas un vert.
+    """
+    if table is None:
+        table = table_processus()
+    pid = os.getpid() if depart is None else depart
+    chaine: list[tuple[int, str]] = []
+    vus = {pid}
+    courant = pid
+    for _ in range(max_sauts):
+        entree = table.get(courant)
+        if entree is None:
+            break
+        ppid = entree[0]
+        if ppid <= 0 or ppid in vus:
+            break
+        vus.add(ppid)
+        parent = table.get(ppid)
+        chaine.append((ppid, parent[1] if parent else ""))
+        if parent is None:
+            break
+        courant = ppid
+    for motif in (_CLAUDE_NOM, _NODE_NOM):
+        for anc_pid, anc_nom in chaine:
+            if anc_nom and motif.match(anc_nom):
+                return (anc_pid, anc_nom)
+    return None
+
+
 def _lire_verrou(path: Path) -> dict:
     """Le verrou lu : dict lane -> entree ; illisible = absent (remplace plus tard)."""
     try:
@@ -610,32 +767,62 @@ def _ecrire_verrou(path: Path, verrous: dict) -> None:
 
 
 def _entree_verrou(pid: int, session_id: str, maintenant: float | None,
-                   etat_pid=pid_etat) -> dict:
+                   etat_pid=pid_etat, nom: str = "") -> dict:
     """Une entree de verrou : PID, heure de debut UTC explicite, session, machine."""
     _, creation = etat_pid(pid)
     debut = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(maintenant or time.time()))
     return {"pid": pid, "debut": debut, "debut_proc": creation,
             "session": session_id or os.environ.get("CLAUDE_SESSION_ID", ""),
+            "proc": nom,
             "machine": os.environ.get("COMPUTERNAME")
             or os.environ.get("HOSTNAME") or ""}
 
 
 def check_lane_lock(root: Path, lane: str, pid: int | None = None,
                     session_id: str = "", maintenant: float | None = None,
-                    etat_pid=pid_etat) -> list[Check]:
+                    etat_pid=pid_etat,
+                    session_proc: Callable[[], tuple[int, str] | None] | None = None,
+                    ) -> list[Check]:
     """Verrou de lane : un second processus VIVANT sous la meme lane, sur ce depot.
 
-    Pose `<repo>/.tmp/lane-session.json` et le lit d'abord. Un PID vivant
-    different du sien est un ROUGE nomme : deux sessions d'une meme lane sont
-    indiscernables pour le protocole de claim (#14323), et c'est le doublon
-    qui se supprime -- `CronList` puis `CronDelete` DANS la session qui le
-    porte (regle de flotte : une session par lane). Robuste a un PID mort
-    (reprise silencieuse du verrou) et, sous Windows, a la reutilisation du
-    numero (l'heure de creation ne suit pas le numero). Les entrees des
-    AUTRES lanes du depot sont preservees.
+    Pose `<repo>/.tmp/lane-session.json` et le lit d'abord. Le PID enregistre
+    est celui du **processus de session du harnais** (`session_proc`, par
+    defaut `trouver_ancetre_session`), jamais `os.getpid()` : ce script meurt
+    a la fin de sa commande, et un PID de script mort a chaque cycle rendait le
+    verrou inerte (review 5908186749, #26634). Un PID de session vivant
+    different du mien est un ROUGE nomme ; une session enregistree non vide
+    qui differe de la mienne est dite explicitement dans le detail. Aucun
+    ancetre de session trouve = AMBER « non mesurable », sans ecriture.
+
+    Deux sessions d'une meme lane sont indiscernables pour le protocole de
+    claim (#14323), et c'est le doublon qui se supprime -- `CronList` puis
+    `CronDelete` DANS la session qui le porte (regle de flotte : une session
+    par lane). Robuste a un PID mort (reprise silencieuse du verrou) et, sous
+    Windows, a la reutilisation du numero (l'heure de creation ne suit pas le
+    numero). Les entrees des AUTRES lanes du depot sont preservees.
     """
+    if pid is not None:
+        mon_pid, mon_nom = pid, ""
+    else:
+        session_proc = session_proc or trouver_ancetre_session
+        trouve = session_proc()
+        if not trouve:
+            # Fail-closed : sans ancetre de session, on ne sait pas QUI porte la
+            # lane. Ce n'est pas un vert, et on n'ecrit aucun verrou qui aurait
+            # l'air valide.
+            return [Check(
+                "session-double",
+                AMBER,
+                "non mesurable : aucun processus de session (claude/node) dans la chaine "
+                "des parents -- le verrou n'est PAS pose et aucune session concurrente "
+                "n'a pu etre ecartee",
+                "lancer l'organe depuis une session du harnais (claude visible dans la "
+                "chaine des parents)",
+                {"lane": lane, "mesurable": False},
+            )]
+        mon_pid, mon_nom = trouve
+    ma_session = session_id or os.environ.get("CLAUDE_SESSION_ID", "")
     path = root / LANE_LOCK_NAME
-    mon_pid = pid if pid is not None else os.getpid()
     verrous = _lire_verrou(path)
     entree = verrous.get(lane)
     autre = entree.get("pid") if isinstance(entree, dict) else None
@@ -647,18 +834,26 @@ def check_lane_lock(root: Path, lane: str, pid: int | None = None,
         reuse = (vivant and isinstance(creation, float) and isinstance(debut_proc, float)
                  and abs(creation - debut_proc) > 1.0)
         if vivant and not reuse:
+            sess_autre = str(entree.get("session") or "").strip()
+            # Le PID compare deja les porteurs ; la session le dit explicitement
+            # quand les deux cotes la connaissent (deux sessions, deux IDs).
+            double_session = bool(sess_autre) and bool(ma_session) and sess_autre != ma_session
+            nom_autre = f" ({entree.get('proc')})" if entree.get("proc") else ""
+            marque = (
+                f" -- la session enregistree '{sess_autre}' differe de la mienne "
+                f"'{ma_session}'" if double_session else "")
             return [Check(
                 "session-double",
                 RED,
-                f"le processus {autre} (lane {lane}, demarre "
+                f"le processus {autre}{nom_autre} (lane {lane}, demarre "
                 f"{entree.get('debut') or '?'}) est VIVANT : une SECONDE session "
-                f"tourne sous cette lane",
+                f"tourne sous cette lane{marque}",
                 "regle une session par lane : CronList puis CronDelete du cron du "
                 "doublon DANS la session qui le porte ; cette session n'edite rien "
                 "tant qu'il vit",
                 {"lane": lane, "autre_pid": autre},
             )]
-        verrous[lane] = _entree_verrou(mon_pid, session_id, maintenant, etat_pid)
+        verrous[lane] = _entree_verrou(mon_pid, ma_session, maintenant, etat_pid, mon_nom)
         _ecrire_verrou(path, verrous)
         return [Check(
             "session-double",
@@ -668,16 +863,33 @@ def check_lane_lock(root: Path, lane: str, pid: int | None = None,
             data={"lane": lane, "reprise": True},
         )]
     if isinstance(entree, dict) and autre == mon_pid:
-        return [Check("session-double", GREEN,
-                      "verrou deja pose par ce processus (meme session)",
-                      data={"lane": lane})]
+        # Meme numero : verifier que c'est bien le MEME processus (un PID de
+        # session recycle par un autre harnais est un porteur mort).
+        _, creation = etat_pid(mon_pid)
+        debut_proc = entree.get("debut_proc")
+        recycle = (isinstance(creation, float) and isinstance(debut_proc, float)
+                   and abs(creation - debut_proc) > 1.0)
+        if not recycle:
+            return [Check(
+                "session-double", GREEN,
+                f"verrou deja pose par ce processus (meme session, pid {mon_pid}"
+                f"{', ' + mon_nom if mon_nom else ''})",
+                data={"lane": lane, "pid": mon_pid, "proc": mon_nom})]
+        verrous[lane] = _entree_verrou(mon_pid, ma_session, maintenant, etat_pid, mon_nom)
+        _ecrire_verrou(path, verrous)
+        return [Check(
+            "session-double", GREEN,
+            f"verrou repris : le numero {mon_pid} a ete reutilise par un autre processus",
+            data={"lane": lane, "reprise": True},
+        )]
     illisible = path.exists() and not verrous  # lu avant d'y poser sa propre entree
-    verrous[lane] = _entree_verrou(mon_pid, session_id, maintenant, etat_pid)
+    verrous[lane] = _entree_verrou(mon_pid, ma_session, maintenant, etat_pid, mon_nom)
     _ecrire_verrou(path, verrous)
-    detail = f"verrou de lane pose (pid {mon_pid})"
+    detail = f"verrou de lane pose (pid {mon_pid}{', ' + mon_nom if mon_nom else ''})"
     if illisible:
         detail = f"verrou illisible, remplace -- {detail}"
-    return [Check("session-double", GREEN, detail, data={"lane": lane})]
+    return [Check("session-double", GREEN, detail,
+                  data={"lane": lane, "pid": mon_pid, "proc": mon_nom})]
 
 
 def main(argv: list[str] | None = None) -> int:
