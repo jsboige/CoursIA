@@ -340,3 +340,128 @@ class TestSanctionedOutputStrips:
         recs = gate.ratchet(base, cwd=repo)
         assert [r["verdict"] for r in recs] == ["OUTPUTS_STRIPPED"]
         assert recs[0]["regression"] is False
+
+
+# The founding instance of #23035: a cp1252 host decoded the UTF-8 bytes of an
+# em dash, and #23021 repaired the string back. The repair runs no notebook, so
+# execution_count is untouched and the block still describes a real run.
+MOJI_EM_DASH = "—".encode("utf-8").decode("cp1252")
+
+
+class TestEncodingRepairsAreNotStaleBlocks:
+    """#23035: an encoding repair is sanctioned; a forged output is still caught.
+
+    The repair of #23021 rewrites mojibake strings back to their real
+    characters. To the ratchet that looks exactly like a hand-edited output:
+    the outputs differ from the base while ``metadata.papermill`` is identical
+    to the byte. The exemption is exact, not heuristic -- the base outputs,
+    passed through the SAME cp1252 reversion, must reproduce the head evidence
+    byte for byte. ``test_a_non_reversion_edit_is_still_caught`` is the
+    positive control: a change the reversion cannot produce stays STALE_BLOCK.
+    """
+
+    def _stream(self, text):
+        return [{"output_type": "stream", "name": "stdout",
+                 "text": [text]}]
+
+    def _branch_from(self, repo, base_text, head_text, exec_counts=None):
+        write_nb(repo, "a.ipynb",
+                 make_nb([self._stream(base_text)], papermill=PM,
+                         exec_counts=exec_counts))
+        base = commit(repo, "base: notebook whose outputs were mojibake")
+        git_ok(repo, "checkout", "-q", "-b", "feature")
+        nb = make_nb([self._stream(head_text)], papermill=PM,
+                     exec_counts=exec_counts)
+        nb["cells"].insert(0, {"cell_type": "markdown",
+                               "source": "# prose", "metadata": {}})
+        write_nb(repo, "a.ipynb", nb)
+        commit(repo, "feature: repair the encoding")
+        return base
+
+    def test_encoding_repair_is_not_a_stale_block(self, repo):
+        base = self._branch_from(
+            repo,
+            "cree " + MOJI_EM_DASH + " {env_slippery}\n",
+            "cree — {env_slippery}\n")
+        recs = gate.ratchet(base, cwd=repo)
+        assert [r["verdict"] for r in recs] == ["OUTPUTS_ENCODING_REPAIRED"]
+        assert recs[0]["regression"] is False
+
+    def test_the_replay_really_changes_the_base_evidence(self, repo):
+        """Positive control on the replay itself, not on the verdict.
+
+        If ``revert_cp1252`` left the mojibake untouched, the base evidence
+        would equal the head evidence only when nothing changed at all, and
+        the test above could pass for the wrong reason.
+        """
+        base_nb = make_nb([self._stream("cree " + MOJI_EM_DASH + " x")],
+                          papermill=PM)
+        content = json.dumps(base_nb)
+        assert gate.encoding_reverted_evidence(content) != gate.exec_evidence(
+            base_nb), (
+            "the reversion must move the base evidence, otherwise the "
+            "encoding-repair verdict cannot be distinguishing anything")
+
+    def test_a_non_reversion_edit_is_still_caught(self, repo):
+        """Positive control: a hand-edited output is not an encoding repair."""
+        base = self._branch_from(
+            repo,
+            "cree " + MOJI_EM_DASH + " {env_slippery}\n",
+            "HAND-EDITED-BY-A-HUMAN\n")
+        recs = gate.ratchet(base, cwd=repo)
+        assert [r["verdict"] for r in recs] == ["STALE_BLOCK"]
+        assert recs[0]["regression"] is True
+
+    def test_an_ordinary_string_edit_is_still_caught(self, repo):
+        """A number that moved is not a reversion, even in a repaired notebook."""
+        base = self._branch_from(
+            repo,
+            "cree " + MOJI_EM_DASH + " 0.761\n",
+            "cree — 0.802\n")
+        recs = gate.ratchet(base, cwd=repo)
+        assert [r["verdict"] for r in recs] == ["STALE_BLOCK"]
+        assert recs[0]["regression"] is True
+
+    def test_encoding_repair_does_not_cover_a_moved_execution_count(self, repo):
+        """The repair of #23021 leaves execution_count alone; a move is not it."""
+        write_nb(repo, "a.ipynb",
+                 make_nb([self._stream("cree " + MOJI_EM_DASH + " x\n")],
+                         papermill=PM, exec_counts=[7]))
+        base = commit(repo, "base: mojibake at execution_count 7")
+        git_ok(repo, "checkout", "-q", "-b", "feature")
+        write_nb(repo, "a.ipynb",
+                 make_nb([self._stream("cree — x\n")],
+                         papermill=PM, exec_counts=[8]))
+        commit(repo, "feature: repair the string AND move the count")
+        recs = gate.ratchet(base, cwd=repo)
+        assert [r["verdict"] for r in recs] == ["STALE_BLOCK"]
+        assert recs[0]["regression"] is True
+
+
+class TestRevertCp1252:
+    """`revert_cp1252` is a strict round trip, never an approximation."""
+
+    @pytest.mark.parametrize("text", [
+        "plain ascii",
+        "créé",          # a real accented word, already correct
+        "—",                  # a real em dash, already correct
+        "",
+    ])
+    def test_a_legitimate_string_comes_back_unchanged(self, text):
+        assert gate.revert_cp1252(text) == text
+
+    def test_pure_mojibake_is_reverted(self):
+        assert gate.revert_cp1252(MOJI_EM_DASH) == "—"
+
+    def test_reverting_twice_does_not_widen_the_exemption(self):
+        """The gate applies the reversion ONCE; a second pass must add nothing.
+
+        ``_revert_output_strings`` walks the whole outputs tree, so a future
+        refactor that recursed into its own result would apply the reversion
+        twice. On a repaired string the second pass finds nothing to encode to
+        cp1252 and returns it unchanged -- this pin holds that shape, so the
+        exemption stays exactly "one reversion of the base".
+        """
+        once = gate.revert_cp1252(MOJI_EM_DASH)
+        assert once == "—"
+        assert gate.revert_cp1252(once) == once

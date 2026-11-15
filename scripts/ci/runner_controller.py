@@ -58,6 +58,7 @@ REGISTRATION_TOKEN_ENV = "GITHUB_RUNNER_REGISTRATION_TOKEN"
 REMOVAL_TOKEN_ENV = "GITHUB_RUNNER_REMOVAL_TOKEN"
 TASK_NAME = "CoursIA-Runner-Controller"
 TASK_TICK_SECONDS = 60
+TASK_LAUNCHER_NAME = "controller-task.vbs"
 
 CommandRunner = subprocess.run
 
@@ -157,8 +158,9 @@ def task_action(profile: Profile) -> str:
     """Le CORPS du script de la tache : lit le mot de passe du fichier machine local
     conventionnel, negocie tout le reste a chaud, logue a cote des autres logs.
 
-    Ne porte ni interpreteur ni enrobage `-Command "..."` : l'enveloppe `<Exec>`
-    declare deja `<Command>pwsh.exe</Command>` et ses arguments. L'ancien enrobage
+    Ne porte ni interpreteur ni enrobage `-Command "..."` : c'est le lanceur VBS
+    qui declare `<Command>pwsh.exe</Command>` et ses arguments (cf. `task_launcher`),
+    et l'XML de la tache ne porte plus que `wscript.exe`. L'ancien enrobage
     empilait deux `pwsh.exe -Command "..."` (le second avec des guillemets
     imbriques non echappes) et rendait l'XML invalide — mesure #20174.
     """
@@ -172,6 +174,57 @@ def task_action(profile: Profile) -> str:
         f"$env:{ACCOUNT_PASSWORD_ENV}=(Get-Content -LiteralPath '{secrets_file}' -Raw).Trim();"
         f"& '{python}' '{controller}' ensure --profile {profile.name} --apply"
         f" *>> '{logs_dir}\\controller.log'"
+    )
+
+
+def task_launcher_path(profile: Profile) -> Path:
+    """Emplacement du lanceur sans fenetre, derive du profil.
+
+    Le chemin n'est jamais code en dur : un chemin fixe deploye le defaut sur une
+    autre machine des que la racine des runners differe, et le controle de
+    non-regression cesserait alors de couvrir la machine reellement installee.
+    """
+    return profile.root.parent / "launchers" / TASK_LAUNCHER_NAME
+
+
+def _vbs_escape(text: str) -> str:
+    """Echappe un litteral de chaine VBScript : un `"` s'y ecrit `""`."""
+    return text.replace('"', '""')
+
+
+def task_launcher(profile: Profile, command: str | None = None) -> str:
+    """Le lanceur `wscript.exe` qui masque la fenetre du tick.
+
+    `<Command>wscript.exe</Command>` seul ne suffit pas : `pwsh.exe` lance
+    directement par le Planificateur ouvre une console a chaque tick. La tache se
+    repete toutes les 60 s et n'a pas de condition « seulement si l'utilisateur
+    est absent » — d'ou 60 fenetres par heure sur l'ecran de la session ouverte
+    (mesure lane Maintenance, 2026-11-04). `WScript.Shell.Run` avec le second
+    argument a `0` demande au systeme une fenetre masquee ; le troisieme a
+    `True` attend la fin du tick et rend son code de sortie, propage par
+    `WScript.Quit rc` (detail au commentaire du corps ci-dessous, review #24707).
+
+    Le corps execute est exactement `task_action` : la seule difference avec
+    l'ancienne action est l'enveloppe, pas le travail.
+    """
+    if command is None:
+        command = (
+            "pwsh.exe -NoProfile -NonInteractive -WindowStyle Hidden "
+            f'-Command "{task_action(profile)}"'
+        )
+    # Troisieme argument a True + WScript.Quit rc : sans cela (False, forme
+    # initiale de cette PR, review #24707) le code retour du controleur ne
+    # remonte jamais -- LastTaskResult vaut 0 quel que soit le sort du tick --
+    # et la tache se terminant aussitot, MultipleInstancesPolicy=IgnoreNew ne
+    # protege plus contre les ticks qui se chevauchent. Meme forme que
+    # install_merge_ready_task.py et install_overflow_trigger_task.py.
+    return (
+        "Option Explicit\n"
+        "Dim shell, rc\n"
+        'Set shell = CreateObject("WScript.Shell")\n'
+        f'rc = shell.Run("{_vbs_escape(command)}", 0, True)\n'
+        "Set shell = Nothing\n"
+        "WScript.Quit rc\n"
     )
 
 
@@ -221,8 +274,8 @@ def task_xml(profile: Profile) -> str:
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>pwsh.exe</Command>
-      <Arguments>-NoProfile -NonInteractive -WindowStyle Hidden -Command &quot;{_xml_escape(task_action(profile))}&quot;</Arguments>
+      <Command>wscript.exe</Command>
+      <Arguments>//B //Nologo &quot;{_xml_escape(str(task_launcher_path(profile)))}&quot;</Arguments>
     </Exec>
   </Actions>
 </Task>
@@ -241,6 +294,12 @@ def apply_task_install(profile: Profile, run: CommandRunner) -> dict:
     xml_file = profile.root.parent / "logs" / "controller-task.xml"
     xml_file.parent.mkdir(parents=True, exist_ok=True)
     xml_file.write_text(xml, encoding="utf-16")
+    # Le lanceur est ECRIT par le generateur, jamais pose a la main : un
+    # durcissement manuel de la tache est annule au premier `task-install
+    # --apply` (mesure 2026-11-04 : durcissement a 18:33:21Z, annule a 18:33:22Z).
+    launcher = task_launcher_path(profile)
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    launcher.write_text(task_launcher(profile), encoding="ascii")
     for args in (
         ["schtasks", "/Create", "/TN", TASK_NAME, "/XML", str(xml_file), "/F"],
         ["schtasks", "/Change", "/TN", TASK_NAME, "/RL", "HIGHEST"],
@@ -248,7 +307,7 @@ def apply_task_install(profile: Profile, run: CommandRunner) -> dict:
         completed = run(args, capture_output=True, text=True, encoding="utf-8", check=False)
         if completed.returncode != 0:
             raise Broken(f"schtasks failed: {(completed.stderr or '').strip()[:200]}")
-    return {"action": "task-installed", "task": TASK_NAME}
+    return {"action": "task-installed", "task": TASK_NAME, "launcher": str(launcher)}
 
 
 def apply_task_remove(profile: Profile, run: CommandRunner) -> dict:

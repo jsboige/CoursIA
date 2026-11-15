@@ -183,6 +183,30 @@ def test_commentaire_neutre_posterieur_ne_perime_pas():
     assert errors == []
 
 
+def test_commentaire_renvoi_du_collant_ne_perime_pas():
+    # #15511 : le renvoi d'un doublon fusionne (marqueur principal retire,
+    # contenu porte par le collant canonique) n'est jamais supprime : il vit
+    # dans le fil et ne doit pas perimer un dossier de fermeture.
+    # Le marqueur est neutre quel que soit son auteur -- meme contrat que le
+    # marqueur principal, et meme exigence que les autres formes marker-gardees
+    # de la liste. Le cas `jsboige` est le discriminant : un login non-bot
+    # passe par la liste de marqueurs, la ou le predicat d'auteur l'aurait
+    # laisse perimer le dossier.
+    forward = (
+        "<!-- coursia:advisory-sticky:forwarded -->\n\n"
+        "*Ce commentaire a ete fusionne dans le commentaire collant "
+        "canonique (id 4242) : ses sections y sont integrees.*\n"
+    )
+    for login in ("github-actions[bot]", "jsboige"):
+        snap = _snapshot(comments=[
+            _comment(_dossier_body(), created="2026-09-20T10:00:00Z"),
+            _comment(forward, login=login, created="2026-09-21T09:00:00Z"),
+        ])
+        verdict, errors, _ = evaluate(snap)
+        assert verdict == "CLOSE", f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
+
+
 # --- latest-wins : seul le dernier dossier compte (#18095) -------------------
 
 def test_dossier_malforme_puis_dossier_valide_ferme():

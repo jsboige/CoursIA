@@ -36,6 +36,17 @@ Mesure rendue (Playwright headless) sur un deck Slidev servi en dev mode
      pas le code retour tant que le taux de faux positifs n'est pas mesuré
      sur les decks existants.
 
+  5. ENVIRONNEMENT DE POLICES (diagnostic, #24171) — le rendu Slidev ne
+     dépend que des polices SYSTÈME (aucune @font-face dans slides/) : la
+     hauteur des blocs de texte, donc le compteur HORS_CANVAS, dépend de la
+     machine qui rend. La sonde mesure les polices EFFECTIVEMENT résolues
+     au rendu (largeur de référence comparée à la police par défaut du
+     navigateur) et la hauteur de ligne intrinsèque ; le rapport en porte la
+     signature (`font_signature`). Deux rapports ne sont comparables que si
+     leurs signatures sont égales — sans cela, opposer deux compteurs nus
+     n'a pas de sens. Ce signal est un DIAGNOSTIC : il n'entre dans aucun
+     compteur et ne modifie pas le code retour.
+
 Le rendu est ADVISORY — il ne remplace pas le QA visuel humain pour la
 composition esthétique. Cette borne est imprimée à chaque invocation.
 
@@ -80,6 +91,14 @@ from pathlib import Path
 
 CANVAS_DEFAULT = (980, 552)
 BORNE = "ADVISORY only — ne remplace pas le QA visuel humain pour la composition"
+
+FONT_DEPENDENCY = (
+    "Les compteurs de ce rapport dependent des polices SYSTEME de la machine "
+    "qui a rendu le deck (aucune @font-face dans slides/) : la hauteur des "
+    "blocs de texte, donc HORS_CANVAS, varie d'une machine a l'autre. "
+    "Comparer deux compteurs sans comparer d'abord 'font_signature' n'a pas "
+    "de sens — la signature est l'empreinte de l'environnement de polices."
+)
 
 
 def parse_headmatter_canvas(slides_md: Path) -> tuple[int, int]:
@@ -195,6 +214,222 @@ _READ_STATE_JS = """() => {
         digest: el ? [el.innerText.length, Array.from(el.innerText).slice(0, 60).join('')] : null,
     };
 }"""
+
+
+# Sonde d'environnement de polices (#24171). Mesure au RENDU ce qui decide
+# de la hauteur des blocs de texte — donc du compteur HORS_CANVAS.
+#
+# Detecte de police systeme : la largeur d'une chaine de reference sous
+# `40px "<famille>"` est comparee a la largeur sous une famille INEXISTANTE
+# (le navigateur retombe alors sur sa police par defaut). Famille absente ->
+# meme largeur que la sonde -> non resolue. Famille presente -> largeur
+# differente. Les familles generiques (sans-serif, serif...) sont marquees
+# comme telles : elles ne sont pas testables par cette methode.
+#
+# Le test est valide sur la largeur ET sur la hauteur de ligne : la hauteur
+# d'une boite de texte a `line-height: normal` est la metrique intrinsique
+# de la police — c'est elle qui differe d'une machine a l'autre.
+_FONT_ENV_JS = """() => {
+    try {
+        const REF = 'Hxg 0123 Il1 mWw@';
+        const PX = 40;
+        const GENERIC = /^(monospace|serif|sans-serif|sans serif|cursive|fantasy|system-ui|ui-serif|ui-sans-serif|ui-monospace|ui-rounded|math|emoji|fangsong)$/i;
+
+        const root = document.querySelector('#slide-content');
+        // Canal TEXTE : le premier element de texte de la slide.
+        const textSample = root
+            ? root.querySelector('p, li, h1, h2, h3, h4, blockquote, td, th')
+            : null;
+        // Canal MONOSPACE : un bloc code/pre est un contributeur INDEPENDANT
+        // de la hauteur HORS_CANVAS (la ligne d'un bloc pre depend de la
+        // police monospace resolue). Sans sonde dediee, la signature reste
+        // aveugle a ce canal : deux rendus texte-identiques, monospace
+        // different, collident (reparation #24495, reserve du verificateur).
+        const monoSample = root
+            ? root.querySelector('pre, code')
+            : null;
+
+        // La police par defaut du navigateur : une famille inexistante y
+        // retombe. C'est la reference de comparaison.
+        function widthUnder(family) {
+            const c = document.createElement('canvas');
+            const g = c.getContext('2d');
+            g.font = '10px sans-serif';
+            g.font = PX + 'px ' + family;
+            const applied = g.font || '';
+            const ok = applied.indexOf(String(PX) + 'px') === 0;
+            const w = g.measureText(REF).width;
+            return { width: Math.round(w * 100) / 100, applied: applied, ok: ok };
+        }
+
+        // Hauteur d'une boite de texte (la metrique qui porte HORS_CANVAS).
+        function lineBoxHeight(family, size, lh) {
+            const d = document.createElement('div');
+            d.style.position = 'absolute';
+            d.style.left = '-99999px';
+            d.style.top = '0';
+            d.style.visibility = 'hidden';
+            d.style.width = '600px';
+            d.style.whiteSpace = 'nowrap';
+            d.style.fontFamily = family;
+            d.style.fontSize = size;
+            d.style.lineHeight = lh;
+            d.style.fontWeight = '400';
+            d.textContent = REF;
+            document.body.appendChild(d);
+            const h = d.getBoundingClientRect().height;
+            document.body.removeChild(d);
+            return Math.round(h * 100) / 100;
+        }
+
+        // Mesure l'environnement de polices d'UN element : pile declaree,
+        // familles resolues, hauteur de ligne intrinque. Reutilise pour le
+        // canal TEXTE et le canal MONOSPACE (deux canaux, deux mesures).
+        function measureEnv(el) {
+            const cs = el ? getComputedStyle(el) : null;
+            const declared = cs ? (cs.fontFamily || '') : '';
+            const fontSize = cs ? cs.fontSize : null;
+            const lineHeight = cs ? cs.lineHeight : null;
+            const fontWeight = cs ? cs.fontWeight : null;
+
+            const probe = widthUnder('__coursia_sonde_police_inexistante__');
+            const defaultWidth = probe.width;
+
+            const seen = {};
+            const families = [];
+            declared.split(',').forEach(function (raw) {
+                const name = raw.trim().replace(/^["']/, '').replace(/["']$/, '').trim();
+                if (!name) return;
+                const key = name.toLowerCase();
+                if (seen[key]) return;
+                seen[key] = true;
+                const m = widthUnder('"' + name.replace(/"/g, '') + '"');
+                const generic = GENERIC.test(name);
+                families.push({
+                    name: name,
+                    width_px: m.width,
+                    // resolue = la largeur differe de la police par defaut.
+                    resolved: generic ? null : (m.ok && Math.abs(m.width - defaultWidth) > 0.01),
+                    generic: generic,
+                    probe_ok: m.ok,
+                });
+            });
+
+            const stack = declared || 'sans-serif';
+            const lhStackNormal = lineBoxHeight(stack, '16px', 'normal');
+            const lhGenericNormal = lineBoxHeight('sans-serif', '16px', 'normal');
+            const lhReal = lineBoxHeight(stack, fontSize || '16px', lineHeight || 'normal');
+
+            return {
+                declared_stack: declared || null,
+                sampled_element: el ? el.tagName : null,
+                font_size: fontSize,
+                line_height: lineHeight,
+                font_weight: fontWeight,
+                default_width_px: defaultWidth,
+                probe_ok: probe.ok,
+                families: families,
+                line_height_normal_stack_px: lhStackNormal,
+                line_height_normal_generic_px: lhGenericNormal,
+                line_height_delta_px: Math.round((lhStackNormal - lhGenericNormal) * 100) / 100,
+                line_height_real_px: lhReal,
+            };
+        }
+
+        const textEnv = measureEnv(textSample);
+        const monoEnv = measureEnv(monoSample);
+
+        return {
+            // Canal TEXTE a la racine (compatibilite des lecteurs existants).
+            declared_stack: textEnv.declared_stack,
+            sampled_element: textEnv.sampled_element,
+            font_size: textEnv.font_size,
+            line_height: textEnv.line_height,
+            font_weight: textEnv.font_weight,
+            default_width_px: textEnv.default_width_px,
+            probe_ok: textEnv.probe_ok,
+            generic_width_px: {
+                monospace: widthUnder('monospace').width,
+                serif: widthUnder('serif').width,
+                sans_serif: widthUnder('sans-serif').width,
+            },
+            families: textEnv.families,
+            line_height_normal_stack_px: textEnv.line_height_normal_stack_px,
+            line_height_normal_generic_px: textEnv.line_height_normal_generic_px,
+            line_height_delta_px: textEnv.line_height_delta_px,
+            line_height_real_px: textEnv.line_height_real_px,
+            // NOUVEAU : canal MONOSPACE (code/pre), sonde a part. null quand
+            // la slide ne porte aucun bloc code/pre. Entre dans la signature.
+            monospace: monoSample ? monoEnv : null,
+        };
+    } catch (e) {
+        return { error: 'sonde de polices : ' + (e && e.message ? e.message : String(e)) };
+    }
+}"""
+
+
+def probe_font_environment(page) -> dict:
+    """Sonde l'environnement de polices RÉELLEMENT résolu au rendu.
+
+    ADVISORY : n'entre dans aucun compteur, ne modifie pas le code retour.
+    Retourne un dict `{"error": ...}` si la sonde n'a pas pu aboutir — l'ignorance
+    est alors nommée, jamais silencieuse.
+    """
+    env = page.evaluate(_FONT_ENV_JS)
+    if not isinstance(env, dict):
+        return {"error": "sonde de polices : retour inattendu"}
+    return env
+
+
+def _channel_signature_part(env: dict) -> dict:
+    """Contribution d'un canal de polices (texte ou monospace) à l'empreinte.
+
+    Les grandeurs qui décident de la hauteur d'un bloc : la pile déclarée,
+    les familles résolues, et la hauteur de ligne intrinsèque mesurée. Un
+    canal code/pre est un contributeur INDÉPENDANT du débordement : il doit
+    entrer dans l'empreinte à part (reparation #24495, réserve du
+    vérificateur — un bloc pre changeant de police monospace ne modifiait
+    pas la signature).
+    """
+    resolved = sorted(
+        f.get("name", "")
+        for f in env.get("families", [])
+        if f.get("resolved") and not f.get("generic")
+    )
+    return {
+        "stack": env.get("declared_stack"),
+        "resolved": resolved,
+        "lh_normal": env.get("line_height_normal_stack_px"),
+        "lh_real": env.get("line_height_real_px"),
+        "size": env.get("font_size"),
+        "lh": env.get("line_height"),
+    }
+
+
+def font_signature(font_env: dict) -> str:
+    """Empreinte courte de l'environnement de polices d'un rendu.
+
+    Deux rapports ne sont comparables (compteurs HORS_CANVAS) que si leurs
+    signatures sont égales. La signature couvre ce qui décide de la hauteur
+    des blocs, pour le canal TEXTE et le canal MONOSPACE (code/pre) : les
+    familles effectivement résolues et la hauteur de ligne intrinsèque
+    mesurée. Elle inclut la pile déclarée et la taille de police : deux decks
+    différents n'ont pas la même signature. Avant la reparation #24495, seul
+    le canal texte entrait dans l'empreinte : un bloc code/pre changeant de
+    police monospace ne modifiait pas la signature (collision).
+    """
+    if not font_env or font_env.get("error"):
+        return "indisponible"
+    mono = font_env.get("monospace")
+    payload = {
+        "text": _channel_signature_part(font_env),
+        # None quand la slide ne porte aucun bloc code/pre : deux slides sans
+        # code/pre partagent cette valeur ; une slide avec code/pre ne
+        # collide plus avec elle.
+        "monospace": _channel_signature_part(mono) if isinstance(mono, dict) else None,
+    }
+    blob = json.dumps(payload, ensure_ascii=False, sort_keys=True)
+    return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
 
 
 def wait_slide_stable(page, target: int, timeout_ms: int = 6000, poll_ms: int = 250) -> dict:
@@ -706,6 +941,37 @@ def github_annotations(report: dict, slides_md: Path) -> list[str]:
                 f"::warning file={rel},line={line}::[OCCUPATION] slide {r['slide']} ({head}) — "
                 f"gap_left={occ['gap_left_pct']}% gap_right={occ['gap_right_pct']}% bottom={occ.get('content_bottom')}/{report['canvas'][1]}"
             )
+    # #24171 — empreinte de l'environnement de polices : deux rapports de
+    # compteurs ne sont comparables que si cette signature est la même. La
+    # notice est non bloquante et nomme ce qui a été mesuré, y compris
+    # l'absence de mesure (une ignorance nommée vaut mieux qu'un silence).
+    fe = report.get("font_environment") or {}
+    sig = report.get("font_signature") or font_signature(fe)
+    if not fe:
+        out.append(
+            f"::notice file={rel}::[ENVIRONNEMENT-POLICES] signature={sig} — "
+            "sonde d'environnement de polices non exécutée : la comparabilité "
+            "des compteurs de ce deck avec un autre rendu est inconnue"
+        )
+    elif fe.get("error"):
+        out.append(
+            f"::notice file={rel}::[ENVIRONNEMENT-POLICES] signature={sig} — "
+            f"sonde de polices en erreur ({fe['error']}) : la comparabilité "
+            "des compteurs de ce deck avec un autre rendu est inconnue"
+        )
+    else:
+        resolved = [
+            f.get("name")
+            for f in fe.get("families", [])
+            if f.get("resolved") and not f.get("generic")
+        ]
+        out.append(
+            f"::notice file={rel}::[ENVIRONNEMENT-POLICES] signature={sig} — "
+            f"polices système résolues : {', '.join(resolved) or 'aucune (repli sur une police générique)'} ; "
+            f"hauteur de ligne intrinsèque {fe.get('line_height_normal_stack_px')}px "
+            f"(delta vs police générique {fe.get('line_height_delta_px')}px) — "
+            "les compteurs de ce deck ne sont pas comparables à un rendu fait sur une autre machine"
+        )
     out.append(f"::notice file={rel}::Plancher mécanique advisory ({BORNE})")
     return out
 
@@ -759,6 +1025,11 @@ def main():
             }))
             browser.close()
             return 2
+
+        # Sonde d'environnement de polices (#24171) — une fois, sur la slide 1
+        # telle qu'elle est rendue au chargement. Advisory : elle n'entre dans
+        # aucun compteur et ne modifie pas le code retour.
+        font_env = probe_font_environment(page)
 
         if slide_lines and total and len(slide_lines) != total:
             stale_streaks.append(
@@ -842,6 +1113,9 @@ def main():
         ),
         "stale_warnings": stale_streaks,
         "borne": BORNE,
+        "font_dependency": FONT_DEPENDENCY,
+        "font_environment": font_env,
+        "font_signature": font_signature(font_env),
         "results": results,
         "_slide_lines": {str(k): v for k, v in slide_lines.items()},
     }

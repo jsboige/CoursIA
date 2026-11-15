@@ -211,6 +211,23 @@ class TestValidateProviderCredentialsShared(unittest.TestCase):
                 {"fast": "local"}, KEYLESS), []
         )
 
+    def test_claudish_on_localhost_still_needs_its_key(self):
+        # Negative witness: the proxy listens on 127.0.0.1 but answers 401
+        # without CLAUDISH_PROXY_KEY; the localhost exemption must not apply.
+        providers = {"claudish": {"base_url": "http://127.0.0.1:3002/v1",
+                                  "api_key": ""}}
+        problems = validate_provider_credentials({"reasoning": "claudish"},
+                                                 providers)
+        self.assertEqual(len(problems), 1)
+        self.assertIn("CLAUDISH_PROXY_KEY", problems[0])
+
+    def test_claudish_with_key_passes(self):
+        providers = {"claudish": {"base_url": "http://127.0.0.1:3002/v1",
+                                  "api_key": "k"}}
+        self.assertEqual(
+            validate_provider_credentials({"reasoning": "claudish"},
+                                          providers), [])
+
 
 class TestInnerLauncherGate(unittest.TestCase):
     """Le lanceur inner doit refuser AVANT le tree lock (#18709)."""

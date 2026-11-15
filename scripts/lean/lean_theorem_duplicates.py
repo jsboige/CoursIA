@@ -577,20 +577,18 @@ def render_section(pairs: list[dict], df_max: int, min_containment: float) -> li
                 )
             )
         lines.append("")
-    lines.append("Detail des paires (fichier et ligne) :")
+    lines.append("Detail des paires (fichier et declaration) :")
     lines.append("")
     for p in pairs:
         lines.append(
-            "- **%.2f** -- `%s` (%s:%d) et `%s` (%s:%d) -- nom %.2f /"
+            "- **%.2f** -- `%s` (%s) et `%s` (%s) -- nom %.2f /"
             " docstring %.2f / enonce %.2f / termes %s"
             % (
                 p["score"],
                 p["name"],
                 p["a"]["path"],
-                p["a"]["line"],
                 p["other_name"],
                 p["b"]["path"],
-                p["b"]["line"],
                 p["name_containment"],
                 p["doc_sim"],
                 p["stmt_sim"],

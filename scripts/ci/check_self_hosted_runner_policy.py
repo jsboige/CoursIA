@@ -165,7 +165,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "ict-tests.yml",
     "lean-conway.yml",
     "lean-i18n-drift.yml",
-    "lean-knot.yml",
+    # lean-knot.yml : workflow SUPPRIME par la migration matricielle de
+    #   knot_lean (#13751 -- entree `knot` au manifeste ci_lakes.json, wrapper
+    #   retire). Entree d'allowlist retiree dans le meme commit, comme
+    #   lean-planning.yml avant lui (#23467) : une entree pointant un
+    #   workflow inexistant serait une reference morte. Les jobs planning de
+    #   la famille (c) vivent desormais dans lean-ci-matrix.yml, deja declare.
     # tranche 3c (#14283, meme decision, meme owner) : jobs individuels d'un
     #   workflow dont les autres jobs restent sur ubuntu-latest.
     #   Exclus deliberement : ml-tests (torch retelecharge a chaque run, pas de
@@ -750,8 +755,8 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # absente ou != 'true'), chaque job resout sur ubuntu-latest : l'etat du
     # 27/10 est conserve, et l'entree d'allowlist ne rend le pool local
     # atteignable QUE si un operateur bascule la variable.
-    # Les six autres workflows de la famille (lean-conway, lean-i18n-drift,
-    # lean-knot, quarto-pages-deploy, slides-build-advisory,
+    # Les cinq autres workflows de la famille (lean-conway, lean-i18n-drift,
+    # quarto-pages-deploy, slides-build-advisory,
     # slides-composition-pr-relay) etaient DEJA declares plus haut : seul
     # l'absent est ajoute ici.
     # `lean-planning.yml` n'est PAS declare : le workflow a ete SUPPRIME sur
@@ -760,7 +765,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # entree d'allowlist pointant un workflow inexistant serait une reference
     # morte ; la forme hybride de la famille (c) s'applique donc a
     # `lean-ci-matrix.yml`, qui porte les jobs planning_lean depuis la
-    # migration.
+    # migration. Meme geste pour `lean-knot.yml` (supprime par la migration
+    # matricielle de knot_lean, #13751) : ses jobs vivent dans
+    # lean-ci-matrix.yml, et son entree d'allowlist est retiree au bloc 3a.
     # Exceptions nommees, laissees hebergees : quarto-pages-deploy `build`
     # (OOM mesure sur le pool, #15202) et `deploy` (push-only, deploy-pages +
     # OIDC/PAGES). Rollback = revert de la PR (l'entree disparait de

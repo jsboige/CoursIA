@@ -24,7 +24,7 @@ This checker measures it, comment by comment:
   ``ALLCAPS``) -- a translation may legitimately rephrase such a mention, so
   these are ADVISORY.
 
-Five mechanisms keep the measure from drowning in false positives:
+Six mechanisms keep the measure from drowning in false positives:
 
 * the ``_en`` anti-collision suffix is collapsed **symmetrically** on both
   sides (the convention's two validated variants name the same entity ``Foo``
@@ -50,6 +50,11 @@ Five mechanisms keep the measure from drowning in false positives:
   the other side carries a full date too. The mere presence of a year
   somewhere in the body excuses nothing: that exemption hid 29 findings of
   the repository, among them plain arc counts.
+* an **OK-CONSUMER** sibling is excluded wholesale, on the verdict of the
+  sibling organ (``check_i18n_siblings.check_pair``): when the ``_en`` file
+  ``import``s its FR canonical and reuses the declarations, the FR
+  per-declaration docstrings have no EN counterpart by design, and comparing
+  them would publish a false HARD finding for each one.
 
 Every file reports its **coverage**: how many comment pairs were compared, how
 many were excluded as headers, how many were repaired by alignment, and how
@@ -83,6 +88,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from check_i18n_siblings import (  # noqa: E402
+    check_pair,
     find_en_files,
     fr_sibling,
 )
@@ -96,16 +102,21 @@ _EN_SUFFIX = re.compile(r"\b(\w+)_en\b")
 # typographic choice, the reference is the same).
 _CODE_SPAN = re.compile(r"`([^`]{1,600})`")
 
-# A FENCED code block inside a comment ("```" ... "```"): a snippet quoted in
-# the prose. It is CODE, not a backticked reference, and it must be cut out
-# before the backticks are paired -- a fence carries THREE backticks, so the
-# naive pairing consumed the closing fence's first backtick and left two
-# stray ones to swallow the prose that follows the fence. Measured on the
-# repository (head d038396730): the stray backticks turned arbitrary prose
-# into "code spans" and DROPPED the inline reference that followed the fence
-# -- 130+ HARD findings on `Knots/Invariant_en.lean` alone, every one of them
-# an artefact of the pairing, not a translation gap.
-_FENCE_BLOCK = re.compile(r"```[^\n]*\n(.*?)(?:```|\Z)", re.S)
+# A fenced code block (``` ... ```) inside a comment. The fence carries an
+# ODD number of backticks, so the inline scanner above pairs its closing
+# fence with the NEXT opening one and swallows the prose in between: on a
+# faithful mirror pair this manufactured 130 HARD findings (measured, review
+# of #24143 -- ``Knots/Invariant``). A fenced block is CODE, not prose: the
+# Lean code it carries is bound by the byte-identity contract of
+# ``check_i18n_siblings``, and its comments are translated on purpose (five
+# mirror pairs translate the comment inside the fence). It is therefore
+# removed from the prose comparison.
+_FENCED_BLOCK = re.compile(r"```.*?```", re.S)
+
+
+def prose_only(body: str) -> str:
+    """``body`` without its fenced code blocks."""
+    return _FENCED_BLOCK.sub(" ", body)
 
 # A numeric group: a digit run possibly made of several parts separated by a
 # decimal/thousand/date separator (``2026-10-27``, ``27/10/2026``, ``1.5``).
@@ -117,12 +128,18 @@ _NUMBER_GROUP = re.compile(r"\d+(?:[.,/\-]\d+)*")
 # date.
 _DATE_GROUP = re.compile(r"\d+(?:\s*[.,/\-]\s*\d+)*")
 
-# The mirror declaration of an EN header: it says it is the mirror of a
-# canonical file. Such a comment has no FR counterpart BY DESIGN -- the FR
-# file carries its own (translated) docstring at the same code position --
-# so comparing them would report every metadata token of one side as the
-# loss of the other. This is the marker that tells the two apart.
-_MIRROR_DECLARATION = re.compile(r"\b(?:mirror\s+of|miroir\s+de)\b", re.I)
+# The mirror declaration of an EN header: it says it is the mirror/sibling/
+# companion of a canonical file. Such a comment has no FR counterpart BY
+# DESIGN -- the FR file carries its own (translated) docstring at the same
+# code position -- so comparing them would report every metadata token of
+# one side as the loss of the other. This is the marker that tells the two
+# apart. "sibling of" / "companion to" are recognized only when they name a
+# .lean file: a bare "sibling" (e.g. the "(EN sibling)" tag on the title
+# line) is too weak to single out a metadata header.
+_MIRROR_DECLARATION = re.compile(
+    r"\b(?:mirror\s+of|miroir\s+de)\b"
+    r"|\b(?:sibling|companion)\s+(?:of|to)\s+[`\"']?[A-Za-z0-9_./\\-]*\.lean",
+    re.I)
 
 # A `### i18n` convention note: a comment (or a section of one) that documents
 # the sibling-pair convention itself -- e.g. an option-A bilingual-inline
@@ -130,11 +147,31 @@ _MIRROR_DECLARATION = re.compile(r"\b(?:mirror\s+of|miroir\s+de)\b", re.I)
 # metadata about the file, not translatable content: the EN mirror owes it
 # nothing, so it is excluded from the comparison (a false "loss" / "orphan"
 # otherwise, control Conway/Doomsday.lean, review of #24148).
-_I18N_CONVENTION = re.compile(r"###\s*i18n\b", re.I)
+#
+# Position-restricted (NanoClaw review of #24765): the plain-spelling phrase
+# must HEAD a line -- the labeled note form (`Convention i18n (EPIC #4980,
+# ...) : ...`, `i18n convention (EPIC #4980, ...): this root ...`) that 45+
+# `_en.lean` files open on. A translatable prose line that merely MENTIONS the
+# convention mid-sentence (`... docstrings traduites -- convention i18n #4980
+# pattern A.`) no longer exempts the whole comment: under the old any-position
+# motif it would silence a comment it never intended to classify. The `###`
+# marker form stays any-position: a marked section header is explicit metadata.
+_I18N_CONVENTION = re.compile(
+    r"###\s*i18n\b"                                   # marked section header
+    r"|^[^\S\n]*(?:--|/-!)?[^\S\n]*"                  # label form, heading a line
+    r"(?:convention\s+i18n|i18n\s+convention)\b"
+    r"|(?:convention\s+i18n|i18n\s+convention)\b[^\n]{0,20}?#4980",  # citation
+    re.I | re.MULTILINE,
+)
 
 
 def is_i18n_convention_block(body: str) -> bool:
-    """True when ``body`` is, or embeds, a `### i18n` convention note."""
+    """True when ``body`` is, or embeds, a `### i18n` convention note.
+
+    The plain-spelling phrase counts only in heading position (it starts a
+    line of the comment); a mid-prose mention of the convention does not
+    exempt the comment from the comparison.
+    """
     return bool(_I18N_CONVENTION.search(body))
 
 
@@ -367,55 +404,16 @@ def _file_stem(span: str) -> str | None:
     return collapse_en(base)
 
 
-def split_fenced(body: str) -> tuple[str, list[str]]:
-    """Split ``body`` into its prose and the contents of its fenced blocks.
-
-    A fenced block is CODE quoted in the prose. It is cut out before the
-    backticks are paired, because a fence carries three of them: the naive
-    pairing consumed the closing fence's first backtick, left two stray
-    ones, and swallowed the prose that follows the fence into a bogus
-    "code span" while dropping the inline reference that followed it.
-
-    Returns the prose (the fences replaced by a space) and the list of the
-    fenced contents, in order.
-    """
-    fences: list[str] = []
-
-    def _take(match: re.Match) -> str:
-        fences.append(match.group(1))
-        return " "
-
-    return _FENCE_BLOCK.sub(_take, body), fences
-
-
-def prose_only(body: str) -> str:
-    """``body`` without its code: neither its fenced blocks nor its spans.
-
-    This is the text whose NUMBERS and technical identifiers are prose --
-    a number inside a quoted snippet is code, and it is compared with the
-    snippet itself (see ``code_spans``).
-    """
-    prose, _ = split_fenced(body)
-    return _CODE_SPAN.sub(" ", prose)
-
-
 def code_spans(body: str) -> list[str]:
-    """The code references of ``body`` (order preserved).
+    """The backticked literals of ``body`` (order preserved).
 
-    Two kinds: the backticked literals of the prose, and the contents of
-    the fenced blocks (a quoted snippet IS a reference to code). The
-    internal whitespace of a span is normalized: a translation may wrap a
-    long reference over several lines, which changes the wrapping but not
+    The internal whitespace of a span is normalized: a translation may wrap
+    a long reference over several lines, which changes the wrapping but not
     the reference.
     """
-    prose, fences = split_fenced(body)
     out: list[str] = []
-    for m in _CODE_SPAN.finditer(prose):
+    for m in _CODE_SPAN.finditer(prose_only(body)):
         span = " ".join(m.group(1).split())
-        if span:
-            out.append(span)
-    for fence in fences:
-        span = " ".join(fence.split())
         if span:
             out.append(span)
     return out
@@ -435,7 +433,7 @@ def number_parts(body: str) -> list[str]:
     the decimal made ``1.5`` and ``5.1`` compare equal, because the parts
     of both are ``{1, 5}`` (measured, review of #24148).
     """
-    stripped = prose_only(body)
+    stripped = _CODE_SPAN.sub(" ", prose_only(body))
     parts: list[str] = []
     for m in _NUMBER_GROUP.finditer(stripped):
         raw = m.group(0)
@@ -461,7 +459,7 @@ def date_groups(body: str) -> list[list[str]]:
     #24148).
     """
     out: list[list[str]] = []
-    stripped = prose_only(body)
+    stripped = _CODE_SPAN.sub(" ", prose_only(body))
     for m in _DATE_GROUP.finditer(stripped):
         pieces = [p.strip() for p in re.split(r"[.,/\-]", m.group(0)) if p.strip()]
         if len(pieces) >= 2 and any(len(p) == 4 for p in pieces):
@@ -523,7 +521,7 @@ def number_is_carried_elsewhere(part: str, other_body: str,
     value = int(part)
     words = _NUMBER_WORDS.get(value)
     if words and any(
-        re.search(r"\b%s\b" % re.escape(w), prose_only(other_body), re.IGNORECASE)
+        re.search(r"\b%s\b" % re.escape(w), other_body, re.IGNORECASE)
         for w in words
     ):
         return True
@@ -540,7 +538,7 @@ def number_is_carried_elsewhere(part: str, other_body: str,
 
 def technical_identifiers(body: str) -> set[str]:
     """The technical identifiers mentioned in ``body`` outside code spans."""
-    stripped = prose_only(body)
+    stripped = _CODE_SPAN.sub(" ", prose_only(body))
     out: set[str] = set()
     for m in _WORD.finditer(stripped):
         word = m.group(0)
@@ -765,6 +763,31 @@ def compare_files(fr_path: Path, en_path: Path) -> dict:
     """Compare the FR canonical and its EN mirror; return a pair report."""
     fr_src = fr_path.read_text(encoding="utf-8", errors="replace")
     en_src = en_path.read_text(encoding="utf-8", errors="replace")
+
+    # OK-CONSUMER sibling: the EN file ``import``s the FR module and reuses its
+    # declarations instead of redeclaring them, so the FR canonical's
+    # per-declaration docstrings have **no EN counterpart by design**. Paired
+    # positionally, the organ would report every one of them as a loss -- a
+    # wall of HARD findings that is an artefact of the shape, not a translation
+    # gap. The sibling organ (``check_i18n_siblings.check_pair``) already
+    # classifies exactly this shape as ``"OK-CONSUMER"``; we reuse that verdict
+    # (single source of truth) and skip the comparison for such a pair.
+    if check_pair(fr_path, en_path)[0] == "OK-CONSUMER":
+        return {
+            "fr": str(fr_path),
+            "en": str(en_path),
+            "ok_consumer": True,
+            "fr_comments": 0,
+            "en_comments": 0,
+            "anchor_shift": 0,
+            "pairs_repaired": 0,
+            "pairs_compared": 0,
+            "pairs_excluded": 0,
+            "pairs": [],
+            "unpaired": [],
+            "findings": [],
+        }
+
     fr_comments = scan_comments(fr_src)
     en_comments = scan_comments(en_src)
     decls = declaration_names(fr_src) | declaration_names(en_src)

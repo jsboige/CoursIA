@@ -2020,7 +2020,7 @@ if texte:
     for q in questions:
         print("" •"", q)
 ",,,,,,,,0d807edc1de50e29,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,jxwlftsm05,markdown,fr,e31925fdc154b697,"### Applications pratiques : accessibilite et pedagogie
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,jxwlftsm05,markdown,fr,aeb831f0f515474f,"### Applications pratiques : accessibilite et pedagogie
 
 GPT-5 excelle dans deux cas d'usage concrets :
 - **Alt text** : generer automatiquement des descriptions d'accessibilite pour les images web
@@ -2029,7 +2029,7 @@ GPT-5 excelle dans deux cas d'usage concrets :
 
 ### Lecture du résultat — génération d'alt text
 
-La cellule précédente appelle `analyze_image_with_gpt5()` avec un prompt spécialisé accessibilité qui impose trois contraintes : (1) sortie ≤ 125 caractères, (2) ton factuel et objectif, (3) pas de formatage additionnel. La sortie obtenue décrit la scène (vue aérienne de la Gran Vía à Madrid) en une phrase factuelle unique ; le `print` affiche sa longueur en caractères — vérifiez qu'elle reste sous le seuil de 125 imposé par le prompt (le texte exact change à chaque exécution, la contrainte, elle, est tenue par le prompt).
+La cellule précédente appelle `analyze_image_with_gpt5()` avec un prompt spécialisé accessibilité qui impose trois contraintes : (1) sortie ≤ 125 caractères, (2) ton factuel et objectif, (3) pas de formatage additionnel. La sortie obtenue décrit la scène visible en une phrase factuelle unique ; le `print` affiche sa longueur en caractères — vérifiez qu'elle reste sous le seuil de 125 imposé par le prompt (le texte exact change à chaque exécution, la contrainte, elle, est tenue par le prompt).
 
 **Pourquoi cette longueur compte** : le standard WCAG 2.1 (critère 1.1.1 *Non-text Content*) recommande des alt texts courts pour les images informatives. Au-delà de 125 caractères, les lecteurs d'écran tronquent et l'expérience se dégrade. Au-dessous de 50, l'utilisateur perd le contexte. L'exemple guidé de la cellule 19 ci-dessous exécute les trois niveaux de longueur pour étudier cette zone de confort — c'est l'un des usages où la multimodalité native remplace un pipeline séparé (modèle vision → modèle texte → formatage).","### Practical applications : accessibility and pedagogy
 
@@ -2040,7 +2040,7 @@ GPT-5 excels in two concrete use cases:
 
 ### Reading the result — alt text generation
 
-The previous cell calls `analyze_image_with_gpt5()` with a specialized accessibility prompt that imposes three constraints: (1) output ≤ 125 characters, (2) factual and objective tone, (3) no additional formatting. The output obtained describes the scene (aerial view of the Gran Vía in Madrid) in a single factual sentence; the `print` displays its length in characters — check that it remains under the 125 threshold imposed by the prompt (the exact text changes on each execution, the constraint is held by the prompt).
+The previous cell calls `analyze_image_with_gpt5()` with a specialized accessibility prompt that imposes three constraints: (1) output ≤ 125 characters, (2) factual and objective tone, (3) no additional formatting. The output obtained describes the visible scene in a single factual sentence; the `print` displays its length in characters — check that it remains under the 125 threshold imposed by the prompt (the exact text changes on each execution, the constraint is held by the prompt).
 
 **Why this length matters** : the WCAG 2.1 standard (criterion 1.1.1 *Non-text Content*) recommends short alt texts for informative images. Beyond 125 characters, screen readers truncate and the experience degrades. Below 50, the user loses context. The guided example in cell 19 below runs the three length levels to study this comfort zone — this is one of the uses where native multimodality replaces a separate pipeline (vision model → text model → formatting).",,,,,"### Практические применения: доступность и педагогика
 
@@ -2052,7 +2052,7 @@ GPT-5 отлично справляется с двумя конкретными
 
 Предыдущая ячейка вызывает `analyze_image_with_gpt5()` со специализированным промптом доступности, налагающим три ограничения: (1) вывод ≤ 125 символов, (2) фактический и объективный тон, (3) без дополнительного форматирования. Полученный вывод — *Vue aérienne de la Gran Vía à Madrid au coucher du soleil, dôme du Metropolis, immeubles illuminés et circulation.* — **114 символов** (ниже порога 125), что подтверждает следующий за ним `print`.
 
-**Почему эта длина имеет значение**: стандарт WCAG 2.1 (критерий 1.1.1 *Non-text Content*) рекомендует короткие alt text для информативных изображений. Свыше 125 символов скринридеры обрезают текст, и опыт деградирует. Ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,e31925fdc154b697,f510820b0a80d905,,,,,7bb55f5783c16de6,,,,,,,,,
+**Почему эта длина имеет значение**: стандарт WCAG 2.1 (критерий 1.1.1 *Non-text Content*) рекомендует короткие alt text для информативных изображений. Свыше 125 символов скринридеры обрезают текст, и опыт деградирует. Ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,aeb831f0f515474f,5616b980302adc0f,,,,,7bb55f5783c16de6,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a01bfa80,code,fr,fafb03e3949280b8,"# Génération de descriptions d'accessibilité (Alt text)
 if generate_alt_text and analysis_results:
     print(""\n♿ GÉNÉRATION DE DESCRIPTIONS D'ACCESSIBILITÉ"")
@@ -23815,3 +23815,207 @@ conclusion_ex9 = None  # TODO etudiant : que faut-il exiger d'un critere de zone
 
 print(""Exercice a completer"")
 ",,,,,,,,178b799a2acd0593,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,19756c25,markdown,fr,6f80301f1b905e40,"## Comparaison directe : le modèle compare lui-même les deux images
+
+*Exemple guidé ajouté après la présentation de la contribution #23305, qui reste intacte : il reprend son comparateur d'images et le mesure contre une autre façon de faire.*
+
+L'exemple précédent compare **deux textes**. Le modèle ne voit qu'**une** des deux images au moment où il conclut : le troisième appel reçoit les deux analyses en prose, et seulement l'image B jointe. Tout ce que la description de l'image A a omis, déformé ou inventé passe donc dans la comparaison sans contrôle possible, et les deux images ne sont pas traitées de la même façon.
+
+Les modèles de vision acceptent **plusieurs images dans un même message** : un tableau de parties `image_url` dans `content`. Le modèle regarde alors les deux images lui-même, et il n'y a plus de description intermédiaire où l'information se perd.
+
+**Points clés** :
+- **Vérifier, ne pas supposer** : la cellule commence par un appel réel et échoue avec un message explicite si le modèle refuse deux images. Un modèle multimodal annoncé n'est pas un modèle multimodal mesuré.
+- **La mesure qui tranche** est structurelle : combien d'images l'appel de comparaison reçoit-il réellement ? La voie « descriptions » en joint **une**, la voie directe **deux**.
+- Les deux voies reçoivent **la même consigne de comparaison** ; ce qui change est ce qu'elles ont sous les yeux, pas ce qu'on leur demande.
+- Le nombre d'appels, les tokens d'entrée et le temps sont relevés pour les deux voies, sur la même paire d'images.
+- Un modèle plus léger de la liste du module suffirait : la comparaison directe est **un** appel, pas trois. Non mesuré ici — les cinq appels de la section ont tourné sur `openai/gpt-5`.","## Direct comparison: the model compares the two images itself
+
+*Guided example added after the presentation of contribution #23305, which remains intact: it reuses its image comparator and measures it against another way of doing things.*
+
+The previous example compares **two texts**. The model sees only **one** of the two images when it concludes: the third call receives both analyses in prose, and only image B attached. Everything that the description of image A omitted, distorted or invented therefore enters the comparison with no possible check, and the two images are not treated the same way.
+
+Vision models accept **several images in a single message**: an array of `image_url` parts in `content`. The model then looks at both images itself, and there is no longer an intermediate description where information gets lost.
+
+**Key points**:
+- **Verify, do not assume**: the cell starts with a real call and fails with an explicit message if the model refuses two images. An advertised multimodal model is not a measured multimodal model.
+- **The measurement that settles it** is structural: how many images does the comparison call actually receive? The ""descriptions"" path attaches **one**, the direct path **two**.
+- Both paths receive **the same comparison instruction**; what changes is what they have in front of them, not what they are asked.
+- The number of calls, input tokens and time are recorded for both paths, on the same pair of images.
+- A lighter model from the module's list would be enough: direct comparison is **one** call, not three. Not measured here — the five calls of the section ran on `openai/gpt-5`.",,,,,,,6f80301f1b905e40,b7eba857ab0ce827,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9e5172e1,code,fr,6f20385071062526,"# Exemple guide : le modele compare lui-meme -- un seul appel, les deux images
+# Mesure face a la version ""descriptions"" de l'exemple precedent.
+import time
+
+
+def appel_vision(parts_images, prompt, max_tokens_appel=None):
+    """"""Un appel de vision brut : renvoie le texte, l'usage et la duree.
+
+    Les quatre appels de la comparaison passent par cette meme fonction, donc
+    par des requetes identiques en tout point sauf le contenu joint : c'est ce
+    qui rend la mesure comparable d'une voie a l'autre.
+    """"""
+    payload = {
+        ""model"": model_name,
+        ""messages"": [{
+            ""role"": ""user"",
+            ""content"": [{""type"": ""text"", ""text"": prompt}] + parts_images,
+        }],
+        ""max_tokens"": max_tokens_appel or max_tokens,
+        ""temperature"": temperature,
+        ""top_p"": top_p,
+    }
+    debut = time.time()
+    response = requests.post(f""{api_base_url}/chat/completions"", headers=headers,
+                             json=payload, timeout=120)
+    duree = round(time.time() - debut, 1)
+    if response.status_code != 200:
+        try:
+            message = response.json().get(""error"", {}).get(""message"", """")
+        except ValueError:
+            message = """"
+        return {""ok"": False, ""erreur"": message or f""HTTP {response.status_code}"",
+                ""parts_images"": len(parts_images), ""secondes"": duree, ""usage"": {}}
+    data = response.json()
+    return {""ok"": True,
+            ""texte"": data[""choices""][0][""message""][""content""],
+            ""usage"": data.get(""usage"", {}),
+            ""parts_images"": len(parts_images),
+            ""secondes"": duree}
+
+
+def bilan(appels, appel_comparaison):
+    """"""Agrege ce qui est comparable entre les deux voies.""""""
+    return {
+        ""appels"": len(appels),
+        ""images_vues_a_la_comparaison"": appel_comparaison[""parts_images""],
+        ""tokens_entree"": sum(int(a[""usage""].get(""prompt_tokens"") or 0) for a in appels),
+        ""tokens_sortie"": sum(int(a[""usage""].get(""completion_tokens"") or 0) for a in appels),
+        ""secondes"": round(sum(a[""secondes""] for a in appels), 1),
+    }
+
+
+def comparer_par_descriptions(url_a, url_b, prompt_analyse, prompt_comparaison):
+    """"""Voie de l'exemple precedent : deux descriptions en texte, puis un croisement.""""""
+    image_a_part = prepare_image_for_gpt5(url_a)
+    image_b_part = prepare_image_for_gpt5(url_b)
+    analyses = {}
+    appels = []
+    for cle, part in ((""a"", image_a_part), (""b"", image_b_part)):
+        r = appel_vision([part], prompt_analyse)
+        appels.append(r)
+        if not r[""ok""]:
+            raise RuntimeError(f""analyse de l'image {cle.upper()} : {r['erreur']}"")
+        analyses[cle] = r[""texte""]
+    prompt = (f""{prompt_comparaison}\n\n""
+              f""Analyse de l'image A :\n\""\""\""{analyses['a']}\""\""\""\n\n""
+              f""Analyse de l'image B (image jointe) :\n\""\""\""{analyses['b']}\""\""\"""")
+    # Une seule image est jointe ici : c'est l'asymetrie que l'on mesure.
+    croisement = appel_vision([image_b_part], prompt)
+    appels.append(croisement)
+    if not croisement[""ok""]:
+        raise RuntimeError(f""croisement : {croisement['erreur']}"")
+    return croisement[""texte""], bilan(appels, croisement)
+
+
+def comparer_directement(urls, prompt_comparaison):
+    """"""Voie directe : toutes les images dans un seul message, aucune prose intermediaire.""""""
+    parts_images = [prepare_image_for_gpt5(u) for u in urls]
+    comparaison = appel_vision(parts_images, prompt_comparaison)
+    if not comparaison[""ok""]:
+        raise RuntimeError(f""comparaison directe : {comparaison['erreur']}"")
+    return comparaison[""texte""], bilan([comparaison], comparaison)
+
+
+# --- 1. Verifier l'acceptation du multi-images, avant de s'en servir ---------
+_parts_test = [prepare_image_for_gpt5(image_a), prepare_image_for_gpt5(image_b)]
+# Budget par defaut, comme les appels de comparaison : GPT-5 depense d'abord
+# des jetons de raisonnement, et un plafond serre (essaie a 16) laisse le canal
+# texte vide -- HTTP 200, reponse vide, mesure le 2026-11-05.
+_sonde = appel_vision(_parts_test, ""Combien d'images distingues-tu ? Reponds par un chiffre."")
+# L'acceptation se lit dans la REPONSE du modele, pas dans le seul HTTP 200 :
+# un modele qui ignorerait la seconde image repondrait ""1"" avec le meme code 200.
+_reponse_sonde = (_sonde.get(""texte"") or """").strip()
+_MULTI_IMAGES_OK = _sonde[""ok""] and any(mot in _reponse_sonde for mot in (""2"", ""deux"", ""two""))
+print(f""Reponse de la sonde ({_sonde['parts_images']} images envoyees) : {_reponse_sonde!r}"")
+if _MULTI_IMAGES_OK:
+    print(f""Multi-images accepte par {model_name} : la reponse cite bien deux images"")
+else:
+    if not _sonde[""ok""]:
+        print(f""Multi-images REFUSE par {model_name} : {_sonde['erreur']}"")
+    else:
+        print(f""Multi-images NON CONFIRME par {model_name} : HTTP 200, ""
+              ""mais la reponse ne cite pas deux images"")
+    print(""Les cellules suivantes ne peuvent pas s'executer : le modele ne lit qu'une image par message."")
+
+# --- 2. La meme consigne de comparaison pour les deux voies ------------------
+prompt_comparaison = f""""""Tu compares les images jointes pour des étudiants. Réponds en {language}.
+**Ce que montre chaque image** : une puce par image, avec un détail précis (compte les éléments quand c'est possible)
+**Ce que la seconde ajoute à la première** : 2 puces
+**Verdict** : laquelle introduit le domaine à des étudiants, en 2 lignes""""""
+
+if _MULTI_IMAGES_OK:
+    verdict_descriptions, cout_descriptions = comparer_par_descriptions(
+        image_a, image_b, prompt_analyse, prompt_comparaison)
+    verdict_direct, cout_direct = comparer_directement(
+        [image_a, image_b], prompt_comparaison)
+
+    print(""\nVoie 'descriptions' (exemple precedent) :"", cout_descriptions)
+    print(""Voie directe (images jointes)            :"", cout_direct)
+    gain_calls = cout_descriptions[""appels""] - cout_direct[""appels""]
+    print(f""\nAppels economises : {gain_calls}  |  ""
+          f""images vues a la comparaison : {cout_descriptions['images_vues_a_la_comparaison']} ""
+          f""-> {cout_direct['images_vues_a_la_comparaison']}"")
+
+    print(""\n"" + ""="" * 30 + "" VOIE DESCRIPTIONS "" + ""="" * 30)
+    print(verdict_descriptions)
+    print(""\n"" + ""="" * 30 + "" VOIE DIRECTE "" + ""="" * 30)
+    print(verdict_direct)
+else:
+    verdict_descriptions, verdict_direct = None, None
+    cout_descriptions, cout_direct = None, None
+    print(""Comparaison sautee : le modele ne lit qu'une image par message."")",,,,,,,,6f20385071062526,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9a42930a,markdown,fr,edd6677661d03a54,"### Lecture du résultat — ce que la comparaison directe change, et ce qu'elle ne change pas
+
+L'acceptation du multi-images a été **mesurée** avant usage : interrogé sur le nombre d'images qu'il distingue dans un message portant deux parties `image_url`, `openai/gpt-5` répond `2`. Le reste de la cellule s'appuie sur cette réponse, pas sur la réputation du modèle.
+
+Les deux voies, sur la même paire d'images et avec la même consigne de comparaison :
+
+| | voie « descriptions » | voie directe |
+|---|---|---|
+| appels | 3 | **1** |
+| images vues à la comparaison | 1 | **2** |
+| tokens d'entrée | 1 740 | **925** |
+| tokens de sortie | 4 173 | **1 701** |
+| durée | 54,5 s | **22,3 s** |
+
+Trois lectures, dans l'ordre de ce qui est solide :
+
+1. **La mesure qui tranche est structurelle, pas qualitative.** Le croisement de la voie « descriptions » reçoit **une** image : tout ce qu'il affirme sur l'image A vient d'un texte, sans recours possible. La voie directe en reçoit deux. Aucune formulation de prompt ne corrige cette asymétrie — c'est le montage qui la crée.
+2. **La voie texte paie deux fois.** Elle produit deux descriptions complètes (d'où les 4 173 tokens de sortie), puis les relit dans un troisième appel. La voie directe n'écrit qu'une réponse : moins d'appels, moins de tokens dans les deux sens, et ici 2,4 fois moins de temps.
+3. **Ce que la voie directe voit et que le texte manque** : elle **compte** — « environ 10 sommets visibles » sur l'image A. Aucune des deux descriptions ne l'avait produit ; la voie texte ne pouvait donc pas le relayer. Un compte se lit sur les pixels, pas dans un résumé.
+
+Et une lecture inverse, pour ne pas surinterpréter : **les deux verdicts choisissent la même image** (la carte, B). La comparaison directe ne promet pas un meilleur verdict — elle supprime un intermédiaire où l'information peut se perdre, et l'asymétrie entre les deux images. Ce qui reste fragile dans la voie texte est ailleurs : les nombres qu'elle relaie (22 anciennes régions, 96 départements) viennent d'une seule description, et rien dans la chaîne ne les contredit ; la voie directe les lit sur la carte.
+
+Coût de la section : cinq appels de vision sur `openai/gpt-5` — la sonde d'acceptation, les trois appels de la voie texte, l'appel de la voie directe. Un modèle plus léger suffirait à ces appels, l'un des cinq en particulier : la comparaison directe n'en demande qu'un. Non mesuré ici.","### Reading the result — what direct comparison changes, and what it does not change
+
+Acceptance of multi-image input was **measured** before use: asked how many images it distinguishes in a message carrying two `image_url` parts, `openai/gpt-5` answers `2`. The rest of the cell rests on that answer, not on the model's reputation.
+
+Both paths, on the same pair of images and with the same comparison instruction:
+
+| | ""descriptions"" path | direct path |
+|---|---|---|
+| calls | 3 | **1** |
+| images seen at comparison | 1 | **2** |
+| input tokens | 1,740 | **925** |
+| output tokens | 4,173 | **1,701** |
+| duration | 54.5 s | **22.3 s** |
+
+Three readings, in order of what is solid:
+
+1. **The measurement that settles it is structural, not qualitative.** The ""descriptions"" cross-check receives **one** image: everything it asserts about image A comes from a text, with no recourse. The direct path receives two. No prompt wording corrects that asymmetry — the setup creates it.
+2. **The text path pays twice.** It produces two complete descriptions (hence the 4,173 output tokens), then rereads them in a third call. The direct path writes only one answer: fewer calls, fewer tokens in both directions, and here 2.4 times less time.
+3. **What the direct path sees and the text misses**: it **counts** — about 10 visible peaks on image A. Neither description had produced it; the text path therefore could not relay it. A count is read on the pixels, not in a summary.
+
+And a counter-reading, so as not to overinterpret: **both verdicts choose the same image** (the map, B). Direct comparison does not promise a better verdict — it removes an intermediary where information can get lost, and the asymmetry between the two images. What remains fragile in the text path lies elsewhere: the numbers it relays (22 former regions, 96 departments) come from a single description, and nothing in the chain contradicts them; the direct path reads them on the map.
+
+Cost of the section: five vision calls on `openai/gpt-5` — the acceptance probe, the three calls of the text path, the call of the direct path. A lighter model would suffice for these calls, one of the five in particular: direct comparison requires only one. Not measured here.",,,,,,,edd6677661d03a54,21afe1d8785dcf93,,,,,,,,,,,,,,

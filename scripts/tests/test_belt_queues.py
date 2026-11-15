@@ -157,6 +157,49 @@ def test_board_without_previous_assignment():
     assert res["previous_at"] is None and res["lanes"][A]["assigned"] == 0
 
 
+# --- parcage des EPICs Origami (#24373) ---------------------------------------
+#
+# Les EPICs Origami dont le pli suivant n'est pas deplie sont PARQUES : le
+# tapis ne les sert plus aux lanes, et le tableau du coordinateur doit les
+# montrer dans une rubrique dediee -- c'est la que le geste qui attend le
+# coordinateur devient visible.
+
+
+def test_board_affiche_les_epics_origami_parques():
+    belt = {
+        "picks": [_pick(30, "[X] a")],
+        "origami_parking": {
+            "measured": True,
+            "reason": "mesure faite",
+            "details": [
+                {"epic": 19309, "parked": True, "next_pli": 4,
+                 "reason": "tous les plis materialises sont termines",
+                 "title": "[Epic] constellation causale"},
+                {"epic": 18205, "parked": False,
+                 "reason": "pli 2 ouvert et non livre",
+                 "title": "[Epic Origami] geometrie differentielle"},
+            ],
+        },
+    }
+    res = bq.board(belt, [A], None, NOW)
+    assert [it["number"] for it in res["origami_parked"]] == [19309]
+    assert res["origami_parking"]["measured"] is True
+    text = bq.render_board(res)
+    assert "Origami en attente de depliage" in text
+    assert "#19309" in text and "-- pli 4" in text
+    assert "#18205" not in text  # un EPIC servi n'est pas dans la rubrique
+
+
+def test_board_sans_mesure_origine_le_dit():
+    """Pas de mesure = pas de parcage, et le tableau le dit."""
+    res = bq.board({"picks": [_pick(30, "[X] a")]}, [A], None, NOW)
+    assert res["origami_parked"] == []
+    assert res["origami_parking"]["measured"] is False
+    text = bq.render_board(res)
+    assert "Origami en attente de depliage" in text
+    assert "(non mesure" in text
+
+
 # --- lectures impossibles (#23115) ------------------------------------------------
 #
 # Une issue illisible ne doit pas tuer le tableau : elle est NOMMEE, elle reste

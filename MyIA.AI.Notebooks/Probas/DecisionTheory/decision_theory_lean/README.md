@@ -39,7 +39,7 @@ Notebook compagnon Lean :
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.31.0-rc1`
+- **Toolchain** : `leanprover/lean4:v4.33.0`
 - **Sorry** : **2** (tous dans `gittins_optimality`, `Gittins/GittinsTheorem.lean`) —
   voir « État honnête » ci-dessous. `Gittins/Discount.lean` = **0 sorry** (entièrement
   prouvé), `Gittins/Basic.lean` = 0. `gittins_index_known_arm` et
@@ -52,7 +52,7 @@ Notebook compagnon Lean :
   fidèlement — d'où le total lake standalone-sorry = 4). `Utility` et `Coherence`
   disposent aussi de leurs siblings EN.
 - **Build** : `lake build Gittins Utility Coherence` (dépend de Mathlib4)
-- **Dépendances** : Mathlib4 (`v4.31.0-rc1`) — analyse réelle pour les lemmes
+- **Dépendances** : Mathlib4 (pin `db584cd6`, toolchain `v4.33.0`) — analyse réelle pour les lemmes
   d'actualisation, structure ordonnée et affine de `ℝ` pour vNM, théorie des `Finset`
   / inclusion–exclusion pour la cohérence de de Finetti
 
@@ -72,7 +72,7 @@ La formalisation est scindée en une couche **prouvée** et une couche **énonc�
   `discount_monotone` (γ₁ ≤ γ₂ ⇒ ∑' γ₁^n ≤ ∑' γ₂^n). `discount_monotone` est prouvé
   **en forme close** via `geometric_series_converges` +
   `one_div_le_one_div_of_le`, en contournant l'absence de `tsum_le_tsum` sur le `ℝ`
-  nu dans Mathlib v4.31.0-rc1.
+  nu dans la version de Mathlib alors utilisée (`v4.31.0-rc1`, aujourd'hui `v4.33.0`).
 - **Énoncé, intractable** (`GittinsTheorem.lean`) : `gittinsIndex` (arrêt optimal),
   `gittins_optimality` (le théorème central — la politique à indice maximise la
   récompense actualisée espérée). Les **2 `sorry` résiduels** sont dans l'assemblage de
@@ -265,7 +265,8 @@ Une preuve complète de `gittins_optimality` requiert :
 3. Une **récurrence sur l'horizon de planification**, et
 4. Une **espérance formelle** sur la distribution de récompense.
 
-Mathlib (v4.31.0-rc1) n'a **aucune formalisation de MDP, de bandit ou d'équation de
+Dans la version de Mathlib alors utilisée (`v4.31.0-rc1`, aujourd'hui `v4.33.0`), il n'y avait
+**aucune formalisation de MDP, de bandit ou d'équation de
 Bellman**, ni d'API d'espérance mesurée-théorique adaptée ici. Une preuve complète exigerait un volume
 de définitions support de niveau recherche, au-delà
 d'une seule PR. Le théorème est donc **énoncé** (avec l'énoncé précis préservé dans

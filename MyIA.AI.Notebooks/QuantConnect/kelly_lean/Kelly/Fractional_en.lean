@@ -65,9 +65,7 @@ lemma fractional_feasible (β : Bet) (c : ℝ) (hc0 : 0 ≤ c) (hc1 : c ≤ 1) :
     -- commit (Lean 4.33 changed the behaviour of rewrites on 3-factor products).
     rcases eq_or_lt_of_le hc0 with rfl | hcpos
     · rw [zero_mul]
-      -- -1 / β.b < 0.  Just use `linarith` on the explicit positive of 1/β.b.
-      -- The contradiction arises because -1/β.b is the negation of 1/β.b and
-      -- they have opposite signs.
+      -- Goal : -1 / β.b < 0.  Follows from 0 < 1 / β.b (one_div_pos of β.hb_pos).
       have hpos : 0 < 1 / β.b := one_div_pos.mpr β.hb_pos
       -- (-1/β.b) + (1/β.b) = 0, and 1/β.b > 0, so 1/β.b > 0 implies -1/β.b < 0.
       linarith [show (1 / β.b) + (-1 / β.b) = 0 from by ring, hpos]

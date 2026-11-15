@@ -41,7 +41,7 @@ de mesure. La verification se fait au carnet, par confrontation a
 depuis la tranche « une seule implementation de l'automate », ce module est
 l'unique implementation de l'automate dans le depot. Carnets consommateurs :
 ``ICT-18-ArrowOfTimeReversibilization`` ,
-``ICT-MUH-FibreTegmark`` et ``ICT-48-WolframClasses-ThermoSignature`` --
+``ICT-MUH-FibreTegmark-Python`` et ``ICT-48-WolframClasses-ThermoSignature`` --
 chacun importe l'organe (``rule_table``, ``wolfram_step`` ,
 ``wolfram_trajectory`` selon ses besoins). Un nouveau carnet qui voudrait
 l'automate fait de meme : recopier ``wolfram_step`` ou ``rule_table``

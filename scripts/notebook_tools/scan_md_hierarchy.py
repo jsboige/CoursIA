@@ -29,7 +29,10 @@ introduced -- net WITHIN a notebook, never ACROSS notebooks: fixing 10 in
 notebook A does not excuse adding 3 in notebook B, but adding 1 and fixing 9 in
 the SAME notebook is a burndown, not a "new defect"; a class migration like
 9 HEADING-IN-LIST -> 1 HINT-AS-HEADING is net -8). Exit 0 when every net delta
-is <= 0. Exit 1 on broken input (unreadable baseline, vacuous scan).
+is <= 0. Exit 1 on broken input (unreadable baseline, vacuous scan). With
+`--fail-kinds K1,K2` (#22012 gradual blocking), an increase on one of the
+listed kinds exits 4 instead -- the check fails -- while drift on the other
+kinds keeps the advisory exit 2.
 
 `--name-status FILE` (git diff --name-status output, see #12735): PR-attribution.
 The drift computation is then restricted to the notebooks CHANGED by the PR
@@ -59,6 +62,13 @@ from datetime import datetime, timezone
 from notebook_walk import iter_notebooks as _walk_notebooks  # noqa: E402
 
 BASELINE_DEFAULT = pathlib.Path(__file__).with_name('md_hierarchy_baseline.json')
+
+# Tous les kinds emis par ce scanner. Sert a la validation de --fail-kinds :
+# une classe typoee doit echouer bruyamment, jamais matcher en silence (#22012).
+KNOWN_KINDS = frozenset({
+    'COLLAPSED-MARKDOWN', 'HEADING-IN-LIST', 'HINT-AS-HEADING',
+    'H1-DEEP', 'MULTI-H1',
+})
 
 HEADING_RE = re.compile(r'^(#{1,6})\s+(.*\S)\s*$')
 # Heading nested inside a list item or blockquote (`- # Indice : ...`,
@@ -562,6 +572,22 @@ def main(argv=None):
                              'poison: the "before" is the exact tree the PR merges '
                              'into, so drift is always imputable to the diff. '
                              'Requires --name-status')
+    parser.add_argument('--fail-kinds', default=None, metavar='KIND[,KIND...]',
+                        help='blocking classes (#22012, bascule graduelle) : en '
+                             'mode --diff, un drift positif sur l une de ces '
+                             'classes sort en 4 (le check echoue) ; le drift des '
+                             'autres classes garde la sortie advisory 2. Sans le '
+                             'flag, comportement inchange (tout drift positif '
+                             'sort en 2). Une classe inconnue sort en 1.')
+    parser.add_argument('--base-ref', default=None, metavar='REF',
+                        help='attribution par ref (sucre #22012 pour la voie '
+                             'rapide) : compose en interne `git diff -M '
+                             '--name-status REF...HEAD -- MyIA.AI.Notebooks/` '
+                             '(fichier temporaire) + --reference-base REF. Le '
+                             'drift mesure est imputable au diff REF...HEAD, '
+                             'jamais la derive heritee d une base perimee '
+                             '(#12735 / #13315). Requiert un depot git et un '
+                             'cwd a la racine du repo')
     args = parser.parse_args(argv)
 
     try:
@@ -574,6 +600,48 @@ def main(argv=None):
     if args.reference_base and not args.name_status:
         parser.error('--reference-base requires --name-status (the reference is '
                      'scoped to the notebooks the diff changed)')
+    fail_kinds = set()
+    if args.fail_kinds:
+        fail_kinds = {k.strip() for k in args.fail_kinds.split(',') if k.strip()}
+        unknown = fail_kinds - KNOWN_KINDS
+        if unknown:
+            # PAS parser.error : argparse sortirait 2, qui signifie « drift
+            # advisory » -- une classe typoee passerait pour un verdict. Le
+            # contrat #22012 est l inverse : echouer bruyamment en 1.
+            print(f'ERROR: --fail-kinds: unknown kind(s) {sorted(unknown)} -- '
+                  f'known kinds: {sorted(KNOWN_KINDS)}', file=sys.stderr)
+            return 1
+        if not args.diff:
+            print('ERROR: --fail-kinds requires --diff (it routes the drift '
+                  'exit code)', file=sys.stderr)
+            return 1
+    if args.base_ref:
+        # Sucre d appel pour la voie rapide : synthetiser le couple
+        # name-status + reference-base depuis la ref, au lieu d exiger deux
+        # fichiers intermediaires que le runner ne sait pas produire.
+        if args.name_status or args.reference_base:
+            print('ERROR: --base-ref composes --name-status/--reference-base '
+                  'internally; pass either, not both', file=sys.stderr)
+            return 1
+        import atexit
+        import subprocess
+        import tempfile
+        r = subprocess.run(
+            ['git', 'diff', '-M', '--name-status', f'{args.base_ref}...HEAD',
+             '--', 'MyIA.AI.Notebooks/'],
+            capture_output=True, text=True,
+            encoding='utf-8', errors='replace')
+        if r.returncode != 0:
+            print(f'ERROR: --base-ref: git diff failed: '
+                  f'{r.stderr.strip()[:300]}', file=sys.stderr)
+            return 1
+        tmp = tempfile.NamedTemporaryFile(
+            mode='w', suffix='.name-status', delete=False, encoding='utf-8')
+        tmp.write(r.stdout)
+        tmp.close()
+        atexit.register(pathlib.Path(tmp.name).unlink)
+        args.name_status = pathlib.Path(tmp.name)
+        args.reference_base = args.base_ref
     drift = args.diff or args.update_baseline
 
     if drift:
@@ -664,10 +732,24 @@ def main(argv=None):
             print(f'  {e["net"]}  {e["path"]}  (mixed, net 0)')
             for kind, delta in e['kinds']:
                 print(f'        {delta:+d} {kind}')
+        blocking = []
+        if fail_kinds:
+            blocking = [e for e in regressions
+                        if any(kind in fail_kinds and delta > 0
+                               for kind, delta in e['kinds'])]
+            if blocking:
+                kinds_hit = sorted({kind for e in blocking for kind, delta
+                                    in e['kinds'] if kind in fail_kinds
+                                    and delta > 0})
+                # AVANT la ligne de synthese : le contrat CI lit tail -1.
+                print(f'  blocking kinds {", ".join(kinds_hit)} in '
+                      f'{len(blocking)} notebook(s) -> exit 4 (#22012)')
         # Last stdout line, same contract as census mode (CI reads tail -1).
         print(f'\n=== drift: +{sum(e["net"] for e in regressions)} '
               f'across {len(regressions)} notebook(s), '
               f'{sum(-e["net"] for e in improvements)} burned down ===')
+        if blocking:
+            return 4
         return 2 if regressions else 0
 
     total = 0

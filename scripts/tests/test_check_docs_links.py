@@ -140,6 +140,47 @@ class TestSiteArtifactSkip:
         assert "_site/" in gitignore
 
 
+class TestScratchSkip:
+    """`.tmp/` (agent scratch) is not repository source either (#24410).
+
+    Same defect class as `_site/`: gitignored, never checked out in CI, and
+    repo-wide README sweep makes it reachable on any machine that has run a
+    scratch worktree. Measured 2026-11-03: 29 of the 31 "broken links" the
+    organ reported locally came from three `.tmp/` worktrees, against 2 real
+    defects -- the real ones drowned in scratch noise.
+    """
+
+    def test_tmp_root_skipped(self):
+        p = REPO_ROOT / ".tmp" / "sf-labeler" / "README.md"
+        assert _should_skip(p) is True
+
+    def test_tmp_nested_skip_is_by_directory_name(self):
+        """Skip matches the directory NAME anywhere in the path, like `_site/`."""
+        p = REPO_ROOT / "docs" / ".tmp" / "analysis" / "note.md"
+        assert _should_skip(p) is True
+
+    def test_tmp_is_gitignored(self):
+        """The skip list and `.gitignore` must agree on `.tmp/`.
+
+        `.tmp/` is ignored by the `*.tmp` glob (see `.gitignore`), not by a
+        literal `.tmp/` line: a DIRECTORY named `.tmp` ends in `.tmp` and
+        matches. Asserting git's own verdict rather than a spelling keeps the
+        test honest if the pattern is ever rewritten.
+        """
+        res = subprocess.run(
+            ["git", "check-ignore", "-q", ".tmp/scratch/README.md"],
+            cwd=REPO_ROOT, capture_output=True,
+        )
+        assert res.returncode == 0, (
+            ".tmp/ is no longer gitignored -- the skip would mask real content"
+        )
+
+    def test_dot_tmp_named_file_still_scanned(self):
+        """Only the `.tmp` DIRECTORY is skipped -- not names merely containing it."""
+        p = REPO_ROOT / "docs" / "notes.tmp.md"
+        assert _should_skip(p) is False
+
+
 class TestShouldSkipArchiveVariants:
     """Lock the archive-skip design decision (EPIC #9535 item 10, incident #9814).
 

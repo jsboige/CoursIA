@@ -554,10 +554,10 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
   --
   -- Statement edge repaired (2026-08-15): the old quantifier "∀ d ≥ δ*"
   -- (no d < 1 bound) made the theorem FALSE — at d ≥ 1 the series
-  -- ∑' d^n · payoff diverge and `tsum` is 0 (junk value), so no u ≠ 0 is
-  -- realizable (witness: g = ⟨3, 2, 1, 0⟩, u = (2, 2), d = 2).
-  -- The "d < 1" bound repairs without strengthening: the prover picks
-  -- δ* ≥ 0, hence d ∈ [δ*, 1) ⊆ [0, 1) and the series converge absolutely.
+  -- ∑' d^n · payoff diverge and `tsum` is 0 (junk value), so no
+  -- u ≠ 0 is realizable (witness: g = ⟨3, 2, 1, 0⟩, u = (2, 2), d = 2).
+  -- The "d < 1" bound repairs without strengthening: the prover picks δ* ≥ 0,
+  -- hence d ∈ [δ*, 1) ⊆ [0, 1) and the series converge absolutely.
   sorry
 
 /-- Boundary case δ = 0: with no weight on the future, the discounted values

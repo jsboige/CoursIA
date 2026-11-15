@@ -45,7 +45,8 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 7. **Le mot comme un vecteur** (07) : la représentation distributionnelle par co-occurrence, PPMI et SVD tronquée — séparer le signal d'association du bruit de fréquence, et rendre la similarité de sens mesurable par cosinus.
 8. **Le mot et ses vecteurs** (08) : les vecteurs de mots **appris par optimisation** (word2vec, CBOW + skip-gram + échantillonnage négatif) — le passage de la factorisation statistique du carnet 07 à l'apprentissage par gradient, où la même structure lexicale se révèle par deux méthodes distinctes.
 9. **Le mot et ses subwords** (09) : fastText — la représentation d'entrée passe du mot atomique à la somme des n-grammes de caractères, et la généralisation aux mots inconnus (OOV) devient mesurable.
-10. **La frontière apprise** (11) : la régression logistique discriminative — softmax et entropie croisée en numpy pur, la précision hors échantillon mesurée contre une baseline, et une régularisation qui, sur ce banc précis, dégrade au lieu d'améliorer.
+10. **La classification et l'hypothèse naïve** (10) : le Naive Bayes génératif — sac-de-mots, MLE et lissage Laplace en log-espace, la précision hors échantillon mesurée et le cross-check `sklearn` à l'accord exact des prédictions.
+11. **La frontière apprise** (11) : la régression logistique discriminative — softmax et entropie croisée en numpy pur, la précision hors échantillon mesurée contre une baseline, et une régularisation qui, sur ce banc précis, dégrade au lieu d'améliorer.
 
 ## Prérequis
 

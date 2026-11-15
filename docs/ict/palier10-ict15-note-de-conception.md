@@ -28,7 +28,7 @@ Lane `myia-po-2025:CoursIA-2`, suite au claim phase 2 (c6108523649) et à la dé
 ### Plateaux mesurés (à `origin/main` = `6ad27f7853f`)
 - Famille ICT-15 : **12 carnets** (`ICT-15`, `15b`→`15l`) + 3 PNG.
 - Le clone local est en retard de ~676 commits → **toute mesure a été prise à la ref `origin/main`, jamais dans l'arbre partagé** (l'arbre rend des faux positifs `STALE_LINK`).
-- **Aucune PR ouverte ne touche un fichier `ICT-15*`** (vérifié). Le plus proche : **#20378** sur `ICT-Annexe-ProxyContextuality` (marchepied du même palier) ; #20318/#20337 portent un « palier 15 » d'arrivée = bloc lentilles, **autre sens du mot**.
+- **Aucune PR ouverte ne touche un fichier `ICT-15*`** (vérifié). Le plus proche : **#20378** sur `ICT-Annexe-ProxyContextuality-Python` (marchepied du même palier) ; #20318/#20337 portent un « palier 15 » d'arrivée = bloc lentilles, **autre sens du mot**.
 
 ### Structure réelle : deux fils entrelacés
 La numérotation entrelace deux fils qu'il faut séparer pour ordonner quoi que ce soit :

@@ -478,11 +478,14 @@ def get_head_sha() -> str:
     """
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "rev-parse", "--short=7", "HEAD"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=10,
         )
         if result.returncode == 0:
-            return result.stdout.strip()
+            # Largeur epinglee a 7 (#24860), miroir de forensic_scan.get_last_commit_sha :
+            # sans epinglage, l'abrege suit la taille du depot (9 puis 10 puis 9 mesures)
+            # et classify_reproducibility() compare deux resolutions independantes.
+            return result.stdout.strip()[:7]
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
     return ""
@@ -1077,6 +1080,19 @@ _FORENSIC_CATEGORY_REPRO = {
 }
 
 
+def _sha_prefix_equal(a: str, b: str) -> bool:
+    """Egalite d'abreges SHA robuste a la largeur (#24860).
+
+    L'historique du champ `last_success_sha` porte des largeurs 9 et 10 issues
+    d'abreges non epingles ; les producteurs sont desormais epingles a 7
+    (forensic_scan.get_last_commit_sha, get_head_sha). Deux abreges designent
+    le meme commit ssi leur prefixe commun -- d'au moins 7 caracteres -- est
+    identique ; une valeur trop courte ne suffit pas a attester.
+    """
+    n = min(len(a), len(b))
+    return n >= 7 and a[:n].lower() == b[:n].lower()
+
+
 def classify_reproducibility(
     forensic_category: str | None,
     *,
@@ -1094,8 +1110,10 @@ def classify_reproducibility(
     if not forensic_category:
         return "UNTESTED"
     base = _FORENSIC_CATEGORY_REPRO.get(forensic_category, "UNTESTED")
-    # Pas de promotion EXECUTED -> REPRODUCED sans coherence SHA
-    if base == "EXECUTED" and last_success_sha and head_sha and last_success_sha == head_sha and executed_at:
+    # Pas de promotion EXECUTED -> REPRODUCED sans coherence SHA.
+    # Comparaison normalisee en prefixe (#24860) : l'attestation ne depend plus
+    # de la largeur d'abrege (historique 9/10 vs epingle 7).
+    if base == "EXECUTED" and last_success_sha and head_sha and _sha_prefix_equal(last_success_sha, head_sha) and executed_at:
         return "REPRODUCED"
     return base
 

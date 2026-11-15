@@ -215,7 +215,7 @@ Le contrôleur est `scripts/ci/runner_controller.py` :
 | `status` | État distant + plan, aucun effet de bord. |
 | `ensure --apply` | **Idempotent** : runner online → no-op ; absent → token frais via `gh` + `register` + `verify` du gestionnaire. Sans `--apply`, imprime le plan JSON. |
 | `deregister --apply` | Arrêt propre : `config.cmd remove` avec token de retrait. L'installation demeure ; l'état redevient « préparé, pas activé ». |
-| `task-install --apply` | Enregistre la tâche planifiée `CoursIA-Runner-Controller` (tick 60 s, limite d'exécution 10 min, `IgnoreNew`) qui déclenche `ensure --apply`. **C'est le bouton** — exige une session élevée. |
+| `task-install --apply` | Enregistre la tâche planifiée `CoursIA-Runner-Controller` (tick 60 s, limite d'exécution 10 min, `IgnoreNew`) qui déclenche `ensure --apply`. **C'est le bouton** — exige une session élevée. L'action passe par un lanceur `wscript.exe` masqué, réécrit à chaque installation dans `<racine>/launchers/controller-task.vbs` : une action de tâche modifiée à la main serait annulée au prochain `task-install` (#24706). |
 | `task-remove --apply` | Retire la tâche (retour arrière du bouton). Second passage sur une tâche absente = succès explicite. |
 
 Le tick ne fait quasiment rien quand le runner est online (une lecture d'API) : autant de passages que de minutes, un seul état stable. L'action de la tâche lit le mot de passe du compte dédié dans le fichier machine local conventionnel (`<racine-parent>\secrets\runner_pwd.txt`, jamais dans le dépôt), négocie tout le reste à chaud et journalise dans `<racine-parent>\logs\controller.log`. Le token d'enregistrement ne transite jamais par argv, commit, PR, commentaire ou dashboard, et est retiré de l'environnement après chaque cycle.

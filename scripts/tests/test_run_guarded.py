@@ -10,6 +10,10 @@ Ce que ces tests doivent prouver, mecanisme par mecanisme :
   passer pour une raison étrangère au plafond) ;
 * la **garde de charge de commit** refuse un demarrage au-dessus du seuil, et
   refuse **aussi** quand la mesure est illisible (fail-CLOSED) ;
+* la **projection d'engagement** (#23531, #23546) refuse le demarrage quand la
+  charge de commit, une fois l'engagement du job ajoute, depasse le plafond
+  de l'hote -- et refuse quand l'engagement n'est pas borne, sauf opt-in
+  explicite ; la lecture de la charge est **unique** ;
 * le **verrou N=1** refuse un second lancement concurrent ;
 * le **fichier de PID** est ecrit ;
 * la **garde GPU** (#22456) : sans ``--gpu-entity`` AUCUN appel au ledger ;
@@ -137,7 +141,7 @@ def test_garde_de_charge_de_commit_refuse_au_dessus_du_seuil(guarded, tmp_path):
 
 def test_garde_de_charge_de_commit_illisible_refuse(guarded, tmp_path, monkeypatch):
     """Fail-CLOSED : une mesure ILLISIBLE refuse aussi le demarrage."""
-    monkeypatch.setattr(guarded, "_commit_charge_pct", lambda: None)
+    monkeypatch.setattr(guarded, "_commit_charge", lambda: None)
     log = tmp_path / "illisible.log"
     rc = guarded.main([
         "--limit-gib", "8", "--reserve-gib", "1",
@@ -148,6 +152,215 @@ def test_garde_de_charge_de_commit_illisible_refuse(guarded, tmp_path, monkeypat
     assert rc == 5, f"rc {rc} attendu (5 = refus fail-CLOSED)"
     journal = log.read_text(encoding="utf-8")
     assert "ILLISIBLE" in journal, journal
+
+
+# --- Projection de l'engagement (#23531, #23546) ----------------------------
+#
+# Le seuil de charge de l'hote compare un etat AVANT engagement a une valeur
+# qui ne dit rien de ce que le job va engager ensuite. Ces tests prouvent que
+# l'admission tient compte de l'engagement : une PR qui touche 356 GiB sur un
+# plafond de 400 GiB passe le seuil de 90 %, mais son job de 48 GiB porterait
+# l'hote a 101 % -- donc refus.
+#
+# La projection est bornee par le MEME seuil de sante que l'etat d'avant
+# (``--max-commit-charge-pct``), pas par 100 % du plafond de commit : 100 %,
+# c'est la famine de commit meme, et le vLLM de flotte (GPU 0/1) n'a alors
+# aucune marge. Le cas limite est donc celui ou l'etat AVANT passe et l'etat
+# APRES franchit le seuil : 80 % de charge + 48 GiB sur un plafond de
+# 399,8 GiB donnent 92 % de projection -> refus.
+#
+# La lecture est simulee (monkeypatch de `_commit_charge`) : aucun sous-processus
+# PowerShell, aucune mesure reelle de la machine dans les assertions.
+
+
+def _lecture(pct, committed_gib, limit_gib):
+    """Fabrique une lecture de charge de commit : (pct, engage, plafond)."""
+    return (pct, int(committed_gib * (2 ** 30)), int(limit_gib * (2 ** 30)))
+
+
+def test_projection_au_dela_du_plafond_refuse_le_lancement(guarded, tmp_path,
+                                                            monkeypatch):
+    """L'hote passe le seuil, mais pas avec l'engagement du job.
+
+    La projection est bornee par le meme seuil de sante que l'etat d'avant
+    (90 %), pas par 100 % du plafond de commit : ici 404 > 400 %, donc refus
+    au double titre.
+    """
+    monkeypatch.setattr(
+        guarded, "_commit_charge",
+        lambda: _lecture(89, 356.0, 400.0))   # 356 + 48 = 404 > 400
+    log = tmp_path / "projection.log"
+    rc = guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1",
+        "--max-commit-charge-pct", "90",
+        "--job-memory-limit-gib", "48",
+        "--log", str(log),
+        "--", sys.executable, "-c", TRIVIAL_CHILD,
+    ])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal}"
+    assert "projection" in journal.lower(), journal
+    assert "TRIVIAL_OK" not in journal, "rien ne doit avoir ete lance"
+    # Le refus doit nommer les quantites qui le produisent.
+    assert "48.0" in journal or "48 GiB" in journal, journal
+    assert "400.0" in journal or "400 GiB" in journal, journal
+
+
+def test_projection_sous_le_plafond_laisse_passer(guarded, tmp_path, monkeypatch):
+    """Temoin : a 78 % de charge, un job de 48 GiB laisse 89,5 % de projection.
+
+    C'est le cas limite favorable : sur un plafond de 400 GiB, la projection
+    franchit le seuil de sante (90 %) a partir de 80 % de charge courante.
+    """
+    monkeypatch.setattr(
+        guarded, "_commit_charge",
+        lambda: _lecture(78, 310.0, 400.0))   # 310 + 48 = 358 -> 89,5 %
+    log = tmp_path / "projection_ok.log"
+    rc = guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1",
+        "--max-commit-charge-pct", "90",
+        "--job-memory-limit-gib", "48",
+        "--log", str(log),
+        "--", sys.executable, "-c", TRIVIAL_CHILD,
+    ])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 0, f"rc {rc} attendu (0 = admis), journal :\n{journal}"
+    assert "TRIVIAL_OK" in journal, journal
+    assert "projection" in journal.lower(), journal
+
+
+def test_projection_au_dela_du_seuil_de_sante_refuse_le_lancement(
+        guarded, tmp_path, monkeypatch):
+    """Point limite : 80 % de charge + 48 GiB sur 399,8 GiB -> 92 % -> refus.
+
+    C'est le cas que la revue nomme : l'etat AVANT engagement (80 %) passe le
+    seuil de 90 %, l'etat APRES engagement (92 %) le franchit. Borne par 100 %
+    du plafond de commit, ce cas etait ADMIS -- et 100 % du plafond, c'est la
+    famine de commit qui affamerait le vLLM de flotte (GPU 0/1) autant que le
+    job. Mesure sur le plafond reel de `myia-ai-01` (399,8 GiB).
+    """
+    monkeypatch.setattr(
+        guarded, "_commit_charge",
+        lambda: _lecture(80, 319.84, 399.8))   # 319,84 + 48 = 367,84 -> 92,0 %
+    log = tmp_path / "projection_limite.log"
+    rc = guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1",
+        "--max-commit-charge-pct", "90",
+        "--job-memory-limit-gib", "48",
+        "--log", str(log),
+        "--", sys.executable, "-c", TRIVIAL_CHILD,
+    ])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal}"
+    assert "projection" in journal.lower(), journal
+    assert "TRIVIAL_OK" not in journal, "rien ne doit avoir ete lance"
+    # Le refus doit nommer la projection refusee et le plafond mesure.
+    assert "92.0" in journal, journal
+    assert "399.8" in journal, journal
+
+
+def test_le_seuil_de_charge_reste_un_predicat_independant(guarded, tmp_path,
+                                                         monkeypatch):
+    """Le seuil de l'hote (90 %) continue de refuser meme si la projection passe.
+
+    Les deux predicats ne se remplacent pas : le seuil borne l'etat de la
+    machine, la projection borne l'etat APRES engagement.
+    """
+    monkeypatch.setattr(
+        guarded, "_commit_charge",
+        lambda: _lecture(95, 100.0, 400.0))   # 95 % > 90 %, projection 37 %
+    log = tmp_path / "seuil.log"
+    rc = guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1",
+        "--max-commit-charge-pct", "90",
+        "--job-memory-limit-gib", "48",
+        "--log", str(log),
+        "--", sys.executable, "-c", TRIVIAL_CHILD,
+    ])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal}"
+    assert "charge de commit 95 %" in journal, journal
+    assert "TRIVIAL_OK" not in journal
+
+
+def test_engagement_non_borne_refuse_sans_opt_in(guarded, tmp_path, monkeypatch):
+    """Sans plafond de commit du job, la projection est INDEMONTRABLE : refus.
+
+    C'est le cas ou le predicat ne peut pas dire ce que le job va engager.
+    Refuser (fail-CLOSED) plutot que laisser passer : le lanceur ne
+    pretendant pas proteger la limite de commit de l'hote, il le dit.
+    """
+    monkeypatch.setattr(
+        guarded, "_commit_charge", lambda: _lecture(10, 40.0, 400.0))
+    log = tmp_path / "non_borne.log"
+    rc = guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1",
+        "--max-commit-charge-pct", "90",
+        "--log", str(log),
+        "--", sys.executable, "-c", TRIVIAL_CHILD,
+    ])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal}"
+    assert "NON BORNE" in journal, journal
+    assert "TRIVIAL_OK" not in journal
+
+
+def test_engagement_non_borne_assume_explicitement(guarded, tmp_path, monkeypatch):
+    """L'opt-in explicite laisse passer, et le journal dit que la limite n'est
+    PAS protegee : le risque reste visible, il n'est pas efface."""
+    monkeypatch.setattr(
+        guarded, "_commit_charge", lambda: _lecture(10, 40.0, 400.0))
+    log = tmp_path / "non_borne_assume.log"
+    rc = guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1",
+        "--max-commit-charge-pct", "90",
+        "--allow-unbounded-commit",
+        "--log", str(log),
+        "--", sys.executable, "-c", TRIVIAL_CHILD,
+    ])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 0, f"rc {rc} attendu (0 = admis sous opt-in), journal :\n{journal}"
+    assert "NON BORNE" in journal, journal
+    assert "TRIVIAL_OK" in journal, journal
+
+
+def test_la_lecture_de_charge_est_unique(guarded, tmp_path, monkeypatch):
+    """Une SEULE lecture par admission : pourcentage, engagement et plafond
+    viennent du meme instant.
+
+    Deux sondes successives pourraient voir deux etats differents -- la
+    projection ne serait alors pas un etat coherent de la machine.
+    """
+    appels = []
+
+    def faux():
+        appels.append(1)
+        return _lecture(78, 310.0, 400.0)
+
+    monkeypatch.setattr(guarded, "_commit_charge", faux)
+    log = tmp_path / "lecture_unique.log"
+    guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1",
+        "--max-commit-charge-pct", "90",
+        "--job-memory-limit-gib", "48",
+        "--log", str(log),
+        "--", sys.executable, "-c", TRIVIAL_CHILD,
+    ])
+    assert len(appels) == 1, f"la lecture doit etre unique, appels : {appels}"
+
+
+def test_la_charge_de_commit_est_lue_d_un_bloc(guarded):
+    """L'instrument rend le trio (pourcentage, engage, plafond) en une lecture.
+
+    Le pourcentage seul ne permet pas de projeter : il faut le PLAFOND de
+    commit de l'hote, qui n'est pas la memoire physique (RAM + pagefile).
+    """
+    lecture = guarded._commit_charge()
+    assert lecture is not None, "lecture impossible sur cette machine"
+    pct, committed, limit = lecture
+    assert 0 <= pct <= 100, lecture
+    assert 0 < committed <= limit, lecture
+    assert limit > committed, "la machine ne devrait pas etre au-dela de son plafond"
 
 
 def test_verrou_n1_refuse_un_second_lancement(guarded, tmp_path):

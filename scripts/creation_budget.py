@@ -28,6 +28,11 @@ Deux decisions de conception, toutes deux mesurees.
   O2 fichier cite  -> l'issue cite-t-elle un `.ipynb` absent du depot ?
   O3 phrase        -> l'issue DECLARE-t-elle la creation ?
 
+O2 ne declare « absent » que si le nom cite n'est dans le depot SOUS AUCUN
+nom : le registre des renommages (`docs/reference/rename-ledger.tsv`) est
+consulte, parce qu'un carnet renomme existe deja sous son nouveau nom
+(#24887). Un registre absent ne change rien.
+
 Un VETO de reparation (audit, correction, renumerotation, collision, prose)
 l'emporte sur les trois : un grain de reparation n'est JAMAIS ecarte. Le sens
 de l'erreur est choisi -- on saute un carnet neuf *quand on le sait*, on ne
@@ -94,6 +99,7 @@ import re
 import subprocess
 import sys
 from collections.abc import Iterable, Sequence
+from functools import lru_cache
 
 VERDICT_CREATION = "creation"
 VERDICT_REPAIR = "repair"
@@ -179,6 +185,118 @@ def _tokens(text: str) -> list[str]:
     return re.findall(r"[A-Za-z][A-Za-z0-9]{1,}", text or "")
 
 
+# --- registre des renommages : le nom cite a peut-etre change -----------------
+
+# Le registre est la SEULE source qui dit « ce nom n'existe plus, il s'appelle
+# desormais comme cela ». Sans lui, un grain qui cite le nom d'un carnet
+# renomme est pris pour une creation de carnet neuf : le carnet existe, mais
+# sous un autre nom (#24887).
+LEDGER_RELPATH = "docs/reference/rename-ledger.tsv"
+
+
+@lru_cache(maxsize=8)
+def _rename_ledger(root: str) -> tuple[tuple[str, str], ...]:
+    """Les couples (ancien chemin, nouveau chemin) du registre de renommage.
+
+    Le registre est un TSV `ancien / nouveau / date / lane`. Un registre
+    absent, illisible ou sans ligne exploitable donne une table VIDE : aucun
+    renommage n'est alors resolu et le classement garde exactement le
+    comportement d'avant. Aucune invention, aucune tolerance.
+    """
+    path = pathlib.Path(root) / LEDGER_RELPATH
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except Exception:  # noqa: BLE001 - registre absent = aucune resolution
+        return ()
+    out: list[tuple[str, str]] = []
+    for index, line in enumerate(lines):
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        old, new = parts[0].strip(), parts[1].strip()
+        if index == 0 and old.lower() in ("ancien", "old"):
+            continue  # en-tetes
+        if not old or not new or old == new:
+            continue
+        if not (old.endswith(".ipynb") and new.endswith(".ipynb")):
+            continue
+        out.append((old, new))
+    return tuple(out)
+
+
+def _renamed_targets(path: str, ledger: Sequence[tuple[str, str]]) -> list[str]:
+    """Les noms que le registre donne pour un nom cite.
+
+    Deux formes de correspondance : le chemin exact (le grain cite le chemin
+    complet) et le nom de fichier seul (le grain cite `ML-7-...` sans son
+    dossier, ou avec un dossier different).
+    """
+    stem = ""
+    if path.endswith(".ipynb"):
+        stem = _norm(path.rsplit("/", 1)[-1][:-6])
+    out: list[str] = []
+    for old, new in ledger:
+        if old == path:
+            out.append(new)
+            continue
+        if not stem:
+            continue
+        old_stem = old.rsplit("/", 1)[-1][:-6]
+        if _norm(old_stem) == stem:
+            out.append(new)
+    return out
+
+
+def _exists_in_catalog(path: str, catalog: NotebookCatalog) -> bool:
+    """Le nom designe-t-il un carnet du depot ?
+
+    Meme correspondance approximative qu'avant (`-Python`, `-en`,
+    `-CSharp`...), pour qu'un renommage ne soit pas traite differently d'un
+    nom que le depot porte deja.
+    """
+    if path in catalog.paths:
+        return True
+    key = _norm(path.rsplit("/", 1)[-1][:-6])
+    if not key:
+        return False
+    if key in catalog.norm_stems:
+        return True
+    return any(key in ns or ns in key for ns in catalog.norm_stems)
+
+
+def _renamed_exists(path: str, catalog: NotebookCatalog) -> bool:
+    """Le nom cite est-il celui d'un carnet renomme qui existe encore ?
+
+    On suit la chaine des renommages (un carnet peut avoir ete renomme
+    plusieurs fois) et on s'arrete des qu'un des noms intermediaires est
+    present dans le depot. Le verdict est binaire : soit le nom se resout
+    vers un carnet present, soit rien n'est tranche et le classement
+    d'« absent » reste applicable.
+    """
+    root = getattr(catalog, "root", None)
+    if not root:
+        return False
+    ledger = _rename_ledger(str(root))
+    if not ledger:
+        return False
+    frontier = [path]
+    visited: set[str] = set()
+    for _ in range(5):  # chaine bornee : au-dela, c'est un cycle, pas un nom
+        nxt: list[str] = []
+        for cur in frontier:
+            if cur in visited:
+                continue
+            visited.add(cur)
+            nxt.extend(_renamed_targets(cur, ledger))
+        if not nxt:
+            return False
+        for cand in nxt:
+            if _exists_in_catalog(cand, catalog):
+                return True
+        frontier = nxt
+    return False
+
+
 class NotebookCatalog:
     """L'etat du depot : les carnets connus, leurs noms et leurs series.
 
@@ -188,8 +306,11 @@ class NotebookCatalog:
     a echoue).
     """
 
-    def __init__(self, ipynb_paths: Sequence[str]):
+    def __init__(self, ipynb_paths: Sequence[str], root: str | None = None):
         self.paths = list(ipynb_paths)
+        # La racine du depot sert a lire le registre des renommages : sans
+        # elle, un nom cite qui a change reste impossible a resoudre.
+        self.root = root
         self.stems = {p.rsplit("/", 1)[-1][:-6] for p in self.paths if p.endswith(".ipynb")}
         self.norm_stems = {_norm(s): s for s in self.stems}
         self.series: dict[str, set[str]] = {}
@@ -215,7 +336,8 @@ class NotebookCatalog:
             ).stdout
         except Exception:  # noqa: BLE001 - un git muet = catalogue inconnu
             return cls([])
-        return cls([p for p in out.splitlines() if p.endswith(".ipynb")])
+        return cls([p for p in out.splitlines() if p.endswith(".ipynb")],
+                   root=str(root))
 
 
 def _series_of(catalog: NotebookCatalog, tokens: Iterable[str]) -> str | None:
@@ -298,20 +420,19 @@ def absent_notebooks(text: str, catalog: NotebookCatalog) -> list[str]:
     c'est ce qui empeche un audit de citer `Serre100/08-serre-dans-mathlib
     .ipynb` alors que le depot porte `08-serre-dans-mathlib-Lean.ipynb` de
     compter pour une creation.
+
+    Un nom cite peut aussi avoir ete **renomme** : le registre des
+    renommages est alors consulte, et le carnet est reconnu comme existant
+    sous son nouveau nom (#24887). Un registre absent ne change rien.
     """
     out: list[str] = []
     for m in _RE_IPYNB.finditer(text or ""):
         path = m.group(0).strip().replace("\\", "/").lstrip("./")
         if "/" not in path:
             continue
-        if path in catalog.paths:
+        if _exists_in_catalog(path, catalog):
             continue
-        key = _norm(path.rsplit("/", 1)[-1][:-6])
-        if not key:
-            continue
-        if key in catalog.norm_stems:
-            continue
-        if any(key in ns or ns in key for ns in catalog.norm_stems):
+        if _renamed_exists(path, catalog):
             continue
         out.append(path)
     return sorted(set(out))

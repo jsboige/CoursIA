@@ -164,7 +164,7 @@ L'inventaire établit **3 tailles** candidates, dont **2 déjà câblées** (ext
 - **Issue livrable** : #10356 — Phase 1 deliverable 4
 - **Préréquis harnais** : #8236 (ICT strate 6 SAE), PR #10337 MERGED 2026-08-09 (seconde échelle SAE appariée)
 - **Code harnais** : `MyIA.AI.Notebooks/IIT/ICT-Series/scripts/extract_sae_traces.py` + `MyIA.AI.Notebooks/IIT/ICT-Series/ict/sae_traces.py` + `MyIA.AI.Notebooks/IIT/ICT-Series/tests/test_sae_cross_scale.py`
-- **Notebooks consommateurs** : `ICT-21-SAETrajectoires-Python.ipynb` (Gate 10/11 PASS) + `ICT-SAE-JLens-TeteATete.ipynb` (Gate 22-24 #5635)
+- **Notebooks consommateurs** : `ICT-21-SAETrajectoires-Python.ipynb` (Gate 10/11 PASS) + `ICT-SAE-JLens-TeteATete-Python.ipynb` (Gate 22-24 #5635)
 - **Traces committées** : `MyIA.AI.Notebooks/IIT/ICT-Series/traces/ict21_sae_layer16_{trained,control}.npz` + `ict21_sae_qwen35-2b-base_layer12of24_{trained,control}.npz`
 - **Qwen-Scope paper** : arXiv:2605.11887 — *Scaling Sparse Autoencoders on Qwen3.5*
 - **Phase 1 autres livrables** : #10360 (survey SOTA MERGED) + #10363 (Jessynoo extraction MERGED) ; reste deliverable 2 (datasets landscape)

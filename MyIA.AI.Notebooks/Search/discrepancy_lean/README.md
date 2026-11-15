@@ -52,7 +52,7 @@ formalisation Lean 4 tierce de cette preuve existe déjà (voir le réaudit du
 - **0 `sorry`** ; conjectures = `def ... : Prop` nommées, jamais théorèmes
   tronqués.
 - Docstrings **FR-first** (i18n #4980).
-- Toolchain `leanprover/lean4:v4.32.1`, Mathlib `v4.32.1` (`520045ab`) —
+- Toolchain `leanprover/lean4:v4.33.0`, Mathlib pin `db584cd6d46c92f209a44c0f1c829460d327499d` —
   aligné sur la cohorte fleet (mutualisation #4363).
 
 ## Build

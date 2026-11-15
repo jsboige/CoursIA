@@ -20,5 +20,5 @@ renommage sous une PR vivante) — les PRs [#21223](https://github.com/jsboige/C
 touchent actuellement le lake ou les carnets concernés.
 
 Le companion complet du parcours (adjonctions, topologies, cribles) vit dans le lake
-[`grothendieck_lean/`](../grothendieck_lean/README.md) — modules `Grothendieck/CategoryAndSites.lean`
+[`grothendieck_lean/`](grothendieck_lean/README.md) — modules `Grothendieck/CategoryAndSites.lean`
 et `Grothendieck/Adjunction.lean`.

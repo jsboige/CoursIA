@@ -92,9 +92,9 @@ theorem present_value_constant {γ r : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1) 
     fermée `∑' n, γ^n = 1/(1-γ)` (`geometric_series_converges`), puis ramener le
     but à `1/(1-γ₁) ≤ 1/(1-γ₂)`. Comme `γ₁ ≤ γ₂` on a `1-γ₂ ≤ 1-γ₁`, et les deux
     dénominateurs sont positifs (`γ₂ < 1`), donc `one_div_le_one_div_of_le` clôt le
-    but. Cela contourne l'absence de `tsum_le_tsum` sur `ℝ` (non disponible dans
-    Mathlib v4.30.0-rc2 pour les séries sur `ℝ` brut) en exploitant la forme
-    fermée. -/
+    but. Cela contourne l'absence de `tsum_le_tsum` sur `ℝ` (non disponible dans la
+    version alors utilisée, Mathlib v4.30.0-rc2, pour les séries sur `ℝ` brut) en
+    exploitant la forme fermée. -/
 theorem discount_monotone {γ₁ γ₂ : ℝ} (h₁ : 0 ≤ γ₁) (h₂ : γ₁ ≤ γ₂) (h₃ : γ₂ < 1) :
     ∑' n : ℕ, γ₁ ^ n ≤ ∑' n : ℕ, γ₂ ^ n := by
   have hγ₁_lt : γ₁ < 1 := lt_of_le_of_lt h₂ h₃

@@ -9,7 +9,7 @@ Covers the two correctness gates of ``pr-review-discipline.md`` §B.3:
   the prover default ``fail_on_sorry=False`` preserves historical behaviour
   (Level 2 tracks sorry textually, so Level 3 stays green).
 
-No real Lean build is required: ``subprocess.run``, the lake resolver and the
+No real Lean build is required: the organ boundary ``_organ_run`` and the
 declaration enumerator are mocked so the gate logic is exercised deterministically.
 
 Run from ``agent_tests/``::
@@ -49,13 +49,6 @@ def _axiom_line(name: str, axioms: list) -> str:
     """
     inner = ", ".join(axioms) if axioms else ""
     return f"{Q}{name}{Q} depends on axioms: [{inner}]"
-
-
-class _FakeCompletedProcess:
-    def __init__(self, stdout: str = "", stderr: str = "", returncode: int = 0):
-        self.stdout = stdout
-        self.stderr = stderr
-        self.returncode = returncode
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -361,16 +354,18 @@ def test_extract_axioms_ignores_non_axiom_lines():
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# check_axioms gate logic (subprocess mocked)
+# check_axioms gate logic (organ boundary mocked)
 # ──────────────────────────────────────────────────────────────────────────
 
 def _check_with_output(decls, fake_stdout, *, fail_on_sorry=False, project_dir=".",
                         returncode=0, whitelist=None):
     verifier = LeanVerifier(project_dir)
+    # Since #15666 lean_server spawns nothing itself: every lake call goes
+    # through ``_organ_run`` (contract ``(rc, out, err)``), which replaced
+    # ``_resolve_lake_command`` + ``subprocess.run``. Mock that boundary.
     with patch.object(lean_server, "_enumerate_module_declarations", return_value=decls), \
-            patch.object(lean_server, "_resolve_lake_command", return_value=(["lean"], {})), \
-            patch.object(lean_server.subprocess, "run",
-                         return_value=_FakeCompletedProcess(fake_stdout, returncode=returncode)):
+            patch.object(lean_server, "_organ_run",
+                         return_value=(returncode, fake_stdout, "")):
         return verifier.check_axioms("Knots.Basic", fail_on_sorry=fail_on_sorry,
                                      whitelist=whitelist)
 

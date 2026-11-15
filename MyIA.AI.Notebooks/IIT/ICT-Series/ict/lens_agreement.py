@@ -1,7 +1,7 @@
 """Co-localisation inter-lentilles des ignitions SAE <-> J-Lens (strate 5, #5681 / #4588).
 
 La jambe **lens-agreement** de la triade d'evenements du capstone axe-derivee-temporelle
-(#7259). Le tete-a-tete ``ICT-SAE-JLens-TeteATete.ipynb`` (PR #5959) a etabli que les deux
+(#7259). Le tete-a-tete ``ICT-SAE-JLens-TeteATete-Python.ipynb`` (PR #5959) a etabli que les deux
 lentilles vivent dans des **espaces disjoints** (features SAE vs directions singulieres
 J-space, sec. 8.3) et que leurs *valeurs* de concentration par position ne se correlent que
 faiblement. Il n'a PAS teste la question temporelle qui interesse le workspace global : les
@@ -67,7 +67,7 @@ References
   operationalise.
 * Anthropic, *Global Workspace in Claude* (2025) -- substrat J-space (jacobien des logits).
 * Grün (2009) -- null par rotation pour le co-firing de trains d'evenements (via #7274).
-* Tete-a-tete ``ICT-SAE-JLens-TeteATete.ipynb`` (PR #5959) -- concentration par lentille,
+* Tete-a-tete ``ICT-SAE-JLens-TeteATete-Python.ipynb`` (PR #5959) -- concentration par lentille,
   espaces disjoints (sec. 8.3).
 * :func:`ict.workspace.event_colocalization` (#7274) -- primitive reutilisee telle quelle.
 * #5681 (tete-a-tete SAE<->J-Lens), #7259 (capstone axe derivee temporelle), #4588 (Epic ICT).

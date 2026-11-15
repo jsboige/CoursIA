@@ -30,7 +30,14 @@ PROVIDER_ENV_KEYS = {
     "openrouter": "OPENROUTER_API_KEY",
     "mistral": "MISTRAL_API_KEY",
     "local": "LOCAL_LLM_API_KEY",
+    "claudish": "CLAUDISH_PROXY_KEY",
 }
+
+# Providers served on localhost that still require a key. The localhost
+# exemption below assumes an open local server (Ollama/vLLM); the claudish
+# proxy listens on 127.0.0.1 and answers 401 without its key (canary of
+# 2026-11-04), so it must not inherit the exemption.
+KEYED_LOCALHOST_PROVIDERS = frozenset({"claudish"})
 
 
 def effective_agent_providers(
@@ -98,7 +105,8 @@ def validate_provider_credentials(eff: dict, providers: dict) -> list:
         base = (cfg.get("base_url") or "").strip()
         key = (cfg.get("api_key") or "").strip()
         host = urlparse(base).hostname or ""
-        if host in ("localhost", "127.0.0.1", "::1"):
+        if (host in ("localhost", "127.0.0.1", "::1")
+                and name not in KEYED_LOCALHOST_PROVIDERS):
             continue
         env = PROVIDER_ENV_KEYS.get(name, f"{name.upper()}_API_KEY")
         if not base:

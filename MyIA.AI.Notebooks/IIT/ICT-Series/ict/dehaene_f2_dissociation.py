@@ -33,7 +33,7 @@ non-dégénérescence). Verdict pré-enregistré : F2 falsifié si
 {0, 1, 7, 42} : ``F2_CONFIRMED_EXTENDED_REQUIRED`` (delta = +0,289 ;
 2·σ_B = 0,073) — avec la nuance que le régime B garde une reconnaissance
 significative (p < 0,02), donc le self-model **persiste** sans le store, plus
-faiblement. Carnet : ``ICT-Dissociation-DehaeneF2-SelfReport.ipynb`` ;
+faiblement. Carnet : ``ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb`` ;
 résultats : ``ict/results/dehaene_f2_abc_results.json``.
 
 References
@@ -393,7 +393,7 @@ def run(trace_path: str | Path,
 # discrimination self/other du self-model, mesuré par l'AUC de ses erreurs.
 #
 # Pré-enregistrement (scellé AVANT la mesure, cf. carnet
-# `ICT-Dissociation-DehaeneF2-SelfReport.ipynb` et docs §F2) :
+# `ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb` et docs §F2) :
 #   - Régime A : store étendu plein (contenu dérivé de la dynamique PROPRE de
 #     l'agent : workspace_state, ignition_flag, report_counter, attention_index,
 #     basin_width), réinjecté dans la dynamique et lu par le self-model.

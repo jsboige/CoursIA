@@ -50,7 +50,7 @@ pip install -r requirements-comfyui.txt
 
 ### Multi-Model Comparison
 - **Critères** : Qualité, vitesse, ressources, contrôle
-- **Modèles comparés** : SDXL Lightning-4step (Forge), Z-Image/Lumina-2 (ComfyUI)
+- **Modèles comparés** : SDXL Lightning-4step (Forge), Qwen Image Edit fp8 (ComfyUI)
 - **Métriques** : PSNR, SSIM, temps de génération, coût
 
 ### Workflow Orchestration

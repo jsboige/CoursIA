@@ -23,7 +23,7 @@ sensibles (`or3_sensitive_blocks_card`), mais la sensibilité de bloc vaut
 
 Les quantités ici sont *locales* (en un sommet `x`) : c'est le grain fin de la
 littérature (Nisan, Huang), et le socle sur lequel le carnet
-`ANALYSE-06-Sensibilite-2026` construit les variantes globales.
+`ANALYSE-06b-Sensibilite-2026-Lean` construit les variantes globales.
 -/
 
 namespace Sensitivity

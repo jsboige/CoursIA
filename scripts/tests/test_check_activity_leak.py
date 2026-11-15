@@ -55,6 +55,8 @@ markers_in_text = _mod.markers_in_text
 scan_notebook = _mod.scan_notebook
 scan_diff = _mod.scan_diff
 emit_diff = _mod.emit_diff
+anchored_line_tokens = _mod.anchored_line_tokens
+_output_text_tokens = _mod._output_text_tokens
 _markdown_paragraphs_of_blob = _mod._markdown_paragraphs_of_blob
 
 
@@ -732,6 +734,124 @@ class TestNotebookScan(unittest.TestCase):
         self.assertIsNotNone(report)
         self.assertGreater(report.part, 0.4)
         self.assertEqual(len(report.dense_passages), 2)
+
+
+class TestOutputAnchoredLessonTags(unittest.TestCase):
+    """Blanchiment #24721 : L<d> ancre dans l'output d'une cellule anterieure.
+
+    Mesure fondatrice (KNOTS-03, PR #24654, 2026-11-04) : sur 6 ancres qui
+    faisaient rougir ``lesson_tag``, 3 (L1053/L1380/L3657) figuraient dans
+    le listing imprime par la cellule code AU-DESSUS de la « Lecture du
+    resultat » -- des citations d'output, pas des renvois aux lecons.
+    """
+
+    KNOTS_PARA = (
+        "La lecture du resultat est directe : la contrainte de taille "
+        "sature (L1380) des la deuxieme vague, tandis que la barre du "
+        "compteur amorti (L1053) ne bouge plus apres la troisieme."
+    )
+
+    def test_lesson_tag_anchored_in_prior_output_is_masked(self):
+        """Fige l'ecart assume du masque d'ancre (cf commentaire de
+        ``_ANCHORED_TOKEN_RE``) : predicat = token exact, sans regard de
+        prose, symetrique des deux familles precedentes."""
+        anchored = frozenset({"L1380", "L1053"})
+        v = judge_passage(0, self.KNOTS_PARA, anchored)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertFalse(v.dense, "une citation d'output n'est pas un recit de cycle")
+
+        # meme passage, sans ancres : le comportement pre-24721 est preserve
+        v_bare = judge_passage(0, self.KNOTS_PARA)
+        self.assertIn("lesson_tag", {n for n, _, _ in v_bare.markers})
+        self.assertTrue(v_bare.dense)
+
+    def test_anchored_mask_is_scoped_to_lesson_tag(self):
+        """Un token ancre ne blanchit pas le recit de coordination voisin."""
+        para = (
+            "La lane a livre la tranche, verdict `domain: fail` du dossier ; "
+            "voir le listing (L1380) pour le compte rendu de la re-execution."
+        )
+        anchored = frozenset({"L1380"})
+        v = judge_passage(0, para, anchored)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertIn("lane", {n for n, _, _ in v.markers})
+        self.assertIn("verdict", {n for n, _, _ in v.markers})
+
+    def test_posterior_output_does_not_anchor(self):
+        """Une citation suit sa preuve : un token imprime PLUS BAS n'ancre
+        rien (une « Lecture du resultat » ne peut pas citer un listing
+        posterieur)."""
+        cells = [
+            {"cell_type": "markdown", "source": self.KNOTS_PARA},
+            {"cell_type": "code", "source": "print('saturation (L1380)')",
+             "outputs": [{"output_type": "stream", "text": "saturation (L1380)\n"}]},
+        ]
+        # rien avant la cellule 0 : pas d'ancres
+        self.assertEqual(anchored_line_tokens(cells, 0), frozenset())
+        # pour la cellule code 1 elle-meme : son propre output ne compte pas
+        self.assertEqual(anchored_line_tokens(cells, 1), frozenset())
+        # la cellule code 1 ancre pour ce qui SUIT (cellule 2), pas avant
+        self.assertEqual(anchored_line_tokens(cells, 2), frozenset({"L1380"}))
+        v = judge_passage(0, self.KNOTS_PARA, anchored_line_tokens(cells, 0))
+        self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
+
+    def test_output_text_list_form_is_flattened(self):
+        """nbformat : ``text`` d'un output = chaine OU liste de lignes. Le
+        piege TypeError sur une liste est mesure sur #24654."""
+        cell_list = {
+            "cell_type": "code", "source": "print(listing)",
+            "outputs": [{"output_type": "stream",
+                         "text": ["seuil (L1380) atteint\n",
+                                   "compteur (L1053) fige\n"]}],
+        }
+        self.assertEqual(_output_text_tokens(cell_list), {"L1380", "L1053"})
+        cell_str = {
+            "cell_type": "code", "source": "print(listing)",
+            "outputs": [{"output_type": "stream", "text": "seuil (L3657)\n"}],
+        }
+        self.assertEqual(_output_text_tokens(cell_str), {"L3657"})
+
+    def test_word_boundary_anchored_l138_does_not_mask_l1380(self):
+        """L138 ancre ne blanchit pas L1380 : bornes de mots dans le masque."""
+        para = "La lecture du resultat (L1380) reste valable sur les grandes tailles."
+        v = judge_passage(0, para, frozenset({"L138"}))
+        self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
+
+    def test_scan_notebook_threads_anchors_in_order(self):
+        """Bout en bout : scan_notebook accumule les ancres au fil des
+        cellules -- la « Lecture du resultat » jugee apres son listing n'est
+        plus dense, et le meme carnet SANS la cellule code le reste."""
+        import json
+        import tempfile
+
+        def build(with_code_cell):
+            cells = []
+            if with_code_cell:
+                cells.append({
+                    "cell_type": "code", "source": "print(listing)",
+                    "outputs": [{"output_type": "stream",
+                                 "text": "seuil (L1380) atteint, compteur (L1053) fige\n"}],
+                })
+            cells.append({"cell_type": "markdown", "source": self.KNOTS_PARA})
+            return {"cells": cells}
+
+        with tempfile.TemporaryDirectory() as d:
+            path = Path(d) / "fixture.ipynb"
+            path.write_text(json.dumps(build(True)), encoding="utf-8")
+            anchored_report = scan_notebook(path)
+            path.write_text(json.dumps(build(False)), encoding="utf-8")
+            bare_report = scan_notebook(path)
+        self.assertEqual(anchored_report.dense_passages, [],
+                         "le listing anterieur ancre les (Lnnn) de la lecture")
+        self.assertTrue(bare_report.dense_passages,
+                        "sans listing anterieur, les Lnnn restent des lecons")
+
+    def test_url_fragment_frozen_regression_stays_green(self):
+        """Garde-regression : la 3e famille ne deroge pas aux deux premieres
+        -- un fragment de permalien ``#L261`` reste masque SANS ancre."""
+        prose_anchor = "Voir la ligne #L261 du fichier pour le detail du calcul."
+        v = judge_passage(0, prose_anchor, frozenset({"L261"}))
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
 
 
 if __name__ == "__main__":

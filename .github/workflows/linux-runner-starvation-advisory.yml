@@ -57,8 +57,9 @@ name: Linux runner starvation advisory
 # gate » occupe cette place : job unique ubuntu-latest, declenche par
 # pull_request sur MyIA.AI.Notebooks/**/*.ipynb -- evenement que GitHub
 # delivre sans le parc. Mesure du 2026-10-29 : 3 runs, 3 jobs, 100 %
-# heberges ; la meme mesure donne Secret Scan a 75 % sur un echantillon
-# melange, donc l'ancre ajoutee est la SEULE jambe hebergee. L'organe
+# heberges ; la meme mesure donne Secret Scan a 25 % en pull_request /
+# 100 % en push (mesure de la review #23280), donc l'ancre ajoutee est la
+# SEULE jambe hebergee. L'organe
 # scripts/ci/check_heartbeat_anchor_independence.py re-mesure ce fait a
 # chaque passage et rougit si l'ancre cesse de l'etre -- une jambe declaree
 # redevient ainsi une jambe prouvee. Sa cadence propre est bornee par la

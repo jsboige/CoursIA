@@ -90,8 +90,37 @@ def test_shuffled_nomme_et_distordu_rapport():
     d = asc.FOCUS_WIDTH / 4.0
     rd = asc.run_schema(t, 7, distorted_d=d)
     assert rd.arm == "schema_distorted"
-    # stockage = pos_s + d : l'ecart de rapport est de l'ordre de d (P3a mecanique)
-    assert rd.metrics["erreur_rapport"] >= 0.8 * d
+    # Temoin falsifiable (#23661) : la distorsion sous-clinique passe dans le
+    # RAPPORT OBSERVABLE -- la divergence d'allocation focus(distordu) vs
+    # focus(sain) sur le meme terrain gele croit de ~d. L'ancienne assertion
+    # portait sur erreur_rapport >= 0.8*d, vrai PAR CONSTRUCTION (stockage =
+    # pos_s + d, attention_schema_control.py:235/:278) : elle ne pouvait pas
+    # rougir sous aucune mecanique. Celle-ci est escapable des deux cotes :
+    # une mecanique qui AMORTIT (l'updater compense la distorsion) fait
+    # tomber la divergence sous 0.5*d ; une mecanique qui AMPLIFIE (boucle
+    # capture -> estimation -> tracking deraillee) la pousse au-dela de
+    # 1.5*d -- rouge demontre sous null shuffled
+    # (test_temoin_distorsion_rouge_sous_null_shuffled).
+    r0 = asc.run_schema(t, 7, distorted_d=0.0)
+    div = float(np.abs(asc.circ_delta(rd.focus, r0.focus)).mean())
+    assert 0.5 * d <= div <= 1.5 * d
+
+
+def test_temoin_distorsion_rouge_sous_null_shuffled():
+    # Témoin du témoin (#23661) : preuve que le témoin principal a des dents.
+    # Sous entrée permutée (null du module), l'estimation de saillance se
+    # dégrade et la boucle fermée AMPLIFIE la distorsion au lieu de la
+    # transmettre : la divergence d'allocation sain/distordu sort par le haut
+    # de la bande [0.5*d, 1.5*d]. Les deux bras partagent le même flux de
+    # permutations (même graine + offset du bras schema_shuffled) : la
+    # divergence isole bien l'effet de d à travers la mécanique dégradée.
+    # Mesuré (graine 7) : ~4.9*d, soit 3.3x la borne haute.
+    t = asc.build_terrain(7)
+    d = asc.FOCUS_WIDTH / 4.0
+    r0 = asc.run_schema(t, 7, shuffled=True)
+    rd = asc.run_schema(t, 7, shuffled=True, distorted_d=d)
+    div = float(np.abs(asc.circ_delta(rd.focus, r0.focus)).mean())
+    assert div > 1.5 * d
 
 
 def test_schema_distortion_croissante():

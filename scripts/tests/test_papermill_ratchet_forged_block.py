@@ -17,6 +17,7 @@ base/head que ``classify`` consomme directement, ce qui isole le verdict
 du bruit du depot et des fixtures reelles.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -82,8 +83,15 @@ HAND_TOP = dict(REAL_TOP, duration=16.0,
 
 
 def _state_from_nb(nb, *, status="OK"):
+    # The 5th slot is the lazy cp1252-replay thunk (#23035). It is wired here
+    # rather than stubbed to None on purpose: every fixture in this file is
+    # mojibake-free, so the replay returns the base evidence unchanged and the
+    # verdicts below are untouched. That makes these ten tests the negative
+    # control of the encoding-repair branch -- it must not perturb a single
+    # existing FORGED_BLOCK / STALE_BLOCK / BLOCK_MOVED verdict.
     return (status, cpr.exec_evidence(nb), cpr.papermill_block(nb),
-            None, cpr.cell_papermill_signature(nb),
+            None, lambda: cpr.encoding_reverted_evidence(json.dumps(nb)),
+            cpr.cell_papermill_signature(nb),
             cpr.cell_papermill_blocks(nb))
 
 
@@ -179,7 +187,7 @@ def test_outputs_unchanged_passes_regardless_of_block():
 
 def test_forged_block_not_triggered_on_added_notebook():
     """b_block is None on an added notebook - the FORGED_BLOCK branch requires it."""
-    base = ("ABSENT", None, None, None, None, None)
+    base = ("ABSENT", None, None, None, None, None, None)
     head = _state_from_nb(_nb(HAND_TOP, SHARED_CELL_PM, [{"text": ["hello fresh"]}], [{"text": ["hello fresh"]}]))
     verdict, regression = cpr.classify(base, head)
     assert verdict == "ADDED", verdict

@@ -2634,694 +2634,694 @@
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Adjunction.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Adjunction_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Adjunction.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Adjunction_en.lean",
    "sha1_fr": "0ec481382ea7d86fcdffcf2642e1e95708f1e993",
    "sha1_en": "893ea5330e2e1a2806b97a5fa26a70d43511e0be"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Calibration.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Calibration_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Calibration.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Calibration_en.lean",
    "sha1_fr": "00d30e7f2a3dc12c49089d2aa52eb045dd5d89fe",
    "sha1_en": "3855ff9dc3cb0f89b0013518e9c5346cd31c598d"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CanonicalProps.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CanonicalProps_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CanonicalProps.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CanonicalProps_en.lean",
    "sha1_fr": "885d33326118835b39869e76f39c7a0b0892b4e5",
    "sha1_en": "bbaf67a5b5b2c1ed23a1ae4024f203cec891db59"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CategoryAndSites.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CategoryAndSites_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CategoryAndSites.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CategoryAndSites_en.lean",
    "sha1_fr": "7c415733162ab13a35f11649197742f9fe188a5f",
    "sha1_en": "9696bac131e963cba9b2270ff45b948f89787f76"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Classifier.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Classifier_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Classifier.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Classifier_en.lean",
    "sha1_fr": "49db7bf8ead5b6d5851b785cffd0776cf810f8c6",
    "sha1_en": "9243c8a55a3cad609e04e55789dd095e4e217838"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Comma.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Comma_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Comma.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Comma_en.lean",
    "sha1_fr": "926013debf86ff9edb6d7f447911f37204bdaff7",
    "sha1_en": "28cc8eacd164c2864f9b21d2d46bcce1def5d253"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Conservative.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Conservative_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Conservative.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Conservative_en.lean",
    "sha1_fr": "3dd7770d266dd3e155e332be6417116e236317c0",
    "sha1_en": "ae1a92e01f9f3697f2a5d642ce94eefde03bc9a1"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/ConstantSheaf.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/ConstantSheaf_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/ConstantSheaf.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/ConstantSheaf_en.lean",
    "sha1_fr": "341fe7f096a5faa3703e7c155d3ab6c050e30fe8",
    "sha1_en": "29425c3d1f4c96c7e9cf015e8eb12286060e63f5"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Construction.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Construction_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Construction.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Construction_en.lean",
    "sha1_fr": "2a0ddd9d7f995c434ed8568e00bd815abc96d57a",
    "sha1_en": "e8348aee1e3b5688a3892db2571866a0c8d09c78"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Cover.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Cover_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Cover.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Cover_en.lean",
    "sha1_fr": "ec8b782d84b6ff5f9e3e3778ed302bb18c997e36",
    "sha1_en": "380faef8f6614261601ca284cf1546937a3cf851"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoverageGen.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoverageGen_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoverageGen.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoverageGen_en.lean",
    "sha1_fr": "1ee799bf936936ef321c58c96f1cb67c3628dedf",
    "sha1_en": "6704a2c83755ff24d6ca1737a477f5fb1903872e"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversArrow_en.lean",
    "sha1_fr": "a8962c20cc23bb281ed48207fe50651e208762f9",
    "sha1_en": "f5ffac89803a4b57f01cde187361163db29b8b60"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversAtomicArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversAtomicArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversAtomicArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversAtomicArrow_en.lean",
    "sha1_fr": "fef0718afb1fbab834964c0590d01d3a6fd480b2",
    "sha1_en": "b8be0fcc4a9ab58e44822b0df3aa937d8b53715e"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversBind.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversBind_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversBind.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversBind_en.lean",
    "sha1_fr": "d6077b282f36e5bd49615a777874cff00aa544de",
    "sha1_en": "4dd96a9dcbbc263a85243b452929cc4b64afa261"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversCoherentArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversCoherentArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversCoherentArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversCoherentArrow_en.lean",
    "sha1_fr": "c6d5b7b96a4169419582d98b8b354f96b496d729",
    "sha1_en": "019e7ac3f8fc147cf5610baf7be58ddfb7b41f17"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversCoverPreserving.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversCoverPreserving_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversCoverPreserving.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversCoverPreserving_en.lean",
    "sha1_fr": "e540fb4e33d2d32edb14f13ea5becb8d1c73cd2b",
    "sha1_en": "0d2e73ced96b781ab0cd3057ac16361146f48750"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversCoverPreservingLaws.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversCoverPreservingLaws_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversCoverPreservingLaws.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversCoverPreservingLaws_en.lean",
    "sha1_fr": "ef525dae197c826be965992e675d323a57e77ac3",
    "sha1_en": "27a09e8b5dc31df94734267d370fcea1f367915c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversCoverageArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversCoverageArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversCoverageArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversCoverageArrow_en.lean",
    "sha1_fr": "499d70f173cac79873fdc8a18f944094f2cb02eb",
    "sha1_en": "045aba27c75590a3ed8b43421d96904f9756f9a0"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversEtaleArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversEtaleArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversEtaleArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversEtaleArrow_en.lean",
    "sha1_fr": "786d83e8ea0ad6dd7a76c2cbcbad511d6d60169a",
    "sha1_en": "cd4f0892aaa41d5c0ac10deeba1b5fafa12ea679"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversExtensiveArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversExtensiveArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversExtensiveArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversExtensiveArrow_en.lean",
    "sha1_fr": "562b00332f09b5eb85132963e4214d449b910efe",
    "sha1_en": "fd75390b63737da46b9b027938f5aa9f13b0a61c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversExtremal.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversExtremal_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversExtremal.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversExtremal_en.lean",
    "sha1_fr": "f466fa609723152b6621c8f4f7f3db2e6875ccf9",
    "sha1_en": "747d2237e05fa92ec77dc2b9c31d707b43fc97ee"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversInducedTopology.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversInducedTopology_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversInducedTopology.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversInducedTopology_en.lean",
    "sha1_fr": "ad4504a54ffce4ff2bf967a074d5d6397445fd08",
    "sha1_en": "1f4ce02ecb2fe19a3180cc546a22bf31133024dc"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversLattice.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversLattice_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversLattice.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversLattice_en.lean",
    "sha1_fr": "15c6814e1bd1193caa262ec8976d25b8a01392bb",
    "sha1_en": "5b210579201d1ce37f2ecde62ec3d34000d8b498"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversOfPretopology.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversOfPretopology_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversOfPretopology.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversOfPretopology_en.lean",
    "sha1_fr": "dd2c541bf42927dd2940639db98051761313c90a",
    "sha1_en": "f3a0d7a863abe7863584fc68b288aa935b118646"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversOrder.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversOrder_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversOrder.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversOrder_en.lean",
    "sha1_fr": "b8057c42ea1723ad399ae539da7f546c9516016e",
    "sha1_en": "5b9476d594490fac1d5ab5219591545acb734c81"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversPrecoverageArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversPrecoverageArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversPrecoverageArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversPrecoverageArrow_en.lean",
    "sha1_fr": "c655dd3a16bb90d898df02d90277c4dd19c96cd1",
    "sha1_en": "338d2928313d7ffc54ea95280b64e355948f0b2c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversPretopologyArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversPretopologyArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversPretopologyArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversPretopologyArrow_en.lean",
    "sha1_fr": "cfe3f996d7315c6fc52c228d2108360faaa649dc",
    "sha1_en": "2ebb28d2fc04a134ea462af152c5f04eaa14b645"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversPullback.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversPullback_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversPullback.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversPullback_en.lean",
    "sha1_fr": "392645c364b4a1e33142c019646c7a4188362ac2",
    "sha1_en": "31fff122abd0f1e8e87235a28b8d079ab04adc0b"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversPushforward.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversPushforward_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversPushforward.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversPushforward_en.lean",
    "sha1_fr": "500c4e7d3c768ee0efcd072b84edfc7eba1baa0d",
    "sha1_en": "e1cf2308fa208e958638a501a95db5586b0c1813"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversRegularArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversRegularArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversRegularArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversRegularArrow_en.lean",
    "sha1_fr": "f2d0ad66d4a6c3b962d3ed7f00767f9c6710d7ab",
    "sha1_en": "caf65e8729f2939489b56dbccf9f34b136e0f182"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversTopologies.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversTopologies_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversTopologies.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversTopologies_en.lean",
    "sha1_fr": "7997cc8da03847e92865b8138dc219f3f2872f02",
    "sha1_en": "6735b9e7e28a44b48f9e51f47faf1de1e4038f72"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversZariskiArrow.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/CoversZariskiArrow_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversZariskiArrow.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/CoversZariskiArrow_en.lean",
    "sha1_fr": "a33c050f428601bc1b622f7099caf50a3e085b68",
    "sha1_en": "f35dc9e062fe258d84ee91b884e06e9f7ebaf8a3"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/DenseTopology.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/DenseTopology_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/DenseTopology.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/DenseTopology_en.lean",
    "sha1_fr": "05eb8fb8e66bca61b75334eb9eb4da171492b379",
    "sha1_en": "1d2aa64c892d6c6f50e95cd170f4cf29ed5fdeb0"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/DirectImage.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/DirectImage_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/DirectImage.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/DirectImage_en.lean",
    "sha1_fr": "0db9f99d8c1cf583fddd51af178411f1f189e2db",
    "sha1_en": "4d0394065133a5b2afceaa903257514cae03767b"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Equivalences.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Equivalences_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Equivalences.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Equivalences_en.lean",
    "sha1_fr": "209603fe5d1d1a6becfd5c91f5dceb7583138fc2",
    "sha1_en": "f0c3299c2522b1eb7888a9768f73709be1c95dc1"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/ExceptionalDirect.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/ExceptionalDirect_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/ExceptionalDirect.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/ExceptionalDirect_en.lean",
    "sha1_fr": "2eb5584101040ba1df329790af87987dc39696d9",
    "sha1_en": "e3798aaa7d9489d2da4014aba05a9617e41205ee"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/ExceptionalTriple.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/ExceptionalTriple_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/ExceptionalTriple.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/ExceptionalTriple_en.lean",
    "sha1_fr": "7e7d2f3119c76f091a4739bb4692428428eec1db",
    "sha1_en": "3de19d113ca61ba269368cc53202cb5ec9863f84"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Flasque.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Flasque_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Flasque.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Flasque_en.lean",
    "sha1_fr": "6b1b8cfa012cb705ed675353305c104462d5215f",
    "sha1_en": "83a6aef1c83fc96b3c4094e409de12b9cac2c0a1"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueAcyclic.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueAcyclic_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueAcyclic.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueAcyclic_en.lean",
    "sha1_fr": "3de9dfb37061e6c79e9310bba38c26649a053298",
    "sha1_en": "51b7f853363c20fcb7ca026f6e283364228adfe0"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueExact.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueExact_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueExact.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueExact_en.lean",
    "sha1_fr": "4dca9acf7fd8f91166c077d278c8f82e08642adc",
    "sha1_en": "54d9bc1b3ab2bf1b974c4dc115acf5deb002b190"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueQuotient.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueQuotient_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueQuotient.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueQuotient_en.lean",
    "sha1_fr": "0744fdc7ce46c66d53e0600d0e3e90acf558f5e0",
    "sha1_en": "9af2169272d7b18b82ecf26ca410d44096fa2a16"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueRetract.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueRetract_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueRetract.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueRetract_en.lean",
    "sha1_fr": "77415cb7389d35cfc78ef3e68d3d46d493dae678",
    "sha1_en": "5bc6b3c0633086be4344188913d92adbd747748c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueStability.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/FlasqueStability_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueStability.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/FlasqueStability_en.lean",
    "sha1_fr": "3e563ecc42a6b92d1ffee5d0b98a8ce6ab4ce763",
    "sha1_en": "98fb4aaa852bef33c78a8e16e8e2392050ff4f21"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Fppf.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Fppf_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Fppf.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Fppf_en.lean",
    "sha1_fr": "6e94497f0c76c97b0f144153df89418f2485a0d9",
    "sha1_en": "3faaef07ac2a1be5cfa15dcf24d1192cd50ce48e"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Godement.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Godement_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Godement.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Godement_en.lean",
    "sha1_fr": "2069a547b0be2d62b047360dda19f560babd033f",
    "sha1_en": "1ba26fcf5741e5c055f5dbb9aa98f843cafc1a18"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementAcyclicity.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementAcyclicity_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementAcyclicity.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementAcyclicity_en.lean",
    "sha1_fr": "b1aa176e88c6f8b3a985e1a69a85f885041764dc",
    "sha1_en": "91ee1434cb19678c87473b1b20133379ccf846a1"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementCanonicalDiff.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementCanonicalDiff_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementCanonicalDiff.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementCanonicalDiff_en.lean",
    "sha1_fr": "9118ab2a1d51c162b9fab999866d289b7f980bb6",
    "sha1_en": "67e69ed03935faace62aae5ff43ed8176037ab8f"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementComplex.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementComplex_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementComplex.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementComplex_en.lean",
    "sha1_fr": "3b0405f5121eac99aaa8122d386638a8eebe3642",
    "sha1_en": "6cf4fab848220f2aeb1e2d747a76c987e14e2856"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementExactness.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementExactness_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementExactness.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementExactness_en.lean",
    "sha1_fr": "b177d0c77167a5ead691d80838e91fc91ab851ed",
    "sha1_en": "430af4539b88092ccd911deaf4c85e093eb336a2"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementFunctor.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementFunctor_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementFunctor.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementFunctor_en.lean",
    "sha1_fr": "48bc9e63d0418ecf716c0b5ad541e87f14e87853",
    "sha1_en": "331c2e75f5ee934bee7a76848b8a936246ddca9b"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementMono.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementMono_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementMono.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementMono_en.lean",
    "sha1_fr": "4732e8ad278e7b38b4c5eb5389f10a7f1f8ba150",
    "sha1_en": "d4db99df7ea0c486c4de922e73253bb6959f06ad"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementResolution.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementResolution_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementResolution.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/GodementResolution_en.lean",
    "sha1_fr": "c73ea36f4c11efa42e361297e963f0dc02a22f39",
    "sha1_en": "edd08615556930a9500c7e88802d127982a63cb2"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/KanExtensions.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/KanExtensions_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/KanExtensions.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/KanExtensions_en.lean",
    "sha1_fr": "2494920eb99d84a405f7fb5c233f07fa426c3e91",
    "sha1_en": "49c670b21046559af71a9e20e3e7a64eba327b68"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/LawvereTierney.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/LawvereTierney_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/LawvereTierney.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/LawvereTierney_en.lean",
    "sha1_fr": "e5ea305d84ad91ea7894800c6636c265ae91033b",
    "sha1_en": "03d20b613ea3b57942c382bbab2978eb9f77268b"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/LeftExact.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/LeftExact_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/LeftExact.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/LeftExact_en.lean",
    "sha1_fr": "7b4f281b40e910798ff9fb40c302ebec15093201",
    "sha1_en": "b42b26220433932268b01d010cc6e099dbb4cd9d"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Limits.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Limits_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Limits.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Limits_en.lean",
    "sha1_fr": "d40b78c38503ea0d27967e68f852867519ef8497",
    "sha1_en": "9550d46438944bdb415c8aa930adc86d43913899"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/LocalSurjectivitySpectrum.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/LocalSurjectivitySpectrum_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/LocalSurjectivitySpectrum.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/LocalSurjectivitySpectrum_en.lean",
    "sha1_fr": "bcb1ee146d0f3109bb3465fc4239eff6715cf09c",
    "sha1_en": "d43bbf6eb26bf6d5665c27199ed1e244250beb12"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/MathlibMap.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/MathlibMap_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/MathlibMap.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/MathlibMap_en.lean",
    "sha1_fr": "a8f16b036daf4f112f4e7ad4ba1f18ef757aeb52",
    "sha1_en": "84d2c68a5d9153f392f016eee78cb6548e2a4cd4"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/MayerVietorisSquare.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/MayerVietorisSquare_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/MayerVietorisSquare.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/MayerVietorisSquare_en.lean",
    "sha1_fr": "a08316d7a1eeef4a68d7ec0a466c258b8a7009ac",
    "sha1_en": "de8d22d4b31c045cf2c713972b47f1d57b428b97"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Monads.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Monads_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Monads.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Monads_en.lean",
    "sha1_fr": "013206ea8fd1bdadd2a58f12d9f89d1667d49628",
    "sha1_en": "4b7cfead725cfbeb35a66e1373e9dcf986cb0c85"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Monodromie.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Monodromie_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Monodromie.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Monodromie_en.lean",
    "sha1_fr": "c9a9f0567c26486615911b0e5df3f4e4a6466821",
    "sha1_en": "ca250edcb46c9aedd8928c66147a39721564fc5e"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/MonoidalCategories.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/MonoidalCategories_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/MonoidalCategories.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/MonoidalCategories_en.lean",
    "sha1_fr": "d4c5ed8048b6a3f223e121ced1508173ed0d8527",
    "sha1_en": "a6fb3cc5716083cb3040f827a2d3957e174fbc1c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/PlusConstruction.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/PlusConstruction_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/PlusConstruction.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/PlusConstruction_en.lean",
    "sha1_fr": "cd57ef10e089e92780864aa76a82fe2257bdb63d",
    "sha1_en": "b3eeede794bb716e6abed2494b560aa061074589"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/PullbackCoversLaws.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/PullbackCoversLaws_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/PullbackCoversLaws.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/PullbackCoversLaws_en.lean",
    "sha1_fr": "5b9242eef173b512b8924ff0d2557ee862c45c8c",
    "sha1_en": "356435a987de1505a4f6431d8519ad2aa43d0df5"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/PullbackFunctor.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/PullbackFunctor_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/PullbackFunctor.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/PullbackFunctor_en.lean",
    "sha1_fr": "1e5adaf1c59443f00be74d13982cffa1bc4bc86d",
    "sha1_en": "e2df3c7234e7c6f0be8c2e99bbfb874245998a18"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/PullbackFunctorLaws.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/PullbackFunctorLaws_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/PullbackFunctorLaws.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/PullbackFunctorLaws_en.lean",
    "sha1_fr": "0cae31aad039951aeef768e814b494e13467a22b",
    "sha1_en": "15166bf13021b9415d3da9e09c850578702d0258"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SchemesTour.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SchemesTour_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SchemesTour.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SchemesTour_en.lean",
    "sha1_fr": "39d3c617b1e1fdb36fecc17e0c996bb12f617fe4",
    "sha1_en": "588993cf45140d216651fb005f91b3f039f3c057"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SerreMap.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SerreMap_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SerreMap.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SerreMap_en.lean",
    "sha1_fr": "d9341f74f7ee7dd9ffc676b9d28688274e4d9fc8",
    "sha1_en": "aca5151c4719730bae665b573d446fa686e96f2d"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafBasics.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafBasics_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafBasics.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafBasics_en.lean",
    "sha1_fr": "7926b1d66cc53a16a1bb3b15f65c222e93ec8623",
    "sha1_en": "4cf845c0c5d96dc3487da03086bf2d1538a949e1"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Basic_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Basic_en.lean",
    "sha1_fr": "e125fab6b7e0105b47613293d02586d933807419",
    "sha1_en": "4d5d19faf51e1a649fc7f7e7d3f2447d13619b87"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Cech.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Cech_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Cech.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Cech_en.lean",
    "sha1_fr": "432a39c3a8e41f47117268a6dd9671d34ac74857",
    "sha1_en": "7de64374c61db09e0a08ab85c8d76bf5d2cb54ee"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Godement.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/Godement_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Godement.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Godement_en.lean",
    "sha1_fr": "faf5851c40ee0d3b004aa56608e27224a43a9070",
    "sha1_en": "bb49dc6b3c4fc038fb91bf3060bb1bb711d93d64"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/MayerVietoris.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCohomology/MayerVietoris_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/MayerVietoris.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/MayerVietoris_en.lean",
    "sha1_fr": "55c959e7797df856cbbd58ebbe3d7c11eefdf8af",
    "sha1_en": "55ce6410ef6a6f6e61df47349b1b0aee2a8ce383"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCondition.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafCondition_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCondition.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCondition_en.lean",
    "sha1_fr": "bbf5bae9e8e8edd53659948c83073cf236024322",
    "sha1_en": "8e30fe49084b2907889440d9ab021559286df4c1"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafConditionCharacterization.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafConditionCharacterization_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafConditionCharacterization.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafConditionCharacterization_en.lean",
    "sha1_fr": "3f29001e4f55501ec3959e886b412d4a06e0e7be",
    "sha1_en": "0b1e9c571bb3bd00cb904bb5bb60632451193614"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafConditionInvariance.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafConditionInvariance_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafConditionInvariance.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafConditionInvariance_en.lean",
    "sha1_fr": "65e6925b216a9927d04cdcb08052ee0e682945d1",
    "sha1_en": "a11605fe3126bf0fd873fafea3910a18ec73eaf5"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafHom.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafHom_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafHom.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafHom_en.lean",
    "sha1_fr": "19ddd7d0097747ae550966ab50c6b7d1b4b25f64",
    "sha1_en": "c77758d29b53816feffd5682e0fb339a593c221c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafTopologySpectrum.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SheafTopologySpectrum_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafTopologySpectrum.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafTopologySpectrum_en.lean",
    "sha1_fr": "f167fa161cf7b3e677adbac5ed7535f94a2c65eb",
    "sha1_en": "bff6ab9c8b76cd0f2c81fa8a844e7a98486a3123"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Sheafification.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Sheafification_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Sheafification.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Sheafification_en.lean",
    "sha1_fr": "362131ee213fd5378eacff8660d929274198c43f",
    "sha1_en": "9ed28605f9edcc8322b5b9bd020798c64a012e08"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SieveGenerate.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SieveGenerate_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SieveGenerate.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SieveGenerate_en.lean",
    "sha1_fr": "7df6b3da56435aafde45d8bbc90c5ceb91725604",
    "sha1_en": "3fa53c391faa9d339d6c5c459a3ad1a86637be2c"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SieveLattice.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SieveLattice_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SieveLattice.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SieveLattice_en.lean",
    "sha1_fr": "e86cc2733def7eb1de2e697f20e13c8fad4324ac",
    "sha1_en": "cf40930fe1e4003141a86bb3cba89d6074380a8a"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SieveOps.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SieveOps_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SieveOps.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SieveOps_en.lean",
    "sha1_fr": "95023045031587bb4c96983380f51bad0678536c",
    "sha1_en": "82a3503c29be1d33ee069491a8028d2b07471d24"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SitePoints.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SitePoints_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SitePoints.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SitePoints_en.lean",
    "sha1_fr": "cb7a5da26f0fbf01b90c446e464407afe781e472",
    "sha1_en": "33e6ca882ee0f68fa5da29fdda88f1667fa91f43"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SitesComparison.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SitesComparison_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SitesComparison.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SitesComparison_en.lean",
    "sha1_fr": "1297e34c53bc4a5ff85ea25ee7c48d8460c9ae07",
    "sha1_en": "0d3f0c9cad42696313417189c7f148de89af4a59"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Skyscraper.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Skyscraper_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Skyscraper.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Skyscraper_en.lean",
    "sha1_fr": "858e73be11047400ed4262ba553a10d7b8634c4b",
    "sha1_en": "f4e919b2d6afcb1a0c4cdc24e09d6e6125c9bae6"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Spaces.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Spaces_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Spaces.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Spaces_en.lean",
    "sha1_fr": "0ce7fe7b6aeccfeb929b978deae3334b7884f930",
    "sha1_en": "10c939a705d38d582cb91a3461e01085b9bbf541"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SpacesMathlib.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SpacesMathlib_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SpacesMathlib.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SpacesMathlib_en.lean",
    "sha1_fr": "1b048b6223ba0b9f156660ae01f10df951826cbb",
    "sha1_en": "5c8d73732000b130e5966c2ca42f209b9e60be2d"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SpacesSubcanonical.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/SpacesSubcanonical_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SpacesSubcanonical.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SpacesSubcanonical_en.lean",
    "sha1_fr": "5182e6b665bcaacfe700ac910b005541a6b58165",
    "sha1_en": "9654456bbc5c4ef990d5e3d6a746a3ca274781e6"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/StalkCharacterization.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/StalkCharacterization_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/StalkCharacterization.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/StalkCharacterization_en.lean",
    "sha1_fr": "aab7ddac7a131aabf89c0a06238968861fb6603a",
    "sha1_en": "b07da6e3f825854e77d94939cbe3547ade9898ae"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/StalkGluing.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/StalkGluing_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/StalkGluing.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/StalkGluing_en.lean",
    "sha1_fr": "f62b4627a3873819882da8be287ba9d2e190a8f2",
    "sha1_en": "5745e9c91ee62dd44c0e5f210b6caf9886448d30"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/StalkPoints.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/StalkPoints_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/StalkPoints.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/StalkPoints_en.lean",
    "sha1_fr": "8361e159dd3e3528333165a30abce25febf3063c",
    "sha1_en": "76bc77efb164e1e9bbd5b70e2e72c92711d937c0"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/StalkSeparated.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/StalkSeparated_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/StalkSeparated.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/StalkSeparated_en.lean",
    "sha1_fr": "f0ec2c66f5e189aadf939023daaac2b111e55a78",
    "sha1_en": "7460464015815db417e7de4a8db1f4e1716d9a10"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Stalks.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Stalks_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Stalks.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Stalks_en.lean",
    "sha1_fr": "87656136ec840ad5d2a34bf511831ca8745b2df1",
    "sha1_en": "7c7a06f69d45948ce3f94ce706cce57172e980e0"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Subcanonical.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/Subcanonical_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Subcanonical.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/Subcanonical_en.lean",
    "sha1_fr": "188535d157c8bd29c00279df82032e0dd4c85294",
    "sha1_en": "430d5ec630c015e8b20d783cb68d7f72810efb95"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/TopologyDictionary.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/TopologyDictionary_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/TopologyDictionary.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/TopologyDictionary_en.lean",
    "sha1_fr": "91d9102cb030c88773a86444fd842eb79b5801a8",
    "sha1_en": "9eacf3811b9da21b268a89d341868d44491b70d8"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/TopologyLattice.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/TopologyLattice_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/TopologyLattice.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/TopologyLattice_en.lean",
    "sha1_fr": "398723073e48982bd66763d8a1de30ba7a549bf9",
    "sha1_en": "c4d198477b4aca1b9dfd9d9a1ad5a2631ae4d770"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/YonedaLemma.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/YonedaLemma_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/YonedaLemma.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/YonedaLemma_en.lean",
    "sha1_fr": "8b195e97d43fe49c2a445939416567d31a9aac69",
    "sha1_en": "4abac0583067cdd885d321b861dadb9499c63037"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/ZariskiSite.lean",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/ZariskiSite_en.lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/ZariskiSite.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/ZariskiSite_en.lean",
    "sha1_fr": "db7dc29d605c9b23027d7dd0c174d4a4606205ec",
    "sha1_en": "8716dc7d691b47b84d7e2010616e676cf55141a9"
   },
   {
    "kind": "readme",
-   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md",
-   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.en.md",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.en.md",
    "sha1_fr": "bf547dd0628a2ba7df3c8f8591aaf70418fb82aa",
    "sha1_en": "9b7e9884683341af082a9a1e86a595a33b83a431"
   },

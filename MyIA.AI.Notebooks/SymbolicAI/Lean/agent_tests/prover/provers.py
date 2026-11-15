@@ -396,6 +396,19 @@ def _guard_baseline_sorry_count(demo: dict, original_sorry_count: int) -> int:
     return int(pre_stub) if pre_stub is not None else original_sorry_count
 
 
+def _deadline_keeps_latched_proof(tactic_tools) -> bool:
+    """#24469: on a reasoning-deadline cancel, keep a proof already latched.
+
+    VerifyExecutor latches ``tactic_tools.proof_latched`` only after
+    ``verify_sorry_replacement`` succeeded with ``persist_on_success`` (real
+    module rebuild) or the in-place latch confirmed a build. The success gate
+    still requires ``final_build_ok`` from the mandatory final verify, and the
+    statement-mutation guard still runs: the latch cannot turn an unverified
+    edit into a success, it only stops the deadline from erasing a real one.
+    """
+    return bool(getattr(tactic_tools, "proof_latched", False))
+
+
 def _stmt_mutation_guard(final_sorry: int, original_sorry_count: int,
                          final_build_ok: bool, proof_found: bool,
                          verified_tactic_count: int) -> bool:
@@ -504,11 +517,19 @@ def _reverify_compiles_clean(filepath: str, tactic_tools) -> bool | _ReverifyUnk
     * ``True`` — fresh build compiles with zero errors -> PRESERVE (#6790
       behavior unchanged).
     * ``False`` — >= 1 real parseable error, or the re-verify itself
-      crashed (fail closed) -> REVERT (#6790 behavior unchanged). A
-      wall-clock cut WITH a confirmed diagnostic in the partial output is
-      also a plain False (errors outrank UNKNOWN, #18432).
-    * ``_ReverifyUnknown`` — wall-clock budget exhausted with NO diagnostic:
-      the absence of a verdict (falsy sentinel — see the class contract).
+      crashed (fail closed) -> REVERT (#6790 behavior unchanged).
+    * ``_ReverifyUnknown`` — NO verdict exists, on either of two routes:
+      the wall-clock budget was exhausted (#18432), or the fresh build
+      reported zero parseable errors while ``level_1_build`` stayed False —
+      the manifest/cache incoherence that triggers this re-verify in the
+      first place, which is an absence of verdict rather than evidence of
+      breakage (#1453, pass 24 on 2026-11-04 destroyed a correct proof on
+      that branch).
+
+    The timeout test deliberately precedes the error parse (see the comment
+    at that branch): a timed-out build is UNKNOWN even when its partial
+    output carries a diagnostic, so the candidate is archived before the
+    original is restored rather than discarded on an unfinished build.
     """
     from .verifier import get_verifier
     from .tools import _parse_lean_errors  # authoritative parser (#6831)
@@ -535,20 +556,38 @@ def _reverify_compiles_clean(filepath: str, tactic_tools) -> bool | _ReverifyUnk
         )
         return _ReverifyUnknown("wall_clock_timeout", _to)
     fresh_errors = _parse_lean_errors(rv.get("raw_output", "") or rv.get("errors", ""))
-    fresh_ok = bool(rv.get("level_1_build", False)) and len(fresh_errors) == 0
-    if not fresh_ok:
+    if fresh_errors:
         print(
             f"  RE-VERIFY FAILED: fresh independent build of the on-disk content "
             f"reports {len(fresh_errors)} error(s) — the false-negative verify was "
             f"MISLEADING; the snapshot is truly broken -> REVERT (#6790 hardening)."
         )
-    else:
+        return False
+    if not rv.get("level_1_build", False):
+        # Zero parseable errors AND level_1_build False is the SAME incoherence
+        # that sent us into this re-verify ("FINAL VERIFY INCOHERENT ... worktree
+        # manifest warning / cache state"). Re-reading level_1_build as the gate
+        # one level down reintroduces it, and it destroyed a correct proof:
+        # pass 24 (2026-11-04) produced `exact Nat.zero_add n`, sorry 1 -> 0,
+        # error_count 0, and this branch printed "reports 0 error(s) ... truly
+        # broken -> REVERT" (#1453). Same class as DEMO 62 / conway_lean L2892,
+        # where p4_final_verify already dropped level_1_build from its path.
+        #
+        # Empty output (a build that died producing nothing) lands here too, and
+        # is likewise a non-verdict rather than evidence of breakage.
         print(
-            "  RE-VERIFY PASSED: fresh independent build confirms the on-disk "
-            "content compiles clean -> the false-negative verify is confirmed, "
-            "snapshot is genuinely build-passing -> PRESERVE (#6790 hardening)."
+            "  RE-VERIFY UNKNOWN (#1453): fresh independent build reports 0 "
+            "compile error(s) but level_1_build is False — that is the "
+            "manifest/cache incoherence that triggered this re-verify, not a "
+            "verdict. Neither preserve nor revert on an absent verdict."
         )
-    return fresh_ok
+        return _ReverifyUnknown("level_1_build_incoherent_zero_errors", None)
+    print(
+        "  RE-VERIFY PASSED: fresh independent build confirms the on-disk "
+        "content compiles clean -> the false-negative verify is confirmed, "
+        "snapshot is genuinely build-passing -> PRESERVE (#6790 hardening)."
+    )
+    return True
 
 
 # #18432 EOF-marker sentinels. The two sides get DISTINCT sentinels so
@@ -697,7 +736,7 @@ def _trace_verdict_safe(trace, message: str) -> None:
 
 def _archive_and_restore_unknown(trace, filepath: str, original_content: str,
                                  patch_name: str,
-                                 timeout_s) -> dict:
+                                 timeout_s, reason: str = "wall_clock_timeout") -> dict:
     """#18432 shared UNKNOWN core: verified-archive the candidate, THEN
     restore the original — never restore without a verified archive.
 
@@ -708,26 +747,35 @@ def _archive_and_restore_unknown(trace, filepath: str, original_content: str,
     """
     patch = _write_unknown_scaffold_patch(
         trace, filepath, original_content, patch_name,
-        reason="wall_clock_timeout", timeout_s=timeout_s)
+        reason=reason, timeout_s=timeout_s)
     restored = patch is not None
     if restored:
         Path(filepath).write_text(original_content, encoding="utf-8")
     return {"patch": patch, "restored": restored}
 
 
-def _unknown_outcome_message(patch, restored, timeout_s) -> str:
-    """#18432: the citable UNKNOWN verdict (stdout + trace event)."""
+def _unknown_outcome_message(patch, restored, timeout_s,
+                             reason: str = "wall_clock_timeout") -> str:
+    """#18432: the citable UNKNOWN verdict (stdout + trace event).
+
+    ``reason`` is carried through from the tri-state: a second route reaches
+    UNKNOWN without any timeout (#1453), and a message that hard-wires
+    ``wall_clock_timeout`` would misreport it.
+    """
+    if reason == "wall_clock_timeout":
+        what = f"wall_clock_timeout, timeout_s={timeout_s}"
+    else:
+        what = f"{reason}, timeout_s={timeout_s}"
     if restored:
         return (
-            f"FINAL VERIFY UNKNOWN (wall_clock_timeout, timeout_s={timeout_s}): "
-            f"budget exhausted, no compile verdict (#18432). Original restored; "
-            f"candidate archived as scaffold patch: {patch}"
+            f"FINAL VERIFY UNKNOWN ({what}): no compile verdict exists "
+            f"(#18432/#1453). Original restored; candidate archived as "
+            f"scaffold patch: {patch}"
         )
     return (
-        f"FINAL VERIFY UNKNOWN (wall_clock_timeout, timeout_s={timeout_s}): "
-        f"budget exhausted, no compile verdict (#18432). NO verified archive "
-        f"possible — RESTORE SKIPPED, the UNVERIFIED candidate stays on disk; "
-        f"success cannot fire for this run."
+        f"FINAL VERIFY UNKNOWN ({what}): no compile verdict exists "
+        f"(#18432/#1453). NO verified archive possible — RESTORE SKIPPED, the "
+        f"UNVERIFIED candidate stays on disk; success cannot fire for this run."
     )
 
 
@@ -755,10 +803,12 @@ def _consume_reverify_tri_state(filepath: str, tactic_tools, trace,
         out = _archive_and_restore_unknown(
             trace, filepath, original_content,
             f"multi_{demo_name}_{provider}_reverify_unknown.patch",
-            _rv_state.timeout_s)
-        print(f"  {_unknown_outcome_message(out['patch'], out['restored'], _rv_state.timeout_s)}")
-        _trace_verdict_safe(
-            trace, _unknown_outcome_message(out["patch"], out["restored"], _rv_state.timeout_s))
+            _rv_state.timeout_s, reason=_rv_state.reason)
+        _msg = _unknown_outcome_message(out["patch"], out["restored"],
+                                        _rv_state.timeout_s,
+                                        reason=_rv_state.reason)
+        print(f"  {_msg}")
+        _trace_verdict_safe(trace, _msg)
         tactic_tools._best_content = None
         tactic_tools._best_sorry_count = original_sorry_count
         return {"final_build_ok": False, "unknown": True,
@@ -1229,7 +1279,9 @@ class MultiAgentSorryProver:
             # (compile-level): here the agent loop burned the whole reasoning
             # budget without converging on an edit.
             state.reasoning_budget_exceeded = True
-            proof_found = False
+            proof_found = _deadline_keeps_latched_proof(tactic_tools)
+            if proof_found:
+                print("  Verified proof was latched before the deadline -- kept (#24469)")
         except Exception as e:
             print(f"  Workflow error: {e}")
         finally:

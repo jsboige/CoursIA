@@ -38,7 +38,7 @@ Ce premier livrable établit le **cœur formel** documenté de la preuve — la
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` + Mathlib4 (`v4.32.1`, aligné sur le pin effectif du `lean-toolchain` et du `lake-manifest.json`)
+- **Toolchain** : `leanprover/lean4:v4.33.0` + Mathlib4 (commit `db584cd6d46c`, le pin effectif du `lake-manifest.json`)
 - **Sorry** : **0** sur tout le module. L'additivité + l'homogénéité du payoff en
   chaque variable, la continuité (jointe et restreinte), la concavité/cvxicité du
   payoff sur les simplexes, les **4 hyps analytiques de Sion** (quasi-convexité,

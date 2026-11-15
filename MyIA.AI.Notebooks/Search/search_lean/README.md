@@ -213,7 +213,7 @@ prouvés** ; le module ancre ce qui, lui, se vérifie mécaniquement :
 ## Construction
 
 ```bash
-lake exe cache get   # récupère les .olean de Mathlib (v4.31.0-rc1)
+lake exe cache get   # récupère les .olean de Mathlib (pin db584cd6)
 lake build Astar     # build de la librairie
 ```
 
