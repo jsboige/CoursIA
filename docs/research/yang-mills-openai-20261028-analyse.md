@@ -268,7 +268,7 @@ rejouable sans la soumission.
    recalculer en Python (carnet `Jauge-03`, §8) et vérifier qu'aucun profil libre
    n'atteint le coefficient `3·dim(g)/π⁴`.
 3. Le **gap de masse** n'est pas résolu par cette soumission : l'énoncer comme
-   ouvert, dans le carnet comme dans le README de la sous-série, serait une
+   résolu, dans le carnet comme dans le README de la sous-série, serait une
    faute.
 
 ---
