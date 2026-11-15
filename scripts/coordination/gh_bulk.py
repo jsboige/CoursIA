@@ -1,7 +1,8 @@
 """Lectures groupees de GitHub et de git pour le tapis rapide (#22983).
 
 Seul module de la voie legere qui lance un processus ; `run(argv, timeout)` est
-injecte, les tests en passent un faux. Le nombre d'appels ne depend pas des candidats.
+injecte, les tests en passent un faux. Le cache et le verrou sont dans
+`coordination.gh_cache` (#22630).
 """
 from __future__ import annotations
 
@@ -9,11 +10,10 @@ import json
 import os
 import re
 import subprocess
-import tempfile
 import time
 from collections.abc import Callable
-from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 Run = Callable[[list[str], int], str]
@@ -23,6 +23,7 @@ TIMEOUT_S = 90
 # Un 502/504 se resorbe en relisant la meme page en plus petit.
 TAILLES_PAGE = (50, 25, 12)
 PAGES_PRS_MAX = 20  # au-dela : lecture incomplete plutot que tronquee
+FETCH_AGE_MAX_H = 6  # age max de la pointe locale d'origin/main sans fetch
 _TRANSITOIRE_RE = re.compile(r"\b50[24]\b|Bad Gateway|Gateway Time-?out", re.IGNORECASE)
 _CITATION_RE = re.compile(r"#(\d+)\b")
 # Un commit FERME #N s'il le nomme apres un mot de fermeture, ou dans la portee de son
@@ -60,6 +61,7 @@ class Lecture:
     appels: int = 0
     secondes: float = 0.0
     depuis_cache: bool = False
+    fetch_note: str | None = None  # fetch d'origin/main tente et echoue (sinon None)
 
     @property
     def origin_main_le(self) -> str | None:
@@ -149,7 +151,7 @@ def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict
     raise LectureIncomplete("prs_ouvertes", PAGES_PRS_MAX, "plus de pages que le plafond")
 
 
-def lire_citations_mergees(depot: str | Path, jours: int = 14,
+def lire_citations_mergees(depot: str | Path, jours: int = 45,
                            run: Run = run_defaut) -> dict[int, list[dict]]:
     """Par numero cite, les commits `{sha, date, sujet, ferme}` d'`origin/main` sur `jours` jours.
 
@@ -182,20 +184,47 @@ def dossier_cache_defaut() -> Path:
     return (Path(local) / "CoursIA" if local else Path.home() / ".cache/coursia") / "tapis_rapide"
 
 
-def lire_tout(depot: str | Path, cache_s: int = 300, run: Run = run_defaut, jours: int = 14,
+def _rafraichir_origin_main(run: Run, depot: str | Path) -> str | None:
+    """`git fetch origin main` si la pointe locale d'origin/main a plus de
+    `FETCH_AGE_MAX_H` h ou est illisible : une panne se NOMME, ne leve pas."""
+    try:
+        argv = ["git", "-C", str(depot), "log", "-1", "--format=%ct", "origin/main"]
+        tip = datetime.fromtimestamp(int(run(argv, TIMEOUT_S).strip()), UTC)
+        if datetime.now(UTC) - tip <= timedelta(hours=FETCH_AGE_MAX_H):
+            return None
+    except (ValueError, subprocess.SubprocessError, OSError):
+        pass  # pointe illisible : le fetch se tente quand meme
+    try:
+        run(["git", "-C", str(depot), "fetch", "-q", "origin", "main"], TIMEOUT_S)
+        return None
+    except (subprocess.SubprocessError, OSError) as exc:
+        return f"fetch origin/main impossible ({str(exc)[:100]}), pointe locale gardee"
+
+
+def lire_tout(depot: str | Path, cache_s: int = 300, run: Run = run_defaut, jours: int = 45,
               dossier_cache: Path | None = None) -> Lecture:
     """Les trois lectures, ou le cache local de moins de `cache_s` s (0 : sans cache).
 
-    Un cache illisible se relit sur le reseau ; sans verrou, le dernier ecrivain gagne."""
+    **Une seule lecture reseau par machine et par instant** (#22630) : le cache est
+    relu apres le verrou partage -- si une autre lane a rafraichi pendant l'attente,
+    cette passe ne consomme aucun credit gh. Le verrou n'est jamais bloquant.
+    """
+    from coordination import gh_cache
+
     chemin = (dossier_cache or dossier_cache_defaut()) / f"lecture-{jours}j.json"
-    if cache_s > 0:
-        try:
-            brut = json.loads(chemin.read_text(encoding="utf-8"))
-            if time.time() - float(brut.pop("_epoch")) < cache_s:
-                brut["citations"] = {int(k): v for k, v in brut["citations"].items()}
-                return Lecture(**{**brut, "depuis_cache": True})
-        except (OSError, ValueError, KeyError, TypeError, AttributeError):
-            pass  # cache absent ou illisible : relu sur le reseau
+
+    def _depuis_cache(brut: dict) -> Lecture:
+        brut["citations"] = {int(k): v for k, v in brut["citations"].items()}
+        return Lecture(**{**brut, "depuis_cache": True})
+
+    def _reseau() -> Lecture:
+        return _lire_reseau(depot, cache_s, run, jours)
+
+    return gh_cache.lire_unique(chemin, cache_s, _reseau, _depuis_cache)
+
+
+def _lire_reseau(depot: str | Path, cache_s: int, run: Run, jours: int) -> Lecture:
+    """Les trois lectures reseau."""
     appels = [0]
 
     def compte(argv: list[str], timeout: int) -> str:
@@ -203,23 +232,15 @@ def lire_tout(depot: str | Path, cache_s: int = 300, run: Run = run_defaut, jour
         return run(argv, timeout)
 
     debut = time.monotonic()
+    fetch_note = _rafraichir_origin_main(compte, depot)  # AVANT les citations
     lecture = Lecture(issues=lire_issues_ouvertes(compte), prs=lire_prs_ouvertes(compte),
                       citations=lire_citations_mergees(depot, jours, compte),
-                      lu_a=datetime.now(UTC).strftime(_ISO))
+                      lu_a=datetime.now(UTC).strftime(_ISO), fetch_note=fetch_note)
     lecture.appels, lecture.secondes = appels[0], round(time.monotonic() - debut, 1)
-    if cache_s > 0:
-        try:
-            chemin.parent.mkdir(parents=True, exist_ok=True)
-            fd, tmp = tempfile.mkstemp(dir=chemin.parent, suffix=".tmp")
-            with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                json.dump({**asdict(lecture), "_epoch": time.time()}, fh, ensure_ascii=False)
-            os.replace(tmp, chemin)
-        except OSError:
-            pass  # un cache non ecrit ne change pas le tirage
     return lecture
 
 
-def charger_depuis(dossier: str | Path, depot: str | Path | None = None, jours: int = 14,
+def charger_depuis(dossier: str | Path, depot: str | Path | None = None, jours: int = 45,
                    run: Run = run_defaut) -> Lecture:
     """Rejoue `issues.json` et `prs_ouvertes.json` d'un dossier deja lu ; avec
     `depot`, les citations se lisent en plus sur son `origin/main` local."""
