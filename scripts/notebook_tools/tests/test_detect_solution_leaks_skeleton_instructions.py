@@ -6,7 +6,7 @@ EPIC #8053 :
 - ``exercise_with_none_stub_or_marker`` : def/class avec `= None` stubs
   + print trailer (Lab4-DataWrangling, SW-12-GraphRAG, Planners-1, Arrow).
 - ``exercise_with_a_completer_minizinc`` : model-text avec `% A COMPLETER`
-  + `display_model` (App-8-MiniZinc).
+  + `display_model` (App-08-MiniZinc-Python).
 - ``exercise_with_attente_implementation`` : C# `Console.WriteLine("...
   en attente de votre implementation")` (CSP-3-Advanced, CSP-7-Soft,
   App-1b-NQueens).
