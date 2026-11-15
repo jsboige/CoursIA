@@ -68,7 +68,7 @@ La boîte à outils de graphes et la recherche continue, trois accrétions de Se
 
 - **[2b NetworkX](Search-02b-NetworkX.ipynb)** (+ [jumeau C#](Search-02b-NetworkX-CSharp.ipynb)) — **Boîte à outils de graphes** : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, MST, Floyd-Warshall ; matière optionnelle, utile dès la fin de Search-2, en parité structurelle avec QuikGraph (2c). Le jumeau C# refait la théorie from-scratch (`Dictionary` / listes d'adjacence pondérées) et ajoute le flot maximum (Ford-Fulkerson) plus une tranche 2 QuikGraph (parité lib-vs-lib sur la même instance) — distinct de 2c, parité #4956.
 - **[2c QuikGraph](Search-02c-QuikGraph.ipynb)** — Bibliothèque de graphes .NET **QuikGraph 2.5.0** (NuGet) : AdjacencyGraph / BidirectionalGraph / UndirectedGraph, DFS/BFS, Dijkstra, Bellman-Ford, centralités, composantes connexes, Edmonds-Karp (flot max), en parité avec NetworkX. Suppose .NET Interactive.
-- **[2d RRT](Search-02d-RRT-Recherche-Continue.ipynb)** — **Recherche continue** (from scratch : stdlib, numpy, matplotlib) : RRT (LaValle 1998) et RRT\* (Karaman & Rus 2010) — croissance par échantillonnage aléatoire, biais vers le but, contrôle de collision, rewiring. **Optimalité asymptotique mesurée** : ratio longueur/borne inférieure contre budget N (médiane de 5 graines) — RRT plat à 1,27 contre RRT\* 1,08 → 1,02.
+- **[2d RRT en Python](Search-02d-RRT-Recherche-Continue.ipynb)** et **[C#](Search-02d-RRT-Recherche-Continue-CSharp.ipynb)** — recherche continue, collisions exactes, RRT et reparentage RRT* ; comparaison à budget fini sur cinq graines, sans preuve expérimentale d’optimalité asymptotique.
 
 ### Autour de 03
 
@@ -83,6 +83,7 @@ Cette section absorbe le contenu durable de l'ancienne Partie 3, centrée sur la
 ### Autour de 05
 
 - **[5b Natural Evolution Strategies](Search-05b-NaturalEvolutionStrategies.ipynb)** — Stratégies d'évolution naturelles (Wierstra *et al.*, JMLR 2014) : on fait évoluer une **distribution** et non une population. Gradient simple contre gradient naturel sur la figure 1 du papier (80/300 tirages en échec contre 0/300), invariance par transformation monotone à la précision machine, **xNES** et **SNES** réglés sur la table 1, banc décisif ellipsoïde séparable puis tourné, confrontation à CMA-ES (~2,3× plus rapide que xNES), équivalence au premier ordre avec le rang-μ de CMA-ES vérifiée en O(η²).
+  - [Version C#](Search-05b-NaturalEvolutionStrategies-CSharp.ipynb) : gradients, xNES/SNES et CMA-ES avec MetaGeneticSharp natif, banc par rotation et figures SVG.
 
 ### Autour de 09
 
@@ -94,6 +95,10 @@ Le fil relaxation / arrondi / convexité, cinq accrétions de Search-9 :
 - **[9e Komlos-Lean](Search-09e-Komlos-Lean.ipynb)** — **Compagnon formel de 9c** sur kernel `lean4-wsl` : `#check` des conjectures (Komlós ∃C universel, Beck–Fiala 2k−1, régimes Bansal–Jiang 2025), témoins coloriés ±1 énumérés exhaustivement sur instances jouet (Hadamard ½n en particulier). Suppose le miroir local du lake `discrepancy_lean`.
 - **[9f ConvexOptimisation](Search-09f-ConvexOptimisation-Python.ipynb)** — **Du linéaire au convexe** : l'escalier LP → QP → SOCP nommé et démontré — le LP de Search-9 relu comme QP dégénérée, Markowitz en QP exacte sur l'instance App-10 (tangence Sharpe identique à son génétique), mesure échantillonnage vs QP, plafond de risque SOCP. Copie pédagogique déclarée d'App-10.
 
+### Autour de 10
+
+- **Service web de Search-10** (pli 0 v2, [#26511](https://github.com/jsboige/CoursIA/issues/26511)) — Le carnet de cours devient cours + TP + **service web** : le cœur d'exécution vit dans [`automata_core.py`](automata_core.py) (construction, validation, parcours, opérations — tout délégué à `automata-lib`, jamais réimplémenté) et sert deux frontends : le service FastAPI [`automata_service.py`](automata_service.py) (`POST /automata/run`, contrat `ok`/`invalid`/`error` ↔ 200/422/502) et une cellule d'endpoint Kernel Gateway dans le carnet lui-même. Le DFA pair de « a » de la section 2.3 rejoué en JSON par le cœur du service valide la sérialisation de bout en bout. Tests du cœur **et** du transport TCP réel dans [`test_automata_core.py`](test_automata_core.py) (18 tests, câblés dans la CI via `search-automata-tests.yml`), dépendances dans [`requirements-automata.txt`](requirements-automata.txt).
+
 ### Autour de 11
 
 - **[11b Metaheuristiques-Deep](Search-11b-Metaheuristiques-Deep.ipynb)** (4 volets .NET : [T2 PSO](Search-11b-Metaheuristiques-Deep-Part2.ipynb), [T3 ABC](Search-11b-Metaheuristiques-Deep-Part3.ipynb), [T4 Benchmark](Search-11b-Metaheuristiques-Deep-Part4.ipynb)) — **Déclinaison deep-dive** : un algorithme from-scratch approfondi par tranche (recuit T1, PSO T2, ABC T3, benchmark capstone T4). Complète le jumeau 11 (.NET) par un traitement détaillé algorithme par algorithme.
@@ -102,7 +107,7 @@ Le fil relaxation / arrondi / convexité, cinq accrétions de Search-9 :
 
 ### Autour de 12
 
-- **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (19/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 24 vs 75 expansions). Suppose Search-3.
+- **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (23/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 23 vs 75 expansions). Suppose Search-3.
 
 ## Progression
 
@@ -140,6 +145,7 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | `deap` | Search-5 (Genetic Algorithms) |
 | `mealpy` | Search-11 (Métaheuristiques) |
 | `z3-solver` | Search-10 (Symbolic Automata), Search-11c (SMT) |
+| [`requirements-automata.txt`](requirements-automata.txt) | Search-10, service web pli 0 v2 : `automata-lib` (cœur), `fastapi` + `uvicorn` (service `POST /automata/run`), `httpx` (tests loopback) |
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
 | `cvxpy` | Search-09b (relaxation SDP, solveur CLARABEL embarqué), Search-09f (QP Markowitz et SOCP, même solveur CLARABEL) |
 | Kernel `lean4-wsl` | Search-09e : kernel Jupyter Lean 4 + miroir local du lake [`discrepancy_lean`](../discrepancy_lean/README.md) (Mathlib 4 via les packages du dépôt) — cf. [`docs/reference/wsl-kernels-detail.md`](../../../docs/reference/wsl-kernels-detail.md) |
@@ -155,9 +161,17 @@ Le notebook [Search-2c-QuikGraph](Search-02c-QuikGraph.ipynb) ferme la boucle c�
 
 La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
 
+### Descente sous budget : deux langages
+
+[Python](Search-11d-Descente-Sous-Budget.ipynb) et [C#](Search-11d-Descente-Sous-Budget-CSharp.ipynb) confrontent descente à un flip, borne LP et optimum exact ; les générateurs aléatoires diffèrent, mais les budgets sont identiques. Un arrêt sur budget ne certifie pas un blocage.
+
 ## Ponts vers les autres séries
 
 Cette partie irrigue le reste du dépôt : les Dancing Links de Search-8 sont à l'œuvre dans la série [Sudoku](../../Sudoku/README.md), Minimax et MCTS (Search-6/7) se prolongent dans [GameTheory](../../GameTheory/README.md) avec OpenSpiel puis dans [RL](../../RL/README.md) côté politiques apprises, et les prédicats Z3 de Search-10 ouvrent sur [SymbolicAI](../../SymbolicAI/README.md).
+
+### Composer les regards en Python et C#
+
+Le carnet [Python](Search-12a-Composer-Regards.ipynb) et son [jumeau C#](Search-12a-Composer-Regards-CSharp.ipynb) calculent les distances arrière sur les arcs inversés, comparent les guides et conservent le même terrain déterministe.
 
 ## Références
 
@@ -172,6 +186,10 @@ Couverture par notebook des sources fondatrices mobilisées dans cette partie :
 | Search-8 (DancingLinks) | Knuth, D. E. (2000) — « Dancing Links », dans *Millennial Perspectives in Computer Science* (Springer). |
 | Search-09e (conjecture de Komlós) | Matoušek, J. (1999) — *Geometric Discrepancy: An Illustrated Guide*, Springer. Contexte classique de la conjecture de Komlós (disc ≤ C pour colonnes unitaires) ; les énoncés `KomlosConjecture` / `BansalJiangLargeDegree` / `KomlosBansalJiangWeak` formalisés dans [`discrepancy_lean/Komlos.lean`](../discrepancy_lean/Discrepancy/Komlos.lean) suivent les régimes de Bansal & Jiang (2025, arXiv:2508.03961 — cf. Search-09c). |
 | Search-11 (Metaheuristics) | Kennedy, J., & Eberhart, R. (1995) — « Particle Swarm Optimization », *Proc. IEEE Int. Conf. on Neural Networks*. Origine du PSO. |
+
+### Traverser les murs en Python et C#
+
+[Python](Search-13a-Traverser-Murs-Certifies.ipynb) et [C#](Search-13a-Traverser-Murs-Certifies-CSharp.ipynb) comparent chemin minimal, épaisseur, coupe de sommets et audit de potentiels sur le pavage hexagonal ; trois exemples guidés de Tristan Dhersin prolongent les mesures.
 
 ## FAQ
 
@@ -221,3 +239,7 @@ Le véritable enseignement, au-delà du catalogue d'algorithmes, est un **réfle
 ### Le fil rouge
 
 La recherche en IA propose un changement de regard sur la résolution de problèmes : ne plus voir chaque algorithme comme une recette à appliquer, mais comprendre qu'ils sont tous des **négociations d'un même compromis fondamental** — entre la garantie de trouver l'optimal et le coût pour l'atteindre, entre explorer l'inconnu et exploiter l'acquis, entre la complétude et la mémoire disponible. BFS garantit l'optimal mais explose en mémoire ; DFS file droit mais peut se perdre ; A* négocie les deux via une heuristique dont l'honnêteté (l'admissibilité) conditionne la justesse du résultat ; le recuit simulé accepte de remonter la pente pour s'échapper d'un optimum local ; MCTS remplace l'expertise par la statistique. Comprendre la recherche, c'est comprendre qu'il n'existe pas de « bon » algorithme dans l'absolu, mais une famille de stratégies dont le choix dépend du compromis qu'on est prêt à accepter — et que ce compromis, loin d'être une limitation, est précisément ce qui rend la recherche applicable à tout problème formalisable en espace d'états.
+
+## B&B et borne LP : versions Python et C#
+
+[Search-12 en Python](Search-12-BranchAndBound-Borne-LP-Python.ipynb) et [en C#](Search-12-BranchAndBound-Borne-LP-CSharp.ipynb) comparent DP, branch-and-bound et MILP sur le sac à dos. Le juge est HiGHS côté Python et SCIP via Google.OrTools côté C# ; les durées et les générateurs aléatoires diffèrent.

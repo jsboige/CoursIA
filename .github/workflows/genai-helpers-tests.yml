@@ -57,12 +57,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: genai-helpers-tests-${{ github.ref }}
+  group: genai-helpers-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   genai-helpers-tests:
     name: GenAI helpers pytest (138 collected)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
     # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
     # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
