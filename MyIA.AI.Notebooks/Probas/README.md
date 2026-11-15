@@ -2,8 +2,6 @@
 pagetitle: "Probas - Programmation Probabiliste"
 ---
 
-# Probas - Programmation Probabiliste
-
 <!-- CATALOG-STATUS
 series: Probas
 pedagogical_count: 93

@@ -2,8 +2,6 @@
 pagetitle: "QuantConnect AI Trading - Série Éducative CoursIA"
 ---
 
-# QuantConnect AI Trading - Série Éducative CoursIA
-
 <!-- CATALOG-STATUS
 series: QuantConnect
 pedagogical_count: 124
