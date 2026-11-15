@@ -1,0 +1,2564 @@
+[
+  {
+    "file": "MyIA.AI.Notebooks\\CaseStudies\\Diagnostic-Medical\\solution\\Diagnostic-Medical.ipynb",
+    "total_cells": 44,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Configuration du notebook | CONFIG = { |     'version': '2.0.0', |     'auteur': 'EPF IA Biomédicale', |     'date': '2025-11-04', |     '"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\CaseStudies\\Diagnostic-Medical\\student\\Diagnostic-Medical.ipynb",
+    "total_cells": 35,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Configuration du notebook | CONFIG = { |     'version': '2.0.0', |     'auteur': 'EPF IA Biomédicale', |     'date': '2025-11-04', |     '"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\CaseStudies\\SmartGrid-Energy\\solution\\SmartGrid-Energy.ipynb",
+    "total_cells": 25,
+    "code_cells": 8,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation des dependances (solveurs des Parties 1-4) | # %pip install ortools numpy scipy  # decommenter pour execution complete |  | f"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\CaseStudies\\SmartGrid-Energy\\student\\SmartGrid-Energy.ipynb",
+    "total_cells": 24,
+    "code_cells": 8,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation des dependances (solveurs des Parties 1-4 ; a completer par l etudiant) | # %pip install ortools numpy scipy  # decommenter p"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-01-Setup-Python.ipynb",
+    "total_cells": 69,
+    "code_cells": 22,
+    "occurrences": [
+      {
+        "cell_index": 11,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification de Nashpy | try: |     import nashpy as nash |     print(f\"Nashpy version: {nash.__version__}\") |     NASHPY_OK = True | exce"
+      },
+      {
+        "cell_index": 17,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation d'OpenSpiel selon la plateforme | def install_openspiel(): |     \"\"\"Tente d'installer OpenSpiel selon la plateforme.\"\"\" |    "
+      },
+      {
+        "cell_index": 25,
+        "classification": "NON_BASH",
+        "source_preview": "# Resume de l'environnement | print(\"=\" * 60) | print(\"RESUME DE L'ENVIRONNEMENT\") | print(\"=\" * 60) | print(f\"Plateforme:      {OS_NAME}\") "
+      },
+      {
+        "cell_index": 28,
+        "classification": "NON_BASH",
+        "source_preview": "# Configuration automatique du kernel WSL pour OpenSpiel (Windows uniquement) | #  | # IMPORTANT: Ce code cree un wrapper bash qui gere la c"
+      },
+      {
+        "cell_index": 68,
+        "classification": "NON_BASH",
+        "source_preview": "# Aide-memoire : commande d'installation OpenSpiel selon la plateforme detectee. | # Cellule informative : aucun changement de systeme, affi"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-02-NormalForm-CSharp.ipynb",
+    "total_cells": 30,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 21,
+        "classification": "NON_BASH",
+        "source_preview": "// === Pont nashpy CLI : l'oracle SOTA du twin Python valide le from-scratch (BCL .NET) === | // Parite lib-vs-lib (issue #10382) : le twin "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-04-NashEquilibrium-CSharp.ipynb",
+    "total_cells": 39,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 30,
+        "classification": "NON_BASH",
+        "source_preview": "// === Pont nashpy CLI : le moteur SOTA du twin Python valide le SupportEnumeration from-scratch === | // Parite lib-vs-lib (issue #10382) :"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-06-EvolutionTrust-CSharp.ipynb",
+    "total_cells": 45,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 44,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.1.0\" | #load \"../Config/PythonNetLoader.cs\" | using System; | using Python.Runtime; |  | // Pont .NET -> CPython 3.10"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-07-ExtensiveForm-CSharp.ipynb",
+    "total_cells": 32,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 30,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.0.5\" | #load \"../Config/PythonNetLoader.cs\" | using System; | using Python.Runtime; |  | // Pont .NET -> CPython 3.11"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-07-ExtensiveForm-Python.ipynb",
+    "total_cells": 36,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 20,
+        "classification": "NON_BASH",
+        "source_preview": "if HAS_OPENSPIEL: |     # Kuhn Poker - jeu classique a information imparfaite |     kuhn = pyspiel.load_game(\"kuhn_poker\") |      |     prin"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb",
+    "total_cells": 30,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 29,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.0.5\" | #load \"../Config/PythonNetLoader.cs\" | using System; | using Python.Runtime; |  | // Pont .NET -> CPython -> p"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-13-ImperfectInfo-CFR-Python.ipynb",
+    "total_cells": 65,
+    "code_cells": 26,
+    "occurrences": [
+      {
+        "cell_index": 27,
+        "classification": "NON_BASH",
+        "source_preview": "if OPENSPIEL_AVAILABLE: |     from open_spiel.python.algorithms import cfr as openspiel_cfr |     from open_spiel.python.algorithms import e"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-16d-Echange-de-Reins-Lean-Python.ipynb",
+    "total_cells": 25,
+    "code_cells": 8,
+    "occurrences": [
+      {
+        "cell_index": 11,
+        "classification": "NON_BASH",
+        "source_preview": "# Code 4.1 — Arbitrage cardinalite vs equite via pulp. |  | try: |     import pulp |     HAS_PULP = True | except ImportError: |     HAS_PUL"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\GameTheory-17-MultiAgent-RL-CSharp.ipynb",
+    "total_cells": 27,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 25,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.0.5\" | #load \"../Config/PythonNetLoader.cs\" | using System; | using System.Linq; | using System.Collections.Generic; "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\SocialChoice\\01-Arrow-Impossibility-Theorem-Csharp.ipynb",
+    "total_cells": 45,
+    "code_cells": 18,
+    "occurrences": [
+      {
+        "cell_index": 33,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.1.0\" | #load \"../../Config/PythonNetLoader.cs\" | using Python.Runtime; |  | // === Pont industriel : pysat via Python"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GameTheory\\SocialChoice\\04-Computational-Aggregation-SAT-Z3-Csharp.ipynb",
+    "total_cells": 42,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 37,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.1.0\" | #load \"../../Config/PythonNetLoader.cs\" | using Python.Runtime; |  | // === Pont industriel : PySAT via Python"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\01-Foundation\\01-5-Kokoro-TTS-Local.ipynb",
+    "total_cells": 71,
+    "code_cells": 28,
+    "occurrences": [
+      {
+        "cell_index": 16,
+        "classification": "NON_BASH",
+        "source_preview": "# Configuration forcée de use_onnx | use_onnx = True |  | # Chargement du modele Kokoro | print(\"CHARGEMENT DU MODELE KOKORO\") | print(\"=\" *"
+      },
+      {
+        "cell_index": 70,
+        "classification": "NON_BASH",
+        "source_preview": "# Export du rendu : notebook désigné explicitement + résultats ; fonctionne dans Colab et en local | # Avant d'exécuter : enregistrer le not"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\02-Advanced\\02-1-Chatterbox-TTS.ipynb",
+    "total_cells": 34,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 10,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement du modele Chatterbox | print(\"CHARGEMENT DU MODELE CHATTERBOX\") | print(\"=\" * 45) |  | chatterbox_loaded = False |  | try: |   "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\02-Advanced\\02-2-XTTS-Voice-Cloning.ipynb",
+    "total_cells": 40,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 11,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement du modele XTTS v2 | print(\"CHARGEMENT DU MODELE XTTS V2\") | print(\"=\" * 45) |  | xtts_loaded = False |  | try: |     # Compatib"
+      },
+      {
+        "cell_index": 28,
+        "classification": "NON_BASH",
+        "source_preview": "# Analyse de similarite vocale | print(\"ANALYSE DE SIMILARITE VOCALE\") | print(\"=\" * 45) |  | if xtts_loaded and generate_audio and analyze_"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\02-Advanced\\02-3-MusicGen-Generation.ipynb",
+    "total_cells": 44,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 12,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement du modele MusicGen | print(\"CHARGEMENT DU MODELE MUSICGEN\") | print(\"=\" * 45) |  | # Filtre stdout/stderr pour neutraliser la t"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\02-Advanced\\02-4-Demucs-Source-Separation.ipynb",
+    "total_cells": 37,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 10,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement du modele Demucs | print(\"CHARGEMENT DU MODELE DEMUCS\") | print(\"=\" * 45) |  | demucs_loaded = False |  | try: |     from demuc"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\02-Advanced\\02-6-MIDI-Generation.ipynb",
+    "total_cells": 44,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 11,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation et telechargement du modele | print(\"INSTALLATION ET CHARGEMENT\") | print(\"=\" * 45) |  | # Verifier les dependances | missing"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\02-Advanced\\02-7-YuE2-Song-Generation.ipynb",
+    "total_cells": 39,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 31,
+        "classification": "NON_BASH",
+        "source_preview": "# Comparaison : MusicGen via audiocraft (pattern 02-3) + tableau honnete | musicgen_reponse = None | try: |     from audiocraft.models impor"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\02-Advanced\\02-8-Expressive-TTS.ipynb",
+    "total_cells": 53,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 13,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances et du service HTTP Fish S2 Pro | print(\"VERIFICATION DES DEPENDANCES\") | print(\"=\" * 45) |  | fish_http_ok = "
+      },
+      {
+        "cell_index": 29,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement et test de Dia TTS | print(\"DIA TTS - ALTERNATIVE LEGERE\") | print(\"=\" * 45) |  | dia_model = None | dia_results = {} |  | if t"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\02-Advanced\\02-9-AceStep-Music-Generation.ipynb",
+    "total_cells": 35,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 7,
+        "classification": "NON_BASH",
+        "source_preview": "# Setup environnement et imports | import warnings | # Bruit de warnings tiers (prefixes = chemins site-packages) : filtrage cible | warning"
+      },
+      {
+        "cell_index": 13,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement du modele ACE-Step | print(\"CHARGEMENT DU MODELE ACE-STEP v1.5\") | print(\"=\" * 50) |  | pipeline = None |  | if acestep_loaded:"
+      },
+      {
+        "cell_index": 16,
+        "classification": "NON_BASH",
+        "source_preview": "# Generation text-to-song : 3 exemples de styles differents | print(\"GENERATION TEXT-TO-SONG\") | print(\"=\" * 50) |  | song_examples = [ |   "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\03-Orchestration\\03-1-Multi-Model-Audio-Comparison.ipynb",
+    "total_cells": 46,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 15,
+        "classification": "NON_BASH",
+        "source_preview": "# Benchmark STT | print(\"BENCHMARK STT (Speech-to-Text)\") | print(\"=\" * 45) |  | if run_stt_benchmark and stt_test_path.exists(): |     audi"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\03-Orchestration\\03-3-Realtime-Voice-API.ipynb",
+    "total_cells": 31,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement robuste de la configuration .env (Pattern A - Papermill-safe) | from dotenv import load_dotenv | import os | from pathlib impor"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\04-Applications\\04-3-Music-Composition-Workflow.ipynb",
+    "total_cells": 47,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement robuste de la configuration .env (Pattern A - Papermill-safe) | from dotenv import load_dotenv | import os | from pathlib impor"
+      },
+      {
+        "cell_index": 10,
+        "classification": "NON_BASH",
+        "source_preview": "# Generation musicale avec MusicGen | print(\"GENERATION MUSICALE - MUSICGEN\") | print(\"=\" * 50) |  | generated_tracks = {} |  | # Descriptio"
+      },
+      {
+        "cell_index": 13,
+        "classification": "NON_BASH",
+        "source_preview": "# Separation de stems avec Demucs | print(\"SEPARATION DE STEMS - DEMUCS\") | print(\"=\" * 50) |  | separated_stems = {} |  | if generate_audio"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\04-Applications\\04-4-Audio-Video-Sync.ipynb",
+    "total_cells": 44,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 8,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement robuste de la configuration .env (Pattern A - Papermill-safe) | from dotenv import load_dotenv | import os | from pathlib impor"
+      },
+      {
+        "cell_index": 11,
+        "classification": "NON_BASH",
+        "source_preview": "# Creation d'une video de test et extraction audio | print(\"CREATION VIDEO DE TEST ET EXTRACTION AUDIO\") | print(\"=\" * 50) |  | test_video_p"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Audio\\04-Applications\\04-5-LiveCoding-LLM-Music.ipynb",
+    "total_cells": 48,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 8,
+        "classification": "NON_BASH",
+        "source_preview": "# Configuration OpenAI | openai_available = False | try: |     import openai |     api_key = os.environ.get(\"OPENAI_API_KEY\") |     base_url"
+      },
+      {
+        "cell_index": 10,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification Supriya (dependance optionnelle) | supriya_available = False | if test_supriya: |     try: |         import supriya |        "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\FineTuning\\FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb",
+    "total_cells": 25,
+    "code_cells": 9,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "import copy | import time | import os |  | import numpy as np | import torch | import torch.nn as nn | import torch.nn.functional as F | fro"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\01-Foundation\\01-2-GPT-5-Image-Generation.ipynb",
+    "total_cells": 38,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\01-Foundation\\01-2-GPT-5-Image-Generation_en.ipynb",
+    "total_cells": 38,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\01-Foundation\\01-3-Basic-Image-Operations.ipynb",
+    "total_cells": 49,
+    "code_cells": 18,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\01-Foundation\\01-4-Forge-SD-XL-Turbo.ipynb",
+    "total_cells": 28,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\01-Foundation\\01-5-Qwen-Image-Edit.ipynb",
+    "total_cells": 33,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\01-Foundation\\01-5b-Qwen-Image-Edit-2509.ipynb",
+    "total_cells": 42,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\01-Foundation\\01-5c-Qwen-Image-21-Workflows.ipynb",
+    "total_cells": 26,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Dependances, configuration, authentification | import importlib.util |  | for module in (\"PIL\", \"requests\", \"matplotlib\", \"dotenv\"): |    "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\02-Advanced\\02-2-FLUX-1-Advanced-Generation.ipynb",
+    "total_cells": 43,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      },
+      {
+        "cell_index": 7,
+        "classification": "NON_BASH",
+        "source_preview": "# ============================================================================= | # 2. DÉTECTION GPU ET CHARGEMENT DIFFUSERS (LOCAL) | # ==="
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\02-Advanced\\02-3-Stable-Diffusion-3-5.ipynb",
+    "total_cells": 37,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\02-Advanced\\02-4-Z-Image-Lumina2.ipynb",
+    "total_cells": 16,
+    "code_cells": 7,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\03-Orchestration\\03-1-Multi-Model-Comparison.ipynb",
+    "total_cells": 17,
+    "code_cells": 7,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\03-Orchestration\\03-2-Workflow-Orchestration.ipynb",
+    "total_cells": 28,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\03-Orchestration\\03-3-Performance-Optimization.ipynb",
+    "total_cells": 67,
+    "code_cells": 29,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('torch') |     _DEPS_"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\03-Orchestration\\03-4-VLM-Character-Design-Workflow.ipynb",
+    "total_cells": 26,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | for mod in ('PIL', 'requests', 'matplotlib', 'numpy', 'd"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\04-Applications\\04-1-Educational-Content-Generation.ipynb",
+    "total_cells": 28,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\04-Applications\\04-2-Creative-Workflows.ipynb",
+    "total_cells": 23,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\04-Applications\\04-3-Production-Integration.ipynb",
+    "total_cells": 27,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\04-Applications\\04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb",
+    "total_cells": 24,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\examples\\history-geography.ipynb",
+    "total_cells": 25,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances externes | import importlib |  | _DEPS_STATUS = {} | try: |     importlib.import_module('PIL') |     _DEPS_ST"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\examples\\literature-visual.ipynb",
+    "total_cells": 25,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances (import guards) | try: |     import requests |     requests_AVAILABLE = True | except ImportError: |     requ"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Image\\examples\\science-diagrams.ipynb",
+    "total_cells": 33,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances (import guards) | try: |     import requests |     requests_AVAILABLE = True | except ImportError: |     requ"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\PostTraining\\PT_02_sft_baseline.ipynb",
+    "total_cells": 35,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import torch |     print(f\"torch : {torch.__version__}\") |     if torch.cuda.is_available(): |         gpu = torch.cuda.get_devic"
+      },
+      {
+        "cell_index": 8,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from datasets import load_dataset |     DATASETS_AVAILABLE = True |     print(\"datasets : importe\") | except ImportError: |     D"
+      },
+      {
+        "cell_index": 15,
+        "classification": "NON_BASH",
+        "source_preview": "MODEL_NAME = \"Qwen/Qwen3.5-0.8B\"  # Qwen3.5 : petit modele SOTA, vision-langage unifie (migration #10289) | try: |     from transformers imp"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\PostTraining\\PT_07_rewardspy_reward_hacking.ipynb",
+    "total_cells": 19,
+    "code_cells": 7,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# rewardspy n'est PAS sur PyPI — installation depuis le dépôt git (0.1.0, ~42 KB, deps légères : textual) | # Deja installe dans l'env cours"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\RAG-et-Memoire-Semantique\\01-Hands-On-Grounding.ipynb",
+    "total_cells": 33,
+    "code_cells": 10,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Décommentez pour installer (première exécution) : | # %pip install -q \"qdrant-client[fastembed]>=1.7\" |  | from qdrant_client import Qdran"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\RAG-et-Memoire-Semantique\\09-KernelMemory-Multimodal.ipynb",
+    "total_cells": 36,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# --- 2a. PDF reel du depot (meme source que le 07) ------------------- | PDF_CANDIDATES = [ |     # Layout depuis #20152 : les assets du de"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\SemanticKernel\\10-SemanticKernel-NotebookMaker.ipynb",
+    "total_cells": 30,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 13,
+        "classification": "NON_BASH",
+        "source_preview": "# --- Hygiene helpers (issue #6443, Stop & Repair type C) --- | # Module-level redaction of PII-lite machine paths from any text before it r"
+      },
+      {
+        "cell_index": 25,
+        "classification": "NON_BASH",
+        "source_preview": "# Cellule Code : Création des 3 agents et configuration avec prise en compte du .env | # ---------------------------------------------------"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\SemanticKernel\\10a-SemanticKernel-NotebookMaker-batch.ipynb",
+    "total_cells": 32,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances (import guards) | try: |     from semantic_kernel import Kernel |     semantic_kernel_AVAILABLE = True | exce"
+      },
+      {
+        "cell_index": 27,
+        "classification": "NON_BASH",
+        "source_preview": "# Cellule Code : Création des 3 agents et configuration avec prise en compte du .env | # ---------------------------------------------------"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\SemanticKernel\\10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb",
+    "total_cells": 38,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances (import guards) | try: |     from semantic_kernel import Kernel |     semantic_kernel_AVAILABLE = True | exce"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\SemanticKernel\\Créateur de mail personnalisé.ipynb",
+    "total_cells": 49,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances (import guards) | try: |     import semantic_kernel as sk |     semantic_kernel_AVAILABLE = True | except Imp"
+      },
+      {
+        "cell_index": 38,
+        "classification": "CONDITIONAL_TRY",
+        "source_preview": "# Cell 6: Orchestration et Workflow |  | from semantic_kernel.agents import AgentGroupChat | from semantic_kernel.agents.strategies import S"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\SemanticKernel\\fort-boyard-python.ipynb",
+    "total_cells": 25,
+    "code_cells": 10,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances (import guards) | try: |     from semantic_kernel import Kernel |     semantic_kernel_AVAILABLE = True | exce"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\SemanticKernel\\Workbook-Template-Python.ipynb",
+    "total_cells": 17,
+    "code_cells": 7,
+    "occurrences": [
+      {
+        "cell_index": 7,
+        "classification": "NON_BASH",
+        "source_preview": "# Cell 1 | # (Exemple : !pip install semantic-kernel)"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\01_OpenAI_Intro.ipynb",
+    "total_cells": 40,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 37,
+        "classification": "NON_BASH",
+        "source_preview": "# ============================ | # Cellule : Exemple Responses API | # ============================ |  | # Exemple avec la Responses API (no"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\02_PromptEngineering.ipynb",
+    "total_cells": 68,
+    "code_cells": 25,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances (import guards) | try: |     from openai import OpenAI |     openai_AVAILABLE = True | except ImportError: | "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\03_Structured_Outputs.ipynb",
+    "total_cells": 64,
+    "code_cells": 22,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "CONDITIONAL_TRY",
+        "source_preview": "# Verification des dependances (import guards) | try: |     from openai import OpenAI |     openai_AVAILABLE = True | except ImportError: | "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\04_Function_Calling.ipynb",
+    "total_cells": 64,
+    "code_cells": 25,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "CONDITIONAL_TRY",
+        "source_preview": "# Verification des dependances (import guards) | try: |     from openai import OpenAI |     openai_AVAILABLE = True | except ImportError: | "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\06_PDF_Web_Search.ipynb",
+    "total_cells": 40,
+    "code_cells": 18,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "# Installation des dépendances | from pathlib import Path | %pip install openai python-dotenv reportlab pillow -q |  | import os | import ba"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\07_Code_Interpreter.ipynb",
+    "total_cells": 52,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "%pip install openai python-dotenv pandas matplotlib scipy -q --disable-pip-version-check | from pathlib import Path | import os | from opena"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\08_Reasoning_Models.ipynb",
+    "total_cells": 36,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "from pathlib import Path | %pip install openai python-dotenv --quiet |  | import os | import time | from openai import OpenAI | from dotenv "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\09_Production_Patterns.ipynb",
+    "total_cells": 49,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "from pathlib import Path | %pip install -q openai python-dotenv tenacity |  | import os | import time | from openai import OpenAI | from dot"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\09b_Prompt_Security_RedTeam.ipynb",
+    "total_cells": 40,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "from pathlib import Path | %pip install -q openai python-dotenv tenacity |  | import os | import re | import json | import time | from pathl"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\10_LocalLlama.ipynb",
+    "total_cells": 66,
+    "code_cells": 23,
+    "occurrences": [
+      {
+        "cell_index": 9,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification des dependances (import guards) | try: |     import torch |     torch_AVAILABLE = True | except ImportError: |     torch_AVAI"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\11_Quantization.ipynb",
+    "total_cells": 47,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 21,
+        "classification": "NON_BASH",
+        "source_preview": "# Exemple de script de quantization GPTQ avec llmcompressor | # Adapte des scripts de production (workspace vLLM) | # | # NOTE: Ce code est "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\12_Test_Time_Scaling.ipynb",
+    "total_cells": 35,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "# Installation des dependances | %pip install -q --disable-pip-version-check openai python-dotenv |  | import os | from pathlib import Path "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\13_Agentic_Orchestration.ipynb",
+    "total_cells": 40,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "# Installation des dependances (identique NB-12) | %pip install -q openai python-dotenv |  | import os, re, json | from pathlib import Path "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\14_Persistent_Memory.ipynb",
+    "total_cells": 28,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "%pip install -q openai python-dotenv numpy |  | import os, re, json | from pathlib import Path | from collections import Counter | from open"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\15_Tree_of_Thoughts_Search.ipynb",
+    "total_cells": 21,
+    "code_cells": 9,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "%pip install -q openai python-dotenv |  | import os, re, json, itertools | from pathlib import Path | from openai import OpenAI | from doten"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\16_Scaling_Test_Time_Compute.ipynb",
+    "total_cells": 26,
+    "code_cells": 10,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "%pip install -q openai python-dotenv matplotlib numpy |  | import os, re, math, time | from pathlib import Path | from openai import OpenAI "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\17_Native_Reasoning_vs_Scaling.ipynb",
+    "total_cells": 31,
+    "code_cells": 10,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "%pip install -q openai python-dotenv matplotlib numpy |  | import os, re, math, time | from pathlib import Path | from openai import OpenAI "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Texte\\19_OWUI_Orchestration.ipynb",
+    "total_cells": 28,
+    "code_cells": 8,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "%pip install -q python-dateutil openai python-dotenv |  | import os | from pathlib import Path | from datetime import datetime, timezone, ti"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\01-Foundation\\01-1-Video-Operations-Basics.ipynb",
+    "total_cells": 41,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 7,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification des dependances | # Chargement variables d'environnement | from dotenv import load_dotenv |  | # Recherche"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\01-Foundation\\01-5-AnimateDiff-Introduction.ipynb",
+    "total_cells": 31,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 7,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification GPU et dependances | print(\"\\n--- VERIFICATION GPU ---\") | print(\"=\" * 40) | import torch | import pandas as pd | device = \"c"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\02-Advanced\\02-1-HunyuanVideo-Generation.ipynb",
+    "total_cells": 40,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification de l'environnement | from pathlib import Path | from dotenv import load_dotenv | import os | import time |"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\02-Advanced\\02-2-LTX-Video-Lightweight.ipynb",
+    "total_cells": 36,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification GPU | # Chargement variables d'environnement | from dotenv import load_dotenv |  | # Verification GPU | pr"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\02-Advanced\\02-3-Wan-Video-Generation.ipynb",
+    "total_cells": 34,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification de l'environnement | # Chargement robuste de la configuration .env | from dotenv import load_dotenv | impo"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\02-Advanced\\02-4-SVD-Image-to-Video.ipynb",
+    "total_cells": 32,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification GPU | # Chargement robuste de la configuration .env | from dotenv import load_dotenv | import os | # Reche"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\02-Advanced\\02-5-LTX2-Audiovisual.ipynb",
+    "total_cells": 24,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification GPU + dependances LTX-2 | print(\"\\n--- VERIFICATION GPU ---\") | print(\"=\" * 40) |  | # L'init CUDA peut de"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\03-Orchestration\\03-3-ComfyUI-Video-Workflows.ipynb",
+    "total_cells": 28,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 12,
+        "classification": "NON_BASH",
+        "source_preview": "# Comparaison diffusers vs ComfyUI | print(\"\\n--- COMPARAISON DIFFUSERS VS COMFYUI ---\") | print(\"=\" * 50) |  | comparison_data = { |     \"C"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\04-Applications\\04-1-Educational-Video-Generation.ipynb",
+    "total_cells": 33,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification des dependances | from dotenv import load_dotenv | import os |  | # Determine GenAI root directory | GENAI"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\04-Applications\\04-2-Creative-Video-Workflows.ipynb",
+    "total_cells": 30,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification des dependances | from dotenv import load_dotenv | import os |  | # Determine GenAI root directory | GENAI"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\04-Applications\\04-3-Sora-API-Cloud-Video.ipynb",
+    "total_cells": 31,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification des dependances | from dotenv import load_dotenv | import os |  | # c.10315 : reutiliser GENAI_ROOT deja r"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\04-Applications\\04-4-Production-Video-Pipeline.ipynb",
+    "total_cells": 28,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Chargement .env et verification des dependances | from dotenv import load_dotenv | import os |  | # Determine GenAI root directory | GENAI"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\GenAI\\Video\\04-Applications\\04-5-MiniMax-H3-Cloud-Video.ipynb",
+    "total_cells": 18,
+    "code_cells": 9,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Setup environnement et imports | import os | import json | import time | from pathlib import Path | from datetime import datetime, timezon"
+      },
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Définition des scénarios + chargeur idempotent | # Deux scénarios omni-modaux qui exercent la capacité DISTINCTIVE du service | # (HD/2K +"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\IIT\\ICT-Series\\ICT-Dissociation-SaillancePregnance.ipynb",
+    "total_cells": 36,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports : le package ict/ est installe via `pip install -e .` depuis ICT-Series/. | import numpy as np | import sys, os | sys.path.insert("
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\ML\\DataScienceWithAgents\\02-ML-Cours\\2.6-Clustering-KMeans-PCA.ipynb",
+    "total_cells": 66,
+    "code_cells": 26,
+    "occurrences": [
+      {
+        "cell_index": 39,
+        "classification": "NON_BASH",
+        "source_preview": "# UMAP sur les memes digits, compare au t-SNE | try: |     import umap |     UMAP_DISPONIBLE = True | except ImportError: |     UMAP_DISPONI"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\ML\\DataScienceWithAgents\\03-DeepLearning\\3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb",
+    "total_cells": 18,
+    "code_cells": 8,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# %pip install -q scikit-learn numpy |  | import numpy as np | from sklearn.linear_model import SGDClassifier | from sklearn.metrics import "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\ML\\DataScienceWithAgents\\Track2-GoogleADK\\Day4-Foundations\\Lab8-ADK-Introduction.ipynb",
+    "total_cells": 32,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation des dependances (decommenter si necessaire) | # !pip install google-adk google-genai litellm pydantic-settings"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\DecisionTheory\\DecPyMC\\DecPyMC-5-Value-Information.ipynb",
+    "total_cells": 84,
+    "code_cells": 30,
+    "occurrences": [
+      {
+        "cell_index": 52,
+        "classification": "NON_BASH",
+        "source_preview": "# PyMC : propager un prior Beta sur P(petrole) dans le calcul d'EVPI | # Quand P(petrole) est incertain (meta-prior), l'EVPI devient une dis"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\PyMC\\PyMC-01-Setup.ipynb",
+    "total_cells": 31,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import numpy as np |     NUMPY_AVAILABLE = True | except ImportError: |     NUMPY_AVAILABLE = False |  | try: |     import matplo"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\PyMC\\PyMC-02-Gaussian-Mixtures.ipynb",
+    "total_cells": 44,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "import warnings | # arviz (FutureWarning de refactor) et pytensor (\"could not link BLAS\", advisory de perf, pas de correctness) | # leakent "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\PyMC\\PyMC-03-Factor-Graphs.ipynb",
+    "total_cells": 21,
+    "code_cells": 9,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import numpy as np |     NUMPY_AVAILABLE = True | except ImportError: |     NUMPY_AVAILABLE = False |  | try: |     import pymc a"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\PyMC\\PyMC-04-Bayesian-Networks.ipynb",
+    "total_cells": 48,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Filtres AVANT les imports tierces : import pymc declenche deja le FutureWarning | # d'arviz (refactor futur) et rich (UserWarning ipywidge"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\PyMC\\PyMC-07-Skills-IRT.ipynb",
+    "total_cells": 34,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "import warnings | # arviz (FutureWarning de refactor) et pytensor (\"could not link BLAS\", advisory de perf, pas de correctness) | # leakent "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\PyMC\\PyMC-08-TrueSkill.ipynb",
+    "total_cells": 44,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import numpy as np |     NUMPY_AVAILABLE = True | except ImportError: |     NUMPY_AVAILABLE = False |  | try: |     import pymc a"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\PyMC\\PyMC-09-Classification.ipynb",
+    "total_cells": 36,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import numpy as np |     NUMPY_AVAILABLE = True | except ImportError: |     NUMPY_AVAILABLE = False |  | try: |     import pymc a"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\PyMC\\PyMC-10-Model-Selection.ipynb",
+    "total_cells": 42,
+    "code_cells": 20,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "import warnings |  | # Trois familles d'avertissements Python apparaissent dans ce notebook : | #  1. arviz FutureWarning (refactor advisory"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Probas\\PyMC\\PyMC-11-Topic-Models.ipynb",
+    "total_cells": 62,
+    "code_cells": 18,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "import warnings | # arviz (FutureWarning de refactor) et pytensor (\"could not link BLAS\", advisory de perf, pas de correctness) | # leakent "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\QuantConnect\\projects\\Crypto-LSTM-Prediction\\research.ipynb",
+    "total_cells": 21,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "!pip install yfinance matplotlib scikit-learn -q"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\QuantConnect\\projects\\TFT-Crypto-Ranking\\research.ipynb",
+    "total_cells": 20,
+    "code_cells": 10,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "!pip install yfinance matplotlib scikit-learn -q"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\QuantConnect\\Python\\QC-Py-01-Setup.ipynb",
+    "total_cells": 26,
+    "code_cells": 7,
+    "occurrences": [
+      {
+        "cell_index": 12,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation LEAN CLI (à exécuter dans un terminal) | # Décommentez et exécutez si vous voulez tester |  | # !pip install lean"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\QuantConnect\\Python\\QC-Py-17-Sentiment-Analysis.ipynb",
+    "total_cells": 53,
+    "code_cells": 22,
+    "occurrences": [
+      {
+        "cell_index": 7,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation des bibliotheques de sentiment (si necessaire) | # Decommenter pour installer: | # !pip install textblob vaderSentiment |  | "
+      },
+      {
+        "cell_index": 50,
+        "classification": "NON_BASH",
+        "source_preview": "# Tableau des dependances a installer |  | print(\"=\"*70) | print(\"DEPENDANCES PYTHON A INSTALLER\") | print(\"=\"*70) |  | dependencies = [ |  "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\QuantConnect\\Python\\QC-Py-19-ML-Supervised-Classification.ipynb",
+    "total_cells": 66,
+    "code_cells": 28,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports ML | from sklearn.ensemble import RandomForestClassifier | from sklearn.model_selection import TimeSeriesSplit, cross_val_score | "
+      },
+      {
+        "cell_index": 64,
+        "classification": "NON_BASH",
+        "source_preview": "# Dependances Python |  | print(\"=\"*70) | print(\"DEPENDANCES PYTHON\") | print(\"=\"*70) |  | dependencies = [ |     { |         'package': 'sc"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\QuantConnect\\Python\\QC-Py-20-ML-Regression-Prediction.ipynb",
+    "total_cells": 94,
+    "code_cells": 35,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports necessaires | import numpy as np | import pandas as pd | import matplotlib.pyplot as plt | import seaborn as sns | from datetime i"
+      },
+      {
+        "cell_index": 36,
+        "classification": "NON_BASH",
+        "source_preview": "# XGBoost Regressor (si disponible) |  | if XGB_AVAILABLE: |     print(\"=\"*60) |     print(\"XGBOOST REGRESSOR\") |     print(\"=\"*60) |      |"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\QuantConnect\\Python\\QC-Py-24-Autoencoders-Anomaly.ipynb",
+    "total_cells": 52,
+    "code_cells": 21,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports | import numpy as np | import pandas as pd | import matplotlib.pyplot as plt | import warnings | warnings.filterwarnings('ignore')"
+      },
+      {
+        "cell_index": 29,
+        "classification": "NON_BASH",
+        "source_preview": "if HMM_AVAILABLE: |     # Préparer les features pour HMM (pas besoin de séquences, juste features par jour) |     df_clean = df.dropna() |  "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\QuantConnect\\Python\\QC-Py-26-LLM-Trading-Signals.ipynb",
+    "total_cells": 46,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports et configuration |  | import os | import json | import time | from typing import Dict, List, Optional, Tuple | from dataclasses im"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Applications\\CSP\\App-3-NurseScheduling.ipynb",
+    "total_cells": 59,
+    "code_cells": 25,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation si necessaire | # !pip install ortools matplotlib numpy |  | import sys | import time | import numpy as np | import matplotli"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Applications\\CSP\\App-5-Timetabling.ipynb",
+    "total_cells": 47,
+    "code_cells": 20,
+    "occurrences": [
+      {
+        "cell_index": 29,
+        "classification": "NON_BASH",
+        "source_preview": "# Execution du modele MiniZinc. | # | # Le package Python `minizinc` expose `instance.solve()` synchrone, qui echoue | # sous un environneme"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Applications\\CSP\\App-8-MiniZinc.ipynb",
+    "total_cells": 48,
+    "code_cells": 19,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports pour tout le notebook | import sys | import time | import textwrap | import subprocess | import shutil | import os | import matplo"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Applications\\Hybrid\\App-10-Portfolio.ipynb",
+    "total_cells": 57,
+    "code_cells": 24,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports et configuration | import sys | import os | import numpy as np | import matplotlib.pyplot as plt | import time |  | # Ajouter le r"
+      },
+      {
+        "cell_index": 17,
+        "classification": "NON_BASH",
+        "source_preview": "# --- Configuration de l'algorithme genetique --- |  | if not HAS_PYGAD: |     raise ImportError(\"PyGAD est requis pour cette section. Insta"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Applications\\Hybrid\\App-13-TSP-Metaheuristics.ipynb",
+    "total_cells": 61,
+    "code_cells": 22,
+    "occurrences": [
+      {
+        "cell_index": 34,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from ortools.constraint_solver import routing_enums_pb2 |     from ortools.constraint_solver import pywrapcp |      |     def ort"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Applications\\Hybrid\\App-18-HyperparameterTuning.ipynb",
+    "total_cells": 34,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 17,
+        "classification": "NON_BASH",
+        "source_preview": "# Si Optuna n'est pas installe: pip install optuna | try: |     import optuna |     optuna_available = True |     optuna.logging.set_verbosi"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Applications\\Hybrid\\App-18b-HyperparameterTuning-Python.ipynb",
+    "total_cells": 30,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 24,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import optuna |     optuna.logging.set_verbosity(optuna.logging.WARNING) |     HAS_OPTUNA = True | except ImportError: |     HAS_"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Part1-Foundations\\Search-07-MCTS-And-Beyond-CSharp.ipynb",
+    "total_cells": 45,
+    "code_cells": 17,
+    "occurrences": [
+      {
+        "cell_index": 15,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet, 3.0.5\" | #load \"../../Config/PythonNetLoader.cs\" |  | // Cellule 16 : Bridge pythonnet (.NET 10 -> CPython 3.11 -> pys"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Part1-Foundations\\Search-10-SymbolicAutomata-CSharp.ipynb",
+    "total_cells": 43,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 16,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.1.0\" | #load \"../../Config/PythonNetLoader.cs\" | using Python.Runtime; |  | // === Tranche 3 (#10382) : pont PythonNe"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Part1-Foundations\\Search-10-SymbolicAutomata.ipynb",
+    "total_cells": 81,
+    "code_cells": 24,
+    "occurrences": [
+      {
+        "cell_index": 22,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import graphviz |     HAS_GRAPHVIZ = True | except ImportError: |     HAS_GRAPHVIZ = False |     print(\"graphviz non disponible. "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Part1-Foundations\\Search-11-Metaheuristics.ipynb",
+    "total_cells": 52,
+    "code_cells": 21,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification de MEALPy | try: |     import mealpy |     print(f\"MEALPy version: {mealpy.__version__}\") |     print(f\"Nombre d'algorithmes "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Part2-CSP\\CSP-3-Advanced.ipynb",
+    "total_cells": 69,
+    "code_cells": 25,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports pour tout le notebook | import sys | import time | import numpy as np | import matplotlib.pyplot as plt | import matplotlib.patche"
+      },
+      {
+        "cell_index": 59,
+        "classification": "NON_BASH",
+        "source_preview": "# Parite lib-vs-lib : le meme moteur Choco que le jumeau C# (pychoco) | # pychoco = binding Python officiel de Choco-solver (PyPI, MIT) -- m"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Search\\Part2-CSP\\CSP-5-Optimization.ipynb",
+    "total_cells": 65,
+    "code_cells": 25,
+    "occurrences": [
+      {
+        "cell_index": 55,
+        "classification": "NON_BASH",
+        "source_preview": "# Parite lib-vs-lib : le meme moteur Choco que le jumeau C# (pychoco) | # pychoco = binding Python officiel de Choco-solver (PyPI, MIT) -- m"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-03-Genetic-Python.ipynb",
+    "total_cells": 34,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports | import numpy as np | import time | from typing import List, Tuple, Optional, Callable | import matplotlib.pyplot as plt |  | try"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-05-PSO-CSharp.ipynb",
+    "total_cells": 49,
+    "code_cells": 21,
+    "occurrences": [
+      {
+        "cell_index": 42,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.1.0\" | #load \"../Config/PythonNetLoader.cs\" | using Python.Runtime; |  | // === Pont PythonNet -> mealpy, meme moteur"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-05-PSO-Python.ipynb",
+    "total_cells": 47,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports | import numpy as np | import time | import random | from typing import List, Tuple, Optional | import matplotlib.pyplot as plt | "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-10-ORTools-Python.ipynb",
+    "total_cells": 30,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports | import time | from typing import List, Optional, Tuple |  | # Verifier l'installation | try: |     from ortools.sat.python impor"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-11-Choco-Python.ipynb",
+    "total_cells": 39,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Configuration de JPype et téléchargement de Choco | import os | from pathlib import Path | import urllib.request |  | # Drapeau global pou"
+      },
+      {
+        "cell_index": 8,
+        "classification": "NON_BASH",
+        "source_preview": "# Importer les classes Choco (API moderne 4.10+) | if CHOCO_AVAILABLE: |     try: |         from org.chocosolver.solver import Model |      "
+      },
+      {
+        "cell_index": 17,
+        "classification": "NON_BASH",
+        "source_preview": "import time | from typing import List, Optional |  | class ChocoSudokuSolver: |     \"\"\"Solveur de Sudoku utilisant Choco-solver 4.10+.\"\"\" | "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-12-Z3-Python.ipynb",
+    "total_cells": 35,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports | import time | from typing import List, Optional, Tuple | from pathlib import Path |  | # Verifier l'installation | try: |     fr"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-13-SymbolicAutomata-CSharp.ipynb",
+    "total_cells": 56,
+    "code_cells": 20,
+    "occurrences": [
+      {
+        "cell_index": 53,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.1.0\" | #load \"../Config/PythonNetLoader.cs\" | using Python.Runtime; | using System; | using System.Collections.Generi"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-15-Infer-Python.ipynb",
+    "total_cells": 52,
+    "code_cells": 20,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "import numpy as np | import time | from typing import List, Tuple, Optional, Dict | import warnings | warnings.filterwarnings('ignore', cate"
+      },
+      {
+        "cell_index": 8,
+        "classification": "NON_BASH",
+        "source_preview": "if JAX_AVAILABLE: |     def compute_constraint_penalty(cell_probs): |         \"\"\" |         Calcule une penalite pour les violations de cont"
+      },
+      {
+        "cell_index": 10,
+        "classification": "NON_BASH",
+        "source_preview": "if JAX_AVAILABLE: |     class RobustProbabilisticSolverPy: |         \"\"\" |         Equivalent Python du RobustProbabilisticSolver C# Infer.N"
+      },
+      {
+        "cell_index": 12,
+        "classification": "NON_BASH",
+        "source_preview": "if JAX_AVAILABLE: |     # Test sur un puzzle facile |     test_grid = puzzle_to_grid(puzzles[0]) |     print_grid(test_grid, \"Puzzle initial"
+      },
+      {
+        "cell_index": 19,
+        "classification": "NON_BASH",
+        "source_preview": "if JAX_AVAILABLE: |     class IterativeProbabilisticSolverPy: |         \"\"\" |         Equivalent Python du IterativeSudokuModel C# Infer.NET"
+      },
+      {
+        "cell_index": 21,
+        "classification": "NON_BASH",
+        "source_preview": "if JAX_AVAILABLE: |     print(\"=== Test IterativeProbabilisticSolverPy ===\") |  |     iterative_solver = IterativeProbabilisticSolverPy( |  "
+      },
+      {
+        "cell_index": 44,
+        "classification": "NON_BASH",
+        "source_preview": "if JAX_AVAILABLE: |     def benchmark_comparison(puzzles: List[str], limit: int = 3): |         \"\"\"Compare les solveurs Python avec les resu"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Argument_Analysis\\Argumentation-00-Setup-Tweety-Python.ipynb",
+    "total_cells": 13,
+    "code_cells": 5,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "import sys |  | print(f\"Python : {sys.version.split()[0]}\") |  | try: |     import jpype |     print(f\"JPype : {jpype.__version__} (passerel"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\KNOTS\\KNOTS-02-Invariants-Python.ipynb",
+    "total_cells": 47,
+    "code_cells": 20,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "import numpy as np | import matplotlib.pyplot as plt |  | # Try SnapPy import | try: |     import snappy |     SNAPPY_AVAILABLE = True |    "
+      },
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "if SNAPPY_AVAILABLE: |     print(\"=\" * 60) |     print(\"Volume hyperbolique via SnapPy\") |     print(\"=\" * 60) |  |     volumes = {} |     f"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Lean-01-Setup-Lean-Python.ipynb",
+    "total_cells": 27,
+    "code_cells": 8,
+    "occurrences": [
+      {
+        "cell_index": 10,
+        "classification": "NON_BASH",
+        "source_preview": "\"\"\" | Auto-detection de la plateforme et affichage de la commande d'installation equivalente. | Cette cellule sert d'aide-memoire immediat :"
+      },
+      {
+        "cell_index": 20,
+        "classification": "NON_BASH",
+        "source_preview": "\"\"\" | Detection et configuration du kernel Lean4 via WSL (Windows uniquement) |  | Sur Windows, le kernel lean4_jupyter natif peut avoir des"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Lean-07-LLM-Integration-Lean-Python.ipynb",
+    "total_cells": 39,
+    "code_cells": 18,
+    "occurrences": [
+      {
+        "cell_index": 24,
+        "classification": "NON_BASH",
+        "source_preview": "# Section 5.1 - Configuration et Imports | # Les classes LLM sont maintenant dans lean_runner.py |  | import os | import sys | from pathlib "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Lean-07b-Examples-Python.ipynb",
+    "total_cells": 40,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 22,
+        "classification": "NON_BASH",
+        "source_preview": "# Section 7.5 - Visualisations |  | if api_ok and (simple_results or mathlib_results): |     try: |         import matplotlib.pyplot as plt "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Lean-09-SK-Multi-Agents-Lean-Python.ipynb",
+    "total_cells": 59,
+    "code_cells": 24,
+    "occurrences": [
+      {
+        "cell_index": 19,
+        "classification": "NON_BASH",
+        "source_preview": "# ============================================================================= | # Section 2 - Définition des 5 Agents Specialises avec Sem"
+      },
+      {
+        "cell_index": 24,
+        "classification": "NON_BASH",
+        "source_preview": "# ============================================================================= | # Factory pour creer les agents (SK ou fallback) | # ====="
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Lean-10-LeanDojo.ipynb",
+    "total_cells": 73,
+    "code_cells": 26,
+    "occurrences": [
+      {
+        "cell_index": 12,
+        "classification": "NON_BASH",
+        "source_preview": "# ============================================================================= | # Installation de LeanDojo (decommenter si necessaire) | #"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\00-Environment\\Planners-0-Setup.ipynb",
+    "total_cells": 43,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 9,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification de unified-planning | try: |     import unified_planning as up |     from unified_planning.shortcuts import * |     print(f\"u"
+      },
+      {
+        "cell_index": 12,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification d'OR-Tools | try: |     from ortools.sat.python import cp_model |     print(\"OR-Tools CP-SAT disponible\") |     ORTOOLS_OK = "
+      },
+      {
+        "cell_index": 22,
+        "classification": "NON_BASH",
+        "source_preview": "# Resume de l'environnement | print(\"=\" * 60) | print(\"RESUME DE L'ENVIRONNEMENT PLANIFICATION\") | print(\"=\" * 60) | print(f\"Plateforme:    "
+      },
+      {
+        "cell_index": 35,
+        "classification": "NON_BASH",
+        "source_preview": "# Resolution avec un planificateur reel (pyperplan) | if UP_OK: |     from unified_planning.engines import PlanGenerationResultStatus |     "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\01-Foundation\\Planners-1-Introduction.ipynb",
+    "total_cells": 36,
+    "code_cells": 8,
+    "occurrences": [
+      {
+        "cell_index": 13,
+        "classification": "NON_BASH",
+        "source_preview": "# Resolution avec un planificateur | if UP_OK: |     from unified_planning.engines import PlanGenerationResultStatus |      |     # Desactiv"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\01-Foundation\\Planners-2-PDDL-Basics.ipynb",
+    "total_cells": 59,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 21,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification de unified-planning | try: |     import unified_planning as up |     from unified_planning.shortcuts import * |     print(f\"u"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\02-Classical\\Planners-4-Fast-Downward.ipynb",
+    "total_cells": 59,
+    "code_cells": 19,
+    "occurrences": [
+      {
+        "cell_index": 11,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification de unified-planning | try: |     import unified_planning as up |     from unified_planning.shortcuts import * |     print(f\"u"
+      },
+      {
+        "cell_index": 42,
+        "classification": "NON_BASH",
+        "source_preview": "# Resolution avec unified-planning - Test des planificateurs disponibles | if UP_OK: |     from unified_planning.shortcuts import OneshotPla"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\02-Classical\\Planners-6-Domains.ipynb",
+    "total_cells": 78,
+    "code_cells": 23,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification de l'environnement | import os | import sys |  | try: |     import unified_planning as up |     from unified_planning.shortcu"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\03-Advanced\\Planners-7-OR-Tools.ipynb",
+    "total_cells": 49,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports et verification de l'environnement | import sys | import time | import numpy as np | import matplotlib.pyplot as plt | from typing"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\03-Advanced\\Planners-8-Temporal.ipynb",
+    "total_cells": 48,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 13,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification de unified-planning | try: |     import unified_planning as up |     from unified_planning.shortcuts import * |     print(f\"u"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\03-Advanced\\Planners-9-HTN-Csharp.ipynb",
+    "total_cells": 23,
+    "code_cells": 10,
+    "occurrences": [
+      {
+        "cell_index": 20,
+        "classification": "NON_BASH",
+        "source_preview": "#r \"nuget: pythonnet,3.0.5\" | #load \"../../../Config/PythonNetLoader.cs\" | using System; | using Python.Runtime; |  | // Pont .NET -> CPytho"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\03-Advanced\\Planners-9-HTN.ipynb",
+    "total_cells": 57,
+    "code_cells": 16,
+    "occurrences": [
+      {
+        "cell_index": 30,
+        "classification": "NON_BASH",
+        "source_preview": "# Bibliotheque SOTA de planification (modèle HTN declaratif + moteurs reels). | # Installation si besoin : %pip install \"unified-planning[ar"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\04-NeuroSymbolic\\Planners-11-Unified-Planning.ipynb",
+    "total_cells": 63,
+    "code_cells": 20,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation des packages necessaires | # Decommentez les lignes si necessaire |  | # !pip install unified-planning | # !pip install up-fa"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Planners\\04-NeuroSymbolic\\Planners-12-LOOP.ipynb",
+    "total_cells": 60,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 8,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports et configuration de l'environnement | import numpy as np | import matplotlib.pyplot as plt | from typing import List, Dict, Tuple,"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-11-Python-KnowledgeGraphs.ipynb",
+    "total_cells": 105,
+    "code_cells": 38,
+    "occurrences": [
+      {
+        "cell_index": 34,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from pyvis.network import Network |     import os |  |     # Creer le reseau pyvis |     net = Network( |         height=\"600px\","
+      },
+      {
+        "cell_index": 41,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import kglab |  |     # Definir les namespaces pour kglab |     namespaces = { |         \"schema\": \"http://schema.org/\", |       "
+      },
+      {
+        "cell_index": 48,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import owlready2 |     import os |  |     # Charger l'ontologie depuis le fichier local |     onto_path = os.path.abspath(\"data/u"
+      },
+      {
+        "cell_index": 54,
+        "classification": "NON_BASH",
+        "source_preview": "import os | import shutil |  | if OWLREADY_AVAILABLE: |     # Detecter un JRE (HermiT necessite Java accessible) |     java_exe = shutil.whi"
+      },
+      {
+        "cell_index": 71,
+        "classification": "NON_BASH",
+        "source_preview": "import os | import shutil |  | # Exemple guide 3 : Ajouter un etudiant et raisonner |  | if OWLREADY_AVAILABLE: |     # Detecter un JRE (Her"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-13-Python-Reasoners.ipynb",
+    "total_cells": 89,
+    "code_cells": 31,
+    "occurrences": [
+      {
+        "cell_index": 23,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from owlready2 import * |     import owlready2 |     # Limiter la memoire JVM du raisonneur pour compatibilite JVM 32-bit (defaut"
+      },
+      {
+        "cell_index": 33,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from reasonable import PyReasoner |     REASONABLE_AVAILABLE = True |     print(\"✓ reasonable est disponible\") | except ImportErr"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-2b-Python-RDFBasics.ipynb",
+    "total_cells": 43,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from rdflib import Graph, URIRef, Literal, BNode, Namespace |     from rdflib.namespace import RDF, RDFS, XSD, FOAF, DC |  |     "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-3b-Python-GraphOperations.ipynb",
+    "total_cells": 49,
+    "code_cells": 20,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "from rdflib import Graph, URIRef, Literal, BNode, Namespace | from rdflib.namespace import RDF, RDFS, XSD | from rdflib.collection import Co"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-4b-Python-SPARQL.ipynb",
+    "total_cells": 62,
+    "code_cells": 20,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from rdflib import Graph, Namespace |  |     RDFLIB_AVAILABLE = True | except ImportError: |     RDFLIB_AVAILABLE = False |     p"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-5b-Python-LinkedData.ipynb",
+    "total_cells": 53,
+    "code_cells": 18,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from SPARQLWrapper import SPARQLWrapper, JSON, XML |     import json |  |     SPARQLWRAPPER_AVAILABLE = True |     print(\"SPARQLW"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-6b-Python-RDFS.ipynb",
+    "total_cells": 39,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from rdflib import Graph, URIRef, Literal, BNode, Namespace |     from rdflib.namespace import RDF, RDFS, XSD |     import owlrl "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SemanticWeb\\SW-7b-Python-OWL.ipynb",
+    "total_cells": 47,
+    "code_cells": 18,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from owlready2 import * |     import owlready2 |  |     # Limiter la memoire JVM du raisonneur pour compatibilite JVM 32-bit (def"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\00-Foundations\\SC-00-Cypherpunk-Origins-Python.ipynb",
+    "total_cells": 41,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 25,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from Crypto.PublicKey import ECC |     from Crypto.Signature import DSS |     from Crypto.Hash import SHA256 | except ImportError"
+      },
+      {
+        "cell_index": 38,
+        "classification": "NON_BASH",
+        "source_preview": "# Exercice : Mini-blockchain complete | # Combiner : hash chain + Merkle tree + PoW + signatures |  | import hashlib | import json | import "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\00-Foundations\\SC-02-Setup-Web3py-Python.ipynb",
+    "total_cells": 34,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation (decommentez si necessaire) | # !pip install web3 py-solc-x |  | import importlib | for pkg in [\"web3\", \"solcx\"]: |     try: "
+      },
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Installer le compilateur Solidity via py-solc-x | try: |     import solcx | except ImportError as e: |     print(f\"Installation requise : "
+      },
+      {
+        "cell_index": 7,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from web3 import Web3 | except ImportError as e: |     print(f\"Installation requise : pip install web3\") |     print(f\"Erreur : {"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\01-Solidity-Foundation\\SC-03-Solidity-Basics-Python.ipynb",
+    "total_cells": 51,
+    "code_cells": 18,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Connection a anvil (blockchain locale Foundry) | # Prerequis: anvil en cours d'execution dans un terminal | try: |     from web3 import We"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\01-Solidity-Foundation\\SC-04-Functions-State-Python.ipynb",
+    "total_cells": 42,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Connection a anvil (blockchain locale Foundry) | # Prerequis: anvil en cours d'execution dans un terminal | try: |     from web3 import We"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\01-Solidity-Foundation\\SC-05-Inheritance-Python.ipynb",
+    "total_cells": 38,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Connection a anvil (blockchain locale Foundry) | # Prerequis: anvil en cours d'execution dans un terminal | try: |     from web3 import We"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\02-Solidity-Advanced\\SC-07-Token-Standards-Python.ipynb",
+    "total_cells": 32,
+    "code_cells": 10,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Connection a anvil (blockchain locale Foundry) | # Prerequis: anvil en cours d'execution dans un terminal | try: |     from web3 import We"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\02-Solidity-Advanced\\SC-09-DAO-Governance-Python.ipynb",
+    "total_cells": 23,
+    "code_cells": 8,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Connection a anvil (blockchain locale Foundry) | # Prerequis: anvil en cours d'execution dans un terminal | try: |     from web3 import We"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\04-Privacy-Cryptography\\SC-15-Zero-Knowledge-Proofs-Python.ipynb",
+    "total_cells": 45,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 6,
+        "classification": "NON_BASH",
+        "source_preview": "# %% Cellule - Parametres Discrete Log avec import guards | # Guard: verification pycryptodome |  | try: |     from Crypto.Util.number impor"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\04-Privacy-Cryptography\\SC-16-Homomorphic-Encryption-Python.ipynb",
+    "total_cells": 42,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Installation si necessaire | # !pip install phe |  | try: |     from phe import paillier |     PHE_AVAILABLE = True | except ImportError: "
+      },
+      {
+        "cell_index": 16,
+        "classification": "NON_BASH",
+        "source_preview": "# TenSEAL : CKKS pour l'arithmetique approchee | # pip install tenseal |  | try: |     import tenseal as ts |     import numpy as np |  |   "
+      },
+      {
+        "cell_index": 22,
+        "classification": "NON_BASH",
+        "source_preview": "# Concrete : compiler Python en FHE | # pip install concrete-python |  | try: |     import warnings |  |     warnings.filterwarnings( |     "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\04-Privacy-Cryptography\\SC-17-E2E-Verifiable-Voting-Python.ipynb",
+    "total_cells": 37,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from phe import paillier |     PHE_AVAILABLE = True | except ImportError: |     PHE_AVAILABLE = False |     print(\"phe non instal"
+      },
+      {
+        "cell_index": 25,
+        "classification": "NON_BASH",
+        "source_preview": "# ElectionGuard SDK (optionnel - necessite pip install electionguard) | try: |     from electionguard.election import CiphertextElectionCont"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\05-Alternative-Chains\\SC-18-Vyper-Python.ipynb",
+    "total_cells": 34,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 2,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification de l'environnement | import sys | print(f\"Python {sys.version}\") |  | # Verifier si vyper est installe | try: |     import vy"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\05-Alternative-Chains\\SC-19-Ripple-XRP-Python.ipynb",
+    "total_cells": 42,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 5,
+        "classification": "NON_BASH",
+        "source_preview": "# Verification de l'installation de xrpl-py | try: |     import xrpl |     from xrpl.asyncio.clients import AsyncJsonRpcClient |     from xr"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\05-Alternative-Chains\\SC-20-Bitcoin-Scripting-Python.ipynb",
+    "total_cells": 42,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 21,
+        "classification": "NON_BASH",
+        "source_preview": "# Utilisation de python-bitcoinlib (optionnel) | # Cette bibliotheque fournit les types Bitcoin natifs |  | try: |     import bitcoin |     "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\06-Real-World\\SC-24-Testnet-Deploy-Python.ipynb",
+    "total_cells": 38,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 8,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from web3 import Web3 |     import solcx |     WEB3_AVAILABLE = True | except ImportError: |     WEB3_AVAILABLE = False |     pri"
+      },
+      {
+        "cell_index": 11,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     from eth_account import Account |     ETH_ACCOUNT_AVAILABLE = True | except ImportError: |     ETH_ACCOUNT_AVAILABLE = False |  |"
+      },
+      {
+        "cell_index": 23,
+        "classification": "NON_BASH",
+        "source_preview": "try: |     import xrpl |     from xrpl.clients import JsonRpcClient |     from xrpl.wallet import generate_faucet_wallet |     from xrpl.mod"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\06-Real-World\\SC-25-Mainnet-Deploy-Python.ipynb",
+    "total_cells": 24,
+    "code_cells": 8,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "import os | from dotenv import load_dotenv |  | try: |     from web3 import Web3 |     import solcx |     WEB3_AVAILABLE = True | except Imp"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SmartContracts\\06-Real-World\\SC-26-Final-Project-Python.ipynb",
+    "total_cells": 29,
+    "code_cells": 5,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "# Partie 1: Contrat Solidity | # Utilisez compile_and_deploy() de SC-2 |  | try: |     from web3 import Web3 |     import solcx |     WEB3_A"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SMT\\Z3-API\\Z3-01-Introduction-Python.ipynb",
+    "total_cells": 26,
+    "code_cells": 10,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports et verification de l'environnement | # Le package pip s'appelle 'z3-solver' (et non 'z3'). | # Dans cet environnement il est deja "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SMT\\Z3-API\\Z3-06-Advanced-Optimization-Python.ipynb",
+    "total_cells": 29,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports et verification de l'environnement | # Le package pip s'appelle 'z3-solver' (et non 'z3'). | # !pip install z3-solver |  | from z3"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SMT\\Z3-API\\Z3-17-Array-Theory-Python.ipynb",
+    "total_cells": 20,
+    "code_cells": 7,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports et vérification de l'environnement. | # Le package pip s'appelle 'z3-solver' (et non 'z3'). | # !pip install z3-solver |  | from z"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SMT\\Z3-API\\Z3-18-Sudoku-Modes-Python.ipynb",
+    "total_cells": 19,
+    "code_cells": 7,
+    "occurrences": [
+      {
+        "cell_index": 1,
+        "classification": "NON_BASH",
+        "source_preview": "# Imports et verification de l'environnement. | # Le package pip s'appelle 'z3-solver' (et non 'z3'). | # !pip install z3-solver |  | from z"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SymbolicLearning\\SL-12-DifferentiableLogicGateNetworks.ipynb",
+    "total_cells": 28,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "NON_BASH",
+        "source_preview": "import os as _os | import random | import sys |  | import numpy as np | import torch | import torch.nn as nn |  | # difflogic : lib de Felix"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SymbolicLearning\\SL-4-InductiveLogicProgramming-Csharp.ipynb",
+    "total_cells": 27,
+    "code_cells": 11,
+    "occurrences": [
+      {
+        "cell_index": 24,
+        "classification": "NON_BASH",
+        "source_preview": "// === Pont clingo (Process.Start) : le moteur SOTA derrière Popper, invoqué depuis C# === | // Parite lib-vs-lib (#10382) : le twin Python "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SymbolicLearning\\SL-5-InverseResolution.ipynb",
+    "total_cells": 40,
+    "code_cells": 14,
+    "occurrences": [
+      {
+        "cell_index": 20,
+        "classification": "NON_BASH",
+        "source_preview": "# Environnement Aleph : SWI-Prolog + pont janus_swi (pur Prolog -> kernel Windows OK) | import os | import platform | import shutil |  | HAS"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SymbolicLearning\\SL-6-ModernILP-Csharp.ipynb",
+    "total_cells": 25,
+    "code_cells": 12,
+    "occurrences": [
+      {
+        "cell_index": 18,
+        "classification": "NON_BASH",
+        "source_preview": "// === Pont clingo (Process.Start) : le moteur ASP SOTA derrière Popper, invoqué depuis le C# === | using System.IO; | using System.Diagnost"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SymbolicLearning\\SL-7-NeuroSymbolic.ipynb",
+    "total_cells": 44,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 20,
+        "classification": "NON_BASH",
+        "source_preview": "# LTNtorch : memes faits, vraie librairie (pip install LTNtorch) | import warnings | warnings.filterwarnings(\"ignore\", message=\".*pynvml.*\")"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\SymbolicLearning\\SL-8-KnowledgeGraphs-ILP.ipynb",
+    "total_cells": 62,
+    "code_cells": 22,
+    "occurrences": [
+      {
+        "cell_index": 3,
+        "classification": "UNCONDITIONAL_BASH",
+        "source_preview": "# Installation silencieuse de rdflib | %pip install -q --disable-pip-version-check rdflib"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Tweety\\Tweety-01-Setup-Python.ipynb",
+    "total_cells": 40,
+    "code_cells": 15,
+    "occurrences": [
+      {
+        "cell_index": 4,
+        "classification": "NON_BASH",
+        "source_preview": "# Vérification/Installation des packages Python nécessaires | import importlib | import sys | import subprocess |  | # Le package s'appelle "
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Tweety\\Tweety-02-Basic-Logics-Python.ipynb",
+    "total_cells": 56,
+    "code_cells": 19,
+    "occurrences": [
+      {
+        "cell_index": 22,
+        "classification": "NON_BASH",
+        "source_preview": "# --- 2.1.3a Solveurs SAT Modernes: Comparaison sur Problemes Varies --- | print(\"--- 2.1.3a Solveurs SAT Modernes (pySAT / CaDiCaL) ---\") |"
+      }
+    ]
+  },
+  {
+    "file": "MyIA.AI.Notebooks\\SymbolicAI\\Tweety\\Tweety-04-Belief-Revision-Python.ipynb",
+    "total_cells": 38,
+    "code_cells": 13,
+    "occurrences": [
+      {
+        "cell_index": 18,
+        "classification": "NON_BASH",
+        "source_preview": "# --- 3.3 Enumeration de MUS --- | # MUS = Minimal Unsatisfiable Subsets | # Utile pour diagnostiquer les sources d'incoherence dans une bas"
+      }
+    ]
+  }
+]
