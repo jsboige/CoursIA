@@ -96,6 +96,7 @@ Un podcast de qualité demande une voix naturelle et une identité sonore distin
 | [02-7-YuE2-Song-Generation](02-Advanced/02-7-YuE2-Song-Generation.ipynb) | YuE2-3B : zero-shot, cover, édition agentique | Routée GPU 24 GB (Linux) | ~24 GB |
 | [02-8-Expressive-TTS](02-Advanced/02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
 | [02-9-AceStep-Music-Generation](02-Advanced/02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
+| [02-10-Effets-Sonores-AudioLDM2](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) | AudioLDM2, text-to-SFX, descripteurs mesurés | Local GPU | <3 GB |
 
 La séparation de sources en est l'exemple le plus visuel : plutôt que de régénérer, Demucs ([02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb)) décompose un mix stéréo en quatre stems (batterie, basse, autre, voix) et en mesure l'énergie RMS :
 
@@ -165,6 +166,7 @@ Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) com
 | **midi-model (SkyTNT)** | 02-6 | GPU ~2 GB VRAM, FluidSynth |
 | **YuE / SongGeneration 2** | 02-7 | GPU 10-24 GB VRAM |
 | **Fish S2 Pro / Dia TTS** | 02-8 | GPU 6-18 GB VRAM |
+| **AudioLDM2 (cvssp)** | 02-10 | GPU ~2,5 GB VRAM |
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
 | **FFmpeg** | 04-12 | Installé système |
 
@@ -175,6 +177,7 @@ Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) com
 - **Voice cloning** — reproduire l'identité vocale d'un locuteur à partir d'un court échantillon, pour un narrateur cohérent. Notebook [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) (XTTS v2).
 - **Prosodie** — l'intonation, le rythme et l'émotion qui rendent une voix naturelle ; pilotable par tags expressifs, et mesurable objectivement par partition syllabique (notes effectives, recouvrement top-3, motifs répétés — [04-10, section 10](04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb)). Notebooks [02-8](02-Advanced/02-8-Expressive-TTS.ipynb), [04-10](04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb) (tags + mesure) et [04-13](04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) (FishAudio S2-Pro, 29 tags).
 - **Source separation** — isoler les composantes d'un mix (voix, batterie, basse...). Notebook [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) (Demucs v4).
+- **Text-to-SFX (effets sonores)** — générer un effet sonore (impact, pluie, verre brisé) à partir d'une description, et le distinguer d'une musique par des descripteurs mesurés (flatness, centroïde, attaques). Notebook [02-10](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) (AudioLDM2).
 - **Spectrogramme / MFCC** — représentations temps-fréquence du signal audio, base de l'analyse. Notebook [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb).
 
 ## Prérequis
@@ -226,7 +229,7 @@ Le fil rouge de cette série est la création d'un podcast généré par IA. Voi
 
 1. **01-Foundation** (TTS + STT) : [01-1](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) et [01-5](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) vous donnent les bases de la synthèse vocale. [01-2](01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) et [01-4](01-Foundation/01-4-Whisper-Local.ipynb) couvrent la reconnaissance vocale. À la fin de ce niveau, vous savez transformer du texte en audio et inversement.
 
-2. **02-Advanced** (voix + musique) : [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) clone une voix pour créer un narrateur cohérent. [02-3](02-Advanced/02-3-MusicGen-Generation.ipynb) génère le jingle et le fond sonore. [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) isole les pistes si besoin, et [02-8](02-Advanced/02-8-Expressive-TTS.ipynb) ajoute de l'expressivité.
+2. **02-Advanced** (voix + musique + effets) : [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) clone une voix pour créer un narrateur cohérent. [02-3](02-Advanced/02-3-MusicGen-Generation.ipynb) génère le jingle et le fond sonore. [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) isole les pistes si besoin, et [02-8](02-Advanced/02-8-Expressive-TTS.ipynb) ajoute de l'expressivité. Pour l'habillage, [02-10](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) peut fournir les effets sonores décrits par le texte.
 
 3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles pour choisir le meilleur STT/TTS selon le budget. [03-2](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) assemble le pipeline STT vers LLM vers TTS qui constitue le cœur du podcast automatisé.
 
