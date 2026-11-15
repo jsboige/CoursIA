@@ -63,12 +63,21 @@ class HarrvKellyAlgorithm(QCAlgorithm):
             BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN
         )
 
+        # League de reference (#26329) : `mode` selectionne la strategie ou un
+        # portefeuille reference mesure sur le meme historique.
+        self.mode = self.get_parameter("mode", "strategy")
+        if self.mode not in MODES:
+            raise ValueError(f"unknown mode {self.mode}")
+
         self.tickers = ["SPY", "EFA", "EEM", "TLT", "GLD", "DBC"]
         self.symbols = {}
         for ticker in self.tickers:
             equity = self.add_equity(ticker, Resolution.DAILY)
             self.symbols[ticker] = equity.symbol
-        if self.get_parameter("mode", "strategy") == "6040":
+        if self.mode == "6040":
+            # Le 60/40 tient 40 % en obligations agregat (BND, #26548) : 7e
+            # actif ajoute seulement pour ce mode de reference ; exclu de la
+            # boucle de RV (`on_data`) qui ne suit que `self.tickers`.
             self.symbols["BND"] = self.add_equity("BND", Resolution.DAILY).symbol
 
         self.set_benchmark(self.symbols["SPY"])
@@ -97,9 +106,7 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         self.set_warm_up(250, Resolution.DAILY)
 
         # --- Mesure ligue (#26329) -------------------------------------------
-        self.mode = self.get_parameter("mode", "strategy")
-        if self.mode not in MODES:
-            raise ValueError(f"unknown mode {self.mode}")
+        # `self.mode` est deja lu et valide en tete de `initialize` (#26547).
         self.shadow_bars = 0
         self.shadow2_bars = 0
         # Proprietes publiees avec le verdict (protocole #26329).

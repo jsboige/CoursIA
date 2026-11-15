@@ -244,26 +244,29 @@ import gh_identity  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
-# La voix du coordinateur : le login humain SEUL. L'App ``coursia-lane-ai-01``
-# n'en fait PAS partie (arbitrage ai-01 2026-11-13, portee par ce module).
+# La voix du coordinateur : le login humain, PLUS l'App PROPRE a la lane
+# coordinateur. L'App de machine ``coursia-lane-ai-01`` n'en fait TOUJOURS
+# PAS partie (arbitrage ai-01 2026-11-13, maintenu).
 #
-# Sa cle privee vit sur la machine ai-01, dans le clone du depot
-# (``.secrets/github-apps/coursia-lane-ai-01.pem``, cf
-# ``scripts/secrets/github_app_manifest.KEY_DIR``). La machine porte DEUX
-# lanes : ``myia-ai-01:CoursIA`` (le coordinateur) et ``myia-ai-01:CoursIA-2``
-# (la lane worker sœur). La seconde lit le meme fichier et forge donc le meme
-# jeton d'installation : compter cette App comme voix du coordinateur
-# ouvrirait la porte Q131 a une lane non coordinatrice -- une APPROVE ou un
-# ``[OVERRIDE]`` de CoursIA-2 vaudrait ceux du coordinateur. Une App PROPRE a
-# la lane coordinateur est le prealable ; une App nommee par machine ne le
-# remplace pas.
+# L'App propre existe desormais (Q187, 2026-11-14) : App 5763709, slug
+# ``coursia-coord-ai01``, creee le 2026-11-14 sur le go du user, installee
+# sur jsboige/CoursIA seulement, cle dediee
+# ``.secrets/github-apps/coursia-coord-ai01.pem`` -- DISTINCTE de la cle de
+# l'App de machine que la lane worker sœur ``myia-ai-01:CoursIA-2`` lit
+# aussi. C'est cette separation de cles qui la rend eligible : seul le
+# coordinateur peut forger son jeton. L'App de machine
+# ``coursia-lane-ai-01[bot]`` reste EXCLUE pour la raison d'origine : sa cle
+# vivant dans le clone partage, une APPROVE de CoursIA-2 sous cette App
+# vaudrait celle du coordinateur -- la porte Q131 tomberait.
 #
 # Le mecanisme de preuve d'identite reste en place (``_voice_login`` /
-# ``_typed_reviews``) : la preuve est le TYPE porte par la ligne, jamais une
-# sonde ``users/<login>[bot]``. Il sert la voix humaine et refuse toute forme
-# App ; le jour ou une App de lane coordinateur existe, elle s'ajoute ici par
-# une edition consciente, accompagnee de sa cle dediee.
-COORDINATOR_VOICES = frozenset((COORDINATOR_USER,))
+# ``_typed_reviews``) : la preuve est le TYPE porte par la ligne (REST
+# ``user.type`` / GraphQL ``author.__typename``), jamais une sonde
+# ``users/<login>[bot]``. L'App propre entre donc UNIQUEMENT par une ligne
+# typee ``Bot`` ; une forme nue sans type, ou un homonyme UTILISATEUR type
+# ``User``, est refuse -- fail-closed.
+COORDINATOR_LANE_APP_LOGIN = "coursia-coord-ai01[bot]"
+COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_LANE_APP_LOGIN))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
@@ -1045,6 +1048,9 @@ def _voice_login(row: dict) -> str:
     l'orthographe canonique EXACTE de l'humain (``myia-ai-01``, nu par
     construction) : toute forme nue App est refusee, sans sonde ni
     reconstruction -- fail-closed par construction, plus de cas muets.
+    #17437/Q187 : l'App propre ``coursia-coord-ai01`` entre donc par la
+    ligne typee ``Bot`` (suffixe reconstruit), et l'homonyme UTILISATEUR
+    type ``User`` reste nu donc hors ``COORDINATOR_VOICES``.
     """
     author = row.get("author") or row.get("user") or {}
     if not isinstance(author, dict):
@@ -1109,14 +1115,17 @@ def coordinator_approval_oid(view: dict, runner: Runner | None = None,
                              gh_env: dict[str, str] | None = None) -> str | None:
     """Oid du commit que la DERNIERE voix du coordinateur approuve, ou None.
 
-    #17437 : la voix du coordinateur est le login humain seul
-    (``COORDINATOR_VOICES``) -- toute forme App y est refusee : une App de
-    machine est forgeable par la lane soeur (bloc justificatif au-dessus de
-    sa definition). La preuve d'identite est TYPEE PAR LIGNE :
-    avec un runner, les reviews se relisent sur la surface REST typee
-    (``pulls/N/reviews``, ``user.type`` par ligne) ; sans runner (lecture
-    pure, tests), seules comptent les lignes deja typees du payload et
-    l'orthographe canonique exacte de l'humain -- une forme nue App n'est
+    #17437 : la voix du coordinateur est le login humain PLUS l'App propre a
+    la lane coordinateur (``COORDINATOR_VOICES`` ; App 5763709, cle dediee,
+    Q187 2026-11-14). L'App de machine ``coursia-lane-ai-01[bot]`` reste
+    refusee : forgeable par la lane soeur (bloc justificatif au-dessus de sa
+    definition). La preuve d'identite est TYPEE PAR LIGNE : l'App propre
+    n'entre que par une ligne typee ``Bot`` (REST ``user.type`` / GraphQL
+    ``author.__typename``), jamais par une forme nue ni par un homonyme
+    UTILISATEUR. Avec un runner, les reviews se relisent sur la surface REST
+    typee (``pulls/N/reviews``, ``user.type`` par ligne) ; sans runner
+    (lecture pure, tests), seules comptent les lignes deja typees du payload
+    et l'orthographe canonique exacte de l'humain -- une forme nue App n'est
     JAMAIS resolue (relecture ai-01 2026-11-12 : la sonde prouve que
     l'App existe, pas que l'auteur de la ligne est l'App).
 
