@@ -108,6 +108,15 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
 
+# Lectures REST conditionnelles (ETag persiste, partage par machine) : meme
+# protocole que pr_gate #26260, etendu aux processus courts de B.0. Le module
+# porte les invariants ; `gh_json` ne fait que router les argv applicables.
+try:
+    import gh_etag
+except ImportError:  # meme shim que gh_identity (tests hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_etag
+
 REPO = "jsboige/CoursIA"
 
 # Les deux orthographes d'un meme bot : la lecture normalisee (voir
@@ -339,20 +348,42 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
-# #17437 : la voix App n'est PAS jointe a la voix du coordinateur (arbitrage
-# ai-01 du 2026-11-13). La cle privee de ``coursia-lane-ai-01`` vit sur la
-# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
-# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
-# fichier et forge le meme jeton. Une App par machine ne peut donc pas
-# representer la lane coordinateur seule -- un ``[OVERRIDE]`` de CoursIA-2
-# vaudrait celui du coordinateur, exactement ce que la borne #12737/#12836
-# interdit. Une App PROPRE a la lane coordinateur est le prealable.
+# #17437 : la voix App PROPRE a la lane coordinateur rejoint la voix humaine
+# (Q187, 2026-11-14). L'App existe desormais (App 5763709, slug
+# ``coursia-coord-ai01``, creee le 2026-11-14 sur le go du user, installee
+# sur jsboige/CoursIA seulement, cle dediee
+# ``.secrets/github-apps/coursia-coord-ai01.pem``), DISTINCTE de la cle de
+# l'App de machine ``coursia-lane-ai-01`` que la lane worker sœur
+# ``myia-ai-01:CoursIA-2`` lit aussi : seul le coordinateur forge le jeton
+# de l'App propre. L'App de MACHINE ``coursia-lane-ai-01[bot]`` reste
+# EXCLUE pour la raison d'origine (arbitrage ai-01 du 2026-11-13) : sa cle
+# vivant dans le clone partage, un ``[OVERRIDE]`` de CoursIA-2 sous cette
+# App vaudrait celui du coordinateur, exactement ce que la borne
+# #12737/#12836 interdit.
 #
 # La preuve d'identite reste typee par ligne (``_author_login`` +
-# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique, et une
-# forme nue sans type ne leve rien. Le jour ou une App de lane coordinateur
-# existe, son login REST rejoint cet ensemble par une edition consciente.
-LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique. La forme
+# REST suffixee ``coursia-coord-ai01[bot]`` et la forme GraphQL typee
+# ``Bot`` (repliee par normalisation) levent ; une forme nue sans type ne
+# leve rien, et l'homonyme UTILISATEUR type ``User`` reste nu donc hors de
+# l'ensemble -- fail-closed.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01", "coursia-coord-ai01[bot]"}
+# Q185 (sign-off user 2026-11-13) -- l'ADJOINT coordonnateur, borne aux
+# reserves de BOT. La lane adjointe myia-po-2025:CoursIA-2 poste sous son
+# identite GitHub App propre (``coursia-lane-po-2025[bot]`` : forme REST
+# suffixee, preuve de type portee par la ligne #17437 -- une forme nue
+# typee ``User`` n'entre pas). Sa trappe reprend TOUTE la grammaire du
+# coordinateur (``[OVERRIDE] lane`` pose en tete #13030, phrase de levee
+# affirmative nommant la reserve #14216, bornes temporelles et trappe
+# #13495) avec UN resserrement : elle ne leve que les reserves emises par
+# un BOT -- persona Hermes (``clusterManager-Myia`` via
+# PERSONA_ALIAS_LOGINS, ou marqueur ``[Hermes]``/``[NanoClaw]`` pose par le
+# self-bot ``jsboige``) et bots automatises (BOT_LOGINS). Hors perimetre,
+# fail-closed : le coordinateur (myia-ai-01), les nits user voix nue de
+# jsboige, toute reserve d'une autre lane ou d'un humain, et la PR portee
+# par l'App elle-meme. Voir ``_adjoint_liftable_reserve`` et la trappe de
+# ``_lift_eligible`` ; les pouvoirs du coordinateur restent inchanges.
+ADJOINT_LIFT_LOGINS = {"coursia-lane-po-2025[bot]"}
 # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona de
 # reviewer Hermes parle sous DEUX logins -- clusterManager-Myia (reviewer
 # principal) et jsboige (self-bot). Quand elle pose une reserve sous l'un
@@ -3720,7 +3751,11 @@ def _nits_budget_exhausted() -> bool:
 #    `pr list --json`, `issue view --json` = GraphQL ; `api repos/...` = REST.
 # 2. B.0 publie desormais son propre compte, sur stderr et dans la sortie
 #    JSON de l'audit retro.
-API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
+# 3. `rest_304` (#26260, extension cross-processus) : lectures REST servies
+#    par un 304 ETag serveur -- un 304 ne consomme AUCUN quota (mesure
+#    #26260), le compte `rest` compte les appels gh, `rest_304` la part
+#    servie gratuitement. L'economie devient mesurable par run, pas supposee.
+API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0, "rest_304": 0}
 
 
 def _count_api_call(args: list[str]) -> None:
@@ -3749,6 +3784,20 @@ def gh_json(args: list[str]) -> object:
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
     _count_api_call(args)
+    # Lectures REST conditionnelles (#26260, extension cross-processus) : les
+    # chemins `api repos/...` sans drapeau passent par l'ETag persiste partage
+    # par machine. Un 304 est une PREUVE SERVEUR que le chemin est inchange
+    # depuis le corps cache -- B.0 est un organe de merge, aucun corps n'est
+    # jamais servi sans reponse du serveur, donc aucun faux vert possible.
+    # Tout echec non-304 leve les memes exceptions que le chemin d'origine
+    # (CalledProcessError / JSONDecodeError / TimeoutExpired).
+    etag_path = gh_etag.etag_applicable(args)
+    if etag_path is not None:
+        body, served_by_304 = gh_etag.conditional_get(
+            etag_path, timeout=GH_CALL_TIMEOUT_S)
+        if served_by_304:
+            API_USAGE["rest_304"] += 1
+        return _project_gh_payload(args, body)
     out = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
         timeout=GH_CALL_TIMEOUT_S,
@@ -5357,6 +5406,38 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
     return False
 
 
+def _adjoint_liftable_reserve(nit_author: str, nit_body: str) -> bool:
+    """Q185 : la reserve est-elle emise par un BOT, seul perimetre de la
+    voix adjointe (``ADJOINT_LIFT_LOGINS``) ?
+
+    Bot au sens de Q185, par detection DEJA EN PLACE dans l'organe :
+
+    - ``BOT_LOGINS`` : bots automatises (github-actions, codecov, dependabot,
+      copilot-pull-request-reviewer -- la reserve d'un bot y vit surtout via
+      un etat natif CHANGES_REQUESTED, classify() rendant None sinon) ;
+    - ``PERSONA_ALIAS_LOGINS`` (clusterManager-Myia) : la persona Hermes,
+      reviewer principal ;
+    - ``jsboige`` + marqueur persona POSE dans le corps
+      (``_PERSONA_MARKERS_RE``, citation depouillee) : la review Hermes du
+      self-bot. Sans marqueur, un commentaire ``jsboige`` est le canal des
+      NITS USER (B.0 : les nits du user sont les commentaires jsboige qui
+      ne portent PAS la persona) -- hors perimetre.
+
+    Fail-closed : tout autre auteur (le coordinateur, une autre lane, un
+    humain, une classification inconnue) rend False -- la voix adjointe ne
+    leve pas.
+    """
+    if not nit_author:
+        return False
+    if nit_author in BOT_LOGINS:
+        return True
+    if nit_author in PERSONA_ALIAS_LOGINS:
+        return True
+    if nit_author == "jsboige":
+        return bool(_PERSONA_MARKERS_RE.search(_strip_quoted(nit_body or "")))
+    return False
+
+
 def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
     """#15511 (P1) : plus longue serie de [DIAG] sans [ACTION] intercale.
 
@@ -5744,8 +5825,21 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # declare le relais, la LEVEE revendique le siege en tete de ligne.
         siege = (_QUALIFYING_SEAT_BODY_RE.search(_strip_quoted(nit_body or ""))
                  and _QUALIFYING_SEAT_HEAD_RE.search(_strip_quoted(lift_body or "")))
-        if not (lift_author in LIFT_OVERRIDE_LOGINS
-                and (m is not None or siege)):
+        if lift_author in ADJOINT_LIFT_LOGINS:
+            # Q185 (sign-off user 2026-11-13) : la voix adjointe. Meme
+            # grammaire que le coordinateur -- ``[OVERRIDE] lane`` pose en
+            # tete (#13030), scope par reserve juge ci-dessous par
+            # ``_override_scopes_reserve`` (#14216) -- mais NI la voie siege
+            # qualifiant (#16764 : le siege est l'arbitre tiers, role
+            # coordinateur) NI un perimetre autre que BOT
+            # (``_adjoint_liftable_reserve``) : reserve du coordinateur,
+            # nit user, reserve d'une autre lane ou d'un humain ->
+            # fail-closed, pas levee.
+            if m is None or not _adjoint_liftable_reserve(nit_author,
+                                                          nit_body):
+                return False
+        elif not (lift_author in LIFT_OVERRIDE_LOGINS
+                  and (m is not None or siege)):
             return False
         if siege and m is None:
             # Le scope #14216 est porte par la DECLARATION du nit
@@ -6162,6 +6256,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         if t is not None
         and OVERRIDE_LANE.search(body or "") is not None
         and author not in LIFT_OVERRIDE_LOGINS
+        and author not in ADJOINT_LIFT_LOGINS
         and author not in nit_authors
     ] + [
         # #13495 — meme exigence de nomination pour la trappe fermee a
@@ -6197,6 +6292,27 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                              if b.get("author") not in ("", author)
                              and not _override_scopes_reserve(
                                  body or "", b.get("author") or "")})
+    ] + [
+        # Q185 — meme exigence de nomination pour la voix adjointe : un
+        # override adjoint qui laisse survivre une reserve est nomme avec sa
+        # cause (reserve hors perimetre bot, reserve non nommee nommement,
+        # ou PR portee par l'App elle-meme, #13495). Sans cette ligne, un
+        # gate rouge « malgre notre override adjoint » serait indistinguable
+        # d'un bug du detecteur (meme contrat que #13316/#14216 ci-dessus) ;
+        # et une levee adjointe REUSSIE ne produit aucune note.
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré pour la réserve de « {b.get('author')} » — "
+                 f"la voix adjointe de « {author} » ne lève par phrase que "
+                 "les réserves de bot (Q185, sign-off 2026-11-13 : persona "
+                 "Hermes, clusterManager-Myia, bots automatisés), hors PR "
+                 "portée par l'App elle-même (#13495), et nommées "
+                 "nommément (#14216)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and author in ADJOINT_LIFT_LOGINS
+        and OVERRIDE_LANE.search(body or "") is not None
+        for b in blocking
+        if b.get("author") not in ("", author)
     ]
 
     # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
@@ -6604,7 +6720,8 @@ def main() -> int:
         # #17315 : la consommation sort sur stderr, comme le fait le gate --
         # un compteur publie n'est lu par personne s'il reste dans le JSON.
         print(f"API-USAGE (#17315) : rest={API_USAGE['rest']} "
-              f"graphql={API_USAGE['graphql']}", file=sys.stderr)
+              f"graphql={API_USAGE['graphql']} "
+              f"rest_304={API_USAGE['rest_304']}", file=sys.stderr)
         return rc
     except subprocess.TimeoutExpired as exc:
         # #19643 (residu) : gh n'a pas repondu dans sa borne -- aucun verdict.

@@ -24,6 +24,8 @@ registered under a different name" ; l'option ini
 
 from __future__ import annotations
 
+import json
+import re
 import sys
 from pathlib import Path
 
@@ -524,6 +526,26 @@ def test_missing_pytest_pin_is_detected(tmp_path: Path) -> None:
     assert "pytest>=8" in problems[0]
 
 
+def _jeux_de_labels_runs_on(runs_on: object) -> list[list[str]]:
+    """Jeux de labels vises par un `runs-on`, dans l'ordre d'apparition.
+
+    La forme statique est une liste ; la forme hybride auditee (#26386) est une
+    expression a deux jambes :
+
+        ${{ (GARD) && fromJSON('["..."]') || fromJSON('["..."]') }}
+
+    Les deux lectures renvoient la meme structure, ce qui permet d'asserter les
+    jambes -- et non la chaine entiere.
+    """
+    if isinstance(runs_on, list):
+        return [[str(label) for label in runs_on]]
+    expression = str(runs_on)
+    return [
+        [str(label) for label in json.loads(jeu)]
+        for jeu in re.findall(r"fromJSON\(\s*'(\[[^\]]*\])'\s*\)", expression)
+    ]
+
+
 def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pushes() -> None:
     """The Conway ratchet must run for its own source changes on PRs and main.
 
@@ -545,7 +567,43 @@ def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pu
 
     job = workflow["jobs"]["scripts-tests"]
     assert job["name"] == "Scripts Tests (CPU)"
-    assert job["runs-on"] == ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+    # Le job reste sur le parc auto-heberge. Depuis #26386 le `runs-on` est une
+    # forme hybride auditee : la jambe `push` vise le slot reserve de main
+    # {self-hosted, coursia-main, coursia-linux}, le repli vise le pool des PR
+    # {self-hosted, coursia-ephemeral, coursia-linux}. Depuis #21978 une jambe
+    # LOURDE ({self-hosted, coursia-persistent, coursia-linux}) peut
+    # s'intercaler entre les deux : elle n'est atteinte que si un operateur
+    # pose la variable de depot `CI_HEAVY_PERSISTENT` (absente par defaut),
+    # et sa forme est auditee par
+    # `scripts/ci/check_self_hosted_runner_policy.py`.
+    # On asserte les JAMBES (leur role et leur ordre), pas la chaine entiere :
+    # le repli ne peut pas glisser vers `ubuntu-latest`, et une jambe
+    # intermediaire ne peut pas ouvrir un pool non declare.
+    MAIN_SLOT = ["self-hosted", "coursia-main", "coursia-linux"]
+    PR_POOL = ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+    HEAVY_FAMILY = ["self-hosted", "coursia-persistent", "coursia-linux"]
+    runs_on = job["runs-on"]
+    if isinstance(runs_on, list):
+        assert runs_on == PR_POOL
+    else:
+        assert "github.event_name == 'push'" in str(runs_on), (
+            "la forme hybride doit rester gardee par l'evenement -- sans la "
+            "garde, la jambe du slot reserve de main serait atteinte par toute PR"
+        )
+        jeux = _jeux_de_labels_runs_on(runs_on)
+        assert jeux[0] == MAIN_SLOT, (
+            "la premiere jambe est le slot reserve de main -- la chaine "
+            f"commence par {jeux[0]}"
+        )
+        assert jeux[-1] == PR_POOL, (
+            "la derniere jambe est le repli sur le pool des PR -- le repli "
+            f"est {jeux[-1]}"
+        )
+        for jambe in jeux[1:-1]:
+            assert jambe == HEAVY_FAMILY, (
+                "une jambe intermediaire ne peut viser que la famille "
+                f"lourde auditee -- trouve {jambe}"
+            )
 
 
 def test_adk_job_targets_existing_refactor_files_for_run_and_collection() -> None:

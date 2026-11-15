@@ -127,7 +127,33 @@ jobs:
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    #
+    # T-L (#25510) : ce job est un job REQUIS -- tant qu'il n'a pas de verdict,
+    # `main` n'est pas verifie. Il etait route sur le meme pool que les PRs
+    # (`coursia-ephemeral`), donc il attendait derriere elles (mesure du
+    # 2026-11-12 : plus de 27 minutes en file, 31 runners sur 31 occupes).
+    # Il vise desormais le slot RESERVE (`coursia-main`) sur un push, et le
+    # pool PR sinon -- repli ENUMERE, exige par
+    # `scripts/ci/check_self_hosted_runner_policy.py` (forme auditee : jeu de
+    # labels + garde `push` + repli ; le jeu seul, ou le jeu sans garde, ou
+    # le jeu sans repli sont refuses).
+    # La garde same-repo ci-dessous reste obligatoire : le repli est
+    # auto-heberge, donc une PR de fork ne doit pas l'atteindre.
+    # Le merge de ce routage suppose le slot DEPLOYE (`--apply` du script de
+    # creation) : sans runner `coursia-main`, le job de `main` attendrait un
+    # runner inexistant. Ordre : deployer le slot, puis merger.
+    #
+    # #21978 (routage par label) : la jambe LOURDE est intercalee entre le
+    # slot reserve et le pool PR. Elle n'est atteinte que si un operateur
+    # pose la variable de depot `CI_HEAVY_PERSISTENT` (ABSENTE PAR DEFAUT)
+    # ET que la PR est du meme depot : c'est la famille `coursia-persistent`
+    # (4 Gio, 512 pids) au lieu du pool PR (1,5 Gio), dont le cgroup tuait
+    # ce job en `exit 137` le 21/10 (c2207).
+    # La forme est une CHAINE de routage auditee par
+    # `scripts/ci/check_self_hosted_runner_policy.py` : chaque jambe porte sa
+    # garde enumeratee, le repli reste le pool PR (auto-heberge) -- donc la
+    # garde meme-depot du job reste obligatoire.
+    runs-on: ${{ (github.event_name == 'push') && fromJSON('["self-hosted","coursia-main","coursia-linux"]') || (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_HEAVY_PERSISTENT == 'true') && fromJSON('["self-hosted","coursia-persistent","coursia-linux"]') || fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12). Grandeur mesuree : le
     # mur du JOB (started_at -> completed_at du job nomme exactement
@@ -608,6 +634,7 @@ jobs:
             MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py \
+            MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_flagship_endpoint.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
