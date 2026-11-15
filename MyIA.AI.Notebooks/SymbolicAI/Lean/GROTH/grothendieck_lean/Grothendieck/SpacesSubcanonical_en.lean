@@ -32,13 +32,14 @@ identical; only docstrings and comments differ.
 Epic #1646, Phase 2 (#2159). No `sorry` introduced.
 -/
 
-import Grothendieck.Spaces
+import Grothendieck.Spaces_en
 import Mathlib.CategoryTheory.Sites.Canonical
 import Mathlib.CategoryTheory.Sites.SheafOfTypes
 
 namespace Grothendieck.SpacesSubcanonical_en
 
 open CategoryTheory TopologicalSpace
+open Grothendieck_en
 
 universe u
 

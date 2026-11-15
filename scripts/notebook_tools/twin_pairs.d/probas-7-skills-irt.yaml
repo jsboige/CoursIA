@@ -33,3 +33,7 @@
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+  - '2026-11-03 (myia-po-2028:CoursIA, PR #24445, commit 8d45d8c4a4) : realignment markdown-only des lectures
+    de PyMC-07-Skills-IRT -- cellules 2/19 (PyMC version 6.3.2 au lieu de 5.28.5 ; AUC (IRT) 0.784 au lieu de
+    0.788, ~78 % du temps). 3 remplacements, code byte-identique, sorties et execution_count intacts (exception
+    C.2 markdown). Jumeau C# Infer-7 non touche. --update en DERNIERE operation (cf #8957).'

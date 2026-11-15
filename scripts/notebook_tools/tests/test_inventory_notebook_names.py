@@ -326,6 +326,130 @@ def test_json_output_is_utf8_even_when_pipe_is_cp1252():
         shutil.rmtree(repo, ignore_errors=True)
 
 
+def _load_inventory_module():
+    """Charge inventory_notebook_names.py comme module (test unitaire direct)."""
+    import importlib.util
+    script = os.path.join(REPO_ROOT,
+                          "scripts/notebook_tools/inventory_notebook_names.py")
+    spec = importlib.util.spec_from_file_location(
+        "inventory_notebook_names_under_test", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_kernel_env_named_coursia_py313_is_known():
+    """#5081 — `coursia-py313-argu` (et le prefixe `coursia-py313`) est un
+    kernel d'env MESURE et publie du depot, pas un kernel inconnu.
+
+    Mesure fondatrice : la table des kernels de `kernels-runtime.md` publie
+    `coursia-py313-argu` (python 3.13.16 / numpy 2.5.2, executable
+    `coursia-canonical`) et documente « po-2023 python3 ==
+    coursia-py313-argu » — plusieurs noms, un seul environnement. Le carnet
+    `Argumentation-08b-Executor-Python.ipynb` (nom canonique, suffixe
+    `-python` reconnu, index absent = base implicite) etait classe `ambigu`
+    uniquement parce que la liste des prefixes ignorait ce nom — meme classe
+    d'artefact que le bloc #23193 (`.net-csharp`, `coursia-ml-training`,
+    `pyphi`).
+
+    Controle negatif : un kernel d'env HORS liste (`gametheory-wsl`, reel
+    dans le depot mais pas encore measure/publie) reste `ambigu` — la liste
+    ne s'elargit pas par sympathie, seulement par mesure publiee.
+    """
+    mod = _load_inventory_module()
+    #idx=None (base implicite), kernel d'env connu, suffixe reconnu -> conforme.
+    assert mod._classify(
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/"
+        "Argumentation-08b-Executor-Python.ipynb",
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/"
+        "Argumentation-08b-Executor-Python",
+        None, "coursia-py313-argu", "-python", None,
+    ) == mod._CLASSIF_CONFORME
+    #Prefixe nu, meme famille : connu lui aussi.
+    assert mod._kernel_known("coursia-py313")
+    #Controle negatif : kernel env-nomme hors liste reste inconnu.
+    assert not mod._kernel_known("gametheory-wsl")
+    #Et None reste inconnu (jamais enregistre).
+    assert not mod._kernel_known(None)
+
+
+def test_inventory_archive_revision_no_kernelspec_is_not_broken_protocol():
+    """#23655 branche 1 : blobs lus, aucun kernelspec -> inventaire publie.
+
+    Une revision d'archives (carnets JSON sans metadata.kernelspec) doit
+    produire un inventaire avec kernel None partout et une note sur stderr —
+    pas une exception « protocole rompu ». Avant le correctif, la garde
+    comptait les kernelspec trouves au lieu des blobs lus : ce cas legitime
+    levait a tort.
+    """
+    repo = tempfile.mkdtemp(prefix="inv-archives-")
+    try:
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        d = os.path.join(repo, "MyIA.AI.Notebooks", "GenAI", "Texte")
+        os.makedirs(d)
+        # Archives : JSON de carnet VALIDE mais sans metadata.kernelspec.
+        with open(os.path.join(d, "MGS-26-Equilibrium.ipynb"), "w",
+                  encoding="utf-8") as f:
+            f.write(json.dumps({"cells": [], "metadata": {}, "nbformat": 4,
+                                "nbformat_minor": 5}))
+        _git(repo, "add", "-A")
+        _git(repo, "commit", "-qm", "archives")
+        r = subprocess.run(
+            [sys.executable,
+             os.path.join(REPO_ROOT,
+                          "scripts/notebook_tools/inventory_notebook_names.py"),
+             "--base", "HEAD", "--json"],
+            cwd=repo, capture_output=True, text=True,
+            encoding="utf-8", errors="replace")
+        assert r.returncode == 0, \
+            "revision d'archives ne doit pas lever : %s%s" % (r.stdout, r.stderr)
+        inv = json.loads(r.stdout)
+        entries = {e["path"]: e for e in inv["entries"]}
+        rel = "MyIA.AI.Notebooks/GenAI/Texte/MGS-26-Equilibrium.ipynb"
+        assert rel in entries, \
+            "entree absente de l'inventaire : %s" % sorted(entries)
+        assert entries[rel]["kernelspec"] is None, \
+            "kernel attendu None (archives), obtenu %r" % entries[rel]["kernelspec"]
+        assert "revision d'archives" in r.stderr, \
+            "note stderr attendue, obtenu : %r" % r.stderr
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
+def test_kernelspecs_at_zero_blob_read_still_raises():
+    """#23655 branche 2 : zero blob lu -> RuntimeError, quel que soit le motif.
+
+    Des chemins absents de la revision font repondre `<object> missing` a
+    cat-file --batch : zero blob lu. C'est l'etat que la garde doit
+    attraper (protocole rompu) — le correctif comptant les blobs lus ne
+    l'a pas affaiblie.
+    """
+    mod = _load_inventory_module()
+    repo = tempfile.mkdtemp(prefix="inv-zeroblob-")
+    old = os.getcwd()
+    try:
+        _git(repo, "init", "-q")
+        _git(repo, "config", "user.email", "test@example.invalid")
+        _git(repo, "config", "user.name", "test")
+        _git(repo, "commit", "-q", "--allow-empty", "-m", "vide")
+        # _kernelspecs_at lance git SANS cwd : il herite du processus.
+        os.chdir(repo)
+        try:
+            mod._kernelspecs_at("HEAD", ["inexistant.ipynb"])
+        except RuntimeError as e:
+            assert "protocole rompu" in str(e), \
+                "message inattendu : %s" % e
+        else:
+            raise AssertionError(
+                "zero blob lu doit lever RuntimeError (protocole rompu)")
+        finally:
+            os.chdir(old)
+    finally:
+        shutil.rmtree(repo, ignore_errors=True)
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     ko = 0

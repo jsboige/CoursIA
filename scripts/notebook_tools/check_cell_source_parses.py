@@ -49,6 +49,16 @@ import sys
 from pathlib import Path
 from typing import Iterable, List, Optional, Tuple
 
+# Shared rename probe (#24068): a notebook staged as a pure rename was only
+# MOVED, so the cells it carries pre-date the move -- a consolidation-by-move
+# must not be blamed for a parse error it did not introduce. Same family as
+# #24039 (scripts/check_subprocess_encoding.py).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# T3-c (#25366) : probe git_index_renames reloge dans scripts/audit/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "audit"))
+import git_index_renames  # noqa: E402
+from git_index_renames import skip_pure_renames  # noqa: E402
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
@@ -375,8 +385,33 @@ def main() -> int:
         paths = [args.path]
     elif args.paths:
         paths = [p for p in args.paths if p.exists()]
+        # A notebook staged as a pure rename was only MOVED (#24068): the
+        # cells it carries pre-date the move, so a consolidation-by-move must
+        # not be reported for a parse error it did not introduce.
+        kept, skipped = skip_pure_renames([p.as_posix() for p in paths])
+        if skipped:
+            print(f"cell-source-parses: {len(skipped)} pure rename(s) "
+                  "ignored -- their cells pre-date the move (#24068)",
+                  file=sys.stderr)
+        paths = [Path(p) for p in kept]
     elif args.pr_diff:
         names = _diff_range(args.pr_diff[0], args.pr_diff[1])
+        # CI half (#24068): this mode scans the WHOLE notebook of every
+        # changed file, so a notebook that was merely MOVED between the base
+        # and the head would resurrect the parse error it inherited -- the
+        # same defect as the pre-commit half, on the CI surface. A pure
+        # rename (R100) adds no line and changes no cell: it is excluded.
+        # A rename WITH edits stays in the target: the lane did touch it.
+        pure = git_index_renames.pure_renames_between(
+            args.pr_diff[0], args.pr_diff[1])
+        if pure:
+            kept_names = [n for n in names if n.strip() not in pure]
+            skipped_n = len(names) - len(kept_names)
+            if skipped_n:
+                print(f"cell-source-parses: {skipped_n} pure rename(s) "
+                      "ignored -- their cells pre-date the move (#24068)",
+                      file=sys.stderr)
+            names = kept_names
         paths = _cells_touched_by_pr(names)
     else:
         paths = list(_iter_python_notebooks([NOTEBOOKS_DIR]))

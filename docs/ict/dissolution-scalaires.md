@@ -59,13 +59,13 @@ Trois notebooks frères appliquent à la triade Φ/F/K des **proxys alternatifs*
 
 [`ICT-16-MDLTwoPartCode-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) (strate 5, cellule [8] Bosse complexité-entropie) montre que K (compression) **n'est pas un scalaire** : la bosse Crutchfield-Feldman (complexité statistique vs taux d'entropie) impose un **plan à deux dimensions** pour décrire K sur des données réelles. K est dissous en `(H_rate, model_bits)` ou, opérationnellement, `(entropy_rate_estimate, tpm_description_length)`.
 
-[`ICT-17-EpsilonMachine-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb) (strate 5, cellule [23] Bilan) ajoute une **troisième jambe** : `C_μ` (entropie statistique de l'ε-machine de Crutchfield), **plafond** pour n'importe quel estimateur `p̂` (Gate 9, cellule [15]). K n'est plus seulement compressé (bits) ni même descriptif (bits + résiduel) : il est **structurellement contraint** par la causalité de la séquence.
+[`ICT-17-EpsilonMachine-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb) (strate 5, cellule [23] Bilan) ajoute une **troisième jambe** : `C_μ` (entropie statistique de l'ε-machine de Crutchfield), **plafond** pour n'importe quel estimateur `p̂` (Gate 9, cellule [15]). K n'est plus seulement compressé (bits) ni même descriptif (bits + résiduel) : il est **structurellement contraint** par la causalité de la séquence.
 
 **Statut (palier 5).** K est passé de **scalaire** (ICT-15) à **bipolaire** (ICT-16 : `model_bits + résiduel`) à **tri-polaire** (ICT-17 : `C_μ + model_bits + résiduel`). Chaque polarité capture un **invariant différent** : la complexité statistique (C_μ), la compressibilité algorithmique (model_bits), l'adéquation aux données (résiduel). La dissolution est **technique** : c'est la **bosse Crutchfield-Feldman** qui force deux dimensions.
 
 ### Palier 6 — ICT-17b : K dissous en positif vs négatif sur le grokking
 
-[`ICT-17b-Grokking-CompressionProgress-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (strate 5, cellule [13] Interprétation honnête) pousse K sur le substrat training (multiplication modulaire `a*b mod p`, transformer 1-couche) :
+[`ICT-17b-Grokking-CompressionProgress-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (strate 5, cellule [13] Interprétation honnête) pousse K sur le substrat training (multiplication modulaire `a*b mod p`, transformer 1-couche) :
 
 - **Proxy positif** : `K_compression_progress` (Schmidhuber) — la **compression progressive des poids** accompagne le grokking, **résultat positif et robuste** (cellule [8] §2).
 - **Proxy négatif** : `K_rang_effectif` (cellule [17] exercice 2) — le **rang effectif** ne capture pas la transition, **résultat négatif**.
@@ -75,7 +75,7 @@ Trois notebooks frères appliquent à la triade Φ/F/K des **proxys alternatifs*
 
 ### Palier 7 — ICT-21 / ICT-22 : Φ/F/K sur substrat S4 — dissolution continue
 
-[`ICT-21-SAETrajectoires-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb) (strate 5, cellule [19] Lecture honnête) ajoute le substrat S4 (LLM + SAE features) :
+[`ICT-21-SAETrajectoires-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb) (strate 5, cellule [19] Lecture honnête) ajoute le substrat S4 (LLM + SAE features) :
 
 - **Φ/F/K restent concluants** (Gate 13 ICT-22, cellule [13]) — la triade tient sur 4 substrats (S1/S2/S3/S4).
 - **Mais l'émergence créditée est régime-dépendante** (Gate 12 ICT-22, cellule [11]) — vs shuffle, le verdict est **nuancé et majoritairement négatif** : S4 affiche le `ec_gain` le plus bas, **renforce** la convergence (triade) mais **affaiblit** la discrimination (émergence). Le LLM **ne casse pas** la triade mais **ajoute une strate de nuance** : la triade mesure **la convergence**, pas **l'émergence**.

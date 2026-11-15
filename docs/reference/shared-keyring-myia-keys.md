@@ -1,5 +1,7 @@
 # Trousseau partagé `MyIA-Keys` — organe d'accès, bootstrap par machine, empreinte de preuve
 
+> REFERENCE — vivante — dernière révision 2026-11-14
+
 Détail durable de l'organe `scripts/secrets/agent_keyring.py`. La règle qui le gouverne reste
 [.claude/rules/secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) — ce fichier ne pose
 aucune prescription nouvelle, il documente un outil et l'état vérifié de son déploiement.
@@ -14,7 +16,9 @@ G:\Mon Drive\Synchronisation\RooSync\.shared-state\MyIA-Keys.kdbx
 
 La passphrase maîtresse est saisie dans un PDF de secours (§ « Le PDF d'urgence » ci-dessous).
 
-**Le coffre porte aujourd'hui des mots de passe de connexion GitHub, pas des PAT.** C'est le
+**Les entrées `github <machine>` portent des mots de passe de connexion GitHub, pas des PAT.**
+(Les clés des Apps de lane, elles, sont distribuées par le coffre : § « Les clés privées des
+Apps de lane » plus bas.) C'est le
 constat le plus important de cette page, et il est mesurable : `verify` rend `secret=mot de passe`
 sur les entrées peuplées. Conséquence opérationnelle — **le coffre n'est pas encore un canal de
 distribution de jetons**. `gh auth login --with-token` refuse un mot de passe de compte, avec un
@@ -162,6 +166,61 @@ Cette PR portait d'abord son propre correctif ; #17442 l'a livré entre-temps, a
 L'organe du trousseau réutilise cette mesure pour `get` au lieu d'en tenir une seconde. La leçon
 générale reste : **un test d'ignorance lancé dans ce clone mesure ce clone, pas le dépôt** — et une
 énumération est par construction aveugle au fichier qu'on ajoutera demain.
+
+## Quand le coffre semble absent — chercher l'arbre Drive fourché avant de conclure
+
+Deux pièges mesurés les 2026-11-09/10 : un `coffre : ABSENT` est un **défaut compté** —
+`cmd_doctor()` rend `EXIT_DEFECT` (1), jamais un feu vert — et une absence au chemin attendu
+ne prouve pas la perte du coffre.
+
+Le Drive partagé peut porter un **arbre jumeau fourché** (`Synchronisation (1)\` à côté de
+`Synchronisation\`) : le coffre vivait dans le jumeau figé au 29/10 pendant que l'arbre par
+défaut ne le portait plus. Avant de conclure « absent » :
+`ls "G:/Mon Drive/" | grep -i "Synchronisation ("`, puis comparer les copies des deux arbres
+(taille, SHA-256). `vault_candidates()` énumère ces jumeaux et `doctor` les signale par
+`CONFLIT` dès que plusieurs copies existent — arrêt **avant toute écriture**, même à contenu
+identique (mesure po-2023 du 2026-11-10 : `coffre : OK` + `CONFLIT 2 copies visibles`,
+rc=1). La **résolution du fork appartient à roo-extensions**, signalée sur le dashboard
+global — pas à un geste local de consolidation ou de suppression.
+
+On ne **reconstruit jamais** le coffre depuis un seul `master.env` : ce serait fabriquer une
+source unique de substitution. Laisser Drive synchroniser, relancer `doctor` ; la phase 6
+(retrait des `master.env` et `.env` rendus) reste bloquée tant qu'un coffre vivant n'est pas
+mesuré.
+
+**Écart mesuré le 2026-11-14** : `set` ne consulte que les copies **voisines** du coffre
+(`conflict_copies()`), pas les jumeaux d'arbre que `doctor` énumère. Il écrit donc malgré un
+`CONFLIT` d'arbre. Les 8 entrées d'App ci-dessous ont été écrites ainsi, après comparaison
+SHA-256 des deux copies (identiques, aucune perte) : le jumeau `Synchronisation (1)\` est
+depuis en retard de ces entrées. Aligner `set` sur `vault_candidates()` est un correctif dû.
+
+## Les clés privées des Apps de lane (#17437)
+
+Depuis le 2026-11-14, le coffre est **le canal de distribution** des clés des GitHub Apps de lane,
+une entrée par App, dans le groupe `Agents` :
+
+| Champ | Contenu |
+|---|---|
+| titre | `github-app coursia-lane-<lane>` (`ai-01`, `po-2023` … `po-2028`, `web1`) |
+| username | l'App ID numérique (public, il signe le JWT) |
+| password | la clé privée PEM (sans le saut de ligne final, que `set` retire) |
+| url | la page de réglages de l'App |
+
+La clé ne touche jamais le disque de la machine qui consomme : le coffre l'injecte dans
+l'environnement du seul processus de forge, qui rend un jeton d'installation d'une heure.
+
+```bash
+python scripts/secrets/agent_keyring.py show "github-app coursia-lane-po-2024"   # App ID = user
+python scripts/secrets/agent_keyring.py run --env "APP_PEM=github-app coursia-lane-po-2024" \
+    -- python scripts/secrets/github_app_token.py --app-id <id> --key-env APP_PEM \
+       --repo jsboige/CoursIA --quiet
+```
+
+Chaque entrée a été vérifiée au dépôt par un jeton forgé depuis le coffre (installation résolue,
+`expires_at` lu, jeton jamais imprimé). Les copies locales de `.secrets/github-apps/` restent
+sur la machine qui a créé les Apps. Une copie envoyée par pièce jointe RooSync devient inutile
+dès que la lane lit le coffre, et la pièce jointe se supprime par `attachments_delete`, puisque
+`destruct_after` ne retire que le message.
 
 ## Voir aussi
 

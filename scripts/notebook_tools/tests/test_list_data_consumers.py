@@ -17,9 +17,9 @@ import list_data_consumers as organ
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-OWL = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_fallacies.owl"
-CSV = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv"
-CARDS = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb"
+OWL = "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/argumentum_fallacies.owl"
+CSV = "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv"
+CARDS = "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02b-Argumentum-Cards-Python.ipynb"
 
 
 class TestVendoredDataPredicate:
@@ -31,7 +31,7 @@ class TestVendoredDataPredicate:
 
     def test_other_csv_is_not_vendored(self):
         assert not organ.is_vendored_data(
-            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/other.csv"
+            "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/other.csv"
         )
 
     def test_docs_are_not_vendored(self):
@@ -41,12 +41,12 @@ class TestVendoredDataPredicate:
 class TestConsumerExclusions:
     def test_archive_consumer_is_excluded(self):
         assert organ.EXCLUDED_CONSUMER.search(
-            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Old.ipynb"
+            "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/_archive/Old.ipynb"
         )
 
     def test_translation_consumer_is_excluded(self):
         assert organ.EXCLUDED_CONSUMER.search(
-            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-EN.ipynb"
+            "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02b-EN.ipynb"
         )
 
     def test_source_consumer_is_kept(self):

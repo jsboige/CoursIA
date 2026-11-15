@@ -138,6 +138,8 @@ def test_classify_single_merged_pr_silent_is_ready(monkeypatch):
         ("search", "issues", "--json", "number"): [],
         ("issue", "view", "11266", "--repo", "o/r", "--json",
          "comments"): {"comments": []},
+        ("pr", "view", "11300", "--repo", "o/r", "--json",
+         "body"): {"body": "Closes #11266"},
     }
     _stub_subprocess(monkeypatch, mapping)
     row = classify_one("o/r", {"number": 11266, "title": "step mort workflow-path-filter-audit"})
@@ -263,11 +265,82 @@ def test_classify_acceptance_checkboxes_are_not_container(monkeypatch):
         ("search", "issues", "--json", "number", "--limit", "20"): [],
         ("issue", "view", "17902", "--repo", "o/r", "--json",
          "comments"): {"comments": []},
+        ("pr", "view", "17904", "--repo", "o/r", "--json",
+         "body"): {"body": "Closes #17902"},
     }
     _stub_subprocess(monkeypatch, mapping)
     row = classify_one("o/r", {"number": 17902,
                                "title": "Corriger le rendu SVG de la cellule 12"})
     assert row["verdict"] == "READY"
+
+
+def _single_merge_mapping(issue_number: int, pr_number: int, pr_body: str) -> dict:
+    """Replay the original single-merge witness shape without live drift."""
+    return {
+        ("api", f"repos/o/r/issues/{issue_number}/timeline", "--paginate"): [
+            _timeline_event(pr_number, "2026-10-30T17:12:44Z"),
+        ],
+        ("search", "issues", "--json", "number", "--limit", "20"): [],
+        ("issue", "view", str(issue_number), "--repo", "o/r", "--json",
+         "comments"): {"comments": []},
+        ("pr", "view", str(pr_number), "--repo", "o/r", "--json",
+         "body"): {"body": pr_body},
+    }
+
+
+def test_partial_marker_on_23159_is_partial_tranche(monkeypatch):
+    # Frozen body excerpt of merged PR #23159, read firsthand 2026-11-06.
+    # Live #23140 is now AMBIGUOUS because later merged PRs appeared; this
+    # fixture preserves the exact single-merge defect measured by #23815.
+    body = "Grain: DEEP/notebook-python\n\nSee #23140 -- deuxieme grain.\n"
+    _stub_subprocess(monkeypatch, _single_merge_mapping(23140, 23159, body))
+    row = classify_one("o/r", {"number": 23140, "title": "Distiller 3SUM et APSP"})
+    assert row["verdict"] == "PARTIAL_TRANCHE"
+    assert "#23159" in row["reason"]
+
+
+def test_partial_marker_on_23200_is_partial_tranche(monkeypatch):
+    # Frozen body excerpt of merged PR #23200, read firsthand 2026-11-06.
+    body = "Grain: DEEP/guard\n\nSee #22938\n\nTranche de la file."
+    _stub_subprocess(monkeypatch, _single_merge_mapping(22938, 23200, body))
+    row = classify_one("o/r", {"number": 22938, "title": "Coordination au long cours"})
+    assert row["verdict"] == "PARTIAL_TRANCHE"
+    assert "#23200" in row["reason"]
+
+
+def test_closing_marker_on_same_merge_shape_stays_ready(monkeypatch):
+    # Positive control: identical evidence except the marker class.
+    body = "Grain: DEEP/guard\n\nCloses #22938\n"
+    _stub_subprocess(monkeypatch, _single_merge_mapping(22938, 23200, body))
+    row = classify_one("o/r", {"number": 22938, "title": "Coordination au long cours"})
+    assert row["verdict"] == "READY"
+    assert "closing marker" in row["reason"]
+
+
+def test_pr_body_read_failure_fails_closed_to_partial(monkeypatch):
+    # An unreadable body cannot prove a COMPLETE delivery: never invent READY.
+    _stub_subprocess(monkeypatch, _single_merge_mapping(22938, 23200, ""))
+    row = classify_one("o/r", {"number": 22938, "title": "Coordination au long cours"})
+    assert row["verdict"] == "PARTIAL_TRANCHE"
+
+
+def test_get_pr_body_reads_json_key_never_jq(monkeypatch):
+    import subprocess as _sp
+    import json as _json
+    import verifier_cleanup as vc
+    seen = {}
+
+    class _P:
+        stdout = _json.dumps({"body": "See #23140"})
+        returncode = 0
+
+    def fake_run(args, **kwargs):
+        seen["args"] = tuple(args)
+        return _P()
+
+    monkeypatch.setattr(_sp, "run", fake_run)
+    assert vc.get_pr_body("jsboige/CoursIA", 23159) == "See #23140"
+    assert "--jq" not in seen["args"]
 
 
 # --- #17956 : coherence labeler <-> closure pass (meme corpus, meme refs) ---
@@ -279,14 +352,9 @@ def test_container_corpus_never_candidate_and_never_ready(monkeypatch):
     # ce test alimente le MEME corpus + les MEMES refs declarees a chacun
     # et exige la coherence des deux cotes, plus les cas sains (feuille).
     #
-    # #23762 a change la regle cote labeler : un PR mergée qui declare
-    # `See #N` (marqueur de contribution PARTIELLE) sans `Closes` rend
-    # desormais `partial`, plus `candidate`. La fixture le porte donc
-    # explicitement, et le controle positif (feuille reellement livree)
-    # se fait sur un marqueur fermant. La divergence qui reste -- le
-    # verificateur dit READY la ou le labeler dit partial, faute de lire
-    # la classe du marqueur -- est suivie en #23815 et n'est PAS assertée
-    # comme coherence : elle est nommee ici pour qu'elle ne se perde pas.
+    # #23815 a scinde le verdict : marqueur partiel => PARTIAL_TRANCHE,
+    # marqueur fermant => READY. Les deux fixtures de feuille ci-dessous
+    # alignent donc le verificateur sur la classe rendue par le labeler.
     from candidate_delivered import classify as cd_classify
 
     REF_PARTIAL = "Grain: DEEP/notebook-python -- See #{n} (tranche)."
@@ -304,7 +372,7 @@ def test_container_corpus_never_candidate_and_never_ready(monkeypatch):
         # Feuille declaree par une tranche : `See` n'est pas une livraison
         # complete (#23762) -- le labeler refuse l'etiquette.
         (17902, "Corriger le rendu SVG de la cellule 12",
-         "Acceptance:\n\n- [x] SVG\n", "READY", "partial", REF_PARTIAL),
+         "Acceptance:\n\n- [x] SVG\n", "PARTIAL_TRANCHE", "partial", REF_PARTIAL),
         # Controle positif : la meme feuille, livree par un marqueur
         # fermant, reste candidate. Sans ce cas le test ne prouverait plus
         # qu'une feuille peut etre etiquetee.
@@ -321,6 +389,8 @@ def test_container_corpus_never_candidate_and_never_ready(monkeypatch):
              "body"): {"body": body},
             ("issue", "view", str(n), "--repo", "o/r", "--json",
              "comments"): {"comments": []},
+            ("pr", "view", "17754", "--repo", "o/r", "--json",
+             "body"): {"body": ref_body.format(n=n)},
         }
         _stub_subprocess(monkeypatch, mapping)
         row = classify_one("o/r", {"number": n, "title": title})
@@ -429,3 +499,55 @@ def test_classify_tasklist_body_via_gh_reel(monkeypatch):
     row = classify_one("o/r", {"number": 17956,
                                "title": "Fermer la dette de rendu des notebooks"})
     assert row["verdict"] == "CONTAINER"
+
+
+# --- #25894 : panne gh du crible -- strict leve, labeler degrade ------------
+
+def _mapping_panne_pr_body():
+    """Tout reussit SAUF la lecture du body de la PR fusionnee (rc 1).
+
+    C'est exactement la falsification mesuree par la review Hermes du
+    11/11 sur #25894 : le body illisible se lisait comme « pas de marqueur
+    de fermeture », donc un verdict PARTIAL_TRANCHE ferme a tort.
+    """
+    return {
+        ("issue", "view", "4242", "--repo", "o/r", "--json", "body"):
+            {"body": "Sujet unitaire"},
+        ("api", "repos/o/r/issues/4242/timeline", "--paginate"):
+            [_timeline_event(999, "2026-11-01T00:00:00Z")],
+        ("search", "issues"): [],
+        ("issue", "view", "4242", "--repo", "o/r", "--json", "comments"):
+            {"comments": []},
+        # Aucune cle ("pr", "view", ...) : le stub rend rc 1 = panne gh.
+    }
+
+
+def test_panne_gh_du_body_en_mode_strict_leve_25894(monkeypatch):
+    import pytest
+    import verifier_cleanup
+    _stub_subprocess(monkeypatch, _mapping_panne_pr_body())
+    issue = {"number": 4242, "title": "Sujet unitaire", "labels": []}
+    with pytest.raises(verifier_cleanup.GhUnavailableError):
+        classify_one("o/r", issue, strict_gh=True)
+
+
+def test_panne_gh_du_body_en_mode_labeler_reste_partial_tranche(monkeypatch):
+    """Mode labeler (defaut) : la lecture cassee reste une absence de
+    donnee -- verdict degrade PARTIAL_TRANCHE, jamais une exception. Le
+    comportement historique du labeler est preserve a l'identique."""
+    _stub_subprocess(monkeypatch, _mapping_panne_pr_body())
+    issue = {"number": 4242, "title": "Sujet unitaire", "labels": []}
+    row = classify_one("o/r", issue)
+    assert row["verdict"] == "PARTIAL_TRANCHE"
+
+
+def test_mode_strict_sain_rend_ready(monkeypatch):
+    """Strict ne change rien quand gh repond : le body porte le marqueur,
+    le verdict est READY, identique au mode labeler."""
+    mapping = _mapping_panne_pr_body()
+    mapping[("pr", "view", "999", "--repo", "o/r", "--json", "body")] = {
+        "body": "Closes #4242"}
+    _stub_subprocess(monkeypatch, mapping)
+    issue = {"number": 4242, "title": "Sujet unitaire", "labels": []}
+    assert classify_one("o/r", issue, strict_gh=True)["verdict"] == "READY"
+    assert classify_one("o/r", issue)["verdict"] == "READY"

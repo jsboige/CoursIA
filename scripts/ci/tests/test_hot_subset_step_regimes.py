@@ -91,6 +91,16 @@ def _run_step(
     script = tmp_path / "step.sh"
     script.write_text(_hot_subset_run_block(), encoding="utf-8", newline="\n")
     env = dict(os.environ)
+    # Fuite d'env runner (#25104, mesure du 07/11) : sur un runner Linux,
+    # GITHUB_BASE_REF est une variable PAR DEFAUT de l'evenement pull_request --
+    # pytest l'herite, et sur une PR EMPILEE elle vaut la branche mere : le
+    # step (correctement, #22472) diff alors contre elle, et le test qui epingle
+    # la plage PAR DEFAUT (origin/main...HEAD) devient rouge sans que ni le
+    # step ni le test n'aient change. Invisible localement : le bash WSL ne
+    # recoit pas l'env du processus Windows (point 2 ci-dessous) -- reproduit
+    # en declarant la variable dans WSLENV. On retire la variable de
+    # l'environnement simule ; extra_env reste la voie pour l'epiner.
+    env.pop("GITHUB_BASE_REF", None)
     # Portabilite Windows (#22436, deux causes mesurees) : le bash MSYS mange les
     # antislashs d'un chemin Windows (`C:\...` -> rc 127) et ne resout pas non plus
     # la forme `C:/` ; son PATH se separe par ':', la ou os.pathsep vaut ';'.

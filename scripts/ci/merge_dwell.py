@@ -23,8 +23,9 @@ merge :
   * `DWELL_HOURS_DEFAULT = 24.0` (`scripts/pick_idle_grain.py`) refuse de
     *proposer* une issue creee il y a moins de 24 h -- c'est un picker, pas
     un gate ;
-  * l'attente bornee du `PR gate` (`--timeout-min 45`) attend que les
-    constituants concluent -- elle ne differe rien une fois qu'ils sont verts.
+  * l'attente bornee du `PR gate` (`--timeout-min 59` depuis le 2026-11-14,
+    55 avant, 45 avant cela) attend que les constituants concluent -- elle ne
+    differe rien une fois qu'ils sont verts.
 
 D'ou l'attachement retenu : le plancher est evalue par le gate lui-meme,
 **apres** que les constituants ont conclu verts, et **hors** de la boucle
@@ -1037,7 +1038,7 @@ def _default_branch(repo: str, fetch=_gh_json) -> str:
 #: pull_request, tous deux filtres par la MEME liste de chemins -- les deux
 #: incluent `tests/**`, `pytest.ini`, `.github/workflows/**` et une poignee
 #: de sujets hors `scripts/` (registre d'attributions, `conway_lean/**`,
-#: `prosody_lab/syllable_pitch.py`, `Track2-GoogleADK/**`, ...). Une PR qui
+#: `prosody_lab/syllable_pitch.py`, `07-Agent-Orchestration/**`, ...). Une PR qui
 #: ne touche AUCUN de ces chemins ne le declenche sur aucun des deux. #19069
 #: corrige ici deux mentions erronees successives : « pas de trigger
 #: pull_request » (version initiale) puis « une PR hors `scripts/**` », qui

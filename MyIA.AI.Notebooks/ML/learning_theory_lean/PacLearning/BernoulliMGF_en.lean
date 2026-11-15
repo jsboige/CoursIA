@@ -132,7 +132,7 @@ The bound `φ'' ≤ 1/4` is the **analytic core** of Hoeffding (all the difficul
 concentration lives here: the variance of a r.v. bounded in [0,1] is ≤ (range/2)² = 1/4).
 The final bound `MGF ≤ exp(t²/8)` follows by convexity/Taylor-style monotonicity
 (`K(t) := φ(t) − tμ` has `K(0)=K'(0)=0` and `K'' = φ'' ≤ 1/4` ⟹ `K(t) ≤ t²/8`) —
-proven via the gap method in `bernoulli_mgf_le`.
+proven via the gap method in `bernoulli_mgf_le` (the Taylor/convexity step remains unformalized).
 -/
 
 /-- **Positivity of the log-MGF denominator**: for `μ ∈ [0,1]` and all `t`,

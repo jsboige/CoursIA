@@ -266,7 +266,7 @@ repos:
         entry: python scripts/notebook_tools/list_data_consumers.py --advisory
         language: system
         pass_filenames: false
-        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Argument_Analysis/(ontologies/.*\.owl|data/.*taxonomy.*\.csv)$'
+        files: '^MyIA\.AI\.Notebooks/SymbolicAI/ArgumentAnalysis/(ontologies/.*\.owl|data/.*taxonomy.*\.csv)$'
         stages: [pre-commit]
 
       - id: knots-extracts-class23

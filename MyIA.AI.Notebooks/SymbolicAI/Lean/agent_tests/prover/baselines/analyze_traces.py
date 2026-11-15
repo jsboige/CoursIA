@@ -6,9 +6,11 @@ import json
 import os
 import glob
 import re
+import sys
 from collections import defaultdict, Counter
 import hashlib
 import statistics
+from pathlib import Path
 
 TRACE_DIR = os.path.join(os.path.dirname(__file__), "traces")
 
@@ -126,40 +128,16 @@ if _stale:
     print(f"        Re-run with --since 2026-06-01 to scope to the current harness.")
 print()
 
-def _derive_result_kind(result, final_sorry, original_sorry):
-    """Canonical run verdict — mirror of run_prover_bg._derive_result_kind (#1453).
-
-    Applied retroactively in Section 11 to the legacy *_result.json wrappers that
-    predate the ``result_kind`` field (added 2026-07-02): 67 of 76 wrappers carry
-    neither ``result_kind`` nor the diagnostic fields the span-substring
-    classifier (Section 9) reads. Mirrored rather than imported because
-    run_prover_bg pulls prover.config / lean_utils / tree_lock at module load —
-    heavy and side-effectful outside the harness runtime — and this re-derivation
-    is pure dict logic. Keep the 9-branch precedence in sync with the canonical
-    ``run_prover_bg._derive_result_kind`` when it changes.
-
-    Precedence (first match wins): crashed > sorry_decreased > structural_only >
-    provider_outage > correctly_refused > heartbeat_budget_exceeded >
-    decomposition_regression > reasoning_budget_exceeded > no_progress.
-    """
-    if isinstance(result, dict) and result.get("error"):
-        return "crashed"
-    if (final_sorry is not None and original_sorry is not None
-            and final_sorry < original_sorry):
-        return "sorry_decreased"
-    if isinstance(result, dict) and result.get("structural_progress"):
-        return "structural_only"
-    if isinstance(result, dict) and result.get("provider_outage"):
-        return "provider_outage"
-    if isinstance(result, dict) and result.get("intractable"):
-        return "correctly_refused"
-    if isinstance(result, dict) and result.get("heartbeat_budget_exceeded"):
-        return "heartbeat_budget_exceeded"
-    if isinstance(result, dict) and result.get("decomposition_regression"):
-        return "decomposition_regression"
-    if isinstance(result, dict) and result.get("reasoning_budget_exceeded"):
-        return "reasoning_budget_exceeded"
-    return "no_progress"
+# Verdict ladder: imported, not copied (forensic #1453). The hand-copied mirror
+# drifted until 2026-11-05 — it still had 9 branches (`freeze_loop` and its
+# `no_attempt` split missing) after the live classifier reached 10, so every
+# legacy freeze-loop wrapper was re-scored `no_progress` here. `prover.verdicts`
+# is pure dict logic with no harness imports, which is what made the copy look
+# necessary; sharing it is cheaper than keeping two copies honest.
+_AGENT_TESTS = Path(__file__).resolve().parents[2]
+if str(_AGENT_TESTS) not in sys.path:
+    sys.path.insert(0, str(_AGENT_TESTS))
+from prover.verdicts import derive_result_kind as _derive_result_kind  # noqa: E402
 
 
 def extract_target(filename):

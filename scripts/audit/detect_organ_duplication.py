@@ -56,6 +56,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INDEX = Path(__file__).resolve().parent / "organ_api_index.yaml"
 
 DEF_RE = re.compile(r"(?:^|[\s\"'(])(?:def|class)\s+([A-Za-z_][A-Za-z0-9_]*)")
+CSHARP_TYPE_RE = re.compile(
+    r"\b(?:(?:public|internal|private|protected|static|abstract|sealed|"
+    r"partial|readonly|file|new|unsafe|ref)\s+)*"
+    r"(?:class|struct|enum|record(?:\s+(?:class|struct))?)\s+"
+    r"@?([A-Za-z_][A-Za-z0-9_]*)\b"
+)
 DIFF_FILE_RE = re.compile(r"^diff --git a/(.+?) b/(.+?)(?:\s|$)")
 HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@")
 
@@ -168,23 +174,107 @@ def resolve_series(path: str, owners: dict):
     return best
 
 
+def _mask_csharp_line(
+    line: str, in_block_comment: bool, raw_delimiter: int
+) -> tuple[str, bool, int]:
+    """Retire commentaires et chaines C# d'une ligne avant la detection de type."""
+    out = []
+    i = 0
+    while i < len(line):
+        if raw_delimiter:
+            end = line.find('"' * raw_delimiter, i)
+            if end < 0:
+                out.append(" " * (len(line) - i))
+                return "".join(out), in_block_comment, raw_delimiter
+            out.append(" " * (end + raw_delimiter - i))
+            i = end + raw_delimiter
+            raw_delimiter = 0
+            continue
+        if in_block_comment:
+            end = line.find("*/", i)
+            if end < 0:
+                out.append(" " * (len(line) - i))
+                return "".join(out), True, raw_delimiter
+            out.append(" " * (end + 2 - i))
+            i = end + 2
+            in_block_comment = False
+            continue
+        if line.startswith("//", i):
+            out.append(" " * (len(line) - i))
+            break
+        if line.startswith("/*", i):
+            in_block_comment = True
+            continue
+        if line.startswith('"""', i):
+            start = i
+            while i < len(line) and line[i] == '"':
+                i += 1
+            raw_delimiter = i - start
+            out.append(" " * raw_delimiter)
+            continue
+        if line[i] in {'"', "'"}:
+            quote = line[i]
+            start = i
+            i += 1
+            while i < len(line):
+                if line[i] == "\\":
+                    i += 2
+                elif line[i] == quote:
+                    i += 1
+                    break
+                else:
+                    i += 1
+            out.append(" " * (i - start))
+            continue
+        out.append(line[i])
+        i += 1
+    return "".join(out), in_block_comment, raw_delimiter
+
+
 def parse_patch(patch_text: str, owners: dict, symbol_owners: dict):
-    """Retourne [(file, series, symbol)] pour chaque def/class ajoute en collision."""
+    """Retourne les declarations ajoutees qui collisionnent avec un organe indexe."""
     collisions = []
     current_file = None
+    csharp_block_comment = False
+    csharp_raw_delimiter = 0
     for line in patch_text.splitlines():
         m = DIFF_FILE_RE.match(line)
         if m:
             current_file = m.group(2)
+            csharp_block_comment = False
+            csharp_raw_delimiter = 0
+            continue
+        if line.startswith("@@ "):
+            csharp_block_comment = False
+            csharp_raw_delimiter = 0
             continue
         if current_file is None or current_file in SELF_FIXTURE_FILES:
             continue
-        if not line.startswith("+") or line.startswith("+++"):
+        if line.startswith("+++"):
+            continue
+        if current_file.endswith(".cs"):
+            if line.startswith(" "):
+                _, csharp_block_comment, csharp_raw_delimiter = _mask_csharp_line(
+                    line[1:], csharp_block_comment, csharp_raw_delimiter
+                )
+                continue
+            if not line.startswith("+"):
+                continue
+        elif not line.startswith("+"):
             continue
         content = line[1:].lstrip()
         if content.startswith("#"):
             continue
-        for sym_m in DEF_RE.finditer(line[1:]):
+        if current_file.endswith(".cs"):
+            content, csharp_block_comment, csharp_raw_delimiter = _mask_csharp_line(
+                line[1:], csharp_block_comment, csharp_raw_delimiter
+            )
+            matches = list(CSHARP_TYPE_RE.finditer(content))
+        else:
+            matches = list(DEF_RE.finditer(line[1:]))
+        for sym_m in matches:
+            if sym_m is None:
+                continue
             sym = sym_m.group(1)
             owner = symbol_owners.get(sym)
             if owner is None:

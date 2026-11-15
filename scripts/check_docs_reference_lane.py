@@ -93,9 +93,11 @@ ARCHIVE_REL = Path("docs") / "archive"
 
 # Default coverage floor = wave 1 (docs/notebook-metadata/, 9 documents)
 # + wave 2 (docs/qc/, 8 documents, hors qc-strategies-status chaud par PRs)
-# + wave 3 (docs/genai/, 16 documents). Raise it as perenne waves land;
-# it is a monotone floor, never a target.
-DEFAULT_BASELINE = 33
+# + wave 3 (docs/genai/, 16 documents)
+# + wave 4 (docs/reference/, 70 documents, hors scripts-reference chaud par
+# #25433, STABLE_SNAPSHOT et quant-prose-census dates-par-signature).
+# Raise it as perenne waves land; it is a monotone floor, never a target.
+DEFAULT_BASELINE = 102
 
 # "> REFERENCE — vivante — dernière révision 2026-10-31"
 # (marker, then "vivante", then "derniere revision" with its trailing date --

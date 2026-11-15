@@ -864,7 +864,7 @@ class TestComposeReferencedKeys:
 # extension added 5 paths, the #13955 follow-up added a 6th:
 #
 #   - ML/DataScienceWithAgents/AgenticDataScience/.env  (ECE TP series)
-#   - ML/DataScienceWithAgents/Track2-GoogleADK/.env    (Lab11, OPENAI+OPENROUTER, #13955)
+#   - ML/DataScienceWithAgents/07-Agent-Orchestration/.env    (Lab11, OPENAI+OPENROUTER, #13955)
 #   - SemanticKernel/.env                               (0-AI-settings + 09-CLR)
 #   - SymbolicAI/SmartContracts/.env                    (Solidity / foundry)
 #   - QuantConnect/.env                                 (LLM summary channel)
@@ -889,7 +889,7 @@ class TestNotebookTargetEnvs:
         # with the .env path; we match by suffix to be tolerant of any
         # future restructuring of parents above the notebook series).
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/AgenticDataScience/.env",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/.env",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/.env",
         "MyIA.AI.Notebooks/SemanticKernel/.env",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/.env",
         "MyIA.AI.Notebooks/QuantConnect/.env",

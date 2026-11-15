@@ -44,6 +44,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: scripts/ci
 
       - name: Measure window and merge 24 h log
         env:

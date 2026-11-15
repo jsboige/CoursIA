@@ -13,11 +13,20 @@ services:
     container_name: whisper-api
     hostname: whisper-api
 
+    # Maintenance#303 bounds: the whole limits block moved from
+    # deploy.resources.limits to the service-level spellings, because compose
+    # v5 refuses to mix them ("can't set distinct values on 'pids_limit' and
+    # 'deploy.resources.limits.pids'") and deploy limits cannot express
+    # memory-swap at all. Result on the container is identical and stricter:
+    # --cpus=2 --memory=4g --memory-swap=4g --pids-limit=256. Only the GPU
+    # reservation stays under deploy. Measured 2026-11-07: 343 MiB / 29 PIDs.
+    cpus: '2'
+    mem_limit: 4g
+    memswap_limit: 4g
+    pids_limit: 256
+
     deploy:
       resources:
-        limits:
-          cpus: '2'
-          memory: 4G
         reservations:
           devices:
             - driver: nvidia
