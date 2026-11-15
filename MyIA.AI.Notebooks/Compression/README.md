@@ -11,7 +11,7 @@ Le point d'entrée est accessible avec les bases de Python et les probabilités 
 Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue le parcours principal et ses approfondissements.
 
 - **Vous découvrez** : suivez les numéros nus, du code préfixe au coût total d'une description. Le palier 05 ouvre une application aux modèles appris ; 06 se lit aussi directement après 01–02.
-- **Vous creusez un palier** : 01b développe la preuve en Lean ; 04b compare les codecs disponibles selon leur taux et leur vitesse.
+- **Vous creusez un palier** : 01b développe la preuve en Lean ; 04b compare les codecs disponibles selon leur taux et leur vitesse ; 07 confie à un modèle local le triage des segments d'un répertoire.
 - **Vous cherchez des prolongements** : « Pour aller plus loin » relie les expériences aux garanties formelles, à la complexité du calcul et à l'apprentissage par compression.
 
 Au fil du parcours, vous apprendrez à construire et décoder un code, à justifier ses bornes, à vérifier un aller-retour exact, puis à comparer des représentations en comptant ce qu'elles coûtent réellement : en-tête, tables, données et modèle. Pour la compression avec pertes, la qualité prédictive entre aussi dans la comparaison.
@@ -63,9 +63,15 @@ Le compagnon C# utilise .NET Interactive `.net-csharp`, .NET 9 et la BCL. Les li
 
 Les débits dépendent de la machine, des versions et des corpus. Le carnet vérifie la restitution par empreinte et distingue les bibliothèques mesurées des outils seulement cités. Les données aléatoires servent de contrôle : changer de codec ne crée pas une régularité absente de la source.
 
+### Autour de 05 — le triage par un modèle local (Recherche)
+
+[07 — Triage par le LLM et opérations réelles](Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb) prolonge le pli jouet du 05b jusque dans un système de compression par segments. Les opérations y sont réelles et inversables : les codecs de la bibliothèque standard d'un côté, des découpages de fichiers de l'autre — colonnes d'un CSV, clés d'un JSON, lignes, blocs. Le modèle local voit la vue de chaque segment, c'est-à-dire sa taille, son entropie et un aperçu, et choisit une opération par appel d'outil ; la boucle le rappelle tant qu'il reste des segments produits par un découpage, et lui renvoie la raison quand une opération ne s'applique pas au contenu. La décompression ne fait aucun appel : elle rejoue la recette certifiée à l'envers, et le banc vérifie le round-trip octet pour octet.
+
+Le banc compare ce triage au traitement indifférencié d'un bloc, d'abord avec le même codec, puis avec le meilleur codec global choisi après coup — une borne favorable au traitement naïf, puisqu'elle lui offre un choix que personne ne fait sans essayer tous les codecs sur tout le contenu. Le gain vient du découpage, non d'une compression inventée par le modèle : une colonne de catégories séparée de ses montants se comprime mieux que le tableau entremêlé. La recette elle-même, c'est-à-dire les décisions sérialisées, est comptée dans le total : une recette gratuite n'existe pas.
+
 ## Installation — Découverte et pratique
 
-Utiliser un noyau Python 3.10 ou ultérieur dans un environnement virtuel, avec NumPy et Matplotlib. Le compagnon C# du carnet 02 utilise le noyau .NET Interactive `.net-csharp` et .NET 9 ; il ne demande aucun paquet NuGet. Le carnet 05 utilise aussi PyTorch et Pandas. Le carnet 04b sonde les codecs installés : `zlib`, `bz2` et `lzma` viennent de Python ; `zstandard`, `brotli` et `lz4` sont des compléments selon les comparaisons souhaitées. Les instructions générales sont dans les [commandes de référence](../../docs/reference/common-commands.md).
+Utiliser un noyau Python 3.10 ou ultérieur dans un environnement virtuel, avec NumPy et Matplotlib. Le compagnon C# du carnet 02 utilise le noyau .NET Interactive `.net-csharp` et .NET 9 ; il ne demande aucun paquet NuGet. Le carnet 05 utilise aussi PyTorch et Pandas. Le carnet 04b sonde les codecs installés : `zlib`, `bz2` et `lzma` viennent de Python ; `zstandard`, `brotli` et `lz4` sont des compléments selon les comparaisons souhaitées. Le carnet 07 suppose en plus l'endpoint OpenAI-compatible de la pile vLLM locale et le modèle `swift` ; il s'arrête explicitement s'ils sont absents. Les instructions générales sont dans les [commandes de référence](../../docs/reference/common-commands.md).
 
 Commencer par [01](Compression-01-ShannonFano-Prefixe-Python.ipynb), puis modifier la distribution de symboles et observer l'arbre obtenu. Les expériences Python du parcours utilisent le CPU. Pour 01b, suivre la toolchain déclarée dans [Compression_lean](Compression_lean/README.md), construire le projet avec `lake build` depuis ce dossier et utiliser le noyau Lean `lean4-wsl` indiqué par le carnet.
 

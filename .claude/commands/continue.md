@@ -7,9 +7,10 @@ Reprendre le travail sur cette lane : lire les directives coordinateur, puis enc
 ### Phase 1 : Contexte (30s)
 
 1. Etablir si la session précédente a été interrompue pour une raison fortuite (crash de l'environnement, saturation du crédit de tokens etc.), et quelles étapes restent à finaliser avant d'entreprendre une nouvelle session propre.
-2. Lire `MEMORY.md` (auto-memory) pour l'etat des sessions precedentes
-3. `git checkout main && git pull --ff-only` — repartir d'un main courant (les branches feature se rebasent frais, cf [catalog-pr-hygiene](../rules/catalog-pr-hygiene.md))
-4. `git status` — si l'arbre partage est sale (WIP d'une autre session), travailler en **worktree isole** : `git worktree add ../CoursIA-<sujet> -b feature/<sujet> origin/main`. Ne jamais stasher/toucher le WIP d'autrui.
+2. `python scripts/coordination/session_hygiene.py --lane <machine:workspace>` — verrou de session + hygiène de l'arbre en debut de cycle (#26632). Un ROUGE **session-double** = **arret** : `CronList` puis `CronDelete` du cron double **dans la session qui le porte** (split-brain, cf CLAUDE.md global), aucune edition tant qu'il vit ; les autres ROUGES (main otage, organes divergents de origin/main) se traitent avant le tirage.
+3. Lire `MEMORY.md` (auto-memory) pour l'etat des sessions precedentes
+4. `git checkout main && git pull --ff-only` — repartir d'un main courant (les branches feature se rebasent frais, cf [catalog-pr-hygiene](../rules/catalog-pr-hygiene.md))
+5. `git status` — si l'arbre partage est sale (WIP d'une autre session), travailler en **worktree isole** : `git worktree add ../CoursIA-<sujet> -b feature/<sujet> origin/main`. Ne jamais stasher/toucher le WIP d'autrui.
 
 ### Phase 1.5 : Tour RooSync (obligatoire, AVANT de travailler)
 
@@ -26,7 +27,7 @@ Reprendre le travail sur cette lane : lire les directives coordinateur, puis enc
 python scripts/coordination/tapis_rapide.py --lane <machine:workspace>
 ```
 
-Il rend **vos PRs ouvertes**, puis **8 grains de 8 familles differentes**, chacun avec la commande `check_lane_claim.py` a jouer avant d'editer ([tapis-rapide.md](../../docs/reference/tapis-rapide.md)). **La liste se sert en entier** ; on ne retire qu'une fois la liste epuisee. Sortie 3 (lecture GitHub incomplete) : rien n'est servi, la commande de repli est imprimee (`python scripts/pick_idle_grain.py --belt --lane <machine:workspace>`).
+Il rend **vos PRs ouvertes**, puis **8 grains de 8 familles differentes**, chacun avec la commande `check_lane_claim.py` a jouer avant d'editer ([tapis-rapide.md](../../docs/reference/tapis-rapide.md)). **La liste se sert en entier** ; on ne retire qu'une fois la liste epuisee. Sortie 3 (lecture GitHub incomplete) : rien n'est servi, la commande de repli est imprimee (`python scripts/pick_idle_grain.py --belt --lane <machine:workspace>`). Sortie 4 (tirage REFUSE pour peremption — main local en retard ou organe du tirage divergent d'origin/main) : le remede est `git pull --ff-only` puis re-tirer, **JAMAIS le repli `pick_idle_grain`** — il se contente d'avertir et rejoue le meme incident (po-2028, 14/11, #26632).
 
 **P0 — Reparer SON PROPRE rouge.** Les PRs de la lane **ouvertes depuis plus de 24 h** sont la **premiere file de la session**, avant tout grain neuf : reparer le rouge, repondre aux reserves, rafraichir la branche. La drainer ne termine pas la session. La raison est mecanique, pas disciplinaire : une PR rouge ne peut etre reparee **que par sa lane** — le coordinateur ne peut ni rebaser ni corriger a sa place — donc tant que la lane ne revient pas dessus, elle reste ouverte indefiniment pendant que les PRs du jour, elles, mergent. C'est exactement ce qui produit le residu de vieilles PRs.
 
