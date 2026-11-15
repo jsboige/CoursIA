@@ -345,13 +345,15 @@ def ordinal_date_inversion_reasons(base_reg: dict, other_reg: dict) -> list:
                 "plus ANCIEN que l'attestation la plus recente (%s, date %s). "
                 "L'audit de parite lit l'ordinal le plus haut : il compare "
                 "donc le carnet a une attestation perimee et rend un DRIFT "
-                "que rien ne justifie. Renumeroter AU-DESSUS de l'ordinal le "
-                "plus haut de la paire (par `git mv` PUR : aucun contenu a "
-                "toucher, aucune re-execution), ou rebaseliner : "
+                "que rien ne justifie. Le geste : renumeroter "
+                "l'attestation la plus RECENTE (%s) AU-DESSUS de l'ordinal le "
+                "plus haut de la paire, par `git mv` PUR (aucun contenu a "
+                "toucher, aucune re-execution) ; ou rebaseliner la paire : "
                 "`python scripts/notebook_tools/check_twin_parity.py --update "
                 "--pair \"%s\" --by <lane>`."
                 % (v["pair"], ", ".join(v["top_names"]), v["top_date"],
-                   ", ".join(v["recent_names"]), v["recent_date"], v["pair"])
+                   ", ".join(v["recent_names"]), v["recent_date"],
+                   ", ".join(v["recent_names"]), v["pair"])
             ),
         })
     return out
@@ -932,9 +934,15 @@ def main(argv: list | None = None) -> int:
                           % (r["pair"], r["index"], r["kind"]))
                     print("      noms en jeu : %s" % ", ".join(r["names"]))
                     print("      geste : %s" % r["gist"])
-                print("   Un `git mv` PUR suffit (aucun contenu a toucher, aucune")
-                print("   re-execution) : renumeroter le fichier de la tete vers le")
-                print("   premier index libre de la paire.")
+                if n_inv:
+                    print("   Pour une INVERSION ordinal/date : renumeroter")
+                    print("   l'attestation la plus RECENTE de la paire au-dessus de")
+                    print("   l'ordinal le plus haut (un `git mv` PUR : aucun contenu")
+                    print("   a toucher, aucune re-execution).")
+                else:
+                    print("   Un `git mv` PUR suffit (aucun contenu a toucher, aucune")
+                    print("   re-execution) : renumeroter le fichier de la tete vers le")
+                    print("   premier index libre de la paire.")
             else:
                 print("PORTE : VERTE -- cette revision n'introduit aucune collision")
                 print("d'index (les doublons herites de %s ne sont pas de son fait)."
