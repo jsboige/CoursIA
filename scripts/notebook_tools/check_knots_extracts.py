@@ -7,7 +7,7 @@ Implements the (A) arm of the prevention strategy in #21007 (KNOTS):
   notebook directory.
 
 This is a pre-commit hook. It runs on staged ``.ipynb`` files whose path
-contains ``Lean/Knots/`` (or any other ``Lean/<series>`` cell path
+contains ``Lean/Noeuds/`` (or any other ``Lean/<series>`` cell path
 configured below). It scans the cells (markdown + code) for
 ``lean_file_path`` candidates and fails the commit if any of them cannot
 be resolved from the notebook's parent directory.
@@ -46,7 +46,7 @@ from git_index_renames import skip_pure_renames  # noqa: E402
 # du projet. La regex capture :
 #  - `knot_lean/.../*.lean` (relatif au cwd d'exécution du notebook)
 #  - `Knots/.../*.lean` (relatif, forme post-4ee14af19e)
-#  - `MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/...` (absolu repo)
+#  - `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/...` (absolu repo)
 #
 # Variante historique pré-4ee14af19e NON capturée (volontaire) :
 #  - `lean/Knots/...` (lowercase ``lean/`` + capital ``Knots/``) — le
@@ -182,9 +182,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--path-filter",
-        default=r"Lean/Knots/",
+        default=r"Lean/Noeuds/",
         help="Substring path filter — only check notebooks under this. "
-        "Default: r'Lean/Knots/'. Pass empty string to disable filter.",
+        "Default: r'Lean/Noeuds/'. Pass empty string to disable filter.",
     )
     parser.add_argument(
         "--rel-resolve-from-repo-root",
@@ -221,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
         flt = re.compile(args.path_filter)
         # Windows : ``str(Path)`` rend des antislashs (``\``) sur les
         # .ipynb crees/renommes par Git ou par pre-commit. Le filtre
-        # par defaut (``Lean/Knots/``) est forward-slash -- applique
+        # par defaut (``Lean/Noeuds/``) est forward-slash -- applique
         # sur la forme Windows, il ne matche JAMAIS, le hook scanne 0
         # carnet et sort en rc 0 sans un mot. C'est la classe 1 stale
         # path documente par #21007. On normalise via ``as_posix()``

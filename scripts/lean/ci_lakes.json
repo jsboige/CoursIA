@@ -504,7 +504,7 @@
     },
     {
       "lake": "knot",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean",
       "display-name": "knot_lean",
       "sorry-baseline": "8",
       "sorry-filter-mode": "real",
@@ -512,17 +512,17 @@
       "axiom-fail-on-sorry": "false",
       "axiom-include-i18n-siblings": "true",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean/lake-manifest.json",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
       ]
     },
     {
       "lake": "conway",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean",
       "display-name": "conway_lean",
       "sorry-baseline": "1",
       "sorry-filter-mode": "real",
@@ -535,11 +535,11 @@
       "axiom-blocking-fail-on-sorry": "true",
       "build-threads": "1",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lake-manifest.json",
         "scripts/lean/allow_axioms_conway.txt"
       ]
     }

@@ -86,7 +86,7 @@ Terminé EXIT=0 (log `.tmp/junction_build_run7.log`), cache `db584cd6` réutilis
 ## Après le run
 
 - **Sorry après** : `distinct_code_sorry` = 17 (mesuré `count_code_sorry.py --json` post-run 5) — **17 → 17, inchangé** vs baseline du matin. Aucune source `*.lean` touchée par la lignée entière (runs 1-7).
-- **État des jonctions** (`share-state.json`, persisté par membre) : **22 membres jonctionnés** ; 4 rollbackés (`needsProvision: true`) : learning_theory, GameOfLife/conway_lean, Knots/knot_lean, Tweety/argumentation_lean — GROTH sorti de la liste au run 7.
+- **État des jonctions** (`share-state.json`, persisté par membre) : **22 membres jonctionnés** ; 4 rollbackés (`needsProvision: true`) : learning_theory, GameOfLife/conway_lean, Noeuds/knot_lean, Tweety/argumentation_lean — GROTH sorti de la liste au run 7.
 - **Run 7 (`LAKE_JOBS=1`) terminé, EXIT=0 — 22/26.** Pour les 4 traînards restants : migration WSL en premier geste (tranche la question KNOTS), provisioning autonome (~5 Go de Mathlib chacun) en repli.
 - **Purge `520045ab` (11,79 Go)** : reste **interdite** — le build vert n'est pas établi sur les 4 re-pointés restants.
 

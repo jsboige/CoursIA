@@ -45,7 +45,7 @@ from scan_knots_extracts import (  # noqa: E402
 # Helpers
 # ---------------------------------------------------------------------------
 
-KNOTS_REL = Path("MyIA.AI.Notebooks/SymbolicAI/Lean/Knots")
+KNOTS_REL = Path("MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds")
 
 
 def _md(source: str) -> dict:
@@ -67,7 +67,7 @@ def _write_ground_truth_files(repo_root: Path) -> None:
     """Pose les 2 fichiers .lean de verite a leur chemin canonique.
 
     Conserve de la premiere generation : les chemins sont ceux du depot
-    (``.../Knots/knot_lean/Knots/<Module>.lean``), ce qui donne a
+    (``.../Noeuds/knot_lean/Knots/<Module>.lean``), ce qui donne a
     ``LeanTruth.build`` les memes cles de module que sur le vrai arbre.
     """
     lean_dir = repo_root / KNOTS_REL / "knot_lean" / "Knots"

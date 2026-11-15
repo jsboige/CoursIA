@@ -255,7 +255,7 @@ class ArtifactExemption(NamedTuple):
 
 ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
         motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
         raison=(
             "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
@@ -264,7 +264,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.md",
         motif=re.compile(r"Pulsar \(48 cellules\)"),
         raison=(
             "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
@@ -272,7 +272,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/README.en.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/README.en.md",
         motif=re.compile(r"Pulsar \(48 cells\)"),
         raison=(
             "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
@@ -370,7 +370,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/scripts/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/scripts/README.md",
         motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
         raison=(
             "« 36 cellules » = population d'une transcription FABRIQUEE du canon "
@@ -725,7 +725,7 @@ SEED_RE = re.compile(
 # ne figure que sur demande explicite ``--class structural``, en banniere LEGITIME.
 #
 # Note fix (#9434 angle-mort t1) : la forme « 2.78e24x » (notation scientifique
-# SUIVIE du suffixe 'x', PR #9427 App-11-Picross) n'etait PAS attrapee par
+# SUIVIE du suffixe 'x', PR #9427 App-11-Picross-Python) n'etait PAS attrapee par
 # l'alternance originale ``(?:e\d+|x)`` : apres avoir consomme « e24 », le
 # ``\b`` echouait car le 'x' suivant est un caractere mot. La branche est
 # desormais ``(?:e\d+x?|x)`` : la notation scientifique peut etre suivie d'un

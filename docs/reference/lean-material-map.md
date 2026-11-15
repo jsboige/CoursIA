@@ -11,11 +11,11 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | Lac | Modules | Miroirs | CI | Gate axiomes | Site = consommateur | Doublons declares | Naissance |
 |---|---|---|---|---|---|---|---|
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean` | 100 | 98 | declare | couverte | 1 hors site (4 carnets) | - | 2026-05-31 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean` | 57 | 41 | declare | couverte | 1 hors site (9 carnets) | 0 / 2 | 2026-05-28 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean` | 57 | 41 | declare | couverte | 1 hors site (9 carnets) | 0 / 2 | 2026-05-28 |
 | `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 44 | 26 | declare | couverte | ok (4) | 1 / 3 | 2026-07-10 |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 34 | 26 | declare | couverte | ok (1) | - | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 1 hors site (5 carnets) | - | 2026-06-25 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Noeuds/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
 | `MyIA.AI.Notebooks/Compression/Compression_lean` | 15 | 2 | declare | couverte | ok (1) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | 15 | 14 | declare | couverte | ok (1) | - | 2026-06-10 |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | 15 | 14 | declare | couverte | ok (2) | - | 2026-10-02 |
@@ -98,7 +98,7 @@ La doctrine demande qu'un lac vive dans le dossier de la (sous-)serie dont les c
 30 lacs sur 39 sont consommes, dont 8 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
 
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
-- `MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean` — 9 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
+- `MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean` — 9 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
 - `MyIA.AI.Notebooks/ML/learning_theory_lean` — 5 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning`
 - `MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean` — 5 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Tweety`
