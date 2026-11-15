@@ -11,7 +11,7 @@ site. Cette partie établit la propriété de **détection** : deux sections
 d'un préfaisceau de types **séparé** qui ont mêmes germes en tout point
 sont égales.
 
-  `eq_of_germ_eq_of_isSeparated : (∀ x ∈ U, germe_x s = germe_x t) → s = t`
+  `eq_of_germ_eq_of_isSeparated : (∀ x ∈ U, germ_x s = germ_x t) → s = t`
 
 L'assemblage est à deux leviers, tous deux déjà disponibles :
 
@@ -38,7 +38,7 @@ Deux corollaires complètent la tranche :
     (Partie 70) transporte la condition de faisceau de Mathlib vers le
     site own ;
   - `injective_germ_family_of_isSeparated` : reformulation combinatoire —
-    l'application « famille des germes » `s ↦ (germe_x s)ₓ` est injective.
+    l'application « famille des germes » `s ↦ (germ_x s)ₓ` est injective.
     C'est la brique ponctuelle du dictionnaire faisceaux ↔ espaces étalés :
     une section est déterminée par ses valeurs germinales.
 
