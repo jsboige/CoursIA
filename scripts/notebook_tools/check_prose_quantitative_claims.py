@@ -628,6 +628,137 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "l'experience, pas un artefact du depot."
         ),
     ),
+    # Grille Sudoku de la serie Z3 (tranche #17636 volet 2) : les « N
+    # cellules » de Z3-18, 02, 05 et du README comptent les cases de la
+    # grille pedagogique (4x4 = 16 cases dont 4 par rangee/colonne/bloc,
+    # 9x9 = 81 cases dont 9 par ligne/colonne/sous-grille, rangee de 4 du
+    # mini-Sudoku 1D du bloc B8) -- le probleme mathematique enseigne, pas
+    # des cellules de carnet. Le « 81 lignes de proprietes » designe la
+    # classe C# explicite du carnet 02 : une propriete par case de la
+    # grille 9x9, fixee par le domaine. Ces nombres ne derivent pas avec
+    # le depot ; les reecrire n'aurait pas de sens.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/"
+            "Z3-18-Sudoku-Modes-Python.ipynb"
+        ),
+        motif=re.compile(r"(par \*\*16 cellules\*\*|ces 16 cellules)"),
+        raison=(
+            "« 16 cellules » = cases de la grille Sudoku 4x4 encodant le "
+            "probleme (4x4 = 16) ; deux modeles d'encodage de CES cases "
+            "sont compares. Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/"
+            "Z3-18-Sudoku-Modes-Python.ipynb"
+        ),
+        motif=re.compile(r"les 4 cellules de chaque (rangée|colonne|bloc)"),
+        raison=(
+            "« 4 cellules » par rangee/colonne/bloc 2x2 = structure de la "
+            "grille Sudoku 4x4 enseignee. Propriete du domaine."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"\(81 cellules\)"),
+        raison=(
+            "« 81 cellules » (noeud mermaid) = cases de la grille Sudoku "
+            "9x9 (9x9 = 81). Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"les 9 cellules de chaque (ligne|colonne|sous-grille)"),
+        raison=(
+            "« 9 cellules » par ligne/colonne/sous-grille 3x3 = structure "
+            "de la grille Sudoku 9x9 enseignee. Propriete du domaine."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"81 lignes de proprietes"),
+        raison=(
+            "« 81 lignes de proprietes » = la classe C# explicite du carnet "
+            "emets une propriete PAR CASE de la grille 9x9 : le compte est "
+            "fixe par le domaine (9x9 = 81), il ne derive pas avec le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"parcourt les 81 cellules"),
+        raison=(
+            "La boucle C# demontree parcourt les 81 cases de la grille "
+            "Sudoku 9x9. Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"9 lambdas enumerant 9 cellules chacune"),
+        raison=(
+            "« 9 lambdas enumerant 9 cellules chacune » (contraintes de "
+            "ligne et de boite de la grille 9x9) : les deux 9 sont fixes "
+            "par la structure du Sudoku enseigne."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"une \*\*rangee\*\* de 4 cellules"),
+        raison=(
+            "« rangee de 4 cellules » = le mini-Sudoku 1D du bloc B8 "
+            "(palette {1,2,3,4}) : terrain du contraste ForAll/Exists. "
+            "Cellules du probleme, pas du carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "05_Nested_Arrays_2D.ipynb"
+        ),
+        motif=re.compile(r"(les|des) 4 cellules du bloc"),
+        raison=(
+            "« 4 cellules du bloc » = cases d'un bloc 2x2 de la grille "
+            "Sudoku 4x4 demontree. Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "05_Nested_Arrays_2D.ipynb"
+        ),
+        motif=re.compile(r"`Z3Methods\.Distinct` sur les 9 cellules"),
+        raison=(
+            "« Distinct sur les 9 cellules » = contrainte sur les cases "
+            "d'une ligne de la grille Sudoku demontree. Cellules de grille."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/README.md",
+        motif=re.compile(r"une rangée de 4 cellules"),
+        raison=(
+            "« une rangee de 4 cellules » = le mini-Sudoku 1D du bloc B8 "
+            "du carnet 02, decrit en miroir ici. Cellules du probleme."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------
