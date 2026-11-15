@@ -12,19 +12,22 @@ Arc autonome de **théorie de la décision bayésienne** en PyMC — le socle (1
 
 **Paire symétrique, sans canonique** : les deux arcs ont le même statut — aucun n'est le port de l'autre, et chacun porte des carnets que l'autre n'a pas. La déclaration porte donc sur l'**invariant de maintenance** ci-dessus et sur les exceptions ci-dessous, pas sur une hiérarchie.
 
-**Le plan commun, et ses numéros divergents** — le titre fait foi, pas le numéro :
+**Le plan commun** — numéros alignés depuis le re-flow voie (a) (2026-11-05, EPIC #12933 ; avant : décalage d'un cran, titre faisait foi) :
+
 
 | Étape | `DecInfer` | `DecPyMC` |
 |---|---|---|
 | Fondements axiomatiques (VNM) | `01-Utility-Foundations` | `01-Utility-Foundations` |
-| Utilité de l'argent, aversion au risque | `03-Utility-Money` | `02-Utility-Money` |
-| Utilité multi-attributs | `04-Multi-Attribute` | `03-Multi-Attribute` |
-| Réseaux de décision | `05-Decision-Networks` | `04-Decision-Networks` |
-| Valeur de l'information | `06-Value-Information` | `05-Value-Information` |
-| Systèmes experts, décisions robustes | `07-Expert-Systems` | `06-Expert-Systems` |
-| MDPs, bandits, POMDPs | `08-Sequential` (+ `10-Thompson-Sampling`) | `07-Sequential` |
+| Utilité de l'argent, aversion au risque | `02-Utility-Money` | `02-Utility-Money` |
+| Utilité multi-attributs | `03-Multi-Attribute` | `03-Multi-Attribute` |
+| Réseaux de décision | `04-Decision-Networks` | `04-Decision-Networks` |
+| Valeur de l'information | `05-Value-Information` | `05-Value-Information` |
+| Systèmes experts, décisions robustes | `06-Expert-Systems` | `06-Expert-Systems` |
+| MDPs, bandits, POMDPs | `07-Sequential` (+ `10-Thompson-Sampling`) | `07-Sequential` |
+| Théories de la décision face à un prédicteur (EDT, CDT, UDT) | `11-Theories-Decision-Predicteur-Python` | — |
 
-**Sans jumeau de l'autre côté** : côté Infer, les trois companions formels Lean 4 — `02-Lean-ExpectedUtility`, `02b-Lean-Coherence`, `08b-Lean-Gittins` — n'ont pas d'équivalent Python, et l'étape « MDPs, bandits, POMDPs » y est **découpée** en `08` + `10`. Côté PyMC, `08-Actuariat-Capstone` ouvre la sous-série [`Actuariat/`](../Actuariat/README.md) (T1-T5) et n'a pas de jumeau Infer.
+**Sans jumeau de l'autre côté** : côté Infer, les trois companions formels Lean 4 — `01b-Lean-ExpectedUtility`, `01c-Lean-Coherence`, `07b-Lean-Gittins` — n'ont pas d'équivalent Python, et l'étape « MDPs, bandits, POMDPs » y est **découpée** en `07` + `10`. Côté PyMC, `08-Actuariat-Capstone` ouvre la sous-série [`Actuariat/`](../Actuariat/README.md) (T1-T5) et n'a pas de jumeau Infer. `11-Theories-Decision-Predicteur-Python` est également propre à l'arc Infer : il est descendu de `GameTheory-04f` le 2026-11-05 (#24825), après le re-flow, et n'a pas de jumeau PyMC.
+
 
 ## Pourquoi un arc autonome
 

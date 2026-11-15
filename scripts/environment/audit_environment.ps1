@@ -151,7 +151,7 @@ try {
         } else {
             Write-Check ".NET Interactive" "WARNING" "Non installé globalement"
             $Results.DotNet.Interactive = $false
-            $Results.Recommendations += "Installer .NET Interactive: dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.617701"
+            $Results.Recommendations += "Installer .NET Interactive: dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001"
         }
     } catch {
         Write-Check ".NET Interactive" "WARNING" "Statut indéterminé"

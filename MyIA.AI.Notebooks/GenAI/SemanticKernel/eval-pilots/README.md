@@ -85,13 +85,13 @@ router par handoff implicite et produirait des `Event from an unknown agent`) :
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash
-py -3.11 ../../../ML/DataScienceWithAgents/Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py
+py -3.11 ../../../ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py
 ```
 
 ## Sonde C# (T6)
 
 **App mono-fichier .NET 10** : aucun `.csproj` n'est livré, donc aucun impact sur
-`MyIA.CoursIA.sln`, `MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par
+`dotnet/MyIA.CoursIA.sln`, `dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par
 chemin). Les versions des paquets sont épinglées par les directives `#:package` en
 tête du fichier :
 

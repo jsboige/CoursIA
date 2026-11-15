@@ -7,11 +7,7 @@ execution, parsing, audits pedagogiques. **Cluster worker canonique**
 C.1-C.3 (notebooks), D (anti-regression), sota-not-workaround (#3801),
 anti-banner (#6309), secrets-hygiene.
 
-Le seul sous-dossier `scripts/` sans `README.md` avant ce fichier :
-6 detecteurs + 4 validateurs CI + 2 scanners + 51 scripts utilitaires,
-+ 2 fichiers `golden_set.yml` / `golden_set.lock.txt` non-`.py` en
-complement. L'inventaire ci-dessous remplace la lecture en aveugle de
-65 fichiers.
+Ce README présente l'organisation et l'usage des outils de `notebook_tools`.
 
 | Categorie | Scripts | Role |
 |-----------|---------|------|
@@ -19,9 +15,11 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 | **Validateurs CI** | `validate_pr_notebooks.py`, `check_c2_compliance.py`, `check_notebook_navlinks.py`, `check_plotly_static_risk.py` | Gates pre-merge, `--check` exit-code CI-ready |
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py`, `scan_figure_visual_signature.py` | Audit hierarchie markdown + ordre cellules pedagogiques + **signature visuelle des figures PNG (consolidation L777-L1/L778-L1/L2/L779-L1/L2/L780-L1/L2/L3/L781-L1/L2/L3 du rollout MANIFEST c.754-c.781, EPIC #5780)** |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
+| **Relevé runtime kernels** | `measure_kernels_runtime.py` | Lance les kernelspecs Jupyter et exporte les versions Python/numpy effectives en JSON |
+| **Versions de bibliothèques** | `notebook_lib_versions.py`, `lib_version_manifest.json` | Recense les littéraux de version des cellules de code (`#r "nuget: X, v"`, `pip install x==v`, URL de build Tweety) et classe chaque site contre les canoniques du manifeste (#23073) |
 | **QC quantbooks** | `qc_quantbook_execute.py`, `qc_classify.py`, `execute_qcpy_docker.py`, `fix_qc_notebooks.py` | Subset QuantConnect (QuantBook non-executable via MCP) |
 | **Anti-banner / hygiene** | `strip_probe_banner.py`, `strip_machine_paths.py`, `scrub_papermill_paths.py`, `audit_pip_install_cells.py`, `pip_leak_delta.py` | Stop & Repair (secrets-hygiene §6) + banner #6309 + pip leaks |
-| **Catalogue & dashboards** | `generate_catalog.py`, `verify_catalog_readme.py`, `catalog_coverage.py`, `fix_catalog_drift.py`, `generate_health_dashboard.py`, `weekly_digest.py`, `extract_readme_figures.py` | Artefacts catalogue (#2632) + figures README + dashboards |
+| **Catalogue & dashboards** | `generate_catalog.py`, `generate_curriculum_rdf.py`, `query_curriculum.py`, `verify_catalog_readme.py`, `catalog_coverage.py`, `fix_catalog_drift.py`, `generate_health_dashboard.py`, `weekly_digest.py`, `extract_readme_figures.py` | Catalogue, export RDF interrogeable du cursus, figures README + dashboards |
 | **Audit & regression** | `audit_c1_c3.py`, `audit_solution_leaks.py`, `regression_scan.py`, `forensic_scan.py`, `diagnose_broken.py` | Audits structurels C.1/C.3 + fuite solution (#4970) + regression cluster + diagnostics |
 | **Extraction & parsing** | `notebook_tools.py`, `notebook_helpers.py`, `notebook_lint.py`, `extract_notebook_skeleton.py`, `count_exercises.py`, `count_notebooks_by_series.py`, `expand_catalog_markers.py`, `golden_set.yml`, `golden_set.lock.txt` | CLI multi-famille + helpers parsing + golden set |
 | **C# / .NET persistence** | — (archivés : `_exec_bdd_csharp.py`, `_fix_gt15b_compilation.py`, `_fix_lean34_unused_vars.py` → `scripts/notebook_tools/_archive/`) | Diagnostic + fix cibles C# specifiques (GT-15, Lean34) ; voir `_archive/README.md` (palier 1 #18153, 2026-10-01) |
@@ -30,6 +28,75 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 | **Rendu pédagogique** | `knot_diagram.py` | Diagrammes de nœuds 2D depuis un PD-code SnapPy — Python pur (faces par système de rotation, plongement de Tutte, arcs Bezier, halo sur/sous), substitut portable au rendu POSIX `draw`+`mpost` de Spherogram (#21908) |
 
 Tests unitaires dans `scripts/notebook_tools/tests/`.
+
+## Recenser les versions de bibliothèques chargées par les carnets
+
+`notebook_lib_versions.py` lit `lib_version_manifest.json` (versions canoniques et
+écarts arbitrés, avec motif écrit) et recense, dans les **cellules de code** des
+carnets suivis par git, chaque littéral de version : directive
+`#r "nuget: X, v"`, `pip install x==v`, URL de build Tweety. Un `#r` sans version
+n'est pas un littéral ; une mention en markdown non plus.
+
+Chaque site est classé : `OK` (version canonique), `CONVERGE` (écart non arbitré),
+`ALLOWED` (écart arbitré au manifeste), `NO_CANONICAL` (le manifeste ne fixe pas
+encore de canonique — arbitrage non tranché), `UNKNOWN` (paquet absent du
+manifeste), `CANONICAL_UNRESOLVED` (la source pointée par `canonical_from` n'a pas
+pu être lue).
+
+```bash
+python scripts/notebook_tools/notebook_lib_versions.py                 # recensement complet
+python scripts/notebook_tools/notebook_lib_versions.py --only-dispersed
+python scripts/notebook_tools/notebook_lib_versions.py --json
+python scripts/notebook_tools/notebook_lib_versions.py --strict        # rc=1 s'il reste un CONVERGE
+```
+
+Le recensement sort **0 même quand des écarts existent** : c'est un instrument de
+mesure, pas un gate. `--strict` donne au câblage CI son point d'appui, il n'est pas
+encore branché sur la fast lane. Une canonique n'est fixée au manifeste que lorsque
+la version **majoritaire est aussi la plus récente** ; sinon `canonical: null`, car
+choisir la direction est un arbitrage et non une déduction.
+
+## Lancer un service Kernel Gateway depuis un notebook existant
+
+`kernel_gateway_service.py` lance le carnet donné comme seed du serveur officiel
+Jupyter Kernel Gateway, en mode `notebook-http`. Les annotations `# GET /...`
+ou `# POST /...` du carnet restent la source du contrat : le lanceur transmet le
+fichier sans extraire, recopier ou réécrire ses cellules. Le serveur écoute par
+défaut sur `127.0.0.1`, port `8899`.
+
+```bash
+# Pré-vol : notebook JSON lisible et dépendance installée
+python scripts/notebook_tools/kernel_gateway_service.py \
+  chemin/vers/carnet-annote.ipynb --check-only
+
+# Démarrage interactif, depuis n'importe quel répertoire
+python scripts/notebook_tools/kernel_gateway_service.py \
+  chemin/vers/carnet-annote.ipynb --port 8899
+
+# Fumée locale : attend la route annotée, la retrouve dans OpenAPI puis envoie
+# une seule requête POST JSON et affiche la réponse du carnet.
+python scripts/notebook_tools/kernel_gateway_service.py \
+  chemin/vers/carnet-annote.ipynb --port 8899 \
+  --probe-path /chemin/annote --probe-json '{"parametre": "exemple"}'
+```
+
+Le nom du module Python est `kernel_gateway`; le paquet à installer est
+`jupyter_kernel_gateway` (`python -m pip install jupyter_kernel_gateway`). Le
+pré-vol vérifie aussi le kernel Jupyter déclaré par le notebook. Une dépendance
+ou un kernelspec absent est détecté avant le lancement, avec le nom attendu.
+`--check-only` ne démarre pas le service et ne
+prétend donc pas vérifier une route ; la sonde démarre réellement le serveur,
+vérifie que la méthode et le chemin annotés apparaissent dans son descripteur
+OpenAPI, puis interroge l'endpoint sur loopback. Elle affecte au serveur un
+jeton aléatoire via `KG_AUTH_TOKEN`, vérifie qu'OpenAPI répond 401 sans ce
+jeton, puis signe la requête métier : un serveur déjà présent sur le port ne
+peut pas fournir un faux succès. La sonde s'arrête après la réponse ; sans
+sonde, le processus reste au premier plan jusqu'à Ctrl-C.
+
+Le lanceur ne valide pas le sens du contrat métier et ne remplace pas les tests
+du cœur. Il vérifie que l'endpoint répond en JSON avec un statut HTTP 2xx. Les
+secrets LLM doivent rester dans les variables d'environnement du processus ; ne
+pas les placer dans `--probe-json`.
 
 ---
 
@@ -631,6 +698,49 @@ une branche feature (propriete de l'automatisation). Qui regenere alors :
 dashboards cluster (etat sante, digest hebdomadaire, inventaire figures).
 Sortie = dashboard RooSync / artefacts CI, JAMAIS dans le repo.
 
+### Export et requêtes RDF du cursus
+
+`generate_curriculum_rdf.py` transforme le catalogue généré en Turtle et
+valide sa structure avec `curriculum-shapes.ttl`. `query_curriculum.py`
+consomme **un ou plusieurs exports Turtle** réunis en un graphe local
+(`--graph fichier.ttl` se répète). Il ne relit pas le catalogue et n'entretient
+pas un second index. Cela permet aussi
+d'interroger les concepts et prérequis explicites fournis par une taxonomie
+RDF complémentaire.
+
+Les indicateurs d'exécution réellement présents dans le catalogue sont
+exportés (`requires_api`, `requires_gpu`, `requires_cloud`, `requires_wsl`,
+`duree_estimee`, `status`). Ils indiquent si une API ou une classe de
+ressource est requise, sans identifier un fournisseur ou une clé API. Les
+prérequis pédagogiques ne sont affichés que s'ils existent explicitement dans
+l'export ; l'absence de déclaration est rendue comme « non renseignée », pas
+comme un graphe complet sans prérequis.
+
+Installer la pile RDF utilisée par le générateur et les tests, puis générer
+l'export hors du dépôt :
+
+```bash
+python -m pip install 'rdflib>=7.0.0,<8.0.0' 'pyshacl>=0.27.0'
+python scripts/notebook_tools/generate_curriculum_rdf.py --output /tmp/cursus.ttl
+```
+
+Exemples de requêtes locales sur ce Turtle :
+
+```bash
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl series
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl list --series SymbolicAI --subseries SemanticWeb
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl resources api --limit 10
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl resources cloud --state not-required --limit 10
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl --graph /tmp/taxonomie.ttl concepts --query graphe
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl show SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl prerequisites SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb
+```
+
+Les chemins de parcours reflètent la structure disponible (série, sous-série,
+carnet), pas un ordre pédagogique ni des prérequis inférés. Un chemin de
+carnet inconnu est refusé. Les cycles entre liens URI de prérequis explicites
+font échouer toute requête au chargement de l'export.
+
 ---
 
 ## Audit & regression
@@ -658,11 +768,11 @@ Sortie = dashboard RooSync / artefacts CI, JAMAIS dans le repo.
 
 ## Extraction & parsing (la couche `lib`)
 
-- `notebook_tools.py` : **CLI multi-famille** (2262 lignes) -- point
+- `notebook_tools.py` : **CLI multi-famille** -- point
   d'entree canon pour les operations structurelles (`validate`,
   `execute`, `skeleton`, `analyze`).
-- `notebook_helpers.py` : helpers parsing nbformat (1585 lignes).
-- `notebook_lint.py` : linting structurel (333 lignes).
+- `notebook_helpers.py` : helpers parsing nbformat.
+- `notebook_lint.py` : linting structurel.
 - `extract_notebook_skeleton.py` : extrait squelette (markdown +
   cellules stub) pour catalogues.
 - `count_exercises.py`, `count_notebooks_by_series.py` : metriques

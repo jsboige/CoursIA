@@ -140,8 +140,8 @@ def _relpath(path: Path) -> str:
     """Compute a stable relative-to-cwd path; fall back to absolute if outside.
 
     Used to disambiguate same-named notebooks at different locations
-    (e.g., ``CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb``
-    vs ``CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb``).
+    (e.g., ``CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb``
+    vs ``CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb``).
     """
     try:
         # Use os.path.relpath so cross-drive paths (Windows) don't ValueError.

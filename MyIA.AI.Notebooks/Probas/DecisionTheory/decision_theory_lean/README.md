@@ -35,12 +35,12 @@ Trois modules livrés :
   reste un **jalon ouvert** (délibérément non `sorry`-backed).
 
 Notebook compagnon Lean :
-[`DecInfer/DecInfer-08b-Lean-Gittins.ipynb`](../DecInfer/DecInfer-08b-Lean-Gittins.ipynb).
+[`DecInfer/DecInfer-07b-Lean-Gittins.ipynb`](../DecInfer/DecInfer-07b-Lean-Gittins.ipynb).
 
 ## Statut
 
 - **Toolchain** : `leanprover/lean4:v4.33.0`
-- **Sorry** : **2** (tous dans `gittins_optimality`, `Gittins/GittinsTheorem.lean`) —
+- **Sorry** : **1** (la preuve de `gittins_optimality`, `Gittins/GittinsTheorem.lean`) —
   voir « État honnête » ci-dessous. `Gittins/Discount.lean` = **0 sorry** (entièrement
   prouvé), `Gittins/Basic.lean` = 0. `gittins_index_known_arm` et
   `gittins_index_monotone_discount` = **0 sorry** (prouvés, ce dernier via le port
@@ -48,8 +48,8 @@ Notebook compagnon Lean :
   (entièrement prouvés, jalon ouvert documenté non `sorry`-backed).
 - **i18n (#4980)** : les modules `Gittins` existent en siblings FR + EN
   (`Basic_en`/`Discount_en`/`GittinsTheorem_en`, `namespace Gittins_en`), preuves
-  byte-identiques (les 2 INTRINSIC sorries de `gittins_optimality` sont mirorrés
-  fidèlement — d'où le total lake standalone-sorry = 4). `Utility` et `Coherence`
+  byte-identiques (le sorry INTRINSIC restant de `gittins_optimality` est miroité
+  fidèlement — d'où le total lake standalone-sorry = 2). `Utility` et `Coherence`
   disposent aussi de leurs siblings EN.
 - **Build** : `lake build Gittins Utility Coherence` (dépend de Mathlib4)
 - **Dépendances** : Mathlib4 (pin `db584cd6`, toolchain `v4.33.0`) — analyse réelle pour les lemmes
@@ -74,9 +74,11 @@ La formalisation est scindée en une couche **prouvée** et une couche **énonc�
   `one_div_le_one_div_of_le`, en contournant l'absence de `tsum_le_tsum` sur le `ℝ`
   nu dans la version de Mathlib alors utilisée (`v4.31.0-rc1`, aujourd'hui `v4.33.0`).
 - **Énoncé, intractable** (`GittinsTheorem.lean`) : `gittinsIndex` (arrêt optimal),
-  `gittins_optimality` (le théorème central — la politique à indice maximise la
-  récompense actualisée espérée). Les **2 `sorry` résiduels** sont dans l'assemblage de
-  `gittins_optimality` (point fixe d'arrêt optimal + passage à la limite sur l'horizon) ;
+  `discountedValue` (l'opérateur de valeur espérée `V` — **défini**, non `sorry` :
+  `∑' γⁿ·r` via le `tsum` de Mathlib, de sorte que l'énoncé du théorème n'est plus
+  circulaire), `gittins_optimality` (le théorème central — la politique à indice maximise
+  la valeur `discountedValue`). Le **`sorry` résiduel** est la preuve de
+  `gittins_optimality` (opérateur de Bellman / récurrence sur l'horizon) ;
   c'est la **barrière A** (MDP/Bellman), research-level.
 - **Prouvé** (`GittinsTheorem.lean`) : `gittins_index_known_arm` (indice d'un bras connu)
   et `gittins_index_monotone_discount` (monotonie en γ de l'indice, PR #5272 via le port
@@ -211,7 +213,7 @@ vNM, qui porte sur les *préférences* sous risque), mais purement *épistémiqu
 |---------|--------|-------|---------|
 | `Gittins/Basic.lean` | 41 | 0 | Types fondamentaux — `BanditArm`, `BanditInstance` (bras + actualisation γ), `Policy := Nat → Nat`, `RewardHistory`, `pullCount`, `empiricalMean`. Lean 4 pur, sans Mathlib. |
 | `Gittins/Discount.lean` | 109 | 0 | Actualisation géométrique **prouvée** via l'analyse réelle de Mathlib : `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. **Compagnon somme partielle finie** (PR #4252) : `geometricPartialSum γ n = ∑₀..n γ^k` avec `geometricPartialSum_zero`/`_succ` (récurrence télescopique) et `geometricPartialSum_closed` (forme close `(1−γ^n)/(1−γ)`). |
-| `Gittins/GittinsTheorem.lean` | 154 | 2 | Théorème phare **partiellement prouvé** : `gittinsIndex` (def prouvée = `trueMean` dans le modèle à moyenne connue), `gittinsPolicy` (argmax), `gittins_index_known_arm` (**prouvé** `rfl`), `gittins_index_monotone_discount` (**prouvé** PR #5272 — port `Float→ℝ`, barrière B fermée), `gittins_optimality` (sorry — MDP-intrinsic). Voir « État honnête » ci-dessous. (`gittins_beats_greedy` = placeholder `: True := trivial`, pas un sorry.) |
+| `Gittins/GittinsTheorem.lean` | 204 | 1 | Théorème phare **partiellement prouvé** : `gittinsIndex` (def prouvée = `trueMean` dans le modèle à moyenne connue), `gittinsPolicy` (argmax), `gittins_index_known_arm` (**prouvé** `rfl`), `gittins_index_monotone_discount` (**prouvé** PR #5272 — port `Float→ℝ`, barrière B fermée), `discountedValue` (l'opérateur de valeur `V`, **def** — énoncé non circulaire), `gittins_optimality` (sorry — MDP-intrinsic). Voir « État honnête » ci-dessous. (`gittins_beats_greedy` = placeholder `: True := trivial`, pas un sorry.) |
 | `Gittins.lean` | 36 | 0 | Imports parapluie |
 | `Utility/Basic.lean` | 96 | 0 | Primitives vNM — `Lottery` (loterie sur `Fintype`), `expectation`, mélange convexe `mix` (preuve de validité), identités affine d'espérance (`expectation_mix`, `expectation_add`, `expectation_smul`, `expectation_const`, `expectation_affine`). |
 | `Utility/Axioms.lean` | 77 | 0 | Les **quatre axiomes vNM** — `IsComplete`, `IsTransitive`, `IsIndependent`, `IsContinuous` (solvabilité des mélanges), `IsRational`, plus `StrictPref`. |
@@ -238,16 +240,18 @@ retrérer à `λ` (`λ/(1−γ)`), i.e. `λ = μ`. D'où deux sites **prouvés**
 - `gittinsIndex` (def) — calibré sur `arm.trueMean` ;
 - `gittins_index_known_arm` — `sorry` → **`rfl`** (égalité définitionnelle).
 
-### Couche INTRINSIC — 2 sites sorry restants (1 barrière MDP)
+### Couche INTRINSIC — 1 site sorry restant (barrière MDP)
 
 | Site | Barrière | Nature |
 |------|----------|--------|
-| `V` (opérateur de valeur espérée, l.99) | **MDP-intrinsic** | Formaliser `E[Σγⁿ·r]` requiert un type de processus de récompense bandit + un opérateur d'espérance sur les distributions + une somme actualisée infinie (le côté `ℝ` est couvert par le `tsum` de Mathlib, ni le côté `Float` ni l'espérance) |
-| `gittins_optimality` (preuve, l.103) | **MDP-intrinsic** | Opérateur de Bellman / programmation dynamique + décomposabilité de l'indice + récurrence sur l'horizon = formalization MDP/arrêt-optimal complète |
+| `gittins_optimality` (preuve, l.133) | **MDP-intrinsic** | Opérateur de Bellman / programmation dynamique + décomposabilité de l'indice + récurrence sur l'horizon = formalization MDP/arrêt-optimal complète |
 
-Le théorème central (`gittins_optimality`) + son opérateur `V` sont le **vrai**
-mur court-terme (MDP absent de Mathlib). Aucun des 2 n'est un placeholder :
-chacun documente **précisément** ce qui manque.
+L'ancien second site — `V`, l'opérateur de valeur espérée — est **défini** depuis la
+PR de ce dépôt (`discountedValue` : `∑' γⁿ·r` sur le `tsum` de Mathlib) : ce n'est
+plus un `sorry`, et l'énoncé de `gittins_optimality` n'est plus circulaire. Le
+théorème central (`gittins_optimality`) reste le **vrai** mur court-terme (MDP
+absent de Mathlib). Ce n'est pas un placeholder : le site sorry documente
+**précisément** ce qui manque.
 
 > **Barrière B (Float-order) FERMÉE — PR #5272.** `gittins_index_monotone_discount`
 > était bloqué sur `arm.trueMean ≤ arm.trueMean` non prouvable en `Float` (IEEE 754 :
@@ -282,13 +286,14 @@ lake build Gittins Utility Coherence
 
 ## Notebook compagnon
 
-[`DecInfer/DecInfer-08b-Lean-Gittins.ipynb`](../DecInfer/DecInfer-08b-Lean-Gittins.ipynb) — présentation
+[`DecInfer/DecInfer-07b-Lean-Gittins.ipynb`](../DecInfer/DecInfer-07b-Lean-Gittins.ipynb) — présentation
 pédagogique du problème du bandit et de l'indice de Gittins, reliant le matériel de
 programmation probabiliste Infer.NET à la formalisation Lean.
 
 ## Voir aussi
 
 - **PR #2911** — `discount_monotone` prouvé en forme close (sorry 1→0)
+- **PR #24705** — `V` défini comme `discountedValue` (opérateur de valeur, `tsum`) : le sorry de `V` disparaît, l'énoncé de `gittins_optimality` n'est plus circulaire (sorry 2→1, lake 4→2 avec le sibling EN)
 - **`Probas/Infer/`** — série probabiliste Infer.NET (inférence bayésienne, priors conjugués) ; **Infer-5** = utilité espérée sous postérieure bayésienne
 - **`Probas/PyMC/`** — série PyMC ; **PyMC-1** = utilité espérée par échantillonnage de postérieure
 - **Epic #2651** — audit README/structure (série Lean)

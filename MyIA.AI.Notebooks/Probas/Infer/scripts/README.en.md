@@ -25,7 +25,7 @@ This directory contains setup and testing scripts for the Infer.NET probabilisti
 
 1. **Install .NET Interactive tool:**
    ```bash
-   dotnet tool install -g Microsoft.dotnet-interactive
+   dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
    dotnet interactive jupyter install
    ```
 

@@ -398,6 +398,10 @@ def main(argv: list[str] | None = None) -> int:
             plan = {"planned_actions": ["create-scheduled-task"]}
             if args.apply:
                 plan["result"] = apply_task_install(profile, subprocess.run)
+            else:
+                xml = task_xml(profile)
+                _validate_task_xml(xml)
+                plan["xml"] = xml
         elif args.command == "task-remove":
             plan = {"planned_actions": ["delete-scheduled-task"]}
             if args.apply:

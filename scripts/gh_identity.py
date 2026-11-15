@@ -95,11 +95,24 @@ APP_DOSSIER_LANES = (
     "po-2025",
     "po-2026",
     "po-2027",
+    "po-2028",
     "web1",
     "ai-01",
 )
+# #17437 (Q187, 2026-11-14) : l'App PROPRE a la lane coordinateur
+# ``myia-ai-01:CoursIA``. Elle existe desormais (App 5763709, slug
+# ``coursia-coord-ai01``, creee le 2026-11-14 sur le go du user, installee
+# sur jsboige/CoursIA seulement). Sa cle privee dediee
+# (``.secrets/github-apps/coursia-coord-ai01.pem``) n'est PAS la cle de
+# l'App de machine ``coursia-lane-ai-01``, que la lane worker soeur
+# ``myia-ai-01:CoursIA-2`` lit aussi : c'est cette separation qui la rend
+# eligible a porter la voix du coordinateur. Litteral EXPLICITE, pas derive
+# du prefixe ``APP_LOGIN_PREFIX`` (elle ne s'appelle pas ``coursia-lane-*``) :
+# un login construit par forme ne prouverait rien. Fail-closed comme le
+# reste : absente de la table = refuse.
+COORDINATOR_LANE_APP_LOGIN = "coursia-coord-ai01[bot]"
 ACCEPTED_DOSSIER_AUTHORS = frozenset(
-    (SHARED_LOGIN,)
+    (SHARED_LOGIN, COORDINATOR_LANE_APP_LOGIN)
     + tuple(f"{APP_LOGIN_PREFIX}{lane}[bot]" for lane in APP_DOSSIER_LANES)
 )
 

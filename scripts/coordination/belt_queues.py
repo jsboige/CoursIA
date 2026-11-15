@@ -26,10 +26,17 @@ prepare ce que le coordinateur regarde, et il mesure apres coup.
 ``record`` -- enregistre la repartition decidee par le coordinateur (horodatee),
 pour que le ``board`` suivant mesure les assiettes.
 
-    python scripts/pick_idle_grain.py --belt --lane myia-ai-01:CoursIA --json --grains 50 > belt.json
+    python scripts/coordination/tapis_rapide.py --lane myia-ai-01:CoursIA --grains 60 --json > belt.json
     python scripts/coordination/belt_queues.py board --belt-json belt.json --previous latest \\
         --lanes myia-po-2023:CoursIA,myia-po-2027:CoursIA-2
     python scripts/coordination/belt_queues.py record --assignment files.json --belt-json belt.json
+
+**Deux sources de tirage sont lues** (mesure du 2026-11-14) : le tapis lourd
+(``pick_idle_grain.py --belt --json``, cle ``picks``) et le tapis rapide
+(``tapis_rapide.py --json``, cle ``grains``). Le second ecarte les grains deja
+livres -- le premier non : 34 des 40 grains du tirage coordinateur etaient
+livres, et une partie est partie dans les files des workers. ``record``
+refuse donc un grain ``delivered`` dans la file d'une lane worker.
 
 ``files.json`` (ecrit par le coordinateur) :
 ``{"lanes": {"myia-po-2023:CoursIA": {"arc": "Search, du diagnostic au correctif",
@@ -51,12 +58,27 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import check_lane_claim as clc  # noqa: E402
+import grain_tag as gt  # noqa: E402
 import recette_due as rd  # noqa: E402
+import tirage_journal as tj  # noqa: E402
 
 _SERIES_RE = re.compile(r"MyIA\.AI\.Notebooks/([A-Za-z][\w.-]*)(?:/([A-Za-z][\w.-]*))?")
 _TAG_RE = re.compile(r"^\s*\[([^\]]{1,30})\]")
 _VISION_RE = re.compile(r"\b(QA visuel|rendu visuel|slides?|galerie|capture|screenshot|image[s]? g[ée]n[ée]r)", re.I)
 _VLLM_RE = re.compile(r"(192\.168\.0\.47|:5002\b|vLLM local|inf[ée]rence locale)", re.I)
+#: Reference a une issue dans le TITRE d'une PR : la convention des lanes
+#: est `Type(scope,#N): ...` ou `Type(#N): ...`. Le numero est le sujet
+#: traite, pas un renvoi de PR (celles-ci sont citees en toutes lettres).
+_TITLE_ISSUE_RE = re.compile(r"#(\d+)")
+
+#: Lanes qui peuvent porter un grain ``delivered`` (label ``candidate-delivered``) :
+#: le coordinateur, son adjoint et le secretaire. Toute autre lane est un worker :
+#: elle rend la main au lieu de servir le grain (mandat user 2026-09-07, #15069).
+LANES_URNE_DELIVERED = frozenset({
+    "myia-ai-01:CoursIA",      # coordinateur
+    "myia-po-2025:CoursIA-2",  # adjoint du coordinateur
+    "myia-po-2028:CoursIA-3",  # secretaire
+})
 
 
 def store_dir() -> Path:
@@ -64,8 +86,57 @@ def store_dir() -> Path:
     return Path(base) / "CoursIA" / "belt_queues"
 
 
+def normaliser_grains_tapis(belt: dict) -> list[dict]:
+    """Les grains du tapis rapide, mis dans la forme que le tableau consomme.
+
+    ``tapis_rapide.py --json`` rend ses grains sous la cle ``grains``, avec des
+    noms de champs differents (``numero``, ``titre``, ``famille``) et **sans** le
+    corps de l'issue. Ce que le tableau lit de chaque grain -- numero, titre,
+    famille, date de derniere visite -- y est entier.
+
+    Ce qui n'y est pas : le corps. La detection des contraintes (``vision``,
+    ``vllm-local``) ne lit donc que le titre sur cette source : elle est plus
+    aveugle ici que sur le tapis lourd, ou elle lisait titre + corps.
+    """
+    grains = []
+    for g in belt.get("grains") or []:
+        famille = g.get("famille")
+        grains.append({
+            "number": int(g["numero"]),
+            "title": g.get("titre") or "",
+            "body": "",
+            "labels": [],
+            "created_at": "",
+            "tapis_famille": f"#{famille}" if famille else None,
+            "derniere_visite": g.get("derniere_visite"),
+            "consolidation": bool(g.get("consolidation")),
+            "conteneur": bool(g.get("conteneur")),
+            "klass": g.get("klass"),
+        })
+    return grains
+
+
+def grains_du_belt(belt: dict | None) -> list[dict]:
+    """Les grains lus dans le JSON du tirage, quelle que soit sa source.
+
+    Deux sources existent : le tapis lourd (``pick_idle_grain.py --belt --json``,
+    cle ``picks``) et le tapis rapide (``tapis_rapide.py --json``, cle
+    ``grains``). Elles ne se ressemblent pas : la seconde ne porte ni le corps
+    de l'issue ni le champ ``klass``.
+    """
+    belt = belt or {}
+    if "picks" in belt:
+        return list(belt.get("picks") or [])
+    if "grains" in belt:
+        return normaliser_grains_tapis(belt)
+    return []
+
+
 def family_of(pick: dict) -> str:
-    """Cle de regroupement : serie de notebooks > etiquette de titre > label > genre."""
+    """Cle de regroupement : famille du tapis > serie de notebooks > etiquette > label > genre."""
+    famille = pick.get("tapis_famille")
+    if famille:
+        return famille
     text = f"{pick.get('title') or ''}\n{pick.get('body') or ''}"
     m = _SERIES_RE.search(text)
     if m:
@@ -95,7 +166,8 @@ def visit_age_days(pick: dict, now: datetime) -> float | None:
     Le champ ``idle`` du picker mesure l'activite quelconque (``updated_at``) : un commentaire
     de bot le remet a zero sans que personne ait servi l'issue. Ce n'est pas la cle du tapis.
     """
-    stamps = [s for s in (pick.get("last_delivery_stamp"), pick.get("last_claim_stamp")) if s]
+    stamps = [s for s in (pick.get("last_delivery_stamp"), pick.get("last_claim_stamp"),
+                          pick.get("derniere_visite")) if s]
     ref = max(stamps) if stamps else pick.get("created_at")
     if not ref:
         return None
@@ -182,6 +254,212 @@ def error_label(exc: BaseException) -> str:
     return type(exc).__name__
 
 
+# --- adherence au tapis (issue #25082, point D) ------------------------------
+#
+# Mesure du 2026-11-07 (issue #25082, mesure 1) : sur 67 PRs ouvertes
+# depuis le 06/11 16:00Z, **16** traitaient une issue de la file de leur
+# lane. Le chiffre ne distinguait pas trois provenances que le coordinateur
+# a ensuite precises (commentaire du 07/11 16:30Z) :
+#
+#   1. issue de la file ASSIGNEE (tirage enregistre par `belt_queues.py
+#      record`) ;
+#   2. issue TIREE par la lane elle-meme au tapis (son propre tirage) ;
+#   3. HORS tapis (dispatch nominatif, reparation de PR, initiative).
+#
+# La provenance 2 n'innocente pas le tirage : c'est le tapis lui-meme qui
+# ne met pas la consolidation en tete (mesures 3 a 6). Elle se distingue de
+# 1 pour savoir si une lane travaille SA file ou le tapis, et de 3 pour
+# voir le travail hors tapis.
+
+ADHERENCE_ASSIGNED = "file"
+ADHERENCE_SELF_DRAWN = "tapis"
+ADHERENCE_OFF_BELT = "hors_tapis"
+# 4e provenance (#25082, revue du 07/11) : le journal de tirage est PAR
+# MACHINE ; pour une lane d'une autre machine, la part tapis/hors d'une PR
+# hors file est NON MESURABLE localement. Ces PRs tombent dans ce seau --
+# jamais dans hors_tapis, qui se lirait « la lane n'a rien fait du tapis »
+# alors que c'est la lecture qui est impossible.
+ADHERENCE_NON_MEASURED = "non_mesure"
+ADHERENCE_PROVENANCES = (ADHERENCE_ASSIGNED, ADHERENCE_SELF_DRAWN,
+                          ADHERENCE_OFF_BELT, ADHERENCE_NON_MEASURED)
+
+
+def _local_machine() -> str:
+    """La machine locale, au format du segment machine d'une lane.
+
+    Reutilise la normalisation de ``gh_identity.machine_hostname``
+    (``COMPUTERNAME`` prime sur Windows, cf #17418) -- une fonction locale
+    substituable en test plutot qu'un appel direct a l'import.
+    """
+    import gh_identity as ghi
+    return ghi.machine_hostname()
+
+
+def gh_open_prs() -> list[dict]:
+    """Les PRs OUVERTES du depot, avec leur corps et leur date de creation.
+
+    Le corps porte le tag `Grain:` (l'attribution de lane -- le login
+    GitHub est partage) et les references d'issues ; la date de creation
+    borne la fenetre « depuis le tirage precedent ».
+    """
+    out = subprocess.run(
+        ["gh", "pr", "list", "--repo", rd.REPO, "--state", "open",
+         "--limit", "500", "--json",
+         "number,title,body,createdAt,closingIssuesReferences"],
+        capture_output=True, text=True, encoding="utf-8", check=True)
+    return json.loads(out.stdout)
+
+
+def pr_issue_refs(pr: dict) -> set[int]:
+    """Les issues qu'une PR traite.
+
+    Trois sources, par ordre de fidelite :
+
+    - `closingIssuesReferences` : la parse de GitHub lui-meme ;
+    - les references NON fermantes du body (`See #N`, `Part of #N`) : la
+      livraison d'une lane passe majoritairement par elles -- elles ne
+      ferment pas, et le commit les ecrit ;
+    - le numero du titre : la convention des lanes est `Type(scope,#N): ...`.
+
+    On ne lit PAS les references fermantes en prose : leur detecteur scanne
+    le texte entier, et une citation (`voir #12345` dans une explication)
+    se lirait comme une issue traitee.
+    """
+    refs: set[int] = set()
+    for ref in pr.get("closingIssuesReferences") or []:
+        n = ref.get("number")
+        if n:
+            refs.add(int(n))
+    for hit in gt.find_non_closing_refs(pr.get("body") or ""):
+        refs.add(int(hit["number"]))
+    for m in _TITLE_ISSUE_RE.finditer(pr.get("title") or ""):
+        refs.add(int(m.group(1)))
+    return refs
+
+
+def pr_lane(pr: dict) -> str | None:
+    """La lane qui porte la PR, lue dans son tag `Grain:`.
+
+    Le login GitHub est partage (`jsboige`) : le tag est la seule source
+    d'attribution par lane (spec #18832, reprise par
+    `belt_service_balance.attribute_service`). Une PR sans tag n'est pas
+    attribuee : elle est comptee a part, jamais repartie au hasard.
+    """
+    tag = gt.parse_grain_tag(pr.get("body") or "")
+    if not tag:
+        return None
+    return tag.get("lane") or None
+
+
+def belt_draw_numbers(lane: str) -> set[int] | None:
+    """Les issues que la lane a RETENUES d'un tirage au tapis (journal local).
+
+    La provenance « tiree par la lane » est l'issue RETENUE du tirage
+    (``retained``), pas les candidates montrees : le tapis montre jusqu'a 50
+    issues par tour, la lane n'en prend qu'une. Compter les candidates
+    gonflerait l'adherence -- toute PR traitant une issue simplement MONTREE
+    par un tirage passerait pour du tapis (#25082, revue du 07/11).
+
+    Le journal est PAR MACHINE (`%LOCALAPPDATA%/CoursIA/tirage_journal`) :
+    une mesure prise sur ai-01 ne voit que les tirages d'ai-01. Pour une
+    lane dont la machine n'est pas la machine locale, on retourne donc
+    ``None`` (non mesure) -- jamais un ensemble vide, qui se lirait « la
+    lane n'a rien tire » alors que c'est la lecture qui est impossible.
+    """
+    if lane.split(":", 1)[0] != _local_machine():
+        return None
+    try:
+        records = tj.read_journal()
+    except (OSError, json.JSONDecodeError):
+        return set()
+    out: set[int] = set()
+    for rec in records:
+        if rec.lane != lane or rec.mode != "belt":
+            continue
+        if rec.retained is not None:
+            out.add(int(rec.retained))
+    return out
+
+
+def measure_adherence(previous: dict | None, lanes: list[str], *,
+                       open_prs: list[dict] | None = None,
+                       belt_draws: dict[str, set[int] | None] | None = None,
+                       measured: bool = True) -> dict:
+    """La part des PRs d'une lane qui traite une issue de SON tapis.
+
+    La fenetre est celle du tour : les PRs creees depuis la repartition
+    precedente (`previous["assigned_at"]`). Une PR sans date de creation
+    n'entre pas dans la mesure : elle est comptee a part, jamais imputee.
+
+    Trois provenances disjointes, chacune Named (cf. les constantes) :
+    `file`, `tapis`, `hors_tapis` -- plus `non_mesure` : le journal de
+    tirage est PAR MACHINE ; quand ``belt_draws[lane]`` vaut ``None``, la
+    part tapis/hors des PRs hors file de cette lane est inconnue ICI.
+    Elles tombent dans ce seau (jamais dans `hors_tapis`, qui se lirait
+    « la lane n'a rien fait du tapis »), `self_drawn` rend ``None`` et
+    l'adherence n'est pas calculee. Le taux d'adherence est
+    `(file + tapis) / total` : il dit si une lane travaille le tapis ou
+    autre chose, sans pretendre que le tapis lui-meme est bien oriente.
+    """
+    out: dict[str, dict] = {}
+    if not previous:
+        return {"measured": False, "reason": "aucune repartition precedente",
+                "lanes": out, "sans_lane": 0}
+    since = previous.get("assigned_at") or ""
+    queue_by_lane = {
+        lane: {int(it["number"]) for it in (info.get("queue") or [])}
+        for lane, info in (previous.get("lanes") or {}).items()
+    }
+    draws = belt_draws or {}
+    # None (cle absente comprise) = le journal local ne couvre pas la
+    # machine de la lane : echec-clos sur la non-mesure, jamais un zero
+    # qui se lirait « la lane n'a rien tire au tapis ».
+    journal_covers = {lane: draws.get(lane) is not None for lane in lanes}
+    buckets: dict[str, dict[str, list[int]]] = {}
+    sans_lane: list[int] = []
+    for pr in open_prs or []:
+        created = pr.get("createdAt") or ""
+        if since and created and created < since:
+            continue
+        lane = pr_lane(pr)
+        if not lane:
+            sans_lane.append(int(pr.get("number") or 0))
+            continue
+        if lane not in lanes:
+            continue
+        refs = pr_issue_refs(pr)
+        queue = queue_by_lane.get(lane, set())
+        drawn = draws.get(lane) or set()
+        if refs & queue:
+            kind = ADHERENCE_ASSIGNED
+        elif not journal_covers.get(lane, False):
+            kind = ADHERENCE_NON_MEASURED
+        elif refs & drawn:
+            kind = ADHERENCE_SELF_DRAWN
+        else:
+            kind = ADHERENCE_OFF_BELT
+        buckets.setdefault(lane, {k: [] for k in ADHERENCE_PROVENANCES})
+        buckets[lane][kind].append(int(pr.get("number") or 0))
+    for lane in lanes:
+        b = buckets.get(lane) or {k: [] for k in ADHERENCE_PROVENANCES}
+        total = sum(len(v) for v in b.values())
+        covers = journal_covers.get(lane, False)
+        adhere = (len(b[ADHERENCE_ASSIGNED]) + len(b[ADHERENCE_SELF_DRAWN]))
+        out[lane] = {
+            "measured": measured,
+            "assigned": len(b[ADHERENCE_ASSIGNED]),
+            "self_drawn": len(b[ADHERENCE_SELF_DRAWN]) if covers else None,
+            "off_belt": len(b[ADHERENCE_OFF_BELT]),
+            "non_mesure": len(b[ADHERENCE_NON_MEASURED]),
+            "total": total,
+            "adherence": round(adhere / total, 3) if (total and covers) else None,
+            "prs": b,
+        }
+    return {"measured": measured, "since": since, "lanes": out,
+            "sans_lane": len(sans_lane),
+            "draw_journal_scope": "machine locale"}
+
+
 def gh_issue_state(number: int) -> dict:
     out = subprocess.run(["gh", "issue", "view", str(number), "--repo", rd.REPO,
                           "--json", "number,state,comments"],
@@ -190,16 +468,23 @@ def gh_issue_state(number: int) -> dict:
 
 
 def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
-          fetch_issue=None, recette=None) -> dict:
+          fetch_issue=None, recette=None, open_prs=None, belt_draws=None,
+          adherence_measured: bool = True) -> dict:
     # `fetch_issue` est resolu a l'appel (et non a la definition) pour que le
     # defaut reste le vrai lecteur `gh` tout en restant substituable en test.
     fetch_issue = fetch_issue or gh_issue_state
     plates = measure_plates(previous, fetch_issue) if previous else {}
     on_plate = {it["number"] for p in plates.values() for it in p["remaining"]}
-    picks = [p for p in belt.get("picks", []) if p["number"] not in on_plate]
+    grains = grains_du_belt(belt)
+    picks = [p for p in grains if int(p["number"]) not in on_plate]
     incidents: list[dict] = []
     out_lanes = {}
-    for lane in list(dict.fromkeys(lanes + list(plates))):
+    all_lanes = list(dict.fromkeys(lanes + list(plates)))
+    # #25082 point D -- l'adherence au tapis, mesuree par lane.
+    adherence = measure_adherence(previous, all_lanes, open_prs=open_prs,
+                                   belt_draws=belt_draws,
+                                   measured=adherence_measured)
+    for lane in all_lanes:
         plate = plates.get(lane)
         for inc in (plate["unreadable"] if plate else []):
             incidents.append({"kind": "issue", "lane": lane, **inc})
@@ -218,11 +503,17 @@ def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
             "remaining": plate["remaining"] if plate else [],
             "arc": plate["arc"] if plate else None,
             "recette": rec,
+            "adherence": adherence["lanes"].get(lane),
         }
     # #24373 : les EPICs Origami dont le pli suivant n'est pas deplie ne sont
     # pas servis aux lanes. Le tableau les montre : c'est la que le
     # coordinateur voit ce qui attend SON geste.
-    origami = belt.get("origami_parking") or {}
+    origami = belt.get("origami_parking")
+    if origami is None:
+        # Le tapis rapide ne porte pas d'etat origami : le dire plutot que
+        # laisser croire qu'aucun EPIC n'est parque (mesure nulle != mesure).
+        origami = {"measured": False,
+                   "reason": "le tirage ne porte pas d'etat origami"}
     parked = []
     for item in origami.get("details") or []:
         if item.get("parked"):
@@ -230,8 +521,9 @@ def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
                            "title": item.get("title"),
                            "next_pli": item.get("next_pli"),
                            "reason": item.get("reason")})
-    return {"drawn": len(belt.get("picks", [])), "families": group_picks(picks, now), "lanes": out_lanes,
+    return {"drawn": len(grains), "families": group_picks(picks, now), "lanes": out_lanes,
             "previous_at": previous["assigned_at"] if previous else None,
+            "adherence": adherence,
             "origami_parked": parked,
             "origami_parking": {"measured": bool(origami.get("measured")),
                                 "reason": origami.get("reason"),
@@ -255,6 +547,29 @@ def render_board(b: dict) -> str:
         rec = info["recette"] or {}
         rec_txt = f" | recette {rec.get('verdict')}" + (f" #{rec['issue']}" if rec.get("verdict") == "DUE" else "")
         lines.append(f"  {lane} : {served}/{info['assigned']} rendues, assiette {rest}{rec_txt if rec else ''}")
+        # #25082 point D -- l'adherence au tapis, dans la meme ligne : le
+        # coordinateur voit la file ET ce que la lane a reellement travaille.
+        adh = info.get("adherence") or {}
+        if adh and adh.get("total"):
+            pct = adh.get("adherence")
+            pct_txt = "n/a" if pct is None else f"{round(pct * 100)} %"
+            if adh.get("self_drawn") is None:
+                # Journal de tirage local : pour une lane d'une autre
+                # machine, la part tapis de ses PRs hors file n'est pas
+                # mesurable ici. Rendu n/m avec la reserve nommee -- jamais
+                # un zero nu qui se lirait « la lane n'a rien fait du
+                # tapis » (#25082, revue du 07/11).
+                tapis_txt = (f"tapis 0/{adh.get('non_mesure', 0)} "
+                             f"(journal local)")
+            else:
+                tapis_txt = f"tapis {adh.get('self_drawn', 0)}"
+            lines.append(
+                f"      adherence : file {adh.get('assigned', 0)} / "
+                f"{tapis_txt} / "
+                f"hors {adh.get('off_belt', 0)} "
+                f"(= {pct_txt} sur {adh.get('total')} PR(s))")
+        elif adh and not adh.get("measured"):
+            lines.append("      adherence : NON MESUREE")
     # #24373 : ce qui attend le geste du coordinateur (depliage d'un pli).
     parked = b.get("origami_parked") or []
     origami = b.get("origami_parking") or {}
@@ -277,8 +592,20 @@ def render_board(b: dict) -> str:
 
 
 def record(assignment: dict, belt: dict | None, now: datetime) -> dict:
-    """Valide et horodate la repartition decidee par le coordinateur."""
-    titles = {p["number"]: p for p in (belt or {}).get("picks", [])}
+    """Valide et horodate la repartition decidee par le coordinateur.
+
+    **Un grain ``delivered`` (label ``candidate-delivered``) n'entre pas dans la
+    file d'une lane worker** (mesure du 2026-11-14 : 34 des 40 grains du tirage
+    coordinateur etaient livres, et une partie etait partie dans les files des
+    workers le 13/11). L'urne de cloture appartient au coordinateur, a son
+    adjoint et au secretaire (``LANES_URNE_DELIVERED``) ; une worker qui la
+    rencontre rend la main au lieu de la servir.
+
+    Le refus porte sur les grains **visibles dans le tirage** : une issue que le
+    tirage ne porte pas passe (le coordinateur compose ses files a partir du
+    tirage ; une composition hors tirage n'est pas verifiable ici).
+    """
+    titles = {int(p["number"]): p for p in grains_du_belt(belt)}
     seen: dict[int, str] = {}
     lanes = {}
     for lane, info in assignment["lanes"].items():
@@ -289,6 +616,11 @@ def record(assignment: dict, belt: dict | None, now: datetime) -> dict:
                 raise ValueError(f"#{n} attribuee deux fois ({seen[n]} et {lane})")
             seen[n] = lane
             p = titles.get(n, {})
+            if p.get("klass") == "delivered" and lane not in LANES_URNE_DELIVERED:
+                raise ValueError(
+                    f"#{n} est un grain `delivered` (label `candidate-delivered`) : "
+                    f"l'urne de cloture n'appartient pas a la lane worker {lane} "
+                    f"({', '.join(sorted(LANES_URNE_DELIVERED))})")
             queue.append({"number": n, "title": p.get("title"), "family": family_of(p) if p else None})
         lanes[lane] = {"arc": info.get("arc"), "queue": queue}
     return {"assigned_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "lanes": lanes}
@@ -351,7 +683,24 @@ def main(argv: list[str] | None = None) -> int:
 
             def recette(lane: str) -> dict:
                 return rd.run(lane, rd.DEFAULT_WINDOW_DAYS, now, list_issues=lambda: listed, fetch_issue=fetch)
-        result = board(_read_json(args.belt_json), lanes, _load_previous(args.previous), now, recette=recette)
+        # #25082 point D -- les PRs ouvertes de la flotte (attribution par le
+        # tag `Grain:`) et les tirages que chaque lane a faits au tapis.
+        # Une lecture impossible est une ABSENCE DE MESURE : elle est
+        # nommee, jamais convertie en un zero qui se lirait « la lane n'a
+        # rien fait du tapis ».
+        open_prs = None
+        adherence_measured = True
+        try:
+            open_prs = gh_open_prs()
+        except (subprocess.CalledProcessError, FileNotFoundError,
+                json.JSONDecodeError) as exc:
+            adherence_measured = False
+            print(f"(adherence NON MESUREE : lecture des PRs ouvertes "
+                  f"impossible -- {error_label(exc)})", file=sys.stderr)
+        belt_draws = {lane: belt_draw_numbers(lane) for lane in lanes}
+        result = board(_read_json(args.belt_json), lanes, _load_previous(args.previous), now, recette=recette,
+                       open_prs=open_prs, belt_draws=belt_draws,
+                       adherence_measured=adherence_measured)
     except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as exc:
         print(f"UNKNOWN: belt_queues injoignable ({type(exc).__name__}) — {error_label(exc)}")
         return 2

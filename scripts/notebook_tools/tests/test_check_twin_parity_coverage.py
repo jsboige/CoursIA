@@ -13,7 +13,7 @@ were silently misfiled as C#-only:
 
     Tweety-10-MLN-CSharp      <-> Tweety-10-MLN-Python            suffix dropped
     Sudoku-07-Norvig-CSharp    <-> Sudoku-07-Norvig-Python   suffix substituted
-    SW-10-CSharp-RDFStar      <-> SW-10-Python-RDFStar     medial token
+    SW-10-RDFStar-CSharp      <-> SW-10-RDFStar-Python     medial token
 
 A too-narrow predicate does not fail loudly; it returns a confident wrong
 answer. Every convention is pinned here so a future edit to the matcher cannot
@@ -44,12 +44,12 @@ UNIVERSE = {
     f"{GT}/GameTheory-04c-NashExistence-CSharp.ipynb",
     f"{GT}/GameTheory-04c-NashExistence-Python.ipynb",
     # convention 3 -- medial token
-    f"{SW}/SW-10-CSharp-RDFStar.ipynb",
-    f"{SW}/SW-10-Python-RDFStar.ipynb",
+    f"{SW}/SW-10-RDFStar-CSharp.ipynb",
+    f"{SW}/SW-10-RDFStar-Python.ipynb",
     # genuinely C#-only
     f"{TW}/Tweety-02c-FOL-CSharp.ipynb",
     f"{SUD}/Sudoku-00-Environment-CSharp.ipynb",
-    f"{SW}/SW-1-CSharp-Setup.ipynb",
+    f"{SW}/SW-01-Setup-CSharp.ipynb",
     f"{GT}/GameTheory-02-NormalForm-Part2-CSharp.ipynb",
 }
 
@@ -68,8 +68,8 @@ def test_convention_suffix_substituted():
 
 def test_convention_medial_token():
     """The case a suffix-only matcher cannot see: CSharp sits mid-name."""
-    assert python_twin_candidates(f"{SW}/SW-10-CSharp-RDFStar.ipynb", UNIVERSE) == [
-        f"{SW}/SW-10-Python-RDFStar.ipynb"
+    assert python_twin_candidates(f"{SW}/SW-10-RDFStar-CSharp.ipynb", UNIVERSE) == [
+        f"{SW}/SW-10-RDFStar-Python.ipynb"
     ]
 
 
@@ -78,7 +78,7 @@ def test_csharp_only_has_no_candidate():
     for cs in (
         f"{TW}/Tweety-02c-FOL-CSharp.ipynb",
         f"{SUD}/Sudoku-00-Environment-CSharp.ipynb",
-        f"{SW}/SW-1-CSharp-Setup.ipynb",
+        f"{SW}/SW-01-Setup-CSharp.ipynb",
     ):
         assert python_twin_candidates(cs, UNIVERSE) == [], cs
 

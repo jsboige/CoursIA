@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1609
-breakdown: SymbolicAI=402, GenAI=305, Search=165, GameTheory=140, ML=137, QuantConnect=123, IIT=111, Probas=92, Sudoku=39, RL=38, Complexity=22, NLP=11, Compression=8, Physique=8, CaseStudies=6, cross-series=2
-maturity: BETA=1406, DRAFT=115, ALPHA=84, TEMPLATE=4
+total: 1657
+breakdown: SymbolicAI=407, GenAI=317, Search=169, GameTheory=142, ML=140, QuantConnect=124, IIT=114, Probas=93, RL=40, Sudoku=39, Complexity=28, NLP=13, Physique=12, Compression=11, CaseStudies=6, cross-series=2
+maturity: BETA=1501, DRAFT=83, ALPHA=69, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -78,7 +78,7 @@ SymbolicAI
 ├── Tweety/ - Logiques classiques, argumentation (Dung, Walton-Krabbe)
 ├── SMT/ - Z3, Satisfiability Modulo Theories (LINQ C# + Python)
 ├── SymbolicLearning/ - ILP, neuro-symbolique, KG-LLM, automates (L*)
-└── Argument_Analysis/ - Analyse d'arguments
+└── ArgumentAnalysis/ - Analyse d'arguments
 
 Search
 ├── Part1-Foundations/ - BFS, A*, Minimax, MCTS (agents et espaces d'états)
@@ -114,8 +114,8 @@ RL
 
 CaseStudies
 ├── Diagnostic-Medical/ - LLM-assisted diagnosis
-├── Oncology-Planning/ - Planification oncologique
-└── SmartGrid-Energy/ - Optimisation énergétique
+├── Planification-Oncologie/ - Planification oncologique
+└── Reseau-Electrique-Intelligent/ - Optimisation énergétique
 
 IIT
 ├── ICT-Series/ - Integrated Causal Trajectories (5 substrats : tri, Gray-Scott, Axelrod, transformer+SAE, Jeu de la Vie certifié Lean)
@@ -216,7 +216,7 @@ python -m venv venv && venv\Scripts\activate
 pip install -r requirements.txt
 
 # C#
-dotnet restore MyIA.CoursIA.sln
+dotnet restore dotnet/MyIA.CoursIA.sln
 ```
 
 ### Services Docker
@@ -296,11 +296,11 @@ Le Niveau 3 promet de « prouver ce qu'on a calculé » ; le dépôt tient cette
 
 | Famille | Lake phare | Théorème | Branchement notebook |
 |---------|-----------|----------|----------------------|
-| **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + Argument_Analysis |
-| **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16a (Conway) + 17a/b (Nœuds) + 15b (Grothendieck) |
+| **SymbolicAI** (Tweety) | `argumentation_lean` | Théorèmes d'extension (Dung) + pragmatique Walton-Krabbe (cf. `#4046`) | Notebook Tweety + ArgumentAnalysis |
+| **SymbolicAI** (Lean) | `knot_lean` (tricolorabilité Fox GF(3) + Piccirillo), `conway_lean` (Free Will Theorem 0 sorry), `grothendieck_lean` | Nœud trinôme / sliceness, théorème du libre arbitre (Kochen-Specker), visite catégorielle | SymbolicAI/Lean-16 (Conway) + KNOTS-01/02 (Nœuds) + 15b (Grothendieck) |
 | **SymbolicAI** (SC) | `erc20_lean` | Pas de réentrance ERC-20 (cf. `#4047`) | SmartContracts/Erc20 |
 | **Search** | `search_lean` | Consistance + heuristique admissible = optimalité (cf. `#4048`) | Search-3 (A*) + Search-03d, Part1-Foundations |
-| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-08b (Gittins) |
+| **Probas** | `decision_theory_lean/VNM` | Axiomes VNM ⇔ utilité espérée (cf. `#4049`) | DecisionTheory/DecInfer-01..02 (VNM) + DecInfer-07b (Gittins) |
 | **QuantConnect** | `kelly_lean` | Kelly `g(f) ≤ g(f*)` + unicité (cf. `#4052`) | QuantConnect QC-Py-10 Risk Management |
 | **GameTheory** | `game_theory_lean` (SocialChoice + CooperativeGames, absorption `#4365`) | Impossibilité d'Arrow + Bondareva-Shapley (0 sorry) | GameTheory/16b-* Choix social |
 

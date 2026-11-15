@@ -13,6 +13,13 @@ from datetime import datetime
 # américaines cotées aux États-Unis, hors SPY, de plus de 10 milliards de
 # dollars de capitalisation, dont la rentabilité des capitaux propres est
 # sous la médiane du groupe. Sélection et rééquilibrage chaque jour.
+#
+# Version 2 (#18923) : contrat du rejeu en ombre. La première version lisait
+# `start_date` et `end_date` avec des valeurs par défaut et ne traçait que la
+# valeur du portefeuille, à l'ouverture de chaque séance : un passage d'ombre
+# était refusé faute de `fees` et de `turnover`, et la valeur d'ouverture
+# n'était pas celle de la clôture que demande le contrat. La règle de trading
+# ne change pas.
 
 MODES = ("strategy", "all", "half", "spy", "6040")
 
@@ -29,13 +36,20 @@ class ShortUnprofitableIntlAlgorithm(QCAlgorithm):
         if self._mode not in MODES:
             raise ValueError(f"unknown mode parameter: {self._mode} ({' | '.join(MODES)})")
 
-        start = self.get_parameter("start_date", "2009-10-01")
-        # Fin explicite : la coupure d'environ 90 jours de certains nœuds de
-        # backtest ne la raccourcit pas en silence.
-        end = self.get_parameter("end_date", "2026-07-31")
+        # Dates sans valeur par défaut (contrat d'ombre #18923) : un backtest
+        # lancé sans elles échoue au lieu de tourner sur une période implicite.
+        # La fenêtre du verdict de #24228 est 2009-10-01 -> 2026-07-31 ; une fin
+        # explicite évite aussi que la coupure d'environ 90 jours de certains
+        # nœuds de backtest la raccourcisse en silence.
+        start = self.get_parameter("start")
+        end = self.get_parameter("end")
+        if not start or not end:
+            raise ValueError("parameters start and end are required (ISO dates)")
         self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
         self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))
         self.set_cash(100000)
+        self._start_value = 100000.0
+        self._traded = 0.0  # rotation cumulée, en fraction du portefeuille
         # Pas de modèle de courtage explicite : l'article n'en montre pas. Tous
         # les modes partagent le modèle par défaut de Lean.
 
@@ -78,16 +92,11 @@ class ShortUnprofitableIntlAlgorithm(QCAlgorithm):
         self.schedule.on(date_rule, self.time_rules.at(8, 0), self._rebalance)
         self.set_warm_up(timedelta(90))
 
-        # Trace journalière `shadow` (contrat #18923) : valeur du portefeuille à
-        # l'ouverture de chaque séance de SPY, hors préchauffage, répartie sur
-        # e0..e4. Tous les modes la prennent au même instant, sur la clôture
-        # précédente.
+        # Trace journalière `shadow` (contrat #18923) : à la clôture de chaque
+        # séance de SPY, hors préchauffage, la valeur du portefeuille (séries
+        # e0..e4 à tour de rôle), les frais cumulés et la rotation cumulée.
+        # Tous les modes la prennent au même instant.
         self._closes = 0
-        self.schedule.on(
-            self.date_rules.every_day(self._spy),
-            self.time_rules.after_market_open(self._spy, 0),
-            self._trace,
-        )
 
     def _record_etf_constituents(self, constituents):
         self._etf_constituents = [c.symbol for c in constituents]
@@ -143,13 +152,19 @@ class ShortUnprofitableIntlAlgorithm(QCAlgorithm):
         if n == 0:
             self._short_empty_days += 1
 
-    def _trace(self):
-        if self.is_warming_up:
+    def on_data(self, data):
+        # Une clôture par séance, à sa date : la barre journalière de SPY.
+        if self.is_warming_up or not data.bars.contains_key(self._spy):
             return
         self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self.plot("shadow", "fees", float(self.portfolio.total_fees) / self._start_value)
+        self.plot("shadow", "turnover", self._traded)
         self._closes += 1
 
     def on_order_event(self, order_event):
+        if order_event.status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
+            self._traded += (abs(float(order_event.fill_quantity) * float(order_event.fill_price))
+                             / float(self.portfolio.total_portfolio_value))
         if order_event.status == OrderStatus.INVALID:
             self._invalid_orders += 1
             self.set_runtime_statistic("invalid_orders", str(self._invalid_orders))

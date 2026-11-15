@@ -1,6 +1,7 @@
 import Gittins.Basic
 import Gittins.Discount
 import Gittins.GittinsTheorem
+import Gittins.Panel
 
 /-!
   Indice de Gittins — Vérification Formelle
@@ -15,6 +16,7 @@ import Gittins.GittinsTheorem
   - `Gittins.Discount` : Identités d'escompte géométrique (prouvées)
   - `Gittins.GittinsTheorem` : Définition et optimalité de l'indice
     de Gittins (sorry)
+  - `Gittins.Panel` : Terrains du programme prover #1453 (sorry documentés)
 
   ## Statut
   - Lemmes prouvés : convergence géométrique, valeur présente,

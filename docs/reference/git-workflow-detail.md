@@ -1,5 +1,7 @@
 # Git workflow — détail : verbatim force-push, incidents, rationale
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Détail durable de [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md) (harness-hygiene tier 2). La règle porte le périmètre opératoire ; ce fichier porte les verbatims et les incidents qui le fondent.
 
 ## 1. Force-push — décision user 2026-08-08 (verbatim)
@@ -85,6 +87,8 @@ Une règle du harnais est **datée de sa rédaction, pas de sa lecture**. Quand 
 | … REFUSE | 4 (main + 3 PR OPEN) | 4 |
 
 Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergée par squash 2026-09-02) a été retiré — c'est le **contrôle positif** manquant à tout prédicat d'ascendance : un squash-merge efface l'ascendance, mais `gh pr list --state all --search` retrouve la PR par le nom de branche.
+
+**L'ancre PR passe au listing REST par branche (2026-11, #23636)** : `gh pr list --state all --search "head:<branche>"` consomme le chemin de recherche GraphQL, refusé sous le login partagé alors même que le compteur horaire du seau `search` reste positif (plafond de points propre au chemin de recherche ; mesure firsthand 2026-10-31 : 3 échecs consécutifs `GraphQL: API rate limit already exceeded` alors que `gh api rate_limit` rendait `core: 4950` — le compteur ne prédit pas ce refus, seul le log de l'appel tranche). L'ancre autoritative est désormais `gh api "repos/<owner>/<repo>/pulls?state=all&head=<owner>:<branche>&per_page=5"` : seau `core`, filtre sur la tête **exacte** — le qualificatif `head:` de `--search` matche par sous-chaîne, donc moins précis pour l'intention « la PR dont `headRefName == branche` ». Le repli `--search` reste réservé aux branches de fork dont le propriétaire du head est inconnu : le filtre `head=` accepte bien `<fork-owner>:<branch>`, mais la voie REST de l'organe ne connaît que le propriétaire du dépôt courant. Ce n'est **pas** l'ancre interdite `commits/<oid>/pulls` (faux négatifs mesurés sur PRs OPEN) : le listing par branche n'a pas ce défaut. Fail-closed conservé dans l'organe : une erreur `gh` reste un `RuntimeError` → verdict `no_gh_unverifiable`, jamais un « 0 worktree » silencieux. Correctif appliqué dans `anchor_search_pr_for_branch` de `scripts/ci/prune_merged_worktrees.py` ; récurrence fondatrice #15369, mesure #23636, déploiement #23642.
 
 ## 6. Le scope avale le mot-clé — la mesure sur 500 commits (#23348)
 

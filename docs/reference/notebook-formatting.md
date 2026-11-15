@@ -1,5 +1,7 @@
 # Mise en forme visuelle des notebooks — directives + verification de rendu
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Source : mandat user 2026-06-23 (EPIC #3966). Les agents editent le markdown/code **sans voir le rendu**, ce qui laisse passer des pathologies de mise en forme invisibles a l'edition. Ce document donne (1) les **directives de formatage** et (2) le **pipeline de verification visuelle**.
 
 ## 1. Directives de formatage (HARD)

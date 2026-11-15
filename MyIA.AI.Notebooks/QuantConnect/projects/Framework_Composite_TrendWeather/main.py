@@ -12,15 +12,24 @@ class FrameworkCompositeStrategy(QCAlgorithm):
     Combines TrendStocksLite (momentum-weighted large-caps) with
     AllWeather (SPY/IEF/GLD/XLP) via Algorithm Framework.
 
-    Allocation sweep results (2015-2026):
-    v1.3 (T60/AW40): Sharpe 1.130, CAGR 23.8%, MaxDD 24.5%
-    v1.4b (T65/AW35): Sharpe 1.141, CAGR 25.0%, MaxDD 25.6%
-    v1.4c (T70/AW30): Sharpe 1.149, CAGR 26.2%, MaxDD 26.6%
-    v1.4d (T75/AW25): Sharpe 1.155, CAGR 27.4%, MaxDD 27.7% <-- selected
-    v1.4e (T80/AW20): Sharpe 1.163, CAGR 28.7%, MaxDD 28.7%
+    Allocation sweep, measured on QC Cloud on 2026-11-09 (#25533),
+    window 2015-01-01 -> 2025-12-31, QC parameter `trend_alloc`:
+    T60/AW40: Sharpe 1.120, CAGR 23.4%, MaxDD 24.5%, beta 0.683
+    T65/AW35: Sharpe 1.131, CAGR 24.7%, MaxDD 25.6%, beta 0.711
+    T70/AW30: Sharpe 1.140, CAGR 25.9%, MaxDD 26.6%, beta 0.740
+    T75/AW25: Sharpe 1.148, CAGR 27.1%, MaxDD 27.6%, beta 0.769 <-- default
+    T80/AW20: Sharpe 1.156, CAGR 28.4%, MaxDD 28.7%, beta 0.798
+    Control, SPY held (same window, broker and starting cash):
+              Sharpe 0.537, CAGR 13.4%, MaxDD 33.5%, beta 0.994
 
-    T75/AW25 chosen as production: best risk/return balance before
-    beta exceeds 0.80 and MaxDD approaches 29%.
+    The sweep is monotonic: each 5-point step toward the trend pocket adds
+    about 0.009 Sharpe, 1.1 point of MaxDD and 0.029 beta. There is no
+    optimum inside the range, so T75 is a risk choice: it is the share at
+    which the annual volatility (0.148) matches SPY held (0.147).
+
+    Caveat (#19393): the 15 trend stocks were picked in 2026, so the list
+    reads the future. The sweep does not remove that bias, and the verdict
+    against SPY held and 60/40 stays NO BEATS.
     """
 
     def initialize(self):
@@ -47,10 +56,16 @@ class FrameworkCompositeStrategy(QCAlgorithm):
             AllWeatherAlpha(aw_tickers)
         ))
 
+        # Part de la poche tendance (parametre QC, defaut T75/AW25).
+        # Le balayage de la docstring fait varier ce seul parametre.
+        trend_alloc = float(self.get_parameter("trend_alloc", 0.75))
+        aw_alloc = round(1.0 - trend_alloc, 4)
+        self.log(f"Allocation : TrendStocks {trend_alloc}, AllWeather {aw_alloc}")
+
         self.set_portfolio_construction(MultiStrategyPouchesPCM(
             alpha_allocations={
-                "TrendStocks": 0.75,
-                "AllWeather": 0.25,
+                "TrendStocks": trend_alloc,
+                "AllWeather": aw_alloc,
             },
             rebalance=timedelta(days=31),
             additive=True,  # Univers disjoints : identique au mode base

@@ -147,6 +147,18 @@ PIDS="${COURSIA_RUNNER_PIDS:-384}"
 # re-telechargerait interpretes et outils via les actions setup-*. Le volume
 # nomme survit aux conteneurs ; RUNNER_TOOL_CACHE dit aux actions ou chercher.
 # Sa propriete runner:runner vient du point de montage du Dockerfile.
+#
+# GARDE COURSE PIP (#22502) : ce volume est PARTAGE par tous les slots et les
+# waiters -- son site-packages servait donc chaque job, et deux jobs
+# pip-installant en parallele y corrompaient des paquets (pygments a 0 octet
+# sous dist-info 2.21.0, ImportError aleatoires retombes sur la PR mesuree,
+# instance #22281). L'isolation vit cote CONTENEUR, pas cote volume :
+# entrypoint.sh exporte PIP_USER=1, chaque pip installe dans le site
+# utilisateur ephemere (~/.local du conteneur, detruit avec lui) et le
+# site-packages partage n'est plus jamais ecrit par un job. Les exceptions
+# (etapes a venv propre sous $RUNNER_TEMP) posent PIP_USER=0 localement dans
+# le workflow. Ne pas re-introduire d'ecriture pip dans ce volume sans
+# re-ouvrir #22502 : la course redevenait possible par construction.
 TOOLCACHE_VOLUME="${COURSIA_RUNNER_TOOLCACHE_VOLUME:-coursia-runner-toolcache}"
 TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
 
@@ -188,6 +200,9 @@ MIRROR_HEAD="${COURSIA_RUNNER_MIRROR_HEAD:-main}"
 # superviseurs de la meme machine ne font alors qu'un fetch par periode, au lieu
 # d'un par boucle.
 MIRROR_REFRESH_EVERY="${COURSIA_RUNNER_MIRROR_REFRESH_EVERY:-300}"
+# Nombre d'echecs consecutifs de refresh avant l'alerte `[WARN][mirror]`
+# (#26453). 3 echecs au rythme de 5 min du tick = ~15 min.
+MIRROR_FAIL_WARN="${COURSIA_RUNNER_MIRROR_FAIL_WARN:-3}"
 # Bootstrap DESACTIVE par defaut : c'est une action hors bande, lourde (copie
 # integrale de l'historique), et elle n'a de sens qu'une fois par machine. Un
 # `supervise.sh mirror bootstrap` l'explicite ; `COURSIA_RUNNER_MIRROR_BOOTSTRAP=1`
@@ -198,6 +213,12 @@ MIRROR_MIN_FREE_MB="${COURSIA_RUNNER_MIRROR_MIN_FREE_MB:-8192}"
 # defaut, soit la moitie d'un `timeout-minutes: 10` -- le job garde sa marge
 # pour ses propres etapes apres le checkout.
 MIRROR_PROBE_MAX_S="${COURSIA_RUNNER_MIRROR_PROBE_MAX_S:-300}"
+# Delai de la MESURE EN DIRECT de l'ecart du miroir (`git ls-remote`).
+# Un reseau qui pend ne doit pas pendre le tick : le tick qui ne rend pas
+# ne rafraichit rien, et le miroir finit par figer SANS que personne ne le
+# voie -- exactement la panne muette de #26453. 20 s : un `ls-remote` vers
+# GitHub repond en quelques secondes ; au-dela, c'est un reseau pendu.
+MIRROR_LS_REMOTE_TIMEOUT_S="${COURSIA_RUNNER_MIRROR_LS_REMOTE_TIMEOUT_S:-20}"
 # Le conteneur du miroir ne porte PAS le label coursia-ci=1 : il ne doit pas
 # entrer dans l'arithmetique memoire des slots (assert_memory_budget), qui
 # dimensionne une flotte de jobs. Il porte son propre plafond a la place.
@@ -1999,10 +2020,124 @@ EVERY="$COURSIA_RUNNER_MIRROR_REFRESH_EVERY"
 FREE_MB="$COURSIA_RUNNER_MIRROR_MIN_FREE_MB"
 PARENT="$(dirname "$MIRROR")"
 STAMP="$PARENT/.objects-mirror.stamp"
+# DEUX horodatages (#26453). `$STAMP` est le THROTTLE : il dit QUAND on a
+# tente un refresh, et il est pose AVANT le fetch pour qu'une panne reseau
+# persistante ne transforme pas le tick en marteau. Il ne dit donc rien de ce
+# qui s'est passe. `$OKSTAMP` est pose SEULEMENT apres un fetch reussi : c'est
+# lui qui distingue un succes d'un echec. Avant, un seul horodatage portait
+# les deux roles -- et l'echec etait indiscernable d'un succes (incident du
+# 26/10 : 19 jours de panne muette, le miroir a l'arret au milieu du parc).
+OKSTAMP="$PARENT/.objects-mirror.ok"
+# Compteur d'echecs CONSECUTIFS. Il vit dans le volume parce que chaque tick
+# est un conteneur NEUF : un compteur en memoire serait remis a zero a chaque
+# tick et ne compterait jamais rien.
+FAILSFILE="$PARENT/.objects-mirror.fails"
 LOCKF="$PARENT/.objects-mirror.lock"
 
 mkdir -p "$PARENT" 2>/dev/null || true
 
+# --- Compteur d'echecs consecutifs et alerte --------------------------------
+# Seuil par defaut : 3 echecs, soit ~15 min au rythme de 5 min du tick. Le
+# seuil est un parametre pour qu'un operateur puisse le resserrer.
+MIRROR_FAIL_WARN="${COURSIA_RUNNER_MIRROR_FAIL_WARN:-3}"
+
+mirror_fails_read() {
+  local n=0
+  if [ -f "$FAILSFILE" ]; then
+    n="$(cat "$FAILSFILE" 2>/dev/null || echo 0)"
+    case "$n" in ''|*[!0-9]*) n=0 ;; esac
+  fi
+  printf '%s' "$n"
+}
+
+mirror_fails_write() {  # $1 = compte
+  printf '%s\n' "$1" > "$FAILSFILE" 2>/dev/null || true
+}
+
+# Un refresh en echec : on compte, et on ALERTE quand la serie est longue
+# enough pour etre une panne et non un incident de reseau ponctuel. La ligne
+# d'alerte est censee etre lue par le garde de famine / de heartbeat, d'ou
+# son prefixe `[WARN][mirror]` -- la convention des gardes de ce depot.
+mirror_record_failure() {  # $1 = cause (une phrase)
+  local n
+  n="$(mirror_fails_read)"
+  n=$(( n + 1 ))
+  mirror_fails_write "$n"
+  if [ "$n" -ge "$MIRROR_FAIL_WARN" ]; then
+    echo "[WARN][mirror] refresh en echec $n fois de suite (~$(( n * EVERY / 60 )) min) -- cause : $1"
+    echo "[WARN][mirror] le miroir est fige sur son etat precedent ; les checkouts reprennent l'historique complet depuis le serveur"
+  fi
+}
+
+# Un refresh reussi : le compteur retombe a zero et l'horodatage de SUCCES est
+# pose. C'est le seul point du cycle qui pose `.ok`.
+mirror_record_success() {
+  mirror_fails_write 0
+  touch "$OKSTAMP" 2>/dev/null || true
+  # Le sha de origin/main vu au dernier fetch REUSSI : c'est la reference
+  # hors-ligne de l'ecart du miroir. Sans elle, l'ecart n'est mesurable que
+  # si le reseau repond -- et le cas le plus interessant (le reseau coupe)
+  # est justement celui ou l'on ne peut rien mesurer.
+  sha="$(git --git-dir="$MIRROR" rev-parse "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null || echo '')"
+  if [ -n "$sha" ]; then
+    printf '%s\n' "$sha" > "$PARENT/.objects-mirror.remote" 2>/dev/null || true
+  fi
+}
+
+# --- Garde de propriete ------------------------------------------------------
+# Incident #26453 (26/10) : un fetch lance en root a laisse 8 entrees
+# root-owned dans le miroir (FETCH_HEAD, refs/heads/main, un pack...). Le
+# conteneur de refresh tourne sous `runner` (uid 1001) : le fetch echoue sur
+# `FETCH_HEAD`, et l'echec RESSEMBLE a une panne reseau -- le parc continue
+# donc en silence sur un miroir fige.
+#
+# On distingue les deux causes AVANT le fetch, sur les entrees que le fetch
+# ecrit reellement :
+#   - le PROPRIETAIRE de l'entree est-il celui du miroir ? (miroir
+#     heterogene : une entree root dans un miroir de `runner`) ;
+#   - l'entree est-elle eCRITABLE par l'uid courant ? (droits restrictifs).
+# Les deux controles sont necessaires : le second est le seul qui voie un
+# miroir entierement root quand le tick tourne en `runner` ; le premier est
+# le seul qui voie l'entree etrangere sous root (ou `[ -w ]` y vaut toujours
+# vrai). Le message nomme le proprietaire ET l'uid de reference, pour que
+# l'operateur sache qu'il faut un `chown` et non un `chmod`.
+
+# Miroir des entrees que le fetch ecrit : le depot lui-meme (FETCH_HEAD y
+# nait), `refs/` (les refs heads et tags y sont ecrits), `objects/pack` (les
+# packs). Une entree absente est ignoree : le fetch la creera, et c'est le
+# depot parent qui compte alors.
+
+mirror_property_guard() {
+  local uid_now ref_owner owner details="" bad="" p
+  uid_now="$(id -u)"
+  # Le proprietaire de REFERENCE est celui du miroir lui-meme : toutes les
+  # entrees doivent lui appartenir. Un miroir HETEROGENE (une entree root
+  # dans un miroir de `runner`, ou l'inverse) fait echouer le fetch du tick
+  # suivant -- celui qui n'est pas root. Le refuser ici, sous root aussi,
+  # evite de laisser un etat qui ne marchera qu'une fois.
+  ref_owner="$(stat -c %u "$MIRROR" 2>/dev/null || echo '')"
+  for p in "$MIRROR" "$MIRROR/FETCH_HEAD" "$MIRROR/refs" "$MIRROR/refs/heads" \
+           "$MIRROR/objects" "$MIRROR/objects/pack"; do
+    [ -e "$p" ] || continue
+    owner="$(stat -c %u "$p" 2>/dev/null || echo '')"
+    if [ -n "$ref_owner" ] && [ -n "$owner" ] && [ "$owner" != "$ref_owner" ]; then
+      bad="oui"
+      details="$details $p(uid=$owner,attendu=$ref_owner)"
+      continue
+    fi
+    if [ ! -w "$p" ]; then
+      bad="oui"
+      details="$details $p(droits=$(stat -c %a "$p" 2>/dev/null || echo '?'))"
+    fi
+  done
+  if [ -n "$bad" ]; then
+    echo "miroir: garde de propriete REFUSEE (rc 7) -- entree(s) du miroir hors de portee de l'uid $uid_now :$details"
+    echo "miroir: fetch NON tente -- la cause est la propriete/les droits du miroir, PAS le reseau"
+    echo "miroir: remedy -- chown -R <uid du miroir> sur ces entrees (contenu conserve)"
+    return 7
+  fi
+  return 0
+}
 now="$(date +%s)"
 last=0
 if [ -f "$STAMP" ]; then
@@ -2059,9 +2194,11 @@ if [ ! -d "$MIRROR/objects" ]; then
     if git --git-dir="$MIRROR" -c gc.auto=0 fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'; then
       git --git-dir="$MIRROR" symbolic-ref HEAD "$HEADREF" 2>/dev/null || true
       touch "$STAMP" 2>/dev/null || true
+      mirror_record_success
       echo "miroir: bootstrap OK en $(( $(date +%s) - t0 ))s"
     else
       echo "miroir: bootstrap ECHOUE -- le parc reste sur son comportement d'avant #18225"
+      mirror_record_failure "le bootstrap a echoue (fetch)"
       mv "$MIRROR" "$MIRROR.incomplete-$(date -u +%Y%m%dT%H%M%SZ)" 2>/dev/null || true
       exit 0
     fi
@@ -2121,7 +2258,90 @@ if [ "$ACTION" = "status" ]; then
   echo "  refs: $(git --git-dir="$MIRROR" for-each-ref --format=x 2>/dev/null | wc -l | tr -d ' ')"
   echo "  taille: $(du -sh "$MIRROR" 2>/dev/null | awk '{print $1}')"
   echo "  gc.auto: $(git --git-dir="$MIRROR" config gc.auto 2>/dev/null || echo 'non positionne (refresh le posera)')"
-  echo "  dernier refresh: $([ -f "$STAMP" ] && date -Is -r "$STAMP" 2>/dev/null || echo jamais)"
+  echo "  dernier refresh (throttle): $([ -f "$STAMP" ] && date -Is -r "$STAMP" 2>/dev/null || echo jamais)"
+  # LE DEUXIEME HORODATAGE (#26453) : celui du SUCCES. Le throttle dit quand
+  # on a tente ; celui-ci dit quand le miroir a reellement ete rafraichi. Avant,
+  # le statut affichait « dernier refresh » d'apres le stamp pose AVANT le
+  # fetch : un echec y etait indiscernable d'un succes.
+  if [ -f "$OKSTAMP" ]; then
+    ok_at="$(stat -c %Y "$OKSTAMP" 2>/dev/null || echo 0)"
+    echo "  dernier succes: $(date -Is -r "$OKSTAMP" 2>/dev/null) (il y a $(( now - ok_at ))s)"
+  else
+    echo "  dernier succes: jamais (aucun fetch reussi enregistre)"
+  fi
+  echo "  echecs consecutifs: $(mirror_fails_read) (seuil d'alerte : $MIRROR_FAIL_WARN)"
+  # L'alerte est reprise dans le STATUT : c'est la surface qu'un heartbeat ou
+  # un operateur lit. Une ligne `[WARN][mirror]` ecrit dans le journal et
+  # jamais relue ne vaut rien -- l'incident du 26/10 a produit 2 700 lignes
+  # d'erreur dans `objects-mirror.log` sans que personne ne les regarde.
+  if [ "$(mirror_fails_read)" -ge "$MIRROR_FAIL_WARN" ]; then
+    echo "  [WARN][mirror] refresh en echec $(mirror_fails_read) fois de suite -- le miroir est fige sur son etat precedent"
+  fi
+  # AGE DE LA MAIN DU MIROIR PAR RAPPORT A origin/main : c'est la mesure qui
+  # dit si le miroir est en retard, et de COMBIEN. L'ecart se compte en
+  # commits quand l'objet distant est deja dans le miroir ; sinon l'ecart est
+  # annonce sans nombre plutot que devine.
+  mirror_head="$(git --git-dir="$MIRROR" rev-parse "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null || echo '')"
+  # MESURE EN DIRECT, BORDEE EN TEMPS (#26453) : le `git ls-remote` mesure
+  # l'ecart du miroir a origin/main. Un reseau qui PEND ne doit pas pendre
+  # le tick : le tick qui ne rend pas ne rafraichit rien, et le miroir finit
+  # par figer sans que personne ne le voie -- c'est la panne muette qu'on
+  # supprime. Le delai depasse est DISTINGUE de l'echec : les deux
+  # reconduisent vers la reference hors-ligne, mais ils ne se ressemblent
+  # pas dans le journal.
+  LSR_TIMEOUT="${COURSIA_RUNNER_MIRROR_LS_REMOTE_TIMEOUT_S:-20}"
+  lsr_out=""
+  lsr_rc=0
+  if command -v timeout >/dev/null 2>&1; then
+    lsr_out="$(timeout "$LSR_TIMEOUT" git ls-remote "$REMOTE" "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null)"
+    lsr_rc=$?
+    lsr_note="ls-remote borne a ${LSR_TIMEOUT}s"
+  else
+    # `timeout` absent (image minimale) : la mesure n'est pas bornee, et le
+    # journal doit le dire plutot que de laisser croire a une mesure sure.
+    lsr_out="$(git ls-remote "$REMOTE" "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null)"
+    lsr_rc=$?
+    lsr_note="ls-remote NON borne (timeout absent de l'image)"
+  fi
+  remote_head="$(printf '%s\n' "$lsr_out" | awk 'NR==1{print $1}')"
+  remote_src="ls-remote"
+  if [ "$lsr_rc" -eq 124 ]; then
+    lsr_note="$lsr_note -- DELAI DEPASSE (le reseau a pendu)"
+    remote_src="ls-remote (delai depasse : ${LSR_TIMEOUT}s)"
+  elif [ "$lsr_rc" -ne 0 ]; then
+    lsr_note="$lsr_note -- echec (rc=$lsr_rc)"
+    remote_src="ls-remote (echec rc=$lsr_rc)"
+  fi
+  if [ -z "$remote_head" ] && [ -d "$REMOTE" ]; then
+    # Remote local : lecture directe du depot (le `ls-remote` peut echouer
+    # quand le repertoire courant est lui-meme un depot illisible).
+    remote_head="$(git --git-dir="$REMOTE" rev-parse "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null || echo '')"
+    remote_src="depot local"
+  fi
+  if [ -z "$remote_head" ] && [ -f "$PARENT/.objects-mirror.remote" ]; then
+    # Hors-ligne : le sha d'origin/main vu au dernier fetch reussi.
+    remote_head="$(head -n 1 "$PARENT/.objects-mirror.remote" 2>/dev/null || echo '')"
+    remote_src="dernier fetch reussi"
+  fi
+  echo "  main du miroir: ${mirror_head:-inconnue} ($(git --git-dir="$MIRROR" log -1 --format=%cI "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null || echo 'date inconnue'))"
+  echo "  origin/main: ${remote_head:-injoignable (reseau indisponible)} [$remote_src]"
+  # La note du `ls-remote` est rappelee MEME quand la reference a ete
+  # reconduite hors-ligne : sinon le delai depasse disparaitrait du journal
+  # et le tick suivant ne saurait pas dire pourquoi la mesure a change de
+  # source.
+  [ -n "$lsr_note" ] && echo "  mesure distante: $lsr_note"
+  if [ -n "$mirror_head" ] && [ -n "$remote_head" ]; then
+    if [ "$mirror_head" = "$remote_head" ]; then
+      echo "  etat: a jour"
+    else
+      behind="$(git --git-dir="$MIRROR" rev-list --count "$mirror_head..$remote_head" 2>/dev/null || echo '')"
+      if [ -n "$behind" ]; then
+        echo "  etat: en retard de $behind commit(s) sur origin/main"
+      else
+        echo "  etat: en retard sur origin/main (ecart non quantifiable : l'objet distant n'est pas dans le miroir)"
+      fi
+    fi
+  fi
   # PAS de compte d'emprunteurs ici : ce conteneur ne monte aucun volume _work,
   # donc il lirait zero et l'ecrirait comme un fait. Le compte se mesure depuis
   # l'interieur d'un slot, ou par `grep -l` sur les volumes qui les portent.
@@ -2153,9 +2373,21 @@ touch "$STAMP" 2>/dev/null || true
 # miroir pendant qu'un job emprunte ses objets est la promesse que ce depot
 # ne doit jamais casser.
 git --git-dir="$MIRROR" config gc.auto 0 2>/dev/null || true
+# GARDE DE PROPRIETE, AVANT le fetch (#26453). Elle distingue la panne de
+# droits (entrees root-owned ou droits restrictifs) de la panne reseau, et
+# sort avec un code DISTINCT (rc 7) : le `docker run` rend ce code a
+# l'appelant, qui peut donc gater dessus. Sans elle, l'echec de l'incident
+# du 26/10 s'est perdu dans un message de fetch indistinguable d'un timeout
+# reseau -- et le parc a tourne 19 jours sur un miroir fige.
+if ! mirror_property_guard; then
+  mirror_record_failure "garde de propriete : entree(s) du miroir hors de portee de l'uid $(id -u)"
+  exit 7
+fi
 if git --git-dir="$MIRROR" -c gc.auto=0 fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' 2>&1; then
+  mirror_record_success
   echo "miroir: rafraichi ($(date -Is))"
 else
+  mirror_record_failure "le fetch a echoue (voir la sortie du fetch ci-dessus)"
   echo "miroir: refresh echoue -- le parc continue sur l'etat precedent"
 fi
 exit 0
@@ -2176,6 +2408,8 @@ MIRROR_SH
     -e COURSIA_RUNNER_MIRROR_MIN_FREE_MB="$MIRROR_MIN_FREE_MB" \
     -e COURSIA_RUNNER_MIRROR_PROBE_MAX_S="$MIRROR_PROBE_MAX_S" \
     -e COURSIA_RUNNER_MIRROR_BOOTSTRAP="$MIRROR_BOOTSTRAP" \
+    -e COURSIA_RUNNER_MIRROR_FAIL_WARN="$MIRROR_FAIL_WARN" \
+    -e COURSIA_RUNNER_MIRROR_LS_REMOTE_TIMEOUT_S="$MIRROR_LS_REMOTE_TIMEOUT_S" \
     "${GIT_NET_ARGS[@]}" \
     --entrypoint bash "$IMAGE" -c "$script" >>"$STATE_DIR/objects-mirror.log" 2>&1
 }
@@ -3007,8 +3241,15 @@ case "${1:-}" in
              tail -n 20 "$STATE_DIR/objects-mirror.log" 2>/dev/null
              exit "$m_rc"
            fi
-           mirror_one_shot "$m_act" || true
+           mirror_one_shot "$m_act"
+           m_rc=$?
            tail -n 20 "$STATE_DIR/objects-mirror.log" 2>/dev/null
+           # Le code de sortie est PROPAGE (#26453) : un refresh refuse par la
+           # garde de propriete rend rc 7, et l'operateur (ou un garde qui
+           # gate dessus) voit l'echec au lieu d'un rc 0 qui dirait « tout va
+           # bien ». `bootstrap` et `status` restent en rc 0 (ce sont des
+           # gestes fail-open).
+           exit "$m_rc"
            ;;
   *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak|pin|mirror {bootstrap|refresh|status|probe}}"; exit 2 ;;
 esac

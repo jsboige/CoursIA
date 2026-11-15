@@ -310,7 +310,7 @@ def main() -> int:
     parser.add_argument(
         "--out",
         type=Path,
-        default=REPO_ROOT / "example_results" / "p1_plus_harvey_validation.json",
+        default=REPO_ROOT / "scripts" / "cartier_miller" / "example_results" / "p1_plus_harvey_validation.json",
         help="output JSON path (upstream-comparable format)",
     )
     parser.add_argument(

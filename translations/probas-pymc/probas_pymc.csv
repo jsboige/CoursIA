@@ -386,14 +386,14 @@ parametrisation, voir **PyMC-12-Modeles-Hierarchiques**.
 ***
 
 **Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,ea91cc1942f119a7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,a1b2c3d0,markdown,fr,91fcce8a923b3896,"# PyMC-10 : Sélection de Modèles et Comparaison Bayesienne
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,a1b2c3d0,markdown,fr,181bbd0d520b6769,"# PyMC-10 : Sélection de Modèles et Comparaison Bayesienne
 
 **Navigation** : [Index](../README.md) | [<< PyMC-9](PyMC-09-Classification.ipynb) | [PyMC-11 >>](PyMC-11-Topic-Models.ipynb)
 
 **Equivalent Infer.NET** : [Infer-10-Model-Sélection](../Infer/Infer-10-Model-Selection.ipynb)
 
 
-**Duree estimee** : 60 minutes
+**Duree estimee** : 45 minutes
 **Objectifs** :
 - Comprendre le problème du surapprentissage (overfitting)
 - Comparer des modèles via le critere LOO (validation croisee leave-one-out)
@@ -426,9 +426,10 @@ dans les régions de faible posterior). ArviZ contourne le problème en approxim
 hors-échantillon via le **Pareto Smoothed Importance Sampling (PSIS)** de Vehtari et al. (2017),
 qui produit une estimation stable du leave-one-out predictive accuracy.
 
-**Reference** : Vehtari, Gelman, Gabry (2017), *Pareto Smoothed Importance Sampling Pointwise
-Predictive Model Selection*, Statistics and Computing 27(5). DOI : 10.1007/s11222-016-9696-4.
-",,,,,,,,91fcce8a923b3896,,,,,,,,,,,,,,,
+**Reference** : Vehtari, Gelman, Gabry (2017), *Practical Bayesian model evaluation using
+leave-one-out cross-validation and WAIC*, Statistics and Computing 27(5), 1413-1432.
+DOI : 10.1007/s11222-016-9696-4.
+",,,,,,,,181bbd0d520b6769,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,b2c3d4e1,code,fr,fafeab0815bbca77,"import warnings
 
 # Trois familles d'avertissements Python apparaissent dans ce notebook :
@@ -497,7 +498,7 @@ for _style in [""arviz-tumma"", ""arviz-darkgrid""]:
         continue
 else:
     print(""PyMC ou ArviZ n'est pas installe. Executez: pip install pymc arviz matplotlib numpy scipy"")",,,,,,,,fafeab0815bbca77,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,c3d4e5f2,markdown,fr,ed07126fb5fded85,"## 1. Le Problème du Surapprentissage
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,c3d4e5f2,markdown,fr,f5275b1c49161c2d,"## 1. Le Problème du Surapprentissage
 
 Un modèle trop complexe peut memoriser le bruit dans les données au lieu d'apprendre le signal.
 La sélection de modèle bayesienne resout ce problème automatiquement via le **principe du parsimonie** :
@@ -508,9 +509,9 @@ un modèle plus complexe a une evidence (marginal likelihood) plus faible **sauf
 | Méthode | Infer.NET | PyMC |
 |---------|-----------|-------|
 | Evidence (marginal likelihood) | `Variable.Bernoulli(0.5)` + `Variable.If` | Non direct (NUTS) |
-| Comparaison de modèles | Bayes Factor exact | **LOO** via `az.loo()` (WAIC historique, retiré arviz 1.1.0) |
+| Comparaison de modèles | Bayes Factor exact | **LOO** via `az.loo()` (WAIC historique, retiré arviz 1.0.0) |
 | Sélection de variables | ARD avec Gamma hiérarchique | Pareil + `pm.Gamma` + `pm.Normal` |
-| Validation croisee | LOO manuel | `az.loo()` (Pareto-smoothed IS) |",,,,,,,,ed07126fb5fded85,,,,,,,,,,,,,,,
+| Validation croisee | LOO manuel | `az.loo()` (Pareto-smoothed IS) |",,,,,,,,f5275b1c49161c2d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,d4e5f6a3,code,fr,2f6ab185546f778f,"# Generation de donnees : unimodale (provenant d'une seule gaussienne)
 np.random.seed(42)
 n_obs = 50
@@ -535,24 +536,24 @@ axes[1].set_title('Donnees bimodales (2 gaussiennes)')
 axes[1].set_xlabel('x')
 plt.tight_layout()
 plt.show()",,,,,,,,2f6ab185546f778f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,e5f6a7b4,markdown,fr,886c42c84e404a94,"## 2. Comparaison de Modeles : LOO et heritage WAIC
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,e5f6a7b4,markdown,fr,80b4a8dfe7157c39,"## 2. Comparaison de Modeles : LOO et heritage WAIC
 
 La methode de reference en PyMC pour comparer des modeles est **LOO** (Leave-One-Out cross-validation, approximee par importance sampling Pareto-smoothed). **WAIC** (Widely Applicable Information Criterion) etait la methode historique, implementee jusqu'a ArviZ 0.x via `az.waic()` ; **ArviZ 1.0+ l'a retiree** au profit de LOO seul, qui est a la fois plus stable et plus informatif (les `pareto_k` diagnostiquent la fiabilite de l'approximation IS).
 
 **Concepts cles** :
 
 - **LOO (methode de reference executee ici)** : validation croisee leave-one-out approximee via importance sampling Pareto-smoothed. Retourne `elpd_loo` (log-pointwise predictive density, plus grand = meilleur), `p_loo` (nombre effectif de parametres), `se` (erreur standard), et les diagnostics `pareto_k` (k > 0.7 = approximation peu fiable pour cette observation).
-- **WAIC (concept historique)** : estimait la deviance attendue sur de nouvelles donnees avec une penalite de complexite. Equivalent en interpretation a LOO sur des donnees ou l'approximation IS est fiable, mais sans le diagnostic `pareto_k`. Ne s'utilise plus en pratique (depuis arviz 1.0, 2023) ; reste cite dans la litterature anterieure.
+- **WAIC (concept historique)** : estimait la deviance attendue sur de nouvelles donnees avec une penalite de complexite. Equivalent en interpretation a LOO sur des donnees ou l'approximation IS est fiable, mais sans le diagnostic `pareto_k`. Ne s'utilise plus en pratique (ArviZ 1.0.0 est sorti le 2 mars 2026 et a retire `az.waic`) ; reste cite dans la litterature anterieure.
 - La difference entre modeles est mesurable via `dSE` (deviance standard error) et le test de **stacking** (`az.compare` retourne les poids optimaux d'un melange de modeles).
 
 ### Origine des methodes
 
-Le **WAIC** (Watanabe, 2010) generalise l'AIC au cadre bayesien ; le **LOO** (Vehtari, Gelman, Gabry, 2017) repose sur l'importance sampling Pareto-smoothed (PSIS) pour fiabiliser l'approximation quand certaines observations ont des poids IS extremes. ArviZ 1.1.0 (2024) a unifie l'API sur LOO seul.
+Le **WAIC** (Watanabe, 2010) generalise l'AIC au cadre bayesien ; le **LOO** (Vehtari, Gelman, Gabry, 2017) repose sur l'importance sampling Pareto-smoothed (PSIS) pour fiabiliser l'approximation quand certaines observations ont des poids IS extremes. ArviZ 1.1.0 (sorti le 24 avril 2026) a unifie l'API sur LOO seul.
 
 ### Choix dans ce notebook
 
 Tous les comparaisons de ce carnet utilisent `az.loo()` et `az.compare()` (LOO seul). Aucune cellule n'appelle `az.waic()` ni ne s'appuie sur WAIC comme procedure de selection vivante. Les references a WAIC dans les cellules suivantes (interpreations, exercice) sont conservees comme **contexte conceptuel** pour la lecture des papiers anterieurs, pas comme procedure a executer.
-",,,,,,,,886c42c84e404a94,,,,,,,,,,,,,,,
+",,,,,,,,80b4a8dfe7157c39,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,f6a7b8c5,code,fr,efe3fc6940f9fbe4,"# Modele 1 : Gaussienne unique sur donnees unimodales
 with pm.Model() as model_1gauss:
     mu = pm.Normal('mu', mu=0, sigma=10)
@@ -615,9 +616,9 @@ compare_uni = az.compare({""1-gaussien"": trace_1g, ""2-gaussien"": trace_2g},
                           method=""BB-pseudo-BMA"")
 print(""Comparaison (donnees unimodales, critere LOO via arviz %s) :"" % az.__version__)
 print(compare_uni)",,,,,,,,a32cc78fdf444ef8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,b8c9d0e7,markdown,fr,fcc101c136e159e3,"### Interpretation
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,b8c9d0e7,markdown,fr,5fea31971138f4c8,"### Interpretation
 
-Sur les donnees unimodales, le modele a 1 gaussienne devrait avoir un **LOO** comparable ou meilleur que le modele a 2 gaussiennes. Le modele plus complexe n'apporte rien car les donnees proviennent d'une seule gaussienne. Si `az.compare` (qui retourne `elpd_loo` + poids de stacking) favorise le modele 1-gaussienne, c'est la confirmation que le 2-gaussiennes est sur-parametre.
+Sur les donnees unimodales, le modele a 1 gaussienne devrait avoir un **LOO** comparable ou meilleur que le modele a 2 gaussiennes. Le modele plus complexe n'apporte rien car les donnees proviennent d'une seule gaussienne. Si `az.compare` (qui retourne `elpd_loo` + poids d'empilement) favorise le modele 1-gaussienne, c'est la confirmation que le 2-gaussiennes est sur-parametre.
 
 **Note** : la litterature anterieure (avant ArviZ 1.0) utilisait WAIC au lieu de LOO. WAIC et LOO-CV donnent generalement les memes conclusions sur des donnees ou l'approximation IS est fiable, mais LOO expose en plus le diagnostic `pareto_k` qui signale les observations ou l'approximation est delicate. Aucun des deux ne reussit a 'reparer' la non-identifiabilite du melange : sur des donnees unimodales, les deux methodes vont penaliser le modele 2-gaussiennes pour sa complexite non-utile.
 
@@ -632,12 +633,12 @@ cles (ArviZ 1.x, LOO seul) :
 - **`elpd`** : LOO sur l'echelle log-predictive-density (plus haut = meilleur)
 - **`p`** : nombre effectif de paramètres (penalite de complexite)
 - **`elpd_diff`** : difference relative au meilleur ; par convention, le meilleur a `elpd_diff=0`
-- **`weight`** : poids du modèle selon le **stacking** pseudo-BMA (model averaging bayesien)
+- **`weight`** : poids du modèle selon l'empilement **BB-pseudo-BMA** (bootstrap bayésien) — c'est la méthode que ce carnet emploie dans tous ses appels à `az.compare()`. `az.compare` accepte d'autres méthodes (`stacking` par défaut), qui redistribuent les poids différemment : le nom de la colonne ne dit pas laquelle a été utilisée, c'est l'argument `method=` qui le dit.
 
 Pour le cas unimodal, on attend `weight(modele_1g) > weight(modele_2g)` : le modèle simple
 absorbe la majorite de la masse predictive. Sur le run de ce notebook, l'ecart est serre
 (poids ~0.7/0.3, `elpd_diff = -0.8`) : les donnees unimodales n'ont pas besoin de deux
-composantes, mais a n=80 le sur-parametrage du mélange reste modéré — le stacking ne
+composantes, mais a n=50 le sur-parametrage du mélange reste modéré — l'empilement ne
 confisque pas toute la masse au modèle simple.
 
 ### Pièges classiques
@@ -653,7 +654,7 @@ confisque pas toute la masse au modèle simple.
   incompatibles (ex : gauss sur données binaires), la elpd n'a pas de sens.
 - **Pareto k eleves** : le diagnostic `pareto_k` (cf. section 5) signale les observations ou
   l'approximation PSIS est fragile — le `warning` de la table ne s'ignore pas.
-",,,,,,,,fcc101c136e159e3,,,,,,,,,,,,,,,
+",,,,,,,,5fea31971138f4c8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,c9d0e1f8,code,fr,2aa3aa45f3489190,"# Visualisation de la comparaison (arviz 1.1 : az.plot_compare rend sa propre
 # figure standalone, le parametre ax a ete retire de l'API PlotCollection).
 az.plot_compare(compare_uni)",,,,,,,,2aa3aa45f3489190,,,,,,,,,,,,,,,
@@ -745,7 +746,7 @@ with model_2g_bi:
     trace_2g_bi = pm.compute_log_likelihood(trace_2g_bi)
 
 print(""Echantillonnage termine."")",,,,,,,,47cd3b3b57050488,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,21706470,markdown,fr,0133a2a1bb221125,"### Interpretation des modèles sur données bimodales
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,21706470,markdown,fr,a54962cfb81416da,"### Interpretation des modèles sur données bimodales
 
 L'echantillonnage est termine. Nous allons maintenant comparer les deux modèles via LOO et visualiser comment chaque modèle s'ajuste aux données bimodales.
 
@@ -771,9 +772,8 @@ Le modèle a 2 gaussiennes est **plus difficile à sampler** que le 1 gaussienne
 
 ArviZ detecte les divergences et affiche un warning `There were N divergences after
 removing N warmups`. Au-dessus de ~5% du total des echantillons, les estimations elpd (LOO)
-sont suspectes. Sur le run de ce notebook, ce cas reste sous controle : 0 divergence,
-R-hat ~1.02 (cf. les diagnostics de convergence ci-dessus).
-",,,,,,,,0133a2a1bb221125,,,,,,,,,,,,,,,
+sont suspectes. Sur le run de ce notebook, ce cas reste sous controle : aucune divergence NUTS n'est signalée dans la sortie d'échantillonnage. Le `R-hat ~1.02` cité plus haut (section 2) concerne l'ajustement du mélange à 2 gaussiennes sur les données **unimodales** : ce carnet n'affiche pas `az.summary(trace_2g_bi)` pour l'ajustement **bimodal**, donc ce chiffre ne lui est pas transposable — un apprenant qui veut s'appuyer sur ce diagnostic doit le produire lui-même.
+",,,,,,,,a54962cfb81416da,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,f2a3b4c1,code,fr,a00b67b67249c1b7,"# Comparaison sur donnees bimodales (LOO via arviz 1.1, cf. note cellule ci-dessus)
 compare_bi = az.compare({""1-gaussien"": trace_1g_bi, ""2-gaussien"": trace_2g_bi},
                          method=""BB-pseudo-BMA"")
@@ -804,7 +804,7 @@ plt.show()
 
 # 2) Comparaison (figure arviz standalone)
 az.plot_compare(compare_bi)",,,,,,,,a00b67b67249c1b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,a3b4c5d2,markdown,fr,bd7decc9ab074532,"## 4. ARD : Automatic Relevance Determination
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,a3b4c5d2,markdown,fr,ccd33178178a2816,"## 4. ARD : Automatic Relevance Determination
 
 L'ARD est une technique de sélection automatique de variables.
 On utilise un prior hiérarchique ou chaque variable a sa propre precision,
@@ -824,8 +824,8 @@ y ~ Normal(X @ w, sigma)         # regression lineaire
 
 ### Origine
 
-L'ARD (Automatic Relevance Determination) a ete introduite par **Michael E. Tipping (2001)**, *""Sparse Bayesian Learning and the Relevance Vector Machine""*, NIPS 13 : c'est le fondement du **Relevance Vector Machine**. Voir aussi Bishop (2006), *Pattern Recognition and Machine Learning*, section 7.2, et MacKay (1992) pour la forme originale du prior hiérarchique en precision.
-",,,,,,,,bd7decc9ab074532,,,,,,,,,,,,,,,
+L'ARD (Automatic Relevance Determination) a ete introduite par **Michael E. Tipping (2001)**, *""Sparse Bayesian Learning and the Relevance Vector Machine""*, Journal of Machine Learning Research 1(Jun):211-244 : c'est le fondement du **Relevance Vector Machine**. Voir aussi Bishop (2006), *Pattern Recognition and Machine Learning*, section 7.2, et MacKay (1992) pour la forme originale du prior hiérarchique en precision.
+",,,,,,,,ccd33178178a2816,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,b4c5d6e3,code,fr,50100d2752a16ef2,"# Generation de donnees avec 3 variables dont 2 pertinentes
 np.random.seed(42)
 n_samples = 100
@@ -951,7 +951,7 @@ print(""Concordance avec Infer.NET :"")
 print(""  Feature 1 : w=2.04, alpha=0.49 (haute pertinence)"")
 print(""  Feature 2 : w=0.02, alpha=1.49 (pertinence moyenne, poid proche de 0)"")
 print(""  Feature 3 : w=2.97, alpha=0.28 (haute pertinence)"")",,,,,,,,3cee410b6ab726dc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,9b03ea7f,markdown,fr,03651f1c99d5d5e8,"### Analyse des résultats ARD
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,9b03ea7f,markdown,fr,3920033af0f8a9d4,"### Analyse des résultats ARD
 
 Le tableau ci-dessous resume les estimations posterieures pour chaque variable. Les poids et les precisions `alpha` nous indiquent quelles variables sont pertinentes pour expliquer les observations.
 
@@ -972,9 +972,8 @@ Surveillez :
 - Trace plots en ruban : doivent etre ""tressés"" (pas de derive monotone)
 - `r_hat` : doit etre proche de 1.0 (<1.01 recommande)
 
-Si `r_hat > 1.05`, l'echantillonnage n'a pas converge — augmenter `tune` et `draws`, ou
-utiliser un reparameteriseur (e.g. `pm.NoncentralStudentT` au lieu de `Gamma + Normal`).
-",,,,,,,,03651f1c99d5d5e8,,,,,,,,,,,,,,,
+Si `r_hat > 1.05`, l'echantillonnage n'a pas converge — augmenter `tune` et `draws`, ou relever `target_accept=0.95`. (Il n'existe **pas** de `pm.NoncentralStudentT` dans PyMC, et une loi non-centrale n'aurait de toute façon rien à faire dans une hiérarchie `Gamma + Normal` sur des poids ARD.)
+",,,,,,,,3920033af0f8a9d4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,e7f8a9b6,code,fr,b9d03f20c644fde5,"# Visualisation des posteriors ARD (histogrammes des echantillons posterieurs reels)
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
 
@@ -997,7 +996,7 @@ axes[1].set_xlabel('Alpha')
 
 plt.tight_layout()
 plt.show()",,,,,,,,b9d03f20c644fde5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,f8a9b0c7,markdown,fr,4ef0a1a99fdbe244,"### Interpretation ARD
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,f8a9b0c7,markdown,fr,1021efa5f4d460f3,"### Interpretation ARD
 
 - **Variable 2 (non pertinente)** : son poids posterior est concentre autour de 0.
   La precision `alpha` est elevee, ce qui resserre le prior autour de 0.
@@ -1027,14 +1026,13 @@ L'ARD suppose que **les variables non pertinentes ont un vrai poids de 0**. Ce n
 toujours le cas en pratique :
 
 1. **Variables correlees** : si deux variables partagent la même information, l'ARD peut
-   en ecarter une arbitrairement. Solution : utiliser `pm.HorseShoe` (prior plus robuste)
-   ou pre-selectionner via corrélation.
+   en ecarter une arbitrairement. Solution : pre-selectionner via correlation, ou adopter un prior de type *horseshoe* (plus robuste). Attention : **PyMC ne fournit pas** ce prior — `pm.HorseShoe` n'existe pas (`AttributeError`) ; le horseshoe vit dans le paquet complementaire `pymc-extras` (`pmx.Horseshoe`), absent de l'environnement de cette série. La voie réellement disponible dans le cadre de ce carnet reste donc la pre-selection par correlation.
 2. **Variables faiblement pertinentes** : un poids de 0.1 avec n=100 observations peut
    être indiscernable d'un poids de 0 (le rapport signal/bruit est trop bas).
 3. **Modèle mal spécifié** : si la relation n'est pas lineaire, l'ARD peut deconcentrer
    ses poids pour compenser, donnant une fausse impression de pertinence partout.
-",,,,,,,,4ef0a1a99fdbe244,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,86efa4f0,markdown,fr,dfcab305484a333a,"### Exercice 2 : ARD avec 5 variables (3 non pertinentes)
+",,,,,,,,1021efa5f4d460f3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,86efa4f0,markdown,fr,fb4dfe2453d5d3ed,"### Exercice 2 : ARD avec 5 variables (3 non pertinentes)
 
 Etendez le modèle ARD ci-dessus a un problème avec **5 variables** dont seules 2 sont pertinentes. Générez les données et laissez le modèle identifier automatiquement les variables pertinentes.
 
@@ -1065,10 +1063,8 @@ variables non pertinentes doivent être centrées près de 0, et leur `alpha` mo
 
 ### Aller plus loin
 
-Une variante interessante : utiliser `pm.HorseShoe` au lieu de Gamma + Normal. Le prior
-HorseShoe a des **queues infiniment lourdes** qui pénalisent moins les petits coefficients,
-ce qui réduit le risque de faux negatifs (variables faiblement pertinentes eliminees a tort).
-",,,,,,,,dfcab305484a333a,,,,,,,,,,,,,,,
+Une variante interessante : un prior *horseshoe* (à **queues infiniment lourdes**) au lieu de Gamma + Normal, qui pénalise moins les petits coefficients et réduit le risque de faux negatifs (variables faiblement pertinentes eliminees a tort). Ce prior n'est **pas** dans PyMC (`pm.HorseShoe` n'existe pas) : il vient du paquet `pymc-extras`, qui n'est pas installé ici. Sans ce paquet, l'effet peut s'approcher en **durcissant le prior hyper** sur la précision — mais c'est un `beta` **plus petit** qu'il faut poser dans `pm.Gamma('alpha', alpha=1, beta=1)`, et non un `beta` plus grand. Ici `alpha` est la précision des poids (`tau = alpha`, donc `sigma_w = 1/sqrt(alpha)`), et l'hyperprior `Gamma(shape=1, rate=beta)` a pour moyenne `1/beta` : un `beta` plus grand tire `alpha` vers 0 et **relâche** le prior des poids au lieu de le resserrer. Au point `alpha = 1/beta` (la moyenne de l'hyperprior), `sigma_w` = `1/sqrt(alpha)` vaut 0.71 / 1.00 / 3.16 / 10.00 pour `beta` = 0.5 / 1 / 10 / 100 — c'est-à-dire `sqrt(beta)`. La moyenne de `sigma_w` **sur le prior échantillonné** est plus élevée (1.27 / 1.80 / 5.68 / 17.97 pour les mêmes `beta`, PyMC 6.3.2, graine 42) : `1/sqrt(alpha)` est convexe, donc la moyenne de la sigma_w dépasse sa valeur au point alpha = 1/beta.
+",,,,,,,,fb4dfe2453d5d3ed,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,fc71ff76,code,fr,375e2dec00ac0467,"# Exercice 2 : ARD avec 5 variables dont 3 non pertinentes
 # Generez des donnees avec 5 features et laissez le modele ARD
 # identifier automatiquement lesquelles sont pertinentes
@@ -1142,19 +1138,21 @@ print(""=== TABLE LOO (valeurs reelles de ce run) ==="")
 print(f""{'Modele':<14}{'elpd':<10}{'se':<8}{'p':<8}"")
 for name, loo_obj in [(""1-gaussien"", loo_1g), (""2-gaussien"", loo_2g), (""ARD"", loo_ard)]:
     print(f""{name:<14}{float(loo_obj.elpd):<10.2f}{float(loo_obj.se):<8.2f}{float(loo_obj.p):<8.2f}"")",,,,,,,,32706f605c29ebc5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,add4cdf6,markdown,fr,00e98f334e82e2c8,"### Interpretation des résultats LOO
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,add4cdf6,markdown,fr,8c188c83ac80b301,"### Interpretation des résultats LOO
 
 Les valeurs LOO viennent de la table réelle du run ci-dessus (objets `az.loo`, non transcrites) et permettent de comparer la complexité effective des modèles :
 
-| Modèle | Lecture p_loo | Interpretation |
-|--------|---------------|----------------|
-| 1-gaussien | p_loo le plus bas (~2 paramètres effectifs : mu + sigma) | le plus parcimonieux sur données unimodales |
-| 2-gaussien | p_loo un peu plus élevé (2 mu + 2 sigma + 1 poids) | pénalité modérée, n'apporte rien ici |
-| ARD | p_loo le plus élevé (3 poids + 3 alpha + 1 sigma) | le plus complexe |
+| Modèle | Données (n) | Lecture p_loo | Interpretation |
+|--------|--------------|---------------|----------------|
+| 1-gaussien | unimodales (50) | p_loo le plus bas (~2 paramètres effectifs : mu + sigma) | le plus parcimonieux sur données unimodales |
+| 2-gaussien | unimodales (50) | p_loo un peu plus élevé (2 mu + 2 sigma + 1 poids) | pénalité modérée, n'apporte rien ici |
+| ARD | ARD (100) | p_loo le plus élevé (3 poids + 3 alpha + 1 sigma) | le plus complexe |
+
+**Ces trois `elpd` ne sont pas comparables entre eux** : les deux modèles à gaussienne sont ajustés sur le jeu **unimodal** (50 observations), le modèle ARD sur son propre jeu de **100** observations. L'elpd est une **somme** sur les observations : l'écart de ~25 unités entre l'ARD (`-63.81`) et la 1-gaussienne (`-89.23`) mesure d'abord le **doublement du nombre d'observations**, pas une meilleure capacité prédictive — comparer des `elpd` bruts entre deux tailles d'échantillon n'a pas de sens. `p_loo`, lui, s'additionne aussi sur les observations (`p_loo = Σ(lppd_i − elpd_i)`), mais il estime un **nombre effectif de paramètres** : sa somme croît **sous-linéairement** en `n`, alors que `elpd` croît proportionnellement au nombre d'observations. C'est ce décalage de croissance, et non une absence de somme, qui rend `p_loo` comparable d'une ligne à l'autre. Il n'est pas invariant en `n` pour autant : rejoué sur le même modèle 1-gaussien (graine 42, ArviZ 1.3.0, 500 tirages × 2 chaînes), `p_loo` passe de 1.39 (n = 20) à 1.82 (n = 400) — ×1,31 quand `n` est multiplié par 20, contre ×20,5 pour `elpd` (−26,80 → −549,38).
 
 Le **paramètre effectif p_loo** indique combien de paramètres contribuent réellement à l'ajustement. Un p_loo nettement inférieur au nombre nominal de paramètres signale qu'un prior contraint efficacement le modèle (cas ARD).
 
-Le diagnostique Pareto k (ci-dessous) vérifie la qualité de l'approximation PSIS-LOO : si tous les k sont inférieurs à 0.7, l'approximation est fiable.",,,,,,,,00e98f334e82e2c8,,,,,,,,,,,,,,,
+Le diagnostique Pareto k (ci-dessous) vérifie la qualité de l'approximation PSIS-LOO : si tous les k sont inférieurs à 0.7, l'approximation est fiable.",,,,,,,,8c188c83ac80b301,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,c1d2e3f0,code,fr,d143b9b777051b83,"# Diagnostique Pareto k (qualite de l'approximation LOO)
 # k < 0.7 = bonne approximation, k > 0.7 = probleme potentiel
 print(""Diagnostique Pareto k :"")
@@ -1167,7 +1165,7 @@ for name, loo_obj in [('1-gaussien', loo_1g), ('2-gaussien', loo_2g), ('ARD', lo
 
 print()
 print(""Tous les k < 0.7 = approximation LOO fiable."")",,,,,,,,d143b9b777051b83,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,d2e3f4a1,markdown,fr,22d6eeb42ffcadfa,"## 7. Exercice : Comparaison de Modèles Polynomiaux
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,d2e3f4a1,markdown,fr,4714232b3722a1ab,"## 7. Exercice : Comparaison de Modèles Polynomiaux
 
 On genere des données a partir d'une relation lineaire `y = 2x + 1 + bruit`.
 On compare un modèle lineaire (deg 1), quadratique (deg 2) et cubique (deg 3).
@@ -1177,12 +1175,47 @@ Lequel est selectionne par LOO ?
 **Indices** :
 - Créer les features polynomiales : `X_deg2 = np.column_stack([X, X**2])`
 - Utiliser `pm.Normal('w', mu=0, sigma=5, shape=n_features)` pour les poids
+- **Ajouter un terme constant** : les données sont `y = 2x + 1 + bruit`, mais un modèle
+  `pm.Normal('w', ...)` seul n'a pas d'intercept — il est alors **mal spécifié**, et le
+  verdict annoncé ne tient plus (le modèle linéaire y perd la comparaison). Écrivez
+  `mu = pm.math.dot(X, w) + c` avec `c = pm.Normal('c', mu=0, sigma=5)`.
+- **Appeler `pm.compute_log_likelihood(trace)` sur chaque trace** avant `az.compare()`
+  (comme dans les cellules précédentes) : sans la log-likelihood calculée,
+  `az.compare` échoue sur `TypeError: log likelihood not found in inference data object`.
 - Comparer les 3 modèles avec `az.compare()`
 
 ### Verdict attendu
 
-Le **modèle linéaire (deg 1)** doit être selectionne avec un poids tres proche de 1.0
-(typiquement >0.95). Les modèles quadratique et cubique doivent montrer :
+Le **modèle linéaire (deg 1)** doit être **sélectionné** — mais le **poids** qu'il porte
+dépend de deux réglages que l'énoncé ne fixait pas, et qu'il faut donc écrire
+explicitement dans la réponse :
+
+- **la méthode d'empilement** (argument `method=` d'`az.compare`) ;
+- **la présence d'un terme constant** dans le modèle.
+
+Mesure de référence (rejouée hors carnet, PyMC 6.3.2 / ArviZ 1.3.0, sur le même
+jeu de données que l'énoncé) — `weight(deg1)` :
+
+- sans terme constant, `method=""stacking""` : **0,00** — le modèle
+  **quadratique** l'emporte ;
+- sans terme constant, `method=""BB-pseudo-BMA""` : **0,03** — le
+  modèle **quadratique** l'emporte également ;
+- avec terme constant, `method=""stacking""` : **1,00** — le modèle
+  **linéaire** l'emporte ;
+- avec terme constant, `method=""BB-pseudo-BMA""` : **0,63** — le
+  modèle **linéaire** l'emporte, mais avec un poids nettement plus faible.
+
+Une seconde graine confirme le classement : avec terme constant, `weight(deg1)` vaut
+0,98 en `stacking` et 0,48 en
+`BB-pseudo-BMA` ; sans terme constant, le modèle linéaire est écarté dans les deux cas.
+
+Autrement dit : **le classement** (deg1 devant deg2 et deg3) est le résultat à vérifier —
+et il ne s'obtient qu'avec un modèle correctement spécifié ; le **poids** n'est close que
+si l'on fixe la méthode d'empilement. Un `weight(deg1)` proche de 1.0 n'est atteignable
+qu'avec `stacking` **et** un terme constant — c'est la leçon de l'exercice, plus que le
+chiffre.
+
+Les modèles quadratique et cubique doivent montrer :
 - `elpd` legerement inferieur (penalise par LOO pour leurs parametres supplementaires)
 - `weight` proche de 0 dans le stacking
 
@@ -1193,13 +1226,18 @@ Format typique du résultat (valeurs illustratives — les vôtres varieront ave
 ```
         rank   elpd   p  elpd_diff  weight   se  dse  warning
 deg1       0  -65.2  2.1        0.0    0.97  4.1  0.0    False
-deg2       1  -68.5  3.4        3.3    0.03  4.3  1.2    False
-deg3       2  -72.1  4.8        6.9    0.00  4.5  1.5    False
+deg2       1  -68.5  3.4       -3.3    0.03  4.3  1.2    False
+deg3       2  -72.1  4.8       -6.9    0.00  4.5  1.5    False
 ```
+
+`elpd_diff` est **negatif** pour les modeles moins bons (convention : 0 pour le meilleur, comme le rappelle la lecture de la section 2). Un signe positif signalerait un modele concurrent qui ferait mieux que le premier de la liste.
 
 `weight(deg1) ≈ 0.97` signifie que **dans un model averaging bayesien**, 97% de la
 masse predictive vient du modèle lineaire. C'est un cas ecole ou le bon modèle est
-selectionne avec une confiance tres elevee.
+selectionne avec une confiance tres elevee — **à condition que le modèle comporte un
+terme constant et que la méthode d'empilement soit `stacking`** : sans terme constant,
+le modèle linéaire est écarté de la comparaison, et `BB-pseudo-BMA` répartit la masse
+entre les modèles plutôt que de la concentrer (voir « Verdict attendu »).
 
 ### Pièges classiques
 
@@ -1210,7 +1248,7 @@ selectionne avec une confiance tres elevee.
 - **Ordre des degres** : avec `np.column_stack([X, X**2])`, le degre 2 capture aussi le
   degre 1 (les features sont emboitees). C'est intentionnel et c'est ce qui permet la
   comparaison honnete.
-",,,,,,,,22d6eeb42ffcadfa,,,,,,,,,,,,,,,
+",,,,,,,,4714232b3722a1ab,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,e3f4a5b2,code,fr,4df05572c111994b,"# TODO etudiant : implementer la comparaison de modeles polynomiaux
 # Resultat attendu : le modele lineaire (deg 1) devrait etre selectionne
 # car les donnees sont generees a partir d'une relation lineaire
@@ -1239,7 +1277,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,6d9c2dd7,markdown,fr
 - **BRMS / Bambi** : surcouche PyMC avec une API type scikit-learn, permet de tester
   rapidement plus de modeles avec moins de code.
 ",,,,,,,,84b021924d06b8d9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,f4a5b6c3,markdown,fr,9e9e2b9f49e9c108,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-10-Model-Selection.ipynb,f4a5b6c3,markdown,fr,d6aa0adc2c4b06df,"## Conclusion
 
 La sélection de modèle bayesienne compare des modèles concurrents en integrant sur l'espace des paramètres, penalisant naturellement la complexite.
 
@@ -1272,11 +1310,11 @@ API depuis la 1.0.
 ### References
 
 - Akaike, H. (1974). *A new look at the statistical model identification.* IEEE Transactions on Automatic Control 19(6).
-- Tipping, M. E. (2001). *Sparse Bayesian Learning and the Relevance Vector Machine.* NIPS 13.
+- Tipping, M. E. (2001). *Sparse Bayesian Learning and the Relevance Vector Machine.* Journal of Machine Learning Research 1:211-244.
 - Watanabe, S. (2010). *Asymptotic Equivalence of Bayes Cross Validation and Widely Applicable Information Criterion in Singular Learning Theory.* JMLR 11.
 - Vehtari, A., Gelman, A., & Gabry, J. (2017). *Practical Bayesian model evaluation using leave-one-out cross-validation and WAIC.* Statistics and Computing 27(5). doi:10.1007/s11222-016-9696-4
 - Kumar, R., Carroll, C., Hartikainen, A., & Martin, O. (2019). *ArviZ: a unified library for exploratory analysis of Bayesian models in Python.* JOSS 4(33).
-",,,,,,,,9e9e2b9f49e9c108,,,,,,,,,,,,,,,
+",,,,,,,,d6aa0adc2c4b06df,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-11-Topic-Models.ipynb,a1b2c3d0,markdown,fr,38214780414b44e2,"# PyMC-11 : Modèles de Sujets (Topic Models) et LDA
 
 **Navigation** : [Index](../README.md) | [<< PyMC-10](PyMC-10-Model-Selection.ipynb) | [PyMC-12 >>](PyMC-12-Modeles-Hierarchiques.ipynb)
@@ -7169,7 +7207,7 @@ Ce notebook traite le `do()` en **probabiliste MCMC + enumeration exacte** (`pm.
 
 - **Symbolique (Java/Tweety)** : [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) — `do()` et contrefactuels par raisonnement **propositionnel** (`scm.intervene`), sans probabilites.
 - **Bayesien par message passing (Infer.NET)** : [Infer-05-Causal-Inference](../Infer/Infer-05-Causal-Inference.ipynb) — mêmes effets **calcules** par message passing (EP/VMP par defaut, Gibbs aussi disponible), avec mutilation du graphe. Ce message passing est *exact* sur ces reseaux discrets sans boucle, mais c'est une inference **approchee** en general — a la différence de l'enumeration exhaustive de ce notebook.
-- **Théorie de l'information / emergence (ICT)** : [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) — l'intervention `do(X_t = x)` devient une **distribution uniforme** `p(C)` sur les etats ; le do-calculus y mesure *a quelle echelle* la causalite est la plus effective (EI / CP).
+- **Théorie de l'information / emergence (ICT)** : [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) — l'intervention `do(X_t = x)` devient une **distribution uniforme** `p(C)` sur les etats ; le do-calculus y mesure *a quelle echelle* la causalite est la plus effective (EI / CP).
 - **Pre-requis Python** : [PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) demontre la même distinction `P(Cloudy|Rain)` vs `P(Cloudy|do(Rain))`.
 
 > **Synthese transversale** : voir le [README IIT](../../IIT/README.md), section **« Ponts causaux : le do-calculus de Pearl a travers les paradigmes »**, qui aligne l'echelle de Pearl (association -> intervention -> contrefactuel) sur les quatre instanciations de l'opérateur `do`.

@@ -33,4 +33,4 @@ Après l'évaluation, lorsqu'une correction étudiante est distillée dans Cours
 - [docs/student-pr-reviews-detail.md](../../docs/reference/student-pr-reviews-detail.md) — incident, format public, briefings internes, cooperation reviewers, bypass CI, anti-patterns, precedents
 - [exercise-example-labeling.md](exercise-example-labeling.md) — workflow exercices → exemples
 - [pr-review-discipline.md](pr-review-discipline.md) — NE PAS appliquer criteres A-G a PR etudiante
-- [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) — moteur de notation (pipelines par cohorte prives sur GDrive)
+- [configs/README.md](../../dotnet/GradeBookApp/configs/README.md) — moteur de notation (pipelines par cohorte prives sur GDrive)

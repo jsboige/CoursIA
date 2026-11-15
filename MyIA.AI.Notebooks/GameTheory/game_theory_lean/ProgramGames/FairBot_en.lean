@@ -1,5 +1,5 @@
 import Mathlib.Tactic
-import RepeatedGames.Stage
+import RepeatedGames.Stage_en
 
 /-
   FairBot via Löb's theorem: L2 (EN sibling)
@@ -15,8 +15,8 @@ import RepeatedGames.Stage
 
   Namespace: `ProgramGames_en` (anti-collision with `ProgramGames` of the
   FR canonical `FairBot.lean`). Like `Basic_en.lean`, this mirror
-  references the FR base types of `RepeatedGames.Stage` (`PDAction`,
-  `cooperate`, `defect`) via `open RepeatedGames`.
+  references the base types of `RepeatedGames.Stage_en` (`PDAction`,
+  `cooperate`, `defect`) via `open RepeatedGames_en`.
 
   Methodological note: manual translation of the FR canonical. Code
   (signatures, proofs, tactics, names) is byte-identical to the FR file;
@@ -105,7 +105,7 @@ surface, but proof.
 
 namespace ProgramGames_en
 
-open RepeatedGames PDAction
+open RepeatedGames_en PDAction
 
 /-! ## Provability interface: Box + D1/D2/D3 + postulated Löb -/
 

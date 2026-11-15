@@ -9,6 +9,7 @@ L'article annonce qu'un portefeuille bas-bêta équipondéré par industrie bat 
 | `article` | port fidèle du code de l'article : long-only, \|bêta\| OLS sur 60 jours, médiane **globale**, poids de rang, industries équipondérées |
 | `bab` | *industry-neutral BAB* d'Asness, Frazzini et Pedersen (2014) : bêta de Frazzini-Pedersen, médiane **par industrie**, jambe basse levée à bêta 1 et jambe haute réduite à bêta 1, industries équipondérées |
 | `spy` | buy-and-hold SPY (la référence de l'article) |
+| `6040` | référence tenue 60/40 du protocole commun de la ligue : SPY 60 %, IEF 40 % |
 
 ## Ce que l'article fait, et ce que sa source fait
 
@@ -167,10 +168,51 @@ Limites :
 - **univers** : les 50 actions les plus liquides de chaque *industry group* Morningstar, soit l'univers de l'article et non tout CRSP ;
 - **financement** : LEAN ne verse pas d'intérêt sur le cash et ne facture pas l'emprunt de titres. Le premier défaut est corrigé hors plateforme, le second ne l'est pas, ce qui rend le BAB plutôt optimiste.
 
+## Le bras `bab` au protocole commun de la ligue
+
+Le protocole de la ligue (#19821) confronte un bras de stratégie à **deux** références — SPY et une référence tenue 60/40 — sur des rendements **journaliers** appariés, avec trois tests (Ledoit-Wolf, bootstrap stationnaire, Newey-West) et la correction de Holm. Le banc ci-dessus mesure sur des **mensuels** ; la ligue mesure sur des **journaliers**, ce qui change la puissance des tests. `league_protocol.py` applique le protocole tel quel — les tests ne sont pas réimplémentés.
+
+Quatre exécutions QC Cloud, sur la fenêtre 2010-01-02 → 2026-08-31, même compte, même capital, même modèle de frais :
+
+| Exécution | Bras | Code | Rôle |
+|---|---|---|---|
+| `R` | `bab` | d'origine (avant instrumentation) | référence du contrôle d'innocuité |
+| `C` | `bab` | instrumenté (trace journalière) | bras mesuré |
+| `M` | `spy` | instrumenté | référence 1 |
+| `N` | `6040` | instrumenté | référence 2 |
+
+### Verdict
+
+| Fenêtre | Sharpe `bab` | Sharpe SPY | Δ | p de Holm (LW) | Sharpe `6040` | Δ | p de Holm (LW) | Verdict (niveau de preuve) |
+|---|---:|---:|---:|---:|---:|---:|---:|---|
+| w1 (2010-01 → 2024-12) | 0,040 | 0,838 | −0,798 | 0,057 | 0,979 | −0,938 | 0,030 | **NO BEATS** — écart significatif |
+| w2 (2025-01 → 2026-08) | 0,428 | 1,100 | −0,672 | 1,000 | 1,221 | −0,792 | 1,000 | **NO BEATS** — écart non significatif |
+
+Les valeurs complètes (écart-type, z, intervalle de bootstrap, t de Newey-West, p brutes et p de Holm) sont dans [`measures/league/verdict.json`](measures/league/verdict.json).
+
+**Ce que le verdict dit, et ce qu'il ne dit pas.** Le bras `bab` est **très en dessous** des deux références sur les deux fenêtres, et l'écart est significatif dans le sens défavorable (w1 contre la référence 60/40 : p de Holm = 0,030). La règle de verdict exige un écart de Sharpe **positif** : le verdict est donc `NO BEATS`, pas `INCONCLUSIVE` — l'infériorité est établie, pas l'absence d'effet. Sur w2, l'écart n'est pas significatif (p = 1,000) : la fenêtre récente est courte (20 mois) et le bras y fait 0,428 contre 1,100 pour SPY.
+
+**L'asymétrie de preuve, en clair.** `BEATS` exige un écart **positif** contre les deux références *et* une significativité (p de Holm < 0,05) ; `NO BEATS` n'exige qu'un Sharpe ponctuel inférieur à celui de SPY — **sans** exigence de significativité. Un `NO BEATS` porte donc deux lectures : sur w1 l'infériorité est **établie** (p de Holm = 0,030 contre la référence 60/40) ; sur w2 elle n'est **qu'une estimation ponctuelle** (p = 1,000), la fenêtre de 20 mois ne permettant pas de conclure. La colonne « Verdict (niveau de preuve) » du tableau distingue ces deux lectures.
+
+L'écart de Sharpe de w1 mérite d'être lu avec la puissance du banc : 0,040 contre 0,838 est un écart de 0,80, très au-dessus de l'erreur-type mesurée ailleurs dans ce README. Ce n'est pas un résultat de faible puissance, c'est un résultat négatif.
+
+### Contrôle d'innocuité
+
+Le code instrumenté (trace journalière) ne doit changer ni la stratégie ni ses chiffres. Contrôle exécuté entre `R` (code d'origine) et `C` (code instrumenté) : **12 statistiques sur 12 identiques** (Sharpe −0,376, CAGR 0,311 %, drawdown 16,600 %, PSR 0,000 %, alpha −0,014, bêta −0,03, frais 250 384,28 $, 93 987 ordres, turnover 0,71 %, profit net 5,317 %, capital final 10 531 699,52 $) et série mensuelle `ret` **identique sur les 199 points**. L'instrumentation est donc une écriture pure, comme l'affirme le code.
+
+Une anomalie d'exposition, sans effet sur le verdict : le graphique `Monthly` de l'exécution instrumentée du bras `bab` n'expose que la série `ret`, là où l'exécution de référence expose `ret`, `spy`, `netexp` et `gross` — les deux autres bras exposent les quatre. Le code trace ces quatre séries inconditionnellement ; la perte est côté stockage de graphique, et n'a pas été identifiée. Elle ne touche pas le verdict : le protocole (`slice` puis `verdict`) lit la **trace journalière**, complète et à calendriers vérifiés sur les trois bras mesurés.
+
+Limites de cette mesure :
+
+- **un backtest par bras** : le backtest est déterministe, l'incertitude est celle de l'échantillonnage des rendements quotidiens ;
+- **jambe bootstrap à une seule graine** (`seed = 0`, 2 000 tirages) : le verdict s'appuie sur le p de Ledoit-Wolf (analytique), pas sur le bootstrap ;
+- **référence 60/40** : SPY 60 % / IEF 40 %, rééquilibrée en début de mois (+2 minutes), même horaire que les bras stratégie ;
+- la fenêtre w2 (20 mois) est courte : une absence d'effet significatif n'y dit rien.
+
 ## Références
 
-- Asness, C., Frazzini, A., Pedersen, L. H. (2014). *Low-Risk Investing without Industry Bets*. Financial Analysts Journal 70(4), 24-41. `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2014 - Asness Frazzini Pedersen - Low-Risk Investing without Industry Bets.pdf`
-- Frazzini, A., Pedersen, L. H. (2014). *Betting Against Beta*. Journal of Financial Economics 111(1), 1-25 (version du 2013-05-10). `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2014 - Frazzini Pedersen - Betting Against Beta (JFE 111(1), version 2013-05-10).pdf`
-- Frazzini, A., Pedersen, L. H. (2010). *Betting Against Beta*. NBER Working Paper 16601. `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2010 - Frazzini Pedersen - Betting Against Beta (NBER w16601).pdf`
-- Ledoit, O., Wolf, M. (2008). *Robust Performance Hypothesis Testing with the Sharpe Ratio*. Journal of Empirical Finance 15(5) ; version IEW Working Paper 320 (janvier 2008). `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\2008 - Ledoit Wolf - Robust Performance Hypothesis Testing with the Sharpe Ratio (IEW WP 320).pdf`
+- Asness, C., Frazzini, A., Pedersen, L. H. (2014). *Low-Risk Investing without Industry Bets*. Financial Analysts Journal 70(4), 24-41. `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2014 - Asness Frazzini Pedersen - Low-Risk Investing without Industry Bets.pdf`
+- Frazzini, A., Pedersen, L. H. (2014). *Betting Against Beta*. Journal of Financial Economics 111(1), 1-25 (version du 2013-05-10). `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2014 - Frazzini Pedersen - Betting Against Beta (JFE 111(1), version 2013-05-10).pdf`
+- Frazzini, A., Pedersen, L. H. (2010). *Betting Against Beta*. NBER Working Paper 16601. `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2010 - Frazzini Pedersen - Betting Against Beta (NBER w16601).pdf`
+- Ledoit, O., Wolf, M. (2008). *Robust Performance Hypothesis Testing with the Sharpe Ratio*. Journal of Empirical Finance 15(5) ; version IEW Working Paper 320 (janvier 2008). `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\2008 - Ledoit Wolf - Robust Performance Hypothesis Testing with the Sharpe Ratio (IEW WP 320).pdf`
 - Melchin, D. (2024). *Low Beta Portfolios Across Industries*. QuantConnect Research 18469.

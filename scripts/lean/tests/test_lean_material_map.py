@@ -19,7 +19,9 @@ import importlib.util
 import json
 import pathlib
 import re
+import subprocess
 import sys
+import types
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -139,3 +141,105 @@ def test_le_fichier_d_epingles_est_du_json_valide():
     assert isinstance(brut.get("lakes"), dict) and brut["lakes"]
     for lac, date in brut["lakes"].items():
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}", date), f"date invalide pour {lac} : {date}"
+
+
+# --- La couverture ne doit jamais etre avalee --------------------------------
+#
+# Le defaut mesure le 2026-11-07 : `_coverage()` rendait `{}` quand l'organe
+# de couverture ne repondait pas, et le seuil de 300 s etait SOUS la duree
+# reelle de cet organe (634 s puis 658 s sur ai-01). L'echec etait donc
+# deterministe, et il rendait une page FAUSSE (`hors matrice` pour tous les
+# lacs) sans lever aucune erreur : le `--check` rendait « A JOUR » sur cette
+# page fausse, et le `--write` ecracait une page correcte par une page fausse.
+#
+# Ces tests verrouillent les trois proprietes : le budget domine la duree
+# reelle, l'echec est remonte, et rien n'est ecrit quand la mesure est
+# impossible.
+
+
+def test_le_budget_de_couverture_domeine_la_duree_reelle_mesuree():
+    """Le budget doit etre SUPERIEUR a la duree reelle de l'organe amont.
+
+    Mesures du 2026-11-07 sur ai-01 : 634 s et 658 s (deux passes). Le seuil
+    d'avant (300 s) etait sous les deux -- l'echec avalait donc toujours
+    lieu, et toujours en silence."""
+    assert mod.COVERAGE_TIMEOUT >= 660, (
+        "le budget (%d s) est sous la duree reelle mesuree (634-658 s) : "
+        "l'echec de l'organe amont sera avale" % mod.COVERAGE_TIMEOUT)
+
+
+def _faux_subprocess(*, rc=0, stdout="", raise_timeout=False):
+    """Un `subprocess` de substitution : seul `run` est appele."""
+    def run(*args, **kwargs):
+        if raise_timeout:
+            raise subprocess.TimeoutExpired(cmd="check_axiom_gate_coverage.py",
+                                            timeout=1)
+        return types.SimpleNamespace(returncode=rc, stdout=stdout, stderr="")
+    return types.SimpleNamespace(
+        run=run,
+        TimeoutExpired=subprocess.TimeoutExpired,
+        SubprocessError=subprocess.SubprocessError,
+        OSError=OSError,
+    )
+
+
+def test_un_timeout_de_couverture_est_remonte_et_non_avalé(monkeypatch):
+    """Le timeout de l'organe amont doit REMONTER, pas rendre un `{}`."""
+    monkeypatch.setattr(mod, "subprocess",
+                        _faux_subprocess(raise_timeout=True))
+    try:
+        mod._coverage()
+    except mod.CoverageUnavailable as exc:
+        assert "timeout" in str(exc)
+    else:
+        raise AssertionError("un timeout avalé rendrait une page fausse")
+
+
+def test_un_rc_non_nul_de_couverture_est_remonte(monkeypatch):
+    """Un organe amont en erreur n'est pas un verdict neutre."""
+    monkeypatch.setattr(mod, "subprocess", _faux_subprocess(rc=1))
+    try:
+        mod._coverage()
+    except mod.CoverageUnavailable as exc:
+        assert "rc=1" in str(exc)
+    else:
+        raise AssertionError("un rc non nul avalé rendrait une page fausse")
+
+
+def test_une_sortie_de_couverture_illisible_est_remontee(monkeypatch):
+    """Une sortie vide ou illisible n'est pas une mesure."""
+    monkeypatch.setattr(mod, "subprocess", _faux_subprocess(rc=0, stdout=""))
+    try:
+        mod._coverage()
+    except mod.CoverageUnavailable:
+        pass
+    else:
+        raise AssertionError("une sortie illisible avalée rendrait une page fausse")
+
+
+def test_le_generateur_refuse_d_ecrire_la_page_quand_la_mesure_est_impossible(
+        monkeypatch, tmp_path):
+    """Le geste interdit : `--write` sur une mesure impossible.
+
+    La page sur disque doit rester INTACTE : c'est elle qui est saine. La
+    regeneree porterait une couverture degradee (`hors matrice` partout)."""
+    page = tmp_path / "lean-material-map.md"
+    page.write_text("page d'origine\n", encoding="utf-8")
+
+    def collect_qui_echoue(*args, **kwargs):
+        raise mod.CoverageUnavailable("timeout de 1800 s sur l'organe amont")
+
+    monkeypatch.setattr(mod, "PAGE", page)
+    monkeypatch.setattr(mod, "collect", collect_qui_echoue)
+    rc = mod.main(["--write"])
+    assert rc == mod.UNMEASURABLE_RC
+    assert rc != 0, "une mesure impossible ne peut pas rendre 0"
+    assert page.read_text(encoding="utf-8") == "page d'origine\n", (
+        "la page sur disque a ete touchee alors que la mesure etait impossible")
+
+
+def test_le_code_de_sortie_de_mesure_impossible_est_different_de_la_divergece():
+    """`1` = la page diverge ; `2` = la mesure est impossible. Les deux ne se
+    confondent pas : le geste de reparation n'est pas le meme."""
+    assert mod.UNMEASURABLE_RC == 2
+    assert mod.UNMEASURABLE_RC != 1

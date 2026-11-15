@@ -35,6 +35,10 @@ jobs:
     # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 3 derniers runs
+    # verts de ce job : max 0.20 min. Marge x2 -- le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 10
     steps:
       - name: Checkout PR (full history for blob diff)
         uses: actions/checkout@v4

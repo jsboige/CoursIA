@@ -21,11 +21,29 @@ class GaussianDirectionClassifier(QCAlgorithm):
     - Probability-weighted position sizing (stronger signals get more weight)
     - End date extended to 2026
 
-    Results (2015-2026):
-    - v1.0: Sharpe 0.864, Beta 1.133, CAGR 29.1%, MaxDD 36.8%
-    - v2.0: Sharpe 0.761, Beta 0.540, CAGR 23.1%, MaxDD 25.6%
-    - Treynor Ratio improved: 0.177 -> 0.283 (better risk-adjusted vs market risk)
-    - SMA200 filter halved beta and reduced MaxDD by 11pp at cost of lower raw Sharpe
+    Résultats mesurés
+    -----------------
+    QC Cloud, 2026-11-06, espace ESGF_School, projet 39006161, backtest
+    7f1a0d2d2e7aaee75e26a695d47eb966. Fenêtre codée 2015-01-01 -> 2026-01-01,
+    capital 1 000 000, courtage et compte sur marge tels que codés ci-dessous :
+    - Sharpe (QC, avec taux sans risque) : 0.715 ; PSR (QC) : 8.0 %
+    - CAGR : 21.4 %
+    - Drawdown max : 40.2 %
+    - 5098 ordres ; bêta (QC) : 0.533 ; Treynor (QC) : 0.267
+    Le code d'avant #23301 rend les mêmes chiffres le même jour (projet 39006302).
+    Témoin SPY détenu, même fenêtre et mêmes réglages (projet 39006369) :
+    Sharpe 0.537, CAGR 13.4 %, drawdown max 33.6 %.
+
+    Historique : la v2.0 annonçait Sharpe 0.761, bêta 0.540, CAGR 23.1 %,
+    MaxDD 25.6 % (projet 29398513, mesure du 2026-03-28, retrouvée le
+    2026-06-15 par #3073 avec 4999 ordres). Le même code rend aujourd'hui
+    5098 ordres et les chiffres ci-dessus, y compris rejoué le 2026-11-06 dans
+    le projet d'origine (espace personnel) : l'écart tient à la date du
+    calcul (données ou version du moteur côté QC), pas au code ni à l'espace.
+    La v1.0 (5 titres, sans filtre SMA200) annonçait Sharpe 0.864, bêta 1.133,
+    CAGR 29.1 %, MaxDD 36.8 % (mesure du 2026-03-26, non rejouée) ; la
+    comparaison v1.0/v2.0 (bêta divisé par deux, drawdown -11 points) ne vaut
+    que pour les mesures de mars.
 
     Features: 2d, 5d, 10d, 21d trailing returns
     Target: next-day return direction (up=1, down=0)

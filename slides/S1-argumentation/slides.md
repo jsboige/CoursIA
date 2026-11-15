@@ -725,7 +725,7 @@ _Programme de français de première des voies générale et technologique_
 
 # Pour aller plus loin : Notebooks
 
-- **Tweety Framework** : `SymbolicAI/Argument_Analysis/`
+- **Tweety Framework** : `SymbolicAI/ArgumentAnalysis/`
   - Argumentation abstraite, Dung semantics
   - Argument schemes, argument mining
 - **Logique formelle** : `SymbolicAI/Lean/` - preuves et tactiques
@@ -890,5 +890,5 @@ layout: end
 Jean-Sylvain Boige
 jsboige@myia.org
 
-> **Notebooks associés :** `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/`
+> **Notebooks associés :** `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/`
 > Tweety Framework : Dung semantics, argumentation schemes, argument mining

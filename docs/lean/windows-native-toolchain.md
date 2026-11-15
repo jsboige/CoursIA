@@ -119,7 +119,8 @@ Get-Process | Sort-Object WS -Descending | Select-Object -First 10  # PowerShell
 3. **Machines 16 GB ou moins** : envisager `LAKE_JOBS=1` **ET** laisser
    le build **rouler la nuit** ; ne pas saturer la RAM avec d'autres
    processus pendant le build.
-4. **CI Linux** (`lean-conway.yml` sur PR-land) : c'est le **gate canonique**.
+4. **CI Linux** (job `conway_lean` de la matrice `lean-ci-matrix.yml`, sur
+   PR-land) : c'est le **gate canonique**.
    Le build local Windows-native sert de pré-flight worker — s'il
    échoue par OOM, ne pas **régénérer une PR de fix**, juste laisser
    la CI Linux trancher (les runners CI ont 64 GB+).

@@ -48,6 +48,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
+# Code de sortie conventionnel d'un generateur qui n'a pas pu MESURER (il le
+# dit lui-meme : ni `--write` ni `--check` n'ont ete executes, la page sur
+# disque n'a pas ete touchee). Distinct de 1 (`divergente`) : la page peut
+# etre parfaitement saine, c'est la machine qui n'a pas repondu a l'organe
+# amont. Convention posee par `scripts/lean/lean_material_map.py`
+# (`UNMEASURABLE_RC`).
+GENERATOR_UNMEASURABLE_RC = 2
+
 # (generateur, page). Le generateur est l'organe qui possede la page : il
 # sait la regenerer (`--write`) et la verifier (`--check`). Le garde ne
 # reimplementerait ni l'un ni l'autre -- il les **interroge**.
@@ -120,6 +128,21 @@ def _run_check(generator: str, timeout: int, repo_root: Path | None = None) -> d
         # Un generateur qui sort en erreur SANS rien dire n'est pas un verdict
         # muet : le garde doit pouvoir nommer la page et le geste.
         detail = "le generateur a rendu rc=%d sans message" % proc.returncode
+    if proc.returncode == GENERATOR_UNMEASURABLE_RC:
+        # Le generateur a declare sa mesure IMPOSSIBLE : ce n'est pas un
+        # verdict sur la page, c'est l'etat de la machine qui interdit de
+        # conclure. La page sur disque n'a PAS ete modifiee, donc la regeneree
+        # serait un piege : elle y ecrirait une mesure degradee. On bloque
+        # (comme le clone shallow) mais en nommant le bon geste.
+        return {
+            "generator": generator,
+            "page": str(page),
+            "status": "mesure_impossible",
+            "drifted": True,
+            "rc": proc.returncode,
+            "duration_s": round(time.monotonic() - start, 1),
+            "detail": detail or "le generateur n'a pas pu mesurer la page",
+        }
     return {
         "generator": generator,
         "page": str(page),
@@ -214,6 +237,7 @@ def main(argv: list | None = None) -> int:
     drifted = [r for r in results if r["drifted"]]
     expired = [r for r in results if r["status"] == "expiree"]
     unmeasurable = [r for r in results if r["status"] == "non_mesurable"]
+    impossible = [r for r in results if r["status"] == "mesure_impossible"]
 
     if args.json:
         print(json.dumps({
@@ -221,6 +245,7 @@ def main(argv: list | None = None) -> int:
             "drifted": bool(drifted),
             "expired": bool(expired),
             "non_mesurable": bool(unmeasurable),
+            "mesure_impossible": bool(impossible),
             "n_pages": len(results),
         }, indent=2, sort_keys=True))
     else:
@@ -233,6 +258,13 @@ def main(argv: list | None = None) -> int:
                     # Nommer `--write` ici enverrait la lane droit dans le
                     # piege : la page ressortirait avec des dates fabriquees.
                     print("   geste : reparer l'historique, PAS regenerer")
+                elif r["status"] == "mesure_impossible":
+                    # Meme piege, autre cause : la page n'a pas ete mesuree,
+                    # elle n'est pas pour autant fausse. Regenerer ici
+                    # ecrirait une mesure degradee (la colonne de couverture
+                    # tomberait a `hors matrice` pour tous les lacs).
+                    print("   geste : la machine n'a pas repondu -- NE PAS"
+                          " regenerer ici ; rejouer ou elargir le budget")
                 else:
                     print("   regenere par : python %s --write"
                           % r["generator"])
@@ -255,6 +287,12 @@ def main(argv: list | None = None) -> int:
             # d'un defaut dont la seule cause mesuree est la troncature.
             print("VERDICT: NON MESURABLE (%d page(s) sur %d -- clone "
                   "shallow)" % (len(drifted), len(results)), file=stream)
+        elif len(impossible) == len(drifted):
+            # Meme raison, autre cause : la machine n'a pas repondu a l'organe
+            # amont. La page n'est pas accusee a tort -- elle n'est pas
+            # certifiable ici.
+            print("VERDICT: MESURE IMPOSSIBLE (%d page(s) sur %d -- la machine "
+                  "n'a pas repondu)" % (len(drifted), len(results)), file=stream)
         else:
             print("VERDICT: DIVERGENCE (%d page(s) sur %d)"
                   % (len(drifted), len(results)), file=stream)

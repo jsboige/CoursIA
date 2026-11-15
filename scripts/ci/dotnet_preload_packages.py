@@ -24,7 +24,9 @@ le chemin doit etre un LITTERAL relatif au dossier du notebook (forme mesuree
 c.790/c.803). D'ou ce helper : il resout le cache NuGet, copie les DLL a plat
 dans `_deps/` et emet un manifest donnant les lignes `#r` pretes a coller.
 
-Contexte et mesures : `docs/reference/dotnet-restore-rfc-17361.md` (livrable 2).
+Contexte et mesures : `docs/transients/2026-09-25-dotnet-restore-rfc-17361.md`
+(rapport fige). Le noyau durable -- symptome, non-determinisme, et l'interdit de
+conversion de masse -- vit dans `docs/reference/kernels-runtime.md`.
 
 PORTEE -- ce que ce helper ne fait PAS
 --------------------------------------

@@ -2,14 +2,14 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 159
-breakdown: Lean=159
-maturity: BETA=141, DRAFT=15, ALPHA=3
+pedagogical_count: 164
+breakdown: Lean=164
+maturity: BETA=154, DRAFT=6, ALPHA=4
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
 
-Cette série introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel basé sur la théorie des types dépendants. Le fil rouge va des fondations (types dépendants, mode tactique, Mathlib) vers l'état de l'art : assistance aux preuves par LLM et vérification formelle de réseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), théorie des nœuds (mouvements de Reidemeister, tricolorabilité de Fox, noeud de Conway et preuve de Piccirillo), hommages aux mathématiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre), et théorie de la décision (cohérence de de Finetti : le Dutch book comme témoin d'une incohérence).
+Cette série introduit **Lean 4**, un assistant de preuves et langage de programmation fonctionnel basé sur la théorie des types dépendants. Le fil rouge va des fondations (types dépendants, mode tactique, Mathlib) vers l'état de l'art : assistance aux preuves par LLM et vérification formelle de réseaux de neurones, ports de théorèmes phares (théorème de Kochen-Specker / 18 vecteurs Cabello ; théorème du libre arbitre de Conway-Kochen ; finitude des dérivées symboliques de Brzozowski), théorie des nœuds (mouvements de Reidemeister, tricolorabilité de Fox, noeud de Conway et preuve de Piccirillo), hommages aux mathématiciens (Grothendieck et le langage grothendieckien dans Mathlib 4 ; John Conway, l'homme et l'oeuvre ; Bernhard Riemann en distillations calculées pour son bicentenaire — [Riemann 200](Riemann200/README.md)), et théorie de la décision (cohérence de de Finetti : le Dutch book comme témoin d'une incohérence).
 
 ## Aperçu — Lean en images
 
@@ -40,15 +40,15 @@ L'hommage à John Conway passe par le Game of Life comme modèle de calcul ([GOL
 La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues complémentaires : les nœuds les plus simples classés par nombre de croisements ([Lean-17a](KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb)), le couple de mutants Conway (11n34) / Kinoshita-Terasaka (11n42) dont Lisa Piccirillo prouva que seul le second borne un disque lisse (slice), puis le polynôme d'Alexander — trivial (= 1) pour ce couple, et donc incapable à lui seul de distinguer leur sliceness ([Lean-17b](KNOTS/KNOTS-02-Invariants-Python.ipynb)).
 
 <p align="center">
-  <a href="Lean-17a-Knots-Conway-Proofs.ipynb"><img src="assets/readme/lean-knot-conway.png" width="420" alt="Les trois premiers nœuds par nombre de croisements : nœud trivial (unknot), trèfle (3₁) et nœud de huit (4₁)."></a>
+  <a href="KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb"><img src="assets/readme/lean-knot-conway.png" width="420" alt="Les trois premiers nœuds par nombre de croisements : nœud trivial (unknot), trèfle (3₁) et nœud de huit (4₁)."></a>
 </p>
 
 <p align="center">
-  <a href="Lean-17a-Knots-Conway-Proofs.ipynb"><img src="assets/readme/lean-knot-piccirillo.png" width="420" alt="Nœuds mutants de Conway (11n34) et Kinoshita-Terasaka (11n42) : même polynôme d'Alexander (= 1), sliceness lisse différente."></a>
+  <a href="KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb"><img src="assets/readme/lean-knot-piccirillo.png" width="420" alt="Nœuds mutants de Conway (11n34) et Kinoshita-Terasaka (11n42) : même polynôme d'Alexander (= 1), sliceness lisse différente."></a>
 </p>
 
 <p align="center">
-  <a href="Lean-17b-Knots-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynômes d'Alexander Δ(t) du trèfle, du nœud de huit et du couple Conway/Kinoshita-Terasaka (Δ(t) = 1, trivial comme l'unknot)."></a>
+  <a href="KNOTS/KNOTS-02-Invariants-Python.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynômes d'Alexander Δ(t) du trèfle, du nœud de huit et du couple Conway/Kinoshita-Terasaka (Δ(t) = 1, trivial comme l'unknot)."></a>
 </p>
 
 ## Fil de lecture — « Le charme et la marée »
@@ -56,8 +56,8 @@ La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues com
 Le travail Grothendieck de la série se lit aussi comme un parcours transversal, en cinq mouvements qui traversent les séries voisines : l'idée géométrique, le langage, les fragilités, les correspondances, puis le pont qui referme l'arc. Le récit complet — visuels, variantes et exercices — vit dans la section 9 de [Lean-15d](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) ; l'itinéraire :
 
 1. **L'idée** — quand une figure devient équation, puis preuve : [Geometry-01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) et [Geometry-02](Geometry/Geometry-02-From-Equation-To-Proof.ipynb).
-2. **Le langage** — le vocabulaire grothendieckien (cribles, topologies, faisceaux) : [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), l'atelier [Lean-15b](Lean-15b-Lean-Grothendieck.ipynb), le companion formel [Lean-15c](Lean-15c-Lean-Grothendieck-Companion.ipynb), la visite visuelle [Lean-15d](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb).
-3. **Les fragilités** — ce que le langage ne garantit pas : les trois fragilités de [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), la frontière des zéros avec Terjanian ([Serre100/07](Serre100/07-zeros-fonctions-l-gaps-gue.ipynb)) et Serre dans Mathlib ([Serre100/08](Serre100/08-serre-dans-mathlib-Lean.ipynb)).
+2. **Le langage** — le vocabulaire grothendieckien (cribles, topologies, faisceaux) : [GROTH-02](GROTH/GROTH-02-Tribut-Python.ipynb), l'atelier [GROTH-03](GROTH/GROTH-03-Atelier-Python.ipynb), le companion formel [GROTH-04](GROTH/GROTH-04-Companion-Lean.ipynb), la visite visuelle [Lean-15d](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb).
+3. **Les fragilités** — ce que le langage ne garantit pas : les trois fragilités de [GROTH-02](GROTH/GROTH-02-Tribut-Python.ipynb), la frontière des zéros avec Terjanian ([Serre100/07](Serre100/07-zeros-fonctions-l-gaps-gue.ipynb)) et Serre dans Mathlib ([Serre100/08](Serre100/08-serre-dans-mathlib-Lean.ipynb)).
 4. **Les correspondances** — les liens qui dépassent le langage : formes modulaires ([Langlands 01](Langlands/01-formes-modulaires-sl2z-hecke.ipynb)), Moonshine et l'invariant j ([Langlands 02](Langlands/02-monstrous-moonshine-invariant-j.ipynb)), la chaîne Serre100 de [09](Serre100/09-congruences-tau-lacunarite-delta.ipynb) à [15](Serre100/15-quatre-carres-lagrange.ipynb).
 5. **Le pont** — de la géométrie à la cohomologie : Čech ([Serre100/03](Serre100/03-cohomologie-cech-espaces-finis.ipynb)), Yoneda ([Serre100/04](Serre100/04-lemme-yoneda-categories-finies.ipynb)), les lakes `grothendieck_lean` et `hecke_lean`, jusqu'au capstone [Lean-37](Lean-37-Capstone-Serre100.ipynb).
 
@@ -74,8 +74,8 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | **Intégration IA** | 1-7, 7b | ~5h | Ajoute LLMs, exemples et benchmarks |
 | **Complet** | 1-12 | ~11h | Toutes les fonctionnalités incluant LeanDojo et théorème de sensibilité |
 | **Avec Pilier 1.B** | 1-12, 13 | ~12h | Inclut le port Kochen-Specker (Cabello 18-vecteurs) - contextuality quantique |
-| **Avec hommages** | 1-12, 13, 15, 16a, GOL-01 a GOL-07, 16b, 16c | ~20h10 | Ajoute Lean-15 (Grothendieck), Lean-16a (Conway, l'homme et l'oeuvre), GOL-01 (Conway, Game of Life), GOL-03 (Conway, Game of Life sur kernel Lean natif), Lean-16b (Conway, FRACTRAN sur kernel Lean natif), Lean-16c (Conway, théorème du libre arbitre - adossé à Lean-13), GOL-04 (Conway, canons - le barreau 2 de l'échelle des témoins Life), GOL-05 (tournée des motifs sur kernel natif), GOL-06 (translateur minuscule, Loi II) et GOL-07 (correction Hashlife sur kernel natif) |
-| **Avec théorie des nœuds** | 1-12, 13, 15, 16a, GOL-01, GOL-02, 16c, 17, 17a, 17b | ~18h00 | Ajoute Lean-17 (portail Conway 16 → KNOTS-01/02/03, mutation cellulaire vs mutation knot), Lean-17a (Conway, les nœuds et la preuve de Piccirillo) et Lean-17b (invariants : PD-codes, tricolorabilité de Fox, mouvements de Reidemeister) - companion `knot_lean`, Epic #2874 |
+| **Avec hommages** | 1-12, 13 (+ 13e), GROTH-02, 16, GOL-01 a GOL-07, Lean-16b | ~20h10 | Ajoute GROTH-02 (Grothendieck), Lean-16 (Conway, l'homme et l'oeuvre), GOL-01 (Conway, Game of Life), GOL-03 (Conway, Game of Life sur kernel Lean natif), Lean-16b (Conway, FRACTRAN sur kernel Lean natif), Lean-13e (Conway, théorème du libre arbitre - adossé à Lean-13), GOL-04 (Conway, canons - le barreau 2 de l'échelle des témoins Life), GOL-05 (tournée des motifs sur kernel natif), GOL-06 (translateur minuscule, Loi II) et GOL-07 (correction Hashlife sur kernel natif) |
+| **Avec théorie des nœuds** | 1-12, 13, 15, 16, GOL-01, GOL-02, 13e, 17, 17a, 17b | ~18h00 | Ajoute Lean-17 (portail Conway 16 → KNOTS-01/02/03, mutation cellulaire vs mutation knot), Lean-17a (Conway, les nœuds et la preuve de Piccirillo) et Lean-17b (invariants : PD-codes, tricolorabilité de Fox, mouvements de Reidemeister) - companion `knot_lean`, Epic #2874 |
 
 ## Structure
 
@@ -112,10 +112,12 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parité, contextuality quantique - Pilier 1.B Epic #1651 | 60 min |
+| 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | théorème de Kochen-Specker (1967), preuve Cabello 18 vecteurs, parité, contextuality quantique - Pilier 1.B Epic #1651 ; section 9 : digest CGLMP (OQP 27) - généralisation qudit du CHSH des carnets 13b-13d, borne locale 2 vérifiée par énumération exhaustive, valeur quantique croissante vers 2,97 (issue #25006) | 85 min |
 | 13b | [Lean-13b-CHSH-Tsirelson-Native](Lean-13b-CHSH-Tsirelson-Native.ipynb) | Companion **natif** du lake `conway_lean` : la borne de Tsirelson exécutée in-kernel — `#check` de la signature exacte (7 classes de types + `IsCHSHTuple`, conclusion `≤ (2 * √2) • 1`), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, frontière classique mesurée (score `2` atteint, mélange équilibré → `0`), contrôle positif de kernel contre le REPL muet (#11874) et 3 exercices - Epic #13106 | 30 min |
 | 13c | [Lean-13c-CHSH-Landau-Saturation](Lean-13c-CHSH-Landau-Saturation.ipynb) | Companion **natif** du lake `conway_lean` : la saturation de Tsirelson exécutée in-kernel — `#check` de l'égalité centrale `chshOperator A₀ A₁ B₀ B₁ = (2 * √2) • 1` (égalité exacte, pas un majorant : la borne de Lean-13b devient un maximum démontré), `#print axioms` = `[propext, Classical.choice, Quot.sound]` sans `sorryAx`, témoin de Pauli (`sigmaZ`, `sigmaX`, `B₀`, `B₁` en `Matrix (Fin 2) (Fin 2) ℝ`), forme spectrale bilatérale (`2√2` sur la diagonale), anticommutateur, critère de Landau vérifié sur le témoin (spectre ±1) et 3 exercices - Epic #13106 | 25 min |
 | 13d | [Lean-13d-CHSH-Indeterminisme-Native](Lean-13d-CHSH-Indeterminisme-Native.ipynb) | Companion **natif** du lake `conway_lean` : la route statistique vers l'indéterminisme exécutée in-kernel — modèle local déterministe du jeu CHSH en vocabulaire FWT (`AliceResponse`/`BobResponse` : fonctions de l'état caché, localité par signature, l'analogue structurel de MIN), frontière locale état par état (`|realizedScore| = 2`, délégué à `classical_abs_score`), écart de Tsirelson `2 < 2√2` et conclusion `chsh_indeterminism` (aucun modèle local déterministe ne réalise un score `> 2` en réels — la même conclusion que le théorème du libre arbitre, obtenue par l'argument statistique), tableau comparatif des deux routes (contextuelle vs statistique) et 3 exercices - Epic #13106 | 25 min |
+| 13e | [Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python](Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb) | théorème du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le théorème dit et NE dit PAS, port formel adossé à `FreeWillTheorem.lean` (chaîne de réduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilité - Epic #2162 / #2156 | 40 min |
+| 13f | [Lean-13f-Correlation-Bell-Vide-Lean-Python](Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb) | corrélation de Bell du vide (OQP 12, Turturean 2026) : la quantité β de Summers-Werner (bornes 1 et √2, le facteur ½ par rapport au score des carnets 13b-13d), prérequis QFT self-contained (corrélateur du vide m·K₁(mr)/(4π²r), décroissance exponentielle), organe CHSH du lake `conway_lean` inventorié par lecture des sources sans réimplémentation, jouet structurel à deux qubits (fenêtre intriqué-sans-violation entre ξ·ln(√2) et ξ·ln(3)), théorème de la coupure à séparation finie (L ≥ C\*·R ⟹ β = 1, réponse négative au problème 12), statut de la formalisation Lean 4 amont (six énoncés de `Challenge.lean`, audit d'axiomes) et lecture honnête d'un préprint issu d'agents IA - See #26488 | 45 min |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) | Dérivées symboliques de Brzozowski : la finitude des dérivées qui garantit le matching linéaire (langages rationnels, automates) | 25 min |
 | 14b | [Lean-14b-Finiteness-Lean-Companion](Lean-14b-Finiteness-Lean-Companion.ipynb) | Companion **natif** (kernel Lean) : les 7 déclarations du lake `finiteness_lean` (`Regex`, `nullable`, `deriv`, `derivWord`, `accepts`, `aStar`, `abWord`) re-déclarées fidèlement (kernel sans oleans), vérifiées et exécutées in-kernel, finitude observée sur une regex à union (6 préfixes → 4 dérivées distinctes) | 20 min |
 
@@ -123,16 +125,16 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 15 | [Lean-15-Grothendieck-Tribute](Lean-15-Grothendieck-Tribute.ipynb) | Langage grothendieckien dans Mathlib 4 : catégories/foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas, site de Zariski, morphismes étales/lisses - Epic #1646 | 45 min |
-| 15b | [Lean-15b-Lean-Grothendieck](Lean-15b-Lean-Grothendieck.ipynb) | Atelier pratique Grothendieck : cribles, topologies et faisceaux en exercices (compagnon `grothendieck_lean`, fait suite à Lean-15) - Epic #1646 | 50 min |
-| 15c | [Lean-15c-Lean-Grothendieck-Companion](Lean-15c-Lean-Grothendieck-Companion.ipynb) | Companion formel natif du lake `grothendieck_lean` en kernel `lean4-wsl` : les modules du lake visités par leurs énoncés qui compilent (Yoneda, forme flèche Covers*, faisceautisation, Čech, Mayer-Vietoris, Zariski), 0 sorry attesté par `#print axioms` - Epic #11703 | 40 min |
+| GROTH-02 | [GROTH/GROTH-02-Tribut-Python](GROTH/GROTH-02-Tribut-Python.ipynb) | Langage grothendieckien dans Mathlib 4 : catégories/foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas, site de Zariski, morphismes étales/lisses - Epic #1646 | 45 min |
+| GROTH-03 | [GROTH/GROTH-03-Atelier-Python](GROTH/GROTH-03-Atelier-Python.ipynb) | Atelier pratique Grothendieck : cribles, topologies et faisceaux en exercices (compagnon `grothendieck_lean`, fait suite à GROTH-02) - Epic #1646 | 50 min |
+| GROTH-04 | [GROTH/GROTH-04-Companion-Lean](GROTH/GROTH-04-Companion-Lean.ipynb) | Companion formel natif du lake `grothendieck_lean` en kernel `lean4-wsl` : les modules du lake visités par leurs énoncés qui compilent (Yoneda, forme flèche Covers*, faisceautisation, Čech, Mayer-Vietoris, Zariski), 0 sorry attesté par `#print axioms` - Epic #11703 | 40 min |
 | 15d | [Lean-15d-Lean-Grothendieck-Visuel-Python](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) | Visite guidée visuelle des abstractions grothendieckiennes : sept figures Python autonomes (catégories et foncteurs, cribles, topologie de Grothendieck, faisceaux, Yoneda, site de Zariski, synthèse) et trois exercices sur données manipulables (fermeture d'un crible, compatibilité d'une famille de sections, critère de recouvrement par le pgcd) — aucun kernel Lean requis - See #17978 | 35 min |
-| 16a | [Lean-16a-Conway-Man-and-Work](Lean-16a-Conway-Man-and-Work.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme méthode) ; panorama des grands résultats (nombres surréels, groupes de Conway & Monstrous Moonshine, réseau de Leech, polynôme de Conway, Doomsday, Look-and-Say, FRACTRAN, problème de l'Ange, Sprouts, théorème du libre arbitre) ; premières noix crackées exécutées depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
+| 15e | [Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python](Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | Monodromie et groupe fondamental — le plan épointé à l'œuvre : volet preuve de la fenêtre 7-bis, transport d'un objet algébrique le long d'une boucle autour d'une singularité ; le module `Grothendieck.Monodromie` du lac `grothendieck_lean` piloté depuis le kernel `lean4-wsl`, `sorry` compté à zéro avant lecture - See #17978 / #21307 | 45 min |
+| 16 | [Lean-16-Conway-Homme-et-Oeuvre-Lean-Python](Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme méthode) ; panorama des grands résultats (nombres surréels, groupes de Conway & Monstrous Moonshine, réseau de Leech, polynôme de Conway, Doomsday, Look-and-Say, FRACTRAN, problème de l'Ange, Sprouts, théorème du libre arbitre) ; premières noix crackées exécutées depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
 | GOL-01 | [GOL/GOL-01-Regles-Vie-Lean](GOL/GOL-01-Regles-Vie-Lean.ipynb) | Hommage à John Conway : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel - Epic #1647 | 60 min |
 | GOL-02 | [GOL/GOL-02-Golly](GOL/GOL-02-Golly.ipynb) | Game of Life : les 3 piliers en images (compagnon Golly, intégration CLI `bgolly` pour simulation certifiée) - Epic #1647 | 45 min |
 | GOL-03 | [GOL/GOL-03-Vie-Native](GOL/GOL-03-Vie-Native.ipynb) | Game of Life sur **kernel Lean natif** (`lean4-wsl`) : grille, règle B3/S23, moteur `step`/`evolve`, motifs (bloc, clignoteur, planeur) et faits certifiés par `decide`/`native_decide`, sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
 | 16b | [Lean-16b-Conway-FRACTRAN-Lean-Native](Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | FRACTRAN sur **kernel Lean natif** (`lean4-wsl`) : type `Frac` (preuve `den > 0`), moteur `fracMulNat`/`fractranStep`/`fractranRun`, programmes (doubler, diviser) et le générateur de nombres premiers de Conway (14 fractions), faits certifiés par `decide` sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
-| 16c | [Lean-16c-Conway-Free-Will-Theorem](Lean-16c-Conway-Free-Will-Theorem.ipynb) | théorème du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le théorème dit et NE dit PAS, port formel adossé à `FreeWillTheorem.lean` (chaîne de réduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilité - Epic #2162 / #2156 | 40 min |
 | GOL-04 | [GOL/GOL-04-Canons](GOL/GOL-04-Canons.ipynb) | Barreau 2 de l'échelle des témoins Life (#12223, chantier #12205) : la source périodique (canon de Gosper) — reconnaître (période 30, transitoire 0, cadence d'émission 30 mesurées), générer (recherche bornée 3 000 soupes, zéro calibré par contrôle positif), certifier (prédicat `core (evolve 30 gosper_gun) = core gosper_gun` évalué `#eval` sur horizons 30/60/90 depuis le lake), barreaux 3-4 nommés hors d'atteinte | 45 min |
 | GOL-05 | [GOL/GOL-05-Pattern-Tour](GOL/GOL-05-Pattern-Tour.ipynb) | La tournée des motifs du Jeu de la Vie en compagnon formel **natif** (kernel `lean4-wsl`) : les théorèmes de `Conway.Life.PatternTour` importés et exécutés in-kernel (still lifes, oscillateurs, vaisseaux — égalités `Bool` réduites par le noyau, `#print axioms` en transparence) - Epic #11703 | 40 min |
 | GOL-06 | [GOL/GOL-06-Translateur-Life](GOL/GOL-06-Translateur-Life.ipynb) | Synthèse d'un translateur minuscule : franchir la Loi II (recoordonner, passer du vérificateur au constructeur) — énumération SAT sur grille bornée du motif T (vitesse (2,-2), période 8), sérialisation JSON vers Lean - Grain B1 du Chantier 2 #12205 | 40 min |
@@ -145,9 +147,9 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
 | 17 | [Lean-17-Conway-Bridge-to-Knots-Python](Lean-17-Conway-Bridge-to-Knots-Python.ipynb) | **Portail/escalier** : le pont entre Conway (16) et KNOTS-01/02/03 (17a/b/c) — la mutation cellulaire en Game of Life et la mutation knot comme signature commune de Conway, invariants faibles préservés (densité, Alexander) vs invariants profonds tranchés (sliceness) — carnet pédagogique avec SnapPy (K11n34/K11n42), stubs d'exercices C.1 (See #19644) | 30 min |
-| 17a | [Lean-17a-Knots-Conway-Proofs](KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb) | Conway, les nœuds et la preuve de Piccirillo : le noeud de Conway (11n34), slice-genre et nombre de dénouement, contexte de la preuve (Piccirillo 2020, le noeud de Conway n'est pas slice) - hommage narratif, Epic #2874 | 40 min |
-| 17b | [Lean-17b-Knots-Invariants-Companion](KNOTS/KNOTS-02-Invariants-Python.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilité de Fox, diagrammes bien formés - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
-| 17c | [Lean-17c-Knots-Companion-Formel](KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb) | Companion formel du lake `knot_lean` en kernel python3 (kernel lean4-wsl gelé #11874) : les modules que Lean-17 ne cite pas (Basic, Invariant, Reidemeister) interrogés par leurs déclarations réelles, murs nommés R2/R3, sorries réels (14) vs prose, miroir i18n byte-identique attesté par l'instrument canonique - Epic #2874 / #11703 | 40 min |
+| KNOTS-01 | [KNOTS/KNOTS-01-Conway-Proofs-Lean-Python](KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb) | Conway, les nœuds et la preuve de Piccirillo : le noeud de Conway (11n34), slice-genre et nombre de dénouement, contexte de la preuve (Piccirillo 2020, le noeud de Conway n'est pas slice) - hommage narratif, Epic #2874 | 40 min |
+| KNOTS-02 | [KNOTS/KNOTS-02-Invariants-Python](KNOTS/KNOTS-02-Invariants-Python.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilité de Fox, diagrammes bien formés - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
+| KNOTS-03 | [KNOTS/KNOTS-03-Companion-Formel-Lean-Python](KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb) | Companion formel du lake `knot_lean` en kernel python3 (kernel lean4-wsl gelé #11874) : les modules que Lean-17 ne cite pas (Basic, Invariant, Reidemeister) interrogés par leurs déclarations réelles, murs nommés R2/R3, sorries réels (14) vs prose, miroir i18n byte-identique attesté par l'instrument canonique - Epic #2874 / #11703 | 40 min |
 
 ### Annexe méthodologique : bornes de concentration et inférence bayésienne (détection MIMO)
 
@@ -204,6 +206,8 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Langlands](Langlands/README.md) (EPIC #17969) : la relation de Hecke sur les coefficients de Δ montée par six marches de garantie croissante — table de Ramanujan exacte par convolution entière (13 valeurs publiées, concordance 13/13), identité τ(pn) + p¹¹τ(n/p) = τ(p)τ(n) vérifiée sur 9 cas (p = 2, 3, 5), témoin négatif (la suite perturbée τ+n la viole 9 fois sur 9), lecture du lac [`hecke_lean`](Langlands/hecke_lean/) comme un consommateur (définition `coeffHeckeT`, preuve de `coeffHeckeT_of_dvd`, audit `sorry`/`native_decide` : 0), et le pont Moonshine (j = E₄³/Δ recalculé, 196884 = 1 + 196883) — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
 | 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | **Capstone (escalier)** vers la sous-série [MIMO](MIMO/README.md) (EPIC #17545) : la détection MIMO par flips de coordonnées, le budget de descente et sa digestion — table de routage des quatre carnets (MIMO-01 à MIMO-04), citation du lac [`mimo_lean/`](mimo_lean/README.md) par ses modules réels (`Descent`, `Objective`, `Lmmse`, `Converse`, `Bridge`, `NormTails` + miroirs `_en`, baseline 0 sorry en code-only mesurée par l'organe canonique `count_code_sorry.py` — champ `distinct_code_sorry`), prérequis d'entrée (Lean 1-6 pour le formel, NumPy seul pour la digestion), **surface de la sous-série mesurée plutôt que déclarée** — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
 
+La sous-série **[Riemann 200](Riemann200/README.md)** (bicentenaire de Bernhard Riemann, EPIC [#20403](https://github.com/jsboige/CoursIA/issues/20403)) s'ouvre par cette marche, sans escalier dédié pour l'instant : chaque texte fondateur y devient une **distillation calculée** — l'énoncé mesuré dans une sortie, démontrable en Lean quand Mathlib le permet, exerçable. Le versant preuves vit dans le lake compagnon [`riemann200_lean/`](Riemann200/riemann200_lean/) — le pôle en s = 1 et la divergence des inverses des premiers dans [`Memoire1859.lean`](Riemann200/riemann200_lean/Riemann200/Memoire1859.lean), la forme ε du liminf dans [`LiminfForme.lean`](Riemann200/riemann200_lean/Riemann200/LiminfForme.lean) — même maison que [`serre100_lean/`](Serre100/serre100_lean/). Le carnet capstone citant la sous-série depuis la racine reste à poser.
+
 > Numérotation : le notebook Confiance-Preuves-Native — initialement prévu en 35 — est livré en 24b (accrétion du palier 24 Calibration, décision #17545) par la PR #17530 (issue #17520) ; l'annexe A de Tegmark arrive donc en 36.
 
 **Durée totale** : le décompte par notebook vit dans le catalogue généré (`CATALOG-STATUS`) — il dérive à chaque ajout.
@@ -222,15 +226,17 @@ A l'issue de la série, vous saurez :
 
 - **Porter** un théorème de recherche en Lean 4 : théorème de sensibilité (Huang 2019, hypercube et signing matrix), théorème de Kochen-Specker (Cabello 18 vecteurs, argument de parité, contextuality quantique). Notebooks 12, 13.
 
-- **Lire le langage grothendieckien** dans Mathlib 4 : catégories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas et sites, morphismes étales/lisses — comme entrée vers la géométrie algébrique formalisée. Notebook 15.
+- **Lire le langage grothendieckien** dans Mathlib 4 : catégories et foncteurs, cribles et topologies de Grothendieck, faisceaux, schémas et sites, morphismes étales/lisses — comme entrée vers la géométrie algébrique formalisée. Carnet GROTH-02.
 
-- **Situer l'oeuvre de Conway** dans sa largeur : des nombres surréels au Monstrous Moonshine, du réseau de Leech au théorème du libre arbitre, en exécutant les premières noix formalisées (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16a.
+- **Situer l'oeuvre de Conway** dans sa largeur : des nombres surréels au Monstrous Moonshine, du réseau de Leech au théorème du libre arbitre, en exécutant les premières noix formalisées (Doomsday, Look-and-Say, Nim, Angel, Life) directement depuis le projet conway_lean (0 sorry). Notebook 16.
 
-- **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks 16a-16e.
+- **Explorer les noix de Conway** en Lean 4 : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel — port formel de résultats combinatoires iconiques. Notebooks Lean-16, GOL-01, GOL-02, GOL-03 et Lean-16b.
 
-- **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook 16f.
+- **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook Lean-13e.
 
-- **Franchir un barreau de l'échelle vérifier→construire** : reconnaître une source périodique Life (période, transitoire, cadence d'émission mesurées sur le canon de Gosper), chercher à en générer une dans un budget borné (zéro calibré par contrôle positif), et certifier la périodicité du noyau par un prédicat `Grid` évalué sur horizon fini — l'écart structurel entre vérificateur et constructeur. Notebook 16g.
+- **Lire un résultat de recherche frais** (OQP 12 : la corrélation de Bell du vide du champ scalaire massif atteint la borne classique au-delà d'une séparation finie) : la quantité β de Summers-Werner et son pont de normalisation avec le score CHSH des carnets 13b-13d, le corrélateur du vide et sa décroissance exponentielle, un jouet à deux qubits qui sépare intrication et violation, l'énoncé du théorème, sa structure de preuve et les limites honnêtes d'un préprint formalisé en Lean 4 par des agents IA. Notebook Lean-13f.
+
+- **Franchir un barreau de l'échelle vérifier→construire** : reconnaître une source périodique Life (période, transitoire, cadence d'émission mesurées sur le canon de Gosper), chercher à en générer une dans un budget borné (zéro calibré par contrôle positif), et certifier la périodicité du noyau par un prédicat `Grid` évalué sur horizon fini — l'écart structurel entre vérificateur et constructeur. Notebook GOL-04.
 
 - **Formaliser les invariants de nœuds** : PD-codes, mouvements de Reidemeister et tricolorabilité de Fox, en s'appuyant sur le companion `knot_lean` (transfert de tricolorabilité le long d'un twist R1 connecté, preuve forward sorry-free + backward partielle). Notebooks 17a, 17b.
 
@@ -268,21 +274,22 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 13b | CHSH-Tsirelson-Native | ~8 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
 | 13c | CHSH-Landau-Saturation | ~11 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
 | 13d | CHSH-Indeterminisme-Native | ~10 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
+| 13e | Conway-Theoreme-Libre-Arbitre-Lean-Python | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
+| 13f | Correlation-Bell-Vide-Lean-Python | ~34 | 3 | 0 | **NOUVEAU** (digest OQP 12) |
 | 14 | Finiteness-Derivatives | ~12 | 1 | - | **NOUVEAU** |
 | 14b | Finiteness-Lean-Companion | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
-| 15 | Grothendieck-Tribute | ~23 | 0 | - | **NOUVEAU** (hommage) |
-| 15b | Lean-Grothendieck (atelier) | ~40 | 4 | Oui | **NOUVEAU** |
-| 15c | Lean-Grothendieck-Companion | ~25 | 2 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
-| 16a | Conway-Man-and-Work | ~39 | 3 | 0 | **NOUVEAU** (hommage) |
-| 16b | Conway-Game-of-Life-Lean | ~26 | 0 | - | **NOUVEAU** (hommage) |
-| 16c | Conway-Game-of-Life-Golly | ~47 | 5 | - | **NOUVEAU** (hommage) |
-| 16d | Conway-Game-of-Life-Lean-Native | ~32 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
-| 16e | Conway-FRACTRAN-Lean-Native | ~22 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
-| 16f | Conway-Free-Will-Theorem | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
-| 16g | Conway-Canons | ~23 | 3 | - | **NOUVEAU** |
-| 16h | Conway-PatternTour-Native | ~9 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
-| 16i | Translateur-Life | ~4 | 0 | - | **NOUVEAU** |
-| 16j | Conway-Hashlife-Correctness-Native | ~15 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
+| GROTH-02 | GROTH-02-Tribut | ~23 | 0 | - | **NOUVEAU** (hommage) |
+| GROTH-03 | GROTH-03-Atelier | ~40 | 4 | Oui | **NOUVEAU** |
+| GROTH-04 | GROTH-04-Companion | ~25 | 2 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 16 | Conway-Homme-et-Oeuvre-Lean-Python | ~39 | 3 | 0 | **NOUVEAU** (hommage) |
+| GOL-01 | Regles-Vie-Lean | ~26 | 0 | - | **NOUVEAU** (hommage) |
+| GOL-02 | Golly | ~47 | 5 | - | **NOUVEAU** (hommage) |
+| GOL-03 | Vie-Native | ~32 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
+| Lean-16b | Conway-FRACTRAN-Lean-Native | ~22 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
+| GOL-04 | Canons | ~23 | 3 | - | **NOUVEAU** |
+| GOL-05 | Pattern-Tour | ~9 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
+| GOL-06 | Translateur-Life | ~4 | 0 | - | **NOUVEAU** |
+| GOL-07 | Hashlife-Correctness | ~15 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
 | 17a | Knots-a-Conway-and-Proofs | ~13 | 0 | - | **NOUVEAU** (hommage) |
 | 17b | Knots-b-Invariants-Companion | ~19 | 3 | - | **NOUVEAU** |
 | 17c | Knots-Companion-Formel | ~33 | 3 | 0 | **NOUVEAU** (kernel python3) |
@@ -481,16 +488,15 @@ Lean/
 ├── Lean-12-Sensitivity-Theorem.ipynb # Python kernel - théorème de sensibilité (Huang 2019, hypercube, signing matrix)
 ├── Lean-12b-Lean-Sensitivity-Theorem.ipynb # Lean4 (WSL) kernel - companion natif du théorème de sensibilité (preuve 0-sorry du lake sensitivity_lean)
 ├── Lean-12c-Tensor-Product-Representations-Lean.ipynb # Lean4 (WSL) kernel - algèbre TPR : binding, unbinding, constituent surgery (jumeau empirique SL-13 SymbolicLearning)
-├── Lean-15-Grothendieck-Tribute.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
-├── Lean-15b-Lean-Grothendieck.ipynb # Python kernel - atelier pratique Grothendieck (compagnon grothendieck_lean)
-├── Lean-15c-Lean-Grothendieck-Companion.ipynb # Lean4 (WSL) kernel - companion formel natif grothendieck_lean (modules visités par leurs énoncés, Epic #11703)
 ├── Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb # Python kernel - visite guidée visuelle du corpus Grothendieck (7 figures, 3 exercices, sans lake)
-├── Lean-16a-Conway-Man-and-Work.ipynb # Python kernel - hommage Conway (l'homme et l'œuvre, noix exécutées depuis conway_lean)
+├── Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb # Python kernel - monodromie et groupe fondamental (volet preuve, module Grothendieck.Monodromie du lac grothendieck_lean, 0 sorry)
+├── Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb # Python kernel - hommage Conway (l'homme et l'œuvre, noix exécutées depuis conway_lean)
 ├── GOL/GOL-01-Regles-Vie-Lean.ipynb   # Python kernel - hommage Conway (Game of Life as Computation)
 ├── GOL/GOL-02-Golly.ipynb  # Python kernel - hommage Conway (Game of Life en images, compagnon Golly)
 ├── GOL/GOL-03-Vie-Native.ipynb  # Lean4 (WSL) kernel - Game of Life natif (grille, B3/S23, decide/native_decide, 0 sorry)
 ├── Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb      # Lean4 (WSL) kernel - FRACTRAN natif (machine universelle de Conway, générateur de premiers)
-├── Lean-16c-Conway-Free-Will-Theorem.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adossé à FreeWillTheorem.lean)
+├── Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adossé à FreeWillTheorem.lean)
+├── Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb # Python kernel - digest OQP 12 (corrélation de Bell du vide, organe CHSH inventorié, jouet intrication/violation)
 ├── GOL/GOL-04-Canons.ipynb                    # Python kernel - barreau 2 de l'échelle des témoins : source périodique (canon de Gosper) mesurée, cherchée, certifiée #eval (#12223)
 ├── GOL/GOL-05-Pattern-Tour.ipynb        # Lean4 (WSL) kernel - tournée des motifs : PatternTour.lean importé et exécuté in-kernel (Epic #11703)
 ├── GOL/GOL-06-Translateur-Life.ipynb                 # Python kernel - synthèse d'un translateur minuscule (SAT borné, Loi II, Chantier 2 #12205)
@@ -503,9 +509,9 @@ Lean/
 ├── Lean-13d-CHSH-Indeterminisme-Native.ipynb # Lean4 (WSL) kernel - pont CHSH <-> libre arbitre : modèle local déterministe, frontière état par état, conclusion d'indéterminisme (Epic #13106)
 ├── Lean-14-Finiteness-Derivatives.ipynb # Python kernel - dérivées symboliques de Brzozowski (finitude, matching linéaire)
 ├── Lean-14b-Finiteness-Lean-Companion.ipynb # Lean kernel - companion natif du lake finiteness_lean (7 déclarations citées)
-├── Lean-17a-Knots-Conway-Proofs.ipynb # Python kernel - Conway, les nœuds et la preuve de Piccirillo (noeud de Conway)
-├── Lean-17b-Knots-Invariants-Companion.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
-├── Lean-17c-Knots-Companion-Formel.ipynb # Python kernel - companion formel knot_lean (modules non cités par 17b, murs R2/R3, miroir i18n)
+├── KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb # Python kernel - Conway, les nœuds et la preuve de Piccirillo (noeud de Conway)
+├── KNOTS/KNOTS-02-Invariants-Python.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
+├── KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb # Python kernel - companion formel knot_lean (modules non cités par 17b, murs R2/R3, miroir i18n)
 ├── Lean-20-Capstone-Digestions-Tao-Python.ipynb # Python kernel - escalier capstone vers la sous-série ANALYSE : digestion du travail formel de T. Tao, règle de chaîne, distance de Ruzsa
 ├── Lean-23-ERC20-Invariant-Companion.ipynb # Python kernel - invariant ERC-20 (lecture statique du lake erc20_lean, Monte-Carlo)
 ├── Lean-23b-Lean-ERC20-Native-Companion.ipynb # Lean4 (WSL) kernel - ERC-20 natif (17 déclarations résolues par le kernel)
@@ -555,8 +561,11 @@ Lean/
 │   ├── GOL-07-Hashlife-Correctness.ipynb  # La correction de Hashlife comme théorème (lean4-wsl)
 │   ├── conway_lean/                       # Lake Conway (0 sorry, Lake build), descendu sous GOL/ (See #23164)
 │   └── README.md
-├── GROTH/                         # Sous-série hommage Grothendieck (catégories et foncteurs par Mathlib, séries formelles multivariées) — lake [grothendieck_lean](GROTH/grothendieck_lean/README.md) descendu sous GROTH/ (See #23164) : [README](GROTH/README.md)
+├── GROTH/                         # Sous-série hommage Grothendieck (hommages Grothendieck : tribut, atelier, companion ; catégories et séries formelles par Mathlib) — lake [grothendieck_lean](GROTH/grothendieck_lean/README.md) descendu sous GROTH/ (See #23164) : [README](GROTH/README.md)
 │   ├── GROTH-01-Categories-Mathlib-Lean.ipynb # Lean4 (WSL) kernel - catégories, cribles et faisceaux par les modules du lake
+│   ├── GROTH-02-Tribut-Python.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
+│   ├── GROTH-03-Atelier-Python.ipynb # Python kernel - atelier pratique Grothendieck (compagnon grothendieck_lean)
+│   ├── GROTH-04-Companion-Lean.ipynb # Lean4 (WSL) kernel - companion formel natif grothendieck_lean (modules visités par leurs énoncés, Epic #11703)
 │   ├── GROTH-05-MvPowerSeries-Lean.ipynb # Lean4 (WSL) kernel - séries formelles multivariées
 │   ├── grothendieck_lean/         # Grothendieck tribute workspace (0 sorry, Lake build)
 │   └── README.md
@@ -783,7 +792,7 @@ Lean n'est pas un langage de programmation de plus : c'est le point où **le cod
 
 - **Les fondations** (Lean-1 Setup à Lean-6) : installer l'outil, manipuler les types dépendants, comprendre l'isomorphisme de Curry-Howard — un programme *est* une preuve, un type *est* une proposition.
 - **Prouver en pratique** (Lean-7 à Lean-12) : tactiques, lemmes, induction, l'art de *réduire* un énoncé jusqu'à ce que `rfl` ou `decide` le closent. Vous avez vu qu'une preuve formelle n'est pas une invention — c'est un dialogue avec un vérificateur qui n'accepte rien sur confiance.
-- **Les mathématiques vivantes** (Lean-15 à Lean-17b) : Game of Life (Hashlife), théorie des jeux sociaux (Arrow, Sen, Shapley), topologie (Grothendieck), théorie des nœuds (Piccirillo, tricolorabilité de Fox). Chaque domaine porté en Lean devient une *certification* — le `sorry` résiduel y est tracé comme une dette, pas caché.
+- **Les mathématiques vivantes** (l'îlot GROTH et Lean-16 à Lean-17b) : Game of Life (Hashlife), théorie des jeux sociaux (Arrow, Sen, Shapley), topologie (Grothendieck), théorie des nœuds (Piccirillo, tricolorabilité de Fox). Chaque domaine porté en Lean devient une *certification* — le `sorry` résiduel y est tracé comme une dette, pas caché.
 
 ### Prochaines étapes
 

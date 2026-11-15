@@ -26,11 +26,13 @@ from ict.free_coordinates import (  # noqa: E402
     institutionalization,
     internal_move,
     irreversibility_debt,
+    jumeaux_comportementaux,
     non_canonicity,
     performative_power,
     political_opening,
     quorum_mechanism,
     temoin_decoratif,
+    verifier_equivalence,
 )
 
 
@@ -320,6 +322,47 @@ def test_classer_sans_d_marg_reste_compatible_avec_la_lecture_brute():
     assert classer_proxys(0, 3, 1, 0.5, 0.4) == "nouveau (renommage actif)"
 
 
+def test_concept_et_alias_ne_sont_pas_une_nouvelle_classe():
+    # Le concept existe, mais son action ne fait que renommer une action existante.
+    for inst in (0.0, 0.5):
+        assert classer_proxys(1, 1, 1, 0.0, inst, d_a_t_marg=0) == (
+            "ornamental (concept sans action ouverte)"
+        )
+    # Sans quotient explicite, la lecture historique reste brute.
+    assert classer_proxys(1, 1, 1, 0.0, 0.5) == "nouveau"
+    assert classer_proxys(1, 1, 1, 0.0, 0.0) == "nouveau (non institutionnalise)"
+
+
+def test_banc_concept_alias_et_action_reelle_sur_quatre_graines():
+    agents = ("auteur", "tiers")
+    g0 = EvolutiveGame(
+        agents=agents, lexicon=frozenset({"acte"}), actions=frozenset({"acte"}),
+        payoffs={(agent, action): 1.0 for agent in agents
+                 for action in ("acte", "acte_alias")},
+    )
+    coup = OntologicalMove(
+        proposer="auteur", new_concepts=("jargon",),
+        opened_actions={"jargon": ("acte_alias",)},
+    )
+    g1 = apply_ontology(g0, coup)
+    for seed in range(4):
+        alias = bancher_mecanisme(
+            "alias", g0, g1, coup, (coup,), equivalence={"acte_alias": "acte"},
+            horizon=20, n_sim=30, rng=np.random.default_rng(seed),
+        )
+        nouveau = bancher_mecanisme(
+            "action", g0, g1, coup, (coup,),
+            horizon=20, n_sim=30, rng=np.random.default_rng(seed),
+        )
+        assert alias.O_t == alias.dA_t == 1
+        assert alias.dA_t_marg == 0 and alias.P_R_marg == 0
+        assert alias.institutionnalisation > 0
+        assert alias.classe == "ornamental (concept sans action ouverte)"
+        assert alias.temoin and "O_t" in alias.temoin[0]
+        assert nouveau.dA_t_marg == 1 and nouveau.P_R_marg > 0
+        assert nouveau.institutionnalisation > 0 and nouveau.classe == "nouveau"
+
+
 def test_temoin_est_le_dual_exact_du_classifieur():
     # Propriete enforcee par test (mesuree empiriquement dans la review #23900
     # pt 5) : temoin vide <=> classe 'decoratif', sur TOUTE la grille.
@@ -457,3 +500,183 @@ def test_bench_verdict_porte_l_ouverture_marginalisee():
         institutionnalisation=0.0, I_R=10.0, classe="decoratif",
     )
     assert v.dA_t_marg == 0  # defaut : champ present, valeur neutre
+
+
+def test_fixed_predictor_rejects_undefined_distribution():
+    with pytest.raises(ValueError, match="distinctes"):
+        FixedSpacePredictor(("a", "a"))
+    p = FixedSpacePredictor(("a", "b"))
+    with pytest.raises(ValueError, match="observation"):
+        p.log_loss("a")
+    for epsilon in (-1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="epsilon"):
+            p.log_loss("a", epsilon=epsilon)
+    assert p.log_loss("a", epsilon=1.0) == pytest.approx(1.0)
+    p.update("a")
+    assert p.log_loss("a") == pytest.approx(0.0)
+    assert p.log_loss("unknown") == pytest.approx(np.log2(3))
+
+
+def test_banc_lectures_brute_et_identite_partagent_tirages():
+    g0, eta = _banc_vote()
+    g1 = apply_ontology(g0, eta)
+    result = bancher_mecanisme(
+        "identite", g0, g1, eta, (eta,), equivalence={},
+        horizon=8, n_sim=3, rng=np.random.default_rng(92),
+    )
+    assert result.P_R == pytest.approx(result.P_R_marg, abs=1e-15)
+
+
+# ---------------------------------------------------------------------------
+# Revue contradictoire (Concern #23778, 2026-11-01) — les gardes du quotient
+# ---------------------------------------------------------------------------
+
+def _banc_renommage(paiement_copie: float) -> tuple[EvolutiveGame, EvolutiveGame, dict[str, str]]:
+    """Le banc M5a minimal : un renommage pur, copie a paiement parametre."""
+    g0 = EvolutiveGame(
+        agents=("electeur",),
+        lexicon=frozenset({"a", "b", "c"}),
+        actions=frozenset({"comite a", "comite b", "comite c"}),
+        payoffs={
+            ("electeur", "comite a"): 2.0,
+            ("electeur", "comite b"): 0.3,
+            ("electeur", "comite c"): 0.3,
+        },
+    )
+    g1 = EvolutiveGame(
+        agents=("electeur",),
+        lexicon=frozenset({"a", "b", "c"}),
+        actions=frozenset({"comite a'", "comite b'", "comite c'"}),
+        payoffs={
+            ("electeur", "comite a'"): paiement_copie,
+            ("electeur", "comite b'"): 0.3,
+            ("electeur", "comite c'"): 0.3,
+        },
+    )
+    eq = {"comite a'": "comite a", "comite b'": "comite b", "comite c'": "comite c"}
+    return g0, g1, eq
+
+
+def test_verifier_equivalence_carte_coherente_rend_vide():
+    g0, g1, eq = _banc_renommage(paiement_copie=2.0)
+    assert verifier_equivalence(g0, g1, eq) == ()
+
+
+def test_verifier_equivalence_carte_vide_ou_nulle_rend_vide():
+    g0, g1, _ = _banc_renommage(paiement_copie=2.0)
+    assert verifier_equivalence(g0, g1, None) == ()
+    assert verifier_equivalence(g0, g1, {}) == ()
+
+
+def test_verifier_equivalence_copie_porteuse_de_paiements_est_nommee():
+    g0, g1, eq = _banc_renommage(paiement_copie=3.5)  # la copie paie PLUS cher
+    violations = verifier_equivalence(g0, g1, eq)
+    assert len(violations) == 1
+    assert "comite a" in violations[0] and "comite a'" in violations[0]
+
+
+def test_verifier_equivalence_lit_les_paiements_par_agent():
+    g0, _, eq = _banc_renommage(paiement_copie=2.0)
+    g0 = EvolutiveGame(
+        agents=("electeur", "censeur"),
+        lexicon=g0.lexicon, actions=g0.actions,
+        payoffs={("electeur", "comite a"): 2.0, ("censeur", "comite a"): 1.0,
+                 ("electeur", "comite b"): 0.3, ("censeur", "comite b"): 0.3,
+                 ("electeur", "comite c"): 0.3, ("censeur", "comite c"): 0.3},
+    )
+    g1 = EvolutiveGame(
+        agents=("electeur", "censeur"),
+        lexicon=g0.lexicon,
+        actions=frozenset({"comite a'", "comite b'", "comite c'"}),
+        payoffs={("electeur", "comite a'"): 2.0,
+                 ("electeur", "comite b'"): 0.3, ("censeur", "comite b'"): 0.3,
+                 ("electeur", "comite c'"): 0.3, ("censeur", "comite c'"): 0.3},
+    )
+    # Pour l'electeur les profils concordent ; le censeur paye l'original 1.0
+    # et la copie 0.0 (absente) — la fusion doit tomber sur CE fait, seul.
+    violations = verifier_equivalence(g0, g1, eq)
+    assert len(violations) == 1
+    assert "censeur" in violations[0]
+
+
+def test_jumeaux_comportementaux_renommage_pur_trois_paires():
+    g0, g1, _ = _banc_renommage(paiement_copie=2.0)
+    paires = jumeaux_comportementaux(g0, g1)
+    # b et c paient tous deux 0.3 : ce sont des jumeaux, et la paire de c'
+    # nomme un REPRESENTANT (le premier trie) — la non-unificite est un fait
+    # du banc, pas un defaut du detecteur.
+    assert paires == (
+        ("comite a'", "comite a"),
+        ("comite b'", "comite b"),
+        ("comite c'", "comite b"),
+    )
+
+
+def test_jumeaux_comportementaux_action_vraiment_nouvelle_aucune_paire():
+    g0, g1, _ = _banc_renommage(paiement_copie=9.7)  # profil inedit : pas de jumeau
+    assert jumeaux_comportementaux(g0, g1) == (("comite b'", "comite b"), ("comite c'", "comite b"))
+
+
+def test_jumeaux_comportementaux_meme_nom_ne_compte_pas():
+    g0, _, _ = _banc_renommage(paiement_copie=2.0)
+    g1 = EvolutiveGame(agents=g0.agents, lexicon=g0.lexicon, actions=g0.actions,
+                       payoffs=dict(g0.payoffs))
+    assert jumeaux_comportementaux(g0, g1) == ()
+
+
+def _verdict_copie_porteuse(paiement_copie: float) -> tuple:
+    """Le banc M5a, copie a paiement parametre, carte de noms passe telle quelle."""
+    g0, g1, eq = _banc_renommage(paiement_copie=paiement_copie)
+    eta = OntologicalMove(proposer="electeur", new_concepts=(), opened_actions={})
+    ren1 = OntologicalMove(proposer="electeur", new_concepts=(),
+                           opened_actions={"": ("comite a'", "comite b'", "comite c'")})
+    v = bancher_mecanisme("copie porteuse (carte de noms)", g0, g1, eta, (ren1,),
+                          equivalence=eq, horizon=40, n_sim=80,
+                          rng=np.random.default_rng(7))
+    return v, verifier_equivalence(g0, g1, eq)
+
+
+def test_faux_decoratif_sous_eps_est_rattrape_par_la_garde():
+    """Le faux decoratif MESURE : une copie qui paie 2.05 (vs 2.00) passe sous
+    eps (P_R_marg ~ 6e-4) et le banc dit 'decoratif' — alors que la carte de
+    noms fusionne des paiements divergents. La garde lit les paiements, pas la
+    trajectoire lissée : elle nomme la carte inadmissible que eps avale."""
+    v, garde = _verdict_copie_porteuse(paiement_copie=2.05)
+    assert v.classe == "decoratif"           # le verdict NAIF...
+    assert v.P_R_marg < 1e-2                 # ...parce que l'ecart passe sous eps
+    assert len(garde) == 1                   # ...et la garde ne passe pas dessous
+
+
+def test_copie_porteuse_au_dela_d_eps_bascule_en_latent_temoin_rouge():
+    """Le meme cas, divergence franche (3.5) : le banc lui-meme bascule en
+    'latent' et le temoin rougit — la carte trop large echoue BRUYAMMENT, la
+    garde nomme la cause en plus."""
+    v, garde = _verdict_copie_porteuse(paiement_copie=3.5)
+    assert v.classe == "latent"
+    assert any("trajectoire" in t for t in v.temoin)
+    assert len(garde) == 1
+
+
+def test_renommage_pur_carte_admissible_decoratif_merite():
+    """Le controle : copie a paiement identique (2.0), carte coherente — le
+    verdict 'decoratif' est alors TENU et la garde se tait."""
+    v, garde = _verdict_copie_porteuse(paiement_copie=2.0)
+    assert v.classe == "decoratif"
+    assert v.temoin == ()
+    assert garde == ()
+
+
+def test_faux_nouveau_par_carte_oubliee_est_rattrape_par_les_jumeaux():
+    """Le circuit complet du faux nouveau : carte oubliee -> le banc dit
+    'nouveau', les jumeaux comportementaux designent le renommage."""
+    g0, g1, _ = _banc_renommage(paiement_copie=2.0)
+    eta = OntologicalMove(proposer="electeur", new_concepts=(), opened_actions={})
+    ren1 = OntologicalMove(proposer="electeur", new_concepts=(),
+                           opened_actions={"": ("comite a'", "comite b'", "comite c'")})
+    v = bancher_mecanisme("renommage pur (carte oubliee)", g0, g1, eta, (ren1,),
+                          equivalence=None, horizon=40, n_sim=80,
+                          rng=np.random.default_rng(8))
+    assert v.classe.startswith("nouveau")   # le verdict NAIF
+    assert v.dA_t_marg == 3                 # ...compte 3 classes nouvelles
+    paires = jumeaux_comportementaux(g0, g1)
+    assert len(paires) == 3                 # ...toutes trois sont des renommages
