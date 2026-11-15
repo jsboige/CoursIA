@@ -346,10 +346,15 @@ jobs:
             echo "QUEUE_DEPTH=" >> "$GITHUB_ENV"
             exit 0
           fi
+          # silence justifie : DEPTH_JSON vient d'etre lu non vide ; un JSON
+          # illisible n'y laisse qu'un champ vide, et le test de DEPTH juste
+          # en dessous le nomme (::warning:: « rapport sans profondeur »).
+          # Les trois champs suivants sont informatifs : vides, ils n'alterent
+          # aucun verdict.
           DEPTH=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("depth",""))' 2>/dev/null) || DEPTH=""
-          DEPTH_KIND=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("depth_kind",""))' 2>/dev/null) || DEPTH_KIND=""
-          DEPTH_RAW=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("total_count",""))' 2>/dev/null) || DEPTH_RAW=""
-          DEPTH_API=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("api_calls",""))' 2>/dev/null) || DEPTH_API=""
+          DEPTH_KIND=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("depth_kind",""))' 2>/dev/null) || DEPTH_KIND=""  # silence justifie : champ informatif, voir le bloc ci-dessus
+          DEPTH_RAW=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("total_count",""))' 2>/dev/null) || DEPTH_RAW=""  # silence justifie : champ informatif, voir le bloc ci-dessus
+          DEPTH_API=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("api_calls",""))' 2>/dev/null) || DEPTH_API=""  # silence justifie : champ informatif, voir le bloc ci-dessus
           if [ -z "$DEPTH" ]; then
             echo "::warning::[stale-sweep] profondeur VIVANTE illisible (rapport sans profondeur) -- le verdict retombe sur l'age seul"
             echo "QUEUE_DEPTH=" >> "$GITHUB_ENV"
