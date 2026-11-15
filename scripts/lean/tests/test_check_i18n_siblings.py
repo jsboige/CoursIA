@@ -36,7 +36,7 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 # explicite du test conway ci-dessous, qui rend cette disparition visible).
 CONWAY_DIR = (
     REPO_ROOT
-    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GameOfLife" / "conway_lean" / "Conway"
+    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "JeuDeLaVie" / "conway_lean" / "Conway"
 )
 
 

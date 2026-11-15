@@ -262,7 +262,7 @@ class TestPathFilterWindowsCompat:
         jamais un carnet KNOTS sur Windows. Ce test documente la
         regression si quelqu'un revient a ``str(p)``."""
         # PureWindowsPath rend inconditionnellement des antislashs.
-        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "Knots", "demo.ipynb")
+        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "Noeuds", "demo.ipynb")
         s = str(p)  # forme native Windows : antislashs
         assert "\\" in s, "sanity check : on est bien sur une forme Windows"
         # Le filtre forward-slash NE MATCHE PAS la forme antislashes.
@@ -271,7 +271,7 @@ class TestPathFilterWindowsCompat:
     def test_as_posix_path_windows_antislashes_matches(self):
         """Avec ``as_posix()``, le filtre forward-slash retrouve la
         forme Windows normalisee -- c'est le fix."""
-        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "Knots", "demo.ipynb")
+        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "Noeuds", "demo.ipynb")
         # ``as_posix()`` rend la forme forward-slash portable.
         posix_form = p.as_posix()
         assert "\\" not in posix_form
