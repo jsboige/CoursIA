@@ -1173,7 +1173,7 @@ def scan_notebook(path: str) -> list[dict]:
             if exercise_with_none_stub_or_marker(next_code_source):
                 continue
             # MiniZinc/C# exercise with `A COMPLETER` markers in a model string.
-            # App-8-MiniZinc pattern (% A COMPLETER :...). The student fills
+            # App-08-MiniZinc-Python pattern (% A COMPLETER :...). The student fills
             # the missing constraints. Not a leak.
             if exercise_with_a_completer_minizinc(next_code_source):
                 continue
