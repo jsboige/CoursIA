@@ -16668,7 +16668,7 @@ avec ce null à ~0,94 comme référence, et la reproductibilité au bit établie
 comme garantie qu'un écart observé viendra du modèle et non du banc. Le SAE
 `W32K-L0_100` (même modèle, même couche, densité doublée) fournit le second readout qui
 permettra de vérifier qu'un effet mesuré ne dépend pas du choix de dictionnaire.",,,,,,,,bdeae08d68de1c93,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb,54751726,markdown,fr,3e1fda61565ff46a,"[← ICT-24 — WorkspaceIgnition](ICT-24-WorkspaceIgnition-Python.ipynb) | [→ ICT-25b — StratificationInterTailles](ICT-25b-StratificationInterTailles-Python.ipynb) | [↑ ICT-Series](README.md)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb,54751726,markdown,fr,3e1fda61565ff46a,"[← ICT-24 — WorkspaceIgnition](ICT-24-WorkspaceIgnition-Python.ipynb) | [→ ICT-25b — StratificationInterTailles](PT_19_stratification_inter_tailles.ipynb) | [↑ ICT-Series](README.md)
 
 # ICT-25 — InoculationRL : GRPO à récompense *hackable*, inoculation de persona, et le pont ICT↔PostTraining
 
