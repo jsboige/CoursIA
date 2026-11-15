@@ -4474,3 +4474,64 @@ TRANCHE46: list[Guard] = [
         warn_rc=(2,),
     ),
 ]
+
+# TRANCHE 47 (#26782) : densite de commentaires du code des carnets.
+# Concerns user #26607/#26616 (via #26613) : « le code est non commente et
+# tres difficile a lire. Le CI devrait le rejeter ». Deux axes :
+#  - axe 1 BLOQUANT : ratchet base-vs-PR. Un carnet AJOUTE >= 40 lignes de
+#    code sous 5 % de densite rougit ; un carnet MODIFIE qui passe sous 5 %
+#    rougit ; le stock de main n'est jamais juge (un carnet deja sous le
+#    seuil a la base reste ALREADY_BELOW, dette §I, jamais rouge).
+#  - axe 2 ADVISORY : lisibilite (lignes > 120 caracteres, blocs > 60
+#    lignes sans commentaire, identifiants d'une lettre hors indices de
+#    boucle). Rapporte, jamais bloquant.
+# Garde natif ne dans la voie rapide : aucun workflow unitaire a retirer.
+TRANCHE47: list[Guard] = [
+    Guard(
+        name="Comment-density ratchet (base vs PR)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_code_comment_density.py",
+            "scripts/notebook_tools/tests/test_check_code_comment_density.py",
+            "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json",
+        ],
+        pre_argv=[
+            # Pre-controle (lecon #11685/#12817) : un detecteur qui ne peut
+            # pas prouver qu'il tire est indiscernable d'un detecteur
+            # debranche.
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "{base_ref}",
+        ],
+        blocking=True,          # axe 1 : le gate exige par le Concern user
+        needs_base=True,        # le runner garantit origin/<base_ref>
+        diff_bounded=True,      # verdict base vs tete : le stock n'est pas juge
+        absorbed=True,
+    ),
+    Guard(
+        name="Comment-density readability (advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_code_comment_density.py",
+            "scripts/notebook_tools/tests/test_check_code_comment_density.py",
+            "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "--readability", "{base_ref}",
+        ],
+        blocking=False,         # axe 2 : advisory, signale jamais bloque
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+    ),
+]
