@@ -265,6 +265,14 @@ Tranche 1 du slimming du harnais (#15204, parent #12051) : le détail déplacé 
 
 PR #14821 : 31 commentaires et 68 101 caractères d'infra-diagnostic sur 5 jours (25/28 sans action attachée), pour un livrable qui n'avait pas bougé depuis le commit du premier jour. Le commentaire de diagnostic pur coûte une lecture à chaque lane et ne fait pas avancer la PR : c'est une pompe, pas un apport. D'où le seuil porté par la règle : **plus de 3 `[DIAG]` consécutifs sans `[ACTION]` intercalé** = `DIAG-LOOP`.
 
+### `[BASE-INHERITED]` — un rouge hérité de la base n'est pas un nit (#26364)
+
+Tranche B.0 du plan #26364. La règle `proactive-coordination` demande à une lane qui rencontre un rouge non réparable par elle de l'**écrire en commentaire** sur la PR, puis de poursuivre avec `--ignore-red`. Ce commentaire portait jusqu'ici la forme libre, que l'organe B.0 (`check_unaddressed_nits.py`) lisait comme une réserve de plus : la lane payait un nit pour avoir signalé une panne qui n'était pas la sienne.
+
+Le marqueur `[BASE-INHERITED]`, en **première ligne non vide**, dit à l'organe que le rouge vient de `main` et n'appelle aucune action de la lane : il est classé **non-nit**, selon le même contrat **côté émission** que `[DIAG]` — l'organe ne lit que des marqueurs, jamais la prose. Trois bornes, couvertes par `scripts/tests/test_check_unaddressed_nits_26364.py` : un commentaire qui porte une réserve vivante **reste un nit** malgré le marqueur ; le tag ne compte ni comme `[DIAG]` ni comme `[ACTION]` dans le seuil `DIAG-LOOP` ; et il ne dispense pas de nommer l'issue de suivi quand une est due (voie 3).
+
+Détail déplacé de la taxonomie `[ACTION]` / `[DIAG]` / `[ASK]` : le dossier `[ADJOINT PREFLIGHT]` exige son marqueur en tête du commentaire (`check_adjoint_prevalidation.py`) — la règle ne le porte plus que par le nom du marqueur.
+
 ### L25 — `statusCheckRollup` est une liste plate non triée (#16765)
 
 Les rouges périmés restent dans la liste : **12/160 PRs mesurées**, dont les fondateurs #16232 / #16499 / #16579 — six rouges tous supersedés sur le même head. Symétriquement, une jambe rouge **résiduelle** d'une suite distincte a déjà bloqué une PR verte (#11532, CodeQL) : c'est ce que le helper rend sous `residual_reds`.
