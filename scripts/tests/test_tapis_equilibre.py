@@ -8,6 +8,7 @@ exceptions (vieille consolidation, marathons) et la structure du module.
 Aucun test ne touche le reseau.
 """
 import ast
+import importlib.util
 from collections import Counter
 from datetime import timedelta
 from pathlib import Path
@@ -15,7 +16,16 @@ from pathlib import Path
 import pytest
 from coordination import tapis_equilibre as te
 from coordination import tapis_rapide as tr
-from tests.test_tapis_rapide import AUTRE, LANE, NOW, com, commit, etat, issue, lecture
+
+# Les fabriques de test_tapis_rapide.py, chargees par chemin : sous
+# `--import-mode importlib`, `tests.` designe le premier paquet `tests` collecte
+# (scripts/genai-stack/tests, par exemple), pas ce repertoire.
+_SPEC = importlib.util.spec_from_file_location(
+    "_fabriques_tapis_rapide", Path(__file__).with_name("test_tapis_rapide.py"))
+_fab = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_fab)
+AUTRE, LANE, NOW = _fab.AUTRE, _fab.LANE, _fab.NOW
+com, commit, etat, issue, lecture = _fab.com, _fab.commit, _fab.etat, _fab.issue, _fab.lecture
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
