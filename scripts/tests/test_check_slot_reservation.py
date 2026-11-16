@@ -1005,10 +1005,10 @@ class ScanMainCollisionTests(unittest.TestCase):
                         "le kernel en milieu de nom doit etre neutralise")
 
     def test_same_item_scan_does_not_match_different_topics(self):
-        # App-14-ConnectFour-Adversarial et App-14-ConnectFour-CSharp :
+        # App-14-ConnectFour-Adversarial-Python et App-14-ConnectFour-CSharp :
         # `Adversarial` n'est PAS un token noyau, le strip ne le touche
         # pas, et la collision reste un vrai conflit de sujet.
-        a = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb"
+        a = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-Python.ipynb"
         b = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb"
         self.assertFalse(csr._same_item_scan(a, b),
                          "deux sujets differents ne sont PAS un jumeau")
@@ -1071,6 +1071,141 @@ class ScanMainCollisionTests(unittest.TestCase):
             self.assertIn("slot", c)
             self.assertIn("paths", c)
             self.assertIn("ref", c)
+
+
+class TestSquashArtifact(unittest.TestCase):
+    """Fix (a) : un « ajout » byte-identique a la base est un artefact de squash.
+
+    Mesure fondatrice : #25027 -- branche empilee sur #25025 deja squash-mergee.
+    `added_notebooks` calcule depuis le merge-base, donc `Chaines-04` remontait
+    comme « ajout » alors que son blob exact vit deja sur origin/main : le garde
+    refusait une PR qui ne prend aucun numero, et bloquait toute la pile.
+    """
+
+    SAME = SERIES + "/04-2-Alpha.ipynb"
+
+    def _stacked_repo(self, repo: Path, diverge: bool) -> None:
+        """Base A ; branche topic ajoute 04-2 ; mainline pose le meme fichier
+        par un commit DISTINCT (squash de la mere) puis avance.
+
+        merge-base(mainline, topic) == A : le diff mainline...topic voit donc
+        04-2 comme un AJOUT alors qu'il vit aussi sur mainline. `diverge=True`
+        pose un contenu DIFFERENT sur mainline (temoin negatif : reecriture).
+        """
+        root = _init_repo(repo, [SERIES + "/04-1-Previous.ipynb"])
+        _git(repo, "checkout", "-qb", "topic", root)
+        _write(repo, self.SAME)                      # contenu C1 sur topic
+        _commit(repo, "topic ajoute 04-2")
+        _git(repo, "checkout", "-qb", "mainline", root)
+        if diverge:
+            _write(repo, self.SAME, json.dumps(      # contenu C2 != C1
+                {"cells": [], "metadata": {"autre": True},
+                 "nbformat": 4, "nbformat_minor": 5}, indent=1) + "\n")
+        else:
+            _write(repo, self.SAME)                  # C1 aussi : blob identique
+        _commit(repo, "squash de la mere : pose 04-2 sur main")
+        _write(repo, "README.md", "# avance de mainline\n")
+        _commit(repo, "mainline avance")
+        _git(repo, "checkout", "-q", "topic")
+
+    def test_stacked_branch_with_identical_blob_is_an_artifact(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._stacked_repo(repo, diverge=False)
+
+            r = _run(repo, "mainline")
+            self.assertEqual(r.returncode, 0,
+                             "un ajout byte-identique a la base ne prend aucun slot\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("1 artefact(s) de squash ecarte(s)", r.stdout, r.stdout)
+            self.assertNotIn("taken_on_base", r.stdout)
+
+    def test_artifact_is_reported_in_json(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._stacked_repo(repo, diverge=False)
+
+            r = _run(repo, "mainline", "--json")
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["sources"]["revision"]["added"], 1)
+            self.assertEqual(doc["sources"]["revision"]["squash_artifacts"], 1)
+            self.assertEqual(doc["targets_examined"], 0,
+                             "l'artefact ne doit plus etre une cible examinee")
+            self.assertEqual(doc["conflicts"], 0)
+
+    def test_same_path_with_different_content_still_taken_on_base(self):
+        """Temoin negatif du dispatch : meme chemin, contenu DIFFERENT = reecriture."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._stacked_repo(repo, diverge=True)
+
+            r = _run(repo, "mainline")
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("taken_on_base", r.stdout)
+            self.assertNotIn("artefact(s) de squash", r.stdout)
+
+    def test_target_mode_keeps_exact_name_on_base_taken(self):
+        """Le mode --target n'est pas touche : viser le nom exact d'un fichier
+        de la base reste une prise, meme byte-identique (preflight avant edition)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            root = _init_repo(repo, [SERIES + "/04-1-Previous.ipynb"])
+            _commit(repo, "rev vide")      # HEAD n'apporte rien
+            r = _run(repo, root, "--target", SERIES + "/04-1-Previous.ipynb")
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("taken_on_base", r.stdout)
+
+
+class TestOpenPrAgeRule(unittest.TestCase):
+    """Fix (b) : une PR ouverte ne reserve un numero que contre une PR plus jeune.
+
+    Mesure fondatrice : #26585 (ouverte le 14/11, approuvee) et #26710 (ouverte
+    le 15/11) revendiquaient toutes deux `02-Advanced/02-11` -- chaque examen
+    voyait l'autre comme occupant, aucune ne pouvait merger. Cle d'anciennete :
+    le NUMERO de PR (allocation sequentielle a la creation = ordre d'ouverture).
+    """
+
+    SLOT = "MyIA.AI.Notebooks/ML/02-Advanced/02-11-Comparaisons-Python.ipynb"
+    OCC = "MyIA.AI.Notebooks/ML/02-Advanced/02-11-Autre-Sujet-Python.ipynb"
+
+    def _claims(self, prs, examined):
+        slot = csr._scan_slot(self.SLOT)
+        self.assertIsNotNone(slot, "le temoin doit porter un slot lisible")
+        return csr.pr_claims(prs, None, examined_pr=examined).get(slot, [])
+
+    @staticmethod
+    def _pr(num, path, additions=10, deletions=0):
+        return {"number": num, "files": [
+            {"path": path, "additions": additions, "deletions": deletions}]}
+
+    def test_younger_claimant_does_not_block_the_older_pr(self):
+        """Examiner l'ainnee (#26585) : la plus jeune (#26710) ne reserve pas."""
+        claims = self._claims([self._pr(26710, self.OCC)], 26585)
+        self.assertEqual(claims, [],
+                         "#26710 est plus jeune que #26585 : elle ne bloque pas l'ainnee")
+
+    def test_older_claimant_still_blocks_the_younger_pr(self):
+        """Examiner la plus jeune (#26710) : l'ainnee (#26585) garde la main."""
+        claims = self._claims([self._pr(26585, self.OCC)], 26710)
+        self.assertEqual(len(claims), 1,
+                         "#26585 est plus ancienne : la plus jeune cede")
+
+    def test_without_examined_pr_every_claimant_reserves(self):
+        """Sans reference d'age (preflight hors PR), tout claimant reserve."""
+        claims = self._claims([self._pr(26710, self.OCC)], None)
+        self.assertEqual(len(claims), 1)
+
+    def test_examined_pr_never_reserves_against_itself(self):
+        """L'egalite est l'examinee elle-meme : jamais d'auto-blocage."""
+        claims = self._claims([self._pr(26585, self.OCC)], 26585)
+        self.assertEqual(claims, [])
+
+    def test_malformed_number_stays_fail_closed(self):
+        """Un claimant sans numero lisible ne saute pas la regle : il reserve."""
+        claims = self._claims([{"files": [
+            {"path": self.OCC, "additions": 10, "deletions": 0}]}], 26585)
+        self.assertEqual(len(claims), 1,
+                         "numero illisible = pas d'age connu = reserve (fail-closed)")
 
 
 if __name__ == "__main__":
