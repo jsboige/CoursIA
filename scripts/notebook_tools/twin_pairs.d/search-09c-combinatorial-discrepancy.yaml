@@ -1,0 +1,10 @@
+- name: "Search-09c Combinatorial Discrepancy"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets utilisent une vraie SVD pour le noyau de l'arrondi flottant (NumPy et MathNet) et le même moteur CP-SAT OR-Tools pour l'optimum ; les deux implémentent les expériences pédagogiques et la vérification de la borne."
+  known_differences:
+    - "Les graines produisent des systèmes différents entre NumPy et System.Random ; la direction de SVD peut aussi différer. Le C# recoupe les huit optima avec l'énumération exhaustive et utilise un SVG autonome. Les trois exercices restent ouverts et sont répartis ; l'adaptation à des colonnes réelles ne revendique pas la garantie Beck–Fiala."
+    - "Pour les huit résolutions CP-SAT, C# fixe num_search_workers=1 ; le Python laisse le nombre de workers au réglage automatique du solveur."
