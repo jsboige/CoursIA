@@ -30,6 +30,7 @@ from coordination import frozen_campaigns, gh_bulk, tapis_origami
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
+from coordination.tapis_hors_flotte import ecart_hors_flotte
 
 # Poids des familles, une ligne a changer pour regler la priorite. Ils restent
 # legers : aucune famille n'est privee de service.
@@ -51,8 +52,8 @@ LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-CODES = ("LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE", "RELACHEE", "PLAFOND",
-         "ORIGAMI", "RECLAMEE")
+CODES = ("HORSFLOTTE", "LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE",
+         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE")
 REPLI = "python scripts/pick_idle_grain.py --belt --lane {lane}"
 VERIF = "python scripts/check_lane_claim.py {n} --lane {lane}"
 
@@ -213,6 +214,7 @@ def _reclamee(e: Etat, evts: list[Evt], lane: str, maintenant: datetime) -> None
 def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict) -> None:
     """Le premier ecart qui s'applique gagne ; chacun est decide localement."""
     regles = [
+        ("HORSFLOTTE", lambda: ecart_hors_flotte(it.get("body") or "")),
         ("LABEL", lambda: "label candidate-delivered : urne de cloture (coordinateur, adjoint)"
          if any(lab.strip().lower() == LABEL_LIVRE for lab in e.labels) else None),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),

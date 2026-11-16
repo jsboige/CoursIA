@@ -299,6 +299,19 @@ except ImportError:
     except ImportError:
         frozen_campaigns = None  # type: ignore[assignment]
 
+# #26893 : la declaration d'exemption « Hors flotte » (#17713), partagee avec
+# le tapis rapide. Import best-effort, comme frozen_campaigns : sans module,
+# le tirage lourd tourne sans cette lecture (fail-OPEN), jamais l'inverse.
+try:
+    import tapis_hors_flotte
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import tapis_hors_flotte
+    except ImportError:
+        tapis_hors_flotte = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -4828,6 +4841,13 @@ def filter_candidates(
     urns = urns or set(URN_NAMES)
     checks = [
         ("exclude_issue", lambda item, labels: item["number"] in exclude_issues),
+        # #26893 : une issue dont le body DECLARE l'exemption « Hors flotte »
+        # (#17713) n'est pas un grain de lane -- la raison est nommee dans
+        # l'entonnoir, jamais tuee. La prose qui mentionne une session hors
+        # flotte ne declare rien (cf. tapis_hors_flotte.py).
+        ("hors_flotte", lambda item, labels: tapis_hors_flotte is not None
+         and tapis_hors_flotte.hors_flotte_declaration(item.get("body"))
+         is not None),
         ("require_label", lambda item, labels: not required_labels.issubset(labels)),
         ("exclude_label", lambda item, labels: bool(excluded_labels & labels)),
         ("min_age_days", lambda item, labels: min_age_days is not None
