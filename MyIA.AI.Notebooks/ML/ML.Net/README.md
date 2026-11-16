@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: ML-ML.Net
-pedagogical_count: 25
-breakdown: ML.Net=25
-maturity: BETA=23, ALPHA=2
+pedagogical_count: 26
+breakdown: ML.Net=26
+maturity: BETA=25, ALPHA=1
 -->
 
 [← ML (série parente)](../README.md) | [DataScienceWithAgents (Python) →](../DataScienceWithAgents/README.md) | [Probas/Infer.NET →](../../Probas/Infer/README.md)

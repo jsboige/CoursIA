@@ -66,7 +66,7 @@ Installer le modèle français dans l'environnement du noyau avec `python -m spa
 
 ### Lire une expérience au bon niveau
 
-Les petits corpus servent à isoler un mécanisme. En 02, le lissage évite des probabilités nulles, mais Kneser–Ney n'obtient pas une meilleure perplexité de test que Laplace sur le corpus affiché. La diminution de perplexité à l'entraînement ne suffit pas à choisir un modèle.
+Les petits corpus servent à isoler un mécanisme. En 02 ([Python](02_NGrammes_Modeles_De_Langue.ipynb) · [C#](02_NGrammes_Modeles_De_Langue-CSharp.ipynb)), Laplace rend les probabilités positives sur le test, tandis que Kneser–Ney conserve des zéros pour des inconnus ; les deux versions invoquent les modèles NLTK. Ces mesures sur un seul petit corpus ne suffisent pas à choisir un modèle général.
 
 En 03, le CRF pédagogique obtient un F1 par entité de 0,947 sur le petit test, contre 1,000 pour CRFsuite. L'accord avec `seqeval` porte sur le **calcul de la métrique appliqué aux mêmes prédictions**, pas sur l'identité des prédictions de ces modèles. C'est un exemple utile de deux validations différentes : contrôler l'évaluation et comparer les systèmes.
 

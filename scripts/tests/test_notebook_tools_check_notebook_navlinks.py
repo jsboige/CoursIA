@@ -4,7 +4,7 @@
 sa portee de diff (cf. PR #20582 symetrique pour `check-nav-chain`). Le checker
 doit donc calculer lui-meme le diff a partir d'une base et borner les NEW
 trouves au perimetre imputable. Tests par classe de portee, miroir de
-`test_check_notebook_nav_chain.py::TestDiffBaseScope`, adapte a la cle 4-tuples
+`test_notebook_tools_check_notebook_nav_chain.py::TestDiffBaseScope`, adapte a la cle 4-tuples
 (notebook, cell_idx, line_no, target) de navlinks.
 
 Quatre clusters :
