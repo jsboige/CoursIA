@@ -1,6 +1,6 @@
 {
   "artifacts": {
-    "annotations_jsonl": "D:\\CoursIA-2\\.tmp\\humor_chain_c26911\\annotations.jsonl",
+    "annotations_jsonl": "annotations.jsonl",
     "annotations_jsonl_in_repo": false
   },
   "corpora": {
@@ -8,7 +8,7 @@
       "dataset": "artemsnegirev/dialogs_from_jokes",
       "language": "ru",
       "licence": "CC0-1.0",
-      "local_copy": "D:\\CoursIA-2\\.tmp\\humor_chain_c26911\\dialogs_from_jokes.dataset.json",
+      "local_copy": "dialogs_from_jokes.dataset.json",
       "note": "corpus de dialogues-plaisanteries en russe : il exerce la chaine (trace, controle, augmentation) hors de la langue du banc ; il ne fournit aucune reference et n'entre pas dans le jeu d'evaluation",
       "sha256": "50f6cf42959d592c1267f0f7dd516855b666d2a34453a8cef3abdabcf073f4ac",
       "url": "https://huggingface.co/datasets/artemsnegirev/dialogs_from_jokes/resolve/main/dataset.json",

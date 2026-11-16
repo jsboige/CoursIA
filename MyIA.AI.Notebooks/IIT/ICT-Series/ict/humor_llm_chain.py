@@ -75,6 +75,7 @@ __all__ = [
     "build_prompt",
     "build_rubric",
     "build_rubric_reversed",
+    "portable_pointer",
     "read_env_value",
     "reference_nature",
     "sample_composition",
@@ -329,6 +330,22 @@ def read_env_value(path: str | Path, key: str) -> str | None:
             value = value[1:-1]
         return value or None
     return None
+
+
+# --------------------------------------------------------------------------- #
+# Pointeur portable (aucun chemin de poste dans un artefact commite)
+# --------------------------------------------------------------------------- #
+
+
+def portable_pointer(path: str | Path) -> str:
+    """Nom de fichier seul, a la place d'un chemin de poste.
+
+    Un rapport commite ne doit pas porter le chemin du siege qui l'a
+    produit : ce chemin devient faux des le premier nettoyage du scratch,
+    et il expose la disposition du poste. L'identite du fichier est portee
+    par son URL et son empreinte -- pas par son chemin local.
+    """
+    return Path(path).name
 
 
 # --------------------------------------------------------------------------- #

@@ -11,6 +11,7 @@ la compatibilite de format avec l'instrument d'accord existant
 
 from __future__ import annotations
 
+import json
 import re
 import tempfile
 import unittest
@@ -31,6 +32,7 @@ from ict.humor_llm_chain import (
     build_prompt,
     build_rubric,
     build_rubric_reversed,
+    portable_pointer,
     read_env_value,
     reference_nature,
     sample_stratified,
@@ -367,6 +369,72 @@ class TestTemoinNegatif(unittest.TestCase):
         chance = chance_kappa_distribution(reference, list(reference), n_draws=50, seed=1)
         self.assertEqual(chance["n_draws"], 50)
         self.assertIsNotNone(chance["p95"])
+
+
+class TestPointeurPortable(unittest.TestCase):
+    """Un rapport commite ne porte ni chemin de poste ni disposition du siege.
+
+    Le pointeur d'un artefact de campagne est un **nom de fichier** : le
+    chemin local devient faux des le premier nettoyage du scratch, et il
+    expose la disposition de la machine qui a produit le rapport. L'identite
+    du corpus est portee par son URL et son empreinte.
+    """
+
+    #: Rapport(s) produit(s) par la campagne, tel(s) qu'il(s) sont commites.
+    RAPPORTS = ("humor_llm_chain_c26911.json", "humor_llm_chain_c26911_v1.json")
+
+    @staticmethod
+    def _strings(payload):
+        if isinstance(payload, str):
+            yield payload
+        elif isinstance(payload, dict):
+            for value in payload.values():
+                yield from TestPointeurPortable._strings(value)
+        elif isinstance(payload, list):
+            for value in payload:
+                yield from TestPointeurPortable._strings(value)
+
+    def test_portable_pointer_ne_garde_que_le_nom(self):
+        self.assertEqual(
+            portable_pointer("D:\\poste-de-test\\scratch\\humor_chain\\annotations.jsonl"),
+            "annotations.jsonl",
+        )
+        self.assertEqual(
+            portable_pointer("/home/agent/.tmp/humor_chain/dialogs_from_jokes.dataset.json"),
+            "dialogs_from_jokes.dataset.json",
+        )
+        self.assertEqual(portable_pointer("annotations.jsonl"), "annotations.jsonl")
+
+    def test_rapports_commites_ne_portent_aucun_chemin_de_poste(self):
+        results_dir = Path(__file__).resolve().parents[1] / "results"
+        for nom in self.RAPPORTS:
+            chemin = results_dir / nom
+            self.assertTrue(chemin.is_file(), f"rapport absent : {nom}")
+            brut = chemin.read_text(encoding="utf-8")
+            for valeur in self._strings(json.loads(brut)):
+                self.assertIsNone(
+                    re.match(r"^[A-Za-z]:[\\/]", valeur),
+                    f"chemin de poste dans {nom} : {valeur!r}",
+                )
+
+    def test_pointeurs_des_rapports_sont_des_noms_de_fichier(self):
+        results_dir = Path(__file__).resolve().parents[1] / "results"
+        for nom in self.RAPPORTS:
+            rapport = json.loads((results_dir / nom).read_text(encoding="utf-8"))
+            pointeurs = [
+                rapport["artifacts"]["annotations_jsonl"],
+                rapport["corpora"]["cc0"]["local_copy"],
+            ]
+            for pointeur in pointeurs:
+                self.assertNotIn("/", pointeur)
+                self.assertNotIn("\\", pointeur)
+            self.assertEqual(
+                rapport["corpora"]["cc0"]["local_copy"],
+                "dialogs_from_jokes.dataset.json",
+            )
+            self.assertEqual(
+                rapport["artifacts"]["annotations_jsonl"], "annotations.jsonl"
+            )
 
 
 if __name__ == "__main__":

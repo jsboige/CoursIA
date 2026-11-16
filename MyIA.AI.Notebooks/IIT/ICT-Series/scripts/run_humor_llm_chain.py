@@ -27,7 +27,7 @@ Sorties :
 Usage (machine locale, endpoint vLLM de la flotte) :
 
     python scripts/run_humor_llm_chain.py \\
-        --env-file ../../GenAI/.env --out-dir D:/CoursIA-2/.tmp/humor_chain
+        --env-file ../../GenAI/.env --out-dir .tmp/humor_chain
 """
 from __future__ import annotations
 
@@ -59,6 +59,15 @@ CC0_URL = (
     "https://huggingface.co/datasets/"
     "artemsnegirev/dialogs_from_jokes/resolve/main/dataset.json"
 )
+
+#: Racine du depot : ce runner vit dans
+#: ``<racine>/MyIA.AI.Notebooks/IIT/ICT-Series/scripts/``. Le scratch par
+#: defaut en decoule -- aucun chemin de poste n'est ecrit en dur.
+REPO_ROOT = Path(__file__).resolve().parents[4]
+
+#: Repertoire de travail par defaut : scratch **du depot** (gitignore),
+#: partage par toutes les machines de la flotte.
+DEFAULT_OUT_DIR = REPO_ROOT / ".tmp" / "humor_chain"
 
 #: Source des instances dont l'etiquette de reference est posee par une
 #: **heuristique de categorie** Argumentum (et non par un jugement humain).
@@ -120,7 +129,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cc0-size", type=int, default=20)
     parser.add_argument("--cc0-control-size", type=int, default=10)
     parser.add_argument("--workers", type=int, default=4)
-    parser.add_argument("--out-dir", default="D:/CoursIA-2/.tmp/humor_chain")
+    parser.add_argument("--out-dir", default=str(DEFAULT_OUT_DIR))
     parser.add_argument(
         "--results",
         default=os.path.join(
@@ -181,7 +190,7 @@ def fetch_cc0(cache_dir: Path, size: int) -> tuple[list[dict[str, Any]], dict[st
         "licence": CC0_LICENCE,
         "url": CC0_URL,
         "sha256": digest,
-        "local_copy": str(target),
+        "local_copy": chain.portable_pointer(target),
         "vendored_in_repo": False,
         "language": "ru",
         "note": (
@@ -430,6 +439,12 @@ def main() -> int:
         cached = Path(args.reuse_annotations).parent / "dataset.provenance.json"
         if cached.is_file():
             cc0_provenance = json.loads(cached.read_text(encoding="utf-8"))
+            # Le cache peut dater d'une campagne anterieure : son pointeur
+            # est renormalise ici, pour que le rapport republie ne porte
+            # jamais le chemin du siege qui a produit la campagne.
+            cc0_provenance["local_copy"] = chain.portable_pointer(
+                cc0_provenance.get("local_copy", "")
+            )
     else:
         records_p1 = chain.annotate_items(
             sample,
@@ -594,7 +609,7 @@ def main() -> int:
         },
         "provenance_invariant": invariant,
         "artifacts": {
-            "annotations_jsonl": str(jsonl_path),
+            "annotations_jsonl": chain.portable_pointer(jsonl_path),
             "annotations_jsonl_in_repo": False,
         },
         "limits": [
