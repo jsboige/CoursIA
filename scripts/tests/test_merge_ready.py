@@ -163,6 +163,11 @@ class ScriptedRunner:
         nits_rc: int = 0,
         pulls: list[dict] | None = None,
         merge_rc: int = 0,
+        # Scenario de merge consomme **dans l'ordre** : chaque appel a
+        # `gh pr merge` prend le couple (rc, stderr) suivant ; la liste
+        # epuisee, le runner retombe sur ``merge_rc``. Sert a simuler une
+        # course de base puis un rejeu (#26771).
+        merge_script: list[tuple[int, str]] | None = None,
         fetch_rc: int = 0,
         twin_rc: int = 0,
         twin_stdout: str = "",
@@ -240,6 +245,7 @@ class ScriptedRunner:
         self.nits_rc = nits_rc
         self.pulls = pulls or [{"mergeable_state": "clean", "head": {"sha": HEAD}}]
         self.merge_rc = merge_rc
+        self.merge_script = list(merge_script or [])
         self.fetch_rc = fetch_rc
         self.twin_rc = twin_rc
         # stdout de l'organe twin : porte le JSON classifie quand twin_rc=1.
@@ -306,6 +312,9 @@ class ScriptedRunner:
             view = self.views.get(pr, default_view(pr=pr))
             return mr.RunResult(0, json.dumps(view), "")
         if c[:3] == ["gh", "pr", "merge"]:
+            if self.merge_script:
+                rc, err = self.merge_script.pop(0)
+                return mr.RunResult(rc, "", err)
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
@@ -882,6 +891,84 @@ def test_merge_echoue_arrete_le_run(tmp_path):
     assert rc == 1
     assert lines[-1]["verdict"] == "merge-failed" and lines[-1]["merged"] is False
     assert not any("302" in flat for flat in runner.flat())
+
+
+# --- course de base (#26771) ----------------------------------------------------
+#
+# « Base branch was modified » n'est ni une panne de l'organe ni une PR cassee :
+# `main` a bouge entre la lecture de l'etat et la pose du merge. Le passage du
+# 15/11 a merge 11 PRs, s'est arrete sur la 12e, et toute la suite de la file
+# a attendu un passage de plus. Le motif est REJOUABLE pour la PR.
+
+
+BASE_RACE_TEXT = (
+    "GraphQL: Base branch was modified. Review and try the merge again. "
+    "(mergePullRequest)"
+)
+
+
+def test_le_motif_de_course_de_base_est_reconnu():
+    assert mr.is_base_modified_race(BASE_RACE_TEXT)
+    assert mr.is_base_modified_race(BASE_RACE_TEXT.upper())
+    # Un motif non reconnu n'est JAMAIS lu comme une course : il garde le
+    # disjoncteur.
+    assert not mr.is_base_modified_race("merge refused")
+    assert not mr.is_base_modified_race("Head branch was modified")
+    assert not mr.is_base_modified_race("")
+
+
+def test_course_de_base_rejouee_la_pr_est_mergee_et_le_passage_continue(tmp_path):
+    """Echec de course puis rejeu reussi : la PR part en `merged`."""
+    runner = ScriptedRunner(prs=(501, 502), merge_script=[(1, BASE_RACE_TEXT)])
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert [row["pr"] for row in lines] == [501, 502]
+    assert all(row["verdict"] == "merged" for row in lines)
+    merges = [c for c in runner.flat() if c.startswith("gh pr merge")]
+    # PR 501 : un echec + un rejeu ; PR 502 : un merge.
+    assert len(merges) == 3
+    # Le rejeu est pose a la MEME tete (--match-head-commit).
+    assert all("--match-head-commit" in c for c in merges)
+    assert all(c.endswith(HEAD) for c in merges), merges
+    # La courte pause prevue a ete respectee.
+    assert runner.sleeps == [mr.MERGEABLE_RETRY_SLEEP_S]
+
+
+def test_course_de_base_rejouee_echouant_la_pr_est_skippee_et_la_suivante_est_evaluee(tmp_path):
+    """Deux echecs de course : la PR est `skipped base-modified-race`, et le
+    balayage CONTINUE -- c'est le point de la demande."""
+    runner = ScriptedRunner(
+        prs=(601, 602),
+        merge_script=[(1, BASE_RACE_TEXT), (1, BASE_RACE_TEXT)],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0, "une course de base ne doit pas arreter le passage"
+    assert lines[0]["pr"] == 601
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "base-modified-race"
+    assert lines[0]["merged"] is False
+    # La PR suivante est bien evaluee (et mergee).
+    assert lines[1]["pr"] == 602 and lines[1]["verdict"] == "merged"
+
+
+def test_autre_echec_de_merge_garde_le_disjoncteur(tmp_path):
+    """Non-regression : un motif inconnu arrete TOUJOURS le passage."""
+    runner = ScriptedRunner(prs=(701, 702), merge_rc=1)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 1
+    assert lines[-1]["verdict"] == "merge-failed"
+    assert lines[-1]["reason"] != "base-modified-race"
+    assert not any("702" in flat for flat in runner.flat())
+
+
+def test_la_course_ne_declenche_pas_de_rejeu_sur_une_erreur_inconnue(tmp_path):
+    """Un echec inconnu ne doit pas lancer de rejeu : un seul appel a
+    `gh pr merge`, et le passage s'arrete."""
+    runner = ScriptedRunner(prs=(801, 802), merge_rc=1)
+    run_organ(tmp_path, runner, extra=("--apply",))
+    merges = [c for c in runner.flat() if c.startswith("gh pr merge")]
+    assert len(merges) == 1
+    assert runner.sleeps == []
 
 
 # --- journal -----------------------------------------------------------------------
