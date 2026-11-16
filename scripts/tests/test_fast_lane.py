@@ -1623,6 +1623,11 @@ def test_le_registre_passe_l_inventaire_et_la_baseline_du_ratchet():
 
     La seconde panne est bruyante, la premiere ne l'est pas : c'est elle que
     cette epingle existe pour rendre visible.
+
+    Les deux chemins de declenchement T4 (`**/tests/**`, `**/test_*.py`) sont
+    epingles ici pour la meme raison : sans eux le ratchet reste juste mais
+    ne tourne plus sur les PR qui le concernent, et rien d'autre ne le dit --
+    la liste de `paths` du test d'absorption ne les couvre pas.
     """
     guard = TRANCHE5[0]
     assert "--inventory" in guard.argv, (
@@ -1647,6 +1652,15 @@ def test_le_registre_passe_l_inventaire_et_la_baseline_du_ratchet():
         f"la baseline citee par l'argv du registre est absente du depot : "
         f"{REPO_ROOT / baseline_rel}"
     )
+    # Les deux chemins de declenchement ajoutes par T4: sans eux le ratchet
+    # ne tourne plus sur les PR qui touchent un dossier de tests ou un module
+    # de test hors `scripts/**` et `tests/**`, ou vit l'essentiel de la dette.
+    for motif in ("**/tests/**", "**/test_*.py", baseline_rel):
+        assert motif in guard.paths, (
+            f"`{motif}` doit figurer dans les paths du garde, sinon une PR "
+            f"qui touche ce que le ratchet mesure ne le declenche pas "
+            f"(paths={guard.paths})"
+        )
 
 
 def test_absorbed_workflows_of_tranche5_no_longer_trigger_on_pull_request():
