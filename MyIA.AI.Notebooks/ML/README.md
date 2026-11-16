@@ -6,9 +6,9 @@ pagetitle: "Machine learning — données, modèles et agents"
 
 <!-- CATALOG-STATUS
 series: ML
-pedagogical_count: 140
-breakdown: DataScienceWithAgents=115, ML.Net=25
-maturity: BETA=129, ALPHA=7, DRAFT=4
+pedagogical_count: 142
+breakdown: DataScienceWithAgents=116, ML.Net=26
+maturity: BETA=135, DRAFT=4, ALPHA=3
 -->
 
 [↑ Parcours de notebooks](../README.md) · [Cours et supports sur l'apprentissage](../../slides/06-apprentissage/)
