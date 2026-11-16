@@ -177,6 +177,11 @@ Le notebook confronte l'encodage déclaratif (idiomatique z3-py) à l'encodage b
 18. **Notebook 18** confronte **deux modes d'encodage** d'un même Sudoku 4×4 : un par `Int` constants (une variable scalaire par cellule, `c_0_0` … `c_3_3`), l'autre par `Array(Int, Int)` indexé par position. Les contraintes canoniques (domaine `{1..4}`, rangées / colonnes / blocs 2×2 à valeurs distinctes) s'expriment identiquement dans les deux modes, mais la **comparaison** révèle leurs compromis respectifs — granularité et lisibilité des scalaires d'un côté, uniformité fonctionnelle et extensibilité du tableau de l'autre. Cas d'école du **choix d'encodage** en SMT, ce notebook boucle la série sur la modélisation déclarative entamée au notebook 02 (le Sudoku comme premier CSP).
 20. **Notebook 20** fait de Z3 le **chercheur de preuves d'une machine de Gödel** (Schmidhuber 2006) : la machine ne remplace sa politique que si elle prouve, pour tout environnement admissible, que la réécriture rapporte plus que « continuer », sa propre recherche future comprise. La preuve passe par réfutation sous des axiomes d'environnement ; un `sat` fournit le contre-exemple qui justifie un refus. Le notebook mesure l'optimalité globale face à une machine gloutonne, le gain abandonné quand une amélioration réelle n'est pas prouvable, et le budget de preuve (`rlimit`) au-delà duquel prouver coûte plus que cela ne rapporte. Il prolonge les preuves par réfutation du notebook 05.
 
+### Parité de la machine de Gödel
+
+Le carnet [machine de Gödel en C#](Z3-20-Machine-de-Goedel-CSharp.ipynb) reprend les expériences du [carnet Python](Z3-20-Machine-de-Goedel-Python.ipynb) avec le binding natif Microsoft.Z3, les mêmes budgets et quatre figures SVG. Les générateurs aléatoires des deux langages peuvent produire des échantillons et statistiques différents.
+
+
 ## Concepts clés
 
 
@@ -352,3 +357,7 @@ Explorez ensuite la frontière de Pareto : quelles solutions le solveur propose-
 ### Le fil rouge
 
 La programmation par contraintes avec z3-py propose un changement de regard sur la résolution de problèmes : ne plus demander « quel algorithme écrire pour résoudre ceci ? » mais **« quelles contraintes doivent être satisfaites, et quelle est la meilleure solution parmi celles qui le sont ? »**. Cette série vous a donné l'API complète (types, théories, tactiques, quantificateurs), les deux postures (`Solver` pour décider, `Optimize` pour optimiser), et l'intuition des compromis (expressivité vs performance, contraintes dures vs souples, Pareto quand les objectifs se contredisent) — en gardant à l'esprit que Z3 n'est qu'un point du spectre des solveurs, et que la compétence est de savoir quand l'utiliser plutôt qu'un backtracking, un CP-SAT ou une métaheuristique.
+
+### Parité du compagnon 13b
+
+Le carnet [UNSAT cores et MUS en C#](Z3-13b-UnsatCores-MUS-CSharp.ipynb) reprend les deux modèles du [carnet Python](Z3-13b-UnsatCores-MUS-Python.ipynb) avec l'API native Microsoft.Z3 et vérifie l'irréductibilité par suppression. Les exercices dans les deux versions fournissent des modèles à compléter par des étiquettes et vérifient les réponses.
