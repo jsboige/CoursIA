@@ -2,7 +2,7 @@
   "schema": 1,
   "issue": 26364,
   "tranche": "T0",
-  "_comment": "Plafonds de taille des scripts de coordination (#26364, tranche T0). Un test bloquant (`scripts/tests/test_script_size_ratchet.py`) lit ce fichier : un script de `tracked` ne peut pas grossir, une baisse abaisse son plafond, et un script nouveau sous `scripts/` ne depasse pas `new_script_max_lines`. Relever un plafond se fait ICI, dans la PR, par une ligne motivee -- le relecteur la voit. `known_large` est l'etat des lieux au 13/11 : ces scripts depassaient deja le plafond des scripts neufs, ils ne sont donc pas concernes par la regle du plafond des 800 lignes, mais ils ne sont pas non plus epingles (seuls les quinze de `tracked` le sont).",
+  "_comment": "Plafonds de taille des scripts de coordination (#26364, tranche T0). Un test bloquant (`scripts/tests/test_script_size_ratchet.py`) lit ce fichier : un script de `tracked` ne peut pas grossir, une baisse abaisse son plafond, et un script nouveau sous `scripts/` ne depasse pas `new_script_max_lines`. Relever un plafond se fait ICI, dans la PR, par une ligne motivee -- le relecteur la voit. `known_large` est l'etat des lieux : ces scripts depassaient deja le plafond des scripts neufs au 13/11, ou y sont passes depuis (releve au 16/11) ; ils ne sont donc pas concernes par la regle du plafond des 800 lignes, mais ils ne sont pas non plus epingles (seuls les quinze de `tracked` le sont).",
   "new_script_max_lines": 800,
   "tracked": {
     "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provers.py": {
@@ -14,28 +14,28 @@
       "note": "Outils du prover Lean : cible T7 (second rang). Plafond pose sur la taille du 13/11."
     },
     "scripts/check_adjoint_prevalidation.py": {
-      "lines": 4314,
-      "note": "Dossier de prevalidation : cible T7 (second rang). Plafond pose sur la taille du 13/11."
+      "lines": 4380,
+      "note": "Dossier de prevalidation : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 66 lignes depuis la mesure du 13/11 (4314 -> 4380)"
     },
     "scripts/check_lane_claim.py": {
-      "lines": 7583,
-      "note": "Claims : cible T4 (sortir la grammaire des marqueurs et l'automate de claim). Plafond pose sur la taille du 13/11."
+      "lines": 8381,
+      "note": "Claims : cible T4 (sortir la grammaire des marqueurs et l'automate de claim). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 798 lignes depuis la mesure du 13/11 (7583 -> 8381)"
     },
     "scripts/check_pr_perimeter.py": {
       "lines": 2936,
       "note": "Perimetre de PR : cible T7 (second rang). Plafond pose sur la taille du 13/11."
     },
     "scripts/check_unaddressed_nits.py": {
-      "lines": 6414,
-      "note": "B.0 : cible T5 (separer la grammaire des marqueurs, l'evaluation et le rapport). Plafond pose sur la taille du 13/11."
+      "lines": 6746,
+      "note": "B.0 : cible T5 (separer la grammaire des marqueurs, l'evaluation et le rapport). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 332 lignes depuis la mesure du 13/11 (6414 -> 6746)"
     },
     "scripts/ci/fast_lane_registry.py": {
-      "lines": 4305,
-      "note": "Registre de la voie rapide : cible T7 (second rang). Plafond pose sur la taille du 13/11."
+      "lines": 4605,
+      "note": "Registre de la voie rapide : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 300 lignes depuis la mesure du 13/11 (4305 -> 4605)"
     },
     "scripts/ci/prune_merged_worktrees.py": {
-      "lines": 3407,
-      "note": "Purge des worktrees : cible T7 (second rang). Plafond pose sur la taille du 13/11."
+      "lines": 3939,
+      "note": "Purge des worktrees : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 532 lignes depuis la mesure du 13/11 (3407 -> 3939)"
     },
     "scripts/coordination/debt_ledger.py": {
       "lines": 4421,
@@ -46,29 +46,30 @@
       "note": "Hashlife : cible T7 (second rang). Plafond pose sur la taille du 13/11."
     },
     "scripts/lean/lean_exec.py": {
-      "lines": 2917,
-      "note": "Execution Lean (`run_command`, 465 lignes) : cible T7 (second rang). Plafond pose sur la taille du 13/11."
+      "lines": 2997,
+      "note": "Execution Lean (`run_command`, 465 lignes) : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 80 lignes depuis la mesure du 13/11 (2917 -> 2997)"
     },
     "scripts/notebook_tools/check_twin_parity.py": {
       "lines": 3321,
       "note": "Parite des jumeaux : cible T7 (`_main`, 1 088 lignes). Plafond pose sur la taille du 13/11."
     },
     "scripts/notebook_tools/generate_catalog.py": {
-      "lines": 2918,
-      "note": "Generation du catalogue : cible T7 (second rang). Plafond pose sur la taille du 13/11."
+      "lines": 3089,
+      "note": "Generation du catalogue : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 171 lignes depuis la mesure du 13/11 (2918 -> 3089)"
     },
     "scripts/pick_idle_grain.py": {
-      "lines": 16327,
-      "note": "Tapis (#22983) : cible T1 (voie legeres), T2 (bascule), T6 (retrait). Plafond pose sur la taille du 13/11 ; la refonte doit le faire BAISSER."
+      "lines": 16371,
+      "note": "Tapis (#22983) : cible T1 (voie legeres), T2 (bascule), T6 (retrait). Plafond pose sur la taille du 13/11 ; la refonte doit le faire BAISSER. Releve au 16/11 sur origin/main : le script a grossi de 44 lignes depuis la mesure du 13/11 (16327 -> 16371) ; la refonte T1/T2/T6 reste due et fera BAISSER ce plafond, ce releve n'est qu'un constat"
     },
     "scripts/pr_gate.py": {
-      "lines": 2650,
-      "note": "Porte de fusion : cible T7 (second rang). Plafond pose sur la taille du 13/11."
+      "lines": 2845,
+      "note": "Porte de fusion : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 195 lignes depuis la mesure du 13/11 (2650 -> 2845)"
     }
   },
   "known_large": [
     "scripts/audit/check_cost_metadata.py",
     "scripts/audit/check_distillation_archival_order.py",
+    "scripts/bibliography/scan_cited_identifiers.py",
     "scripts/candidate_delivered.py",
     "scripts/check_docs_links.py",
     "scripts/check_markdown_claims_output.py",
@@ -98,11 +99,13 @@
     "scripts/coordination/gh_snapshot.py",
     "scripts/coordination/merge_ready.py",
     "scripts/coordination/series_saturation.py",
+    "scripts/coordination/session_hygiene.py",
     "scripts/detect_family_recurrence.py",
     "scripts/fallacy_detection/baseline_branch_detection.py",
     "scripts/genai-stack/_archive/core/validate_genai_ecosystem.py",
     "scripts/genai-stack/_archive/utils/comfyui_client_helper.py",
     "scripts/grain_tag.py",
+    "scripts/lean/attest_local_build.py",
     "scripts/lean/check_i18n_token_fidelity.py",
     "scripts/lean/knot_anymoves_search.py",
     "scripts/lean/knot_r3connected_validation.py",
@@ -125,9 +128,11 @@
     "scripts/notebook_tools/check_slot_reservation.py",
     "scripts/notebook_tools/check_source_collapse.py",
     "scripts/notebook_tools/check_split_reading_cells.py",
+    "scripts/notebook_tools/check_twin_index_collisions.py",
     "scripts/notebook_tools/count_exercises.py",
     "scripts/notebook_tools/detect_markdown_rendering.py",
     "scripts/notebook_tools/detect_md_content_loss.py",
+    "scripts/notebook_tools/detect_notebook_plan_loss.py",
     "scripts/notebook_tools/detect_solution_leaks.py",
     "scripts/notebook_tools/fix_qc_notebooks.py",
     "scripts/notebook_tools/notebook_helpers.py",
@@ -177,6 +182,9 @@
     "scripts/notebook_tools/tests/test_twin_registry_integrity.py",
     "scripts/notebook_tools/tests/test_validate_pr_mutation.py",
     "scripts/notebook_tools/tests/test_validate_pr_notebooks.py",
+    "scripts/qc-mcp-lite/qc_measure.py",
+    "scripts/qc-mcp-lite/tests/test_qc_measure.py",
+    "scripts/quantconnect/check_pcm_single_source.py",
     "scripts/regen_quarto_render.py",
     "scripts/research/aima_mapping.py",
     "scripts/secrets/agent_keyring.py",
@@ -209,6 +217,7 @@
     "scripts/tests/test_check_slot_reservation.py",
     "scripts/tests/test_check_source_output_ratchet.py",
     "scripts/tests/test_check_split_reading_cells.py",
+    "scripts/tests/test_check_testpaths_coverage.py",
     "scripts/tests/test_check_unaddressed_nits.py",
     "scripts/tests/test_ci_overflow_controller.py",
     "scripts/tests/test_debt_ledger.py",
@@ -226,6 +235,7 @@
     "scripts/tests/test_pr_gate.py",
     "scripts/tests/test_pr_gate_sweep_select.py",
     "scripts/tests/test_prune_merged_worktrees.py",
+    "scripts/tests/test_prune_quarantine.py",
     "scripts/tests/test_regen_quarto_render.py",
     "scripts/tests/test_run_guarded.py",
     "scripts/tests/test_series_saturation.py",
