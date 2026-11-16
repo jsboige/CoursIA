@@ -34,6 +34,8 @@
 import Knots.Basic
 import Knots.Mutation
 import Knots.ConwayPD
+import Knots.Redraw
+import Knots.AlexanderTrivial
 
 namespace Knots
 
@@ -232,5 +234,33 @@ theorem not_areWindowMutantDiagrams_conway_kt :
       · have hj10 : j ≤ 10 := by omega
         interval_cases i <;> interval_cases j <;> cases ρ <;>
           exact absurd h (by decide)
+
+/-! ## 4. Clôture stricte du chantier (maillon 6 strict)
+
+Le chantier nommé par ce module — `AreMutants conwayKnot kinoshitaTerasakaKnot`
+— se compose depuis trois maillons déjà livrés : le témoin de sphère du
+maillon 4 (`areMutantDiagrams_conway_conwayMutant`, AlexanderTrivial.lean,
+amendement σ du maillon 8 2bis), le certificat de redraw du maillon 5
+(`conwayMutant_redraws_kt`, Redraw.lean) et le pont définitionnel du
+maillon 8 voie 1 (`Redraws.reidemeisterEquiv`). Les jambes `refl` sont
+gratuites : les champs `diagram` de `conwayKnot` et `kinoshitaTerasakaKnot`
+sont *définitionnellement* les codes PD du census (ConwayPD.lean). Avec la
+voie 3 (`conwayMutant_sameKnot_kt`, Redraw.lean), l'équivalence composée
+`SameKnot` fermait déjà le maillon 6 au sens faible ; l'énoncé strict —
+celui du docstring de `AreMutants`, sans aucun amendement — est désormais
+un théorème. La fenêtre nue reste impossible (§3) : c'est le recollement σ
+du maillon 4 qui fournit le témoin. -/
+
+/-- **Clôture stricte du maillon 6 (headline de l'EPIC)** : le nœud de
+Conway et le nœud de Kinoshita-Terasaka sont mutants au sens strict
+`AreMutants` — deux présentations de la même paire de classes d'isotopie
+reliées par une mutation de sphère. Composition : jambe 1 `refl` (le
+champ `diagram` de `conwayKnot` est le code PD du census), jambe 2 le
+redraw maillon 5 → pont voie 1 → symétrie, mutation le témoin maillon 4. -/
+theorem areMutants_conway_kt :
+    AreMutants conwayKnot kinoshitaTerasakaKnot :=
+  ⟨conwayKnotDiagram, conwayMutantDiagram, ReidemeisterEquiv.refl _,
+    reidemeister_equiv_symm (Redraws.reidemeisterEquiv conwayMutant_redraws_kt),
+    areMutantDiagrams_conway_conwayMutant⟩
 
 end Knots

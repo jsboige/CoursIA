@@ -38,6 +38,8 @@
 import Knots.Basic_en
 import Knots.Mutation_en
 import Knots.ConwayPD_en
+import Knots.Redraw_en
+import Knots.AlexanderTrivial_en
 
 namespace Knots_en
 
@@ -234,5 +236,34 @@ theorem not_areWindowMutantDiagrams_conway_kt :
       · have hj10 : j ≤ 10 := by omega
         interval_cases i <;> interval_cases j <;> cases ρ <;>
           exact absurd h (by decide)
+
+/-! ## 4. Strict closure of the chantier (strict link 6)
+
+The chantier named by this module — `AreMutants conwayKnot
+kinoshitaTerasakaKnot` — composes from three already delivered links: the
+sphere witness of link 4 (`areMutantDiagrams_conway_conwayMutant`,
+AlexanderTrivial_en.lean, σ amendment of link 8 2bis), the redraw
+certificate of link 5 (`conwayMutant_redraws_kt`, Redraw_en.lean) and the
+definitional bridge of link 8 route 1 (`Redraws.reidemeisterEquiv`). The
+`refl` legs are free: the `diagram` fields of `conwayKnot` and
+`kinoshitaTerasakaKnot` are *definitionally* the census PD codes
+(ConwayPD_en.lean). With route 3 (`conwayMutant_sameKnot_kt`,
+Redraw_en.lean), the composed equivalence `SameKnot` already closed link 6
+in the weak sense; the strict statement — the one in the docstring of
+`AreMutants`, without any amendment — is now a theorem. The bare window
+remains impossible (§3): it is the σ regluing of link 4 that provides the
+witness. -/
+
+/-- **Strict closure of link 6 (EPIC headline)**: the Conway knot and the
+Kinoshita-Terasaka knot are mutants in the strict `AreMutants` sense — two
+presentations of the same pair of isotopy classes related by a sphere
+mutation. Composition: leg 1 `refl` (the `diagram` field of `conwayKnot`
+is the census PD code), leg 2 link-5 redraw → route-1 bridge → symmetry,
+mutation the link-4 witness. -/
+theorem areMutants_conway_kt :
+    AreMutants conwayKnot kinoshitaTerasakaKnot :=
+  ⟨conwayKnotDiagram, conwayMutantDiagram, ReidemeisterEquiv.refl _,
+    reidemeister_equiv_symm (Redraws.reidemeisterEquiv conwayMutant_redraws_kt),
+    areMutantDiagrams_conway_conwayMutant⟩
 
 end Knots_en
