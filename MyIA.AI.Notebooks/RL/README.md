@@ -8,9 +8,9 @@ pagetitle: "RL - Reinforcement Learning"
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 38
-breakdown: root=27, PostTraining=11
-maturity: BETA=38
+pedagogical_count: 41
+breakdown: root=30, PostTraining=11
+maturity: BETA=41
 -->
 
 Comment un agent apprend-il à décider quand personne ne lui donne la bonne réponse ? Le reinforcement learning (apprentissage par renforcement) répond par l'essai et l'erreur : l'agent agit, observe la conséquence de son action, et ajuste sa politique. C'est le paradigme derrière AlphaGo, le contrôle de robots, et l'alignement des modèles de langue par retour humain.
@@ -39,7 +39,7 @@ La série couvre les **fondements théoriques** (bandits, MDP, équation de Bell
 
 Les kernels sont relevés dans les carnets eux-mêmes (`metadata.kernelspec.name`) : `python3` pour l'immense majorité, `coursia-ml-training` pour les carnets qui entraînent un modèle de langue. Les durées sont des ordres de grandeur pour une lecture active, exercices compris.
 
-> **Note de comptage.** Le bloc `CATALOG-STATUS` ci-dessus fait foi pour l'**agrégat** — il est régénéré par `catalog-cron.yml` et ne se corrige jamais à la main sur une branche de feature. La table ci-dessous fait foi pour l'**énumération**. Leurs totaux peuvent donc différer d'une unité, et cet écart ne se tranche ni ici ni par une retouche du marqueur : il se lit dans la prochaine régénération du catalogue.
+> **Note de comptage.** Le bloc `CATALOG-STATUS` ci-dessus fait foi pour l'**agrégat** — il est régénéré par `catalog-cron.yml` et ne se corrige jamais à la main sur une branche de feature. La table ci-dessous fait foi pour l'**énumération du socle** ; celle de la sous-série `PostTraining/` vit dans son [README](PostTraining/README.md). Les totaux peuvent donc différer, et cet écart ne se tranche ni ici ni par une retouche du marqueur : il se lit dans la prochaine régénération du catalogue.
 
 ### Socle du parcours principal
 
@@ -63,9 +63,9 @@ Les numéros nus constituent le parcours principal. Les liens de la dernière co
 | 14 | [RL-14-RL-Hierarchique-Options-Python](RL-14-RL-Hierarchique-Options-Python.ipynb) | python3 | Abstraction temporelle : options `(I, π, β)` de Sutton, Precup et Singh, gridworld à quatre pièces, crédit sur longue horizon, formalisme semi-MDP enseigné sur place | 50 min | |
 | 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | python3 | GRPO contre PPO sur CartPole-v1 : avantage relatif intra-groupe contre GAE bootstrappé, six graines appariées, verdict tri-conditionnel (seuil à deux écarts-types, Wilcoxon apparié, intervalle bootstrap des différences). **Verdict du run committé : PPO devant GRPO** (six graines sur six, p = 0,0312) ; portée et limites documentées dans le carnet. Exige un GPU CUDA | 40-45 min | |
 | 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.ipynb) | python3 | Exploration explicite et programmable (la politique est du code), historique de découverte utilisé comme simulateur-replay, évaluation off-policy à coût nul, boucle d'auto-amélioration avec incumbent ; monde jouet circle-packing en bibliothèque standard, ablation replay brut contre guidance sémantique | 40-45 min | |
-| 19 | [RL-19-Reward-Tampering-Python](RL-19-Reward-Tampering-Python.ipynb) | python3 | Du specification gaming au reward tampering : *Rocks and Diamonds* à paramètre modifiable (Everitt et al. 2021), quatre agents résolus par induction arrière exacte, et la mesure qui compte — l'indifférence n'est pas la protection, le départage des égalités suffit à déclencher la manipulation | 35-40 min | |
-| 20 | [RL-20-Randomisation-Domaine-Sim-to-Real-Python](RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | python3 | Du simulateur au réel : les paramètres physiques de `CartPole-v1` modifiés pour de vrai (`masscart`, `masspole`, `length`, `gravity`, `tau`), trois régimes de test — nominal, interpolation, extrapolation — et la question de transfert qu'ils posent | 40-45 min | |
-| 21 | [RL-21-Auto-Jeu-AlphaZero-Python](RL-21-Auto-Jeu-AlphaZero-Python.ipynb) | python3 | Auto-jeu à la AlphaZero sur CPU (Puissance 4 réduit) : MCTS guidé par réseau (PUCT, valeur du réseau au lieu de rollouts), cibles politiques prises sur les distributions de visites, deux têtes politique/valeur, tournoi round-robin à budget égal — la boucle fermée fonctionne, l'avantage du guidage demande des budgets plus élevés | 10 min | |
+| 17 | [RL-17-Reward-Tampering-Python](RL-17-Reward-Tampering-Python.ipynb) | python3 | Du specification gaming au reward tampering : *Rocks and Diamonds* à paramètre modifiable (Everitt et al. 2021), quatre agents résolus par induction arrière exacte, et la mesure qui compte — l'indifférence n'est pas la protection, le départage des égalités suffit à déclencher la manipulation | 35-40 min | |
+| 18 | [RL-18-Randomisation-Domaine-Sim-to-Real-Python](RL-18-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | python3 | Du simulateur au réel : les paramètres physiques de `CartPole-v1` modifiés pour de vrai (`masscart`, `masspole`, `length`, `gravity`, `tau`), trois régimes de test — nominal, interpolation, extrapolation — et la question de transfert qu'ils posent | 40-45 min | |
+| 19 | [RL-19-Auto-Jeu-AlphaZero-Python](RL-19-Auto-Jeu-AlphaZero-Python.ipynb) | python3 | Auto-jeu à la AlphaZero sur CPU (Puissance 4 réduit) : MCTS guidé par réseau (PUCT, valeur du réseau au lieu de rollouts), cibles politiques prises sur les distributions de visites, deux têtes politique/valeur, tournoi round-robin à budget égal — la boucle fermée fonctionne, l'avantage du guidage demande des budgets plus élevés | 10 min | |
 
 ### Approfondissements
 
@@ -96,27 +96,13 @@ Les lettres restent des extensions facultatives de leur parent : leurs identifia
 
 ### Sous-série indépendante PostTraining
 
-La sous-série conserve ses identifiants RLPT propres et son parcours de post-training ; elle ne fait pas partie de la numérotation du socle RL.
-
-| # | Notebook | Kernel | Contenu | Durée |
-|---|----------|--------|---------|-------|
-| pt-00 | [RLPT-00-Reward-Model-Bradley-Terry-Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | python3 | Reward model from scratch : apprendre `r(x, y)` depuis des paires de préférences (Bradley-Terry), sans `trl` ; évaluation contre le plafond de Bayes, calibration (ECE), identification affine, multi-graines. C'est de ce monde que partent les carnets suivants | 35-40 min |
-| pt-00b | [RLPT-00b-Biais-Dataset-Preferences-Python](PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | python3 | Biais d'un dataset de préférences : trois biais classiques (longueur, position, annotateur) injectés à paramètres connus, dégât mesuré contre le plafond d'un juge oracle non biaisé, puis les mitigations usuelles — verdict mesuré : aucune ne franchit deux écarts-types, le length-controlled est structurellement sans effet sur une métrique de classement, l'orthogonalisation de longueur aggrave le biais | 40-45 min |
-| pt-00c | [RLPT-00c-Anatomie-Reward-Hacking-Python](PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | coursia-ml-training | Anatomie d'un reward hacking qui **prend** : reward model biaisé en longueur, PPO from scratch sur ce proxy, puis bras de contrôle (récompense longueur-contrôlée, oracle) qui isole la cause. Diagnostic par canal et normalisation par canal : l'arbitrage, pas la chirurgie | 35-40 min |
-| pt-00d | [RLPT-00d-Reward-Trainer-TRL-Python](PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb) | python3 | Le même problème que RLPT-00 traité par `trl.RewardTrainer` : monde, juge, architecture et graines identiques, une seule variable — le harnais. Documente les exigences de contrat non devinables et la traduction des paires ; verdict mesuré : `trl` devance la boucle maison pour un coût en temps d'un ordre de grandeur, et n'évalue pas pour vous | 35-40 min |
-| pt-00e | [RLPT-00e-DPO-TRL-Python](PostTraining/RLPT-00e-DPO-TRL-Python.ipynb) | python3 | `trl.DPOTrainer` contre DPO from scratch et reward model explicite, sur le même monde et les mêmes paires, à budget égal : multi-graines départagé au plafond de Bayes — DPO maison et `trl` indiscernables, la différence robuste est le coût fixe de la pile | 25-35 min |
-| pt-00f | [RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python](PostTraining/RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb) | python3 | `trl.GRPOTrainer` contre le PPO maison de RLPT-01 sur le même monde et le même juge, à budget apparié : verdict non concluant, et la différence robuste est le critic (réseau de valeur appris contre moyenne de groupe). Inclut le fait mesuré dans l'environnement : `PPOTrainer` a quitté la racine de `trl` pour `trl.experimental.ppo` | 30-45 min |
-| pt-00g | [RLPT-00g-PPO-TRL-Experimental-Python](PostTraining/RLPT-00g-PPO-TRL-Experimental-Python.ipynb) | python3 | `trl.experimental.ppo.PPOTrainer` instancié comme surface réelle, signature introspectée, boucle PPO conforme (rollout, GAE, surrogate clippé, perte de valeur) : la mini-tâche ne se branche pas directement sur le trainer, la limite est documentée et l'algorithme reste celui que TRL enveloppe. Complément de RLPT-00f sur l'axe RLHF | 30-40 min |
-| pt-01 | [RLPT-01-PPO-RLHF-Petit-Modele-Python](PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb) | python3 | PPO pour l'alignement d'un petit modèle de langue (RLHF jouet, from scratch, char-level) : reward model jouet, pénalité KL contre la politique SFT de référence, multi-graines — la signature RLHF, distincte de RL-06c et RL-06e | 40-45 min |
-| pt-02 | [RLPT-02-GRPO-Minimal-Python](PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) | coursia-ml-training | GRPO sur Qwen3.5-0.8B local avec `trl.GRPOTrainer` : récompense arithmétique vérifiable par programme et générations groupées sans réseau de valeur | 45-55 min |
-| pt-03 | [RLPT-03-Reward-Hacking-Python](PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) | coursia-ml-training | Reward hacking sur récompense vérifiable faillible : trois voies pour tenter de déclencher le hack, détection, inoculation comme variable expérimentale, verdict reproductible à graine fixée | 35-40 min |
-| pt-04 | [RLPT-04-DPO-Offline-contre-GRPO-Online-Python](PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb) | coursia-ml-training | DPO offline contre GRPO online sur la même tâche conversationnelle, à budget égal, préférences auto-fabriquées : verdict multi-graines avec test de Diebold-Mariano et dispersion inter-graines documentée | 50-55 min |
+La sous-série conserve ses identifiants RLPT propres et son parcours de post-training ; elle ne fait pas partie de la numérotation du socle RL. Son arc part du reward model Bradley-Terry écrit à la main, passe par l'anatomie d'un reward hacking et la comparaison à budget égal entre code maison et harnais `trl`, et referme le parcours sur le départage DPO offline contre GRPO online avec test statistique. L'énumération des carnets, les kernels, les durées et les objectifs d'apprentissage vivent dans le [README de la sous-série](PostTraining/README.md).
 
 Les carnets `RL-17` et `RL-18` n'existent plus dans cette série : ce sont désormais `Complexity-04c` et `Complexity-04d`, décrits plus haut.
 
 ## Contenu détaillé du parcours principal
 
-Les carnets du socle numérotés de 01 à 13 sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles — la provenance exacte de chaque figure (cellule source, poids, alt-text) est consignée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md). Les sections 6b à 6f détaillent séparément les approfondissements de leur parent. Les carnets 14 à 21 et la sous-série `PostTraining/` sont décrits dans la table ci-dessus.
+Les carnets du socle numérotés de 01 à 13 sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles — la provenance exacte de chaque figure (cellule source, poids, alt-text) est consignée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md). Les sections 6b à 6f détaillent séparément les approfondissements de leur parent. Les carnets 14 à 21 sont décrits dans la table ci-dessus ; la sous-série `PostTraining/` est décrite dans son [README](PostTraining/README.md).
 ### Notebook 1 - Introduction avec PPO et CartPole
 
 | Section | Contenu |
@@ -420,7 +406,7 @@ La sous-série [`PostTraining/`](PostTraining/) et [GenAI/PostTraining](../GenAI
 
 ### Recherche adversariale et jeux
 
-Le pont avec [Search](../README.md) est direct : `RL-08` montre les rollouts et la planification depuis un modèle appris, et le carnet Search consacré à MCTS fait le lien vers AlphaGo (recherche arborescente guidée par un réseau de valeur) ; `RL-21` referme la boucle en entraînant le réseau *par* la recherche, sur un jeu réduit. Côté [GameTheory](../GameTheory/README.md), l'apprentissage multi-agent de `RL-07` et `RL-07b` rejoint la théorie des jeux : l'équilibre que des agents indépendants atteignent n'est pas forcément l'optimum conjoint, et le Climbing Game en donne la démonstration mesurée.
+Le pont avec [Search](../README.md) est direct : `RL-08` montre les rollouts et la planification depuis un modèle appris, et le carnet Search consacré à MCTS fait le lien vers AlphaGo (recherche arborescente guidée par un réseau de valeur) ; `RL-19` referme la boucle en entraînant le réseau *par* la recherche, sur un jeu réduit. Côté [GameTheory](../GameTheory/README.md), l'apprentissage multi-agent de `RL-07` et `RL-07b` rejoint la théorie des jeux : l'équilibre que des agents indépendants atteignent n'est pas forcément l'optimum conjoint, et le Climbing Game en donne la démonstration mesurée.
 
 ### Activité de vulgarisation
 
@@ -447,8 +433,8 @@ L'activité [Processus de décision de Markov de l'aspirateur autonome](../GenAI
 | `RL-12` | Bellemare, Dabney & Munos, C51 (2017) |
 | `RL-13` | Burda et al., Random Network Distillation (2018) |
 | `RL-14` | Sutton, Precup & Singh, options (1999) |
-| `RL-19` | Everitt et al., reward tampering (2021) |
-| `RL-21` | Silver et al., AlphaZero (2017) |
+| `RL-17` | Everitt et al., reward tampering (2021) |
+| `RL-19` | Silver et al., AlphaZero (2017) |
 | `RLPT-01` | Christiano et al., RLHF (2017) |
 | `RLPT-04` | Rafailov et al., DPO (2023) |
 
@@ -582,6 +568,10 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 Le [notebook RL-09 en Python](RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) a maintenant un [jumeau C#](RL-09-RL-Offline-Behavior-Cloning-CSharp.ipynb). Les deux versions implémentent de zéro le Q-learning tabulaire, le Behavior Cloning et la contrainte de support BCQ-lite; le code C# s’appuie sur la bibliothèque standard .NET, sans moteur RL ni package NuGet.
 
 Les trajectoires et retours mesurés diffèrent entre langages, car NumPy et .NET n’emploient pas le même générateur pseudo-aléatoire ni le même ordre de départage. Les mêmes invariants sont contrôlés : géométrie du labyrinthe, chemin BFS de 14 pas, cibles terminales, actions hors support et dimensions de couverture. Le twin C# rend ses figures en SVG statique.
+
+### Options hiérarchiques en C#
+
+[RL-14 Python](RL-14-RL-Hierarchique-Options-Python.ipynb) et [RL-14 C#](RL-14-RL-Hierarchique-Options-CSharp.ipynb) présentent FourRooms, les options BFS et le crédit SMDP. Le port C# utilise la BCL et un graphique SVG ; les générateurs aléatoires des deux langages produisent des mesures distinctes.
 
 ## Licence
 

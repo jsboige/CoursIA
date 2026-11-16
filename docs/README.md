@@ -51,6 +51,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [`2026-10-08-roster-machine-workspace.md`](transients/2026-10-08-roster-machine-workspace.md) | Roster daté des `machine:workspace` actifs, mesuré au 2026-10-08 (#14527, doc éphémère, figé dans la lane transiente) |
 | [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + vérification CI) |
 | [reference/lib-versions.md](reference/lib-versions.md) | Organe des versions de bibliothèques des carnets (#23073) : manifeste canonique, recensement `--census`, garde advisory sur les carnets modifiés |
+| [reference/rust-ecosystem-map.md](reference/rust-ecosystem-map.md) | Carte de l'écosystème Rust (Pli 1 de l'Epic #26510) : correspondance bibliothèques Python/C# en usage → crate Rust, série par série ; socle mesuré par `rust_ecosystem_census.py` |
 | [reference/audit-reassessment-findings.md → transients/2026-05-17-…](transients/2026-05-17-reference-audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) — déplacé en lane transiente (tranche 3b #14623) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
@@ -160,6 +161,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | Fichier | Description |
 |---------|-------------|
 | [qc/quantconnect.md](qc/quantconnect.md) | Backtests, structure, livre référence |
+| [qc/qc-pieges-mesures.md](qc/qc-pieges-mesures.md) | Pièges mesurés QuantConnect et Lean : lecture d'un backtest, ordres, données, framework, graphiques, outils, suivi en ombre ; chaque entrée sourcée par issue ou PR |
 | [qc/qc-comparative-backtests.md](qc/qc-comparative-backtests.md) | Baselines alignées + analyse comparative backtests (#1630) |
 | [qc/qc-batch-methodology-playbook.md](qc/qc-batch-methodology-playbook.md) | Playbook méthodologie batch QC (#1621) |
 | [qc/qc-strategies-status.md](qc/qc-strategies-status.md) | Statut des stratégies QuantConnect — source de vérité |
@@ -286,7 +288,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/aima-mapping/README.md](curriculum/aima-mapping/README.md) | AIMA : tables des matières 3e et 4e en données (ancre PDF par ligne), correspondance section → phase → carnets → compétences, sections sans couverture, ce qui dépasse le livre, et écarts de découpage entre les deux éditions |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
 | [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
-| [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations) + IIT (cœur) + Z3-Linq2Z3, avec export SKOS/OWL et validation globale `--all` |
+| [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations) + Planners (cœur classique) + IIT (cœur) + Z3-Linq2Z3, avec export SKOS/OWL et validation globale `--all` |
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 | [curriculum/qualification/README.md](curriculum/qualification/README.md) | Qualification des carnets — échelle de difficulté et dimension recherche, séries pilotes qualifiées valeur par valeur (#24996) |
@@ -329,6 +331,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 
 | Fichier | Description |
 |---------|-------------|
+| [research/yang-mills-openai-20261028-analyse.md](research/yang-mills-openai-20261028-analyse.md) | Cartographie sourcée de la soumission formelle `yang-mills-group/OpenAI-YM-20261028` (Apache-2.0, `main` @ 2026-11-05) issue #25826 — ce qui est formalisé et où (`fichier:ligne`), ce qui est **hors périmètre** (gap de masse, unicité de la prescription : ce n'est pas le problème Clay), et l'obstacle assumé (compilation Lean non rejouée localement). Outil de relecture rejouable : `scripts/ym_openai_20261028/inventory.py` (9 contrôles, aucun Lean requis) |
 | [research/cartier-miller-p0-cartography.md](research/cartier-miller-p0-cartography.md) | Cartographie énoncés ↔ code de la distillation Cartier-Miller (#19452, modèle #17845). Brique P0 = lecture intégrale + pin du dépôt externe (`bbrhuft/Cartier-Miller-...` @ `37a9b72`). P1+ explicitement hors scope. Statut auteur « unrefereed draft, AI-assisted » auto-déclaré. |
 | [research/fallacy-detection-survey.md](research/fallacy-detection-survey.md) | Survey SOTA détection de sophismes + argument mining, fondant l'EPIC #10355 (Phase 1 livrable 1). 10 sources primaires (Logic/LogicClimate, MAFALDA 23 classes, IBM-Rank-30k, AraucariaDB), constat clé : taxonomie Argumentum 1408/8 familles écrase les datasets académiques 13-23 → mapping d'étiquettes = livrable de recherche à part entière |
 | [transients/2026-10-23-17578-hard-distractors-measurement.md](transients/2026-10-23-17578-hard-distractors-measurement.md) | Mesure deux-taux du contrôle aller-retour du choix de distracteurs (#17578, PR #22220) — même échantillon (`--split val --limit 40 --votes 3 --seed 7`) confronté au contrôle aléatoire propre vs distracteurs difficiles, répondant au point 2 de la revue amont (c.6327388489) |
@@ -351,6 +354,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 | [research/percolation-04-sharpness-scoping.md](research/percolation-04-sharpness-scoping.md) | Mémo de cadrage du palier 04 sharpness (#19494, c.1107) — mesure de la vitesse de disparition du géant en régime supercritique au regard du théorème de Diskin–Easo–Radhakrishnan–Sudakov–Tassion (arXiv:2603.03257). Définit l'architecture du sweep et les critères d'acceptation du palier. |
 | [research/percolation-04-sharpness-results.md](research/percolation-04-sharpness-results.md) | Résultats du palier 04 sharpness (#19494, c.1108) — queue supérieure `Ψ(n) = P(|C_o| ≥ n)` sur tores finis supercritiques. Verdict **honnête** : la décroissance exponentielle n'est pas visible dans la fenêtre de seuils accessible à `L ≤ 512` ; trois causes identifiées, plan #19494 clos par ce palier. |
 | [research/cooperation-llm-16h-protocole.md](research/cooperation-llm-16h-protocole.md) | Mémo de gel du protocole `GameTheory-16h` (coopération LLM sur IPD, #20884, carnet livré par #21021) — ce qui est figé avant le premier appel d'agent (payoffs, 4 hétérogénéités, seeds `{0,1,7,42,99}`, seuils H0/H1, modèle nul, contrôle négatif), les chiffres tels que les sorties du carnet les portent, et **ce qu'ils ne disent pas** (proxy scripté ⇒ les 1,0000 sont un point fixe trivial). c.2344 |
+| [research/pan2-world-model-analyse.md](research/pan2-world-model-analyse.md) | Distillation sourcée de la **technique** PAN 2 (IFM/MBZUAI, arXiv 2507.05169 *Critique of World Model*) : thèse « le modèle du monde est un simulateur de possibilités actionnables », les 5 dimensions de design, l'architecture **GLP** (bottleneck génératif + backbone LLM + prédicteur de next-embedding par diffusion) et son instanciation PAN (encodeur / monde / décodeur, factorisation $p_{PAN}=p_h\,p_f\,p_g$ — le décodeur $g$ absent de JEPA ferme la boucle), faits firsthand de la model card (29 B MMDiT, vLLM). Outil rejouable [`scripts/genai/pan2/world_model_formalism.py`](../scripts/genai/pan2/world_model_formalism.py) (CPU, `--check` 7/7). #25846. Le « carnet sur la technique » est planifié (issue #26151, lane myia-po-2027:CoursIA-2). |
 
 ## Captures de rendu (docs/captures/)
 
@@ -486,6 +490,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | Fichier | Description |
 |---------|-------------|
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
+| [dotnet/banc4-regime-25644.md](dotnet/banc4-regime-25644.md) | Banc 4 — contrôle du régime d’invocation et du tiering sur .NET 9 et 10, avec profils par itération |
 | [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
 | [dotnet/net11-axis1-async.md](dotnet/net11-axis1-async.md) | .NET 10 vs 11 — axe 1 (awaits profonds / Runtime Async) : mesure rejouable sur un carnet, runtime prouvé par sonde et non déduit du nom de variante |
