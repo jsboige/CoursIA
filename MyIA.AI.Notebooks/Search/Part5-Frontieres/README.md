@@ -100,3 +100,7 @@ Le [Frontieres-11-Abstraction-Dette-ShortestPath-Python](Frontieres-11-Abstracti
 ## Navigation
 
 [<- Partie 3 : Cas pratiques](../Part3-Cas-pratiques/README.md) | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | [Retour à la série Search](../README.md)
+
+## Covering Arrays : deux langages, trois niveaux de preuve
+
+[Frontieres-05 Python](Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb) et [Frontieres-05 C#](Frontieres-05-CoveringArrays-Guarantee-Audit-CSharp.ipynb) construisent le même set cover avec le vrai CP-SAT OR-Tools. L'oracle sépare les interactions cartésiennes des interactions extensibles sous les règles métier ; les tableaux conservent incumbent, borne et statut, tandis que les gloutons IPOG-like/AETG-like restent explicitement des baselines pédagogiques. Les limites de 10/15 secondes et le worker unique sont conservés ; les tailles issues d'un tie-break semé et les preuves fermées sous cette limite peuvent varier entre environnements. Le C# ajoute des gardes qui contrôlent les réponses fournies et observe réellement les vingt constructions de l'exercice de sensibilité ; ses figures sont des SVG autonomes opaques.

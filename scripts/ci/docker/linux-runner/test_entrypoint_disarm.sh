@@ -63,7 +63,7 @@ echo "1234567890123456789012345678901234567890" > "$REPO_POISONED/.git/refs/remo
   if git -C "$REPO_POISONED" rev-parse --verify -q refs/remotes/origin/keepbranch >/dev/null; then
     ok "T1 ref saine conservee"
   else ko "T1 la ref saine ne doit PAS etre supprimee"; fi
-  if echo "$out" | grep -q "deadbranch"; then ok "T1 suppression journalisee"; else ko "T1 aucune trace de la suppression"; fi
+  if grep -q "deadbranch" <<<"$out"; then ok "T1 suppression journalisee"; else ko "T1 aucune trace de la suppression"; fi
 )
 
 # --- Test 2 : repo sain = intouché (controle negatif) ------------------------
@@ -154,7 +154,7 @@ echo "deadbeef00000000000000000000000000000000" > "$REPO_PARTIAL/.git/refs/remot
   fi
   # De-masquage de stderr : un garde de sante reste diagnosticable (#16938).
   # La trace de suppression apparait sur stderr (que l'on capture via 2>&1).
-  if echo "$out" | grep -q "ghost"; then
+  if grep -q "ghost" <<<"$out"; then
     ok "T5 suppression journalisee (stderr de-masque)"
   else
     ko "T5 aucune trace de la suppression (stderr encore masque ?)"

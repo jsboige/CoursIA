@@ -30,8 +30,10 @@ Trois faits, dans l'ordre du recit :
    des germes.
 
 Ce qui est acquis est ce qui est prouve : un endofoncteur, et une unite naturelle.
-Le lac ne revendique rien de plus — en particulier, la preservation des
-monomorphismes par `C⁰` n'est **pas** etablie ici.
+La preservation des monomorphismes par `C⁰` est etablie dans la Partie 86
+(`Grothendieck.GodementMono`) ; celle des epimorphismes et l'exactitude en
+chaque ouvert dans la Partie 98 (`Grothendieck.GodementComplex`) : le relevement
+point par point dans les tiges.
 
 ## References
 
