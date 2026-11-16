@@ -79,6 +79,8 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 
   **Exception MED/DEEP mesurable (#14357)** : deux grains consécutifs d'un même genre LIGHT sont autorisés **ssi** (i) le **second** est MED ou DEEP et (ii) les deux PRs ne partagent **aucun fichier**. Le critère est **mécanique, jamais jugé à la main, fail-CLOSED** (rendu par `variation_light_cap.py`, consommé par `variation_adjacency_guard.py`) — un run de ≥3 s'exempte seulement si **chaque paire adjacente** satisfait (i) et (ii). Tell décisif : le litmus LIGHT — générable en scannant l'instance d'à-côté → bloqué **même sous une étiquette DEEP**.
 
+  **Exemption de lane (#26988, décision user Q194 a du 16/11/2026)** : la lane désignée par le coordinateur pour les organes de CI et de merge est **exempte de G-VAR-3** — ses grains sont presque tous des gardes, et le ban vise la monotonie d'un worker de CONTENU. La liste des lanes inscrites est déclarée en **un seul endroit**, `G_VAR3_EXEMPT_LANES` dans [`scripts/ci/variation_adjacency_guard.py`](../../scripts/ci/variation_adjacency_guard.py) ; **seul G-VAR-3 est levé** — G-VAR-1 (plancher) et G-VAR-2 (budget) restent appliqués. Détail : [détail §15](../../docs/reference/variation-protocol-detail.md).
+
 ## 3. Merge-gate coordinateur (ai-01) — les dents (HARD)
 
 À chaque passe, pour chaque PR, **lire le tag** et croiser avec les grains récents de la lane ([détail §1](../../docs/reference/variation-protocol-detail.md)) :
