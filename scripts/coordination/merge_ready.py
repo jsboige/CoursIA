@@ -537,9 +537,11 @@ SCRIPTS_TESTS_CHECK = "Scripts Tests (CPU)"
 
 #: L'issue canonique du rouge de `main` (#26706). La sentinelle ne se
 #: contente plus de retenir les merges : elle ouvre (ou REUTILISE) UNE issue
-#: vivante, que la lane de reparation reclame (`[CLAIMED]`) et qu'elle
-#: ferme (`Closes #`). Un episode = une issue, pas une issue par run : le
-#: titre est le prefixe ci-dessous, suivi du check et du test en echec.
+#: vivante, que la lane de reparation reclame (`[CLAIMED]`) et que la PR de
+#: reparation nomme (`See #`). La FERMETURE appartient a la sentinelle, qui la
+#: fait au VERT mesure -- pas au merge du correctif, qui precede le rejeu de
+#: `main`. Un episode = une issue, pas une issue par run : le titre est le
+#: prefixe ci-dessous, suivi du check et du test en echec.
 MAIN_RED_ISSUE_TITLE_PREFIX = "[main-red]"
 
 #: Marqueur HTML de l'issue du rouge. Le titre est l'index (GitHub indexe
@@ -1066,8 +1068,9 @@ def clear_main_red_hold(hold_path: Path) -> bool:
 #
 # Le canal de coordination est donc une ISSUE, pas la retenue elle-meme :
 # une seule issue vivante par episode, que la lane qui repare reclame avec
-# `[CLAIMED]` et qu'elle ferme avec `Closes #`. La sentinelle l'ouvre au
-# rouge et la ferme au vert.
+# `[CLAIMED]`. La PR de reparation porte `See #` : la FERMETURE appartient a
+# la sentinelle seule, qui la fait au VERT -- une fois `main` rejoue. La
+# sentinelle l'ouvre au rouge et la ferme au vert.
 
 
 def _issue_number_from_line(line: str) -> int | None:
@@ -1129,8 +1132,16 @@ def main_red_issue_body(sha: str, check: str, test: str) -> str:
         "1. Reclamer cette issue : `[CLAIMED] lane <machine:workspace> -- "
         "<cause>`.\n"
         "2. Reparer la cause, pousser le correctif, le faire merger.\n"
-        "3. Nommer la livraison : `Closes #N`, ou N est le numero de cette "
-        "issue.\n"
+        "3. Nommer la livraison : `See #N`, ou N est le numero de cette "
+        "issue — **pas** `Closes`.\n"
+        "\n"
+        "**La fermeture appartient a la sentinelle, pas a la PR.** Le correctif "
+        "fusionne alors que `main` n'a pas encore rejoue `Scripts Tests (CPU)` "
+        "(20 a 30 min) : une fermeture par la PR rendrait l'episode sans "
+        "issue ouverte pendant ce temps, et la branche « aucune issue → voie "
+        "normale » enverrait alors chaque lane reparer seule. La PR porte donc "
+        "`See #N`, et l'issue reste **ouverte** jusqu'au vert mesure par la "
+        "sentinelle.\n"
         "\n"
         "L'issue est **fermee automatiquement** par la sentinelle des que le "
         "verdict redevient vert : aucune fermeture manuelle n'est necessaire.\n"
@@ -1232,6 +1243,87 @@ def _write_body_file(body: str) -> str:
     return handle.name
 
 
+def _read_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], number: int
+) -> tuple[str, dict | None]:
+    """Lit l'ETAT d'une issue connue par son numero.
+
+    Renvoie `(etat, issue)` avec `etat` dans ``{"ok", "absent", "illisible"}``.
+
+    La lecture est le meme coup que l'edition : elle rend `state`, `title` et
+    `body` d'un coup. C'est elle qui permet deComparer avant d'editer, et de
+    REOUVRIR une issue fermee alors que le rouge tient (#26706, revue
+    ai-01 du 16/11) : une PR de reparation porte `See #`, donc la fermeture
+    appartient a la sentinelle -- mais une PR ancienne portant encore
+    `Closes #` peut l'avoir fermee au merge, avant le rejeu de `main`.
+    """
+    result = runner.run(
+        [
+            "gh",
+            "issue",
+            "view",
+            str(number),
+            "--repo",
+            REPO,
+            "--json",
+            "number,title,body,state",
+        ],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        return ("illisible", None)
+    try:
+        payload = json.loads(result.stdout or "{}")
+    except ValueError:
+        return ("illisible", None)
+    if not isinstance(payload, dict):
+        return ("illisible", None)
+    try:
+        lu = int(payload.get("number"))
+    except (TypeError, ValueError):
+        return ("absent", None)
+    if lu != number:
+        return ("absent", None)
+    return (
+        "ok",
+        {
+            "number": lu,
+            "title": str(payload.get("title") or ""),
+            "body": str(payload.get("body") or ""),
+            "state": str(payload.get("state") or "").upper(),
+        },
+    )
+
+
+def _reopen_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], number: int, sha: str, check: str
+) -> bool:
+    """Rouvre l'issue du rouge fermee a tort, en citant le SHA rouge.
+
+    Le SHA rouge est dans le commentaire : c'est la preuve que l'issue
+    vivante porte CET episode-la, et pas un episode deja resolu.
+    """
+    commentaire = (
+        "Rouge de `main` toujours actif : le check `{check}` est en `failure` "
+        "au commit `{sha}`. Cette issue est **reeouverte** -- la fermeture "
+        "d'un episode appartient a la sentinelle, au vert mesure (#26706)."
+    ).format(check=check, sha=sha)
+    result = runner.run(
+        [
+            "gh",
+            "issue",
+            "reopen",
+            str(number),
+            "--repo",
+            REPO,
+            "--comment",
+            commentaire,
+        ],
+        env=gh_env,
+    )
+    return result.returncode == 0
+
+
 def ensure_main_red_issue(
     runner: Runner, gh_env: dict[str, str], sha: str, check: str, test: str,
     known_number: int | None = None,
@@ -1252,11 +1344,40 @@ def ensure_main_red_issue(
     precedent : c'est la voie DETERMINISTE de reutilisation. Elle prime sur
     la recherche, parce que l'index de recherche de GitHub peut avoir du
     retard — deux runs rapproches ne doivent pas ouvrir deux issues.
+
+    Sur cette voie, l'ETAT de l'issue est relu avant toute ecriture : si elle
+    est **fermee** alors que le rouge tient, elle est **reeouverte** — une PR
+    de reparation ancienne portant `Closes #` peut l'avoir fermee au merge,
+    avant que `main` ait rejoue ses tests ; et titre et corps ne sont
+    reecrits que s'ils different du verdict courant.
     """
     title = main_red_issue_title(check, test)
     body = main_red_issue_body(sha, check, test)
     if known_number is not None:
-        _align_main_red_issue(runner, gh_env, known_number, title, body)
+        etat_lu, item = _read_main_red_issue(runner, gh_env, known_number)
+        if etat_lu == "ok" and item is not None:
+            if item.get("state") == "CLOSED":
+                if _reopen_main_red_issue(
+                    runner, gh_env, known_number, sha, check
+                ):
+                    print(
+                        "merge_ready : sentinelle main-red -- issue [main-red] "
+                        "#{} REOUVERTE (le rouge tient toujours au commit "
+                        "{})".format(known_number, sha[:9])
+                    )
+                    item = dict(item)
+                    item["state"] = "OPEN"
+                else:
+                    print(
+                        "merge_ready : sentinelle main-red -- issue [main-red] "
+                        "#{} fermee et rouverture impossible ; elle sera "
+                        "reprise au run suivant".format(known_number)
+                    )
+            _align_main_red_issue(
+                runner, gh_env, known_number, title, body, item
+            )
+        else:
+            _align_main_red_issue(runner, gh_env, known_number, title, body)
         return ("reuse", known_number)
     etat, item = _search_main_red_issue(runner, gh_env)
     if etat == "illisible":

@@ -2,8 +2,9 @@
 
 La sentinelle `main-red` ne retient plus les merges "en silence" : elle
 ouvre (ou REUTILISE) UNE issue vivante `[main-red] <check> — <test>`, que
-la lane de reparation reclame (`[CLAIMED]`) et ferme (`Closes #`). L'issue
-est fermee automatiquement des que le verdict redevient vert.
+la lane de reparation reclame (`[CLAIMED]`) et que la PR de reparation
+nomme (`See #`). La FERMETURE appartient a la sentinelle : elle ferme l'issue
+des que le verdict redevient vert, mesure sur `main`.
 
 Ces tests sont hermetiques : aucun reseau, aucun `gh` reel. Tout passe par
 un runner scripte qui repond aux appels de l'organe.
@@ -11,6 +12,11 @@ un runner scripte qui repond aux appels de l'organe.
 Le controle positif rejoue l'EPISODE DU 15/11 : la sentinelle posee au
 commit `ffdfd724e3` (rouge) et levee au commit `2e4411d3bc` (vert) doivent
 produire une issue ouverte puis fermee — sans jamais ouvrir deux issues.
+
+Le cas de REOUVERTURE couvre la voie `known_number` : une issue fermee par
+une PR de reparation portant `Closes #` (avant que `main` n'ait rejoue ses
+tests) doit etre rouverte par la sentinelle, qui cite le SHA rouge, et il ne
+doit pas en etre cree une seconde.
 """
 
 import importlib.util
@@ -56,18 +62,21 @@ class FakeRunner:
     """Runner scripte : repond aux appels de la sentinelle et de l'issue.
 
     L'etat des issues est REEL au sens du test : `gh issue create` ouvre
-    une issue, `gh issue close` la ferme, et la recherche renvoie les
-    issues ouvertes. Un episode replaye donc exactement ce que verrait la
-    production.
+    une issue, `gh issue close` la ferme, `gh issue reopen` la rouvre, et la
+    recherche renvoie les issues ouvertes. Un episode replaye donc exactement
+    ce que verrait la production.
     """
 
     def __init__(self, history, verdicts, *, search_rc: int = 0,
-                 create_rc: int = 0, close_rc: int = 0) -> None:
+                 create_rc: int = 0, close_rc: int = 0,
+                 reopen_rc: int = 0, view_rc: int = 0) -> None:
         self.history = list(history)
         self.verdicts = dict(verdicts)
         self.search_rc = search_rc
         self.create_rc = create_rc
         self.close_rc = close_rc
+        self.reopen_rc = reopen_rc
+        self.view_rc = view_rc
         self.issues: dict[int, dict] = {}
         self.ouvertes: list[int] = []
         self.calls: list[list[str]] = []
@@ -89,6 +98,10 @@ class FakeRunner:
             return self._creation(cmd)
         if cmd[1:2] == ["issue"] and cmd[2] == "close":
             return self._fermeture(cmd)
+        if cmd[1:2] == ["issue"] and cmd[2] == "reopen":
+            return self._rouverture(cmd)
+        if cmd[1:2] == ["issue"] and cmd[2] == "view":
+            return self._lecture(cmd)
         if cmd[1:2] == ["issue"] and cmd[2] == "edit":
             return self._edition(cmd)
         return mr.RunResult(0, "", "")
@@ -118,6 +131,7 @@ class FakeRunner:
         self.issues[number] = {
             "title": cmd[cmd.index("--title") + 1],
             "body": Path(cmd[cmd.index("--body-file") + 1]).read_text(encoding="utf-8"),
+            "state": "OPEN",
         }
         self.ouvertes.append(number)
         return mr.RunResult(0, f"https://github.com/jsboige/CoursIA/issues/{number}\n", "")
@@ -128,13 +142,47 @@ class FakeRunner:
         number = int(cmd[3])
         if number in self.ouvertes:
             self.ouvertes.remove(number)
+        if number in self.issues:
+            self.issues[number]["state"] = "CLOSED"
         return mr.RunResult(0, "", "")
+
+    def _rouverture(self, cmd):
+        if self.reopen_rc != 0:
+            return mr.RunResult(self.reopen_rc, "", "refus de rouverture")
+        number = int(cmd[3])
+        if number not in self.ouvertes:
+            self.ouvertes.append(number)
+        if number in self.issues:
+            self.issues[number]["state"] = "OPEN"
+        return mr.RunResult(0, "", "")
+
+    def _lecture(self, cmd):
+        if self.view_rc != 0:
+            return mr.RunResult(self.view_rc, "", "refus de lecture")
+        number = int(cmd[3])
+        if number not in self.issues:
+            return mr.RunResult(1, "", "issue introuvable")
+        entry = self.issues[number]
+        return mr.RunResult(
+            0,
+            json.dumps(
+                {
+                    "number": number,
+                    "title": entry.get("title", ""),
+                    "body": entry.get("body", ""),
+                    "state": entry.get("state", "OPEN"),
+                }
+            ),
+            "",
+        )
 
     def _edition(self, cmd):
         number = int(cmd[3])
         # L'issue peut etre inconnue du fake (index de recherche en retard) :
         # elle existe cote GitHub, l'edition doit aboutir.
-        entry = self.issues.setdefault(number, {"title": "", "body": ""})
+        entry = self.issues.setdefault(
+            number, {"title": "", "body": "", "state": "OPEN"}
+        )
         if "--title" in cmd:
             entry["title"] = cmd[cmd.index("--title") + 1]
         if "--body-file" in cmd:
@@ -149,6 +197,9 @@ class FakeRunner:
 
     def fermetures(self) -> list[list[str]]:
         return [c for c in self.calls if c[2:3] == ["close"]]
+
+    def rouvertures(self) -> list[list[str]]:
+        return [c for c in self.calls if c[2:3] == ["reopen"]]
 
 
 def _runner(*, rouge: str = ROUGE_15_11, vert: str | None = None,
@@ -325,9 +376,25 @@ def test_le_corps_de_l_issue_dit_comment_la_reparer():
     """Le corps doit dire QUOI faire : c'est lui que la lane lit."""
     corps = mr.main_red_issue_body(ROUGE_15_11, CHECK, TEST_15_11)
     assert "[CLAIMED]" in corps
-    assert "Closes #N" in corps
+    assert "See #N" in corps
     assert ROUGE_15_11 in corps
     assert TEST_15_11 in corps
+
+
+def test_le_corps_de_l_issue_interdit_la_fermeture_par_la_pr():
+    """La fermeture appartient a la sentinelle : le corps ne dit pas `Closes`.
+
+    Une PR de reparation qui porte `Closes #N` ferme l'episode au merge du
+    correctif -- avant que `main` ait rejoue `Scripts Tests (CPU)` (20 a
+    30 min). Pendant ce temps aucune issue n'est ouverte, et la branche
+    « aucune issue → voie normale » renvoie chaque lane reparer seule.
+    """
+    corps = mr.main_red_issue_body(ROUGE_15_11, CHECK, TEST_15_11)
+    assert "Closes #N" not in corps
+    # La formule `Closes` peut apparaitre, mais seulement comme interdiction.
+    for ligne in corps.splitlines():
+        if "Closes" in ligne:
+            assert "**pas**" in ligne or "fermeture" in ligne.lower()
 
 
 def test_le_corps_de_l_issue_porte_le_marqueur_html():
@@ -406,6 +473,67 @@ def test_le_vert_ferme_l_issue_meme_si_la_recherche_ne_la_voit_pas(tmp_path):
 
     assert runner.fermetures(), "l'issue n'a pas ete fermee"
     assert creee in [int(cmd[3]) for cmd in runner.fermetures()]
+
+
+def test_une_issue_fermee_pendant_un_rouge_persistent_est_reouverte(tmp_path):
+    """Rouge persistant + issue fermee : la sentinelle la rouvre, sans doublon.
+
+    Le cas mesure (revue ai-01 du 16/11) : une PR de reparation portant
+    `Closes #N` ferme l'issue au MERGE du correctif, alors que `main` n'a pas
+    encore rejoue `Scripts Tests (CPU)` (20 a 30 min). Pendant ce temps
+    aucune issue n'est ouverte et la branche « aucune issue → voie normale »
+    renvoie chaque lane reparer seule.
+
+    La voie `known_number` (le numero inscrit dans la retenue) est donc
+    relue : on lit l'etat, on rouvre si le rouge tient, et on ne cree
+    AUCUNE seconde issue.
+    """
+    runner = _runner()
+    hold = _hold(tmp_path)
+    mr.refresh_main_red_hold(runner, {}, hold)
+    creee = runner.ouvertes[0]
+    assert len(runner.creations()) == 1
+
+    # Une PR de reparation portant `Closes #` ferme l'issue au merge.
+    runner.ouvertes.remove(creee)
+    runner.issues[creee]["state"] = "CLOSED"
+
+    # Le rouge tient toujours : le meme commit, le meme verdict.
+    mr.refresh_main_red_hold(runner, {}, hold)
+
+    assert runner.rouvertures(), "l'issue n'a pas ete rouverte"
+    assert creee in [int(cmd[3]) for cmd in runner.rouvertures()]
+    assert len(runner.creations()) == 1, "une seconde issue a ete ouverte"
+    assert creee in runner.ouvertes, "l'issue doit rester ouverte"
+
+
+def test_la_rouverture_cite_le_sha_rouge(tmp_path):
+    """Le commentaire de rouverture porte le SHA rouge : la preuve d'episode."""
+    runner = _runner()
+    hold = _hold(tmp_path)
+    mr.refresh_main_red_hold(runner, {}, hold)
+    creee = runner.ouvertes[0]
+    runner.ouvertes.remove(creee)
+    runner.issues[creee]["state"] = "CLOSED"
+
+    mr.refresh_main_red_hold(runner, {}, hold)
+
+    cmd = next(c for c in runner.rouvertures())
+    commentaire = cmd[cmd.index("--comment") + 1]
+    assert ROUGE_15_11 in commentaire
+    assert CHECK in commentaire
+
+
+def test_une_issue_ouverte_n_est_pas_rouverte_deux_fois(tmp_path):
+    """Rouge persistant + issue deja ouverte : aucune rouverture superflue."""
+    runner = _runner()
+    hold = _hold(tmp_path)
+    mr.refresh_main_red_hold(runner, {}, hold)
+
+    mr.refresh_main_red_hold(runner, {}, hold)
+
+    assert not runner.rouvertures(), "l'issue etait deja ouverte"
+    assert len(runner.creations()) == 1
 
 
 if __name__ == "__main__":  # pragma: no cover
