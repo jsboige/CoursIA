@@ -494,7 +494,8 @@ def _first_matching_label(text):
     """
     if not isinstance(text, str):
         return ""
-    if _is_nuget_extension_banner(text):
+    if ((ACTIVE_CATEGORIES is None or "nuget" in ACTIVE_CATEGORIES)
+            and _is_nuget_extension_banner(text)):
         return "nuget"
     norm = _normalize_bs(text)
     for label, token in MACHINE_PATH_TOKENS:

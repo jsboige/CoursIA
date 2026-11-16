@@ -1306,3 +1306,24 @@ def test_custom_banner_preserves_crlf_and_neighbor_elements(tmp_path):
     # Only the banner and its separator are removed; line endings are intact.
     assert p.read_bytes() == raw.replace(needle, b'', 1)
     assert json.loads(p.read_bytes())['cells'][0]['outputs'][0]['data']['text/plain'] == ['before', 'after']
+
+
+@pytest.mark.parametrize(('category', 'cache'), [
+    ('pip', r'AppData\Roaming\Python\cache'),
+    ('hf', r'.cache\huggingface\cache'),
+])
+def test_banner_overlap_respects_non_nuget_category(tmp_path, category, cache):
+    import strip_machine_paths as smp
+
+    smp.ACTIVE_CATEGORIES = {category}
+    banner = (f'Loading extensions from `C:\\Users\\alice\\{cache}\\pkg\\1.0.0\\'
+              'interactive-extensions\\dotnet\\Ext.dll`')
+    p = _write_nb(tmp_path / 'overlap.ipynb', [_code(['pass\n'], [_display_output(banner)])])
+    assert _has_leak(banner)
+    assert _first_matching_label(banner) == category
+    assert strip_in_place(p) == (1, 1)
+    result = json.loads(p.read_text(encoding='utf-8'))['cells'][0]['outputs'][0]['data']['text/plain'][0]
+    assert result.startswith('Loading extensions from `<USER_PATH>')
+    assert 'alice' not in result
+    assert result.endswith('interactive-extensions\\dotnet\\Ext.dll`')
+    assert strip_in_place(p) == (0, 0)
