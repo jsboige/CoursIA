@@ -165,6 +165,10 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 
 ---
 
+### Voice leading : affectation et contrepoint
+
+[App-21 en Python](App-21-VoiceLeading-Python.ipynb) et [son jumeau C#](App-21-VoiceLeading-CSharp.ipynb) comparent les mouvements de voix par affectation, puis auditent les règles de Fux avec CP-SAT. Le Python appelle SciPy, le C# utilise le solveur d’affectation OR-Tools natif ; tous deux préservent l’identité des voix et distinguent les notes immobiles des mouvements parallèles. Les figures et la progression sont autonomes.
+
 ## Prérequis par notebook
 
 ### Puissance 4 (Search)
