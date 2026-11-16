@@ -172,3 +172,5 @@ Maintenir ces fichiers dans `.claude/agent-memory/qc-robustness-researcher/`:
 - `robustness-patterns.md` - Patterns decouverts cross-strategies
 - `regime-calendar.md` - Periodes de marche de reference
 - `failed-approaches.md` - Ce qui n'a pas marche (eviter de repeter)
+
+Pièges mesurés (lecture d'un backtest, ordres, données, framework, outils) : [docs/qc/qc-pieges-mesures.md](../../docs/qc/qc-pieges-mesures.md).

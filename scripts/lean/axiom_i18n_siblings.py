@@ -55,8 +55,11 @@ Modes :
   (defaut)     table par lake : decision, raison, mesures
   --json       sortie machine
   --check      porte : exit 1 si le manifeste diverge des decisions
-               recomputees, si une entree n'a pas de cle explicite, ou si le
-               fichier de decisions a derive
+               recomputees, si une entree n'a pas de cle explicite, ou si la
+               DECISION d'un lac du fichier de decisions diverge. La RAISON
+               n'est pas comparee (elle embarque des comptes, donc elle
+               derive des que la surface `_en` d'un lac change) : son ecart
+               est signale en NOTE non bloquante.
   --update     ecrit la cle explicite dans le manifeste ET le fichier de
                decisions `axiom_i18n_siblings_decisions.json`
 
@@ -270,24 +273,21 @@ def decide_lake(entry, tools):
         governed = [a for a in noted if a in ALWAYS_FORBIDDEN_ANCHORS]
         if governed:
             row["reason"] = (
-                f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "
-                f"{row['i18n-declarations']} declarations) ; les ancres "
-                f"reportees ({', '.join(noted)}) sont gouvernees par la "
-                f"allow-list du lac (`axiom-allow-axioms`) -- la source ne dit "
-                f"pas si l'ancre resolue au build y est couverte, seule la CI "
-                f"le dit (le gate reel compare les noms resolus)")
+                "opt-in sur : la surface `_en` porte des ancres reportees "
+                "qui sont gouvernees par l'allow-list du lac "
+                "(`axiom-allow-axioms`) -- la source ne dit pas si l'ancre "
+                "resolue au build y est couverte, seule la CI le dit (le "
+                "gate reel compare les noms resolus)")
         else:
             row["reason"] = (
-                f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "
-                f"{row['i18n-declarations']} declarations) ne porte aucun ancrage "
-                f"qui ferait rougir la porte ; les `sorry` y sont rapportes, non "
-                f"gates (la porte ne gate pas sur sorryAx pour ce lake)")
+                "opt-in sur : la surface `_en` ne porte aucun ancrage qui "
+                "ferait rougir la porte ; les `sorry` y sont rapportes, non "
+                "gates (la porte ne gate pas sur sorryAx pour ce lake)")
     else:
         row["reason"] = (
-            f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "
-            f"{row['i18n-declarations']} declarations) est integralement "
-            f"auditable et sans ancre interdite ; la porte couvre desormais "
-            f"la surface bilingue entiere")
+            "opt-in sur : la surface `_en` est integralement auditable et "
+            "sans ancre interdite ; la porte couvre desormais la surface "
+            "bilingue entiere")
     row["decision"] = "true"
     return row
 
@@ -359,7 +359,30 @@ def _manifest_drift(rows):
 
 
 def _decisions_drift(rows):
-    """Ecarts entre le fichier de decisions et les decisions recomputees."""
+    """Ecarts BLOQUANTS entre le fichier de decisions et les decisions
+    recomputees.
+
+    Le ratchet porte sur la seule **DECISION** -- ce que le fichier affirme
+    de la couverture de la porte. La **RAISON** n'est PAS comparee, et les
+    comptes non plus.
+
+    Pourquoi : la raison est une prose qui embarque des COMPTES (« la
+    surface `_en` (5 modules, 50 declarations) ... »). Ces comptes bougent
+    des que le lac gagne un module `_en` ; la raison derivee de la mesure
+    est donc **volatile par construction**. La comparer reddenait `main` a
+    chaque ajout de surface bilingue, sans qu'aucune decision change --
+    mesure : les PR #26294 et #26297 ont fait croitre la surface de
+    `mathlibexamples` de 3 a 5 modules sans regeneration du fichier, et le
+    test `test_the_decisions_file_matches_the_recomputed_measurement` est
+    alors devenu rouge sur **toutes** les PRs (`Scripts Tests (CPU)`), sans
+    qu'aucune d'elles soit responsable. Les comptes vivent desormais dans
+    leurs champs dedies (`i18n-modules`, `i18n-declarations`) ; la raison
+    reste documentaire, et son ecart est signale sans bloquer (cf
+    `_decisions_stale_reasons`).
+
+    Le reste du contrat est intact : un lac absent du fichier, ou un lac du
+    fichier absent du manifeste, reste un ecart bloquant.
+    """
     if not DECISIONS.exists():
         return ["fichier de decisions absent"]
     payload = json.loads(DECISIONS.read_text(encoding="utf-8"))
@@ -374,12 +397,32 @@ def _decisions_drift(rows):
             drifts.append(
                 f"{row['lake']}: fichier={rec.get('decision')} / "
                 f"recomputee={row['decision']}")
-        elif rec.get("reason") != row["reason"]:
-            drifts.append(f"{row['lake']}: raisonderivee dans le fichier")
     for lake in recorded:
         if lake not in {r["lake"] for r in rows}:
             drifts.append(f"{lake}: lake inconnu du manifeste")
     return drifts
+
+
+def _decisions_stale_reasons(rows):
+    """Lacs dont la raison du fichier a derive de la mesure -- **note**, pas
+    blocage (cf `_decisions_drift` pour la raison de la separation).
+
+    La note garde l'information vivante : le fichier de decisions peut etre
+    regenere (`--update`) quand on veut une prose a jour, sans que l'ecart
+    de prose rouge `main`.
+    """
+    if not DECISIONS.exists():
+        return []
+    payload = json.loads(DECISIONS.read_text(encoding="utf-8"))
+    recorded = {r["lake"]: r for r in payload.get("lakes", [])}
+    stale = []
+    for row in rows:
+        rec = recorded.get(row["lake"])
+        if rec is None:
+            continue
+        if rec.get("reason") != row["reason"]:
+            stale.append(row["lake"])
+    return stale
 
 
 def apply_updates(rows, lane):
@@ -436,6 +479,14 @@ def main(argv=None) -> int:
         print("OK: chaque lake du manifeste porte une decision explicite "
               "`axiom-include-i18n-siblings`, conforme a la mesure "
               "recomputee et au fichier de decisions.")
+        stale = _decisions_stale_reasons(rows)
+        if stale:
+            print("NOTE (non bloquant) : raison du fichier de decisions "
+                  "derivee de la mesure pour "
+                  f"{len(stale)} lac(s) -- {', '.join(stale)} ; la raison "
+                  "embarque des comptes, ils vivent desormais dans "
+                  "`i18n-modules` / `i18n-declarations` ; `--update` "
+                  "rafraichit la prose.")
         return 0
 
     if args.json:

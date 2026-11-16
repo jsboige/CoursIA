@@ -21,14 +21,6 @@ def strip_stale_papermill_metadata(nb, cells=None):
     """Remove a pre-existing Papermill block from a notebook the executor is
     about to rewrite.
 
-    ``cells`` restricts the per-cell cleanup to the cells whose outputs the
-    executor actually rewrote (default: every cell). A single-cell executor
-    passes only the cell it re-ran: the other cells keep the outputs of the
-    run that produced them, so their blocks still describe that run and
-    removing them would be churn, not honesty. The notebook-level block is
-    always removed — it describes the whole-notebook pass, which no targeted
-    re-execution reproduces.
-
     The outputs and ``execution_count`` just written describe THIS run; a
     ``metadata.papermill`` left over from an earlier Papermill pass would still
     describe that pass (old dates, old duration) and would let a reviewer date
@@ -47,12 +39,26 @@ def strip_stale_papermill_metadata(nb, cells=None):
     gate. C'est le defaut STALE_IOPUB mesure sur MGS-02 (cf. #18305, instance
     du 2026-08-20 preservee par la passe anterieure alors que le notebook etait
     re-execute en 09/2026).
+
+    ``cells=None`` (defaut) stripppe TOUTES les cellules : c'est le contrat
+    d'un executeur qui reecrit le carnet entier (dotnet_executor,
+    execute_qcpy_docker, exec_dotnet_persist) — chaque cellule a alors des
+    sorties fraiches. Un executeur qui ne reecrit QUE CERTAINES cellules
+    (``exec_single_cell``) passe ``cells=[...]`` : les blocs d'une cellule non
+    re-executee decrivent encore le run qui a produit ses sorties intactes,
+    et les retirer detruit une provenance valide (mesure du 14/11 : 70
+    cellules strippes pour une seule executee, +50/-716 au lieu de +50/-7,
+    meme classe que #24434 sur le writer generique). Le niveau carnet est
+    strippés dans tous les cas : le ratchet #11155 autorise son absence
+    (BLOCK_REMOVED), pas sa survie sur des sorties changees (STALE_BLOCK).
     """
     metadata = nb.get("metadata")
     if metadata:
         metadata.pop("papermill", None)
         metadata.pop("execution", None)
-    for cell in (nb.get("cells", []) if cells is None else cells) or []:
+    if cells is None:
+        cells = nb.get("cells", []) or []
+    for cell in cells:
         cell_meta = cell.get("metadata")
         if not cell_meta:
             continue

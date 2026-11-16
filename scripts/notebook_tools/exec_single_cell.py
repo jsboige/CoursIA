@@ -11,9 +11,12 @@ tool runs only the target cell on a fresh kernel and persists just that cell.
 
 It reads/writes with the raw ``json`` module (NOT nbformat) so the on-disk key
 order of every other cell is preserved exactly: only the target cell's
-``execution_count`` and ``outputs`` are mutated. This avoids the whole-file
-key-order churn nbformat.write() introduces on notebooks that were saved by
-VS Code / dotnet-interactive (non nbformat-canonical key order).
+``execution_count``, ``outputs`` and stale per-cell papermill/execution blocks
+are mutated. This avoids the whole-file key-order churn nbformat.write()
+introduces on notebooks that were saved by VS Code / dotnet-interactive
+(non nbformat-canonical key order), and the mass metadata deletion a global
+``strip_stale_papermill_metadata`` call caused (mesure du 14/11 : 70 cellules
+strippées pour une seule exécutée, +50/-716 au lieu de +50/-7).
 
 For .NET (.net-csharp) kernels, the dotnet-interactive HTTP-port bootstrap
 ``<div>`` that a fresh kernel injects on the first executed cell (a
@@ -208,10 +211,14 @@ def main():
     target["outputs"] = outputs
 
     # Les sorties/ec fraîchement écrits décrivent CE run : un bloc papermill
-    # hérité d'une passe antérieure les daterait au mauvais run (#12722).
-    # Portee CIBLEE : seules les sorties de la cellule re-executee ont change,
-    # les autres cellules gardent les sorties du run qui les a produites --
-    # leur bloc n'est donc pas perime, et le retirer serait du bruit (#25188).
+    # hérité d'une passe antérieure les daterait au mauvais run (#12722). Le
+    # strip est BORNÉ à la cellule cible : les blocs des cellules non
+    # ré-exécutées décrivent le run qui a produit leurs sorties intactes —
+    # les retirer détruit une provenance valide (mesure du 14/11 : 70 cellules
+    # strippées pour une seule exécutée, +50/-716 au lieu de +50/-7 ; même
+    # classe que #24434 sur le writer générique). Le niveau carnet part bien :
+    # le ratchet #11155 autorise son absence (BLOCK_REMOVED), pas sa survie
+    # sur des sorties changées (STALE_BLOCK).
     strip_stale_papermill_metadata(nb, cells=[target])
     with open(args.notebook, "w", encoding="utf-8", newline="\n") as f:
         json.dump(nb, f, ensure_ascii=False, indent=1)

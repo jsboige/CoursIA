@@ -72,7 +72,12 @@ PADDING_REFERENCE = 776.0
 # troisieme -- le correctif `_kernelspecs_at` ne change pas la grandeur
 # (26 avant et apres, mesure sur l'arbre a284df8293f) : pas de point de
 # serie neuf, seule l'identite de l'instrument change.
-PADDING_REFERENCE_REBASE = 26.0
+# Sixieme rebasage (2026-11-13, #5081) : la grandeur CHANGE, comme le
+# quatrieme -- l'instrument reconnait le prefixe de kernel d'env
+# `coursia-py313` (publie dans kernels-runtime.md), deux carnets au nom
+# canonique sortent du bucket (27 -> 25 sur l'arbre 9f2ffff292b9). Le
+# point d'avant (26, instrument 18c887da79d) reste dans `historique`.
+PADDING_REFERENCE_REBASE = 25.0
 # Fixture de sha pour les tests qui simulent `git log` : ce n'est plus une
 # identite attendue du registre (c'etait le faux vert de #24678 -- la
 # constante de test et la donnee etaient la meme chaine, donc le test ne
@@ -396,13 +401,14 @@ def test_la_reference_du_padding_est_celle_de_l_issue():
     `comparables`), et c'est ce qui produisait le verdict « AVANCE »
     fabrique sur l'entree « padding et nommage »."""
     e = entree("padding-nommage")
-    assert e.reference.source.startswith("issue #23655")
-    assert e.reference.mesure_le == "2026-11-06"
+    assert e.reference.source.startswith("issue #5081")
+    assert e.reference.mesure_le == "2026-11-13"
     assert e.reference.valeur == PADDING_REFERENCE_REBASE
-    # Le 4e rebasage change la grandeur : les points d'avant le correctif
-    # restent dans la serie, ils ne servent plus de reference.
-    assert e.reference.valeur not in {39.0, 40.0}
-    assert {r.valeur for r in e.historique} >= {39.0, 40.0}
+    # Le 4e et le 6e rebasages changent la grandeur : les points d'avant
+    # chaque correctif restent dans la serie, ils ne servent plus de
+    # reference.
+    assert e.reference.valeur not in {39.0, 40.0, 26.0}
+    assert {r.valeur for r in e.historique} >= {39.0, 40.0, 26.0}
     # Et la reference rebasee est comparable a l'instrument courant : par le
     # sha, par la SOURCE du script ou par la date -- quel que soit le chemin
     # que la fusion laissera (une fusion en squash reecrit le sha sans
