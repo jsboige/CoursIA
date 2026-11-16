@@ -163,7 +163,44 @@ def test_le_mode_merged_signale_le_doublon_que_le_merge_cree(tmp_path):
 
 def test_le_mode_merged_laisse_passer_la_pr_qui_repare(tmp_path):
     """La base porte deux noms a 0007 (dette) ; la tete renumerote l'un. Le
-    merge ne porte plus qu'un nom a 0007 : la porte reste verte."""
+    merge ne porte plus qu'un nom a 0007 : la porte reste verte.
+
+    La renumerotation porte ici sur le fichier LE PLUS RECENT (#26795) :
+    c'est la variante qui laisse l'audit de parite lire une attestation a
+    jour. Renumeroter le fichier le plus ANCIEN vers le haut ferait passer
+    l'ordinal le plus haut devant une attestation plus recente -- l'audit
+    comparerait alors le carnet a une attestation perimee (le cas mesure
+    sur #26381). Ce second cas est teste plus bas.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init", "-q", "-b", "main")
+    _write_registry(repo, {
+        "0007-2026-10-01-a.yaml": "date: '2026-10-01'\n",
+        "0007-2026-10-02-b.yaml": "date: '2026-10-02'\n",
+    })
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "base")
+    _git(repo, "checkout", "-q", "-b", "pr")
+    _git(repo, "mv", f"{ORG}/{PAIR}/0007-2026-10-02-b.yaml",
+         f"{ORG}/{PAIR}/0009-2026-10-02-b.yaml")
+    _git(repo, "commit", "-q", "-m", "renumerotation")
+
+    data = _run_organ(repo, "main", "pr")
+    assert data["gate_fail"] is False, data
+    assert data["merged_reasons"] == []
+
+
+def test_le_mode_merged_refuse_la_reparation_qui_inverse_la_fraicheur(tmp_path):
+    """La meme reparation de doublon, mais renumerotant le fichier le plus
+    ANCIEN vers le haut : le sommet de la paire devient une attestation
+    perimee, et l'audit de parite (qui lit l'ordinal le plus haut)
+    comparerait le carnet a une attestation perimee.
+
+    C'est le cas mesure sur #26381 (`0044` du 13/11 renumerote au-dessus
+    de `0043` du 15/11) -- d'ou la porte (#26795). Le remede est dans le
+    message : renumeroter l'attestation la plus RECENTE, ou rebaseliner la
+    paire."""
     repo = tmp_path / "repo"
     repo.mkdir()
     _git(repo, "init", "-q", "-b", "main")
@@ -179,8 +216,13 @@ def test_le_mode_merged_laisse_passer_la_pr_qui_repare(tmp_path):
     _git(repo, "commit", "-q", "-m", "renumerotation")
 
     data = _run_organ(repo, "main", "pr")
-    assert data["gate_fail"] is False, data
-    assert data["merged_reasons"] == []
+    assert data["gate_fail"] is True, data
+    kinds = {r["kind"] for r in data["merged_reasons"]}
+    assert "ordinal_date_inversion" in kinds, data
+    inversions = [r for r in data["merged_reasons"]
+                   if r["kind"] == "ordinal_date_inversion"]
+    assert inversions[0]["pair"] == PAIR
+    assert inversions[0]["index"] == "0009"
 
 
 def test_un_merge_en_conflit_reste_illisible_et_ne_pretend_pas_etre_propre(tmp_path):

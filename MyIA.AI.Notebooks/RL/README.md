@@ -8,9 +8,9 @@ pagetitle: "RL - Reinforcement Learning"
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 40
-breakdown: root=29, PostTraining=11
-maturity: BETA=40
+pedagogical_count: 41
+breakdown: root=30, PostTraining=11
+maturity: BETA=41
 -->
 
 Comment un agent apprend-il à décider quand personne ne lui donne la bonne réponse ? Le reinforcement learning (apprentissage par renforcement) répond par l'essai et l'erreur : l'agent agit, observe la conséquence de son action, et ajuste sa politique. C'est le paradigme derrière AlphaGo, le contrôle de robots, et l'alignement des modèles de langue par retour humain.
@@ -63,9 +63,9 @@ Les numéros nus constituent le parcours principal. Les liens de la dernière co
 | 14 | [RL-14-RL-Hierarchique-Options-Python](RL-14-RL-Hierarchique-Options-Python.ipynb) | python3 | Abstraction temporelle : options `(I, π, β)` de Sutton, Precup et Singh, gridworld à quatre pièces, crédit sur longue horizon, formalisme semi-MDP enseigné sur place | 50 min | |
 | 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | python3 | GRPO contre PPO sur CartPole-v1 : avantage relatif intra-groupe contre GAE bootstrappé, six graines appariées, verdict tri-conditionnel (seuil à deux écarts-types, Wilcoxon apparié, intervalle bootstrap des différences). **Verdict du run committé : PPO devant GRPO** (six graines sur six, p = 0,0312) ; portée et limites documentées dans le carnet. Exige un GPU CUDA | 40-45 min | |
 | 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.ipynb) | python3 | Exploration explicite et programmable (la politique est du code), historique de découverte utilisé comme simulateur-replay, évaluation off-policy à coût nul, boucle d'auto-amélioration avec incumbent ; monde jouet circle-packing en bibliothèque standard, ablation replay brut contre guidance sémantique | 40-45 min | |
-| 19 | [RL-19-Reward-Tampering-Python](RL-19-Reward-Tampering-Python.ipynb) | python3 | Du specification gaming au reward tampering : *Rocks and Diamonds* à paramètre modifiable (Everitt et al. 2021), quatre agents résolus par induction arrière exacte, et la mesure qui compte — l'indifférence n'est pas la protection, le départage des égalités suffit à déclencher la manipulation | 35-40 min | |
-| 20 | [RL-20-Randomisation-Domaine-Sim-to-Real-Python](RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | python3 | Du simulateur au réel : les paramètres physiques de `CartPole-v1` modifiés pour de vrai (`masscart`, `masspole`, `length`, `gravity`, `tau`), trois régimes de test — nominal, interpolation, extrapolation — et la question de transfert qu'ils posent | 40-45 min | |
-| 21 | [RL-21-Auto-Jeu-AlphaZero-Python](RL-21-Auto-Jeu-AlphaZero-Python.ipynb) | python3 | Auto-jeu à la AlphaZero sur CPU (Puissance 4 réduit) : MCTS guidé par réseau (PUCT, valeur du réseau au lieu de rollouts), cibles politiques prises sur les distributions de visites, deux têtes politique/valeur, tournoi round-robin à budget égal — la boucle fermée fonctionne, l'avantage du guidage demande des budgets plus élevés | 10 min | |
+| 17 | [RL-17-Reward-Tampering-Python](RL-17-Reward-Tampering-Python.ipynb) | python3 | Du specification gaming au reward tampering : *Rocks and Diamonds* à paramètre modifiable (Everitt et al. 2021), quatre agents résolus par induction arrière exacte, et la mesure qui compte — l'indifférence n'est pas la protection, le départage des égalités suffit à déclencher la manipulation | 35-40 min | |
+| 18 | [RL-18-Randomisation-Domaine-Sim-to-Real-Python](RL-18-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | python3 | Du simulateur au réel : les paramètres physiques de `CartPole-v1` modifiés pour de vrai (`masscart`, `masspole`, `length`, `gravity`, `tau`), trois régimes de test — nominal, interpolation, extrapolation — et la question de transfert qu'ils posent | 40-45 min | |
+| 19 | [RL-19-Auto-Jeu-AlphaZero-Python](RL-19-Auto-Jeu-AlphaZero-Python.ipynb) | python3 | Auto-jeu à la AlphaZero sur CPU (Puissance 4 réduit) : MCTS guidé par réseau (PUCT, valeur du réseau au lieu de rollouts), cibles politiques prises sur les distributions de visites, deux têtes politique/valeur, tournoi round-robin à budget égal — la boucle fermée fonctionne, l'avantage du guidage demande des budgets plus élevés | 10 min | |
 
 ### Approfondissements
 
@@ -368,6 +368,10 @@ Chaque carnet se termine sur des exercices à compléter dans les cellules prév
 
 Dans `RL-15`, les exercices prolongent le comparatif multi-graines : ils invitent à examiner l'avantage relatif au groupe, le choix du nombre de graines et l'effet de la taille du groupe.
 
+## Reward model Bradley–Terry : Python et C#
+
+[RLPT-00 en Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) et [en C#](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-CSharp.ipynb) entraînent le même type de modèle de reward sur des préférences synthétiques, avec PyTorch et TorchSharp CPU. Le pooling moyen reste insensible à l'ordre : les deux versions exposent cette limite et distinguent la référence Bayes en espérance des mesures réalisées.
+
 ## Ponts vers les autres séries
 
 ### Où atterrit le « pont RLHF »
@@ -406,7 +410,7 @@ La sous-série [`PostTraining/`](PostTraining/) et [GenAI/PostTraining](../GenAI
 
 ### Recherche adversariale et jeux
 
-Le pont avec [Search](../README.md) est direct : `RL-08` montre les rollouts et la planification depuis un modèle appris, et le carnet Search consacré à MCTS fait le lien vers AlphaGo (recherche arborescente guidée par un réseau de valeur) ; `RL-21` referme la boucle en entraînant le réseau *par* la recherche, sur un jeu réduit. Côté [GameTheory](../GameTheory/README.md), l'apprentissage multi-agent de `RL-07` et `RL-07b` rejoint la théorie des jeux : l'équilibre que des agents indépendants atteignent n'est pas forcément l'optimum conjoint, et le Climbing Game en donne la démonstration mesurée.
+Le pont avec [Search](../README.md) est direct : `RL-08` montre les rollouts et la planification depuis un modèle appris, et le carnet Search consacré à MCTS fait le lien vers AlphaGo (recherche arborescente guidée par un réseau de valeur) ; `RL-19` referme la boucle en entraînant le réseau *par* la recherche, sur un jeu réduit. Côté [GameTheory](../GameTheory/README.md), l'apprentissage multi-agent de `RL-07` et `RL-07b` rejoint la théorie des jeux : l'équilibre que des agents indépendants atteignent n'est pas forcément l'optimum conjoint, et le Climbing Game en donne la démonstration mesurée.
 
 ### Activité de vulgarisation
 
@@ -433,8 +437,8 @@ L'activité [Processus de décision de Markov de l'aspirateur autonome](../GenAI
 | `RL-12` | Bellemare, Dabney & Munos, C51 (2017) |
 | `RL-13` | Burda et al., Random Network Distillation (2018) |
 | `RL-14` | Sutton, Precup & Singh, options (1999) |
-| `RL-19` | Everitt et al., reward tampering (2021) |
-| `RL-21` | Silver et al., AlphaZero (2017) |
+| `RL-17` | Everitt et al., reward tampering (2021) |
+| `RL-19` | Silver et al., AlphaZero (2017) |
 | `RLPT-01` | Christiano et al., RLHF (2017) |
 | `RLPT-04` | Rafailov et al., DPO (2023) |
 
@@ -568,6 +572,10 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 Le [notebook RL-09 en Python](RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) a maintenant un [jumeau C#](RL-09-RL-Offline-Behavior-Cloning-CSharp.ipynb). Les deux versions implémentent de zéro le Q-learning tabulaire, le Behavior Cloning et la contrainte de support BCQ-lite; le code C# s’appuie sur la bibliothèque standard .NET, sans moteur RL ni package NuGet.
 
 Les trajectoires et retours mesurés diffèrent entre langages, car NumPy et .NET n’emploient pas le même générateur pseudo-aléatoire ni le même ordre de départage. Les mêmes invariants sont contrôlés : géométrie du labyrinthe, chemin BFS de 14 pas, cibles terminales, actions hors support et dimensions de couverture. Le twin C# rend ses figures en SVG statique.
+
+### Options hiérarchiques en C#
+
+[RL-14 Python](RL-14-RL-Hierarchique-Options-Python.ipynb) et [RL-14 C#](RL-14-RL-Hierarchique-Options-CSharp.ipynb) présentent FourRooms, les options BFS et le crédit SMDP. Le port C# utilise la BCL et un graphique SVG ; les générateurs aléatoires des deux langages produisent des mesures distinctes.
 
 ## Licence
 
