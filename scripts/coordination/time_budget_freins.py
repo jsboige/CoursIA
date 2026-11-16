@@ -66,7 +66,12 @@ _HEADER_RE = re.compile(
     r"^###\s+\[(?P<ts>\d{4}-\d{2}-\d{2}T[\d:.]+Z)\]\s+(?P<machine>[\w.\-]+)\|(?P<workspace>[\w.\-]+)\s*$"
 )
 _TAGS_RE = re.compile(r"^\[tags:\s*(?P<tags>[^\]]*)\]", re.MULTILINE)
-_FREINS_MARKER_RE = re.compile(r"^\[FREINS\]\s*$", re.IGNORECASE | re.MULTILINE)
+# Le marqueur tolere les decorations markdown REELLES des [DONE] de la flotte :
+# `**[FREINS]** (demande ai-01)`, `### [FREINS]`, `> [FREINS]`, `[FREINS] — top-3`.
+# Mesure du 2026-11-15 : un [DONE] ecrivant ses freins sous `**[FREINS]** — top-3`
+# n'etait pas reconnu — ses chiffres existaient et comptaient 0. La classe
+# n'inclut PAS `-` : une puce `- [FREINS] ...` reste une puce, pas un marqueur.
+_FREINS_MARKER_RE = re.compile(r"^[\s>#*_]*\[FREINS\]", re.IGNORECASE)
 # `17+ min`, `~5 min`, `0 min` -- le premier chiffre suivi de `min` fait foi.
 # Le `+` optionnel couvre la forme mesuree `35+ min (hosted)` : sans lui, une
 # puce REELLE du miroir (c3103) serait lue « sans minutes » et fabriquerait un
@@ -264,11 +269,39 @@ def _extract_prs(body: str) -> list[str]:
 # Rapport
 # ---------------------------------------------------------------------------
 
+def _dedupe_entries(entries: list[Entry]) -> tuple[list[Entry], int]:
+    """Ecartes les entrees [DONE] cross-postees sur deux dashboards.
+
+    Une lane peut poster le meme [DONE] sur son dashboard ``workspace`` ET sur un
+    ``machine`` ou le ``global`` (crossPost du dashboard MCP). Le miroir porte
+    alors DEUX fois le meme bloc, avec le meme en-tete : sans dedup, ses minutes
+    comptent double et la lane apparait deux fois dans le tableau par cycle.
+
+    La cle est (horodatage d'en-tete, lane, premiere ligne de corps) : trois
+    champs que le cross-post recopie a l'identique, et qu'une AUTRE lane ne peut
+    pas produire par hasard -- deux lanes n'ont pas le meme couple
+    ``machine:workspace``, et deux cycles d'une meme lane n'ont ni le meme
+    horodatage ni le meme marqueur de cycle en tete de corps.
+    """
+    seen: set[tuple[str, str, str]] = set()
+    kept: list[Entry] = []
+    doublons = 0
+    for e in entries:
+        key = (e.timestamp.isoformat(), e.lane, e.body_first_line)
+        if key in seen:
+            doublons += 1
+            continue
+        seen.add(key)
+        kept.append(e)
+    return kept, doublons
+
+
 def build_report(entries: list[Entry], since: datetime, until: datetime) -> dict:
     """Fenetre + trois sorties du mandat : (a) par cycle, (b) cumul par cause,
     (c) fautifs sans [FREINS] chiffre."""
     window = [e for e in entries if since <= e.timestamp <= until]
     window.sort(key=lambda e: e.timestamp)
+    window, doublons = _dedupe_entries(window)
 
     per_cycle = [
         {
@@ -297,6 +330,35 @@ def build_report(entries: list[Entry], since: datetime, until: datetime) -> dict
             else:
                 bucket["minutes"] += f.minutes
 
+    # Le cumul par cause buckete le TEXTE LIBRE, borne a 48 car. : trois facons
+    # d'ecrire une meme famine sortent en trois lignes. La fenetre du 2026-11-15
+    # en portait l'exemple sur #26581 -- « Famine runners sur #26581 »,
+    # « Analyze (python) #26581 QUEUED 35+ min », « runners hosted satures ».
+    # Quand les mots varient, le point commun d'une cause est l'OBJET qu'elle
+    # cite : on agrege donc AUSSI par objet. Une puce citant plusieurs objets est
+    # imputee au PREMIER (ordre du texte), si bien que la somme par objet ne
+    # depasse jamais le total mesure.
+    par_objet: dict[str, dict] = {}
+    for e in window:
+        for f in e.freins:
+            if f.cause is None:
+                continue
+            cites = _PR_RE.findall(f.raw)
+            if not cites:
+                continue
+            key = "#" + cites[0]
+            bucket = par_objet.setdefault(
+                key,
+                {"objet": key, "minutes": 0, "occurrences": 0, "non_chiffrees": 0, "causes": []},
+            )
+            bucket["occurrences"] += 1
+            if f.minutes is None:
+                bucket["non_chiffrees"] += 1
+            else:
+                bucket["minutes"] += f.minutes
+            if f.cause not in bucket["causes"]:
+                bucket["causes"].append(f.cause)
+
     faulties = [
         {
             "lane": e.lane,
@@ -309,9 +371,15 @@ def build_report(entries: list[Entry], since: datetime, until: datetime) -> dict
     ]
 
     return {
-        "fenetre": {"depuis": since.isoformat(), "jusqu_a": until.isoformat(), "entrees_done": len(window)},
+        "fenetre": {
+            "depuis": since.isoformat(),
+            "jusqu_a": until.isoformat(),
+            "entrees_done": len(window),
+            "doublons_ecartes": doublons,
+        },
         "par_cycle": per_cycle,
         "cumul_par_cause": sorted(cumul.values(), key=lambda b: (-b["minutes"], -b["non_chiffrees"], b["cause"])),
+        "cumul_par_objet": sorted(par_objet.values(), key=lambda b: (-b["minutes"], -b["non_chiffrees"], b["objet"])),
         "total_min_mesurees": sum(b["minutes"] for b in cumul.values()),
         "fautifs": faulties,
         "limites": [
@@ -319,6 +387,9 @@ def build_report(entries: list[Entry], since: datetime, until: datetime) -> dict
             "durees et minutes declaratives, non verifiees",
             "une cause nommee sans minutes compte n.c. (0 au total, listee en fautifs)",
             "heures ecrites dans le corps des lanes = prose locale (UTC+1) ; la fenetre se cale sur les en-tetes UTC",
+            "cumul par cause = texte libre borne a 48 car. : deux ecritures d'une meme cause y restent deux lignes ; le cumul par objet cite les regroupe",
+            "cumul par objet : une puce citant plusieurs objets est imputee au premier, et une puce sans objet cite n'y entre pas (elle reste dans le cumul par cause)",
+            "un [DONE] ecrivant ses freins en prose SANS marqueur [FREINS] reste hors mesure (faux positif connu, non devinable sans risquer d'inventer des chiffres)",
         ],
     }
 
@@ -328,7 +399,12 @@ def render_markdown(report: dict) -> str:
     le numero de cycle."""
     lines: list[str] = []
     fen = report["fenetre"]
-    lines.append(f"## Budget de temps — fenêtre {fen['depuis']} → {fen['jusqu_a']} ({fen['entrees_done']} [DONE])")
+    doublons = fen.get("doublons_ecartes") or 0
+    suffixe = f", {doublons} doublon(s) cross-post écarté(s)" if doublons else ""
+    lines.append(
+        f"## Budget de temps — fenêtre {fen['depuis']} → {fen['jusqu_a']} "
+        f"({fen['entrees_done']} [DONE]{suffixe})"
+    )
 
     lines.append("")
     lines.append("### Par cycle")
@@ -351,6 +427,19 @@ def render_markdown(report: dict) -> str:
     for b in report["cumul_par_cause"]:
         lines.append(f"| {b['cause']} | {b['minutes']} | {b['occurrences']} | {b['non_chiffrees']} |")
     lines.append(f"| **Total mesuré** | **{report['total_min_mesurees']}** | | |")
+
+    # Le cumul par cause ne regroupe que le texte libre : deux ecritures d'une
+    # meme famine y restent deux lignes. La vue par objet cite donne le
+    # regroupement que les mots ne donnent pas (« combien a coute #26581 ? »).
+    objets = report.get("cumul_par_objet") or []
+    if objets:
+        lines.append("")
+        lines.append("### Cumul par objet cité")
+        lines.append("| Objet | Minutes | Occurrences | Non chiffrées | Écritures de la cause |")
+        lines.append("|---|---|---|---|---|")
+        for b in objets:
+            causes = " · ".join(b["causes"][:3]) + (" …" if len(b["causes"]) > 3 else "")
+            lines.append(f"| {b['objet']} | {b['minutes']} | {b['occurrences']} | {b['non_chiffrees']} | {causes} |")
 
     lines.append("")
     lines.append("### [DONE] sans [FREINS] chiffré")
@@ -400,7 +489,33 @@ def _parse_since(raw: str) -> datetime:
     return dt
 
 
+def _force_utf8_stdio() -> None:
+    """Force stdout/stderr en UTF-8 quand le flux les a ouverts autrement.
+
+    Sous Windows, ``python -I`` (mode isole) ignore ``PYTHONIOENCODING`` : le
+    stdout reste en cp1252 et le premier caractere non-ASCII du rapport (``é``,
+    ``→``, ``—``) tue le script sur ``UnicodeEncodeError: 'charmap'``. Un organe
+    ne peut pas dependre d'une variable d'environnement que son appelant doit
+    penser a poser : il force son propre encodage.
+
+    No-op quand le flux est deja en UTF-8 (cas POSIX, et le ``capsys`` de pytest,
+    qui n'expose pas ``reconfigure``).
+    """
+    for stream in (sys.stdout, sys.stderr):
+        encoding = (getattr(stream, "encoding", None) or "").lower().replace("-", "")
+        if encoding in ("utf8", "utf8mb4"):
+            continue
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is None:
+            continue
+        try:
+            reconfigure(encoding="utf-8", errors="replace")
+        except (ValueError, OSError):
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _force_utf8_stdio()
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,

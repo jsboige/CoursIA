@@ -244,9 +244,15 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
+      # 3.12, pas 3.11 : le garde `notebook-cell-source-parses` (absorbe ici)
+      # parse le source des cellules avec le tokenizer de l'interpreteur
+      # COURANT, et `--target-py 3.12` ne peut pas l'assouplir sur un
+      # runtime 3.11. Les kernels des carnets sont en 3.13 : une f-string
+      # PEP 701 valide (#26737, `f"{'A \\ B':>18}"`) rougissait la jambe
+      # absorbee alors que le workflow autonome, epingle en 3.12, la passe.
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       # Dependances des detecteurs du fast-lane (pyyaml pour le scan de
       # closure markdown-rendering, Pillow pour scan_md_hierarchy) --

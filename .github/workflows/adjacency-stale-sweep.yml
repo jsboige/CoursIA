@@ -147,6 +147,7 @@ jobs:
           sparse-checkout: |
             scripts/ci/refresh_stale_adjacency.py
             scripts/ci/fetch_merged_prs_since.py
+            scripts/ci/fetch_pr_checkruns.py
             scripts/ci/variation_adjacency_guard.py
             scripts/grain_tag.py
             scripts/variation_light_cap.py
@@ -175,24 +176,44 @@ jobs:
             > /tmp/adjacency_openprs.txt \
             || { echo "::warning::[adjacency-sweep] PR listing failed (upstream) -- skip this sweep"; exit 0; }
 
+          # #26739 -- les jambes sont lues par le COLLECTEUR
+          # (`scripts/ci/fetch_pr_checkruns.py`), qui produit le meme format
+          # que la boucle d'avant. Ce balayeur ne consomme NI la carte des
+          # runs NI les conclusions de run : les deux lectures sont donc
+          # desactivees (`--no-run-map --no-run-conclusions`), et le cout se
+          # limite aux lectures de jambes -- les PAGES comprises (l'endpoint
+          # rend 100 check-runs par page : une tete qui en porte plus exige
+          # la page suivante, sinon le filtre lit une vue perimee -- mesure
+          # 2026-11-15 : 69 PR sur 171 en portent plus de 100).
           : > /tmp/adjacency_red.txt
-          GUARD_LEG_COUNT=0
-          while read -r NUM SHA; do
-            [ -z "${NUM:-}" ] && continue
-            LEGS=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-                     --jq '[.check_runs[] | select(.name | startswith("Always-on guards")) | .conclusion]' 2>/dev/null) || continue
-            if [ -z "${LEGS:-}" ] || [ "$LEGS" = "[]" ]; then
-              continue
-            fi
-            GUARD_LEG_COUNT=$((GUARD_LEG_COUNT + 1))
-            # Une jambe rouge = candidate ; refresh_stale_adjacency.py
-            # re-vérifie contre `gh pr checks` et décide du refresh. Le
-            # pré-filtre peut sur-sélectionner (jambe passée cohabitant avec
-            # une vieille rouge, #11532), le script reste l'autorité.
-            if printf '%s' "$LEGS" | jq -e 'any(. == "failure" or . == "timed_out" or . == "action_required")' >/dev/null 2>&1; then
-              echo "$NUM" >> /tmp/adjacency_red.txt
-            fi
-          done < /tmp/adjacency_openprs.txt
+          : > /tmp/adjacency_legs.txt
+          LEGS_RC=0
+          python3 scripts/ci/fetch_pr_checkruns.py --repo "$REPO" \
+            --prs /tmp/adjacency_openprs.txt --out /tmp/adjacency_legs.jsonl \
+            --no-run-map --no-run-conclusions --json \
+            > /tmp/adjacency_legs.json 2>/tmp/adjacency_legs.err || LEGS_RC=$?
+          if [ "$LEGS_RC" -ne 0 ]; then
+            echo "::warning::[adjacency-sweep] check-runs collection failed (rc=$LEGS_RC) -- skip this sweep"
+            cat /tmp/adjacency_legs.err
+            exit 0
+          fi
+          # #26739 -- les muets du collecteur (PRs illisibles, lecture
+          # tronquee, erreurs GraphQL partielles) sont des `::warning::` sur
+          # SON stderr : ils sont re-emis ici, sinon ils seraient lus par
+          # personne -- le stderr du collecteur n'est affiche qu'en cas
+          # d'echec.
+          if [ -s /tmp/adjacency_legs.err ]; then
+            grep -E '^::(warning|error)::' /tmp/adjacency_legs.err || true
+          fi
+          jq -r '[.checks[] | select(.name | startswith("Always-on guards"))] as $legs | select(($legs | length) > 0) | "\(.number) \([$legs[].conclusion] | join(" "))"' \
+            /tmp/adjacency_legs.jsonl > /tmp/adjacency_legs.txt
+          GUARD_LEG_COUNT=$(wc -l < /tmp/adjacency_legs.txt | tr -d ' ')
+          # Une jambe rouge = candidate ; refresh_stale_adjacency.py
+          # re-verifie contre `gh pr checks` et decide du refresh. Le
+          # pre-filtre peut sur-selectionner (jambe passee cohabitant avec
+          # une vieille rouge, #11532), le script reste l'autorite.
+          awk '{for (i = 2; i <= NF; i++) if ($i == "failure" || $i == "timed_out" || $i == "action_required") { print $1; break }}' \
+            /tmp/adjacency_legs.txt > /tmp/adjacency_red.txt
           INSPECTED=$(wc -l < /tmp/adjacency_openprs.txt | tr -d ' ')
           RED_COUNT=$(wc -l < /tmp/adjacency_red.txt | tr -d ' ')
           echo "[adjacency-sweep] open PRs inspected: $INSPECTED; carrying an 'Always-on guards*' leg: $GUARD_LEG_COUNT; red legs: $RED_COUNT"
