@@ -2403,7 +2403,7 @@ query {
     pullRequests(states:OPEN, first:100, orderBy:{field:UPDATED_AT, direction:ASC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        number title headRefName baseRefName body additions deletions
+        number title headRefName baseRefName body additions deletions createdAt
         headRefOid
         files(first:100) { totalCount nodes { path changeType } }
       }
@@ -2419,7 +2419,7 @@ query($cursor: String) {
     pullRequests(states:OPEN, first:100, after:$cursor, orderBy:{field:UPDATED_AT, direction:ASC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        number title headRefName baseRefName body additions deletions
+        number title headRefName baseRefName body additions deletions createdAt
         headRefOid
         files(first:100) { totalCount nodes { path changeType } }
       }
@@ -2725,6 +2725,10 @@ def _gh_open_prs_complete() -> list[dict]:
                 "body": node.get("body"),
                 "additions": node.get("additions"),
                 "deletions": node.get("deletions"),
+                # #26751 -- la date de creation serveur de la PR : elle dit si
+                # la PR est ANTERIEURE au claim de la lane appelante (une
+                # livraison en cours que le claim a recouvre).
+                "created_at": node.get("createdAt"),
                 "files": [{"path": p} for p in paths],
                 # #25910 -- anciens chemins des renommages (liste vide si la
                 # PR n'en porte pas). La cle est aussi la preuve que cette
@@ -2809,6 +2813,18 @@ def _read_open_prs_cache() -> list[dict] | None:
             # renommer. Il est donc traite comme absent -- le fetch complet
             # qui suit le REECRIT au format courant.
             if any("renames" not in pr for pr in prs if isinstance(pr, dict)):
+                return None
+            # #26751 -- meme traitement pour la date de creation : sans elle,
+            # la jambe IMPLICIT ne peut pas dire si une PR est ANTERIEURE au
+            # claim de la lane appelante, et le filtre par date (le cas
+            # #26597) deviendrait un verdict fabrique. Un cache ecrit par une
+            # version anterieure est donc traite comme absent : le fetch
+            # complet qui suit le REECRIT au format courant. Les DEUX
+            # graphies sont acceptees (`created_at` du fetch GraphQL de cet
+            # organe, `createdAt` du `gh pr list` du picker) -- meme chose,
+            # deux ecrivains.
+            if any("created_at" not in pr and "createdAt" not in pr
+                   for pr in prs if isinstance(pr, dict)):
                 return None
             return prs
         raise OpenPrsIncompleteError(
@@ -3343,6 +3359,10 @@ def _find_open_prs_referencing_issue(
             "files": files,
             "additions": pr.get("additions"),
             "deletions": pr.get("deletions"),
+            # #26751 -- la date de creation serveur de la PR, comparee au
+            # `createdAt` serveur du claim de la lane appelante. Deux
+            # graphies acceptees (voir `_read_open_prs_cache`).
+            "created_at": pr.get("created_at") or pr.get("createdAt"),
             "enumerative": cited > limit,
             "cited_issues": cited,
         })
@@ -5572,9 +5592,12 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     of ANOTHER lane references this issue. Implicit occupation has no
     marker authority, so it neither reuses BLOCKED (exit 1) nor the
     io/gh-error exit 2 that check_grain_free.py documents for this mode.
-    Emitted only on the read path (`check_open_pr_paths=True`): a `--claim`
-    posting is the deconfliction gesture itself and is never refused by
-    this leg.
+    #26751 -- the leg is now read AND write: `--claim` calls this function
+    with `check_open_pr_paths=True`, and a rc=3 REFUSES the post (a marker
+    posted over an untagged OPEN PR of another lane deconflicts nothing).
+    When the caller already HOLDS its claim, the leg is restricted to the
+    PRs opened BEFORE that claim (the server `createdAt` of each): a PR
+    opened after it stays subsumed by the claim (review 5429946072).
 
     Args:
         payload: `gh issue view --json ...` payload (or `from-json`).
@@ -5919,20 +5942,26 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
 
     # #14300 -- the IMPLICIT leg, issue mode (the incident's exact shape:
     # `check_lane_claim.py 14259 --lane ...` said CLEAR while PR #14293 of
-    # another lane was already 79+/3- deep on the same file). Read path
-    # only (`--claim` is exempt: posting the marker IS the deconfliction
-    # gesture, and the writer path calls this function with
-    # `check_open_pr_paths=False`). Lazy by outcome: it runs only when the
-    # registry carries NO active claim at all -- neither another lane's
-    # (`not others`, final post scope-filter and stale-filter) nor the
-    # caller's (`mine is None`, review 5429946072: the letter of #14300 is
-    # « sans qu'aucun [CLAIMED] n'ait ete pose » -- a lane that HAS posted
-    # its marker owns the grain, and an open PR of a third lane must not
-    # flip its verdict to IMPLICIT), because any claim subsumes implicit
-    # occupation AND skipping the gh round-trip on claimed probes keeps
-    # the picker's N-per-draw probes cheap. Fail-open with a loud WARN on
-    # gh failure, same posture as the #16570 paths leg: a leg that cannot
-    # measure must not fabricate a verdict.
+    # another lane was already 79+/3- deep on the same file). Lazy by
+    # outcome: it runs only when the registry carries NO active claim of
+    # ANOTHER lane (`not others`, final post scope-filter and stale-filter),
+    # because an explicit claim subsumes implicit occupation. Fail-open with
+    # a loud WARN on gh failure, same posture as the #16570 paths leg: a leg
+    # that cannot measure must not fabricate a verdict.
+    #
+    # #26751 -- deux trous fermes sur cette jambe :
+    #   (a) le chemin d'ECRITURE (`--claim`) ne la lancait pas : poser le
+    #       marqueur n'est PAS le geste de deconfliction face a une PR
+    #       ouverte et SANS marqueur d'une session hors flotte (#26597).
+    #   (b) une lane qui detient DEJA son claim recevait CLEAR pour toujours
+    #       (`mine is None`), meme au-dessus d'une PR plus ancienne que son
+    #       claim : c'est exactement le cas #26597 (deux PRs pour un grain).
+    # La jambe tourne donc desormais pour la lane appelante ; le filtre
+    # chronologique (le `createdAt` serveur du claim contre celui de la PR)
+    # ne retient que les PRs ANTERIEURES au claim : une PR posterieure
+    # reste subsumee par le claim (review 5429946072). Le cout du round-trip
+    # gh est le meme qu'avant (memo de processus + cache de session) ; seule
+    # la lecture d'une lane qui CLAIMait l'evite.
     implicit_occupation: list[dict] = []
     # #22408 (item 3) -- `[]` disait deux choses incompatibles : « mesure, et
     # personne n'occupe » et « jambe non demandee ». Instance #21881 : le
@@ -5941,12 +5970,36 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # outcome* -- a cet instant le registre portait un claim actif, donc la
     # jambe n'a pas tourne. Le booleen separe la mesure de son absence.
     implicit_occupation_measured = False
-    if (check_open_pr_paths and not others and mine is None
+    if (check_open_pr_paths and not others
             and payload.get("number") is not None):
         implicit_occupation_measured = True
         try:
             implicit_occupation = _find_open_prs_referencing_issue(
                 int(payload["number"]), my_lane)
+            if mine is not None:
+                # #26751 -- la lane appelante detient son claim : seule une PR
+                # ANTERIEURE a ce claim signale que le claim a recouvre une
+                # livraison en cours. Une PR posterieure reste subsumee.
+                claim_at = mine.get("created_at")
+                kept: list[dict] = []
+                for finding in implicit_occupation:
+                    pr_at = finding.get("created_at")
+                    if not claim_at or not pr_at:
+                        # Mesure impossible : la jambe ne fabrique pas de
+                        # verdict (fail-open + WARN), comme sur un `gh` mort.
+                        print(
+                            f"WARN: date de creation illisible (PR "
+                            f"#{finding.get('number')} : {pr_at or 'absente'} ; "
+                            f"claim de {my_lane} : {claim_at or 'absent'}) : "
+                            f"le filtre chronologique de la jambe IMPLICIT "
+                            f"(#26751) ne peut pas conclure -- verifier a la "
+                            f"main avant d'editer.",
+                            file=sys.stderr,
+                        )
+                        continue
+                    if pr_at < claim_at:
+                        kept.append(finding)
+                implicit_occupation = kept
         except (RuntimeError, ValueError, TypeError) as exc:
             implicit_occupation_measured = False
             print(
@@ -8178,15 +8231,34 @@ def main(argv: list[str] | None = None) -> int:
                             # chemin unitaire. `--from-json` est un contrat
                             # HORS RESEAU : on ne va pas chercher un parent ni
                             # un pool pour lui.
-                            epic_cap=not args.from_json)
+                            epic_cap=not args.from_json,
+                            # #26751 -- le chemin d'ECRITURE lance les jambes
+                            # PR-ouverte : poser le marqueur n'est PAS le geste
+                            # de deconfliction face a une PR ouverte et SANS
+                            # marqueur d'une session hors flotte (#26597). Un
+                            # rc=3 (IMPLICIT) refuse donc de poster.
+                            # `--from-json` reste un contrat HORS RESEAU :
+                            # aucune PR n'y est lue, la jambe est sautee et
+                            # le dit sur stderr.
+                            check_open_pr_paths=not args.from_json)
+            if args.from_json:
+                print(
+                    "WARN: --from-json : les jambes PR-ouverte sont sautees "
+                    "(contrat hors reseau) -- une PR ouverte d'une autre lane "
+                    "referencant ce grain NE PEUT PAS etre detectee ici. "
+                    "Verifier a la main avec `gh pr list --state open "
+                    "--search \"<N>\"` avant de claimer (#26751).",
+                    file=sys.stderr,
+                )
             if rc != 0:
                 # #22500 point 3 -- le refus ne nomme plus une cause unique :
                 # le check peut aussi rendre le plafond hebdomadaire d'un EPIC.
                 print(f"BLOCKED: not posting [CLAIMED] on #{issue} "
                       f"-- the check above names the blocking cause (another "
-                      f"lane's active claim, or the weekly EPIC cap of "
-                      f"#22500). Use --force only for coordinator "
-                      f"arbitration.",
+                      f"lane's active claim, an OPEN PR of another lane "
+                      f"referencing this grain -- IMPLICIT, #26751, or the "
+                      f"weekly EPIC cap of #22500). Use --force only for "
+                      f"coordinator arbitration.",
                       file=sys.stderr)
                 return rc
         body = _CLAIM_BODY_TMPL.format(
