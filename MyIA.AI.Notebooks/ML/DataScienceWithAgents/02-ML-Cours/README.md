@@ -207,7 +207,7 @@ Chaque notebook suit les mêmes conventions :
 
 9. **Diagnostiquer un modèle entraîné** : analyse par tranches (heatmap tranches × métrique, effectifs lus), inspection worst-k des deux côtés de la matrice, erreurs affirmées vs hésitantes (pont vers la calibration, 2.5b), et plan d'action cause → remède dont le gain est **mesuré par tranche** (2.13).
 10. **Régler les hyperparamètres honnêtement** : poser un espace de recherche mixte (continu, discret, conditionnel), mesurer pourquoi la grille exhaustive explose en dimension, lire l'argument de couverture du hasard, consommer un search bayésien (TPE/Optuna), et s'arrêter sur un critère de gain marginal explicite — budget, multi-seed, médiane (2.10).
-11. **Régulariser et réduire en grande dimension** : comprendre pourquoi OLS devient indéterminée quand $p > n$ (rang $< p$, solutions non uniques), ce que la pénalité ridge ($\lambda$ par CV) change, la différence entre composantes **ignorantes de la cible** (PCR) et **supervisées** (PLS), et re-vérifier tout verdict sur plusieurs graines — la min-norme perd 8/10 et 6/10 selon le régime (2.3c).
+11. **Régulariser et réduire en grande dimension** : comprendre pourquoi OLS devient indéterminée quand $p > n$ (rang $< p$, solutions non uniques), ce que la pénalité ridge ($\lambda$ par CV) change, la différence entre composantes **ignorantes de la cible** (PCR) et **supervisées** (PLS), et re-vérifier tout verdict sur plusieurs graines — la min-norme est dernière ou ex æquo 8/10 et 6/10 selon le régime (2.3c).
 
 ## Prérequis
 
