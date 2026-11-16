@@ -438,6 +438,7 @@ def ramp_ews_segment(
     min_steps: int = 20000,
     jump_threshold: float = 0.15,
     jump_hold: int = 200,
+    t_cut_override: Optional[int] = None,
 ) -> Dict[str, object]:
     """EWS d'une rampe, mesures sur le **residu a la branche analytique**.
 
@@ -452,6 +453,12 @@ def ramp_ews_segment(
     posterieur a ``t_cut``. Si ``t_cut < min_steps`` la graine est declaree
     ``excluded`` et aucune statistique n'est rendue (garde de faisabilite du
     protocole).
+
+    ``t_cut_override`` sert a l'**appariement du nul N1** : le protocole
+    tronque le nul a la longueur exacte du bras pli de la meme graine, pour
+    que la comparaison porte sur autant de fenetres de part et d'autre. Il
+    n'a aucun autre usage et ne change rien a la regle du lead time, qui
+    reste calculee (et enregistree) avant lui.
 
     Renvoie un dict serialisable (les tableaux restent hors du dict : la
     variance et l'AR1 brute sont dans ``variance`` / ``ar1`` pour les figures).
@@ -474,6 +481,11 @@ def ramp_ews_segment(
     t_jump = _first_sustained_below(ps, jump_threshold, jump_hold)
     ref = t_cross if t_jump is None else min(t_cross, t_jump)
     t_cut = int(ref) - int(lead_steps)
+    # Appariement du nul N1 : le document scelle impose la MEME longueur que
+    # le bras pli de la meme graine, pour que la comparaison porte sur autant
+    # de fenetres de part et d'autre. L'override est reserve a cet usage.
+    if t_cut_override is not None:
+        t_cut = int(t_cut_override)
 
     out: Dict[str, object] = {
         "t_cross": int(t_cross),

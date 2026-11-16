@@ -400,3 +400,18 @@ def test_instrument_sees_a_built_in_variance_rise():
     var = ews.rolling_variance(x[::10], 100)
     tau, _ = ews.kendall_tau(np.arange(var.shape[0], dtype=float), var)
     assert tau > 0.5, f"tau_var={tau:.3f} sur une hausse construite"
+
+
+def test_t_cut_override_pairs_the_null_to_the_fold_length():
+    """Le nul N1 est tronque a la longueur exacte du bras pli (appariement)."""
+    n = 24000
+    ps = np.ones(n)                      # aucun saut : t_cross = n
+    bs = np.linspace(0.0, 0.4, n)        # ne franchit jamais b_c
+    ref = ramp_ews_segment(ps, bs, 2.0, 0.6, min_steps=1000)
+    assert int(ref["t_cut"]) == n - 1000
+    pair = ramp_ews_segment(ps, bs, 2.0, 0.6, min_steps=1000,
+                            t_cut_override=20000)
+    assert int(pair["t_cut"]) == 20000
+    n_thin = len(np.arange(0, 20000)[::10])
+    assert int(pair["n_windows"]) == n_thin - 100 + 1
+    assert pair["excluded"] is False
