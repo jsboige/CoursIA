@@ -39,7 +39,7 @@ NEGATIF :
    l'etape venv ; controle negatif : l'etape venv pointe bien sur
    `setup_wsl_python.sh`.
 
-Run : python -m pytest scripts/tests/test_validate_lean_setup.py
+Run : python -m pytest scripts/tests/test_lean_validate_lean_setup.py
 """
 
 import importlib.util

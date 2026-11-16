@@ -320,7 +320,6 @@ MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb	MyIA.AI.Notebooks/II
 MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb	MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb	MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb	2026-10-11	myia-po-2023:CoursIA-2
-
 MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
@@ -452,7 +451,6 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb	MyIA.AI.Noteboo
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb	2026-11-04	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb	2026-11-04	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb	2026-11-04	myia-po-2024:CoursIA
-
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb	2026-11-03	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb	2026-11-03	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21b-SAECalibration-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21b-SAECalibration-Python.ipynb	2026-11-03	myia-po-2023:CoursIA
@@ -642,9 +640,12 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-10b-ML-CATE
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb	2026-11-13	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb	2026-11-13	myia-po-2024:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb	2026-11-13	myia-po-2024:CoursIA
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents	MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Agents-de-Donnees	2026-11-13	myia-po-2028:CoursIA
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration	MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents	2026-11-13	myia-po-2028:CoursIA
+MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb	MyIA.AI.Notebooks/RL/RL-17-Reward-Tampering-Python.ipynb	2026-11-15	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/RL/RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb	MyIA.AI.Notebooks/RL/RL-18-Randomisation-Domaine-Sim-to-Real-Python.ipynb	2026-11-15	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/RL/RL-21-Auto-Jeu-AlphaZero-Python.ipynb	MyIA.AI.Notebooks/RL/RL-19-Auto-Jeu-AlphaZero-Python.ipynb	2026-11-15	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb	2026-11-15	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14b-ActiveInferenceEFE-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb	2026-11-15	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Python.ipynb	2026-11-15	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb	2026-11-15	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents	MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Agents-de-Donnees	2026-11-13	myia-po-2028:CoursIA
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration	MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents	2026-11-13	myia-po-2028:CoursIA
