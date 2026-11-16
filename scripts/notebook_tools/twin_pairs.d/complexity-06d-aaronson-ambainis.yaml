@@ -1,0 +1,10 @@
+- name: "Complexity-06d Aaronson Ambainis"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-06d-AaronsonAmbainis-VariableInfluente-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Le cube, la transformée de Walsh, les influences, les circuits quantiques et l'arbre C sont natifs en C# ; MathNet génère les unitaires de Haar et SciPy/HiGHS résout réellement les programmes linéaires par Python.NET.
+  known_differences:
+    - "Les générateurs aléatoires C# et NumPy produisent des unitaires différentes ; les budgets et lois sont conservés. Les résultats papier et Lean sont rapportés par le Python et non rejoués pour ce port."
