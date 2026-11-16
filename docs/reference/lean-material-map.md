@@ -10,9 +10,9 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 | Lac | Modules | Miroirs | CI | Gate axiomes | Site = consommateur | Doublons declares | Naissance |
 |---|---|---|---|---|---|---|---|
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 100 | 98 | declare | couverte | 1 hors site (4 carnets) | 0 / 1 | 2026-05-31 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 58 | 42 | declare | couverte | 1 hors site (9 carnets) | 0 / 3 | 2026-05-28 |
-| `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 45 | 27 | declare | couverte | ok (4) | 1 / 5 | 2026-07-10 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` | 100 | 98 | declare | couverte | 1 hors site (4 carnets) | - | 2026-05-31 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` | 58 | 42 | declare | couverte | 1 hors site (9 carnets) | 0 / 2 | 2026-05-28 |
+| `MyIA.AI.Notebooks/GameTheory/game_theory_lean` | 45 | 27 | declare | couverte | ok (4) | 1 / 3 | 2026-07-10 |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 34 | 26 | declare | couverte | ok (1) | - | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 1 hors site (5 carnets) | - | 2026-06-25 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
@@ -118,10 +118,8 @@ La colonne « nature » compare la **formulation**, pas le resultat, et cet éca
 | `dayOfWeek_add_seven` | `conway_lean`, `calibration_lean` | 4 | 0 | conway_lean 0/2, calibration_lean 0/2 | formulation identique | non declare |
 | `fairBot_unexploitable` | `game_theory_lean`, `formal_logic_lean` | 3 | 0 | game_theory_lean 0/2, formal_logic_lean 0/1 | formulation differente | non declare |
 | `fairBot_vs_defectBot` | `game_theory_lean`, `formal_logic_lean` | 3 | 0 | game_theory_lean 0/2, formal_logic_lean 0/1 | formulation differente | non declare |
-| `is` | `game_theory_lean`, `conway_lean` | 3 | 0 | game_theory_lean 0/1, conway_lean 0/2 | formulation differente | non declare |
 | `nimSum_single` | `conway_lean`, `calibration_lean` | 4 | 0 | conway_lean 0/2, calibration_lean 0/2 | formulation identique | non declare |
 | `sen_impossibility` | `game_theory_lean`, `lean_game_defs` | 4 | 4 | game_theory_lean 2/2, lean_game_defs 2/2 | formulation differente | declare |
-| `that` | `game_theory_lean`, `grothendieck_lean` | 2 | 0 | game_theory_lean 0/1, grothendieck_lean 0/1 | formulation differente | non declare |
 
 **Cet inventaire sous-compte, et c'est mesure.** La detection est par nom : un meme resultat prouve sous deux noms differents lui echappe. Le controle negatif est `Arrow`, declare des deux cotes (`game_theory_lean/SocialChoice/Arrow.lean` : `arrow` ; `lean_game_defs/SocialChoice.lean` : `arrow_impossibility`), et absent de la table ci-dessus. Un verdict « 0 doublon » ne se lit donc jamais comme « aucun resultat n'est prouve deux fois ». La table ne tranche pas davantage l'identite mathematique : elle compare des formulations, et une « formulation differente » peut etre le meme theoreme encode deux fois — le cas se rencontre dans ce depot, ou une maison abstraite et une maison specialisee prouvent le meme resultat a des generalites differentes. L'organe qui tranche est celui de #24183 (tranche T0) ; cette page en est l'inventaire, pas le juge.
 
