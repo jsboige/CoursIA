@@ -21,6 +21,14 @@ Les cinq jumeaux bash sont **livrés et commités** (PRs #10650, #10657, #10670,
 #10673 + FFmpeg/Z3 préexistants). Le préfixe `_` « placeholder » est désormais
 obsolète : tous les scripts ci-dessus existent sur `main`.
 
+Le script bash installe FFmpeg via le gestionnaire de paquets système (`apt`,
+`yum`, `dnf` ou Homebrew). Il ne prend pas en charge `--path` ; cette option
+est refusée avant tout appel au gestionnaire. `--help` affiche son usage.
+Cette différence avec `-InstallPath` sous PowerShell est intentionnelle : le
+script Windows télécharge et extrait une archive dans le répertoire choisi,
+tandis que les gestionnaires Unix déterminent eux-mêmes les chemins installés.
+Le script bash ne prétend donc pas pouvoir choisir leur destination.
+
 ## Usage
 
 ### Windows (PowerShell)

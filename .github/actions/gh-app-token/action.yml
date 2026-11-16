@@ -1,0 +1,71 @@
+name: 'REST token : App GitHub si le secret existe, sinon GITHUB_TOKEN'
+description: >
+  Rend un jeton pour les appels REST dans un seau de quota SEPARE de celui de
+  `GITHUB_TOKEN` quand l'App GitHub est configuree, et se replie sur
+  `GITHUB_TOKEN` sinon. Inerte tant que le secret n'est pas pose : le repli
+  rend exactement le jeton d'aujourd'hui, donc le job se comporte comme avant.
+
+  Contexte (#26739) : le jeton du depot (`GITHUB_TOKEN`) plafonne a 1 000
+  appels/h pour l'ensemble du depot, partage par tous les jobs ; un seul cron
+  horaire en consomme ~630 (cf docs/coordination/ci-overflow-controller.md).
+  Le jeton d'installation d'une App a son PROPRE seau : l'y deplacer retire sa
+  depense du seau partage sans changer le comportement du job.
+
+  Le secret est pose par le coordinateur (App installee sur le depot, secret
+  `APP_ID` + `APP_PRIVATE_KEY`). Tant qu'il est absent, l'etape App est
+  sautee et le repli s'applique -- aucune ecriture, aucun echec.
+
+inputs:
+  app-id:
+    description: >
+      Identifiant de l'App GitHub (secret `APP_ID`). Vide = repli sur
+      `GITHUB_TOKEN`.
+    required: false
+    default: ''
+  private-key:
+    description: >
+      Cle privee PEM de l'App (secret `APP_PRIVATE_KEY`). Vide = repli sur
+      `GITHUB_TOKEN`.
+    required: false
+    default: ''
+
+outputs:
+  token:
+    description: 'Jeton a passer aux appels REST (env `GH_TOKEN`).'
+    value: ${{ steps.resolve.outputs.token }}
+  source:
+    description: 'Origine du jeton : `app` ou `github-token`.'
+    value: ${{ steps.resolve.outputs.source }}
+
+runs:
+  using: composite
+  steps:
+    - name: Jeton d'installation de l'App (si le secret existe)
+      id: app
+      # La condition porte sur les DEUX entrees : un `app-id` sans cle (ou
+      # l'inverse) ne peut pas produire de jeton, et l'etape doit alors
+      # s'ignorer au lieu d'echouer. Indexation explicite (`inputs[...]`) :
+      # un nom d'entree contenant un trait d'union n'a pas besoin d'etre
+      # devinette par le parseur d'expressions.
+      if: ${{ inputs['app-id'] != '' && inputs['private-key'] != '' }}
+      # `continue-on-error` : l'App peut etre absente du depot, mal installee,
+      # ou le secret peut avoir expire. Le repli doit alors s'appliquer SANS
+      # faire echouer le job -- un job rouge pour un jeton manquant est pire
+      # que le quota qu'on voulait epargner. Le repli est visible dans le
+      # journal (`source=github-token`) et dans la sortie `source`.
+      continue-on-error: true
+      uses: actions/create-github-app-token@v2
+      with:
+        app-id: ${{ inputs['app-id'] }}
+        private-key: ${{ inputs['private-key'] }}
+
+    - name: Resolution du jeton
+      id: resolve
+      shell: bash
+      env:
+        # Vide quand l'etape App a ete sautee ou a echoue -> repli.
+        APP_TOKEN: ${{ steps.app.outputs.token }}
+        # Le jeton du job : c'est lui qui rend le mecanisme INERTE tant que
+        # le secret n'est pas pose.
+        FALLBACK_TOKEN: ${{ github.token }}
+      run: bash "${{ github.action_path }}/resolve_token.sh"
