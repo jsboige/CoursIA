@@ -227,11 +227,34 @@ class ScriptedRunner:
         # Log d'echec du run (`gh run view --log-failed`). Vide par defaut :
         # aucun test n'y est identifie.
         run_log: str = "",
+        # #26706 : issue canonique du rouge de `main`. `main_red_issues` =
+        # les issues [main-red] VIVantes (comme la recherche GitHub les
+        # rendrait) ; `main_red_search_rc` non nul simule une recherche
+        # illisible (fail-closed : aucune creation) ; `main_red_issue_rc`
+        # non nul simule un refus de creation ou de fermeture.
+        main_red_issues: list[dict] | None = None,
+        main_red_search_rc: int = 0,
+        main_red_issue_rc: int = 0,
+        # #26706 : reponse scriptee de ``gh issue view <numero>`` -- la
+        # lecture de l'ETAT d'une issue [main-red] connue par son numero.
+        # La CLE est le numero ; la VALEUR est soit un payload JSON (dict),
+        # soit un stdout BRUT (str : reponse malformee -> illisible).
+        # `main_red_view_rc` non nul simule une lecture ILLISIBLE.
+        main_red_views: dict[int, dict | str] | None = None,
+        main_red_view_rc: int = 0,
     ):
         self.rest_reviews = list(rest_reviews or [])
         self.user_types = user_types or {}
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
+        self.main_red_issues = list(main_red_issues or [])
+        self.main_red_search_rc = main_red_search_rc
+        self.main_red_issue_rc = main_red_issue_rc
+        self.main_red_views = dict(main_red_views or {})
+        self.main_red_view_rc = main_red_view_rc
+        self.main_red_created: list[dict] = []
+        self.main_red_reopened: list[int] = []
+        self.main_red_closed: list[int] = []
         self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
         self.main_check_runs = main_check_runs if main_check_runs is not None else json.dumps([
             {"name": "Scripts Tests (CPU)", "conclusion": "success",
@@ -336,6 +359,93 @@ class ScriptedRunner:
             return mr.RunResult(1, "", "HTTP 404")
         if c[:2] == ["gh", "api"] and "/commits/main" in c[2]:
             return mr.RunResult(0, self.main_sha + "\n", "")
+        if "search/issues" in c:
+            # #26706 : recherche de l'issue canonique du rouge de `main`.
+            if self.main_red_search_rc != 0:
+                return mr.RunResult(self.main_red_search_rc, "", "search failed")
+            return mr.RunResult(
+                0,
+                json.dumps(
+                    {"total_count": len(self.main_red_issues),
+                     "items": self.main_red_issues}
+                ),
+                "",
+            )
+        if c[:2] == ["gh", "issue"] and c[2] == "create":
+            # #26706 : ouverture de l'issue du rouge de `main`.
+            if self.main_red_issue_rc != 0:
+                return mr.RunResult(self.main_red_issue_rc, "", "create refused")
+            number = 26710 + len(self.main_red_created)
+            row = {
+                "number": number,
+                "title": c[c.index("--title") + 1],
+                "body": Path(c[c.index("--body-file") + 1]).read_text(encoding="utf-8"),
+            }
+            self.main_red_created.append(row)
+            self.main_red_issues.append(row)
+            return mr.RunResult(
+                0, f"https://github.com/jsboige/CoursIA/issues/{number}\n", ""
+            )
+        if c[:2] == ["gh", "issue"] and c[2] == "close":
+            # #26706 : fermeture de l'issue du rouge de `main`.
+            if self.main_red_issue_rc != 0:
+                return mr.RunResult(self.main_red_issue_rc, "", "close refused")
+            number = int(c[3])
+            self.main_red_closed.append(number)
+            self.main_red_issues = [
+                row for row in self.main_red_issues if row["number"] != number
+            ]
+            return mr.RunResult(0, "", "")
+        if c[:2] == ["gh", "issue"] and c[2] == "edit":
+            if self.main_red_issue_rc != 0:
+                return mr.RunResult(self.main_red_issue_rc, "", "edit refused")
+            number = int(c[3])
+            for row in self.main_red_issues:
+                if row["number"] != number:
+                    continue
+                if "--title" in c:
+                    row["title"] = c[c.index("--title") + 1]
+                if "--body-file" in c:
+                    row["body"] = Path(
+                        c[c.index("--body-file") + 1]
+                    ).read_text(encoding="utf-8")
+            return mr.RunResult(0, "", "")
+        if c[:3] == ["gh", "issue", "view"]:
+            # #26706 : lecture de l'ETAT d'une issue [main-red] connue par
+            # son numero (`_read_main_red_issue`). Les trois etats doivent
+            # etre scriptingables : `ok` (payload conforme), `absent` (le
+            # numero rendu ne correspond pas a celui demande) et
+            # `illisible` (rc non nul, ou stdout malforme).
+            if self.main_red_view_rc != 0:
+                return mr.RunResult(self.main_red_view_rc, "", "view refused")
+            number = int(c[3])
+            scripted = self.main_red_views.get(number)
+            if scripted is not None:
+                if isinstance(scripted, str):
+                    return mr.RunResult(0, scripted, "")
+                return mr.RunResult(0, json.dumps(scripted), "")
+            # Issue non scriptee : l'etat REEL du runner fait foi (comme
+            # pour la recherche), sinon la lecture est un refus.
+            for row in self.main_red_issues:
+                if row["number"] == number:
+                    return mr.RunResult(0, json.dumps({
+                        "number": row["number"],
+                        "title": row.get("title", ""),
+                        "body": row.get("body", ""),
+                        "state": row.get("state", "OPEN"),
+                    }), "")
+            return mr.RunResult(1, "", "issue introuvable")
+        if c[:3] == ["gh", "issue", "reopen"]:
+            # #26706 : rouverture d'une issue [main-red] fermee a tort, le
+            # rouge tenant toujours au commit courant.
+            if self.main_red_issue_rc != 0:
+                return mr.RunResult(self.main_red_issue_rc, "", "reopen refused")
+            number = int(c[3])
+            self.main_red_reopened.append(number)
+            for row in self.main_red_issues:
+                if row["number"] == number:
+                    row["state"] = "OPEN"
+            return mr.RunResult(0, "", "")
         if c[:2] == ["gh", "api"] and "/commits?sha=" in c[2]:
             # Historique de main lu par la sentinelle (le plus recent d'abord).
             return mr.RunResult(0, "\n".join(self.main_history) + "\n", "")
@@ -1273,8 +1383,13 @@ def test_main_rouge_pose_hold_nommee_et_bloque_tout_merge(tmp_path):
     assert not any("gh pr view" in cmd or "gh pr merge" in cmd for cmd in red.flat())
     assert hold.read_text(encoding="utf-8").splitlines() == [
         "16808 attente utilisateur",
+        # #26706 : la retenue porte le numero de l'issue du rouge -- c'est
+        # la voie deterministe de reutilisation (l'index de recherche peut
+        # avoir du retard, deux runs rapproches ne doivent pas ouvrir deux
+        # issues).
         "0 main-red-sentinel sha=" + red.main_sha
-        + " check=Scripts Tests (CPU) conclusion=failure test=scripts/tests/test_guard.py::test_case",
+        + " check=Scripts Tests (CPU) conclusion=failure test=scripts/tests/test_guard.py::test_case"
+        + " issue=26710",
     ]
 
     # Le vert retire uniquement la ligne appartenant a la sentinelle.
@@ -1309,6 +1424,72 @@ def _scripts_check(conclusion, status="completed", summary="21 000 passed", star
 def _job_url(job_id: int) -> str:
     """`details_url` d'un check-run de job (forme mesuree sur l'API)."""
     return f"https://github.com/jsboige/CoursIA/actions/runs/43316243195/job/{job_id}"
+
+
+def test_le_rouge_de_main_ouvre_une_issue_et_le_vert_la_ferme(tmp_path):
+    """#26706, de bout en bout dans le run : l'issue est le canal de coordination.
+
+    Le 15/11, le rouge de `main` a recu QUATRE reparations concurrentes
+    (#26696, #26697, #26698, plus une tentative locale) : rien ne disait
+    aux lanes que le rouge etait deja pris. La sentinelle ouvre donc UNE
+    issue `[main-red] <check> — <test>`, que la lane de reparation reclame,
+    et la ferme des que le verdict redevient vert.
+    """
+    main_sha = "c" * 40
+    runner = ScriptedRunner(
+        main_sha=main_sha,
+        main_history=[main_sha],
+        main_checks_by_sha={
+            main_sha: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_guard.py::test_case - assertion",
+            )
+        },
+    )
+    journal = tmp_path / "journal.jsonl"
+    hold = tmp_path / "hold.txt"
+
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold)], runner=runner)
+    assert rc == 0
+    assert len(runner.main_red_created) == 1, "le rouge n'a pas ouvert d'issue"
+    assert runner.main_red_created[0]["title"] == (
+        "[main-red] Scripts Tests (CPU) — scripts/tests/test_guard.py::test_case"
+    )
+    assert "0 main-red-sentinel sha=" + main_sha in hold.read_text(encoding="utf-8")
+
+    # Le vert arrive sur `main` : l'issue se ferme et la retenue tombe.
+    runner.main_checks_by_sha[main_sha] = _scripts_check("success")
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold)], runner=runner)
+    assert rc == 0
+    assert runner.main_red_closed == [runner.main_red_created[0]["number"]]
+    assert "main-red-sentinel" not in hold.read_text(encoding="utf-8")
+
+
+def test_une_recherche_d_issue_illisible_n_ouvre_rien_mais_pose_la_retenue(tmp_path):
+    """#26706, fail-closed : une recherche illisible n'ouvre AUCUNE issue.
+
+    Une retention en double est pire qu'une absence : deux lanes y
+    reclameraient le meme rouge. La retenue, elle, reste posee.
+    """
+    main_sha = "d" * 40
+    runner = ScriptedRunner(
+        main_sha=main_sha,
+        main_history=[main_sha],
+        main_red_search_rc=1,
+        main_checks_by_sha={
+            main_sha: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_guard.py::test_case - assertion",
+            )
+        },
+    )
+    journal = tmp_path / "journal.jsonl"
+    hold = tmp_path / "hold.txt"
+
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold)], runner=runner)
+    assert rc == 0
+    assert runner.main_red_created == [], "une issue a ete ouverte malgre la recherche"
+    assert "0 main-red-sentinel sha=" + main_sha in hold.read_text(encoding="utf-8")
 
 
 def test_sentinelle_juge_le_commit_derriere_une_tete_en_cours(tmp_path):

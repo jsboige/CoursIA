@@ -2,8 +2,6 @@
 pagetitle: "Théorie des Jeux - Game Theory"
 ---
 
-# Théorie des Jeux - Game Theory
-
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ RL](../RL/README.md)
 
 <!-- CATALOG-STATUS
@@ -139,7 +137,7 @@ Le modèle s'enrichit du temps et de l'incertitude : arbres de jeu et ensembles 
 
 ### Phase 3 : algorithmes, coopération, mécanismes, apprentissage (13 à 17, et les capstones 18 à 21)
 
-La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à information imparfaite, jeux différentiels, théorie coopérative, conception de mécanismes, apprentissage multi-agent. Les paliers 06, 15 et 16 servent aussi d'escalier vers trois sous-séries — [Dynamics](Dynamics/README.md), consacrée à la coopération crédible sous menace ou preuve dégradée, [Coalitions](#sous-série-coalitions), consacrée à la valeur d'un groupe, et [SocialChoice](#sous-série-socialchoice), consacrée à l'agrégation des préférences ; les capstones [19 (Dynamics)](GameTheory-19-Capstone-Dynamics-Python.ipynb), 20 (Coalitions, PR #26712 ouverte) et [21 (SocialChoice)](GameTheory-21-Capstone-Choix-Social-Python.ipynb) en sont les portes d'entrée depuis la série mère. Le [capstone 18](GameTheory-18-Capstone-Metajeux-Python.ipynb) ferme le même parcours par l'autre bout : il **relie** les six carnets de la sous-série [Metajeux](Metajeux/README.md) autour d'une seule question — quand on change l'espace de représentation d'un jeu, qu'est-ce qui survit ?
+La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à information imparfaite, jeux différentiels, théorie coopérative, conception de mécanismes, apprentissage multi-agent. Les paliers 06, 15 et 16 servent aussi d'escalier vers trois sous-séries — [Dynamics](Dynamics/README.md), consacrée à la coopération crédible sous menace ou preuve dégradée, [Coalitions](#sous-série-coalitions), consacrée à la valeur d'un groupe, et [SocialChoice](#sous-série-socialchoice), consacrée à l'agrégation des préférences ; les capstones [19 (Dynamics)](GameTheory-19-Capstone-Dynamics-Python.ipynb), [20 (Coalitions)](GameTheory-20-Capstone-Coalitions-Python.ipynb) et [21 (SocialChoice)](GameTheory-21-Capstone-Choix-Social-Python.ipynb) en sont les portes d'entrée depuis la série mère. Le [capstone 18](GameTheory-18-Capstone-Metajeux-Python.ipynb) ferme le même parcours par l'autre bout : il **relie** les six carnets de la sous-série [Metajeux](Metajeux/README.md) autour d'une seule question — quand on change l'espace de représentation d'un jeu, qu'est-ce qui survit ?
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
@@ -150,6 +148,7 @@ La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à
 | 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL-Python.ipynb) · [C#](GameTheory-17-MultiAgent-RL-CSharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | Licence | [17b](GameTheory-17b-Asymmetric-Information-Python.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) · [17f](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) |
 | 18 | Capstone métajeux — [Python](GameTheory-18-Capstone-Metajeux-Python.ipynb) | Ce qui survit au changement de représentation : composer, abstraire, témoigner — les six protocoles mesurés de la sous-série Metajeux, rejoués devant le lecteur | Licence | sous-série [Metajeux](Metajeux/README.md) |
 | 19 | Capstone dynamics — [Python](GameTheory-19-Capstone-Dynamics-Python.ipynb) | La sous-série Dynamics depuis la série mère : l'effondrement par induction à rebours et son remède (seuil δ* mesuré, celui que `Discounting.lean` énonce), la coopération one-shot par preuve mutuelle prouvée (Löb) contre la preuve de surface sondable, le budget de raisonnement comme paramètre du jeu — inventaire mesuré du lake `game_theory_lean` | Licence | sous-série [Dynamics](Dynamics/README.md) |
+| 20 | Capstone coalitions — [Python](GameTheory-20-Capstone-Coalitions-Python.ipynb) | La sous-série Coalitions depuis la série mère : l'échelle des garanties du pouvoir calculé (Banzhaf) à la preuve formelle (lake `assignment_lean`, 0 sorry), en passant par l'institution réelle de l'échange de reins et l'optimum dual certifié de Munkres | Licence | sous-série [Coalitions](Coalitions/README.md) |
 | 21 | Capstone choix social — [Python](GameTheory-21-Capstone-Choix-Social-Python.ipynb) | La sous-série SocialChoice depuis la série mère : témoins d'Arrow et cycle de Condorcet par le code, Gale-Shapley vérifié, lecture mesurée du lake | Licence | sous-série [SocialChoice](SocialChoice/README.md) |
 
 Le palier 16 est l'un des cas réels mesurés par le [critère de frontière utilitaire-de-série / exposition MCP](../../docs/reference/ict-mcp-frontier-criterion.md) — verdict : rien dû, le palier reste notebook.
@@ -223,7 +222,7 @@ Le carnet 03d existe aussi en [C#](GameTheory-03d-Deux-Especes-de-Fleches-CSharp
 | 04c | Point fixe discriminant — [Python](GameTheory-04c-NashExistence-Python.ipynb) · [C#](GameTheory-04c-NashExistence-CSharp.ipynb) | Brouwer rendu testable : la carte `perturbed_br` déplace un profil non équilibré et laisse fixe l'équilibre (voir [Pour aller plus loin](#pour-aller-plus-loin)) | Python · C# | Licence |
 | 04d | Marchandage asymétrique — [Python](GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) · [C#](GameTheory-04d-Marchandage-Asymetrique-CSharp.ipynb) | Point de désaccord, faisceau de dépendance et contre-exemple stylisé à une lecture du moindre intérêt par le seul désir | Python · C# | Licence |
 | 04e | [Oracles réflexifs](GameTheory-04e-Reflective-Oracles-Python.ipynb) | Fallenstein, Taylor et Christiano (2015) : un agent qui raisonne sur un modèle de lui-même, l'écart CDT/EDT, un Nash réflexivement cohérent | Python | Recherche |
-| 04f → DecInfer | [Théories de la décision face à un prédicteur](../Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) — *descendu vers l'arc décision de Probas ([DecInfer-11](../Probas/DecisionTheory/DecInfer/README.md)) : EDT, CDT et UDT sont des théories de la décision, non des équilibres* | EDT, CDT et UDT sur Newcomb, la lésion de Fisher et d'autres problèmes dans un seul cadre générique ; 2TDT-1CDT ; inattention rationnelle | Python | Recherche |
+| 04f → DecInfer | [Théories de la décision face à un prédicteur](../Probas/DecisionTheory/DecInfer/DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) — *descendu vers l'arc décision de Probas ([DecInfer-09](../Probas/DecisionTheory/DecInfer/README.md)) : EDT, CDT et UDT sont des théories de la décision, non des équilibres* | EDT, CDT et UDT sur Newcomb, la lésion de Fisher et d'autres problèmes dans un seul cadre générique ; 2TDT-1CDT ; inattention rationnelle | Python | Recherche |
 | 04g | Supermodularité et treillis des équilibres — [Python](GameTheory-04g-Supermodularite-Python.ipynb) · [C#](GameTheory-04g-Supermodularite-CSharp.ipynb) | Complémentarité stratégique : tests de supermodularité et de différences croissantes sur un treillis produit, meilleure réponse monotone, ensemble des équilibres purs de Nash comme treillis complet (Topkis, Milgrom-Roberts, Zhou), comparaison monotone et bande d'hystérésis ; ce que ce treillis doit aux gains et non aux préférences | Python · C# | Licence |
 | 04h | Jeux de routage & price of anarchy — [Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) · [C#](GameTheory-04h-Routing-PriceOfAnarchy-CSharp.ipynb) · [Lean](GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb) | Le price of anarchy **mesuré** en Python et en C# (BCL) : équilibre de Wardrop vs optimum social sur l'instance de Pigou (PoA = 4/3), la borne 4/3 de Roughgarden–Tardos pour les latences linéaires, et la frontière de validité du chiffre ; **vérifié** côté Lean : la borne atomique 2× par le potentiel de Rosenthal entier (chaîne C ≤ Φ′ ≤ 2C, module lake `CongestionGames`), témoin exact 2 et contre-exemple 15/7 | Python · Lean | Recherche |
 | 04i | Utilité espérée et aversion au risque — [Python](GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb) · [C#](GameTheory-04i-Utilite-Esperee-Risque-CSharp.ipynb) | Le chaînon manquant des paiements du 04 : théorème de représentation vNM, élicitation par équivalence de probabilité, équivalent certain et prime de risque, puis mesure de ce que l'aversion au risque fait aux jeux mêmes du palier 04 — équilibres purs invariants, équilibres mixtes déplacés (Bonanno ch. 4) | Python · C# | Licence |
@@ -418,7 +417,9 @@ Le dossier [Coalitions/](Coalitions/README.md) traite la valeur d'un groupe : po
 coalition dans un vote, assistance entre un humain et un agent, appariement d'agents sur un
 marché sans prix. Son README porte son propre parcours et son ordre de lecture.
 
-On y entre par les deux paliers dont elle dépend : [GT-15](GameTheory-15-CooperativeGames-Python.ipynb)
+Depuis le parcours principal, on y entre par le [capstone 20](GameTheory-20-Capstone-Coalitions-Python.ipynb),
+qui présente la sous-série depuis la série mère — l'échelle des garanties du pouvoir calculé à la
+preuve formelle. Les deux paliers dont elle dépend restent [GT-15](GameTheory-15-CooperativeGames-Python.ipynb)
 pour la valeur de Shapley et le Core, [GT-16](GameTheory-16-MechanismDesign-Python.ipynb) pour
 le vocabulaire des mécanismes. L'organe Python de la famille reste
 [`cooperative_games/`](cooperative_games/) à la racine ; les carnets l'invoquent, et le carnet 05
@@ -440,12 +441,12 @@ Les extensions autonomes de la série vivent dans des **escaliers** : des sous-d
 |---|---|---|
 | [SocialChoice/](SocialChoice/README.md) | L'agrégation des préférences : Arrow, vote, appariement | [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb), depuis la série mère |
 | [Dynamics/](Dynamics/README.md) | De la répétition aux institutions | [GT-06](GameTheory-06-EvolutionTrust-Python.ipynb) ; [capstone 19](GameTheory-19-Capstone-Dynamics-Python.ipynb), depuis la série mère |
-| [Coalitions/](Coalitions/README.md) | La valeur d'un groupe | [GT-15](GameTheory-15-CooperativeGames-Python.ipynb) et [GT-16](GameTheory-16-MechanismDesign-Python.ipynb) |
+| [Coalitions/](Coalitions/README.md) | La valeur d'un groupe | [capstone 20](GameTheory-20-Capstone-Coalitions-Python.ipynb), depuis la série mère |
 | [Metajeux/](Metajeux/README.md) | Modifier l'espace des jeux plutôt qu'y jouer — composer, abstraire, témoigner | après le parcours principal, voisin d'amont [GT-17](GameTheory-17-MultiAgent-RL-Python.ipynb) |
 
 Le dossier [Metajeux/](Metajeux/README.md) descend des extensions 18-20c de la racine (tranche T6 de la restructuration #20316) : open games et lentilles (ex-18), casser la composition (ex-18b), abstraction à dette (ex-19), chemin minimal Robinson-Goforth (ex-20), témoins d'impossibilité (ex-20b) et chemin minimal 3×2 (ex-20c) y forment les marches `Metajeux-01` à `Metajeux-06` ; la marche 03 consomme le lake `Abstraction`.
 
-**Descentes vers d'autres séries** : des extensions nées ici ont rejoint leur série d'organe — [DecInfer-11](../Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) (ex-04f, théories de la décision, série Probas), [SC-06b](SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) (ex-15d, décomposition de Möbius, sous-série SocialChoice) et [GOL-08 / GOL-09](../SymbolicAI/Lean/GOL/README.md) (ex-20d/20e, sous-série GOL de la série Lean, réorg #20204).
+**Descentes vers d'autres séries** : des extensions nées ici ont rejoint leur série d'organe — [DecInfer-09](../Probas/DecisionTheory/DecInfer/DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) (ex-04f, théories de la décision, série Probas), [SC-06b](SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) (ex-15d, décomposition de Möbius, sous-série SocialChoice) et [GOL-08 / GOL-09](../SymbolicAI/Lean/GOL/README.md) (ex-20d/20e, sous-série GOL de la série Lean, réorg #20204).
 
 ### Extensions restées en racine
 
