@@ -1,0 +1,10 @@
+- name: ML DataScience 2.3c grande dimension
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: C# orchestre les tirages et les plis, calcule les métriques et contributions des variables ; les vrais estimateurs sklearn OLS, RidgeCV, PCA/PCR et PLS NIPALS sont utilisés via Python.NET.
+  known_differences:
+    - Les figures sont des SVG statiques et les durées dépendent de l'environnement.
+    - La standardisation du train complet précède la validation croisée ; les k du régime leurre sont réutilisés sur l'aligné, comme dans la source.

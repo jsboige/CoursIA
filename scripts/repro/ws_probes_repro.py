@@ -33,6 +33,7 @@ import sklearn
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+from threadpoolctl import threadpool_info
 
 SEED = 42
 
@@ -42,15 +43,14 @@ CITED = {
 }
 
 
-def load_fashion_mnist(cache_root: str, source: str = "auto"):
-    """Charge Fashion-MNIST. `auto` suit l'ordre de la cellule WS-00c: torchvision, sinon openml.
+def load_fashion_mnist(cache_root: str, source: str = "torchvision"):
+    """Charge la source epinglee du carnet ; OpenML est un choix non canonique.
 
-    Les deux sources ne rangent pas les images dans le meme ordre. La sonde WS-00c
-    selectionne `np.where(labs == c)[0][:80]`: les 80 premieres images de chaque
-    classe, donc un sous-ensemble DIFFERENT selon la source. C'est pourquoi la
-    source est exposee explicitement au lieu d'etre laissee a un `try/except`.
+    `auto` est conserve pour les appelants existants comme alias de torchvision,
+    sans repli automatique. Les sources ordonnent les images differemment : WS-00c prend les 80
+    premieres de chaque classe et selectionne donc un autre sous-ensemble.
     """
-    if source in ("auto", "torchvision"):
+    if source in ("torchvision", "auto"):
         try:
             from torchvision.datasets import FashionMNIST
 
@@ -60,20 +60,22 @@ def load_fashion_mnist(cache_root: str, source: str = "auto"):
             labs_tr = ds_tr.targets.numpy()
             ims_te = ds_te.data.numpy().astype(np.float64) / 255.0
             labs_te = ds_te.targets.numpy()
-            return ims_tr, labs_tr, ims_te, labs_te, "torchvision"
-        except Exception as exc:  # meme repli que le carnet
-            if source == "torchvision":
-                raise
-            print(f"torchvision indisponible ({exc.__class__.__name__}), repli openml")
+        except Exception as exc:
+            raise RuntimeError(
+                "Chargement torchvision impossible ; verifier son installation et le cache "
+                f"FashionMNIST ({type(exc).__name__}: {exc}). "
+                "--source openml choisit un protocole non canonique."
+            ) from exc
+        return ims_tr, labs_tr, ims_te, labs_te, "torchvision"
+    if source != "openml":
+        raise ValueError(f"Source inconnue : {source!r} (torchvision, auto ou openml)")
 
     from sklearn.datasets import fetch_openml
 
     data = fetch_openml("Fashion-MNIST", version=1, as_frame=False)
     ims = data.data.reshape(-1, 28, 28).astype(np.float64) / 255.0
     labs = data.target.astype(int)
-    # openml ne distingue pas train/test: on reprend la coupure du carnet,
-    # qui n'utilise que la premiere source. Diviser 70000 en 60000/10000
-    # garde la sonde WS-03 executable sur cette source.
+    # OpenML ne distingue pas train/test ; cette coupure permet la sonde WS-03.
     return ims[:60000], labs[:60000], ims[60000:], labs[60000:], "openml"
 
 
@@ -89,28 +91,13 @@ def alternating_shift(images: np.ndarray) -> np.ndarray:
     )
 
 
-def blas_chain() -> dict:
-    """Implementation, version et nombre de fils de la chaine BLAS effective.
-
-    Le rapport imprimait python / numpy / scikit-learn, jamais la chaine BLAS :
-    deux sieges sous la meme version de numpy peuvent servir deux BLAS
-    differents. C'etait un angle mort du RAPPORT, pas de la mesure (#24075).
-    Lecture defensive : la structure de `show_config(mode="dicts")` depend du
-    backend, et un numpy sans ce mode rend la main autrement -- chaque champ
-    degrade en "inconnu" plutot que de casser le rapport.
-    """
-    try:
-        info = np.show_config(mode="dicts") or {}
-    except TypeError:  # numpy sans le mode dicts
-        info = {}
-    except Exception:  # noqa: BLE001 - le rapport ne doit pas mourir d'env
-        info = {}
-    blas = (info.get("Build Dependencies") or {}).get("blas") or {}
-    return {
-        "implementation": blas.get("name", "inconnu"),
-        "version": blas.get("version", "inconnue"),
-        "threads_env": os.environ.get("OPENBLAS_NUM_THREADS") or "defaut du runtime",
-    }
+def blas_chain() -> list[dict]:
+    """Bibliotheques BLAS chargees, leurs versions et leurs fils actifs."""
+    return [
+        {key: info.get(key) for key in
+         ("user_api", "internal_api", "version", "num_threads", "filepath")}
+        for info in threadpool_info() if info.get("user_api") == "blas"
+    ]
 
 
 def probe_ws00c(ims_tr, labs_tr):
@@ -204,15 +191,18 @@ def main(argv=None) -> int:
     parser.add_argument("--out", default=None, help="chemin d'ecriture du JSON de resultats")
     parser.add_argument(
         "--source",
-        choices=("auto", "torchvision", "openml"),
-        default="auto",
-        help="source du corpus: auto = torchvision puis repli openml (ordre du carnet WS-00c)",
+        choices=("torchvision", "auto", "openml"),
+        default="torchvision",
+        help="source : torchvision (carnet), auto (alias torchvision sans repli), ou openml (non canonique)",
     )
     args = parser.parse_args(argv)
 
-    ims_tr, labs_tr, ims_te, labs_te, source_used = load_fashion_mnist(
-        args.cache, args.source
-    )
+    try:
+        ims_tr, labs_tr, ims_te, labs_te, source_used = load_fashion_mnist(
+            args.cache, args.source
+        )
+    except RuntimeError as exc:
+        parser.exit(2, f"Erreur : {exc}\n")
 
     results = {}
     for name, probe in (
@@ -232,16 +222,21 @@ def main(argv=None) -> int:
         "blas": blas_chain(),
         "cache_root": args.cache,
         "corpus_source": source_used,
+        "canonical_source": source_used == "torchvision",
         "probes": results,
     }
 
-    blas = report["blas"]
     print(
         f"python {report['python']} | numpy {report['numpy']} | scikit-learn {report['scikit_learn']}"
     )
-    print(
-        f"blas {blas['implementation']} {blas['version']} | fils : {blas['threads_env']}"
-    )
+    if report["blas"]:
+        for blas in report["blas"]:
+            print(f"blas runtime {blas['internal_api']} {blas['version']} | "
+                  f"fils : {blas['num_threads']} | chemin : {blas['filepath']}")
+    else:
+        print("blas runtime : aucune bibliotheque BLAS detectee")
+    if not report["canonical_source"]:
+        print("Source OpenML : protocole non canonique, comparaison indicative seulement")
     print(f"graine {SEED} | source {source_used} | cache {args.cache}")
     print()
     print(f"{'sonde':<8} | {'etat':<11} | {'mesure':>7} | {'cite':>7} | {'ecart':>7} | verdict")
@@ -256,15 +251,16 @@ def main(argv=None) -> int:
 
     overall = all(results[n]["comparison"]["verdict"] == "MATCH" for n in results)
     print()
-    print(f"VERDICT GLOBAL: {'MATCH' if overall else 'MISMATCH'}")
-    report["verdict_global"] = "MATCH" if overall else "MISMATCH"
+    verdict = ("MATCH" if overall else "MISMATCH") if report["canonical_source"] else "NON_CANONICAL"
+    print(f"VERDICT GLOBAL: {verdict}")
+    report["verdict_global"] = verdict
 
     if args.out:
         with open(args.out, "w", encoding="utf-8") as fh:
             json.dump(report, fh, ensure_ascii=False, indent=2)
         print(f"rapport ecrit: {args.out}")
 
-    return 0 if overall else 1
+    return 0 if verdict == "MATCH" else 1
 
 
 if __name__ == "__main__":
