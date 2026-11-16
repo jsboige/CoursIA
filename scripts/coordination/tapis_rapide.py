@@ -28,7 +28,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import frozen_campaigns, gh_bulk, tapis_origami, tapis_service
+from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_origami, tapis_sature,
+                         tapis_service)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -58,8 +59,10 @@ LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
 # Main a sorti les textes de service dans tapis_service (#26926) : REPLI et VERIF
 # n'ont plus d'usage ici, seul le code d'ecart HORSFLOTTE reste a cabler.
-CODES = ("HORSFLOTTE", "LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE",
-         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE")
+# EPAISSE et SATURE sont les deux barrieres de FOND d'un CONTENEUR (#26973) :
+# le fil declare l'epuisement, ou tous les enfants sont fermes.
+CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "LIVREE", "MERGEE", "COUVERTE",
+         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
 
 _CITE_RE = re.compile(r"#(\d+)\b")
 _PART_OF_RE = re.compile(r"\bpart\s+of\s*:?\s*#(\d+)\b", re.IGNORECASE)
@@ -224,6 +227,7 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LABEL", lambda: "label candidate-delivered : urne de cloture (coordinateur, adjoint)"
          if any(lab.strip().lower() == LABEL_LIVRE for lab in e.labels) else None),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
+        ("EPAISSE", lambda: tapis_sature.epuise(e, it.get("comments") or [])),
         ("LIVREE", lambda: _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
@@ -474,6 +478,16 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
+    # Les conteneurs SATURES (tous leurs enfants fermes) sortent de la file,
+    # et le tirage est refait pour les remplacer par un grain reel (#26973).
+    # La mesure porte sur les seuls conteneurs de la file, et elle est
+    # fail-OPEN : une panne n'ecarte rien. Un rejeu `--lecture` est hors
+    # ligne : rien n'est mesure, rien n'est ecarte.
+    if not args.lecture:
+        file = tapis_sature.ecarter_satures(
+            tous, file,
+            lambda n: gh_recherche.chercher_enfants(run, gh_bulk.DEPOT_GH, n),
+            lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
     if fraicheur is not None:
