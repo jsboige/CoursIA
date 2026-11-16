@@ -133,16 +133,41 @@ class TestCmdCountBySubdir:
             assert "MISMATCH" in out
 
     def test_real_repo_check_readme_all(self):
-        """--check-readme across all 10 series produces a table with at least
-        one OK and may include MISMATCH entries (audit signal)."""
+        """--check-readme across all series: every row's status is logically
+        consistent with the README count the primitives read (See #9826).
+
+        The former ``assert "OK" in out`` held only because ONE series (IIT)
+        happened to have a fresh ``CATALOG-STATUS`` marker while every other
+        series drifted. Any PR adding, removing or moving an IIT notebook then
+        turned the whole table into MISMATCH and this test red, although the
+        marker is regenerated only on ``main`` by ``catalog-cron.yml`` and must
+        stay byte-identical to ``main`` on a feature branch: a deadlock for
+        every cross-series move (measured on #26742 and #26779). The assertion
+        is now per row, on the comparison mechanism, never on marker freshness.
+        """
         buf = io.StringIO()
         with redirect_stdout(buf):
             rc = cmd_count_by_subdir(_args(check_readme=True))
         assert rc == 0
         out = buf.getvalue()
-        assert "OK" in out
-        # Series header is present
         assert "Series" in out
+        rows = {}
+        for line in out.splitlines():
+            parts = line.split()
+            if len(parts) < 4 or not parts[1].isdigit():
+                continue
+            if not (NOTEBOOKS_DIR / parts[0]).is_dir():
+                continue  # header, rule or the "Total:" line
+            rows[parts[0]] = (int(parts[1]), parts[2], " ".join(parts[3:]))
+        assert len(rows) >= 5, f"expected a row per series, got {sorted(rows)}"
+        for name, (actual, declared_str, status) in rows.items():
+            declared = extract_readme_count(NOTEBOOKS_DIR / name / "README.md")
+            if declared is None:
+                assert (declared_str, status) == ("?", "no count"), name
+            else:
+                assert declared_str == str(declared), name
+                expected = "OK" if actual == declared else "MISMATCH"
+                assert status == expected, (name, actual, declared, status)
 
     def test_real_repo_json_single_series(self):
         buf = io.StringIO()

@@ -56,6 +56,14 @@ class CompositeC1MultiAssetRotation(QCAlgorithm):
                 {"Momentum": 1 / 3, "MACD": 1 / 3, "RelStrength": 1 / 3},
                 line_cap=0.40,
                 rebalance=timedelta(days=7),
+                # Mode intent ecrit explicitement (#20188) : le defaut du
+                # canonique est `additive=False`, et cette classe est une
+                # sous-classe qui forwarde `**kwargs` — sans cette ligne, le
+                # defaut du canonique serait atteint a travers le forward et
+                # le composite passerait du mode intent au mode base en
+                # silence. Le comportement est donc inchange (le defaut de
+                # `main` etait `True`).
+                additive=True,
                 algorithm=self
             )
         self.set_portfolio_construction(self.pcm)
