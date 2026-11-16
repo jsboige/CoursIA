@@ -21,6 +21,8 @@ from __future__ import annotations
 
 import sys
 import urllib.parse
+
+import pytest
 from pathlib import Path
 
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
@@ -230,7 +232,7 @@ def test_reponse_incomplete_et_erreur_api_ne_sont_pas_masquees(monkeypatch):
 
 
 def test_toutes_les_pages_de_jobs_sont_lues(monkeypatch):
-    jobs = [{"id": i} for i in range(105)]
+    jobs = [{"id": i} for i in range(1, 106)]
 
     def api(url):
         page = int(urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["page"][0])
@@ -278,3 +280,34 @@ def test_un_double_run_et_une_page_de_jobs_vide_sont_refuses(monkeypatch):
     monkeypatch.setattr(mcp, "gh", lambda url: {"total_count": 1, "jobs": []})
     with pytest.raises(RuntimeError, match="incomplete"):
         mcp.collect_jobs(1)
+
+
+def test_jobs_dupliques_entre_pages_interrompent_le_rapport(monkeypatch, tmp_path, capsys):
+    import pytest
+    from datetime import datetime, timezone
+
+    run = {"id": 42, "name": "A", "created_at": datetime.now(timezone.utc).strftime(mcp.FMT)}
+    output = tmp_path / "rapport.json"
+
+    def api(url):
+        if "/jobs?" not in url:
+            return {"total_count": 1, "workflow_runs": [run]}
+        page = int(urllib.parse.parse_qs(urllib.parse.urlparse(url).query)["page"][0])
+        ids = range(1, 101) if page == 1 else [100]
+        return {"total_count": 101, "jobs": [{"id": i} for i in ids]}
+
+    monkeypatch.setattr(mcp, "gh", api)
+    monkeypatch.setattr(sys, "argv", ["measure", "--hours", "1", "--out", str(output)])
+    with pytest.raises(RuntimeError, match="job duplique"):
+        mcp.main()
+    assert not output.exists()
+    assert not capsys.readouterr().out
+
+
+@pytest.mark.parametrize("job", [{}, {"id": None}, {"id": "42"}, {"id": True}, {"id": 0}, {"id": -1}, None])
+def test_identifiant_de_job_invalide_est_refuse(monkeypatch, job):
+    import pytest
+
+    monkeypatch.setattr(mcp, "gh", lambda url: {"total_count": 1, "jobs": [job]})
+    with pytest.raises(RuntimeError, match="ID de job invalide"):
+        mcp.collect_jobs(42)

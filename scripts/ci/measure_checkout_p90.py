@@ -162,6 +162,7 @@ def collect_runs(start: datetime, end: datetime, limit: int, workflow: str = "")
 def collect_jobs(run_id: int) -> list[dict]:
     """Toutes les pages de jobs ou une erreur, jamais un resultat partiel muet."""
     jobs: list[dict] = []
+    seen: set[int] = set()
     page = 1
     expected = None
     while True:
@@ -173,6 +174,13 @@ def collect_jobs(run_id: int) -> list[dict]:
             expected = count
         if count != expected or len(jobs) + len(batch) > count:
             raise RuntimeError(f"pagination des jobs incoherente pour {run_id}")
+        for job in batch:
+            job_id = job.get("id") if isinstance(job, dict) else None
+            if not isinstance(job_id, int) or isinstance(job_id, bool) or job_id <= 0:
+                raise RuntimeError(f"ID de job invalide pour {run_id}")
+            if job_id in seen:
+                raise RuntimeError(f"job duplique pendant la pagination pour {run_id}: {job_id}")
+            seen.add(job_id)
         jobs.extend(batch)
         if len(jobs) == expected:
             return jobs
