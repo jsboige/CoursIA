@@ -48,7 +48,35 @@ jobs:
     # OK) : aucun code de fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    timeout-minutes: 10
+    # Plafond 10 -> 20 min (#25181). Mesure du 2026-11-14 par l'organe du
+    # depot (`scripts/ci/measure_declared_ceiling.py --workflow
+    # banner-guard.yml --hours 96 --annotate`), meme grandeur que le mur du
+    # job (started_at -> completed_at du job nomme) :
+    #     plafond 10 min -- 27 coupe(s) sur 326 jobs (8,28 %),
+    #     annules hors mur 5, succ max 7,57 min (marge 2,43 min),
+    #     CONFIRMEES par annotation (organe natif TIMEOUT) : 28
+    #     classes : {'TIMEOUT': 28, 'CANCELLED_OTHER': 4}
+    # 28 jobs de ce workflow sur 326 (8,6 %) sont tues au mur : un job tue
+    # ne rend AUCUN verdict, donc le commit reste non verifie. Un rouge
+    # INFRA qui n'est ni un echec de test ni un supplantement.
+    # La marge du succes le plus long (2,43 min) est trop etroite : le
+    # plafond doit couvrir le travail mesure, pas le nominal.
+    # Cout en runners : le nombre de runs ne change pas (le groupe de
+    # concurrence de ce workflow est deja par `github.sha` sur push) ; le
+    # surcout est le temps de slot d'un job lent, deja tenu jusqu'a la
+    # coupe. Rejouer la mesure :
+    #     python scripts/ci/measure_declared_ceiling.py --workflow banner-guard.yml --hours 96 --annotate
+    #
+    # La queue, elle, est mesuree par l'organe de variance du depot
+    # (`scripts/ci/characterize_runner_variance.py --workflow banner-guard.yml
+    # --days 7`), qui attribue la duree a son hote : 536 jobs, 161 "heavy",
+    # **medianes de 15 a 59 s** selon le runner, et un **p90 epingle a
+    # 606 s (= le plafond) sur 9 des 31 runners** (wsl-12, wsl-14,
+    # persist-1, persist-5, po-2025-docker-1/-2, po-2028-docker-1/-2/-3).
+    # La queue n'est donc pas propre a une famille de slots : c'est la queue
+    # de la distribution qui s'ecrase contre le plafond. Rejouer :
+    #     python scripts/ci/characterize_runner_variance.py --workflow banner-guard.yml --days 7 --json
+    timeout-minutes: 20
 
     steps:
       # Default checkout does not initialise submodules; --exclude-submodules is a

@@ -28,7 +28,12 @@ lake dédié `Compression_lean/`, mathlib seule.
    exactement `1`.
 
 Roadmap (plis suivants de #18706) : ~~théorème de McMillan (réciproque)~~
-(livré, module `McMillan`), trie canonique de Huffman, optimalité de Huffman.
+(livré, module `McMillan`), ~~trie canonique de Huffman~~ (livré, modules
+`Huffman` et `Optimalite`), ~~optimalité de Huffman~~ (livrée, modules
+`Appariement`, `Echange`, `Expansion`, `Feuilles`, `Soeurs`, `Descente`,
+`DeuxMinima` puis `HuffmanOptimal`, refermée par la passerelle `SymbolCodec`
+avec le carnet 02). L'arc complet est exécuté par l'annexe du carnet
+compagnon.
 
 ## Module `Decode` (pli 2)
 
@@ -79,12 +84,16 @@ quand il reconstruit un code depuis une table de longueurs :
 ## Carnet compagnon
 
 `Compression-01b-Kraft-McMillan-Lean.ipynb` (kernel `lean4-wsl`) importe les
-trois modules **réels** du lake et les fait travailler : ancres `#eval` de
-Kraft (`sf4`, `full k`), round-trip de décodage, construction `canon` /
-`mass`, `#print axioms` des quatre théorèmes piliers : `mcmillan_converse`,
+modules **réels** du lake et les fait travailler : ancres `#eval` de Kraft
+(`sf4`, `full k`), round-trip de décodage, construction `canon` / `mass`,
+`#print axioms` des quatre théorèmes piliers (`mcmillan_converse`,
 `canon_spec` et `kraft_le_one` dépendent de `propext`, `Classical.choice` et
-`Quot.sound` ; `decode_encode` de `propext` et `Quot.sound` seulement — aucun
-`sorryAx`, aucun `native_decide`.
+`Quot.sound` ; `decode_encode` de `propext` et `Quot.sound` seulement), puis
+en annexe l'arc Huffman complet : la construction et son coût (`huffman`,
+`costW`, `cost_dot`), la loi de la fusion (`subst`, `huffman_expand`), les
+mouvements locaux (`sisterPath`, `exchange_le`, `both_mins_to_bottom`), la
+passerelle symboles (`SymbolCodec`) et le verdict `huffman_optimal` avec ses
+axiomes — aucun `sorryAx`, aucun `native_decide`.
 Placé dans `Compression_lean/` car le kernel détecte le `lakefile.lean`
 ancêtre : son répertoire est son environnement. Exécution depuis la racine
 du lake (`papermill -k lean4-wsl`).
@@ -92,7 +101,7 @@ du lake (`papermill -k lean4-wsl`).
 ## Build
 
 ```bash
-lake build   # tous les modules du lake (PrefixCodes FR + EN, Decode, McMillan), 0 sorry
+lake build   # tous les modules du lake : PrefixCodes FR + EN, Decode, McMillan, l'arc Huffman (Huffman ... HuffmanOptimal) et SymbolCodec, 0 sorry
 ```
 
 ## i18n (convention #4980, pattern A)
@@ -100,4 +109,7 @@ lake build   # tous les modules du lake (PrefixCodes FR + EN, Decode, McMillan),
 `PrefixCodes.lean` (namespace `CompressionLean`, docstrings FR) et
 `PrefixCodes_en.lean` (namespace `CompressionLean_en`, docstrings EN) sont
 des miroirs auto-contenus : mêmes énoncés et preuves, seule la prose diffère.
+La passerelle suit le même pattern de jumeaux : `SymbolCodec.lean` (FR) et
+`SymbolCodec_en.lean` (EN, miroir auto-contenu). Les autres modules de l'arc
+Huffman restent FR-only à ce jour.
 Vérification : `python scripts/lean/check_i18n_siblings.py --all`.

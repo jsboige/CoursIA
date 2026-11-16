@@ -111,6 +111,17 @@ else:
         "argumentation_lib.tweety_initializer", _tweety_initializer_module
     )
 
+# -- Logic-handler import compatibility (volet B etape 4, See #4960) --
+# Installs the EPITA-namespace virtuals (config, prover9/mace4 runners --
+# dependency-free, always installed) and the handler-name aliases the
+# verbatim `_tweety_bridge.py` imports at module level. The jpype-dependent
+# handler aliases degrade per handler (same contract as the initializer
+# alias above): without jpype the bridge stays deferred behind its lazy
+# accessor, the rest of the package remains importable.
+from argumentation_lib import _logic_handlers_compat  # noqa: F401
+
+_logic_handlers_compat.install()
+
 # -- Runner (requires semantic_kernel) --
 def get_analysis_runner():
     """Lazy import for the analysis runner."""
@@ -481,48 +492,50 @@ def get_dialogue_handler_symbol():
 def get_tweety_bridge_symbol():
     """Lazy import for the TweetyBridge class symbol.
 
-    Note (G.9 honest caveat): `tweety_bridge.py` imports 12 logic handlers
-    + `TweetyInitializer` at module level (lines 29-41 of upstream
-    `a8025f60`). None of these 13 sibling modules are vendored in
-    `argumentation_lib/` today. Therefore:
+    Note (G.9 honest caveat, RESOLUE le 2026-11-14 -- volet B etape 4) :
+    `tweety_bridge.py` importe 12 logic handlers + `TweetyInitializer` au
+    niveau module (lignes 29-41 de l'amont `a8025f60`). Ces 13 imports de
+    siblings sont desormais re-routes au chargement du package par
+    `_logic_handlers_compat.install()` (aliases `sys.modules` vers les
+    modules underscores livres C186b/c ; gardes import-safe pour les
+    handlers NON portes par decision EPIC -- bipolar/ABA/ASPIC ; virtuals
+    `config`/`prover9_runner`/`mace4_runner` en complement de la couverture
+    C186g). Le pont est donc aujourd'hui :
 
-    - **Class symbol import is safe today** : `from argumentation_lib.
-      _tweety_bridge import TweetyBridge` succeeds *if* the 12 handler
-      classes are stub-resolvable. In practice, the `from .pl_handler
-      import ...` lines on rows 29-40 fail because
-      `argumentation_analysis.agents.core.logic.pl_handler` is not
-      importable in this vendored context (no PYTHONPATH, no submodule).
+    - **importable** : `from argumentation_lib._tweety_bridge import
+      TweetyBridge` passe (le chargement du package a installe les
+      aliases AVANT que le pont n'execute ses `from .pl_handler import`) ;
 
-    - **Instantiation will fail at runtime** : even if the import succeeded,
-      `TweetyBridge()` would call `initialize_jvm()` which depends on
-      `argumentation_analysis.core.jvm_setup.initialize_jvm_robustly`
-      (a separate EPITA module not vendored here).
+    - **instanciable de bout en bout** : `TweetyBridge()` demarre la JVM
+      via la couche de compat et rend des decisions reelles -- verifie au
+      runtime le 2026-11-14 (coherence PL decidee par Tweety).
 
-    The lazy accessor preserves the API symmetry with C184/C185/C186b
-    accessors but does **not** bypass the top-level imports (same caveat
-    as C185/C186b). Runtime usability awaits Volet B etape 4 sub-tranches
-    C186c-f (12 handlers + tweety_initializer + jvm_setup bridge).
+    Historique (reserve d'avant branchement, conservee pour la trace) :
+    le symbole de classe etait importable seulement si les 12 handlers
+    etaient resolubles, et l'instanciation echouait sur
+    `argumentation_analysis.core.jvm_setup` non vendu -- les deux
+    conditions levaient `ImportError`.
 
-    For a **fully-functional JPype bridge today**, use
-    `argumentation_lib.initialize_jvm()` (the CoursIA-native bridge via
-    `Tweety.tweety_init` -- see `_jvm_compat.py`) and write the reasoning
-    glue manually. The verbatim Python is preserved here as the
-    authoritative reference contract for the future CoursIA integration.
+    Le corps verbatim de `_tweety_bridge.py` reste byte-for-byte
+    identique a l'amont : le branchement vit entierement dans la couche
+    de compat, jamais dans le fichier vendu.
     """
-    from argumentation_lib._tweety_bridge import (
-        TweetyBridge,
-        TweetyBridgeSK,
-        initialize_jvm,
-        shutdown_jvm,
-        is_jvm_started,
-    )
-    return (
-        TweetyBridge,
-        TweetyBridgeSK,
-        initialize_jvm,
-        shutdown_jvm,
-        is_jvm_started,
-    )
+    # NOTE (2026-11-14, branchement etape 4) : cet accesseur important
+    # `TweetyBridgeSK`, `initialize_jvm`, `shutdown_jvm` et
+    # `is_jvm_started` au niveau MODULE -- aucun de ces quatre symboles
+    # n'existe a ce niveau dans le pont verbatim vendu (commit amont
+    # a8025f60, verifie par grep : le fichier n'expose QUE `class
+    # TweetyBridge` ; `initialize_jvm`/`shutdown_jvm` sont des METHODES de
+    # la classe). Les fantomes etaient masques depuis la livraison C186 :
+    # l'ImportError amont (`from .pl_handler import ...` non resoluble)
+    # court-circuitait l'accesseur AVANT ses propres imports. Le
+    # branchement rendant la chaine importable, l'accesseur est desormais
+    # exercable et ses imports fantomes ont surgi (attrapes par le test de
+    # contrat du branchement). Aucun consommateur ne dereference ces
+    # index : grep verifie sur l'arbre entier. L'accesseur retourne
+    # desormais la classe seule, symetrique de `get_tweety_initializer_symbol`.
+    from argumentation_lib._tweety_bridge import TweetyBridge
+    return TweetyBridge
 
 
 # -- Tweety Initializer (JPype setup, 3 sibling imports absent) --

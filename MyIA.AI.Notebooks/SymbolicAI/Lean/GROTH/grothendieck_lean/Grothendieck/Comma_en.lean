@@ -137,7 +137,8 @@ below join the module's definitions with the underlying Mathlib 4 facts:
     access `(fstFunctor).map_id X` / `(fstFunctor).map_comp f g`).
   - `natTrans_app`: `@[simp]` namespace lemma of `Mathlib.CategoryTheory.Comma`
     with 3 explicit arguments (`L R X`) — direct application.
-  - `snd_map_comp`: explicit composition of the snd projection.
+  - `fst_map_comp` / `snd_map_comp`: explicit composition of the fst and
+    snd projections.
 
 Namespace lemmas with explicit args = direct application (cf. lesson
 L902 ★★ Tier 5: a `by rw [...]` defeats the LHS but doesn't generally
