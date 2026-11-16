@@ -35,8 +35,8 @@ Sorties
   défaut** : ``train.csv`` est gitignoré par politique d'artefacts, un split
   dérivé l'est aussi.
 - ``--report`` : l'agrégat anonymisé (paramètres, SHA-256 des entrées, comptes
-  avant/après, distribution de support des nœuds tenus à part) — lui seul est
-  citable dans une PR.
+  avant/après, distribution de support des nœuds tenus à part, familles par
+  nœud et paires de test) — lui seul est citable dans une PR.
 
 Usage :
   python scripts/fallacy_detection/build_heldout_node_split.py --report r.json
@@ -89,16 +89,6 @@ def read_split(path: Path) -> list[dict[str, str]]:
         if missing:
             raise SystemExit(f"{path}: colonnes manquantes {missing}")
         return [dict(row) for row in reader]
-
-
-def node_stats(rows: Iterable[dict[str, str]]) -> dict[str, dict[str, object]]:
-    """Support par ``node_pk`` et famille de premier niveau portee par le noeud."""
-    stats: dict[str, dict[str, object]] = {}
-    for row in rows:
-        node = row["node_pk"]
-        entry = stats.setdefault(node, {"support": 0, "family": row["family"]})
-        entry["support"] = int(entry["support"]) + 1
-    return stats
 
 
 def split_support(rows: Iterable[dict[str, str]]) -> Counter:
@@ -178,7 +168,9 @@ def build(
     train_support = split_support(rows["train"])
     test_support = split_support(rows["test"])
     val_support = split_support(rows["val"])
-    families = {row["node_pk"]: row["family"] for row in rows["train"]}
+    families_by_node: dict[str, set[str]] = {}
+    for row in rows["train"]:
+        families_by_node.setdefault(row["node_pk"], set()).add(row["family"])
 
     candidates = sorted(
         node
@@ -201,6 +193,28 @@ def build(
 
     heldout_test = Counter(r["node_pk"] for r in rows["test"] if r["node_pk"] in heldout_set)
     heldout_train = Counter(r["node_pk"] for r in rows["train"] if r["node_pk"] in heldout_set)
+
+    # Familles des noeuds tenus a part, comptees depuis les lignes elles-memes
+    # (un noeud peut porter plusieurs familles au train : la derniere ligne ne
+    # doit pas ecraser les autres). Publication par famille : noeuds distincts
+    # et paires de test, pour qu'un arbitrage de protocole voie si le split
+    # retire une famille entiere du train.
+    heldout_family_nodes: dict[str, set[str]] = {}
+    for node in heldout:
+        for family in sorted(families_by_node.get(node, ())):
+            heldout_family_nodes.setdefault(family, set()).add(node)
+    heldout_family_test_pairs = Counter(
+        r["family"] for r in rows["test"] if r["node_pk"] in heldout_set
+    )
+    families_report = {
+        family: {
+            "nodes": len(heldout_family_nodes.get(family, ())),
+            "test_pairs": heldout_family_test_pairs.get(family, 0),
+        }
+        for family in sorted(
+            set(heldout_family_nodes) | set(heldout_family_test_pairs)
+        )
+    }
     report: dict[str, object] = {
         "params": {
             "holdout_count": holdout_count,
@@ -232,7 +246,10 @@ def build(
         "heldout": {
             "nodes": len(heldout),
             "node_pks": heldout,
-            "families": dict(Counter(families.get(n, "?") for n in heldout).most_common()),
+            "families": families_report,
+            "ambiguous_family_nodes": sum(
+                1 for node in heldout if len(families_by_node.get(node, ())) > 1
+            ),
             "train_support_histogram": support_histogram(heldout_train.values()),
             "test_support_histogram": support_histogram(heldout_test.values()),
             "test_pairs_total": sum(heldout_test.values()),

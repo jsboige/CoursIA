@@ -150,12 +150,17 @@ def test_same_seed_same_selection_and_strategies_differ(mod, splits, tmp_path):
         min_test_pairs=2,
         min_train_support=1,
     )
-    a = mod.build(strategy="seeded", seed=7, **common)
-    b = mod.build(strategy="seeded", seed=7, **common)
+    # Graine 42 : sur cette population (candidats 10/11/12), le tirage
+    # aleatoire (10, 12) differait des tetes de support (10, 11). La graine 7
+    # y collisionne -- l'ancienne echappatoire ``or len(...) < 3`` masquait
+    # cette collision au lieu de l'epingler.
+    a = mod.build(strategy="seeded", seed=42, **common)
+    b = mod.build(strategy="seeded", seed=42, **common)
     assert a["heldout"]["node_pks"] == b["heldout"]["node_pks"]
+    assert len(a["heldout"]["node_pks"]) == 2
 
-    top = mod.build(strategy="top-support", seed=7, **common)
-    assert top["heldout"]["node_pks"] != a["heldout"]["node_pks"] or len(a["heldout"]["node_pks"]) < 3
+    top = mod.build(strategy="top-support", seed=42, **common)
+    assert top["heldout"]["node_pks"] != a["heldout"]["node_pks"]
 
 
 def test_min_test_pairs_excludes_thin_nodes(mod, splits, tmp_path):
@@ -185,8 +190,8 @@ def test_asking_more_than_candidates_fails_loudly(mod, splits, tmp_path):
         )
 
 
-def test_report_only_writes_no_split(mod, splits, tmp_path):
-    out = tmp_path / "never"
+def test_report_only_writes_no_split(mod, splits, tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
     mod.build(
         split_dir=splits,
         out_dir=None,
@@ -196,7 +201,57 @@ def test_report_only_writes_no_split(mod, splits, tmp_path):
         min_test_pairs=2,
         min_train_support=1,
     )
-    assert not out.exists()
+    # Sans --out-dir, aucun CSV n'est ecrit nulle part sous le cwd : le
+    # repertoire de splits (train.csv gitignore) ne doit pas se voir doubler
+    # d'un split derive dans un coin du disque.
+    written = [p for p in tmp_path.rglob("*.csv") if not p.is_relative_to(splits)]
+    assert written == []
+
+
+def test_family_counts_come_from_rows_not_last_row(mod, tmp_path):
+    """Un noeud multi-familles au train publie TOUTES ses familles.
+
+    Regression du comptage ``derniere-ligne-gagnante`` : l'ancien dict
+    ``{node: family}`` ecrasait les familles precedentes du meme noeud, donc
+    le rapport pouvait annoncer une famille retiree du train qui ne l'etait
+    pas (et en omettre une qui l'etait).
+    """
+    root = tmp_path / "phase2"
+    root.mkdir(parents=True)
+    rows = {"train": [], "val": [], "test": []}
+    # Noeud 10 : deux familles au train (A puis B), une seule au test (B).
+    rows["train"].append(_row("train", 10, 0, family="FamilleA"))
+    rows["train"].append(_row("train", 10, 1, family="FamilleB"))
+    rows["train"].append(_row("train", 10, 2, family="FamilleB"))
+    # Noeud 11 : une famille unique, pour que le holdout de 1 noeud soit stable.
+    rows["train"].extend(_row("train", 11, i, family="FamilleC") for i in range(3))
+    rows["val"].extend(_row("val", n, 0) for n in (10, 11))
+    rows["test"].extend(_row("test", 10, i, family="FamilleB") for i in range(2))
+    rows["test"].append(_row("test", 11, 0, family="FamilleC"))
+    for split, split_rows in rows.items():
+        with (root / f"{split}.csv").open("w", encoding="utf-8", newline="") as fh:
+            writer = csv.DictWriter(fh, fieldnames=COLUMNS, lineterminator="\n")
+            writer.writeheader()
+            writer.writerows(split_rows)
+
+    report = mod.build(
+        split_dir=root,
+        out_dir=None,
+        holdout_count=1,
+        strategy="top-support",
+        seed=42,
+        min_test_pairs=2,
+        min_train_support=1,
+    )
+    assert report["heldout"]["node_pks"] == ["10"]
+    families = report["heldout"]["families"]
+    # Les DEUX familles du noeud 10 sont publiees (l'ancien dict n'en
+    # gardait que FamilleB, derniere ligne).
+    assert families["FamilleA"] == {"nodes": 1, "test_pairs": 0}
+    assert families["FamilleB"] == {"nodes": 1, "test_pairs": 2}
+    # FamilleC vit hors du holdout : elle n'apparait pas.
+    assert "FamilleC" not in families
+    assert report["heldout"]["ambiguous_family_nodes"] == 1
 
 
 def test_written_csv_matches_builder_format(mod, splits, tmp_path):
