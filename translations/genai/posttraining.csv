@@ -9166,7 +9166,7 @@ ininterprétable : l'effet cherché et l'effet de l'instrument deviendraient ind
 
 Ce carnet paie donc la première moitié du prix : il **mesure l'instrument**, et il **mesure la
 barrière** qui empêche la seconde.",,,,,,,,c7097ed021620ca9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,statut-epistemique,markdown,fr,619a92463e2643b7,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; les verdicts de la famille pain-axis sont ancrés sur [ICT-47](ICT-47-PainAxisDistillation-Python.ipynb).,,,,,,,,619a92463e2643b7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,statut-epistemique,markdown,fr,35f6698a812c4a9e,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; les verdicts de la famille pain-axis sont ancrés sur [ICT-47](../../IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb).,,,,,,,,35f6698a812c4a9e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-plan,markdown,fr,6890d3a8d56c24f1,"## Plan
 
 1. Le corpus — hérité verbatim d'ICT-47 (9 groupes × 24 énoncés)
@@ -10451,8 +10451,7 @@ signal W-`Dhack`, marginal ici, est-il un effet du bras ou un artefact de
 seed ?** C'est la suite logique du carnet — le transformer d'un constat
 *suggéré* en un résultat *prouvé*, en y apportant les graines et les tests
 manquants.",,,,,,,,cc909028b8fb92c8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,eeaa05e9,markdown,fr,6d05cf072a45d1b0,"## Pour aller plus loin
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,eeaa05e9,markdown,fr,8f0a41eb4a0a88ee,"## Pour aller plus loin
 
-- **[ICT-49 — Machines de Gödel](ICT-49-MachinesDeGoedel-Python.ipynb)** : l'auto-amélioration prouvée, en jouet honnête.
-- **[ICT-0 — Cadrage de la série](ICT-0-Framing.md)** : le principe directeur de la série ICT.
-",,,,,,,,6d05cf072a45d1b0,,,,,,,,,,,,,,,
+- **[ICT-49 — Machines de Gödel](../../IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb)** : l'auto-amélioration prouvée, en jouet honnête.
+- **[ICT-0 — Cadrage de la série](../../IIT/ICT-Series/ICT-0-Framing.md)** : le principe directeur de la série ICT.",,,,,,,,8f0a41eb4a0a88ee,,,,,,,,,,,,,,,
