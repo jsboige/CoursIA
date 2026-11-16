@@ -329,6 +329,8 @@ Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [j
 
 16d a rejoint la [sous-série Coalitions](Coalitions/README.md) (carnet 03) : l'échange de reins est un mécanisme d'appariement — de la famille de Kuhn-Munkres, carnets 04 et 05 — et non un mécanisme de révélation.
 
+**Parité de 16k — enchères** : [Python](GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) · [C#](GameTheory-16k-Theorie-des-Encheres-Myerson-CSharp.ipynb). Les simulations NumPy et BCL .NET conservent les mêmes budgets ; leurs générateurs pseudo-aléatoires et trajectoires diffèrent.
+
 L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la [sous-série SocialChoice](#sous-série-socialchoice).
 
 #### Parité du carnet de screening 16j
