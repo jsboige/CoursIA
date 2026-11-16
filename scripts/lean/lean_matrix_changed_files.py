@@ -19,6 +19,31 @@ d'installation est transitoire -- le rejeu a reussi sur l'instance
 mesuree), puis sortie non nulle. Le fichier de sortie n'est ecrit
 qu'a la reussite : un ``any=false`` ne peut pas naitre d'une lecture en
 echec.
+
+DEUX SORTIES D'ECHEC, DISTINCTES (contrat #26739, instance #26004)
+-----------------------------------------------------------------
+
+Le job reste rouge dans les deux cas -- un build qui n'a pas eu lieu ne
+doit jamais s'afficher vert. Ce qui change est ce que le rouge **dit** :
+
+* ``EXIT_USAGE = 1`` : l'invocation elle-meme est fausse (evenement non
+  gere, ``--pr`` manquant). C'est un defaut a corriger, pas un alea.
+  (Le ``2`` qu'argparse rend de son cote pour un argument absent
+  appartient a la meme famille : il n'emet aucune annotation.)
+* ``EXIT_MEASURE_FAILED = 3`` : la **mesure** a echoue (403 de quota,
+  reseau). L'etat du depot est **INCONNU, pas faux**. L'organe emet
+  alors une annotation ``INCONCLUSIVE -- ...``, le meme verdict que le
+  gate a introduit pour lui-meme (#26739), que les consommateurs d'etats
+  savent deja lire (``scripts/ci/gate_verdicts.py`` via
+  ``pr_gate.parse_inconclusive_message``) : la PR n'est plus classee en
+  rouge reparable, et le seul geste est de rejouer la jambe. Le code
+  ``3`` est celui que le gate porte deja pour ce verdict
+  (``pr_gate.QUOTA_INCONCLUSIVE_CODE``) : un nombre, un sens.
+
+Instance mesuree (#26004, run 43813462537, job 133120065647) : le gate
+a rendu ``failing checks: lean-matrix-changes (failure)`` -- blanc et
+noir, indiscernable d'un echec de contenu -- alors que le job etait mort
+sur son propre ``gh api`` en 403 et qu'aucun ``lake`` n'avait tourne.
 """
 
 from __future__ import annotations
@@ -34,8 +59,39 @@ from pathlib import Path
 SELF_COVER = ".github/workflows/lean-ci-matrix.yml"
 
 
+# Deux sorties d'echec distinctes : un defaut d'invocation (1) et un echec
+# de MESURE (3). Le second porte l'etat INCONCLUSIVE dans son annotation.
+# `3` est le code que le gate porte deja pour ce meme verdict
+# (`pr_gate.QUOTA_INCONCLUSIVE_CODE`) ; `2` reste a argparse, qui ne dit
+# rien de l'etat du depot.
+EXIT_USAGE = 1
+EXIT_MEASURE_FAILED = 3
+
+# Prefixe du verdict d'etat lu par `pr_gate.parse_inconclusive_message`
+# (via `scripts/ci/gate_verdicts.py`). Le format appartient a l'emetteur ;
+# ici l'emetteur est une jambe de matrice, et le prefixe est le contrat.
+INCONCLUSIVE_MARKER = "INCONCLUSIVE -- "
+
+
 class ApiError(RuntimeError):
     """La lecture de l'API GitHub a echoue."""
+
+
+def inconclusive_annotation(detail: str) -> str:
+    """Une commande de workflow `::error::` portant le verdict INCONCLUSIVE.
+
+    GitHub publie le message comme annotation du check-run de la jambe ;
+    c'est ce canal, et non le log, que `gate_verdicts.read_annotations`
+    consomme. Le message est mis sur une seule ligne et echappe selon les
+    regles des commandes de workflow (%, \\r, \\n).
+    """
+    one_line = " ".join(str(detail).split())
+    escaped = (
+        one_line.replace("%", "%25")
+        .replace("\r", "%0D")
+        .replace("\n", "%0A")
+    )
+    return f"::error::{INCONCLUSIVE_MARKER}{escaped}"
 
 
 def _gh_api(args: list[str]) -> str:
@@ -151,10 +207,21 @@ def main(argv: list[str] | None = None) -> int:
             pr=args.pr, before=args.before, sha=args.sha,
             retries=args.retries, sleep_s=args.sleep,
         )
-    except (ApiError, ValueError) as exc:
-        # BRUYANT : aucun fichier de sortie n'est ecrit, le job echoue.
+    except ApiError as exc:
+        # BRUYANT (aucun fichier de sortie) ET LISIBLE : l'echec est une
+        # mesure impossible, pas un verdict sur le depot. L'annotation
+        # `INCONCLUSIVE -- ...` est le canal que les consommateurs d'etats
+        # savent lire (#26739) ; le job reste rouge pour autant.
         print(f"LEAN-MATRIX CHANGED-FILES: {exc}", file=sys.stderr)
-        return 1
+        print(inconclusive_annotation(
+            f"lecture API en echec, l'etat des fichiers modifies est INCONNU "
+            f"(pas faux) -- rejouer la jambe apres le reset du quota : {exc}"
+        ))
+        return EXIT_MEASURE_FAILED
+    except ValueError as exc:
+        # Invocation fausse : c'est un defaut a corriger, pas un alea.
+        print(f"LEAN-MATRIX CHANGED-FILES: {exc}", file=sys.stderr)
+        return EXIT_USAGE
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
