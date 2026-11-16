@@ -11,5 +11,6 @@
   - 'OFTRL et DCFR sont les variantes pédagogiques versionnées : propagation scalaire,
     pondération de l’incrément et gamma inactif ; les garanties des publications ne
     sont pas attribuées à ces récurrences.'
-  - La graine et le générateur du mini-jeu synthétique diffèrent ; entraînement et
-    budgets sont conservés.
+  - Le mini-jeu utilise la même graine numérique 0, mais des générateurs NumPy et
+    .NET distincts ; son application historique/carte est explicite et commune. MCCFR
+    utilise aussi des générateurs distincts ; les résultats ne sont pas forcés identiques.
