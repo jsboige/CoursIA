@@ -1,7 +1,7 @@
 {
   "_comment": "Decision par lake de l'opt-in i18n de la porte d'axiomes (#24107). Genere par `scripts/lean/axiom_i18n_siblings.py --update` ; le registre du manifeste fait foi sur la valeur, ce fichier porte la RAISON et la MESURE. Une cle du manifeste qui diverge de ce fichier fait rougir `--check`.",
-  "generated-at": "2026-11-15T16:48:33Z",
-  "generated-by": "myia-po-2023:CoursIA",
+  "generated-at": "2026-11-16T06:57:11Z",
+  "generated-by": "myia-po-2027:CoursIA",
   "organ": "scripts/lean/axiom_i18n_siblings.py",
   "issue": 24107,
   "lakes": [
@@ -292,6 +292,14 @@
       "mode": "WILDCARD",
       "i18n-modules": 24,
       "i18n-declarations": 810
+    },
+    {
+      "lake": "linear",
+      "decision": "false",
+      "reason": "aucun frere `_en` dans la surface derivee : lac monolingue, l'opt-in ne change rien",
+      "mode": "WILDCARD",
+      "i18n-modules": 0,
+      "i18n-declarations": 0
     },
     {
       "lake": "conway",

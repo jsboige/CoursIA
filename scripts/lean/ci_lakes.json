@@ -543,7 +543,7 @@
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "axiom-fail-on-sorry": "false",
-      "axiom-include-i18n-siblings": "true",
+      "axiom-include-i18n-siblings": "false",
       "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lakefile.lean",

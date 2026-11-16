@@ -42,6 +42,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-13 |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 1 hors site (2 carnets) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean` | 4 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-08 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` | 4 | 0 | declare | couverte | non consomme | - | 2026-11-16 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean` | 4 | 0 | declare | couverte | non consomme | - | 2026-10-18 |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean` | 4 | 3 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/IIT/iit_lean` | 3 | 1 | declare | couverte | ok (4) | - | 2026-10-24 |
@@ -55,11 +56,11 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 ## Ce que la carte etablit
 
-40 lacs propres, plus 2 dossier vendu. Les lacs hors CI sont listes ci-dessous : ce sont eux qui rendent une consolidation invisible depuis la matrice de build.
+41 lacs propres, plus 2 dossier vendu. Les lacs hors CI sont listes ci-dessous : ce sont eux qui rendent une consolidation invisible depuis la matrice de build.
 
 ### Reconciliation
 
-517 modules + 385 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 939 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
+521 modules + 385 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 943 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
 
 ### Lacs hors CI
 
@@ -96,7 +97,7 @@ Traces par git, mais dans aucun dossier portant un `lakefile` : ils ne sont cons
 
 La doctrine demande qu'un lac vive dans le dossier de la (sous-)serie dont les carnets l'importent. La consommation se mesure sur le seul signal objectif disponible sans build : une ligne `import <Module>` d'un carnet, ou `<Module>` est un fichier `.lean` du lac. Les imports de paquets (`Mathlib`, `Batteries`) ne rattachent un carnet a aucun lac -- sans cette restriction, tout carnet Lean consommerait tous les lacs. Un carnet est « au site » quand il vit sous le dossier du lac, « hors site » sinon.
 
-30 lacs sur 40 sont consommes, dont 8 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
+30 lacs sur 41 sont consommes, dont 8 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
 
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` — 9 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
