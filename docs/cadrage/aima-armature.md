@@ -28,7 +28,7 @@ Structure de la 4e édition lue dans le sommaire du PDF du gisement (p. vii-xiii
 | 10 | Knowledge Representation | `SymbolicAI/SemanticWeb` · `SymbolicAI/Tweety` · `SymbolicAI/ArgumentAnalysis` | SPARQL/OWL (RDF), Tweety (ASP, argumentation de Dung), Argumentum (sous-module) | 28+39+32 |
 | 11 | Automated Planning | `SymbolicAI/Planners/02-Classical` | Fast Downward (`Planners-04-Fast-Downward-Python`), PDDL, heuristiques (`Planners-5`) | 25 |
 | 12 | Quantifying Uncertainty | `Probas` | Infer.NET (probabilités, réseaux bayésiens) | 75 |
-| 13 | Probabilistic Reasoning | `Probas` · `Probas/DecisionTheory/Causal-Bridges` | Infer.NET, do-calculus (`CausalBridges-01-Do-Calculus`) | 75 |
+| 13 | Probabilistic Reasoning | `Probas` · `Probas/Causalite` | Infer.NET, do-calculus (`Causalite-01-Calcul-Do-Python`) | 75 |
 | 14 | Probabilistic Reasoning over Time | `NLP/05-HMM-Viterbi` | HMM, décodage de Viterbi (module numpy dédié) | 5 |
 | 15 | Probabilistic Programming | `Probas` · `ML/ML.Net` | Infer.NET **est** un langage de programmation probabiliste (cf. `Infer.NETCacheHelper.cs`) | 75 |
 | 16 | Making Simple Decisions | `Probas/DecisionTheory/DecInfer` | fondations d'utilité (`DecInfer-01-Utility-Foundations`, Infer.NET) | 75 |

@@ -1,0 +1,12 @@
+- name: "GenAI-Texte-10g Speculative Decoding"
+  family: GenAI/Texte
+  python: MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le sujet est un algorithme probabiliste enseigné from-scratch : aucun moteur tiers n'est requis ou appelé pour l'implémenter. Python utilise les bibliothèques NumPy/Matplotlib du cours ; C# emploie le BCL .NET 9 et génère le SVG lui-même. Les deux versions entraînent les mêmes n-grammes sur le même corpus et vérifient l'équivalence du greedy au décodage cible ; les idiomes d'implémentation et le renderer graphique diffèrent."
+  known_differences:
+    - "Les deux versions distinguent les propositions réelles du budget rembourré verify_steps*k ; les mesures greedy sont déterministes et concordent. Aucune latence LLM ni vraie inférence par lots n'est mesurée."
+    - "Les exercices sampling utilisent une graine reproductible dans chaque langage, sans exiger une séquence identique entre PRNG Python et .NET. Les traces et compteurs sont rejoués par les gardes."
+    - "Les arbres utilisent un top-b avec égalités lexicales, racine sentinelle exclue, profondeur bornée au budget restant et variante sans bonus. Les figures Matplotlib et SVG BCL diffèrent en présentation."
+    - "Le runtime .NET Interactive émet un warning CS1701 de compatibilité Microsoft.AspNetCore.Html.Abstractions/Formatting ; il reste visible, sans erreur d'exécution."
