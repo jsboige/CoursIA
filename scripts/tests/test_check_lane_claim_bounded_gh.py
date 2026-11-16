@@ -40,9 +40,13 @@ READER = Path(__file__).resolve().parents[1] / "check_lane_claim.py"
 
 # Le descendant herite du stdout du parent : c'est lui qui garde le handle du
 # pipe ouvert, et donc lui qui rend `join(None)` infini sur l'ancien transport.
+# Sa duree ne doit PAS etre plus courte que la tolerance de l'assertion, sinon
+# le test ne mord plus : avec `time.sleep(10)`, l'ancien transport rendait la
+# main en ~10,1 s, ce que `elapsed < 20` acceptait -- le cas passait donc
+# aussi sur le transport fautif (review ai-01 du 2026-11-16).
 _GRANDCHILD_SCRIPT = (
     "import subprocess, sys, time\n"
-    "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(10)'])\n"
+    "subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])\n"
     "print('parent-output', flush=True)\n"
     "time.sleep(30)\n"
 )
