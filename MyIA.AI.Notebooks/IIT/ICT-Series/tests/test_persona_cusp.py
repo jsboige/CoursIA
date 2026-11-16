@@ -415,3 +415,54 @@ def test_t_cut_override_pairs_the_null_to_the_fold_length():
     n_thin = len(np.arange(0, 20000)[::10])
     assert int(pair["n_windows"]) == n_thin - 100 + 1
     assert pair["excluded"] is False
+
+
+def _load_runner():
+    """Charge ``scripts/ict23_anticipation.py`` par chemin (ce n'est pas un package)."""
+    import importlib.util
+    from pathlib import Path
+
+    path = Path(__file__).resolve().parents[1] / "scripts" / "ict23_anticipation.py"
+    spec = importlib.util.spec_from_file_location("ict23_anticipation_runner", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_compute_verdict_reads_clause_b_in_the_sealed_direction():
+    """(B) tombe si la largeur >= 5 % de 2 b_c : tombe => HYSTERESIS CONFIRMEE.
+
+    Sens scelle : la clause d'affaiblissement « les points coincident » est
+    **tombee** quand le lacet est large. Ce test epingle la polarite du
+    drapeau, qui etait inversee dans le premier passage du runner (le verdict
+    sortait juste par double inversion, le drapeau consigne etait faux).
+    """
+    runner = _load_runner()
+    green = {
+        "C+var": {"green": True, "all_informative": True},
+        "C0": {"green": True, "all_informative": True},
+        "C+ar1": {"green": True, "all_informative": True},
+        "C-lacet": {"green": True},
+    }
+    fold = [{"excluded": False, "informative": True}]
+    base = {
+        "P_A1": {"held": False},
+        "P_A2": {"held": False},
+        "P_A3": {"held": False},
+    }
+
+    wide = runner.compute_verdict(green, fold, dict(base, P_B={"clause_B_fallen": True}))
+    assert wide["anticipation"] == "ANTICIPATION REFUTEE"
+    assert wide["hysteresis"] == "HYSTERESIS CONFIRMEE"
+
+    narrow = runner.compute_verdict(green, fold, dict(base, P_B={"clause_B_fallen": False}))
+    assert narrow["hysteresis"] == "HYSTERESIS REFUTEE"
+
+    # Lacet sans deux sauts : aucun des deux verdicts scelles n'est lisible.
+    unknown = runner.compute_verdict(green, fold, dict(base, P_B={"clause_B_fallen": None}))
+    assert unknown["hysteresis"].startswith("HORS DES CASES SCELLEES")
+
+    # Un controle rouge prime sur tout resultat de fond.
+    red = dict(green, C0={"green": False, "all_informative": True})
+    blind = runner.compute_verdict(red, fold, dict(base, P_B={"clause_B_fallen": True}))
+    assert blind["anticipation"] == "INSTRUMENT NON INFORMATIF"

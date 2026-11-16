@@ -338,10 +338,17 @@ def run_loop(cfg: Dict[str, object]) -> Dict[str, object]:
     if out["ok"] and b_c is not None:
         out["rel_error_vs_2bc"] = float(abs(loop["width"] - 2.0 * b_c) / (2.0 * b_c))
         out["p_b_within_15pct"] = bool(out["rel_error_vs_2bc"] <= 0.15)
-        out["hysteresis_refuted"] = bool(float(loop["width"]) < 0.0506)
+        # Clause d'affaiblissement (B) scellee : « les points coincident » tombe
+        # des que la largeur atteint 5 % de 2 b_c (0.0506). Un lacet reel (~1.0)
+        # la fait tomber ; seule une largeur de l'ordre du pas de grille la
+        # laisse vivante. Le sens du drapeau suit le texte scelle, pas l'usage
+        # qu'en fait le verdict d'hysteresis.
+        out["clause_b_fallen"] = bool(float(loop["width"]) >= 0.0506)
+        out["hysteresis_refuted"] = bool(not out["clause_b_fallen"])
     else:
         out["rel_error_vs_2bc"] = None
         out["p_b_within_15pct"] = False
+        out["clause_b_fallen"] = None
         out["hysteresis_refuted"] = None
     return out
 
@@ -424,7 +431,7 @@ def compute_predictions(
         "two_bc": loop.get("two_bc"),
         "rel_error": loop.get("rel_error_vs_2bc"),
         "within_15pct": bool(loop.get("p_b_within_15pct")),
-        "clause_B_fallen": bool(loop.get("hysteresis_refuted")),
+        "clause_B_fallen": loop.get("clause_b_fallen"),
     }
     return {"P_A1": p_a1, "P_A2": p_a2, "P_A3": p_a3, "P_B": p_b}
 
@@ -445,7 +452,8 @@ def compute_verdict(
     p1 = bool(preds["P_A1"]["held"])
     p2 = bool(preds["P_A2"]["held"])
     p3 = bool(preds["P_A3"]["held"])
-    b_fallen = bool(preds["P_B"]["clause_B_fallen"])
+    _b_raw = preds["P_B"]["clause_B_fallen"]
+    b_fallen = None if _b_raw is None else bool(_b_raw)
 
     if not controls_green or not informative or excluded_gate:
         verdict = "INSTRUMENT NON INFORMATIF"
@@ -468,7 +476,10 @@ def compute_verdict(
             "P_A1": p1, "P_A2": p2, "P_A3": p3, "clause_B_fallen": b_fallen,
         }
 
-    hyst = "HYSTERESIS CONFIRMEE" if not b_fallen else "HYSTERESIS REFUTEE"
+    if b_fallen is None:
+        hyst = "HORS DES CASES SCELLEES (lacet sans deux sauts)"
+    else:
+        hyst = "HYSTERESIS CONFIRMEE" if b_fallen else "HYSTERESIS REFUTEE"
     return {
         "anticipation": verdict,
         "hysteresis": hyst,
