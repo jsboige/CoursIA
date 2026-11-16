@@ -87,7 +87,10 @@ plan logique. -/
 theorem panel_constant_stream_monotone {γ μ₁ μ₀ : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1)
     (hμ₁ : 0 ≤ μ₁) (h : μ₁ ≤ μ₀) :
     ∑' n : ℕ, γ ^ n * μ₁ ≤ ∑' n : ℕ, γ ^ n * μ₀ := by
-  sorry
+  refine Summable.tsum_le_tsum
+    (fun n => mul_le_mul_of_nonneg_left h (pow_nonneg hγ₁.le n))
+    (Summable.mul_right μ₁ (summable_geometric_of_lt_one hγ₁.le hγ₂))
+    (Summable.mul_right μ₀ (summable_geometric_of_lt_one hγ₁.le hγ₂))
 
 /-- **Terrain P3 — composition de limites** (programme prover #1453, dispatch
 c2770 ; description réalignée après review c.5778073186).
