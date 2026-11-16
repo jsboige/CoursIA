@@ -4,7 +4,7 @@
 series: IIT-ICT-Series
 pedagogical_count: 104
 breakdown: ICT-Series=104
-maturity: BETA=94, DRAFT=9, ALPHA=1
+maturity: BETA=102, DRAFT=2
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
