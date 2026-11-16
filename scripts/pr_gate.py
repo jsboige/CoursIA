@@ -1857,6 +1857,7 @@ def wait_and_decide(
     sleep=time.sleep,
     fetch=fetch_checks,
     now=time.monotonic,
+    epoch_now=time.time,
     detail: "dict | None" = None,
     fetch_job=None,
     all_queued_polls: int = 0,
@@ -1893,6 +1894,17 @@ def wait_and_decide(
     streak only accumulates under real starvation. The message starts with
     "STARVED" so `main`'s self-cancel (#13510) and the stale sweep's
     cancelled-leg remedy apply unchanged.
+
+    Two clocks, each for its own use (#26869). `now` is MONOTONIC (seconds
+    since an arbitrary origin): it measures the gate's own budget, the
+    absolute `deadline`. `epoch_now` is EPOCH (seconds since 1970): it is
+    the only scale on which GitHub's `x-ratelimit-reset` header lives, hence
+    the only scale on which the announced reset can be compared to "now".
+    The two are NEVER subtracted from one another -- doing so measured a
+    duration of ~1,79e9 s for every reset (job 133062303546,
+    2026-11-16T02:57:47Z : `announced reset 1794790081s away`) and made the
+    "wait for a near reset" branch unreachable: every installation-quota 403
+    rendered INCONCLUSIVE at once, even when the reset was seconds away.
     """
     deadline = now() + timeout_min * 60.0
     quiet_streak = 0
@@ -1947,8 +1959,16 @@ def wait_and_decide(
                     len(INSTALLATION_QUOTA_BACKOFF_SEC) - 1,
                 )
                 reset_at = getattr(exc, "reset_epoch", None)
-                if reset_at is not None and reset_at > now_ts:
-                    if reset_at - now_ts > INSTALLATION_QUOTA_MAX_WAIT_SEC:
+                # #26869 -- the announced reset is an EPOCH instant (the
+                # `x-ratelimit-reset` header, seconds since 1970). It is
+                # compared to the EPOCH clock, never to the monotonic one:
+                # subtracting a monotonic reading from an epoch instant
+                # measured ~1,79e9 s for every reset, which made the
+                # "wait for a near reset" branch below unreachable.
+                epoch_ts = epoch_now()
+                if reset_at is not None and reset_at > epoch_ts:
+                    reset_in = reset_at - epoch_ts
+                    if reset_in > INSTALLATION_QUOTA_MAX_WAIT_SEC:
                         # #26739 -- the announced reset is too far to be
                         # worth the wait: sleeping to it holds a runner for
                         # a verdict that is already decided. The stale
@@ -1957,7 +1977,7 @@ def wait_and_decide(
                         # NOW, through the same exit as the deadline bound.
                         print(
                             f"[pr-gate] installation-quota 403 -- announced "
-                            f"reset {reset_at - now_ts:.0f}s away "
+                            f"reset {reset_in:.0f}s away "
                             f"(> {INSTALLATION_QUOTA_MAX_WAIT_SEC:.0f}s): "
                             "rendering INCONCLUSIVE now and releasing the "
                             "runner; pr-gate-stale-sweep replays this leg "
@@ -1970,9 +1990,11 @@ def wait_and_decide(
                     # The API told us when the quota resets: sleep until
                     # then (bounded by the absolute deadline) instead of
                     # spending the budget on short retries that cannot
-                    # cross an hourly reset.
+                    # cross an hourly reset. The duration comes from the
+                    # epoch difference; the remaining budget from the
+                    # monotonic clock -- two clocks, never mixed.
                     wait_sec = min(
-                        reset_at - now_ts,
+                        reset_in,
                         max(deadline - now_ts, 0.0),
                     )
                 else:
