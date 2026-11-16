@@ -105,6 +105,37 @@ def bend_series(n: int, seed: int, noise: float, ramp: float = 0.6) -> np.ndarra
     return np.clip(dist, 0, None)
 
 
+def decay_null_series(n: int, seed: int, noise: float) -> np.ndarray:
+    """Nul CORRECT du panel : la serie decroit mais ne plie pas.
+
+    Le nul stationnaire du tableau principal mesure la puissance d'un
+    detecteur de pli contre *rien*. Le panel ne compare pas a rien : il
+    compare un bras qui resiste (distance qui decroit) a un bras qui plie.
+    Une statistique de pente rend donc une valeur non nulle sur le bras qui
+    resiste, et la seuil doit etre calibre sur CE nul-la, sinon on mesure la
+    decroissance et on l'appelle une derive.
+    """
+    rng = np.random.default_rng(seed)
+    t = np.arange(n, dtype=float)
+    return 1.0 * np.exp(-t / 8.0) + 0.1 + noise * rng.standard_normal(n)
+
+
+def slope_shift(series: np.ndarray) -> float:
+    """Statistique corrigee : pente de la seconde moitie moins celle de la premiere.
+
+    Ecrite ici, pas dans le carnet : c'est une candidate du controle. Le pli
+    cherche est un changement de pente ; la variance roulante le voit mal
+    quand une decroissance exponentielle initiale porte l'essentiel de la
+    variance de la serie.
+    """
+    s = np.asarray(series, dtype=float)
+    half = len(s) // 2
+    first = float(np.polyfit(np.arange(half, dtype=float), s[:half], 1)[0])
+    rest = len(s) - half
+    second = float(np.polyfit(np.arange(rest, dtype=float), s[half:], 1)[0])
+    return second - first
+
+
 def build_statistics(ns: dict) -> dict[str, Callable[[np.ndarray], float]]:
     """Les trois statistiques candidates, construites sur l'instrument du carnet."""
     ews_variance = ns["ews_variance"]
@@ -125,6 +156,57 @@ def build_statistics(ns: dict) -> dict[str, Callable[[np.ndarray], float]]:
         return float(autocorr1(series[half:])) - float(autocorr1(series[:half]))
 
     return {"max_var": max_var, "var_ratio": var_ratio, "ac_shift": ac_shift}
+
+
+def run_candidates(n_seeds: int, n_checkpoints: int, noise: float) -> list[dict]:
+    """Puissance de la candidate corrigee, contre le nul CORRECT (decroissance sans pli).
+
+    Deux seuils sont reportes : celui du nul stationnaire (comparable au
+    tableau principal) et celui du nul « decroit sans plier », seul
+    interpretable pour un bras qui resiste.
+    """
+    nulls_stationary = np.array([slope_shift(null_series(n_checkpoints, s, noise)) for s in range(n_seeds)])
+    nulls_decay = np.array([slope_shift(decay_null_series(n_checkpoints, s, noise)) for s in range(n_seeds)])
+    bends = np.array([slope_shift(bend_series(n_checkpoints, s, noise)) for s in range(n_seeds)])
+
+    thr_decay = float(np.quantile(nulls_decay, NULL_QUANTILE))
+    power = float(np.mean(bends > thr_decay))
+    return [
+        {
+            "statistic": "slope_shift",
+            "null_stationary_median": float(np.median(nulls_stationary)),
+            "null_decay_median": float(np.median(nulls_decay)),
+            "bend_median": float(np.median(bends)),
+            "threshold_q95_decay": thr_decay,
+            "power_vs_decay_null": power,
+            "passes_floor": power >= POWER_FLOOR,
+        }
+    ]
+
+
+def run_sensitivity(n_seeds: int) -> list[dict]:
+    """La puissance n'est pas un chiffre : c'est une fonction du reglage.
+
+    Publier un seuil sans sa courbe de puissance ferait passer un point de
+    mesure pour une propriete de l'instrument.
+    """
+    rows = []
+    for n in (30, 40):
+        for ramp in (0.6, 0.3, 0.15):
+            for noise in (0.02, 0.05):
+                nulls = np.array([slope_shift(decay_null_series(n, s, noise)) for s in range(n_seeds)])
+                bends = np.array([slope_shift(bend_series(n, s, noise, ramp)) for s in range(n_seeds)])
+                thr = float(np.quantile(nulls, NULL_QUANTILE))
+                rows.append(
+                    {
+                        "n_checkpoints": n,
+                        "ramp": ramp,
+                        "noise": noise,
+                        "threshold_q95": thr,
+                        "power": float(np.mean(bends > thr)),
+                    }
+                )
+    return rows
 
 
 def run_controls(n_seeds: int, n_checkpoints: int, noise: float) -> dict:
@@ -156,6 +238,7 @@ def run_controls(n_seeds: int, n_checkpoints: int, noise: float) -> dict:
         degenerate[label] = {
             "final": float(series[-1]),
             **{name: float(fn(series)) for name, fn in stats.items()},
+            "slope_shift": float(slope_shift(series)),
         }
 
     return {
@@ -165,6 +248,8 @@ def run_controls(n_seeds: int, n_checkpoints: int, noise: float) -> dict:
         "power_floor": POWER_FLOOR,
         "notebook": str(notebook_path().name),
         "statistics": rows,
+        "candidates": run_candidates(n_seeds, n_checkpoints, noise),
+        "sensitivity": run_sensitivity(n_seeds),
         "degenerate": degenerate,
     }
 
@@ -199,11 +284,31 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     print()
+    print("candidats corriges -- seuil calibre sur le nul CORRECT (decroissance sans pli) :")
+    print(f"{'statistique':<14}{'med nul decroi':>17}{'med pli':>11}{'seuil q95':>12}{'puissance':>12}  verdict")
+    for row in report["candidates"]:
+        verdict = "OK" if row["passes_floor"] else "NON INFORMATIF"
+        print(
+            f"{row['statistic']:<14}{row['null_decay_median']:>17.6f}{row['bend_median']:>11.6f}"
+            f"{row['threshold_q95_decay']:>12.6f}{row['power_vs_decay_null']:>11.1%}  {verdict}"
+        )
+
+    print()
+    print("courbe de puissance de la candidate (la puissance est une fonction du reglage) :")
+    print(f"{'n':>4}{'rampe':>8}{'bruit':>8}{'seuil q95':>12}{'puissance':>12}")
+    for row in report["sensitivity"]:
+        print(
+            f"{row['n_checkpoints']:>4}{row['ramp']:>8.2f}{row['noise']:>8.2f}"
+            f"{row['threshold_q95']:>12.6f}{row['power']:>11.1%}"
+        )
+
+    print()
     print("controle degenere -- le placeholder du carnet contre lui-meme :")
     for label, values in report["degenerate"].items():
         print(
             f"  {label:<10} finale={values['final']:.3f}  max_var={values['max_var']:.6f}  "
-            f"var_ratio={values['var_ratio']:.3f}  ac_shift={values['ac_shift']:+.3f}"
+            f"var_ratio={values['var_ratio']:.3f}  ac_shift={values['ac_shift']:+.3f}  "
+            f"slope_shift={values['slope_shift']:+.4f}"
         )
     delta_max_var = abs(
         report["degenerate"]["I_resists"]["max_var"] - report["degenerate"]["N_drifts"]["max_var"]

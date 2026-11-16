@@ -13,7 +13,8 @@ L'ordre effectivement suivi est celui-ci, et il est rapporté tel quel :
 
 1. les **contrôles de l'instrument** ont été exécutés le 2026-11-16 (§3), avant la rédaction de ce document — c'est la règle 2, « contrôles d'abord » ;
 2. le **prérequis** du panel a été mesuré le même jour sur les artefacts committés (§4) ;
-3. ce document **pré-enregistre** ce qui reste à exécuter : la mesure sur activations réelles, ses règles de décision, et les conditions de sa reproductibilité (§2, §6).
+3. ce document **pré-enregistre** ce qui reste à exécuter : la mesure sur activations réelles, ses règles de décision, et les conditions de sa reproductibilité (§2, §6) ;
+4. une **statistique de remplacement** a ensuite été écrite et mesurée (§3 bis). Cet ajout est **postérieur** à la première version de ce document : il ne fait pas partie du pré-enregistrement, il répond au verdict du §3 et se lit comme tel.
 
 Le point 1 précède donc le point 3, et non l'inverse. Les issues disqualifiantes du §2 portent sur la mesure à venir ; elles n'ont pas été écrites après avoir vu un résultat de panel, puisqu'aucun panel réel n'a été produit.
 
@@ -79,6 +80,38 @@ Les corrections que le contrôle désigne, sans les imposer :
 - calculer les EWS sur la série **détendancée** (retirer la décroissance exponentielle initiale, qui n'est pas le pli cherché), plutôt que sur la série brute ;
 - préférer une statistique de **point de changement** à la variance roulante, ou fenêtrer `autocorr1` au lieu de le lire sur un scalaire global ;
 - **publier la puissance mesurée** de la statistique retenue, au réglage exact du panel, dans la même cellule que son usage — une statistique sans puissance mesurée n'est pas un instrument.
+
+### 3 bis. La statistique de remplacement, mesurée
+
+Le contrôle désigne une direction ; il ne dit pas si elle marche. Une candidate a donc été écrite et mesurée aux mêmes réglages : **`slope_shift`**, la pente de la seconde moitié moins celle de la première (`np.polyfit` degré 1 sur chaque moitié, 30 points). Elle vise directement ce que le pli est — un changement de pente — là où la variance roulante ne le voit pas quand une décroissance exponentielle initiale porte l'essentiel de la variance.
+
+**Le nul change avec elle, et c'est le point de méthode.** Le tableau du §3 mesure la puissance contre un nul **stationnaire**, c'est-à-dire contre rien. Le panel ne compare pas à rien : il compare un bras qui **résiste** (distance qui décroît) à un bras qui **plie**. Une statistique de pente rend donc une valeur **non nulle** sur le bras qui résiste — `slope_shift` médian `0,048` sur une décroissance pure — et calibrer le seuil sur le nul stationnaire aurait mesuré la décroissance en l'appelant une dérive. Le seuil est donc pris au quantile 95 du nul **« décroît sans plier »**, qui est le seul nul interprétable ici.
+
+| Statistique | Médiane nul « décroît sans plier » | Médiane pli | Seuil q95 | Puissance |
+|---|---|---|---|---|
+| `slope_shift` | 0,048241 | 0,088241 | **0,051050** | **100,0 %** |
+
+**Elle sépare les deux bras du contrôle dégénéré, là où `max_var` ne les séparait pas :**
+
+| Bras simulé | `max_var` | `slope_shift` | Position vs seuil 0,051050 |
+|---|---|---|---|
+| I (`persona_resists=True`) | 0,019485 | **+0,0464** | en dessous — « pas de pli », correct |
+| N (`persona_resists=False`) | 0,019485 | **+0,0864** | au-dessus — « pli », correct |
+
+L'écart entre les deux `max_var` valait `1,0e-17` ; l'écart entre les deux `slope_shift` vaut `0,0400`, et le seuil tombe **entre** les deux. C'est la propriété que le §3 reprochait à l'instrument de ne pas avoir.
+
+**La puissance est une fonction du réglage, pas un chiffre.** Elle est mesurée sur 12 combinaisons (`n_checkpoints` 30 ou 40 × rampe 0,6/0,3/0,15 × bruit 0,02/0,05) :
+
+| `n_checkpoints` | Rampe 0,6 | Rampe 0,3 | Rampe 0,15 |
+|---|---|---|---|
+| 30, bruit 0,02 | 100,0 % | 100,0 % | 100,0 % |
+| 30, bruit 0,05 | 100,0 % | 100,0 % | **74,5 %** |
+| 40, bruit 0,02 | 100,0 % | 100,0 % | 100,0 % |
+| 40, bruit 0,05 | 100,0 % | 100,0 % | **92,0 %** |
+
+La limite est donc écrite : au réglage exact du panel (`n = 30`, bruit `0,02`), la candidate tient le plancher de 80 % avec de la marge ; elle le perd sur le pli le plus faible **et** le bruit le plus fort à 30 points, et le retrouve à 40. Conséquence pour le run du §6 : `n_checkpoints ≥ 40`, ou déclarer le plancher de détection en amplitude à 30 points.
+
+**Ce que cette mesure ne dit pas.** Elle établit qu'une statistique de pente, calibrée sur le bon nul, distingue un pli planté d'une décroissance pure **sur des séries synthétiques**. Elle ne dit rien du comportement de `slope_shift` sur des activations réelles, dont la forme n'est ni exponentielle ni stationnaire : c'est précisément ce que le run du §6 doit mesurer, et la puissance devra y être **recalculée** sur les séries réelles avant toute lecture.
 
 ## 4. Prérequis mesuré — la première moitié du gate 20
 
