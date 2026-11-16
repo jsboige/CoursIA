@@ -3289,6 +3289,42 @@ def test_the_published_body_names_the_replay_gesture():
     assert "pr-gate-stale-sweep" in body
 
 
+def test_parse_inconclusive_message_recognizes_the_emitted_verdict():
+    """L'inverse de l'emetteur : le format appartient a l'emetteur.
+
+    Le message porte le prefixe de l'annotation (`[pr-gate] `) et le motif
+    apres le separateur -- c'est ce que le lecteur (le picker) doit
+    retrouver sans re-ecrire le format.
+    """
+    message = (
+        "[pr-gate] INCONCLUSIVE -- quota d'installation GitHub App epuisee : "
+        "l'etat des checks est INCONNU, pas faux. Source : HTTP 403"
+    )
+    parsed = pr_gate.parse_inconclusive_message(message)
+    assert parsed is not None
+    assert parsed["kind"] == "quota-installation"
+    assert parsed["detail"].startswith("quota d'installation")
+
+
+def test_parse_inconclusive_message_rejects_the_other_verdicts():
+    """Controle NEGATIF : un FAIL, un DWELL ou une annotation d'organe ne
+    sont pas des etats inconclusifs.
+
+    Un detecteur trop large acquitterait la lane d'un rouge qu'elle doit
+    reparer.
+    """
+    assert pr_gate.parse_inconclusive_message(
+        "[pr-gate] FAIL -- failing checks: Scripts Tests (CPU)") is None
+    assert pr_gate.parse_inconclusive_message(
+        "[pr-gate] DWELL -- plancher de merge 120 min") is None
+    assert pr_gate.parse_inconclusive_message("Organes bloquants : perimeter") is None
+    assert pr_gate.parse_inconclusive_message("") is None
+    assert pr_gate.parse_inconclusive_message(None) is None
+    # Un marqueur sans motif ne porte aucun verdict : il ne doit pas
+    # fabriquer une entree.
+    assert pr_gate.parse_inconclusive_message("INCONCLUSIVE -- ") is None
+
+
 def test_ratelimit_reset_header_is_parsed():
     block = (
         "HTTP/2.0 403 Forbidden\n"
@@ -3310,7 +3346,8 @@ def test_ratelimit_reset_header_unparsable_is_none():
 def test_the_wait_sleeps_until_the_reset_it_was_told_about():
     """CONTROLE POSITIF du calage : un quota horaire ne se franchit pas en
     30 s de tentatives -- quand l'API dit quand il se reinitialise, on
-    attend cet instant (borne par l'echeance absolue du job)."""
+    attend cet instant (borne par l'echeance absolue du job). #26739 : ce
+    calage ne survit que SOUS le seuil (290 s < 300 s ici)."""
     slept = []
     clock = itertools.count(1000.0, 10)
 
@@ -3327,6 +3364,67 @@ def test_the_wait_sleeps_until_the_reset_it_was_told_about():
     # consomme la premiere lecture (1000), l'erreur observe 1010 --
     # d'ou 1300 - 1010 = 290 s d'attente, pas 300.
     assert slept and slept[0] == pytest.approx(290.0, abs=1.0)
+
+
+def test_a_far_reset_renders_inconclusive_without_waiting(capsys):
+    """#26739 -- un reset annonce a ~59 min ne merite pas 59 min de runner
+    (mesure du 15/11 : jobs 132806296573/132806304780, 3 appels API puis
+    INCONCLUSIVE). Le verdict INCONCLUSIVE -- rejouable par le balayeur --
+    est rendu sur-le-champ : AUCUN sommeil, un seul appel, et le MEME
+    message que l'INCONCLUSIVE de borne (cap de retries ou echeance)."""
+    slept = []
+    calls = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        calls.append(1)
+        # L'echeance lit 1000, l'erreur observe 1010 : le reset annonce est
+        # a 4539 - 1010 = 3529 s, au-dela du seuil de 300 s -- la distance
+        # mesuree du 15/11 (3539 s).
+        raise _quota_error(reset_epoch=4539.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive) as excinfo:
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock),
+        )
+    # AUCUN sommeil, meme court : le runner est rendu immediatement, et le
+    # budget de 60 min n'est pas entame.
+    assert slept == [], (
+        "un reset lointain ne doit rien couter en runner : aucun sommeil"
+    )
+    assert len(calls) == 1
+    # Meme format que la borne : la famille est nommee et l'etat reste
+    # illisible (regle 1) -- le rejeu reste le geste nomme.
+    assert "installation-quota read failure" in str(excinfo.value)
+    assert "stayed unreadable (rule 1)" in str(excinfo.value)
+    # La sortie impute le geste : nommer la distance du reset et le rejeu
+    # par le balayeur, comme la ligne de backoff nomme sa famille.
+    out = capsys.readouterr().out
+    assert "installation-quota 403" in out
+    assert "3529s away" in out
+    assert "stale-sweep" in out
+
+
+def test_a_reset_at_exactly_the_threshold_still_waits():
+    """La borne est STRICTE : a exactement 300 s du reset, l'attente bornee
+    tient -- l'INCONCLUSIVE immediate ne vise que les resets PLUS LOINS que
+    le seuil, pas le seuil lui-meme."""
+    slept = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        # 1010 observe, reset a 1310 : distance exactement 300.0 s.
+        raise _quota_error(reset_epoch=1310.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock),
+        )
+    assert slept and slept[0] == pytest.approx(300.0, abs=1.0)
 
 
 def test_the_quota_wait_falls_back_on_the_backoff_without_a_reset():
