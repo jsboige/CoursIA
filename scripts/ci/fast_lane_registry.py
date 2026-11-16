@@ -4603,3 +4603,30 @@ TRANCHE49: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# TRANCHE 50 (#24698, garde bloquant) -- copies du noyau de risque. Le noyau
+# (plafond, stop ATR, coupe-circuit) vit dans projects/RiskKernel/risk_kernel.py ;
+# QuantConnect n'important que les fichiers du projet, chaque strategie qui
+# l'utilise en porte une copie identique. La garde rougit sur une copie qui
+# derive (COPY_DRIFT) ou un projet qui importe le noyau sans copie (COPY_MISSING,
+# sinon echec a Initialize() sur QC Cloud). Meme forme que TRANCHE41.
+# ---------------------------------------------------------------------------
+TRANCHE50: list[Guard] = [
+    Guard(
+        name="risk-kernel-copies-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/QuantConnect/projects/**/*.py",
+            "scripts/quantconnect/check_risk_kernel_copies.py",
+            "scripts/quantconnect/tests/test_check_risk_kernel_copies.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/quantconnect/check_risk_kernel_copies.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
