@@ -376,6 +376,35 @@ class MergeFailedError(Exception):
     """La commande de merge a echoue -- arret du run (disjoncteur)."""
 
 
+class BaseModifiedRaceError(Exception):
+    """Le merge a echoue deux fois sur une course de base (#26771).
+
+    Distinct de ``MergeFailedError`` : la course de base est **rejouable pour
+    la PR**, donc le balayage CONTINUE -- la PR est journalisee ``skipped``
+    avec le motif ``base-modified-race`` et les PRs suivantes sont evaluees.
+    C'est la correction du passage de 15:16Z du 2026-11-15, qui a merge 11 PRs
+    puis s'est arrete sur la 12e (``Base branch was modified``) et a fait
+    attendre toute la suite de la file un passage de plus.
+    """
+
+
+#: Motif de la course de base, dans le texte d'echec de ``gh pr merge``
+#: (GraphQL : « Base branch was modified. Review and try the merge again. »).
+#: Reconnaissance **litterale** : un motif non reconnu n'est jamais lu comme
+#: une course, il garde le disjoncteur. Une variante non ecrite ici ne serait
+#: donc pas traitee -- c'est le compromis voulu (une lecture large des
+#: messages d'erreur finirait par absorber de vrais echecs).
+BASE_MODIFIED_MARKER = "base branch was modified"
+
+#: Motif ecrit dans le journal pour une PR laissee par une course de base.
+BASE_MODIFIED_RACE_REASON = "base-modified-race"
+
+
+def is_base_modified_race(message: str) -> bool:
+    """Le message d'echec decrit-il une course de base (#26771) ?"""
+    return BASE_MODIFIED_MARKER in (message or "").lower()
+
+
 # Marqueurs d'une erreur de PORTEE GENERALE : ce qui frappe tous les appels de
 # la meme facon ne doit pas etre isole par PR, sinon une panne de jeton ou de
 # quota se lit comme une collection de ``run-error`` attribuees a des PRs
@@ -1889,17 +1918,52 @@ def unstable_state_reason(
 
 def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None:
     """Etape 7 : squash merge epingle sur la tete evaluee (jamais --admin,
-    jamais --delete-branch)."""
-    res = runner.run(
-        ["gh", "pr", "merge", str(pr), "--repo", REPO,
-         "--squash", "--match-head-commit", head],
-        env=gh_env,
-    )
-    if res.returncode != 0:
+    jamais --delete-branch).
+
+    Un echec ``Base branch was modified`` est une **course** (#26771) : `main`
+    a bouge entre la lecture de l'etat et la pose du merge -- le merge
+    precedent du meme passage, ou un merge manuel concurrent, suffit a la
+    provoquer. Ce n'est ni une panne de l'organe ni une PR casse : le motif
+    est **rejouable pour la PR**. On relit l'etat de la PR apres la courte
+    pause prevue, et on retente une seule fois a la meme tete ; si la
+    tentative echoue encore, la PR est journalisee ``skipped`` et le
+    balayage CONTINUE.
+
+    Tout autre echec garde le disjoncteur (``MergeFailedError``) : un motif
+    non reconnu n'est jamais lu comme une course.
+    """
+    argv = ["gh", "pr", "merge", str(pr), "--repo", REPO,
+            "--squash", "--match-head-commit", head]
+    res = runner.run(argv, env=gh_env)
+    if res.returncode == 0:
+        return
+    message = (res.stderr or res.stdout or "").strip()
+    if not is_base_modified_race(message):
         raise MergeFailedError(
-            f"gh pr merge {pr} rc={res.returncode} : "
-            f"{(res.stderr or res.stdout).strip()[:200]}"
+            f"gh pr merge {pr} rc={res.returncode} : {message[:200]}"
         )
+    # Course de base : pause courte (celle du chemin nominal), puis relecture
+    # de l'etat de la PR (etat de fusion + tete) -- une relecture illisible
+    # n'interrompt pas la course : le merge est rejoue a la tete connue.
+    runner.sleep(MERGEABLE_RETRY_SLEEP_S)
+    try:
+        view = fetch_pr_view(runner, pr, gh_env)
+    except UnexpectedError:
+        view = {}
+    print(
+        f"merge_ready : course de base sur PR {pr} (tete {head}) -- "
+        f"etat relu : mergeable_state="
+        f"{view.get('mergeable_state') or 'inconnu'}, "
+        f"tete={((view.get('head') or {}).get('sha')) or 'inconnue'}",
+        file=sys.stderr,
+    )
+    res = runner.run(argv, env=gh_env)
+    if res.returncode == 0:
+        return
+    raise BaseModifiedRaceError(
+        f"gh pr merge {pr} rc={res.returncode} apres un rejeu : "
+        f"{(res.stderr or res.stdout or '').strip()[:200]}"
+    )
 
 
 # --- tour de controle par PR ---------------------------------------------------
@@ -2292,6 +2356,24 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         stopped_reason = f"merge-failed:PR-{pr}"
                         exit_code = 1
                         break
+                    except BaseModifiedRaceError as exc:
+                        # Course de base (#26771) : le motif est REJOUABLE pour
+                        # la PR. La PR est journalisee ``skipped`` et le
+                        # balayage CONTINUE -- c'est le point de la demande :
+                        # une course sur la 12e PR d'un passage ne doit plus
+                        # faire attendre toute la suite de la file. Le motif
+                        # est nu dans le journal (greppable) ; le detail est
+                        # sur stderr.
+                        print(f"merge_ready : {exc}", file=sys.stderr)
+                        skipped = PRVerdict(
+                            pr, decision.head, "skipped",
+                            BASE_MODIFIED_RACE_REASON, False,
+                            decision.review, decision.stack,
+                            decision.stack_incidents,
+                        )
+                        results.append(skipped)
+                        append_journal(journal_path, skipped)
+                        continue
                     decision = PRVerdict(
                         pr, decision.head, "merged", decision.reason, True,
                         decision.review,
