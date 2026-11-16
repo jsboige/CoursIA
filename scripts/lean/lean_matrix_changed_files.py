@@ -3,22 +3,46 @@
 ``.github/workflows/lean-ci-matrix.yml`` (#22065).
 
 Le job doit choisir les lakes a batir : il lit la liste des fichiers
-modifies dans l'API REST (pull_request : fichiers de la PR ; push :
-compare avant..apres) puis la passe au dispatcher.
+modifies puis la passe au dispatcher.
 
-Avant ce correctif, la lecture etait faite dans le shell avec un repli
-silencieux (``|| echo -n "" > "$out"``) : un 403 de quota transformait la
-liste des fichiers modifies en liste VIDE, donc ``any=false``, donc le
-build Lean etait ``skipped`` -- et ``skipped`` se replie en vert. Un
-build Lean qui n'a pas eu lieu s'affichait comme fait (instance #21999,
-run 39814286963 : ``gh: API rate limit exceeded ... (HTTP 403)`` suivi
-d'une liste vide, et pourtant le job de build au vert).
+Ordre de lecture : GIT D'ABORD, L'API EN REPLI. Le checkout du job
+emporte le commit de l'evenement (``fetch-depth: 2``), le differenciel
+se calcule donc localement, sans consommer le quota d'installation de
+l'API -- quota partage et epuisable : chaque PR Lean passait au rouge
+sans defaut de contenu quand il tombait a sec (instance #26004, run
+43737514387, job 132883351379 : ``gh: API rate limit exceeded for
+installation`` ; idem #26399 a la meme minute).
 
-Ici l'echec est BRUYANT : une nouvelle tentative (le 403 de quota
-d'installation est transitoire -- le rejeu a reussi sur l'instance
-mesuree), puis sortie non nulle. Le fichier de sortie n'est ecrit
-qu'a la reussite : un ``any=false`` ne peut pas naitre d'une lecture en
-echec.
+  - ``pull_request`` : ``github.sha`` est le commit de fusion de test,
+    dont le premier parent est la base. Si ``HEAD`` local egale
+    ``--sha`` et que ``HEAD^1`` existe : ``git diff --name-only
+    HEAD^1 HEAD``. Sinon, repli sur l'API (fichiers de la PR).
+  - ``push`` : si les objets ``--before`` et ``--sha`` sont presents
+    localement : ``git diff --name-only <before> <sha>`` ; sinon l'API
+    (compare avant..apres). Le cas ``0000000`` (nouvelle histoire de
+    branche) reste non differenciable -> self-cover ;
+    ``workflow_dispatch`` reste le self-cover explicite.
+
+``--no-renames`` : un deplacement se lit comme suppression + ajout, donc
+les DEUX chemins remontent. Le lake qui perd un fichier est ainsi rebati
+lui aussi, et la detection de renommage ne va pas chercher de blobs sous
+un checkout partiel.
+
+La source qui a repondu s'imprime sur stderr (``source=git`` /
+``source=api``).
+
+L'ECHEC RESTE BRUYANT (garantie #21999). Avant le lecteur en Python, la
+lecture etait faite dans le shell avec un repli silencieux
+(``|| echo -n "" > "$out"``) : un 403 de quota transformait la liste
+des fichiers modifies en liste VIDE, donc ``any=false``, donc le build
+Lean etait ``skipped`` -- et ``skipped`` se replie en vert. Ici, si git
+ET l'API echouent tous les deux : une nouvelle tentative sur l'API (le
+403 de quota d'installation est transitoire -- le rejeu a reussi sur
+l'instance mesuree #21999), puis aucun fichier de sortie n'est ecrit et
+sortie non nulle. Une reponse git VIDE est legitime (reussite git sur
+un commit de fusion qui ne change rien face a sa base) ; une ERREUR
+git, jamais : elle declenche le repli, elle ne devient pas une liste
+vide.
 
 DEUX SORTIES D'ECHEC, DISTINCTES (contrat #26739, instance #26004)
 -----------------------------------------------------------------
@@ -77,6 +101,10 @@ class ApiError(RuntimeError):
     """La lecture de l'API GitHub a echoue."""
 
 
+class GitError(RuntimeError):
+    """La lecture locale de git a echoue."""
+
+
 def inconclusive_annotation(detail: str) -> str:
     """Une commande de workflow `::error::` portant le verdict INCONCLUSIVE.
 
@@ -109,8 +137,63 @@ def _gh_api(args: list[str]) -> str:
     return proc.stdout
 
 
+def _git(args: list[str]) -> str:
+    proc = subprocess.run(
+        ["git", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    if proc.returncode != 0:
+        detail = (proc.stderr or proc.stdout or "").strip()
+        raise GitError(
+            f"git {' '.join(args)} a echoue (rc={proc.returncode}) : {detail}"
+        )
+    return proc.stdout
+
+
 def _lines(text: str) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def _git_pull_request_files(sha: str | None) -> list[str] | None:
+    """Fichiers de la PR par git local, ou ``None`` si git ne peut repondre.
+
+    Sur Actions, le checkout ``fetch-depth: 2`` place HEAD sur le commit
+    de fusion de test (``github.sha`` passe en ``--sha``), dont le
+    premier parent est la base : ``git diff HEAD^1 HEAD`` est alors
+    exactement la liste des fichiers de la PR. Hors Actions (HEAD
+    discordant, parent absent, hors depot), git decliner -- seule une
+    REUSSITE git vaut reponse, meme liste vide ; une erreur git ne
+    devient jamais une liste vide.
+    """
+    if not sha:
+        return None
+    try:
+        head = _git(["rev-parse", "HEAD"]).strip()
+        if head != sha:
+            print(
+                f"git ecarte : HEAD local ({head[:12]}) != sha de "
+                f"l'evenement ({sha[:12]}) -- repli sur l'API",
+                file=sys.stderr,
+            )
+            return None
+        _git(["rev-parse", "--verify", "--quiet", "HEAD^1"])
+        return _lines(_git(["diff", "--no-renames", "--name-only", "HEAD^1", "HEAD"]))
+    except GitError as exc:
+        print(f"git ecarte : {exc} -- repli sur l'API", file=sys.stderr)
+        return None
+
+
+def _git_push_files(before: str, sha: str) -> list[str] | None:
+    """Fichiers du push par git local, ou ``None`` si un objet manque."""
+    try:
+        for rev in (before, sha):
+            _git(["rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}"])
+        return _lines(_git(["diff", "--no-renames", "--name-only", before, sha]))
+    except GitError as exc:
+        print(f"git ecarte : {exc} -- repli sur l'API", file=sys.stderr)
+        return None
 
 
 def changed_files_pull_request(repo: str, pr: int) -> list[str]:
@@ -140,14 +223,31 @@ def collect(
     before: str | None = None,
     sha: str | None = None,
 ) -> list[str]:
+    """Git d'abord (zero quota), l'API en repli ; la source repondante
+    s'imprime sur stderr."""
     if event == "pull_request":
         if not pr:
             raise ValueError("evenement pull_request sans numero de PR")
-        return changed_files_pull_request(repo, int(pr))
+        files = _git_pull_request_files(sha)
+        if files is not None:
+            print("source=git (diff HEAD^1 HEAD)", file=sys.stderr)
+            return files
+        files = changed_files_pull_request(repo, int(pr))
+        print("source=api (fichiers de la PR)", file=sys.stderr)
+        return files
     if event == "push":
         if not before or not sha:
             raise ValueError("evenement push sans before/sha")
-        return changed_files_push(repo, before, sha)
+        if before.startswith("0000000"):
+            # Nouvelle histoire de branche : on ne peut pas differencer -> tout.
+            return [SELF_COVER]
+        files = _git_push_files(before, sha)
+        if files is not None:
+            print("source=git (diff before..sha)", file=sys.stderr)
+            return files
+        files = changed_files_push(repo, before, sha)
+        print("source=api (compare avant..apres)", file=sys.stderr)
+        return files
     if event == "workflow_dispatch":
         return [SELF_COVER]
     raise ValueError(f"evenement non gere : {event}")
@@ -192,7 +292,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", required=True, help="owner/name")
     ap.add_argument("--pr", default=None, help="numero de PR (pull_request)")
     ap.add_argument("--before", default=None, help="sha avant (push)")
-    ap.add_argument("--sha", default=None, help="sha courant (push)")
+    ap.add_argument(
+        "--sha", default=None,
+        help="sha courant (push ; commit de fusion de test pour pull_request)",
+    )
     ap.add_argument("--out", required=True, type=Path,
                     help="fichier de sortie (une ligne par chemin)")
     ap.add_argument("--retries", type=int, default=1,

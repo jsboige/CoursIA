@@ -58,6 +58,30 @@
 # `Source` brute serait FAUX pour un volume : `docker inspect` y rend le
 # mountpoint du daemon, pas le nom du volume.
 #
+# LA POLITIQUE DE REDEMARRAGE (`--restart`)
+# -----------------------------------------
+# Un slot reserve SANS politique de redemarrage ne survit pas a un
+# redemarrage de la machine : le job CPU de `main` reste alors en file
+# jusqu'a ce qu'un operateur relance le slot a la main.
+#
+# Le script NE posait aucune politique : `docker run` sans `--restart` donne
+# `no`, la valeur par defaut du daemon. Un slot cree par `--apply` tournait
+# donc avec `HostConfig.RestartPolicy.Name = "no"` : il tournait, ses caps et
+# ses labels etaient conformes, et rien ne le relancait apres un reboot.
+# (Le slot VIVANT porte `unless-stopped`, pose HORS du script : il a ete cree
+# le 2026-11-14, quand le script ne la posait pas. La mesure du vivant est
+# dans le body de la PR.)
+#
+# Deux politiques sont acceptees : `unless-stopped` (le conteneur suit le
+# demon, sauf arret explicite) et `always` (il suit le demon, meme apres un
+# arret manuel). Les deux repondent a la question "le slot revient tout
+# seul apres un redemarrage de la machine ?" ; `no` ne repond pas.
+#
+# La politique est posee a la CREATION (`--restart` dans le `docker run`)
+# et REPAREE sur un slot deja vivant (`docker update --restart=...`) :
+# `docker update` ne recree pas le conteneur, il ne change que le champ de
+# la politique -- les volumes, l'image et les caps restent intacts.
+#
 # LES TROIS MODES (rien n'est fait sans `--apply`)
 # --------------------------------------------------
 #   --dry-run (defaut) : affiche la commande `docker run` exacte. Aucun
@@ -68,7 +92,8 @@
 #   --check             : compare l'etat VIVANT (docker inspect) a la
 #                         specification ; sort en 1 sur derive (labels,
 #                         image, cgroup-parent, cap memoire, etat de
-#                         marche, identite des trois montages). C'est l'organe
+#                         marche, identite des trois montages, politique
+#                         de redemarrage). C'est l'organe
 #                         du critere "le slot existe et il est vraiment
 #                         reserve".
 #   --apply             : cree le slot s'il est absent. Mint du registration
@@ -136,6 +161,17 @@ CPUS="${COURSIA_MAIN_CPUS:-2}"
 IMAGE="${COURSIA_MAIN_IMAGE:-${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.338.0}}"
 LABELS="${COURSIA_MAIN_LABELS:-self-hosted,coursia-main,coursia-linux}"
 CGROUP_PARENT="${COURSIA_CGROUP_PARENT:-coursia-ci.slice}"
+# La politique de redemarrage du slot. Un slot sans politique ne revient
+# pas tout seul apres un redemarrage de la machine (le script ne posait
+# aucune politique : `docker run` sans `--restart` donne `no`, la valeur par
+# defaut du daemon -- le slot VIVANT porte `unless-stopped`, pose hors du
+# script). `unless-stopped` est la valeur par defaut : le conteneur suit le
+# demon, sauf arret explicite de l'operateur.
+RESTART_POLICY="${COURSIA_MAIN_RESTART_POLICY:-unless-stopped}"
+#: Les politiques ACCEPTABLES au `--check`. `always` est acceptee aussi :
+#: elle repond elle aussi a la question du slot ("le slot revient tout
+#: seul apres un redemarrage ?"), avec un comportement le plus severe.
+ACCEPTED_RESTART_POLICIES="unless-stopped always"
 WORK_MOUNT="/home/runner/_work"
 TOOLCACHE_MOUNT="/opt/hostedtoolcache"
 
@@ -276,6 +312,12 @@ run_cmd() {
 
   printf '%s\n' "docker run -d --name ${name} \\"
   printf '%s\n' "  --cpus=${CPUS} --memory=${MEMORY} --pids-limit=${PIDS} \\"
+  # La politique de redemarrage : c'est elle qui fait revenir le slot
+  # apres un redemarrage de la machine (le script ne posait aucune
+  # politique : le slot qu'il creait tournait avec `no`, la valeur par
+  # defaut du daemon quand `--restart` est absent -- donc rien ne le
+  # relancait).
+  printf '%s\n' "  --restart ${RESTART_POLICY} \\"
   printf '%s\n' "  --label coursia-ci=1 --label coursia-family=main \\"
   if [ -n "$CGROUP_PARENT" ]; then
     printf '%s\n' "  --cgroup-parent=${CGROUP_PARENT} \\"
@@ -301,6 +343,15 @@ slot_state() {
     return
   fi
   docker inspect --format '{{.HostConfig.Memory}} {{.HostConfig.PidsLimit}} {{.HostConfig.NanoCpus}} {{.State.Running}}' "$name" 2>/dev/null
+}
+
+# La politique de redemarrage VIVANTE du slot. Elle est lue separement de
+# `slot_state` : c'est un champ d'une autre nature (une politique, pas un
+# cap), et le lire a part garde la ligne d'etat lisible.
+restart_policy() {
+  local name
+  name="$(slot_name)"
+  docker inspect --format '{{.HostConfig.RestartPolicy.Name}}' "$name" 2>/dev/null
 }
 
 expected_memory_bytes() {
@@ -399,6 +450,22 @@ mode_check() {
       log "  DERIVE : cgroup-parent attendu '${CGROUP_PARENT}', mesure '${cgroup}'"
       rc=1
     fi
+    # La POLITIQUE DE REDEMARRAGE. Un slot qui tourne avec `no` est
+    # conforme sur tous les autres points -- caps, labels, image,
+    # cgroup-parent, montages -- et ne revient PAS tout seul apres un
+    # redemarrage de la machine : le job CPU de `main` reste alors en
+    # file jusqu'a l'intervention d'un operateur. C'est une derive au
+    # meme titre qu'un cap ou un label non conforme (le script ne posait
+    # aucune politique : le slot qu'il creait tournait avec `no`, la
+    # valeur par defaut du daemon quand `--restart` est absent).
+    restart="$(docker inspect --format '{{.HostConfig.RestartPolicy.Name}}' "$name" 2>/dev/null)"
+    case " ${ACCEPTED_RESTART_POLICIES} " in
+      *" ${restart} "*) : ;;
+      *)
+        log "  DERIVE : politique de redemarrage attendue '${RESTART_POLICY}' (ou 'always'), mesure '${restart}'"
+        rc=1
+        ;;
+    esac
     # Les MONTAGES. C'est la derive la plus discrete de toutes : le slot
     # peut tourner (labels conformes, image conforme, caps conformes) et
     # pourtant travailler dans un volume qui n'est pas celui de la
@@ -471,6 +538,32 @@ mode_create() {
   if [ "$state" != "ABSENT" ]; then
     log "[EXISTANT] ${name} — laisse en place (le script ne supprime jamais un slot)"
     skipped=$((skipped + 1))
+    # La POLITIQUE DE REDEMARRAGE est la seule chose qu'un slot deja
+    # vivant puisse voir reparer SANS etre recree : `docker update` ne
+    # touche qu'au champ de la politique -- le conteneur, ses volumes,
+    # ses caps et son image restent intacts. Sans cela, un slot cree
+    # par le script -- qui ne posait aucune politique (`docker run` sans
+    # `--restart` -> `no`, la valeur par defaut du daemon) -- ne
+    # reviendrait jamais tout seul apres un redemarrage de la machine, et
+    # son `--check` resterait rouge.
+    live_restart="$(restart_policy)"
+    case " ${ACCEPTED_RESTART_POLICIES} " in
+      *" ${live_restart} "*)
+        log "  politique de redemarrage : '${live_restart}' (conforme)"
+        ;;
+      *)
+        if [ "$MODE" = "dry-run" ]; then
+          log "  DERIVE : politique de redemarrage '${live_restart}' -- reparation prevue : docker update --restart=${RESTART_POLICY} ${name}"
+        else
+          if docker update --restart="${RESTART_POLICY}" "$name" >/dev/null 2>&1; then
+            log "  [REPARATION] politique de redemarrage : '${live_restart}' -> '${RESTART_POLICY}' (docker update, conteneur non recree)"
+          else
+            err "impossible de poser la politique de redemarrage '${RESTART_POLICY}' sur ${name}"
+            exit 5
+          fi
+        fi
+        ;;
+    esac
   elif [ "$MODE" = "dry-run" ]; then
     log "--- creation prevue : ${name} ---"
     run_cmd

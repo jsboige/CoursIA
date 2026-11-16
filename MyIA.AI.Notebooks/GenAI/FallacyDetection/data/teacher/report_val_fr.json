@@ -11,14 +11,23 @@
   "retries": 2,
   "checkpoint": "val_fr.jsonl",
   "seconds": 805.1,
+  "hard_distractors": false,
   "n_pairs": 280,
+  "n_generated": 280,
   "n_empty": 0,
+  "n_below_floor": 1,
+  "below_floor_pairs": [
+    "val-V138-2.1.5"
+  ],
   "n_regenerated": 1,
   "mean_completion_tokens": 69.2,
   "example_overlap": 0,
   "roundtrip_measured": 280,
   "roundtrip_hits": 243,
   "roundtrip_rate": 0.8679,
+  "roundtrip_hard_measured": 0,
+  "roundtrip_hard_hits": 0,
+  "roundtrip_hard_rate": null,
   "by_family": {
     "Abus de langage": {
       "n": 21,
@@ -90,5 +99,34 @@
       "hit": 18,
       "measured": 20
     }
+  },
+  "report_provenance": {
+    "mode": "checkpoint-only",
+    "rebuilt_at": "2026-11-16T10:47:09Z",
+    "source_checkpoint": "val_fr.jsonl",
+    "source_checkpoint_sha256": "d7621fffa05dc857b2110fc44299b04fdbce670efbd76c633ec3917e83aef52c",
+    "source_checkpoint_rows": 280,
+    "summary_from": "summarise() tel que corrige par #20137",
+    "reason": "le rapport d'origine precedait ce correctif (#20081/#20137) : il ne publiait ni n_generated ni n_below_floor",
+    "preserved_from_existing_report": [
+      "checkpoint",
+      "distractors",
+      "hub_url",
+      "lang",
+      "max_tokens",
+      "min_tokens",
+      "model",
+      "retries",
+      "seconds",
+      "seed",
+      "split",
+      "votes"
+    ],
+    "absent_not_derivable": [
+      "resumed",
+      "n_resumed",
+      "n_todo"
+    ],
+    "absent_not_derivable_why": "l'historique de reprise n'est pas ecrit dans le checkpoint ; une reprise repart d'un tirage neuf et ne rejoue que les paires manquantes"
   }
 }
