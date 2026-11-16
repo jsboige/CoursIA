@@ -4,8 +4,8 @@
   "canonical": {
     "path": "MyIA.AI.Notebooks/QuantConnect/projects/SharedPCM/pouches_pcm.py",
     "classes": ["MultiStrategyPouchesPCM"],
-    "sha256": "5d0618bc480c2f7788196a86a98533ef4e2c03a028914a065509420fcaec4c5b",
-    "note": "Source canonique du modele de construction de portefeuille par poches, extraite de la consolidation des neuf copies (#21134). Les composites l'importent ; le correctif `additive` (#19740) et les diagnostics #20188 y vivent. Ne pas modifier sans re-declarer le manifeste (code CANONICAL_DRIFT)."
+    "sha256": "61429ed92471fa4b18f023eaaeb15e5e1de6ac62acd7d2976c8df8829886dc3c",
+    "note": "Source canonique du modele de construction de portefeuille par poches, extraite de la consolidation des neuf copies (#21134). Les composites l'importent ; le correctif `additive` (#19740) et les diagnostics #20188 y vivent. Le defaut `additive` est `False` (#20188) : chaque consommateur passe son mode explicitement, donc le defaut n'est atteint par aucun d'eux. Ne pas modifier sans re-declarer le manifeste (code CANONICAL_DRIFT)."
   },
   "declared_copies": [
     {
