@@ -6803,7 +6803,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         lines.append(
             "\nCoordinate with the owner(s), re-scope to paths no OPEN PR "
             "touches, or pick another grain from the GLOBAL POOL "
-            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "(`python scripts/coordination/tapis_rapide.py --lane "
             "<machine:workspace>`)."
         )
         # Le renvoi porte sur le POOL, jamais sur un numero d'issue.
@@ -7903,7 +7903,7 @@ def _run_check_paths(
         msg.append(
             "\nDo not start -- coordinate with the owner(s), or pick "
             "another grain from the GLOBAL POOL "
-            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "(`python scripts/coordination/tapis_rapide.py --lane "
             "<machine:workspace>`) that does not intersect the open PR(s)."
         )
         print("\n".join(msg), file=sys.stderr)

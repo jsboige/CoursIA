@@ -2,8 +2,6 @@
 pagetitle: "RL - Reinforcement Learning"
 ---
 
-# RL - Reinforcement Learning
-
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GameTheory](../GameTheory/README.md)
 
 <!-- CATALOG-STATUS
@@ -367,6 +365,10 @@ L'installation détaillée, avec les versions épinglées, vit dans [`requiremen
 Chaque carnet se termine sur des exercices à compléter dans les cellules prévues : la correction n'est pas fournie, mais le carnet s'exécute de bout en bout même quand les exercices ne sont pas faits, et la sortie attendue de chaque cellule est visible dans la version committée. Les exercices demandent en général de modifier un hyperparamètre ou une fonction de récompense, puis de relire les courbes — l'objectif est de faire bouger une mesure, pas de recopier une réponse.
 
 Dans `RL-15`, les exercices prolongent le comparatif multi-graines : ils invitent à examiner l'avantage relatif au groupe, le choix du nombre de graines et l'effet de la taille du groupe.
+
+## Reward model Bradley–Terry : Python et C#
+
+[RLPT-00 en Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) et [en C#](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-CSharp.ipynb) entraînent le même type de modèle de reward sur des préférences synthétiques, avec PyTorch et TorchSharp CPU. Le pooling moyen reste insensible à l'ordre : les deux versions exposent cette limite et distinguent la référence Bayes en espérance des mesures réalisées.
 
 ## Ponts vers les autres séries
 

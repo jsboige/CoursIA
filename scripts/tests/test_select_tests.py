@@ -66,6 +66,21 @@ def test_r1_un_test_touche_selectionne_sa_suite_locale(repo: Path) -> None:
     assert "tests/test_other.py" in selection.selected
 
 
+def test_r1_test_supprime_selectionne_la_suite_existante(repo: Path) -> None:
+    (repo / "tests/test_module.py").unlink()
+    selection = select_tests.select(repo, ["tests/test_module.py"])
+    assert "tests/test_module.py" not in selection.selected
+    assert "tests/test_other.py" in selection.selected
+
+
+def test_r1_test_suivi_mais_absent_reste_selectionne(repo: Path) -> None:
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "-C", str(repo), "add", "tests/test_module.py"], check=True)
+    (repo / "tests/test_module.py").unlink()
+    selection = select_tests.select(repo, ["tests/test_module.py"])
+    assert "tests/test_module.py" in selection.selected
+
+
 def test_r1_ne_selectionne_pas_une_suite_etrangere(repo: Path) -> None:
     selection = select_tests.select(repo, ["tests/test_module.py"])
     assert "elsewhere/test_remote.py" not in selection.selected

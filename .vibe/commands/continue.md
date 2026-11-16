@@ -42,25 +42,25 @@
    `git worktree add ../CoursIA-vibe-<sujet> -b feature/<sujet> origin/main`
    (jamais de travail sur un arbre partage ; la branche reste LOCALE, voir Interdits).
 
-### Phase 2 : Selection — le picker d'abord (P0 inclus)
+### Phase 2 : Selection — le tapis rapide d'abord (P0 inclus)
 
-**Premier geste de selection : le picker calibre** — apres la lecture inbox/dashboard (Phase 1), jamais de scan manuel du pool avant lui :
+**Premier geste de selection : le tapis rapide** — apres la lecture inbox/dashboard (Phase 1), jamais de scan manuel du pool avant lui (~50 s ; le tapis lourd `pick_idle_grain.py --belt` ne se tire plus : 240 s et grains non verifies, #26926) :
 
 ```bash
-python scripts/pick_idle_grain.py --belt --lane "myia-po-2025:Microsoft VS Code" --json
+python scripts/coordination/tapis_rapide.py --lane "myia-po-2025:Microsoft VS Code" --json
 ```
 
-- La verification des claims est active sur ce tirage ; `--no-check-claims` est interdit.
+- Sortie 3 : rien n'est servi (lecture GitHub incomplete et pas de lecture de secours de moins de 12 h) ; sortie 4 : checkout en retard, `git pull --ff-only` puis re-tirer.
 - Genre du grain precedent de la lane (pour la barriere G-VAR-3 ci-dessous), lu sur le tag `Grain:` de sa derniere PR mergee :
   ```bash
   gh pr list --state merged --limit 50 --json body,mergedAt --jq '[.[] | select(.body != null and (.body | contains("myia-po-2025:Microsoft VS Code"))) | {m: .mergedAt, g: (.body | capture("(?m)^Grain:[ \t]*[A-Z]+/(?<g>[a-z-]+)").g // "?")}] | sort_by(.m) | last | if . == null then "(aucun)" else .g end'
   ```
   Réponse `(aucun)` ou `?` -> pas de barriere G-VAR-3 a appliquer : `?` signifie que la lane a été trouvée, mais que son tag `Grain:` n'a pas fourni de genre capturable.
 
-**Interpretation de la sortie JSON** (un seul document, `"mode": "belt"`) :
+**Interpretation de la sortie JSON** (un seul document) :
 
-- `"repair"` non nul -> **P0** : le picker retourne le backlog rouge/review de la lane sous cette cle (`repair.assignment`, `repair.grain`). Le grain du cycle EST la reparation de la PR nommee dans `repair.grain` (points de review d'abord : `python scripts/check_unaddressed_nits.py <N>`). La reparation se prepare comme tout livrable Vibe : branche locale + commit + [REVIEW-NEEDED] (jamais de push direct sur la branche de la PR). Tant qu'il reste une PR a reprendre, pas de nouveau grain.
-- `"repair": null` -> **le tapis** : `picks` est la tete de la file de tout l'ouvert, triee par derniere visite (la plus ancienne en tete, une issue jamais servie passe devant). Prendre les candidats **dans l'ordre**. Un candidat ne se saute que pour une barriere reelle : hors **profil Vibe** (Phase 3), ou second grain LIGHT du meme genre d'affilee (G-VAR-3). Chaque saut est dit dans le rapport de cycle, et l'issue sautee reste en tete pour le tirage suivant. Aucun des `picks` compatible -> relancer avec `--grains 20` et continuer de descendre la file ; toujours aucun -> post [ASK] sur le dashboard en demandant un steering compatible profil Vibe. Ne JAMAIS claimer un grain hors profil. Le tapis ne pondere pas : pas de preference de famille, de serie ni d'EPIC, et `--reroll` n'a pas d'objet.
+- `"vos_prs"` porte une PR de plus de 24 h (`age_j` > 1) -> **P0** : le grain du cycle EST la reparation de cette PR (points de review d'abord : `python scripts/check_unaddressed_nits.py <N>`). La reparation se prepare comme tout livrable Vibe : branche locale + commit + [REVIEW-NEEDED] (jamais de push direct sur la branche de la PR). Tant qu'il reste une PR a reprendre, pas de nouveau grain.
+- Sinon -> **le tapis** : `grains` est la tete de la file de tout l'ouvert, par familles servies a tour de role, les grains avant les conteneurs ; chaque grain porte sa commande `avant_d_editer`, et un conteneur (`"conteneur": true`) porte sa `procedure` et ses `chemins_occupes`. Prendre les candidats **dans l'ordre**. Un candidat ne se saute que pour une barriere reelle : hors **profil Vibe** (Phase 3), ou second grain LIGHT du meme genre d'affilee (G-VAR-3). Chaque saut est dit dans le rapport de cycle, et l'issue sautee reste en tete pour le tirage suivant. Aucun des `grains` compatible -> relancer avec `--grains 20` et continuer de descendre la file ; toujours aucun -> post [ASK] sur le dashboard en demandant un steering compatible profil Vibe. Ne JAMAIS claimer un grain hors profil. Le tapis ne pondere pas : pas de preference de famille, de serie ni d'EPIC, et `--reroll` n'a pas d'objet.
 
 **P1** : steering coordinateur nomme (DM / dashboard) — prime sur le tirage quand il existe ET est compatible profil.
 **P2** : candidat retenu du tapis.
@@ -159,7 +159,7 @@ roo-state-manager_conversation_browser
 
 | Commande | Action |
 |----------|--------|
-| `python scripts/pick_idle_grain.py --belt --lane "myia-po-2025:Microsoft VS Code" --json` | Premier geste de selection (verification des claims active) |
+| `python scripts/coordination/tapis_rapide.py --lane "myia-po-2025:Microsoft VS Code" --json` | Premier geste de selection (tapis rapide, ~50 s) |
 | `gh pr list --state open --limit 100 --json number,title,body --jq '.[] \| select(.body != null and (.body \| contains("myia-po-2025:Microsoft VS Code"))) \| "#\(.number) \(.title)"'` | PRs ouvertes de la lane (via tag `Grain:`, jamais `--author @me`) |
 | `python scripts/check_unaddressed_nits.py <N>` | Points de review non leves sur une PR |
 | `python scripts/check_lane_claim.py --lane "myia-po-2025:Microsoft VS Code" <N>` | Verrou de claim avant edition |
@@ -193,6 +193,7 @@ roo-state-manager_conversation_browser
 | 2026-08-20 | Creation initiale | jsboige + Mistral Vibe |
 | 2026-08-20 | Correction noms outils MCP | Mistral Vibe |
 | 2026-09-01 | Alignement #14114 : picker calibre en premier geste de selection (P0 rouge/review via mode repair), relais humain [REVIEW-NEEDED] (plus de push/PR autonome), cadence feeder 4 h / probe `--wake` 1 h, retrait de `--author @me` | jsboige + Claude Code |
+| 2026-11-16 | #26926 : tapis rapide en premier geste de selection (`tapis_rapide.py --json`, P0 = `vos_prs` de plus de 24 h, `grains` dans l'ordre, conteneurs servis apres les grains avec `--paths`) ; le tapis lourd `pick_idle_grain.py --belt` ne se tire plus | jsboige + Claude Code |
 
 ---
 
