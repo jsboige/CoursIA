@@ -1033,11 +1033,21 @@ def _json_stdout(res: RunResult, what: str) -> object:
         raise UnexpectedError(f"{what} : stdout illisible ({exc})") from exc
 
 
-def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
-    """Numeros des PRs ouvertes, triees croissant (la plus ancienne d'abord)."""
+def list_open_prs(
+    runner: Runner, gh_env: dict[str, str]
+) -> tuple[list[int], list[int]]:
+    """PRs ouvertes triees croissant, et PRs a rechauffer.
+
+    UNE SEULE lecture de liste : elle porte aussi les DERNIERES reviews
+    (``latestReviews``), ce qui permet de choisir les PRs a rechauffer SANS
+    appel REST supplementaire. Revue coordinateur du 16/11 : le rechauffage
+    de TOUT le pool ouvert coutait ~1 500 lectures REST par passage, sous le
+    jeton que le coordinateur partage avec l'attestation Lean et les
+    relectures (05:06Z : 1 879 restants sur 5 000).
+    """
     res = runner.run(
         ["gh", "pr", "list", "--repo", REPO, "--state", "open",
-         "--limit", str(PR_LIST_LIMIT), "--json", "number"],
+         "--limit", str(PR_LIST_LIMIT), "--json", "number,latestReviews"],
         env=gh_env,
     )
     if res.returncode != 0:
@@ -1052,7 +1062,68 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
         for row in rows
         if isinstance(row, dict) and row.get("number") is not None
     )
-    return numbers
+    return numbers, warm_up_candidates(rows)
+
+
+#: Les PRs rechauffees sont celles qui peuvent atteindre l'etape 6 (la lecture
+#: de mergeabilite) : celles qui portent une VOIX du coordinateur. Une PR
+#: sans approbation s'arrete a l'etape 2 (``no-coordinator-approval``) : la
+#: rechauffer consommerait le jeton partage pour rien.
+#:
+#: Ce choix NE DECIDE RIEN : le rechauffage est une lecture a EFFET DE BORD,
+#: sans verdict. Une PR mal rechauffee n'est jamais mergee a tort -- elle est
+#: PARQUEE puis rejouee au budget long. Le critere est donc VOLONTAIREMENT
+#: permissif (une voix qui approuve, ou qui commente apres avoir approuve) :
+#: mieux vaut rechauffer une PR de trop qu'une de moins.
+WARMUP_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_LANE_APP_LOGIN))
+
+#: Etats d'une review qui disent « cette PR peut encore etre mergee ».
+WARMUP_STATES = frozenset(("APPROVED", "COMMENTED", "LGTM"))
+
+
+def _warmup_state(review: dict) -> str:
+    """Etat d'une review, pour le CHOIX du rechauffage (aucun verdict).
+
+    Un ``COMMENTED`` porte son verdict dans son CORPS (le canal du jeton du
+    cluster) : c'est ce verdict qui compte, pas l'etat muet. L'extraction
+    est celle du CANON (``pool_review_verdicts._voice``) -- la meme pour les
+    deux formes (``VERDICT: X`` et le prefixe de persona) : un verdict
+    reecrit ici derivera de celui qui gouverne.
+    """
+    state = str(review.get("state") or "")
+    voice = review_canon._voice(review.get("body")) or {}
+    verdict = str(voice.get("verdict") or "")
+    if state == "COMMENTED" and verdict:
+        return verdict
+    return state or verdict
+
+
+def warm_up_candidates(rows: list) -> list[int]:
+    """PRs a rechauffer : celles qui portent une voix du coordinateur.
+
+    Les PRs sans aucune voix du coordinateur s'arretent a l'etape 2 : elles
+    n'atteignent jamais la lecture de mergeabilite, et les rechauffer
+    consommerait le jeton partage pour rien. Mesure du 16/11 sur le pool
+    vivant : 178 PRs ouvertes, 35 candidates.
+    """
+    out: list[int] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        number = row.get("number")
+        if number is None:
+            continue
+        for review in row.get("latestReviews") or []:
+            if not isinstance(review, dict):
+                continue
+            author = review.get("author") or {}
+            login = str(author.get("login") or "") if isinstance(author, dict) else ""
+            if login not in WARMUP_VOICES:
+                continue
+            if _warmup_state(review) in WARMUP_STATES:
+                out.append(int(number))
+                break
+    return sorted(set(out))
 
 
 #: ``reviews`` est lu par la MEME commande que le reste : la disposition de
@@ -1854,13 +1925,20 @@ def mergeable_state_and_head(
 def warm_up_mergeability(
     runner: Runner, gh_env: dict[str, str], prs: list[int]
 ) -> int:
-    """Rechauffage : une lecture REST par PR, sans attente (#26799).
+    """Rechauffage : une lecture REST par PR CANDIDATE, sans attente (#26799).
 
     Chaque lecture DEMARRE le calcul de mergeabilite de la PR cote GitHub,
     et ces calculs se font en parallele cote serveur. Sans rechauffage, la
     passe sert ces calculs UN PAR UN : la premiere PRRencontre paie seule
     son attente (120 s), puis la suivante, et ainsi de suite -- 28 PRs
     portaient 90 % du passage du 16/11.
+
+    Seules les PRs CANDIDATES (celles qui portent une voix du
+    coordinateur, donc les seules qui peuvent atteindre l'etape 6) sont
+    rechauffees : rechauffer tout le pool ouvert coutait ~1 500 lectures
+    REST par passage, sous le jeton que le coordinateur partage (revue du
+    16/11). Le choix ne porte AUCUN verdict -- une PR mal rechauffee est
+    parkee puis rejouee, jamais mergee a tort.
 
     Le rechauffage ne LIT aucun etat a exploiter : c'est un effet de bord
     serveur. Il ne change donc aucun verdict, et les merges restent
@@ -2350,6 +2428,7 @@ def emit_output(
     results: list[PRVerdict],
     stopped_reason: str | None,
     exit_code: int,
+    warmup: dict | None = None,
 ) -> None:
     """Resume humain sur stdout, ou payload machine unique en --json."""
     if args.json:
@@ -2360,6 +2439,8 @@ def emit_output(
             "exit_code": exit_code,
             "results": [v.journal_dict() for v in results],
         }
+        if warmup:
+            payload["warmup"] = warmup
         print(json.dumps(payload, ensure_ascii=False))
         return
     mode = "APPLY" if args.apply else "DRY-RUN"
@@ -2391,6 +2472,18 @@ def emit_output(
     )
     if stopped_reason:
         print(f"arret : {stopped_reason}")
+    if warmup:
+        # Le cout du rechauffage est nomme : c'est lui qui pesait sur le
+        # jeton partage du coordinateur (revue du 16/11).
+        print(
+            "rechauffage : %d lecture(s) REST sur %d candidate(s) "
+            "(pool ouvert : %d PRs)"
+            % (
+                int(warmup.get("reads") or 0),
+                int(warmup.get("candidates") or 0),
+                int(warmup.get("pool") or 0),
+            )
+        )
 
 
 # --- boucle de run ---------------------------------------------------------------
@@ -2443,7 +2536,7 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     stopped_reason: str | None = None
     exit_code = 0
     try:
-        prs = list_open_prs(active_runner, gh_env)
+        prs, warm_candidates = list_open_prs(active_runner, gh_env)
     except UnexpectedError as exc:
         # Echec avant la boucle : aucune PR evaluee, rien a journeler.
         print(f"merge_ready : ARRET sur erreur inattendue -- {exc}", file=sys.stderr)
@@ -2456,13 +2549,18 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     #: passe (#26799).
     replay_queue: list[tuple[int, PRVerdict]] = []
 
-    # Rechauffage de tete (#26799) : une lecture par PR ouverte, sans
+    # Rechauffage de tete (#26799) : une lecture par PR CANDIDATE, sans
     # attente. Chaque lecture demarre le calcul de mergeabilite de sa PR ;
     # les calculs se font en parallele cote serveur. Sans ce geste, la passe
     # sert ces calculs un par un, et chaque PR paie seule son attente.
-    warm_up_mergeability(active_runner, gh_env, prs)
+    #
+    # Seules les PRs qui peuvent atteindre l'etape 6 sont rechauffees (une
+    # voix du coordinateur) : rechauffer tout le pool coutait ~1 500
+    # lectures REST par passage, sous le jeton partage du coordinateur
+    # (revue du 16/11).
+    warmup_reads = warm_up_mergeability(active_runner, gh_env, warm_candidates)
 
-    for index, pr in enumerate(prs):
+    for pr in prs:
         # Disjoncteur --max : plafond de DECISIONS de merge du run (merges
         # reels en --apply, would-merge en dry-run : le dry-run doit refléter
         # ce que --apply ferait). Une fois le plafond atteint, les PRs
@@ -2525,9 +2623,12 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                     # Le merge rebascule les PRs soeurs en « etat en cours de
                     # calcul » : on les rechauffe TOUTES maintenant, en
                     # parallele, au lieu de les servir une par une au fil de
-                    # la passe (#26799).
-                    warm_up_mergeability(
-                        active_runner, gh_env, prs[index + 1:]
+                    # la passe (#26799). Seules les CANDIDATES restantes le
+                    # sont : rechauffer le pool entier coutait ~1 500
+                    # lectures REST par passage (revue du 16/11).
+                    warmup_reads += warm_up_mergeability(
+                        active_runner, gh_env,
+                        [p for p in warm_candidates if p > pr],
                     )
                 merged_count += 1
             elif (decision.reason or "") in PENDING_MERGEABLE_REASONS:
@@ -2631,7 +2732,14 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         break
                     continue
 
-    emit_output(args, results, stopped_reason, exit_code)
+    emit_output(
+        args, results, stopped_reason, exit_code,
+        warmup={
+            "reads": warmup_reads,
+            "candidates": len(warm_candidates),
+            "pool": len(prs),
+        },
+    )
     return exit_code
 
 

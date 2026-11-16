@@ -216,6 +216,13 @@ class ScriptedRunner:
         # numero de PR, la valeur l'etat renvoye. Ces lectures NE CONSOMMENT
         # PAS la pile ``pulls`` : elles n'ont aucun etat a faire valoir.
         warmup_states: dict[int, str] | None = None,
+        # #26799 (revue coordinateur du 16/11) : PRs qui portent une voix du
+        # coordinateur dans ``latestReviews`` (la lecture de liste). Defaut :
+        # TOUTES -- le chemin nominal du rechauffage. Une PR absente de la
+        # liste n'est pas rechauffee : elle s'arrete a l'etape 2 (pas
+        # d'approbation), donc elle n'atteint jamais la lecture de
+        # mergeabilite.
+        coordinator_voices: tuple[int, ...] | None = None,
         # #25510 T-J : etapes du job associe a un check-run de job. La
         # CLE est l'identifiant de job, la VALEUR est le nom de la PREMIERE
         # etape en echec ("" = aucune etape en echec). Sert a prouver que
@@ -241,6 +248,9 @@ class ScriptedRunner:
         self.main_checks_by_sha = main_checks_by_sha or {}
         self.job_steps = job_steps or {}
         self.warmup_states = warmup_states or {}
+        self.coordinator_voices = (
+            set(coordinator_voices) if coordinator_voices is not None else None
+        )
         self.run_log = run_log
         self.token = token
         self.token_rc = token_rc
@@ -308,9 +318,20 @@ class ScriptedRunner:
             rows = self.base_search.get(search_key or "", [])
             return mr.RunResult(0, json.dumps(rows), "")
         if c[:3] == ["gh", "pr", "list"]:
-            return mr.RunResult(
-                0, json.dumps([{"number": n} for n in self.prs]), ""
-            )
+            rows = []
+            for n in self.prs:
+                row = {"number": n}
+                if (self.coordinator_voices is None
+                        or n in self.coordinator_voices):
+                    row["latestReviews"] = [{
+                        "author": {"login": "myia-ai-01"},
+                        "state": "APPROVED",
+                        "body": "",
+                    }]
+                else:
+                    row["latestReviews"] = []
+                rows.append(row)
+            return mr.RunResult(0, json.dumps(rows), "")
         if c[:3] == ["gh", "pr", "view"]:
             if self.view_rc != 0:
                 return mr.RunResult(self.view_rc, "", self.view_stderr)
@@ -855,6 +876,81 @@ def test_le_rechauffage_rechauffe_les_prs_restantes_apres_chaque_merge(tmp_path)
     # tete de passe : les 3 PRs ; puis, apres le merge de 101 : 102 et 103 ;
     # apres le merge de 102 : 103 ; apres le merge de 103 : plus rien.
     assert numbers == [101, 102, 103, 102, 103, 103]
+
+
+# --- restriction du rechauffage aux candidates (revue du 16/11) ----------------
+#
+# Le rechauffage de TOUT le pool ouvert coutait ~1 500 lectures REST par
+# passage (178 PRs en tete de passe, puis toutes les restantes apres chaque
+# merge), sous le jeton que le coordinateur partage avec l'attestation Lean
+# et les relectures (05:06Z : 1 879 restants sur 5 000). Seules les PRs qui
+# peuvent atteindre l'etape 6 (la lecture de mergeabilite) ont besoin d'etre
+# rechauffees : celles qui portent une voix du coordinateur.
+
+
+def test_le_rechauffage_ne_touche_que_les_prs_avec_une_voix_du_coordinateur(tmp_path):
+    """Une PR sans approbation s'arrete a l'etape 2 : la rechauffer
+    consommerait le jeton partage pour rien."""
+    runner = ScriptedRunner(prs=(301, 302, 303), coordinator_voices=(302,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    numbers = sorted({
+        int(cmd[2].rsplit("/", 1)[1]) for cmd in _warmup_reads(runner)
+    })
+    assert numbers == [302]
+
+
+def test_le_cout_du_rechauffage_est_nomme_dans_le_bilan(tmp_path, capsys):
+    """Le nombre de lectures REST du rechauffage est publie : c'est lui qui
+    pesait sur le jeton partage (revue du 16/11)."""
+    runner = ScriptedRunner(prs=(401, 402), coordinator_voices=(401,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "rechauffage :" in out
+    assert "1 candidate(s)" in out
+    assert "pool ouvert : 2 PRs" in out
+
+
+def test_les_candidates_se_lisent_dans_la_lecture_de_liste():
+    """Le critere : une voix du coordinateur, approuvante ou commentant apres
+    avoir approuve. Une reserve (`CHANGES_REQUESTED`) ne candidate pas."""
+    rows = [
+        {"number": 1, "latestReviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "APPROVED", "body": ""}]},
+        {"number": 2, "latestReviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "COMMENTED",
+             "body": "leve la reserve, la PR est approuvee"}]},
+        {"number": 3, "latestReviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "CHANGES_REQUESTED",
+             "body": ""}]},
+        {"number": 4, "latestReviews": [
+            {"author": {"login": "autre-lane"}, "state": "APPROVED", "body": ""}]},
+        {"number": 5, "latestReviews": []},
+    ]
+    assert mr.warm_up_candidates(rows) == [1, 2]
+
+
+def test_un_comment_qui_porte_un_verdict_reserve_ne_candidate_pas():
+    """Le canal du jeton du cluster porte son verdict dans le CORPS : un
+    COMMENT qui dit CONCERNS n'est pas une approbation."""
+    rows = [
+        {"number": 7, "latestReviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "COMMENTED",
+             "body": "[Hermes] COMMENT_WITH_CONCERNS"}]},
+    ]
+    assert mr.warm_up_candidates(rows) == []
+
+
+def test_la_lecture_de_liste_porte_desormais_les_dernieres_reviews(tmp_path):
+    """UNE SEULE lecture de liste : elle porte aussi `latestReviews`, sinon le
+    choix des candidates coute un appel REST par PR."""
+    runner = ScriptedRunner(prs=(501,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    list_cmds = [cmd for cmd in runner.cmds() if cmd[:3] == ["gh", "pr", "list"]]
+    assert list_cmds
+    assert "number,latestReviews" in list_cmds[0]
 
 
 def test_lordre_des_merges_est_inchange(tmp_path):
