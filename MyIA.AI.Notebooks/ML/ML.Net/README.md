@@ -533,6 +533,10 @@ Le fil rouge de cette série est le **paradoxe résolu** du ML en .NET : faire d
 
 Le [jumeau C#](ML-04b-ModelComparison-Validity-CSharp.ipynb) utilise MathNet pour les moindres carrés et les statistiques, ML.NET FastForest et FastTree pour les arbres, et Python.NET pour les données diabetes et les indices scikit-learn. Les scores des arbres peuvent différer des modèles scikit-learn.
 
+
+## Parité du socle ML-05b
+
+Le [socle Python](ML-05b-Series-Temporelles-Classiques-Python.ipynb) et son [jumeau C#](ML-05b-Series-Temporelles-Classiques-CSharp.ipynb) exécutent les mêmes données, diagnostics ADF/ACF/PACF, seize configurations SARIMA, lissages et douze fenêtres expansives. Le C# orchestre les expériences et figures statiques, avec les vraies API statsmodels via Python.NET ; le SSA natif ML.NET reste un modèle différent. Non-rejet, égalité après arrondi et preuve statistique d'équivalence sont distingués ; aucun modèle en échec n'est remplacé par le naïf.
 ### Parité ML-07b
 
 Les identifiants sémantiques ont leur parcours [Python](ML-07b-SemanticIDs-Recommandation-Python.ipynb) et leur [jumeau C#](ML-07b-SemanticIDs-Recommandation-CSharp.ipynb). Le C# construit le corpus et calcule profils, scores PMI, classements et bootstrap ; il appelle les vrais SVD/KMeans scikit-learn via Python.NET, et confronte McNemar MathNet à SciPy. Les paramètres et budgets sont communs ; les générateurs aléatoires diffèrent, donc les scores aussi. La SVD collaborative est calculée en float32, puis son produit est accumulé en double C#. Les bits affichés mesurent les codes idéaux, hors livres et stockage réel.
