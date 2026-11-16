@@ -4475,7 +4475,6 @@ TRANCHE46: list[Guard] = [
     ),
 ]
 
-
 # ---------------------------------------------------------------------------
 # TRANCHE 47 (#26690) -- code de notebook non commente
 #
@@ -4536,5 +4535,133 @@ TRANCHE47: list[Guard] = [
         # rc=2 : erreur d'invocation (carnet illisible). Incident, jamais un
         # vert silencieux.
         warn_rc=(2,),
+    ),
+]
+
+# TRANCHE 48 (#26782) : densite de commentaires du code des carnets.
+# Concerns user #26607/#26616 (via #26613) : « le code est non commente et
+# tres difficile a lire. Le CI devrait le rejeter ». Deux axes :
+#  - axe 1 BLOQUANT : ratchet base-vs-PR. Un carnet AJOUTE >= 40 lignes de
+#    code sous 5 % de densite rougit ; un carnet MODIFIE qui passe sous 5 %
+#    rougit ; le stock de main n'est jamais juge (un carnet deja sous le
+#    seuil a la base reste ALREADY_BELOW, dette §I, jamais rouge).
+#  - axe 2 ADVISORY : lisibilite (lignes > 120 caracteres, blocs > 60
+#    lignes sans commentaire, identifiants d'une lettre hors indices de
+#    boucle). Rapporte, jamais bloquant.
+# Garde natif ne dans la voie rapide : aucun workflow unitaire a retirer.
+# Numerotation : TRANCHE47 etait le numero de branche ; main l'a pris pour
+# l'organe #26690 (PR #26694) -- renumerote 48 au conflit, organes distincts.
+TRANCHE48: list[Guard] = [
+    Guard(
+        name="Comment-density ratchet (base vs PR)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_code_comment_density.py",
+            "scripts/notebook_tools/tests/test_check_code_comment_density.py",
+            "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json",
+        ],
+        pre_argv=[
+            # Pre-controle (lecon #11685/#12817) : un detecteur qui ne peut
+            # pas prouver qu'il tire est indiscernable d'un detecteur
+            # debranche.
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "{base_ref}",
+        ],
+        blocking=True,          # axe 1 : le gate exige par le Concern user
+        needs_base=True,        # le runner garantit origin/<base_ref>
+        diff_bounded=True,      # verdict base vs tete : le stock n'est pas juge
+        absorbed=True,
+    ),
+    Guard(
+        name="Comment-density readability (advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_code_comment_density.py",
+            "scripts/notebook_tools/tests/test_check_code_comment_density.py",
+            "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "--readability", "{base_ref}",
+        ],
+        blocking=False,         # axe 2 : advisory, signale jamais bloque
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 49 -- SVG emis seulement en text/html (#26783).
+#
+# Garde NATIF : aucun workflow d'origine. L'organe
+# `scripts/notebook_tools/detect_svg_html_only.py` flagge toute sortie
+# `display_data`/`execute_result` dont le mime bundle contient un `<svg>` en
+# `text/html` mais NI `image/svg+xml` NI `image/png` : le SVG n'a alors aucune
+# representation que toute surface de rendu affiche (viewer GitHub, rich diff
+# de PR, nbviewer, VS Code, exports HTML ne sanitizent pas `text/html`
+# pareil). Les quatre detecteurs SVG existants jugent la GEOMETRIE du SVG
+# emis, pas son type MIME : cette classe leur est invisible par construction.
+#
+# Calibration census sur main (mesure firsthand, worktree b8bc690d) :
+# 198 sorties html-only dans 87 carnets -- exactement les chiffres de
+# l'issue. Controle positif reel : la tete de #26613 rend 4/4 (cellules
+# 13/20/25/28 de Z3-20 C#). Controle negatif : tout bundle doubled
+# `image/svg+xml` ou `image/png` est exempte (15 tests pytest + self-test
+# embarque en pre-controle).
+#
+# Pourquoi ADVISORY et non bloquant (ecart ASSUMI avec le body de l'issue,
+# qui demandait bloquant) : l'etape 0 de #26783 -- capture du rendu GitHub
+# par un agent qui voit, DOM cross-checke -- a REFUTE l'invisibilite sur la
+# surface blob/viewer pour les DEUX carnets tests (4 SVG rendus a 776x349
+# sur la tete de #26613, 6 sur Infer-07 main) ; la surface Files changed est
+# restee inobservable en sonde anonyme (diffs .ipynb bloques a « Loading »).
+# Brancher un gate BLOQUANT sur un defaut dont la manifestation visuelle
+# n'est pas demontree est interdit (gate-fp). Une capture AUTHENTIFIEE de
+# Files changed montrant le SVG absent fait basculer le garde en bloquant :
+# `blocking=True` sur ce garde, un commit d'une ligne. Clause de l'issue :
+# « Si l'un des deux s'affiche, le critere se raffine avant tout code » --
+# les deux s'affichent.
+#
+# `needs_base=True` + ratchet autonome : l'organe fait lui-meme son diff
+# merge-base...HEAD et ne juge que les AJOUTS (cle (cell_id, sha1 du
+# payload)) -- le stock de main n'est pas juge, contrat de l'issue. Un
+# carnet NOUVEAU compte toutes ses occurrences comme ajouts. Meme forme
+# moteur que TRANCHE11 (source-collapse) : self-test en pre-controle, argv
+# positionnel `{base_ref}`.
+# ---------------------------------------------------------------------------
+TRANCHE49: list[Guard] = [
+    Guard(
+        name="SVG html-only ratchet (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/detect_svg_html_only.py",
+            "scripts/notebook_tools/tests/test_detect_svg_html_only.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/detect_svg_html_only.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_html_only.py",
+            "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
     ),
 ]

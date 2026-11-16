@@ -159,7 +159,8 @@ def test_claims_vivant_perime_mien_et_borne():
     assert etat(lec, 4).ecart == "PLAFOND"  # un claim borne reste une visite
     assert etat(lec, 5).ecart == "PLAFOND"
     borne = etat(lec, 7)
-    assert borne.ecart is None and borne.notes == [f"claim borne de {AUTRE} : a/b/**"]
+    assert borne.ecart is None and borne.notes == [f"claim borne de {AUTRE}"]
+    assert borne.occupes == [(AUTRE, "a/b/**")]  # le chemin entier, jamais tronque
     # Le claim est ferme, mais le [RELEASED] d'il y a 1 h tient l'issue a l'ecart.
     assert etat(lec, 6).ecart == "RELACHEE"
 
@@ -302,12 +303,11 @@ def test_une_seule_famille_garde_ses_invariants():
     ])
     file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
     ordre = [e.numero for e in file]
-    # jamais visitees devant les visitees
-    assert set(ordre[:3]) == {1, 2, 3}
-    # le grain avant son conteneur
-    assert ordre.index(2) < ordre.index(1) and ordre.index(3) < ordre.index(1)
-    # puis la visite la plus ancienne
-    assert ordre.index(5) < ordre.index(4)
+    # parmi les grains, les jamais visites devant les visites
+    assert set(ordre[:2]) == {2, 3}
+    # puis la visite la plus ancienne ; le conteneur, meme jamais visite, en
+    # dernier : il demande une lecture et un --paths (#26926)
+    assert ordre[2:] == [5, 4, 1]
 
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
@@ -380,14 +380,68 @@ def test_graine_par_lane_et_par_tranche_de_quatre_heures():
 
 # --- CLI --------------------------------------------------------------------
 
-def test_cli_lecture_en_panne_code_3_et_repli(capsys):
-    def run(argv, timeout):
-        raise subprocess.CalledProcessError(1, argv, output="", stderr="HTTP 401")
+def _panne(argv, timeout):
+    raise subprocess.CalledProcessError(1, argv, output="", stderr="HTTP 401")
 
-    assert tr.main(["--lane", LANE, "--cache-s", "0"], run=run, maintenant=NOW) == 3
+
+def test_cli_lecture_en_panne_code_3_sans_tapis_lourd(capsys):
+    """Sans secours, rien n'est servi -- et rien ne renvoie au tapis lourd (#26926)."""
+    assert tr.main(["--lane", LANE, "--cache-s", "0"], run=_panne, maintenant=NOW) == 3
     err = capsys.readouterr().err
     assert "Lecture incomplete (issues" in err
-    assert f"python scripts/pick_idle_grain.py --belt --lane {LANE}" in err
+    assert "pick_idle_grain" not in err and "Ne tirez pas le tapis lourd" in err
+
+
+def _cache(dossier: Path, age_s: float, lec: gh_bulk.Lecture) -> None:
+    import dataclasses
+    import time
+    dossier.mkdir(parents=True, exist_ok=True)
+    brut = {**dataclasses.asdict(lec), "_epoch": time.time() - age_s}
+    (dossier / "lecture-45j.json").write_text(json.dumps(brut), encoding="utf-8")
+
+
+def test_cli_lecture_en_panne_tire_sur_le_cache_de_secours(tmp_path, monkeypatch, capsysbinary):
+    """Une panne reseau tire sur la derniere lecture COMPLETE de moins de 12 h,
+    et le dit dans la ligne de lecture ; au-dela de 12 h, sortie 3 (#26926)."""
+    lec = lecture([issue(7, titre="Grain du cache")])
+    lec.lu_a = tr._iso(NOW - timedelta(hours=2))
+    monkeypatch.setattr(tr.gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
+    monkeypatch.setattr(tr.tapis_origami, "mesurer", lambda *a, **k: (
+        {}, {"active": False, "measured": False, "parked": [], "reason": "test"}))
+    _cache(tmp_path, 3 * 3600, lec)
+    monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: (_ for _ in ()).throw(
+        gh_bulk.LectureIncomplete("issues", 1, "HTTP 502")))
+    assert tr.main(["--lane", LANE], run=_panne, maintenant=NOW) == 0
+    capture = capsysbinary.readouterr()
+    out, err = capture.out.decode("utf-8"), capture.err.decode("utf-8")
+    assert "#7 Grain du cache" in out and "lecture reseau en echec (issues" in out
+    assert "lecture de secours" in err and "pick_idle_grain" not in out + err
+    _cache(tmp_path, 13 * 3600, lec)
+    assert tr.main(["--lane", LANE], run=_panne, maintenant=NOW) == 3
+
+
+def test_conteneur_servi_apres_les_grains_avec_sa_procedure_paths():
+    """Un conteneur ne passe jamais devant un grain, et sa commande porte
+    `--paths` : sans elle, check_lane_claim refuse le conteneur entier des
+    qu'une autre lane y tient un claim borne (6 sur #19297, 16/11)."""
+    borne = com(2, f"[OVERRIDE] lane {AUTRE} -- paths: MyIA.AI.Notebooks/Search/**, "
+                   "MyIA.AI.Notebooks/Sudoku/Sudoku-12-Long-Chemin-De-Fichier.ipynb")
+    lec = lecture([issue(1, titre="[EPIC] racine", labels=["consolidation"], comments=[borne]),
+                   issue(2), issue(3)],
+                  prs=[{"number": 900, "title": "Fix(x,#1): y", "body": ""}])
+    etats_ = tr.etats(lec, LANE, NOW)
+    file = tr.ordonner(etats_, LANE, NOW, 8)
+    assert [e.conteneur for e in file] == [False, False, True]
+    r = tr.rapport(lec, etats_, file, LANE, NOW, "g")
+    g = r["grains"][-1]
+    assert g["avant_d_editer"] == f"python scripts/check_lane_claim.py 1 --lane {LANE} " \
+                                  "--paths <vos chemins>"
+    assert "gh issue view 1 --comments" in g["procedure"]
+    assert g["chemins_occupes"][0]["paths"].endswith("Sudoku-12-Long-Chemin-De-Fichier.ipynb")
+    assert g["prs_ouvertes"] == [900]
+    assert "--paths" not in r["grains"][0]["avant_d_editer"]  # un grain : la commande nue
+    sortie = tr.texte(r, "test")
+    assert "[CONTENEUR]" in sortie and "Sudoku-12-Long-Chemin-De-Fichier.ipynb" in sortie
 
 
 def test_cli_mesure_origami_en_panne_sort_0_et_la_cause(monkeypatch, capsysbinary):
@@ -506,7 +560,7 @@ def _violations(source: str) -> list[str]:
 
 def test_tapis_rapide_ne_lance_aucun_processus():
     for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "gh_cache.py",
-                "gh_cache_fichier.py"):
+                "gh_cache_fichier.py", "tapis_service.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -518,11 +572,14 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # gh_cache.py la seconde (cache et verrou de la lecture, #22630, 14/11) ;
 # gh_cache_fichier.py la troisieme (le fichier de cache : lire si frais, ecrire
 # atomiquement -- extraction demandee par les replis de la review Hermes,
-# #22630, 14/11 : le protocole a grandi de 41 lignes).
+# #22630, 14/11 : le protocole a grandi de 41 lignes) ; tapis_service.py la
+# quatrieme (ce que le tapis sert : procedure des conteneurs, secours, sortie
+# texte, #26926, 16/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("gh_cache.py", 130),
-                                              ("gh_cache_fichier.py", 60)])
+                                              ("gh_cache_fichier.py", 60),
+                                              ("tapis_service.py", 140)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
