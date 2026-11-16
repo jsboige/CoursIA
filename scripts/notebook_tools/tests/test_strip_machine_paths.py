@@ -1327,3 +1327,40 @@ def test_banner_overlap_respects_non_nuget_category(tmp_path, category, cache):
     assert 'alice' not in result
     assert result.endswith('interactive-extensions\\dotnet\\Ext.dll`')
     assert strip_in_place(p) == (0, 0)
+
+
+def test_adjacent_drop_runs_and_redactions_preserve_complete_json(tmp_path):
+    """Exhaust all DROP/REDACT/keep sequences through length five."""
+    from itertools import product
+
+    warning = (r'warning C:\Users\alice\AppData\Roaming\Python\Python313'
+               r'\site-packages\m.py: detail')
+    redacted = (r'warning <USER_PATH>\AppData\Roaming\Python\Python313'
+                r'\site-packages\m.py: detail')
+    values = {'D': _REAL_CUSTOM_BANNER, 'R': warning, 'K': 'science é [x]'}
+    for size in range(1, 6):
+        for sequence in product('DRK', repeat=size):
+            if 'D' not in sequence:
+                continue
+            original = _nb([_code(['source'], [{
+                'output_type': 'display_data',
+                'metadata': {'text/plain': [_REAL_CUSTOM_BANNER]},
+                'data': {'text/plain': [values[k] for k in sequence],
+                         'image/svg+xml': ['<svg/>']},
+            }])])
+            expected = json.loads(json.dumps(original))
+            expected['cells'][0]['outputs'][0]['data']['text/plain'] = [
+                redacted if k == 'R' else values[k] for k in sequence if k != 'D'
+            ]
+            p = tmp_path / 'runs.ipynb'
+            p.write_text(json.dumps(original, ensure_ascii=False, separators=(',', ':')),
+                         encoding='utf-8')
+            count = sequence.count('D') + sequence.count('R')
+            assert strip_in_place(p) == (1, count), sequence
+            # json.loads must succeed before checking the exact bytes and data.
+            assert json.loads(p.read_bytes()) == expected, sequence
+            assert p.read_bytes() == json.dumps(expected, ensure_ascii=False,
+                                                separators=(',', ':')).encode(), sequence
+            clean = p.read_bytes()
+            assert strip_in_place(p) == (0, 0), sequence
+            assert p.read_bytes() == clean, sequence

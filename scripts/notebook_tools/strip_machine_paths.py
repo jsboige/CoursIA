@@ -772,7 +772,8 @@ def strip_in_place(nb_path):
             edit_spans = []  # (start, end, replacement_text) for REPLACE; or
                              # (start, end, None) for DROP
             replaced_here = 0
-            for em in elems:
+            dropped = []
+            for index, em in enumerate(elems):
                 try:
                     decoded = json.loads('"' + em.group(1) + '"')
                 except json.JSONDecodeError:
@@ -782,25 +783,8 @@ def strip_in_place(nb_path):
                 replaced_here += 1
                 label = _first_matching_label(decoded)
                 replacement, _strat = _redact_drop_strategy(decoded, label)
-                # Determine the boundary to remove/replace (trailing comma
-                # for non-final elements, leading comma for final, or
-                # entire list for single-element).
                 if replacement is None:
-                    # DROP — same boundary rules as before:
-                    after = em.end()
-                    tail_match = re.match(r'\s*,', body[after:])
-                    if tail_match:
-                        edit_spans.append(
-                            (em.start(), after + tail_match.end(), None))
-                    else:
-                        before = em.start()
-                        pre_match = re.search(r',\s*$', body[:before])
-                        if pre_match:
-                            edit_spans.append(
-                                (pre_match.start(), em.end(), None))
-                        else:
-                            edit_spans.append(
-                                (em.start(), em.end(), None))
+                    dropped.append(index)
                 else:
                     # REDACT — keep the element position + comma, just swap
                     # the JSON-encoded string. Byte-identical when the
@@ -817,13 +801,32 @@ def strip_in_place(nb_path):
             if not replaced_here:
                 continue
 
+            # Delete each contiguous run as one unit. A final run consumes
+            # its leading comma; other runs consume their trailing comma.
+            # Choosing separators per element would overlap for adjacent
+            # drops and could leave a dangling comma in the resulting JSON.
+            run_start = 0
+            while run_start < len(dropped):
+                run_end = run_start
+                while (run_end + 1 < len(dropped)
+                       and dropped[run_end + 1] == dropped[run_end] + 1):
+                    run_end += 1
+                first, last = dropped[run_start], dropped[run_end]
+                start, end = elems[first].start(), elems[last].end()
+                if last + 1 < len(elems):
+                    end += re.match(r'\s*,', body[end:]).end()
+                elif first > 0:
+                    start = re.search(r',\s*$', body[:start]).start()
+                edit_spans.append((start, end, None))
+                run_start = run_end + 1
+
             # Apply edits in REVERSE body-offset order so earlier offsets
             # remain valid. REDACT swaps the element content with no
             # boundary manipulation (the element stays inline; the comma
             # stays inline). DROP removes the element and the trailing /
             # preceding comma.
             new_body = body
-            for start, end, replacement_text in reversed(edit_spans):
+            for start, end, replacement_text in reversed(sorted(edit_spans)):
                 if replacement_text is None:
                     # DROP
                     new_body = new_body[:start] + new_body[end:]
