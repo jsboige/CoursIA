@@ -1,0 +1,173 @@
+{
+  "probe": "pli5-grainC-structure-causale",
+  "issue": 23093,
+  "date": "2026-11-15",
+  "seat": "myia-po-2024 (Windows, python 3.13)",
+  "organe": "scripts/hashlife/causal_structure.py",
+  "regle": "{{x, y}, {x, z}} -> {{x, z}, {x, w}, {y, w}, {z, w}}",
+  "regle_origine": "regle de l'annonce du Wolfram Physics Project (temoin des Grains A et B, PR #26671 / #26675)",
+  "etat_initial": [
+    [
+      1,
+      2
+    ],
+    [
+      1,
+      3
+    ],
+    [
+      1,
+      4
+    ],
+    [
+      1,
+      5
+    ]
+  ],
+  "declared_before_measurement": {
+    "controles": {
+      "CC1_dag_avant": "toute arete native normalisee (a, b) verifie a < b strictement (un evenement ne peut dependre que d'un evenement anterieur) ; toute arete a >= b = echec",
+      "CC2_sommets_evenements": "l'ensemble des sommets natifs est de cardinal N (nombre d'evenements) et forme un intervalle contigu ; la convention 0-based ou 1-based est mesuree et documentee",
+      "CC3a_identite_jeton": "l'ensemble des aretes natives est EGAL a la relation reconstruite depuis le grand livre tokens() : pour chaque evenement b >= 1 et chaque jeton d'entree t de b dont le createur n'est pas la condition initiale, une arete (createur(t), b)",
+      "CC3b_ambiguite_diff": "la relation par contenus (createur le plus recent du contenu consomme, reconstruite depuis les seuls diffs d'etats) diverge de la relation jeton ; la cause declaree est l'AMBIGUITE : quand le membre droit re-cree le membre gauche {x,z}, deux liaisons distinctes peuvent produire le MEME etat, le diff ne tranche pas, et l'erreur d'attribution se propage en aval. Controle : (1) compter les evenements ambigus (au moins deux liaisons valides) ; (2) verifier que la relation par contenus, les liaisons ambigues tranchees par le grand livre de jetons, coïncide EXACTEMENT avec la relation native ; (3) rapporter combien de fois la liaison choisie par le rejeu par diff differe de la vraie",
+      "mesure_void_si": "CC1 ou CC2 echoue (le graphe natif ne serait alors pas le graphe causal de la Definition 4)"
+    },
+    "relation_jetons": "le paquet expose un grand livre : chaque jeton (arete-objet) porte ses atomes, son evenement createur et son evenement destructeur ; l'evenement 0 est la condition initiale (aucune arete causale n'en part) ; un jeton re-cree par le membre droit {x,z} est un NOUVEAU jeton (l'ancien est detruit)",
+    "ambiguite_declaree": "quand un evenement consomme {x,y},{x,z} et que le membre droit re-cree {x,z}, une AUTRE paire d'aretes de l'etat precedent peut produire le MEME etat resultant (le {x,z} re-cree compense exactement) ; le diff d'etats (1 consommee, 3 creees) ne determine alors pas la liaison appliquee ; declare avant mesure d'apres la dissection des evenements 9-13 du present temoin",
+    "structure_descriptive": "profondeur (plus long chemin), largeurs de niveaux, degres entrants/sortants, sources et puits -- aucune n'alimente un verdict ; elles caracterisent le temoin",
+    "copie_couche_rejeu": "la reconstruction de liaison par differences d'etats est copiee depuis l'organe du Grain B (scripts/hashlife/hypergraph_multiway.py, PR #26675, pas encore sur main a la redaction) ; l'organe est autonome par rapport a main"
+  },
+  "controles": {
+    "reference": {
+      "package": "setreplace 0.2.0",
+      "events": 1500,
+      "tokens": 6004,
+      "final_state_sha256_16": "452bb4067f0e5689",
+      "rejeu_diff_ok": true
+    },
+    "CC1_dag_avant": {
+      "convention_numerotation": "1-based (sommets = numeros d'evenements)",
+      "sommets_min": 1,
+      "sommets_max": 1500,
+      "toutes_aretes_avant": true,
+      "pass": true
+    },
+    "CC2_sommets_evenements": {
+      "sommets_distincts": 1500,
+      "evenements": 1500,
+      "intervalle_contigu": true,
+      "pass": true
+    },
+    "CC3": {
+      "CC3a_identite_jeton": {
+        "aretes_native": 2602,
+        "aretes_relation_jeton": 2602,
+        "identite_exacte": true,
+        "pass": true
+      },
+      "CC3b_ambiguite_diff": {
+        "aretes_jeton_non_contenu_diff": 291,
+        "aretes_contenu_diff_non_jeton": 355,
+        "evenements_ambigus": 459,
+        "erreurs_choix_du_rejeu_par_diff": 223,
+        "relation_contenus_ambiguite_resolue_egale_native": true,
+        "aretes_relation_contenus_resolue": 2602,
+        "exemples_jetons_non_contenu_diff": [
+          [
+            5,
+            10
+          ],
+          [
+            5,
+            12
+          ],
+          [
+            6,
+            12
+          ]
+        ],
+        "exemples_contenu_diff_non_jetons": [
+          [
+            5,
+            17
+          ],
+          [
+            5,
+            18
+          ],
+          [
+            6,
+            21
+          ]
+        ],
+        "pass": true
+      }
+    },
+    "pass": true
+  },
+  "structure_causale": {
+    "sommets": 1500,
+    "aretes": 2602,
+    "degre_sortant_moyen": 1.735,
+    "sources_ind0": 2,
+    "puits_out0": 681,
+    "degre_entrant_max": 2,
+    "degre_sortant_max": 4,
+    "profondeur_max": 11,
+    "evenements_par_profondeur": 12,
+    "largeur_niveau_max": 532,
+    "largeurs_par_niveau": [
+      {
+        "profondeur": 0,
+        "largeur": 2
+      },
+      {
+        "profondeur": 1,
+        "largeur": 2
+      },
+      {
+        "profondeur": 2,
+        "largeur": 4
+      },
+      {
+        "profondeur": 3,
+        "largeur": 8
+      },
+      {
+        "profondeur": 4,
+        "largeur": 14
+      },
+      {
+        "profondeur": 5,
+        "largeur": 24
+      },
+      {
+        "profondeur": 6,
+        "largeur": 48
+      },
+      {
+        "profondeur": 7,
+        "largeur": 84
+      },
+      {
+        "profondeur": 8,
+        "largeur": 162
+      },
+      {
+        "profondeur": 9,
+        "largeur": 292
+      },
+      {
+        "profondeur": 10,
+        "largeur": 532
+      },
+      {
+        "profondeur": 11,
+        "largeur": 328
+      }
+    ],
+    "ratio_evenements_profondeur": 136.364
+  },
+  "mesure_void_si_controles_echouent": false,
+  "wall_s": 7.78
+}
