@@ -388,11 +388,14 @@ def test_le_check_refuse_un_slot_de_montage_derive(tmp_path, prefix_jetable):
 def test_le_dry_run_pose_la_politique_de_redemarrage(prefix_jetable):
     """Le slot cree doit SURVIVIR a un redemarrage de la machine.
 
-    Mesure (16/11, ai-01) : le slot reserve tournait avec
-    `HostConfig.RestartPolicy.Name = "no"`. Il etait conforme sur tous les
-    autres points (caps, labels, image, cgroup-parent, montages), et rien
-    ne le relancait apres un reboot : le job CPU de `main` restait en file
-    jusqu'a l'intervention d'un operateur.
+    Le script ne posait AUCUNE politique : `docker run` sans `--restart`
+    donne `no`, la valeur par defaut du daemon — le slot que le script
+    creait tournait donc avec `HostConfig.RestartPolicy.Name = "no"`. Il
+    etait conforme sur tous les autres points (caps, labels, image,
+    cgroup-parent, montages), et rien ne le relancait apres un reboot : le
+    job CPU de `main` restait en file jusqu'a l'intervention d'un operateur.
+    (Le slot VIVANT porte `unless-stopped`, pose hors du script : il a ete
+    cree le 2026-11-14, quand le script ne la posait pas.)
 
     Le `--dry-run` est la commande exacte du `--apply` (une seule source de
     verite) : c'est donc la que la politique doit etre lisible.

@@ -64,9 +64,13 @@
 # redemarrage de la machine : le job CPU de `main` reste alors en file
 # jusqu'a ce qu'un operateur relance le slot a la main.
 #
-# Mesure (16/11, ai-01) : `docker inspect myia-ai-01-linux-main-1` ->
-# `HostConfig.RestartPolicy.Name = "no"`. Le slot tournait, ses caps et ses
-# labels etaient conformes, et rien ne le relancait apres un reboot.
+# Le script NE posait aucune politique : `docker run` sans `--restart` donne
+# `no`, la valeur par defaut du daemon. Un slot cree par `--apply` tournait
+# donc avec `HostConfig.RestartPolicy.Name = "no"` : il tournait, ses caps et
+# ses labels etaient conformes, et rien ne le relancait apres un reboot.
+# (Le slot VIVANT porte `unless-stopped`, pose HORS du script : il a ete cree
+# le 2026-11-14, quand le script ne la posait pas. La mesure du vivant est
+# dans le body de la PR.)
 #
 # Deux politiques sont acceptees : `unless-stopped` (le conteneur suit le
 # demon, sauf arret explicite) et `always` (il suit le demon, meme apres un
@@ -158,9 +162,11 @@ IMAGE="${COURSIA_MAIN_IMAGE:-${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.338.
 LABELS="${COURSIA_MAIN_LABELS:-self-hosted,coursia-main,coursia-linux}"
 CGROUP_PARENT="${COURSIA_CGROUP_PARENT:-coursia-ci.slice}"
 # La politique de redemarrage du slot. Un slot sans politique ne revient
-# pas tout seul apres un redemarrage de la machine (mesure du 16/11 sur
-# ai-01 : `RestartPolicy.Name = "no"`). `unless-stopped` est la valeur par
-# defaut : le conteneur suit le demon, sauf arret explicite de l'operateur.
+# pas tout seul apres un redemarrage de la machine (le script ne posait
+# aucune politique : `docker run` sans `--restart` donne `no`, la valeur par
+# defaut du daemon -- le slot VIVANT porte `unless-stopped`, pose hors du
+# script). `unless-stopped` est la valeur par defaut : le conteneur suit le
+# demon, sauf arret explicite de l'operateur.
 RESTART_POLICY="${COURSIA_MAIN_RESTART_POLICY:-unless-stopped}"
 #: Les politiques ACCEPTABLES au `--check`. `always` est acceptee aussi :
 #: elle repond elle aussi a la question du slot ("le slot revient tout
@@ -307,8 +313,10 @@ run_cmd() {
   printf '%s\n' "docker run -d --name ${name} \\"
   printf '%s\n' "  --cpus=${CPUS} --memory=${MEMORY} --pids-limit=${PIDS} \\"
   # La politique de redemarrage : c'est elle qui fait revenir le slot
-  # apres un redemarrage de la machine (mesure du 16/11 : le slot tourne
-  # avec `RestartPolicy.Name = "no"`, donc rien ne le relance).
+  # apres un redemarrage de la machine (le script ne posait aucune
+  # politique : le slot qu'il creait tournait avec `no`, la valeur par
+  # defaut du daemon quand `--restart` est absent -- donc rien ne le
+  # relancait).
   printf '%s\n' "  --restart ${RESTART_POLICY} \\"
   printf '%s\n' "  --label coursia-ci=1 --label coursia-family=main \\"
   if [ -n "$CGROUP_PARENT" ]; then
@@ -447,8 +455,9 @@ mode_check() {
     # cgroup-parent, montages -- et ne revient PAS tout seul apres un
     # redemarrage de la machine : le job CPU de `main` reste alors en
     # file jusqu'a l'intervention d'un operateur. C'est une derive au
-    # meme titre qu'un cap ou un label non conforme (mesure du 16/11 sur
-    # ai-01 : `RestartPolicy.Name = "no"`).
+    # meme titre qu'un cap ou un label non conforme (le script ne posait
+    # aucune politique : le slot qu'il creait tournait avec `no`, la
+    # valeur par defaut du daemon quand `--restart` est absent).
     restart="$(docker inspect --format '{{.HostConfig.RestartPolicy.Name}}' "$name" 2>/dev/null)"
     case " ${ACCEPTED_RESTART_POLICIES} " in
       *" ${restart} "*) : ;;
@@ -533,9 +542,10 @@ mode_create() {
     # vivant puisse voir reparer SANS etre recree : `docker update` ne
     # touche qu'au champ de la politique -- le conteneur, ses volumes,
     # ses caps et son image restent intacts. Sans cela, un slot cree
-    # avant que la politique existe (`RestartPolicy.Name = "no"`, mesure
-    # du 16/11 sur ai-01) ne reviendrait jamais tout seul apres un
-    # redemarrage de la machine, et son `--check` resterait rouge.
+    # par le script -- qui ne posait aucune politique (`docker run` sans
+    # `--restart` -> `no`, la valeur par defaut du daemon) -- ne
+    # reviendrait jamais tout seul apres un redemarrage de la machine, et
+    # son `--check` resterait rouge.
     live_restart="$(restart_policy)"
     case " ${ACCEPTED_RESTART_POLICIES} " in
       *" ${live_restart} "*)
