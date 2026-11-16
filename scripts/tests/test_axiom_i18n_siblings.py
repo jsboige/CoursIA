@@ -70,9 +70,11 @@ def test_the_explicit_decision_matches_the_recomputed_measurement():
 
 
 def test_the_decisions_file_matches_the_recomputed_measurement():
-    """Le fichier de decisions ne doit pas deriver de la mesure (ni
-    decision, ni raison). C'est le garde-fou du drift : le manifeste porte
-    la valeur, ce fichier porte la preuve."""
+    """La DECISION de chaque lac du fichier de decisions ne doit pas
+    deriver de la mesure. La raison n'est plus comparee : elle embarque des
+    comptes, son ecart est une note non bloquante (cf
+    `_decisions_stale_reasons`). C'est le garde-fou du drift : le manifeste
+    porte la valeur, ce fichier porte la preuve."""
     drifts = axiom_i18n_siblings._decisions_drift(
         axiom_i18n_siblings.report()[1])
     assert not drifts, "derive fichier de decisions <-> mesure : " + \
@@ -160,3 +162,104 @@ def test_the_opt_in_lakes_have_a_non_empty_i18n_surface():
         if row["decision"] == "true":
             assert row["i18n-modules"] > 0, (
                 f"{row['lake']} : opt-in sans surface i18n")
+
+
+# --- Ratchet de la DECISION (voie structurelle, #26704) --------------------
+#
+# Le ratchet porte sur la seule DECISION. La raison du fichier de decisions
+# est une prose qui embarque des COMPTES : elle derive des que la surface
+# `_en` d'un lac change, et sa comparaison reddenait `main` sur TOUTES les
+# PRs (mesure : PR #26294 et #26297 ont fait croitre la surface de
+# `mathlibexamples` de 3 a 5 modules sans regeneration du fichier).
+
+
+def _recorded(lake, decision, reason, modules, declarations, mode="WILDCARD"):
+    """Une ligne du fichier de decisions, telle que l'organe l'ecrit."""
+    return {
+        "lake": lake,
+        "decision": decision,
+        "reason": reason,
+        "mode": mode,
+        "i18n-modules": modules,
+        "i18n-declarations": declarations,
+    }
+
+
+def _recomputed(lake, decision, reason, modules, declarations, mode="WILDCARD"):
+    """Une ligne recomputee par l'organe -- meme forme que l'enregistree."""
+    return {
+        "lake": lake,
+        "decision": decision,
+        "reason": reason,
+        "mode": mode,
+        "i18n-modules": modules,
+        "i18n-declarations": declarations,
+    }
+
+
+def _write_decisions(tmp_path, monkeypatch, rows):
+    path = tmp_path / "decisions.json"
+    path.write_text(json.dumps({"lakes": rows}), encoding="utf-8")
+    monkeypatch.setattr(axiom_i18n_siblings, "DECISIONS", path)
+    return path
+
+
+def test_a_lake_that_gains_an_en_module_does_not_redden_the_decisions_file(
+        tmp_path, monkeypatch):
+    """CONTROLE POSITIF : un lac qui gagne un module `_en` ne doit PAS
+    rougir `main`.
+
+    C'est la recidive que la voie structurelle supprime : la surface
+    bilingue de `mathlibexamples` est passee de 3 a 5 modules (PR #26294,
+    #26297), la raison du fichier a derive avec elle, et le test du fichier
+    de decisions est devenu rouge sur toutes les PRs -- alors que la
+    DECISION, elle, n'avait pas bouge.
+    """
+    _write_decisions(tmp_path, monkeypatch, [
+        _recorded("demo", "true",
+                  "opt-in sur : la surface `_en` (3 modules, 25 declarations) "
+                  "est integralement auditable", 3, 25)])
+    rows = [_recomputed("demo", "true",
+                        "opt-in sur : la surface `_en` (5 modules, 50 "
+                        "declarations) est integralement auditable", 5, 50)]
+    assert axiom_i18n_siblings._decisions_drift(rows) == [], (
+        "un lac qui gagne un module `_en` ne doit pas rougir le ratchet : "
+        "la decision n'a pas change")
+    # L'ecart de prose reste VISIBLE, mais il est une note :
+    assert axiom_i18n_siblings._decisions_stale_reasons(rows) == ["demo"]
+
+
+def test_a_decision_change_still_reddens_the_decisions_file(tmp_path,
+                                                             monkeypatch):
+    """Le ratchet ne perd rien de sa force : une DECISION qui change
+    reste un ecart bloquant (fail-closed)."""
+    _write_decisions(tmp_path, monkeypatch, [
+        _recorded("demo", "false",
+                  "aucun frere `_en` dans la surface derivee : lac "
+                  "monolingue, l'opt-in ne change rien", 0, 0)])
+    rows = [_recomputed("demo", "true",
+                        "opt-in sur : la surface `_en` (5 modules, 50 "
+                        "declarations)", 5, 50)]
+    drifts = axiom_i18n_siblings._decisions_drift(rows)
+    assert drifts, "un changement de decision doit rester bloquant"
+    assert "demo" in drifts[0]
+
+
+def test_a_lake_missing_from_the_decisions_file_still_reddens(tmp_path,
+                                                               monkeypatch):
+    """Un lac sans ligne de decision reste un trou de couverture : le
+    ratchet ne doit pas l'oublier en cessant de comparer la raison."""
+    _write_decisions(tmp_path, monkeypatch, [])
+    rows = [_recomputed("demo", "true", "opt-in sur : la surface `_en`", 5, 50)]
+    drifts = axiom_i18n_siblings._decisions_drift(rows)
+    assert drifts, "un lac absent du fichier de decisions doit rester bloquant"
+
+
+def test_a_lake_unknown_to_the_manifest_still_reddens(tmp_path, monkeypatch):
+    """Symetrique : un lac du fichier que la mesure ne voit pas reste un
+    ecart bloquant."""
+    _write_decisions(tmp_path, monkeypatch, [
+        _recorded("fantome", "true", "opt-in sur : la surface `_en`", 1, 1)])
+    rows = [_recomputed("demo", "true", "opt-in sur : la surface `_en`", 5, 50)]
+    drifts = axiom_i18n_siblings._decisions_drift(rows)
+    assert drifts, "un lac inconnu du manifeste doit rester bloquant"
