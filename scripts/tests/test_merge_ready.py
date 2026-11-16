@@ -207,11 +207,18 @@ class ScriptedRunner:
         # (non typees) — le chemin des tests historiques.
         rest_reviews: list[dict] | None = None,
         # #25510 T-J : etapes du job associe a un check-run de job. La
-        # CLE est l'identifiant de job, la VALEUR est le nom de la PREMIERE
-        # etape en echec ("" = aucune etape en echec). Sert a prouver que
-        # la sentinelle distingue une panne d'infrastructure d'un verdict
-        # de code.
-        job_steps: dict[str, str] | None = None,
+        # CLE est l'identifiant de job, la VALEUR est soit le nom de la
+        # PREMIERE etape en echec (forme historique : une seule etape en
+        # echec, "" = aucune), soit la LISTE des etapes (forme T-J : chaque
+        # etape porte son nom `n`, son numero `o`, son statut `s` et sa
+        # conclusion `c`). Sert a prouver que la sentinelle distingue une
+        # panne d'infrastructure d'un verdict de code, et un runner perdu
+        # d'un verdict de code.
+        job_steps: dict[str, str | list[dict]] | None = None,
+        # Code de sortie de la lecture de job, par identifiant de job.
+        # 0 (defaut) = lecture reussie ; autre chose = lecture ILLISIBLE
+        # (fail-closed : la retenue doit rester).
+        job_steps_rc: dict[str, int] | None = None,
         # Log d'echec du run (`gh run view --log-failed`). Vide par defaut :
         # aucun test n'y est identifie.
         run_log: str = "",
@@ -230,6 +237,7 @@ class ScriptedRunner:
         self.main_history = list(main_history) if main_history is not None else [main_sha]
         self.main_checks_by_sha = main_checks_by_sha or {}
         self.job_steps = job_steps or {}
+        self.job_steps_rc = job_steps_rc or {}
         self.run_log = run_log
         self.token = token
         self.token_rc = token_rc
@@ -337,10 +345,20 @@ class ScriptedRunner:
             return mr.RunResult(0, self.check_runs, "")
         if c[:2] == ["gh", "api"] and "/actions/jobs/" in c[2]:
             # #25510 T-J : etapes du job associe au check-run. La reponse
-            # est le nom de la premiere etape en echec ("" = aucune).
+            # est la LISTE des etapes (nom `n`, numero `o`, statut `s`,
+            # conclusion `c`). La forme historique (une chaine) reste
+            # acceptee : elle vaut UNE etape en echec.
             job_id = c[2].rsplit("/", 1)[-1]
-            step = self.job_steps.get(job_id, "")
-            return mr.RunResult(0, (step + "\n") if step else "\n", "")
+            rc = self.job_steps_rc.get(job_id, 0)
+            if rc != 0:
+                return mr.RunResult(rc, "", "gh failed")
+            scripted = self.job_steps.get(job_id, [])
+            if isinstance(scripted, str):
+                steps = ([{"n": scripted, "o": 1, "s": "completed",
+                           "c": "failure"}] if scripted else [])
+            else:
+                steps = list(scripted)
+            return mr.RunResult(0, json.dumps(steps), "")
         if c[:3] == ["gh", "run", "view"]:
             # Log d'echec du run : la sentinelle le lit quand le resume du
             # check-run ne nomme aucun test.
@@ -1396,6 +1414,117 @@ def test_sentinelle_failure_a_l_etape_de_test_garde_la_retenue(tmp_path):
     contenu = hold.read_text(encoding="utf-8")
     assert f"sha={tete}" in contenu
     assert "test=test-non-identifie-dans-le-check" in contenu
+
+
+def test_sentinelle_runner_perdu_en_cours_d_etape_remonte_au_commit_precedent(tmp_path, capsys):
+    """CONTROLE POSITIF (#25510 T-J) : un job `failure` SANS etape en echec
+    est un runner perdu, pas un verdict de code.
+
+    Mesure du 2026-11-16 (run 43777127542, job 133012644184, runner
+    `myia-ai-01-linux-main-1`) : le job a rendu `completed/failure` alors que
+    l'etape 11 « Run tests » etait restee `in_progress` (conclusion nulle) et
+    que les etapes suivantes etaient `pending` -- le runner avait disparu au
+    milieu d'une etape (reboot de l'hote a 00:32Z). Aucune etape n'etant en
+    `failure`, la sentinelle lisait un verdict de code et retenait `main` sur
+    une perte d'infrastructure : le verdict doit remonter au commit precedent.
+
+    Le controle porte sur le **mecanisme** (`runner perdu`), pas seulement
+    sur l'ecart du commit : sans le correctif, l'ancien code lisait la liste
+    JSON des etapes comme un NOM d'etape, et le motif retenu etait
+    `infra(failure-step:<blob>)` -- un verdict de code deguise en panne.
+    """
+    tete = "e1" * 20
+    ancien = "e2" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(133012644184)),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+        job_steps={
+            "133012644184": [
+                {"n": "Set up job", "o": 1, "s": "completed", "c": "success"},
+                {"n": "Run actions/checkout@v4", "o": 5, "s": "completed", "c": "success"},
+                {"n": "Run tests", "o": 11, "s": "in_progress", "c": None},
+                {"n": "Publish results", "o": 12, "s": "queued", "c": None},
+            ],
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert f"sha={tete}" not in contenu
+    assert f"sha={ancien}" in contenu
+    out = capsys.readouterr().out
+    assert "runner perdu en cours d'etape" in out
+
+
+def test_sentinelle_une_etape_en_echec_emporte_la_retenue(tmp_path):
+    """CONTROLE NEGATIF (#25510 T-J) : la presence d'UNE etape en echec
+    interdit la lecture « runner perdu ».
+
+    Meme mesure que le controle positif, mais l'etape de test a rendu
+    `failure` : c'est un verdict de code, la retenue doit etre conservee --
+    meme si une autre etape du job est restee en cours.
+    """
+    tete = "e3" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(133012644185)),
+        },
+        job_steps={
+            "133012644185": [
+                {"n": "Run actions/checkout@v4", "o": 5, "s": "completed", "c": "success"},
+                {"n": "Run tests", "o": 11, "s": "completed", "c": "failure"},
+                {"n": "Publish results", "o": 12, "s": "queued", "c": None},
+            ],
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={tete}" in contenu
+
+
+def test_sentinelle_lecture_de_job_illisible_garde_la_retenue(tmp_path):
+    """CONTROLE NEGATIF (#25510 T-J) : une lecture ILLISIBLE reste
+    fail-closed -- elle ne devient jamais un « runner perdu ».
+
+    Une lecture impossible ne vaut pas une preuve : sans etapes, on ne peut
+    rien conclure sur le job, donc la retenue est conservee.
+    """
+    tete = "e4" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(133012644186)),
+        },
+        job_steps={"133012644186": []},
+        job_steps_rc={"133012644186": 1},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={tete}" in contenu
 
 
 def test_sentinelle_reconnait_les_etapes_du_checkout_borne_t_k(tmp_path):

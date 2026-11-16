@@ -666,29 +666,112 @@ def _job_id_of_check(check: dict) -> str:
     return raw if raw.isdigit() else ""
 
 
-def _first_failing_step(runner: Runner, gh_env: dict[str, str],
-                        check: dict) -> str:
-    """Nom de la PREMIERE etape en echec du job ("" si elle est illisible).
+def _parse_job_steps(stdout: str) -> list[dict] | None:
+    """Liste des etapes lue dans la reponse ``gh api``.
+
+    ``None`` = lecture illisible (fail-closed) ; une liste vide = lecture
+    reussie sans etape. Le retour accepte les deux formes de sortie de
+    ``--jq`` : un tableau JSON (forme compacte) ou un objet par ligne.
+    """
+    text = (stdout or "").strip()
+    if not text:
+        return []
+    try:
+        payload = json.loads(text)
+    except ValueError:
+        payload = None
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    if isinstance(payload, dict):
+        return [payload]
+    steps: list[dict] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            return None
+        if not isinstance(row, dict):
+            return None
+        steps.append(row)
+    return steps or None
+
+
+def _read_job_steps(runner: Runner, gh_env: dict[str, str],
+                    check: dict) -> list[dict] | None:
+    """Etapes du job associe au check-run (``None`` si la lecture echoue).
 
     Une seule lecture de job par commit juge, et seulement dans le cas
-    `failure` sans test identifie. Le tri se fait sur le numero d'etape :
-    l'API renvoie les etapes dans l'ordre, mais le tri le rend explicite.
+    `failure` sans test identifie. La lecture est **globale** : elle rend
+    toutes les etapes, avec leur statut ET leur conclusion, parce que la
+    decision "runner perdu" (#25510 T-J) porte sur l'ensemble des etapes et
+    pas sur la premiere etape en echec.
     """
     job_id = _job_id_of_check(check)
     if not job_id:
-        return ""
+        return None
     result = runner.run(
         [
             "gh", "api", f"repos/{REPO}/actions/jobs/{job_id}",
             "--jq",
-            '[.steps[] | select(.conclusion == "failure")'
-            ' | {n: .name, o: .number}] | sort_by(.o) | .[0].n // ""',
+            '[.steps[] | {n: .name, o: .number, s: .status, c: .conclusion}]',
         ],
         env=gh_env,
     )
     if result.returncode != 0:
+        return None
+    return _parse_job_steps(result.stdout or "")
+
+
+def _first_failing_step(steps: list[dict]) -> str:
+    """Nom de la PREMIERE etape en echec ("" si aucune).
+
+    Fonction PURE sur la liste des etapes : la decision se teste sans
+    `jq` ni reseau. Le tri se fait sur le numero d'etape : l'API renvoie les
+    etapes dans l'ordre, mais le tri le rend explicite.
+    """
+    failing = [row for row in steps
+               if str(row.get("c") or "").lower() == "failure"]
+    if not failing:
         return ""
-    return (result.stdout or "").strip().strip('"')
+    ordered = sorted(failing, key=_step_order)
+    return str(ordered[0].get("n") or "")
+
+
+def _step_order(step: dict) -> int:
+    """Numero d'etape (ordre d'execution) ; 0 quand il est absent."""
+    try:
+        return int(step.get("o") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _runner_lost(steps: list[dict]) -> bool:
+    """Vrai si le job a echoue SANS qu'aucune etape soit en echec.
+
+    C'est la mesure du 2026-11-16 (run 43777127542, job 133012644184,
+    runner `myia-ai-01-linux-main-1`) : le job a rendu `completed/failure`
+    alors que l'etape 11 « Run tests » etait restee `in_progress` (conclusion
+    nulle) et que les etapes suivantes etaient `pending` -- le runner a
+    disparu au milieu d'une etape (reboot de l'hote a 00:32Z). Aucune etape
+    n'etant en `failure`, la sentinelle lisait un **verdict de code** la ou
+    il y avait une perte d'infrastructure.
+
+    Fonction PURE : la liste des etapes suffit, rien n'est relu.
+
+    - aucune etape en `failure` ET au moins une etape non `completed`
+      -> runner perdu (infrastructure) ;
+    - une etape en `failure` -> verdict de code, ce n'est pas un runner perdu ;
+    - toutes les etapes `completed` sans etape en echec -> on ne sait pas :
+      la retenue reste (fail-closed).
+    """
+    if not steps:
+        return False
+    if any(str(row.get("c") or "").lower() == "failure" for row in steps):
+        return False
+    return any(str(row.get("s") or "").lower() != "completed" for row in steps)
 
 
 def _is_infra_step(step_name: str) -> bool:
@@ -748,9 +831,14 @@ def refresh_main_red_hold(
        commits ne porte de verdict termine, l'organe refuse de demarrer et
        nomme la borne.
     4. **Une `failure` sans test identifie peut etre une panne
-       d'infrastructure.** On lit alors les etapes du job : si la PREMIERE
-       etape en echec est une etape d'infrastructure (checkout, setup-python,
-       installation, purge HEAL), le commit est ecarte comme
+       d'infrastructure.** On lit alors les etapes du job : si le job a
+       echoue **sans qu'aucune etape ne soit en echec** et qu'au moins une
+       etape ne soit pas terminee, c'est un **runner perdu en cours
+       d'etape** (#25510 T-J) : le commit est ecarte comme
+       `infra(runner-lost)` et le verdict remonte au commit precedent, comme
+       `cancelled`. Sinon, si la PREMIERE etape en echec est une etape
+       d'infrastructure (checkout, setup-python, installation, purge HEAL),
+       le commit est ecarte comme
        `infra(failure-step:<nom>)` et le verdict remonte au commit
        precedent, comme pour `cancelled`. Le cas mesure (12/11, run
        43316243195) : le checkout avait echoue sur `curl 28` apres 19 min
@@ -787,16 +875,34 @@ def refresh_main_red_hold(
             if not test_name:
                 # Aucun test identifie : la `failure` peut venir de
                 # l'infrastructure. UNE lecture de job, dans ce cas seul.
-                step = _first_failing_step(runner, gh_env, check)
-                if step and _is_infra_step(step):
-                    skipped.append((sha, f"infra(failure-step:{step})"))
+                steps = _read_job_steps(runner, gh_env, check)
+                if steps is None:
+                    # Lecture illisible : fail-closed, la retenue reste.
+                    pass
+                elif _runner_lost(steps):
+                    # Runner perdu en cours d'etape (#25510 T-J) : le job a
+                    # rendu `failure` sans qu'aucune etape ne soit en echec.
+                    # C'est de l'infrastructure, pas un verdict de code : le
+                    # verdict remonte au commit precedent, comme `cancelled`.
+                    skipped.append((sha, "infra(runner-lost)"))
                     print(
                         "merge_ready : sentinelle main-red -- commit "
-                        f"{sha[:9]} ecarte, premiere etape en echec "
-                        f"'{step}' (infrastructure) : le verdict remonte au "
-                        "commit precedent"
+                        f"{sha[:9]} ecarte, runner perdu en cours d'etape "
+                        "(job en echec sans etape en echec) : le verdict "
+                        "remonte au commit precedent"
                     )
                     continue
+                else:
+                    step = _first_failing_step(steps)
+                    if step and _is_infra_step(step):
+                        skipped.append((sha, f"infra(failure-step:{step})"))
+                        print(
+                            "merge_ready : sentinelle main-red -- commit "
+                            f"{sha[:9]} ecarte, premiere etape en echec "
+                            f"'{step}' (infrastructure) : le verdict remonte "
+                            "au commit precedent"
+                        )
+                        continue
         judged = (sha, check, conclusion, test_name)
         break
 
