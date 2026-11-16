@@ -15,9 +15,9 @@
   - the signed variant (`alexanderEntryNeg`, `alexanderEntrySigned`,
     `alexanderPolynomialSigned`) and its 4-crossing class divergence
     diagnosis;
-  - the two Dehn proofs: `conway_trivial_alexander` (minor in -t^6
+  - the two Dehn proofs: `conway_trivial_alexander` (minor in −t⁶
     for 11n34: deterministic Gauss elimination plus one composite step
-    at the k=8 corner) and `KT_trivial_alexander` (t^5 for 11n42:
+    at the k=8 corner) and `KT_trivial_alexander` (t⁵ for 11n42:
     integral transvections of the minor).
 
   Digestion of the non-trivial `set_option`s (plan #18397, level 3):
@@ -32,10 +32,11 @@
   pair inherited from `Conway`/`Conway_en`: docstrings and comments
   translated, byte-identity of signatures, statements and tactics.
 
-  Origin: Conway_en.lean l.50-2471 (2422 lines), reference commit
+  Origin: Conway.lean l.39-2458 (2420 lines), reference commit
   origin/main 1cef8a55024. No reformatting, no tactic modified.
   After this slice, `Knots/Conway_en.lean` is reduced to the Option A
-  plan aggregator stub. -/
+  plan aggregator stub. The EN text was moved from Conway_en.lean
+  l.50-2471 (2422 lines). -/
 
 import Knots.Basic_en
 import Knots.Mutation_en
@@ -175,7 +176,7 @@ theorem det_three_aux (A : Matrix (Fin 3) (Fin 3) (Polynomial ℤ)) :
 under the designated normalization (minor without first row nor last
 column).
 
-It is also the polynomial of the **(2, 3) torus knot**: `t² − t + 1` reads
+It is also the polynomial of the **torus knot** `(2, 3)`: `t² − t + 1` reads
 `(t³ + 1)/(t + 1)`, and its roots are the **primitive** 6th roots of unity.
 The hidden-phenomena article (Michael & Kenta, 2026-10-03,
 https://hidden-phenomena.com/articles/trefoil) identifies this knot with the
@@ -2567,10 +2568,10 @@ Prior measurement (Python probe, engine validated against the proven
 values −t⁶/11n34 and t⁵/11n42, cf.
 `python-sweep-probe-validate-against-proven-value`): among the 96
 well-formed non-trivial mutants of the construction (4 rotations × 24
-boundary re-attachments), exactly **one** carries a trivial minor —
-(r13, (8 11)(13 22)) below. The mutant is not the 11n42 census code (no
-(ρ, perm, σ) superposes them): a second drawing of the same isotopy type,
-documented gap.
+re-attachments of the 4 boundary points), exactly **one** carries a
+trivial minor — (r13, (8 11)(13 22)) below. The mutant is not the 11n42
+census code (no (ρ, perm, σ) superposes them): a second drawing of the
+same isotopy type, documented gap.
 -/
 
 /-- The re-attachment involution realizing the sphere mutation Conway →
