@@ -2489,6 +2489,56 @@ def emit_output(
 # --- boucle de run ---------------------------------------------------------------
 
 
+def merge_verdict(
+    runner: Runner, gh_env: dict[str, str], pr: int, decision: PRVerdict,
+    results: list[PRVerdict], journal_path: Path,
+) -> tuple[PRVerdict, str | None, int]:
+    """Applique le merge d'une PR et journalise le verdict.
+
+    Rend (verdict, raison d'arret du passage, code de sortie). Le verdict
+    porte le sort du merge : ``merged`` (reussi), ``merge-failed`` (le
+    passage s'arrete) ou ``skipped`` (course de base -- le balayage
+    CONTINUE, #26771).
+
+    La boucle principale et le rejeu (#26799) partagent CETTE gestion du
+    merge : la copier deux fois avait deux chemins de sortie pour un meme
+    evenement (revue coordinateur du 16/11).
+    """
+    try:
+        merge_pr(runner, pr, decision.head or "", gh_env)
+    except MergeFailedError as exc:
+        failed = PRVerdict(
+            pr, decision.head, "merge-failed", str(exc), False,
+            decision.review, decision.stack, decision.stack_incidents,
+        )
+        results.append(failed)
+        append_journal(journal_path, failed)
+        return failed, f"merge-failed:PR-{pr}", 1
+    except BaseModifiedRaceError as exc:
+        # Course de base (#26771) : le motif est REJOUABLE pour la PR. La PR
+        # est journalisee ``skipped`` et le balayage CONTINUE -- une course
+        # sur la 12e PR d'un passage ne doit plus faire attendre toute la
+        # suite de la file. Le motif est nu dans le journal (greppable) ; le
+        # detail est sur stderr.
+        print(f"merge_ready : {exc}", file=sys.stderr)
+        skipped = PRVerdict(
+            pr, decision.head, "skipped", BASE_MODIFIED_RACE_REASON, False,
+            decision.review, decision.stack, decision.stack_incidents,
+        )
+        results.append(skipped)
+        append_journal(journal_path, skipped)
+        return skipped, None, 0
+    merged = PRVerdict(
+        pr, decision.head, "merged", decision.reason, True,
+        decision.review, decision.stack, decision.stack_incidents,
+    )
+    # Le verdict de succes n'est PAS journalise ici : l'appelant le
+    # journalise apres le rechauffage qui suit le merge (ordre de la boucle
+    # principale). Les deux sorties qui arrevent le passage sont, elles,
+    # journalisees sur place.
+    return merged, None, 0
+
+
 def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     """Point d'entree testable : parse les arguments, execute un run complet."""
     args = _parse_args(argv)
@@ -2584,42 +2634,18 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             decision = evaluate_pr(view, pr, active_runner, gh_env)
             if decision.verdict == "would-merge":
                 if args.apply:
-                    try:
-                        merge_pr(active_runner, pr, decision.head or "", gh_env)
-                    except MergeFailedError as exc:
-                        failed = PRVerdict(
-                            pr, decision.head, "merge-failed", str(exc), False,
-                            decision.review, decision.stack,
-                            decision.stack_incidents,
-                        )
-                        results.append(failed)
-                        append_journal(journal_path, failed)
-                        stopped_reason = f"merge-failed:PR-{pr}"
-                        exit_code = 1
-                        break
-                    except BaseModifiedRaceError as exc:
-                        # Course de base (#26771) : le motif est REJOUABLE pour
-                        # la PR. La PR est journalisee ``skipped`` et le
-                        # balayage CONTINUE -- c'est le point de la demande :
-                        # une course sur la 12e PR d'un passage ne doit plus
-                        # faire attendre toute la suite de la file. Le motif
-                        # est nu dans le journal (greppable) ; le detail est
-                        # sur stderr.
-                        print(f"merge_ready : {exc}", file=sys.stderr)
-                        skipped = PRVerdict(
-                            pr, decision.head, "skipped",
-                            BASE_MODIFIED_RACE_REASON, False,
-                            decision.review, decision.stack,
-                            decision.stack_incidents,
-                        )
-                        results.append(skipped)
-                        append_journal(journal_path, skipped)
-                        continue
-                    decision = PRVerdict(
-                        pr, decision.head, "merged", decision.reason, True,
-                        decision.review,
-                        decision.stack, decision.stack_incidents,
+                    decision, stop, code = merge_verdict(
+                        active_runner, gh_env, pr, decision, results, journal_path
                     )
+                    if stop:
+                        stopped_reason = stop
+                        exit_code = code
+                        break
+                    if not decision.merged:
+                        # Course de base (#26771) : deja journalise, le
+                        # balayage CONTINUE (le motif est nu dans le
+                        # journal, le detail est sur stderr).
+                        continue
                     # Le merge rebascule les PRs soeurs en « etat en cours de
                     # calcul » : on les rechauffe TOUTES maintenant, en
                     # parallele, au lieu de les servir une par une au fil de
@@ -2630,6 +2656,10 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         active_runner, gh_env,
                         [p for p in warm_candidates if p > pr],
                     )
+                    results.append(decision)
+                    append_journal(journal_path, decision)
+                    merged_count += 1
+                    continue
                 merged_count += 1
             elif (decision.reason or "") in PENDING_MERGEABLE_REASONS:
                 # Etat de mergeabilite « en cours de calcul » a son tour : la
@@ -2687,38 +2717,23 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                     )
                     if decision.verdict == "would-merge":
                         if args.apply:
-                            try:
-                                merge_pr(
-                                    active_runner, pr, decision.head or "", gh_env
-                                )
-                            except MergeFailedError as exc:
-                                failed = PRVerdict(
-                                    pr, decision.head, "merge-failed",
-                                    str(exc), False,
-                                    decision.review, decision.stack,
-                                    decision.stack_incidents,
-                                )
-                                results.append(failed)
-                                append_journal(journal_path, failed)
-                                stopped_reason = f"merge-failed:PR-{pr}"
-                                exit_code = 1
-                                break
-                            except BaseModifiedRaceError as exc:
-                                print(f"merge_ready : {exc}", file=sys.stderr)
-                                skipped = PRVerdict(
-                                    pr, decision.head, "skipped",
-                                    BASE_MODIFIED_RACE_REASON, False,
-                                    decision.review, decision.stack,
-                                    decision.stack_incidents,
-                                )
-                                results.append(skipped)
-                                append_journal(journal_path, skipped)
-                                continue
-                            decision = PRVerdict(
-                                pr, decision.head, "merged", decision.reason,
-                                True, decision.review,
-                                decision.stack, decision.stack_incidents,
+                            # Meme gestion du merge que la boucle principale
+                            # (helper partage) : le rejeu ne connait pas une
+                            # seconde porte de sortie.
+                            decision, stop, code = merge_verdict(
+                                active_runner, gh_env, pr, decision,
+                                results, journal_path,
                             )
+                            if stop:
+                                stopped_reason = stop
+                                exit_code = code
+                                break
+                            if not decision.merged:
+                                continue
+                            results.append(decision)
+                            append_journal(journal_path, decision)
+                            merged_count += 1
+                            continue
                         merged_count += 1
                     results.append(decision)
                     append_journal(journal_path, decision)
