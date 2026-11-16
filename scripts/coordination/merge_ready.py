@@ -174,6 +174,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -354,6 +355,45 @@ PR_LIST_LIMIT = 500  # le pool ouvert mesure ~220 PRs ; au-dela, ordre ancien d'
 MERGEABLE_RETRIES = 12
 MERGEABLE_RETRY_SLEEP_S = 10.0
 
+# --- attente de mergeabilite : budget court + rejeu (#26799) -----------------
+#
+# Mesure du 16/11 (ai-01, 12 PRs sondees) : l'etat de mergeabilite passe de
+# `unknown` a `clean`/`blocked` en 10 a 20 s, SANS intervention -- le calcul
+# se fait seul cote GitHub. L'organe attendait 120 s (12 x 10 s) sur CHAQUE PR
+# rencontree, et chaque merge rebascule les PRs soeurs en `unknown` : le
+# passage du 16/11 evaluait 132 PRs en 1 h 41, dont 90 % du temps porte par
+# 28 PRs (#26799).
+#
+# Le correctif ne change pas la GARANTIE (la mergeabilite est verifiee au
+# moment du merge) ; il change QUAND la lecture a lieu :
+#
+#   1. RECHAUFFAGE : une lecture sans attente par PR restante, juste apres
+#      chaque merge et au debut du passage. Chaque lecture DEMARRE le calcul
+#      de la PR ; les calculs se font en parallele cote serveur, au lieu
+#      d'etre servis un par un par la passe.
+#   2. BUDGET COURT : au tour d'une PR, l'etat est lu avec un budget court.
+#      S'il est encore en cours de calcul, la PR est PARQUEE, pas refusee.
+#   3. REJEU : les PRs parkees sont reevaluees en fin de passage, avec le
+#      budget long -- leur calcul a eu tout le temps de se faire.
+#
+#: Budget court de la passe normale : deux relectures apres la premiere.
+MERGEABLE_SHORT_RETRIES = 2
+
+#: Etats de mergeabilite « en cours de calcul » : la valeur textuelle
+#: `unknown` et l'ABSENCE de valeur (null). Les deux se resolvent seuls ;
+#: traiter l'absence comme un refus definitif evaluait une PR mergeable
+#: avant la fin de son calcul (mesure du 16/11 : `#26829` et `#26827` sont
+#: passees de `unknown` a `blocked`/`clean` en moins de 20 s).
+MERGEABLE_PENDING_STATES = ("", "unknown")
+
+#: Motifs de skip qui signifient « etat en cours de calcul » : ces PRs sont
+#: rejouees en fin de passage, pas comptees comme un refus.
+PENDING_MERGEABLE_REASONS = ("mergeable-state:unknown", "mergeable-state:absent")
+
+#: Nombre de LECTURES de rechauffage en parallele. Le rechauffage ne touche
+#: qu'a des lectures : les merges restent strictement sequentiels.
+WARMUP_MAX_WORKERS = 8
+
 
 class CannotRunError(Exception):
     """Le run ne peut pas demarrer (jeton irresolu, env invalide)."""
@@ -473,8 +513,42 @@ class SubprocessRunner:
         )
         return RunResult(proc.returncode, proc.stdout or "", proc.stderr or "")
 
+    def run_many(
+        self, cmds: list[list[str]], env: dict[str, str] | None = None
+    ) -> list[RunResult]:
+        """Execute plusieurs LECTURES en parallele (rechauffage, #26799).
+
+        Le parallélisme ne porte que sur des lectures : les merges, eux,
+        restent strictement sequentiels (contrainte de #26799). L'ordre des
+        resultats suit l'ordre des commandes.
+        """
+        if not cmds:
+            return []
+        if len(cmds) == 1:
+            return [self.run(cmds[0], env)]
+        with ThreadPoolExecutor(
+            max_workers=min(WARMUP_MAX_WORKERS, len(cmds))
+        ) as pool:
+            futures = [pool.submit(self.run, cmd, env) for cmd in cmds]
+            return [future.result() for future in futures]
+
     def sleep(self, seconds: float) -> None:
         time.sleep(seconds)
+
+
+def run_reads(
+    runner: Runner, cmds: list[list[str]], gh_env: dict[str, str]
+) -> list[RunResult]:
+    """Execute des lectures, en parallele si le runner le permet.
+
+    Le repli est SEQUENTIEL : un runner de test (ou tout runner qui n'implemente
+    pas ``run_many``) reste utilisable tel quel, et l'ordre des lectures est
+    alors deterministe.
+    """
+    many = getattr(runner, "run_many", None)
+    if callable(many):
+        return list(many(cmds, env=gh_env))
+    return [runner.run(cmd, gh_env) for cmd in cmds]
 
 
 # --- petites pieces pures -----------------------------------------------------
@@ -1728,17 +1802,36 @@ def base_ref_liveness(
     return "gone"
 
 
+def mergeable_pending(state: str) -> bool:
+    """L'etat de mergeabilite est-il EN COURS DE CALCUL ?
+
+    Deux formes, meme sens : la valeur textuelle ``unknown`` et l'absence de
+    valeur (``null``). Une PR dont l'etat est en cours de calcul n'est pas
+    une PR refusee : son etat se resout tout seul en 10 a 20 s (mesure du
+    16/11). La traiter comme un refus evaluait une PR mergeable avant la
+    fin de son calcul -- et la traiter comme un etat stable bloquait le
+    passage (#26799).
+    """
+    return state in MERGEABLE_PENDING_STATES
+
+
 def mergeable_state_and_head(
-    runner: Runner, pr: int, gh_env: dict[str, str]
+    runner: Runner, pr: int, gh_env: dict[str, str], retries: int | None = None
 ) -> tuple[str, str]:
-    """Etape 6 : (mergeable_state, head.sha) via REST, avec retry sur ``unknown``.
+    """Etape 6 : (mergeable_state, head.sha) via REST, avec retry sur l'etat
+    « en cours de calcul ».
 
     Apres un merge, les PRs soeurs passent ``unknown`` le temps que GitHub
-    recalcule : jusqu'a MERGEABLE_RETRIES relectures avec court sommeil avant
-    de conclure au skip.
+    recalcule : jusqu'a `retries` relectures avec court sommeil avant de
+    conclure.
+
+    Le budget par defaut est COURT (#26799) : au-dela, l'appelant parke la PR
+    et la rejoue en fin de passage, ou le calcul a eu le temps de se faire.
+    Le budget LONG (`MERGEABLE_RETRIES`) est reserve a ce rejeu.
     """
+    budget = MERGEABLE_SHORT_RETRIES if retries is None else retries
     data: dict = {}
-    for attempt in range(MERGEABLE_RETRIES + 1):
+    for attempt in range(budget + 1):
         res = runner.run(
             ["gh", "api", f"repos/{REPO}/pulls/{pr}"], env=gh_env
         )
@@ -1750,12 +1843,40 @@ def mergeable_state_and_head(
         if not isinstance(data, dict):
             raise UnexpectedError(f"pulls/{pr} : la reponse n'est pas un objet")
         state = str(data.get("mergeable_state") or "")
-        if state != "unknown":
+        if not mergeable_pending(state):
             return state, str(((data.get("head") or {}).get("sha")) or "")
-        if attempt < MERGEABLE_RETRIES:
+        if attempt < budget:
             runner.sleep(MERGEABLE_RETRY_SLEEP_S)
     state = str(data.get("mergeable_state") or "")
     return state, str(((data.get("head") or {}).get("sha")) or "")
+
+
+def warm_up_mergeability(
+    runner: Runner, gh_env: dict[str, str], prs: list[int]
+) -> int:
+    """Rechauffage : une lecture REST par PR, sans attente (#26799).
+
+    Chaque lecture DEMARRE le calcul de mergeabilite de la PR cote GitHub,
+    et ces calculs se font en parallele cote serveur. Sans rechauffage, la
+    passe sert ces calculs UN PAR UN : la premiere PRRencontre paie seule
+    son attente (120 s), puis la suivante, et ainsi de suite -- 28 PRs
+    portaient 90 % du passage du 16/11.
+
+    Le rechauffage ne LIT aucun etat a exploiter : c'est un effet de bord
+    serveur. Il ne change donc aucun verdict, et les merges restent
+    strictement sequentiels (les lectures sont les seules paralleles).
+
+    L'etat de chaque PR est relu normalement, au tour de la PR : c'est cette
+    relecture qui fait foi, et elle est faite au moment du merge.
+    """
+    if not prs:
+        return 0
+    cmds = [
+        ["gh", "api", f"repos/{REPO}/pulls/{pr}", "--jq", ".mergeable_state"]
+        for pr in prs
+    ]
+    run_reads(runner, cmds, gh_env)
+    return len(cmds)
 
 
 # --- etape 6 bis : `unstable` est-il un etat mergeable ? (#25059) -------------
@@ -1975,7 +2096,11 @@ _STACK_PARTNER_RE = re.compile(r"OPEN #(\d+)")
 
 
 def evaluate_pr(
-    view: dict, pr: int, runner: Runner, gh_env: dict[str, str]
+    view: dict,
+    pr: int,
+    runner: Runner,
+    gh_env: dict[str, str],
+    retries: int | None = None,
 ) -> PRVerdict:
     """Applique dans l'ordre les controles pre-merge (1 a 6, 5bis compris). Tout echec = skip nomme.
 
@@ -2125,8 +2250,13 @@ def evaluate_pr(
     # Prelecture REST bon marche : ne pas payer les tests d'arbre fusionne
     # pour une PR que l'etape 6 refuserait. L'etape 6 reste la garde finale
     # contre une evolution de l'etat ou de la tete pendant ces tests.
-    pre_state, pre_live_head = mergeable_state_and_head(runner, pr, gh_env)
+    pre_state, pre_live_head = mergeable_state_and_head(
+        runner, pr, gh_env, retries=retries
+    )
     if pre_state not in ("clean", "unstable"):
+        # Etat « en cours de calcul » : la PR n'est pas refusee, elle est
+        # PARQUEE (motif repris dans PENDING_MERGEABLE_REASONS) et rejouee en
+        # fin de passe, quand le calcul sera termine (#26799).
         return skip(f"mergeable-state:{pre_state or 'absent'}",
                     stack_state, stack_inc)
     if pre_live_head != view_head:
@@ -2138,7 +2268,9 @@ def evaluate_pr(
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
     # 6. REST : mergeable + tete.
-    state, live_head = mergeable_state_and_head(runner, pr, gh_env)
+    state, live_head = mergeable_state_and_head(
+        runner, pr, gh_env, retries=retries
+    )
     accepted_detail: str | None = None
     if state == "unstable":
         # 6bis (#25059) : `unstable` n'est pas un refus automatique. La chaine
@@ -2319,7 +2451,18 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         return 1
 
     merged_count = 0
-    for pr in prs:
+    #: PRs dont l'etat de mergeabilite etait « en cours de calcul » a leur
+    #: tour : elles sont PARQUEES, pas refusees, et rejouees en fin de
+    #: passe (#26799).
+    replay_queue: list[tuple[int, PRVerdict]] = []
+
+    # Rechauffage de tete (#26799) : une lecture par PR ouverte, sans
+    # attente. Chaque lecture demarre le calcul de mergeabilite de sa PR ;
+    # les calculs se font en parallele cote serveur. Sans ce geste, la passe
+    # sert ces calculs un par un, et chaque PR paie seule son attente.
+    warm_up_mergeability(active_runner, gh_env, prs)
+
+    for index, pr in enumerate(prs):
         # Disjoncteur --max : plafond de DECISIONS de merge du run (merges
         # reels en --apply, would-merge en dry-run : le dry-run doit refléter
         # ce que --apply ferait). Une fois le plafond atteint, les PRs
@@ -2379,7 +2522,21 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         decision.review,
                         decision.stack, decision.stack_incidents,
                     )
+                    # Le merge rebascule les PRs soeurs en « etat en cours de
+                    # calcul » : on les rechauffe TOUTES maintenant, en
+                    # parallele, au lieu de les servir une par une au fil de
+                    # la passe (#26799).
+                    warm_up_mergeability(
+                        active_runner, gh_env, prs[index + 1:]
+                    )
                 merged_count += 1
+            elif (decision.reason or "") in PENDING_MERGEABLE_REASONS:
+                # Etat de mergeabilite « en cours de calcul » a son tour : la
+                # PR est parsee, PAS refusee. Elle sera reevaluee en fin de
+                # passe, avec le budget long -- son calcul aura eu le temps
+                # de se faire pendant le reste du passage (#26799).
+                replay_queue.append((pr, decision))
+                continue
             results.append(decision)
             append_journal(journal_path, decision)
         except UnexpectedError as exc:
@@ -2397,6 +2554,82 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             # None -- le run ne s'est PAS arrete, l'ecrire ici serait un
             # constat faux (le bilan, lui, compte les erreurs isolees).
             continue
+
+    # --- rejeu des PRs parkees ------------------------------------------------
+    #
+    # Le calcul de mergeabilite de ces PRs a ete demarre a leur tour ; il a
+    # eu tout le reste du passage pour se faire. Elles sont donc reevaluees
+    # ici, avec le budget LONG : la garantie reste intacte (la mergeabilite
+    # est lue au moment du merge), mais le passage ne l'a plus payee en
+    # attente serielle.
+    if replay_queue:
+        if stopped_reason is not None:
+            # La passe s'est arretee avant le rejeu : les PRs parkees sont
+            # journalisees telles quelles (un motif nomme, jamais une PR
+            # disparue du bilan).
+            for pr, parked in replay_queue:
+                results.append(parked)
+                append_journal(journal_path, parked)
+            replay_queue = []
+        else:
+            for pr, parked in replay_queue:
+                if merged_count >= args.max:
+                    stopped_reason = "max-merges-reached"
+                    results.append(parked)
+                    append_journal(journal_path, parked)
+                    break
+                try:
+                    view = fetch_pr_view(active_runner, pr, gh_env)
+                    decision = evaluate_pr(
+                        view, pr, active_runner, gh_env,
+                        retries=MERGEABLE_RETRIES,
+                    )
+                    if decision.verdict == "would-merge":
+                        if args.apply:
+                            try:
+                                merge_pr(
+                                    active_runner, pr, decision.head or "", gh_env
+                                )
+                            except MergeFailedError as exc:
+                                failed = PRVerdict(
+                                    pr, decision.head, "merge-failed",
+                                    str(exc), False,
+                                    decision.review, decision.stack,
+                                    decision.stack_incidents,
+                                )
+                                results.append(failed)
+                                append_journal(journal_path, failed)
+                                stopped_reason = f"merge-failed:PR-{pr}"
+                                exit_code = 1
+                                break
+                            except BaseModifiedRaceError as exc:
+                                print(f"merge_ready : {exc}", file=sys.stderr)
+                                skipped = PRVerdict(
+                                    pr, decision.head, "skipped",
+                                    BASE_MODIFIED_RACE_REASON, False,
+                                    decision.review, decision.stack,
+                                    decision.stack_incidents,
+                                )
+                                results.append(skipped)
+                                append_journal(journal_path, skipped)
+                                continue
+                            decision = PRVerdict(
+                                pr, decision.head, "merged", decision.reason,
+                                True, decision.review,
+                                decision.stack, decision.stack_incidents,
+                            )
+                        merged_count += 1
+                    results.append(decision)
+                    append_journal(journal_path, decision)
+                except UnexpectedError as exc:
+                    errored = PRVerdict(pr, None, "run-error", str(exc), False)
+                    results.append(errored)
+                    append_journal(journal_path, errored)
+                    exit_code = 1
+                    if is_pass_wide(exc):
+                        stopped_reason = f"unexpected-error:{exc}"
+                        break
+                    continue
 
     emit_output(args, results, stopped_reason, exit_code)
     return exit_code
