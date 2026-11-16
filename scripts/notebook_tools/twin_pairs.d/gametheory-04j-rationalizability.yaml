@@ -1,0 +1,9 @@
+- name: "GameTheory-04j Rationalizability"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-04j-Rationalisabilite-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04j-Rationalisabilite-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets appellent scipy.optimize.linprog avec HiGHS pour les LP et nashpy.Game.support_enumeration pour les contrôles ; le C# construit les programmes et orchestre l’IDSDS nativement."
+  known_differences:
+    - "Les exercices sont ouverts et gardés dans les deux versions. Les représentations des tableaux et les sorties des solveurs peuvent différer par leur format."
