@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1657
-breakdown: SymbolicAI=407, GenAI=317, Search=169, GameTheory=142, ML=140, QuantConnect=124, IIT=114, Probas=93, RL=40, Sudoku=39, Complexity=28, NLP=13, Physique=12, Compression=11, CaseStudies=6, cross-series=2
-maturity: BETA=1501, DRAFT=83, ALPHA=69, TEMPLATE=4
+total: 1702
+breakdown: SymbolicAI=408, GenAI=323, Search=173, GameTheory=149, ML=142, QuantConnect=125, IIT=114, Probas=96, RL=41, Sudoku=41, Complexity=33, NLP=20, Physique=16, Compression=13, CaseStudies=6, cross-series=2
+maturity: BETA=1560, DRAFT=76, ALPHA=62, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -90,7 +90,7 @@ Search
 Probas
 ├── Infer/ - notebooks Infer.NET (graphes de facteurs, C#)
 ├── PyMC/ - notebooks PyMC (MCMC, Python) — miroir Infer
-└── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causal-Bridges (do(·) Pearl cross-paradigmes) + lake decision_theory_lean (axiomes VNM + Gittins)
+└── DecisionTheory/ - Arc décision DecInfer 1-10 (vNM, Gittins, Thompson) + Causalité (do(·) Pearl cross-paradigmes) + lake decision_theory_lean (axiomes VNM + Gittins)
 
 Sudoku
 └── (à plat) - 19 problèmes × N méthodes : Backtracking → CNN/LLM

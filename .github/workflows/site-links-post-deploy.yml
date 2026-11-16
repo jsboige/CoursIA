@@ -38,9 +38,18 @@ jobs:
     name: "Check published site links"
     # Deploy reussi seulement : tester un ancien site apres un deploy
     # echoue produirait un verdict qui ne parle pas de la sortie reelle.
+    # Et DEPLOIEMENT seulement (P4 #25510, fournee 1) : le declencheur
+    # `workflow_run` tire sur CHAQUE completion de « Quarto Pages Deploy »,
+    # jambes PR comprises -- qui ne deploient RIEN (le job `deploy` est
+    # push-only). Mesure du 2026-11-14 sur 24 h : 300 runs, dont 105 echecs,
+    # tous tires par des completions qui n'avaient pas publie ; le site sonde
+    # etait celui du dernier deploy, pas celui de la sortie. Un vrai
+    # deploiement = jambe push (le `workflow_dispatch` manuel reste admis :
+    # re-mesure volontaire du site publie).
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

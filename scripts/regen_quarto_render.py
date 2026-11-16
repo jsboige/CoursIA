@@ -48,6 +48,10 @@ LANDING_PAGES = [
     "MyIA.AI.Notebooks/Probas/index.qmd",
     "MyIA.AI.Notebooks/Physique/index.qmd",
     "docs/index.qmd",
+    # Page parcours : deplacee de la racine vers docs/ (#13751, fenetre Quarto)
+    # — la racine ne garde que index.qmd ; le glob "*.qmd" ci-dessus ne la
+    # couvre plus, elle est listee explicitement.
+    "docs/parcours.qmd",
     # COURSE_CATALOG.generated.md est lie depuis index.qmd (L64) mais servi en
     # texte brut sinon : on le REND en HTML (verifie firsthand #10925 Q2 —
     # quarto render standalone -> HTML 176 Ko, exit 0, sans front-matter).
@@ -81,6 +85,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/Sudoku/",                # tranche 2 #10923 (37)
     "MyIA.AI.Notebooks/GameTheory/",            # tranche 2 #10923 (56)
     "MyIA.AI.Notebooks/Probas/",                # tranche 2 #10923 (58)
+    "MyIA.AI.Notebooks/Symmetry/",              # serie Symmetry #25324 (groupes de frieze, art generatif)
     "MyIA.AI.Notebooks/CaseStudies/",            # tranche 15 #10923 (6)
     "MyIA.AI.Notebooks/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
     "MyIA.AI.Notebooks/NLP/",                    # tranche 19 #18423 (5, TAL/TALN)

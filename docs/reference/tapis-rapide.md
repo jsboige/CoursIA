@@ -1,12 +1,12 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-14
+> REFERENCE — vivante — dernière révision 2026-11-16
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
-le 2026-11-14 pour tenir le plafond de lignes) et `scripts/coordination/gh_bulk.py` (seul module qui lance
-`gh` ou `git`).
-Elle vit **à côté** de `scripts/pick_idle_grain.py --belt`, qui reste la voie de repli.
+le 2026-11-14 pour tenir le plafond de lignes), `scripts/coordination/tapis_origami.py` (parcage Origami,
+#26523) et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
+Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
 ## La commande
 
@@ -30,16 +30,33 @@ le dépôt n'est pas touché.
 
 La sortie donne, dans l'ordre : l'en-tête (issues, servables, familles, durée, appels, cache, âge de
 `origin/main`), **vos PRs ouvertes** (à porter au merge d'abord quand elles ont plus de 24 h), les grains
-numérotés avec la commande `python scripts/check_lane_claim.py N --lane <lane>` à jouer **avant d'éditer**,
-puis le compte des écartées par code. `--json` rend les mêmes données (`grains`, `vos_prs`, `ecartees`,
+numérotés avec la commande `python scripts/check_lane_claim.py N --lane <lane>` à jouer **avant d'éditer**
+(les grains d'abord, les conteneurs ensuite, voir plus bas), puis le compte des écartées par code. `--json` rend les mêmes données (`grains`, `vos_prs`, `ecartees`,
 `lecture`).
 
 Codes de sortie : `0` grains servis, ou pool réellement vide dit en clair ; `3` lecture incomplète (502/504
-répétés à toutes les tailles de page, panne `gh` ou `git`) : rien n'est servi, le message nomme la lecture en
-panne et la commande de repli `python scripts/pick_idle_grain.py --belt --lane <lane>`. Il n'y a ni mur de
+répétés à toutes les tailles de page, panne `gh` ou `git`) **et** aucune lecture de secours : rien n'est
+servi, et le message dit quoi faire à la place (porter ses PRs, traiter la file du coordinateur, re-tirer).
+**Aucune sortie ne renvoie au tapis lourd** `pick_idle_grain.py --belt` (#26926) : il mettait 240 s à servir des
+grains non vérifiés, et chaque panne réseau y renvoyait toute la flotte. `4` : main local en retard ou organe
+du tirage divergent d'`origin/main` (`git pull --ff-only`, puis re-tirer).
+
+**Lecture de secours** (#26926) : quand la lecture réseau échoue, le tapis tire sur la dernière lecture
+**complète** du cache machine (`%LOCALAPPDATA%/CoursIA/tapis_rapide/lecture-<jours>j.json`) si elle a moins
+de 12 h ; la sortie est alors `0`, et `lecture.fetch_note` dit la panne et la date de la lecture servie.
+Une lecture incomplète n'est jamais mise en cache, donc jamais servie ; un rejeu (`--lecture`) n'a pas de
+secours. Le pool d'une lecture de quelques heures reste juste à la marge, puisque `check_lane_claim.py`
+fait autorité avant d'éditer. Il n'y a ni mur de
 temps ni budget de sondes : le nombre d'appels est fixé par construction. Mesure du 2026-11-13 : 14 appels
 (15 depuis la lecture de la pointe `origin/main`, plus un `git fetch` quand elle dépasse 6 h),
 lecture réseau de 25 à 101 s selon GitHub, rejeu d'un instantané en ~1 s (l'ancienne voie : 295 à 382 s).
+
+Une **mesure Origami** impossible (voir plus bas) ne rend **pas** le `3` : le parcage Origami est une
+protection **auxiliaire**, et le tapis rapide est le tirage de référence de toute la flotte — une protection
+en panne ne doit pas l'éteindre. La sortie reste `0`, `measured: false` et la cause restent visibles dans le
+`--json` et dans le texte (« Parcage Origami : NON MESURE (…) »), et un avertissement part sur stderr : un
+EPIC Origami servi pendant la panne se lit comme tel. Le `3` reste réservé à la lecture groupée incomplète.
+Un **rejeu** (`--lecture`) ne refait pas la mesure et n'est jamais invalidé par elle.
 
 ## Ce qui écarte un candidat
 
@@ -56,6 +73,7 @@ groupée, sans sonde par issue.
 | `RELACHEE` | le **dernier** marqueur du fil est un `[RELEASED]` de moins de 3 jours (`RELACHE_J`), quelle que soit la lane, la vôtre comprise. Son motif (barrière mesurée, siège trop petit) vaut encore : sans cet écart, chaque lane re-mesurait la même barrière (mesure po-2023 du 13/11 : 38 cycles sans grain servable, 23 issues concernées). Un `[CLAIMED]` ou un `[NOT-DELIVERED]` postérieur lève l'écart |
 | `PLAFOND` | conteneur hors `consolidation` : une visite d'une **autre** lane de moins de 7 jours (`PLAFOND_EPIC_J`, même fenêtre que l'organe `check_lane_claim.py epic_visit_cap`, #22500) — un marqueur `[CLAIMED]`/`[CLAIMED-AMEND]`/`[DELIVERED]` dans son fil ou la création d'une de ses filles ouvertes. Le tapis ne sert pas un EPIC que le gate L898 refuserait ; les visites de **votre** lane n'arment rien (#25443) |
 | `RECLAMEE` | claim ouvert d'une autre lane de moins de 48 h ; sur un conteneur, un claim récent d'une autre lane écarte déjà via `PLAFOND` (une remise de main `[OVERRIDE]` bornée `paths:` reste une note) |
+| `ORIGAMI` | EPIC Origami dont **tous les plis matérialisés sont terminés** et dont le pli suivant n'est pas annoncé : le dépliage est réservé au coordinateur, aucune lane worker ne peut le lever. Le motif dit quel pli attend. Comme sur le tapis lourd, l'écart est appliqué **après** les autres : un EPIC déjà livré reste `LIVREE` |
 
 Les marqueurs se lisent en tête de **n'importe quelle ligne** d'un commentaire (souvent après `Grain: …`),
 décor de citation ou de gras toléré, blocs de code ignorés. Par lane, `[CLAIMED]`/`[CLAIMED-AMEND]` ouvre ;
@@ -66,6 +84,54 @@ l'issue à la lane qui le pose. Un claim de **votre** lane n'écarte pas : l'iss
 Un **conteneur** (issue nommée comme parent par une autre issue ouverte, label `epic`/`umbrella`, ou titre
 `[EPIC` sans parent) se sert : la lane y prend une tranche. C'est pourquoi ni une PR, ni un commit, ni un
 `[DELIVERED]` de tranche ne l'écartent.
+
+**Les grains d'abord, les conteneurs ensuite** (#26926). Un conteneur demande une lecture du fil et un choix de
+tranche ; il ne passe donc jamais devant un grain (vos claims restent en tête). Il est servi avec :
+
+- la commande `python scripts/check_lane_claim.py N --lane <lane> --paths <vos chemins>` : sans `--paths`,
+  l'organe refuse le conteneur entier dès qu'une autre lane y tient un claim borné (mesure du 2026-11-16 :
+  six claims bornés sur #19297, et la commande servie sans `--paths` était refusée par construction) ;
+- sa **procédure** (lire le fil entier, prendre l'étape suivante non faite hors des chemins occupés,
+  vérifier par `--paths`, poser `[CLAIMED] … -- paths: …`) ;
+- les **chemins occupés**, en entier, lane par lane (`chemins_occupes` en JSON), et les PRs ouvertes qui le
+  citent (`prs_ouvertes`).
+
+## Le parcage Origami (#26523, parité de #24373)
+
+Le tapis lourd (`pick_idle_grain.py --belt`) parque les EPICs Origami dont le pli suivant n'est pas encore
+déplié : c'est le geste du coordinateur, qu'aucune lane worker ne peut lever. Le tapis rapide l'applique
+aujourd'hui aussi, faute de quoi un EPIC Origami au long cours revenait à chaque tirage comme un grain
+ordinaire.
+
+Ce que la mesure lit, et où :
+
+- **les plis** (sous-issues `Part of #N`, y compris fermées) et **les déclarations de dépliage** du fil de
+  l'EPIC : lus par `origami_parking.measure`, dont le résultat est mis en cache **par la machine**
+  (`%LOCALAPPDATA%/CoursIA/origami_parking/`, 30 min — la cadence du tapis). Un depliage fait dans la
+  demi-heure est vu au cycle suivant ;
+- **la livraison d'un pli** — un pli est terminé quand il est fermé *ou* livré par un commit de fusion : la
+  sonde est fondée sur les **citations de la lecture groupée** (`gh_bulk`), donc **aucune lecture par issue**.
+
+C'est le seul point de la voie qui sorte de la lecture groupée : deux appels groupés, au plus une fois toutes
+les 30 min et par machine. Mesure du 2026-11-14, sur le siège `myia-ai-01:CoursIA-2` : lecture à froid
+**39,2 s → 48,2 s** (+9,0 s, la mesure Origami), lecture **chaude** (caches frais) **0,57 s → 0,82 s**. Le
+tirage reste du même ordre.
+
+Trois états, jamais mélangés — le bloc `origami_parking` du `--json` les porte :
+
+| État | Ce que ça veut dire |
+| --- | --- |
+| `measured: true` | la mesure est faite ; les EPICs parqués sont écartés du tirage et listés dans `details` (le tableau du coordinateur les lit sans changement) |
+| `measured: false` + `reason` | la mesure est **impossible** ; rien n'est parqué et **la cause est nommée** — jamais une liste vide, qui se lirait « rien à parquer ». La sortie reste `0` : le tirage continue, et un avertissement sur stderr nomme la cause |
+| `measured: true`, `epics: 0` | le pool ne porte aucun EPIC Origami : la mesure est faite, et vide |
+
+Le parcage est **fail-OPEN**, comme celui du tapis lourd : une mesure absente ne supprime jamais un grain.
+Ce qui change, c'est que la mesure est faite — l'absence de mesure se voit au lieu de passer inaperçue.
+
+Un **rejeu** (`--lecture <dossier>`) est hors ligne par contrat : il ne refait **pas** la mesure Origami et
+**ne parque rien**. Un rejeu peut donc servir des EPICs Origami que le tirage en direct avait parqués — c'est
+le prix du rejeu, et il est assumé. L'état rendu porte alors `measured: false` avec la cause « rejeu hors
+ligne ».
 
 ## L'ordre et les poids
 
@@ -93,13 +159,12 @@ reçoivent donc pas le même grain. Mesuré le 14/11 : deux sièges (même préf
 différents) avaient reçu les mêmes deux grains, parce que l'ordre des *familles* était semé par lane mais
 celui des *membres* d'une famille était le même pour toutes les lanes. Le décalage porte sur le **rang**,
 pas sur le contenu : l'ancienneté reste le critère à l'intérieur du décalage, et les grains jamais visités
-passent devant les conteneurs et devant les grains déjà visités. Résidu mesuré : sur une famille de
-*n* grains, deux lanes ont 1/*n* chance de partager le même rang — le taux de chevauchement porte sur la
-liste entière (8 familles servies), pas sur une famille isolée.
+passent devant les conteneurs et devant les grains déjà visités. Résidu **calculé** (ce n'est pas une
+mesure) : sur une famille de *n* grains, deux lanes ont 1/*n* chance de partager le même rang — le taux de
+chevauchement porte sur la liste entière (8 familles servies), pas sur une famille isolée.
 
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 
 - Le **bandit de fermeture par zone** : la variété vient du tour de rôle par famille et du tirage semé par lane.
 - Les **plafonds par EPIC côté tirage pondéré** : le tour de rôle borne déjà la part d'une famille à un grain par tour. Le plafond hebdomadaire #22500 lui **est** repris, sous la forme de l'écart `PLAFOND` ci-dessus, pour ne pas servir ce que le gate de claim refuse ; il ne pèse que les conteneurs, jamais les filles existantes (#26414).
-- Le **parcage Origami** : une campagne à mettre de côté se gèle par `[FROZEN]`, que la voie lit.
 - La **file de réparation** : une réparation due passe par une issue ordinaire, servie comme les autres.
