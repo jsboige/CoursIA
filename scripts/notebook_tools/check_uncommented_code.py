@@ -65,11 +65,15 @@ carnet sans ids voit alors ses cellules suivantes comptees comme modifiees
 quand une insertion decale les positions, ce qui sur-signale sans jamais
 manquer un defaut.
 
-Un carnet RENOMME par la branche est lu a son ancien chemin dans la base
-(``renamed_notebooks`` : ``-M --diff-filter=R``). Sans cette resolution, le
-chemin de tete est absent de la base et le carnet passe pour neuf -- 18
+Un carnet **renomme** sans changement de contenu n'est pas neuf : ``git diff
+--name-only`` (l'attelage partage) ne rend que le nouveau chemin, et lire la
+base a ce chemin rend ``None`` -- le carnet entier etait alors juge
+« (carnet neuf) » (35 faux positifs sur les 21 renommages de #26420 ; 18
 cellules preexistantes signalees sur le pur renommage #26381, le rouge qui a
-fonde cette reparation.
+fonde la reparation). La table nouveau->ancien (``renamed_notebooks`` :
+``-M --diff-filter=R``, importee de l'organe partage) fait lire la base a
+l'ANCIEN chemin du carnet renomme (correctif #26690 sur l'organe, centralise
+par #26883).
 
 Mode fichier (``--file``) : juge un carnet entier, pour l'audit hors CI.
 
@@ -94,6 +98,7 @@ from pathlib import Path
 
 # Le meme attelage git que les organes freres : une seule implementation de
 # « qu'est-ce qui a change entre le merge-base et HEAD ».
+import check_output_failure_text  # module objet : stub git du self-test 11
 from check_output_failure_text import (
     _cell_source,
     changed_notebooks,
@@ -305,18 +310,22 @@ def compare(base_ref: str, paths: list[str], cwd: str | None = None,
             renames: dict[str, str] | None = None) -> list[dict]:
     """Findings par carnet, bornes aux cellules que la branche a touchees.
 
-    ``renames`` ({chemin tete: chemin base}, cf. ``renamed_notebooks``) fait
-    lire la base a l'ANCIEN chemin d'un carnet renomme : sans lui, le chemin
-    de tete est absent de la base, ``changed_keys`` rend ``None`` et le carnet
-    est juge entier -- du code preexistant signale comme neuf.
+    ``renames`` ({chemin tete: chemin base}, cf. ``renamed_notebooks`` de
+    l'organe partage) fait lire la base a l'ANCIEN chemin d'un carnet
+    renomme : sans lui, le chemin de tete est absent de la base,
+    ``changed_keys`` rend ``None`` et le carnet est juge entier -- du code
+    preexistant signale comme neuf (angle mort corrige sur #26690, table
+    centralisee dans l'organe partage par #26883 : 35 faux positifs sur les
+    21 renommages de #26420, 18 cellules sur le pur renommage #26381).
     """
+    renames = renames or {}
     rows: list[dict] = []
     for path in paths:
         head_notebook = read_notebook_at(None, path, cwd=cwd)
         if head_notebook is None:
             continue
         base_notebook = read_notebook_at(
-            base_ref, (renames or {}).get(path, path), cwd=cwd)
+            base_ref, renames.get(path, path), cwd=cwd)
         keys = changed_keys(base_notebook, head_notebook)
         findings = analyse_notebook(head_notebook, only_keys=keys)
         if findings:
@@ -518,6 +527,44 @@ def self_test() -> int:
         analyse_cell(_cell(*lean_body), language="lean4") is not None,
     ))
 
+    # 11. RENOMMAGE -- la table nouveau->ancien vient de l'organe partage
+    #     (``renamed_notebooks``, parsing inline du statut git
+    #     ``R<score>\tancien\tnouveau``). Le parseur se teste ici par stub de
+    #     ``git`` dans le module source : le self-test partage ne le couvre
+    #     qu'en direct (l. 1727), pas au niveau des octets.
+    rename_out = (
+        "R100\tdossier/ancien.ipynb\tdossier/nouveau.ipynb\n"
+        "M\tun/Modifie.ipynb\n"
+        "R075\tchemin\\base.ipynb\tchemin\\reordonne.ipynb\n"
+    )
+    saved_git = check_output_failure_text.git
+    try:
+        check_output_failure_text.git = lambda *a, **k: rename_out
+        renames = renamed_notebooks("base")
+    finally:
+        check_output_failure_text.git = saved_git
+    checks.append((
+        "renommage : table nouveau->ancien (R100, R075, anti-diagnostics BS)",
+        renames == {"dossier/nouveau.ipynb": "dossier/ancien.ipynb",
+                    "chemin/reordonne.ipynb": "chemin/base.ipynb"},
+    ))
+
+    # 12. RENOMMAGE -- un carnet renomme a cellules INTACTES n'est pas neuf :
+    #     sa base existe (lue a l'ancien chemin par compare), donc keys est un
+    #     ensemble VIDE, pas None, et aucune cellule n'est jugee.
+    renamed_head = _notebook(_cell(*_BODY_12))
+    checks.append((
+        "renommage : base trouvee => cellules intactes hors jugement",
+        changed_keys(_notebook(_cell(*_BODY_12)), renamed_head) == set(),
+    ))
+
+    # 12bis. CONTROLE POSITIF -- un VRAI carnet neuf rend bien None (le carnet
+    #     entier reste juge, y compris apres le correctif renommage).
+    checks.append((
+        "renommage : carnet vraiment neuf => keys=None (juge en entier)",
+        changed_keys(None, renamed_head) is None,
+    ))
+
     failed = [name for name, ok in checks if not ok]
     for name, ok in checks:
         print(("  OK   " if ok else "  FAIL ") + name)
@@ -566,8 +613,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.diff:
         base = resolve_base(args.diff)
         paths = changed_notebooks(base)
+        renames = renamed_notebooks(base)
         scope += len(paths)
-        rows.extend(compare(base, paths, renames=renamed_notebooks(base)))
+        rows.extend(compare(base, paths, renames=renames))
     for path in args.file:
         notebook = read_notebook_at(None, path)
         if notebook is None:
