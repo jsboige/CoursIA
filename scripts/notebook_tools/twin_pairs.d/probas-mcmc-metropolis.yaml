@@ -1,0 +1,10 @@
+- name: Probas-MCMC Metropolis
+  family: Probas/Fondations
+  python: MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets enseignent MH et Gibbs en les construisant ; MathNet et NumPy fournissent les primitives statistiques adaptées."
+  known_differences:
+  - "Générateurs NumPy et .NET distincts : trajectoires et diagnostics numériques diffèrent ; mêmes cibles et budgets, comparaisons aux vérités analytiques."
+  - "Le R-hat classique non scindé a été corrigé des deux côtés (B = n variance des moyennes). L'ESS est une heuristique au premier coefficient négatif ; ces diagnostics ne sont pas les variantes modernes scindées et normalisées par rangs."
