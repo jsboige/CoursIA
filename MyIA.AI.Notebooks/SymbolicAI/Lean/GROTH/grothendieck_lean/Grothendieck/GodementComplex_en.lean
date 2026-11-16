@@ -187,4 +187,25 @@ variable {X : TopCat.{u}}
 -- is a functor into cochain complexes. The named frontier is now the
 -- long exact sequence alone (Part 95, brick 3).
 
+--
+-- **Part 98, exactness of `C⁰` landed in the FR twin**: `C⁰` preserves
+-- epimorphisms (`epi_godementMapHom_of_epi`) and short exact sequences
+-- **evaluated at every open** (`shortExact_app_godementMapHom`) — the mono
+-- face was already closed by Part 86 (`godementMapHom_mono`,
+-- `godementFunctor_preservesMonomorphisms`). The proof is the **pointwise
+-- lifting through stalks**: a Godement section is a family of germs, every
+-- property is tested component by component — surjectivity via
+-- `epi_stalkFunctor_map_of_epi` (Part 93, stalk ⊣ skyscraper adjunction),
+-- exactness via `stalkFunctor_map_exact` (Part 93). Nothing here needs
+-- abelian sheafification: everything already holds at the level of
+-- presheaves of discontinuous sections. The elementwise core
+-- (`exact_godementHomApp`) lifts a `C⁰g`-annihilated section of `F₂`
+-- germ by germ, via a per-component choice of preimages; the enabling
+-- prerequisite `godementFunctor_preservesZeroMorphisms` (so that
+-- `ShortComplex.map godementFunctor` makes sense) is landed for tranche 2.
+-- **Not posed** — the named frontier: the degreewise SES of the canonical
+-- complexes themselves (a `ShortExact` of complexes, not of presheaf
+-- sections at one open); it needs the flabby lifting
+-- (`epi_of_shortExact_of_isFlasqueSieves`, Part 94) or the separatedness
+-- ladder — tranche 2, feeding Part 99 (long exact sequence assembly).
 end Grothendieck_en
