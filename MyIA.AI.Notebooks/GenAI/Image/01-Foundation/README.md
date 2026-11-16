@@ -8,7 +8,7 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 
 ## Comment lire ce README
 
-- Vous voulez **produire une image tout de suite** : commencez par [01-1](01-1-OpenAI-DALL-E-3.ipynb) (API cloud, ~19 s pour un visuel) ou par [01-4](01-4-Forge-SD-XL-Turbo.ipynb) (local, SDXL Turbo en 4 steps au lieu des dizaines habituelles).
+- Vous voulez **produire une image tout de suite** : commencez par [01-1](01-1-OpenAI-DALL-E-3.ipynb) (API cloud) ou par [01-4](01-4-Forge-SD-XL-Turbo.ipynb) (local, SDXL Turbo en 4 steps au lieu des dizaines habituelles).
 - Vous voulez **comprendre ce que manipulent les modèles** : [01-3](01-3-Basic-Image-Operations.ipynb) pose les bases PIL/OpenCV avant d'éditer quoi que ce soit — c'est le préalable pour lire les sorties des carnets suivants.
 - Vous voulez **éditer une image existante** : [01-5](01-5-Edition-Image-Prompt.ipynb) et ses approfondissements [5b](01-5b-Edition-Image-Prompt-Iterations.ipynb) et [5c](01-5c-Edition-Image-Prompt-Workflows.ipynb) (édition par prompt via ComfyUI, compte ~29 GB de VRAM et un service joignable).
 
@@ -34,7 +34,7 @@ Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décom
 
 | # | Notebook | Contenu | Service | VRAM | Approfondir | Ce qu'on y apprend |
 |---|----------|---------|---------|------ |--------------|--------------------|
-| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 | — | Obtenir un visuel depuis un prompt en un appel d'API cloud, et mesurer sa latence (~19 s) |
+| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 | — | Obtenir un visuel depuis un prompt en un appel d'API cloud, et mesurer sa latence |
 | 2 | [01-2-Generation-Image-API](01-2-Generation-Image-API.ipynb) | Génération et analyse d'images via API (GPT-5) | OpenAI API | 0 | — | Générer puis analyser une image avec la même API multimodale |
 | 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 | — | Manipuler une image en local (formats, redimensionnement) avant et après génération |
 | 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable | — | Faire tourner un modèle open source en local, en 4 steps, et fixer la seed pour reproduire |
