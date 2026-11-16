@@ -313,7 +313,19 @@ AGENT_PREFIXES = (
 # #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
 # donc dans cette constante, consommee uniquement par classify ; can_lift
 # reste sur AGENT_PREFIXES.
-CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
+#
+# #26364 (tranche B.0, [ACTION] ai-01 du 2026-11-15) : `[BASE-INHERITED` rejoint
+# l'extension, meme mecanisme que [DIAG. Motif : un rouge herite de la base
+# n'avait pas de canal sur la PR -- l'ecrire (comme l'exige la regle worker
+# « ecrire en commentaire puis --ignore-red ») creait un nit B.0 qui bloquait
+# la PR qu'il documentait (7 occurrences mesurees par po-2028, cycles 86-89).
+# Le commentaire de signalement est un SIGNAL, pas une reserve : il sort de la
+# classification. Une reserve vivante reste un nit par la garde habituelle
+# (ligne 51xx), et le tag ne touche ni les levees (can_lift lit
+# AGENT_PREFIXES) ni la boucle DIAG (COMMENT_TAG_RE ne le lit pas).
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + (
+    "[ACTION", "[DIAG", "[BASE-INHERITED",
+)
 
 # #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
 # ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --

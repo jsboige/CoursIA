@@ -2,8 +2,6 @@
 pagetitle: "Machine learning — données, modèles et agents"
 ---
 
-# Machine learning — données, modèles et agents
-
 <!-- CATALOG-STATUS
 series: ML
 pedagogical_count: 142

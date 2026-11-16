@@ -295,9 +295,9 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 82 | [ICT-47b — L'instrument change-t-il la géométrie ?](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47b-PainAxisInstrument-Python.ipynb) | BETA | Non |
 | 83 | [ICT-48 — Onset/SAE Qwen3.5-9B-Base, agrégat de quatre…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb) | BETA | Oui |
 | 84 | [ICT-48 — Origami Wolfram, pli 2 : quatre classes, six…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | BETA | Oui |
-| 85 | [ICT-49 — Machines de Gödel : l'auto-amélioration…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb) | BETA | Oui |
-| 86 | [ICT-50 -- Origami Wolfram pli 2 : la regle 30 comme…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-50-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) | BETA | Oui |
-| 87 | [ICT-51 -- Origami Wolfram pli 4 : les combinateurs…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-51-CombinateursSKI-TagDePost-Python.ipynb) | BETA | Oui |
+| 85 | [ICT-49 — Machines de Gödel : l'auto-amélioration…](../../MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb) | BETA | Oui |
+| 86 | [ICT-50 -- Origami Wolfram pli 2 : la regle 30 comme…](../../MyIA.AI.Notebooks/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) | BETA | Oui |
+| 87 | [ICT-51 -- Origami Wolfram pli 4 : les combinateurs…](../../MyIA.AI.Notebooks/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb) | BETA | Oui |
 | 88 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb) | BETA | Oui |
 | 89 | [ICT — Substrat argumentation : trajectoires de croyance…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb) | BETA | Oui |
 | 90 | [ICT — Argumentation et croyances : le capstone du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-Capstone-Python.ipynb) | BETA | Oui |
@@ -475,9 +475,9 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 25 | [Hierarchical RL — l'Option framework de Sutton, Precup…](../../MyIA.AI.Notebooks/RL/RL-14-RL-Hierarchique-Options-Python.ipynb) | BETA | Oui |
 | 26 | [RL-15 — GRPO (Group Relative Policy Optimization) sur…](../../MyIA.AI.Notebooks/RL/RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | BETA | Non |
 | 27 | [RL-16 : Dream-RSI — l'exploration comme code, évaluée…](../../MyIA.AI.Notebooks/RL/RL-16-Dream-RSI-Python.ipynb) | BETA | Oui |
-| 28 | [RL 19 - Reward tampering : quand l'agent peut modifier…](../../MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb) | BETA | Oui |
-| 29 | [RL-20 — Du simulateur au réel : la randomisation de…](../../MyIA.AI.Notebooks/RL/RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | BETA | Oui |
-| 30 | [RL 21 - Auto-jeu à la AlphaZero : quand le réseau guide…](../../MyIA.AI.Notebooks/RL/RL-21-Auto-Jeu-AlphaZero-Python.ipynb) | BETA | Non |
+| 28 | [RL 19 - Reward tampering : quand l'agent peut modifier…](../../MyIA.AI.Notebooks/RL/RL-17-Reward-Tampering-Python.ipynb) | BETA | Oui |
+| 29 | [RL-20 — Du simulateur au réel : la randomisation de…](../../MyIA.AI.Notebooks/RL/RL-18-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | BETA | Oui |
+| 30 | [RL 21 - Auto-jeu à la AlphaZero : quand le réseau guide…](../../MyIA.AI.Notebooks/RL/RL-19-Auto-Jeu-AlphaZero-Python.ipynb) | BETA | Non |
 
 ## RL/PostTraining (11 notebooks)
 

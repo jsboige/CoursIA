@@ -34,11 +34,18 @@ En mode ``--hard-distractors`` (opt-in, defaut inchange), chaque tour de vote
 pose **deux** questions : l'une a distracteurs tires d'abord parmi les noeuds
 difficiles (freres, parent, homonymes), l'autre a distracteurs aleatoires
 **exclusivement** — le rapport publie alors deux taux separes.
+
+Le **rapport** d'un run se reconstruit depuis son checkpoint, sans rappeler le
+maitre et sans reseau : ``--report-only`` rejoue ``summarise`` sur les
+enregistrements deja produits (voir ``rebuild_report``). C'est ce qui remet un
+rapport committe en accord avec le code quand un correctif de fidelite change ce
+que le rapport publie.
 """
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import os
 import random
@@ -48,6 +55,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Iterable, Optional, Protocol, Sequence
 
@@ -638,6 +646,86 @@ def _record_from_row(row: dict) -> Record:
 # CLI
 # --------------------------------------------------------------------------
 
+def _write_report(report: dict, *, report_path: Path, checkpoint: Path) -> None:
+    """Ecrit le rapport et le resume console -- un seul chemin d'ecriture."""
+    report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
+                           encoding="utf-8")
+    print(json.dumps({k: v for k, v in report.items()
+                      if k not in ("by_family", "below_floor_pairs")},
+                     indent=2, ensure_ascii=False))
+    if report["n_below_floor"]:
+        print(f"  {report['n_below_floor']} paire(s) generee(s) sous le plancher "
+              f"de {report['min_tokens']} tokens -- liste dans {report_path.name}")
+    print(f"corpus  : {checkpoint}")
+    print(f"rapport : {report_path}")
+
+
+def rebuild_report(*, out: Path, split: str, lang: str) -> tuple[dict, Path, Path]:
+    """Reconstruit un rapport depuis son checkpoint, sans appeler le maitre.
+
+    Le rapport committe de la tranche B (``val``/``fr``) datait d'avant le
+    correctif de fidelite #20137 : il ne publiait ni ``n_generated`` ni
+    ``n_below_floor``, et laissait donc croire que tout texte genere respectait
+    le plancher de ``min_tokens``. Le checkpoint, lui, enregistre **par paire**
+    tout ce que ``summarise`` agrege -- la correction se rejoue donc sans
+    modele, sans reseau, et sans refaire le run.
+
+    Ce que le checkpoint ne porte pas est conserve **tel quel** depuis le
+    rapport existant : les parametres du run (``model``, ``hub_url``, ``seed``,
+    ``votes``, ``distractors``, ``max_tokens``, ``min_tokens``, ``retries``),
+    le nom du checkpoint et sa duree ``seconds``. L'historique de reprise
+    (``resumed``, ``n_resumed``, ``n_todo``) n'est ecrit nulle part : ces cles
+    restent **absentes** et ``report_provenance`` le dit -- une valeur inventee
+    vaudrait moins qu'une absence nommee.
+
+    Rend ``(report, report_path, checkpoint)`` et n'ecrit rien.
+    """
+    checkpoint = out / f"{split}_{lang}.jsonl"
+    report_path = out / f"report_{split}_{lang}.json"
+    missing = [p.name for p in (checkpoint, report_path) if not p.is_file()]
+    if missing:
+        raise SystemExit(
+            f"--report-only : {', '.join(missing)} introuvable(s) dans {out} -- "
+            "il faut le checkpoint du run et le rapport qu'il a produit")
+    rows = [json.loads(line) for line in
+            checkpoint.read_text(encoding="utf-8").splitlines() if line.strip()]
+    if not rows:
+        raise SystemExit(f"--report-only : checkpoint vide ({checkpoint.name})")
+    previous = json.loads(report_path.read_text(encoding="utf-8"))
+    summary = summarise([_record_from_row(r) for r in rows],
+                        [r.get("roundtrip") for r in rows],
+                        min_tokens=int(previous["min_tokens"]))
+    header = {k: v for k, v in previous.items()
+              if k not in summary and k != "report_provenance"}
+    hard = previous.get("hard_distractors")
+    if hard is None:
+        # Deduit, pas mesure : un run --hard-distractors laisse des verdicts
+        # difficiles dans le checkpoint ; aucun verdict = le mode etait inactif.
+        hard = bool(summary["roundtrip_hard_measured"])
+    report = {
+        **header,
+        "hard_distractors": hard,
+        **summary,
+        "report_provenance": {
+            "mode": "checkpoint-only",
+            "rebuilt_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "source_checkpoint": checkpoint.name,
+            "source_checkpoint_sha256": hashlib.sha256(checkpoint.read_bytes()).hexdigest(),
+            "source_checkpoint_rows": len(rows),
+            "summary_from": "summarise() tel que corrige par #20137",
+            "reason": ("le rapport d'origine precedait ce correctif (#20081/#20137) : "
+                       "il ne publiait ni n_generated ni n_below_floor"),
+            "preserved_from_existing_report": sorted(header),
+            "absent_not_derivable": ["resumed", "n_resumed", "n_todo"],
+            "absent_not_derivable_why": (
+                "l'historique de reprise n'est pas ecrit dans le checkpoint ; "
+                "une reprise repart d'un tirage neuf et ne rejoue que les paires "
+                "manquantes"),
+        },
+    }
+    return report, report_path, checkpoint
+
+
 def main(argv: Optional[Sequence[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--out", type=Path, default=DEFAULT_OUT)
@@ -656,7 +744,17 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--hub-url", default=DEFAULT_HUB_URL)
     parser.add_argument("--model", default=DEFAULT_MODEL)
     parser.add_argument("--phase2-dir", type=Path, default=PHASE2_DIR)
+    parser.add_argument("--report-only", action="store_true",
+                        help="ne pas appeler le maitre : reconstruire le rapport "
+                             "depuis le checkpoint existant et le rapport qu'il a "
+                             "produit (seuls --out/--split/--lang comptent)")
     args = parser.parse_args(argv)
+
+    if args.report_only:
+        report, report_path, checkpoint = rebuild_report(
+            out=args.out, split=args.split, lang=args.lang)
+        _write_report(report, report_path=report_path, checkpoint=checkpoint)
+        return 0
 
     texts = B.load_texts()
     hard_peers = build_hard_peers(texts) if args.hard_distractors else None
@@ -692,16 +790,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         **summarise(records, verdicts, min_tokens=args.min_tokens),
     }
     report_path = args.out / f"report_{args.split}_{args.lang}.json"
-    report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n",
-                           encoding="utf-8")
-    print(json.dumps({k: v for k, v in report.items()
-                      if k not in ("by_family", "below_floor_pairs")},
-                     indent=2, ensure_ascii=False))
-    if report["n_below_floor"]:
-        print(f"  {report['n_below_floor']} paire(s) generee(s) sous le plancher "
-              f"de {args.min_tokens} tokens -- liste dans {report_path.name}")
-    print(f"corpus  : {checkpoint}")
-    print(f"rapport : {report_path}")
+    _write_report(report, report_path=report_path, checkpoint=checkpoint)
     return 0
 
 
