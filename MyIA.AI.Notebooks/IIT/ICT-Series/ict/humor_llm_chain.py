@@ -53,7 +53,7 @@ import json
 import random
 import urllib.error
 import urllib.request
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
 from .humor_agreement import write_annotations_jsonl
@@ -344,8 +344,15 @@ def portable_pointer(path: str | Path) -> str:
     produit : ce chemin devient faux des le premier nettoyage du scratch,
     et il expose la disposition du poste. L'identite du fichier est portee
     par son URL et son empreinte -- pas par son chemin local.
+
+    La lecture du nom est **independante de la plateforme** :
+    `Path` ne reconnait `\\` comme separateur que sur Windows, donc un
+    chemin Windows lu depuis POSIX passait *en entier* dans l'artefact
+    commite -- exactement le chemin de poste que ce pointeur existe pour
+    supprimer. La grammaire Windows traite les deux separateurs (`\\` et
+    `/`) et donne le meme nom sur tout l'hote.
     """
-    return Path(path).name
+    return PureWindowsPath(str(path)).name
 
 
 # --------------------------------------------------------------------------- #

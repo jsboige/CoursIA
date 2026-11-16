@@ -404,6 +404,12 @@ class TestPointeurPortable(unittest.TestCase):
             "dialogs_from_jokes.dataset.json",
         )
         self.assertEqual(portable_pointer("annotations.jsonl"), "annotations.jsonl")
+        # Separateurs melanges : le pointeur doit les traiter tous les deux,
+        # quelle que soit la plateforme qui a produit le chemin.
+        self.assertEqual(
+            portable_pointer("D:/poste-de-test\\scratch/annotations.jsonl"),
+            "annotations.jsonl",
+        )
 
     def test_rapports_commites_ne_portent_aucun_chemin_de_poste(self):
         results_dir = Path(__file__).resolve().parents[1] / "results"
