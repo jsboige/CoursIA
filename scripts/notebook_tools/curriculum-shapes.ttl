@@ -24,4 +24,7 @@ cursus:SeriesShape a sh:NodeShape ;
 cursus:SubseriesShape a sh:NodeShape ;
     sh:targetClass cursus:Subseries ;
     sh:property [ sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ] ;
-    sh:property [ sh:path cursus:partOfSeries ; sh:minCount 1 ; sh:maxCount 1 ; sh:class cursus:Series ] .
+    sh:property [ sh:path cursus:subseriesPath ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path cursus:partOfSeries ; sh:maxCount 1 ; sh:class cursus:Series ] ;
+    sh:property [ sh:path cursus:partOfSubseries ; sh:maxCount 1 ; sh:class cursus:Subseries ] ;
+    sh:or ( [ sh:path cursus:partOfSeries ] [ sh:path cursus:partOfSubseries ] ) .

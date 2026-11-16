@@ -1,5 +1,7 @@
 # Prévalidation — pourquoi l'ordre compte, et ce que la tête vient périmer (#16878)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Détail déporté de la puce « `update-branch` tue AUSSI le dossier de prévalidation » de [`git-workflow.md`](../../.claude/rules/git-workflow.md). Le sujet : **le dossier de prévalidation atteste une tête, pas une PR** — et l'ordre des gestes qui en découle.
 
 **La règle fait foi** pour l'ordre et le gel ; ce document ne les rejoue pas, il donne le **pourquoi** (le mécanisme vérifié à la source, la boucle réelle, et les deux prémisses de l'issue fondatrice qui étaient fausses).

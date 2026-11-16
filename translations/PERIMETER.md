@@ -65,7 +65,7 @@ produites par un POC antérieur au gate T3 (avant #6949 / Epic #4957).
 | `genai/casestudies.csv` | Fort-Boyard | 10 | oui (10/10) | kept (paired) |
 | `genai/casestudies.csv` | Medical-Chatbot | 2 | oui (23/2 partiel) | kept (paired, partial fill) |
 | `genai/image.csv` | 01-1-OpenAI-DALL-E-3 | 13 | non | kept (orphan justifié, image.csv `en` activé) |
-| `genai/image.csv` | 01-2-GPT-5-Image-Generation | 13 | non | kept (orphan justifié, image.csv `en` activé) |
+| `genai/image.csv` | 01-2-Generation-Image-API | 13 | non | kept (orphan justifié, image.csv `en` activé) |
 
 **Justification** : la décision D3 demande « `en` seul d'abord » mais
 ne demande PAS de détruire du contenu déjà traduit. Les `text_ru` POC

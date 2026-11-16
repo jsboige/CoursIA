@@ -24,6 +24,12 @@ DEUX VUES, NE PAS LES CONFONDRE :
    #16232 est MERGE avec une jambe rouge residuelle encore presente sur son
    head : pour un meme nom d'un meme app, le gate retient la plus recente.
 
+   UNE EXCEPTION, et elle est recente (#25510, tranche T-C) : une jambe
+   `skipped` ne remplace jamais une jambe anterieure non-skipped du meme nom.
+   Un job saute mesure rien du code, et `skipped` compte comme VERT : sous un
+   repli latest-wins simple, une edition de titre emettrait un `skipped` plus
+   recent que le verdict reel, et une PR rouge se debloquerait d'elle-meme.
+
 2. `residual_reds` : les jambes rouges ANCIENNES encore presentes sous un vert
    recent. Elles ne disparaissent PAS de la liste plate. Contre-preuve mesuree
    (#11532, CodeQL default setup) : une jambe rouge d'une suite distincte a
@@ -52,9 +58,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
+
+# Lectures REST conditionnelles (ETag persiste, partage par machine) :
+# protocole pr_gate #26260 etendu aux processus courts. Le module porte les
+# invariants (un 304 est une preuve serveur d'unchangement ; tout echec
+# non-304 reste un echec) ; `_run_gh` ne fait que router les argv applicables.
+try:
+    import gh_etag
+except ImportError:  # meme shim que les organes voisins (tests hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_etag
 
 RED = {"failure", "timed_out"}
 GREEN = {"success", "neutral", "skipped"}
@@ -81,10 +98,29 @@ def normalize_leg(entry: dict) -> dict:
     }
 
 
+def _is_skipped(leg: dict) -> bool:
+    """Whether the normalized leg is a SKIPPED job.
+
+    A skipped job measured NOTHING about the code : it is the absence of a
+    verdict, not a verdict. `skipped` is nonetheless counted as a PASS
+    (`GREEN`), so it must never be read as the newest opinion about its name
+    (#25510, tranche T-C).
+    """
+    return (leg.get("conclusion") or "").lower() == "skipped"
+
+
 def fold_latest(legs: list[dict]) -> dict[str, dict]:
     """Derniere jambe par nom, semantique dedupe_latest (clee started_at puis
     id, monotones au niveau check-run -- #11416 : un rerun cree une entree
     fraiche d'id ET de started_at plus grands).
+
+    LE REPLI SUR LE SKIP (#25510, T-C) : une jambe `skipped` ne remplace JAMAIS
+    une jambe anterieure non-skipped du meme nom, sur la meme tete. Un job
+    saute (garde job-level, `paths:`) mesure rien, et `skipped` compte comme
+    VERT : sous un repli latest-wins simple, une edition de titre emettrait un
+    `skipped` plus recent que le verdict reel, et une PR ROUGE se
+    debloquerait d'elle-meme. Effet de bord fail-closed accepte : un rouge
+    reste affiche jusqu'au push suivant.
 
     La jambe rendue est la jambe BRUTE enrichie des champs canoniques
     (name/conclusion/started_at/id/details_url ecrasent les formes brutes) :
@@ -94,9 +130,20 @@ def fold_latest(legs: list[dict]) -> dict[str, dict]:
     best: dict[str, tuple[tuple, dict]] = {}
     for index, raw in enumerate(legs):
         leg = normalize_leg(raw)
-        key = (leg.get("started_at") or "", leg.get("id") or 0, index)
+        # La NATURE est en tete de la cle (verdict reel > `skipped`), donc le
+        # repli est independant de l'ordre d'arrivee : `check-runs` rend les
+        # entrees du plus recent au plus ancien.
+        key = (not _is_skipped(leg),
+               leg.get("started_at") or "",
+               leg.get("id") or 0,
+               index)
         current = best.get(leg["name"])
-        if current is None or key >= current[0]:
+        if current is None:
+            merged = dict(raw)
+            merged.update(leg)
+            best[leg["name"]] = (key, merged)
+            continue
+        if key >= current[0]:
             merged = dict(raw)
             merged.update(leg)
             best[leg["name"]] = (key, merged)
@@ -123,6 +170,22 @@ def residual_reds(legs: list[dict]) -> list[dict]:
 
 
 def _run_gh(args: list[str]) -> str:
+    """Un appel gh, en texte. Les lectures REST conditionnables (ETag
+    persiste #26260) passent par `gh_etag` : un 304 sert le corps certifie
+    inchange par le serveur et ne consomme aucun quota ; tout echec non-304
+    reste un `RuntimeError`, comme le chemin d'origine -- un cache absent ou
+    corrompu coute un 200, il ne change jamais le verdict."""
+    etag_path = gh_etag.etag_applicable(args)
+    if etag_path is not None:
+        try:
+            body, _ = gh_etag.conditional_get(etag_path)
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(f"gh api {etag_path[:40]}... -> timeout "
+                               f"{exc.timeout}s") from exc
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(f"gh api {etag_path[:40]}... -> {exc.returncode}: "
+                               f"{(exc.stderr or '')[:200]}") from exc
+        return json.dumps(body)
     proc = subprocess.run(["gh", *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         raise RuntimeError(f"gh {' '.join(args[:4])}... -> {proc.returncode}: "

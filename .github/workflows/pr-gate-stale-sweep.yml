@@ -159,8 +159,18 @@ on:
   # 230-293 s of execution. `concurrency.cancel-in-progress: false` below
   # coalesces a burst of merges into one pending sweep; it never kills a
   # running one.
-  push:
-    branches: [main]
+  # #25510 T-G (regle 24h mainteneur 09/11, decision coord 12/11) : le push: main
+  # est RETIRE. Sa justification #15770 (re-agregation d'un verdict PR gate
+  # perime ; le push = 11 min) est un REFINEMENT du service que le schedule
+  # FOURNIT DEJA sous 24 h -- cron horaire servi 178-341 min en retard sur ce
+  # depot (~3-5,7 h), toujours < 24 h. Le push n'apporte donc pas une
+  # reactivite sous 24 h que le schedule ne fournit PAS : il la raffine.
+  # Degradation acceptee : un verdict perime est re-agregue en ~3-5,7 h au lieu
+  # de 11 min (le « best-effort backstop » que #15770 documente deja comme le
+  # role du schedule), jamais au-dela de 24 h. Le sibling sweep-health GARDE
+  # son push (#15332 : liveness PENDANT la coupure totale du scheduler --
+  # service que le schedule ne fournit PAS, il est mort) ; evict-orphan-caches
+  # a son push retire dans la meme PR (cron horaire).
   workflow_dispatch:
     inputs:
       dry_run:
@@ -248,6 +258,12 @@ jobs:
     # plafond ne fait que rendre la marge explicite. Re-mesurer apres fusion :
     # l'etape 3 doit redescendre nettement sous ses 11 min.
     timeout-minutes: 25
+    env:
+      # #26739 -- le seuil de saturation de la file, lu par DEUX
+      # consommateurs (l'etape qui mesure la profondeur ET le selecteur qui
+      # la compare au seuil) : une seule source, sinon les deux divergent
+      # sans qu'on le voie.
+      QUEUE_SATURATED_N: "800"
     steps:
       - name: Bootstrap gh into the persistent toolcache
         # ubuntu-latest ships gh, python3, jq, curl and git preinstalled, so
@@ -277,6 +293,81 @@ jobs:
           fi
           echo "/opt/hostedtoolcache/bin" >> "$GITHUB_PATH"
           "$GH_BIN" --version
+
+      # #26718 -- la profondeur de file que ce sweep compare a son seuil de
+      # saturation etait le nombre BRUT (`total_count`), qui compte le padding
+      # des fantomes MESURES avec le travail reel : au 2026-11-15 la file
+      # mesurait 326 runs `queued`, dont 234 fantomes (142 `pr-closed`,
+      # 88 `no-job`, 4 `scheduled-orphan`) -- la profondeur VIVANTE etait 92.
+      #
+      # L'organe `scripts/ci/gh_queue_health.py --live-depth` rend la
+      # profondeur VIVANTE (population MOINS chaque classe de fantome mesuree).
+      # Il est recupere PAR L'API, au SHA DU RUN LUI-MEME : pas de checkout
+      # (ce sweep ne paie pas les ~40 s de runner par passage -- #12728,
+      # runner scarcity mesuree sur ce depot), et le code execute est celui du
+      # commit que le workflow execute.
+      - name: Measure the LIVE queue depth (ghost classes excluded)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          DEPTH_ERR=$(mktemp)
+          trap 'rm -f "${DEPTH_ERR:-}"' EXIT
+          ORG=$(gh api "repos/$REPO/contents/scripts/ci/gh_queue_health.py?ref=$SHA" \
+            --jq '.content' 2>"$DEPTH_ERR") || ORG=""
+          if [ -z "$ORG" ]; then
+            echo "::warning::[stale-sweep] organe de profondeur introuvable (endpoint=GET repos/$REPO/contents/scripts/ci/gh_queue_health.py?ref=$SHA code=illisible) -- le verdict retombe sur l'age seul"
+            echo "QUEUE_DEPTH=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          if ! printf '%s' "$ORG" | base64 -d > "$RUNNER_TEMP/gh_queue_health.py"; then
+            echo "::warning::[stale-sweep] organe de profondeur illisible (dechodage base64) -- le verdict retombe sur l'age seul"
+            echo "QUEUE_DEPTH=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          # #26739 -- la mesure complete coute 114 appels API par invocation
+          # (un par branche de PR en file, un par candidat `no-job`), sur un
+          # quota horaire partage par TOUS les workflows du depot (#26739
+          # mesure une fenetre ouverte a 12:07:27 et epuisee a 12:08:14).
+          # L'organe lit donc le BRUT d'abord (UN appel) et ne mesure la
+          # profondeur VIVANTE que si le brut ATTEINT le seuil de saturation :
+          # le brut MAJORE la vivante (la vivante = population MOINS ses
+          # fantomes), donc un brut sous le seuil PROUVE que la file n'est
+          # pas saturee -- la mesure ne peut pas changer le verdict et n'est
+          # pas payee. Dans ce cas la sortie est un MAJORANT
+          # (`depth_kind: raw-upper-bound`), jamais une profondeur.
+          DEPTH_JSON=$(python3 "$RUNNER_TEMP/gh_queue_health.py" --repo "$REPO" \
+            --live-depth --saturation-threshold "$QUEUE_SATURATED_N" --json \
+            2>"$DEPTH_ERR") || DEPTH_JSON=""
+          if [ -z "$DEPTH_JSON" ]; then
+            echo "::warning::[stale-sweep] profondeur VIVANTE illisible ($(head -1 "$DEPTH_ERR")) -- le verdict retombe sur l'age seul"
+            echo "QUEUE_DEPTH=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          # silence justifie : DEPTH_JSON vient d'etre lu non vide ; un JSON
+          # illisible n'y laisse qu'un champ vide, et le test de DEPTH juste
+          # en dessous le nomme (::warning:: « rapport sans profondeur »).
+          # Les trois champs suivants sont informatifs : vides, ils n'alterent
+          # aucun verdict.
+          DEPTH=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("depth",""))' 2>/dev/null) || DEPTH=""
+          DEPTH_KIND=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("depth_kind",""))' 2>/dev/null) || DEPTH_KIND=""  # silence justifie : champ informatif, voir le bloc ci-dessus
+          DEPTH_RAW=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("total_count",""))' 2>/dev/null) || DEPTH_RAW=""  # silence justifie : champ informatif, voir le bloc ci-dessus
+          DEPTH_API=$(printf '%s' "$DEPTH_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("api_calls",""))' 2>/dev/null) || DEPTH_API=""  # silence justifie : champ informatif, voir le bloc ci-dessus
+          if [ -z "$DEPTH" ]; then
+            echo "::warning::[stale-sweep] profondeur VIVANTE illisible (rapport sans profondeur) -- le verdict retombe sur l'age seul"
+            echo "QUEUE_DEPTH=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "QUEUE_DEPTH=$DEPTH" >> "$GITHUB_ENV"
+          echo "QUEUE_DEPTH_KIND=$DEPTH_KIND" >> "$GITHUB_ENV"
+          echo "QUEUE_DEPTH_RAW=$DEPTH_RAW" >> "$GITHUB_ENV"
+          if [ "$DEPTH_KIND" = "raw-upper-bound" ]; then
+            echo "[stale-sweep] profondeur de file : VIVANTE NON MESUREE (brut $DEPTH < seuil $QUEUE_SATURATED_N -- saturation exclue par majoration ; api-quota: $DEPTH_API appel(s))"
+          else
+            echo "[stale-sweep] profondeur VIVANTE de la file : $DEPTH (api-quota: $DEPTH_API appel(s))"
+          fi
 
       # No checkout / setup-python / pip here on purpose. This sweep no longer
       # runs `pr_gate.py`: it re-runs the original workflow run (see the note in
@@ -1167,11 +1258,33 @@ jobs:
           # #22278 -- le stderr etait jete : un appel casse rendait la
           # profondeur vide sans que rien ne le dise. Meme idiome que
           # CAND_ERR ci-dessous : capturer, puis nommer.
+          # #26718 -- la profondeur n'est plus lue ICI mais MESUREE par
+          # l'organe dans l'etape qui precede (une mesure, une source) ; le
+          # seuil de saturation se compare desormais a la profondeur VIVANTE.
+          # Le brut reste lu ici pour le diagnostic seulement.
           QUEUE_ERR=$(mktemp)
-          QUEUE_DEPTH=$(gh api "repos/$REPO/actions/runs?per_page=1&status=queued" \
-            --jq '.total_count' 2>"$QUEUE_ERR") || QUEUE_DEPTH=""
-          if [ -s "$QUEUE_ERR" ]; then
-            echo "::warning::profondeur de file illisible ($(head -1 "$QUEUE_ERR")) -- le verdict retombe sur l'age seul"
+          # #26718 -- la profondeur VIVANTE est mesuree par l'organe dans
+          # l'etape qui precede ce sweep (population MOINS chaque classe de
+          # fantome mesuree) ; elle est lue dans l'environnement. Le nombre
+          # BRUT reste un DIAGNOSTIC -- l'ecart entre les deux EST le padding
+          # -- et ne decide plus de rien : comparer le brut au seuil de
+          # saturation comptait des fantomes comme de la file.
+          QUEUE_DEPTH="${QUEUE_DEPTH:-}"
+          QUEUE_DEPTH_KIND="${QUEUE_DEPTH_KIND:-}"
+          # #26739 -- le brut a deja ete lu par l'etape de mesure : on ne le
+          # redemande pas, sauf si cette etape a echoue (le brut n'est
+          # alors qu'un diagnostic).
+          QUEUE_DEPTH_RAW="${QUEUE_DEPTH_RAW:-}"
+          if [ -z "$QUEUE_DEPTH_RAW" ]; then
+            QUEUE_DEPTH_RAW=$(gh api "repos/$REPO/actions/runs?per_page=1&status=queued" \
+              --jq '.total_count' 2>"$QUEUE_ERR") || QUEUE_DEPTH_RAW=""
+          fi
+          if [ -z "$QUEUE_DEPTH" ]; then
+            echo "::warning::profondeur VIVANTE indisponible -- le verdict retombe sur l'age seul (brut: ${QUEUE_DEPTH_RAW:-illisible})"
+          elif [ "$QUEUE_DEPTH_KIND" = "raw-upper-bound" ]; then
+            echo "[stale-sweep] profondeur de file : vivante NON MESUREE (majorant $QUEUE_DEPTH, seuil $QUEUE_SATURATED_N -- saturation exclue par majoration) brute=$QUEUE_DEPTH"
+          else
+            echo "[stale-sweep] profondeur de file : vivante=$QUEUE_DEPTH brute=${QUEUE_DEPTH_RAW:-illisible}"
           fi
 
           m=0
@@ -1320,6 +1433,7 @@ jobs:
                   # test_pr_gate_sweep_select.py (heredoc `PYV`).
                   VERDICT=$(SWEEP_RUN_JSON="$RUN" \
                     SWEEP_QUEUE_DEPTH="${QUEUE_DEPTH:-}" \
+                    SWEEP_QUEUE_SATURATED_N="${QUEUE_SATURATED_N:-800}" \
                     python3 - <<'PYV'
           import json, os, sys
           from datetime import datetime, timezone
@@ -1335,7 +1449,7 @@ jobs:
           # 2026-10-23 la profondeur etait 990-1100 runs. Au-dela de 800, un run
           # `queued` meme ancien attend un drain normal -- on ne recommande pas de
           # nouvelle tete (rafale de runs) sous saturation.
-          QUEUE_SATURATED_N = 800
+          QUEUE_SATURATED_N = int(os.environ.get("SWEEP_QUEUE_SATURATED_N") or "800")
 
           def _parse_dt(v):
               return datetime.fromisoformat(v[:-1] + "+00:00" if v.endswith("Z") else v)

@@ -1,5 +1,7 @@
 # Séparation des lanes de documentation — pérenne / transiente
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 > REFERENCE — vivante — dernière révision 2026-11-10
 
 L'arbre `docs/` vit deux lanes distinctes (design #14623) : des **documents pérennes**

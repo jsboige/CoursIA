@@ -7201,13 +7201,13 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,c0961fd6,markdown,f
 - **Backdoor et front-door rendent l'effet causal identifiable** a partir de données observationnelles, sous conditions graphiques — formalisees par le do-calculus (Pearl 1995), complet (Shpitser & Pearl 2006).
 
 ### Pour aller plus loin — le même do-calculus, d'autres paradigmes
-- **[Notebook-pont — du graphe causal au do-calculus](../DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb)** : l'armature formelle unifiee de Pearl (echelle + 3 règles) executee sur l'outil de reference `dowhy` (identification backdoor/front-door + estimation + refutation), qui relie cette serie a Tweety-11, Infer-5 et ICT-5.
+- **[Notebook-pont — du graphe causal au do-calculus](../Causalite/Causalite-01-Calcul-Do-Python.ipynb)** : l'armature formelle unifiee de Pearl (echelle + 3 règles) executee sur l'outil de reference `dowhy` (identification backdoor/front-door + estimation + refutation), qui relie cette serie a Tweety-11, Infer-5 et ICT-5.
 
 Ce notebook traite le `do()` en **probabiliste MCMC + enumeration exacte** (`pm.do`). Le **même opérateur** structure trois autres series du depot, chacune dans un paradigme différent :
 
 - **Symbolique (Java/Tweety)** : [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) — `do()` et contrefactuels par raisonnement **propositionnel** (`scm.intervene`), sans probabilites.
 - **Bayesien par message passing (Infer.NET)** : [Infer-05-Causal-Inference](../Infer/Infer-05-Causal-Inference.ipynb) — mêmes effets **calcules** par message passing (EP/VMP par defaut, Gibbs aussi disponible), avec mutilation du graphe. Ce message passing est *exact* sur ces reseaux discrets sans boucle, mais c'est une inference **approchee** en general — a la différence de l'enumeration exhaustive de ce notebook.
-- **Théorie de l'information / emergence (ICT)** : [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) — l'intervention `do(X_t = x)` devient une **distribution uniforme** `p(C)` sur les etats ; le do-calculus y mesure *a quelle echelle* la causalite est la plus effective (EI / CP).
+- **Théorie de l'information / emergence (ICT)** : [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) — l'intervention `do(X_t = x)` devient une **distribution uniforme** `p(C)` sur les etats ; le do-calculus y mesure *a quelle echelle* la causalite est la plus effective (EI / CP).
 - **Pre-requis Python** : [PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) demontre la même distinction `P(Cloudy|Rain)` vs `P(Cloudy|do(Rain))`.
 
 > **Synthese transversale** : voir le [README IIT](../../IIT/README.md), section **« Ponts causaux : le do-calculus de Pearl a travers les paradigmes »**, qui aligne l'echelle de Pearl (association -> intervention -> contrefactuel) sur les quatre instanciations de l'opérateur `do`.
