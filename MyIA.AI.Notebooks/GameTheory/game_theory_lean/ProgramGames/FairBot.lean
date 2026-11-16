@@ -64,7 +64,14 @@ FairBot comme « certifié ». Ce module procède autrement, en trois temps :
     système de preuve qui certifie une coopération fausse ;
   - `fairBot_vs_coopBot` / `fairBot_vs_defectBot` : la table pédagogique —
     FairBot coopère avec qui coopère de façon prouvable, dévie contre
-    DefectBot *sous hypothèse explicite de cohérence* (`¬ box False`).
+    DefectBot *sous hypothèse explicite de cohérence* (`¬ box False`) ;
+  - `cupodAction` / `CupodDuel` : le zoo s'étend au dual CUPOD (coopère sauf
+    preuve de défection, Critch) — self-play (D, D) **sous hypothèses
+    nommées**, asymétrie DUPOC/CUPOD citée (2ᵉ incomplétude), théorème
+    borné cité (organ-first : ColombanD/TorchLean le démontrent) ;
+  - `PrudentBotDuel` : le PrudentBot payorien `P ↔ □(□P → Q) ∧ □(□¬P → ¬Q)`,
+    pont direct vers le lemme de Payor du carnet `Dynamics-04c` (série
+    Dynamics, issue #26985 tranche T-2).
 
 ## Contraste avec le niveau L1
 
@@ -268,6 +275,132 @@ coopération illusoire. -/
 theorem fairBot_vs_defectBot (hconsis : ¬ box False) :
     fairBotAction box False = defect :=
   modalAction_false hconsis
+
+/-! ## Le zoo s'étend : CUPOD, le dual de FairBot (Critch) -/
+
+/-- CUPOD (Cooperate Unless Proof Of Defection) coopère sauf s'il peut
+prouver que son adversaire dévie. La proposition `r` lit l'adversaire :
+`r` vraie signifie « l'adversaire dévie » — attention, la même `r` qui
+lisible chez FairBot disait « l'adversaire coopère ». Dual exact de
+`fairBotAction` (rebaptisé DUPOC par Critch : Defect Unless Proof Of
+Cooperation). Source : A. Critch, « Open-Source Game Theory », AI-Safety
+for Mathematicians, 2026, archivé au gisement : « CUPOD cooperates unless
+it can prove its opponent defects, and DUPOC defects unless it can prove
+its opponent cooperates. » -/
+noncomputable def cupodAction (box : Prop → Prop) (r : Prop) : PDAction :=
+  modalAction (¬ box r)
+
+/-- CUPOD coopère quand il ne trouve pas de preuve de défection adverse. -/
+theorem cupod_cooperates_without_proof {r : Prop} (h : ¬ box r) :
+    cupodAction box r = cooperate :=
+  modalAction_true h
+
+/-- CUPOD dévie quand il trouve une preuve de défection adverse. -/
+theorem cupod_defects_with_proof {r : Prop} (h : box r) :
+    cupodAction box r = defect :=
+  modalAction_false (fun hnr => hnr h)
+
+/-- Rencontre de deux CUPOD : chacun dévie si et seulement s'il peut prouver
+la défection de l'autre. Structure duale de `FairBotDuel` — les clauses
+suivent les *défections* au lieu des coopérations. -/
+structure CupodDuel (box : Prop → Prop) where
+  rowDefects : Prop
+  colDefects : Prop
+  rowClause : rowDefects ↔ box colDefects
+  colClause : colDefects ↔ box rowDefects
+
+/-- Dans un duel CUPOD-CUPOD, toute défection est elle-même prouvable :
+`A → □B → □□B → □A`. La réciproque (`□A → A`) n'est PAS dérivable dans
+l'interface — premier symptôme de l'asymétrie DUPOC/CUPOD, qui tient tout
+entière dans la direction de la réflexion. -/
+theorem cupod_defect_provable (d : CupodDuel box) :
+    d.rowDefects → box d.rowDefects :=
+  fun hA => box_mono d.rowClause.2 (posIntros (d.rowClause.1 hA))
+
+/-- Sans preuve de défection adverse, pas de défection : la clause de
+CUPOD, dite aussi sa « bienveillance ». -/
+theorem cupod_cooperates_of_no_proof (d : CupodDuel box)
+    (h : ¬ box d.colDefects) : ¬ d.rowDefects :=
+  fun hA => h (d.rowClause.1 hA)
+
+/-- Self-play CUPOD × CUPOD = (D, D) **sous les hypothèses nommées** que
+chaque recherche aboutit : `hrow`, la recherche du camp ligne trouve une
+preuve de la défection adverse ; `hcol`, celle du camp colonne. L'action
+du camp ligne est `cupodAction box d.colDefects` — elle lit l'adversaire.
+
+Sans ces hypothèses, le résultat n'est PAS dérivable dans cette interface :
+CUPOD coopérerait avec lui-même s'il n'existait pas de preuve qu'il dévie,
+or — sous cohérence — un système ne prouve pas l'absence de preuve
+(2ᵉ théorème de Gödel). C'est la contre-intuition que signale Critch :
+« CUPOD seems the nicer robot, yet it defects against itself. »
+
+Le théorème **borné** (Critch, « Cooperative and uncooperative institution
+designs », 2022) établit `outcome(CUPOD(k), CUPOD(k)) = (D, D)` pour tout
+k assez grand, sans hypothèse. Il est **cité, pas prouvé** ici :
+organ-first, sa démonstration paramétrique appartient au corpus
+ColombanD/TorchLean (week-08) que cette série cite sans le porter. -/
+theorem cupod_cupod_mutual_defect (d : CupodDuel box)
+    (hrow : box d.colDefects) (hcol : box d.rowDefects) :
+    (cupodAction box d.colDefects, cupodAction box d.rowDefects)
+      = (defect, defect) := by
+  rw [cupod_defects_with_proof hrow, cupod_defects_with_proof hcol]
+
+/-- Asymétrie DUPOC × CUPOD (Critch, ibid.) : si le DUPOC ne trouve pas de
+preuve que le CUPOD coopère, il dévie ; si le CUPOD ne trouve pas de
+preuve que le DUPOD dévie, il coopère. Issue : (D, C). Chez Critch, ces
+hypothèses ne sont pas décoratives — impossible de prouver *dans le
+système* que CUPOD coopère (il faudrait prouver l'absence d'une preuve de
+défection), donc DUPOC dévie ; symétriquement CUPOD coopère. -/
+theorem dupoc_cupod_asymmetry {coopCol defCol : Prop}
+    (hnoCoop : ¬ box coopCol) (hnoDef : ¬ box defCol) :
+    (fairBotAction box coopCol, cupodAction box defCol)
+      = (defect, cooperate) := by
+  rw [fairBot_defects_without_proof hnoCoop,
+      cupod_cooperates_without_proof hnoDef]
+
+/-! ## PrudentBot payorien : deux simulations au lieu d'une -/
+
+/-- Le PrudentBot **payorien** : coopérer ssi (1) une preuve que « si ma
+coopération était prouvable, l'adversaire coopérerait » **et** (2) une
+preuve que « si ma défection était prouvable, l'adversaire dévierait » :
+`P ↔ □(□P → Q) ∧ □(□¬P → ¬Q)`. Source : commentaire de
+`transhumanist_atom_understander` au billet *Payorian cooperation is easy
+with Kripke frames* (Alignment Forum, 2026-03) — le même fil qui fonde le
+carnet `Dynamics-04c` de la série Dynamics. Le PrudentBot **löbien**
+d'origine, `PB(X) ↔ □(X(PB) ∧ (¬□⊥ → ¬X(DB)))` (rappelé par Payor dans le
+même fil ; Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire,
+Yudkowsky, *Robust Cooperation in the Prisoner's Dilemma*, LORI-V 2014)
+teste l'adversaire contre DefectBot sous un niveau de stabilité : il est
+**cité**, non mécanisé ici. L'auto-jeu PrudentBot × PrudentBot n'est pas
+établi dans cette interface — la source le laisse « non-obvious », et
+cette section ne prétend pas trancher. -/
+structure PrudentBotDuel (box : Prop → Prop) where
+  rowCooperates : Prop
+  colCooperates : Prop
+  rowClause : rowCooperates ↔ (box (box rowCooperates → colCooperates) ∧
+      box (box (¬ rowCooperates) → ¬ colCooperates))
+  colClause : colCooperates ↔ (box (box colCooperates → rowCooperates) ∧
+      box (box (¬ colCooperates) → ¬ rowCooperates))
+
+/-- Un PrudentBot payorien n'est jamais le dindon de la farce dès lors que
+la boîte est fiable sur la clause adverse (`soundCol`) : sa première
+clause exige une preuve `box (box P → Q)`, et sa propre coopération `P`
+la nourrit par nécessitation — miroir exact de `fairBot_not_sucker`. -/
+theorem prudent_not_sucker (d : PrudentBotDuel box)
+    (soundCol : box d.colCooperates → d.colCooperates) :
+    ¬ (d.rowCooperates ∧ ¬ d.colCooperates) := by
+  rintro ⟨hRow, hNotCol⟩
+  exact hNotCol (soundCol (dist (d.rowClause.1 hRow).1 (posIntros (nec hRow))))
+
+/-- La première clause du PrudentBot payorien **est** la clause du FairBot
+payorien `P ↔ □(□P → Q)` — le lemme de Payor que le carnet `Dynamics-04c`
+réfute sur cadres de Kripke. Ce pont relie L2 au carnet Python : coopérer
+en PrudentBot, c'est coopérer en FairBot payorien **plus** le test de
+prudence. -/
+theorem prudent_implies_payorian (d : PrudentBotDuel box)
+    (hRow : d.rowCooperates) :
+    box (box d.rowCooperates → d.colCooperates) :=
+  (d.rowClause.1 hRow).1
 
 /-! ## Indépendance du schéma de Löb : le champ n'est pas redondant -/
 
