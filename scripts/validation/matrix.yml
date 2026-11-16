@@ -179,7 +179,7 @@ families:
       Diagnostic-Medical:
         kernel: python3
         strategy: papermill
-      Oncology-Planning:
+      Planification-Oncologie:
         kernel: python3
         strategy: papermill
     acceptance:

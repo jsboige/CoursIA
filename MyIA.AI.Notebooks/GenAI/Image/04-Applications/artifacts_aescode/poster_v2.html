@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Le document visuel genere comme code</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #111;
+      font-family: Arial, Helvetica, sans-serif;
+      color: #ddd;
+    }
+
+    .poster {
+      width: 1600px;
+      height: 900px;
+      background:
+        radial-gradient(circle at 80% 10%, rgba(190, 122, 64, 0.16), transparent 24%),
+        radial-gradient(circle at 20% 86%, rgba(180, 120, 60, 0.10), transparent 22%),
+        linear-gradient(180deg, #151518 0%, #222227 58%, #17171a 100%);
+      position: relative;
+      overflow: hidden;
+      padding: 30px 58px 34px 58px;
+    }
+
+    .poster::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 48px 48px;
+      pointer-events: none;
+    }
+
+    .content {
+      position: relative;
+      z-index: 2;
+      width: 1484px;
+      height: 836px;
+    }
+
+    .title {
+      font-size: 30px;
+      line-height: 1.15;
+      font-weight: 800;
+      color: #fff4d8;
+      margin: 0 0 24px 0;
+      letter-spacing: -0.2px;
+    }
+
+    .subtitle {
+      font-size: 18px;
+      line-height: 1.2;
+      font-weight: 500;
+      color: #b8b8b8;
+      margin: 0 0 22px 0;
+    }
+
+    .table-wrap {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      align-items: start;
+      margin-bottom: 28px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      color: #e8e8e8;
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    th {
+      background: rgba(255, 170, 76, 0.16);
+      color: #fff;
+      font-weight: 700;
+      padding: 12px 14px;
+    }
+
+    td {
+      padding: 10px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-weight: 500;
+    }
+
+    th, td {
+      text-align: left;
+    }
+
+    .section {
+      margin-bottom: 22px;
+    }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      align-items: start;
+      margin-bottom: 20px;
+    }
+
+    .step {
+      font-size: 18px;
+      line-height: 1.45;
+      color: #d8d8d8;
+    }
+
+    .step .num {
+      display: block;
+      color: #f0c87d;
+      font-weight: 800;
+      margin-bottom: 2px;
+    }
+
+    .tiles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    .tile {
+      min-height: 116px;
+      background: rgba(255, 172, 78, 0.12);
+      border: 1px solid rgba(255, 172, 78, 0.22);
+      border-radius: 8px;
+      padding: 16px 14px;
+      color: #fff;
+      font-size: 18px;
+      line-height: 1.35;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .limits {
+      border: 1px solid rgba(255, 172, 78, 0.28);
+      background: rgba(255, 172, 78, 0.06);
+      border-radius: 8px;
+      padding: 18px 22px;
+      font-size: 18px;
+      line-height: 1.45;
+      color: #f0f0f0;
+      margin-bottom: 22px;
+    }
+
+    ul.bullets {
+      margin: 0;
+      padding-left: 22px;
+    }
+
+    .bullets li {
+      margin-bottom: 8px;
+    }
+
+    .footer {
+      position: absolute;
+      left: 58px;
+      right: 58px;
+      bottom: 34px;
+      font-size: 16px;
+      color: #9b9b9b;
+      letter-spacing: 0.1px;
+    }
+
+    .accent {
+      color: #f0c87d;
+    }
+  </style>
+</head>
+<body>
+  <div class="poster">
+    <div class="content">
+      <h1 class="title">Le document visuel genere comme code</h1>
+      <p class="subtitle">Sections exigees, dans l'ordre :</p>
+
+      <div class="section">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>Image de diffusion</th>
+                <th>HTML/CSS</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>editable</td>
+                <td>Oui</td>
+                <td>Oui</td>
+              </tr>
+              <tr>
+                <td>verifiable</td>
+                <td>Oui</td>
+                <td>Oui</td>
+              </tr>
+              <tr>
+                <td>diffusable</td>
+                <td>Non</td>
+                <td>Oui</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="subtitle" style="margin-bottom:4px;">Pipeline AesCode</h2>
+        <div class="pipeline">
+          <div class="step">
+            <span class="num">1</span>
+            spec
+          </div>
+          <div class="step">
+            <span class="num">2</span>
+            modele
+          </div>
+          <div class="step">
+            <span class="num">3</span>
+            rendu navigateur
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="subtitle" style="margin-bottom:4px;">Chiffres cles</h2>
+        <div class="tiles">
+          <div class="tile">8B parametres</div>
+          <div class="tile">7 canaux de recompense</div>
+          <div class="tile">82.94 score global du benchmark maison</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <h2 class="subtitle" style="margin-bottom:4px;">Limites honnetes</h2>
+        <div class="limits">
+          <ul class="bullets">
+            <li>benchmark maison construit par les auteurs</li>
+            <li>papier en cours de revue</li>
+            <li>goulot de lier sous 60 pourcents</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">Genere comme code - carnet 04-6 - RTX 3080 Ti Laptop.</div>
+  </div>
+</body>
+</html>

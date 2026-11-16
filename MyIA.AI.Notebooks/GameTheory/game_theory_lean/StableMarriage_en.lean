@@ -20,10 +20,11 @@
   sub-modules `.lean` and their `_en.lean` siblings (namespace
   `<Name>_en`) are auto-discovered by the lakefile's
   `globs := #[`StableMarriage.*]`. The CI drift-detection sees both languages.
+-/
 
-  Convention i18n (EPIC #4980, user decision 2026-07-04): this file is the
-  **English mirror** of the FR-canonical root aggregator `StableMarriage.lean`,
-  following the **sibling pair model** ratified by user on 2026-07-04
+/-
+  English mirror of the FR-canonical root aggregator `StableMarriage.lean`,
+  following the sibling pair model ratified by user on 2026-07-04
   (see `code-style.md` §Lean i18n, line 35; Option B rejected: double cost +
   FR/EN drift + quality bias). The FR-canonical aggregator is byte-identical
   on the import block (root aggregator is imports-only); only the docstring

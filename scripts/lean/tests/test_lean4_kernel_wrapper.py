@@ -2,11 +2,32 @@
 """Regression tests for the deployed Lean 4 WSL kernel wrapper (#16181)."""
 
 import importlib.util
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
+
+
+def _symlinks_available():
+    """Le shim du wrapper est un lien symbolique : sous Windows sans le
+    privilege de creer des liens, `os.symlink` echoue et le wrapper refuse
+    alors de demarrer, ce qui est son comportement voulu. Le wrapper, lui, ne
+    tourne que sous Linux ou WSL."""
+    with tempfile.TemporaryDirectory() as directory:
+        try:
+            os.symlink(os.path.join(directory, "target"),
+                       os.path.join(directory, "link"))
+        except (OSError, NotImplementedError):
+            return False
+    return True
+
+
+needs_symlink = pytest.mark.skipif(
+    not _symlinks_available(),
+    reason="le shim du wrapper exige os.symlink (indisponible ici)")
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -301,7 +322,9 @@ def test_main_refuses_to_start_on_repl_divergence(wrapper, monkeypatch, tmp_path
     assert "kernel startup failed" in stderr
     assert "v4.30.0" in stderr
     assert "4.29.0" in stderr
-    assert "build-repl" in stderr
+    # La commande suggeree doit etre recevable : `build-repl` prend le tag
+    # avec son `v` (cles de REPL_TOOLCHAIN_TAGS).
+    assert "build-repl v4.30.0" in stderr
 
 
 def test_main_pins_the_toolchain_and_exports_it(wrapper, monkeypatch, tmp_path):
@@ -348,3 +371,163 @@ def test_entrypoint_propagates_failure_exit_code(tmp_path):
     assert result.returncode == 2
     assert "kernel startup failed" in result.stderr
     assert "--cwd <lake-root>" in result.stderr
+
+
+# --------------------------------------------------------------------------
+# #24913 -- le binaire apparie est celui qui tourne, ou le noyau refuse
+# --------------------------------------------------------------------------
+
+class _LegacyFork:
+    """lean4_jupyter anterieur a LEAN4_JUPYTER_REPL, hors lake : `lake env repl`."""
+
+
+class _PairedFork:
+    """lean4_jupyter qui lance le binaire exporte par le wrapper."""
+
+    @staticmethod
+    def _repl_from_caller():
+        return None
+
+
+def _legacy_fork_with_table(chosen):
+    class _Fork:
+        @staticmethod
+        def _repl_for_toolchain(lake_root):
+            return chosen
+    return _Fork
+
+
+def test_legacy_target_is_none_for_a_fork_that_reads_the_variable(wrapper, tmp_path):
+    default = _write_repl(tmp_path / "bin" / "repl", b"4.33.0")
+    assert wrapper.legacy_launch_target(_PairedFork, None, str(default)) is None
+
+
+def test_legacy_target_outside_a_lake_is_the_default_repl(wrapper, tmp_path):
+    """`lake env` met ~/.elan/bin en tete du PATH : le REPL par defaut gagne."""
+    default = _write_repl(tmp_path / "bin" / "repl", b"4.33.0")
+    assert wrapper.legacy_launch_target(_LegacyFork, None, str(default)) == str(default)
+
+
+def test_legacy_target_without_default_repl_is_the_shim(wrapper, tmp_path):
+    """Sans ~/.elan/bin/repl, `lake env repl` trouve le shim : rien a refuser."""
+    assert wrapper.legacy_launch_target(_LegacyFork, None, str(tmp_path / "repl")) is None
+
+
+def test_legacy_target_in_a_lake_is_the_fork_table_choice(wrapper, tmp_path):
+    chosen = _write_repl(tmp_path / "bin" / "repl-4.30.0-rc2", b"4.30.0")
+    default = _write_repl(tmp_path / "bin" / "repl", b"4.33.0")
+    fork = _legacy_fork_with_table(str(chosen))
+    assert wrapper.legacy_launch_target(fork, str(tmp_path), str(default)) == str(chosen)
+
+
+def _series_with_two_repls(tmp_path):
+    """Arbre ancre en v4.30.0 sur une machine qui porte deux REPL."""
+    home = tmp_path / "home"
+    _write_repl(home / ".elan" / "bin" / "repl", b"4.33.0")
+    paired = _write_repl(home / ".elan" / "bin" / "repl-4.30.0", b"4.30.0")
+    series = tmp_path / "series"
+    series.mkdir()
+    (series / "lean-toolchain").write_text("leanprover/lean4:v4.30.0\n", encoding="utf-8")
+    return home, series, paired
+
+
+def _install_fake_fork(monkeypatch, fork_cls):
+    import types
+    package = types.ModuleType("lean4_jupyter")
+    module = types.ModuleType("lean4_jupyter.repl")
+    module.Lean4ReplWrapper = fork_cls
+    package.repl = module
+    monkeypatch.setitem(sys.modules, "lean4_jupyter", package)
+    monkeypatch.setitem(sys.modules, "lean4_jupyter.repl", module)
+
+
+@needs_symlink
+def test_main_refuses_a_fork_that_would_run_another_version(wrapper, monkeypatch,
+                                                           tmp_path, capsys):
+    """Le fork ancien lancerait le REPL par defaut (4.33.0) sur un arbre en
+    v4.30.0 : cellules en erreur sous exit 0. Le noyau refuse de demarrer."""
+    home, series, paired = _series_with_two_repls(tmp_path)
+    _install_fake_fork(monkeypatch, _LegacyFork)
+    monkeypatch.chdir(series)
+    monkeypatch.setenv("PATH", wrapper.os.environ["PATH"])
+    monkeypatch.setattr(wrapper.sys, "argv", ["lean4-kernel-wrapper.py"])
+    monkeypatch.setattr(wrapper.os.path, "expanduser", lambda _: str(home))
+
+    assert wrapper.main() == 3
+    stderr = capsys.readouterr().err
+    assert "ignores LEAN4_JUPYTER_REPL" in stderr
+    assert "4.33.0" in stderr
+    assert str(paired) in stderr
+    assert "setup_native_lean4_import.py install" in stderr
+
+
+@needs_symlink
+def test_main_exports_the_paired_repl_to_a_fork_that_reads_it(wrapper, monkeypatch,
+                                                              tmp_path):
+    import ipykernel.kernelapp as ipk
+
+    home, series, paired = _series_with_two_repls(tmp_path)
+    _install_fake_fork(monkeypatch, _PairedFork)
+    monkeypatch.chdir(series)
+    monkeypatch.setenv("PATH", wrapper.os.environ["PATH"])
+    monkeypatch.delenv("LEAN4_JUPYTER_REPL", raising=False)
+    monkeypatch.setattr(wrapper.sys, "argv", ["lean4-kernel-wrapper.py"])
+    monkeypatch.setattr(wrapper.os.path, "expanduser", lambda _: str(home))
+
+    def _stop(*args, **kwargs):
+        raise SystemExit(0)
+
+    monkeypatch.setattr(ipk.IPKernelApp, "launch_instance", _stop)
+
+    with pytest.raises(SystemExit):
+        wrapper.main()
+    assert wrapper.os.environ.get("LEAN4_JUPYTER_REPL") == str(paired)
+
+
+def test_main_accepts_a_legacy_fork_when_versions_agree(wrapper, monkeypatch, tmp_path):
+    """Un seul REPL, a la version de l'ancrage : le fork ancien lance le bon
+    binaire, le noyau demarre comme avant."""
+    import ipykernel.kernelapp as ipk
+
+    home = tmp_path / "home"
+    _write_repl(home / ".elan" / "bin" / "repl", b"4.30.0")
+    series = tmp_path / "series"
+    series.mkdir()
+    (series / "lean-toolchain").write_text("leanprover/lean4:v4.30.0\n", encoding="utf-8")
+    _install_fake_fork(monkeypatch, _LegacyFork)
+    monkeypatch.chdir(series)
+    monkeypatch.setenv("PATH", wrapper.os.environ["PATH"])
+    monkeypatch.setattr(wrapper.sys, "argv", ["lean4-kernel-wrapper.py"])
+    monkeypatch.setattr(wrapper.os.path, "expanduser", lambda _: str(home))
+
+    def _stop(*args, **kwargs):
+        raise SystemExit(0)
+
+    monkeypatch.setattr(ipk.IPKernelApp, "launch_instance", _stop)
+
+    with pytest.raises(SystemExit):
+        wrapper.main()
+
+
+def test_repl_lean_version_keeps_the_rc_suffix(wrapper, tmp_path):
+    """Une toolchain rc embarque `.../reference/4.33.0-rc1/` (mesure)."""
+    repl = _write_repl(tmp_path / "repl", b"4.33.0-rc1")
+    assert wrapper.repl_lean_version(str(repl)) == "4.33.0-rc1"
+
+
+def test_resolve_repl_accepts_a_matched_rc_binary(wrapper, tmp_path):
+    """Avant : la version lue s'arretait a `4.33.0`, et le binaire rc
+    correctement construit etait refuse."""
+    _write_repl(tmp_path / ".elan" / "bin" / "repl-4.33.0-rc1", b"4.33.0-rc1")
+    path, version = wrapper.resolve_repl(str(tmp_path), "v4.33.0-rc1")
+    assert path is not None and path.endswith("repl-4.33.0-rc1")
+    assert version == "4.33.0-rc1"
+
+
+def test_resolve_repl_refuses_an_rc_default_for_a_release_pin(wrapper, tmp_path):
+    """Temoin du precedent : un REPL construit sur le rc ne passe plus pour
+    la release."""
+    _write_repl(tmp_path / ".elan" / "bin" / "repl", b"4.33.0-rc1")
+    path, version = wrapper.resolve_repl(str(tmp_path), "v4.33.0")
+    assert path is None
+    assert version == "4.33.0-rc1"

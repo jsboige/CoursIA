@@ -719,13 +719,13 @@ reports/
 # They live on GDrive: G:\Mon Drive\MyIA\Formation\<school>\<year>\grading\
 # and are resolved at runtime via the COURSIA_ROOT env var (fallback D:\CoursIA).
 # The repo keeps ONLY the school-agnostic engine (gradebook.py, run_grading.py).
-GradeBookApp/configs/*.py
-!GradeBookApp/configs/__init__.py
+dotnet/GradeBookApp/configs/*.py
+!dotnet/GradeBookApp/configs/__init__.py
 
 # Per-cohort grading *pipeline docs* are private too (they embed cohort codes,
 # student ids, plagiarism verdicts and grades). They live on GDrive alongside the
 # configs: G:\Mon Drive\MyIA\Formation\<school>\<year>\grading\. The repo keeps
-# ONLY the school-agnostic engine docs (GradeBookApp/README.md + configs/README.md).
+# ONLY the school-agnostic engine docs (dotnet/GradeBookApp/README.md + configs/README.md).
 docs/reference/ece-grading.md
 docs/reference/esgf-grading.md
 

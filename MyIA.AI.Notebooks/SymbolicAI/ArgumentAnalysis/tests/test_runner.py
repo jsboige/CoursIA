@@ -516,6 +516,62 @@ def test_logic_agent_registers_the_reasoner_plugin_once():
     assert _count_plugins(k, "Reasoner") == 1
 
 
+def test_logic_agent_raises_the_auto_invoke_cap(monkeypatch):
+    """#22981 : le plafond d'auto-invocation doit depasser le defaut de SK.
+
+    `FunctionChoiceBehavior.Required()` vaut **1** appel d'outil par
+    invocation en SK 1.44. Mesure du 2026-11-06 sur le carnet 08b : l'agent
+    emettait `add_belief_set` puis rendait une reponse vide, `query_log`
+    restait vide (`QUERIES_NONE`). Le contrat formel demande une CHAINE
+    d'appels (belief set -> `Reasoner-pl_query` -> `log_query_result`), donc
+    le plafond doit la couvrir. Ce test rougit si quelqu'un revient au
+    defaut en croyant « simplifier ».
+    """
+    import types
+
+    import argumentation_lib._runner as r
+
+    captured = []
+
+    class _FunctionChoiceBehavior:
+        @staticmethod
+        def Required(**kwargs):
+            captured.append(kwargs)
+            return "FCB-SENTINEL"
+
+    mod = types.ModuleType(
+        "semantic_kernel.connectors.ai.function_choice_behavior"
+    )
+    mod.FunctionChoiceBehavior = _FunctionChoiceBehavior
+    parent = types.ModuleType("semantic_kernel.connectors.ai")
+    parent.__path__ = []
+    monkeypatch.setitem(
+        sys.modules,
+        "semantic_kernel.connectors.ai.function_choice_behavior",
+        mod,
+    )
+    monkeypatch.setitem(sys.modules, "semantic_kernel.connectors.ai", parent)
+
+    # Le stub d'agent ne prend pas `function_choice_behavior` : on capture ce
+    # que le constructeur recoit plutot que de modifier le stub partage.
+    class _CapturingAgent:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+            self.name = kwargs.get("name")
+            self.instructions = kwargs.get("instructions")
+
+    monkeypatch.setattr(r, "ChatCompletionAgent", _CapturingAgent, raising=True)
+
+    k, s = _kernel(), _state()
+    agent = r.create_logic_agent(k, "svc", s)
+
+    assert captured, "Required() doit etre appele hors du stub declare"
+    attempts = captured[0]["maximum_auto_invoke_attempts"]
+    assert attempts == r.LOGIC_AUTO_INVOKE_ATTEMPTS
+    assert attempts > 1, "le defaut de SK (1 appel) laisse la phase formelle muette"
+    assert agent.kwargs["function_choice_behavior"] == "FCB-SENTINEL"
+
+
 def test_informal_builder_registers_plugin_when_absent():
     """Informal/Logic builders also register the plugin if PM wasn't called first."""
     k, s = _kernel(), _state()

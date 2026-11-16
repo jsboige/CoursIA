@@ -1,5 +1,6 @@
 #region imports
 from AlgorithmImports import *
+import numpy as np
 #endregion
 # Noyau de risque deterministe de Steward (Feng et al., arXiv:2610.30557, section 5.5,
 # table 11), porte dans LEAN. Etape 2 de #24698 : verification independante du carnet
@@ -22,6 +23,13 @@ from AlgorithmImports import *
 #   - `keep` : sur une ligne qui reste detenue, le stop n'est pas annule ; sa quantite
 #     passe a la quantite cible des la decision, avant l'ouverture. Seule l'ouverture
 #     d'une ligne reste sans stop ce jour-la.
+#
+# Parametres `entries` et `seed` (ablation a 50 graines, suite de l'etape 2) :
+#   - `entries=momentum` (defaut) : les entrees decrites plus haut ;
+#   - `entries=random` : chaque semaine, 10 lignes tirees uniformement sans remise, avec le
+#     tirage du carnet (`np.random.default_rng(seed).choice(23, 10, replace=False)`, un
+#     appel par semaine, indices dans l'ordre de GROUPS). Le tirage ne depend d'aucun
+#     etat du portefeuille : a graine egale, toutes les variantes recoivent les memes lignes.
 
 GROUPS = {
     "actions_us": ["XLB", "XLE", "XLF", "XLI", "XLK", "XLP", "XLU", "XLV", "XLY", "IWM"],
@@ -37,6 +45,10 @@ MODES = {
     "exposure90": (0.09, False, False, False),
     "kernel_nocb": (0.09, True, True, False),
     "kernel": (0.09, True, True, True),
+    # kernel_sized (point 2 de #25532) : poids par ligne None -> dimensionnement a
+    # risque fixe : 0,5 % du capital risque par ligne, distance au stop = 2 ATR(14),
+    # exposition totale plafonnee a 90 %.
+    "kernel_sized": (None, True, True, True),
 }
 
 FEE_RATE = 0.0005      # 5 points de base par cote
@@ -44,7 +56,11 @@ STOP_ATR_MULT = 2.0
 GROUP_CAP = 0.40
 CB_THRESHOLD = -0.03
 TOP_N = 10
+RISK_PER_LINE = 0.005   # 0,5 % du capital risque par ligne (mode kernel_sized)
+MAX_EXPOSURE = 0.90     # plafond d'exposition totale (mode kernel_sized)
 STOP_HANDLING = ("recreate", "keep")   # parametre stop_handling, defaut en tete
+ENTRIES = ("momentum", "random")       # parametre entries, defaut en tete
+N_LOGGED_DRAWS = 3                     # tirages journalises, pour le controle contre le carnet
 
 
 class ProportionalFeeModel(FeeModel):
@@ -66,6 +82,13 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
         if self._stop_handling not in STOP_HANDLING:
             raise ValueError(f"unknown stop_handling parameter: {self._stop_handling} "
                              f"({' | '.join(STOP_HANDLING)})")
+        self._entries = self.get_parameter("entries", "momentum").lower()
+        if self._entries not in ENTRIES:
+            raise ValueError(f"unknown entries parameter: {self._entries} "
+                             f"({' | '.join(ENTRIES)})")
+        self._seed = int(self.get_parameter("seed", "0"))
+        self._rng = np.random.default_rng(self._seed)
+        self._n_draws = 0
 
         start = self.get_parameter("start_date", "2015-01-02")
         end = self.get_parameter("end_date", "2026-07-31")
@@ -117,6 +140,8 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
         self._exposure_max = 0.0
         self._cash_min = float("inf")
         self._group_max = 0.0
+        self._seen_dates = set()   # dates distinctes vues par on_data (point 1 de #25532)
+        self._n_flat = 0          # seances a plat : aucune position de l'univers detenue
 
         # Decisions avant l'ouverture, sur la cloture de la veille.
         self.schedule.on(self.date_rules.every_day(self._spy),
@@ -132,6 +157,8 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
     # ------------------------------------------------------------------ donnees
 
     def on_data(self, slice):
+        if not self.is_warming_up:
+            self._seen_dates.add(self.time.date())
         for symbol in self._symbols:
             bar = slice.bars.get(symbol)
             if bar is not None:
@@ -140,6 +167,8 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
             return
         value = self.portfolio.total_portfolio_value
         held = sum(abs(self.portfolio[s].holdings_value) for s in self._symbols)
+        if held == 0:
+            self._n_flat += 1
         self._exposure_max = max(self._exposure_max, held / value)
         self._cash_min = min(self._cash_min, float(self.portfolio.cash))
         for group in GROUPS:
@@ -192,6 +221,13 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
             self._rebalance_to(self._target_weights(self._lines))
 
     def _select(self):
+        if self._entries == "random":
+            index = self._rng.choice(len(self._symbols), TOP_N, replace=False)
+            self._n_draws += 1
+            if self._n_draws <= N_LOGGED_DRAWS:
+                self.log(f"tirage {self._n_draws} {self.time.date()} graine={self._seed} "
+                         f"indices={','.join(str(int(i)) for i in index)}")
+            return [self._symbols[int(i)] for i in index]
         scores = {}
         for symbol in self._symbols:
             window = self._closes[symbol]
@@ -200,7 +236,22 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
         return sorted(scores, key=scores.get, reverse=True)[:TOP_N]
 
     def _target_weights(self, lines):
-        weights = {symbol: self._weight for symbol in lines}
+        if self._mode == "kernel_sized":
+            # Dimensionnement a risque fixe (point 2 de #25532) : la quantite par
+            # ligne porte 0,5 % du capital si le stop (2 ATR sous l'entree) se
+            # declenche. Exprimee en poids (quantity * price / value) pour reutiliser
+            # le plafond de groupe ; l'exposition totale est plafonnee ensuite a 90 %.
+            value = self.portfolio.total_portfolio_value
+            weights = {}
+            for symbol in lines:
+                price = self.securities[symbol].price
+                atr = self._atr[symbol].current.value
+                if price <= 0 or not atr or atr <= 0:
+                    continue
+                quantity = RISK_PER_LINE * value / (STOP_ATR_MULT * atr)
+                weights[symbol] = quantity * price / value
+        else:
+            weights = {symbol: self._weight for symbol in lines}
         if self._use_cap:
             for group in GROUPS:
                 members = [s for s in weights if self._group[s] == group]
@@ -208,6 +259,12 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
                 if total > GROUP_CAP + 1e-12:
                     for symbol in members:
                         weights[symbol] *= GROUP_CAP / total
+        if self._mode == "kernel_sized":
+            total = sum(weights.values())
+            if total > MAX_EXPOSURE + 1e-12:
+                scale = MAX_EXPOSURE / total
+                for symbol in weights:
+                    weights[symbol] *= scale
         for symbol in self._stopped:
             weights[symbol] = 0.0
         return weights
@@ -315,8 +372,13 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
         self.set_runtime_statistic("Coupures", str(self._n_cuts))
         self.set_runtime_statistic("Ordres invalides", str(self._n_invalid))
         self.set_runtime_statistic("Traitement du stop", self._stop_handling)
+        self.set_runtime_statistic("Entrees", self._entries)
+        self.set_runtime_statistic("Graine", str(self._seed) if self._entries == "random" else "-")
+        self.set_runtime_statistic("Tirages", str(self._n_draws))
         self.set_runtime_statistic("Stops gardes au redimensionnement", str(self._n_kept))
         self.set_runtime_statistic("Mises a jour de stop refusees", str(self._n_kept_failed))
         self.set_runtime_statistic("Exposition max", f"{self._exposure_max:.4f}")
         self.set_runtime_statistic("Liquidites min", f"{self._cash_min:.2f}")
         self.set_runtime_statistic("Poids de groupe max", f"{self._group_max:.4f}")
+        self.set_runtime_statistic("Dates vues par on_data", str(len(self._seen_dates)))
+        self.set_runtime_statistic("Seances a plat", str(self._n_flat))

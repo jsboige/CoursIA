@@ -1,8 +1,8 @@
 """Mesure de l'ecart entre le carnet QC-Py-45 et le backtest LEAN de ce projet.
 
 Copie declaree du moteur vectorise du carnet QC-Py-45 (cellules de donnees et de
-simulation), restreinte au chemin momentum et aux deux variantes a stops. Motif de la
-copie : rejouer le moteur du carnet a l'identique, puis lui ajouter deux bascules qui
+simulation), restreinte aux variantes que ``main.py`` sait jouer. Motif de la copie :
+rejouer le moteur du carnet a l'identique, puis lui ajouter deux bascules qui
 reproduisent, une par une, les deux differences d'execution de LEAN :
 
 - ``mode_stop`` :
@@ -13,6 +13,10 @@ reproduisent, une par une, les deux differences d'execution de LEAN :
       ``MarketOnOpen`` et le repose a son execution) ;
 - ``cc_lendemain`` : la seance a -3 % n'est connue qu'a la cloture ; la liquidation
   part a l'ouverture suivante et le retour se fait a l'ouverture d'apres.
+
+Les entrees sont celles du chemin momentum par defaut ; ``choix`` y substitue une autre
+regle, par exemple ``entrees_aleatoires(graine)``, le tirage du carnet (une suite par
+simulation, un tirage de 10 lignes par rebalancement), que ``ablation_lean.py`` utilise.
 
 Fenetre 2015-01-02 -> 2026-07-31, liquidites remunerees a 0 %, comme les backtests LEAN.
 Donnees yfinance ajustees : un nouveau telechargement peut decaler les chiffres de
@@ -35,7 +39,8 @@ GROUPES = {
 TICKERS = [t for g in GROUPES.values() for t in g]
 DEBUT, FIN = "2015-01-02", "2026-07-31"
 # variante : (poids par ligne, stops, plafond de groupe, coupe-circuit)
-VARIANTES = {"kernel_nocb": (0.09, True, True, False), "kernel": (0.09, True, True, True)}
+VARIANTES = {"nokernel": (0.10, False, False, False), "exposure90": (0.09, False, False, False),
+             "kernel_nocb": (0.09, True, True, False), "kernel": (0.09, True, True, True)}
 FRAIS = 0.0005
 SEUIL_CC = -0.03
 MULT_STOP = 2.0
@@ -78,8 +83,14 @@ def poids_cibles(d: dict, lignes: np.ndarray, w_ligne: float, plafond: bool) -> 
     return w
 
 
+def entrees_aleatoires(graine: int):
+    """Tirage du carnet : une suite par simulation, 10 lignes par rebalancement."""
+    rng = np.random.default_rng(graine)
+    return lambda t: rng.choice(len(TICKERS), TOP_N, replace=False)
+
+
 def simuler(d: dict, variante: str, mode_stop: str = "carnet",
-            cc_lendemain: bool = False) -> tuple[np.ndarray, dict]:
+            cc_lendemain: bool = False, choix=None) -> tuple[np.ndarray, dict]:
     """Moteur du carnet, avec les deux bascules decrites en tete de fichier."""
     w_ligne, stops, plafond, coupe = VARIANTES[variante]
     n = len(TICKERS)
@@ -94,7 +105,7 @@ def simuler(d: dict, variante: str, mode_stop: str = "carnet",
         o, l, c = d["o"][t], d["l"][t], d["c"][t]
         sans_stop = np.zeros(n, bool)
         if d["rebal"][t]:
-            lignes = np.argsort(-d["mom"][t])[:TOP_N]
+            lignes = choix(t) if choix is not None else np.argsort(-d["mom"][t])[:TOP_N]
             stoppee[:] = False
         if liquider:
             # Coupe-circuit LEAN : liquidation a l'ouverture qui suit la seance a -3 %.

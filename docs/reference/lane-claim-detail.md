@@ -1,5 +1,7 @@
 # Lane claim protocol — détail (référencé depuis `.claude/rules/lane-claim-protocol.md`)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Documentation détaillée du protocole de claim cross-lane. Le **règle succincte** vit dans [`.claude/rules/lane-claim-protocol.md`](../../.claude/rules/lane-claim-protocol.md) ; ce fichier porte le **contexte, les incidents, les déviations sémantiques et le tie-break**.
 
 S'applique à tous les agents du cluster CoursIA (workers `po-*` + coordinateur `ai-01`), sur les deux workspaces. Source : mandat user 2026-08-06 (« mieux differencier les lanes CoursIA et CoursIA-2 pour eviter les collisions malheureusement trop courantes ») + sign-off user 2026-08-07 (session directe vscode).

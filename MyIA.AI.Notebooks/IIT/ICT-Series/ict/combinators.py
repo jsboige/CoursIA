@@ -535,8 +535,15 @@ def first_missing_blocks(trace: Sequence[Sequence[str]], width: int = 4) -> List
     """Blocs de ``width`` elements qui n'apparaissent JAMAIS dans la trace.
 
     Instrument du fait mesure par Wolfram (2021, section *The Space of
-    Possible States*) : dans le systeme de Post, ``1111`` est inatteignable
-    -- aucune suite de 00 et 1101 ajoutes ne peut le produire.
+    Possible States*) : une fois la chaine entierement composee de blocs
+    ajoutes (``00`` et ``1101``), ``1111`` est inatteignable -- aucun bloc ne
+    porte quatre ``1`` consecutifs et aucun ne se termine par deux ``1``,
+    donc aucune jonction ne peut les produire.
+
+    La portee est la **trace observee**, pas le systeme entier : une graine
+    arbitraire peut deja porter un ``11`` que la queue d'un bloc vient
+    completer (``10011`` donne ``111101`` des le premier pas). Sur les 496
+    graines de longueur 4 a 8, 121 atteignent ``1111``.
     """
     seen: set = set()
     for state in trace:

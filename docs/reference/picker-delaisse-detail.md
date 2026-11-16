@@ -1,5 +1,7 @@
 # Picker delaisse — verification FIRSTHAND (detail)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 > **Source :** [verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md) regle 5. Cette page est le detail ; la regle auto-chargee pose le geste obligatoire.
 
 ## Origine : issue #11900

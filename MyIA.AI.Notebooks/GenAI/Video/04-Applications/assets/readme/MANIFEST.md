@@ -1,6 +1,6 @@
 # Manifeste des figures — GenAI/Video/04-Applications (cas d'usage production)
 
-Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
+Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks). Les indices de cellule et de sortie commencent à 0 et comptent toutes les cellules.
 
 > **Audit vision po-2025 c.485 (2026-07-14, doctrine #5780)** : les 6 PNG ci-dessous ont été ouverts un par un via l'outil `Read` et leur contenu réel confronté à leur description existante. **Bilan G.1 firsthand : 6/6 alt-texts sur-vendeurs / faux sens majeur — 0 figure ACCURATE mature**. Le dossier GenAI/Video/04-Applications **n'avait pas reçu d'audit G.1 préalable** (contrairement à GenAI/Video/01-Foundation c.351 po-2023) — c'est donc un audit fondateur tardif pour ce sous-dossier. **Migration format vague-1 → liste détaillé standard** (sections Contenu réel vérifié / Alt-text (FR) / Poids / Note) appliquée pour aligner avec le standard rollout #5780. **6/6 corrections réelles** :
 > 1. `vid4-educational.png` : alt-text sur-vendeur (« aperçu des frames ») → refait pour préciser le **contenu visible** = panorama des 4 premiers slides « Introduction au Machine Learning » (Slide 1: « Introduction au Machine Learning — Concepts fondamentaux et applications » ; Slide 2: « Qu'est-ce que le Machine Learning ? — Apprentissage à partir de données, Amélioration avec l'expérience, Généralisation à de nouveaux cas, Alternative à la programmation explicite » ; Slide 3: « Types d'apprentissage — Supervisé (données étiquetées: classification, régression), Non supervisé (découverte de structures), Par renforcement (apprentissage par essai-erreur) » ; Slide 4: « Pipeline typique ML — Collecte et préparation, Sélection et entraînement du modèle, Évaluation des performances, Déploiement et monitoring »). **Ce sont des SLIDES de présentation pédagogique, pas des frames vidéo.**
@@ -22,7 +22,7 @@ Toutes les attributions cell[X]/out[Y] sont **validées par ratio** (downscaling
 
 ## vid4-educational.png
 
-- **Source** : notebook `04-1-Educational-Video-Generation.ipynb` (cellule 9, output 2) — génération automatique de slides pédagogiques à partir d'un script textuel
+- **Source** : notebook `04-1-Educational-Video-Generation.ipynb` (cellule 11, output 2) — génération automatique de slides pédagogiques à partir d'un script textuel
 - **Description visuelle** : Quatre rectangles bleu nuit côte-à-côte sous le titre noir gras « Apercu des premiers slides ». Slide 1 met en valeur son titre « Introduction au Machine Learning » dans un bandeau bleu plus clair (le seul slide avec emphase visuelle). Slides 2/3/4 portent respectivement 4/3/4 puces textuelles alignées à gauche sur fond uniforme. Palette dominante bleu nuit (RGB 80×80 mean ≈ 117/124/150, variance modérée), texte blanc. Densité d'information textuelle croissante gauche→droite (slide 1 = quasi-vierge avec titre/sous-titre uniquement, slide 4 = 4 étapes pipeline remplies).
 - **Contenu réel vérifié** : PNG 1200×252, panorama horizontal de **4 slides successifs** sous le titre « Apercu des premiers slides » :
   - **Slide 1** : fond bleu nuit, titre « Introduction au Machine Learning », sous-titre « Concepts fondamentaux et applications ».
@@ -48,7 +48,7 @@ Toutes les attributions cell[X]/out[Y] sont **validées par ratio** (downscaling
 
 ## vid4-creative2.png
 
-- **Source** : notebook `04-2-Creative-Video-Workflows.ipynb` (cellule 15, output 2) — collage 4 styles visuels sur même séquence vidéo
+- **Source** : notebook `04-2-Creative-Video-Workflows.ipynb` (cellule 18, output 2) — collage 4 styles visuels sur même séquence vidéo
 - **Description visuelle** : Douze vignettes en grille 3 colonnes × 2 lignes (3 timestamps × 4 styles) sous le titre gras « Collage video 2x2 : Original / Aquarelle / Dessin / Teal & Orange ». Chaque colonne correspond à un timestamp t=0.0/3.0/6.0s ; chaque ligne montre 2 vignettes de styles différents (Original/Aquarelle sur la première moitié verticale, Dessin/Teal & Orange en bas). Le carré cyan + cercle orange réapparaissent dans toutes les vignettes, mais changent **radicalement de palette selon la colonne** : bleu/violet à t=0s, vert olive/rouge brique à t=3s (effet aquarelle), retour bleu/violet décalé à t=6s. Variance colorimétrique élevée (RGB 80×80 std ≈ 80/92/91 — la figure la plus *multi-palette* des 6).
 - **Contenu réel vérifié** : PNG 1200×313, sous-titre « Collage video 2x2 : Original / Aquarelle / Dessin / Teal & Orange », 3 colonnes × 2 lignes :
   - **t=0.0s** : 4 vignettes carrées sur fond bleu/violet en haut, 4 vignettes sur fond blanc/bleu en bas (style Teal & Orange).

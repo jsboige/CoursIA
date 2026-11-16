@@ -41,6 +41,11 @@ Ce que fait cet organe
    ecrit. La levee d'une reserve reste au tiers : cet organe ne pretend pas
    valider une PR, il publie un constat.
 
+   Un avis non bloquant `repli_versionne` signale aussi, sur l'etat des
+   carnets examines, un message litteral `print` de skip avec version dans
+   un `except` Python. Il ne prouve pas que ce repli a ete execute ; les
+   cellules non analysables et les messages calcules ne sont pas couverts.
+
 Ce que cet organe ne fait pas
 -----------------------------
 
@@ -67,6 +72,7 @@ exactement la regression que l'organe doit empecher.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 import posixpath
@@ -447,6 +453,59 @@ def _cell_text(cell: dict) -> str:
     if isinstance(source, list):
         return "".join(source)
     return str(source)
+
+
+_SKIP_MESSAGE = re.compile(r"\b(?:skip(?:ped|ping)?|saut(?:e|é|ée|er))\b", re.I)
+_MESSAGE_VERSION = re.compile(r"(?<![\d.])\d+\.\d+(?:\.\d+)*(?![\d.])")
+
+
+def versioned_fallbacks(notebook: str, payload: dict) -> list[dict]:
+    """Avis borne : message litteral de skip imprime dans un `except` Python.
+
+    Les cellules non analysables (magics, autres langages) et les messages
+    calcules ne sont pas couverts. Aucun avis ne prouve que le handler a tourne.
+    """
+    result: list[dict] = []
+    for index, cell in enumerate(payload.get("cells", []) or []):
+        if cell.get("cell_type") != "code":
+            continue
+        try:
+            tree = ast.parse(_cell_text(cell))
+        except (SyntaxError, ValueError):
+            continue
+        class Visitor(ast.NodeVisitor):
+            in_handler = False
+
+            def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+                previous = self.in_handler
+                self.in_handler = True
+                for statement in node.body:
+                    self.visit(statement)
+                self.in_handler = previous
+
+            def visit_FunctionDef(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+                previous = self.in_handler
+                self.in_handler = False
+                self.generic_visit(node)
+                self.in_handler = previous
+
+            visit_AsyncFunctionDef = visit_FunctionDef
+            visit_ClassDef = visit_FunctionDef
+            visit_Lambda = visit_FunctionDef
+
+            def visit_Call(self, node: ast.Call) -> None:
+                if self.in_handler and isinstance(node.func, ast.Name) and node.func.id == "print":
+                    for arg in node.args:
+                        if (isinstance(arg, ast.Constant) and isinstance(arg.value, str)
+                                and _SKIP_MESSAGE.search(arg.value)
+                                and _MESSAGE_VERSION.search(arg.value)):
+                            result.append({"notebook": notebook, "cell": index,
+                                           "line": node.lineno, "message": arg.value,
+                                           "kind": "repli_versionne"})
+                self.generic_visit(node)
+
+        Visitor().visit(tree)
+    return result
 
 
 def _declaration_lines(payload: dict):
@@ -2210,6 +2269,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     findings: list[dict] = []
+    advisories: list[dict] = []
     checked = 0
     # Le mode « chemins explicites » est un mode d'ETAT : la sortie JSON doit
     # le dire, sinon elle annonce `"state": false` pour une lecture d'etat.
@@ -2243,6 +2303,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"ERREUR : carnet illisible : {raw_path}", file=sys.stderr)
                 return 2
             pins = pins_from_payload(payload, manifest)
+            advisories.extend(versioned_fallbacks(relative, payload))
             findings.extend(state_findings(relative, pins, manifest, canonicals))
             # Version **chargeee** : elle ne se lit dans aucune ligne
             # d'epinglage, mais dans les sorties commitees.
@@ -2282,6 +2343,7 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 return 2
             head_pins = pins_from_payload(head_payload, manifest)
+            advisories.extend(versioned_fallbacks(relative, head_payload))
             if args.state:
                 # Relecture d'etat : le constat porte sur le carnet, pas sur un
                 # delta -- un binaire absent du clone l'est deja dans la base.
@@ -2345,6 +2407,7 @@ def main(argv: list[str] | None = None) -> int:
                     "mode": "check",
                     "state": state_mode,
                     "findings": findings,
+                    "advisories": advisories,
                     "checked": checked,
                 },
                 indent=2,
@@ -2353,6 +2416,11 @@ def main(argv: list[str] | None = None) -> int:
         )
     else:
         print(render_findings(findings))
+        if advisories:
+            print("\nAvis non bloquants : replis versionnes (source, pas execution)")
+            for advisory in advisories:
+                print(f"- {advisory['notebook']} cellule {advisory['cell']} "
+                      f"ligne {advisory['line']} : {advisory['message']}")
     return 1 if findings else 0
 
 

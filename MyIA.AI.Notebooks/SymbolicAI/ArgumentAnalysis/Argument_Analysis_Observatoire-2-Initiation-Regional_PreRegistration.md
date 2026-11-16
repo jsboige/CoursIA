@@ -14,6 +14,8 @@
 
 **Édition de forme postérieure à la pré-inscription** : les désignations de la plateforme ci-dessus ont été rendues génériques afin de satisfaire la clause « hors périmètre » ci-dessus ; il s'agit d'une édition de forme strictement postérieure à la pré-inscription — prédictions, hypothèses et design inchangés, et le SHA de pré-inscription reste `6e523ae070bd`.
 
+**Erratum de forme daté 2026-11-09** : deux défauts de forme relevés par la relecture de l'adjoint sur ce document en l'état mergé (#20764) sont corrigés par un **erratum daté** (§7) : (a) le décompte hebdomadaire de la fenêtre pré/post annonçait « 78 observations hebdomadaires **par moitié** de split (39 semaines × 2) » — chaque moitié dure 9 mois, soit **environ 39 semaines**, et 78 est le **total** sur les deux moitiés, non le compte par moitié ; (b) §3.5 présentait le plancher **mondial** (cité, mesure #18873) à côté du plancher **régional** (prescrit, à mesurer) sans marquer que les nombres cités ne sont pas les seuils opposables au Cas 2. **Rien de ce qui est pré-inscrit n'est modifié** : les hypothèses, leurs directions signées, leurs conditions de réfutation, le design DiD, les trois réserves, la règle de décision et le SHA de pré-inscription `6e523ae070bd` restent inchangés ; aucune donnée n'est collectée, aucun plancher n'est inventé, aucune mesure n'est produite.
+
 ---
 
 ## 1. Le Cas 2, par contraste avec le Cas 1
@@ -73,7 +75,7 @@ Le Cas 2 retenu est donc : **plateforme de mise en relation, modification datée
 - **Pré** : 9 mois avant la date pivot de **chaque** région (fenêtre alignée régionalement, pas mondialement) ;
 - **Post** : 9 mois après la date pivot de **chaque** région ;
 - **Granularité** : hebdomadaire, pour préserver la mesure `Dated_Graphs` (`#13310`) et la structure de split chronologique (`#18873`).
-- **Total** : 18 mois par région, ce qui donne au moins 78 observations hebdomadaires par moitié de split (39 semaines × 2) — la distribution du plancher de bruit sous split chronologique (cf. `12f608aa` cellule de l'instrument, reproduit dans #18873) reste mesurable.
+- **Total** : 18 mois par région (9 mois pré + 9 mois post, cf. les deux lignes ci-dessus), soit **environ 39 semaines par moitié de split — donc 39 observations hebdomadaires par moitié —**, et **78 observations hebdomadaires au total** sur les deux moitiés réunies (18 mois ≈ 78 semaines). La distribution du plancher de bruit sous split chronologique (cf. `12f608aa` cellule de l'instrument, reproduit dans #18873) reste mesurable. *(Erratum du 2026-11-09 — voir §7 : la version pré-inscrite annonçait « 78 observations hebdomadaires par moitié de split », ce qui reportait sur chaque moitié le total des deux.)*
 
 ### 3.3 Quantité mesurée
 
@@ -94,8 +96,10 @@ Le Cas 2 retenu est donc : **plateforme de mise en relation, modification datée
 
 ### 3.5 Le plancher de bruit à dépasser
 
-- **Plancher mondial** (instrument #13310, mesure #18873) : split chronologique première/seconde moitié, **sur 20 tirages seedés `random.Random(42)`** ; les trois composantes publient respectivement 0,077 / 0,111 / 0,125 (les **minima** de la distribution ; la distribution complète, l'Exercice 2 du carnet, n'a pas été exécutée — c'est précisément la fragilité héritée, documentée).
-- **Plancher régional (Cas 2)** : réplication du même split, mais sur les **fenêtres régionales** (date pivot alignée par région) plutôt que sur la fenêtre mondiale. Attendu : **plus haut** que le plancher mondial, parce que la fenêtre régionale est plus petite et la variance d'échantillonnage plus grande. Mesure à publier en §1 du grain d'analyse.
+Deux planchers coexistent ici et **ne se confondent pas** : l'un est **cité** (mesuré ailleurs, instrument #13310, mesure #18873), l'autre est **prescrit** (méthode prescrite ici, mesure due au grain d'analyse). **La règle de décision de §3.4 compare au plancher régional**, jamais aux nombres du plancher mondial.
+
+- **Plancher mondial — cité, non opposable** (instrument #13310, mesure #18873) : split chronologique première/seconde moitié, **sur 20 tirages seedés `random.Random(42)`** ; les trois composantes publient respectivement 0,077 / 0,111 / 0,125 (les **minima** de la distribution ; la distribution complète, l'Exercice 2 du carnet, n'a pas été exécutée — c'est précisément la fragilité héritée, documentée). Ces valeurs sont **citées** : elles situent l'ordre de grandeur du bruit de l'instrument, elles **ne sont pas** les seuils opposables au Cas 2.
+- **Plancher régional — prescrit, à mesurer** (Cas 2) : réplication du même split, mais sur les **fenêtres régionales** (date pivot alignée par région) plutôt que sur la fenêtre mondiale. Attendu : **plus haut** que le plancher mondial, parce que la fenêtre régionale est plus petite et la variance d'échantillonnage plus grande. Son **mode de calcul est prescrit ici** (split chronologique seedé, 20 tirages, distribution complète et pas seulement le minimum) ; sa **mesure** est due au grain d'analyse, qui l'établira avec le même instrument `Dated_Graphs` sur les fenêtres régionales et la publiera en §1 de ce grain. **Ce document ne la mesure pas** — il ne mesure rien (§ « Hors périmètre ») — et aucun verdict n'est déposable avant qu'elle existe. *(Erratum du 2026-11-09 — voir §7 : la version pré-inscrite renvoyait cette mesure au grain d'analyse sans marquer que les nombres cités ci-dessus sont ceux du plancher mondial et ne sont pas les seuils opposables.)*
 - **Honnêteté du seuil** : la pré-inscription **ne reproduit pas** l'omission de l'Exercice 2. Le grain d'analyse **doit** publier la distribution complète du plancher régional (20 tirages seedés, comme prescrit) **avant** de déclarer un écart inter-dates `DEPASSE`. Si l'Exercice 2 n'est pas exécuté, le verdict du Cas 2 est **non déposable**, quelle que soit la magnitude apparente de l'écart inter-dates.
 
 ## 4. Réserves DiD (assignation non aléatoire, populations différentes, changements concomitants)
@@ -137,7 +141,26 @@ D'autres modifications datées peuvent survenir dans la fenêtre de 18 mois : ca
 6. [ ] Le **barreau** est déclaré (quasi-expérimental) et les **conditions de plafonnement** (associatif) sont écrites.
 7. [ ] Aucune mesure n'est produite. Aucune source de données n'est engagée.
 
-## 7. See also
+## 7. Erratum de forme daté 2026-11-09
+
+Deux défauts de forme ont été relevés par une relecture d'adjoint sur ce document en l'état mergé, et signalés sous #20764. Ils sont corrigés ici par **erratum daté** : le texte trompeur est modifié à l'endroit où il trompe, et le motif est écrit. C'est le principe même d'une pré-inscription — une correction n'est jamais silencieuse.
+
+### 7.1 Ce qui change
+
+| # | Emplacement | Version pré-inscrite | Version corrigée | Motif |
+|---|---|---|---|---|
+| 1 | §3.2, bullet « Total » | « au moins 78 observations hebdomadaires **par moitié de split** (39 semaines × 2) » | « environ **39 semaines par moitié de split — donc 39 observations hebdomadaires par moitié** », et « **78 observations hebdomadaires au total** sur les deux moitiés réunies (18 mois ≈ 78 semaines) » | chaque moitié dure 9 mois, soit ≈ 39 semaines ; la formulation antérieure reportait sur chaque moitié le total des deux, et impliquait 156 observations sur une fenêtre de 18 mois |
+| 2 | §3.5, premier et deuxième bullets | plancher **mondial** (cité) et plancher **régional** (prescrit) présentés côte à côte, la mesure régionale renvoyée au grain d'analyse | statut explicite de chacun : le mondial est **cité et non opposable**, le régional est **prescrit et à mesurer** ; la règle de décision de §3.4 compare **au plancher régional** ; la mesure régionale est due au grain d'analyse, avec le même instrument `Dated_Graphs`, avant tout verdict déposable | un lecteur pouvait prendre 0,077 / 0,111 / 0,125 pour les seuils du Cas 2, alors que §3.4 oppose le **plancher régional** ; le body de #20764 demande un plancher **mesuré** avec l'instrument, il importait donc de dire sans ambiguïté lequel est mesuré (le mondial, #18873) et lequel reste à mesurer (le régional) |
+
+### 7.2 Ce qui ne change pas
+
+Les hypothèses pré-inscrites (H₀ / H₁ et leur direction signée sur `d_noeuds`, `d_att`, `d_sem`), leurs conditions de réfutation, la règle de décision asymétrique de §3.4, le design DiD régional, les trois réserves de §4, le barreau déclaré et les conditions de plafonnement : **inchangés**. Le SHA de pré-inscription reste `6e523ae070bd` — il n'est ni remplacé ni réécrit.
+
+Conformément au périmètre de ce document, **aucune donnée n'est collectée, aucun plancher n'est inventé, aucune mesure n'est produite** : la correction porte sur la forme, pas sur le fond. Le plancher régional reste dû, et le verdict du Cas 2 reste non déposable tant qu'il n'est pas établi.
+
+---
+
+## 8. See also
 
 - [`Argument_Analysis_RelationalForms_Protocol.md`](Argument_Analysis_RelationalForms_Protocol.md) — protocole de l'EPIC #13303, dont ce document applique §3.
 - [`../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) — outillage DiD livré, MERGED, lien vérifiable.

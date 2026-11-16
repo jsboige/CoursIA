@@ -64,6 +64,11 @@ jobs:
   markdown-deaccent-advisory:
     name: "Markdown deaccent advisory (per-notebook, label, non-blocking)"
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Aucun run a mesurer (workflow jamais
+    # declenche depuis sa creation). Le job est un balayage Python pur
+    # sur les fichiers modifies de la PR. Le defaut d'Actions est 6 h,
+    # et un job fige tient son slot tout ce temps.
+    timeout-minutes: 15
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch'
 
     steps:

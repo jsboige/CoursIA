@@ -6,13 +6,14 @@
     Patrick Massot
 
   Port of mathlib4/Archive/Sensitivity.lean to standalone Lake workspace.
-
-  EN sibling of `Sensitivity/VectorSpace.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
+-/
+/-
+  English mirror of `Sensitivity/VectorSpace.lean` (FR-first canonical).
+  Convention i18n Lean ratified by ai-01 (2026-07-04, #4980 comment-4881909354) :
   distinct `.lean` files FR + EN siblings in the same lake, both compile.
   Drift-CI detectable: non-docstring content byte-identical between siblings.
 
-  Note méthodologique : traduction manuelle du FR canonique. Imports the EN leaf
+  Methodological note: manual translation of the FR canonical. Imports the EN leaf
   `Sensitivity.Hypercube_en` (defines `Q`, `π`, `adjacent` in `namespace
   Sensitivity_en`). Self-contained within the EN namespace: defines its own `V`,
   `e`, `ε`, `duality` — no cross-namespace dot-notation on a FR-defined type
