@@ -24,18 +24,25 @@ Quatre gestes, tous par **`--input`** (un payload JSON construit par
 | `edit-pr-body` | PATCH | `/repos/<repo>/pulls/<pr>` |
 
 La garde post-POST (`gh-posting-hygiene`, regle 2) est **faite par
-l'organe**, pas laissee a la memoire de l'appelant : les deux predicats
-sont verifie sur le corps **publie** (celui que l'API renvoie) :
+l'organe**, pas laissee a la memoire de l'appelant. L'organe tient le
+corps **envoye** : il compare le corps **publie** (celui que l'API
+renvoie) a celui qu'il a pose, et verifie trois predicats :
 
-1. **longueur** -- un corps de moins de 100 caracteres signifie que le piege
-   `-f body=@fichier` a tire (echec silencieux de 100 %) ;
-2. **structure** -- le corps publie ne doit pas parser en objet JSON portant
+1. **divergence** (predicat principal) -- le corps publie n'est pas celui
+   qui a ete envoye : le piege `-f body=@fichier` a tire (echec
+   silencieux de 100 %) ou l'API a tronque ;
+2. **longueur** -- un corps publie de moins de 100 caracteres, signalee
+   **seulement** si les deux diffèrent : un corps court publie a
+   l'identique est un corps **legitime** (un `[CLAIMED]` de 60 caracteres
+   n'a rien d'anormal) ;
+3. **structure** -- le corps publie ne doit pas parser en objet JSON portant
    une cle `body` : c'est le payload complet passe comme corps, le vrai
    corps echappe a l'interieur d'une chaine (#17326).
 
 Quand une garde echoue, l'organe **rend quand meme l'id et l'URL** (le
-correctif est un PATCH sur cet id) et sort avec `rc=2` : le POST a eu lieu,
-la publication est douteuse.
+correctif est un PATCH sur cet id) et sort avec `rc=3` : le POST a eu lieu,
+la publication est douteuse. `rc=2` est reserve a l'erreur d'usage (verbe
+inconnu, corps illisible ou vide, jeton absent) : rien n'a ete publie.
 
 Le jeton
 --------
@@ -177,16 +184,32 @@ def endpoint_for(verb: str, repo: str, number: int | None) -> tuple[str, str]:
     return method, path
 
 
-def check_published_body(published: str) -> list[str]:
-    """Les deux predicats de la garde post-POST, sur le corps **publie**.
+def check_published_body(published: str, sent: str = "") -> list[str]:
+    """Les predicats de la garde post-POST, sur le corps **publie**.
 
-    1. longueur : un corps de moins de `MIN_PUBLISHED_LEN` caracteres ;
-    2. structure : le corps parse en objet JSON portant une cle `body`
+    1. divergence (predicat principal) : le corps publie differe du corps
+       **envoye** (`sent`) -- le piege `-f body=@fichier` a tire, ou l'API
+       a tronque ;
+    2. longueur : un corps publie de moins de `MIN_PUBLISHED_LEN`
+       caracteres, signalee **seulement** quand les deux diffèrent : un
+       corps court publie a l'identique est un corps legitime ;
+    3. structure : le corps parse en objet JSON portant une cle `body`
        (le payload complet passe comme corps, #17326).
+
+    `sent` vide = le corps envoye n'est pas connu (appel direct) : la
+    divergence est alors invérifiable et seule la longueur peut l'etre.
     """
     failures: list[str] = []
     texte = published or ""
-    if len(texte) < MIN_PUBLISHED_LEN:
+    attendu = sent or ""
+    identique = bool(attendu) and texte.strip() == attendu.strip()
+    if attendu and not identique:
+        failures.append(
+            "divergence : le corps publie ({} caracteres) differe du corps "
+            "envoye ({} caracteres) -- le piege `-f body=@fichier` a "
+            "probablement tire".format(len(texte), len(attendu))
+        )
+    if not identique and len(texte) < MIN_PUBLISHED_LEN:
         failures.append(
             "longueur : corps publie de {} caracteres (< {}) -- le piege "
             "`-f body=@fichier` a probablement tire".format(
@@ -256,7 +279,7 @@ def run(args: argparse.Namespace) -> tuple[int, dict]:
         # Une creation de PR ou une edition renvoie l'objet ; le corps
         # publie est alors son champ `body`.
         published = body
-    failures = check_published_body(published)
+    failures = check_published_body(published, body)
     report = {
         "id": data.get("id"),
         "url": data.get("html_url") or data.get("url") or "",

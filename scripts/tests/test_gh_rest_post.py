@@ -7,8 +7,9 @@ monkeypatche. Ce qui est verifie :
 - le fait que le corps vient **toujours** d'un fichier, et qu'aucune option
   de la ligne de commande n'accepte un corps en ligne (le piege
   `-f body=@fichier` n'est donc pas saisissable) ;
-- les **deux predicats** de la garde post-POST (longueur, structure
-  PAYLOAD-TRAP), qui sont la raison d'etre de l'organe ;
+- les **trois predicats** de la garde post-POST (divergence entre le corps
+  envoye et le corps publie, longueur -- seulement si les deux different --
+  et structure PAYLOAD-TRAP), qui sont la raison d'etre de l'organe ;
 - le fait que la resolution du jeton **passe par** `post_dossier.py`
   (importe, jamais reecrit) ;
 - le contrat de sortie : quand une garde echoue, l'id et l'URL sont quand
@@ -187,6 +188,91 @@ def test_un_corps_json_sans_cle_body_ne_declenche_pas_la_garde_structure():
         }
     )
     assert gh_rest_post.check_published_body(sans_body) == []
+
+
+# ---------------------------------------------------------------------------
+# le predicat principal : la divergence entre le corps envoye et le publie
+# ---------------------------------------------------------------------------
+
+def test_un_corps_court_publie_a_l_identique_ne_declenche_aucune_garde():
+    """Un corps court **publie a l'identique** est un corps legitime.
+
+    C'est le cas d'un `[CLAIMED]` de 60 caracteres : la garde de longueur,
+    prise seule, le ferait rougir a tort. Le predicat principal est la
+    **divergence** entre le corps envoye et le corps publie.
+    """
+    corps = "[CLAIMED] lane myia-ai-01:CoursIA-2 -- grain #26979"
+    assert len(corps) < gh_rest_post.MIN_PUBLISHED_LEN
+    assert gh_rest_post.check_published_body(corps, corps) == []
+
+
+def test_un_corps_publie_different_du_corps_envoye_est_signale():
+    """Le piege `-f body=@fichier` : le publie n'est pas l'envoye."""
+    envoye = "Un corps assez long pour que la garde de longueur soit satisfaite.\n"
+    publie = "@/tmp/corps.md"
+    failures = gh_rest_post.check_published_body(publie, envoye)
+    assert failures
+    assert "divergence" in failures[0]
+
+
+def test_un_corps_publie_tronque_est_signale_meme_sans_etre_court():
+    """La divergence suffit : la longueur n'est qu'un symptome."""
+    envoye = "Un corps assez long pour que la garde de longueur soit satisfaite.\n"
+    publie = "Un corps assez long pour que la garde de longueur soit satisfaite"
+    failures = gh_rest_post.check_published_body(publie, envoye)
+    assert failures
+    assert "divergence" in failures[0]
+
+
+def test_un_post_court_publie_a_l_identique_ne_declenche_aucune_garde(monkeypatch, tmp_path):
+    """Au niveau du geste : un claim de 60 caracteres ne fait pas rougir."""
+    corps = tmp_path / "corps.md"
+    corps.write_text(
+        "[CLAIMED] lane myia-ai-01:CoursIA-2 -- grain #26979",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(gh_rest_post, "resolve_token", lambda *a, **k: "jeton")
+    monkeypatch.setattr(
+        gh_rest_post,
+        "_gh_api",
+        lambda method, path, payload, token: {
+            "id": 44,
+            "html_url": "https://github.com/o/r/issues/12#issuecomment-44",
+            "body": payload["body"],
+        },
+    )
+    code, report = gh_rest_post.run(_args(body_file=str(corps)))
+    assert code == gh_rest_post.EXIT_OK
+    assert report["guards"] == []
+
+
+def test_un_espace_final_ajoute_par_l_api_ne_compte_pas_comme_divergence():
+    """La comparaison ignore les espaces de bord : l'API peut en ajouter."""
+    envoye = "[CLAIMED] lane myia-ai-01:CoursIA-2 -- grain #26979\n"
+    publie = envoye + "\n"
+    assert gh_rest_post.check_published_body(publie, envoye) == []
+
+
+def test_un_post_ou_le_corps_publie_diverge_est_rouge(monkeypatch, tmp_path):
+    corps = tmp_path / "corps.md"
+    corps.write_text(
+        "Un corps assez long pour que la garde de longueur soit satisfaite.\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(gh_rest_post, "resolve_token", lambda *a, **k: "jeton")
+    monkeypatch.setattr(
+        gh_rest_post,
+        "_gh_api",
+        lambda method, path, payload, token: {
+            "id": 45,
+            "html_url": "https://github.com/o/r/issues/12#issuecomment-45",
+            "body": "@/tmp/corps.md",
+        },
+    )
+    code, report = gh_rest_post.run(_args(body_file=str(corps)))
+    assert code == gh_rest_post.EXIT_GUARD
+    assert report["id"] == 45
+    assert any("divergence" in f for f in report["guards"])
 
 
 # ---------------------------------------------------------------------------
