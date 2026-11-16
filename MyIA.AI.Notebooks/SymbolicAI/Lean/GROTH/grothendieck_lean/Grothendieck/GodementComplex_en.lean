@@ -38,7 +38,7 @@ module iterates the step **at all degrees** and assembles the result as a
 5. `toGodement_comp_godementCanonicalD`: the start of the augmented complex —
    `μ ≫ d⁰ = 0`, restating Part 89 in the iterated notations.
 
-## Functoriality in `F` (Part 96)
+## Functoriality in `F` (Parts 96-97)
 
 `godementCanonicalComplexMap`: for a morphism of presheaves `η : F ⟶ G`, the
 morphism of canonical complexes — the frontier named by Part 95 (Part 92 had
@@ -46,9 +46,10 @@ posed the object, not the action on morphisms). The recursion carries the
 whole square state (an `Arrow`-morphism: the two verticals and their
 commutation), because `cokernel.map` takes the right vertical **as data** —
 the naive recursion is circular. Identity is respected
-(`godementCanonicalComplexMap_id`). **Not posed**: composition (named
-frontier, together with the long exact sequence, for the functoriality of
-Godement cohomology).
+(`godementCanonicalComplexMap_id`); composition is posed since Part 97
+(`godementCanonicalComplexMap_comp`) — functoriality in `F` is complete.
+**Not posed**: the long exact sequence (Part 95, brick 3), for the
+functoriality of Godement cohomology.
 
 ## What this Part poses vs. what it leaves open
 
@@ -166,5 +167,45 @@ variable {X : TopCat.{u}}
 -- (`godementCanonicalComplexMap_id`); composition is **not posed** — the
 -- named frontier is now the pair (composition, long exact sequence) of
 -- Part 95.
+--
+-- **Part 97, composition landed in the FR twin**:
+-- `Grothendieck.godementCanonicalComplexMap_comp` — the second half of
+-- functoriality in `F`: the morphism of complexes respects composition,
+-- `map (η ≫ θ) = map η ≫ map θ`. The proof reuses the paired-induction
+-- architecture of `godementCanonicalMap_id` verbatim (the induction
+-- hypothesis carries both verticals `.left` / `.right` of the
+-- `Arrow`-morphism state), with the generic lemma
+-- `Grothendieck.cokernel_map_comp` playing exactly the role
+-- `cokernel_map_self_id` played for the identity: stacked commutative
+-- squares of cokernels compose, and `cokernel.map` of the composite is
+-- the composite of the `cokernel.map`s — the composite verticals being
+-- passed as **data** with their defining equations, substituted by
+-- `subst` inside the lemma so that it applies to the goal's terms
+-- verbatim, with no dependent rewriting through commutation witnesses.
+-- With Part 96, functoriality in `F` is **complete**:
+-- `F ↦ godementCanonicalComplex F`, `η ↦ godementCanonicalComplexMap η`
+-- is a functor into cochain complexes. The named frontier is now the
+-- long exact sequence alone (Part 95, brick 3).
 
+--
+-- **Part 98, exactness of `C⁰` landed in the FR twin**: `C⁰` preserves
+-- epimorphisms (`epi_godementMapHom_of_epi`) and short exact sequences
+-- **evaluated at every open** (`shortExact_app_godementMapHom`) — the mono
+-- face was already closed by Part 86 (`godementMapHom_mono`,
+-- `godementFunctor_preservesMonomorphisms`). The proof is the **pointwise
+-- lifting through stalks**: a Godement section is a family of germs, every
+-- property is tested component by component — surjectivity via
+-- `epi_stalkFunctor_map_of_epi` (Part 93, stalk ⊣ skyscraper adjunction),
+-- exactness via `stalkFunctor_map_exact` (Part 93). Nothing here needs
+-- abelian sheafification: everything already holds at the level of
+-- presheaves of discontinuous sections. The elementwise core
+-- (`exact_godementHomApp`) lifts a `C⁰g`-annihilated section of `F₂`
+-- germ by germ, via a per-component choice of preimages; the enabling
+-- prerequisite `godementFunctor_preservesZeroMorphisms` (so that
+-- `ShortComplex.map godementFunctor` makes sense) is landed for tranche 2.
+-- **Not posed** — the named frontier: the degreewise SES of the canonical
+-- complexes themselves (a `ShortExact` of complexes, not of presheaf
+-- sections at one open); it needs the flabby lifting
+-- (`epi_of_shortExact_of_isFlasqueSieves`, Part 94) or the separatedness
+-- ladder — tranche 2, feeding Part 99 (long exact sequence assembly).
 end Grothendieck_en

@@ -30,15 +30,72 @@ whose cancellation yields a CANCELLED leg that blocks the merge (c.925).
 The class costs one API call per queued run to detect, so it is never
 computed by the scheduled watch; it is opt-in via `--cancel no-job`.
 
+## Les runs sans job ne sont PAS annulables (mesure du 14/11)
+
+La classe `no-job` est un etat PERMANENT, pas une file a vider : un run qui
+n'a jamais ete admis en file ne peut pas etre annule par l'API. Sur
+`cancel` ET sur `force-cancel`, la reponse est un 409 « Cannot cancel a
+workflow run that has not been queued yet ».
+
+Mesure du 14/11 sur `jsboige/CoursIA` : 91 runs de plus de 24 h (76
+`issue_comment` + 15 `pull_request_review`), tous sans job, tous refuses en
+409 sur les deux endpoints. Le leveur « annuler les runs qui paddingent la
+file » n'existe donc pas : ces runs ne sont pas annulables, ils sont
+simplement morts.
+
+L'instrument le dit desormais :
+
+- le 409 est RECONNU comme une classe a part entiere -- « phantom non
+  annulable » -- et non plus comme un echec ordinaire (`rc=1`) ;
+- le rapport SEPARE ces runs des runs vivants, dans un seau dedie ;
+- `--apply` n'est PAS recommande pour eux : la classe ne propose plus de
+  les annuler, elle mesure une file morte.
+
+## La profondeur VIVANTE de la file (le nombre que les lanes citent)
+
+`total_count` compte le **padding** avec le travail : au 2026-11-15 la file
+mesurait 358 runs `queued`, dont 234 fantomes mesures (142 `pr-closed`,
+88 `no-job`, 4 `scheduled-orphan`) -- la profondeur VIVANTE etait ~115. Le
+balayeur de portes stale comparait le nombre BRUT a son seuil de saturation :
+il comptait le padding comme de la file.
+
+`--live-depth` rend la profondeur VIVANTE, c'est-a-dire la population MOINS
+chaque classe de fantome mesuree. C'est la commande unique que les lanes
+citent et que le balayeur consomme :
+
+  python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA --live-depth
+  # -> 115
+
+Le rapport complet (population, `total_count`, fantomes par classe, ecart de
+churn) est disponible avec `--json` ou `--output`.
+
+### Le cout de la mesure, et la porte qui l'evite (#26739)
+
+La mesure complete coute **114 appels API** par invocation (un par branche de
+PR en file, un par candidat `no-job`). Le quota horaire est partage par tous
+les workflows du depot : la mesure n'est donc pas un detail de cout, c'est
+une part du budget des autres.
+
+Avec `--saturation-threshold N`, l'organe lit d'abord le **brut** (UN appel)
+et ne mesure la profondeur VIVANTE que si le brut **atteint** N. Le brut
+MAJORE la profondeur vivante (la vivante = population MOINS ses fantomes) :
+un brut sous N PROUVE que la file n'est pas saturee, donc que la mesure ne
+peut pas changer le verdict -- elle n'est pas payee. Dans ce cas le rapport
+publie le brut comme **MAJORANT** de la profondeur vivante
+(`depth_kind: raw-upper-bound`), jamais comme la profondeur ; le verdict de
+saturation reste exact, parce que la seule reponse possible de cette borne
+est « non sature ». Un brut ILLISIBLE ne prouve rien : la mesure a lieu.
+
 Examples:
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA
+  python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA --live-depth
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA \
       --cutoff 2026-08-25 --output queue-health.json
   python scripts/ci/gh_queue_health.py --input queue-health.json
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA \
       --cancel no-job               # dry run: lists the no-job class
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA \
-      --cancel no-job --apply       # opt-in repair
+      --cancel no-job --apply       # opt-in: PROVES the 409 (not a repair)
 """
 from __future__ import annotations
 
@@ -52,7 +109,15 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
+try:
+    import yaml
+except ImportError:  # pragma: no cover -- PyYAML absent on a slim runner
+    # The organ must run on a bare CI runner (the sweep measures the live
+    # depth from a sparse checkout, where PyYAML is not guaranteed). Only
+    # the `stale-runs-on` fingerprint needs YAML; every other mode runs
+    # without it, and the fingerprint returns "unknown" when it is missing
+    # (fail-CLOSED: the caller skips the run, it never guesses).
+    yaml = None  # type: ignore[assignment]
 
 EXIT_OK = 0
 EXIT_GHOST = 1
@@ -120,6 +185,21 @@ NO_JOB_EVENTS = frozenset({
 # A run queued for less than this is ordinary backlog, not a stuck run.
 DEFAULT_NO_JOB_MIN_AGE_HOURS = 24.0
 
+# Classe des runs NON ANNULABLES (mesure du 14/11, 91 runs sur 91).
+#
+# Un run qui n'a jamais ete admis en file (aucun job cree) n'est pas dans la
+# file des runners : l'API refuse de l'annuler. Le refus porte le MEME
+# libelle sur les deux endpoints (mesure en direct du 14/11) :
+#   - `cancel`       -> 409 "Cannot cancel a workflow run that has not been queued yet."
+#   - `force-cancel` -> 409 "Cannot cancel a workflow run that has not been queued yet."
+#
+# Le marquage se fait sur la PHRASE, pas sur le code HTTP : un 409 d'une autre
+# nature (verrou, conflit) ne porte pas la phrase et reste une erreur
+# ordinaire.
+NOT_QUEUED_REFUSAL_MARKERS = ("has not been queued yet", "not been queued yet")
+#: Le `reason` porte par les ghosts de cette classe.
+PHANTOM_REASON = "phantom-non-annulable"
+
 
 class InstrumentError(RuntimeError):
     """The instrument cannot prove that its result is complete or coherent."""
@@ -132,6 +212,31 @@ def parse_date(value: str) -> datetime:
     except ValueError as exc:
         raise InstrumentError(f"invalid date (expected YYYY-MM-DD): {value!r}") from exc
     return parsed.replace(tzinfo=timezone.utc)
+
+
+# Compteur d'appels API -- le COUT de la mesure, rendu lisible (#26739).
+# Chaque TENTATIVE compte : un rety est un appel de plus sur le quota
+# horaire partage par tous les workflows du depot. Un organe qui consomme
+# 114 appels par passage doit pouvoir le dire dans sa sortie.
+_API_CALLS = 0
+
+
+def api_call_count() -> int:
+    """How many API calls this process made (attempts included)."""
+    return _API_CALLS
+
+
+def count_api_call() -> None:
+    """Account ONE API call (a transport attempt)."""
+    global _API_CALLS
+    _API_CALLS += 1
+
+
+def reset_api_calls() -> None:
+    """Zero the counter: a measurement reports its OWN cost, not the
+    process's cumulative spend."""
+    global _API_CALLS
+    _API_CALLS = 0
 
 
 def _gh_api_json(endpoint: str, *, attempts: int = 2, backoff: float = 5.0):
@@ -152,6 +257,7 @@ def _gh_api_json(endpoint: str, *, attempts: int = 2, backoff: float = 5.0):
     for attempt in range(max(1, attempts)):
         if attempt:
             time.sleep(backoff)
+        count_api_call()
         try:
             proc = subprocess.run(
                 ["gh", "api", endpoint],
@@ -175,16 +281,30 @@ def _gh_api_json(endpoint: str, *, attempts: int = 2, backoff: float = 5.0):
     raise InstrumentError(last_error)
 
 
-def fetch_queued_runs(repo: str) -> list[dict]:
+def fetch_queued_population(repo: str) -> dict:
     """Page through `GET /repos/{repo}/actions/runs?status=queued` until empty.
 
-    Returns the raw `workflow_runs` array. We cannot use the gh CLI `--created`
-    filter here because the gh run list interface does not expose it on
-    `status=queued` directly (and even if it did, server-side filtering would
-    be preferable but is not required for a small N like the 18 ghosts).
+    The stop condition is an EMPTY page, never a SHORT one. The queue is
+    mutated while it is read -- a run is admitted (or queued) between the
+    server's `total_count` and the page slice -- so a page can come back
+    with fewer items than `PER_PAGE` while hundreds of runs are still
+    queued. Measured 2026-11-15 on jsboige/CoursIA: pages of 99, 100, 100
+    and 59 items for a `total_count` of 358. The former stop condition (a
+    page shorter than `PER_PAGE`) truncated the collection at 99 of 358 --
+    three quarters of the population invisible to EVERY class, which is how
+    a "queue of 358" was classified as "a queue of 99".
+
+    Returns {"runs": [...], "total_count": int|None, "pages": int,
+             "duplicate_ids": int}. `total_count` is the server's own
+    count at the FIRST page: it is the authority on the population size,
+    and the gap between it and `len(runs)` is the churn of a live queue
+    (reported, never hidden).
     """
     runs: list[dict] = []
+    seen: set[int] = set()
+    duplicates = 0
     page = 1
+    total_count: int | None = None
     while True:
         endpoint = f"repos/{repo}/actions/runs?status=queued&per_page={PER_PAGE}&page={page}"
         payload = _gh_api_json(endpoint)
@@ -193,13 +313,78 @@ def fetch_queued_runs(repo: str) -> list[dict]:
         batch = payload["workflow_runs"]
         if not isinstance(batch, list):
             raise InstrumentError(f"workflow_runs is not a list: {type(batch).__name__}")
-        runs.extend(batch)
-        if len(batch) < PER_PAGE:
+        if total_count is None:
+            tc = payload.get("total_count")
+            total_count = tc if isinstance(tc, int) else None
+        if not batch:
+            # Empty page = end of the population. A SHORT page is not an
+            # end: the queue churns while it is read (see the docstring).
             break
+        for run in batch:
+            rid = run.get("id")
+            if isinstance(rid, int):
+                if rid in seen:
+                    duplicates += 1
+                    continue
+                seen.add(rid)
+            runs.append(run)
         page += 1
-        if page > 50:  # safety cap: 5000 ghost runs is implausible
+        if page > 50:  # safety cap: 5000 queued runs is implausible
             raise InstrumentError(f"pagination exceeded 50 pages for {repo}")
-    return runs
+    return {"runs": runs, "total_count": total_count, "pages": page - 1,
+            "duplicate_ids": duplicates}
+
+
+def fetch_queued_runs(repo: str) -> list[dict]:
+    """The queued population, raw. See `fetch_queued_population` for the paging.
+
+    Returns the raw `workflow_runs` array. We cannot use the gh CLI `--created`
+    filter here because the gh run list interface does not expose it on
+    `status=queued` directly (and even if it did, server-side filtering would
+    be preferable but is not required for a small N like the 18 ghosts).
+    """
+    return fetch_queued_population(repo)["runs"]
+
+
+def fetch_raw_total_count(repo: str) -> int | None:
+    """The server's own count of the queued population -- ONE call.
+
+    `GET /repos/{repo}/actions/runs?status=queued&per_page=1` returns the
+    same `total_count` the paginated population read uses; the page slice is
+    only the vehicle, the count is the server's. One call, no paging.
+
+    Why this number alone is enough to skip the expensive measurement: the
+    LIVE depth is the population MINUS its measured ghost classes, so the
+    raw count MAJORS the live depth. A raw count under a threshold proves
+    the live depth is under it too -- the measurement cannot change the
+    verdict, so it is not paid (#26739 : 114 calls per invocation, on a
+    quota the whole repository shares).
+    """
+    payload = _gh_api_json(
+        f"repos/{repo}/actions/runs?status=queued&per_page=1")
+    if not isinstance(payload, dict):
+        raise InstrumentError(
+            f"unexpected runs payload: {type(payload).__name__}")
+    tc = payload.get("total_count")
+    return tc if isinstance(tc, int) else None
+
+
+def depth_measurement_plan(raw_count: int | None, threshold: int) -> str:
+    """Which measurement the saturation decision needs -- pure, testable.
+
+    "measure" -- the live depth must be measured: the raw count is AT OR
+                 ABOVE the threshold, so it can still be under it (the raw
+                 count counts the ghost padding with the real work).
+    "bound"   -- the raw count is UNDER the threshold: the live depth is at
+                 most the raw count, so the threshold is exceeded PROVABLY
+                 NOT, and the expensive measurement cannot change the
+                 verdict. A raw count that could not be read is not a
+                 bound: the plan is then "measure", because nothing proves
+                 the saturation out.
+    """
+    if raw_count is None:
+        return "measure"
+    return "bound" if raw_count < threshold else "measure"
 
 
 def fetch_pr_states(repo: str, branches: list[str]) -> dict[str, str]:
@@ -228,7 +413,8 @@ def classify_runs(runs: list[dict], cutoff: datetime,
                   pr_states: dict[str, str] | None = None,
                   now: datetime | None = None,
                   stale_runs_on: set[int] | None = None,
-                  no_job: set[int] | None = None) -> dict:
+                  no_job: set[int] | None = None,
+                  phantom_non_annulable: set[int] | None = None) -> dict:
     """Split queued runs into explained ghosts and live runs.
 
     A run is a ghost when its class is measured and permanent:
@@ -267,6 +453,13 @@ def classify_runs(runs: list[dict], cutoff: datetime,
       cannot gate anything. The class is supplied by the caller (detecting
       it costs one API call per queued run, so the scheduled watch never
       computes it) and is honoured only when the caller provides it.
+    * `phantom-non-annulable` -- a run the API REFUSES to cancel, on
+      `cancel` as on `force-cancel`, with the 409 "has not been queued
+      yet": it was never admitted to a runner, so no mutation can free it
+      (measured 2026-11-14: 91 runs on 91 answered 409 on both endpoints).
+      The class is supplied by the caller -- it is PROVEN by the API
+      answer, never guessed -- and separates the dead padding from the
+      runs that are really waiting for a runner.
 
     Anything else is live: an undrained live queue is the drift signal, not
     a classification failure. Entries carry `reason` (ghosts only), `event`
@@ -277,6 +470,7 @@ def classify_runs(runs: list[dict], cutoff: datetime,
     pr_states = pr_states or {}
     stale_runs_on = stale_runs_on or set()
     no_job = no_job or set()
+    phantom_non_annulable = phantom_non_annulable or set()
     ghosts: list[dict] = []
     live: list[dict] = []
     parse_failures: list[dict] = []
@@ -315,6 +509,13 @@ def classify_runs(runs: list[dict], cutoff: datetime,
             ghosts.append(entry(run, "scheduled-orphan"))
         elif run.get("id") in stale_runs_on:
             ghosts.append(entry(run, "stale-runs-on"))
+        elif run.get("id") in phantom_non_annulable:
+            # Preuve par l'API (409 sur cancel ET force-cancel) : le run n'a
+            # jamais ete admis, il n'occupe donc pas la file des runners.
+            # On le garde hors du seau `live` : c'est de la file morte.
+            # La preuve par l'API prime sur la detection structurelle
+            # `no-job` : elle est plus forte, et elle nomme la classe exacte.
+            ghosts.append(entry(run, PHANTOM_REASON))
         elif run.get("id") in no_job:
             ghosts.append(entry(run, "no-job"))
         else:
@@ -545,6 +746,8 @@ def _workflow_runs_on_fingerprint(yaml_text: str) -> frozenset | None:
     Returns None on parse failure. Returns an empty frozenset for a
     workflow with no jobs (pathological but unobjectionable).
     """
+    if yaml is None:  # pragma: no cover -- PyYAML absent on a slim runner
+        return None
     try:
         data = yaml.safe_load(yaml_text)
     except yaml.YAMLError:
@@ -716,6 +919,138 @@ def detect_no_job_runs(repo: str, runs: list[dict], *, events: frozenset[str],
             "unknown": unknown}
 
 
+def live_depth_report(*, repo: str, cutoff: datetime, cutoff_date: str,
+                      now: datetime, no_job_events: frozenset[str],
+                      no_job_min_age_hours: float,
+                      max_workers: int = 8) -> dict:
+    """Measure the LIVE depth of the queued population.
+
+    The live depth is the number of queued runs that represent REAL work in
+    progress: the whole population MINUS every measured ghost class
+    (pre-cutoff, pr-closed, scheduled-orphan, no-job). It is THE number the
+    lanes cite and the number the stale sweep compares to its saturation
+    threshold -- the raw `total_count` counts the ghost padding with it.
+
+    The raw population is reported beside it: the gap between the two IS
+    the padding, and a reader who wants the raw number still finds it (the
+    sweep keeps it as a diagnostic).
+
+    A run whose `created_at` cannot be parsed is a parse failure, not a
+    ghost and not a live run: it is counted apart, and the caller refuses
+    to publish a depth computed over an incomplete population (exit code 2).
+    """
+    population = fetch_queued_population(repo)
+    raw_runs = population["runs"]
+    # PR-state lookups are only needed for post-cutoff pull_request
+    # candidates: everything older is pre-cutoff ghost by definition.
+    # created_at is ISO-8601 and cutoff_date is YYYY-MM-DD, so the lexical
+    # comparison is a valid date-prefix filter.
+    candidates = sorted({
+        run.get("head_branch") for run in raw_runs
+        if run.get("event") == "pull_request"
+        and isinstance(run.get("created_at"), str)
+        and run["created_at"] >= cutoff_date
+    } - {None})
+    pr_states = fetch_pr_states(repo, candidates) if candidates else {}
+    detection = detect_no_job_runs(repo, raw_runs, events=no_job_events,
+                                   min_age_hours=no_job_min_age_hours,
+                                   now=now, max_workers=max_workers)
+    classification = classify_runs(raw_runs, cutoff, pr_states, now=now,
+                                   no_job=detection["ids"])
+    ghosts = classification["ghosts"]
+    by_class: dict[str, int] = {}
+    for ghost in ghosts:
+        reason = ghost.get("reason") or "unknown"
+        by_class[reason] = by_class.get(reason, 0) + 1
+    return {
+        "live_depth": len(classification["live"]),
+        "population": len(raw_runs),
+        "total_count": population["total_count"],
+        "pages": population["pages"],
+        "duplicate_ids": population["duplicate_ids"],
+        "ghosts": len(ghosts),
+        "ghosts_by_class": by_class,
+        "parse_failures": len(classification["parse_failures"]),
+        "no_job_checked": detection["checked"],
+        "no_job_unknown": detection["unknown"],
+        "cutoff": cutoff_date,
+        "measured_at": now.isoformat(),
+    }
+
+
+def measure_queue_depth(*, repo: str, cutoff: datetime, cutoff_date: str,
+                        now: datetime, no_job_events: frozenset[str],
+                        no_job_min_age_hours: float,
+                        max_workers: int = 8,
+                        saturation_threshold: int | None = None) -> dict:
+    """The depth the saturation decision needs -- measured only if it can
+    change that decision.
+
+    Without `saturation_threshold` this is `live_depth_report` itself, and
+    the report says so (`depth_kind: "live"`).
+
+    With a threshold, the raw count is read FIRST (one call). The live
+    depth is at most the raw count, so a raw count under the threshold
+    proves the saturation out: the 114-call measurement is not paid, and
+    the report publishes the RAW as an UPPER BOUND of the live depth
+    (`depth_kind: "raw-upper-bound"`), never as the depth itself.
+
+    The bound is a decision, not a measurement: the caller compares the
+    depth to the threshold, and the bound answers that comparison exactly
+    (live <= raw < threshold means "not saturated", which is the only
+    verdict the bound can produce).
+    """
+    reset_api_calls()
+    raw_count: int | None = None
+    raw_error: str | None = None
+    if saturation_threshold is not None:
+        try:
+            raw_count = fetch_raw_total_count(repo)
+        except InstrumentError as exc:
+            # Unreadable raw count: nothing proves the saturation out, so
+            # the measurement is paid (the conservative branch).
+            raw_error = str(exc)
+        if depth_measurement_plan(raw_count, saturation_threshold) == "bound":
+            return {
+                "live_depth": None,
+                "depth": raw_count,
+                "depth_kind": "raw-upper-bound",
+                "saturation_threshold": saturation_threshold,
+                "saturated": False,
+                "saturation_excluded_by": (
+                    "majoration : la profondeur VIVANTE est au plus le brut"),
+                "population": None,
+                "total_count": raw_count,
+                "pages": 0,
+                "duplicate_ids": 0,
+                "ghosts": None,
+                "ghosts_by_class": {},
+                "parse_failures": 0,
+                "no_job_checked": 0,
+                "no_job_unknown": 0,
+                "cutoff": cutoff_date,
+                "measured_at": now.isoformat(),
+                "api_calls": api_call_count(),
+                "raw_probe_error": raw_error,
+            }
+    report = live_depth_report(
+        repo=repo, cutoff=cutoff, cutoff_date=cutoff_date, now=now,
+        no_job_events=no_job_events,
+        no_job_min_age_hours=no_job_min_age_hours,
+        max_workers=max_workers,
+    )
+    report["depth"] = report["live_depth"]
+    report["depth_kind"] = "live"
+    report["saturation_threshold"] = saturation_threshold
+    report["saturated"] = bool(
+        saturation_threshold is not None
+        and report["live_depth"] >= saturation_threshold)
+    report["saturation_excluded_by"] = None
+    report["api_calls"] = api_call_count()
+    report["raw_probe_error"] = raw_error
+    return report
+
+
 def verify_no_job_before_cancel(repo: str, run_ids: list[int],
                                 max_workers: int = 8) -> tuple[list[int], list[int]]:
     """Re-probe the job lists right before cancelling.
@@ -744,31 +1079,68 @@ def verify_no_job_before_cancel(repo: str, run_ids: list[int],
     return keep, dropped
 
 
-def cancel_run(repo: str, run_id: int) -> dict:
+def is_not_queued_refusal(text: str) -> bool:
+    """True si la reponse de l'API est le refus « run pas encore en file ».
+
+    Le marquage est sur la PHRASE, pas sur le code HTTP : le meme refus revient
+    sur `cancel` et sur `force-cancel` (seul le verbe change dans le message),
+    et un 409 d'une autre nature (verrou, conflit) ne porte pas la phrase.
+    """
+    lowered = (text or "").lower()
+    return any(marker in lowered for marker in NOT_QUEUED_REFUSAL_MARKERS)
+
+
+def cancel_run(repo: str, run_id: int, *, force: bool = False) -> dict:
     """Cancel a single queued run via the API. Returns a per-run verdict.
 
-    The API answers 202 on a successful cancellation and 409 on a run
-    that "has not been queued yet" (the pre-cutoff / pr-closed classes
-    also see this 409 -- the 202 vs 409 split is the only signal the
-    script has to know whether the cancellation was applied). The result
-    is reported, never interpreted: the caller decides what to do.
+    Three verdicts, told apart by the API's own answer:
+
+    * `cancelled` (rc 0, HTTP 202) -- the cancellation was accepted;
+    * `phantom-non-annulable` -- the API REFUSES: "a workflow run that has
+      not been queued yet". The run was never admitted to a runner (no job
+      was ever created for it), so neither `cancel` nor `force-cancel` can
+      free it. This is a permanent state, not an error to retry -- measured
+      2026-11-14: 91 runs on 91 answered 409 on both endpoints;
+    * `rc=<n>` -- any other failure, ordinary.
+
+    The result is reported, never interpreted: the caller decides what to do.
     """
-    endpoint = f"repos/{repo}/actions/runs/{run_id}/cancel"
+    action = "force-cancel" if force else "cancel"
+    endpoint = f"repos/{repo}/actions/runs/{run_id}/{action}"
     try:
         proc = subprocess.run(
             ["gh", "api", "-X", "POST", endpoint, "--silent"],
             capture_output=True, text=True, encoding="utf-8", check=False,
         )
     except FileNotFoundError:
-        return {"ok": False, "status": "gh-missing", "error": "gh CLI not on PATH"}
+        return {"ok": False, "status": "gh-missing", "class": "error",
+                "cancellable": True, "error": "gh CLI not on PATH"}
     if proc.returncode == 0:
-        return {"ok": True, "status": "cancelled"}
+        return {"ok": True, "status": "cancelled", "class": "cancelled",
+                "cancellable": True}
     snippet = (proc.stderr or proc.stdout).strip()
-    return {"ok": False, "status": f"rc={proc.returncode}", "error": snippet[:200]}
+    if is_not_queued_refusal(snippet):
+        return {"ok": False, "status": PHANTOM_REASON, "class": "phantom",
+                "cancellable": False, "error": snippet[:200]}
+    return {"ok": False, "status": f"rc={proc.returncode}", "class": "error",
+            "cancellable": True, "error": snippet[:200]}
+
+
+def force_cancel_run(repo: str, run_id: int) -> dict:
+    """Force-cancel a queued run -- same verdict vocabulary as `cancel_run`.
+
+    Measured in direct contact on 2026-11-14: the `force-cancel` endpoint
+    answers the SAME refusal as `cancel` ("Cannot cancel a workflow run that
+    has not been queued yet.", HTTP 409). The classification is therefore
+    shared -- a run refused by one is refused by the other, and the report
+    says so instead of retrying forever.
+    """
+    return cancel_run(repo, run_id, force=True)
 
 
 def cancel_runs_parallel(repo: str, run_ids: list[int],
-                         max_workers: int = 8) -> list[dict]:
+                         max_workers: int = 8,
+                         force: bool = False) -> list[dict]:
     """Cancel multiple runs concurrently. Returns per-run verdicts.
 
     The 2026-10-15 measurement was ~2 s per cancellation sequentially; 8
@@ -777,18 +1149,30 @@ def cancel_runs_parallel(repo: str, run_ids: list[int],
     shuffled lightly in spirit (as_completed order is non-deterministic by
     design) -- no fairness guarantee, only that the slowest run bounds
     the batch.
+
+    `force=True` hits the `force-cancel` endpoint instead of `cancel`; the
+    verdict vocabulary is identical.
     """
     if not run_ids:
         return []
     out: list[dict] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
-        future_to_id = {ex.submit(cancel_run, repo, rid): rid for rid in run_ids}
+        def _submit(rid: int):
+            # The default path keeps the historical two-argument call, so a
+            # caller that patches `cancel_run` with the old signature keeps
+            # working; `force` is only passed when it is asked for.
+            if force:
+                return ex.submit(cancel_run, repo, rid, force=True)
+            return ex.submit(cancel_run, repo, rid)
+
+        future_to_id = {_submit(rid): rid for rid in run_ids}
         for fut in concurrent.futures.as_completed(future_to_id):
             rid = future_to_id[fut]
             try:
                 res = fut.result()
             except Exception as exc:  # pragma: no cover -- defensive
-                res = {"ok": False, "status": "exception", "error": str(exc)}
+                res = {"ok": False, "status": "exception", "class": "error",
+                       "cancellable": True, "error": str(exc)}
             res["id"] = rid
             out.append(res)
     return out
@@ -823,14 +1207,22 @@ def main(argv: list[str] | None = None) -> int:
                              "queued against (a tranche of #17397). "
                              "`no-job` finds queued runs that have NO job "
                              "created -- never admitted to a runner, hence no "
-                             "check-run, hence safe to cancel without turning "
-                             "any check red (#26357). Requires --repo (live "
+                             "check-run (#26357). Requires --repo (live "
                              "API). Dry-run by default; pass --apply to cancel.")
     parser.add_argument("--apply", action="store_true",
                         help="with --cancel: actually POST cancel requests "
                              "(8 parallel workers, ~2 s/cancellation). "
                              "Default is dry-run -- the affected IDs are "
-                             "reported, not touched.")
+                             "reported, not touched. NOT recommended on the "
+                             "no-job class: those runs were never admitted, "
+                             "so the API refuses to cancel them (409).")
+    parser.add_argument("--force-cancel", action="store_true",
+                        help="with --cancel --apply: use the `force-cancel` "
+                             "endpoint instead of `cancel`. Both answer the "
+                             "same refusal for a run that was never admitted "
+                             "('has not been queued yet'), so this is the way "
+                             "to PROVE the non-annulability on the second "
+                             "endpoint rather than to obtain a cancellation.")
     parser.add_argument("--cancel-workers", type=int, default=8,
                         help="parallel workers for --apply (default 8). "
                              "8 is below the API secondary rate limits and "
@@ -848,10 +1240,82 @@ def main(argv: list[str] | None = None) -> int:
                              "eligible by default: a pull_request or push run "
                              "can gate a head SHA, and cancelling it could "
                              "suppress a check the branch protection expects.")
+    parser.add_argument("--live-depth", action="store_true",
+                        help="measure the LIVE depth of the queued population "
+                             "-- the total minus every measured ghost class "
+                             "(pre-cutoff, pr-closed, scheduled-orphan, "
+                             "no-job) -- and print it as a single integer. "
+                             "This is the number the lanes cite and the number "
+                             "the stale sweep compares to its saturation "
+                             "threshold: the raw `total_count` counts the "
+                             "ghost padding with it. Requires --repo (live "
+                             "API): a snapshot cannot prove the job state of "
+                             "a run. Exit code 2 if the population cannot be "
+                             "parsed in full (an incomplete measurement is "
+                             "never published as a depth).")
+    parser.add_argument("--saturation-threshold", type=int, default=None,
+                        metavar="N",
+                        help="with --live-depth: the saturation threshold the "
+                             "caller compares the depth to. When it is given, "
+                             "the raw count is read FIRST (ONE call) and the "
+                             "expensive live measurement is SKIPPED when the "
+                             "raw count is under N: the live depth is at most "
+                             "the raw count, so the threshold is provably not "
+                             "exceeded and the measurement cannot change the "
+                             "verdict. The report then carries "
+                             "`depth_kind: raw-upper-bound` and the raw as an "
+                             "UPPER BOUND of the live depth -- never as the "
+                             "depth itself. An unreadable raw count measures "
+                             "anyway (nothing proves the saturation out). "
+                             "#26739 : the live measurement costs ~114 API "
+                             "calls, on a quota the whole repository shares.")
+    parser.add_argument("--json", action="store_true",
+                        help="with --live-depth: print the full report as JSON "
+                             "instead of the bare integer (the report always "
+                             "reaches --output when that flag is given).")
     args = parser.parse_args(argv)
 
     try:
         cutoff = parse_date(args.cutoff)
+        if args.live_depth:
+            if args.input:
+                raise InstrumentError(
+                    "--live-depth requires --repo (live API): a snapshot "
+                    "cannot prove the job state of a run")
+            if args.cancel:
+                raise InstrumentError(
+                    "--live-depth is exclusive of --cancel: one measurement, "
+                    "one report")
+            now = datetime.now(timezone.utc)
+            report = measure_queue_depth(
+                repo=args.repo, cutoff=cutoff, cutoff_date=args.cutoff,
+                now=now,
+                no_job_events=frozenset(
+                    e.strip() for e in args.no_job_events.split(",") if e.strip()),
+                no_job_min_age_hours=args.no_job_min_age_hours,
+                max_workers=max(1, args.cancel_workers),
+                saturation_threshold=args.saturation_threshold)
+            rendered = json.dumps(report, indent=2, ensure_ascii=False) + "\n"
+            if args.output:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(rendered, encoding="utf-8")
+            if report.get("depth_kind") == "raw-upper-bound":
+                print(f"[queue-health] profondeur VIVANTE NON MESUREE : le "
+                      f"brut ({report['depth']}) est sous le seuil de "
+                      f"saturation ({report['saturation_threshold']}) -- la "
+                      f"profondeur vivante est au plus {report['depth']}, la "
+                      f"saturation est exclue par majoration "
+                      f"(api-quota: {report['api_calls']} appel(s))",
+                      file=sys.stderr)
+            if args.json:
+                print(rendered, end="")
+            else:
+                print(report["depth"])
+            if report["parse_failures"]:
+                print(f"[queue-health] BROKEN INSTRUMENT: "
+                      f"{report['parse_failures']} parse failures", file=sys.stderr)
+                return EXIT_BROKEN
+            return EXIT_OK
         if args.input:
             raw_runs, preserved_pf = load_snapshot(args.input)
             pr_states: dict[str, str] = {}
@@ -893,6 +1357,9 @@ def main(argv: list[str] | None = None) -> int:
         # (dry-run by default).
         stale_runs_on: set[int] = set()
         cancel_report: list[dict] = []
+        # Runs dont l'API a refuse l'annulation (409 « pas encore en file »).
+        # La preuve vient de la REPONSE de l'API, jamais d'une supposition.
+        phantom_ids: set[int] = set()
         if args.cancel == "stale-runs-on":
             if args.input:
                 raise InstrumentError(
@@ -913,11 +1380,25 @@ def main(argv: list[str] | None = None) -> int:
                 cancel_report = cancel_runs_parallel(
                     args.repo, sorted(stale_runs_on),
                     max_workers=max(1, args.cancel_workers),
+                    force=args.force_cancel,
                 )
+                # Un 409 « pas encore en file » prouve la non-annulabilite :
+                # le run n'entrait pas dans la file des runners, il etait donc
+                # classe a tort comme annulable.
+                phantom_ids = {
+                    r["id"] for r in cancel_report
+                    if r.get("class") == "phantom"
+                }
         # no-job class (opt-in, #26357): queued runs that were never
         # admitted to a runner, hence carry no job and no check-run. The
         # detection costs one API call per queued run, so it runs ONLY when
         # the class is asked for -- the scheduled watch never pays for it.
+        #
+        # Measured 2026-11-14: these runs are NOT cancellable. The API
+        # refuses them with a 409 "has not been queued yet" on `cancel` as on
+        # `force-cancel` (91 runs on 91). The class is therefore a MEASUREMENT
+        # of dead padding, not a lever: the report separates them from the
+        # live runs and does NOT recommend `--apply` for them.
         no_job_ids: set[int] = set()
         no_job_report: dict = {}
         no_job_events = frozenset(
@@ -941,6 +1422,25 @@ def main(argv: list[str] | None = None) -> int:
                 "checked": detection["checked"],
                 "unknown": detection["unknown"],
                 "events": sorted(no_job_events),
+                # Sans job = jamais admis = l'API refuse l'annulation
+                # (409 sur cancel ET force-cancel, mesure du 14/11 : 91 sur
+                # 91). La classe est donc une file MORTE, pas une file a
+                # vider : `--apply` n'est pas recommande pour elle.
+                "phantoms": sorted(no_job_ids),
+                "phantom_evidence": (
+                    "aucun job cree : le run n'a jamais ete admis en file, "
+                    "donc l'API refuse son annulation (409) -- mesure du "
+                    "14/11 : 91 runs sur 91 refuses, sur cancel comme sur "
+                    "force-cancel"
+                ),
+                "cancellable": [],
+                "apply_recommended": False,
+                "apply_refusal": (
+                    "ces runs n'ont jamais ete admis en file (aucun job "
+                    "cree) : l'API refuse leur annulation en 409 "
+                    "'has not been queued yet', sur cancel comme sur "
+                    "force-cancel -- mesure du 14/11 : 91 sur 91"
+                ),
                 "applied": False,
                 "results": [],
                 "dropped": [],
@@ -950,15 +1450,42 @@ def main(argv: list[str] | None = None) -> int:
                     args.repo, sorted(no_job_ids),
                     max_workers=max(1, args.cancel_workers),
                 )
-                no_job_report["results"] = cancel_runs_parallel(
+                results = cancel_runs_parallel(
                     args.repo, to_cancel,
                     max_workers=max(1, args.cancel_workers),
+                    force=args.force_cancel,
                 )
+                no_job_report["results"] = results
                 no_job_report["dropped"] = dropped
                 no_job_report["applied"] = True
+                # Le verdict de l'API fait la loi : un 409 « pas encore en
+                # file » PROUVE la non-annulabilite, un 202 prouve
+                # l'annulation. Les deux seaux sont separes.
+                no_job_phantoms = {
+                    r["id"] for r in results if r.get("class") == "phantom"
+                }
+                cancelled_ids = {
+                    r["id"] for r in results if r.get("class") == "cancelled"
+                }
+                error_ids = {
+                    r["id"] for r in results
+                    if r.get("class") not in ("phantom", "cancelled")
+                }
+                phantom_ids = phantom_ids | no_job_phantoms
+                no_job_report["phantoms"] = sorted(no_job_phantoms)
+                no_job_report["phantom_evidence"] = (
+                    "409 'has not been queued yet' sur "
+                    + ("force-cancel" if args.force_cancel else "cancel")
+                )
+                no_job_report["cancelled"] = sorted(cancelled_ids)
+                no_job_report["errors"] = sorted(error_ids)
+                # Seuls les echecs ordinaires restent annuables : un run
+                # refuse par l'API ne se retente pas.
+                no_job_report["cancellable"] = sorted(error_ids)
         classification = classify_runs(raw_runs, cutoff, pr_states, now=now,
                                         stale_runs_on=stale_runs_on,
-                                        no_job=no_job_ids)
+                                        no_job=no_job_ids,
+                                        phantom_non_annulable=phantom_ids)
         # When the input was a prior analysis output, `classify_runs` cannot
         # re-derive the parse_failures from the synthesized runs -- they were
         # never serialized into the synthesized list. Merge the preserved

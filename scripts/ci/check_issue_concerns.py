@@ -13,13 +13,23 @@ classe ``user-remark`` : **tout autre commentaire du mainteneur** (question,
 consigne, arbitrage, constat) en attente de reponse. La troisieme a ajoute la
 classe ``reviewer-reserve`` : une **reserve de relecteur** (Hermes, NanoClaw,
 clusterManager-Myia, lane tierce) posee sur une **issue** avec un marqueur de
-verdict, et jamais levee. Cette tranche ajoute la classe
+verdict, et jamais levee. La quatrieme a ajoute la classe
 ``external-unanswered`` : un **commentaire d'un auteur hors flotte** (etudiant,
-contributeur public) reste sans triage de la flotte (campagne #20185 ; les
-deux classes restantes viendront chacune par sa propre PR). Seule la flotte
-trie : un second auteur externe ni un bot ne sont candidats de reponse, et la
-reponse attendue **cite le commentaire oublie** (machinerie de citation forte,
-comme une remarque).
+contributeur public) reste sans triage de la flotte. Cette tranche ajoute la
+classe ``ask-unanswered`` : une **question ou demande d'arbitrage adressee a
+une lane ou au coordinateur** (campagne #20185) portee par un tag ``[ASK...]``
+pose en tete de commentaire d'une lane, et restee sans reponse. La reponse
+attendue cite la question oubliee (machinerie de citation forte, comme une
+remarque). Les ``[ASK USER]`` restent hors de cette classe : ils vivent dans
+le registre des questions user (``user-blocker-signaling.md``), les compter
+ici dupliquerait l'etat. La sixieme ajoute la classe ``closed-over-remark`` :
+une **issue fermee** alors qu'un commentaire des cinq classes ci-dessus
+attendait toujours une reponse au moment de la fermeture. Ce n'est pas une
+detection de commentaire mais une **VUE contextuelle** sur les cinq
+detections — la demander les force — activee sur ``--state closed`` : une
+reponse forte arrivee APRES la fermeture reste un evenement de fermeture
+(``REPONDU APRES CLOTURE``, preuve citee), la decision de rouvrir ou de
+justifier par ecrit appartenant a la phase 2 de la campagne.
 
 Le probleme propre a cette classe est le **login partage** : la flotte ecrit sous
 le compte du mainteneur, et l'auteur ne distingue donc plus un post de lane d'une
@@ -74,6 +84,8 @@ Usage::
     python scripts/ci/check_issue_concerns.py --issues 19898 16757 17889 18601
     python scripts/ci/check_issue_concerns.py --classes user-remark --issues 21092
     python scripts/ci/check_issue_concerns.py --as-of 2026-10-08T23:59:59Z
+    python scripts/ci/check_issue_concerns.py --state closed --since 2026-09-01 \
+        --classes closed-over-remark
 """
 
 from __future__ import annotations
@@ -239,6 +251,26 @@ _RESERVE_POSED_RE = re.compile(
 #: precedent.
 _RESERVE_HEAD_BRACKETS = re.compile(r"^\[[^\]]{1,80}\]\s*")
 
+#: Classe ``ask-unanswered`` — le tag d'ASK pose en position d'EMISSION
+#: (premiere ligne du corps, decoration markdown neutralisee, comme
+#: ``reserve_marker``). Formes mesurees sur le corpus du 2026-11-14 (70 issues
+#: les plus recentes portant « [ASK » en corps, sonde emission) :
+#: ``[ASK]`` nu (#24357, #25510, #23384, #20386), ``[ASK][VIBE-SUPPLY]``
+#: double groupe (#18911, decoration ``**`` comprise), ``[ASK c.138
+#: ai-01:CoursIA-2]`` destinataire dans le crochet (#18285). Un ASK cite en
+#: milieu de corps (prose de regle, vocabulaire de campagne — mesure : 63 des
+#: 70 issues n'ont AUCUN tag en emission) n'est pas une question POSEE
+#: (#13030 : mention, pas emission).
+_ASK_TAG_RE = re.compile(r"^\[(ASK[^\]]{0,60})\]", re.IGNORECASE)
+
+#: ``[ASK USER]`` / ``[ASK-USER]`` : hors classe — ces questions vivent dans
+#: le registre des questions user (``user-blocker-signaling.md`` : registre
+#: persistant, represente chaque fin de session, sort sur reponse user
+#: verifiee). Les compter ici dupliquerait l'etat entre deux listes qui
+#: derivent ; l'ecart reste PUBLIE dans ``excluded`` pour que le total lu ne
+#: passe pas pour un recensement exhaustif des ASK.
+_ASK_USER_RE = re.compile(r"^[\s_-]*USER\b", re.IGNORECASE)
+
 
 def reserve_marker(body: str | None) -> str | None:
     """Le marqueur de verdict POSE en tete de premiere ligne, ou ``None``.
@@ -261,6 +293,30 @@ def reserve_marker(body: str | None) -> str | None:
         first_line = reduced
     match = _RESERVE_POSED_RE.match(first_line)
     return match.group(0) if match else None
+
+
+def ask_tag(body: str | None) -> str | None:
+    """Le tag d'ASK POSE en tete de premiere ligne, ou ``None``.
+
+    Meme contrat de position que ``reserve_marker`` : decoration neutralisee,
+    premiere ligne seule, et decoupe iterative des groupes de tete entre
+    crochets qui ne SONT pas le tag (« [DISPATCH] [ASK] … »). Rend le texte
+    INTERIEUR du tag (``ASK`` nu, ou ``ASK c.138 ai-01:CoursIA-2``) — le
+    destinataire ecrit dans le crochet fait partie de la forme mesuree
+    (#18285). Un ``[ASK USER]`` est rendu tel quel : l'exclusion (registre
+    user) se decide dans ``analyse_comments`` pour nourrir le compte publie
+    ``excluded``, pas ici.
+    """
+    stripped = _DECORATION.sub("", body or "")
+    first_line = stripped.splitlines()[0] if stripped.splitlines() else ""
+    while True:
+        match = _ASK_TAG_RE.match(first_line)
+        if match:
+            return match.group(1)
+        reduced = _RESERVE_HEAD_BRACKETS.sub("", first_line, count=1)
+        if reduced == first_line or not reduced:
+            return None
+        first_line = reduced
 
 _WS = re.compile(r"\s+")
 _DECORATION = re.compile(r"^[\s*_#>`]+")
@@ -392,12 +448,84 @@ class ExternalFinding:
 
 
 @dataclass
+class AskFinding:
+    comment_id: int
+    created_at: str
+    excerpt: str
+    status: str
+    proof: int | None
+    #: Texte interieur du tag (« ASK » nu, ou « ASK c.138 ai-01:CoursIA-2 »
+    #: quand le destinataire vit dans le crochet — forme mesuree #18285).
+    tag: str
+    gesture_after: bool
+
+    slug = "ask-unanswered"
+
+    def as_dict(self) -> dict:
+        return {
+            "comment_id": self.comment_id,
+            "created_at": self.created_at,
+            "excerpt": self.excerpt,
+            "status": self.status,
+            "proof": self.proof,
+            "tag": self.tag,
+            "gesture_after": self.gesture_after,
+        }
+
+
+@dataclass
+class ClosureFinding:
+    #: Classe ``closed-over-remark`` — une VUE sur les cinq detections : le
+    #: commentaire est porte par sa classe source (``source``), l'evenement
+    #: constate est la FERMETURE de l'issue au-dessus de lui. Le statut du
+    #: commentaire sous-jacent est repris tel quel quand il reste ouvert ;
+    #: une reponse forte arrivee apres la fermeture devient
+    #: ``REPONDU APRES CLOTURE`` (preuve citee) — l'evenement existe, la
+    #: decision de rouvrir ou de justifier appartient a la phase 2 (#20185).
+    comment_id: int
+    created_at: str
+    excerpt: str
+    status: str
+    proof: int | None
+    #: Slug de la classe porteuse du commentaire ferme-dessus.
+    source: str
+    #: Instant de fermeture de l'issue (UTC ISO) — l'evenement constate.
+    closed_at: str
+    gesture_after: bool
+
+    slug = "closed-over-remark"
+
+    #: Statuts qui laissent l'evenement ouvert : le commentaire n'a jamais
+    #: eu de reponse prouvee. ``REPONDU APRES CLOTURE`` ne l'est pas — la
+    #: reponse existe, reste a arbitrer la reouverture.
+    OPEN_STATUSES = ("NON REPONDU", "MANUAL_REVIEW")
+
+    def as_dict(self) -> dict:
+        return {
+            "comment_id": self.comment_id,
+            "created_at": self.created_at,
+            "excerpt": self.excerpt,
+            "status": self.status,
+            "proof": self.proof,
+            "source": self.source,
+            "closed_at": self.closed_at,
+            "gesture_after": self.gesture_after,
+        }
+
+
+@dataclass
 class IssueReport:
     number: int
     concerns: list[ConcernFinding]
     remarks: list[RemarkFinding] = field(default_factory=list)
     reserves: list[ReserveFinding] = field(default_factory=list)
     externals: list[ExternalFinding] = field(default_factory=list)
+    asks: list[AskFinding] = field(default_factory=list)
+    #: Evenements de fermeture-dessus (classe ``closed-over-remark``) : une
+    #: detection de classe 1-5 dont le commentaire attendait une reponse au
+    #: moment de la fermeture. Quand la vue est active, l'evenement SUPPLEE
+    #: sa detection dans ``unresolved`` (meme commentaire, cadre plus precis).
+    closures: list[ClosureFinding] = field(default_factory=list)
     #: Commentaires ecartes par signature de lane, agreges par nom de signature
     #: (#21621). L'ecart est PUBLIE : un total de candidats ne doit jamais
     #: passer pour un recensement exhaustif du fil.
@@ -405,10 +533,16 @@ class IssueReport:
 
     @property
     def unresolved(self) -> list:
-        return [c for c in self.concerns if c.status != "REPONDU"] + [
-            r for r in self.remarks if r.status != "REPONDU"
-        ] + [r for r in self.reserves if r.status != "REPONDU"] + [
-            e for e in self.externals if e.status != "REPONDU"
+        # Les evenements de fermeture suppleent leur detection : le meme
+        # commentaire ne compte pas deux fois, et l'entree visible porte le
+        # cadre actionnable (la fermeture, pas seulement le silence).
+        closed_ids = {f.comment_id for f in self.closures}
+        return [c for c in self.concerns if c.status != "REPONDU" and c.comment_id not in closed_ids] + [
+            r for r in self.remarks if r.status != "REPONDU" and r.comment_id not in closed_ids
+        ] + [r for r in self.reserves if r.status != "REPONDU" and r.comment_id not in closed_ids] + [
+            e for e in self.externals if e.status != "REPONDU" and e.comment_id not in closed_ids
+        ] + [a for a in self.asks if a.status != "REPONDU" and a.comment_id not in closed_ids] + [
+            f for f in self.closures if f.status in ClosureFinding.OPEN_STATUSES
         ]
 
     @property
@@ -418,6 +552,8 @@ class IssueReport:
             or any(r.gesture_after for r in self.remarks)
             or any(r.gesture_after for r in self.reserves)
             or any(e.gesture_after for e in self.externals)
+            or any(a.gesture_after for a in self.asks)
+            or any(f.gesture_after for f in self.closures)
         )
 
     def as_dict(self) -> dict:
@@ -428,6 +564,8 @@ class IssueReport:
             "remarks": [r.as_dict() for r in self.remarks],
             "reserves": [r.as_dict() for r in self.reserves],
             "externals": [e.as_dict() for e in self.externals],
+            "asks": [a.as_dict() for a in self.asks],
+            "closures": [f.as_dict() for f in self.closures],
             "excluded_by_signature": dict(self.excluded),
         }
 
@@ -653,28 +791,47 @@ def is_response_candidate(
     return True
 
 
-#: Classes livrees par l'organe (la campagne #20185 en compte six ; les deux
-#: restantes viendront chacune par sa propre PR). ``analyse_comments`` accepte un
-#: sous-ensemble — les tests s'en servent pour scoper une classe a la fois.
-CLASSES = (
+#: Les cinq detections de commentaires (classes 1-5 de la campagne #20185).
+DETECTION_SLUGS = (
     "user-concern",
     "user-remark",
     "reviewer-reserve",
     "external-unanswered",
+    "ask-unanswered",
 )
+
+#: Classes livrees par l'organe — les cinq detections plus la VUE
+#: ``closed-over-remark``, qui doit rester en DERNIER : elle n'est pas une
+#: detection mais un evenement de fermeture pose AU-DESSUS des cinq, et sa
+#: demande force les cinq detections (``DETECTION_SLUGS``).
+#: ``analyse_comments`` accepte un sous-ensemble — les tests s'en servent
+#: pour scoper une classe a la fois.
+CLASSES = DETECTION_SLUGS + ("closed-over-remark",)
 
 
 def analyse_comments(
-    number: int, comments: list[Comment], classes: tuple[str, ...] = CLASSES
+    number: int,
+    comments: list[Comment],
+    classes: tuple[str, ...] = CLASSES,
+    state: str = "open",
+    closed_at: str | None = None,
 ) -> IssueReport:
+    # ``closed-over-remark`` n'est pas une detection : la demander FORCE les
+    # cinq detections — l'evenement de fermeture est pose au-dessus d'un
+    # commentaire porte par sa classe source.
+    if "closed-over-remark" in classes:
+        detections = DETECTION_SLUGS
+    else:
+        detections = tuple(classes)
     kinds = [classify(c) for c in comments]
     findings: list[ConcernFinding] = []
     remarks: list[RemarkFinding] = []
     reserves: list[ReserveFinding] = []
     externals: list[ExternalFinding] = []
+    asks: list[AskFinding] = []
     excluded: dict[str, int] = {}
 
-    if "user-concern" in classes:
+    if "user-concern" in detections:
         for i, comment in enumerate(comments):
             if kinds[i] != "concern":
                 continue
@@ -712,7 +869,7 @@ def analyse_comments(
                 )
             )
 
-    if "reviewer-reserve" in classes:
+    if "reviewer-reserve" in detections:
         for i, comment in enumerate(comments):
             marker = reserve_marker(comment.body)
             if marker is None:
@@ -756,7 +913,7 @@ def analyse_comments(
                 )
             )
 
-    if "user-remark" in classes:
+    if "user-remark" in detections:
         for i, comment in enumerate(comments):
             if comment.author != CONCERN_AUTHOR or kinds[i] != "other":
                 continue
@@ -807,7 +964,7 @@ def analyse_comments(
                 )
             )
 
-    if "external-unanswered" in classes:
+    if "external-unanswered" in detections:
         for i, comment in enumerate(comments):
             author = comment.author or ""
             if LANE_LOGIN.match(author) or BOT_LOGIN.search(author):
@@ -852,12 +1009,143 @@ def analyse_comments(
                 )
             )
 
+    if "ask-unanswered" in detections:
+        for i, comment in enumerate(comments):
+            tag = ask_tag(comment.body)
+            if tag is None:
+                continue
+            author = comment.author or ""
+            # La question POSEE vient d'une lane de la flotte : un [ASK] sous
+            # un login externe releve de ``external-unanswered`` (ecart publie,
+            # pas silence), un bot d'integration n'attend rien.
+            if BOT_LOGIN.search(author):
+                continue
+            if not LANE_LOGIN.match(author):
+                excluded["ask-non-lane"] = excluded.get("ask-non-lane", 0) + 1
+                continue
+            # [ASK USER] : registre des questions user, pas ce filet (cf.
+            # ``_ASK_USER_RE``) — l'ecart est publie, jamais muet.
+            if _ASK_USER_RE.match(tag[3:]):
+                excluded["ask-user-registry"] = (
+                    excluded.get("ask-user-registry", 0) + 1
+                )
+                continue
+            later = list(zip(comments[i + 1 :], kinds[i + 1 :]))
+            # Un ASK se referme comme une reserve : par une citation FORTE
+            # (horodatage du commentaire porteur, extrait long). La convention
+            # mesuree des reponses — « [INFO] Reponse au [ASK] du 18:30Z » ou
+            # reprise d'extrait — porte la forme forte ; le cas #2159 (geste
+            # qui cite fortement = reponse) est deja celui d'``is_response_candidate``.
+            candidates = [
+                (other, kind)
+                for other, kind in later
+                if is_response_candidate(kind, other, comment)
+            ]
+            proof = None
+            for other, kind in candidates:
+                if proves(comment, other, kind):
+                    proof = other.id
+                    break
+            if proof is not None:
+                status = "REPONDU"
+            elif candidates:
+                status = "MANUAL_REVIEW"
+            else:
+                status = "NON REPONDU"
+            asks.append(
+                AskFinding(
+                    comment_id=comment.id,
+                    created_at=comment.created_at,
+                    excerpt=excerpt(comment.body),
+                    status=status,
+                    proof=proof,
+                    tag=tag,
+                    gesture_after=any(
+                        kind == "gesture" and other.id != proof
+                        for other, kind in later
+                    ),
+                )
+            )
+
+    # Classe 6 ``closed-over-remark`` : une VUE sur les detections ci-dessus.
+    # Un evenement n'existe que si l'issue est FERMEE ; le commentaire porte
+    # le statut calcule par sa classe source, recadre par la fermeture :
+    # - repondu AVANT la fermeture -> pas d'evenement (fermeture legitime) ;
+    # - repondu APRES la fermeture -> ``REPONDU APRES CLOTURE`` (preuve
+    #   citee) : l'evenement est rendu mais n'est PAS non resolu — rouvrir ou
+    #   justifier par ecrit appartient a la phase 2 de la campagne ;
+    # - sans reponse -> evenement NON REPONDU / MANUAL_REVIEW, non resolu.
+    # Fail-closed : issue fermee sans ``closed_at`` exploitable -> tout
+    # detection non REPONDU devient un evenement, aucune n'est fabriquee
+    # ``APRES CLOTURE`` (l'instant manque, on ne l'invente pas).
+    closures: list[ClosureFinding] = []
+    if "closed-over-remark" in classes and state == "closed":
+        closed_when = None
+        if closed_at:
+            try:
+                closed_when = datetime.strptime(
+                    closed_at, "%Y-%m-%dT%H:%M:%SZ"
+                ).replace(tzinfo=timezone.utc)
+            except ValueError:
+                closed_when = None
+        by_id = {comment.id: comment for comment in comments}
+        carried = [
+            ("user-concern", f) for f in findings
+        ] + [
+            ("user-remark", r) for r in remarks
+        ] + [
+            ("reviewer-reserve", r) for r in reserves
+        ] + [
+            ("external-unanswered", e) for e in externals
+        ] + [
+            ("ask-unanswered", a) for a in asks
+        ]
+        for source, finding in carried:
+            if finding.status == "REPONDU":
+                proof_when = (
+                    by_id[finding.proof].when
+                    if finding.proof is not None and finding.proof in by_id
+                    else None
+                )
+                if (
+                    closed_when is not None
+                    and proof_when is not None
+                    and proof_when > closed_when
+                ):
+                    closures.append(
+                        ClosureFinding(
+                            comment_id=finding.comment_id,
+                            created_at=finding.created_at,
+                            excerpt=finding.excerpt,
+                            status="REPONDU APRES CLOTURE",
+                            proof=finding.proof,
+                            source=source,
+                            closed_at=closed_at or "",
+                            gesture_after=finding.gesture_after,
+                        )
+                    )
+                continue
+            closures.append(
+                ClosureFinding(
+                    comment_id=finding.comment_id,
+                    created_at=finding.created_at,
+                    excerpt=finding.excerpt,
+                    status=finding.status,
+                    proof=finding.proof,
+                    source=source,
+                    closed_at=closed_at or "",
+                    gesture_after=finding.gesture_after,
+                )
+            )
+
     return IssueReport(
         number=number,
         concerns=findings,
         remarks=remarks,
         reserves=reserves,
         externals=externals,
+        asks=asks,
+        closures=closures,
         excluded=excluded,
     )
 
@@ -917,6 +1205,17 @@ def fetch_comments(number: int) -> list[Comment]:
         page += 1
 
 
+def fetch_issue_state(number: int) -> dict:
+    """Etat ``state`` / ``closed_at`` d'une issue (une requete REST).
+
+    Necessaire a la classe ``closed-over-remark`` : l'evenement de fermeture
+    se calcule contre l'instant ``closed_at`` de l'issue, pas contre la date
+    du dernier commentaire.
+    """
+    data = gh_json(["api", f"repos/{REPO}/issues/{number}"])
+    return {"state": data.get("state") or "", "closed_at": data.get("closed_at")}
+
+
 # --------------------------------------------------------------------------- #
 # Rendu
 # --------------------------------------------------------------------------- #
@@ -934,19 +1233,26 @@ def excluded_by_signature(reports: list[IssueReport]) -> dict[str, int]:
 def render_text(reports: list[IssueReport], since: str, state: str, scanned: int) -> str:
     unresolved = [(r, c) for r in reports for c in r.unresolved]
     total = sum(
-        len(r.concerns) + len(r.remarks) + len(r.reserves) + len(r.externals)
+        len(r.concerns)
+        + len(r.remarks)
+        + len(r.reserves)
+        + len(r.externals)
+        + len(r.asks)
         for r in reports
     )
     n_conc = sum(1 for _, c in unresolved if c.slug == "user-concern")
     n_res = sum(1 for _, c in unresolved if c.slug == "reviewer-reserve")
     n_ext = sum(1 for _, c in unresolved if c.slug == "external-unanswered")
-    n_rem = len(unresolved) - n_conc - n_res - n_ext
+    n_ask = sum(1 for _, c in unresolved if c.slug == "ask-unanswered")
+    n_clo = sum(1 for _, c in unresolved if c.slug == "closed-over-remark")
+    n_rem = len(unresolved) - n_conc - n_res - n_ext - n_ask - n_clo
     excluded = excluded_by_signature(reports)
     by_sig = ", ".join(f"{name} {count}" for name, count in sorted(excluded.items()))
     lines = [
         f"=== Remarques user sans reponse (issues {state}, depuis {since}) ===",
         f"{len(unresolved)} non resolu(s) — {n_conc} concern(s), {n_rem} "
-        f"remarque(s), {n_res} reserve(s) de relecteur, {n_ext} externe(s) — "
+        f"remarque(s), {n_res} reserve(s) de relecteur, {n_ext} externe(s), "
+        f"{n_ask} ask(s), {n_clo} cloture(s)-dessus — "
         f"sur {total} recense(s), dans "
         f"{len({r.number for r, _ in unresolved})} issue(s) ; "
         f"{scanned} issue(s) lue(s) ; "
@@ -968,21 +1274,57 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
     )
     for report in ordered:
         flag = "  [gesture-after]" if report.gesture_after else ""
-        open_concerns = [c for c in report.concerns if c.status != "REPONDU"]
+        # Les evenements de fermeture SUPPLENT leur detection source : les
+        # listes ouvertes ci-dessous ne republient pas le commentaire que la
+        # cloture recadre deja.
+        closed_ids = {f.comment_id for f in report.closures}
+        open_concerns = [
+            c
+            for c in report.concerns
+            if c.status != "REPONDU" and c.comment_id not in closed_ids
+        ]
         open_remarks = sorted(
-            (r for r in report.remarks if r.status != "REPONDU"),
+            (
+                r
+                for r in report.remarks
+                if r.status != "REPONDU" and r.comment_id not in closed_ids
+            ),
             key=lambda r: (_ACT_ORDER.get(r.act, 9), r.created_at),
         )
-        open_reserves = [r for r in report.reserves if r.status != "REPONDU"]
-        open_externals = [e for e in report.externals if e.status != "REPONDU"]
+        open_reserves = [
+            r
+            for r in report.reserves
+            if r.status != "REPONDU" and r.comment_id not in closed_ids
+        ]
+        open_externals = [
+            e
+            for e in report.externals
+            if e.status != "REPONDU" and e.comment_id not in closed_ids
+        ]
+        open_asks = [
+            a
+            for a in report.asks
+            if a.status != "REPONDU" and a.comment_id not in closed_ids
+        ]
+        clo_suffix = (
+            f" + {len(report.closures)} cloture(s)-dessus" if report.closures else ""
+        )
         lines.append("")
         lines.append(
             f"#{report.number} — {len(open_concerns)} concern(s), "
             f"{len(open_remarks)} remarque(s), "
             f"{len(open_reserves)} reserve(s), "
-            f"{len(open_externals)} externe(s){flag}"
+            f"{len(open_externals)} externe(s), "
+            f"{len(open_asks)} ask(s){clo_suffix}{flag}"
         )
-        for finding in open_concerns + open_remarks + open_reserves + open_externals:
+        for finding in (
+            open_concerns
+            + open_remarks
+            + open_reserves
+            + open_externals
+            + open_asks
+            + report.closures
+        ):
             proof = f" (piste c{finding.proof})" if finding.proof else ""
             if finding.slug == "user-concern":
                 label = ""
@@ -990,6 +1332,10 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
                 label = f"  [reserve {finding.marker}]"
             elif finding.slug == "external-unanswered":
                 label = f"  [ext {finding.author}]"
+            elif finding.slug == "ask-unanswered":
+                label = f"  [{finding.tag}]"
+            elif finding.slug == "closed-over-remark":
+                label = f"  [fermee {finding.closed_at} sur {finding.source}]"
             else:
                 label = f"  [{finding.act}]"
             lines.append(
@@ -1033,9 +1379,8 @@ def main(argv: list[str] | None = None) -> int:
     unknown = [c for c in requested if c not in CLASSES]
     if unknown:
         print(
-            f"classe(s) non livree(s) : {', '.join(unknown)} — disponibles : "
-            f"{', '.join(CLASSES)} (les autres classes de #20185 viendront "
-            f"chacune par sa PR)",
+            f"classe(s) inconnue(s) : {', '.join(unknown)} — disponibles : "
+            f"{', '.join(CLASSES)}",
             file=sys.stderr,
         )
         return 2
@@ -1059,7 +1404,25 @@ def main(argv: list[str] | None = None) -> int:
         comments = fetch_comments(number)
         if cutoff is not None:
             comments = [c for c in comments if c.when <= cutoff]
-        return analyse_comments(number, comments, requested)
+        state, closed_at = "open", None
+        if "closed-over-remark" in requested:
+            meta = fetch_issue_state(number)
+            state = meta["state"] or "open"
+            closed_at = meta["closed_at"]
+            # ``--as-of`` fige aussi la fermeture : une issue fermee APRES
+            # l'instant fige etait encore ouverte a cet instant.
+            if closed_at and cutoff is not None:
+                try:
+                    frozen_when = datetime.strptime(
+                        closed_at, "%Y-%m-%dT%H:%M:%SZ"
+                    ).replace(tzinfo=timezone.utc)
+                except ValueError:
+                    frozen_when = None
+                if frozen_when is not None and frozen_when > cutoff:
+                    state, closed_at = "open", None
+        return analyse_comments(
+            number, comments, requested, state=state, closed_at=closed_at
+        )
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
         reports = list(pool.map(work, numbers))
@@ -1069,7 +1432,12 @@ def main(argv: list[str] | None = None) -> int:
     reports = [
         r
         for r in reports
-        if r.concerns or r.remarks or r.reserves or r.externals or r.excluded
+        if r.concerns
+        or r.remarks
+        or r.reserves
+        or r.externals
+        or r.asks
+        or r.excluded
     ]
     unresolved = sum(len(r.unresolved) for r in reports)
     excluded = excluded_by_signature(reports)
@@ -1096,6 +1464,17 @@ def main(argv: list[str] | None = None) -> int:
             "externals_total": sum(len(r.externals) for r in reports),
             "externals_unresolved": sum(
                 1 for r in reports for c in r.externals if c.status != "REPONDU"
+            ),
+            "asks_total": sum(len(r.asks) for r in reports),
+            "asks_unresolved": sum(
+                1 for r in reports for a in r.asks if a.status != "REPONDU"
+            ),
+            "closures_total": sum(len(r.closures) for r in reports),
+            "closures_unresolved": sum(
+                1
+                for r in reports
+                for f in r.closures
+                if f.status in ClosureFinding.OPEN_STATUSES
             ),
             "unresolved": unresolved,
             "excluded_total": sum(excluded.values()),
