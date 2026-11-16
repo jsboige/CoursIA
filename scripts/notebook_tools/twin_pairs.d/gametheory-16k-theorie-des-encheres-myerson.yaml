@@ -1,0 +1,9 @@
+- name: "GameTheory-16k Theorie des Encheres Myerson"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Calculs pédagogiques sans solveur : NumPy côté Python, BCL .NET côté C#. Les mêmes enchères, budgets Monte-Carlo et quadrature sont exécutés."
+  known_differences:
+    - "Les générateurs pseudo-aléatoires diffèrent : les estimations numériques ne sont pas identiques."

@@ -2,8 +2,6 @@
 pagetitle: "RL - Reinforcement Learning"
 ---
 
-# RL - Reinforcement Learning
-
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GameTheory](../GameTheory/README.md)
 
 <!-- CATALOG-STATUS
@@ -98,11 +96,13 @@ Les lettres restent des extensions facultatives de leur parent : leurs identifia
 
 La sous-série conserve ses identifiants RLPT propres et son parcours de post-training ; elle ne fait pas partie de la numérotation du socle RL. Son arc part du reward model Bradley-Terry écrit à la main, passe par l'anatomie d'un reward hacking et la comparaison à budget égal entre code maison et harnais `trl`, et referme le parcours sur le départage DPO offline contre GRPO online avec test statistique. L'énumération des carnets, les kernels, les durées et les objectifs d'apprentissage vivent dans le [README de la sous-série](PostTraining/README.md).
 
-Les carnets `RL-17` et `RL-18` n'existent plus dans cette série : ce sont désormais `Complexity-04c` et `Complexity-04d`, décrits plus haut.
+Le parcours se referme sur un carnet de synthèse qui appartient au socle, à la racine de la série : [RL-20-Capstone-PostTraining-Python](RL-20-Capstone-PostTraining-Python.ipynb) relit les sorties committées des onze carnets, les tient côte à côte et calcule ce qu'elles autorisent à affirmer — la part du plafond de Bayes atteinte par chaque modèle, le seuil analytique du reward hacking et sa décomposition par canal, le coût par point de gain, et la résolution de chaque instrument de mesure. Il s'exécute sur CPU, sans GPU ni checkpoint, parce que sa matière première est déjà dans les fichiers.
+
+Les anciens carnets `RL-17` et `RL-18` — `k_server_wfa` et le secrétaire matroidal — ne sont plus dans cette série : ce sont désormais `Complexity-04c` et `Complexity-04d`, décrits plus haut. Les numéros `RL-17` et `RL-18` ont été réattribués le 2026-11-15 à `Reward-Tampering` et `Randomisation-Domaine-Sim-to-Real`, décrits dans la table ci-dessus.
 
 ## Contenu détaillé du parcours principal
 
-Les carnets du socle numérotés de 01 à 13 sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles — la provenance exacte de chaque figure (cellule source, poids, alt-text) est consignée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md). Les sections 6b à 6f détaillent séparément les approfondissements de leur parent. Les carnets 14 à 21 sont décrits dans la table ci-dessus ; la sous-série `PostTraining/` est décrite dans son [README](PostTraining/README.md).
+Les carnets du socle numérotés de 01 à 13 sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles — la provenance exacte de chaque figure (cellule source, poids, alt-text) est consignée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md). Les sections 6b à 6f détaillent séparément les approfondissements de leur parent. Les carnets 14 à 19 sont décrits dans la table ci-dessus, et le capstone `RL-20`, à la racine de la série, dans la section PostTraining ; la sous-série `PostTraining/` est décrite dans son [README](PostTraining/README.md).
 ### Notebook 1 - Introduction avec PPO et CartPole
 
 | Section | Contenu |
@@ -367,6 +367,10 @@ L'installation détaillée, avec les versions épinglées, vit dans [`requiremen
 Chaque carnet se termine sur des exercices à compléter dans les cellules prévues : la correction n'est pas fournie, mais le carnet s'exécute de bout en bout même quand les exercices ne sont pas faits, et la sortie attendue de chaque cellule est visible dans la version committée. Les exercices demandent en général de modifier un hyperparamètre ou une fonction de récompense, puis de relire les courbes — l'objectif est de faire bouger une mesure, pas de recopier une réponse.
 
 Dans `RL-15`, les exercices prolongent le comparatif multi-graines : ils invitent à examiner l'avantage relatif au groupe, le choix du nombre de graines et l'effet de la taille du groupe.
+
+## Reward model Bradley–Terry : Python et C#
+
+[RLPT-00 en Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) et [en C#](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-CSharp.ipynb) entraînent le même type de modèle de reward sur des préférences synthétiques, avec PyTorch et TorchSharp CPU. Le pooling moyen reste insensible à l'ordre : les deux versions exposent cette limite et distinguent la référence Bayes en espérance des mesures réalisées.
 
 ## Ponts vers les autres séries
 
