@@ -5858,12 +5858,19 @@ def test_cache_v2_complete_is_read_by_the_reader_without_network(
         # cache ecrit par une version anterieure, qui n'indexait pas les
         # anciens chemins de renommage.
         "renames": [],
+        # #26751 -- la date de creation est une preuve pour la jambe
+        # IMPLICIT : sans elle, le lecteur traite le cache comme absent.
+        # Les DEUX graphies sont acceptees (`created_at` du fetch GraphQL
+        # de l'organe, `createdAt` du `gh pr list` du picker).
+        "created_at": "2026-11-14T10:00:00Z",
     }]
     monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
     path = pig._build_open_prs_cache_for_belt("myia-ai-01:CoursIA-2")
     assert path is not None
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    assert payload["format"] == "open-prs-v2"
+    # La constante du producteur, pas un litteral : un bump de format
+    # (#26725, v2 -> v3) ne doit pas casser un test qui ne parle pas de format.
+    assert payload["format"] == pig._OPEN_PRS_CACHE_FORMAT
     assert payload["complete"] is True
     assert payload["count"] == 1
 
@@ -5887,7 +5894,7 @@ def test_incomplete_enumeration_writes_an_incomplete_cache(
     assert path is not None
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     assert payload["complete"] is False
-    assert payload["format"] == "open-prs-v2"
+    assert payload["format"] == pig._OPEN_PRS_CACHE_FORMAT
     assert "tronquee" in payload["reason"]
 
     # Le lecteur refuse ce cache : UNKNOWN, jamais une liste exploitee.
