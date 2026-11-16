@@ -825,26 +825,34 @@ def coverage_without_testpaths(
 # --- #25366 T4 : le ratchet — dette connue tolérée, NOUVEAU refusé ---
 
 def write_inventory_baseline(
-    path: Path, unwatched: list[str], dupes: dict[str, list[str]]
+    path: Path,
+    unwatched: list[str],
+    dupes: dict[str, list[str]],
+    unplayed: list[str],
 ) -> None:
     """Écrit la baseline de dette connue des sens d'inventaire.
 
     Format JSON : {"unwatched": [...], "duplicate_basenames": {nom:
-    [répertoires]}}. Régénérer quand une tranche T1/T2 résorbe de la
+    [répertoires]}, "unplayed": [...]}. Le sens fichier (couverture par
+    fichier de #26759) est baseliné depuis que #26759 le rend strict
+    sous --inventory. Régénérer quand une tranche T1/T2 résorbe de la
     dette (le jugement le rappelle par des lignes « régénérer »).
     """
     payload = {
         "description": (
             "Dette connue des sens d'inventaire de #25366 (dossiers de "
-            "tests non triés, basenames dupliqués). Ratchet T4 : ces "
-            "entrées sont tolérées, tout finding NOUVEAU fait rougir la "
-            "garde. Régénération : python scripts/check_testpaths_coverage.py "
-            "--inventory --write-baseline scripts/tests/baseline_testpaths_inventory.json"
+            "tests non triés, basenames dupliqués) et du sens fichier "
+            "de #26759 (fichiers qu'aucune jambe ne collecte). Ratchet "
+            "T4 : ces entrées sont tolérées, tout finding NOUVEAU fait "
+            "rougir la garde. Régénération : python "
+            "scripts/check_testpaths_coverage.py --inventory "
+            "--write-baseline scripts/tests/baseline_testpaths_inventory.json"
         ),
         "unwatched": sorted(unwatched),
         "duplicate_basenames": {
             k: sorted(v) for k, v in sorted(dupes.items())
         },
+        "unplayed": sorted(unplayed),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -873,10 +881,12 @@ def load_inventory_baseline(path: Path) -> dict:
         not isinstance(data, dict)
         or not isinstance(data.get("unwatched"), list)
         or not isinstance(data.get("duplicate_basenames"), dict)
+        or not isinstance(data.get("unplayed"), list)
     ):
         raise SystemExit(
             f"baseline ratchet mal formée ({path}) : clés 'unwatched' "
-            "(liste) et 'duplicate_basenames' (dict) attendues"
+            "(liste), 'duplicate_basenames' (dict) et 'unplayed' "
+            "(liste) attendues — régénérer par --write-baseline"
         )
     return data
 
@@ -884,6 +894,7 @@ def load_inventory_baseline(path: Path) -> dict:
 def judge_inventory_against_baseline(
     unwatched: list[str],
     dupes: dict[str, list[str]],
+    unplayed: list[str],
     baseline: dict,
 ) -> list[str]:
     """T4 : la dette de la baseline est tolérée, le NOUVEAU rougit.
@@ -938,6 +949,18 @@ def judge_inventory_against_baseline(
     for name in sorted(set(base_dupes) - set(dupes.keys())):
         print(f"  [baseline] dette résorbée — régénérer la baseline : {name}")
 
+    base_unplayed = set(baseline.get("unplayed", []))
+    for f in unplayed:
+        if f in base_unplayed:
+            print(f"  [baseline] dette connue (tolérée) : {f}")
+        else:
+            failures.append(
+                "fichier de test non collecté NOUVEAU, absent de la "
+                f"baseline : {f}"
+            )
+    for f in sorted(base_unplayed - set(unplayed)):
+        print(f"  [baseline] dette résorbée — régénérer la baseline : {f}")
+
     if failures:
         print("Ratchet inventaire (#25366 T4) — findings NOUVEAUX :")
         for f in failures:
@@ -946,8 +969,9 @@ def judge_inventory_against_baseline(
         print(
             f"[ok] ratchet : aucun finding nouveau "
             f"({len(unwatched)} dossier(s) non trié(s), "
-            f"{len(dupes)} basename(s) dupliqué(s) — dette de baseline "
-            "tolérée)"
+            f"{len(dupes)} basename(s) dupliqué(s), "
+            f"{len(unplayed)} fichier(s) non collecté(s) — dette de "
+            "baseline tolérée)"
         )
     return failures
 
@@ -1488,7 +1512,8 @@ def main() -> int:
         )
         for finding in (unplayed if args.inventory else unplayed[:20]):
             print(
-                f"  {'FAIL' if file_strict else 'INFO'} {finding['path']} "
+                f"  {'FAIL' if file_strict and args.baseline is None else 'INFO'}"
+                f" {finding['path']} "
                 f"({finding['items']} item(s)) — jambe candidate : "
                 f"{', '.join(finding['candidates'])}"
             )
@@ -1550,12 +1575,20 @@ def main() -> int:
             print("[ok] toutes les cibles-dossier CI sont dans les testpaths")
         # T4 (#25366) : ratchet — dette connue tolérée, nouveau refusé.
         if write_mode:
-            write_inventory_baseline(args.write_baseline, inventory, dupes)
+            write_inventory_baseline(
+                args.write_baseline,
+                inventory,
+                dupes,
+                [f["path"] for f in unplayed],
+            )
             print(f"[ok] baseline ratchet écrite : {args.write_baseline}")
             return 0
         if args.baseline is not None:
             baseline_failures = judge_inventory_against_baseline(
-                inventory, dupes, load_inventory_baseline(args.baseline)
+                inventory,
+                dupes,
+                [f["path"] for f in unplayed],
+                load_inventory_baseline(args.baseline),
             )
 
     # Verdict des sens d'inventaire : rouges en strict (T0), SAUF en mode
@@ -1564,13 +1597,16 @@ def main() -> int:
     # convergence (critère 1) reste refusé sans tolérance dans tous les
     # modes stricts : il est mesuré à zéro sur main.
     if args.baseline is not None:
+        # Mode ratchet : seuls les findings NOUVEAUX rougissent (le
+        # juge couvre dossiers, dupes ET fichiers non collectés), la
+        # convergence reste refusée sans tolérance (zéro sur main).
         inventory_red = bool(baseline_failures) or (
             strict and bool(convergence)
         )
     else:
         inventory_red = strict and bool(
             inventory or dupes or convergence
-        )
+        ) or (file_strict and bool(unplayed))
 
     return 1 if (
         uncovered
@@ -1581,7 +1617,6 @@ def main() -> int:
         or inventory_red
         or ratchet
         or plan_issues
-        or (file_strict and unplayed)
     ) else 0
 
 

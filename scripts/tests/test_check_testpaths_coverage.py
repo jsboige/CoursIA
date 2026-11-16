@@ -872,10 +872,16 @@ def test_write_load_baseline_roundtrip(tmp_path: Path) -> None:
     )
 
     bl = tmp_path / "baseline.json"
-    write_inventory_baseline(bl, ["a/tests"], {"t.py": ["a/tests", "b/tests"]})
+    write_inventory_baseline(
+        bl,
+        ["a/tests"],
+        {"t.py": ["a/tests", "b/tests"]},
+        ["old/tests/test_a.py"],
+    )
     data = load_inventory_baseline(bl)
     assert data["unwatched"] == ["a/tests"]
     assert data["duplicate_basenames"] == {"t.py": ["a/tests", "b/tests"]}
+    assert data["unplayed"] == ["old/tests/test_a.py"]
 
     with pytest.raises(SystemExit):
         load_inventory_baseline(tmp_path / "absente.json")
@@ -888,6 +894,7 @@ def _baseline_dette_connue() -> dict:
     return {
         "unwatched": ["orphan/tests"],
         "duplicate_basenames": {"t.py": ["a/tests", "b/tests"]},
+        "unplayed": ["old/tests/test_a.py"],
     }
 
 
@@ -899,6 +906,7 @@ def test_judge_tolere_la_dette_connue() -> None:
         judge_inventory_against_baseline(
             ["orphan/tests"],
             {"t.py": ["a/tests", "b/tests"]},
+            ["old/tests/test_a.py"],
             _baseline_dette_connue(),
         )
         == []
@@ -909,7 +917,10 @@ def test_judge_rougit_sur_doublon_nouveau() -> None:
     from check_testpaths_coverage import judge_inventory_against_baseline
 
     failures = judge_inventory_against_baseline(
-        [], {"new.py": ["x/tests", "y/tests"]}, _baseline_dette_connue()
+        [],
+        {"new.py": ["x/tests", "y/tests"]},
+        [],
+        _baseline_dette_connue(),
     )
     assert any("NOUVEAU" in f and "new.py" in f for f in failures)
 
@@ -920,7 +931,10 @@ def test_judge_rougit_sur_croissance_laterale() -> None:
     from check_testpaths_coverage import judge_inventory_against_baseline
 
     failures = judge_inventory_against_baseline(
-        [], {"t.py": ["a/tests", "b/tests", "c/tests"]}, _baseline_dette_connue()
+        [],
+        {"t.py": ["a/tests", "b/tests", "c/tests"]},
+        [],
+        _baseline_dette_connue(),
     )
     assert any("CROISSANCE" in f and "c/tests" in f for f in failures)
 
@@ -929,7 +943,7 @@ def test_judge_rougit_sur_dossier_non_trie_nouveau() -> None:
     from check_testpaths_coverage import judge_inventory_against_baseline
 
     failures = judge_inventory_against_baseline(
-        ["orphan/tests", "newcomer/tests"], {}, _baseline_dette_connue()
+        ["orphan/tests", "newcomer/tests"], {}, [], _baseline_dette_connue()
     )
     assert any("non trié" in f and "newcomer/tests" in f for f in failures)
     assert not any("orphan/tests" in f for f in failures)
@@ -940,18 +954,10 @@ def test_judge_tolere_le_retrait_partiel() -> None:
     from check_testpaths_coverage import judge_inventory_against_baseline
 
     failures = judge_inventory_against_baseline(
-        [], {"t.py": ["a/tests"]}, _baseline_dette_connue()
+        [], {"t.py": ["a/tests"]}, [], _baseline_dette_connue()
     )
     assert failures == []
 
-
-def test_cli_ratchet_vert_sur_main_avec_baseline() -> None:
-    """Contrôle sur le dépôt réel : la dette committée est tolérée (rc 0).
-
-    C'est l'invocation exacte que la fast lane rend (T4 #25366). Si ce test
-    rougit sur une PR, l'arbre porte un finding NOUVEAU — ou, sur main, une
-    baseline périmée qu'une tranche T1/T2 a fait rétrécir sans la régénérer.
-    """
 
 # ---------------------------------------------------------------------------
 # #26736 : septième sens (couverture par fichier) et huitième sens
@@ -1149,6 +1155,24 @@ def test_invocation_simple_reste_verte_sur_le_depot_reel() -> None:
     )
     assert proc.returncode == 0, proc.stdout
     assert "Population CI-EXCLUDED" in proc.stdout
+
+
+def test_judge_rougit_sur_fichier_non_collecte_nouveau() -> None:
+    """#26759 rend le sens fichier strict sous --inventory : depuis cette
+    PR, le juge T4 couvre aussi ce sens — un fichier de test que la
+    baseline ne connaît pas rougit, un fichier connu est toléré."""
+    from check_testpaths_coverage import judge_inventory_against_baseline
+
+    failures = judge_inventory_against_baseline(
+        [],
+        {},
+        ["old/tests/test_a.py", "fresh/tests/test_new.py"],
+        _baseline_dette_connue(),
+    )
+    assert any(
+        "NOUVEAU" in f and "fresh/tests/test_new.py" in f for f in failures
+    )
+    assert not any("old/tests/test_a.py" in f for f in failures)
 
 
 def test_cli_ratchet_vert_sur_main_avec_baseline() -> None:
