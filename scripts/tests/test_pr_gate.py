@@ -3208,6 +3208,15 @@ def _quota_error(reset_epoch=None):
     return exc
 
 
+# #26869 -- the epoch scale of the `x-ratelimit-reset` header (seconds since
+# 1970). It is ~1,79e9 while the gate's monotonic clock reads ~1000 s since
+# the origin of the machine: subtracting one from the other measured a
+# duration of ~1,79e9 s for EVERY reset (job 133062303546,
+# 2026-11-16T02:57:47Z : `announced reset 1794790081s away`), which made the
+# "wait for a near reset" branch unreachable.
+EPOCH_NOW = 1_790_000_000.0
+
+
 def test_quota_family_at_its_bound_raises_the_replayable_verdict():
     """CONTROLE POSITIF : la famille quota, a sa borne, donne INCONCLUSIVE."""
     def fetch(_repo, _sha):
@@ -3346,23 +3355,156 @@ def test_ratelimit_reset_header_unparsable_is_none():
 def test_the_wait_sleeps_until_the_reset_it_was_told_about():
     """CONTROLE POSITIF du calage : un quota horaire ne se franchit pas en
     30 s de tentatives -- quand l'API dit quand il se reinitialise, on
-    attend cet instant (borne par l'echeance absolue du job)."""
+    attend cet instant (borne par l'echeance absolue du job). #26739 : ce
+    calage ne survit que SOUS le seuil (290 s < 300 s ici). #26869 : le
+    reset est un instant EPOCH, l'echeance du gate est MONOTONE -- les
+    deux horloges sont injectees separement."""
     slept = []
     clock = itertools.count(1000.0, 10)
+    # L'horloge epoch est celle de GitHub : ~1,79e9 s depuis 1970. Elle est
+    # TRES differente de la monotone (1000 s) -- c'est exactement la
+    # confusion que #26869 corrige.
+    epoch = EPOCH_NOW
 
     def fetch(_repo, _sha):
-        raise _quota_error(reset_epoch=1300.0)
+        raise _quota_error(reset_epoch=epoch + 290.0)
 
     with pytest.raises(pr_gate.QuotaInconclusive):
         pr_gate.wait_and_decide(
             "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
             settle_polls=2, sleep=slept.append, fetch=fetch,
-            now=lambda: next(clock),
+            now=lambda: next(clock), epoch_now=lambda: epoch,
         )
-    # Le compteur d'horloge avance de 10 s par lecture : l'echeance
-    # consomme la premiere lecture (1000), l'erreur observe 1010 --
-    # d'ou 1300 - 1010 = 290 s d'attente, pas 300.
+    # Le compteur d'horloge monotone avance de 10 s par lecture : l'echeance
+    # consomme la premiere lecture (1000), l'erreur observe 1010 -- la
+    # duree d'attente vient de l'ecart EPOCH (290 s), le budget restant de
+    # l'horloge monotone (3700 - 1010 = 2690 s), jamais du melange des deux.
     assert slept and slept[0] == pytest.approx(290.0, abs=1.0)
+
+
+def test_a_far_reset_renders_inconclusive_without_waiting(capsys):
+    """#26739 -- un reset annonce a ~59 min ne merite pas 59 min de runner
+    (mesure du 15/11 : jobs 132806296573/132806304780, 3 appels API puis
+    INCONCLUSIVE). Le verdict INCONCLUSIVE -- rejouable par le balayeur --
+    est rendu sur-le-champ : AUCUN sommeil, un seul appel, et le MEME
+    message que l'INCONCLUSIVE de borne (cap de retries ou echeance)."""
+    slept = []
+    calls = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        calls.append(1)
+        # #26869 -- le reset annonce est un instant EPOCH ; sa distance se
+        # mesure a l'horloge epoch (3529 s), jamais a l'horloge monotone du
+        # gate. La distance mesuree du 15/11 (3539 s) est reprise ici.
+        raise _quota_error(reset_epoch=EPOCH_NOW + 3529.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive) as excinfo:
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock), epoch_now=lambda: EPOCH_NOW,
+        )
+    # AUCUN sommeil, meme court : le runner est rendu immediatement, et le
+    # budget de 60 min n'est pas entame.
+    assert slept == [], (
+        "un reset lointain ne doit rien couter en runner : aucun sommeil"
+    )
+    assert len(calls) == 1
+    # Meme format que la borne : la famille est nommee et l'etat reste
+    # illisible (regle 1) -- le rejeu reste le geste nomme.
+    assert "installation-quota read failure" in str(excinfo.value)
+    assert "stayed unreadable (rule 1)" in str(excinfo.value)
+    # La sortie impute le geste : nommer la distance du reset et le rejeu
+    # par le balayeur, comme la ligne de backoff nomme sa famille.
+    out = capsys.readouterr().out
+    assert "installation-quota 403" in out
+    assert "3529s away" in out
+    assert "stale-sweep" in out
+
+
+def test_a_reset_at_exactly_the_threshold_still_waits():
+    """La borne est STRICTE : a exactement 300 s du reset, l'attente bornee
+    tient -- l'INCONCLUSIVE immediate ne vise que les resets PLUS LOINS que
+    le seuil, pas le seuil lui-meme."""
+    slept = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        # #26869 -- distance exactement 300.0 s, mesuree sur l'horloge epoch.
+        raise _quota_error(reset_epoch=EPOCH_NOW + 300.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock), epoch_now=lambda: EPOCH_NOW,
+        )
+    assert slept and slept[0] == pytest.approx(300.0, abs=1.0)
+
+
+# --- #26869 : deux horloges, une par usage ---------------------------------
+#
+# Le reset annonce par l'API est un instant EPOCH ; l'echeance du gate est
+# MONOTONE. Les soustraire l'une a l'autre mesurait ~1,79e9 s pour tout
+# reset (job 133062303546, 2026-11-16T02:57:47Z : `announced reset
+# 1794790081s away`) : la branche « attendre un reset proche » etait du code
+# MORT, et chaque 403 de quota rendait INCONCLUSIVE immediatement -- meme
+# quand le reset tombait dans la minute.
+
+
+def test_a_near_reset_is_awaited_for_the_real_duration(capsys):
+    """CONTROLE POSITIF : un reset a 60 s est ATTENDU (60 s), pas traite
+    comme un reset lointain. Sur le code d'avant #26869, la distance
+    mesurait ~1,79e9 s -> INCONCLUSIVE immediat, aucun sommeil."""
+    slept = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        raise _quota_error(reset_epoch=EPOCH_NOW + 60.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock), epoch_now=lambda: EPOCH_NOW,
+        )
+    assert slept, "un reset proche doit etre attendu, pas rendu INCONCLUSIVE"
+    assert slept[0] == pytest.approx(60.0, abs=1.0)
+    # La ligne de journal nomme la DUREE REELLE -- pas un nombre gigantic
+    # venu de la soustraction de deux horloges etrangères l'une a l'autre.
+    out = capsys.readouterr().out
+    assert "in 60s" in out, out
+
+
+def test_a_reset_one_hour_away_renders_inconclusive_immediately(capsys):
+    """CONTROLE POSITIF : un reset a 1 h ne vaut pas 1 h de runner -- le
+    verdict INCONCLUSIVE est rendu sur-le-champ, avec la distance REELLE
+    (3600 s) dans le journal."""
+    slept = []
+    calls = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        calls.append(1)
+        raise _quota_error(reset_epoch=EPOCH_NOW + 3600.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock), epoch_now=lambda: EPOCH_NOW,
+        )
+    assert slept == [], "un reset lointain ne doit rien couter en runner"
+    assert len(calls) == 1
+    out = capsys.readouterr().out
+    assert "3600s away" in out, out
+    # Le controle qui distingue ce correctif d'un simple reformatage : le
+    # nombre affiche est la distance REELLE, pas ~1,79e9.
+    assert "1799" not in out, (
+        "la distance affichee doit venir de l'horloge epoch, pas de la "
+        "soustraction epoch - monotone"
+    )
 
 
 def test_the_quota_wait_falls_back_on_the_backoff_without_a_reset():
