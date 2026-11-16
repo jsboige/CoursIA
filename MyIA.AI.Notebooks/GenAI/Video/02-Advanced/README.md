@@ -4,7 +4,7 @@
 
 Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, LTX Video/LTX-2, Wan Video, SVD et CogVideoX, jusqu'à l'étude de licence d'un modèle fermé de référence (MiniMax H3).
 
-**Dans le cadre du fil rouge pipeline vidéo pédagogique** : ce niveau fournit les modèles génératifs. [02-1](02-1-HunyuanVideo-Generation.ipynb) produit des vidéos haute qualité (cinématographique). [02-3](02-3-Wan-Video-Generation.ipynb) offre une génération rapide avec support multilingue. [02-4](02-4-SVD-Image-to-Video.ipynb) anime une image existante -- utile pour transformer un diagramme ou une illustration en séquence animée. Le duo final traite la question juridique de bout en bout : [02-6](02-6-MiniMax-H3-Architecture-Licensing.ipynb) établit *pourquoi* un modèle puissant (MiniMax H3) est hors d'atteinte en UE sur la voie auto-hébergée (bifurcation licence des poids ≠ ToS du service), et [02-7](02-7-CogVideoX-Text-to-Video.ipynb) en est le pendant exécutable : génération texte → vidéo sur un modèle open-weights Apache-2.0 vérifié *firsthand*.
+**Dans le cadre du fil rouge pipeline vidéo pédagogique** : ce niveau fournit les modèles génératifs. [02-1](02-1-HunyuanVideo-Generation.ipynb) produit des vidéos haute qualité (cinématographique). [02-3](02-3-Wan-Video-Generation.ipynb) offre une génération rapide avec support multilingue. [02-4](02-4-SVD-Image-to-Video.ipynb) anime une image existante -- utile pour transformer un diagramme ou une illustration en séquence animée. Le duo final traite la question juridique de bout en bout : [02-6](02-6-MiniMax-H3-Architecture-Licensing.ipynb) établit *pourquoi* un modèle puissant (MiniMax H3) est hors d'atteinte en UE sur la voie auto-hébergée (bifurcation licence des poids ≠ ToS du service), et [02-7](02-7-CogVideoX-Text-to-Video.ipynb) en est le pendant exécutable : génération texte → vidéo sur un modèle open-weights Apache-2.0 vérifié *firsthand*. Le carnet [02-8](02-8-PAN2-Modele-du-Monde-GLP.ipynb) ferme la série côté *technique* : la formalisation de PAN 2 (architecture GLP) — la thèse du modèle du monde, les cinq dimensions de design, la différence entre JEPA et GLP, et la factorisation en trois facteurs — rejouable sur CPU, les 29 B du modèle restant un paramètre d'exécution.
 
 ## Vue d'overview
 
@@ -27,6 +27,7 @@ Ce module explore les modèles de génération vidéo de pointe : HunyuanVideo, 
 | 5 | [02-5-LTX2-Audiovisual](02-5-LTX2-Audiovisual.ipynb) | LTX-2 audio+vidéo conjoint (22B) | Local GPU | ~14-24GB (fp8-cast natif, GGUF Q4 en prod) |
 | 6 | [02-6-MiniMax-H3-Architecture-Licensing](02-6-MiniMax-H3-Architecture-Licensing.ipynb) | Architecture et bifurcation juridique MiniMax H3 (licence poids ≠ ToS service) | Étude documentaire (CPU) | — |
 | 7 | [02-7-CogVideoX-Text-to-Video](02-7-CogVideoX-Text-to-Video.ipynb) | Génération texte → vidéo CogVideoX-2b (Apache-2.0, couple discriminant Prong B) | Local GPU | ~16-20GB |
+| 8 | [02-8-PAN2-Modele-du-Monde-GLP](02-8-PAN2-Modele-du-Monde-GLP.ipynb) | Formalisation de PAN 2 / GLP : thèse du modèle du monde, 5 dimensions de design, JEPA dégénéré vs GLP, factorisation `p_h . p_f . p_g` | Étude technique (CPU) | — |
 
 ## Prérequis
 
@@ -58,6 +59,7 @@ pip install -r requirements-comfyui.txt
 5. **02-5-LTX2-Audiovisual** - Vidéo + audio synchronisé (génération conjointe)
 6. **02-6-MiniMax-H3-Architecture-Licensing** - Vérifier une licence *firsthand* : pourquoi H3 est hors d'atteinte en UE auto-hébergé (et ce que la voie service ouvre)
 7. **02-7-CogVideoX-Text-to-Video** - Le pendant exécutable du 02-6 : texte → vidéo sur poids ouverts Apache-2.0
+8. **02-8-PAN2-Modele-du-Monde-GLP** - La technique d'un modèle du monde : GLP, ses cinq dimensions, ses trois niveaux de prédiction, et ce que le décodeur change (CPU, sans GPU)
 
 ## Technologies clés
 
@@ -98,6 +100,13 @@ pip install -r requirements-comfyui.txt
 - **VRAM** : ~16-20GB
 - **Licence** : Apache-2.0 — vérifiée *firsthand* dans le notebook (pas d'Excluded Territory ni de clause Outputs)
 - **Prong B** : couple discriminant exécuté pour rendre visible ce que le moteur apporte au-delà d'une suite de bas niveau
+
+### PAN 2 / GLP (modèle du monde, étude technique)
+- **Spécialité** : Modèle du monde **généraliste** (IFM/MBZUAI) — il simule l'issue d'une action avant qu'elle ne soit jouée, pour un **raisonnement simulatif** ; sortie = vidéo jusqu'à 20 s
+- **Architecture** : GLP — bottleneck génératif + backbone LLM + prédicteur de next-embedding par diffusion ; factorisation `p_PAN(o'|o,a) = p_h . p_f . p_g`
+- **Distinction clé** : face à JEPA (distribution **dégénérée**, masse de Dirac), le **décodeur** de GLP ferme la boucle et sert de **diagnostic** : il révèle une représentation trop perdante
+- **VRAM** : — (le carnet est CPU ; le modèle, lui, est un backbone MMDiT de 29 B servi sur 4×B300 / 8×H200)
+- **Licence** : Apache-2.0 (model card `IFM/PAN2`) — le carnet n'exécute pas le modèle, il en rejoue la formalisation
 
 ## Comparatif
 
