@@ -1,8 +1,8 @@
-# Audio avancé : voix, musique et séparation
+# Audio avancé : voix, musique, effets sonores et séparation
 
 [← Audio Foundation](../01-Foundation/) | [↑ Audio](../README.md) | [→ Audio Orchestration](../03-Orchestration/)
 
-Cette série intermédiaire explore trois façons de travailler le son : synthétiser une voix, générer de la musique et séparer les sources d'un enregistrement. Elle s'adresse aux personnes à l'aise avec Python et les bases du traitement audio ; la [série Foundation](../01-Foundation/) introduit notamment la synthèse vocale et l'écoute des résultats. Pour le fil rouge podcast, on peut produire une narration, créer un habillage musical, puis séparer ou remixer des pistes.
+Cette série intermédiaire explore quatre façons de travailler le son : synthétiser une voix, générer de la musique, créer des effets sonores et séparer les sources d'un enregistrement. Elle s'adresse aux personnes à l'aise avec Python et les bases du traitement audio ; la [série Foundation](../01-Foundation/) introduit notamment la synthèse vocale et l'écoute des résultats. Pour le fil rouge podcast, on peut produire une narration, créer un habillage musical, puis séparer ou remixer des pistes.
 
 ## Comment lire ce README — Découverte
 
@@ -23,6 +23,7 @@ Les numéros ci-dessous sont les étapes de cette sous-série. Elles présentent
 | 7 | [YuE2 : chansons complètes](02-7-YuE2-Song-Generation.ipynb) | Passer des paroles et d'un style à une chanson, puis explorer reprise et édition d'une partition. | Avancé | [Musique](#musique) |
 | 8 | [TTS expressif](02-8-Expressive-TTS.ipynb) | Expérimenter les tags de prosodie et comparer Fish S2 Pro et Dia TTS. | Avancé | [Voix](#voix) |
 | 9 | [ACE-Step](02-9-AceStep-Music-Generation.ipynb) | Générer une chanson à partir de paroles structurées et étudier les paramètres de génération. | Intermédiaire | [Musique](#musique) |
+| 10 | [Effets sonores AudioLDM2](02-10-Effets-Sonores-AudioLDM2.ipynb) | Générer des effets sonores à partir d'un texte, mesurer étapes, durée et guidance, puis discriminer un effet d'une musique. | Intermédiaire | [Effets sonores](#effets-sonores) |
 
 ## Approfondissements — Pratique
 
@@ -38,13 +39,17 @@ Le [gateway](02-5-Multi-Model-TTS-Gateway.ipynb) déplace la question vers une a
 
 Pour ajouter des paroles, [ACE-Step](02-9-AceStep-Music-Generation.ipynb) introduit les balises de structure et l'effet des paramètres de génération. [YuE2](02-7-YuE2-Song-Generation.ipynb) va plus loin : planification symbolique, génération sémantique, synthèse et décodage, ainsi que reprise et édition. Son carnet demande Linux et un GPU adapté ; les poids YuE2-3B sont sous licence **CC BY-NC 4.0**, qui interdit l'usage commercial. Consultez le carnet pour les conditions et les avis tiers avant toute réutilisation.
 
+### Effets sonores
+
+[AudioLDM2](02-10-Effets-Sonores-AudioLDM2.ipynb) génère des effets sonores décrits par le texte : aboiement, pluie sur une tôle, verre brisé. Le carnet mesure ce qui distingue un effet d'une musique — largeur de bande, hauteur du centroïde, densité d'attaques — et l'effet réel des paramètres de génération (étapes, durée, guidance, graine). Les poids `cvssp/audioldm2` sont sous licence **CC BY-NC-SA 4.0**, qui interdit l'usage commercial ; le carnet détaille en outre les deux correctifs de compatibilité requis sous transformers 5.x.
+
 ### Séparation
 
 [Demucs](02-4-Demucs-Source-Separation.ipynb) prend le chemin inverse de la génération : il extrait des pistes d'un mélange. L'exemple synthétique permet d'examiner les sources et la métrique SDR ; sur un enregistrement réel, l'absence de sources de référence complique cette évaluation. La séparation peut laisser des artefacts et ne donne pas automatiquement les pistes originales. Utilisez des enregistrements dont vous détenez les droits nécessaires.
 
 ## Installation et limites — Pratique
 
-Chaque carnet indique ses dépendances propres et la configuration de ses modèles. Les générations locales demandent généralement un GPU NVIDIA et le téléchargement de poids ; la mémoire et le temps dépendent du modèle, de sa variante et de la machine. Demucs et le carnet MIDI décrivent aussi une exécution CPU, plus lente. Le carnet MIDI nécessite en outre FluidSynth ; YuE2 précise sa configuration Linux/GPU et ACE-Step décrit le déchargement vers la RAM pour réduire l'occupation GPU.
+Chaque carnet indique ses dépendances propres et la configuration de ses modèles. Les générations locales demandent généralement un GPU NVIDIA et le téléchargement de poids ; la mémoire et le temps dépendent du modèle, de sa variante et de la machine. Demucs et le carnet MIDI décrivent aussi une exécution CPU, plus lente. Le carnet MIDI nécessite en outre FluidSynth ; YuE2 précise sa configuration Linux/GPU et ACE-Step décrit le déchargement vers la RAM pour réduire l'occupation GPU. AudioLDM2 documente ses deux correctifs de compatibilité pour transformers 5.x et tourne en float16 sous 2,5 Go de VRAM.
 
 Le gateway et certaines expériences TTS appellent des **services** : leur disponibilité, les modèles déployés et les éventuels identifiants doivent être vérifiés avant l'exécution. Un message de démonstration ou une section sautée faute de dépendance ne constitue pas une génération réelle. Les sorties enregistrées illustrent une configuration donnée ; elles ne garantissent ni la même performance ni la même qualité sur une autre machine.
 

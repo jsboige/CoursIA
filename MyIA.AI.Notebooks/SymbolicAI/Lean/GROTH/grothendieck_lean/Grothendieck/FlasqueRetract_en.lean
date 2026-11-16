@@ -45,9 +45,9 @@ along a one-sided retraction.
 
 The conceptual reading, extending Part 80: what transports without
 choice is not just the isomorphism — it is everything that is a
-retract. A section s provides the transport back; no datum is chosen,
+retract. A section `s` provides the transport back; no datum is chosen,
 everything is canonically moved. The boundary established in Part 80
-(the flasque => injective link requires Zorn) is confirmed: a retract
+(the `flasque => injectif` link requires Zorn) is confirmed: a retract
 costs no choice, a maximal extension costs one.
 
 References:
@@ -60,17 +60,17 @@ References:
     `feature/grothendieck-partie-80`): invariance under iso, products,
     boundary of acyclicity.
 
-i18n convention (EPIC #4980 ratified 2026-07-04): this module is the
-English canonical twin of Grothendieck/FlasqueRetract.lean — _en
-suffix on the namespace (Grothendieck.FlasqueRetract_en), identical
+Convention i18n (EPIC #4980 ratified 2026-07-04): this module is the
+English canonical twin of `Grothendieck/FlasqueRetract.lean` — `_en`
+suffix on the namespace (`Grothendieck.FlasqueRetract_en`), identical
 imports, translated docstrings and comments. Theorem statements, Lean
 tactics, lemma names and Mathlib references remain in English (Mathlib 4,
-standard tactic DSL). Only the /-- ... -/ docstrings and -- ... comments
-differ between the two files. Anti-§D byte-identity guaranteed: the
-namespace body is preserved bit-for-bit (statements and proofs
-byte-identical between FlasqueRetract.lean and FlasqueRetract_en.lean).
+standard tactic DSL). Only the `/-- ... -/` docstrings and `-- ...`
+comments differ between the two files. Anti-§D byte-identity guaranteed:
+the namespace body is preserved bit-for-bit (statements and proofs
+byte-identical between `FlasqueRetract.lean` and `FlasqueRetract_en.lean`).
 
-Epic #1646, Phase 2 (#2159). All sorries eliminated at creation.
+Epic #1646, Phase 2 (#2159). All `sorry`s eliminated at creation.
 -/
 
 import Mathlib.CategoryTheory.Sites.IsSheafFor
