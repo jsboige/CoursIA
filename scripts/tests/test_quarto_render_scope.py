@@ -204,8 +204,9 @@ def test_restrict_yaml_drops_the_original_comments_with_the_entries():
 # ---------------------------------------------------------------------------
 # glob entries
 #
-# The real list carries `*.qmd`, covering index.qmd and parcours.qmd -- the two
-# root landing pages. An exact-string intersection matched neither: a PR
+# The real list carries `*.qmd`, covering index.qmd -- the remaining root
+# landing page since parcours.qmd moved under docs/ (#13751, covered by its
+# explicit entry). An exact-string intersection matched neither: a PR
 # editing index.qmd fell through to `empty`, skipped the render step, and
 # reported success having built nothing. These pin the fix.
 # ---------------------------------------------------------------------------
@@ -295,6 +296,16 @@ def test_this_prs_own_change_set_is_not_a_full_render():
             ("M", "scripts/quarto_render_scope.py"),
             ("M", "scripts/tests/test_quarto_render_scope.py")]
     mode, files, _ = qrs.decide(rows, ENTRIES)
+    assert mode == "scoped"
+    assert files == ["index.qmd", "README.md"]
+
+
+@pytest.mark.parametrize("path", [
+    "scripts/ci/quarto_readme_titles.py",
+    "scripts/ci/tests/test_quarto_readme_titles.py",
+])
+def test_readme_title_machinery_selects_readme_smoke(path):
+    mode, files, _ = qrs.decide([("M", path)], ENTRIES)
     assert mode == "scoped"
     assert files == ["index.qmd", "README.md"]
 

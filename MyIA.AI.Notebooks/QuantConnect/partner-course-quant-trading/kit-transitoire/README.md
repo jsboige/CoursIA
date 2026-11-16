@@ -201,6 +201,42 @@ Les notebooks `research.ipynb` utilisent `QuantBook` et nécessitent l'environne
 
 Les colonnes RandomForest et XGBoost reprennent les backtests de référence (graine 42, mesure du 2026-10-25). La colonne Framework reprend le meilleur backtest publié pour cette stratégie.
 
+## Le partage de `XLU` entre les deux tranches — mesuré
+
+`XLU` est dans les deux univers du kit 03 : c'est un secteur dans `sector_tickers` **et** un actif défensif dans `defensive_tickers`. Les deux tranches émettent donc leur insight sur le même titre, et le modèle de construction de portefeuille doit décider ce qu'il en fait. Cette décision est mesurable — elle a été mesurée sur QC Cloud.
+
+**Le protocole.** Un projet cloud jetable (`nr20188-kit03-xlu`), deux backtests qui ne diffèrent que par le paramètre `pcm_mode` du carnet :
+
+| Mode | Sémantique du `MultiStrategyPCM` |
+|---|---|
+| `base` | le modèle de base de Lean ne transmet que le **dernier** insight actif par titre : la tranche qui parle en dernier gagne, et la tranche qui perd son poids le **perd entièrement** |
+| `intent` | les cibles sont **reconstruites** depuis l'insight actif le plus récent par `(symbole, source_model)`, puis **additionnées** par symbole : les deux tranches s'additionnent |
+
+Même code, même fenêtre (2015-01-01 → 2024-12-31), même capital (100 000), même courtage : la seule variable est le mode.
+
+**La mesure** (QC Cloud, 2026-11-11) :
+
+| Mesure | `base` | `intent` | Écart |
+|---|---|---|---|
+| Ratio de Sharpe | 0,377 | 0,365 | **−0,012** |
+| CAGR | 7,596 % | 7,434 % | −0,162 pt |
+| Pire baisse | 20,700 % | 21,900 % | **+1,200 pt** |
+| Valeur finale du portefeuille | 208 071,56 $ | 204 939,90 $ | −3 131,66 $ |
+| Cas `XLU` (`both_up`) | 114 | 114 | 0 |
+| Cible moyenne reçue par `XLU` | 0,0184 | **0,1052** | × 5,7 |
+
+Le run `base` **reproduit la ligne publiée du kit** (Sharpe 0,376 ; CAGR 7,60 % ; pire baisse 20,6 %) : l'environnement de mesure est donc **fidèle**, et l'écart entre les deux colonnes porte bien sur le seul mode du PCM.
+
+**Ce que les compteurs disent.** Les trois compteurs sont des *statistiques de runtime* du carnet : ils sont **lus sur le run**, pas déduits du code.
+
+- **Les cas sont identiques** des deux côtés (`both_up=114`, `sector_up_only=588`, `defensive_up_only=77`, `none_up=259`) : le mode ne change pas le flux d'insights, seulement la répartition du poids. C'est un contrôle — les deux runs ont vu exactement les mêmes décisions.
+- **La cible sur `XLU` change** : 0,0184 → 0,1052. En mode `base`, la tranche défensive porte `XLU` dans les 1 038 appels, et son poids sectoriel est donc **perdu entièrement** — y compris dans les 588 séances où la seule tranche sectorielle était active, où la cible reçue par `XLU` vaut zéro. En mode `intent`, le poids sectoriel sur `XLU` est conservé et **s'ajoute** à celui de la tranche défensive : `XLU` est targeted bien plus souvent et bien plus lourd.
+- **`XLU passed = Defensive` dans les deux modes** : ce compteur nomme la source de l'insight qui **porte** la cible, pas le nombre de contributeurs. En mode `intent` la cible est une somme, mais elle reste portée par le même insight : l'amplitude se lit donc dans la cible moyenne, pas dans ce compteur.
+
+**La lecture.** Le mode additif **n'est pas neutre** : sur ce consommateur, il change les chiffres. Il restaure le poids sectoriel sur `XLU` — c'est l'effet recherché de la sémantique `intent` — mais il **surcharge** `XLU` et coûte, sur cette fenêtre, **0,012 de Sharpe** et **1,2 point de pire baisse**. La ligne publiée du kit (Sharpe 0,376) correspond au mode `base`, c'est-à-dire au comportement « la dernière tranche gagne ».
+
+Ce résultat complète la mesure du canonique (`SharedPCM/pouches_pcm.py`, défaut `additive`) : sur les consommateurs dont les tranches sont **disjointes**, les deux modes sont **indiscernables** (27 statistiques, 0 écart) ; ici, où `XLU` est partagé par les deux tranches, ils **ne le sont pas**. Le mode additif est donc une **décision par projet**, pas un détail global : chaque projet dont les tranches se recouvrent doit la mesurer.
+
 ---
 
 **Version anglaise (snapshot pré-bascule)** : [README.en.md](README.en.md)

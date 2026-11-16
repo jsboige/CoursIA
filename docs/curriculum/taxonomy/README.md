@@ -55,6 +55,19 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 
 Les tranches suivantes étendront la série aux sous-séries de `Search/` (autres parties du catalogue) et aux carnets de `Part1-Foundations` non couverts ici — ajoutées au même `search.json`, une PR par tranche, sur ce même modèle.
 
+## Série Planners — tranche 1 (cœur classique : formulation → PDDL → espace d'états → Fast Downward → heuristiques → domaines)
+
+`planners.json` étend le même format à la série **Planners**, sur le **cœur classique** de la série : six carnets (`01-Foundation` : `Planners-01-Introduction`, `02-PDDL-Basics`, `03-State-Space` ; `02-Classical` : `04-Fast-Downward`, `05-Heuristics`, `06-Domains`, versions `-Python`) et 26 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; l'arbre de carnets porte ici le niveau **sous-série** (`Planners/01-Foundation` et `Planners/02-Classical`). Les **prérequis** relient les carnets entre eux (par ex. la formulation du problème avant PDDL et la recherche d'états, la recherche d'états avant Fast Downward, PDDL avant les domaines). Chaque concept cite les cellules de carnet où il est enseigné ; ceux qui s'y rattachent (formulation, PDDL, planification comme recherche d'états, heuristiques de planification) nomment en outre le chapitre **AIMA ch. 10** correspondant dans leur définition, les concepts sans équivalent AIMA (Fast Downward, graphe de planification, LM-cut, satisficing, les heuristiques h^max/h^add/FF/landmarks, les domaines de référence) n'en citant aucun.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/planners.json \
+  --skos-output /tmp/planners.ttl \
+  --owl-output /tmp/planners.owl
+```
+
+Les tranches suivantes étendront la série aux sous-séries avancées de `SymbolicAI/Planners/` (planification sous incertitude, planification temporelle, SAT-based) et aux autres carnets de `01-Foundation` / `02-Classical` non couverts ici — ajoutées au même `planners.json`, une PR par tranche, sur ce même modèle.
+
 ## Série IIT — tranches 1+2 (cœur : réseau causal → Φ → CES → complexe majeur → coarse-graining → frontière → lentilles → objection Aaronson → formalisation Lean → partitionnement MIP)
 
 `iit.json` étend le même format à la série **IIT** (Integrated Information Theory), sur le **cœur** de la série : dix carnets (`IIT-01` à `IIT-09`, dont `IIT-08b` — 6 carnets Python PyPhi/Φ et 4 carnets Lean du lake `iit_lean`) et 28 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; les **prérequis** relient les carnets entre eux (par ex. le réseau causal avant Φ et la CES, Φ avant le complexe majeur, le problème de frontière, l'objection d'Aaronson et la formalisation Lean). Chaque concept cite les cellules de carnet où il est enseigné. IIT étant une théorie de la conscience spécifique, **aucun concept ne nomme de chapitre AIMA** (hors du périmètre d'AIMA) — les citations pointent les cellules des carnets uniquement.
@@ -69,3 +82,32 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 ```
 
 Les tranches suivantes étendront la série à la série **ICT** (`ICT-Series/`, 102 carnets, Epic #4588) — extension distincte documentée dans son propre README, ajoutée au même `iit.json` ou dans un `ict.json` dédié, une PR par tranche, sur ce même modèle.
+
+## Série Z3-Linq2Z3 — tranche 1 (la série entière : DSL déclaratif → théorie des tableaux → capstone du planificateur → applications SMT)
+
+`z3-linq2z3.json` étend le même format à la série **Z3-Linq2Z3** (`SymbolicAI/SMT/Z3-Linq2Z3/`), sur ses vingt carnets (`01_Linq2Z3_Intro` à `20_Theorem_Rewriters`) et 21 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent. Les **prérequis** dessinent un tronc et un éventail : la programmation déclarative avant le DSL `Theorem` de Z3.Linq ; le DSL avant la théorie des tableaux, puis les grilles 2D, la modélisation du planificateur de repas, la jointure de données réelles, le capstone patient et l'encodage à l'échelle ; le DSL, encore, avant chacune des applications indépendantes (ordonnancement, coloration, cryptarithmes, MaxSAT, bit-vectors, arithmétique réelle, cores UNSAT, énigme d'Einstein, tactiques, réécritures). Chaque concept cite les cellules de carnet où il est enseigné ; **aucun ne nomme de chapitre AIMA**, la série enseignant un outil SMT et son DSL C# plutôt qu'un chapitre du livre.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py   --data docs/curriculum/taxonomy/z3-linq2z3.json   --skos-output /tmp/z3-linq2z3.ttl   --owl-output /tmp/z3-linq2z3.owl
+```
+
+## Série Tweety — tranche 1 (logiques → révision de croyances → argumentation)
+
+[`tweety.json`](tweety.json) décrit le cœur Python de la sous-série **SymbolicAI/Tweety** : `Tweety-02-Basic-Logics`, `Tweety-03-Advanced-Logics`, `Tweety-04-Belief-Revision`, `Tweety-05-Abstract-Argumentation` et `Tweety-06-Structured-Argumentation`. Le même `schema.json` et le validateur `curriculum_taxonomy.py` s'appliquent. Les prérequis relient notamment la satisfiabilité à MaxSAT et aux sous-ensembles inconsistants minimaux, puis le cadre de Dung à l'admissibilité et aux sémantiques d'argumentation. Cette tranche ne prétend pas couvrir toute la série Tweety.
+
+Les définitions françaises et anglaises citent les **cellules sources des carnets** par chemin et identifiant stable. Aucun chapitre AIMA n'est indiqué dans cette tranche : le choix est de sourcer les formulations effectivement enseignées avec Tweety, notamment AGM, CF2, ASPIC+, DeLP et ABA, plutôt que de leur attribuer un chapitre généraliste sans correspondance établie. Cela ne signifie pas que les fondements de logique propositionnelle ou du premier ordre sont absents d'AIMA ; un rattachement bibliographique supplémentaire demanderait une vérification explicite, distincte des citations de cellules présentes ici.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/tweety.json \
+  --skos-output /tmp/tweety.ttl \
+  --owl-output /tmp/tweety.owl
+```
+
+## Valider toutes les taxonomies d'un coup
+
+`--all` valide chaque `*.json` du dossier (hors `schema.json`) et nomme le fichier fautif ; il n'écrit aucun export, et `--skos-output` / `--owl-output` y sont sans effet :
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py --all
+```

@@ -238,9 +238,35 @@ import lean_build_attestation  # noqa: E402
 # remplace n'a pas repris le pli de la chaine v9).
 import pr_gate  # noqa: E402
 import check_run_state  # noqa: E402
+# #17437 : normalisation de l'auteur d'une review (orthographe REST des
+# identites App) -- source unique de la forme canonique, jamais recopiee.
+import gh_identity  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
+# La voix du coordinateur : le login humain, PLUS l'App PROPRE a la lane
+# coordinateur. L'App de machine ``coursia-lane-ai-01`` n'en fait TOUJOURS
+# PAS partie (arbitrage ai-01 2026-11-13, maintenu).
+#
+# L'App propre existe desormais (Q187, 2026-11-14) : App 5763709, slug
+# ``coursia-coord-ai01``, creee le 2026-11-14 sur le go du user, installee
+# sur jsboige/CoursIA seulement, cle dediee
+# ``.secrets/github-apps/coursia-coord-ai01.pem`` -- DISTINCTE de la cle de
+# l'App de machine que la lane worker sœur ``myia-ai-01:CoursIA-2`` lit
+# aussi. C'est cette separation de cles qui la rend eligible : seul le
+# coordinateur peut forger son jeton. L'App de machine
+# ``coursia-lane-ai-01[bot]`` reste EXCLUE pour la raison d'origine : sa cle
+# vivant dans le clone partage, une APPROVE de CoursIA-2 sous cette App
+# vaudrait celle du coordinateur -- la porte Q131 tomberait.
+#
+# Le mecanisme de preuve d'identite reste en place (``_voice_login`` /
+# ``_typed_reviews``) : la preuve est le TYPE porte par la ligne (REST
+# ``user.type`` / GraphQL ``author.__typename``), jamais une sonde
+# ``users/<login>[bot]``. L'App propre entre donc UNIQUEMENT par une ligne
+# typee ``Bot`` ; une forme nue sans type, ou un homonyme UTILISATEUR type
+# ``User``, est refuse -- fail-closed.
+COORDINATOR_LANE_APP_LOGIN = "coursia-coord-ai01[bot]"
+COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_LANE_APP_LOGIN))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
@@ -256,6 +282,23 @@ SLOT_RESERVATIONS_PATH = SCRIPTS_DIR / "notebook_tools" / "slot_reservations.jso
 COMBINED_PATH = SCRIPTS_DIR / "coordination" / "premerge_combined_check.py"
 COMBINED_DISABLE_ENV = "MERGE_READY_COMBINED_CHECK"
 REPO_ROOT = SCRIPTS_DIR.parent
+
+
+def _repo_relative(path: Path) -> str:
+    """Chemin d'organe RELATIF au depot, pour l'argv des sous-processus.
+
+    #26102 (repro ai-01 2026-11-13) : les argv absolus embarquent le chemin
+    du worktree de la machine. Un worktree nomme pour une PR (p. ex.
+    ``CoursIA-26102``) fait alors tripper toute assertion qui cherche le
+    NUMERO d'une autre PR dans les commandes enregistrees, et le journal
+    d'un meme run differe d'une machine a l'autre. Le couplage est double :
+    argv relatifs ici + ``cwd=REPO_ROOT`` epingle dans
+    ``SubprocessRunner.run`` -- les organes appeles resolvent leurs propres
+    chemins depuis ``__file__`` ou le cwd, jamais depuis cet argv.
+    Forme canonique en barres obliques (``as_posix``) : l'argv est identique
+    sous Windows et POSIX -- Python accepte les deux sur les deux OS.
+    """
+    return path.relative_to(REPO_ROOT).as_posix()
 
 # Parapluies et branches de campagne GELES par un veto user, exemption des
 # redressements comprise : definition et historique portes par le module
@@ -333,6 +376,35 @@ class MergeFailedError(Exception):
     """La commande de merge a echoue -- arret du run (disjoncteur)."""
 
 
+class BaseModifiedRaceError(Exception):
+    """Le merge a echoue deux fois sur une course de base (#26771).
+
+    Distinct de ``MergeFailedError`` : la course de base est **rejouable pour
+    la PR**, donc le balayage CONTINUE -- la PR est journalisee ``skipped``
+    avec le motif ``base-modified-race`` et les PRs suivantes sont evaluees.
+    C'est la correction du passage de 15:16Z du 2026-11-15, qui a merge 11 PRs
+    puis s'est arrete sur la 12e (``Base branch was modified``) et a fait
+    attendre toute la suite de la file un passage de plus.
+    """
+
+
+#: Motif de la course de base, dans le texte d'echec de ``gh pr merge``
+#: (GraphQL : « Base branch was modified. Review and try the merge again. »).
+#: Reconnaissance **litterale** : un motif non reconnu n'est jamais lu comme
+#: une course, il garde le disjoncteur. Une variante non ecrite ici ne serait
+#: donc pas traitee -- c'est le compromis voulu (une lecture large des
+#: messages d'erreur finirait par absorber de vrais echecs).
+BASE_MODIFIED_MARKER = "base branch was modified"
+
+#: Motif ecrit dans le journal pour une PR laissee par une course de base.
+BASE_MODIFIED_RACE_REASON = "base-modified-race"
+
+
+def is_base_modified_race(message: str) -> bool:
+    """Le message d'echec decrit-il une course de base (#26771) ?"""
+    return BASE_MODIFIED_MARKER in (message or "").lower()
+
+
 # Marqueurs d'une erreur de PORTEE GENERALE : ce qui frappe tous les appels de
 # la meme facon ne doit pas etre isole par PR, sinon une panne de jeton ou de
 # quota se lit comme une collection de ``run-error`` attribuees a des PRs
@@ -387,6 +459,9 @@ class SubprocessRunner:
     """Runner reel : rc capture DIRECTEMENT (subprocess.returncode, jamais un pipe)."""
 
     def run(self, cmd: list[str], env: dict[str, str] | None = None) -> RunResult:
+        # cwd epingle a la racine du depot : les argv d'organes sont RELATIFS
+        # (cf. ``_repo_relative``) -- c'est ce qui les rend resolus ici, et le
+        # journal independant du chemin du worktree de la machine.
         proc = subprocess.run(
             cmd,
             capture_output=True,
@@ -394,6 +469,7 @@ class SubprocessRunner:
             encoding="utf-8",
             errors="replace",
             env=env,
+            cwd=REPO_ROOT,
         )
         return RunResult(proc.returncode, proc.stdout or "", proc.stderr or "")
 
@@ -471,6 +547,37 @@ MAIN_RED_HISTORY_LIMIT = 20
 #: une annulation ou un runner perdu n'est pas une regression, et le
 #: verdict remonte au commit precedent (point 2 de la meme revue).
 MAIN_RED_CODE_VERDICTS = ("success", "failure")
+
+#: Etapes d'INFRASTRUCTURE du job `Scripts Tests (CPU)`. Une `failure` dont
+#: la PREMIERE etape en echec est l'une d'elles n'est pas un verdict de code :
+#: le job n'a pas execute un seul test. Le cas mesure (12/11, run 43316243195,
+#: job 131524893709, runner `myia-ai-01-wsl-14`) : l'etape
+#: `actions/checkout@v4` a tire les 1 606 branches (`fetch-depth: 0`) de 22:12
+#: a 22:31Z puis a echoue sur `RPC failed; curl 28 Operation too slow`. Les
+#: gardes de plancher de collection qui suivent ont alors echoue faute de
+#: fichiers -- consequence, pas cause. Aucun test n'etait identifie dans le
+#: log : la sentinelle retenait `main` sur une panne de checkout.
+#:
+#: Les marqueurs sont des sous-chaines du NOM de l'etape, en minuscules. Les
+#: noms rendus par l'API sont ceux du workflow (mesure sur le job cite :
+#: `Run actions/checkout@v4`, `Run actions/setup-python@v5`,
+#: `Install dependencies`, `Purger un work dir reutilise au graphe
+#: incomplet (#15387)`).
+MAIN_RED_INFRA_STEP_MARKERS = (
+    "set up job",
+    "actions/checkout",
+    "actions/setup-python",
+    "install dependencies",
+    "purger un work dir",
+    "[heal]",
+    # T-K (#25510) : les deux etapes du checkout borne tirees
+    # ("T-K : ascendance de la tete + la base, sans les 1 606 branches",
+    # "T-K : controle -- la base est visible, son historique est lu").
+    # Une panne de reseau sur le `git fetch --unshallow` est une panne
+    # d'infrastructure, pas un verdict de code : la sentinelle doit
+    # remonter au commit precedent, comme pour `actions/checkout`.
+    "t-k :",
+)
 
 
 def default_hold_path(journal_path: Path) -> Path:
@@ -570,6 +677,85 @@ def _scripts_tests_check(
     return max(scripts_checks, key=lambda row: str(row.get("started_at") or ""))
 
 
+def _job_id_of_check(check: dict) -> str:
+    """Identifiant du job GitHub Actions qui a produit ce check-run.
+
+    Le `details_url` d'un check-run de job porte le job : mesure sur le job
+    cite par le coordinateur (131524893709), il vaut
+    `https://github.com/jsboige/CoursIA/actions/runs/43316243195/job/131524893709`.
+    On retombe sur l'identifiant du check-run lui-meme, qui vaut le job
+    dans ce cas. Vide si rien n'est identifiable -- et alors on ne lit
+    AUCUNE etape : une lecture impossible ne vaut pas un verdict.
+    """
+    details_url = str(check.get("details_url") or "")
+    match = re.search(r"/job/(\d+)", details_url)
+    if match:
+        return match.group(1)
+    raw = str(check.get("id") or "").strip()
+    return raw if raw.isdigit() else ""
+
+
+def _first_failing_step(runner: Runner, gh_env: dict[str, str],
+                        check: dict) -> str:
+    """Nom de la PREMIERE etape en echec du job ("" si elle est illisible).
+
+    Une seule lecture de job par commit juge, et seulement dans le cas
+    `failure` sans test identifie. Le tri se fait sur le numero d'etape :
+    l'API renvoie les etapes dans l'ordre, mais le tri le rend explicite.
+    """
+    job_id = _job_id_of_check(check)
+    if not job_id:
+        return ""
+    result = runner.run(
+        [
+            "gh", "api", f"repos/{REPO}/actions/jobs/{job_id}",
+            "--jq",
+            '[.steps[] | select(.conclusion == "failure")'
+            ' | {n: .name, o: .number}] | sort_by(.o) | .[0].n // ""',
+        ],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        return ""
+    return (result.stdout or "").strip().strip('"')
+
+
+def _is_infra_step(step_name: str) -> bool:
+    """Vrai si l'etape nommee est une etape d'INFRASTRUCTURE."""
+    lowered = (step_name or "").lower()
+    return any(marker in lowered for marker in MAIN_RED_INFRA_STEP_MARKERS)
+
+
+def _identified_test(runner: Runner, gh_env: dict[str, str], check: dict) -> str:
+    """Nom du test en echec identifie dans le check, sinon dans le log du run.
+
+    Vide quand aucun test n'est identifie -- et c'est precisement ce cas
+    qui demande de regarder les ETAPES du job : un `failure` sans test
+    identifiable peut etre une panne d'infrastructure.
+    """
+    summary = str((check.get("output") or {}).get("summary") or "")
+    test_match = re.search(r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)", summary)
+    if test_match:
+        return test_match.group(1)
+    # Le check-run natif Actions contient souvent un resume sans le detail
+    # pytest. Dans ce cas, lire le log d'echec du run associe au check.
+    details_url = str(check.get("details_url") or "")
+    run_match = re.search(r"/actions/runs/(\d+)(?:/|$)", details_url)
+    if run_match:
+        log_result = runner.run(
+            ["gh", "run", "view", run_match.group(1), "--repo", REPO, "--log-failed"],
+            env=gh_env,
+        )
+        if log_result.returncode == 0:
+            test_match = re.search(
+                r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)",
+                log_result.stdout or "",
+            )
+            if test_match:
+                return test_match.group(1)
+    return ""
+
+
 def refresh_main_red_hold(
     runner: Runner, gh_env: dict[str, str], hold_path: Path
 ) -> None:
@@ -590,6 +776,15 @@ def refresh_main_red_hold(
     3. **Fail-closed borne.** Si aucun des `MAIN_RED_HISTORY_LIMIT` derniers
        commits ne porte de verdict termine, l'organe refuse de demarrer et
        nomme la borne.
+    4. **Une `failure` sans test identifie peut etre une panne
+       d'infrastructure.** On lit alors les etapes du job : si la PREMIERE
+       etape en echec est une etape d'infrastructure (checkout, setup-python,
+       installation, purge HEAL), le commit est ecarte comme
+       `infra(failure-step:<nom>)` et le verdict remonte au commit
+       precedent, comme pour `cancelled`. Le cas mesure (12/11, run
+       43316243195) : le checkout avait echoue sur `curl 28` apres 19 min
+       de fetch, aucun test n'avait ete execute, et la sentinelle retenait
+       `main` sur une panne d'infrastructure.
 
     La ligne posee par cette sentinelle est la seule que le chemin vert peut
     retirer ; les retenues du coordinateur ne sont jamais touchees.
@@ -615,7 +810,23 @@ def refresh_main_red_hold(
         if conclusion not in MAIN_RED_CODE_VERDICTS:
             skipped.append((sha, f"infra({conclusion or 'sans-verdict'})"))
             continue
-        judged = (sha, check, conclusion)
+        test_name = ""
+        if conclusion == "failure":
+            test_name = _identified_test(runner, gh_env, check)
+            if not test_name:
+                # Aucun test identifie : la `failure` peut venir de
+                # l'infrastructure. UNE lecture de job, dans ce cas seul.
+                step = _first_failing_step(runner, gh_env, check)
+                if step and _is_infra_step(step):
+                    skipped.append((sha, f"infra(failure-step:{step})"))
+                    print(
+                        "merge_ready : sentinelle main-red -- commit "
+                        f"{sha[:9]} ecarte, premiere etape en echec "
+                        f"'{step}' (infrastructure) : le verdict remonte au "
+                        "commit precedent"
+                    )
+                    continue
+        judged = (sha, check, conclusion, test_name)
         break
 
     if judged is None:
@@ -627,7 +838,7 @@ def refresh_main_red_hold(
             )
         )
 
-    sha, check, conclusion = judged
+    sha, check, conclusion, test_name = judged
 
     lines = hold_path.read_text(encoding="utf-8-sig").splitlines() if hold_path.exists() else []
     owned = [line for line in lines if line.strip().startswith(f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}")]
@@ -635,25 +846,6 @@ def refresh_main_red_hold(
     if conclusion == "success":
         updated = retained
     else:
-        summary = str((check.get("output") or {}).get("summary") or "")
-        test_match = re.search(r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)", summary)
-        test_name = test_match.group(1) if test_match else ""
-        # Le check-run natif Actions contient souvent un resume sans le detail
-        # pytest. Dans ce cas, lire le log d'echec du run associe au check.
-        if not test_name:
-            details_url = str(check.get("details_url") or "")
-            run_match = re.search(r"/actions/runs/(\d+)(?:/|$)", details_url)
-            if run_match:
-                log_result = runner.run(
-                    ["gh", "run", "view", run_match.group(1), "--repo", REPO, "--log-failed"],
-                    env=gh_env,
-                )
-                if log_result.returncode == 0:
-                    test_match = re.search(
-                        r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)",
-                        log_result.stdout or "",
-                    )
-                    test_name = test_match.group(1) if test_match else ""
         test_name = test_name or "test-non-identifie-dans-le-check"
         reason = (
             f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}sha={sha} "
@@ -872,8 +1064,99 @@ def review_disposition(view: dict, head: str) -> str:
 # --- approbation du coordinateur (etape 2ter, Q67 option a) --------------------
 
 
-def coordinator_approval_oid(view: dict) -> str | None:
-    """Oid du commit que la DERNIERE voix de ``myia-ai-01`` approuve, ou None.
+def _voice_login(row: dict) -> str:
+    """Login d'auteur d'une ligne de review, TYPE PAR LA LIGNE elle-meme.
+
+    #17437, relecture ai-01 du 2026-11-12 : la preuve d'identite est le
+    champ de TYPE de la ligne (REST ``user.type`` / GraphQL
+    ``author.__typename``), JAMAIS une sonde globale -- ``gh api
+    users/<slug>[bot]`` prouve que l'App EXISTE, pas que l'AUTEUR de la
+    ligne est l'App : un compte UTILISATEUR homonyme du slug serait
+    confondu avec elle. Les lignes typees reconstruisent le suffixe par
+    ``gh_identity`` ; une ligne NON typee n'est une voix que pour
+    l'orthographe canonique EXACTE de l'humain (``myia-ai-01``, nu par
+    construction) : toute forme nue App est refusee, sans sonde ni
+    reconstruction -- fail-closed par construction, plus de cas muets.
+    #17437/Q187 : l'App propre ``coursia-coord-ai01`` entre donc par la
+    ligne typee ``Bot`` (suffixe reconstruit), et l'homonyme UTILISATEUR
+    type ``User`` reste nu donc hors ``COORDINATOR_VOICES``.
+    """
+    author = row.get("author") or row.get("user") or {}
+    if not isinstance(author, dict):
+        return ""
+    if author.get("__typename") or author.get("type"):
+        return gh_identity.normalize_author_login(author)
+    login = str(author.get("login") or "")
+    if login == COORDINATOR_USER:
+        return login
+    return ""
+
+
+def _typed_reviews(runner: Runner, pr: int,
+                   gh_env: dict[str, str] | None = None) -> list[dict]:
+    """Reviews d'une PR sur la surface REST TYPEE, en forme canonique.
+
+    #17437 : ``gh pr view --json reviews`` rend l'auteur SANS champ de type ;
+    la preuve de type par ligne se prend sur une surface qui le transporte.
+    REST ``pulls/N/reviews`` rend chaque ligne avec ``user.login`` (deja
+    suffixe pour une App) ET ``user.type`` -- les deux ce dont
+    ``_voice_login`` a besoin. La ligne est mappee a la forme attendue par
+    ``_review_voice_state`` et le latest-wins (``submittedAt``,
+    ``commit.oid`` depuis ``commit_id``).
+
+    Echec de lecture : liste vide -- la preuve illisible vaut refus, le
+    verdict ``no-coordinator-approval`` en rend compte (fail-closed).
+    """
+    cmd = ["gh", "api", f"repos/{REPO}/pulls/{pr}/reviews",
+           "--paginate", "--slurp"]
+    res = runner.run(cmd, env=gh_env) if gh_env else runner.run(cmd)
+    if res.returncode != 0 or not (res.stdout or "").strip():
+        return []
+    try:
+        pages = json.loads(res.stdout)
+    except json.JSONDecodeError:
+        return []
+    flat: list = []
+    for page in pages if isinstance(pages, list) else [pages]:
+        if isinstance(page, list):
+            flat.extend(page)
+        elif isinstance(page, dict):
+            flat.append(page)
+    out: list[dict] = []
+    for row in flat:
+        if not isinstance(row, dict):
+            continue
+        user = row.get("user") or {}
+        out.append({
+            "author": {
+                "login": (user or {}).get("login") or "",
+                "type": (user or {}).get("type") or "",
+            },
+            "state": row.get("state") or "",
+            "body": row.get("body") or "",
+            "submittedAt": row.get("submitted_at") or "",
+            "commit": {"oid": row.get("commit_id") or ""},
+        })
+    return out
+
+
+def coordinator_approval_oid(view: dict, runner: Runner | None = None,
+                             gh_env: dict[str, str] | None = None) -> str | None:
+    """Oid du commit que la DERNIERE voix du coordinateur approuve, ou None.
+
+    #17437 : la voix du coordinateur est le login humain PLUS l'App propre a
+    la lane coordinateur (``COORDINATOR_VOICES`` ; App 5763709, cle dediee,
+    Q187 2026-11-14). L'App de machine ``coursia-lane-ai-01[bot]`` reste
+    refusee : forgeable par la lane soeur (bloc justificatif au-dessus de sa
+    definition). La preuve d'identite est TYPEE PAR LIGNE : l'App propre
+    n'entre que par une ligne typee ``Bot`` (REST ``user.type`` / GraphQL
+    ``author.__typename``), jamais par une forme nue ni par un homonyme
+    UTILISATEUR. Avec un runner, les reviews se relisent sur la surface REST
+    typee (``pulls/N/reviews``, ``user.type`` par ligne) ; sans runner
+    (lecture pure, tests), seules comptent les lignes deja typees du payload
+    et l'orthographe canonique exacte de l'humain -- une forme nue App n'est
+    JAMAIS resolue (relecture ai-01 2026-11-12 : la sonde prouve que
+    l'App existe, pas que l'auteur de la ligne est l'App).
 
     Latest-wins sur les seules voix du coordinateur, lues comme le canon (etat
     reel, puis verdict type en corps) : un ``CHANGES_REQUESTED`` ou un
@@ -882,11 +1165,19 @@ def coordinator_approval_oid(view: dict) -> str | None:
     l'etat REEL ``APPROVED`` vaut approbation : c'est le geste explicite de
     lecture, pas un jeton de corps.
     """
+    rows: list = []
+    if runner is not None and isinstance(view.get("number"), int):
+        rows = _typed_reviews(runner, view["number"], gh_env)
+    if not rows:
+        # Surface CLI non typee : l'humain nu canonique y est reconnu
+        # (orthographe exacte), toute forme App y est invisible -- les
+        # lignes typees du payload restent valables (tests, GraphQL).
+        rows = [row for row in view.get("reviews") or []
+                if isinstance(row, dict)]
     voices = [
         row
-        for row in view.get("reviews") or []
-        if isinstance(row, dict)
-        and ((row.get("author") or {}).get("login")) == COORDINATOR_USER
+        for row in rows
+        if _voice_login(row) in COORDINATOR_VOICES
         and _review_voice_state(row)
     ]
     if not voices:
@@ -934,7 +1225,7 @@ def coordinator_approval_reason(
     commit de contenu. Toute autre difference perime la lecture ; une preuve
     illisible vaut refus.
     """
-    approved = coordinator_approval_oid(view)
+    approved = coordinator_approval_oid(view, runner, gh_env)
     if approved is None:
         return "no-coordinator-approval"
     if approved == head:
@@ -1019,7 +1310,7 @@ def lean_build_attestation_reason(
 
 def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
     """Etape 4 : organe B.0. Retourne son rc (0 = clear), hors contrat -> arret."""
-    res = runner.run([sys.executable, str(NITS_PATH), str(pr)], env=gh_env)
+    res = runner.run([sys.executable, _repo_relative(NITS_PATH), str(pr)], env=gh_env)
     if res.returncode not in NITS_DOCUMENTED_RC:
         raise UnexpectedError(
             f"B.0 PR {pr} rc={res.returncode} hors contrat : "
@@ -1081,7 +1372,7 @@ def twin_collision_reason(
     # 0013) -- aucune n'etait visible de l'arbre de fusion, puisque aucune des
     # deux PRs n'etait mergee.
     claims_res = runner.run(
-        [sys.executable, str(TWIN_CLAIMS_PATH), "--json"]
+        [sys.executable, _repo_relative(TWIN_CLAIMS_PATH), "--json"]
     )
     if claims_res.returncode != 0:
         # « je n'ai pas pu lire » n'est pas « c'est propre » : skip dur, comme
@@ -1096,7 +1387,7 @@ def twin_collision_reason(
         return "twin-collision-unreadable:open-claims"
     try:
         res = runner.run(
-            [sys.executable, str(TWIN_PATH), "--repo", str(REPO_ROOT),
+            [sys.executable, _repo_relative(TWIN_PATH), "--repo", ".",
              "--base", "origin/main", "--head", head, "--merged", "--json",
              "--open-claims", claims_path, "--head-pr", str(pr)]
         )
@@ -1249,7 +1540,7 @@ def slot_reservation_reason(
     # pour la source `open_prs`. La voie rapide ne dispose pas de `gh`, ce
     # qui l'a forcee a `--offline` ; ici on en sert.
     res = runner.run(
-        [sys.executable, str(SLOT_PATH),
+        [sys.executable, _repo_relative(SLOT_PATH),
          "--base", "origin/main", "--head", head,
          "--exclude-pr", str(pr),
          "--json"],
@@ -1348,7 +1639,7 @@ def combined_tree_reason(
     if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
         return None
     res = runner.run(
-        [sys.executable, str(COMBINED_PATH), "--pr", str(pr), "--head", head,
+        [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr), "--head", head,
          "--json"],
         env=gh_env,
     )
@@ -1627,17 +1918,52 @@ def unstable_state_reason(
 
 def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None:
     """Etape 7 : squash merge epingle sur la tete evaluee (jamais --admin,
-    jamais --delete-branch)."""
-    res = runner.run(
-        ["gh", "pr", "merge", str(pr), "--repo", REPO,
-         "--squash", "--match-head-commit", head],
-        env=gh_env,
-    )
-    if res.returncode != 0:
+    jamais --delete-branch).
+
+    Un echec ``Base branch was modified`` est une **course** (#26771) : `main`
+    a bouge entre la lecture de l'etat et la pose du merge -- le merge
+    precedent du meme passage, ou un merge manuel concurrent, suffit a la
+    provoquer. Ce n'est ni une panne de l'organe ni une PR casse : le motif
+    est **rejouable pour la PR**. On relit l'etat de la PR apres la courte
+    pause prevue, et on retente une seule fois a la meme tete ; si la
+    tentative echoue encore, la PR est journalisee ``skipped`` et le
+    balayage CONTINUE.
+
+    Tout autre echec garde le disjoncteur (``MergeFailedError``) : un motif
+    non reconnu n'est jamais lu comme une course.
+    """
+    argv = ["gh", "pr", "merge", str(pr), "--repo", REPO,
+            "--squash", "--match-head-commit", head]
+    res = runner.run(argv, env=gh_env)
+    if res.returncode == 0:
+        return
+    message = (res.stderr or res.stdout or "").strip()
+    if not is_base_modified_race(message):
         raise MergeFailedError(
-            f"gh pr merge {pr} rc={res.returncode} : "
-            f"{(res.stderr or res.stdout).strip()[:200]}"
+            f"gh pr merge {pr} rc={res.returncode} : {message[:200]}"
         )
+    # Course de base : pause courte (celle du chemin nominal), puis relecture
+    # de l'etat de la PR (etat de fusion + tete) -- une relecture illisible
+    # n'interrompt pas la course : le merge est rejoue a la tete connue.
+    runner.sleep(MERGEABLE_RETRY_SLEEP_S)
+    try:
+        view = fetch_pr_view(runner, pr, gh_env)
+    except UnexpectedError:
+        view = {}
+    print(
+        f"merge_ready : course de base sur PR {pr} (tete {head}) -- "
+        f"etat relu : mergeable_state="
+        f"{view.get('mergeable_state') or 'inconnu'}, "
+        f"tete={((view.get('head') or {}).get('sha')) or 'inconnue'}",
+        file=sys.stderr,
+    )
+    res = runner.run(argv, env=gh_env)
+    if res.returncode == 0:
+        return
+    raise BaseModifiedRaceError(
+        f"gh pr merge {pr} rc={res.returncode} apres un rejeu : "
+        f"{(res.stderr or res.stdout or '').strip()[:200]}"
+    )
 
 
 # --- tour de controle par PR ---------------------------------------------------
@@ -1796,9 +2122,18 @@ def evaluate_pr(
         if pstate != "MERGED":
             return skip(f"stacked-on-main:{parent}:{pstate}",
                         stack_state, stack_inc)
+    # Prelecture REST bon marche : ne pas payer les tests d'arbre fusionne
+    # pour une PR que l'etape 6 refuserait. L'etape 6 reste la garde finale
+    # contre une evolution de l'etat ou de la tete pendant ces tests.
+    pre_state, pre_live_head = mergeable_state_and_head(runner, pr, gh_env)
+    if pre_state not in ("clean", "unstable"):
+        return skip(f"mergeable-state:{pre_state or 'absent'}",
+                    stack_state, stack_inc)
+    if pre_live_head != view_head:
+        return skip("head-moved", stack_state, stack_inc)
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
-    # apres tous les controles bon marche (il coute ~1 min) et avant le REST,
-    # qui reste le dernier pour garder la fenetre de course courte.
+    # apres tous les autres controles bon marche (il coute ~1 min) et avant le
+    # REST final, qui reste le dernier pour garder la fenetre de course courte.
     reason = combined_tree_reason(runner, pr, view_head, gh_env)
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
@@ -2021,6 +2356,24 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         stopped_reason = f"merge-failed:PR-{pr}"
                         exit_code = 1
                         break
+                    except BaseModifiedRaceError as exc:
+                        # Course de base (#26771) : le motif est REJOUABLE pour
+                        # la PR. La PR est journalisee ``skipped`` et le
+                        # balayage CONTINUE -- c'est le point de la demande :
+                        # une course sur la 12e PR d'un passage ne doit plus
+                        # faire attendre toute la suite de la file. Le motif
+                        # est nu dans le journal (greppable) ; le detail est
+                        # sur stderr.
+                        print(f"merge_ready : {exc}", file=sys.stderr)
+                        skipped = PRVerdict(
+                            pr, decision.head, "skipped",
+                            BASE_MODIFIED_RACE_REASON, False,
+                            decision.review, decision.stack,
+                            decision.stack_incidents,
+                        )
+                        results.append(skipped)
+                        append_journal(journal_path, skipped)
+                        continue
                     decision = PRVerdict(
                         pr, decision.head, "merged", decision.reason, True,
                         decision.review,

@@ -5595,13 +5595,14 @@ resultat = s_ex2.check()
 print(""Résultat :"", resultat)
 if resultat == unsat:
     print(""Noyau :"", s_ex2.unsat_core())",,,,,,,,e53d9c1d403656ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c17,markdown,fr,38fc05fb1f740c0e,"### Exemple guidé 3 — La carte d'Australie est-elle 2-coloriable ? (crédité #25495 — Emmajvx)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c17,markdown,fr,4d12b7f352e4bd86,"### Exemple guidé 3 — La carte d'Australie est-elle 2-coloriable ? (crédité #25495 — Emmajvx, #25618 — MathisGramaglia)
 
-> Résolution originale : **Emmajvx** (groupe 2), rendu de TP
-> [#25495](https://github.com/jsboige/CoursIA/pull/25495). Reprise telle quelle ;
-> seule la mise en forme de l'énoncé est harmonisée avec les sections voisines.
+> Deux résolutions indépendantes et équivalentes, rendus de TP : **Emmajvx** (groupe 2,
+> [#25495](https://github.com/jsboige/CoursIA/pull/25495)) et **MathisGramaglia** (groupe 4,
+> [#25618](https://github.com/jsboige/CoursIA/pull/25618)). Le code ci-dessous reprend celle de #25495
+> telle quelle ; seule la mise en forme de l'énoncé est harmonisée avec les sections voisines.
 
-La question de décision reprend le modèle de coloration de la section 4, avec le domaine réduit à `{0, 1}` : existe-t-il une coloration valide avec seulement 2 couleurs ? Le verdict du `check` — `sat` ou `unsat` — est la réponse, et un `unsat` prouve que 2 couleurs ne suffisent pas.",,,,,,,,38fc05fb1f740c0e,,,,,,,,,,,,,,,
+La question de décision reprend le modèle de coloration de la section 4, avec le domaine réduit à `{0, 1}` : existe-t-il une coloration valide avec seulement 2 couleurs ? Le verdict du `check` — `sat` ou `unsat` — est la réponse, et un `unsat` prouve que 2 couleurs ne suffisent pas.",,,,,,,,4d12b7f352e4bd86,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01b-Style-Declaratif-Linq.ipynb,c18,code,fr,52cd8065238d884a,"from z3 import *
 
 s_ex3 = Solver()
@@ -6237,73 +6238,171 @@ else:
     print(""CROSS=%d  ROADS=%d  DANGER=%d   (%d + %d = %d, egal a DANGER = %d : %s)"" %
           (cross, roads, danger, cross, roads, cross + roads, danger, cross + roads == danger))
 ",,,,,,,,e1423de6e2d7f2b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,c87f83f3,markdown,fr,f3d31166e61a1fb9,"## Exercices
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,c87f83f3,markdown,fr,6599d5451df9ebb2,"## Exemples guidés
 
-Les trois exercices ci-dessous vous font manipuler l'encodage des cryptarithmes (domaine, distinction, equation positionnelle) sur des variantes classiques. Ils progressent du modelisation d'une nouvelle equation (1), a l'enumeration complete des solutions (2), puis a la generalisation a la multiplication (3). Chaque stub est self-contained : les fonctions utilitaires (`Solver`, `Ints`, `Distinct`) sont définies dans les sections précédentes.",,,,,,,,f3d31166e61a1fb9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,868d2a3a,markdown,fr,26960803af48497e,"### Exercice 1 - DONALD + GERALD = ROBERT
-Modelisez le cryptarithme `DONALD + GERALD = ROBERT` (10 lettres distinctes : D, O, N, A, L, G, E, R, B, T).
+Les trois réalisations suivantes de Léane Audegond (EPF), issues du deuxième TP, illustrent la modélisation d'une addition, l'énumération des modèles et une multiplication non linéaire. Les exercices non résolus viennent ensuite.",,,,,,,,6599d5451df9ebb2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,868d2a3a,markdown,fr,d33cbbacf638501a,"### Exemple guidé 1 — DONALD + GERALD = ROBERT
 
-**Étapes** :
-1. Variables `Ints` pour les 10 lettres, domaine `{0..9}`.
-2. `Distinct` sur les 10 lettres.
-3. Tetes non nulles : `D > 0`, `G > 0`, `R > 0`.
-4. Equation positionnelle :
-   - `DONALD = 100000*D + 10000*O + 1000*N + 100*A + 10*L + L`
-   - `GERALD = 100000*G + 10000*E + 1000*R + 100*A + 10*L + D`
-   - `ROBERT = 100000*R + 10000*O + 1000*B + 100*E + 10*R + T`
+Réalisation de Léane Audegond (EPF), issue du deuxième TP.
 
-**Indice** : notez que `L` apparait deux fois dans DONALD (unite et dizaine) et `R` deux fois dans ROBERT - le solveur s'en occupe, il suffit d'ecrire l'equation positionnelle correcte.",,,,,,,,26960803af48497e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,377db765,code,fr,ac568c35c32fa60c,"# Exercice 1 : DONALD + GERALD = ROBERT
+On modélise dix lettres distinctes, les chiffres de tête non nuls et l'égalité positionnelle :
+
+- `DONALD = 100000*D + 10000*O + 1000*N + 100*A + 10*L + D`
+- `GERALD = 100000*G + 10000*E + 1000*R + 100*A + 10*L + D`
+- `ROBERT = 100000*R + 10000*O + 1000*B + 100*E + 10*R + T`
+
+Dans DONALD, D apparaît en tête et aux unités ; dans ROBERT, R apparaît en tête et aux dizaines.",,,,,,,,d33cbbacf638501a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,377db765,code,fr,8ba7ba2ee4ea7562,"# Exercice 1 : DONALD + GERALD = ROBERT
 # TODO etudiant :
 # Etape 1 : D, O, N, A, L, G, E, R, B, T = Ints('D O N A L G E R B T')
 # Etape 2 : domaine 0..9 pour les 10 lettres
 # Etape 3 : Distinct(...) sur les 10 lettres
 # Etape 4 : têtes non nulles (D > 0, G > 0, R > 0)
 # Etape 5 : equation DONALD + GERALD == ROBERT
-result = None  # TODO etudiant
-print(""Exercice 1 a completer : modelisez DONALD + GERALD = ROBERT avec Z3"")
-",,,,,,,,ac568c35c32fa60c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,486d7848,markdown,fr,6e8b3ecbd5de99f7,"### Exercice 2 - Verifier l'unicite de la solution
-Combien de solutions admet `SEND + MORE = MONEY` ? On sait qu'il y en a au moins une (cellule 3). Pour **prouver l'unicite**, on ajoute une contrainte qui **nie** la solution trouvee et on re-teste : si `unsat`, la solution etait unique.
+#result = None  # TODO etudiant
+#print(""Exercice 1 a completer : modelisez DONALD + GERALD = ROBERT avec Z3"")
 
-**Étapes** :
-1. Re-resoudre `SEND + MORE = MONEY`, recupere le modèle `m`.
-2. Ajouter la contrainte de negation : `Or(S != m[S], E != m[E], ...)` (au moins une lettre differe).
-3. Re-checker : si `unsat` -> unique ; si `sat` -> il existe une autre solution (compter par itération).",,,,,,,,6e8b3ecbd5de99f7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,14722545,code,fr,93e7598e0a7e5f75,"# Exercice 2 : prouver l'unicite de SEND + MORE = MONEY
+
+from z3 import *
+def exercice_1():
+    
+    D, O, N, A, L, G, E, R, B, T = Ints('D O N A L G E R B T') #on créé 10 inconnues entières (int)
+    lettres = [D, O, N, A, L, G, E, R, B, T] #regorupe les variables dans une seule liste pour ne pas les réécrire plus tard à chaque fois
+
+    s = Solver()   # le solveur qui va recevoir les règles
+
+    # chaque lettre est un chiffre entre 0 et 9
+    s.add([And(v >= 0, v <= 9) for v in lettres])
+
+    # deux lettres différentes = deux chiffres différents
+    s.add(Distinct(lettres))
+
+    # la première lettre de chaque mot n'est pas 0
+    s.add(D > 0, G > 0, R > 0)
+
+    # l'addition posée en colonnes.
+    # chaque lettre est multipliée par son rang (unités, dizaines, centaines...)
+    donald = 100000*D + 10000*O + 1000*N + 100*A + 10*L + D  
+    gerald = 100000*G + 10000*E + 1000*R + 100*A + 10*L + D
+    robert = 100000*R + 10000*O + 1000*B + 100*E + 10*R + T
+    s.add(donald + gerald == robert)
+
+    # On lance la recherche
+    # on va demander s'il y a une solution avec une boucle if 
+    #on regarde d'abord s'il y en a une avec s.check() == sat
+    if s.check() == sat: 
+        m = s.model() #si oui on recupere le model et on l'affiche
+        v = {str(x): m[x].as_long() for x in lettres}   # dictionnaire qui associe chaque lettre à son chiffre
+        print(""Solution :"", v)  #affiche la solution trouvée
+
+        # On reconstruit les 3 nombres pour vérifier si c'est correct
+        #on va donc chercher dans le dictionnaire les valeurs pour chaque lettre, les transformer en texte et les assembler 
+        n_donald = int("""".join(str(v[c]) for c in ""DONALD""))
+        n_gerald = int("""".join(str(v[c]) for c in ""GERALD""))
+        n_robert = int("""".join(str(v[c]) for c in ""ROBERT""))
+        print(f""{n_donald} + {n_gerald} = {n_robert}"") #ici on affiche le resultat de l'addition pour verifier que c'est correct 
+        
+    else: # si aucune solution n'est trouvée, on affiche un message
+        print(""Aucune solution"")
+
+exercice_1()
+print()",,,,,,,,8ba7ba2ee4ea7562,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,486d7848,markdown,fr,c53f49d5b6a8be68,"### Exemple guidé 2 — Énumérer les solutions de SEND + MORE = MONEY
+
+Réalisation de Léane Audegond (EPF), issue du deuxième TP. Après chaque modèle, une disjonction impose qu'au moins une lettre change. Quand la recherche se termine par `unsat`, tous les modèles ont été énumérés ; un seul modèle établit alors l'unicité.",,,,,,,,c53f49d5b6a8be68,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,14722545,code,fr,03d41c1a33bec10d,"# Exercice 2 : prouver l'unicite de SEND + MORE = MONEY
 # TODO etudiant :
 # 1. Re-resoudre, recuperer le modele m
 # 2. Ajouter Or(S != m[S], E != m[E], N != m[N], ...) pour nier la solution
 # 3. Si unsat -> unique ; sinon compter toutes les solutions par iteration
-nb_solutions = None  # TODO etudiant
-print(""Exercice 2 a completer : prouvez l'unicite (ou enumerez toutes les solutions)"")
-",,,,,,,,93e7598e0a7e5f75,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,c0e4fef0,markdown,fr,0028a5ac597081e6,"### Exercice 3 - Cryptarithme avec produit (multiplication)
-Generalisez a la **multiplication** : `ABC * D = DBC`, ou `ABC = 100*A + 10*B + C` et `DBC = 100*D + 10*B + C`.
+#nb_solutions = None  # TODO etudiant
+#print(""Exercice 2 a completer : prouvez l'unicite (ou enumerez toutes les solutions)"")
 
-**Étapes** :
-1. Variables `A, B, C, D = Ints('A B C D')`, domaine `{0..9}`.
-2. `Distinct(A, B, C, D)`, têtes `A > 0` et `D > 0`.
-3. Equation : `(100*A + 10*B + C) * D == (100*D + 10*B + C)`.
 
-**Indice** : c'est la même structure que l'addition, mais l'opérateur `*` remplace `+`. Z3 traite les deux aussi bien (théorie arithmetique lineaire + non-lineaire).",,,,,,,,0028a5ac597081e6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,2cc43e56,code,fr,a925754655ed2fa4,"# Exercice 3 : ABC * D = DBC (multiplication)
+def exercice_2():
+    S, E, N, D, M, O, R, Y = Ints('S E N D M O R Y')
+    lettres = [S, E, N, D, M, O, R, Y]
+
+    s = Solver()
+    s.add([And(v >= 0, v <= 9) for v in lettres])    # chiffres 0..9
+    s.add(Distinct(lettres))                         # tous différents
+    s.add(S > 0, M > 0)                              # 1eres lettres non nulles
+    s.add((1000*S + 100*E + 10*N + D) +
+          (1000*M + 100*O + 10*R + E) ==
+          (10000*M + 1000*O + 100*N + 10*E + Y))     # l'addition
+
+
+    nb_solutions = 0 #initie le compteur de solutions
+
+    # Boucle while tant que Z3 trouve une solution, on la note,
+    # puis on lui interdit cette solution et on redemande
+
+    while s.check() == sat:
+        m = s.model() #affiche le model de la solution trouvée
+
+        nb_solutions += 1 #fait monter le compteur de solutions à chaque nouvelle solutions trouvée
+
+        #on affiche le numéro de la solution et le dictionnaire qui associe chaque lettre à son chiffre
+        print(""Solution"", nb_solutions, "":"", {str(v): m[v].as_long() for v in lettres}) 
+
+        # on va ajouter une nouvelle contrainte pour interdire la solution que l'on vient de trouver
+        # et forcer Z3 à chercher une autre solution
+        # Test si au moins une lettre est différente de la solution trouvée avant
+        s.add(Or([v != m[v] for v in lettres]))
+
+    # Quand check() répond enfin unsat, il n'y en a plus d'autre
+    print(""Nombre total de solutions :"", nb_solutions)
+
+    if nb_solutions == 1: #affiche le nombre de solutions trouvées, et si c'est 1, on affiche que la solution est unique
+        print(""-> La solution est unique"")
+    return nb_solutions
+
+exercice_2()
+print()
+",,,,,,,,03d41c1a33bec10d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,c0e4fef0,markdown,fr,f53b277bce99e484,"### Exemple guidé 3 — Une multiplication sans solution
+
+Réalisation de Léane Audegond (EPF), issue du deuxième TP. On cherche `ABC * D = DBC` en base dix, avec quatre chiffres distincts et `A, D > 0`. Contrairement à une multiplication par une constante, le produit par `D` est non linéaire. Le résultat `unsat` concerne précisément ces contraintes ; il ne démontre pas l'impossibilité d'autres multiplications.",,,,,,,,f53b277bce99e484,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,2cc43e56,code,fr,002e447b90d5458b,"# Exercice 3 : ABC * D = DBC (multiplication)
 # TODO etudiant :
 # 1. A, B, C, D = Ints('A B C D'), domaine 0..9
 # 2. Distinct(A, B, C, D), têtes A > 0 et D > 0
 # 3. Equation : (100*A + 10*B + C) * D == (100*D + 10*B + C)
-result = None  # TODO etudiant
-print(""Exercice 3 a completer : modelisez ABC * D = DBC"")
-",,,,,,,,a925754655ed2fa4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,b2c87944,markdown,fr,4397092b9b762f22,"## Conclusion
-Les cryptarithmes illustrent un avantage central du **paradigme declaretif** : on exprime ce qu'on cherche (une affectation de chiffres distincts satisfaisant une equation positionnelle), pas **comment** le chercher. Le solveur Z3 se charge de la recherche via propagation de contraintes - instantanement la ou la brute force enumere des millions de candidats.
+#result = None  # TODO etudiant
+#print(""Exercice 3 a completer : modelisez ABC * D = DBC"")
 
-Cette serie Z3-Python (notebooks 01 a 10) couvre maintenant le spectre complet : satisfaction de contraintes (01, 02), tactiques (03), chaînes/regex (04), quantificateurs (05), optimisation avancee (06), style declaratif (07), ordonnancement NP-difficile (08), CSP logique (09), et ici l'**arithmetique symbolique** sur entiers (10). Le pont avec la serie sœur Z3.Linq (C#) se fait via les mêmes exemples portes entre Microsoft.Z3 et pyz3.
+def exercice_3():
+    A, B, C, D = Ints('A B C D')   # on crée les 4 variables
+    lettres = [A, B, C, D]         # on les range dans une liste
+
+    s = Solver()
+    s.add([And(v >= 0, v <= 9) for v in lettres])   # chiffres entre 0 et 9
+    s.add(Distinct(lettres)) # 4 chiffres tous différents
+    s.add(A > 0, D > 0) # 1ere lettres non nulles
+    
+    s.add((100*A + 10*B + C) * D == (100*D + 10*B + C))   # ABC * D = DBC
+
+    if s.check() == sat: #boucle if pour savoir si une solution est trouvée
+        m = s.model() #affiche le model de la solution trouvée
+        print(""Solution :"", {str(v): m[v].as_long() for v in lettres}) #print le dictionnaire qui associe chaque lettre à son chiffre
+    else:
+        # unsat : l'équation force A = 1, puis soit D = 1, soit B = C = 0,
+        # ce qui est impossible si les 4 chiffres doivent être différents
+        print(""unsat : aucune solution avec 4 chiffres distincts"") #si aucune solution n'est trouvée, on affiche un message
+
+
+exercice_3()
+print()",,,,,,,,002e447b90d5458b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,b2c87944,markdown,fr,bf92b40732c07158,"## Conclusion
+
+Les cryptarithmes illustrent le paradigme déclaratif : on exprime les domaines, les contraintes de distinction et l'équation plutôt que l'algorithme de recherche. Les exemples montrent la recherche d'un témoin, l'énumération des modèles et l'insatisfiabilité d'une multiplication. Les exercices prolongent ces méthodes avec des retenues explicites, des bases variables et un noyau insatisfiable.
+
+Le pont avec la série sœur Z3.Linq (C#) se fait via les exemples portés entre Microsoft.Z3 et pyz3.
 
 ***
 
 > Carnet issu de l'EPIC #1206.
-",,,,,,,,4397092b9b762f22,,,,,,,,,,,,,,,
+",,,,,,,,bf92b40732c07158,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb,e0776896,markdown,fr,fe77b1a7b98ad161,"[<- Z3-Python-10](Z3-10-Cryptarithmetic-Python.ipynb) | [README Z3-Python](README.md) | [Z3-Python-12 ->](Z3-12-Real-Arithmetic-Python.ipynb)
 
 # 11 - Coloration de Graphe avec Z3
@@ -9222,12 +9321,14 @@ assert nRml >= RML_BATCHES_PIN, (
     f""Corpus RecipeML incomplet : {nRml}/{RML_BATCHES_PIN} batches avec XML -- ""
     ""Wayback refuse parfois des batches (reprise : relancer, les batches presents sont sautes)."")
 ",,,,,,,,a7ea9768c617c409,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,1ed80d6f,markdown,fr,d8f0024730eba9b5,"## 1. Ciqual : le référentiel nutritionnel (per-100g), lu en flux
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,1ed80d6f,markdown,fr,61ec4210c7c9e42d,"## 1. Ciqual : le référentiel nutritionnel (per-100g), lu en flux
 
 On lit `const` (5 constituants contraints : énergie, protéines, glucides, lipides, sel), `alim`
 (nom anglais) et `compo` (teneurs) — le gros fichier `compo` (~66 Mo) est lu **en flux**
 (`iterparse` + `clear`) pour ne pas tout charger en mémoire. Les teneurs Ciqual sont **toutes
-par 100 g** — c'est ce qui rendra la normalisation en grammes (§4) indispensable.",,,,,,,,d8f0024730eba9b5,,,,,,,,,,,,,,,
+par 100 g** — c'est ce qui rendra la normalisation en grammes (§4) indispensable.
+
+Pourquoi seulement 5 des 74 constituants : le repas du solveur contraint l'énergie, les macro-nutriments et le sel — les autres constituants Ciqual (vitamines, minéraux) ne joueraient aucun rôle dans les bornes Min/Max du planificateur.",,,,,,,,61ec4210c7c9e42d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,39cc27d6,code,fr,c317d5617257a461,"# Ciqual : lecture en flux du sous-ensemble des constituants contraints.
 import time
 WANTED = [""Energie, Règlement"", ""Protéines, N x"", ""Glucides (g"", ""Lipides (g"", ""Sel chlorure""]
@@ -9284,7 +9385,7 @@ print(f""Ciqual charge en {time.time()-t0:.1f}s : {len(consts)} constituants, ""
 print(f""Constituants contraints (C={C}) :"")
 for cc in chosen:
     print(f""   [{cc}] {consts[cc][:48]}"")",,,,,,,,c317d5617257a461,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,38e6dbb9,markdown,fr,f7fe8ef4abe8dcbc,"## 2. La jointure de data fusion : ingrédient anglais → aliment Ciqual
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,38e6dbb9,markdown,fr,b6b6947337edbc8e,"## 2. La jointure de data fusion : ingrédient anglais → aliment Ciqual
 
 RecipeML est en **anglais** ; on matche contre `alim_nom_eng`. Un **index inversé** mot →
 aliments accélère la recherche : chaque ingrédient n'est comparé qu'aux aliments partageant au
@@ -9295,7 +9396,9 @@ moins un mot. La **normalisation étagée** est la leçon — et la curation tue
 3. **garde sur la tête-de-nom** : l'aliment candidat doit partager le **dernier mot** de l'ingrédient
    (le nom, pas l'adjectif) — c'est ce qui écarte « White pudding » pour « white **sugar** » ;
 4. **similarité de Jaccard** (seuil 0,5), départage par nom Ciqual **le plus court** ;
-5. petites tables de **synonymes** / **composés** / **modificateurs de forme**.",,,,,,,,f7fe8ef4abe8dcbc,,,,,,,,,,,,,,,
+5. petites tables de **synonymes** / **composés** / **modificateurs de forme**.
+
+L'enjeu est quantitatif : 13 666 ingrédients à apparier contre 3 484 aliments. L'index inversé évite de comparer chaque ingrédient aux 3 484 — seuls les aliments partageant au moins un mot normalisé sont candidats.",,,,,,,,b6b6947337edbc8e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,8725053f,code,fr,3a86890fc8776b62,"# Rapprochement lexical CURÉ : normalisation étagée + index inversé + garde tête-de-nom.
 # (port verbatim du C# 07 : DROP / SYN / COMPOUND + Deaccent / Singular / Norm / Jacc / MatchKey)
 DROP = set((""chopped ground grated minced sliced diced melted softened packed sifted beaten cooked raw ""
@@ -9392,12 +9495,14 @@ print(""Démonstration du matcheur curé sur quelques items RecipeML :"")
 for t in [""White sugar"", ""All-purpose flour"", ""Baking soda"", ""Eggs"", ""Butter"", ""Olive oil"", ""Salt pepper""]:
     mcode = match(t)
     print(f""   {t!r:24} -> {alimEng.get(mcode) if mcode else '(aucun)'}"")",,,,,,,,3a86890fc8776b62,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,a26438ed,markdown,fr,fb7882d8bf7ce544,"## 3. RecipeML : parsing structuré **avec quantités**
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,a26438ed,markdown,fr,c0f1ae5a872f3c4a,"## 3. RecipeML : parsing structuré **avec quantités**
 
 Chaque `<recipe>` porte des `<ing>` de forme `<amt><qty>…</qty><unit>…</unit></amt><item>…</item>`.
 On extrait le **triplet (item, quantité, unité)**. `ParseQty` gère entiers, **fractions** (`1/2`),
 **quantités mixtes** (`1 1/2`), fractions Unicode (`½`) et prend la borne basse d'une fourchette
-(`2-3` → `2`). Le parsing XML est tolérant (`&` nus → `&amp;`).",,,,,,,,fb7882d8bf7ce544,,,,,,,,,,,,,,,
+(`2-3` → `2`). Le parsing XML est tolérant (`&` nus → `&amp;`).
+
+Fractions Unicode et fourchettes ne sont pas des curiosités : elles apparaissent réellement dans le corpus, et une quantité non parsée serait perdue pour l'agrégation — d'où les compteurs 91 % / 78 % de la sortie, qui mesurent ce qui a survécu au parsing.",,,,,,,,c0f1ae5a872f3c4a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,beceb300,code,fr,7b47088d4c2461c9,"# ParseQty + parsing de l'archive RecipeML -> (item, qty, unit) par recette.
 FRAC = {""½"": ""1/2"", ""¼"": ""1/4"", ""¾"": ""3/4"", ""⅓"": ""1/3"", ""⅔"": ""2/3""}
 
@@ -9459,13 +9564,15 @@ print(f""RecipeML : {len(recipes)} recettes, {nIng} ingrédients ""
 print(""Exemple de recette (item | qty | unité) :"")
 for it, q, u in recipes[0][2][:5]:
     print(f""   {it[:38]:38} | {q:5} | {u}"")",,,,,,,,7b47088d4c2461c9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,d00cb117,markdown,fr,abe3922c834464ac,"## 4. Normalisation quantité → grammes (le show-stopper résolu)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,d00cb117,markdown,fr,fd4c17d82d6fa2b8,"## 4. Normalisation quantité → grammes (le show-stopper résolu)
 
 Ciqual ne fournit pas de densité. Le passage `(qté, unité, ingrédient) → grammes` se fait en
 **deux couches honnêtes** : (1) unité → mL (volumes) ou g (masses) via une table fixe ;
 (2) mL → g via une **table de densités** curée par mot-clé ; (3) items **comptés** (unité vide :
 `2 Eggs`) → poids moyen par pièce. Les unités de conditionnement (`can`, `package`…) restent
-**non convertibles** → masse `0` (honnête et visible dans les métriques).",,,,,,,,abe3922c834464ac,,,,,,,,,,,,,,,
+**non convertibles** → masse `0` (honnête et visible dans les métriques).
+
+La table de densités curée par mot-clé est le compromis honnête : chaque conversion mL → g repose sur une valeur choisie et traçable — une estimation systématique, pas un 100 g fictif. La sortie de la section permet de remonter chaque masse jusqu'à sa densité.",,,,,,,,fd4c17d82d6fa2b8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,07b66ccd,code,fr,501b06102748b27b,"# unite -> mL/g ; densites ; items comptes -> grammes.
 UNIT = {""cup"": (236.588, False), ""cups"": (236.588, False),
     ""tablespoon"": (14.7868, False), ""tablespoons"": (14.7868, False), ""tbsp"": (14.7868, False), ""tbs"": (14.7868, False),
@@ -9507,13 +9614,15 @@ for q, u, it in [(2.0, ""cups"", ""white sugar""), (2.0, ""cups"", ""flour""), (
                  (4.0, ""ounces"", ""butter""), (2.0, """", ""eggs""), (1.0, ""can"", ""crushed pineapple"")]:
     g = to_grams(q, u, it)
     print(f""   {q} {(u or '(compte)'):10} {it:18} -> {g:.1f} g"" + (""   (non convertible)"" if g == 0 else """"))",,,,,,,,501b06102748b27b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,451ccc82,markdown,fr,304e79b622847b4a,"## 5. Agrégation nutritionnelle **pondérée par la masse** + couverture
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,451ccc82,markdown,fr,d1c7beb1b77e0786,"## 5. Agrégation nutritionnelle **pondérée par la masse** + couverture
 
 Pour chaque recette : on apparie chaque `item` à Ciqual, on convertit sa quantité en grammes, et
 on ajoute sa contribution `teneur_per_100g × grammes / 100`. C'est la correction du biais
 *quantity-blind* : un gâteau avec 2 tasses de farine (~250 g) ne compte plus comme 100 g. On
 mesure aussi la **couverture d'appariement** (fraction des ingrédients appariés) — le critère de
-gating.",,,,,,,,304e79b622847b4a,,,,,,,,,,,,,,,
+gating.
+
+La couverture est le garde-fou : une recette dont la moitié des ingrédients n'est pas appariée aurait un vecteur nutritionnel massivement sous-estimé. Le seuil de 80 % de la section 6 arbitre entre volume (plus de recettes) et fiabilité (vecteurs complets).",,,,,,,,d1c7beb1b77e0786,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,61d4605c,code,fr,0caccd532c8c1577,"# Agrégation pondérée par la masse + couverture par recette.
 built = []
 mc = {}  # item -> code Ciqual (cache d'appariement)
@@ -9553,7 +9662,7 @@ print(""Échantillon 100% apparié (énergie kJ, prot g, gluc g, lip g, sel g �
 for r in [x for x in built if x[3] >= 1.0 and any(v > 0 for v in x[2])][:4]:
     vec = "", "".join(f""{v:.1f}"" for v in r[2])
     print(f""   {r[0][:46]:46} [{vec}]"")",,,,,,,,0caccd532c8c1577,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,e63307b9,markdown,fr,08522c7a2105062c,"## 6. Sous-ensembles gâtés par qualité + cache JSON (contract assertif)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,e63307b9,markdown,fr,073451cd1469681a,"## 6. Sous-ensembles gâtés par qualité + cache JSON (contract assertif)
 
 Le sous-ensemble **solveur-usable** (≥ 80 % des ingrédients appariés) est sérialisé en cache
 `mealplan_cache.json` — la matière première propre que les notebooks de capstone consommeront.
@@ -9566,7 +9675,9 @@ schéma que le cache C# consommé par [08](../Z3-Linq2Z3/08_Meal_Planner_Patient
 > les notebooks 16c/16d/16e le consomment sans réseau ni ré-exécution de la couche de
 > données — re-exécution autonome garantie. Ré-exécuter 16b le régénère (nouveau
 > millésime à committer avec les outputs des consommateurs) ; le corpus brut (~68 Mo)
-> reste gitignoré.",,,,,,,,08522c7a2105062c,,,,,,,,,,,,,,,
+> reste gitignoré.
+
+Le millésime compte : les notebooks 16c/16d/16e consomment le cache tel quel — une ré-exécution de 16b qui ferait bouger le compte de recettes doit se propager avec les outputs des consommateurs, sinon les deux couches divergent silencieusement.",,,,,,,,073451cd1469681a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,254ac27c,code,fr,eeeed2f556f31f17,"# Cache JSON du sous-ensemble solveur-usable (>=80% apparié) + contract assertif.
 usable = [{""title"": r[0], ""cats"": r[1], ""cover"": round(r[3], 3),
            ""vec"": [round(v, 2) for v in r[2]]}
@@ -9590,7 +9701,7 @@ print(""Palier de montée en charge (piloté par la qualité, non par un plafond
 print(f""   subset propre 100%   : {sum(1 for r in built if r[3] >= 1.0 and any(v>0 for v in r[2])):5} recettes"")
 print(f""   subset >=80% (cache) : {len(usable):5} recettes  <- livré au solveur"")
 print(f""   subset >=50%         : {sum(1 for r in built if r[3] >= 0.5 and any(v>0 for v in r[2])):5} recettes"")",,,,,,,,eeeed2f556f31f17,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,72134c54,markdown,fr,511d10465b965fa7,"## Synthèse — la couche de données du planificateur, en Python
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,72134c54,markdown,fr,8e869cb640eada62,"## Synthèse — la couche de données du planificateur, en Python
 
 | Verdict | Ce qu'il montre | Contrôle falsifiant |
 |---|---|---|
@@ -9603,7 +9714,13 @@ Ce notebook **16b** comble le **gap de la couche données** du planificateur Pyt
 (Ciqual × RecipeML), **fusionné** (appariement lexical flou), **normalisé** (unités → grammes),
 et **agrégé** (pondéré par la masse). C'est le socle que les prochains grains Python consommeront :
 **capstone patient** (restrictions Min/Max) et **convergence à l'échelle** (comparaison d'encodages
-`Optimize` / `PbEq` / Array theory).",,,,,,,,511d10465b965fa7,,,,,,,,,,,,,,,
+`Optimize` / `PbEq` / Array theory).
+
+### Le fil mesuré, d'un bout à l'autre
+
+Chaque étape a laissé un chiffre traçable, et ces chiffres se répondent : les 3 484 aliments Ciqual chargés en 4,8 s (§1) deviennent 13 666 triplets (item, quantité, unité) extraits de 1 465 recettes (§3), puis des masses en grammes (§4) — dont les cas non convertibles, visibles à 0.0 g, expliquent pourquoi la couverture moyenne plafonne à 74.1 % (§5). La chaîne de qualité suit : 226 recettes appariées à 100 %, 716 à ≥ 80 %, dont le cache retient les 712 solveur-usables (89 Ko) — le palier est piloté par la qualité de l'appariement, pas par un plafond arbitraire (§6).
+
+Ce que le solveur reçoit, in fine, est minuscule et propre : par recette, un titre, ses catégories, sa couverture et un vecteur de 5 teneurs pondérées par la masse. Toute la difficulté du planificateur de repas est dans cette couche — pas dans la résolution, mais dans la construction honnête d'un vecteur nutritionnel par recette : chaque nombre du cache remonte à une teneur Ciqual par 100 g, une masse convertie, une couverture mesurée.",,,,,,,,8e869cb640eada62,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f3ad5249,markdown,fr,fb78cca9030c0293,"## 7. Exercices
 
 Trois exercices de data-engineering (0 solveur), prolongeant les limites mesurées.",,,,,,,,fb78cca9030c0293,,,,,,,,,,,,,,,
@@ -10946,16 +11063,12 @@ L'encodage ci-dessus n'introduit **aucune variable de retenue** — et pourtant 
 | dizaines de milliers | $c_4 = M$ | $1 = M$ |
 
 Toute cette chaîne est **subsumée** par l'unique équation linéaire positionnelle : l'arithmétique entière de Z3 raisonne sur l'égalité $9567 + 1085 = 10652$ comme sur n'importe quelle identité entière, sans qu'on ait à décomposer les colonnes. Le chiffre de tête $M = 1$ n'est rien d'autre que la dernière retenue devenue chiffre significatif — le solveur la déduit, il ne la déclare pas.",,,,,,,,9f533138bbd1380c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,4edd634d,markdown,fr,ba64f4b1d87b310c,"## Témoin et preuve : deux niveaux de garantie
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,4edd634d,markdown,fr,02afad16950eb4cc,"## Témoin et preuve : deux niveaux de garantie
 
-`check()` renvoie `sat` et un modèle : c'est un **témoignage** — la preuve qu'il existe au moins une solution. Il ne dit rien de leur nombre. Le texte ci-dessus affirme que SEND + MORE = MONEY admet une solution unique : cette affirmation ne tombe pas du modèle, elle se **prouve** en re-posant la question à Z3 (bloquer la solution trouvée, puis vérifier l'insatisfiabilité — exactement l'objet de l'exercice 2). Distinguer témoin (existence) et preuve d'exhaustivité (unicité) est le réflexe central que ces notebooks cherchent à installer.",,,,,,,,ba64f4b1d87b310c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,4f16b95f,markdown,fr,f20cab3126555369,"## Lecture de la variante CROSS + ROADS = DANGER
+`check()` renvoie `sat` et un modèle : c'est un **témoin** de l'existence d'au moins une solution, pas une preuve d'unicité. L'exemple guidé 2 montre comment bloquer les modèles trouvés et chercher à établir leur exhaustivité. Une réponse `unknown` ne prouve pas l'absence d'autres modèles.",,,,,,,,02afad16950eb4cc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,4f16b95f,markdown,fr,76144893bc2a1999,"## Lecture de la variante CROSS + ROADS = DANGER
 
-La solution mesurée est CROSS = 96233, ROADS = 62513, DANGER = 158746. Trois observations structurelles :
-
-1. **D = 1 est forcé avant toute recherche** : la somme de deux nombres à 5 chiffres reste inférieure à 200 000, et le résultat à 6 chiffres impose D différent de 0 — donc D = 1. Là encore, la retenue finale devient le chiffre de tête du résultat.
-2. **La lettre S travaille trois fois** : elle occupe les dizaines **et** les unités de CROSS, plus les unités de ROADS. Cette réutilisation croise les colonnes entre elles — pour une résolution manuelle, c'est une complication ; pour l'équation linéaire, ce n'est qu'un coefficient répété.
-3. **Un seul chiffre reste absent** : les neuf lettres reçoivent 9, 6, 2, 3, 5, 1, 0, 8, 7 — il manque le 4. Avec 9 lettres distinctes prises parmi 10 chiffres, l'affectation est proche d'une permutation complète : l'espace brut double ($P(10,9) = 3\,628\,800$ contre $1\,814\,400$). Le notebook ne mesure pas le temps du solveur sur cette variante — un prolongement naturel, conjointement à la question de l'unicité (exercice 2).",,,,,,,,f20cab3126555369,,,,,,,,,,,,,,,
+La sortie présente un modèle : vérifiez que les deux opérandes donnent bien le résultat affiché. La somme de deux nombres à cinq chiffres reste inférieure à 200 000 : la tête `D` du résultat à six chiffres vaut donc nécessairement 1. La lettre `S` apparaît deux fois dans CROSS et une fois dans ROADS : ces occurrences partagent une seule variable. Neuf lettres distinctes occupent neuf chiffres ; le modèle affiché ne suffit pas à établir son unicité.",,,,,,,,76144893bc2a1999,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb,hand-ex3guide,markdown,fr,3605914d5bf49360,"### Exemple guidé — Exercice 3 (à consulter après votre tentative)
 
 ```python
@@ -11642,3 +11755,44 @@ La sortie affiche `  Pppp0ppp` pour la variante par classe (`MkInRe` + `MkRange`
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-04-Strings-Regex-CSharp.ipynb,lecture-z304-extension,markdown,fr,7336607dd0914b21,"### Lecture du résultat : extension extraite du modèle
 
 Le solveur a généré `fichier = a0.py` (`Nom de fichier valide : SATISFIABLE`), puis `IndexOf(.) = 2`, `Extension extraite = .py` et `Nom sans extension = a0` : l'extraction enchaîne `MkIndexOf` (position du point, évaluée via `((IntNum)m.Evaluate(...)).Int64`) et deux `MkExtract` sur le modèle, exactement comme un `str.index` suivi de slicing en Python.",,,,,,,,7336607dd0914b21,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,4f8e63f0,markdown,fr,ae2c888a3a449f2a,"## Exercices à compléter
+
+### Exercice 1 — Retenues et équivalence
+
+Pour `SEND + MORE = MONEY`, introduisez quatre retenues entières comprises entre 0 et 1 et écrivez les équations de chaque colonne. Sous les mêmes domaines, distinctions et contraintes de tête que le modèle positionnel, demandez à Z3 un contre-exemple dans chaque sens entre les deux encodages. Précisez la portée de la comparaison : les retenues sont des variables auxiliaires à éliminer existentiellement. Interprétez les réponses `sat`, `unsat` ou `unknown`.",,,,,,,,ae2c888a3a449f2a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,3d05be37,code,fr,e8563d2ae35cdc7b,"# TODO : définir les retenues, les équations et les deux recherches de contre-exemple.
+print(""Exercice 1 à compléter : comparer les encodages avec et sans retenues"")",,,,,,,,e8563d2ae35cdc7b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,c3281ca6,markdown,fr,c4cf7b5d54df637e,"### Exercice 2 — Changer de base
+
+Pour chaque base entière fixée de 4 à 10 incluse, modélisez `AB + BA = CC` : les lettres désignent trois chiffres distincts de la base et A, B et C sont non nuls. Utilisez les poids positionnels propres à la base, puis affichez pour chaque base le statut et, lorsqu'il existe, un modèle vérifié par substitution. Distinguez absence de solution et réponse `unknown`.",,,,,,,,c4cf7b5d54df637e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,603117ae,code,fr,e2dcaf63969a855d,"# TODO : construire un solveur par base et vérifier chaque modèle trouvé.
+print(""Exercice 2 à compléter : cryptarithme en bases variables"")",,,,,,,,e2dcaf63969a855d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,51570e2e,markdown,fr,48e5ef61f23c3580,"### Exercice 3 — Expliquer une contradiction
+
+Reprenez `ABC * D = DBC` avec les domaines décimaux, les têtes non nulles et la distinction des lettres. Associez des étiquettes distinctes aux groupes de contraintes avec `assert_and_track`, demandez un noyau insatisfiable, puis vérifiez que les contraintes correspondant aux étiquettes retournées sont elles-mêmes insatisfiables. Expliquez pourquoi un noyau n'est pas nécessairement minimal et distinguez `unknown` de `unsat`.",,,,,,,,48e5ef61f23c3580,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,3ed623c5,code,fr,27cd89fd41ddfc07,"# TODO : suivre les contraintes, extraire le noyau et vérifier sa contradiction.
+print(""Exercice 3 à compléter : noyau insatisfiable"")",,,,,,,,27cd89fd41ddfc07,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,5bf7e81d,markdown,fr,0f2d6e8bd4e952fd,"### Exercice 4 — Cryptarithme avec produit (multiplication)
+Généralisez à la **multiplication** : `ABCD * 4 = DCBA`, où `ABCD = 1000*A + 100*B + 10*C + D` et `DCBA = 1000*D + 100*C + 10*B + A`.
+
+**Étapes** :
+1. Variables `A, B, C, D = Ints('A B C D')`, domaine `{0..9}`.
+2. `Distinct(A, B, C, D)`, têtes `A > 0` et `D > 0`.
+3. Équation positionnelle : `(1000*A + 100*B + 10*C + D) * 4 == (1000*D + 100*C + 10*B + A)`.
+4. Résolvez, puis **prouvez l'unicité** comme dans l'exemple guidé 2 : ajoutez la négation du modèle trouvé et vérifiez que le solveur répond `unsat`.
+
+**Indice** : contrairement à `SEND + MORE = MONEY`, le multiplicateur n'est pas une variable mais la **constante 4**. Commencez par le chiffre des unités : `A` est le dernier chiffre de `D * 4`, et `D` est le premier chiffre du produit — les deux se contraignent mutuellement.",,,,,,,,0f2d6e8bd4e952fd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb,79addfb1,code,fr,988962c2dc5c18a2,"# Exercice 4 : ABCD * 4 = DCBA (multiplication)
+# TODO etudiant :
+# 1. A, B, C, D = Ints('A B C D'), domaine 0..9
+# 2. Distinct(A, B, C, D), têtes A > 0 et D > 0
+# 3. Equation : (1000*A + 100*B + 10*C + D) * 4 == (1000*D + 100*C + 10*B + A)
+# 4. Unicite : ajouter la negation du modele trouve et verifier unsat
+result = None  # TODO etudiant
+print(""Exercice 4 a completer : modelisez ABCD * 4 = DCBA"")",,,,,,,,988962c2dc5c18a2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f10a0001,markdown,fr,47fb952438b0fccc,"La sortie confirme le contrat de données en place : les deux sources externes — Ciqual pour les teneurs nutritionnelles, RecipeML pour les recettes — sont présentes, et les 15 lots d'archives RecipeML sont chargés. Rien n'est téléchargé si les jeux sont déjà là ; toute la suite du carnet suppose ce socle, et chaque étape ajoutera une transformation dont la sortie permet de vérifier le résultat.",,,,,,,,47fb952438b0fccc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f10a0002,markdown,fr,3fa9623008f98e63,"Le référentiel est chargé en flux en 4,8 s : 74 constituants pour 3 484 aliments — et les 3 484 ont une composition, donc aucun appariement n'échouera faute de teneurs. La sortie liste les C = 5 constituants contraints retenus (énergie, protéines, glucides, lipides, sel) : c'est la dimension exacte du vecteur nutritionnel qui traversera tout le reste du carnet, jusqu'au cache final.",,,,,,,,3fa9623008f98e63,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f10a0003,markdown,fr,1d9c3a95a3d17c34,"La démonstration montre la curation en action : « White sugar » trouve « Sugar, white », « Eggs » trouve « Egg, raw », « Salt pepper » trouve « Salt, white (sea, igneous or rock) ». Chaque rapprochement sort de la chaîne de la section 2 — un appariement lexical naïf échouerait précisément sur ces cas (ordre des mots inversé, pluriel, qualificatif en tête).",,,,,,,,1d9c3a95a3d17c34,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f10a0004,markdown,fr,97d4a9a78847a98f,"Le parsing tolérant livre 1 465 recettes et 13 666 ingrédients : 91 % portent une quantité, 78 % une unité, et seuls quelques fichiers XML irrécupérables sont ignorés. L'exemple affiché donne la forme exacte consommée par la suite — des triplets (item, quantité, unité) comme « White sugar | 2.0 | cups » : tout ce que la section 4 attend pour convertir en grammes.",,,,,,,,97d4a9a78847a98f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f10a0005,markdown,fr,08e4e0db1aab2d07,"Chaque ligne montre la conversion en deux couches : 2 cups de sucre → 402.2 g (volume puis densité), 4 ounces de beurre → 113.4 g (masse directe), 2 eggs comptés → 100.0 g (poids moyen par pièce). Et le cas « 1 can crushed pineapple → 0.0 g (non convertible) » est la sortie honnête : l'unité de conditionnement n'a pas de densité connue, la masse reste nulle, et l'ingrédient dégradera d'autant la couverture de sa recette à l'étape suivante.",,,,,,,,08e4e0db1aab2d07,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f10a0006,markdown,fr,22a654fadaf4594d,"L'agrégation pondérée par la masse produit les vecteurs nutritionnels : couverture moyenne de 74.1 %, avec 226 recettes appariées à 100 %, 716 à ≥ 80 % et 127 sous 50 %. L'échantillon affiche des vecteurs complets — par exemple le Cake #10 à [25886.9, 69.1, 857.5, 262.3, 1.0] (énergie, prot, gluc, lip, sel) — exactement la forme (titre, couverture, vecteur) que le cache final sérialisera.",,,,,,,,22a654fadaf4594d,,,,,,,,,,,,,,,

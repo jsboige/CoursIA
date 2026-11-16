@@ -1,0 +1,10 @@
+- name: "GameTheory-16i Appariage stable Gale-Shapley"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le contenu enseigne Gale–Shapley et ses propriétés sans solver externe dans les deux versions : Python utilise itertools et les collections natives ; C# réimplémente la même procédure et ses oracles avec la BCL. Aucun moteur de matching externe appelé par la source Python n'est omis."
+  known_differences:
+    - "La version C# valide explicitement les domaines de préférences, énumère aussi les bijections pour certifier les comptes 2 et 3, et fournit des gardes compilables pour les trois stubs ; la version Python conserve les sorties source à l'identique et porte les stubs dans les cellules code."
+    - "Les ordres d'énumération et la représentation des dictionnaires suivent les idiomes de chaque langage ; les instances, choix de Gale–Shapley, résultats stables et mesures de manipulation sont conceptuellement alignés."

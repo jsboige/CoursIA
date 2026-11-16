@@ -1,5 +1,7 @@
 # Kernels & Runtime — Cluster CoursIA
 
+> REFERENCE — vivante — dernière révision 2026-11-15
+
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
 **Regle user 2026-05-07** : toute machine du cluster (ai-01, po-2023, po-2024, po-2025, po-2026, po-2027, po-2028) doit pouvoir executer n'importe quel notebook du depot. Reparation env > contournement (regle F, cf [env-python-reparation.md](env-python-reparation.md)).
@@ -178,6 +180,102 @@ dotnet interactive jupyter install
 
 Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). **Epilogue (02/10/2026, #18766)** : le depin a eu lieu — le canon fleet passe a `1.0.712001`, exactement le build sur lequel po-2024 tournait lors de cette divergence. La divergence est fermee par montee du canon (po-2024 etait « en avance »), la reparation historique ci-dessus reste documentee pour la methode (uninstall + install pinne quand `dotnet tool update` refuse le downgrade). Mesures de conformite flotte : matrice tenue a jour dans [Conformite flotte au canon](#conformite-flotte-au-canon--matrice-machine-x-version) (au 2026-10-09 : `po-2023`/`po-2024`/`po-2025`/`po-2026`/`po-2027` conformes par mesure — `po-2027` l'a ete apres reparation, sa mesure ayant d'abord trouve l'ancien canon installe ; `ai-01` canon teste en isole mais outil global encore sur l'ancien pin. **Mise a jour 2026-10-19** : `ai-01` est desormais mesuree elle aussi — l'outil **global** porte le canon et l'execution reelle d'un carnet .NET via le kernelspec global passe : la derniere ligne non mesuree de la matrice est close).
 
+## Rust (notebooks Rust via evcxr)
+
+Notebooks de la série `Sudoku/` (pilote `Sudoku-02-DancingLinks-Rust`, jumeau des jumeaux `Python` et `CSharp`). Le moteur est **evcxr** — un kernel Jupyter qui compile et exécute du Rust en place, sans passer par un pont Python.
+
+| Prerequis | Version | Verification |
+|-----------|---------|-------------|
+| rustup + toolchain stable | rustc **1.100.0** (mesuré sur ce siège) | `rustc --version` |
+| composant `rust-src` | requis par evcxr (compilation incrémentale des crates dans le kernel) | `rustup component list --installed \| grep rust-src` |
+| **evcxr_jupyter** | **0.22.0** (épinglé — publication 2025-08-18) | `evcxr_jupyter --version` |
+| kernel Jupyter `rust` | auto-installé par `evcxr_jupyter --install` | `jupyter kernelspec list` |
+| **Windows uniquement** : `dlltool` (binutils MinGW) | **LLVM-MinGW** portable (`mstorsjo/llvm-mingw`) | `dlltool --version` (en PATH) |
+
+### Installation
+
+```bash
+rustup component add rust-src
+cargo install --locked evcxr_jupyter --version 0.22.0
+evcxr_jupyter --install
+```
+
+**Épingler la version** : `cargo install evcxr_jupyter` sans `--version` compile la dernière version publiée, qui peut dériver d'une machine à l'autre — toujours `--version 0.22.0` + `--locked` (le `Cargo.lock` de la crate est figé, reproductible).
+
+### Le blocage Windows : `dlltool` manquant (le piège à connaître)
+
+Sur Windows avec la toolchain **GNU** (`stable-x86_64-pc-windows-gnu`, choisie pour éviter l'élévation UAC du chemin MSVC), `cargo install evcxr_jupyter` **échoue** :
+
+```
+error: error calling dlltool 'dlltool.exe': program not found
+error: could not compile `windows-sys` (lib) due to 1 previous error
+error: could not compile `parking_lot_core` (lib) due to 1 previous error
+```
+
+**Cause** : la toolchain GNU de rustup **n'embarque pas** les binutils MinGW (`dlltool`, `windres`). Les crates C-interop (`windows-sys`, `parking_lot_core`) font appel à `dlltool` via le crate `cc` pour générer les import-libs de DLL, et il n'est nulle part sur la machine.
+
+**Remède sans UAC** : **LLVM-MinGW portable** (archives `mstorsjo/llvm-mingw`) — un simple **zip à extraire**, pas d'installeur, pas de fenêtre UAC, réversible :
+
+```powershell
+# 1. dernière release ucrt x86_64 (zip ~182 Mo ; Invoke-WebRequest peut timeout sur
+#    un lien lent — curl.exe, intégré à Windows 11, avec reprise `-C -` est plus robuste)
+curl.exe -L -C - --retry 5 --retry-delay 10 --max-time 1800 -o llvm-mingw.zip 'https://github.com/mstorsjo/llvm-mingw/releases/download/20261104/llvm-mingw-20261104-ucrt-x86_64.zip'
+Expand-Archive llvm-mingw.zip -DestinationPath .\llvm-mingw
+# 2. le crate `cc` attend `dlltool.exe`/`windres.exe` ; LLVM-MinGW les livre sous
+#    le préfixe `llvm-` → alias par copie :
+Copy-Item .\llvm-mingw\llvm-mingw-*\bin\llvm-dlltool.exe .\llvm-mingw\llvm-mingw-*\bin\dlltool.exe
+Copy-Item .\llvm-mingw\llvm-mingw-*\bin\llvm-windres.exe .\llvm-mingw\llvm-mingw-*\bin\windres.exe
+# 3. ajouter .\llvm-mingw\llvm-mingw-*\bin au PATH de la session, puis :
+$env:CARGO_NET_RETRY = '20'   # lien instable : refait chaque fetch crates.io jusqu'à 20 fois
+cargo install --locked evcxr_jupyter --version 0.22.0
+evcxr_jupyter --install
+```
+
+Version mesurée sur ce siège : `20261104` (archive `llvm-mingw-20261104-ucrt-x86_64.zip`). Le cache registry de cargo **persiste** entre les passes : si un fetch de crate échoue en cours de route, relancer la même commande ne re-télécharge que ce qui manque. Le chemin alternatif (VS Build Tools / MSVC toolchain) exige une fenêtre UAC — **évité** : on n'y recourt que si LLVM-MinGW échoue, et on annonce alors la fenêtre sur le dashboard avant.
+
+### Exécution
+
+`evcxr` compile **chaque cellule** (ou groupe de cellules) avec le compilateur Rust. Le kernel **conserve l'état** entre cellules. Commandes magiques principales :
+
+| Magic | Rôle |
+|-------|------|
+| `:dep <crate> <version>` | ajouter une dépendance cargo (équivalent `#r "nuget:"` du .NET) |
+| `:cache <Mo>` | activer le cache de compilation (taille en Mo) |
+| `:sccache 1` | activer sccache (cache de compilation distribué) |
+| `:opt <niveau>` | niveau d'optimisation (`0`..`3`) |
+| `:timing` | afficher les temps de compilation |
+
+**Deux pièges de persistance mesurés** : (1) un **type opaque** au niveau top-level (ex. `impl Choose<...>` du chooser dlx) échoue « cannot be persisted » — on l'enclose dans un **bloc d'accolades** `{ ... }` ; (2) les **fonctions** définies dans une cellule ne sont **pas** fiablement persistées dans les cellules suivantes — chaque cellule code est donc **autonome** (les variables concrètes `Vec`/`HashMap`/tableaux/`String` persistent, les fonctions non).
+
+**Bridage WSL (siège po-2027)** : le kernel `rust` natif evcxr n'existe que là où evcxr est compilé. Sur ce siège, Rust tourne sous **WSL Ubuntu** : un kernelspec **local** `rust-wsl` invoque `wsl.exe -d Ubuntu -- python3 <wrapper>.py {connection_file}`, et le wrapper reconstruit le chemin du fichier de connexion (dont `wsl.exe` **avale les backslashes**) avant d'exec `evcxr_jupyter` dans l'Ubuntu. Le carnet **committé** porte le kernelspec **canonique** `rust` ; `rust-wsl` est un pont d'exécution machine-local, **jamais commité**.
+
+### Figure SVG sans dépendance système (plotters)
+
+La figure du pilote est rendue par **plotters** (feature `evcxr`) en **SVG inline**. Deux écueils mesurés :
+- **pas de `Context`** (API 0.2) : 0.3.x utilise `ChartBuilder::on(&root)` + `build_cartesian_2d` + `draw_series` + `root.present()`, et l'idion inline est `evcxr_figure((w,h), |mut root| {...})`.
+- **le texte exige `fontconfig`** (via la feature `ttf`) : non installable sous WSL sans sudo. On **désactive le texte** — `default-features = false, features = ["evcxr", "line_series"]` + `configure_mesh().disable_axes()` : la grille reste, les axes/étiquettes disparaissent, la légende vit en markdown.
+
+**Verification visuelle** : le SVG est un XML valide (1 `svg`, 56 `line`, 1 `polyline`) ; le rendu (grille + courbe rouge à 9 points, 480×280) a été **vérifié à la vue** (rendu HTTP + capture), jamais validé text-only.
+
+### Timings & timeouts
+
+Mesuré sur ce siège (WSL, cache cargo **chaud**) : un run complet du pilote (dlx + plotters) ≈ **15–20 s**. Le coût dominant est la **compilation par cellule** d'evcxr, pas la résolution (la crate `dlx` résout le puzzle en ~14 µs). Le premier run (cache **froid**, compilation des crates de zéro) est plus long. **Timeout recommandé papermill/nbclient : 300 s** (marge ×15 sur le chaud ; couvre le froid sans sccache). `:sccache 1` / `:cache <Mo>` réduiraient le froid si un run le justifie.
+
+### Papermill — pas de traducteur Rust (décision écrite)
+
+Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` sont enregistrés ; pas de `papermill_translators["rust"]`). **Décision : NON** — on n'enregistre pas de traducteur maison. Le carnet s'exécute via le kernelspec evcxr (`--kernel rust`), **sans** injection de paramètres Papermill : les valeurs de passage vont par variable d'environnement, comme pour le .NET.
+
+### CI — validation structurelle seule (décision écrite)
+
+**Validation structurelle uniquement** en CI : compiler evcxr (et les crates du carnet) sur le runner GitHub Actions est trop lourd et non reproductible (pas de cache cargo chaud garanti). L'exécution réelle est portée par le **runner self-hosté** du siège avec cache cargo chaud + `:offline 1`. Avant commit, exécution **locale** obligatoire (règle F / §D) — même exigence que pour les notebooks .NET.
+
+### Suffixe de nommage & kernelspec
+
+- **Suffixe de fichier** : `-Rust` (ex. `Sudoku-02-DancingLinks-Rust.ipynb`), cohérent avec `-Python` / `-CSharp`.
+- **Canonnage** : `rust` était **absent** de `KERNEL_LANG_SUFFIXES` (`naming_canon.py`) — cette PR l'ajoute pour que le canon reconnaisse Rust comme **famille de noyau** (sinon un jumeau Rust dans une série *adoptée* par `kernel-suffix-canon-guard` porterait un suffixe fantôme dans la clé d'appariement). Précédent d'extension de la liste : `-lean` (arbitrage 25/09, #17784/#16231).
+- **Kernelspec canonique** : `rust` (le nom produit par `evcxr_jupyter --install`). Le pont `rust-wsl` est machine-local et n'est pas le canon.
+- **Gardes de la voie rapide** : un carnet `Sudoku-02-*-Rust.ipynb` **passe** les gardes de nommage tels quels — `kernel-suffix-canon-guard` (Sudoku non adoptée), `duplicate-notebook-index` + `slot-reservation` (`Sudoku-02` n'a pas d'index numérique en tête → `index_key()` = `None` → pas de collision avec les jumeaux Python/CSharp), `zero-pad` (Sudoku déclarée). Le seul câblage côté contenu : le **lien README→carnet** de la série (nav-chain / navlink).
+
 ## Relevé (python, numpy) par kernelspec — le nom ne dénote pas l'environnement (#24883)
 
 **Pourquoi cette table existe.** Un nom de kernelspec ne dénote pas un environnement : deux sièges peuvent déclarer le même nom pour des tuples `(python, numpy)` différents, et un même environnement peut répondre à plusieurs noms (mesuré dans les deux sens ci-dessous). Une consigne de re-exécution nomme donc toujours un **tuple mesuré et publié**, jamais un label seul — c'est le critère de fermeture de #24883 (suite de #23997, qui couvre les pointeurs morts sous `%TEMP%`, une classe distincte).
@@ -235,15 +333,45 @@ Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` con
 
 **Canon de re-exécution po-2028** : `python3` → **(3.13.16, numpy 2.2.6)**, env `mcp-jupyter`.
 
-### Ce que les deux rangées mesurées établissent
+### MYIA-PO-2024 (mesuré 2026-11-14T02:30Z, re-mesuré 2026-11-14T04:02Z après réparation des enregs morts — heure UTC, celle du commit `f9a38a6f878` qui porte la fermeture des 5 pointeurs morts ; l'heure portée avant était l'heure locale +01:00 suffixée `Z` — rangée d'origine : #24883, commentaire `6870260888`)
 
-1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023) contre **2.2.6** (po-2028). Le cas fondateur de #24883 en version mineure — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp{,-r9,-r10,-r10-canon,-r11,-stdio}` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
+| `python3` / `python3-lean` / `mcp-jupyter` / `global-3.13` / `coursia-py313-argu` | 3.13.16 | 2.4.2 | `C:/Users/jsboi/AppData/Local/Programs/Python/Python313/python.exe` |
+| `py31315` | 3.13.16 | 2.5.4 | `C:/Users/jsboi/.venvs/py31315/Scripts/python.exe` |
+| `sheetsage2-gpu` | 3.13.16 | 2.5.3 | `D:/Dev/venvs/sheetsage2-gpu/Scripts/python.exe` |
+| `ict-py313` | 3.13.7 | 2.5.4 | `D:/Dev/venvs/ict-py3137/Scripts/python.exe` |
+| `coursia-ml-training` | 3.11.15 | 2.4.6 | `C:/Users/jsboi/.conda/envs/coursia-ml-training/python.exe` |
+| `coursia-drift` | 3.11.16 | 1.26.4 | `C:/Users/jsboi/.conda/envs/coursia-drift/python.exe` |
+| `python3119` | 3.11.9 | 2.4.6 | `C:/Users/jsboi/AppData/Local/CoursIA/venvs/py3119/Scripts/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/pyphi/python.exe` |
+| `ict-py39` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** : `pip install numpy==1.26.4` (restaure le pin déclaré, tuple d'origine 1.26.4 mesuré le 08/11) puis `pip install "antropy<0.2" "cryptography>=3.4,<44"` (les deux deps déclarées de `ict-series` qui manquaient) ; après réparation `numpy 1.26.4`, `import pyemd` OK, `import ict` OK, `pip check` → « No broken requirements found » — étapes et mesures d'origine : commentaire `6870260888` de #24883 |
+| `cb09-ass` / `pymc311` | **RETIRÉ le 14/11** | - | 0 consommateur sur `main` → enreg retiré, `kernel.json` sauvegardé (`%APPDATA%\jupyter\kernels\_bak-20261114-deadargv\`) |
+| `ft03-gpu` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/ft03-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.14.0+cu126 CUDA True, transformers 5.15.1, peft 0.20.0, datasets 5.0.1, pillow) ; **noyau lancé et dépendances importées** |
+| `mert2-gpu` | 3.13.16 | 2.5.4 | `D:/Dev/venvs/mert2-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.6.0+cu126, torchaudio 2.6.0+cu126, transformers 4.53.2, soundfile, scikit-learn, scipy) + `ipykernel` ; **noyau lancé et dépendances importées** |
+| `difflogic-sl12` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/difflogic-sl12/Scripts/python.exe` — **reconstruit le 14/11** ; **noyau lancé, `difflogic.LogicLayer` forward CUDA avec autograd vérifié** |
+| `lean4-wsl` / `python3-wsl` / `python3-wsl-swipl` / `python3-sc16-concrete-wsl` | non-Python (wsl) | - | `wsl.exe` |
+
+**Canon de re-exécution po-2024** : `python3` → **(3.13.16, numpy 2.4.2)**, `C:/Users/jsboi/AppData/Local/Programs/Python/Python313`.
+
+**Preuve d'exécution, pas seulement de lancement** — les cellules **3** (résolution d'env), **5** (construction du modèle aux dimensions du carnet) et **6** (forward réel) de `SL-12-DifferentiableLogicGateNetworks` s'exécutent **sans erreur** dans l'enreg reconstruit : `difflogic : fork vendor chargé | Python 3.13.16 | PyTorch 2.14.0+cu126 | CUDA dispo : True | Execution : cpu (snapshot reproductible) | Graine : 42 | Algorithmes : deterministes`, puis `DEVICE : cpu | Implementation : python (pure PyTorch, reference CPU) | Modele difflogic : 96 000 parametres`, puis `Logits shape : (100, 10) (attendu : (100, 10)) | OK -- forward pass difflogic fonctionne`. C'est le **carnet lui-même** qui valide son env, pas une sonde exterior. (Cellules 8+ hors périmètre de cette preuve : téléchargement MNIST et campagne de 2 000 itérations.)
+
+**Les 5 pointeurs morts de po-2024 sont refermés (14/11) : 0 pointeur mort subsiste** (29 enregs restants, tous résolus). Deux enregs **sans consommateur sur `main`** (`cb09-ass`, `pymc311`) ont été retirés, `kernel.json` sauvegardé avant retrait ; les trois autres (`ft03-gpu`, `mert2-gpu`, `difflogic-sl12`) ont été **reconstruits et repointés** — avec, pour chacun, la preuve du **lancement effectif du noyau** (pas seulement la réécriture du chemin).
+
+**Classe #23997 re-attestée sur ce siège après les réparations (14/11 05:17Z)** — le prédicat de l'issue (aucun `argv[0]` sous un répertoire temporaire) est **distinct** de la classe des 5 pointeurs morts hors `%TEMP%` refermés ci-dessus, et il est **revérifié séparément** : `python scripts/notebook_tools/check_kernelspec_temp_paths.py --check-exists` rend `29 kernelspec(s) mesure(s), 1 racine(s) temporaire(s)` puis `CLEAN : aucun interpreteur sous un chemin temporaire` (rc 0) ; en JSON, `{"kernels": 29, "temp_roots": ["c:\\users\\jsboi\\appdata\\local\\temp"], "offenders": [], "verdict": "CLEAN"}` — **0 `argv[0]` sous `%TEMP%`** et **0 interpréteur absolu mort**. Les quatre enregs `wsl` (`lean4-wsl`, `python3-wsl`, `python3-wsl-swipl`, `python3-sc16-concrete-wsl`) portent `argv[0] = "wsl.exe"` : c'est une **commande nue** résolue par `PATH`, que l'organe exclut par construction (il ne mesure que les `argv[0]` **absolus**) — ce n'est donc pas un pointeur mort, et le signaler comme tel serait un faux positif.
+
+**`difflogic` n'est PAS « GPU-only » pour la copie du dépôt — le fork vendored l'est.** Le paquet PyPI `difflogic` 0.1.0 déclare `CUDAExtension` inconditionnellement et importe `difflogic_cuda` sans garde : son installation exige un **CUDA Toolkit assorti au torch** (13.3 installé ici, mais les wheels torch cp313 existent en cu126/cu128/cu130 — **pas de cu133**), et son import échoue sans l'extension. La copie **vendored** `SymbolicAI/SymbolicLearning/vendor/difflogic/` corrige cela : `setup.py` ne construit `CUDAExtension` que si le **major** de `nvcc` égale celui de `torch.version.cuda`, et `difflogic.py` garde l'import de `difflogic_cuda` sous `try/except ImportError`. Conséquence mesurée : avec torch cu126 (major 12) face à nvcc 13.3 (major 13), **l'extension est sautée et l'implémentation `python` (PyTorch pur) est la seule disponible** — ce qui est exactement le mode du snapshot commité de `SL-12` (`IMPL = "python"`). Le carnet n'exige donc **ni CUDA Toolkit-matching ni GPU** pour sa ré-exécution ; réinstaller le **fork vendored** (et non le paquet PyPI) suffit. Le mismatch de **major** est le seul bloquant de compilation (`torch/utils/cpp_extension.py` : major différent → `RuntimeError`, minor différent → simple avertissement).
+
+### Ce que les trois rangées mesurées établissent
+
+1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023), **2.2.6** (po-2028), **2.4.2** (po-2024). Le cas fondateur de #24883 en version mineure — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
 2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310`. Dans les deux sens, le nom ne dénote pas l'artefact.
-3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028 — le nom le plus « canonique » du dépôt n'est pas plus dénotatif que les autres.
+3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028, **(3.11.15, 2.4.6)** sur po-2024 — le nom le plus « canonique » du dépôt n'est pas plus dénotatif que les autres.
 
 ### Sièges restants
 
-Non mesurés à la date de cette section : `ai-01`, `po-2024`, `po-2025`, `po-2026`, `po-2027`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
+Non mesurés à la date de cette section : `ai-01`, `po-2025`, `po-2026`, `po-2027`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
 
 ## Python 3.10+ (notebooks Python)
 

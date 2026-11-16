@@ -244,9 +244,15 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
+      # 3.12, pas 3.11 : le garde `notebook-cell-source-parses` (absorbe ici)
+      # parse le source des cellules avec le tokenizer de l'interpreteur
+      # COURANT, et `--target-py 3.12` ne peut pas l'assouplir sur un
+      # runtime 3.11. Les kernels des carnets sont en 3.13 : une f-string
+      # PEP 701 valide (#26737, `f"{'A \\ B':>18}"`) rougissait la jambe
+      # absorbee alors que le workflow autonome, epingle en 3.12, la passe.
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       # Dependances des detecteurs du fast-lane (pyyaml pour le scan de
       # closure markdown-rendering, Pillow pour scan_md_hierarchy) --
@@ -255,6 +261,9 @@ jobs:
       # (#22279) : son argv est un pytest de scripts/tests/.
       - name: "Installer dependances detecteurs (pyyaml, Pillow, pytest)"
         run: pip install --quiet pyyaml Pillow pytest
+
+      - name: "Vérifier les motifs des listings Quarto (#25680)"
+        run: python scripts/check_quarto_listings.py
 
       # -----------------------------------------------------------------
       # BODY LIVE (#15697) : les organes qui lisent le corps (tag Grain:,
@@ -919,8 +928,16 @@ jobs:
           # legitime (squelette `sorry`, `native_decide` documente) restait
           # rouge faute de moyen de la declarer.
           LEAN_CLIQUET_PR_BODY: ${{ github.event.pull_request.body }}
+          # #22209 (TRANCHE45) : meme canal in-memory pour les marqueurs
+          # `plan-loss: section assumee -- <notebook> section: <titre> : <raison>`
+          # du detecteur de perte de plan (#14532) -- l'arbitrage
+          # par-section que le garde prescrit lui-meme. Sans lui, un
+          # marqueur pose dans le body restait invisible a la jambe absorbee
+          # (le detecteur lit PLAN_LOSS_PR_BODY nativement, priorite
+          # --pr-body > env, meme politique que MD_CONTENT_LOSS_PR_BODY).
+          PLAN_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          # #23146 : les trois canaux ci-dessus portent la PHOTOGRAPHIE du
+          # #23146 : les canaux ci-dessus portent la PHOTOGRAPHIE du
           # payload, figee a l'evenement declencheur. Une PR dont le body est
           # edite APRES le dernier push -- justification `## Output-collapse
           # justification` ecrite, `Grain:` corrige, `[LEAN-ANCHOR-DECLARED]`
@@ -945,7 +962,8 @@ jobs:
           MD_CONTENT_LOSS_PR_BODY="${PR_BODY:-$MD_CONTENT_LOSS_PR_BODY}"
           COLLAPSE_PR_BODY="${PR_BODY:-$COLLAPSE_PR_BODY}"
           LEAN_CLIQUET_PR_BODY="${PR_BODY:-$LEAN_CLIQUET_PR_BODY}"
-          export MD_CONTENT_LOSS_PR_BODY COLLAPSE_PR_BODY LEAN_CLIQUET_PR_BODY
+          PLAN_LOSS_PR_BODY="${PR_BODY:-$PLAN_LOSS_PR_BODY}"
+          export MD_CONTENT_LOSS_PR_BODY COLLAPSE_PR_BODY LEAN_CLIQUET_PR_BODY PLAN_LOSS_PR_BODY
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
 

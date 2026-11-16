@@ -38,6 +38,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 28 | [28-inversion-mobius-phi-euler.ipynb](28-inversion-mobius-phi-euler.ipynb) | Inversion de Möbius — μ construite puis confrontée à l'identité ∑ μ(d) = [n = 1] sur 1..60, φ retrouvée par inversion et comparée au calcul direct d'Euler (φ(1000) = 400) | Python stdlib |
 | 29 | [29-reciprocite-quadratique-legendre.ipynb](29-reciprocite-quadratique-legendre.ipynb) | Symbole de Legendre et réciprocité quadratique — résidus quadratiques énumérés par force brute puis confrontés au critère d'Euler (p = 7, 11, 13), lois supplémentaires (2/p) et (−1/p) sur les 11 premiers impairs ≤ 40, les 55 paires de premiers vérifiées une à une | Python stdlib |
 | 30 | [30-fonction-partition-nombres-pentagonaux.ipynb](30-fonction-partition-nombres-pentagonaux.ipynb) | Fonction de partition p(n) — théorème des nombres pentagonaux généralisés d'Euler : récurrence exacte, contrôle croisé avec la programmation dynamique (0 désaccord sur n ≤ 120), asymptotique de Hardy–Ramanujan mesurée (écart 6.5 % → 3.2 %) | Python stdlib + matplotlib |
+| 31 | [31-squelette-soule-sl3.ipynb](31-squelette-soule-sl3.ipynb) | Le squelette de Soulé pour SL₃(ℤ) — théorème 1.2.1 de la thèse (1978) : rétracte `X_n`, dimension `n(n−1)/2`, quotient compact ; ordres finis de SL₂/SL₃ mesurés (le jeu annoncé pour SL₂ était incomplet), pont de Bernoulli, graphe d'incidence de `F_q^3` (rang cyclomatique `q³` pour q = 2, 3, 5), réseau A₃ (12 vecteurs minimaux, rang 3, stabilisateur 48) ; H*(SL₃(ℤ)) complet cité, non recalculé | Python stdlib + matplotlib |
 
 ## Approfondissements
 
@@ -73,3 +74,9 @@ Deux témoignages filmés de J.-P. Serre, transcrits intégralement (Whisper lar
 - **« À propos de la correspondance Grothendieck-Serre »** — dialogue J.-P. Serre / Alain Connes, Fondation Hugot du Collège de France, 2019 (YouTube `pOv-ygSynRI`) — Tohoku et les axiomes (07:05), la montée H0-H1-H2 (12:36), le conducteur (17:57), citées dans 03, 04 et 07.
 
 Transcriptions complètes (timestampées) : `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\` — hors dépôt, conformément à la convention bibliographique.
+
+### Squelette de Soulé (carnet 31)
+
+- **C. Soulé**, *Groupes arithmétiques et K-théorie des anneaux d'entiers de corps de nombres*, thèse de doctorat d'État, Université Paris VII, juin 1978, §1.2.1 — définition du rétracte `X_n`, dimension `n(n−1)/2`, quotient compact ; H*(SL₃(ℤ)) complet cité. Copie : `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\1978 - Soule - Groupes arithmetiques et K-theorie des anneaux d entiers de corps de nombres (These d Etat, ihes.fr These_Christophe_Soule).pdf`.
+- **Correspondance Serre–Soulé**, lettre du 25 mai 1972 (Princeton) — copie manuscrite ; seule la date et le lieu sont lisibles de façon fiable, le corps n'est pas transcrit. Copie : `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\1972 - Serre & Soule - Correspondance (IHES, Correspondance-Serre-Soule-72).pdf`.
+- **P. Pansu**, *An Interview with Christophe Soulé*, IHES, 2026 — récit de la genèse et citation du squelette de dimension 3. Copie : `G:\Mon Drive\MyIA\IA\Bibliographie IA\NumberTheory\2026 - IHES & Soule - An Interview with Christophe Soule (Pierre Pansu, ihes.fr interview-soule).html`.

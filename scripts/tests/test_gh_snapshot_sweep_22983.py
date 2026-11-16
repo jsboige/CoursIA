@@ -635,7 +635,7 @@ def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
     """Le transport historique ne doit PAS etre appele quand l'instantane
     sert l'issue."""
     instantane = {
-        "comments": {"7": [{"body": "[FROZEN] lane a:b",
+        "comments": {"7": [{"body": "[DELIVERED] lane a:b -- PR #1",
                             "createdAt": "2026-10-27T10:00:00Z",
                             "author": {"login": "a"}, "url": "u1"}]},
         "meta": {"comment_stamps": {"7": time.time()}},
@@ -650,6 +650,11 @@ def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
     verdict = pig.delivery_event(7)
     assert verdict[0] is True
     assert verdict[2] == "2026-10-27T10:00:00Z"
+
+    # Le gel est un veto distinct, et non une livraison ; son horodatage
+    # reste disponible sans appel reseau pour la sonde d'evenement.
+    instantane["comments"]["7"][0]["body"] = "[FROZEN] lane a:b"
+    assert pig.delivery_event(7) == (False, False, "2026-10-27T10:00:00Z")
 
 
 def test_m_le_batch_sert_le_payload_depuis_l_instantane(monkeypatch):
@@ -885,3 +890,29 @@ def test_le_stamp_extreme_ferme_le_balayage_mais_laisse_la_fenetre_servable(
     # refuse rien, il change seulement la maniere de lire.
     assert gs.serves(out, [7, 9]), (
         "apres la lecture par issue, la fenetre doit redevenir servable")
+
+
+def test_commentaire_ajoute_pendant_le_balayage_est_repris(monkeypatch):
+    """Le stamp ne doit pas depasser le debut de la lecture distante."""
+    debut = 1800000000
+    horloge = [debut]
+    monkeypatch.setattr(gs.time, "time", lambda: horloge[0])
+    evenement = debut + 5
+    commentaire = gs.normalise_comment(_commentaire(7, body="claim concurrent"))
+
+    def lire(repo, since, **kwargs):
+        if horloge[0] == debut:
+            # La reponse ne contient pas encore le commentaire ; il arrive
+            # avant que la requete paginee ne soit completement terminee.
+            horloge[0] = debut + 10
+            return {}
+        borne = dt.datetime.fromisoformat(since.replace("Z", "+00:00"))
+        return {7: [commentaire]} if borne.timestamp() <= evenement else {}
+
+    monkeypatch.setattr(gs, "fetch_repo_comments_since", lire)
+    snapshot = {"comments": {"7": []},
+                "meta": {"comment_stamps": {"7": debut - 60}}}
+    gs.sweep_repo_comments("o/r", snapshot, since=_iso(debut - 60))
+    stamp = snapshot["meta"]["comment_stamps"]["7"]
+    gs.sweep_repo_comments("o/r", snapshot, since=_iso(stamp))
+    assert [c["body"] for c in snapshot["comments"]["7"]] == ["claim concurrent"]

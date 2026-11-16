@@ -233,19 +233,51 @@ SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
 COORDINATOR_LOGIN = "myia-ai-01"
-# #17437: the coordinator's GitHub App identity, once its lane signs with an
-# installation token instead of a PAT (the six lane Apps are created and
-# installed; the switch is the remaining operational step). Written as a
-# literal rather than derived from `gh_identity.APP_LOGIN_PREFIX` so this module
-# keeps importing when that organ is unavailable; a test pins the two together.
+# #17437: the coordinator machine's GitHub App identity, kept as a named
+# literal so the tests pin the exact REST spelling (``[bot]`` suffix). It is
+# NOT a coordinator voice -- see the COORDINATOR_IDENTITIES arbitration below
+# (#26102, applied here by #26405).
 COORDINATOR_APP_LOGIN = "coursia-lane-ai-01[bot]"
-# The coordinator's ONE voice, in every spelling it can reach the API under.
+# #17437 (Q187, 2026-11-14): l'App PROPRE a la lane coordinateur. Elle
+# existe desormais (App 5763709, slug ``coursia-coord-ai01``, creee le
+# 2026-11-14 sur le go du user, installee sur jsboige/CoursIA seulement),
+# avec sa cle dediee ``.secrets/github-apps/coursia-coord-ai01.pem`` --
+# DISTINCTE de la cle de l'App de machine ci-dessus, que la lane worker
+# soeur ``myia-ai-01:CoursIA-2`` lit aussi. C'est cette separation de cles
+# qui la rend eligible a porter la voix du coordinateur. Elle rejoint
+# ``gh_identity.ACCEPTED_DOSSIER_AUTHORS`` (litteral explicite, hors prefixe
+# ``coursia-lane-``) et les voix ci-dessous.
+COORDINATOR_LANE_APP_LOGIN = "coursia-coord-ai01[bot]"
+# La voix du coordinateur : les logins HUMAINS, PLUS l'App propre a la lane
+# coordinateur. L'App de machine ``coursia-lane-ai-01`` n'en fait TOUJOURS
+# PAS partie (arbitrage ai-01 2026-11-13, porte par #26102 dans
+# ``merge_ready.py`` ; ce module etait le troisieme residue, mesure par
+# #26405, l'App propre le leve).
+#
+# L'App de machine reste exclue pour la raison d'origine : sa cle privee
+# vit dans le clone du depot (``.secrets/github-apps/coursia-lane-ai-01.pem``,
+# cf ``scripts/secrets/github_app_manifest.KEY_DIR``), et la machine porte
+# DEUX lanes -- ``myia-ai-01:CoursIA`` (le coordinateur) et
+# ``myia-ai-01:CoursIA-2`` (la lane worker soeur), qui lit le meme fichier
+# et forge donc le meme jeton d'installation. La neutraliser, ce serait
+# neutraliser des actes post-dossier qu'une lane NON coordinatrice peut
+# ecrire : un commentaire ou une APPROVE de CoursIA-2 sous l'App vaudrait
+# celle du coordinateur, et le dossier ne perimerait pas.
+#
+# La preuve d'identite reste TYPEE PAR LIGNE (normalisation
+# ``gh_identity.normalize_author_login`` en amont de la comparaison) :
+# l'App propre entre par une ligne typee ``Bot`` (repliee en forme REST
+# suffixee) ; une forme nue sans type, ou l'homonyme UTILISATEUR type
+# ``User``, reste nue donc hors de l'ensemble -- fail-closed.
+#
 # Deliberately NOT `gh_identity.ACCEPTED_DOSSIER_AUTHORS`: that set holds every
 # lane's App, and neutralising a worker lane's row would delete the control
-# `_is_own_later_act` exists to enforce. A worker's App must still expire the
-# dossier -- a negative-control test holds that line.
+# `_is_own_later_act` exists to enforce. The App of the ai-01 machine stays an
+# accepted dossier AUTHOR (signing a dossier is not a post-dossier act) -- it
+# just never neutralises anything after it; only the coordinator's own App
+# does, because only its key is out of the sister lane's reach.
 COORDINATOR_IDENTITIES = frozenset(
-    (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN, COORDINATOR_APP_LOGIN)
+    (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN, COORDINATOR_LANE_APP_LOGIN)
 )
 
 VERDICT_READY = "READY"
@@ -904,6 +936,17 @@ def pre18637_surfaces_fingerprint(
     )
 
 
+def _is_skipped_run(run: dict[str, Any]) -> bool:
+    """Whether the check-run is a SKIPPED job.
+
+    A skipped job measured NOTHING about the code: it is the absence of a
+    verdict, not a verdict (#25510, tranche T-C).
+    """
+    if str(run.get("conclusion") or "").lower() == "skipped":
+        return True
+    return str(run.get("status") or "").lower() == "skipped"
+
+
 def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str, dict[str, Any]]:
     """Last COMPLETED verdict per check name: group by name, latest ``started_at``
     (``id`` as tiebreak), keep that run.
@@ -912,15 +955,34 @@ def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str,
     back to its latest completed run, which is the last word actually said.
     Grouping by name -- not reading the rollup twin -- is what avoids painting
     a head red with the cancelled run of a superseded pair (#16957).
+
+    THE SKIPPED FALLBACK (#25510, tranche T-C), shared with the two canonical
+    folds (``scripts/pr_gate.py::dedupe_latest`` and
+    ``scripts/check_run_state.py::fold_latest``): a ``skipped`` run measured
+    NOTHING about the code, so it never replaces an EARLIER non-skipped run of
+    the same name. ``skipped`` counts as a PASS here, so under a plain
+    latest-wins fold a job skipped by a guard (a title edit, a ``paths:``
+    filter) would WHITEN a red head -- and this dossier would certify
+    ``latest-wins-green`` on a head the gate itself reads as red. The three
+    organs must measure the same "latest".
     """
     verdicts: dict[str, tuple[tuple, dict[str, Any]]] = {}
-    for run in check_runs or []:
+    for index, run in enumerate(check_runs or []):
         if (run.get("status") or "").lower() != "completed":
             continue
         key = run.get("name") or ""
-        rank = (run.get("started_at") or "", run.get("id") or 0)
+        # La NATURE est en tete du rang (verdict reel > `skipped`) : le repli
+        # est ainsi independant de l'ordre d'arrivee, alors que l'API rend les
+        # check-runs du plus recent au plus ancien.
+        rank = (not _is_skipped_run(run),
+                run.get("started_at") or "",
+                run.get("id") or 0,
+                index)
         current = verdicts.get(key)
-        if current is None or rank > current[0]:
+        if current is None:
+            verdicts[key] = (rank, run)
+            continue
+        if rank >= current[0]:
             verdicts[key] = (rank, run)
     return {name: run for name, (rank, run) in verdicts.items()}
 
@@ -1574,6 +1636,84 @@ def _is_stack_noise(subject: str) -> bool:
     )
 
 
+def _pair_blocks(
+    entry: StackEntry, other: StackEntry, index: dict[int, StackEntry]
+) -> bool:
+    """``other`` fait-il de ``entry`` un sommet de pile perime ?
+
+    Predicat d'UNE paire, dans UN sens. ``_stack_partners`` l'applique dans
+    les deux sens pour reconnaitre la fourche soeur reciproque (#23100,
+    troisieme angle).
+    """
+    if not entry.commits or not other.commits:
+        return False
+    mine = _subjects_of(entry)
+    # #23100 (seconde moitie, 2026-11-11) -- un partenaire qui NE PEUT
+    # PAS ATTERRIR ne doit pas bloquer la cible. Une PR soeur en conflit
+    # avec `main` (`mergeable == "CONFLICTING"`) sera rebassee par son
+    # porteur avant d'atterrir : exiger de la cible qu'elle attende
+    # cette PR-la rend la cible inmergeable par une PR qui n'a pas
+    # d'aliance -- c'est le titre de l'issue ("un fork de base commune
+    # dont la PR soeur ne peut pas atterrir"). Mesure absente
+    # ("UNKNOWN", passe GraphQL indisponible) : l'exemption est INERTE,
+    # la porte garde son comportement d'avant. Le controle negatif
+    # (une soeur rebassee et MERGEABLE reste bloquante) est preserve.
+    if other.mergeable == "CONFLICTING":
+        return False
+    if not set(entry.commits) & set(other.commits):
+        # #20263 -- un rebase reecrit les SHA : une intersection vide
+        # ne prouve PAS l'independance, elle est exactement la
+        # signature du sommet de pile rebati que la porte existe pour
+        # attraper. Repli sur les SUJETS partages (hors bruit), comme
+        # le contrat publie le promet : « par sujet, jamais par SHA ».
+        # #20263 ( controle negatif de l'adjoint, dossier c6105057753)
+        # -- un sujet partage seul ne prouve pas non plus la parente :
+        # deux branches INDEPENDANTES depuis main portent souvent le
+        # meme prefixe canonique, et la porte les appariait en BlocAGE
+        # mutuel. Le repli exige la corroboration de CONTENU : au moins
+        # un sujet partage dont les commits des deux cotes ont le MEME
+        # patch-id (egalite qui survit au rebase). Les controles aval
+        # (ancetre lineaire, apport reel) restent appliques.
+        shared = [
+            s for s in (mine & _subjects_of(other))
+            if not _is_stack_noise(s)
+        ]
+        if not shared:
+            return False
+        if not _subjects_corroborated(entry, other, set(shared)):
+            return False
+    # Bas de pile lineaire : la tete d'AUTEUR (au-dela d'un eventuel
+    # rafraichissement content-free, #20641) de `target` est un
+    # ancetre de celle de `other`, donc merger `target` d'abord est
+    # l'ordre correct. On utilise `author_ref`, pas `ref` : un
+    # `gh pr update-branch` content-free prepende une fusion de
+    # rafraichissement a `entry.ref` (et potentiellement a
+    # `other.ref`), et la comparer brute faisait croire a un
+    # sommet de pile la ou il y a un bas lineaire.
+    if _git(
+        ["merge-base", "--is-ancestor", entry.author_ref, other.author_ref], check=False
+    ).returncode == 0:
+        return False
+    # #23100 -- l'enfant retarde de la cible. Le partenaire a pour BASE
+    # la tete de la cible (ou la tete d'un descendant de la cible : la
+    # chaine suit les liens base -> head a travers l'index, des piles de
+    # trois existent -- instance fondatrice #19548 -> #19556 -> #19567).
+    # La cible est alors le BAS d'une vraie pile : la merger d'abord est
+    # l'ordre correct, l'enfant retombera par update-branch -- aucun
+    # « sommet de pile perime » a signaler. La fausse instance qui a
+    # fonde l'issue : #22811 basee sur la tete de #22741, enfant retarde
+    # (le parent a avance apres le fork), et la porte bloquait le seul
+    # merge executable de la paire. Noms absents (entrees construites
+    # hors enumeration) : l'exemption est inerte, comportement d'avant.
+    if _is_stack_descendant(other, entry, index):
+        return False
+    if not [
+        s for s in (_subjects_of(other) - mine) if not _is_stack_noise(s)
+    ]:
+        return False
+    return True
+
+
 def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
     """PRs ouvertes dont ``target`` est un sommet de pile (cf ``stack_reasons``).
 
@@ -1583,76 +1723,28 @@ def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
     entry = index.get(target)
     if entry is None or not entry.commits:
         return []
-    mine = _subjects_of(entry)
     partners: list[int] = []
     for number in sorted(index):
         if number == target:
             continue
         other = index[number]
-        if not other.commits:
+        if not _pair_blocks(entry, other, index):
             continue
-        # #23100 (seconde moitie, 2026-11-11) -- un partenaire qui NE PEUT
-        # PAS ATTERRIR ne doit pas bloquer la cible. Une PR soeur en conflit
-        # avec `main` (`mergeable == "CONFLICTING"`) sera rebassee par son
-        # porteur avant d'atterrir : exiger de la cible qu'elle attende
-        # cette PR-la rend la cible inmergeable par une PR qui n'a pas
-        # d'aliance -- c'est le titre de l'issue ("un fork de base commune
-        # dont la PR soeur ne peut pas atterrir"). Mesure absente
-        # ("UNKNOWN", passe GraphQL indisponible) : l'exemption est INERTE,
-        # la porte garde son comportement d'avant. Le controle negatif
-        # (une soeur rebassee et MERGEABLE reste bloquante) est preserve.
-        if other.mergeable == "CONFLICTING":
-            continue
-        if not set(entry.commits) & set(other.commits):
-            # #20263 -- un rebase reecrit les SHA : une intersection vide
-            # ne prouve PAS l'independance, elle est exactement la
-            # signature du sommet de pile rebati que la porte existe pour
-            # attraper. Repli sur les SUJETS partages (hors bruit), comme
-            # le contrat publie le promet : « par sujet, jamais par SHA ».
-            # #20263 ( controle negatif de l'adjoint, dossier c6105057753)
-            # -- un sujet partage seul ne prouve pas non plus la parente :
-            # deux branches INDEPENDANTES depuis main portent souvent le
-            # meme prefixe canonique, et la porte les appariait en BlocAGE
-            # mutuel. Le repli exige la corroboration de CONTENU : au moins
-            # un sujet partage dont les commits des deux cotes ont le MEME
-            # patch-id (egalite qui survit au rebase). Les controles aval
-            # (ancetre lineaire, apport reel) restent appliques.
-            shared = [
-                s for s in (mine & _subjects_of(other))
-                if not _is_stack_noise(s)
-            ]
-            if not shared:
-                continue
-            if not _subjects_corroborated(entry, other, set(shared)):
-                continue
-        # Bas de pile lineaire : la tete d'AUTEUR (au-dela d'un eventuel
-        # rafraichissement content-free, #20641) de `target` est un
-        # ancetre de celle de `other`, donc merger `target` d'abord est
-        # l'ordre correct. On utilise `author_ref`, pas `ref` : un
-        # `gh pr update-branch` content-free prepende une fusion de
-        # rafraichissement a `entry.ref` (et potentiellement a
-        # `other.ref`), et la comparer brute faisait croire a un
-        # sommet de pile la ou il y a un bas lineaire.
-        if _git(
-            ["merge-base", "--is-ancestor", entry.author_ref, other.author_ref], check=False
-        ).returncode == 0:
-            continue
-        # #23100 -- l'enfant retarde de la cible. Le partenaire a pour BASE
-        # la tete de la cible (ou la tete d'un descendant de la cible : la
-        # chaine suit les liens base -> head a travers l'index, des piles de
-        # trois existent -- instance fondatrice #19548 -> #19556 -> #19567).
-        # La cible est alors le BAS d'une vraie pile : la merger d'abord est
-        # l'ordre correct, l'enfant retombera par update-branch -- aucun
-        # « sommet de pile perime » a signaler. La fausse instance qui a
-        # fonde l'issue : #22811 basee sur la tete de #22741, enfant retarde
-        # (le parent a avance apres le fork), et la porte bloquait le seul
-        # merge executable de la paire. Noms absents (entrees construites
-        # hors enumeration) : l'exemption est inerte, comportement d'avant.
-        if _is_stack_descendant(other, entry, index):
-            continue
-        if not [
-            s for s in (_subjects_of(other) - mine) if not _is_stack_noise(s)
-        ]:
+        # #23100 (troisieme angle, 2026-11-16) -- la fourche soeur
+        # RECIPROQUE. Deux PRs parties d'un meme commit non merge, dont
+        # chacune porte ensuite un travail propre absent de l'autre : le
+        # predicat tire dans les DEUX sens, chacune est le « sommet perime »
+        # de l'autre, et aucune ne peut jamais atterrir. Instance fondatrice :
+        # #26321 (SC-10) et #26323 (SC-11), forkees de `c2a6c7d54c3`,
+        # MERGEABLE toutes deux, skippees en boucle par merge_ready
+        # (`stack-top:26323` / `stack-top:26321`). Aucune des deux n'est la
+        # version anterieure de l'autre : l'ordre se tranche, il ne se
+        # deduit pas. La plus ANCIENNE (numero le plus bas) passe ; la plus
+        # recente reste bloquee par elle, et se libere des que la premiere
+        # a atterri (elle sort alors de l'index des PRs ouvertes). Le blocage
+        # a sens unique -- la soeur qui porte des corrections absentes ici,
+        # sans travail propre de notre cote -- reste inchange.
+        if target < number and _pair_blocks(other, entry, index):
             continue
         partners.append(number)
     return partners
@@ -2419,6 +2511,10 @@ _PR_GATE_CONTRADICTION_PREFIX = (
 #: Voix dont un APPROVED sur la tete exacte ouvre la porte du merge. La queue
 #: expose cette porte a titre d'information : l'autorite de merge reste le
 #: 2ter de ``merge_ready`` (approbation coordinateur), jamais ce champ.
+#: Heritee de COORDINATOR_IDENTITIES : humains + App PROPRE a la lane
+#: coordinateur (Q187), l'App de machine restant refusee, comme dans
+#: ``merge_ready.COORDINATOR_VOICES`` (#26102 aligne par #26405, elargi par
+#: la meme edition que ce module).
 COORDINATOR_REVIEW_LOGINS = COORDINATOR_IDENTITIES
 
 

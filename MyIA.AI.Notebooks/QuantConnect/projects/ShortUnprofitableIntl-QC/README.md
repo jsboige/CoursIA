@@ -33,17 +33,17 @@ Seuls `strategy` et `all` souscrivent l'univers fondamental et l'univers des con
 Projet QC Cloud : un `main.py` sans dépendance hors de Lean. Paramètres :
 
 - `mode` : `strategy`, `all`, `half`, `spy` ou `6040` ;
-- `start_date`, `end_date` : format `%Y-%m-%d` (défauts 2009-10-01 et 2026-07-31) ;
+- `start`, `end` : format `%Y-%m-%d`, obligatoires, sans valeur par défaut (la fenêtre du protocole est 2009-10-01 → 2026-07-31) ;
 - `min_market_cap` : plancher de capitalisation en dollars (défaut 10 milliards).
 - `exclude` : symboles retirés de l'univers éligible, séparés par des virgules (défaut `LBTYB`, voir le protocole ; `exclude=` vide rejoue la série d'origine).
 
-Le graphique `shadow` porte la valeur du portefeuille à l'ouverture de chaque séance de SPY, hors préchauffage, répartie sur les séries `e0` à `e4` (contrat #18923). C'est la série que comparent les tests. Les statistiques d'exécution publient `invalid_orders` et, pour `strategy` et `all`, le nombre moyen, minimal et maximal de lignes courtes par rééquilibrage (`shorts_mean`, `shorts_min`, `shorts_max`, `shorts_empty_days`).
+Le graphique `shadow` suit le contrat du rejeu en ombre (#18923) : à la clôture de chaque séance de SPY, hors préchauffage, il porte la valeur du portefeuille, répartie sur les séries `e0` à `e4`, les frais cumulés divisés par la valeur de départ (`fees`) et la rotation cumulée, en fraction du portefeuille (`turnover`). La valeur du portefeuille est la série que comparent les tests ; ceux du verdict ont été lus sur la version 1, qui la prenait à l'ouverture (voir « Version 2 »). Les statistiques d'exécution publient `invalid_orders` et, pour `strategy` et `all`, le nombre moyen, minimal et maximal de lignes courtes par rééquilibrage (`shorts_mean`, `shorts_min`, `shorts_max`, `shorts_empty_days`).
 
 ## Protocole (#24228)
 
 Le protocole complet, avec les prédictions, est le commentaire de pré-enregistrement de #24228. En résumé :
 
-- **une fenêtre**, 2009-10-01 → 2026-07-31, celle de l'article raccourcie de trois mois. La fin est fixée dans le code, pour que la coupure d'environ 90 jours de certains nœuds de backtest ne la raccourcisse pas en silence. **C'est la fenêtre de l'article : la mesure est une reproduction, pas un test hors échantillon** ;
+- **une fenêtre**, 2009-10-01 → 2026-07-31, celle de l'article raccourcie de trois mois. La fin est passée en paramètre, pour que la coupure d'environ 90 jours de certains nœuds de backtest ne la raccourcisse pas en silence. **C'est la fenêtre de l'article : la mesure est une reproduction, pas un test hors échantillon** ;
 - **contrôle de reproduction** : le CAGR QC de `strategy` doit être compris entre 1,5 % et 5 %, et son bêta QC contre SPY inférieur à 0,1 en valeur absolue ;
 - **contrôle de propriété** : le nombre moyen de lignes courtes de `strategy` doit valoir entre 0,45 et 0,50 fois celui de `all` ;
 - **tests** : `Paradox46Benchmarks/significance.py`, taux sans risque nul (écart de Sharpe de Ledoit-Wolf, bootstrap stationnaire, écart de moyennes de Newey-West). Verdict : `strategy` contre `spy` et `6040`, Holm sur six p-valeurs. Diagnostics : `strategy` contre `half` et contre `all`, Holm sur trois p-valeurs chacun ; ils ne modifient pas le verdict ;
@@ -84,3 +84,16 @@ Propriétés du code :
 Le verdict ne change pas. L'écart de Sharpe n'est pas significatif (p de Holm 1,0 contre les deux références). Le rendement moyen reste inférieur, −11,9 % par an contre `spy` et −6,8 % contre `6040`, mais l'écart n'est plus significatif après correction (p de Holm 0,094 et 0,24). Les trois pertes max. tombent après mars 2015 : ce sont celles de la fenêtre entière.
 
 Le détail des tests est sur #24228.
+
+## Version 2 (2026-11-11)
+
+La version mesurée par le verdict lisait `start_date` et `end_date` avec des valeurs par défaut et ne traçait que la valeur du portefeuille, à l'ouverture de chaque séance. Elle ne tenait pas le contrat du rejeu en ombre : le graphique ne portait ni `fees` ni `turnover`, que l'ingestion exige, et la valeur prise à l'ouverture n'était pas celle de la clôture que demande le contrat.
+
+La version 2 lit `start` et `end` sans valeur par défaut et trace, à la clôture de chaque séance de SPY, la valeur du portefeuille, `fees` et `turnover`. La règle de trading ne change pas. Elle est gelée au registre d'ombre le 2026-11-12, sous l'identifiant `short-intl-v2`, sur le projet QC 39243884, au SHA `fa1d63e`.
+
+Deux contrôles :
+
+- **ingestion** : un backtest court (2026-09-01 → 2026-11-10, projet QC 39243884) est accepté par `ingest_qc` du rejeu, essayé en local sans toucher au registre : 50 points pour 50 séances négociables, du 2026-09-01 au 2026-11-10 à 16 h ET ;
+- **mêmes ordres** : le rejeu de la fenêtre du protocole en mode `strategy` (projet QC 39243931) et celui de la version 1 (projet 38795329), lancés le même jour, rendent les mêmes statistiques d'exécution de Lean au centime près : rendement total 54,54 %, CAGR 2,618 %, perte max. 13,2 %, frais égaux à 8,95 % de la valeur de départ, volume égal à 70,52 fois cette valeur, 44,02 positions courtes en moyenne (de 21 à 70), aucun ordre invalide. Le run du verdict, le 2026-11-02, finit 0,09 % plus haut, avec 0,75 % de volume en plus. Les deux versions coïncidant à date égale, cet écart vient des données de QC entre les deux dates, pas de la version 2.
+
+Sur la fenêtre complète (4233 séances), QC rééchantillonne les séries `fees` et `turnover` du graphique : 3407 points rendus, environ un tous les 1,34 jour. Le contrôle d'ingestion, sur 50 séances, rend un point par séance, comme un passage d'ombre mensuel.

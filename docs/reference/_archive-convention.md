@@ -1,5 +1,7 @@
 # Convention `_archive/` — modèle ML-Training-Pipeline généralisé
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 **S'applique à :** tout dossier `_archive/` du dépôt. Le recensement est une **mesure**, pas un littéral : il se recalcule avec la commande du §« Recenser, ne pas recopier ».
 **Référence :** `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/_archive/` (consolidation #1409, 2026-06-12).
 **Discipline parente :** CLAUDE.md global — « Consolider != Archiver » (préserver avant de réduire, citer la cible comme preuve).

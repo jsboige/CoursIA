@@ -998,6 +998,83 @@ python D:/CoursIA-2-wt/compute-sf-ops3.py art2
 python D:/CoursIA-2-wt/compute-sf-ops3.py art3
 ```
 
+## Second témoin cross-siège — balayage explicite `OperationsPerInvoke` (2026-11-13, `myia-po-2024:CoursIA-2`)
+
+La section ci-dessus a mesuré le régime à N croissant avec l'instrument `InvocationCount`
+(BDN appelle la méthode N fois). Cette section porte le **second témoin** : le test
+**littéralement nommé** par la section « seconde cause » — `OperationsPerInvoke` croissant
+**sur le même appel** — joué sur un **second siège** (i7-11800H contre l'i9-14900KF de la
+section de 2026-11-10), un **second artefact** (`stable-from-v0343` @ `e675df9`, la tête
+épinglée, contre `feature/benchmarkdotnet-baseline` @ `6f96590`), une **seconde version BDN**
+(0.15.8 contre 0.14.0) et **trois runtimes** (net9/10/11 contre net8-11). L'apport amont
+correspondant est la **PR #112** de `MyIntelligenceAgency/semantic-fleet` (classe
+`OperationsPerInvokeRegimeBenchmarks` + document de résultats).
+
+**Pourquoi un second instrument.** `InvocationCount = N` **couple N au tiering du JIT** :
+appeler la méthode N fois la promeut en code optimisé, donc la courbe décroît.
+`OperationsPerInvoke = N` fait tourner N opérations **en interne** à l'appel, le nombre
+d'appels restant **constant** : le tiering est **gelé**, seul le terme de harnais `c/N`
+varie. C'est précisément la décomposition `w + c/N` du contrôle de mécanisme ci-dessus,
+isolée : `InvocationCount` observe `w + c/N` **et** le tiering (d'où la décroissance),
+`OperationsPerInvoke` observe `w + c/N` **tiering gelé** (d'où, ci-dessous, la ligne plate).
+
+**Cellules.** Les deux seules cellules sous 100 µs de l'axe prompt-settings :
+`PromptSignature.Matches` (chemin StartsWith) et `PromptTransform.InterpolateKeys` (regex
+`{key}`) — les mêmes méthodes que le per-op instrument amont. Le balayage ajoute les
+points **N=1 et N=100** que l'instrument amont (N=1 000 / 10 000 seul) et la section de
+2026-11-10 ne portaient pas.
+
+**Protocole.** Une seule compilation par TFM, chaque DLL jouée par le `dotnet` propriétaire
+de son runtime ; BDN 0.15.8 `InProcessEmitToolchain`, `Job.ShortRun` 5 warmup / 15
+itérations / `IterationTime(100 ms)` / unroll 1 ; 5 passes entrelacées net9→net10→net11
+(15 exécutions, charge hôte CPU + nb processus échantillonnées à chaque appel).
+
+**Mesures — coût/op en ns, médiane des 5 moyennes**
+
+| Cellule | N | net9 | net10 | net11 |
+|---|---:|---:|---:|---:|
+| `PromptSignature.Matches` | 1 | 25,89 | 19,46 | 18,92 |
+| `PromptSignature.Matches` | 100 | 26,53 | 19,65 | 18,70 |
+| `PromptSignature.Matches` | 10 000 | 25,33 | 17,00 | 18,47 |
+| `PromptTransform.InterpolateKeys` | 1 | 1 913 | 1 936 | 1 932 |
+| `PromptTransform.InterpolateKeys` | 100 | 1 797 | 1 978 | 1 994 |
+| `PromptTransform.InterpolateKeys` | 10 000 | 1 697 | 2 068 | 1 841 |
+
+Ratios N=10 000 / N=1 : `Matches` 0,87-0,98, `InterpolateKeys` 0,89-1,07 selon le
+runtime — **autour de 1** : le coût/op est **plat** de N=1 à N=10 000.
+
+**Lecture.**
+
+1. **Sous l'instrument `OperationsPerInvoke`, le coût/op est plat, pas décroissant.**
+   Toutes les paires de N disjoints se **chevauchent** (intervalles `[min,max]` des
+   moyennes des 5 passes) : le régime n'est **pas séparable** — aucun coût fixe par
+   itération n'est résolu au-dessus de la bande de bruit sur ces deux cellules. Le coût/op
+   mesuré **est** le coût réel `w`.
+2. **Ce n'est pas une contradiction avec la section de 2026-11-10 — c'est sa seconde moitié.**
+   La section ci-dessus a établi (contrôle de mécanisme) que la courbe `InvocationCount`
+   décroît parce que **deux** termes s'y ajoutent : le harnais `c/N` (H1) **et** le
+   tiering du JIT (H2). Cet instrument **gèle** le tiering (H2 constant) : il ne reste que
+   `w + c/N`, et celui-ci est **plat** — sur ces deux cellules sous 100 µs, le terme `c/N`
+   est petit devant `w`. La décroissance vue sous `InvocationCount` est donc portée
+   **surtout** par le tiering (H2), pas par le harnais (H1). Les deux instruments isolent
+   deux termes du **même** modèle `w + c/N` : ensemble, ils **confirment** la
+   décomposition additive établie en 2026-11-10.
+3. **Le point N=100 ferme l'entre-deux.** Les deux extrémités (N=1, N=10 000) figuraient
+   déjà dans la baseline amont ; le point intermédiaire **N=100 reste sur la même ligne
+   horizontale** — ni saut, ni creux. C'est la contribution propre de ce balayage.
+4. **Ce qui n'est pas établi ici.** La comparabilité absolue des valeurs avec la section de
+   2026-11-10 (artefact, version BDN et siège différents) n'est **pas** visée : seul le
+   **forme de courbe** et le **mécanisme** sont le propos. La décomposition « harnais /
+   tiering » reste, comme en 2026-11-10, bornée par la dispersion inter-passes sur les
+   petites cellules.
+
+**Provenance.** Logs bruts hors dépôt, scratch de la lane
+(sous-répertoire `sf-25635/results/`, chemin hors dépôt non versionné) ;
+analyse : médiane des 5 moyennes par (cellule,
+N, runtime), intervalles `[min,max]`. Document amont détaillé :
+`benchmarks/REGIME-operations-per-invoke-25635.md` (PR #112 de
+`MyIntelligenceAgency/semantic-fleet`).
+
 ## Contrôle du banc 5 — l'ordre fixe rend le delta 9→10 ininterprétable (myia-ai-01:CoursIA-2, 29/10)
 
 Objet : les **deux** drapeaux que ce document pose sur le banc 5 et laisse ouverts depuis le
@@ -1252,8 +1329,11 @@ La part de tiering **diffère selon le runtime** (×0,52 pour .NET 11 contre ×0
    démontrée sur **une charge sur quatre** : `CenterBias_Ackley` garde le même ordre
    dans les deux régimes, `CenterBias_Suite4` ne montre aucun effet, et
    `Sphere10D_50k` est dominé par le bruit (dispersion jusqu'à 87 %, moyenne bimodale
-   du fait de la marche). Le banc 4 (`semantic-fleet`, coûts en µs) **n'a pas été
-   recontrôlé** dans ce protocole.
+   du fait de la marche). Le banc 4 (`semantic-fleet`, coûts en µs) a été recontrôlé
+   depuis, sur ses 96 jambes : [banc4-regime-25644.md](banc4-regime-25644.md) y trouve
+   le mélange **minoritaire** — 11 jambes sur 96 au seuil de 0,05, dont 4 à 0,01 — et
+   sa plus forte amplitude apparente concentrée dans la première passe du régime à une
+   invocation. Le constat du banc 1 ne se transporte donc pas à l'ensemble du banc 4.
 4. **La comparabilité avec les tableaux de ce document.** Les mesures ci-dessus sont
    du 10/11, sur un hôte partagé, en BDN 0.15.8 ; les tableaux « Banc 1 » et « Banc 4 »
    sont du 02/10, sur un portable, en BDN 0.14.0. **Les valeurs absolues ne sont pas
@@ -1269,7 +1349,12 @@ La part de tiering **diffère selon le runtime** (×0,52 pour .NET 11 contre ×0
   un artefact de régime plutôt qu'un gain de runtime.
 - Le **profil par itération** (journal BDN) est le seul artefact qui rende le mélange
   visible : le rapport final ne le montre pas. C'est le premier réflexe à prendre
-  pour un banc qui doit trancher un delta < 20 %.
+  pour un banc qui doit trancher un delta < 20 %. Il est outillé :
+  [`scripts/benchmarks/bdn_iteration_profile.py`](../../scripts/benchmarks/bdn_iteration_profile.py)
+  extrait la série, cherche le point de coupe et le **confronte à 500 permutations** —
+  sans ce contrôle, le meilleur découpage rend toujours un rapport supérieur à 1 et
+  fabrique des marches sur du bruit. Le profil du banc 4 est publié
+  ([markdown](banc4-regime-25644-profile.md), [CSV](banc4-regime-25644-profile.csv)).
 
 ### Origine et reproduction
 
