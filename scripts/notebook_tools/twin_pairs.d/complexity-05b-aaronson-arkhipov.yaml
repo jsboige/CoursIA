@@ -1,0 +1,10 @@
+- name: "Complexity-05b Permanente BosonSampling"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Le port utilise les complexes natifs C# et MathNet pour les déterminants et la décomposition QR des unitaires de Haar, avec des permanentes instrumentées et mémorisées.
+  known_differences:
+    - "Les générateurs aléatoires et les performances diffèrent entre Python et C#. La loi énumérée est conditionnée à l'absence de collision ; les comptes distinguent le recalcul des sommes et leur mise à jour incrémentale."
