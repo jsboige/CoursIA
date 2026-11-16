@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-15
+> REFERENCE — vivante — dernière révision 2026-11-16
 
 # QuantConnect (QC) - Configuration et règles
 
