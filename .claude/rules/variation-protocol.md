@@ -2,9 +2,7 @@
 
 S'applique à **tous les workers** (`po-*`) **et au coordinateur `ai-01`**. Source : mandat user 2026-07-21. Les concepts (tiers DEEP/MED/LIGHT, rotation des genres, never-idle) vivent dans [proactive-coordination.md](proactive-coordination.md) R6/R7 ; ce fichier ajoute la mécanique qui les fait mordre : **tag auditable**, **merge-gate**, **obligation de provisionnement** (pourquoi la prose seule n'a pas tenu : [détail §1](../../docs/reference/variation-protocol-detail.md)).
 
-**Détail (justifications mesurées, incidents fondateurs, verbatims)** : [docs/reference/variation-protocol-detail.md](../../docs/reference/variation-protocol-detail.md).
-
-**Provenance** : fragments déportés = lignes de la base `7a558e4d7ce8` — [détail §Levier B](../../docs/reference/variation-protocol-detail.md).
+**Détail** (justifications mesurées, incidents fondateurs, verbatims ; provenance : fragments déportés des lignes de la base `7a558e4d7ce8`) : [docs/reference/variation-protocol-detail.md](../../docs/reference/variation-protocol-detail.md).
 
 ## 1. Le tag de grain (HARD)
 
@@ -59,13 +57,13 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 | `lean` (ex #12252) | `MED/notebook-lean` | **CONTENU** | grain de contenu **au-delà** du plancher |
 | `guard` (ex #11997) | `MED/guard` | **META** | ne tient **pas** le plancher, comme toute PR META |
 
-**Prescriptions** : le genre hérité est déclaré **directement**, sans annotation spéciale (le REPAIR se lit dans le titre `fix(` et le diff) ; une annotation ajoute du bruit sans information. **Tier** : litmus habituel — un REPAIR à ré-exécution complète + diagnostic de ratchet est `MED` ; un REPAIR d'une ligne de body reste `LIGHT` et consomme le budget G-VAR-2 (pas d'exception). Un REPAIR d'une PR **META** reste **META** : il ne tient jamais le plancher à lui seul. Raisonnement complet et arbitrage #11815 : [détail §13](../../docs/reference/variation-protocol-detail.md).
+**Prescriptions** : le genre hérité est déclaré **directement**, sans annotation spéciale (le REPAIR se lit dans le titre `fix(` et le diff) ; une annotation ajoute du bruit. **Tier** : litmus habituel — un REPAIR à ré-exécution complète + diagnostic de ratchet est `MED` ; un REPAIR d'une ligne de body reste `LIGHT` et consomme le budget G-VAR-2. Un REPAIR d'une PR **META** reste **META** : il ne tient jamais le plancher à lui seul ([détail §13](../../docs/reference/variation-protocol-detail.md).
 
 ## 2. Les trois gates durs
 
 - **G-VAR-1 — Plat principal DEEP, dans un genre de CONTENU.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP **et** porter un genre de la classe CONTENU. **Une LIGHT ne satisfait JAMAIS le plancher ; un genre META non plus, quel que soit son tier ; un MED non plus.** Le MED et le META restent **bienvenus au-delà** du plancher (sous budget G-VAR-2 pour leurs composantes LIGHT) : ce qui est exigé, c'est qu'**au moins un** grain DEEP de contenu porte le cycle ([détail §12.3](../../docs/reference/variation-protocol-detail.md)).
 
-  **Consolider est du DEEP, et la priorité se règle au tapis (mandat user 2026-10-25).** Une consolidation de série (ligne DEEP du tableau des tiers) déclare le genre des carnets qu'elle réorganise (`notebook-python`, `notebook-lean`...), comme un REPAIR hérite du genre de la PR réparée : ce qui arrive sur `main` est une série de carnets. Un nouveau carnet reste DEEP, mais son tier ne le rend pas prioritaire : les issues de consolidation reviennent en tête du tapis plusieurs fois par semaine, un EPIC qui étend une série au plus une fois. Verbatim, mesure et provenance : [détail §14](../../docs/reference/variation-protocol-detail.md).
+  **Consolider est du DEEP, et la priorité se règle au tapis (mandat user 2026-10-25).** Une consolidation de série déclare le genre des carnets qu'elle réorganise, comme un REPAIR hérite du genre de la PR réparée. Un carnet neuf reste DEEP, mais son tier ne le rend pas prioritaire : les issues de consolidation reviennent en tête du tapis, un EPIC qui étend une série au plus une fois ([détail §14](../../docs/reference/variation-protocol-detail.md)).
 
   **Durcissement #15793 (2026-09-12)** : le plancher est **DEEP** (pas « DEEP **ou MED** ») — motif + contre-poids anti-inflation (`TIER-INFLATION`) : [détail §12](../../docs/reference/variation-protocol-detail.md). Le litmus DEEP reste objectif ; le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance.
 
@@ -79,7 +77,7 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 
   **Exception MED/DEEP mesurable (#14357)** : deux grains consécutifs d'un même genre LIGHT sont autorisés **ssi** (i) le **second** est MED ou DEEP et (ii) les deux PRs ne partagent **aucun fichier**. Le critère est **mécanique, jamais jugé à la main, fail-CLOSED** (rendu par `variation_light_cap.py`, consommé par `variation_adjacency_guard.py`) — un run de ≥3 s'exempte seulement si **chaque paire adjacente** satisfait (i) et (ii). Tell décisif : le litmus LIGHT — générable en scannant l'instance d'à-côté → bloqué **même sous une étiquette DEEP**.
 
-  **Exemption de lane (#26988, décision user Q194 a du 16/11/2026)** : la lane désignée par le coordinateur pour les organes de CI et de merge est **exempte de G-VAR-3** — ses grains sont presque tous des gardes, et le ban vise la monotonie d'un worker de CONTENU. La liste des lanes inscrites est déclarée en **un seul endroit**, `G_VAR3_EXEMPT_LANES` dans [`scripts/ci/variation_adjacency_guard.py`](../../scripts/ci/variation_adjacency_guard.py) ; **seul G-VAR-3 est levé** — G-VAR-1 (plancher) et G-VAR-2 (budget) restent appliqués. Détail : [détail §15](../../docs/reference/variation-protocol-detail.md).
+  **Exemption de lane (#26988, décision user Q194 a du 16/11/2026)** : la lane désignée pour les organes de CI est **exempte de G-VAR-3** (liste unique : `G_VAR3_EXEMPT_LANES` dans l'organe) ; **G-VAR-1 et G-VAR-2 restent appliqués** ([détail §15](../../docs/reference/variation-protocol-detail.md)).
 
 ## 3. Merge-gate coordinateur (ai-01) — les dents (HARD)
 
