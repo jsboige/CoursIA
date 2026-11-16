@@ -32,19 +32,29 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from check_testpaths_coverage import (  # noqa: E402
+    CI_EXCLUDED_BASELINE,
+    ENTRY_POINT_WORKFLOW,
     REPO_ROOT,
     WORKFLOW_COVERAGE,
     _partition_run_blocks,
     check_namespace_option,
+    collectible_item_count,
     discover_suites,
+    excluded_population,
     extract_run_targets,
+    file_coverage,
     is_covered,
+    is_test_file_name,
     load_ci_excluded,
     load_testpaths,
     missing_declared_suites,
+    plan_problems,
+    ratchet_problems,
     uncovered_suites,
     verify_declared_test_cwd,
 )
+
+import check_testpaths_coverage as ctc  # noqa: E402
 
 
 def test_extract_run_targets_multiline_backslash() -> None:
@@ -95,6 +105,40 @@ def test_extract_run_targets_root_dir_without_slash() -> None:
     targets = extract_run_targets(text)
     assert "GradeBookApp" in targets
     assert "--tb=short" not in targets and "-q" not in targets
+
+
+def test_extract_run_targets_retire_les_guillemets() -> None:
+    """Une cible entre guillemets est une cible (#26759, revue du coordinateur).
+
+    Le job `adk-contracts` de `scripts-tests.yml` cite ses deux cibles entre
+    guillemets : sans retrait des guillemets, elles sortaient « NON JOUÉE »
+    alors que la CI les joue.
+    """
+    text = """        run: |
+          pytest \\
+            "scripts/tests/test_adk_runtime_contracts.py" \\
+            'config/test_providers.py' \\
+            --tb=short -q
+"""
+    targets = extract_run_targets(text)
+    assert "scripts/tests/test_adk_runtime_contracts.py" in targets
+    assert "config/test_providers.py" in targets
+    assert '"scripts/tests/test_adk_runtime_contracts.py"' not in targets
+    assert "'config/test_providers.py'" not in targets
+
+
+def test_les_cibles_du_job_adk_sont_reconnues_sur_le_workflow_reel() -> None:
+    """Contrôle positif sur le workflow réel : les deux cibles existent.
+
+    Sans ce test, le retrait des guillemets pourrait casser la détection
+    sans qu'aucune cible réelle ne soit vérifiée.
+    """
+    wf = (REPO_ROOT / ".github/workflows/scripts-tests.yml").read_text(encoding="utf-8")
+    targets = extract_run_targets(wf)
+    assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
+            "07-Agent-Orchestration/utils/test_adk_runtime_contracts.py") in targets
+    assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
+            "07-Agent-Orchestration/config/test_providers.py") in targets
 
 
 def test_is_covered_exact_and_ancestor() -> None:
@@ -570,21 +614,40 @@ def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pu
     # Le job reste sur le parc auto-heberge. Depuis #26386 le `runs-on` est une
     # forme hybride auditee : la jambe `push` vise le slot reserve de main
     # {self-hosted, coursia-main, coursia-linux}, le repli vise le pool des PR
-    # {self-hosted, coursia-ephemeral, coursia-linux}. On asserte les DEUX
-    # jambes -- pas la chaine -- pour que le repli ne puisse pas glisser vers
-    # `ubuntu-latest` sans que le test le voie.
+    # {self-hosted, coursia-ephemeral, coursia-linux}. Depuis #21978 une jambe
+    # LOURDE ({self-hosted, coursia-persistent, coursia-linux}) peut
+    # s'intercaler entre les deux : elle n'est atteinte que si un operateur
+    # pose la variable de depot `CI_HEAVY_PERSISTENT` (absente par defaut),
+    # et sa forme est auditee par
+    # `scripts/ci/check_self_hosted_runner_policy.py`.
+    # On asserte les JAMBES (leur role et leur ordre), pas la chaine entiere :
+    # le repli ne peut pas glisser vers `ubuntu-latest`, et une jambe
+    # intermediaire ne peut pas ouvrir un pool non declare.
+    MAIN_SLOT = ["self-hosted", "coursia-main", "coursia-linux"]
+    PR_POOL = ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+    HEAVY_FAMILY = ["self-hosted", "coursia-persistent", "coursia-linux"]
     runs_on = job["runs-on"]
     if isinstance(runs_on, list):
-        assert runs_on == ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+        assert runs_on == PR_POOL
     else:
         assert "github.event_name == 'push'" in str(runs_on), (
             "la forme hybride doit rester gardee par l'evenement -- sans la "
             "garde, la jambe du slot reserve de main serait atteinte par toute PR"
         )
-        assert _jeux_de_labels_runs_on(runs_on) == [
-            ["self-hosted", "coursia-main", "coursia-linux"],
-            ["self-hosted", "coursia-ephemeral", "coursia-linux"],
-        ]
+        jeux = _jeux_de_labels_runs_on(runs_on)
+        assert jeux[0] == MAIN_SLOT, (
+            "la premiere jambe est le slot reserve de main -- la chaine "
+            f"commence par {jeux[0]}"
+        )
+        assert jeux[-1] == PR_POOL, (
+            "la derniere jambe est le repli sur le pool des PR -- le repli "
+            f"est {jeux[-1]}"
+        )
+        for jambe in jeux[1:-1]:
+            assert jambe == HEAVY_FAMILY, (
+                "une jambe intermediaire ne peut viser que la famille "
+                f"lourde auditee -- trouve {jambe}"
+            )
 
 
 def test_adk_job_targets_existing_refactor_files_for_run_and_collection() -> None:
@@ -791,3 +854,201 @@ def test_cli_inventory_advisory_est_vert_sur_main() -> None:
     assert proc.returncode == 0, proc.stdout
     assert "\n  INFO tests\n" not in proc.stdout
     assert "FAIL" not in proc.stdout
+
+
+# ---------------------------------------------------------------------------
+# #26736 : septième sens (couverture par fichier) et huitième sens
+# (cliquet sur la population CI-EXCLUDED + plan de remédiation).
+# ---------------------------------------------------------------------------
+
+
+def _make_test_module(root: Path, rel: str, items: int = 1) -> Path:
+    """Pose un fichier de test portant `items` items collectibles."""
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = "\n".join(f"def test_x{i}():\n    assert True" for i in range(items))
+    path.write_text(body + "\n", encoding="utf-8")
+    return path
+
+
+def test_is_test_file_name_suit_les_motifs_pytest_par_defaut() -> None:
+    """pytest.ini ne fixe pas `python_files` : les motifs par défaut
+    s'appliquent — `test_*.py` ET `*_test.py` (les deux camps du dépôt)."""
+    assert is_test_file_name("test_alpha.py")
+    assert is_test_file_name("alpha_test.py")
+    assert not is_test_file_name("alpha.py")
+    assert not is_test_file_name("conftest.py")
+
+
+def test_collectible_item_count_compte_les_items_pytest(tmp_path: Path) -> None:
+    """Un item collectible = fonction `test_*` (async comprise) ou classe
+    `Test*`. Un helper sans `test_` ne compte pas."""
+    path = tmp_path / "probe.py"
+    path.write_text(
+        "def test_a():\n    pass\n\n\n"
+        "async def test_b():\n    pass\n\n\n"
+        "class TestC:\n    pass\n\n\n"
+        "def helper():\n    pass\n",
+        encoding="utf-8",
+    )
+    assert collectible_item_count(path) == 3
+
+
+def test_file_coverage_signale_un_fichier_qu_aucune_jambe_ne_collecte(
+    tmp_path: Path,
+) -> None:
+    """Le septième sens descend au niveau du FICHIER : un test co-localisé
+    avec du code, dans un répertoire que rien ne joue, est nommé."""
+    _make_test_module(
+        tmp_path, "MyIA.AI.Notebooks/Serie/tests/test_gateway.py", items=2
+    )
+    coverage = file_coverage(tmp_path, {})
+    assert coverage["collected"] == 0
+    paths = [f["path"] for f in coverage["unplayed"]]
+    assert paths == ["MyIA.AI.Notebooks/Serie/tests/test_gateway.py"]
+    finding = coverage["unplayed"][0]
+    assert finding["items"] == 2
+    # A defaut de jambe candidate, l'organe nomme le point d'entree unique.
+    assert finding["candidates"] == [ENTRY_POINT_WORKFLOW]
+
+
+def test_file_coverage_ne_signale_pas_un_fichier_joue_par_une_cible_dossier(
+    tmp_path: Path,
+) -> None:
+    """Un fichier sous la cible-dossier d'un workflow est joue : il ne doit
+    pas apparaitre dans la population non jouee."""
+    _make_test_module(tmp_path, "MyIA.AI.Notebooks/Serie/tests/test_a.py")
+    _make_workflow(tmp_path, ["MyIA.AI.Notebooks/Serie/tests"])
+    coverage = file_coverage(tmp_path, {})
+    assert coverage["unplayed"] == []
+    assert coverage["collected"] == 1
+
+
+def test_file_coverage_compte_la_population_exclue_a_part(
+    tmp_path: Path,
+) -> None:
+    """Un fichier sous un chemin CI-EXCLUDED n'est pas « non joue » : il est
+    DECLARE exclu, donc connu, et compte par le cliquet."""
+    _make_test_module(tmp_path, "MyIA.AI.Notebooks/Serie/tests/test_a.py")
+    excluded = {"MyIA.AI.Notebooks/Serie/tests": "raison mesuree"}
+    coverage = file_coverage(tmp_path, excluded)
+    assert coverage["unplayed"] == []
+    assert coverage["excluded"] == 1
+
+
+def test_excluded_population_compte_marqueurs_fichiers_et_items(
+    tmp_path: Path,
+) -> None:
+    """La population reellement exclue est comptee en trois grandeurs."""
+    _make_test_module(tmp_path, "MyIA.AI.Notebooks/Serie/tests/test_a.py", items=3)
+    excluded = {"MyIA.AI.Notebooks/Serie/tests": "raison"}
+    population = excluded_population(tmp_path, excluded)
+    assert population["marqueurs"] == 1
+    assert population["fichiers"] == 1
+    assert population["items"] == 3
+    assert population["orphelins"] == []
+
+
+def test_excluded_population_signale_un_marqueur_orphelin(
+    tmp_path: Path,
+) -> None:
+    """Un marqueur dont le chemin n'existe plus n'exclut plus rien : il est
+    signale (le marqueur se reecrit dans le workflow, pas dans cet organe)."""
+    excluded = {"MyIA.AI.Notebooks/Serie/renommee/tests": "raison"}
+    population = excluded_population(tmp_path, excluded)
+    assert population["orphelins"] == ["MyIA.AI.Notebooks/Serie/renommee/tests"]
+    assert population["fichiers"] == 0
+
+
+def test_ratchet_rougit_des_que_la_population_croit() -> None:
+    """Le cliquet mord sur le COMPTE, pas sur la presence du marqueur."""
+    population = {
+        "marqueurs": CI_EXCLUDED_BASELINE["marqueurs"],
+        "fichiers": CI_EXCLUDED_BASELINE["fichiers"],
+        "items": CI_EXCLUDED_BASELINE["items"] + 1,
+    }
+    problems = ratchet_problems(population)
+    assert problems, "une hausse de la population doit etre signalee"
+    assert "items" in problems[0]
+
+
+def test_ratchet_est_vert_au_niveau_de_reference() -> None:
+    """A la baseline, le cliquet ne dit rien."""
+    assert ratchet_problems(dict(CI_EXCLUDED_BASELINE)) == []
+
+
+def test_ratchet_ne_rougit_pas_sur_une_baisse() -> None:
+    """Une baisse est une bonne nouvelle (une exclusion levee) : elle ne
+    bloque pas, elle invite a rebaseliner."""
+    population = {
+        "marqueurs": CI_EXCLUDED_BASELINE["marqueurs"] - 1,
+        "fichiers": CI_EXCLUDED_BASELINE["fichiers"],
+        "items": CI_EXCLUDED_BASELINE["items"],
+    }
+    assert ratchet_problems(population) == []
+
+
+def test_plan_signale_une_exclusion_sans_cible_declaree(
+    monkeypatch,
+) -> None:
+    """Chaque exclusion declare sa cible de remediation : une exclusion
+    muette n'a pas de chemin de sortie."""
+    monkeypatch.setattr(ctc, "CI_EXCLUDED_PLAN", {})
+    problems = plan_problems({"MyIA.AI.Notebooks/Serie/tests": "raison"})
+    assert problems
+    assert "MyIA.AI.Notebooks/Serie/tests" in problems[0]
+
+
+def test_plan_signale_une_cible_sans_exclusion(monkeypatch) -> None:
+    """Reciproquement, une cible declaree pour une exclusion absente est
+    une derive du plan."""
+    monkeypatch.setattr(
+        ctc, "CI_EXCLUDED_PLAN", {"MyIA.AI.Notebooks/Serie/tests": "quotidien"}
+    )
+    problems = plan_problems({})
+    assert problems
+    assert "MyIA.AI.Notebooks/Serie/tests" in problems[0]
+
+
+def test_plan_signale_une_cible_inconnue(monkeypatch) -> None:
+    """Une cible hors enumeration est une faute de frappe, pas une cible."""
+    monkeypatch.setattr(
+        ctc, "CI_EXCLUDED_PLAN", {"MyIA.AI.Notebooks/Serie/tests": "demain"}
+    )
+    problems = plan_problems({"MyIA.AI.Notebooks/Serie/tests": "raison"})
+    assert problems
+    assert "inconnue" in problems[0]
+
+
+def test_plan_couvre_toutes_les_exclusions_reelles_du_depot() -> None:
+    """Sur le depot reel, chaque marqueur CI-EXCLUDED a une cible declaree :
+    le plan ne laisse aucun orphan de remediation."""
+    excluded = load_ci_excluded(REPO_ROOT)
+    assert excluded, "le depot doit porter des marqueurs CI-EXCLUDED"
+    assert plan_problems(excluded) == []
+
+
+def test_population_reelle_ne_depasse_pas_la_baseline() -> None:
+    """Le cliquet est mesure sur le depot reel : la population exclue ne
+    doit pas depasser la baseline enregistree."""
+    excluded = load_ci_excluded(REPO_ROOT)
+    population = excluded_population(REPO_ROOT, excluded)
+    assert population["marqueurs"] == CI_EXCLUDED_BASELINE["marqueurs"]
+    assert population["fichiers"] <= CI_EXCLUDED_BASELINE["fichiers"]
+    assert population["items"] <= CI_EXCLUDED_BASELINE["items"]
+    assert ratchet_problems(population) == []
+
+
+def test_invocation_simple_reste_verte_sur_le_depot_reel() -> None:
+    """L'organe tourne dans une jambe DEJA PAYEE (voie rapide) : le cliquet
+    est bloquant, mais la dette de couverture par fichier reste advisory.
+    L'invocation simple doit donc rendre 0 sur le depot reel."""
+    import subprocess
+
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+         "--repo-root", str(REPO_ROOT)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 0, proc.stdout
+    assert "Population CI-EXCLUDED" in proc.stdout

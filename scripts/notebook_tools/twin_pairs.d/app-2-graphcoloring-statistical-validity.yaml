@@ -1,7 +1,7 @@
 - name: "App-2 GraphColoring Statistical Validity"
   family: Search/Part3-Cas-pratiques
-  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-CSharp.ipynb
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Les deux carnets invoquent le moteur CP-SAT OR-Tools, NetworkX pour G(n,p) et SciPy pour les tests statistiques ; C# pilote les expériences et utilise Google.OrTools natif ainsi que Python.NET pour les appels ciblés à NetworkX et SciPy."
