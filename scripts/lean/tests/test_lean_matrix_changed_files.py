@@ -415,10 +415,22 @@ def test_17_le_workflow_checkout_emporte_les_deux_parents():
     """Sans ``fetch-depth: 2`` au checkout du job `changes`, le parent 1
     (base) manque localement : la lecture git serait structurellement
     inerte et le correctif ne servirait a rien."""
-    text = WORKFLOW.read_text(encoding="utf-8")
-    assert "fetch-depth: 2" in text, (
+    # Lecture structuree du YAML : la ligne de commentaire du workflow qui
+    # explique ``fetch-depth: 2`` suffirait a faire passer un test textuel
+    # meme si le ``with:`` de l'etape disparaissait.
+    import yaml
+
+    doc = yaml.safe_load(WORKFLOW.read_text(encoding="utf-8"))
+    steps = doc["jobs"]["changes"]["steps"]
+    checkouts = [
+        s for s in steps
+        if str(s.get("uses", "")).startswith("actions/checkout@")
+    ]
+    assert checkouts, "le job changes doit faire un checkout"
+    depths = [(s.get("with") or {}).get("fetch-depth") for s in checkouts]
+    assert depths == [2], (
         "le checkout du job changes doit etre de profondeur 2 pour que "
-        "git diff HEAD^1 HEAD soit possible"
+        f"git diff HEAD^1 HEAD soit possible ; lu : {depths}"
     )
 
 
