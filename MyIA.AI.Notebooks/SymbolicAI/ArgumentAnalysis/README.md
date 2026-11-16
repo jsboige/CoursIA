@@ -66,6 +66,7 @@ Durée totale estimée : **~4-5 h** pour l'ensemble du parcours. Kernel Python 3
 | 08 | [Capstone](Argumentation-08-Capstone-Python.ipynb) | Comparer une baseline LLM seule au pipeline complet, puis vérifier que la synthèse cite les artefacts sur lesquels elle s'appuie | Licence | [Exécution, interface et synthèse](#autour-de-08--intégration-et-restitution) |
 | 09 | [Garde-fous AI Shield](Argumentation-09-Guardrails-AI-Shield-Python.ipynb) | Distinguer heuristique, filtre de sortie et validation par LLM ; choisir explicitement entre fail-open et fail-closed lorsqu'un garde-fou tombe en panne | Licence | — |
 | 10 | [Export privé](Argumentation-10-Privacy-Export-Python.ipynb) | Opacifier les identifiants, filtrer un état avant export et ne conserver que des motifs agrégés ; mesurer les limites de cette protection | Recherche | — |
+| 11 | [Debate & sécurité](Argumentation-11-Debate-Protocol-Safety-Python.ipynb) | Reformuler le protocole de debate (juge faible, deux agents) en révélation par saliencer ; formaliser le transcript en cadre Dung/ADF et mesurer les modes de défaillance (collusion, mind-hack) | Recherche | — |
 
 Le parcours numérique n'est pas une chaîne d'exécution rigide : les fondations de Toulmin, Dung et des dialogues éclairent le pipeline, tandis que le JTMS, les garde-fous et l'export privé peuvent être étudiés avec leurs propres prérequis. L'[ordre partiel détaillé](#ordre-partiel-et-prérequis) distingue ces dépendances.
 
@@ -430,6 +431,7 @@ Cet ordre est dérivé des déclarations de prérequis et des liens de navigatio
 | `06c` | `05` pour Tweety, `06` pour le raisonnement non monotone | JVM Tweety et JPype, ni clé ni LLM |
 | `09` | Aucun | Bibliothèque standard Python, aucun appel réseau ni clé d'API |
 | `10` | Aucun ; la navigation le présente après `08f` | Bibliothèque standard Python, aucun réseau, clé ou JVM |
+| `11` | Aucun ; la navigation le présente après `10` | `torch` (CPU) et MNIST local, ni réseau ni clé ni JVM |
 
 ### Fondations théoriques et études associées
 
