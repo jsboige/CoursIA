@@ -158,12 +158,12 @@
       "Probas/DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb",
       "Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb"
     ],
-    "Probas/DecisionTheory/Causal-Bridges": [
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-04-Dowhy-Decouverte-Structure.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-06-Dowhy-Instrument-Faible.ipynb"
+    "Probas/Causalite": [
+      "Probas/Causalite/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb",
+      "Probas/Causalite/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb",
+      "Probas/Causalite/Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb",
+      "Probas/Causalite/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb",
+      "Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb"
     ],
     "Probas/DecisionTheory/DecInfer": [
       "Probas/DecisionTheory/DecInfer/DecInfer-02b-Lean-Coherence.ipynb"
