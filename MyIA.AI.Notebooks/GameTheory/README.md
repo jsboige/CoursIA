@@ -299,7 +299,7 @@ Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [j
 
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
-| 14b | [Jeux répétés : le tournoi](GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb) | Le mécanisme d'équilibre isolé et mesuré : récursion arrière qui dénoue la coopération sur horizon fini, seuil de patience δ* = (T−R)/(T−P) calculé puis vérifié numériquement, tournoi round-robin autonome en Python pur (huit stratégies), et l'effondrement mesuré de Tit-for-Tat sous bruit d'exécution multi-graine — le versant évolutionnaire vit au palier 06 | Python | Licence |
+| 14b | Jeux répétés : le tournoi — [Python](GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb) · [C#](GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-CSharp.ipynb) | Le mécanisme d'équilibre isolé et mesuré : récursion arrière qui dénoue la coopération sur horizon fini, seuil de patience δ* = (T−R)/(T−P) calculé puis vérifié numériquement, tournoi round-robin autonome NumPy / BCL .NET (huit stratégies), et l'effondrement mesuré de Tit-for-Tat sous bruit d'exécution multi-graine — le versant évolutionnaire vit au palier 06 | Python · C# | Licence |
 
 ### Autour de 15 — coalitions et pouvoir
 
