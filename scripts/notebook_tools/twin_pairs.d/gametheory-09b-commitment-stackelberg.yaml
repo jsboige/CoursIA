@@ -1,0 +1,10 @@
+- name: "GameTheory-09b Commitment Stackelberg"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les algorithmes d'enumeration et d'induction sont les objets du cours ; stdlib Python et BCL .NET les calculent sans moteur externe omis."
+  known_differences:
+    - "Fraction Python expose le seuil exact 2/3 ; C# emploie une tolerance 1e-12 au seuil fourni. Les grilles des exercices utilisent les numerateurs entiers avant division."
+    - "Aucun tirage aleatoire ni graphique ; les tableaux et trajectoires textuelles preservent les experiences."
