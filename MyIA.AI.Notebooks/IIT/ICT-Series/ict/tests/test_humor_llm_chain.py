@@ -137,11 +137,18 @@ class TestEnv(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / ".env"
             path.write_text('VLLM_API_KEY="secret-test"\n# comment\nOTHER=1\n', encoding="utf-8")
-            self.assertEqual(read_env_value(path, "VLLM_API_KEY"), "secret-test")
-            self.assertIsNone(read_env_value(path, "ABSENT"))
+            # Forme NON interpolante (#17276) : une assertion qui interpole la
+            # valeur lue la fait sortir en clair dans le log d'ECHEC. On
+            # compare donc par un booleen -- le message reste
+            # "False is not true" et ne contient aucune valeur.
+            valeur = read_env_value(path, "VLLM_API_KEY")
+            self.assertTrue(valeur == "secret-test")
+            self.assertTrue(read_env_value(path, "ABSENT") is None)
 
     def test_fichier_absent(self):
-        self.assertIsNone(read_env_value("/chemin/qui/nexiste/pas.env", "VLLM_API_KEY"))
+        self.assertTrue(
+            read_env_value("/chemin/qui/nexiste/pas.env", "VLLM_API_KEY") is None
+        )
 
     def test_trace_ne_contient_pas_la_cle(self):
         annotator = LocalLLMAnnotator(api_key="secret-test")
