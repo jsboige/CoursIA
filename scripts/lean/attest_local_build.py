@@ -128,6 +128,25 @@ DEFAULT_TIMEOUT = 1800.0
 #: Timeout du `lake build` par lake.
 DEFAULT_LAKE_TIMEOUT = 900.0
 
+#: Timeout **par lake**, en secondes. Un lake dont le build complet depasse
+#: le defaut general a besoin d'un budget propre : coupe a 900 s, il rend
+#: `exit 124` **sans** que le code soit en faute, et l'attestation echoue
+#: alors qu'aucune compilation n'a echoue.
+#:
+#: Mesure du 15/11 (dispatch du coordinateur, sur ai-01) :
+#:
+#: - #25585 : `exit 124` a **904 s**, 8 752 / 8 802 modules construits ;
+#: - #26282 : `exit 124` a **903 s**, 8 773 / 8 804 modules construits.
+#:
+#: Les deux lakes concernes sont `conway` (celui de `JeuDeLaVie/conway_lean`,
+#: dont le build entraine Mathlib). Le budget porte a 2 400 s laisse la
+#: marge mesuree (le build complet deborde de ~1 100 modules, soit ~10 % du
+#: budget restant) sans devenir une attente non bornee. Tous les autres
+#: lakes gardent le defaut general.
+LAKE_TIMEOUTS: dict[str, float] = {
+    "conway": 2400.0,
+}
+
 #: Parallélisme accordé a `lake build` : nombre de compilations concurrentes.
 #: La valeur implicite de `lean_exec` est `cpu // 4` (8 sur un hote a 32
 #: coeurs), ce qui contredit son budget implicite (2 places) : les deux
@@ -191,6 +210,44 @@ def raison_alignement_budget(jobs: int, budget: int) -> str:
             )
         )
     return ""
+
+
+def lake_timeout(lake: dict | str, timeout: float | None = None) -> float:
+    """Timeout effectif du build d'un lake, en secondes.
+
+    `timeout` non nul est une **surcharge explicite** (ligne de commande) :
+    elle prime toujours, y compris sur le budget propre du lake. Sinon le
+    defaut general s'applique, sauf pour les lakes de `LAKE_TIMEOUTS` dont le
+    build complet le depasse.
+
+    Fonction **pure** : elle se teste sans Windows, sans Lake, sans
+    toolchain.
+    """
+    if timeout is not None:
+        return float(timeout)
+    nom = lake if isinstance(lake, str) else (lake or {}).get("lake", "")
+    return float(LAKE_TIMEOUTS.get(nom, DEFAULT_LAKE_TIMEOUT))
+
+
+def build_failure_reason(payload: dict, violation: str | None = None) -> str:
+    """Raison de l'echec d'un build de lake.
+
+    Un **timeout** n'est pas un **echec de compilation**. Les deux se
+    lisaient jusqu'ici de la meme facon ("lake build a echoue (exit_code=)"),
+    alors que `builds[].status` dit bien `timeout` : le diagnostic
+    renvoyait a une faute de code la ou le defaut etait un **budget de
+    temps** (mesure du 15/11 : #25585 `exit 124` a 904 s, 8 752 / 8 802
+    modules construits ; #26282 `exit 124` a 903 s, 8 773 / 8 804).
+
+    Fonction **pure** : elle se teste sans Windows, sans Lake, sans
+    toolchain.
+    """
+    if violation:
+        return "violation du budget de concurrence : {}".format(violation)
+    exit_code = payload.get("exit_code")
+    if (payload.get("status") or "").lower() == "timeout":
+        return "timeout du lake build (exit_code={})".format(exit_code)
+    return "lake build a echoue (exit_code={})".format(exit_code)
 
 
 def gh_json(repo: str, path: str) -> object:
@@ -1000,11 +1057,9 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
     result["ok"] = payload.get("exit_code") == 0
     violation = payload.get("budget_violation")
     if violation:
-        result["reason"] = "violation du budget de concurrence : {}".format(violation)
+        result["reason"] = build_failure_reason(payload, violation)
     elif not result["ok"]:
-        result["reason"] = "lake build a echoue (exit_code={})".format(
-            payload.get("exit_code")
-        )
+        result["reason"] = build_failure_reason(payload)
     return result
 
 
@@ -1063,7 +1118,7 @@ def cleanup_worktree(worktree: Path) -> None:
             )
 
 
-def attest(pr: int, repo: str, timeout: float, dry_run: bool,
+def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
             jobs: int = DEFAULT_BUILD_JOBS,
             budget: int = DEFAULT_BUILD_BUDGET) -> dict:
     """Certifie la PR : worktree, builds bornes, attestation postee sur
@@ -1108,6 +1163,11 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
         "comment_id": "",
         "jobs": jobs,
         "budget": budget,
+        # Le budget de temps applique a CHAQUE lake : le verdict doit dire
+        # quel temps a ete accorde, pas seulement que le build a echoue.
+        "lake_timeouts": {
+            lake["lake"]: lake_timeout(lake, timeout) for lake in lakes
+        },
     }
     if not lakes:
         raise OrganError(
@@ -1137,7 +1197,9 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
                 }
                 if reason == NO_WARM_CACHE:
                     entry["toolchain"] = pivot.get("toolchain", "")
-                    entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
+                    entry["prewarm"] = prewarm_plan(
+                        lake, head=head, timeout=lake_timeout(lake, timeout)
+                    )
                 elif not lake_dir.is_dir() and "lean-toolchain absent" in reason:
                     # Lake AJOUTE par la PR : il n'existe pas dans le clone
                     # courant. Le verdict de cache ne peut pas etre rendu
@@ -1153,7 +1215,9 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
                         "clone courant : le verdict de cache se rendra sur le "
                         "worktree de la tete"
                     )
-                    entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
+                    entry["prewarm"] = prewarm_plan(
+                        lake, head=head, timeout=lake_timeout(lake, timeout)
+                    )
                 result["cache_check"].append(entry)
                 continue
             verdict = check_cache_compatibility(lake_dir, Path(pivot["pivot"]))
@@ -1243,12 +1307,19 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
                 }
                 if pivot.get("reason") == NO_WARM_CACHE:
                     entry["toolchain"] = pivot.get("toolchain", "")
-                    entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
+                    entry["prewarm"] = prewarm_plan(
+                        lake, head=head, timeout=lake_timeout(lake, timeout)
+                    )
                 builds.append(entry)
                 continue
             builds.append(
                 build_lake(
-                    lake, worktree, Path(pivot["pivot"]), timeout, jobs=jobs, budget=budget
+                    lake,
+                    worktree,
+                    Path(pivot["pivot"]),
+                    lake_timeout(lake, timeout),
+                    jobs=jobs,
+                    budget=budget,
                 )
             )
         result["builds"] = builds
@@ -1342,8 +1413,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--timeout",
         type=float,
-        default=DEFAULT_LAKE_TIMEOUT,
-        help="timeout du lake build, en secondes",
+        default=None,
+        help=(
+            "timeout du lake build, en secondes (defaut : {} ; conway : {}) "
+            "-- une valeur explicite prime sur le budget propre du lake".format(
+                int(DEFAULT_LAKE_TIMEOUT),
+                int(LAKE_TIMEOUTS.get("conway", DEFAULT_LAKE_TIMEOUT)),
+            )
+        ),
     )
     ap.add_argument("--dry-run", action="store_true", help="ne construit rien")
     ap.add_argument(
