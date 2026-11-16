@@ -1,0 +1,833 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.010193,
+     "end_time": "2026-11-14T22:10:39.347130+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:39.336937+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "**Navigation** : [Version Python](Z3-20-Machine-de-Goedel-Python.ipynb) | [Index Z3](README.md) | [19 - Optimisation](Z3-19-Optimization-Lexicographic-Python.ipynb)\n",
+    "\n",
+    "# Z3-CSharp 20 — La machine de Gödel : se réécrire seulement sur preuve\n",
+    "\n",
+    "**Objectifs** : prouver une réécriture par réfutation, comparer à la recherche future, mesurer le prix des axiomes et du temps de preuve. **Prérequis** : bases Z3 et optimisation. **Durée** : 90 minutes.\n",
+    "\n",
+    "**Source pédagogique primaire** : [le notebook Python de ce même chapitre](Z3-20-Machine-de-Goedel-Python.ipynb), versionné avec cette paire. Ce port reprend son modèle fini, ses calculs, figures et exercices. Le contexte historique et ses références restent dans le Python ; ce carnet ne prétend ni vérifier ces publications ni reproduire une recherche universelle.\n",
+    "\n",
+    "Le modèle autorise une bascule seulement après preuve d'amélioration sur sa continuation calculée. Cette propriété se vérifie ici pour la liste finie des candidats ; aucune optimalité universelle n'est attribuée à ce jouet.\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:39.625524Z",
+     "iopub.status.busy": "2026-11-14T22:10:39.608288Z",
+     "iopub.status.idle": "2026-11-14T22:10:43.467983Z",
+     "shell.execute_reply": "2026-11-14T22:10:43.466250Z"
+    },
+    "papermill": {
+     "duration": 3.880339,
+     "end_time": "2026-11-14T22:10:43.468143+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:39.587804+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "#r \"nuget: Microsoft.Z3, 4.12.2\"\n",
+    "#load \"Z3NativeLoader.cs\"\n",
+    "using System;\n",
+    "using System.Linq;\n",
+    "using System.Collections.Generic;\n",
+    "using System.Globalization;\n",
+    "using System.Text;\n",
+    "using Microsoft.Z3;\n",
+    "Z3NativeLoader.Register(typeof(Context).Assembly);\n",
+    "CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;\n",
+    "Console.WriteLine($\".NET {Environment.Version} ; binding Microsoft.Z3 4.12.2 ; natif {Microsoft.Z3.Version.FullVersion}\");"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.011522,
+     "end_time": "2026-11-14T22:10:43.497590+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:43.486068+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 1. Le monde du levier\n",
+    "A rapporte r par pas. B rapporte q après w pas sans récompense. Les axiomes `base` imposent r ∈ [1,2], q ∈ [1,4], w ∈ [0,30] ; `savoir` ajoute q ≥ r+1 et réduit w à 20. La politique initiale calibre pendant 50 pas puis presse A."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:43.509666Z",
+     "iopub.status.busy": "2026-11-14T22:10:43.509436Z",
+     "iopub.status.idle": "2026-11-14T22:10:43.789951Z",
+     "shell.execute_reply": "2026-11-14T22:10:43.789166Z"
+    },
+    "papermill": {
+     "duration": 0.288243,
+     "end_time": "2026-11-14T22:10:43.790046+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:43.501803+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "record Env(double R, double Q, double W);\n",
+    "record Segment(int Start, string Policy);\n",
+    "record Proof(string Verdict, string Counterexample, uint Cost);\n",
+    "record Attempt(int T, string Candidate, Proof Proof);\n",
+    "record Run(List<Segment> Plan, List<Attempt> Journal);\n",
+    "const int Calibrage = 50;\n",
+    "var reel = new Env(1.5, 3, 10);\n",
+    "Console.WriteLine(\"base : r=[1,2], q=[1,4], w=[0,30] ; savoir : w=[0,20], q>=r+1\");\n",
+    "Console.WriteLine(\"Initiale : 50 pas de calibrage, puis A\");"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003952,
+     "end_time": "2026-11-14T22:10:43.798037+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:43.794085+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 2. Prouver par réfutation\n",
+    "Chaque preuve utilise un contexte neuf. `UNSAT` prouve l'inégalité pour tous les environnements admissibles, `SAT` fournit un contre-exemple et `UNKNOWN` ne permet pas de basculer. Les termes contiennent notamment le produit q × (D−w) : il s'agit d'arithmétique réelle polynomiale, pas uniquement linéaire."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:43.823097Z",
+     "iopub.status.busy": "2026-11-14T22:10:43.822140Z",
+     "iopub.status.idle": "2026-11-14T22:10:44.372210Z",
+     "shell.execute_reply": "2026-11-14T22:10:44.371996Z"
+    },
+    "papermill": {
+     "duration": 0.565884,
+     "end_time": "2026-11-14T22:10:44.372303+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:43.806419+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "ArithExpr Num(Context ctx, double x) => ctx.MkReal(x.ToString(\"0.################\", CultureInfo.InvariantCulture));\n",
+    "ArithExpr Pos(Context ctx, ArithExpr x) => (ArithExpr)ctx.MkITE(ctx.MkGt(x,ctx.MkReal(0)), x, ctx.MkReal(0));\n",
+    "ArithExpr U(Context ctx, string nom, int d, Dictionary<string,ArithExpr> e) {\n",
+    "    var D = ctx.MkReal(d);\n",
+    "    if (nom == \"calibrage\") return ctx.MkMul(e[\"r\"], Pos(ctx, ctx.MkSub(D,ctx.MkReal(Calibrage))));\n",
+    "    if (nom == \"A\") return ctx.MkMul(e[\"r\"], D);\n",
+    "    if (nom == \"B\") return ctx.MkMul(e[\"q\"], Pos(ctx, ctx.MkSub(D,e[\"w\"])));\n",
+    "    throw new ArgumentException(nom);\n",
+    "}\n",
+    "Proof Prouver(string jeu, Func<Context,Dictionary<string,ArithExpr>,BoolExpr> cible, uint? budget=null, double? ecart=null, int? wMax=null) {\n",
+    "    using var ctx = new Context();\n",
+    "    var e = new Dictionary<string,ArithExpr> { [\"r\"] = ctx.MkRealConst(\"r\"), [\"q\"] = ctx.MkRealConst(\"q\"), [\"w\"] = ctx.MkRealConst(\"w\") };\n",
+    "    using var s = ctx.MkSolver();\n",
+    "    if (budget.HasValue && budget.Value > 0) { var p=ctx.MkParams(); p.Add(\"rlimit\",budget.Value); s.Parameters=p; }\n",
+    "    var r=e[\"r\"]; var q=e[\"q\"]; var w=e[\"w\"];\n",
+    "    s.Assert(ctx.MkGe(r,ctx.MkReal(1)),ctx.MkLe(r,ctx.MkReal(2)),ctx.MkGe(q,ctx.MkReal(1)),ctx.MkLe(q,ctx.MkReal(4)),ctx.MkGe(w,ctx.MkReal(0)),ctx.MkLe(w,ctx.MkReal(wMax ?? (jeu==\"savoir\"?20:30))));\n",
+    "    var delta=ecart ?? (jeu==\"savoir\" ? 1.0 : (double?)null);\n",
+    "    if(delta.HasValue) s.Assert(ctx.MkGe(q,ctx.MkAdd(r,Num(ctx,delta.Value))));\n",
+    "    s.Assert(ctx.MkNot(cible(ctx,e)));\n",
+    "    var result=s.Check();\n",
+    "    var stats=s.Statistics; uint count=stats.Keys.Contains(\"rlimit count\") ? stats[\"rlimit count\"].UIntValue : 0;\n",
+    "    if(result==Status.UNSATISFIABLE) return new Proof(\"PROUVE\",null,count);\n",
+    "    if(result==Status.SATISFIABLE) { var model=s.Model; return new Proof(\"REFUTE\",string.Join(\", \",e.Select(x=>$\"{x.Key}={model.Evaluate(x.Value,true)}\")),count); }\n",
+    "    return new Proof(\"INCONNU\",null,count);\n",
+    "}\n",
+    "var preuveA=Prouver(\"savoir\", (x,e)=>x.MkGt(U(x,\"A\",195,e), U(x,\"calibrage\",195,e)));\n",
+    "var preuveB=Prouver(\"base\", (x,e)=>x.MkGt(U(x,\"B\",195,e), U(x,\"A\",195,e)));\n",
+    "Console.WriteLine($\"A > calibrage : {preuveA.Verdict}, rlimit {preuveA.Cost}\");\n",
+    "Console.WriteLine($\"B > A sous base : {preuveB.Verdict}, contre-exemple {preuveB.Counterexample}, rlimit {preuveB.Cost}\");"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003242,
+     "end_time": "2026-11-14T22:10:44.380293+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:44.377051+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "La première négation est insatisfiable : presser A immédiatement évite le calibrage dans tous les environnements admissibles. Sous `base`, la seconde formule a un contre-exemple : B n'est pas garanti meilleur que A. Les coûts `rlimit` et modèles exacts dépendent de la version de Z3.\n",
+    "\n",
+    "## 3. Comparer à la continuation\n",
+    "À chaque tentative la machine dépense `coutPreuve` pas sans récompense. Elle compare la bascule immédiate au plan qu'elle suivrait en poursuivant sa recherche ; la variante gloutonne compare seulement au calibrage. Le calcul anticipé du plan futur n'est pas lui-même facturé dans ce jouet."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:44.394954Z",
+     "iopub.status.busy": "2026-11-14T22:10:44.394169Z",
+     "iopub.status.idle": "2026-11-14T22:10:44.718810Z",
+     "shell.execute_reply": "2026-11-14T22:10:44.718374Z"
+    },
+    "papermill": {
+     "duration": 0.335479,
+     "end_time": "2026-11-14T22:10:44.718913+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:44.383434+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "ArithExpr UtilitePlan(Context ctx, List<Segment> plan, int T, Dictionary<string,ArithExpr> e, int depuis=0) {\n",
+    "    ArithExpr total=ctx.MkReal(0); int calibre=0;\n",
+    "    for(int k=0;k<plan.Count;k++) {\n",
+    "        var seg=plan[k]; int fin=k+1<plan.Count?plan[k+1].Start:T;\n",
+    "        int d=fin-seg.Start, prefixe=Math.Clamp(depuis-seg.Start,0,d);\n",
+    "        if(seg.Policy==\"preuve\") continue;\n",
+    "        if(seg.Policy==\"calibrage\") {\n",
+    "            int gain= Math.Max(calibre+d-Calibrage,0)-Math.Max(calibre+prefixe-Calibrage,0);\n",
+    "            total=ctx.MkAdd(total,ctx.MkMul(e[\"r\"],ctx.MkReal(gain))); calibre+=d;\n",
+    "        } else total=ctx.MkAdd(total,ctx.MkSub(U(ctx,seg.Policy,d,e),U(ctx,seg.Policy,prefixe,e)));\n",
+    "    }\n",
+    "    return total;\n",
+    "}\n",
+    "Run Machine(string[] candidats, string jeu, int T, int coutPreuve, uint? budget=null, bool glouton=false, double? ecart=null, int? wMax=null) {\n",
+    "    Run Suite(int t,int i) {\n",
+    "        if(i==candidats.Length || t+coutPreuve>=T) return new Run(new(){new Segment(t,\"calibrage\")},new());\n",
+    "        int t1=t+coutPreuve; var continuer=Suite(t1,i+1); string nom=candidats[i];\n",
+    "        var preuve=Prouver(jeu,(ctx,e)=>ctx.MkGt(U(ctx,nom,T-t1,e),glouton?U(ctx,\"calibrage\",T-t1,e):UtilitePlan(ctx,continuer.Plan,T,e,t1)),budget,ecart,wMax);\n",
+    "        var entree=new Attempt(t,nom,preuve);\n",
+    "        if(preuve.Verdict==\"PROUVE\") return new Run(new(){new Segment(t,\"preuve\"),new Segment(t1,nom)},new(){entree});\n",
+    "        var suite=Suite(t1,i+1); suite.Plan.Insert(0,new Segment(t,\"preuve\")); suite.Journal.Insert(0,entree); return suite;\n",
+    "    }\n",
+    "    return Suite(0,0);\n",
+    "}\n",
+    "double Gain(List<Segment> plan,int T,Env e) {\n",
+    "    double total=0; int calibre=0;\n",
+    "    for(int k=0;k<plan.Count;k++) { var seg=plan[k]; int fin=k+1<plan.Count?plan[k+1].Start:T; int d=fin-seg.Start;\n",
+    "        if(seg.Policy==\"calibrage\") { total+=e.R*Math.Max(d-Math.Max(Calibrage-calibre,0),0); calibre+=d; }\n",
+    "        else if(seg.Policy==\"A\") total+=e.R*d;\n",
+    "        else if(seg.Policy==\"B\") total+=e.Q*Math.Max(d-e.W,0);\n",
+    "    } return total;\n",
+    "}\n",
+    "foreach(bool glouton in new[]{false,true}) {\n",
+    " var run=Machine(new[]{\"A\",\"B\"},\"savoir\",200,5,glouton:glouton);\n",
+    " Console.WriteLine(glouton?\"Machine gloutonne :\":\"Machine de Gödel :\");\n",
+    " foreach(var a in run.Journal) Console.WriteLine($\"  t={a.T}, {a.Candidate} : {a.Proof.Verdict}, rlimit {a.Proof.Cost}\");\n",
+    " Console.WriteLine($\"  plan {string.Join(\", \",run.Plan.Select(s=>$\"({s.Start},{s.Policy})\"))} ; gain réel {Gain(run.Plan,200,reel)}\");\n",
+    "}"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003269,
+     "end_time": "2026-11-14T22:10:44.725960+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:44.722691+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "Dans le monde réel r=1,5, q=3, w=10, la gloutonne adopte A au pas 5 (292,5). La machine de Gödel attend et adopte B au pas 10 (540). L'optimalité est relative à sa propre continuation, et non une domination de toutes les machines concurrentes.\n",
+    "\n",
+    "## Figures\n",
+    "Les graphes sont des SVG statiques avec fond blanc explicite. Les échantillons tirés avec une graine fixe ont le même budget que le carnet Python ; les générateurs de nombres aléatoires des deux langages peuvent différer."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:44.735581Z",
+     "iopub.status.busy": "2026-11-14T22:10:44.735395Z",
+     "iopub.status.idle": "2026-11-14T22:10:44.914244Z",
+     "shell.execute_reply": "2026-11-14T22:10:44.914076Z"
+    },
+    "papermill": {
+     "duration": 0.184249,
+     "end_time": "2026-11-14T22:10:44.914326+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:44.730077+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "using Microsoft.DotNet.Interactive.Formatting;\n",
+    "record SvgMarkup(string Content);\n",
+    "Formatter.Register<SvgMarkup>((v,w)=>w.Write(v.Content), \"text/html\");\n",
+    "string F(double x)=>x.ToString(\"0.##\",CultureInfo.InvariantCulture);\n",
+    "string Esc(string s)=>System.Security.SecurityElement.Escape(s);\n",
+    "string SeriesSvg(double[] xs, double[][] ys, string[] labels, string title, string xlab, string ylab, bool logX=false) {\n",
+    "    const int W=800,H=360,L=80,R=30,Top=45,Bot=65;\n",
+    "    var xx=xs.Select(v=>logX?Math.Log10(v):v).ToArray(); double x0=xx.Min(), x1=xx.Max();\n",
+    "    double y0=Math.Min(0,ys.SelectMany(v=>v).Min()), y1=ys.SelectMany(v=>v).Max(); if(y1==y0)y1=y0+1;\n",
+    "    double X(double v)=>L+(v-x0)/(x1-x0)*(W-L-R); double Y(double v)=>H-Bot-(v-y0)/(y1-y0)*(H-Top-Bot);\n",
+    "    var b=new StringBuilder($\"<svg xmlns='http://www.w3.org/2000/svg' width='{W}' height='{H}' viewBox='0 0 {W} {H}'><rect width='100%' height='100%' fill='white'/><text x='400' y='23' text-anchor='middle'>{Esc(title)}</text><path d='M {L} {Top} V {H-Bot} H {W-R}' stroke='black' fill='none'/>\");\n",
+    "    for(int i=0;i<=5;i++) { double xv=x0+(x1-x0)*i/5, yv=y0+(y1-y0)*i/5; b.Append($\"<text x='{F(X(xv))}' y='{H-Bot+19}' text-anchor='middle' font-size='11'>{F(logX?Math.Pow(10,xv):xv)}</text><text x='{L-8}' y='{F(Y(yv)+4)}' text-anchor='end' font-size='11'>{F(yv)}</text>\"); }\n",
+    "    string[] couleurs={\"#2455a4\",\"#c33b31\"};\n",
+    "    for(int j=0;j<ys.Length;j++) { var pts=string.Join(\" \",xx.Select((v,i)=>$\"{F(X(v))},{F(Y(ys[j][i]))}\")); b.Append($\"<polyline points='{pts}' fill='none' stroke='{couleurs[j%2]}' stroke-width='2'/><text x='{W-R-180}' y='{Top+15+j*18}' fill='{couleurs[j%2]}' font-size='12'>{Esc(labels[j])}</text>\"); }\n",
+    "    b.Append($\"<text x='400' y='{H-10}' text-anchor='middle'>{Esc(xlab)}</text><text transform='translate(18,180) rotate(-90)' text-anchor='middle'>{Esc(ylab)}</text></svg>\");return b.ToString();\n",
+    "}\n",
+    "Console.WriteLine(\"Rendu SVG : axes, unités, légendes et fond opaque.\");"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.010626,
+     "end_time": "2026-11-14T22:10:44.932312+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:44.921686+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "### Exercice 1 — Un candidat mixte\n",
+    "Complétez une expression Z3 pour A pendant 20 pas puis B, avec son échauffement. Comparez ensuite les ordres de candidats `[A,B,AB]` et `[AB,A,B]` : il faudra étendre `U` avec votre candidat. Le garde teste les durées courtes et prouve l'égalité des expressions pour plusieurs durées."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:44.943465Z",
+     "iopub.status.busy": "2026-11-14T22:10:44.943211Z",
+     "iopub.status.idle": "2026-11-14T22:10:45.034139Z",
+     "shell.execute_reply": "2026-11-14T22:10:45.033984Z"
+    },
+    "papermill": {
+     "duration": 0.098012,
+     "end_time": "2026-11-14T22:10:45.034213+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:44.936201+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "bool VerifierAB(Func<Context,int,Dictionary<string,ArithExpr>,ArithExpr> candidat) {\n",
+    " if(candidat==null)return false;\n",
+    " foreach(int d in new[]{0,10,20,21,35,60}) {\n",
+    "  using var ctx=new Context(); var e=new Dictionary<string,ArithExpr>{{\"r\",ctx.MkRealConst(\"r\")},{\"q\",ctx.MkRealConst(\"q\")},{\"w\",ctx.MkRealConst(\"w\")}};\n",
+    "  ArithExpr resultat=candidat(ctx,d,e);if(resultat==null)return false;\n",
+    "  ArithExpr attendu=ctx.MkAdd(ctx.MkMul(e[\"r\"],ctx.MkReal(Math.Min(d,20))),ctx.MkMul(e[\"q\"],Pos(ctx,ctx.MkSub(ctx.MkReal(d-20),e[\"w\"]))));\n",
+    "  using var s=ctx.MkSolver();s.Assert(ctx.MkNot(ctx.MkEq(resultat,attendu)));if(s.Check()!=Status.UNSATISFIABLE)return false;\n",
+    " }return true;\n",
+    "}\n",
+    "Func<Context,int,Dictionary<string,ArithExpr>,ArithExpr> candidatAB = null; // TODO : expression A puis B\n",
+    "Console.WriteLine(candidatAB==null ? \"Exercice 1 à compléter\" : $\"Candidat valide : {VerifierAB(candidatAB)}\");"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003579,
+     "end_time": "2026-11-14T22:10:45.041848+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:45.038269+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 4. Balayer la durée de vie\n",
+    "On examine T=15 à 200 par pas de 5, et 2 000 environnements tirés uniformément sous `savoir` par rejet. On calcule les récompenses réelles et le minimum et la moyenne de l'écart Gödel−glouton sur cet échantillon."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:45.052065Z",
+     "iopub.status.busy": "2026-11-14T22:10:45.051755Z",
+     "iopub.status.idle": "2026-11-14T22:10:47.101640Z",
+     "shell.execute_reply": "2026-11-14T22:10:47.101368Z"
+    },
+    "papermill": {
+     "duration": 2.055718,
+     "end_time": "2026-11-14T22:10:47.101753+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:45.046035+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "List<Env> Sample(int seed, int n, bool savoir) {\n",
+    "    var rng=new Random(seed); var list=new List<Env>();\n",
+    "    while(list.Count<n) { double r=1+rng.NextDouble(), q=1+3*rng.NextDouble(), w=(savoir?20:30)*rng.NextDouble(); if(!savoir || q>=r+1) list.Add(new Env(r,q,w)); }\n",
+    "    return list;\n",
+    "}\n",
+    "var sampleSavoir=Sample(42,2000,true);\n",
+    "var lignes = new List<(int T,string G,string L,double ReelG,double ReelL,double Min,double Moy)>();\n",
+    "foreach(int T in Enumerable.Range(0,38).Select(i=>15+5*i)) {\n",
+    "    var g=Machine(new[]{\"A\",\"B\"},\"savoir\",T,5);var l=Machine(new[]{\"A\",\"B\"},\"savoir\",T,5,glouton:true);\n",
+    "    var d=sampleSavoir.Select(e=>Gain(g.Plan,T,e)-Gain(l.Plan,T,e)).ToArray();\n",
+    "    lignes.Add((T,g.Plan.Last().Policy,l.Plan.Last().Policy,Gain(g.Plan,T,reel),Gain(l.Plan,T,reel),d.Min(),d.Average()));\n",
+    "}\n",
+    "foreach(var z in lignes.Where(z=>new[]{15,20,25,30,35,40,60,100,150,200}.Contains(z.T))) Console.WriteLine($\"T={z.T} : Gödel {z.G} {z.ReelG:F1}, glouton {z.L} {z.ReelL:F1}, min Δ {z.Min:F1}, moy Δ {z.Moy:F1}\");\n",
+    "Console.WriteLine($\"Premier T divergent : {lignes.First(z=>z.G!=z.L).T} ; T avec écart négatif échantillonné : {string.Join(\",\",lignes.Where(z=>z.Min<0).Select(z=>z.T))}\");\n",
+    "display(new SvgMarkup(SeriesSvg(lignes.Select(z=>(double)z.T).ToArray(),new[]{lignes.Select(z=>z.ReelG).ToArray(),lignes.Select(z=>z.ReelL).ToArray()},new[]{\"Gödel\",\"Gloutonne\"},\"Récompense selon la durée de vie\",\"T (pas)\",\"Récompense\")));"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.005052,
+     "end_time": "2026-11-14T22:10:47.114577+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.109525+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "Les machines peuvent diverger dès que B devient prouvable et rentable. Le minimum échantillonné peut être négatif : le théorème compare chaque décision à sa propre continuation, pas à la trajectoire d'une gloutonne. Les moyennes et minima dépendent du tirage fini. Dans cette exécution, la première divergence est à T=35 ; à T=200 les gains sont 540 et 292,5, et le minimum observé sur les 2 000 tirages est positif (123,0)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004817,
+     "end_time": "2026-11-14T22:10:47.124343+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.119526+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "### Exercice 2 — Le théorème cible relâché\n",
+    "Complétez le comparateur symbolique $u_{switch} \\geq u_{keep}$. Utilisez-le ensuite dans une copie de `Machine` et cherchez une durée de vie où les décisions diffèrent. Le garde prouve l'équivalence, y compris à l'égalité."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:47.135424Z",
+     "iopub.status.busy": "2026-11-14T22:10:47.135238Z",
+     "iopub.status.idle": "2026-11-14T22:10:47.229391Z",
+     "shell.execute_reply": "2026-11-14T22:10:47.229237Z"
+    },
+    "papermill": {
+     "duration": 0.100641,
+     "end_time": "2026-11-14T22:10:47.229466+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.128825+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "bool VerifierComparateur(Func<Context,ArithExpr,ArithExpr,BoolExpr> comparer) {\n",
+    " if(comparer==null)return false;\n",
+    " using var ctx=new Context(); var a=ctx.MkRealConst(\"a\");var b=ctx.MkRealConst(\"b\");var expression=comparer(ctx,a,b);if(expression==null)return false;\n",
+    " using var s=ctx.MkSolver();s.Assert(ctx.MkNot(ctx.MkIff(expression,ctx.MkGe(a,b))));return s.Check()==Status.UNSATISFIABLE;\n",
+    "}\n",
+    "Func<Context,ArithExpr,ArithExpr,BoolExpr> comparaisonRelachee = null; // TODO : remplacer > par >=\n",
+    "Console.WriteLine(comparaisonRelachee==null ? \"Exercice 2 à compléter\" : $\"Comparateur valide : {VerifierComparateur(comparaisonRelachee)}\");"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.0037,
+     "end_time": "2026-11-14T22:10:47.237882+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.234182+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 5. Le prix de la prudence\n",
+    "Sous `base`, B peut perdre contre A. Sur 2 000 environnements tirés, comparez la moyenne et les pertes à la preuve universelle. On cherche aussi l'écart q ≥ r + e, par pas de 0,1, suffisant pour prouver B face à A, pour quatre bornes sur w."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:47.246888Z",
+     "iopub.status.busy": "2026-11-14T22:10:47.246668Z",
+     "iopub.status.idle": "2026-11-14T22:10:47.637454Z",
+     "shell.execute_reply": "2026-11-14T22:10:47.637140Z"
+    },
+    "papermill": {
+     "duration": 0.396302,
+     "end_time": "2026-11-14T22:10:47.637536+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.241234+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "var planBase=Machine(new[]{\"A\",\"B\"},\"base\",200,5);\n",
+    "Console.WriteLine($\"Politique sous base : {planBase.Plan.Last().Policy}\");\n",
+    "foreach(var a in planBase.Journal) Console.WriteLine($\"  {a.Candidate} : {a.Proof.Verdict}, {a.Proof.Counterexample}\");\n",
+    "var envs=Sample(7,2000,false);var planA=new List<Segment>{new(0,\"preuve\"),new(5,\"A\")};var planB=new List<Segment>{new(0,\"preuve\"),new(10,\"B\")};\n",
+    "var diffs=envs.Select(e=>Gain(planB,200,e)-Gain(planA,200,e)).ToArray();\n",
+    "Console.WriteLine($\"Moyennes A={envs.Average(e=>Gain(planA,200,e)):F1}, B={envs.Average(e=>Gain(planB,200,e)):F1}, fraction B<A={diffs.Count(d=>d<0)/20.0:F1}%, min={diffs.Min():F1}, max={diffs.Max():F1}\");\n",
+    "var preuveCompare=Prouver(\"base\",(ctx,e)=>ctx.MkGt(U(ctx,\"B\",190,e),U(ctx,\"A\",195,e)));\n",
+    "Console.WriteLine($\"B à t=10 > A à t=5 : {preuveCompare.Verdict}, {preuveCompare.Counterexample}\");\n",
+    "Console.WriteLine($\"Réel : A={Gain(planA,200,reel)}, B={Gain(planB,200,reel)}, gain abandonné={Gain(planB,200,reel)-Gain(planA,200,reel)}\");\n",
+    "foreach(int maxw in new[]{30,20,10,0}) {\n",
+    " double? minimum=null;\n",
+    " for(int k=0;k<=40;k++) { double e=k/10.0; var pr=Prouver(\"base\",(ctx,z)=>ctx.MkGt(U(ctx,\"B\",190,z),U(ctx,\"A\",195,z)),ecart:e,wMax:maxw); if(pr.Verdict==\"PROUVE\") {minimum=e;break;} }\n",
+    " Console.WriteLine($\"w <= {maxw} : premier écart prouvé = {minimum}\");\n",
+    "}"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004281,
+     "end_time": "2026-11-14T22:10:47.646059+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.641778+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "Le modèle sous `base` accepte A car il ne sait pas prouver B. Une moyenne supérieure ne garantit pas une amélioration dans chaque environnement ; l'échantillon quantifie ce risque sans remplacer la preuve. En environnement réel, le gain abandonné vaut 247,5. L'écart nécessaire dépend de la borne d'échauffement. Le tirage .NET donne 291,2 pour A et 436,5 pour B en moyenne ; B perd dans 21,9 % des environnements, avec une perte maximale de 207,3. Le premier écart prouvé vaut 0,5 si w ≤ 30, et 0,1 si w = 0."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:47.655969Z",
+     "iopub.status.busy": "2026-11-14T22:10:47.655664Z",
+     "iopub.status.idle": "2026-11-14T22:10:47.830727Z",
+     "shell.execute_reply": "2026-11-14T22:10:47.830182Z"
+    },
+    "papermill": {
+     "duration": 0.180822,
+     "end_time": "2026-11-14T22:10:47.830825+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.650003+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "string HistogramSvg(double[] values, int bins, double marker) {\n",
+    "    const int W=800,H=360,L=80,R=30,Top=45,Bot=65; double lo=values.Min(),hi=values.Max(); int[] counts=new int[bins];\n",
+    "    foreach(double v in values) counts[Math.Min(bins-1,(int)((v-lo)/(hi-lo)*bins))]++;\n",
+    "    int max=counts.Max(); double X(double v)=>L+(v-lo)/(hi-lo)*(W-L-R); double Y(double v)=>H-Bot-v/max*(H-Top-Bot);\n",
+    "    var b=new StringBuilder($\"<svg xmlns='http://www.w3.org/2000/svg' width='{W}' height='{H}'><rect width='100%' height='100%' fill='white'/><text x='400' y='23' text-anchor='middle'>Gain B moins A sur 2000 environnements</text><path d='M {L} {Top} V {H-Bot} H {W-R}' stroke='black' fill='none'/>\");\n",
+    "    for(int i=0;i<bins;i++) {double left=L+(W-L-R)*i/(double)bins, width=(W-L-R)/(double)bins; b.Append($\"<rect x='{F(left)}' y='{F(Y(counts[i]))}' width='{F(width)}' height='{F(H-Bot-Y(counts[i]))}' fill='#4779ba'/>\");}\n",
+    "    foreach(var mark in new[]{(0.0,\"zéro\",\"black\"),(marker,\"réel\",\"#c33b31\")}) b.Append($\"<line x1='{F(X(mark.Item1))}' x2='{F(X(mark.Item1))}' y1='{Top}' y2='{H-Bot}' stroke='{mark.Item3}'/><text x='{F(X(mark.Item1)+4)}' y='{Top+15}' fill='{mark.Item3}' font-size='11'>{mark.Item2}</text>\");\n",
+    "    for(int i=0;i<=4;i++) b.Append($\"<text x='{F(X(lo+(hi-lo)*i/4))}' y='{H-Bot+19}' font-size='11' text-anchor='middle'>{F(lo+(hi-lo)*i/4)}</text><text x='{L-8}' y='{F(Y(max*i/4.0)+4)}' font-size='11' text-anchor='end'>{F(max*i/4.0)}</text>\");\n",
+    "    b.Append($\"<text x='400' y='{H-10}' text-anchor='middle'>Gain B − A (récompense)</text><text transform='translate(18,180) rotate(-90)' text-anchor='middle'>Nombre d'environnements</text></svg>\");return b.ToString();\n",
+    "}\n",
+    "display(new SvgMarkup(HistogramSvg(diffs,60,Gain(planB,200,reel)-Gain(planA,200,reel))));"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004467,
+     "end_time": "2026-11-14T22:10:47.840936+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.836469+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "La partie à gauche de zéro rassemble les environnements où B perd. Même si B gagne en moyenne, ces cas suffisent à réfuter la domination universelle. Une utilité en espérance demanderait une loi explicite sur les environnements."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.003828,
+     "end_time": "2026-11-14T22:10:47.848650+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.844822+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "### Exercice 3 — Combien vaut un axiome ?\n",
+    "Calculez les récompenses réelles pour les 21 écarts de 0 à 2 par pas de 0,1 ; tracez la courbe et expliquez ce que signifie l'axiome faux e=2. Le garde rejette les valeurs non finies, les dimensions incorrectes et les résultats différents de la simulation."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:47.860542Z",
+     "iopub.status.busy": "2026-11-14T22:10:47.860300Z",
+     "iopub.status.idle": "2026-11-14T22:10:47.912308Z",
+     "shell.execute_reply": "2026-11-14T22:10:47.912043Z"
+    },
+    "papermill": {
+     "duration": 0.059865,
+     "end_time": "2026-11-14T22:10:47.912375+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.852510+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "bool VerifierValeurs(double[] valeurs) {\n",
+    " if(valeurs==null || valeurs.Length!=21 || valeurs.Any(v=>!double.IsFinite(v)))return false;\n",
+    " for(int k=0;k<21;k++) { var resultat=Machine(new[]{\"A\",\"B\"},\"base\",200,5,ecart:k/10.0);if(Math.Abs(valeurs[k]-Gain(resultat.Plan,200,reel))>1e-8)return false; }\n",
+    " return true;\n",
+    "}\n",
+    "double[] valeurs = null; // TODO : 21 récompenses pour e=0, 0.1, ..., 2.0\n",
+    "Console.WriteLine(valeurs==null ? \"Exercice 3 à compléter\" : $\"Courbe valide : {VerifierValeurs(valeurs)}\");"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.00394,
+     "end_time": "2026-11-14T22:10:47.920824+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.916884+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 6. Le temps de preuve se paie en vie\n",
+    "Chaque tentative dure 1 + ⌊budget/200⌋ pas. On conserve les onze budgets de 100 à 32 000 et mesure décision, verdicts et récompense. Le `rlimit` dépend de la version du moteur ; les frontières numériques peuvent donc différer."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:47.931573Z",
+     "iopub.status.busy": "2026-11-14T22:10:47.931391Z",
+     "iopub.status.idle": "2026-11-14T22:10:49.087087Z",
+     "shell.execute_reply": "2026-11-14T22:10:49.086836Z"
+    },
+    "papermill": {
+     "duration": 1.162274,
+     "end_time": "2026-11-14T22:10:49.087173+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:47.924899+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "int[] budgets={100,200,300,400,600,1000,2000,4000,8000,16000,32000};\n",
+    "var resultats=new List<(int Budget,int Cout,string Pol,int Temps,double Gain,string Verdicts)>();\n",
+    "foreach(int b in budgets) {\n",
+    " int cout=1+b/200; var run=Machine(new[]{\"A\",\"B\"},\"savoir\",200,cout,(uint)b);\n",
+    " resultats.Add((b,cout,run.Plan.Last().Policy,run.Plan.Last().Start,Gain(run.Plan,200,reel),string.Join(\" \",run.Journal.Select(a=>$\"{a.Candidate}:{a.Proof.Verdict}\"))));\n",
+    "}\n",
+    "foreach(var z in resultats) Console.WriteLine($\"budget {z.Budget,5} ; coût {z.Cout,3} ; {z.Pol,9} à {z.Temps,3} ; gain {z.Gain,6:F1} ; {z.Verdicts}\");\n",
+    "display(new SvgMarkup(SeriesSvg(resultats.Select(z=>(double)z.Budget).ToArray(),new[]{resultats.Select(z=>z.Gain).ToArray()},new[]{\"récompense\"},\"Budget de preuve et récompense\",\"Budget rlimit (échelle logarithmique)\",\"Récompense\",true)));"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.006264,
+     "end_time": "2026-11-14T22:10:49.099815+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:49.093551+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "Un budget insuffisant peut donner `UNKNOWN`. Un budget suffisant autorise la preuve, mais des tentatives trop longues consomment la vie disponible. Les valeurs observées ne sont pas une loi générale : elles dépendent des axiomes, de Z3 et de la conversion du budget en temps. Ici, 100 ne prouve rien (gain 222), 1 000 prouve B (534), et 32 000 n’autorise plus que A à t=161 (58,5)."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.004894,
+     "end_time": "2026-11-14T22:10:49.109375+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:49.104481+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 7. Carte des décisions\n",
+    "On balaie 40 coûts de preuve et 38 durées de vie, soit 1 520 simulations, avec les mêmes axiomes `savoir`. Chaque case indique la politique finale."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2026-11-14T22:10:49.125622Z",
+     "iopub.status.busy": "2026-11-14T22:10:49.125333Z",
+     "iopub.status.idle": "2026-11-14T22:11:29.936847Z",
+     "shell.execute_reply": "2026-11-14T22:11:29.936465Z"
+    },
+    "papermill": {
+     "duration": 40.821002,
+     "end_time": "2026-11-14T22:11:29.937122+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:10:49.116120+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "var vies=Enumerable.Range(0,38).Select(i=>15+5*i).ToArray();var couts=Enumerable.Range(1,40).ToArray();\n",
+    "int[,] carte=new int[couts.Length,vies.Length];var code=new Dictionary<string,int>{{\"calibrage\",0},{\"A\",1},{\"B\",2}};\n",
+    "for(int i=0;i<couts.Length;i++) for(int j=0;j<vies.Length;j++) carte[i,j]=code[Machine(new[]{\"A\",\"B\"},\"savoir\",vies[j],couts[i]).Plan.Last().Policy];\n",
+    "for(int k=0;k<3;k++) Console.WriteLine($\"{new[]{\"initiale\",\"A\",\"B\"}[k]} : {carte.Cast<int>().Count(v=>v==k)} cases\");\n",
+    "foreach(int cout in new[]{1,5,20,40}) { int i=cout-1; int? seuilA=null,seuilB=null;for(int j=0;j<vies.Length;j++){if(carte[i,j]==1 && !seuilA.HasValue)seuilA=vies[j];if(carte[i,j]==2 && !seuilB.HasValue)seuilB=vies[j];}Console.WriteLine($\"Coût {cout} : A dès T={seuilA}, B dès T={seuilB}\"); }\n",
+    "string HeatSvg(int[,] map) {\n",
+    " const int W=800,H=400,L=80,R=40,Top=45,Bot=75; double cw=(W-L-R)/(double)map.GetLength(1),ch=(H-Top-Bot)/(double)map.GetLength(0);string[] colors={\"#440154\",\"#21918c\",\"#fde725\"};\n",
+    " var b=new StringBuilder($\"<svg xmlns='http://www.w3.org/2000/svg' width='{W}' height='{H}'><rect width='100%' height='100%' fill='white'/><text x='400' y='23' text-anchor='middle'>Politique adoptée selon le coût et la durée</text>\");\n",
+    " for(int i=0;i<map.GetLength(0);i++)for(int j=0;j<map.GetLength(1);j++)b.Append($\"<rect x='{F(L+j*cw)}' y='{F(H-Bot-(i+1)*ch)}' width='{F(cw+0.1)}' height='{F(ch+0.1)}' fill='{colors[map[i,j]]}'/>\");\n",
+    " for(int j=0;j<map.GetLength(1);j+=5)b.Append($\"<text x='{F(L+(j+0.5)*cw)}' y='{H-Bot+18}' font-size='11' text-anchor='middle'>{vies[j]}</text>\");\n",
+    " for(int i=0;i<40;i+=5)b.Append($\"<text x='{L-8}' y='{F(H-Bot-(i+0.5)*ch+4)}' font-size='11' text-anchor='end'>{couts[i]}</text>\");\n",
+    " b.Append($\"<text x='400' y='{H-8}' text-anchor='middle'>Durée de vie T (pas)</text><text transform='translate(18,180) rotate(-90)' text-anchor='middle'>Coût d'une preuve (pas)</text>\");\n",
+    " for(int k=0;k<3;k++)b.Append($\"<rect x='{180+k*135}' y='{H-38}' width='12' height='12' fill='{colors[k]}'/><text x='{197+k*135}' y='{H-27}' font-size='11'>{new[]{\"initiale\",\"A\",\"B\"}[k]}</text>\");return b.Append(\"</svg>\").ToString();\n",
+    "}\n",
+    "display(new SvgMarkup(HeatSvg(carte)));"
+   ],
+   "outputs": [],
+   "execution_count": null
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.006058,
+     "end_time": "2026-11-14T22:11:29.949958+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:11:29.943900+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "La carte distingue les régions où aucune preuve n'arrive à temps, où A est adopté et où B est adopté. La frontière se déplace vers les vies longues quand le coût des tentatives augmente : ce coût entre directement dans l'utilité. Les 1 520 cases se répartissent en 81 initiales, 311 A et 1 128 B ; B apparaît dès T=25 au coût 1, et dès T=105 au coût 40."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {
+    "papermill": {
+     "duration": 0.005157,
+     "end_time": "2026-11-14T22:11:29.960301+00:00",
+     "exception": false,
+     "start_time": "2026-11-14T22:11:29.955144+00:00",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "source": [
+    "## 8. Exercices\n",
+    "Les exercices répartis ci-dessus portent sur le candidat mixte, le théorème relâché et la valeur d'un axiome.\n",
+    "\n",
+    "## Limites du jouet\n",
+    "Les réécritures candidates sont données, et le coût du calcul anticipé de la continuation n'est pas facturé. Les preuves portent sur chaque environnement admissible, ce qui est plus fort qu'une comparaison d'espérances sous une loi donnée. Le produit q × (D−w) rend l'arithmétique non linéaire ; une limite de ressources peut produire `UNKNOWN`.\n",
+    "\n",
+    "## À retenir\n",
+    "| Question | Réponse |\n",
+    "|---|---|\n",
+    "| Quand basculer ? | Quand l'amélioration sur la continuation est prouvée. |\n",
+    "| Que coûte la prudence ? | Une amélioration réelle peut être refusée faute d'axiomes suffisants. |\n",
+    "| Où entre le temps de preuve ? | Dans l'utilité et la durée de vie restante. |\n",
+    "\n",
+    "## Vérifiez votre compréhension\n",
+    "Pourquoi un contre-exemple interdit-il la bascule ?\n",
+    "<details><summary>Réponse</summary>Il montre un environnement admissible où l'inégalité exigée n'est pas vraie.</details>\n",
+    "\n",
+    "## Pour aller plus loin\n",
+    "Consulter [le source Python de ce chapitre](Z3-20-Machine-de-Goedel-Python.ipynb) pour le contexte historique et [Z3-05 Quantificateurs et preuves](Z3-05-Quantifiers-Proofs-Python.ipynb) pour la mécanique de réfutation."
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": ".NET (C#)",
+   "language": "C#",
+   "name": ".net-csharp"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
