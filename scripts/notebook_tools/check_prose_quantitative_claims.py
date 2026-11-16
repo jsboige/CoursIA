@@ -578,6 +578,115 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "tranche 4 (2026-11-07), pas un compteur du depot."
         ),
     ),
+    # Cartographie de la soumission externe yang-mills-group/OpenAI-YM-20261028
+    # (PR #25826) : chaque nombre mesure le depot externe tel que fige au pin
+    # audite (main 2026-11-05, clone verifie par scripts/ym_openai_20261028/
+    # inventory.py contre SOURCES.sha256). Meme classe que HopfProblem et
+    # DarkSnail ci-dessus : upstream peut bouger, la tete mesuree reste
+    # celle du blob -- ces nombres ne derivent pas avec CoursIA.
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(r"\(9 508 fichiers, commit unique\)"),
+        raison=(
+            "Taille du clone externe audite (pin main du 2026-11-05) : fait "
+            "du depot externe OpenAI-YM-20261028, pas un etat de CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(r"réélaboration des 9 457 modules"),
+        raison=(
+            "Table d'obstacles de la synthese : compte des modules du depot "
+            "externe, marque RAPORTE (journaux de la soumission, section 6)."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"Architecture : 613 lignes de spécification, ~988 000 lignes"
+        ),
+        raison=(
+            "Titre de section : tailles de l'enonce et de l'implementation "
+            "du depot externe, mesurees par l'inventaire rejouable."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(l'énoncé complet, en 190 lignes|réseau de Wilson, loi, limite \(92 lignes\)"
+            r"|Wightman W0–W3 \(325 lignes\))"
+        ),
+        raison=(
+            "Arbre d'architecture (section 3) : tailles des fichiers de "
+            "specification du depot externe, mesurees au pin audite."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"\*\*9 477\*\* fichiers `\.lean` pour \*\*987 586\*\* lignes"
+        ),
+        raison=(
+            "Comptes du manifeste SOURCES.sha256 du depot externe : le pin "
+            "fige les nombres, pas le depot CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(closure = 4 module\(s\) de specification"
+            r"|\+ 1 externe\(s\) ; 0 module\(s\) d'implementation atteint)"
+        ),
+        raison=(
+            "Inventaire de la closure de Challenge.lean : decomposition "
+            "spec/implementation du depot externe (section 3)."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(atteint \*\*9 467\*\* modules du projet"
+            r"|263 modules externes : le travail)"
+        ),
+        raison=(
+            "Closure de Solution.lean du depot externe : portee mesuree au "
+            "pin, temoin du cloisonnement spec/implementation."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(compilation des 9 457 modules YM"
+            r"|outside=149891 modules=9457"
+            r"|\*\*2 950 modules\*\* ne contribuent"
+            r"|laquelle « 9 477 fichiers)"
+        ),
+        raison=(
+            "Journaux verification/*.log de la soumission cites verbatim "
+            "(section 4) : mesures rapportees du depot externe, non "
+            "rejouees ici (section 6)."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(r"\*\*9 506 fichiers sur 9 507\*\*"),
+        raison=(
+            "Obstacle CRLF du checkout (section 6) : ecarts de hachage "
+            "constates sur le clone externe, fait du run d'inventaire."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(integrite_manifeste +9507 fichiers"
+            r"|cloisonnement_reference +0 module\(s\) d'implementation"
+            r"|travail_dans_la_solution +9467 module\(s\) projet)"
+        ),
+        raison=(
+            "Sortie verbatim de l'outil rejouable inventory.py sur le pin "
+            "audite (section 7) : preuve du run, pas un etat de CoursIA."
+        ),
+    ),
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/3D/"
@@ -626,6 +735,137 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "« 95 a 104 cellules contre 68 » = reprise du meme compte de "
             "voxels generes dans la conclusion du carnet. La phrase nomme "
             "l'experience, pas un artefact du depot."
+        ),
+    ),
+    # Grille Sudoku de la serie Z3 (tranche #17636 volet 2) : les « N
+    # cellules » de Z3-18, 02, 05 et du README comptent les cases de la
+    # grille pedagogique (4x4 = 16 cases dont 4 par rangee/colonne/bloc,
+    # 9x9 = 81 cases dont 9 par ligne/colonne/sous-grille, rangee de 4 du
+    # mini-Sudoku 1D du bloc B8) -- le probleme mathematique enseigne, pas
+    # des cellules de carnet. Le « 81 lignes de proprietes » designe la
+    # classe C# explicite du carnet 02 : une propriete par case de la
+    # grille 9x9, fixee par le domaine. Ces nombres ne derivent pas avec
+    # le depot ; les reecrire n'aurait pas de sens.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/"
+            "Z3-18-Sudoku-Modes-Python.ipynb"
+        ),
+        motif=re.compile(r"(par \*\*16 cellules\*\*|ces 16 cellules)"),
+        raison=(
+            "« 16 cellules » = cases de la grille Sudoku 4x4 encodant le "
+            "probleme (4x4 = 16) ; deux modeles d'encodage de CES cases "
+            "sont compares. Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/"
+            "Z3-18-Sudoku-Modes-Python.ipynb"
+        ),
+        motif=re.compile(r"les 4 cellules de chaque (rangée|colonne|bloc)"),
+        raison=(
+            "« 4 cellules » par rangee/colonne/bloc 2x2 = structure de la "
+            "grille Sudoku 4x4 enseignee. Propriete du domaine."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"\(81 cellules\)"),
+        raison=(
+            "« 81 cellules » (noeud mermaid) = cases de la grille Sudoku "
+            "9x9 (9x9 = 81). Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"les 9 cellules de chaque (ligne|colonne|sous-grille)"),
+        raison=(
+            "« 9 cellules » par ligne/colonne/sous-grille 3x3 = structure "
+            "de la grille Sudoku 9x9 enseignee. Propriete du domaine."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"81 lignes de proprietes"),
+        raison=(
+            "« 81 lignes de proprietes » = la classe C# explicite du carnet "
+            "emets une propriete PAR CASE de la grille 9x9 : le compte est "
+            "fixe par le domaine (9x9 = 81), il ne derive pas avec le depot."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"parcourt les 81 cellules"),
+        raison=(
+            "La boucle C# demontree parcourt les 81 cases de la grille "
+            "Sudoku 9x9. Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"9 lambdas enumerant 9 cellules chacune"),
+        raison=(
+            "« 9 lambdas enumerant 9 cellules chacune » (contraintes de "
+            "ligne et de boite de la grille 9x9) : les deux 9 sont fixes "
+            "par la structure du Sudoku enseigne."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "02_Sudoku_Theorem_vs_Array.ipynb"
+        ),
+        motif=re.compile(r"une \*\*rangee\*\* de 4 cellules"),
+        raison=(
+            "« rangee de 4 cellules » = le mini-Sudoku 1D du bloc B8 "
+            "(palette {1,2,3,4}) : terrain du contraste ForAll/Exists. "
+            "Cellules du probleme, pas du carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "05_Nested_Arrays_2D.ipynb"
+        ),
+        motif=re.compile(r"(les|des) 4 cellules du bloc"),
+        raison=(
+            "« 4 cellules du bloc » = cases d'un bloc 2x2 de la grille "
+            "Sudoku 4x4 demontree. Cellules de grille, pas de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/"
+            "05_Nested_Arrays_2D.ipynb"
+        ),
+        motif=re.compile(r"`Z3Methods\.Distinct` sur les 9 cellules"),
+        raison=(
+            "« Distinct sur les 9 cellules » = contrainte sur les cases "
+            "d'une ligne de la grille Sudoku demontree. Cellules de grille."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/README.md",
+        motif=re.compile(r"une rangée de 4 cellules"),
+        raison=(
+            "« une rangee de 4 cellules » = le mini-Sudoku 1D du bloc B8 "
+            "du carnet 02, decrit en miroir ici. Cellules du probleme."
         ),
     ),
 )

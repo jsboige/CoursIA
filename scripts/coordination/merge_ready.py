@@ -376,6 +376,35 @@ class MergeFailedError(Exception):
     """La commande de merge a echoue -- arret du run (disjoncteur)."""
 
 
+class BaseModifiedRaceError(Exception):
+    """Le merge a echoue deux fois sur une course de base (#26771).
+
+    Distinct de ``MergeFailedError`` : la course de base est **rejouable pour
+    la PR**, donc le balayage CONTINUE -- la PR est journalisee ``skipped``
+    avec le motif ``base-modified-race`` et les PRs suivantes sont evaluees.
+    C'est la correction du passage de 15:16Z du 2026-11-15, qui a merge 11 PRs
+    puis s'est arrete sur la 12e (``Base branch was modified``) et a fait
+    attendre toute la suite de la file un passage de plus.
+    """
+
+
+#: Motif de la course de base, dans le texte d'echec de ``gh pr merge``
+#: (GraphQL : « Base branch was modified. Review and try the merge again. »).
+#: Reconnaissance **litterale** : un motif non reconnu n'est jamais lu comme
+#: une course, il garde le disjoncteur. Une variante non ecrite ici ne serait
+#: donc pas traitee -- c'est le compromis voulu (une lecture large des
+#: messages d'erreur finirait par absorber de vrais echecs).
+BASE_MODIFIED_MARKER = "base branch was modified"
+
+#: Motif ecrit dans le journal pour une PR laissee par une course de base.
+BASE_MODIFIED_RACE_REASON = "base-modified-race"
+
+
+def is_base_modified_race(message: str) -> bool:
+    """Le message d'echec decrit-il une course de base (#26771) ?"""
+    return BASE_MODIFIED_MARKER in (message or "").lower()
+
+
 # Marqueurs d'une erreur de PORTEE GENERALE : ce qui frappe tous les appels de
 # la meme facon ne doit pas etre isole par PR, sinon une panne de jeton ou de
 # quota se lit comme une collection de ``run-error`` attribuees a des PRs
@@ -679,29 +708,112 @@ def _job_id_of_check(check: dict) -> str:
     return raw if raw.isdigit() else ""
 
 
-def _first_failing_step(runner: Runner, gh_env: dict[str, str],
-                        check: dict) -> str:
-    """Nom de la PREMIERE etape en echec du job ("" si elle est illisible).
+def _parse_job_steps(stdout: str) -> list[dict] | None:
+    """Liste des etapes lue dans la reponse ``gh api``.
+
+    ``None`` = lecture illisible (fail-closed) ; une liste vide = lecture
+    reussie sans etape. Le retour accepte les deux formes de sortie de
+    ``--jq`` : un tableau JSON (forme compacte) ou un objet par ligne.
+    """
+    text = (stdout or "").strip()
+    if not text:
+        return []
+    try:
+        payload = json.loads(text)
+    except ValueError:
+        payload = None
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    if isinstance(payload, dict):
+        return [payload]
+    steps: list[dict] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            return None
+        if not isinstance(row, dict):
+            return None
+        steps.append(row)
+    return steps or None
+
+
+def _read_job_steps(runner: Runner, gh_env: dict[str, str],
+                    check: dict) -> list[dict] | None:
+    """Etapes du job associe au check-run (``None`` si la lecture echoue).
 
     Une seule lecture de job par commit juge, et seulement dans le cas
-    `failure` sans test identifie. Le tri se fait sur le numero d'etape :
-    l'API renvoie les etapes dans l'ordre, mais le tri le rend explicite.
+    `failure` sans test identifie. La lecture est **globale** : elle rend
+    toutes les etapes, avec leur statut ET leur conclusion, parce que la
+    decision "runner perdu" (#25510 T-J) porte sur l'ensemble des etapes et
+    pas sur la premiere etape en echec.
     """
     job_id = _job_id_of_check(check)
     if not job_id:
-        return ""
+        return None
     result = runner.run(
         [
             "gh", "api", f"repos/{REPO}/actions/jobs/{job_id}",
             "--jq",
-            '[.steps[] | select(.conclusion == "failure")'
-            ' | {n: .name, o: .number}] | sort_by(.o) | .[0].n // ""',
+            '[.steps[] | {n: .name, o: .number, s: .status, c: .conclusion}]',
         ],
         env=gh_env,
     )
     if result.returncode != 0:
+        return None
+    return _parse_job_steps(result.stdout or "")
+
+
+def _first_failing_step(steps: list[dict]) -> str:
+    """Nom de la PREMIERE etape en echec ("" si aucune).
+
+    Fonction PURE sur la liste des etapes : la decision se teste sans
+    `jq` ni reseau. Le tri se fait sur le numero d'etape : l'API renvoie les
+    etapes dans l'ordre, mais le tri le rend explicite.
+    """
+    failing = [row for row in steps
+               if str(row.get("c") or "").lower() == "failure"]
+    if not failing:
         return ""
-    return (result.stdout or "").strip().strip('"')
+    ordered = sorted(failing, key=_step_order)
+    return str(ordered[0].get("n") or "")
+
+
+def _step_order(step: dict) -> int:
+    """Numero d'etape (ordre d'execution) ; 0 quand il est absent."""
+    try:
+        return int(step.get("o") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _runner_lost(steps: list[dict]) -> bool:
+    """Vrai si le job a echoue SANS qu'aucune etape soit en echec.
+
+    C'est la mesure du 2026-11-16 (run 43777127542, job 133012644184,
+    runner `myia-ai-01-linux-main-1`) : le job a rendu `completed/failure`
+    alors que l'etape 11 « Run tests » etait restee `in_progress` (conclusion
+    nulle) et que les etapes suivantes etaient `pending` -- le runner a
+    disparu au milieu d'une etape (reboot de l'hote a 00:32Z). Aucune etape
+    n'etant en `failure`, la sentinelle lisait un **verdict de code** la ou
+    il y avait une perte d'infrastructure.
+
+    Fonction PURE : la liste des etapes suffit, rien n'est relu.
+
+    - aucune etape en `failure` ET au moins une etape non `completed`
+      -> runner perdu (infrastructure) ;
+    - une etape en `failure` -> verdict de code, ce n'est pas un runner perdu ;
+    - toutes les etapes `completed` sans etape en echec -> on ne sait pas :
+      la retenue reste (fail-closed).
+    """
+    if not steps:
+        return False
+    if any(str(row.get("c") or "").lower() == "failure" for row in steps):
+        return False
+    return any(str(row.get("s") or "").lower() != "completed" for row in steps)
 
 
 def _is_infra_step(step_name: str) -> bool:
@@ -761,9 +873,14 @@ def refresh_main_red_hold(
        commits ne porte de verdict termine, l'organe refuse de demarrer et
        nomme la borne.
     4. **Une `failure` sans test identifie peut etre une panne
-       d'infrastructure.** On lit alors les etapes du job : si la PREMIERE
-       etape en echec est une etape d'infrastructure (checkout, setup-python,
-       installation, purge HEAL), le commit est ecarte comme
+       d'infrastructure.** On lit alors les etapes du job : si le job a
+       echoue **sans qu'aucune etape ne soit en echec** et qu'au moins une
+       etape ne soit pas terminee, c'est un **runner perdu en cours
+       d'etape** (#25510 T-J) : le commit est ecarte comme
+       `infra(runner-lost)` et le verdict remonte au commit precedent, comme
+       `cancelled`. Sinon, si la PREMIERE etape en echec est une etape
+       d'infrastructure (checkout, setup-python, installation, purge HEAL),
+       le commit est ecarte comme
        `infra(failure-step:<nom>)` et le verdict remonte au commit
        precedent, comme pour `cancelled`. Le cas mesure (12/11, run
        43316243195) : le checkout avait echoue sur `curl 28` apres 19 min
@@ -800,16 +917,34 @@ def refresh_main_red_hold(
             if not test_name:
                 # Aucun test identifie : la `failure` peut venir de
                 # l'infrastructure. UNE lecture de job, dans ce cas seul.
-                step = _first_failing_step(runner, gh_env, check)
-                if step and _is_infra_step(step):
-                    skipped.append((sha, f"infra(failure-step:{step})"))
+                steps = _read_job_steps(runner, gh_env, check)
+                if steps is None:
+                    # Lecture illisible : fail-closed, la retenue reste.
+                    pass
+                elif _runner_lost(steps):
+                    # Runner perdu en cours d'etape (#25510 T-J) : le job a
+                    # rendu `failure` sans qu'aucune etape ne soit en echec.
+                    # C'est de l'infrastructure, pas un verdict de code : le
+                    # verdict remonte au commit precedent, comme `cancelled`.
+                    skipped.append((sha, "infra(runner-lost)"))
                     print(
                         "merge_ready : sentinelle main-red -- commit "
-                        f"{sha[:9]} ecarte, premiere etape en echec "
-                        f"'{step}' (infrastructure) : le verdict remonte au "
-                        "commit precedent"
+                        f"{sha[:9]} ecarte, runner perdu en cours d'etape "
+                        "(job en echec sans etape en echec) : le verdict "
+                        "remonte au commit precedent"
                     )
                     continue
+                else:
+                    step = _first_failing_step(steps)
+                    if step and _is_infra_step(step):
+                        skipped.append((sha, f"infra(failure-step:{step})"))
+                        print(
+                            "merge_ready : sentinelle main-red -- commit "
+                            f"{sha[:9]} ecarte, premiere etape en echec "
+                            f"'{step}' (infrastructure) : le verdict remonte "
+                            "au commit precedent"
+                        )
+                        continue
         judged = (sha, check, conclusion, test_name)
         break
 
@@ -2257,17 +2392,52 @@ def unstable_state_reason(
 
 def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None:
     """Etape 7 : squash merge epingle sur la tete evaluee (jamais --admin,
-    jamais --delete-branch)."""
-    res = runner.run(
-        ["gh", "pr", "merge", str(pr), "--repo", REPO,
-         "--squash", "--match-head-commit", head],
-        env=gh_env,
-    )
-    if res.returncode != 0:
+    jamais --delete-branch).
+
+    Un echec ``Base branch was modified`` est une **course** (#26771) : `main`
+    a bouge entre la lecture de l'etat et la pose du merge -- le merge
+    precedent du meme passage, ou un merge manuel concurrent, suffit a la
+    provoquer. Ce n'est ni une panne de l'organe ni une PR casse : le motif
+    est **rejouable pour la PR**. On relit l'etat de la PR apres la courte
+    pause prevue, et on retente une seule fois a la meme tete ; si la
+    tentative echoue encore, la PR est journalisee ``skipped`` et le
+    balayage CONTINUE.
+
+    Tout autre echec garde le disjoncteur (``MergeFailedError``) : un motif
+    non reconnu n'est jamais lu comme une course.
+    """
+    argv = ["gh", "pr", "merge", str(pr), "--repo", REPO,
+            "--squash", "--match-head-commit", head]
+    res = runner.run(argv, env=gh_env)
+    if res.returncode == 0:
+        return
+    message = (res.stderr or res.stdout or "").strip()
+    if not is_base_modified_race(message):
         raise MergeFailedError(
-            f"gh pr merge {pr} rc={res.returncode} : "
-            f"{(res.stderr or res.stdout).strip()[:200]}"
+            f"gh pr merge {pr} rc={res.returncode} : {message[:200]}"
         )
+    # Course de base : pause courte (celle du chemin nominal), puis relecture
+    # de l'etat de la PR (etat de fusion + tete) -- une relecture illisible
+    # n'interrompt pas la course : le merge est rejoue a la tete connue.
+    runner.sleep(MERGEABLE_RETRY_SLEEP_S)
+    try:
+        view = fetch_pr_view(runner, pr, gh_env)
+    except UnexpectedError:
+        view = {}
+    print(
+        f"merge_ready : course de base sur PR {pr} (tete {head}) -- "
+        f"etat relu : mergeable_state="
+        f"{view.get('mergeable_state') or 'inconnu'}, "
+        f"tete={((view.get('head') or {}).get('sha')) or 'inconnue'}",
+        file=sys.stderr,
+    )
+    res = runner.run(argv, env=gh_env)
+    if res.returncode == 0:
+        return
+    raise BaseModifiedRaceError(
+        f"gh pr merge {pr} rc={res.returncode} apres un rejeu : "
+        f"{(res.stderr or res.stdout or '').strip()[:200]}"
+    )
 
 
 # --- tour de controle par PR ---------------------------------------------------
@@ -2660,6 +2830,24 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         stopped_reason = f"merge-failed:PR-{pr}"
                         exit_code = 1
                         break
+                    except BaseModifiedRaceError as exc:
+                        # Course de base (#26771) : le motif est REJOUABLE pour
+                        # la PR. La PR est journalisee ``skipped`` et le
+                        # balayage CONTINUE -- c'est le point de la demande :
+                        # une course sur la 12e PR d'un passage ne doit plus
+                        # faire attendre toute la suite de la file. Le motif
+                        # est nu dans le journal (greppable) ; le detail est
+                        # sur stderr.
+                        print(f"merge_ready : {exc}", file=sys.stderr)
+                        skipped = PRVerdict(
+                            pr, decision.head, "skipped",
+                            BASE_MODIFIED_RACE_REASON, False,
+                            decision.review, decision.stack,
+                            decision.stack_incidents,
+                        )
+                        results.append(skipped)
+                        append_journal(journal_path, skipped)
+                        continue
                     decision = PRVerdict(
                         pr, decision.head, "merged", decision.reason, True,
                         decision.review,

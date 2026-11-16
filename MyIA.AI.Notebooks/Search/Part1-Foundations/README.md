@@ -107,7 +107,7 @@ Le fil relaxation / arrondi / convexité, cinq accrétions de Search-9 :
 
 ### Autour de 12
 
-- **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (19/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 24 vs 75 expansions). Suppose Search-3.
+- **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (23/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 23 vs 75 expansions). Suppose Search-3.
 
 ## Progression
 
@@ -168,6 +168,10 @@ La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algo
 ## Ponts vers les autres séries
 
 Cette partie irrigue le reste du dépôt : les Dancing Links de Search-8 sont à l'œuvre dans la série [Sudoku](../../Sudoku/README.md), Minimax et MCTS (Search-6/7) se prolongent dans [GameTheory](../../GameTheory/README.md) avec OpenSpiel puis dans [RL](../../RL/README.md) côté politiques apprises, et les prédicats Z3 de Search-10 ouvrent sur [SymbolicAI](../../SymbolicAI/README.md).
+
+### Composer les regards en Python et C#
+
+Le carnet [Python](Search-12a-Composer-Regards.ipynb) et son [jumeau C#](Search-12a-Composer-Regards-CSharp.ipynb) calculent les distances arrière sur les arcs inversés, comparent les guides et conservent le même terrain déterministe.
 
 ## Références
 
@@ -235,3 +239,7 @@ Le véritable enseignement, au-delà du catalogue d'algorithmes, est un **réfle
 ### Le fil rouge
 
 La recherche en IA propose un changement de regard sur la résolution de problèmes : ne plus voir chaque algorithme comme une recette à appliquer, mais comprendre qu'ils sont tous des **négociations d'un même compromis fondamental** — entre la garantie de trouver l'optimal et le coût pour l'atteindre, entre explorer l'inconnu et exploiter l'acquis, entre la complétude et la mémoire disponible. BFS garantit l'optimal mais explose en mémoire ; DFS file droit mais peut se perdre ; A* négocie les deux via une heuristique dont l'honnêteté (l'admissibilité) conditionne la justesse du résultat ; le recuit simulé accepte de remonter la pente pour s'échapper d'un optimum local ; MCTS remplace l'expertise par la statistique. Comprendre la recherche, c'est comprendre qu'il n'existe pas de « bon » algorithme dans l'absolu, mais une famille de stratégies dont le choix dépend du compromis qu'on est prêt à accepter — et que ce compromis, loin d'être une limitation, est précisément ce qui rend la recherche applicable à tout problème formalisable en espace d'états.
+
+## B&B et borne LP : versions Python et C#
+
+[Search-12 en Python](Search-12-BranchAndBound-Borne-LP-Python.ipynb) et [en C#](Search-12-BranchAndBound-Borne-LP-CSharp.ipynb) comparent DP, branch-and-bound et MILP sur le sac à dos. Le juge est HiGHS côté Python et SCIP via Google.OrTools côté C# ; les durées et les générateurs aléatoires diffèrent.
