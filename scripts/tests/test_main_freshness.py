@@ -175,6 +175,29 @@ def test_clone_sans_main_mesure_sur_head(tmp_path):
     assert v["refuse"] is False
 
 
+def test_worktree_frais_passe_malgre_main_partage_en_retard(tmp_path):
+    """Incident po-2028 (15/11) : worktree frais refuse a cause du main partage.
+
+    La lane tirait depuis un worktree cree sur un origin/main a jour ; le
+    `main` du clone principal (partage, qu'elle ne doit pas toucher) avait
+    381 commits de retard, et la garde refusait sur lui. Le HEAD qui
+    execute est a jour : la garde passe et nomme HEAD. Controle jumeau :
+    le clone principal, lui, sur son main en retard, reste refuse.
+    """
+    clone, origin = _mini_depot(tmp_path)
+    _avancer_origin(tmp_path, origin, n=3)
+    _git("fetch", "-q", "origin", "main", cwd=clone)
+    wt = tmp_path / "wt"
+    _git("worktree", "add", "-q", "--detach", str(wt), "origin/main", cwd=clone)
+    v = mf.garder(wt, run=mf.run_defaut)
+    assert v["refuse"] is False and v["ok"] is True, f"causes : {v}"
+    assert v["ref_mesure"] == "HEAD" and v["ecart"] == 0
+    v_principal = mf.garder(clone, run=mf.run_defaut)
+    assert v_principal["refuse"] is True
+    assert v_principal["ecart"] == 3
+    assert [r["code"] for r in v_principal["raisons"]] == ["MAIN_PERIME"]
+
+
 # --- mesure impossible : fail-closed -----------------------------------------
 
 
