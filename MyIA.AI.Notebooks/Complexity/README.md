@@ -150,6 +150,8 @@ raison visible (les mondes d'oracles de Baker–Gill–Solovay, construits et ex
 et le gap Mathlib devient structurel : la calculabilité est formalisée, la complexité
 pas encore.
 
+[Complexity-03c : carte du zoo (C#)](Complexity-03c-ComplexityZoo-Navigation-CSharp.ipynb) accompagne la [version Python](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb). DFS, Kosaraju et DPLL sont réécrits en BCL pure ; vérificateur NL contre DFS, 2-SAT contre 3-SAT, mondes d'oracles et carte Mesuré/Cité/Ouvert sont rejoués aux mêmes budgets. Les générateurs aléatoires diffèrent, donc les instances et les temps ; les faux témoins restent refusés dans les deux langages.
+
 [Complexity-03f : chaîne des réductions (C#)](Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb) accompagne la [version Python](Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb). Les corpus et intersections sont calculés en BCL ; les générateurs diffèrent et l'algorithme du papier reste cité, non exécuté.
 
 Le notebook 03d confronte la série à la position **annoncée** : deux preuves machine
@@ -228,3 +230,4 @@ dépôt) et les corrigés restent la propriété de l'étudiant.
 ## Jumeau C# et différences de portage
 
 - [Complexity-04 — Décider sans connaître la suite (C#)](Complexity-04-OnlineAlgorithms-CSharp.ipynb) : même couverture conceptuelle, implémentations idiomatiques avec la bibliothèque standard .NET ; espérances des skis calculées par sommes discrètes exactes, et permutations du secrétaire générées réellement par Fisher–Yates (`Random(42)`). Les résultats Monte Carlo peuvent différer de NumPy malgré la graine commune. Les exercices LFU et secrétaire fine vérifient leurs fixtures et leurs budgets.
+- [Complexity-04d — secrétaire matroïdal (C#)](Complexity-04d-Secretaire-Matroidal-CSharp.ipynb) accompagne la [version Python](Complexity-04d-Secretaire-Matroidal-Python.ipynb) : trois oracles d'indépendance, glouton offline et algorithme de Singla en BCL pure, six instances × 4 000 essais et comparatif secrétaire classique à 4 000 essais conservés, figure de garantie en SVG opaque. L'exercice 1 y est corrigé par rapport à sa formulation fautive : l'intersection jointe est mesurée directement sur l'échantillon, jamais multipliée depuis les marginales — et un taux observé n'est pas une borne démontrée. Les générateurs aléatoires diffèrent.
