@@ -1,0 +1,10 @@
+- name: "Frontieres-11 Abstraction Dette ShortestPath"
+  family: Search/Part5-Frontieres
+  python: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-11-Abstraction-Dette-ShortestPath-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : Dijkstra, agrégation et relèvement sont les algorithmes pédagogiques du source. La BCL assure leur implémentation C# ; aucune bibliothèque externe de référence n'est remplacée. Les deux côtés distinguent première sortie et revisite et reproduisent le contre-témoin 8×8."
+  known_differences:
+    - "Les RNG Python et System.Random produisent des cartes et requêtes différentes avec les mêmes graines, dimensions et budgets : 200 requêtes longues, 200 courtes et six échelles. Aucun classement interlangages n'est revendiqué."
+    - "La carte et les bornes sont visualisées en SVG opaque autonome en C#, plutôt qu'en Matplotlib. Les trois exercices restent ouverts et répartis avec gardes de structure, valeurs et réponses partielles ; leur recette complète est hors dépôt."

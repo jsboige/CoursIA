@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk
 from coordination import tapis_rapide as tr
+from coordination import tapis_hors_flotte as thf
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -257,6 +258,46 @@ def test_l_ordre_des_ecarts_le_premier_gagne():
     lec = lecture([issue(1, labels=["candidate-delivered"], body="[FROZEN] x")],
                   citations={1: [commit("f" * 12, 2)]})
     assert etat(lec, 1).ecart == "LABEL"
+
+
+# --- hors flotte (#17713, #26893) -------------------------------------------
+
+def test_hors_flotte_les_quatre_formes_declarees():
+    for corps in (
+        "Hors flotte — Marathon II. Part of #26078 ; See #26070.",
+        "**Hors flotte** — Marathon II.",
+        "- Hors flotte — Epic #26070, parent #26081.",
+        "**Travail hors flotte déjà en cours par root dans la session Marathon II.**",
+        "**État du 16 novembre 2026 — livré hors flotte sous #26070 / #26078.**",
+        "Contexte.\n\nSuivi Marathon II hors flotte #17713. Livraison groupée.",
+    ):
+        assert thf.hors_flotte_declaration(corps), corps[:40]
+
+
+def test_hors_flotte_prose_citation_et_code_ne_declarent_pas():
+    for corps in (
+        "Deux PRs ont fermé la même issue : #26598, une session hors flotte ouverte le 14/11.",
+        "1. **`--claim` saute la jambe.** Le chemin parle d'une session hors flotte.",
+        "> Hors flotte — Marathon II. Part of #26078.",
+        # faux positifs mesures (#10643, #25509) : une puce ou un bloc qui
+        # decrit une livraison cloud cite la regle, l'EPIC reste de flotte.
+        "> - **Parcours visiteur POSIX (clone vierge)** : #25469 — session "
+        "hors flotte #17713, clone vierge rejoue.",
+        "- **Une PR par README.** Une livraison hors flotte #17713 couvre "
+        "la vague batch20.",
+        "Exemple :\n```\nHors flotte — Marathon II.\n```",
+        "",
+    ):
+        assert thf.hors_flotte_declaration(corps) is None, corps[:40]
+
+
+def test_ecart_hors_flotte_domine_le_label():
+    lec = lecture([issue(1, labels=["candidate-delivered"],
+                         body="Hors flotte — Marathon II."),
+                   issue(2, body="Texte ordinaire de flotte.")])
+    e1, e2 = etat(lec, 1), etat(lec, 2)
+    assert e1.ecart == "HORSFLOTTE" and "#17713" in e1.motif
+    assert e2.ecart is None
 
 
 def test_parent_famille_conteneur_et_derniere_visite():
@@ -539,8 +580,8 @@ def _violations(source: str) -> list[str]:
 
 
 def test_tapis_rapide_ne_lance_aucun_processus():
-    for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "gh_cache.py",
-                "gh_cache_fichier.py", "tapis_service.py"):
+    for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "tapis_hors_flotte.py",
+                "gh_cache.py", "gh_cache_fichier.py", "tapis_service.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -557,6 +598,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # texte, #26926, 16/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
+                                              ("tapis_hors_flotte.py", 60),
                                               ("gh_cache.py", 130),
                                               ("gh_cache_fichier.py", 60),
                                               ("tapis_service.py", 140)])
