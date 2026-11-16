@@ -1,7 +1,7 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,793a205e,markdown,fr,6ef113cf62204ca4,"# OpenAI DALL-E 3 - Generation d'Images
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,793a205e,markdown,fr,c6864a39d64ffbcd,"# OpenAI DALL-E 3 - Generation d'Images
 
-**Navigation** : [Index](../README.md) | [Suivant >>](01-2-GPT-5-Image-Generation.ipynb)
+**Navigation** : [Index](../README.md) | [Suivant >>](01-2-Generation-Image-API.ipynb)
 
 **Module :** 01-Images-Foundation  
 **Niveau :** Debutant  
@@ -30,7 +30,7 @@ Si vous n'avez qu'une cle OpenRouter, passez au notebook 01-2 (GPT-5 analyse d'i
 **Ancrage savant.** DALL-E 3 n'a pas de papier scientifique dedie ; OpenAI l'a annonce dans un billet de blog (octobre 2023) accompagne d'une *System Card* officielle. Sa principale innovation -- la **reecriture automatique des prompts** (la fameuse prompt revision enseignee plus bas) -- provient d'un modèle de langage (GPT-4) qui densifie la description, et d'un **entrainement sur captions ameliorees** (recaptioning) : voir la *DALL-E 3 System Card* (OpenAI, 2023) et, pour la filiation architecturale (CLIP latents + diffusion), le papier DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].
 ","# OpenAI DALL-E 3 - Image Generation
 
-**Navigation** : [Index](../README.md) | [Next >>](01-2-GPT-5-Image-Generation.ipynb)
+**Navigation** : [Index](../README.md) | [Next >>](01-2-Generation-Image-API.ipynb)
 
 **Module :** 01-Images-Foundation
 **Level :** Beginner
@@ -58,7 +58,7 @@ If you only have an OpenRouter key, skip to notebook 01-2 (GPT-5 image analysis)
 
 **Scholarly grounding.** DALL-E 3 has no dedicated scientific paper; OpenAI announced it in a blog post (October 2023) accompanied by an official *System Card*. Its main innovation -- the **automatic prompt rewriting** (the famous prompt revision taught below) -- comes from a language model (GPT-4) that densifies the description, and from **training on improved captions** (recaptioning): see the *DALL-E 3 System Card* (OpenAI, 2023) and, for the architectural lineage (CLIP latents + diffusion), the DALL-E 2 paper [Ramesh et al. 2022, arXiv:2204.06125].",,,,,"# OpenAI DALL-E 3 - Генерация изображений
 
-**Навигация** : [Индекс](../README.md) | [Далее >>](01-2-GPT-5-Image-Generation.ipynb)
+**Навигация** : [Индекс](../README.md) | [Далее >>](01-2-Generation-Image-API.ipynb)
 
 **Модуль :** 01-Images-Foundation  
 **Уровень :** Начинающий  
@@ -84,7 +84,7 @@ OpenRouter НЕ поддерживает endpoint `/v1/images/generations`.
 Если у вас есть только ключ OpenRouter, перейдите к notebook 01-2 (анализ изображений GPT-5).
 
 
-**Научная привязка.** У DALL-E 3 нет отдельной научной статьи; OpenAI анонсировала его в записи блога (октябрь 2023), сопровождаемой официальной *System Card*. Его главная инновация -- **автоматическое переписывание prompts** (знаменитая prompt revision, рассматриваемая ниже) -- происходит от языковой модели (GPT-4), которая уплотняет описание, и от **обучения на улучшенных captions** (recaptioning): см. *DALL-E 3 System Card* (OpenAI, 2023) и, для архитектурной преемственности (CLIP latents + diffusion), статью DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].",,6ef113cf62204ca4,31e2de5245f1297a,,,,,ad347d002848efb9,,,,,,,,,
+**Научная привязка.** У DALL-E 3 нет отдельной научной статьи; OpenAI анонсировала его в записи блога (октябрь 2023), сопровождаемой официальной *System Card*. Его главная инновация -- **автоматическое переписывание prompts** (знаменитая prompt revision, рассматриваемая ниже) -- происходит от языковой модели (GPT-4), которая уплотняет описание, и от **обучения на улучшенных captions** (recaptioning): см. *DALL-E 3 System Card* (OpenAI, 2023) и, для архитектурной преемственности (CLIP latents + diffusion), статью DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].",,c6864a39d64ffbcd,208d02230ee0c368,,,,,5f92a7b4fd831656,,c6864a39d64ffbcd,,,,,c6864a39d64ffbcd,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,02190507,code,fr,58bec2d4319d6420,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration generation
@@ -1193,9 +1193,9 @@ observations_ex3 = (
 print(f""\nObservations : {observations_ex3}"")
 
 print(""\nExemple guide 3 termine"")",,,,,,,,ca7b8f75d700d3b4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b07ca49a,markdown,fr,c87237c35a3d3d35,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07ca49a,markdown,fr,46ed19848da1cf75,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
 
-# GPT-5 Multimodal - Analyse et Génération d'Images
+# Génération et analyse d'images par API multimodale
 
 **Module :** 01-Images-Foundation  
 **Niveau :** 🟢 Débutant  
@@ -1224,7 +1224,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b0
 - **Raisonnement** : Analyse complexe et déductive
 - **Éducatif** : Parfait pour l'enseignement","**Navigation** : [Index](../../README.md) | [<< Previous](01-1-OpenAI-DALL-E-3.ipynb) | [Next >>](01-3-Basic-Image-Operations.ipynb)
 
-# GPT-5 Multimodal - Image Analysis and Generation
+# Image Generation and Analysis via Multimodal API
 
 **Module :** 01-Images-Foundation
 **Level :** 🟢 Beginner
@@ -1253,7 +1253,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b0
 - **Reasoning** : Complex and deductive analysis
 - **Educational** : Perfect for teaching",,,,,"**Навигация** : [Индекс](../../README.md) | [<< Назад](01-1-OpenAI-DALL-E-3.ipynb) | [Далее >>](01-3-Basic-Image-Operations.ipynb)
 
-# GPT-5 Мультимодальный - Анализ и генерация изображений
+# Генерация и анализ изображений через мультимодальный API
 
 **Модуль :** 01-Images-Foundation  
 **Уровень :** 🟢 Начинающий  
@@ -1280,8 +1280,8 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b0
 - **Мультимодальность** : Одновременный диалог текст + изображение
 - **Расширенный контекст** : До 400K токенов [OpenAI 2025]
 - **Рассуждение** : Сложный и дедуктивный анализ
-- **Образование** : Идеально для обучения",,c87237c35a3d3d35,2e04cc24b5a6aef2,,,,,7dec99dd3bd02449,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,21befb91,code,fr,67bdbb608fac2cb4,"# Parametres Papermill - JAMAIS modifier ce commentaire
+- **Образование** : Идеально для обучения",,46ed19848da1cf75,a7b7c1a81ba5d791,,,,,c26ca0e029e59505,,46ed19848da1cf75,,,,,46ed19848da1cf75,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,21befb91,code,fr,67bdbb608fac2cb4,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration conversation
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
@@ -1305,14 +1305,14 @@ generate_alt_text = True           # Generer descriptions accessibilite
 educational_level = ""university""   # ""elementary"", ""secondary"", ""university""
 language = ""francais""              # Langue des explications
 include_examples = True            # Inclure exemples pratiques",,,,,,,,67bdbb608fac2cb4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,yz3v2xhzft,markdown,fr,ac5a1198eb931bae,"## Setup de l'environnement
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,yz3v2xhzft,markdown,fr,ac5a1198eb931bae,"## Setup de l'environnement
 
 Chargeons les dependances, configurons l'API OpenRouter pour acceder a GPT-5, et preparons les fonctions utilitaires pour le traitement d'images.","## Environment setup
 
 Let us load the dependencies, configure the OpenRouter API to access GPT-5, and prepare the utility functions for image processing.",,,,,"## Настройка окружения
 
 Загрузим зависимости, настроим API OpenRouter для доступа к GPT-5 и подготовим вспомогательные функции для обработки изображений.",,ac5a1198eb931bae,88236226c04a8de4,,,,,b2617542436c6e0d,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,e7d160d7,code,fr,98c192db6e0a735e,"# Verification des dependances externes
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,e7d160d7,code,fr,98c192db6e0a735e,"# Verification des dependances externes
 import importlib
 
 _DEPS_STATUS = {}
@@ -1402,7 +1402,7 @@ print(f""GPT-5 Multimodal - Analyse et Generation d'Images"")
 print(f""{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""Mode: {notebook_mode}, Analyse: {analysis_mode}, Niveau: {educational_level}"")
 print(f""Langue: {language}, Max tokens: {max_tokens}"")",,,,,,,,98c192db6e0a735e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,on4ridys1z,markdown,fr,72d2ca931c17b6db,"L'environnement est initialise. La cellule suivante configure l'acces a l'API OpenRouter et verifie que le modèle GPT-5 est disponible pour les requêtes multimodales.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,on4ridys1z,markdown,fr,72d2ca931c17b6db,"L'environnement est initialise. La cellule suivante configure l'acces a l'API OpenRouter et verifie que le modèle GPT-5 est disponible pour les requêtes multimodales.
 
 
 ### Lecture du résultat — initialisation de l'environnement
@@ -1423,7 +1423,7 @@ The next block loads the user configuration from `.env` (key `OPENROUTER_API_KEY
 Предыдущая ячейка подтверждает, что четыре критические зависимости разрешены на хост-машине: **Pillow** (base64-кодирование изображений), **requests** (POST `/chat/completions` к OpenRouter), **matplotlib** (опциональная локальная визуализация изображений) и **python-dotenv** (загрузка файла `.env`). Сообщение `Toutes les dependances sont disponibles` — необходимое условие для мультимодального пайплайна: без него вызов GPT-5 поднял бы `ImportError` в момент base64-кодирования, а не в момент HTTP-запроса.
 
 Следующий блок загружает пользовательскую конфигурацию из `.env` (ключ `OPENROUTER_API_KEY`, base URL, дополнительные переменные). Итоговый вывод суммирует параметры ноутбука: `Mode: interactive, Analyse: detailed, Niveau: university, Langue: francais, Max tokens: 4000`. Именно эти значения следующие ячейки передают в качестве аргументов `analyze_image_with_gpt5()` — любое изменение параметра в ячейке 1 отражается здесь без повторного запуска остальной части ноутбука.",,72d2ca931c17b6db,b98aab15f10e17a9,,,,,616293512c23182b,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,6005d149,code,fr,200eedfda142d11e,"# Configuration API OpenRouter pour GPT-5
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,6005d149,code,fr,200eedfda142d11e,"# Configuration API OpenRouter pour GPT-5
 print(""\n🔑 CONFIGURATION GPT-5 MULTIMODAL"")
 print(""="" * 42)
 
@@ -1480,7 +1480,7 @@ print(f""\n🎯 Modèle sélectionné: {model_name}"")
 print(f""⚙️  Paramètres: Temperature={temperature}, Max tokens={max_tokens}"")
 print(f""📊 Mode d'analyse: {analysis_mode}"")
 ",,,,,,,,200eedfda142d11e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,c9dx4xmi4ka,markdown,fr,20e85c058a62aa6c,"L'API est configuree et la connexion validee. La cellule suivante définit les fonctions d'analyse multimodale qui encapsulent les appels a GPT-5 avec encodage des images en base64.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,c9dx4xmi4ka,markdown,fr,20e85c058a62aa6c,"L'API est configuree et la connexion validee. La cellule suivante définit les fonctions d'analyse multimodale qui encapsulent les appels a GPT-5 avec encodage des images en base64.
 
 
 ### Lecture du résultat — connexion à OpenRouter
@@ -1501,7 +1501,7 @@ Each `Contexte: N tokens` line of the output gives the model's window, and it is
 Предыдущая ячейка выполнила `GET /models` на настроенной точке входа OpenRouter. Ответ `HTTP/1.1 200 OK` подтверждает, что API-ключ действителен и шлюз распознаёт учётную запись. Извлечение `gpt5_models` фильтрует 26 моделей, чей идентификатор содержит `gpt-5` — это самый заметный разрыв между официальной номенклатурой (OpenAI публикует `gpt-5`, `gpt-5-mini`, `gpt-5-pro` и т.д.) и номенклатурой шлюза (каждый провайдер появляется со своим префиксом: `openai/gpt-5`, `openai/gpt-5.5-pro`, `openai/gpt-5.4-image-2`, `openai/gpt-5.3-codex`…). Этот таксономический взрыв — следствие стратегии OpenRouter: выставлять по одному идентификатору на каждую пару `(провайдер, вариант)`.
 
 Строка `Contexte: 400000 tokens` (модель `gpt-5`) напоминает, что окно контекста составляет 400K токенов — сообщение с изображением плюс длинный промпт мультимодального анализа помещаются без переполнения. Для сравнения: `gpt-5.5-pro` и `gpt-5.4-pro` поднимаются до 1 050 000 токенов, то есть в 2.6 раза больше, что открывает путь к многоходовым сценариям, где предварительный анализ вспоминается в каждом следующем вопросе.",,20e85c058a62aa6c,d2077423c422d2f1,,,,,3d844f865c78df9f,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ec1512a5,code,fr,33a4d8cf7e230a88,"# Fonctions utilitaires pour traitement d'images
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,ec1512a5,code,fr,33a4d8cf7e230a88,"# Fonctions utilitaires pour traitement d'images
 def encode_image_base64(image_path: Union[str, Path]) -> str:
     """"""
     Encode une image locale en base64 pour GPT-5.
@@ -1583,7 +1583,7 @@ def prepare_image_for_gpt5(image_source: Union[str, Path]) -> Dict[str, str]:
     raise ValueError(f""Format d'image non supporté: {type(image_source)}"")
 
 print(""✅ Fonctions utilitaires images prêtes"")",,,,,,,,33a4d8cf7e230a88,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9un0u6qzrtv,markdown,fr,d803ed064e622f4f,"### Fonction d'analyse et images de demonstration
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,9un0u6qzrtv,markdown,fr,d803ed064e622f4f,"### Fonction d'analyse et images de demonstration
 
 La cellule suivante définit la fonction principale `analyze_image_with_gpt5()` qui encode une image en base64 et l'envoie a l'API multimodale. On prepare ensuite un ensemble d'images de test.
 
@@ -1610,7 +1610,7 @@ The `print('✅ Fonctions utilitaires images prêtes')` is a loading signal, not
 Предыдущая ячейка предоставляет три вспомогательные функции, образующие пайплайн кодирования: `encode_image_base64()` (локальное чтение + base64-кодирование), `download_and_encode_image()` (HTTP GET + кодирование для удалённых URL) и `prepare_image_for_gpt5()` (диспетчер, выбирающий между прямым URL и base64 по префиксу). Единообразный возврат — это dict `{type: image_url, image_url: {url: ...}}`, соответствующий спецификации OpenAI мультимодального поля `content` — именно этот формат `analyze_image_with_gpt5()` затем передаст в массив `messages`.
 
 `print('✅ Fonctions utilitaires images prêtes')` — это сигнал загрузки, а не тест выполнения. Чтобы проверить, что пайплайн действительно работает, нужно перейти к ячейке анализа на конкретном изображении — функция `prepare_image_for_gpt5` валидируется только в этот момент, и сбой (недоступный URL, ненайденный файл, неподдерживаемый формат) поднимает типизированную `ValueError` или `FileNotFoundError`.",,d803ed064e622f4f,ee3635d904f5290e,,,,,e643461d691fc34b,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,c95a0959,code,fr,add01a9d7ba21508,"# Fonction principale d'analyse d'image avec GPT-5
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,c95a0959,code,fr,add01a9d7ba21508,"# Fonction principale d'analyse d'image avec GPT-5
 def analyze_image_with_gpt5(image_source: Union[str, Path], 
                            prompt: str = None,
                            analysis_type: str = ""detailed"") -> Dict[str, Any]:
@@ -1754,7 +1754,7 @@ Adapte ton vocabulaire au niveau {educational_level}.""""""
         }
 
 print(""✅ Fonction d'analyse GPT-5 prête"")",,,,,,,,add01a9d7ba21508,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,r56pmixdacs,markdown,fr,5c42f373ca5f82be,"Les exemples d'images et les prompts pedagogiques sont définis. La cellule suivante lance l'analyse de demonstration en testant les trois modes (quick, detailed, educational) sur une image concrete.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,r56pmixdacs,markdown,fr,5c42f373ca5f82be,"Les exemples d'images et les prompts pedagogiques sont définis. La cellule suivante lance l'analyse de demonstration en testant les trois modes (quick, detailed, educational) sur une image concrete.
 
 
 ### Lecture du résultat — fonction `analyze_image_with_gpt5`
@@ -1775,7 +1775,7 @@ The HTTP call block measures the response time (`response_time`) and retrieves `
 Предыдущая ячейка собирает три предустановленных промпта (`quick`, `detailed`, `educational`), выбираемых аргументом `analysis_type`. Промпт `educational` — самый структурирующий: он задаёт роль, образовательный уровень (читается из `educational_level`), язык (`language`) и формат вывода с пятью явными разделами (`Description accessible`, `Éléments à observer`, `Contexte éducatif`, `Questions pour réflexion`, `Connexions interdisciplinaires`). Именно эта жёсткость промпта гарантирует воспроизводимость анализа между двумя сессиями.
 
 Блок HTTP-вызова измеряет время ответа (`response_time`) и извлекает `usage`, содержащий `prompt_tokens`, `completion_tokens` и `total_tokens`. Поле `reasoning_tokens` (присутствующее в выводе GPT-5 image-generation) отражает токены, израсходованные на фазу внутреннего рассуждения, — это стоимость, невидимая в одном лишь `completion_tokens`, но она тарифицируется. Следующая ячейка использует эту телеметрию, чтобы сравнить три режима на одном изображении.",,5c42f373ca5f82be,6663d54813fb5e4c,,,,,a20a4e397551206c,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,66a1b41e,code,fr,f4c5761ce8cf97ca,"# Exemples d'images pour démonstration
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,66a1b41e,code,fr,f4c5761ce8cf97ca,"# Exemples d'images pour démonstration
 print(""\n🖼️  EXEMPLES D'ANALYSE GPT-5"")
 print(""="" * 40)
 
@@ -1820,7 +1820,7 @@ print(f""• Posez des questions spécifiques"")
 print(f""• Exploitez le contexte éducatif"")
 print(f""• Combinez analyse textuelle et visuelle"")
 print(f""• Adaptez le niveau de complexité"")",,,,,,,,f4c5761ce8cf97ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,vkgiro82pk7,markdown,fr,04758d06016ab082,"### Test : analyse d'une image de demonstration
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,vkgiro82pk7,markdown,fr,04758d06016ab082,"### Test : analyse d'une image de demonstration
 
 Testons la fonction d'analyse sur une image concrete. GPT-5 va decrire le contenu, identifier les éléments visuels, et fournir une analyse structuree.
 
@@ -1844,7 +1844,7 @@ Let us test the analysis function on a concrete image. GPT-5 will describe the c
 1. Время ответа не линейно по длине вывода: переход от 942 к 2256 токенам (×2.4) переводит время с 7.76s на 25.73s (×3.3). Латентность определяется фазой рассуждения (`reasoning_tokens`: 192 → 320 → 704), а не генерацией.
 2. Стоимость upstream (со стороны провайдера инференса) приблизительно следует общим токенам; промпт `educational` самый дорогой, потому что он внедряет структуру + формат вывода во вход.
 3. Для использования `alt-text` достаточно режима `quick` — 206 символов после trim попадает в диапазон WCAG (<125). Для структурированного педагогического использования режим `educational` даёт вдобавок наводящие вопросы для ученика.",,04758d06016ab082,e7e95b2db5cbe804,,,,,9764119d4bfbacfe,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,lecture-cmp-modes-guide,markdown,fr,12300a81ef57555b,"### Lecture du résultat — comparaison quick/detailed/educational
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,lecture-cmp-modes-guide,markdown,fr,12300a81ef57555b,"### Lecture du résultat — comparaison quick/detailed/educational
 
 La cellule précédente lance trois appels successifs sur l'image `Architecture Historique` (en fait la Gran Vía à Madrid — première surprise factuelle à noter). La sortie se termine par une table `📊 COMPARAISON DES MODES D'ANALYSE` imprimée par le code lui-même : caractères, tokens et temps y sont récapitulés pour les trois modes — relisez-la directement dans la sortie, elle reflète l'exécution que vous venez de lancer (ses valeurs changent à chaque ré-exécution).
 
@@ -1859,7 +1859,7 @@ The previous cell launches three successive calls on the `Architecture Historiqu
 1. The response time is not linear in output length: compare the ratio of the `total_tokens` and that of the times — latency is dominated by the reasoning phase (`reasoning_tokens`, in the `completion_tokens_details` of each block), not by generation itself.
 2. The upstream cost (`upstream_inference_cost` in the token details) roughly follows the total tokens; the `educational` prompt is the most expensive because it injects structure + output format into the input.
 3. For an `alt-text` use, it is the specialized prompt of the next section that guarantees the constraint (≤ 125 characters imposed in the prompt) — the `quick` output is concise, but it is the prompt that holds the length promise, not the mere brevity of the mode. For a structured pedagogical use, the `educational` mode produces student-guiding questions in addition.",,,,,,,12300a81ef57555b,67f66cfbed0192f6,,,,,,,12300a81ef57555b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,368e963b,code,fr,d4e94d8c40e61cf0,"# Analyse d'une image de démonstration
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,368e963b,code,fr,d4e94d8c40e61cf0,"# Analyse d'une image de démonstration
 print(""\n🚀 ANALYSE DE DÉMONSTRATION - GPT-5"")
 print(""="" * 50)
 
@@ -1916,7 +1916,7 @@ if analysis_results:
     print(f""• Mode 'educational': Adapté à l'enseignement avec questions"")
 else:
     print(f""\n⚠️  Aucune analyse réussie - vérifiez votre configuration"")",,,,,,,,d4e94d8c40e61cf0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ea7cd836,markdown,fr,5d240f999104a17f,"### Exemple guidé : un prompt d'analyse personnalisé pour le domaine Art
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,ea7cd836,markdown,fr,5d240f999104a17f,"### Exemple guidé : un prompt d'analyse personnalisé pour le domaine Art
 
 *Contribution d'un groupe d'étudiants EPF (TP2, PR #20551), intégrée comme exemple guidé.*
 
@@ -1948,7 +1948,7 @@ The three analysis modes (quick, detailed, educational) cover general uses, but 
 4. Протестируйте ваш промпт на демонстрационном изображении и оцените качество ответа
 
 **Подсказка** : Хороший промпт для анализа определяет роль (""Ты эксперт-преподаватель по...""), ожидаемый формат вывода (разделы, пункты) и уровень детализации. Ориентируйтесь на режим ""educational"".",,5d240f999104a17f,fd0113ca16ddd9ef,,,,,92893da34527924a,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b87e983b,code,fr,0d807edc1de50e29,"# Exemple guide : un prompt d'analyse personnalise pour le domaine Art
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b87e983b,code,fr,0d807edc1de50e29,"# Exemple guide : un prompt d'analyse personnalise pour le domaine Art
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
 # Etape 1 : Choix du domaine
@@ -2019,7 +2019,7 @@ if texte:
     for q in questions:
         print("" •"", q)
 ",,,,,,,,0d807edc1de50e29,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,jxwlftsm05,markdown,fr,1e13c6d0b9cf7aef,"### Applications pratiques : accessibilite et pedagogie
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,jxwlftsm05,markdown,fr,1e13c6d0b9cf7aef,"### Applications pratiques : accessibilite et pedagogie
 
 GPT-5 excelle dans deux cas d'usage concrets :
 - **Alt text** : generer automatiquement des descriptions d'accessibilite pour les images web
@@ -2052,7 +2052,7 @@ GPT-5 отлично справляется с двумя конкретными
 Предыдущая ячейка вызывает `analyze_image_with_gpt5()` со специализированным промптом доступности, налагающим три ограничения: (1) вывод ≤ 125 символов, (2) фактический и объективный тон, (3) без дополнительного форматирования. Полученный вывод — *Vue aérienne de la Gran Vía à Madrid au coucher du soleil, dôme du Metropolis, immeubles illuminés et circulation.* — **114 символов** (ниже порога 125), что подтверждает следующий за ним `print`.
 
 **Почему эта длина имеет значение**: WCAG 2.1 (критерий 1.1.1 *Non-text Content*) требует текстовой альтернативы, передающей **тот же смысл**, что и изображение, — при этом норма **не устанавливает никакой длины**. Порог в 125 символов — это **соглашение, принятое в этом тетради** и записанное в промпт, а не нормативное значение: за этой границей alt text становится слишком длинным для быстрого чтения; ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,1e13c6d0b9cf7aef,ad4c63031003b6fe,,,,,f4c1226adb628e44,,1e13c6d0b9cf7aef,,,,,1e13c6d0b9cf7aef,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a01bfa80,code,fr,fafb03e3949280b8,"# Génération de descriptions d'accessibilité (Alt text)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,a01bfa80,code,fr,fafb03e3949280b8,"# Génération de descriptions d'accessibilité (Alt text)
 if generate_alt_text and analysis_results:
     print(""\n♿ GÉNÉRATION DE DESCRIPTIONS D'ACCESSIBILITÉ"")
     print(""="" * 55)
@@ -2090,7 +2090,7 @@ Format : Fournis UNIQUEMENT la description, sans formatage supplémentaire."""""
         print(f""❌ Erreur génération alt text: {alt_result['error']}"")
 else:
     print(f""\n⏭️  Génération alt text désactivée ou pas d'analyse disponible"")",,,,,,,,fafb03e3949280b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9bf10ff2,markdown,fr,defbf0ae38334e91,"### Exemple guidé : descriptions d'accessibilité multi-niveaux
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,9bf10ff2,markdown,fr,defbf0ae38334e91,"### Exemple guidé : descriptions d'accessibilité multi-niveaux
 
 *Contribution d'un groupe d'étudiants EPF (TP2, PR #20551), intégrée comme exemple guidé.*
 
@@ -2122,7 +2122,7 @@ Web accessibility requires alternative texts (alt text) adapted to the context. 
 5. Проверьте, что каждое описание является фактическим и объективным
 
 **Подсказка** : Составьте специальные промпты для каждого уровня описания. Явно укажите максимальную длину и контекст использования в промпте.",,defbf0ae38334e91,7d88d83dfcf10c8b,,,,,12029e1026361450,,defbf0ae38334e91,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,01e1a458,code,fr,8c2207deb8e7dae8,"# Exemple guide : descriptions d'accessibilite multi-niveaux
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,01e1a458,code,fr,8c2207deb8e7dae8,"# Exemple guide : descriptions d'accessibilite multi-niveaux
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
 # Etape 1 : Choix de l'image
@@ -2157,7 +2157,7 @@ print(""Texte court (<= 125 chars):"", resultats.get(""court"", ""Non généré"
 print(""Description détaillée (200-400 chars):"", resultats.get(""detaille"", ""Non généré""))
 print(""Résumé pédagogique:"", resultats.get(""pedago"", ""Non généré""))
 ",,,,,,,,8c2207deb8e7dae8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,htbu4le2fb,markdown,fr,9b582ea7a96bbff2,"Les analyses de demonstration sont completes. Le mode interactif ci-dessous permet d'experimenter avec vos propres images et prompts d'analyse personnalises.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,htbu4le2fb,markdown,fr,9b582ea7a96bbff2,"Les analyses de demonstration sont completes. Le mode interactif ci-dessous permet d'experimenter avec vos propres images et prompts d'analyse personnalises.
 
 
 ### Lecture du résultat — mode batch vs interactif
@@ -2178,7 +2178,7 @@ The next cell moves on to the application use cases — this is the bridge betwe
 Предыдущая ячейка пытается вызвать `input()`, чтобы получить URL или локальный путь. При выполнении через Papermill / в пакетном режиме стандартный ввод недоступен: `except EOFError` аккуратно перехватывает и переключается на сообщение `⏭️  Mode interactif non disponible (exécution automatisée)`. Этот шаблон — конвенция репозитория для ноутбуков, сочетающих интерактивное и пакетное использование: ячейка остаётся работоспособной в обоих режимах без `raise NotImplementedError` (запрещено правилом C.1 — `pass`/`print` являются корректными заглушками).
 
 Следующая ячейка переходит к прикладным сценариям использования — это мост между технической демонстрацией и бизнес-применением. Перечисленные 5 доменов (История, Науки, География, Искусство, Медицина) охватывают дисциплины, где мультимодальный анализ даёт наибольшее преимущество перед чисто текстовой моделью.",,9b582ea7a96bbff2,7864ee92353819ce,,,,,c4af4d006ee4a7e5,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,0bc5a8f8,code,fr,5bb341f4638450f9,"# Mode interactif - Analyse d'image personnalisée
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,0bc5a8f8,code,fr,5bb341f4638450f9,"# Mode interactif - Analyse d'image personnalisée
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n🎨 MODE INTERACTIF - ANALYSE PERSONNALISÉE"")
     print(""="" * 55)
@@ -2257,7 +2257,7 @@ if notebook_mode == ""interactive"" and not skip_widgets:
 else:
     print(""\n🤖 Mode batch - Interface interactive désactivée"")
     print(""💡 Pour mode interactif: notebook_mode = 'interactive'"")",,,,,,,,5bb341f4638450f9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,gkk2vqpxov,markdown,fr,97a6bbacd3d789b8,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,gkk2vqpxov,markdown,fr,97a6bbacd3d789b8,"Le mode interactif etant traite, la cellule suivante presente les principaux cas d'usage applicatifs de l'analyse visuelle par GPT-5 dans un contexte professionnel et pedagogique.
 
 
 ### Lecture du résultat — matrice domaine × prompt
@@ -2278,7 +2278,7 @@ The output contains no visible GPT-5 output — the cell only *announced* the us
 Предыдущая ячейка каталогизирует пять доменов применения (История, Науки, География, Искусство и культура, Медицина), каждому из которых соответствует предустановленный `prompt_template`, который можно передать напрямую в `analyze_image_with_gpt5()`. Каждый шаблон задаёт дисциплинарную роль, формат вывода и тон, адаптированный к домену, — например, промпт `Médecine` задаёт *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
 Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,97a6bbacd3d789b8,6473fa1e2834a273,,,,,11d0972728d5abb5,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,03146442,code,fr,583bd43216b1385e,"# Cas d'usage pédagogiques avec GPT-5
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,03146442,code,fr,583bd43216b1385e,"# Cas d'usage pédagogiques avec GPT-5
 print(""\n🎓 CAS D'USAGE PÉDAGOGIQUES GPT-5"")
 print(""="" * 45)
 
@@ -2335,7 +2335,7 @@ print(f""2. Analyse GPT-5 avec prompt éducatif"")
 print(f""3. Génération de questions pour les étudiants"")
 print(f""4. Discussion interactive basée sur l'analyse"")
 print(f""5. Évaluation de la compréhension"")",,,,,,,,583bd43216b1385e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a07f0ce4,markdown,fr,7e238d99efa17b7d,"## 🎯 Résumé et Bonnes Pratiques
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,a07f0ce4,markdown,fr,7e238d99efa17b7d,"## 🎯 Résumé et Bonnes Pratiques
 
 ### ✅ Ce que vous avez appris
 
@@ -2497,7 +2497,7 @@ The `print('Cas d'usage pédagogiques')` above is a **static catalog**, not an e
 1. API OpenRouter предоставляет широкое семейство моделей GPT-5 (перечень приведён в выводе подключения) — номенклатура шире официальной номенклатуры OpenAI, и выбор делается по компромиссу `контекст × стоимость × возможности` (зрение, tools и т.д.).
 2. Три режима анализа (quick/detailed/educational) не взаимозаменяемы: quick оптимизирован под короткий alt-text, educational даёт наводящие вопросы для ученика — это единственный режим, дающий готовый педагогический результат.
 3. Мультимодальный пайплайн (encode → POST → parse) одинаков для любого изображения — сложность живёт в промпте, а не в транспорте.",,7e238d99efa17b7d,544a0c89c953c0b7,,,,,3075d36d99503666,,7e238d99efa17b7d,,,,,7e238d99efa17b7d,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,2c703bc7de7a4b02,"***
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,ubm6sfxypqb,markdown,fr,2c703bc7de7a4b02,"***
 
 ## Exemples guidés : trois gestes mesurés
 
@@ -2526,7 +2526,7 @@ Three guided examples from a student contribution close the « analysis » part 
 - Подсказка 1: Используйте функцию `analyze_image_with_gpt5()` с параметром `prompt` для вашего персонализированного prompt
 - Подсказка 2: Режим ""educational"" автоматически генерирует 3 вопроса для размышления для студентов
 - Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,2c703bc7de7a4b02,a92d4639ec2c4d76,,,,,6b20b97c4063d231,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,e9d75f2b8f0e0ae6,"# Exemple guide : comparateur d'images -- deux images du meme domaine cote a cote
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,tvhxa6pat2h,code,fr,e9d75f2b8f0e0ae6,"# Exemple guide : comparateur d'images -- deux images du meme domaine cote a cote
 # (contribution etudiante, PR #23305 -- github.com/Perr1neF0)
 import pprint, time
 
@@ -2585,7 +2585,7 @@ Produis exactement ces trois sections :
 # 4. Executer et afficher
 resultat_comparaison = compare_images(image_a, image_b, prompt_analyse)
 pprint.pprint(resultat_comparaison, width=100)",,,,,,,,e9d75f2b8f0e0ae6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,cuqkx7t59ob,markdown,fr,93e5b853cd3d92a9,"### Critères de succès
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,cuqkx7t59ob,markdown,fr,93e5b853cd3d92a9,"### Critères de succès
 
 **Exercice 1 — reproductibilité**
 - [ ] Trois analyses identiques lancées, et leurs similarités deux à deux mesurées (pas estimées), présentées comme **descriptives**
@@ -2640,7 +2640,7 @@ For advanced students:
 ### Reading the result — the exercises in synthesis
 
 The three guided examples of the previous section each show a measured gesture: comparing two wordings at constant format, adapting an alt text to its context under a length constraint, crossing two analyses with an identical prompt. The three exercises that complete them address what these gestures do not yet measure: the **stability** of a repeated response, the **fidelity** of an alt text to the visible elements, and the **structuring** of a score into validatable JSON. The notebook runs end to end as long as the exercises remain stubs.",,,,,,,93e5b853cd3d92a9,f6be807159e14745,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,c7eec602,markdown,fr,b4d84fb200146d2f,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-2-GPT-5-Image-Generation.ipynb) | [Suivant >>](01-4-Forge-SD-XL-Turbo.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,c7eec602,markdown,fr,b4d84fb200146d2f,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-2-Generation-Image-API.ipynb) | [Suivant >>](01-4-Forge-SD-XL-Turbo.ipynb)
 
 # Opérations de Base sur les Images
 
@@ -4268,7 +4268,7 @@ Les trois exemples guidés et les quatre exercices proposent une mise en pratiqu
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,7aee4370,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b2a,markdown,fr,a23ad93d73a19c8b,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-3-Basic-Image-Operations.ipynb) | [Suivant >>](01-5-Qwen-Image-Edit.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b2a,markdown,fr,a23ad93d73a19c8b,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-3-Basic-Image-Operations.ipynb) | [Suivant >>](01-5-Edition-Image-Prompt.ipynb)
 
 # Notebook: Stable Diffusion Forge - SD XL Turbo
 
@@ -5216,7 +5216,7 @@ image_hq = generate_image_forge(
 ### 🔗 Liens Utiles
 
 - **Documentation API Complète**: [`GUIDE-APIS-ETUDIANTS.md`](../../../../docs/archive/suivis/genai-image/GUIDE-APIS-ETUDIANTS.md)
-- **Notebook Qwen (Édition Images)**: [`01-5-Qwen-Image-Edit.ipynb`](01-5-Qwen-Image-Edit.ipynb)
+- **Notebook Qwen (Édition Images)**: [`01-5-Edition-Image-Prompt.ipynb`](01-5-Edition-Image-Prompt.ipynb)
 - **Status API Temps Réel**: `https://turbo.stable-diffusion-webui-forge.myia.io/sdapi/v1/progress`",,,,,,,,1153651314f9ec87,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,8f3c9b33,markdown,fr,249cdb76c8dad72b,"### Exercice 3 : Generation libre - synthese des techniques
 
@@ -5315,7 +5315,7 @@ Pour toute question ou problème technique :
 - **API Status**: Vérifiez l'accessibilité à `https://turbo.stable-diffusion-webui-forge.myia.io`
 - **Documentation Projet**: Consultez le README principal du projet CoursIA
 - **Issues GitHub**: Signalez bugs/améliorations sur le dépôt du projet",,,,,,,,51b989930a9834af,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,79be9a9e,markdown,fr,37f526941ef89a37,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-4-Forge-SD-XL-Turbo.ipynb) | [Suivant >>](01-5b-Qwen-Image-Edit-2509.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,79be9a9e,markdown,fr,37f526941ef89a37,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-4-Forge-SD-XL-Turbo.ipynb) | [Suivant >>](01-5b-Edition-Image-Prompt-Iterations.ipynb)
 
 # Notebook: Qwen Image-Edit 2.5 - API ComfyUI
 
@@ -5366,7 +5366,7 @@ pip install requests pillow matplotlib
 **Temps estimé**: 90-120 minutes
 **Ancrage savant.** Qwen-Image-Edit est l'un des modèles d'edition d'image de la famille Qwen-Image, dont l'architecture (VAE 16 canaux, CFG = 1.0 gere via CFGNorm, scheduler *beta*, ModelSamplingAuraFlow) est detaillee dans le **Qwen-Image Technical Report** [QwenLM, aout 2025, arXiv:2508.02324]. Le modèle repose sur la base vision-langage Qwen2.5-VL [Bai et al. 2025, arXiv:2502.13923].
 ",,,,,,,,37f526941ef89a37,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ikycba75qmf,markdown,fr,9f7a08b9c6f2126c,"## ⚙️ Vérification de l'Environnement
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,ikycba75qmf,markdown,fr,9f7a08b9c6f2126c,"## ⚙️ Vérification de l'Environnement
 
 **Avant d'exécuter ce notebook**, assurez-vous que tous les packages Python requis sont installés :
 
@@ -5396,7 +5396,7 @@ import PIL
 from PIL import Image
 print(f""✅ PIL {PIL.__version__} installé"")
 ```",,,,,,,,9f7a08b9c6f2126c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,244bd967,code,fr,927efa2d06cebe53,"# Verification des dependances externes
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,244bd967,code,fr,927efa2d06cebe53,"# Verification des dependances externes
 import importlib
 
 _DEPS_STATUS = {}
@@ -5504,7 +5504,7 @@ else:
     print(f""API: {API_BASE_URL} (LOCAL_MODE={LOCAL_MODE})"")
     print(f""Client ID: {CLIENT_ID}"")
     print(""Token: configure"" if len(COMFYUI_API_TOKEN) > 20 else f""Token: (court)"")",,,,,,,,927efa2d06cebe53,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,5743a6a4,markdown,fr,25b388b84fce2d7e,"## 🏗️ Architecture ComfyUI: Workflows JSON
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,5743a6a4,markdown,fr,25b388b84fce2d7e,"## 🏗️ Architecture ComfyUI: Workflows JSON
 
 ### Différence fondamentale avec Forge
 
@@ -5585,7 +5585,7 @@ Après chargement, le UNET passe par **ModelSamplingAuraFlow** (shift=3.0) puis 
 Le prompt est encode avec **TextEncodeQwenImageEdit** (encodeur natif Qwen, pas CLIPTextEncode standard), et le conditioning negatif utilise **ConditioningZeroOut** (pas un second encodeur texte).
 
 L'espace latent utilise **EmptySD3LatentImage** (16 canaux) au lieu de EmptyLatentImage (4 canaux SDXL).",,,,,,,,25b388b84fce2d7e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,851cb759,markdown,fr,ae4d15bad815cc80,"### 🔧 Visualisation Architecture Workflow ComfyUI (Phase 29 Qwen)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,851cb759,markdown,fr,ae4d15bad815cc80,"### 🔧 Visualisation Architecture Workflow ComfyUI (Phase 29 Qwen)
 
 **Diagramme ASCII du workflow Qwen avec loaders separes**:
 
@@ -5674,7 +5674,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,851cb759,
 - `[""1"", 0]` = Output 0 (VAE) du node 1 (VAELoader)
 - `[""2"", 0]` = Output 0 (CLIP) du node 2 (CLIPLoader)
 - `[""5"", 0]` = Output 0 (model) du node 5 (CFGNorm, après ModelSamplingAuraFlow)",,,,,,,,ae4d15bad815cc80,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,9wenph29,markdown,fr,960c36d20c08feff,"Le diagramme ci-dessous rend le **workflow ComfyUI Phase 29** sous forme de graphe de
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,9wenph29,markdown,fr,960c36d20c08feff,"Le diagramme ci-dessous rend le **workflow ComfyUI Phase 29** sous forme de graphe de
 noeuds (au lieu du schema ASCII ci-dessus) : trois loaders separes alimentent
 l'echantillonneur, et le VAE sert a la fois a l'encodage (via le node d'edition) et au
 decodage final.
@@ -5710,7 +5710,7 @@ flowchart TD
 > `ConditioningZeroOut` fournit le **negatif**. Le **KSampler** (`cfg=1.0`, scheduler
 > `beta`, `euler`) debruite, puis le **VAE Decode** restitue l'image enregistree.
 ",,,,,,,,960c36d20c08feff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,85a8ef79,code,fr,155259d6d6cc0305,"class ComfyUIClient:
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,85a8ef79,code,fr,155259d6d6cc0305,"class ComfyUIClient:
     """"""Client pédagogique API ComfyUI pour Qwen avec authentification Bearer""""""
     
     def __init__(self, base_url=API_BASE_URL, client_id=CLIENT_ID, auth_token=None,
@@ -5875,7 +5875,7 @@ if COMFYUI_API_TOKEN:
     print(""✅ ComfyUIClient prêt avec authentification"")
 else:
     print(""⚠️  ComfyUIClient prêt en mode sans authentification"")",,,,,,,,155259d6d6cc0305,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,de517444,markdown,fr,561a6819f2b0422a,"## 🚀 Workflow Minimal: ""Hello World""
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,de517444,markdown,fr,561a6819f2b0422a,"## 🚀 Workflow Minimal: ""Hello World""
 
 ### Objectif
 
@@ -5910,7 +5910,7 @@ Qwen Image Edit utilise des **loaders séparés** (VAE, CLIP, UNET) au lieu d'un
 | **shift** | 3.0 | Paramètre ModelSamplingAuraFlow |
 
 **Temps attendu**: 5-10 secondes (512x512)",,,,,,,,561a6819f2b0422a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,f26afacc,code,fr,1c50bd9fb39c3329,"# ========================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,f26afacc,code,fr,1c50bd9fb39c3329,"# ========================================
 # WORKFLOW HELLO WORLD: Text-to-Image minimal (Phase 29)
 # ========================================
 
@@ -5989,7 +5989,7 @@ print(""Workflow 'Hello World' cree (Phase 29)"")
 print(f""   Nodes: {len(workflow_hello)}"")
 print(f""   Prompt: '{workflow_hello['6']['inputs']['prompt']}'"")
 print(f""   Steps: {workflow_hello['9']['inputs']['steps']}, Seed: {workflow_hello['9']['inputs']['seed']}"")",,,,,,,,1c50bd9fb39c3329,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,a20b3bf0,code,fr,5a0da39a68a2510e,"# Execution avec gestion derreur pour mode batch
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,a20b3bf0,code,fr,5a0da39a68a2510e,"# Execution avec gestion derreur pour mode batch
 api_available = False
 try:
     print(""Lancement generation..."")
@@ -6009,7 +6009,7 @@ if not api_available:
     print(""Resume du workflow (non execute):"")
     print(f""   - Modele: Qwen Image Edit 2509"")
 ",,,,,,,,5a0da39a68a2510e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,347358b3,markdown,fr,941aba93fa564b17,"### Exercice 1 : Validation et diagnostic de workflow
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,347358b3,markdown,fr,941aba93fa564b17,"### Exercice 1 : Validation et diagnostic de workflow
 
 L'objectif de cet exercice est d'ecrire une fonction qui valide un workflow ComfyUI avant de l'envoyer a l'API, en detectant les erreurs de configuration courantes.
 
@@ -6027,7 +6027,7 @@ L'objectif de cet exercice est d'ecrire une fonction qui valide un workflow Comf
 - `# Étape 1` : Verifiez que chaque node a les cles obligatoires
 - `# Étape 2` : Verifiez que les connexions entre nodes sont valides
 - `# Étape 3` : Verifiez les paramètres critiques (cfg=1.0, scheduler=""beta"")",,,,,,,,941aba93fa564b17,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,10e4ed96,code,fr,0bd208cec79af617,"# Exercice 1 : Validation et diagnostic de workflow
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,10e4ed96,code,fr,0bd208cec79af617,"# Exercice 1 : Validation et diagnostic de workflow
 
 def validate_workflow(workflow: dict) -> list:
     """"""Valide la structure d'un workflow ComfyUI et retourne les erreurs trouvees.
@@ -6077,8 +6077,8 @@ else:
 workflow_buggy = None  # TODO etudiant : construisez un workflow avec des erreurs
 
 print(""Exercice a completer"")",,,,,,,,0bd208cec79af617,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,58j7qubak5c,markdown,fr,b8a7388bb228f723,Le test de connectivite est effectue. La cellule suivante définit les fonctions de creation de workflows d'edition : edition simple et edition chainee avec raffinement en deux passes KSampler.,,,,,,,,b8a7388bb228f723,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,62d6a7ad,code,fr,9be7dc28feee1898,"# ========================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,58j7qubak5c,markdown,fr,b8a7388bb228f723,Le test de connectivite est effectue. La cellule suivante définit les fonctions de creation de workflows d'edition : edition simple et edition chainee avec raffinement en deux passes KSampler.,,,,,,,,b8a7388bb228f723,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,62d6a7ad,code,fr,9be7dc28feee1898,"# ========================================
 # WORKFLOW REEL 1: Edition Simple Image (Phase 29)
 # ========================================
 
@@ -6321,7 +6321,7 @@ print(f""   KSamplers: 2 (base + raffinement)"")
 # client = ComfyUIClient(""https://qwen-image-edit.myia.io"")
 # result = client.execute_workflow(workflow_simple)
 # client.display_images(result)",,,,,,,,9be7dc28feee1898,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,e75258e1,markdown,fr,a2ed9f009a2e0ea7,"## 🖼️ Édition Images avec Qwen VLM
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,e75258e1,markdown,fr,a2ed9f009a2e0ea7,"## 🖼️ Édition Images avec Qwen VLM
 
 ### Capacités Qwen Vision-Language Model
 
@@ -6357,7 +6357,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,e75258e1,
 5. **KSampler** (denoise < 1.0) → Éditer latent
 6. **VAE Decode** → Convertir latent → pixels
 7. **Save Image** → Sauvegarder résultat",,,,,,,,a2ed9f009a2e0ea7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ba896395,code,fr,d7ad431c76be4661,"def upload_image_to_comfyui(image_source: str) -> str:
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,ba896395,code,fr,d7ad431c76be4661,"def upload_image_to_comfyui(image_source: str) -> str:
     """"""Upload image vers ComfyUI pour édition
     
     Args:
@@ -6404,7 +6404,7 @@ except Exception as e:
     print(f""⚠️ Erreur upload: {e}"")
     print(""💡 Conseil: Vérifier que le service ComfyUI est actif"")
     uploaded_filename = None",,,,,,,,d7ad431c76be4661,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,64a6a3da,markdown,fr,0ac172b06e17bc82,"## 🎨 Workflow Image-to-Image Complet
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,64a6a3da,markdown,fr,0ac172b06e17bc82,"## 🎨 Workflow Image-to-Image Complet
 
 ### Architecture (Phase 29)
 
@@ -6433,7 +6433,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,64a6a3da,
 **Recommandation**: Commencer avec `denoise=0.5` et ajuster selon résultat.
 
 **Rappel Phase 29**: `cfg=1.0` (CFGNorm gere l'amplification), `scheduler=""beta""` (obligatoire).",,,,,,,,0ac172b06e17bc82,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,a747201c,code,fr,0d4256951ee91f49,"# ========================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,a747201c,code,fr,0d4256951ee91f49,"# ========================================
 # WORKFLOW IMAGE-TO-IMAGE: edition chat tigre -> watercolor
 # ========================================
 # Ce workflow prend l'image source (chat tigre) produite par le hello-world
@@ -6503,7 +6503,7 @@ if uploaded_filename:
 else:
     print(""Skip edition: pas d'image source chat tigre"")
 ",,,,,,,,0d4256951ee91f49,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,7e1176e6,markdown,fr,02b39df7ce11be91,"## 🔬 Expérimentation: Comparaison Denoise
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,7e1176e6,markdown,fr,02b39df7ce11be91,"## 🔬 Expérimentation: Comparaison Denoise
 
 ### Objectif Pédagogique
 
@@ -6528,7 +6528,7 @@ denoise_values = [0.2, 0.5, 0.8]
 prompt = ""convert to dramatic black and white, high contrast""
 seed = 42  # Fixe pour comparabilité
 ```",,,,,,,,02b39df7ce11be91,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,84553629,code,fr,92d61b81d27af531,"# Comparaison denoise - mode batch skip si pas dimage
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,84553629,code,fr,92d61b81d27af531,"# Comparaison denoise - mode batch skip si pas dimage
 if ""uploaded_filename"" not in dir() or uploaded_filename is None or uploaded_filename == ""placeholder.png"":
     print(""Skip: test denoise necessite image uploadee (mode interactif)"")
     print(""   Workflow valide - voir cellules precedentes pour architecture"")
@@ -6539,8 +6539,8 @@ else:
     results_denoise = []
     
 ",,,,,,,,92d61b81d27af531,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,fgpme48zvz4,markdown,fr,6b0cfba1e55fc782,La configuration du test d'exploration est prete. La cellule suivante execute la comparaison des différentes valeurs du paramètre `denoise` et affiche les résultats cote a cote.,,,,,,,,6b0cfba1e55fc782,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,dacdbf51,code,fr,698e6926459ffcf8,"# ========================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,fgpme48zvz4,markdown,fr,6b0cfba1e55fc782,La configuration du test d'exploration est prete. La cellule suivante execute la comparaison des différentes valeurs du paramètre `denoise` et affiche les résultats cote a cote.,,,,,,,,6b0cfba1e55fc782,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,dacdbf51,code,fr,698e6926459ffcf8,"# ========================================
 # 🖼️ COMPARAISON AVANT/APRÈS: Side-by-Side
 # ========================================
 
@@ -6698,7 +6698,7 @@ print(""✅ Fonctions comparaison avant/après définies"")
 print(""   - compare_before_after(): Affichage side-by-side + métriques"")
 print(""   - create_difference_map(): Carte visuelle différences"")
 print(""\n💡 Décommentez les exemples ci-dessus pour tester avec vos images"")",,,,,,,,698e6926459ffcf8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,0d4cff52,markdown,fr,07290a2e2b2871e5,"### Exemple guidé (Exercice 2 résolu) : Carte de différences et analyse qualitative
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,0d4cff52,markdown,fr,07290a2e2b2871e5,"### Exemple guidé (Exercice 2 résolu) : Carte de différences et analyse qualitative
 
 Résolu par un étudiant (PR #22599) et conservé ici en exemple guidé. Le protocole : une **référence Text-to-Image générée avec la graine 42**, puis le **même prompt d'édition aquarelle** appliqué à trois forces de `denoise` (0.2, 0.5, 0.8) — seul `denoise` varie, tout le reste est fixé. Les métriques **PSNR / MAE** sont calculées pixel par pixel et validées sur deux cas limites (images identiques, noir/blanc), les **cartes de différences amplifiées x5** localisent les zones modifiées, et l'ensemble est exporté (`metriques.csv`, `configuration.json`).
 
@@ -6706,7 +6706,7 @@ Résolu par un étudiant (PR #22599) et conservé ici en exemple guidé. Le prot
 > Adaptation lors de l'intégration : la référence était réutilisée depuis la démo hello-world alors que la graine venait d'être posée sur le workflow (graine inerte). La référence est désormais **générée** avec la graine, ce qui rend la série reproductible.
 
 La cellule suivante exécute ce protocole de bout en bout ; la lecture du résultat suit.",,,,,,,,07290a2e2b2871e5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,03b10863,code,fr,b8829e86890ca509,"# Exemple guide (Exercice 2 resolu) : Carte de differences et analyse qualitative
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,03b10863,code,fr,b8829e86890ca509,"# Exemple guide (Exercice 2 resolu) : Carte de differences et analyse qualitative
 # Credit : exercice resolu par un etudiant (PR #22599), conserve et adapte en exemple guide.
 # Assistance declaree par l'auteur : code prepare avec ChatGPT ; resultats verifies par le groupe.
 # Adaptation : la reference etait reutilisee depuis la demo hello-world alors que la graine
@@ -6820,7 +6820,7 @@ else:
     )
     print(""\nMAE faible / PSNR eleve : plus de ressemblance pixel par pixel avec la reference."")
     print(""Ces mesures ne suffisent pas a juger la reussite artistique du style aquarelle."")",,,,,,,,b8829e86890ca509,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,a6db2fc7,markdown,fr,c93209694549842d,"## ⚙️ Bonnes Pratiques ComfyUI
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,a6db2fc7,markdown,fr,c93209694549842d,"## ⚙️ Bonnes Pratiques ComfyUI
 
 ### 1. Gestion des Erreurs Courantes
 
@@ -6874,7 +6874,7 @@ result = client.execute_workflow(workflow, verbose=True)
 ```python
 print(json.dumps(result[""outputs""], indent=2))
 ```",,,,,,,,c93209694549842d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,8df49cfb,markdown,fr,c2f80cb75587aeb6,"### Exercice 3 : Workflow d'edition d'image personnel (Architecture Phase 29)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,8df49cfb,markdown,fr,c2f80cb75587aeb6,"### Exercice 3 : Workflow d'edition d'image personnel (Architecture Phase 29)
 
 En vous basant sur les workflows Text-to-Image et Image-to-Image presentes dans ce notebook, créez votre propre workflow d'edition d'image en modifiant le template Phase 29 fourni.
 
@@ -6891,7 +6891,7 @@ En vous basant sur les workflows Text-to-Image et Image-to-Image presentes dans 
 - Seuls les nodes 6 (image source), 8 (prompt) et 10 (denoise) necessitent vos modifications
 - `cfg` doit rester a 1.0 car CFGNorm gere l'amplification (pas le CFG classique)
 - Le scheduler `""beta""` est obligatoire pour Qwen (pas `""normal""`)",,,,,,,,c2f80cb75587aeb6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,a7af4b97,code,fr,89a4524075a80e58,"# ========================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,a7af4b97,code,fr,89a4524075a80e58,"# ========================================
 # EXERCICE PRATIQUE (Architecture Phase 29)
 # ========================================
 # Creez votre propre workflow d'edition d'image
@@ -7047,7 +7047,7 @@ def tester_prompts_exercice(prompts_list, image_source, denoise=0.5):
 print(""\nExercice pret! Completez les TODO et executez la cellule."")
 print(""Conseil: Commencez simple, puis ajoutez de la complexite progressivement."")
 print(""\nRappel Phase 29: cfg=1.0, scheduler='beta', TextEncodeQwenImageEdit, ConditioningZeroOut"")",,,,,,,,89a4524075a80e58,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,0a694ae8,markdown,fr,ba70771ac6d37722,"## 📚 Ressources Complémentaires
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,0a694ae8,markdown,fr,ba70771ac6d37722,"## 📚 Ressources Complémentaires
 
 ### Documentation Officielle
 
@@ -7121,10 +7121,10 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,0a694ae8,
 - **Bai, J. et al.** (2023). *Qwen-VL: A Versatile Vision-Language Model*. arXiv:2308.12966. — Precurseur VLM de la lignee Qwen-Vision.
 
 ",,,,,,,,ba70771ac6d37722,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,307eaac9,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,307eaac9,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-0,markdown,fr,98e6151e369e9b9a,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-5-Qwen-Image-Edit.ipynb) | [Suivant >>](01-5c-Qwen-Image-21-Workflows.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-0,markdown,fr,98e6151e369e9b9a,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-5-Edition-Image-Prompt.ipynb) | [Suivant >>](01-5c-Edition-Image-Prompt-Workflows.ipynb)
 
 # Qwen Image Edit 2509 - Édition Avancée d'Images
 
@@ -7164,8 +7164,8 @@ Ce notebook explore les capacités avancées de **Qwen-Image-Edit 2509** (versio
 
 - Module 00-GenAI-Environment complété
 - Service `comfyui-qwen` actif (`docker compose up -d`)
-- Notebook 01-5-Qwen-Image-Edit terminé (concepts de base)",,,,,,,,98e6151e369e9b9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,9wen2509,markdown,fr,8ea9c09a4ba33a26,"Le diagramme ci-dessous rend ce pipeline sous forme de graphe : l'image et le prompt
+- Notebook 01-5-Edition-Image-Prompt terminé (concepts de base)",,,,,,,,98e6151e369e9b9a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,9wen2509,markdown,fr,8ea9c09a4ba33a26,"Le diagramme ci-dessous rend ce pipeline sous forme de graphe : l'image et le prompt
 convergent dans l'encodeur vision-langage Qwen2.5-VL, puis le modèle de diffusion edite
 le contenu dans l'espace latent avant decodage VAE.
 
@@ -7193,7 +7193,7 @@ flowchart TD
 > l'intention textuelle dans le modèle de diffusion (UNet), qui opere dans un espace
 > latent compresse par un **VAE a 16 canaux** ; le decodage VAE produit l'image editee.
 ",,,,,,,,8ea9c09a4ba33a26,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,dw2367dvov,markdown,fr,01b9a1e633a6b33e,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-5-Qwen-Image-Edit.ipynb) | [Suivant >>](01-5c-Qwen-Image-21-Workflows.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,dw2367dvov,markdown,fr,01b9a1e633a6b33e,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-5-Edition-Image-Prompt.ipynb) | [Suivant >>](01-5c-Edition-Image-Prompt-Workflows.ipynb)
 
 ***
 
@@ -7216,9 +7216,9 @@ A la fin de ce notebook, vous saurez :
 
 - Module 00-GenAI-Environment complété
 - Service `comfyui-qwen` actif (`docker compose up -d`)
-- Notebook 01-5-Qwen-Image-Edit terminé (concepts de base)
+- Notebook 01-5-Edition-Image-Prompt terminé (concepts de base)
 ",,,,,,,,01b9a1e633a6b33e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-1,code,fr,1e43a0d7b8f68368,"# Verification des dependances externes
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-1,code,fr,1e43a0d7b8f68368,"# Verification des dependances externes
 import importlib
 
 _DEPS_STATUS = {}
@@ -7328,8 +7328,8 @@ BATCH_MODE = os.getenv(""BATCH_MODE"", ""true"").lower() == ""true""
 if BATCH_MODE:
     print(""Mode BATCH actif"")
 ",,,,,,,,1e43a0d7b8f68368,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,avizixuyjo6,markdown,fr,c0e111002ff77a0c,Les imports et la configuration de base sont en place. La cellule suivante initialise le client avance `QwenImageEditClient` et verifie la connexion a l'API ComfyUI.,,,,,,,,c0e111002ff77a0c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-2,code,fr,bd150252c37cfb42,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,avizixuyjo6,markdown,fr,c0e111002ff77a0c,Les imports et la configuration de base sont en place. La cellule suivante initialise le client avance `QwenImageEditClient` et verifie la connexion a l'API ComfyUI.,,,,,,,,c0e111002ff77a0c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-2,code,fr,bd150252c37cfb42,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 2. CLIENT COMFYUI AVANCÉ
@@ -7456,8 +7456,8 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,bd150252c37cfb42,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,p5h3jbfh8zk,markdown,fr,4c95c25651e31adb,"Le client ComfyUI est instancie et la connexion validee. La cellule suivante définit les trois types de workflows disponibles : generation texte-vers-image, edition image-vers-image, et inpainting.",,,,,,,,4c95c25651e31adb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-3,code,fr,d7682af20eb719ef,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,p5h3jbfh8zk,markdown,fr,4c95c25651e31adb,"Le client ComfyUI est instancie et la connexion validee. La cellule suivante définit les trois types de workflows disponibles : generation texte-vers-image, edition image-vers-image, et inpainting.",,,,,,,,4c95c25651e31adb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-3,code,fr,d7682af20eb719ef,"# =============================================================================
 # 3. WORKFLOWS QWEN-IMAGE-EDIT 2509 - ARCHITECTURE PHASE 29
 # =============================================================================
 # Ces workflows utilisent l'architecture native ComfyUI validee Phase 29
@@ -7786,10 +7786,10 @@ print(""   - CFG=1.0 recommande (CFGNorm gere l'amplification)"")
 print(""   - Scheduler 'beta' optimise pour Qwen"")
 print(""   - 20 steps suffisent pour de bons resultats"")
 ",,,,,,,,d7682af20eb719ef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-4,markdown,fr,9101480fcd77f381,"## 4. Génération Text-to-Image
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-4,markdown,fr,9101480fcd77f381,"## 4. Génération Text-to-Image
 
 Commençons par générer une image de base que nous éditerons ensuite.",,,,,,,,9101480fcd77f381,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-5,code,fr,1c534fd0a2ad4909,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-5,code,fr,1c534fd0a2ad4909,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 4. TEXT-TO-IMAGE: Creation d'une image de base
@@ -7840,7 +7840,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,1c534fd0a2ad4909,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,daa141ac,markdown,fr,2efcf3d91edf7a58,"### Exercice 1 : Transfert de style par edition image-to-image
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,daa141ac,markdown,fr,2efcf3d91edf7a58,"### Exercice 1 : Transfert de style par edition image-to-image
 
 Le workflow image-to-image permet de transformer le style visuel d'une image tout en preservant sa composition. Le paramètre `denoise` contrôle le degré de transformation : une valeur basse preserve davantage la structure originale.
 
@@ -7852,7 +7852,7 @@ Le workflow image-to-image permet de transformer le style visuel d'une image tou
 - `# Étape 3` : Utiliser `create_img2img_workflow(image_name=uploaded_name, prompt=..., denoise=0.6)`
 - `# Étape 4` : Executer chaque workflow et afficher les 3 résultats cote a cote
 - `# Indice` : Avec `denoise=0.6`, le modèle preserve environ 40% de l'image originale. L'output_node pour img2img est ""12"".",,,,,,,,2efcf3d91edf7a58,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,e35872dc,code,fr,879ff6b2c3c91926,"# Exercice 1 : Transfert de style par edition image-to-image
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,e35872dc,code,fr,879ff6b2c3c91926,"# Exercice 1 : Transfert de style par edition image-to-image
 # TODO etudiant : appliquer 3 styles differents a l'image de base
 
 style_prompts = None  # TODO etudiant : definir 3 prompts de style (impressionniste, anime, hyperrealiste)
@@ -7873,10 +7873,10 @@ style_prompts = None  # TODO etudiant : definir 3 prompts de style (impressionni
 
 # TODO etudiant : afficher les 3 resultats avec l'originale
 print(""Exercice a completer"")",,,,,,,,879ff6b2c3c91926,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-6,markdown,fr,06a9b3d80fea741e,"## 5. Édition Image-to-Image
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-6,markdown,fr,06a9b3d80fea741e,"## 5. Édition Image-to-Image
 
 Explorons différents niveaux de `denoise` pour comprendre son impact sur l'édition.",,,,,,,,06a9b3d80fea741e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-7,code,fr,c02883a5a75cccd1,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-7,code,fr,c02883a5a75cccd1,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 5. IMAGE-TO-IMAGE: Analyse comparative du parametre denoise
@@ -7945,7 +7945,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,c02883a5a75cccd1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,dadagfpmkwo,markdown,fr,2e84e9cb53ba2aa0,"### Interpretation : Impact du paramètre Denoise
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,dadagfpmkwo,markdown,fr,2e84e9cb53ba2aa0,"### Interpretation : Impact du paramètre Denoise
 
 Les résultats montrent l'effet du paramètre `denoise` sur l'intensite de l'edition :
 
@@ -7960,10 +7960,10 @@ Les résultats montrent l'effet du paramètre `denoise` sur l'intensite de l'edi
 
 **Choix stratégique** : Pour une edition qui preserve la composition tout en changeant l'ambiance, `denoise=0.5` offre le meilleur compromis.
 ",,,,,,,,2e84e9cb53ba2aa0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-8,markdown,fr,664652b979603ae4,"## 6. Inpainting Avancé avec Masque Personnalisé
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-8,markdown,fr,664652b979603ae4,"## 6. Inpainting Avancé avec Masque Personnalisé
 
 L'inpainting permet de modifier uniquement certaines zones de l'image. Nous allons créer un masque programmatique pour remplacer un élément spécifique.",,,,,,,,664652b979603ae4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-9,code,fr,1e348aa3b3bce49c,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-9,code,fr,1e348aa3b3bce49c,"# =============================================================================
 # 6. INPAINTING: Édition localisée avec masque
 # =============================================================================
 
@@ -8056,8 +8056,8 @@ if 'base_image' in dir():
     plt.show()
 else:
     print(""⚠️ Image de base non disponible"")",,,,,,,,1e348aa3b3bce49c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,1ii0f5tdkgi,markdown,fr,5edf11a61835fc8b,L'image de base est generee et uploadee. La cellule suivante execute le workflow d'inpainting en appliquant un masque pour editer selectivement une region de l'image.,,,,,,,,5edf11a61835fc8b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-10,code,fr,a1bd0665df7743fb,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,1ii0f5tdkgi,markdown,fr,5edf11a61835fc8b,L'image de base est generee et uploadee. La cellule suivante execute le workflow d'inpainting en appliquant un masque pour editer selectivement une region de l'image.,,,,,,,,5edf11a61835fc8b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-10,code,fr,a1bd0665df7743fb,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 6b. EXECUTION DE L'INPAINTING
@@ -8105,7 +8105,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,a1bd0665df7743fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,90dfdc7f,markdown,fr,fd0e4da3a21bea0c,"### Exercice 2 : Inpainting creatif avec masque circulaire
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,90dfdc7f,markdown,fr,fd0e4da3a21bea0c,"### Exercice 2 : Inpainting creatif avec masque circulaire
 
 L'inpainting permet de remplacer une zone spécifique de l'image. En combinant un masque précis avec un prompt adapte, on peut inserer de nouveaux éléments dans une scene existante tout en preservant le contexte.
 
@@ -8117,7 +8117,7 @@ L'inpainting permet de remplacer une zone spécifique de l'image. En combinant u
 - `# Étape 3` : Construire le workflow avec `create_inpaint_workflow()` en decrivant le nouvel élément
 - `# Étape 4` : Utiliser `denoise=0.9` pour un remplacement complet de la zone masquee
 - `# Indice` : Le masque blanc définit la zone a modifier, le noir la zone a preserver. Le paramètre `feather` adoucit les bords pour une transition naturelle.",,,,,,,,fd0e4da3a21bea0c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,d919c2da,code,fr,3b51bca6bcb0a8e6,"# Exercice 2 : Inpainting creatif avec masque circulaire
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,d919c2da,code,fr,3b51bca6bcb0a8e6,"# Exercice 2 : Inpainting creatif avec masque circulaire
 # TODO etudiant : creer un masque circulaire et remplacer la zone masquee
 
 # TODO etudiant : creer le masque circulaire
@@ -8140,7 +8140,7 @@ inpaint_prompt_circle = None  # TODO etudiant : decrire le nouvel element
 
 # TODO etudiant : afficher avant/apres
 print(""Exercice a completer"")",,,,,,,,3b51bca6bcb0a8e6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,gjiyry24wsw,markdown,fr,bd99edd84c193647,"### Interpretation : Résultats de l'Inpainting
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,gjiyry24wsw,markdown,fr,bd99edd84c193647,"### Interpretation : Résultats de l'Inpainting
 
 L'inpainting a remplace la zone masquee par un nouvel élément :
 
@@ -8152,10 +8152,10 @@ L'inpainting a remplace la zone masquee par un nouvel élément :
 
 > **Point cle** : Le succes de l'inpainting depend de la qualite du masque. Un masque avec bords adoucis (feathered) permet une transition plus naturelle entre la zone modifiée et l'originale.
 ",,,,,,,,bd99edd84c193647,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-11,markdown,fr,cc64fdf7f2ef56c6,"## 7. Batch Processing: Génération Multiple
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-11,markdown,fr,cc64fdf7f2ef56c6,"## 7. Batch Processing: Génération Multiple
 
 Pour l'efficacité, générons plusieurs variations en parallèle avec différents prompts.",,,,,,,,cc64fdf7f2ef56c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-12,code,fr,3e63566cfedcf801,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-12,code,fr,3e63566cfedcf801,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 7. BATCH PROCESSING: Variations multiples
@@ -8245,7 +8245,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,3e63566cfedcf801,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,8txuf4lm17g,markdown,fr,001cecfe8892a307,"### Interpretation : Batch Processing
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,8txuf4lm17g,markdown,fr,001cecfe8892a307,"### Interpretation : Batch Processing
 
 La generation en lot a permis de créer 4 variations thematiques distinctes :
 
@@ -8260,10 +8260,10 @@ La generation en lot a permis de créer 4 variations thematiques distinctes :
 
 **Performance** : Avec 4 images generes en sequence, le temps total reste raisonnable car chaque generation utilise la même architecture de modèles (pas de rechargement necessaire).
 ",,,,,,,,001cecfe8892a307,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-13,markdown,fr,54b969107b65485f,"## 8. Analyse Comparative: CFG Scale
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-13,markdown,fr,54b969107b65485f,"## 8. Analyse Comparative: CFG Scale
 
 Le paramètre `cfg` (Classifier-Free Guidance) contrôle l'adhérence au prompt. Explorons son impact.",,,,,,,,54b969107b65485f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-14,code,fr,c2ea5d73490015c9,"# Execution avec gestion derreur
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-14,code,fr,c2ea5d73490015c9,"# Execution avec gestion derreur
 try:
     # =============================================================================
     # 8. ANALYSE CFG: Impact du Guidance Scale avec CFGNorm
@@ -8331,7 +8331,7 @@ except Exception as e:
     print(f""API non disponible: {type(e).__name__}"")
     print(""Workflow defini - necessite API ComfyUI active"")
 ",,,,,,,,c2ea5d73490015c9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,7fbd7073,markdown,fr,f53164a4a9a1c4d1,"### Exercice 3 : Exploration des schedulers de diffusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,7fbd7073,markdown,fr,f53164a4a9a1c4d1,"### Exercice 3 : Exploration des schedulers de diffusion
 
 Le scheduler determine la trajectoire de denoise dans l'espace latent. L'architecture Phase 29 utilise par defaut le scheduler `beta` avec le sampler `euler`. D'autres combinaisons peuvent produire des résultats interessants en termes de nettete, contraste ou creativite.
 
@@ -8343,7 +8343,7 @@ Le scheduler determine la trajectoire de denoise dans l'espace latent. L'archite
 - `# Étape 3` : Tester : (a) `beta`/`euler` (defaut), (b) `normal`/`euler_ancestral`, (c) `karras`/`dpmpp_2m`
 - `# Étape 4` : Executer chaque variante et comparer la nettete, les couleurs et le temps de generation
 - `# Indice` : Accedez au workflow comme un dictionnaire Python : `workflow[""9""][""inputs""][""scheduler""] = ""normal""`",,,,,,,,f53164a4a9a1c4d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,845bc08c,code,fr,ce8ae1242c7e12d3,"# Exercice 3 : Exploration des schedulers de diffusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,845bc08c,code,fr,ce8ae1242c7e12d3,"# Exercice 3 : Exploration des schedulers de diffusion
 # TODO etudiant : tester 3 combinaisons scheduler/sampler
 
 scheduler_prompt = None  # TODO etudiant : definir un prompt detaille
@@ -8362,7 +8362,7 @@ scheduler_configs = [
 
 # TODO etudiant : afficher et comparer les 3 resultats
 print(""Exercice a completer"")",,,,,,,,ce8ae1242c7e12d3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,mzzz5x02in9,markdown,fr,975dc1e991925d8a,"### Interpretation : Impact du CFG avec CFGNorm
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,mzzz5x02in9,markdown,fr,975dc1e991925d8a,"### Interpretation : Impact du CFG avec CFGNorm
 
 L'analyse des différentes valeurs CFG avec l'architecture Phase 29 revele des comportements spécifiques :
 
@@ -8377,7 +8377,7 @@ L'analyse des différentes valeurs CFG avec l'architecture Phase 29 revele des c
 
 **Recommandation definitive** : Avec l'architecture Phase 29 (Qwen Image Edit 2509), utilisez toujours `cfg=1.0` pour les meilleurs résultats. Des valeurs plus elevees n'apportent pas d'amelioration significative et peuvent reduire la qualite.
 ",,,,,,,,975dc1e991925d8a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-15,markdown,fr,10a1819ba0982724,"## 9. Recapitulatif des Exercices
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-15,markdown,fr,10a1819ba0982724,"## 9. Recapitulatif des Exercices
 
 Les exercices pratiques sont repartis dans le notebook aux endroits stratégiques :
 
@@ -8388,14 +8388,14 @@ Les exercices pratiques sont repartis dans le notebook aux endroits stratégique
 | **Exercice 3** | Section 8 (après CFG Scale) | Exploration des schedulers | Après analyse CFG |
 
 Chaque exercice est precede d'un bloc markdown avec les objectifs et indices, suivi d'une cellule de code a completer.",,,,,,,,10a1819ba0982724,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-16,code,fr,da64f4279e0a7017,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-16,code,fr,da64f4279e0a7017,"# =============================================================================
 # Les exercices sont maintenant disponibles directement dans le notebook
 # aux sections 4, 6b et 8. Cherchez les cellules ""### Exercice N"" pour
 # les trouver et les completer.
 # =============================================================================
 
 print(""3 exercices disponibles dans les sections 4, 6b et 8 du notebook"")",,,,,,,,da64f4279e0a7017,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-17,markdown,fr,ecf2c8e7ecc3c9ab,"## 10. Recapitulatif et Points Cles
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-17,markdown,fr,ecf2c8e7ecc3c9ab,"## 10. Recapitulatif et Points Cles
 
 ### Architecture Phase 29 - Qwen-Image-Edit 2509
 
@@ -8450,7 +8450,7 @@ ConditioningZeroOut       # Conditioning negatif vide
 - **Bai, J., Bai, S., Yang, S., et al.** (2023). *Qwen-VL: A Versatile Vision-Language Model*. arXiv:2308.12966. — VLM fondateur de la série Qwen (précédent Qwen2-VL puis Qwen2.5-VL).
 - **Esser, P., Kulal, S., Blattmann, A., et al.** (2024). *Scaling Rectified Flow Transformers for High-Resolution Image Synthesis* (MMDiT). arXiv:2403.03206. — Architecture Flow/DiT dont s'inspirent les modèles Qwen-Image (node `ModelSamplingAuraFlow`).
 ",,,,,,,,ecf2c8e7ecc3c9ab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb,cell-18,code,fr,4531b1305c59f203,"# =============================================================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb,cell-18,code,fr,4531b1305c59f203,"# =============================================================================
 # FIN DU NOTEBOOK
 # =============================================================================
 
@@ -8468,7 +8468,7 @@ print(""\n➡️  Prochain notebook: 02-2-FLUX-1-Advanced-Generation.ipynb"")",,
 MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,6c3bb47b,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-0,markdown,fr,c48439cfd2d95154,"**Navigation** : [Index](../../README.md) | [<< Précédent](../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) | [Suivant >>](02-3-Stable-Diffusion-3-5.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-0,markdown,fr,c48439cfd2d95154,"**Navigation** : [Index](../../README.md) | [<< Précédent](../01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb) | [Suivant >>](02-3-Stable-Diffusion-3-5.ipynb)
 
 # FLUX.1 - Génération d'Images Avancée
 
@@ -10887,7 +10887,7 @@ Les points cles a retenir :
 ## Pour aller plus loin
 
 - Notebook précédent : [Z-Image (Lumina-2)](02-4-Z-Image-Lumina2.ipynb)
-- Quantization 4-bit dans le module : [01-5 Qwen-Image-Edit](../01-Foundation/01-5-Qwen-Image-Edit.ipynb) (Nunchaku INT4)
+- Quantization 4-bit dans le module : [01-5 Qwen-Image-Edit](../01-Foundation/01-5-Edition-Image-Prompt.ipynb) (Nunchaku INT4)
 - Module 03-Orchestration (prochain) : combiner plusieurs pipelines via Semantic Kernel
 
 ## References
@@ -21764,10 +21764,10 @@ SD XL Turbo via Forge WebUI (Automatic1111 fork) illustre l'approche **open weig
 
 **Pour aller plus loin** : le pipeline ComfyUI sous-jacent à Forge est directement exploitable par les notebooks 02-Advanced (FLUX, Qwen 2509) et 03-Orchestration — la maîtrise de l'API ComfyUI est un prérequis transverse.
 ",,,,,,,,6d251de1374e4603,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,2905ccc5,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,2905ccc5,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,3217bab9,markdown,fr,27da071c58027a6b,"### Exercice 4 : Politique de retry et timeout adaptatif pour le client ComfyUI
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,3217bab9,markdown,fr,27da071c58027a6b,"### Exercice 4 : Politique de retry et timeout adaptatif pour le client ComfyUI
 
 L'objectif de cet exercice est de fiabiliser l'appel au service en implementant une politique de retry a backoff exponentiel, en distinguant les erreurs transitoires des erreurs definitives.
 
@@ -21787,7 +21787,7 @@ L'objectif de cet exercice est de fiabiliser l'appel au service en implementant 
 
 **Ce que l'exercice mesure** : la capacite a concevoir un appel de service robuste — la difference entre transitoire et definitif est exactement ce qui distingue un client pedagogique d'un client de production.
 ",,,,,,,,27da071c58027a6b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,1ae1332b,code,fr,7966fb0d816e3c29,"# Exercice 4 : Politique de retry et timeout adaptatif pour le client ComfyUI
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,1ae1332b,code,fr,7966fb0d816e3c29,"# Exercice 4 : Politique de retry et timeout adaptatif pour le client ComfyUI
 # (voir l'enonce ci-dessus -- transitoire vs definitif, backoff exponentiel)
 
 import time
@@ -21819,7 +21819,7 @@ class _FakeTimeoutClient:
 print(""Exercice 4 a completer : generate_with_retry existe,"",
       ""renvoie"", generate_with_retry(_FakeTimeoutClient(), {""1"": {}}))
 ",,,,,,,,7966fb0d816e3c29,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,2e8655d3,markdown,fr,457bf384c78529d2,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,2e8655d3,markdown,fr,457bf384c78529d2,"## Conclusion
 
 Qwen-Image-Edit via ComfyUI représente l'état de l'art **open weights pour l'édition d'image conditionnée par le langage** : l'architecture Phase 29 (septembre 2025) combine un VLM (`qwen_2.5_vl_7b_fp8_scaled`), un VAE 16 canaux et un UNET fp8_e4m3fn au sein d'un pipeline ComfyUI en plusieurs étapes (ModelSamplingAuraFlow → CFGNorm → TextEncodeQwenImageEdit → KSampler).
 
@@ -21829,9 +21829,9 @@ Qwen-Image-Edit via ComfyUI représente l'état de l'art **open weights pour l'�
 
 **Pattern d'interaction** avec ComfyUI : queue d'un workflow JSON via `/prompt`, puis polling sur `/history/{prompt_id}` pour récupérer les images via `/view`. Ce pattern est réutilisé dans tous les notebooks 02-Advanced et au-delà.
 
-**Pour aller plus loin** : `01-5b-Qwen-Image-Edit-2509` pousse l'exploitation plus loin (inpainting, batch, analyse denoise) et `02-3-Stable-Diffusion-3-5` compare avec l'architecture MMDiT de Stability AI. Les notebooks 03-Orchestration assemblent ces briques dans des chaînes plus complexes.
+**Pour aller plus loin** : `01-5b-Edition-Image-Prompt-Iterations` pousse l'exploitation plus loin (inpainting, batch, analyse denoise) et `02-3-Stable-Diffusion-3-5` compare avec l'architecture MMDiT de Stability AI. Les notebooks 03-Orchestration assemblent ces briques dans des chaînes plus complexes.
 ",,,,,,,,457bf384c78529d2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,c248-gallery-regen,code,fr,3a5e08c5bad8cd1f,"# ========================================
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,c248-gallery-regen,code,fr,3a5e08c5bad8cd1f,"# ========================================
 # REGENERATION ASSETS GALLERY (issue #14580) - cellule 30 final
 # ========================================
 # La regeneration principale est faite dans la cellule 18 (panneau avant/apres).
@@ -21869,14 +21869,14 @@ print(""Gallery regen:"")
 for line in summary:
     print(f""  - {line}"")
 ",,,,,,,,3a5e08c5bad8cd1f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c00_015c,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c00_015c,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c01_015c,markdown,fr,0b74268622dbb65a,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-5b-Qwen-Image-Edit-2509.ipynb) | [Suivant >>](../02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c01_015c,markdown,fr,0b74268622dbb65a,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-5b-Edition-Image-Prompt-Iterations.ipynb) | [Suivant >>](../02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb)
 
 # Qwen-Image 2.1 : workflows de reference et execution hebergee
 
 Troisieme temps de la lignee Qwen-Image-Edit de la serie Image :
-[01-5](01-5-Qwen-Image-Edit.ipynb) posait le modele et son API, [01-5b](01-5b-Qwen-Image-Edit-2509.ipynb)
+[01-5](01-5-Edition-Image-Prompt.ipynb) posait le modele et son API, [01-5b](01-5b-Edition-Image-Prompt-Iterations.ipynb)
 passait a la revision 2509 et a l'edition multi-etapes. Ce carnet attaque le
 palier **2.1** sous l'angle de l'outillage : les 12 workflows de reference
 publies par l'editeur ComfyUI (nomadoor) sont **versionnes dans le depot** et
@@ -21896,7 +21896,7 @@ Le point de doctrine : le JSON versionne est la reference de l'editeur. Le
 carnet ne recopie **pas** le workflow en dictionnaire inline -- il le charge,
 le convertit, et toute divergence resterait visible dans le diff du fichier
 versionne.",,,,,,,,0b74268622dbb65a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c02_015c,markdown,fr,1532136cae30bf45,"## 1. Le palier INT8 et l'instance hebergee
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c02_015c,markdown,fr,1532136cae30bf45,"## 1. Le palier INT8 et l'instance hebergee
 
 Qwen-Image 2.1 se deploie ici en quantification **INT8 des convolutions**
 (`convrot`) : le fichier de diffusion passe de ~20 Go en bf16 a 7,26 Go, le
@@ -21909,7 +21909,7 @@ dediee), derriere une authentification Bearer. Le `MarkdownNote` embarque
 dans chaque workflow nomadoor liste precisement ces fichiers avec leurs
 liens Hugging Face : notre garde de coherence modele (§2) verifie que ce que
 le carnet charge est exactement ce que le depot versionne.",,,,,,,,1532136cae30bf45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c03_015c,code,fr,0b29317e4ac4ca7c,"# Dependances, configuration, authentification
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c03_015c,code,fr,0b29317e4ac4ca7c,"# Dependances, configuration, authentification
 import importlib.util
 
 for module in (""PIL"", ""requests"", ""matplotlib"", ""dotenv""):
@@ -21946,15 +21946,15 @@ if not COMFYUI_TOKEN:
 
 print(""Endpoint :"", COMFYUI_URL)
 print(""Token   : present (valeur jamais affichee)"")",,,,,,,,0b29317e4ac4ca7c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c04_015c,markdown,fr,f606c7b1398281e0,"## 2. Le client
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c04_015c,markdown,fr,f606c7b1398281e0,"## 2. Le client
 
-Meme patron que [01-5b](01-5b-Qwen-Image-Edit-2509.ipynb) : une session
+Meme patron que [01-5b](01-5b-Edition-Image-Prompt-Iterations.ipynb) : une session
 `requests` portant le jeton Bearer, quatre routes ComfyUI (`/system_stats`,
 `/prompt`, `/history/<id>`, `/view`), et une boucle d'attente. La difference :
 `executer` ne suppose plus un noeud de sortie a numero fixe -- il recolte les
 images de toutes les sorties du historique, le workflow versionne fixant lui-meme
 sa topologie.",,,,,,,,f606c7b1398281e0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c05_015c,code,fr,6a4b8a3327143775,"class ClientQwenImage21:
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c05_015c,code,fr,6a4b8a3327143775,"class ClientQwenImage21:
     """"""Client ComfyUI pour l'instance qwen-image-edit (auth Bearer).""""""
 
     def __init__(self, base_url: str, auth_token: str):
@@ -22017,7 +22017,7 @@ print(""ComfyUI    :"", systeme.get(""comfyui_version"", ""?""))
 print(""Python     :"", systeme.get(""python_version"", ""?""))
 print(""GPU        :"", periph.get(""name"", ""?""))
 print(""VRAM libre : {:.1f} / {:.1f} Go"".format(periph.get(""vram_free"", 0) / 1e9, periph.get(""vram_total"", 0) / 1e9))",,,,,,,,6a4b8a3327143775,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c06_015c,markdown,fr,718a3df846d92302,"### Lecture de l'etat
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c06_015c,markdown,fr,718a3df846d92302,"### Lecture de l'etat
 
 La reponse `system_stats` fait foi pour l'identite de l'instance : ComfyUI
 **0.37.2** sur Python 3.11.14 (GCC 14.2.0 — l'instance tourne sous Linux), GPU
@@ -22029,7 +22029,7 @@ recents de la famille edit (§7) sont disponibles — un workflow versionne qui
 exige un noeud absent rendrait une erreur cote instance, jamais une image
 fausse. Un echec ici (401, timeout) signifie un jeton perime ou une instance
 arrete : le carnet ne masque pas l'erreur -- il la leve. La lecture de cet etat avant toute generation est aussi une sonde de sanite a cout nul : un endpoint qui ne rend pas `system_stats` ou rend une VRAM anormalement basse signale un instance saturee par d'autres travaux — mieux vaut le decouvrir ici qu'apres une generation echouee a la 300e seconde. La remontee des identifiants exacts de version fait partie du temoin : elle rend le diagnostic reproductible.",,,,,,,,718a3df846d92302,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c07_015c,markdown,fr,2645703e7ef9f282,"## 3. Du workflow UI au prompt API
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c07_015c,markdown,fr,2645703e7ef9f282,"## 3. Du workflow UI au prompt API
 
 ComfyUI parle deux formats :
 
@@ -22048,7 +22048,7 @@ deviennent des references `[noeud, slot]`. Les annotations d'editeur
 Le point important : le carnet charge `qwen_image_2_1_text2image.json` depuis
 `scripts/genai-stack/workflows/` du depot. Pas de copie inline, pas de
 reecriture : si la reference evolue, la divergence eclate au prochain commit.",,,,,,,,2645703e7ef9f282,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c08_015c,code,fr,8eecc8af5711c74f,"def trouver_racine() -> Path:
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c08_015c,code,fr,8eecc8af5711c74f,"def trouver_racine() -> Path:
     courant = Path.cwd()
     for _ in range(6):
         if (courant / ""scripts"" / ""genai-stack"" / ""workflows"" / ""qwen_image_2_1"").is_dir():
@@ -22070,13 +22070,13 @@ for n in wf_ui[""nodes""]:
     widgets = n.get(""widgets_values"")
     detail = """" if not widgets else "" "" + str(widgets)[:64]
     print(f""  {n['id']:>3} {n['type']:<20}{detail}"")",,,,,,,,8eecc8af5711c74f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c09_015c,markdown,fr,5a792139df95bd26,"Le graphe ci-dessus est court : trois chargeurs de modeles, un encodeur de
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c09_015c,markdown,fr,5a792139df95bd26,"Le graphe ci-dessus est court : trois chargeurs de modeles, un encodeur de
 texte, un `ConditioningZeroOut` pour le negatif (cfg = 1 : le negatif est
 zeroe, pas redige), un `ResolutionSelector` qui pilote `EmptyLatentImage` en
 megapixels, le `KSampler`, le decodage VAE, la sauvegarde.
 
 L'inventaire chiffre la sortie : **11 nœuds, 11 liens, version 0.4** du format d'export UI — le workflow text2image dans sa forme minimale, trois chargeurs pointant les poids du palier INT8 versionné. Aucune image n'est commitee a cette etape : la preuve d'execution vit dans la sortie texte du graphe, les planches reelles arrivent au §4.",,,,,,,,5a792139df95bd26,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c10_015c,code,fr,02263fec415f0100,"# Convertisseur UI -> API pour les noeuds natifs (core) du workflow
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c10_015c,code,fr,02263fec415f0100,"# Convertisseur UI -> API pour les noeuds natifs (core) du workflow
 WIDGETS_NOMMES = {
     ""UNETLoader"": [""unet_name"", ""weight_dtype""],
     ""CLIPLoader"": [""clip_name"", ""type"", ""device""],
@@ -22137,7 +22137,7 @@ for classe, (champ, attendu) in manifeste.items():
 print(""Garde de coherence palier INT8 : les 3 chargeurs pointent sur le manifeste versionne"")
 print()
 print(json.dumps(prompt_api, indent=1, ensure_ascii=False)[:2200])",,,,,,,,02263fec415f0100,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c11_015c,markdown,fr,549e7172844e3fef,"### Lecture de la conversion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c11_015c,markdown,fr,549e7172844e3fef,"### Lecture de la conversion
 
 Deux choses a noter dans le dictionnaire produit :
 
@@ -22152,14 +22152,14 @@ Deux choses a noter dans le dictionnaire produit :
 La sortie fait aussi voir **ce que le convertisseur n'a pas fait** : aucun champ n'a ete retouche a la main entre le JSON d'export UI et le prompt affiche — l'organe `convertir_workflow()` produit un prompt executable directement, ce qui rend le carnet reproductible sur toute instance qui charge le meme manifeste. Les valeurs de widgets qui survivent sans liens (`seed`, `cfg`, `steps`) restent editables par code dans la suite du carnet : le graphe converti est une structure de donnees, pas une image figee.
 
 La garde de cohérence en tête de sortie (assert sur les trois chargeurs contre le manifeste versioné) transforme la conversion en contrat vérifié : un fichier re-exporté avec un autre checkpoint échoue immédiatement au lieu de générer des images hors palier INT8.",,,,,,,,549e7172844e3fef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c12_015c,markdown,fr,511d9ca8166a1af0,"## 4. Execution du workflow text2image
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c12_015c,markdown,fr,511d9ca8166a1af0,"## 4. Execution du workflow text2image
 
 La graine est fixee pour la reproductibilite, et la resolution est reduite en
 mode batch (2 MP au lieu de 4) : le carnet doit rester executable en un temps
 de cours. La reference de l'editeur mentionne ~2 minutes a 4 MP sur une carte
 a 12 Go -- l'instance dediee (24 Go, INT8) doit faire mieux ; la mesure ci-
 dessous le dit.",,,,,,,,511d9ca8166a1af0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c13_015c,code,fr,16d29b3ff0782e68,"ksampler = noeud_de_classe(prompt_api, ""KSampler"")
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c13_015c,code,fr,16d29b3ff0782e68,"ksampler = noeud_de_classe(prompt_api, ""KSampler"")
 resolution = noeud_de_classe(prompt_api, ""ResolutionSelector"")
 
 MEGAPIXELS = 2 if BATCH_MODE == ""true"" else 4
@@ -22174,7 +22174,7 @@ assert images, ""Aucune image renvoyee par l'instance""
 image_principale = images[0]
 print(f""Generation : {duree:.0f} s -- {image_principale.size[0]}x{image_principale.size[1]} px ({MEGAPIXELS} MP demandes)"")
 display(image_principale)",,,,,,,,16d29b3ff0782e68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c14_015c,markdown,fr,79fc2c5bea37ea66,"### Lecture du resultat
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c14_015c,markdown,fr,79fc2c5bea37ea66,"### Lecture du resultat
 
 L'illustration est le prompt de reference de l'editeur (femme en veste email
 argentee, ciel de cumulonimbus), genere ici sans aucune modification du
@@ -22188,13 +22188,13 @@ Rapporte a la reference de l'editeur (~2 min a 4 MP sur une carte 12 Go), la
 mesure donne un ordre de grandeur honnete du gain de l'instance dediee : la
 carte 24 Go ne divise pas le temps par deux — elle rend possible une
 resolution que la carte 12 Go ne tient pas. Ce temoin reste reproductible tel quel : le workflow est charge depuis le manifeste versionne du depot (meme graphe, meme graine sur toute instance), la seule difference d'une machine a l'autre etant le temps de generation. Le format 1184x1760 est celui demande par le mode batch du manifeste, pas un choix de la cellule : la cellule ne touche aucun parametre du graphe.",,,,,,,,79fc2c5bea37ea66,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c15_015c,markdown,fr,9958b2dbcc860965,"## 5. Le seed change tout
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c15_015c,markdown,fr,9958b2dbcc860965,"## 5. Le seed change tout
 
 La documentation de l'editeur insiste : a prompt constant, **la graine fait
 une grande difference** sur la composition. C'est une propriete utile a
 connaitre avant de conclure quoi que ce soit d'un essai unique -- trois
 graines, meme prompt :",,,,,,,,9958b2dbcc860965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c16_015c,code,fr,5847a8f3393ca50f,"GRAINES = [20260925, 20260926, 20260927]
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c16_015c,code,fr,5847a8f3393ca50f,"GRAINES = [20260925, 20260926, 20260927]
 resolution[""inputs""][""megapixels""] = 1
 
 images_graines = []
@@ -22209,7 +22209,7 @@ for ax, img in zip(axes, images_graines):
     ax.axis(""off"")
 plt.tight_layout()
 plt.show()",,,,,,,,5847a8f3393ca50f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c17_015c,markdown,fr,fa504aeb88cb5163,"### Lecture de la variance
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c17_015c,markdown,fr,fa504aeb88cb5163,"### Lecture de la variance
 
 Pose, orientation du regard, silhouette des nuages : les trois sorties sont
 trois compositions distinctes d'une meme intention. La consequence pratique
@@ -22217,7 +22217,7 @@ est directe : un benchmark de prompt ou une comparaison de modeles qui ne
 fixe pas la graine mesure du bruit, pas une difference. Les trois graines utilisees (20260925-27) restent **consignees dans la cellule** : refaire tourner la cellule reproduit exactement la planche a trois compositions, ce qui est la moindre exigence d'un temoin pedagogique.
 
 Le balayage `megapixels = 1` en tête de cellule ramène chaque génération à une résolution modeste : trois images à 4 MP l'une après l'autre auraient allongé le temps total sans rien changer à la démonstration.",,,,,,,,fa504aeb88cb5163,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c18_015c,markdown,fr,45b9f4d0a9ff9591,"## 7. Ce que l'instance couvre vraiment
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c18_015c,markdown,fr,45b9f4d0a9ff9591,"## 7. Ce que l'instance couvre vraiment
 
 Les 12 workflows versionnes ne demandent pas tous les memes noeuds : la
 famille edit exige `TextEncodeQwenImage21` (ajoute avec le support 2.1 du
@@ -22225,7 +22225,7 @@ coeur ComfyUI), et deux workflows demandent des paquets custom. Plutot qu'une
 table statique, le carnet interroge l'inventaire live `/object_info` : chaque
 classe utilisee par un workflow doit y figurer pour qu'il soit executable
 tel quel.",,,,,,,,45b9f4d0a9ff9591,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c19_015c,code,fr,56bd5aea7b1a01f5,"inventaire = set(client.object_info().keys())
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c19_015c,code,fr,56bd5aea7b1a01f5,"inventaire = set(client.object_info().keys())
 print(f""Classes de noeuds disponibles sur l'instance : {len(inventaire)}"")
 print()
 
@@ -22237,7 +22237,7 @@ for chemin in sorted(DOSSIER_WF.glob(""*.json"")):
     nom = chemin.name.replace(""qwen_image_2_1_"", """").replace("".json"", """")
     etat = "", "".join(sorted(manquantes)) if manquantes else ""-- 100 % couvert""
     print(f""{nom:<26}{len(classes):>4}     {etat}"")",,,,,,,,56bd5aea7b1a01f5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c20_015c,markdown,fr,aa57c5b808da7bf2,"### Lecture de la couverture
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c20_015c,markdown,fr,aa57c5b808da7bf2,"### Lecture de la couverture
 
 Le tableau tranche ce qui reste executable : les workflows 100 % couverts
 tournent tel quels (le convertisseur du §3 suffit), ceux dont il manque une
@@ -22248,17 +22248,17 @@ Aucun de ces manquants n'est `INTRINSIC` : la limite est d'exploitation, pas
 de nature.
 
 **Les chiffres de la sortie.** L'inventaire `object_info` rend **981 classes** de noeuds disponibles sur cette instance — le tableau teste les 12 workflows versionnes de l'editeur contre cet ensemble. Neuf tournent tels quels (image_edit, image_edit_local, image_edit_local_mask, image_edit_upscale, outpainting, ref2image, subject_extraction, text2image, text2image_rgba) ; les trois manquants le sont chacun pour sa raison propre : `image_edit_openpose` attend `OpenposePreprocessor`, `panorama` attend `PanoramaPreview`, et `layer_decomposition` echoue sur le detail le plus revelateur — sa classe `Reroute` manquante porte un UUID (`da2ffc0e-…`), trace d'un node pack embarque dans l'export UI que le coeur seul ne fournit pas : la conversion §3 n'a pas de lien a rebrancher, c'est le paquet qui manque a l'instance. Le verdict de couverture reste executable : rien dans ces manquants n'est `INTRINSIC`, tout est `RECOVERABLE-*`. La frontiere de couverture bouge avec les mises a jour du coeur : le tableau est une photographie a la date d'execution, a re-balayer apres toute montee de version de l'instance.",,,,,,,,aa57c5b808da7bf2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c21_015c,markdown,fr,ad7829d545424f00,"## 8. Exercices
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c21_015c,markdown,fr,ad7829d545424f00,"## 8. Exercices
 
 Trois exercices prolongent le carnet. Chacun part du code du corps sans
 redefinir le client ni le convertisseur.",,,,,,,,ad7829d545424f00,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c22_015c,code,fr,c429027050bbd148,"# Exercice 1 : l'echelle change-t-elle la composition ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c22_015c,code,fr,c429027050bbd148,"# Exercice 1 : l'echelle change-t-elle la composition ?
 # Balayer megapixels dans (1, 2, 4) a graine fixee, afficher la grille 1x3,
 # puis decrire ce qui survit du cadrage (sujet, place des nuages) et ce qui
 # change (densite de detail). Comparer les durees mesurees.
 # TODO etudiant
 resultat_ex1 = None  # TODO etudiant : liste des 3 images",,,,,,,,c429027050bbd148,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c23_015c,code,fr,131b4979eb32711d,"# Exercice 2 : la sortie RGBA.
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c23_015c,code,fr,131b4979eb32711d,"# Exercice 2 : la sortie RGBA.
 # 1. Charger qwen_image_2_1_text2image_rgba.json depuis DOSSIER_WF et le
 #    convertir avec ui_vers_api ;
 # 2. Comparer le graphe obtenu au text2image du corps (qu'est-ce qui change,
@@ -22268,7 +22268,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,
 #    de la transparence.
 # TODO etudiant
 resultat_ex2 = None  # TODO etudiant",,,,,,,,131b4979eb32711d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c24_015c,code,fr,855377e89720f83f,"# Exercice 3 : pourquoi cfg = 1 ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c24_015c,code,fr,855377e89720f83f,"# Exercice 3 : pourquoi cfg = 1 ?
 # Le negatif de reference passe par ConditioningZeroOut (zero pur). Ajouter au
 # prompt_api un second noeud CLIPTextEncode (texte negatif, ex. ""blurry, low
 # quality"", meme CLIPLoader que le positif) et repointer l'entree ""negative"" du
@@ -22279,7 +22279,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,
 # ajouter une cle au dict et repointer ""negative"" suffit, rien d'autre a cabler.
 # TODO etudiant
 resultat_ex3 = None  # TODO etudiant",,,,,,,,855377e89720f83f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c25_015c,markdown,fr,f183960d86f074e8,"## 9. Ce qu'il faut retenir
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,c25_015c,markdown,fr,f183960d86f074e8,"## 9. Ce qu'il faut retenir
 
 | Notion | Temooin dans ce carnet |
 |---|---|
@@ -22295,7 +22295,7 @@ La lignee continue : ce carnet attaque `ref2image` (section 6) ; les
 notebooks suivants attaqueront le reste de la famille edit (edition locale,
 outpainting, extraction de sujet) -- le §7 donne l’etat exact de ce que
 l’instance couvre.",,,,,,,,f183960d86f074e8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,conclusion,markdown,fr,a067edff2958dded,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,conclusion,markdown,fr,a067edff2958dded,"## Conclusion
 
 GPT-5 image generation (via OpenRouter) incarne l'approche **multimodale native** : le modèle ne se contente pas de générer des images à partir d'un prompt texte, il analyse et produit dans un même flux, ce qui ouvre trois modes d'usage pédagogique distincts — quick, detailed, educational — richesse et coût croissent ensemble (les mesures vivent dans la table imprimée par le test). Le ratio coût d'inférence / richesse du contenu est directement exposé à l'utilisateur par le choix du mode.
 
@@ -22312,10 +22312,10 @@ GPT-5 image generation (via OpenRouter) embodies the **native multimodal** appro
 **Positioning in the ecosystem**: GPT-5 completes the course's palette by covering the *comprehension + generation* axis, where DALL-E 3 focuses on generation alone and SD XL Turbo exposes the internal workings. The large family of GPT-5 models exposed by the OpenRouter API opens a wide comparative experimentation ground but introduces a strong dependency on the routing provider.
 
 **To go further**: explore the `04-1-Educational-Content-Generation` notebook which orchestrates several models to produce a complete pedagogical deliverable (image + alt text + structured metadata).",,,,,,,a067edff2958dded,ef5f76dd1f274074,,,,,,,a067edff2958dded,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,d19f9c6c,code,fr,d8cfd07b7b0f3965,"# Parameters
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,d19f9c6c,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exemple-3modes-md,markdown,fr,b667b1b68a05e661,"### Exemple guidé : analyse personnalisée à trois modes pour un domaine
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,nv-exemple-3modes-md,markdown,fr,b667b1b68a05e661,"### Exemple guidé : analyse personnalisée à trois modes pour un domaine
 
 *Contribution d'un groupe d'étudiants EPF (TP2, PR #20551), intégrée comme exemple guidé.*
 
@@ -22333,7 +22333,7 @@ Synthesis of the two previous examples: the `analyse_complete()` function chains
 **Key points**:
 - A single function call produces the **three levels** of description — the result is a reusable dictionary, not three separate displays
 - The educational prompt is **built from the domain**: changing `domain` at the top of the cell adapts the analysis to another discipline",,,,,,,b667b1b68a05e661,f3593e8c0a558bc2,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exemple-3modes-code,code,fr,9c488597d8da6e0b,"# Exemple guide : analyse personnalisee a trois modes pour un domaine
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,nv-exemple-3modes-code,code,fr,9c488597d8da6e0b,"# Exemple guide : analyse personnalisee a trois modes pour un domaine
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
 # 1. Sélection du domaine et configuration
@@ -22385,7 +22385,7 @@ import pprint
 results = analyse_complete(image_source, custom_prompt, domain)
 pprint.pprint(results)
 ",,,,,,,,9c488597d8da6e0b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-md,markdown,fr,5a143c138393c776,"### Exemple guidé : prompt neutre vs prompt orienté — mesurer la sensibilité de la formulation
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,nv-exo1-md,markdown,fr,5a143c138393c776,"### Exemple guidé : prompt neutre vs prompt orienté — mesurer la sensibilité de la formulation
 
 *Contribution étudiante (PR #23305, github.com/Perr1neF0), intégrée comme exemple guidé.*
 
@@ -22406,7 +22406,7 @@ The same image analyzed by GPT-5 can produce very different answers depending on
 - The comparison is **quantified**: a lexical Jaccard over words of five letters and more, computed by `mots_cles()`, replaces eyeball estimation
 - A check verifies that the three requested sections are present in each text; without it, a gap could be a mere format violation
 - The printed conclusion links each wording to a use: visual inventory on one side, disciplinary course on the other",,,,,,,5a143c138393c776,7152123ec67866a4,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-code,code,fr,65d7b11a5fb4915f,"# Exemple guide : prompt neutre vs prompt oriente -- mesurer la sensibilite de la formulation
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,nv-exo1-code,code,fr,65d7b11a5fb4915f,"# Exemple guide : prompt neutre vs prompt oriente -- mesurer la sensibilite de la formulation
 # (contribution etudiante, PR #23305 -- github.com/Perr1neF0)
 import re
 
@@ -22466,7 +22466,7 @@ else:
     for nom, r in [(""neutre"", resultat_neutre), (""orienté"", resultat_oriente)]:
         if not r['success']:
             print(f""Échec ({nom}) : {r['error']}"")",,,,,,,,65d7b11a5fb4915f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-md,markdown,fr,cb5bbe45db5bee54,"### Exemple guidé : alt text contextuel — une image, trois contextes
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,nv-exo2-md,markdown,fr,cb5bbe45db5bee54,"### Exemple guidé : alt text contextuel — une image, trois contextes
 
 *Contribution étudiante (PR #23305, github.com/Perr1neF0), intégrée comme exemple guidé.*
 
@@ -22485,7 +22485,7 @@ The accessibility guided example showed three **lengths** of description for the
 - The three context instructions live in a `contextes` dictionary, the length constraint is shared (`LIMITE = 125`)
 - The constraint is **verified by measurement** (`len(texte)`), not by eye, with a retry that hardens the instruction when the text exceeds the limit
 - Two final checks: each text fits under the limit, and the three texts are **distinct** — without the second, three interchangeable rephrasings would pass the test",,,,,,,cb5bbe45db5bee54,20616386eb07729b,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-code,code,fr,b17fda52c5ba5857,"# Exemple guide : alt text contextuel -- une image, trois contextes
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,nv-exo2-code,code,fr,b17fda52c5ba5857,"# Exemple guide : alt text contextuel -- une image, trois contextes
 # (contribution etudiante, PR #23305 -- github.com/Perr1neF0)
 
 # Etape 1 : Choix de l'image
@@ -22549,7 +22549,7 @@ for ctx, texte in alt_texts.items():
 textes = [t.lower() for t in alt_texts.values()]
 print(""Trois textes distincts :"", ""OUI"" if len(set(textes)) == len(textes) else ""NON"")
 print(""Tous <= 125 caractères  :"", ""OUI"" if all(len(t) <= LIMITE for t in alt_texts.values()) else ""NON"")",,,,,,,,b17fda52c5ba5857,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo3-md,markdown,fr,1dd753d734ab9829,"### Exemple guidé : comparateur d'images — deux images du même domaine côte à côte
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,nv-exo3-md,markdown,fr,1dd753d734ab9829,"### Exemple guidé : comparateur d'images — deux images du même domaine côte à côte
 
 *Contribution étudiante (PR #23305, github.com/Perr1neF0), intégrée comme exemple guidé.*
 
@@ -22571,12 +22571,12 @@ Comparing two images from the same domain in a single workflow: individual analy
 - The cross-comparison is a third call that receives both analyses and **joins image B**, so that the model checks its claims against the visible image
 - A failed analysis interrupts the cross-comparison (immediate `return`): crossing a missing analysis would produce an invented verdict
 - The total time is measured and returned with the result",,,,,,,1dd753d734ab9829,b0cbe829d3e2b2a9,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,67e3bf57,markdown,fr,d28690d38e9d7e8f,"## Exercices à compléter
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,67e3bf57,markdown,fr,d28690d38e9d7e8f,"## Exercices à compléter
 
 Les trois exercices qui suivent portent sur ce que ces exemples ne mesurent pas encore : la **stabilité** d'une sortie répétée à prompt constant, la **fidélité** d'un alt text aux éléments réellement visibles, et la **structuration** d'une note d'évaluation en JSON validable. Chaque squelette s'exécute sans erreur tel quel — à vous de remplir les `TODO etudiant`.","## Exercises to complete
 
 The three exercises that follow address what these examples do not yet measure: the **stability** of a repeated response at constant prompt, the **fidelity** of an alt text to the elements actually visible, and the **structuring** of an evaluation score into validatable JSON. Each skeleton runs without error as is — it is up to you to fill in the `TODO etudiant`.",,,,,,,d28690d38e9d7e8f,74d7205bcbd60f42,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,53b4a16d,markdown,fr,6cb14879167345ca,"### Exercice 1 : Reproductibilité — la même question posée trois fois
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,53b4a16d,markdown,fr,6cb14879167345ca,"### Exercice 1 : Reproductibilité — la même question posée trois fois
 
 L'exemple guidé *prompt neutre vs prompt orienté* mesurait l'effet de l'**angle** du prompt. Ici, tout est figé : même image, même prompt, même modèle. La question devient donc *la sortie est-elle stable ?* Un modèle d'inférence échantillonne, et deux appels identiques peuvent ne pas rendre le même texte.
 
@@ -22623,7 +22623,7 @@ The guided example *neutral prompt vs oriented prompt* measured the effect of th
 - supported parameters of a model: `GET https://openrouter.ai/api/v1/models/openai/gpt-5/endpoints`, field `supported_parameters`
 - three identical calls cost three times the price of one call — keep the prompt short (`analysis_type=""quick""` or few sections)
 - a Jaccard close to 1 signals two nearly identical texts, a low Jaccard a complete rephrasing",,,,,,,6cb14879167345ca,42240f9b672c0b9a,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,3e36808f,code,fr,1475266f6ffaffe4,"# Exercice 1 : Reproductibilite -- la meme question posee trois fois
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,3e36808f,code,fr,1475266f6ffaffe4,"# Exercice 1 : Reproductibilite -- la meme question posee trois fois
 # TODO etudiant : mesurer la dispersion de trois analyses identiques, puis a temperature = 0.0
 
 # Etape 1 : Image et prompt fixes (aucune variation d'angle ici)
@@ -22649,7 +22649,7 @@ analyses_froides = []  # TODO etudiant
 
 # Etape 5 : Conclusion en une phrase (a afficher)
 print(""Exercice a completer"")",,,,,,,,1475266f6ffaffe4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,733f0bd9,markdown,fr,baf0ef6166bfe93e,"### Exercice 2 : Audit de fidélité — un alt text n'affirme que ce qui est visible
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,733f0bd9,markdown,fr,baf0ef6166bfe93e,"### Exercice 2 : Audit de fidélité — un alt text n'affirme que ce qui est visible
 
 L'exemple guidé *alt text contextuel* produisait trois textes conformes à une limite de longueur et à un contexte. Une qualité échappe à ces deux contrôles : la **fidélité**. Un alt text court et bien tourné peut citer une couleur, un objet ou un lieu que l'image ne contient pas — et le lecteur d'écran ne peut pas le contredire.
 
@@ -22684,7 +22684,7 @@ The guided example *contextual alt text* produced three texts compliant with a l
 **Hints**:
 - a term absent from the inventory is not necessarily invented (synonym, rephrasing): the verdict says « to revise », not « false »
 - the inventory and the alt text are two **distinct measurements** of the same image: comparing them only makes sense if each was produced under a single instruction",,,,,,,baf0ef6166bfe93e,f60a127d022f1792,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,11f6adc1,code,fr,6baac784813e8f66,"# Exercice 2 : Audit de fidelite -- un alt text n'affirme que ce qui est visible
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,11f6adc1,code,fr,6baac784813e8f66,"# Exercice 2 : Audit de fidelite -- un alt text n'affirme que ce qui est visible
 # TODO etudiant : inventaire des elements visibles, alt text, puis verification terme a terme
 
 # Etape 1 : Image
@@ -22710,7 +22710,7 @@ termes_non_etayes = []  # TODO etudiant
 # TODO etudiant : afficher la liste des termes non etayes et rappeler la limite de la
 #                 verification lexicale (un synonyme n'est pas une invention)
 print(""Exercice a completer"")",,,,,,,,6baac784813e8f66,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,009bfc93,markdown,fr,3e80b20b0b47449e,"### Exercice 3 : Évaluation structurée — noter une réponse en JSON validable
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,009bfc93,markdown,fr,3e80b20b0b47449e,"### Exercice 3 : Évaluation structurée — noter une réponse en JSON validable
 
 Les exemples guidés produisent des analyses en texte libre. Un usage courant en enseignement est l'inverse : **noter** une réponse selon des critères explicites, et rendre cette note exploitable par un programme. La difficulté n'est pas la note elle-même, c'est d'obtenir une réponse **structurée et validable** — un modèle qui rend une phrase d'appréciation ne rend pas une note.
 
@@ -22744,7 +22744,7 @@ The guided examples produce free-text analyses. A common use in teaching is the 
 - `json.loads()` fails on a markdown code block: ask for the raw text, without tags
 - strict validation (`isinstance(..., int)` and bounds) turns « looks fine » into a binary verdict
 - the grader is a **stochastic** model: the score is indicative, not a truth — its own repeatability can be measured (run the evaluation again identically and compare the two scores)",,,,,,,3e80b20b0b47449e,c8d5d35eda01d7a7,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,1f6e23c5,code,fr,a1740e798a35f9a0,"# Exercice 3 : Evaluation structuree -- noter un alt text avec une rubrique, en JSON
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,1f6e23c5,code,fr,a1740e798a35f9a0,"# Exercice 3 : Evaluation structuree -- noter un alt text avec une rubrique, en JSON
 # TODO etudiant : obtenir une note JSON valide (3 criteres, chacun de 0 a 2)
 
 # Etape 1 : La reponse a evaluer
@@ -23826,7 +23826,7 @@ MyIA.AI.Notebooks/GenAI/Image/examples/science-diagrams.ipynb,518607c9,markdown,
 MyIA.AI.Notebooks/GenAI/Image/examples/science-diagrams.ipynb,7c56404f,markdown,fr,f6f51626eb2fdd11,"**Lecture du contrôle Vision** — La cellule précédente imprime l'analyse de l'image réellement générée. Pour cette exécution, elle signale notamment des flèches pointant vers un autre organite que celui de leur légende. Les scores, les éléments manquants et les recommandations se lisent dans cette sortie : ils décrivent **cette image**, et ne sont pas des constantes à recopier pour les générations suivantes.
 
 **Conséquence pédagogique** : ne pas présenter un diagramme comportant des légendes erronées comme un support de référence. La composition générale et les couleurs ne compensent pas une attribution incorrecte. Corriger le prompt, régénérer puis vérifier chaque flèche avec une source disciplinaire ou une personne compétente avant réutilisation. Une autre exécution peut produire une autre image et exige une nouvelle lecture de son analyse.",,,,,,,,f6f51626eb2fdd11,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ex2-lecture,markdown,fr,6609da62526c3590,"### Lecture du résultat
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,ex2-lecture,markdown,fr,6609da62526c3590,"### Lecture du résultat
 
 Le protocole ci-dessus est **reproductible** : une même référence Text-to-Image est générée avec la graine 42, puis éditée trois fois avec le même prompt aquarelle, la même graine et les mêmes réglages ; seul `denoise` varie. Les deux tests locaux confirment d'abord que les métriques elles-mêmes sont correctes : deux images identiques donnent MAE = 0 et PSNR infini, une image noire comparée à une image blanche donne MAE = 255 et PSNR ≈ 0 dB.
 
@@ -23845,7 +23845,7 @@ La progression des métriques est régulière — MAE est à peu près multipli�
 Ce rejeu reproduit exactement ses mesures — 4,6003 / 31,8027 dB à 0,2 et 11,6781 / 24,8219 dB à 0,5, identiques à quatre décimales : même graine, même modèle et même prompt rendent la chaîne déterministe, et les chiffres rapportés étaient exacts. Son observation visuelle est elle aussi confirmée : à 0,5, l'effet reste discret. Et le palier qui lui manquait est précisément celui où le style apparaît : à 0,8, MAE = 30,2854 et PSNR = 16,3190 dB, la scène reste lisible mais repeinte. Ces valeurs coïncident parce que tout le pipeline est déterministe ; sur un service mis à jour ou avec une autre graine, elles différeraient — c'est la **tendance** et la **lecture visuelle** qui se comparent, jamais une décimale isolée.
 
 Enfin, MAE et PSNR mesurent une distance pixel par pixel, pas la réussite artistique. Une édition peut rester très proche numériquement de la référence tout en étant trop timide stylistiquement ; à l'inverse, une transformation plus affirmée augmente mécaniquement l'écart. Le bon compromis se juge donc avec trois éléments ensemble : le tableau, les images avant/après et les zones éclairées par les cartes de différences.",,,,,,,,6609da62526c3590,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ex2b-enonce,markdown,fr,23d69089e682312d,"### Exercice 2 : Deux prompts, un denoise — que voient MAE et PSNR ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,ex2b-enonce,markdown,fr,23d69089e682312d,"### Exercice 2 : Deux prompts, un denoise — que voient MAE et PSNR ?
 
 L'exemple guidé ci-dessus fait varier `denoise` à prompt fixe. Cet exercice inverse la question : **à `denoise` fixe, deux directions d'édition différentes produisent-elles le même écart de métriques ?**
 
@@ -23859,7 +23859,7 @@ L'exemple guidé ci-dessus fait varier `denoise` à prompt fixe. Cet exercice in
 **Indices** :
 - `# Indice` : réutilisez `metriques_ex2`, `compare_before_after` et `create_difference_map` définis dans l'exemple guidé
 - `# Indice` : un prompt qui déplace tous les pixels un peu (filtre global) et un prompt qui déplace peu de pixels beaucoup (objet ajouté) peuvent donner des MAE proches — la carte de différences les distingue",,,,,,,,23d69089e682312d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ex2b-stub,code,fr,d1a26875ffccd955,"# Exercice 2 : Deux prompts, un denoise -- que voient MAE et PSNR ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb,ex2b-stub,code,fr,d1a26875ffccd955,"# Exercice 2 : Deux prompts, un denoise -- que voient MAE et PSNR ?
 
 # TODO etudiant : deux prompts d'edition de natures differentes (local/subtil vs global)
 prompts_ex2b = [""Votre prompt local ou subtil ici"", ""Votre prompt global ici""]  # TODO etudiant
@@ -24070,7 +24070,7 @@ conclusion_ex9 = None  # TODO etudiant : que faut-il exiger d'un critere de zone
 
 print(""Exercice a completer"")
 ",,,,,,,,178b799a2acd0593,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,19756c25,markdown,fr,6f80301f1b905e40,"## Comparaison directe : le modèle compare lui-même les deux images
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,19756c25,markdown,fr,6f80301f1b905e40,"## Comparaison directe : le modèle compare lui-même les deux images
 
 *Exemple guidé ajouté après la présentation de la contribution #23305, qui reste intacte : il reprend son comparateur d'images et le mesure contre une autre façon de faire.*
 
@@ -24097,7 +24097,7 @@ Vision models accept **several images in a single message**: an array of `image_
 - Both paths receive **the same comparison instruction**; what changes is what they have in front of them, not what they are asked.
 - The number of calls, input tokens and time are recorded for both paths, on the same pair of images.
 - A lighter model from the module's list would be enough: direct comparison is **one** call, not three. Not measured here — the five calls of the section ran on `openai/gpt-5`.",,,,,,,6f80301f1b905e40,b7eba857ab0ce827,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9e5172e1,code,fr,6f20385071062526,"# Exemple guide : le modele compare lui-meme -- un seul appel, les deux images
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,9e5172e1,code,fr,6f20385071062526,"# Exemple guide : le modele compare lui-meme -- un seul appel, les deux images
 # Mesure face a la version ""descriptions"" de l'exemple precedent.
 import time
 
@@ -24229,7 +24229,7 @@ else:
     verdict_descriptions, verdict_direct = None, None
     cout_descriptions, cout_direct = None, None
     print(""Comparaison sautee : le modele ne lit qu'une image par message."")",,,,,,,,6f20385071062526,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9a42930a,markdown,fr,edd6677661d03a54,"### Lecture du résultat — ce que la comparaison directe change, et ce qu'elle ne change pas
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,9a42930a,markdown,fr,edd6677661d03a54,"### Lecture du résultat — ce que la comparaison directe change, et ce qu'elle ne change pas
 
 L'acceptation du multi-images a été **mesurée** avant usage : interrogé sur le nombre d'images qu'il distingue dans un message portant deux parties `image_url`, `openai/gpt-5` répond `2`. Le reste de la cellule s'appuie sur cette réponse, pas sur la réputation du modèle.
 
@@ -24275,7 +24275,7 @@ And a counter-reading, so as not to overinterpret: **both verdicts choose the sa
 
 Cost of the section: five vision calls on `openai/gpt-5` — the acceptance probe, the three calls of the text path, the call of the direct path. A lighter model would suffice for these calls, one of the five in particular: direct comparison requires only one. Not measured here.",,,,,,,edd6677661d03a54,21afe1d8785dcf93,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb,cell-88c82e63,markdown,fr,769436fb8079af44,"🎨 **Lecture** : La seed est **9999 pour les quatre styles** — photoréaliste, cinématique, illustration, anime — et la montre reste dans sa bande (36,1 s, puis 33,2/33,3/33,2 s) ; le levier de variation est ici **le texte seul**. Même bruit initial, même budget de pas : les mots de style (« photorealistic », « cinematic still », « digital illustration », « anime artwork ») steernt la même matière première vers quatre rendus différents. C'est le contrepoint exact de la section précédente sur les seeds — là, le prompt était figé et le bruit variait ; ici, le bruit est figé et le prompt varie. Les quatre vignettes de la figure se comparent sous cet angle : ce qui les sépare ne peut venir que du texte.",,,,,,,,769436fb8079af44,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,96ff31ed,markdown,fr,03a2e5447289748f,"## 6. Le transfert de style par reference : la capacite distinctive
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,96ff31ed,markdown,fr,03a2e5447289748f,"## 6. Le transfert de style par reference : la capacite distinctive
 
 La variance de graine (section 5) jouait sur la **composition**. Ce qui
 distingue Qwen-Image 2.1 des generateurs text-to-image ordinaires, c'est le
@@ -24297,7 +24297,7 @@ Les ancres sont **telechargees a l'execution** depuis le depot Argumentum puis
 uploadees vers l'instance -- jamais commitees dans CoursIA (licence LGPL-3.0).
 C'est le sens de l'acceptance : le contenu de calibration du volet jumeau est
 **utilise**, pas ignore.",,,,,,,,03a2e5447289748f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,d094a4ac,code,fr,55b9f7244d6787e2,"# Ancres de calibration Argumentum (issue #1472) -- LGPL-3.0, telechargees a l'execution
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,d094a4ac,code,fr,55b9f7244d6787e2,"# Ancres de calibration Argumentum (issue #1472) -- LGPL-3.0, telechargees a l'execution
 BASE_ARGUMENTUM = ""https://raw.githubusercontent.com/ArgumentumGames/Argumentum/master/Cards/Rules/Assets""
 ANCRES = {
     ""bg-rules.jpg"": (f""{BASE_ARGUMENTUM}/bg-rules.jpg"", ""style""),      # <image1>
@@ -24326,7 +24326,7 @@ for ax, (nom, img) in zip(axes, ancres_chargees.items()):
     ax.axis(""off"")
 plt.tight_layout()
 plt.show()",,,,,,,,55b9f7244d6787e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,dffadf02,code,fr,722e8dd4b6e73ba3,"# Workflow ref2image : conversion par l'organe du depot, puis roles des ancres
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,dffadf02,code,fr,722e8dd4b6e73ba3,"# Workflow ref2image : conversion par l'organe du depot, puis roles des ancres
 # Le convertisseur minimal de la section 3 couvre les classes core ; ref2image
 # ajoute TextEncodeQwenImage21 et LoadImage, dont l'appariement widgets->entrees
 # se devine mal (l'encodeur publie prompt/negative_prompt + liens). On utilise
@@ -24360,7 +24360,7 @@ GRILLE = 20261018  # meme graine que la baseline ci-dessous : la reference est l
 noeud_de_classe(prompt_ref, ""KSampler"")[""inputs""][""seed""] = GRILLE
 noeud_de_classe(prompt_ref, ""ResolutionSelector"")[""inputs""][""megapixels""] = 1
 print(""ref2image configure : ancres branchees, graine"", GRILLE, "", 1 MP"")",,,,,,,,722e8dd4b6e73ba3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,5068668d,code,fr,5ad1df7461a2a4d5,"# Comparaison : meme graine, meme concept -- la reference est-elle la seule difference ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,5068668d,code,fr,5ad1df7461a2a4d5,"# Comparaison : meme graine, meme concept -- la reference est-elle la seule difference ?
 PROMPT_TEXTE = (
     ""A single friendly cartoon kid character presenting a card, warm pastel ""
     ""color palette, soft paper texture, children's card game illustration, ""
@@ -24391,7 +24391,7 @@ for ax in axes:
     ax.axis(""off"")
 plt.tight_layout()
 plt.show()",,,,,,,,5ad1df7461a2a4d5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,6131a93d,markdown,fr,4ac96e95f71ab1b1,"### Lecture de la comparaison
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,6131a93d,markdown,fr,4ac96e95f71ab1b1,"### Lecture de la comparaison
 
 Les deux images partagent la meme graine et le meme concept. La baseline
 s'appuie sur une description textuelle **soignee** du style vise (palette
@@ -24410,6 +24410,6 @@ La planche comparative ci-dessus embarque leurs pixels en reduction a titre
 de temoin -- ces deux vignettes de la planche restent sous LGPL-3.0.
 
 **Les chiffres de la sortie.** La baseline texte tourne en **74 s**, le transfert par ancres en **345 s** — environ **4,7x** plus lent, le prix du chemin `<image1>/<image2>` : les deux references passent par l'encodeur vision du modele en plus du denoising. Le workflow de reference converti par l'organe du §3 porte **12 noeuds** (contre 10 pour le text2image), configure ici avec la graine **20261018** et `megapixels = 1` pour que les deux bras de la comparaison produisent des images de meme taille — la seule variable teste est la presence de la reference, pas la resolution. Le temps cite n'inclut pas le chargement des poids : les deux generations partent de l'instance deja chaude, la difference de 271 s mesure donc bien le surcout du chemin vision, pas un cold start.",,,,,,,,4ac96e95f71ab1b1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,38156584,markdown,fr,1a3cc466b02247c0,"### Lecture du résultat
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb,38156584,markdown,fr,1a3cc466b02247c0,"### Lecture du résultat
 
 La sortie établit les deux prérequis de connexion en une ligne chacun : l'endpoint (`https://qwen-image-edit.myia.io`, l'instance hébergée du palier INT8 décrite en §1) et le token — **présent mais jamais affiché**, la sortie ne portant que son existence. C'est la discipline de secrets du dépôt appliquée au fil du carnet : le `.env` de la série est découvert en remontant les répertoires parents, les deux noms de variables (`COMFYUI_AUTH_TOKEN`/`COMFYUI_API_TOKEN`) couvrent les deux conventions du stack, et une exception explicite (« voir scripts/genai-stack ») renvoie vers l'audit d'auth plutôt que de laisser une ValueError nue. Le `CLIENT_ID` uuid4 en fin de cellule est le marqueur de session WebSocket : ComfyUI y route les événements d'exécution du client qui a soumis le prompt. Le meme pattern se retrouve dans tous les carnets GenAI de la serie : la presence d'un secret se teste, sa valeur ne se print jamais — une sortie de cellule commitee est un artefact public du depot. Concretement : qui clone le depot et execute le carnet sans `.env` voit la cellule echouer sur une exception explicite — jamais sur un appel reseau qui part sans authentification.",,,,,,,,1a3cc466b02247c0,,,,,,,,,,,,,,,
