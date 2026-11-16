@@ -136,9 +136,9 @@ def test_les_cibles_du_job_adk_sont_reconnues_sur_le_workflow_reel() -> None:
     wf = (REPO_ROOT / ".github/workflows/scripts-tests.yml").read_text(encoding="utf-8")
     targets = extract_run_targets(wf)
     assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
-            "07-Agent-Orchestration/utils/test_adk_runtime_contracts.py") in targets
+            "07-Orchestration-d-Agents/utils/test_adk_runtime_contracts.py") in targets
     assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
-            "07-Agent-Orchestration/config/test_providers.py") in targets
+            "07-Orchestration-d-Agents/config/test_providers.py") in targets
 
 
 def test_is_covered_exact_and_ancestor() -> None:
