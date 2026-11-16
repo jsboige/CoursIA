@@ -2,8 +2,6 @@
 pagetitle: "RL - Reinforcement Learning"
 ---
 
-# RL - Reinforcement Learning
-
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ GameTheory](../GameTheory/README.md)
 
 <!-- CATALOG-STATUS
