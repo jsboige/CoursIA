@@ -1,0 +1,10 @@
+- name: ML DataScience 2.3b Naive Bayes
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Naive Bayes gaussien est calculé en C# ; NumPy conserve les tirages et les véritables GaussianNB et régression logistique sklearn servent aux comparaisons via Python.NET.
+  known_differences:
+    - Les courbes sont des SVG statiques et les durées dépendent de l'environnement.
+    - Python.NET nécessite un CPython configuré avec NumPy et scikit-learn.
