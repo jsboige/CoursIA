@@ -33,7 +33,11 @@ zéro `sorry`, sibling EN), sans refresh du tableau ni des comptes de la ligne
 `hecke_lean` (périmés depuis #18723 — au prochain refresh complet).
 Déplacement 2026-10-22 (#20649) : `iit_lean` a quitté `SymbolicAI/Lean/` pour
 `MyIA.AI.Notebooks/IIT/iit_lean/`, sa série consommatrice ; la ligne du tableau
-reste l'état mesuré au 2026-09-30 et ne décrit plus l'arbre courant.
+reste l'état mesuré au 2026-09-30 et ne décrit plus l'arbre courant. Ajout
+ponctuel 2026-11-16 : lake `linear_lean` (#24838 Fille 3.1 marche 1 — socle
+chapitres 1-2 d'Axler en marches `.lean`, Mathlib v4.33.0, 4 sorry-cibles
+d'exercices documentées, tranche FR seule, sans ligne du tableau ni refresh
+complet — au prochain refresh).
 
 ## Résumé
 
