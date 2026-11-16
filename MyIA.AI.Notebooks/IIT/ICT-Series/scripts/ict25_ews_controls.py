@@ -209,6 +209,42 @@ def run_sensitivity(n_seeds: int) -> list[dict]:
     return rows
 
 
+PAIRED_SEED_OFFSET = 1_000_000
+"""Decalage de graines garantissant que les deux bras du nul apparié sont
+des tirages INDEPENDANTS du nul « decroit sans plier » (seed s pour le bras N,
+seed s + offset pour le bras I, jamais croisés avec range(n_seeds))."""
+
+
+def run_paired_null(n_seeds: int, n_checkpoints: int, noise: float) -> dict:
+    """Nul de la DIFFERENCE appariee delta(N-I) -- le nul que lit D1.
+
+    Le seuil du §3bis calibre ``slope_shift`` sur UNE serie ; la regle D1
+    tranche sur la mediane d'une DIFFERENCE entre deux bras. Sous le nul
+    « le secret ne contamine pas », les deux bras decroissent sans plier :
+    delta vaut la difference de deux tirages independants de la meme loi,
+    dont la variance vaut deux fois celle d'un seul bras. Cette fonction
+    mesure CE nul-la, aux reglages du panel, quantiles 2,5 % et 97,5 %
+    (lecture bilaterale, erreur de type I a 5 %).
+    """
+    deltas = np.array(
+        [
+            slope_shift(decay_null_series(n_checkpoints, s, noise))
+            - slope_shift(decay_null_series(n_checkpoints, s + PAIRED_SEED_OFFSET, noise))
+            for s in range(n_seeds)
+        ]
+    )
+    return {
+        "n_seeds": n_seeds,
+        "n_checkpoints": n_checkpoints,
+        "noise": noise,
+        "seed_offset": PAIRED_SEED_OFFSET,
+        "null": "decroit_sans_plier_moins_decroit_sans_plier (tirages independants)",
+        "median": float(np.median(deltas)),
+        "q2_5": float(np.quantile(deltas, 0.025)),
+        "q97_5": float(np.quantile(deltas, 0.975)),
+    }
+
+
 def run_controls(n_seeds: int, n_checkpoints: int, noise: float) -> dict:
     """Puissance de chaque statistique, au seuil du quantile 95 du nul."""
     ns = load_instrument(notebook_path())
@@ -250,6 +286,7 @@ def run_controls(n_seeds: int, n_checkpoints: int, noise: float) -> dict:
         "statistics": rows,
         "candidates": run_candidates(n_seeds, n_checkpoints, noise),
         "sensitivity": run_sensitivity(n_seeds),
+        "paired_null": run_paired_null(n_seeds, n_checkpoints, noise),
         "degenerate": degenerate,
     }
 
@@ -301,6 +338,15 @@ def main(argv: list[str] | None = None) -> int:
             f"{row['n_checkpoints']:>4}{row['ramp']:>8.2f}{row['noise']:>8.2f}"
             f"{row['threshold_q95']:>12.6f}{row['power']:>11.1%}"
         )
+
+    print()
+    paired = report["paired_null"]
+    print("nul de la difference appariee delta(N-I) -- deux tirages independants du nul « decroit sans plier » :")
+    print(
+        f"  n_seeds={paired['n_seeds']}  mediane={paired['median']:+.6f}  "
+        f"q2.5={paired['q2_5']:+.6f}  q97.5={paired['q97_5']:+.6f}"
+    )
+    print("  -> bande de D1 : la mediane de delta(N-I) dans [q2.5 ; q97.5] fait tirer D1.")
 
     print()
     print("controle degenere -- le placeholder du carnet contre lui-meme :")

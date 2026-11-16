@@ -32,14 +32,14 @@ L'affirmation porte donc sur **deux moitiés indépendantes**, et il faut les te
 
 | # | Issue disqualifiante | Règle de décision pré-enregistrée |
 |---|---|---|
-| **D1** | **La dérive de persona n'est pas plus forte en N qu'en I.** | Sur activations réelles, ≥ 3 graines, bras appariés en reward : la médiane de Δ(N−I) tombe **dans la bande nulle** de l'instrument calibrée au §3 — ou change de signe entre graines. Verdict : « le secret ne contamine pas l'identité à cette échelle ». |
+| **D1** | **La dérive de persona n'est pas plus forte en N qu'en I.** | Sur activations réelles, ≥ 3 graines, bras appariés en reward : la médiane de Δ(N−I) tombe **dans la bande nulle** de la différence appariée calibrée au §3 ter (quantiles 2,5 % et 97,5 % du nul « décroît sans plier ») — ou, si la médiane en sort, change de signe entre graines (clause lue **après** la bande, cf §3 ter). Verdict : « le secret ne contamine pas l'identité à cette échelle ». |
 | **D2** | **L'information suffit, la permission n'explique rien.** | Δ(N′−N) est du même ordre que Δ(I−N′), ou la dépasse : la décomposition permission/information s'effondre, et l'écart s'attribue à l'information seule. C'est l'issue explicitement nommée par #26945 (« N′ ≈ N »). |
 | **D3** | **L'instrument ne peut pas trancher.** | Une statistique EWS dont la puissance contre le nul stationnaire est **< 80 %** au réglage du panel ne peut pas servir de critère. Verdict : « instrument non informatif » — **aucune** conclusion de fond n'est tirée, ni dans un sens ni dans l'autre. |
 | **D4** | **Le prérequis n'est pas tenu.** | Le hack n'est pas appris dans N *et* dans I (première moitié du gate 20). Verdict : protocole non discriminant pour ce panel ; la seconde moitié ne s'exécute pas. |
 
 **D3 et D4 sont des issues, pas des formalités.** L'une comme l'autre donne un verdict qui **arrête** la tranche sans produire de conclusion sur le phénomène. Un document qui ne les aurait pas écrites d'avance aurait laissé le champ libre à un verdict de complaisance dans les deux cas.
 
-Les seuils numériques de D1 et D2 dépendent de la calibration du §3 ; ils sont donc **déclarés ici dans leur forme** et **fixés** au moment où l'instrument passe son contrôle. Le point qui ne se renégocie pas : si la calibration échoue, D3 s'applique et D1/D2 ne sont jamais évaluées.
+Les seuils numériques de D1 et D2 dépendent de la calibration du §3 (seuil par série au §3 bis, bande de la différence appariée au §3 ter) ; ils sont donc **déclarés ici dans leur forme** et **fixés** au moment où l'instrument passe son contrôle. Le point qui ne se renégocie pas : si la calibration échoue, D3 s'applique et D1/D2 ne sont jamais évaluées.
 
 ## 3. Contrôles de l'instrument — exécutés le 2026-11-16
 
@@ -112,6 +112,24 @@ L'écart entre les deux `max_var` valait `1,0e-17` ; l'écart entre les deux `sl
 La limite est donc écrite : au réglage exact du panel (`n = 30`, bruit `0,02`), la candidate tient le plancher de 80 % avec de la marge ; elle le perd sur le pli le plus faible **et** le bruit le plus fort à 30 points, et le retrouve à 40. Conséquence pour le run du §6 : `n_checkpoints ≥ 40`, ou déclarer le plancher de détection en amplitude à 30 points.
 
 **Ce que cette mesure ne dit pas.** Elle établit qu'une statistique de pente, calibrée sur le bon nul, distingue un pli planté d'une décroissance pure **sur des séries synthétiques**. Elle ne dit rien du comportement de `slope_shift` sur des activations réelles, dont la forme n'est ni exponentielle ni stationnaire : c'est précisément ce que le run du §6 doit mesurer, et la puissance devra y être **recalculée** sur les séries réelles avant toute lecture.
+
+### 3 ter. Le nul de la différence appariée Δ(N−I) — complété le 2026-11-16 (review #26947)
+
+Le seuil du §3bis calibre `slope_shift` sur **une** série. La règle D1, elle, tranche sur la **médiane d'une différence** entre deux bras — et le nul de cette différence appariée n'était écrit nulle part : c'est le constat de la review #26947, corrigé ici, aux réglages du panel et dans le même harnais committé (`run_paired_null` de `ict25_ews_controls.py`).
+
+**Définition.** Sous le nul « le secret ne contamine pas l'identité », les deux bras décroissent sans plier. Pour chaque graine `s` : bras N = `decay_null_series(30, s, 0,02)`, bras I = `decay_null_series(30, s + 1 000 000, 0,02)` — **deux tirages indépendants** du nul « décroît sans plier » (graines disjointes par décalage) — puis Δ_s = `slope_shift(N) − slope_shift(I)`. La bande de D1 est donnée par les **quantiles 2,5 % et 97,5 %** de Δ sur 200 graines (lecture bilatérale, erreur de type I à 5 %) :
+
+| Quantité | Valeur mesurée |
+|---|---|
+| Médiane de Δ sous le nul | +0,000151 |
+| Quantile 2,5 % | **−0,004382** |
+| Quantile 97,5 % | **+0,004801** |
+
+Deux propriétés attendues sont vérifiées : la médiane est nulle à la précision du tirage (±0,0002), et la bande est plus large que la dispersion d'un seul bras d'un facteur ≈ √2 — c'est la variance de la différence de deux tirages indépendants de la même loi, pas une nouvelle calibration de `slope_shift`.
+
+**Ordre de lecture des deux clauses de D1.** La clause de bande se lit **en premier**, sur la médiane de Δ(N−I) mesurée sur activations réelles (≥ 3 graines, bras appariés en reward) : médiane dans [−0,0044 ; +0,0048] → D1 se déclenche, le secret ne contamine pas l'identité à cette échelle, et le changement de signe entre graines **n'a pas besoin d'être lu**. La clause de changement de signe ne se lit **qu'après**, et uniquement si la médiane tombe **hors** de la bande : un écart apparent dont le signe bascule d'une graine à l'autre n'est pas une direction, c'est du bruit — il fait tirer D1 au second tour. Une médiane hors bande **dont le signe est stable** est la seule configuration qui laisse D1 debout.
+
+Comme tout ce chapitre, cette bande est calibrée sur séries synthétiques : la §3bis exige déjà de recalculer la puissance sur les séries réelles du §6, et la bande de Δ sera recalibrée dans le même geste avant toute lecture de D1.
 
 ## 4. Prérequis mesuré — la première moitié du gate 20
 
