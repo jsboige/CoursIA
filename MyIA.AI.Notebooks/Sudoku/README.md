@@ -6,9 +6,9 @@ pagetitle: "Sudoku — comparer les méthodes de résolution"
 
 <!-- CATALOG-STATUS
 series: Sudoku
-pedagogical_count: 39
-breakdown: root=39
-maturity: BETA=39
+pedagogical_count: 41
+breakdown: root=41
+maturity: BETA=41
 -->
 
 [↑ Parcours de notebooks](../README.md) · [Search : recherche et contraintes](../Search/README.md)
@@ -57,7 +57,7 @@ Le public indiqué reprend la profondeur des contenus : les preuves du palier 19
 |---|---|---|---|---|
 | 00 | Environment — [C#](Sudoku-00-Environment-CSharp.ipynb) | Préparer les grilles, interfaces de solveur et outils de mesure utilisés dans les carnets C#. | Découverte | — |
 | 01 | Backtracking — [C#](Sudoku-01-Backtracking-CSharp.ipynb) · [Python](Sudoku-01-Backtracking-Python.ipynb) | Explorer une grille par retour arrière ; relier ordre des choix, validité et coût de recherche. | Découverte | — |
-| 02 | Dancing Links — [C#](Sudoku-02-DancingLinks-CSharp.ipynb) · [Python](Sudoku-02-DancingLinks-Python.ipynb) | Traduire le Sudoku en couverture exacte et organiser la recherche avec les Dancing Links de Knuth. | Découverte | — |
+| 02 | Dancing Links — [C#](Sudoku-02-DancingLinks-CSharp.ipynb) · [Python](Sudoku-02-DancingLinks-Python.ipynb) · [Rust](Sudoku-02-DancingLinks-Rust.ipynb) | Traduire le Sudoku en couverture exacte et organiser la recherche avec les Dancing Links de Knuth. | Découverte | — |
 | 03 | Genetic — [C#](Sudoku-03-Genetic-CSharp.ipynb) · [Python](Sudoku-03-Genetic-Python.ipynb) | Faire évoluer une population de grilles ; comparer les effets du codage, du croisement et de la mutation. | Découverte | — |
 | 04 | Simulated Annealing — [C#](Sudoku-04-SimulatedAnnealing-CSharp.ipynb) · [Python](Sudoku-04-SimulatedAnnealing-Python.ipynb) | Explorer un paysage de conflits par recuit simulé : voisinage, température et acceptation de dégradations. | Découverte | — |
 | 05 | PSO — [C#](Sudoku-05-PSO-CSharp.ipynb) · [Python](Sudoku-05-PSO-Python.ipynb) | Adapter l'essaim de particules à un problème discret et étudier ses paramètres. | Découverte | — |
@@ -164,6 +164,10 @@ En [17](Sudoku-17-LLM-Python.ipynb), la comparaison porte sur le rôle du modèl
 | Apprendre à proposer des valeurs ou guider la recherche | Modèles de 15–17. | Mesurer la validité complète et tester l'apport d'un contrôle sous contraintes. |
 
 Ces choix se retrouvent dans l'ordonnancement et l'allocation sous contraintes, la vérification de règles avec SMT ou la recherche d'une bonne configuration en optimisation. Le Sudoku permet d'en observer les mécanismes sur un problème dont le résultat se vérifie facilement.
+
+### Comparaison statistique en C#
+
+[Sudoku-18b — Comparaison statistique en C#](Sudoku-18b-Statistical-Comparison-CSharp.ipynb) complète la [version Python](Sudoku-18b-Statistical-Comparison-Python.ipynb). Les solveurs et le bootstrap sont natifs C# ; Python.NET donne accès aux tests de référence SciPy et à l'oracle Holm de statsmodels. L'environnement Python doit fournir NumPy, SciPy et statsmodels ; `PYTHONNET_PYDLL` désigne sa bibliothèque partagée, avec `PYTHONHOME` et `PYTHONPATH` si nécessaire.
 
 ## Installation — pratique, tous niveaux
 
@@ -283,3 +287,7 @@ Une application possible est de reprendre le benchmark 18 avec un solveur hybrid
 Les carnets reprennent notamment des projets étudiants consacrés à Norvig et sa variante BitArray (`Sudoku.Norvig`, `Sudoku.NorvigBitArray`), au recuit (`Sudoku.SimulatedAnnealing`), aux stratégies humaines (`Sudoku.Human`), aux réseaux (`Sudoku.NeuralNetwork`), au PSO (`Sudoku.PSO`), aux CSP (`Sudoku.CspAima`), à la coloration (`Sudoku.GraphColoring`), à Choco (`Sudoku.ChocoSolvers`) et aux LLM (`Sudoku.LLM-ChatGPTenzin`). Les carnets explicitent les adaptations et les outils utilisés.
 
 [Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md) · [Licence](../../LICENSE)
+
+### Audit des corpus en C#
+
+[Sudoku-20 — Audit des corpus en C#](Sudoku-20-CorpusAudit-CSharp.ipynb) accompagne la [version Python](Sudoku-20-CorpusAudit-Python.ipynb) : il porte en BCL la propagation de Norvig et le comptage plafonné, sur les mêmes trois corpus.

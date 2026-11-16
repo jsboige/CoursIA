@@ -656,5 +656,77 @@ def test_cli_from_json_stays_offline(monkeypatch, tmp_path, capsys):
     assert report(capsys)["epic_visit_cap"] is None
 
 
+# --- le grain DISPATCHE par le coordinateur est exempt du plafond ----------
+
+def test_dispatch_du_coordinateur_exempte_la_lane_nommee(capsys):
+    """Controle POSITIF : le grain dispatche a cette lane n'est PAS plafonne.
+
+    Le coordinateur poste le claim de dispatch sous SON login (`myia-ai-01`)
+    et nomme la lane servie. La visite d'une AUTRE lane arme pourtant le
+    plafond hebdomadaire : sans dispense, la lane refusee par le plafond ne
+    peut pas faire le grain que le coordinateur lui a nomme.
+
+    La visite armeuse a 3 jours (> le seuil de peremption de 48 h) : elle
+    n'est donc pas un bloqueur de lane, et ce qui se mesure ici est bien le
+    plafond.
+    """
+    payload = epic(comments=[
+        comment(f"[CLAIMED] lane {OTHER_LANE} -- tranche", iso(days=3)),
+        comment(f"[CLAIMED] lane {LANE} -- pose au dispatch par le "
+                "coordinateur myia-ai-01 : grain de contenu",
+                iso(minutes=30), author="myia-ai-01"),
+    ])
+    loaders = Loaders(pool=[])
+    rc = run(payload, loaders, stale_threshold=48)
+    assert rc == 0
+    data = report(capsys)
+    assert data["epic_visit_cap"] is None
+    assert data["blocked"] is False
+    # La dispense se LIT : elle nomme l'auteur et l'instant du claim.
+    assert data["epic_visit_cap_dispatch"]["author"] == "myia-ai-01"
+    assert "dispatch" in data["epic_visit_cap_skipped"]
+    # Une dispense connue ne se paie pas : le pool n'est pas lu.
+    assert loaders.pool_calls == 0
+
+
+def test_dispatch_du_coordinateur_n_exempte_pas_les_autres_lanes(capsys):
+    """Controle NEGATIF (l'autre direction) : la dispense est PERSONNELLE.
+
+    Le meme claim de dispatch, mais nomme une AUTRE lane : la lane qui
+    interroge reste plafonnee. C'est ce test qui interdit de lire la
+    dispense comme un passe-droit general du coordinateur.
+    """
+    payload = epic(comments=[
+        comment(f"[CLAIMED] lane {OTHER_LANE} -- tranche", iso(days=3)),
+        comment(f"[CLAIMED] lane {OTHER_LANE} -- pose au dispatch par le "
+                "coordinateur myia-ai-01 : grain pour cette lane",
+                iso(days=3, hours=-1), author="myia-ai-01"),
+    ])
+    rc = run(payload, Loaders(pool=[]), stale_threshold=48)
+    assert rc == 1
+    data = report(capsys)
+    assert data["epic_visit_cap"].startswith(CAUSE_PREFIX)
+    assert data["epic_visit_cap_dispatch"] is None
+
+
+def test_un_claim_de_lane_ne_s_exempte_pas_du_plafond(capsys):
+    """Controle NEGATIF : l'AUTEUR fait la dispense, pas le marqueur.
+
+    Une lane qui pose elle-meme son `[CLAIMED]` -- sous le login partage,
+    comme toute lane -- ne s'exempte pas du plafond. Sans ce test, une lane
+    pourrait s'auto-exempter en écrivant son propre claim.
+    """
+    payload = epic(comments=[
+        comment(f"[CLAIMED] lane {OTHER_LANE} -- tranche", iso(days=3)),
+        comment(f"[CLAIMED] lane {LANE} -- ma prise", iso(minutes=30),
+                author="jsboige"),
+    ])
+    rc = run(payload, Loaders(pool=[]), stale_threshold=48)
+    assert rc == 1
+    data = report(capsys)
+    assert data["epic_visit_cap"].startswith(CAUSE_PREFIX)
+    assert data["epic_visit_cap_dispatch"] is None
+
+
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(pytest.main([__file__, "-q"]))

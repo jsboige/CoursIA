@@ -1,0 +1,10 @@
+- name: "NLP-10 Naive Bayes"
+  family: NLP
+  python: MyIA.AI.Notebooks/NLP/10-Classement-Texte-NaiveBayes-FromScratch.ipynb
+  csharp: MyIA.AI.Notebooks/NLP/10-Classement-Texte-NaiveBayes-FromScratch-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux implémentations principales sont pédagogiques from scratch ; le témoin réel scikit-learn est appelé directement en Python et via Python.NET en C#."
+  known_differences:
+    - "C# utilise Python.NET pour CountVectorizer et MultinomialNB ; les comptages, scores et expériences principaux sont calculés en C#."
+    - "Les exercices Bernoulli exposent les log-probabilités en Python et les probabilités en C#."
