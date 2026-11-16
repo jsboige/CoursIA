@@ -129,6 +129,22 @@ def test_aucune_option_n_accepte_un_corps_en_ligne():
     assert "--input" not in options
 
 
+def test_l_usage_documente_emploie_les_options_reelles():
+    """La doc d'usage ne doit pas nommer une option inexistante.
+
+    Un exemple de ligne de commande que le parseur refuse est une dette
+    silencieuse : l'appelant copie l'exemple, et l'organe echoue.
+    """
+    source = _MODULE_PATH.read_text(encoding="utf-8")
+    options = set()
+    for action in gh_rest_post.build_parser()._actions:
+        options.update(action.option_strings)
+    for mention in ("--issue", "--pr ", "--pr\\n"):
+        assert mention not in source, mention
+    assert "--number" in source
+    assert "--number" in options
+
+
 # ---------------------------------------------------------------------------
 # la garde post-POST : les deux predicats
 # ---------------------------------------------------------------------------

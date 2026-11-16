@@ -51,14 +51,14 @@ Le jeton
 Usage
 -----
     python scripts/coordination/gh_rest_post.py comment \
-        --repo jsboige/CoursIA --issue 26966 --body-file corps.md
+        --repo jsboige/CoursIA --number 26966 --body-file corps.md
     python scripts/coordination/gh_rest_post.py pr-comment \
-        --repo jsboige/CoursIA --pr 26704 --body-file corps.md
+        --repo jsboige/CoursIA --number 26704 --body-file corps.md
     python scripts/coordination/gh_rest_post.py pr-create \
         --repo jsboige/CoursIA --base main --head fix/x --title "..." \
         --body-file corps.md
     python scripts/coordination/gh_rest_post.py edit-pr-body \
-        --repo jsboige/CoursIA --pr 26976 --body-file corps.md
+        --repo jsboige/CoursIA --number 26976 --body-file corps.md
 
 Sortie : une ligne JSON `{"id": ..., "url": ..., "length": ..., "guards": [...]}`.
 """
