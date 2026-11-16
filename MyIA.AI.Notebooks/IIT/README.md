@@ -2,8 +2,6 @@
 pagetitle: "IIT - Integrated Information Theory"
 ---
 
-# IIT - Integrated Information Theory
-
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Probas](../Probas/README.md)
 
 ## Hook — pourquoi cette série
@@ -589,5 +587,5 @@ Voir la licence du repository principal.
 series: IIT
 pedagogical_count: 114
 breakdown: ICT-Series=104, root=10
-maturity: BETA=104, DRAFT=9, ALPHA=1
+maturity: BETA=112, DRAFT=2
 -->

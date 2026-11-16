@@ -1,5 +1,7 @@
 # Slow lane (voie asynchrone) — tranches 1-2 #12856
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 ## Strategie
 
 Sortir les controles **lourds et idempotents** du `pull_request` et les payer

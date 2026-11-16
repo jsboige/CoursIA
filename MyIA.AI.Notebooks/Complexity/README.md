@@ -69,6 +69,12 @@ paires est $4+2/(n-1)$ au doublement de la taille, donc il tend vers 4 sans lui
 
 [Complexity-02b : seuil du 3-SAT (C#)](Complexity-02b-SAT-PhaseTransition-CSharp.ipynb) accompagne la [version Python](Complexity-02b-SAT-PhaseTransition-Python.ipynb). Les deux réalisent les balayages et le contrôle exhaustif avec DPLL pédagogique ; les générateurs aléatoires diffèrent et leurs mesures numériques ne coïncident pas nécessairement.
 
+### Jumeau C# — les conjectures online (04b)
+
+[Complexity-04b : secrétaire matroïdal et k-server (C#)](Complexity-04b-OnlineConjectures-Secretary-KServer-CSharp.ipynb) accompagne la [version Python](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb). Les budgets et les expériences sont conservés — vingt mille tirages par taille pour la baseline $1/e$, deux mille suites de compétitivité par instance, les huit graines du protocole pour la dispersion — de même que les trois exercices, chacun muni d'un contrôle automatique qui rejette un mutant.
+
+Tout est écrit contre la BCL : pas de paquet NuGet, y compris pour l'union-find du matroïde graphique et pour la programmation dynamique de la work function. Le générateur est `System.Random`, non PCG64 ; les grandeurs qui ne dépendent d'aucun tirage coïncident donc exactement avec le carnet Python — sur le cycle $C_5$, OPT = 3, WFA = 5 et ratio 1,667 à toute longueur, glouton = 61 — tandis que les valeurs tirées diffèrent, et les deux carnets l'affichent plutôt que de le taire. Les nombres s'affichent avec la virgule décimale de la culture du noyau.
+
 ## Parcours
 
 La série se lit de haut en bas : chaque notebook principal ne suppose que ceux qui le
