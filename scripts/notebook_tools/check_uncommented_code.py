@@ -65,6 +65,13 @@ carnet sans ids voit alors ses cellules suivantes comptees comme modifiees
 quand une insertion decale les positions, ce qui sur-signale sans jamais
 manquer un defaut.
 
+Un carnet **renomme** sans changement de contenu n'est pas neuf : ``git diff
+--name-only`` (l'attelage partage) ne rend que le nouveau chemin, et lire la
+base a ce chemin rend ``None`` -- le carnet entier etait alors juge
+« (carnet neuf) » (35 faux positifs sur les 21 renommages de #26420). La
+table nouveau->ancien (``--name-status -M``) est donc construite et la base
+relue a l'ancien chemin (correctif #26690 sur l'organe lui-meme).
+
 Mode fichier (``--file``) : juge un carnet entier, pour l'audit hors CI.
 
 Codes de sortie : 0 aucun defaut, 1 au moins un defaut, 2 erreur d'invocation.
@@ -89,8 +96,11 @@ from pathlib import Path
 # Le meme attelage git que les organes freres : une seule implementation de
 # « qu'est-ce qui a change entre le merge-base et HEAD ».
 from check_output_failure_text import (
+    BS,
+    EXCLUDE_MARKERS,
     _cell_source,
     changed_notebooks,
+    git,
     read_notebook_at,
     resolve_base,
 )
@@ -294,14 +304,64 @@ def changed_keys(base_notebook: dict | None, head_notebook: dict) -> set[str] | 
     return keys
 
 
-def compare(base_ref: str, paths: list[str], cwd: str | None = None) -> list[dict]:
-    """Findings par carnet, bornes aux cellules que la branche a touchees."""
+def _parse_rename_status(out: str) -> dict[str, str]:
+    """Table nouveau->ancien chemin depuis ``git diff --name-status -M``.
+
+    Chaque ligne de renommage porte trois champs separees par des
+    tabulations : ``R<score>\tancien\tnouveau`` (le score de similarite est
+    colle au statut). Les autres statuts et les lignes vides sont ignores.
+    """
+    renames: dict[str, str] = {}
+    for line in out.splitlines():
+        fields = line.split("\t")
+        if len(fields) < 3 or not fields[0].startswith("R"):
+            continue
+        old = fields[1].strip().replace(BS, "/")
+        new = fields[2].strip().replace(BS, "/")
+        if old and new:
+            renames[new] = old
+    return renames
+
+
+def renamed_notebooks(base: str, head: str = "HEAD",
+                      cwd: str | None = None) -> dict[str, str]:
+    """Carnets RENOMMES entre base et head, sous la forme nouveau->ancien.
+
+    Un renommage lourdement remanie (similarite sous le seuil de ``-M``)
+    apparait comme une paire suppression+ajout et ne figure pas ici : il est
+    alors juge comme carnet neuf, ce qui sur-signale sans jamais blanchir.
+    """
+    out = git("diff", "--name-status", "-M", "--diff-filter=R", base, head,
+              "--", "*.ipynb", cwd=cwd)
+    if out is None:
+        return {}
+    renames = _parse_rename_status(out)
+    # Meme exclusions que changed_notebooks, sur le chemin NOUVEAU : un
+    # carnet renomme vers un chemin exclu sort du perimetre de jugement.
+    return {new: old for new, old in renames.items()
+            if not any(m in "/" + new for m in EXCLUDE_MARKERS)}
+
+
+def compare(base_ref: str, paths: list[str],
+            renames: dict[str, str] | None = None,
+            cwd: str | None = None) -> list[dict]:
+    """Findings par carnet, bornes aux cellules que la branche a touchees.
+
+    Un carnet RENOMME sans changement de contenu n'est pas neuf : sa base se
+    lit a l'ANCIEN chemin (angle mort corrige sur #26690 -- ``--name-only``
+    perd la source du renommage, et lire la base au nouveau chemin rendait
+    ``None``, donc ``changed_keys`` rendait ``None`` et le carnet entier etait
+    juge « (carnet neuf) » : 35 faux positifs sur #26420, 21 renommages).
+    """
+    renames = renames or {}
     rows: list[dict] = []
     for path in paths:
         head_notebook = read_notebook_at(None, path, cwd=cwd)
         if head_notebook is None:
             continue
         base_notebook = read_notebook_at(base_ref, path, cwd=cwd)
+        if base_notebook is None and path in renames:
+            base_notebook = read_notebook_at(base_ref, renames[path], cwd=cwd)
         keys = changed_keys(base_notebook, head_notebook)
         findings = analyse_notebook(head_notebook, only_keys=keys)
         if findings:
@@ -503,6 +563,36 @@ def self_test() -> int:
         analyse_cell(_cell(*lean_body), language="lean4") is not None,
     ))
 
+    # 11. RENOMMAGE -- la table nouveau->ancien se parse depuis le statut git
+    #     (R<score>\tancien\tnouveau), les autres statuts sont ignores.
+    rename_out = (
+        "R100\tdossier/ancien.ipynb\tdossier/nouveau.ipynb\n"
+        "M\tun/Modifie.ipynb\n"
+        "R075\tchemin\\base.ipynb\tchemin\\reordonne.ipynb\n"
+    )
+    renames = _parse_rename_status(rename_out)
+    checks.append((
+        "renommage : table nouveau->ancien (R100, R075, anti-diagnostics BS)",
+        renames == {"dossier/nouveau.ipynb": "dossier/ancien.ipynb",
+                    "chemin/reordonne.ipynb": "chemin/base.ipynb"},
+    ))
+
+    # 12. RENOMMAGE -- un carnet renomme a cellules INTACTES n'est pas neuf :
+    #     sa base existe (lue a l'ancien chemin par compare), donc keys est un
+    #     ensemble VIDE, pas None, et aucune cellule n'est jugee.
+    renamed_head = _notebook(_cell(*_BODY_12))
+    checks.append((
+        "renommage : base trouvee => cellules intactes hors jugement",
+        changed_keys(_notebook(_cell(*_BODY_12)), renamed_head) == set(),
+    ))
+
+    # 12bis. CONTROLE POSITIF -- un VRAI carnet neuf rend bien None (le carnet
+    #     entier reste juge, y compris apres le correctif renommage).
+    checks.append((
+        "renommage : carnet vraiment neuf => keys=None (juge en entier)",
+        changed_keys(None, renamed_head) is None,
+    ))
+
     failed = [name for name, ok in checks if not ok]
     for name, ok in checks:
         print(("  OK   " if ok else "  FAIL ") + name)
@@ -551,8 +641,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.diff:
         base = resolve_base(args.diff)
         paths = changed_notebooks(base)
+        renames = renamed_notebooks(base)
         scope += len(paths)
-        rows.extend(compare(base, paths))
+        rows.extend(compare(base, paths, renames=renames))
     for path in args.file:
         notebook = read_notebook_at(None, path)
         if notebook is None:

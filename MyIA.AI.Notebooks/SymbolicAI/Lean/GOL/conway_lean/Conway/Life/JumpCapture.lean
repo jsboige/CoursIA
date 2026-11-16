@@ -450,8 +450,10 @@ Deux ingrédients nouveaux :
 1. `cellWf_toGrid_bounds` : le domaine d'une cellule bien formée de niveau
    `n` vit dans `[0, 2^n)²` — la borne de cadrage manquante, par induction
    sur le prédicat opaque `cellWf` (c.142 de HashlifeCorrectness) ;
-2. `evolve_mul_of_period` : une période `T` se répète — `evolve T g = g`
-   entraîne `evolve (m·T) g = g` pour tout multiple.
+2. `evolve_mulJ_of_period` : une période `T` se répète — `evolve T g = g`
+   entraîne `evolve (m·T) g = g` pour tout multiple. Suffixe `J` (même
+   convention que la copie `mulF` de HashlifeMarginFragment) : le nom court
+   `evolve_mul_of_period` est déjà pris par `Conway.Life.Novelty`.
 
 La géométrie : `padCenter2` translate le contenu de `3·2^(k-1)` ; le
 contenu borné `[0, 2^k)` atterrit donc dans `[3·2^(k-1), 3·2^(k-1) + 2^k)
@@ -515,7 +517,7 @@ theorem cellWf_toGrid_bounds {c : MacroCell} (hc : cellWf c) (r0 c0 : Int)
 /-- **Une période se répète** : si `g` est de période `T` (au sens faible
     `evolve T g = g`), alors tout multiple `m·T` d'étapes la
     ramène à elle-même. Par induction sur `m` via `evolve_add`. -/
-theorem evolve_mul_of_period {T : Nat} (g : Grid)
+theorem evolve_mulJ_of_period {T : Nat} (g : Grid)
     (hper : evolve T g = g) (m : Nat) :
     evolve (m * T) g = g := by
   induction m with
@@ -539,7 +541,7 @@ theorem jumpCaptured_of_period_divides (c : MacroCell) (hwf : c.wf = true)
   obtain ⟨m, hm⟩ := hdiv
   have hself : evolve (2 ^ c.level) (c.toGrid (0, 0)) = c.toGrid (0, 0) := by
     rw [hm, Nat.mul_comm]
-    exact evolve_mul_of_period _ hper m
+    exact evolve_mulJ_of_period _ hper m
   have hfinal : evolve (2 ^ c.level) ((padCenter2 c).toGrid (0, 0))
       = shift ((3 * 2 ^ (c.level - 1) : Int), (3 * 2 ^ (c.level - 1) : Int))
           (c.toGrid (0, 0)) := by
