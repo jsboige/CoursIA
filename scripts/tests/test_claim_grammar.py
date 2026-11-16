@@ -20,6 +20,7 @@ Deux divergences documentees, chacune piree par un test dedie :
 
 Run: python -m pytest scripts/tests/test_claim_grammar.py -q
 """
+import ast
 import importlib.util
 import json
 import sys
@@ -260,6 +261,29 @@ def test_accolades_non_fermees_epic_wide_fail_closed():
     assert evs[0].get("unparseable_scope") or not evs[0].get("paths")
 
 
+def _hotes_subprocess(src: str) -> list[str]:
+    """Les fonctions de premier niveau qui touchent `subprocess`, lues sur l'AST.
+
+    Le nom rendu est celui de l'hote ; `"<module>"` signale un appel au niveau
+    module, qui serait le pire cas (import == effet de bord).
+    """
+    hotes = []
+    for noeud in ast.parse(src).body:
+        if isinstance(noeud, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            for enfant in ast.walk(noeud):
+                if (isinstance(enfant, ast.Attribute)
+                        and isinstance(enfant.value, ast.Name)
+                        and enfant.value.id == "subprocess"):
+                    hotes.append(noeud.name)
+                    break
+        elif any(isinstance(enfant, ast.Attribute)
+                 and isinstance(enfant.value, ast.Name)
+                 and enfant.value.id == "subprocess"
+                 for enfant in ast.walk(noeud)):
+            hotes.append("<module>")
+    return sorted(hotes)
+
+
 def test_module_sans_reseau_import():
     # Garde anti-regression de la frontiere : importer le module ne doit jamais
     # declencher d'appel reseau (aucun code au niveau module n'en fait, et ce
@@ -267,8 +291,17 @@ def test_module_sans_reseau_import():
     src = (SCRIPTS / "coordination" / "claim_grammar.py").read_text(encoding="utf-8")
     assert "import requests" not in src
     assert "import urllib" not in src
-    assert "subprocess.run" not in src.replace(
-        "# ", "#") or True  # _git_tracked_files (git local) est le seul subprocess
+    # Frontiere subprocess : un seul hote autorise, `_git_tracked_files`, qui lit
+    # l'index git LOCAL. La liste est explicite et fermee : un appel ajoute dans
+    # une autre fonction rougit ce test, et un appel au niveau module aussi.
+    assert _hotes_subprocess(src) == ["_git_tracked_files"], _hotes_subprocess(src)
+    # Temoin negatif : le garde doit VOIR un second hote, sinon il ne mord pas
+    # (l'assertion precedente seule ne distinguerait pas « une seule occurrence »
+    # de « detecteur aveugle »).
+    temoin = ("def a():\n    subprocess.run([])\n"
+              "def b():\n    subprocess.run([])\n"
+              "subprocess.run([])\n")
+    assert _hotes_subprocess(temoin) == ["<module>", "a", "b"], _hotes_subprocess(temoin)
     # frontiere reseau : le module ne definit aucun fetch -- la preuve dure est
     # l'absence du symbole ET le temoin fail-closed du test de divergence.
     assert not hasattr(cg, "_fetch_pr_state")
