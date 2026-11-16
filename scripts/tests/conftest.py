@@ -139,3 +139,21 @@ def _belt_deadline_hermetique():
     _reset_belt_deadline()
     yield
     _reset_belt_deadline()
+
+
+@pytest.fixture(autouse=True)
+def _gh_etag_desactive(monkeypatch):
+    """Filet de securite (#26631, CR coordinateur) : ETag persiste DESACTIVE.
+
+    Les tests qui mockent ``subprocess.run`` servent un stdout SANS bloc
+    d'en-tetes de ``gh api -i`` : si le chemin conditionnel etait pris, le
+    corps lu serait vide (incident : test_gh_json_porte_une_borne_par_appel,
+    run 43651006619 -- rouge sur le runner Linux la ou le garde
+    ``cache_dir()`` de gh_etag suffit sur machine sans LOCALAPPDATA ; ce
+    filet couvre AUSSI Windows ou LOCALAPPDATA est pose). Sans cache
+    (``COURSIA_GH_ETAG=0``), ``etag_applicable`` rend None et les organes
+    reprennent leur chemin d'origine octet pour octet. Les tests de gh_etag
+    eux-memes re-activent explicitement dans leur fixture ``cache_isole``.
+    """
+    monkeypatch.setenv("COURSIA_GH_ETAG", "0")
+    yield

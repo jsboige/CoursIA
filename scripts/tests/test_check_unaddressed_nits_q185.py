@@ -331,6 +331,8 @@ def test_q185_constant_adjoint_epinglee():
 
 def test_q185_levee_adjointe_disjointe_du_coordinateur():
     """L'adjoint n'entre pas dans LIFT_OVERRIDE_LOGINS : ses pouvoirs sont
-    les siens (bot only), jamais ceux du coordinateur."""
-    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+    les siens (bot only), jamais ceux du coordinateur. #17437/Q187 : la
+    voix coordinateur porte desormais l'humain PLUS l'App propre
+    ``coursia-coord-ai01[bot]`` -- l'adjoint reste disjoint des deux."""
+    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01", "coursia-coord-ai01[bot]"}
     assert not (mod.LIFT_OVERRIDE_LOGINS & mod.ADJOINT_LIFT_LOGINS)
