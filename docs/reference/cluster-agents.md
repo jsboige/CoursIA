@@ -77,7 +77,7 @@ Deux garde-fous, l'un et l'autre mesurés à l'usage :
 
 Il n'y a **aucune table de spécialités** dans cette page, et c'est délibéré. Une table « tel sujet va à telle lane » contredit le tirage sur le pool entier ([proactive-coordination.md](../../.claude/rules/proactive-coordination.md), R5), et la dernière qui figurait ici n'était plus appliquée par aucune lane.
 
-Le grain d'une lane vient du **tapis** (`python scripts/pick_idle_grain.py --belt --lane <machine:workspace>`) ou d'une file composée par le coordinateur. Ce qui contraint une lane, ce sont des **barrières de capacité**, et elles seules :
+Le grain d'une lane vient du **tapis** (`python scripts/coordination/tapis_rapide.py --lane <machine:workspace>`, [tapis-rapide.md](tapis-rapide.md)) ou d'une file composée par le coordinateur. Ce qui contraint une lane, ce sont des **barrières de capacité**, et elles seules :
 
 - **GPU** : la VRAM requise, et la disponibilité au ledger ;
 - **vision** : la capacité du modèle qui anime la lane (section suivante) ;

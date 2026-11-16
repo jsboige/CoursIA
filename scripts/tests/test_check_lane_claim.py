@@ -1802,7 +1802,9 @@ def test_le_repli_de_la_collision_pointe_sur_le_pool(monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "BLOCKED: OPEN PR(s) of other lanes touch" in err
     assert "pick another grain from the GLOBAL POOL" in err
-    assert "pick_idle_grain.py --belt" in err
+    # Le pool se tire au tapis rapide, jamais au tapis lourd (#26926).
+    assert "scripts/coordination/tapis_rapide.py --lane" in err
+    assert "pick_idle_grain.py --belt" not in err
     # Le repli ne nomme PLUS l'issue livree comme destination.
     assert "pick another grain (#16570)" not in err
 
