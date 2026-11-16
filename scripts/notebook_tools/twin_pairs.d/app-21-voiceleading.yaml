@@ -1,6 +1,6 @@
 - name: "App-21 VoiceLeading"
   family: Search/Part3-Cas-pratiques
-  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading-Python.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK

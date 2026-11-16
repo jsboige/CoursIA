@@ -1,0 +1,7 @@
+date: '2026-11-13'
+by: 'renommage Causal-Bridges -> Probas/Causalite #25827 : re-attestation a la tete
+  fusionnee, liens markdown recalés (Python et C# symetriques)'
+python_sha: 8fd970e412d249826b2e5a479b63ca04099c492e
+csharp_sha: f3f50f22969d30d8a6c6df5c55fb1e7f30221a86
+content_python_sha: a1ff84180c4bfea121eccab528ef5460ce1a6fd337599564522cbe1425f58957
+content_csharp_sha: c3c669e6e58c49aba487443231f664422f7c8afa2b85c33c0be0fbea1fa1e480
