@@ -15,7 +15,7 @@ Le parcours s'adresse aux étudiants en physique, mathématiques appliquées et 
 Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue entrée dans le sujet, approfondissements et recherche.
 
 - **Vous découvrez** : choisissez une question dans la table ci-dessous. Numérique offre une première expérience concrète avec une équation, un choc et des schémas à comparer.
-- **Vous approfondissez** : suivez les paliers de Jauge ou d'Intégrales et leurs exercices. Les liens entre conservation, discrétisation et contrôles numériques sont développés ensuite.
+- **Vous approfondissez** : suivez les paliers de Jauge ou d'Intégrales et leurs exercices, ou entrez par Information quantique si l'algèbre linéaire des matrices de densité vous est familière. Les liens entre conservation, discrétisation et contrôles numériques sont développés ensuite.
 - **Vous explorez des fondements** : Constructeur et Chaînes interrogent la formulation des lois et le statut de leurs conséquences. Leur lecture demande de séparer modèle illustratif, résultat démontré et conjecture.
 
 Il n'y a pas de séquence unique imposée entre ces branches. Les numéros des carnets décrivent une progression à l'intérieur de chaque sous-série ; les README locaux portent les inventaires et les approfondissements.
@@ -29,6 +29,7 @@ Il n'y a pas de séquence unique imposée entre ces branches. Les numéros des c
 | Comment calculer et contrôler une intégrale de Feynman ? | [Intégrales](Integrales/README.md) → [Triangle scalaire](Integrales/Integrales-01-Triangle-Scalaire-Python.ipynb) | Représentations paramétriques, quadratures, valeurs spéciales, divergence ultraviolette et structure elliptique. | Licence avancée puis Master : intégration et fonctions spéciales ; la première amplitude est construite dans le carnet. | Relier le sunrise à ses périodes elliptiques. |
 | Peut-on formuler une loi comme une tâche impossible ? | [Constructeur](Constructeur/README.md) → [Lois comme tâches](Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb) | Tâches, constructeurs, conservation, non-clonage et témoin de non-classicité dans un modèle jouet. | Lecture conceptuelle avancée : algèbre linéaire et notions quantiques pour les calculs. | Discuter ce que l'exemple de médiateur permet d'inférer. |
 | Comment examiner un programme physique fondé sur un axiome informationnel ? | [Chaînes](Chaines/README.md) → [Intrication et constante de structure fine](Chaines/Chaines-01-Axiome-Intrication-Constante-Structure-Fine-Python.ipynb) | Reproduire une énumération, examiner une valeur candidate et distinguer résultats mesurés, cités et ouverts. | Recherche : algèbre linéaire, notions d'intrication et lecture critique d'une prépublication. | Vérifier les étapes de la dérivation et leurs hypothèses. |
+| Comment tester l'intrication d'un état mixte par le calcul ? | [Information quantique](InformationQuantique/README.md) → [Werner, PPT, distillation, canaux à rupture d'intrication](InformationQuantique/InfoQuant-01-Intrication-Werner-PPT-Distillation-Python.ipynb) | États mixtes et purification, critère PPT, seuils de distillabilité des états de Werner et canaux à rupture d'intrication, chaque seuil cité étant recalculé sur des matrices explicites. | Master : algèbre linéaire (valeurs propres, produit tensoriel) et notions de matrice de densité. | Ajouter une dimension aux états de Werner et chercher où le critère PPT cesse d'être suffisant. |
 
 ## Comprendre les liens entre les branches — Licence et Master
 
@@ -117,5 +118,6 @@ Les branches [Constructeur](Constructeur/README.md) et [Chaînes](Chaines/README
 - [Intégrales](Integrales/README.md) : normalisations, fonctions spéciales et bibliographie des amplitudes étudiées.
 - [Constructeur](Constructeur/README.md) : textes sur les tâches possibles et impossibles en physique.
 - [Chaînes](Chaines/README.md) : source étudiée, reproduction et statut des propositions.
+- [Information quantique](InformationQuantique/README.md) : états mixtes, intrication, témoins et canaux, calculés sur des matrices.
 
 [Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md) · [Licence](../../LICENSE)
