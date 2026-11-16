@@ -4664,4 +4664,36 @@ TRANCHE49: list[Guard] = [
         diff_bounded=True,
         absorbed=True,
     ),
+    # #26979 : le SVG IMPRIME EN TEXTE (sortie `stream`) au lieu d'etre
+    # rendu. Meme famille que le garde du dessus -- un ratchet base-vs-PR
+    # natif de la voie rapide, advisory d'abord, self-test en pre-argv.
+    # On ajoute le garde AU TRANCHE 49 plutot que dans une tranche 52
+    # neuve : les tranches s'ajoutent toutes au meme endroit du registre et
+    # de l'agregat du moteur, et deux PRs qui en ajoutent chacune une se
+    # marchent dessus au merge (lecon mesuree le 16/11/2026). Ici, l'ajout
+    # est a plus de vingt lignes du point d'insertion des autres tranches :
+    # les fusions sortiront propres.
+    Guard(
+        name="Rich output as text ratchet (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_rich_output_as_text.py",
+            "scripts/notebook_tools/tests/test_check_rich_output_as_text.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_rich_output_as_text.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_rich_output_as_text.py",
+            "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+    ),
 ]
