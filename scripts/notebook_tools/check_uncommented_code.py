@@ -65,6 +65,12 @@ carnet sans ids voit alors ses cellules suivantes comptees comme modifiees
 quand une insertion decale les positions, ce qui sur-signale sans jamais
 manquer un defaut.
 
+Un carnet RENOMME par la branche est lu a son ancien chemin dans la base
+(``renamed_notebooks`` : ``-M --diff-filter=R``). Sans cette resolution, le
+chemin de tete est absent de la base et le carnet passe pour neuf -- 18
+cellules preexistantes signalees sur le pur renommage #26381, le rouge qui a
+fonde cette reparation.
+
 Mode fichier (``--file``) : juge un carnet entier, pour l'audit hors CI.
 
 Codes de sortie : 0 aucun defaut, 1 au moins un defaut, 2 erreur d'invocation.
@@ -92,6 +98,7 @@ from check_output_failure_text import (
     _cell_source,
     changed_notebooks,
     read_notebook_at,
+    renamed_notebooks,
     resolve_base,
 )
 from check_output_flood import _cell_key
@@ -294,14 +301,22 @@ def changed_keys(base_notebook: dict | None, head_notebook: dict) -> set[str] | 
     return keys
 
 
-def compare(base_ref: str, paths: list[str], cwd: str | None = None) -> list[dict]:
-    """Findings par carnet, bornes aux cellules que la branche a touchees."""
+def compare(base_ref: str, paths: list[str], cwd: str | None = None,
+            renames: dict[str, str] | None = None) -> list[dict]:
+    """Findings par carnet, bornes aux cellules que la branche a touchees.
+
+    ``renames`` ({chemin tete: chemin base}, cf. ``renamed_notebooks``) fait
+    lire la base a l'ANCIEN chemin d'un carnet renomme : sans lui, le chemin
+    de tete est absent de la base, ``changed_keys`` rend ``None`` et le carnet
+    est juge entier -- du code preexistant signale comme neuf.
+    """
     rows: list[dict] = []
     for path in paths:
         head_notebook = read_notebook_at(None, path, cwd=cwd)
         if head_notebook is None:
             continue
-        base_notebook = read_notebook_at(base_ref, path, cwd=cwd)
+        base_notebook = read_notebook_at(
+            base_ref, (renames or {}).get(path, path), cwd=cwd)
         keys = changed_keys(base_notebook, head_notebook)
         findings = analyse_notebook(head_notebook, only_keys=keys)
         if findings:
@@ -552,7 +567,7 @@ def main(argv: list[str] | None = None) -> int:
         base = resolve_base(args.diff)
         paths = changed_notebooks(base)
         scope += len(paths)
-        rows.extend(compare(base, paths))
+        rows.extend(compare(base, paths, renames=renamed_notebooks(base)))
     for path in args.file:
         notebook = read_notebook_at(None, path)
         if notebook is None:
