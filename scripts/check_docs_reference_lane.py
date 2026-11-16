@@ -95,9 +95,12 @@ ARCHIVE_REL = Path("docs") / "archive"
 # + wave 2 (docs/qc/, 8 documents, hors qc-strategies-status chaud par PRs)
 # + wave 3 (docs/genai/, 16 documents)
 # + wave 4 (docs/reference/, 70 documents, hors scripts-reference chaud par
-# #25433, STABLE_SNAPSHOT et quant-prose-census dates-par-signature).
+# #25433, STABLE_SNAPSHOT et quant-prose-census dates-par-signature)
+# + wave 5 (docs/ict/, 20 documents, hors pre-enregistrements, distillations,
+# cases et prototype grade C : un document fige par construction ne se declare
+# pas reference vivante).
 # Raise it as perenne waves land; it is a monotone floor, never a target.
-DEFAULT_BASELINE = 102
+DEFAULT_BASELINE = 122
 
 # "> REFERENCE — vivante — dernière révision 2026-10-31"
 # (marker, then "vivante", then "derniere revision" with its trailing date --
