@@ -1,0 +1,10 @@
+- name: "Complexity-03c Zoo Navigation"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Le source construit DFS, BFS, Kosaraju, DPLL et des jeux d'oracles finis ; le jumeau emploie les structures natives C# correspondantes.
+  known_differences:
+    - "Les jeux finis illustrent des mécanismes et ne prouvent pas de séparation de classes. Le certificat 2-SAT exige deux chemins. System.Random produit d'autres graphes et les chronos varient."
