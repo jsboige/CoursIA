@@ -20,14 +20,14 @@ Reprendre le travail sur cette lane : lire les directives coordinateur, puis enc
 
 ### Phase 2 : Choisir la tache
 
-**Avant le tirage : l'issue `[main-red]`.** Un rouge de `main` herite n'est plus un grain sans proprietaire : quand la sentinelle `main-red` de `merge_ready.py` retient les merges, elle ouvre (ou reutilise) UNE issue `[main-red] <check> — <test>`, que la lane qui repare reclame et que la sentinelle ferme au vert (#26706). A lire **avant** de reparer quoi que ce soit d'herite :
+**Avant le tirage : l'issue `[main-red]`.** Un rouge de `main` herite n'est plus un grain sans proprietaire : quand la sentinelle `main-red` de `merge_ready.py` retient les merges, elle ouvre (ou reutilise) UNE issue `[main-red] <check> — <test>`, que la lane qui repare reclame et que la sentinelle ferme au vert (#26706). La PR de reparation la **nomme** (`See #`), elle ne la ferme pas : la fermeture appartient a la sentinelle, qui la fait au vert mesure. A lire **avant** de reparer quoi que ce soit d'herite :
 
 ```bash
 gh issue list --repo jsboige/CoursIA --state open --search "main-red in:title" --json number,title
 ```
 
 - **Issue ouverte, claim d'une autre lane** → **ne pas ouvrir de travail dessus** : la cause est deja reprise. On attend son merge (verifie au cycle suivant) puis on `update-branch` sur nos branches. Ce n'est pas une attente bloquante : la file continue.
-- **Issue ouverte, aucun claim** → c'est un grain de fond : on le reclame (`[CLAIMED] lane <machine:workspace> -- <cause>`) apres `python scripts/check_lane_claim.py <N>`, et la PR de reparation porte `Closes #<N>`.
+- **Issue ouverte, aucun claim** → c'est un grain de fond : on le reclame (`[CLAIMED] lane <machine:workspace> -- <cause>`) apres `python scripts/check_lane_claim.py <N>`, et la PR de reparation porte `See #<N>` — **pas** `Closes`. La fermeture appartient a la sentinelle : le correctif fusionne alors que `main` n'a pas encore rejoue `Scripts Tests (CPU)` (20 a 30 min), et une fermeture par la PR laisserait l'episode sans issue ouverte pendant ce temps.
 - **Aucune issue** → le rouge n'est pas encore publie par la sentinelle (ou il est redevenu vert) : on suit la voie normale.
 
 **Un seul geste ouvre le choix, une fois par session** (mandat user du 13/11 : plusieurs grains par session, grande variete, tirage court) :
