@@ -6,6 +6,12 @@ import os
 from pathlib import Path
 import subprocess
 
+import pytest
+
+
+pytestmark = pytest.mark.skipif(
+    os.name != "posix", reason="Le script Bash cible Linux et macOS, pas Windows."
+)
 
 SCRIPT = Path(__file__).parents[1] / "environment" / "install-ffmpeg.sh"
 
@@ -50,8 +56,9 @@ def test_custom_path_fails_before_package_manager_even_with_force(tmp_path: Path
 def test_missing_or_empty_path_is_explained_before_installation(tmp_path: Path) -> None:
     missing = run_script(tmp_path / "missing", "linux-gnu", "--path")
     empty = run_script(tmp_path / "empty", "linux-gnu", "--path", "")
+    option = run_script(tmp_path / "option", "linux-gnu", "--path", "--force")
 
-    for result in (missing, empty):
+    for result in (missing, empty, option):
         assert result.returncode == 1
         assert "--path requiert un chemin non vide" in result.stderr
         assert result.command_log == ""
