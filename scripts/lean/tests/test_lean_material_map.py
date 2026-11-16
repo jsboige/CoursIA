@@ -110,9 +110,13 @@ def test_chaque_lac_de_la_page_porte_une_epingle():
     ce test tant que son epingle n'a pas ete ajoutee explicitement.
     """
     page = _lignes_de_la_page()
-# 42 depuis la descente #24183 (#25262) : le lac autonome
-    # social_choice_core_lean s'ajoute a la page (epingle 2026-11-08).
-    assert len(page) == 42, f"la page porte {len(page)} lacs, attendu 42"
+    # 43 depuis la fusion de main : les deux cotes comptaient 42, mais par des
+    # chemins differents, donc le compte fusionne n'est ni l'un ni l'autre.
+    # La descente #24183 (#25262) ajoute le lac autonome
+    # `social_choice_core_lean` (epingle 2026-11-08) ; main ajoute
+    # `combinators_lean`. Le nombre ci-dessous sort de la page regeneree par
+    # `lean_material_map.py --write`, pas d'une addition a la main.
+    assert len(page) == 43, f"la page porte {len(page)} lacs, attendu 43"
 
     epingles = mod._pinned_births()
     manquantes = sorted(set(page) - set(epingles))
