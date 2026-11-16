@@ -357,3 +357,7 @@ Explorez ensuite la frontière de Pareto : quelles solutions le solveur propose-
 ### Le fil rouge
 
 La programmation par contraintes avec z3-py propose un changement de regard sur la résolution de problèmes : ne plus demander « quel algorithme écrire pour résoudre ceci ? » mais **« quelles contraintes doivent être satisfaites, et quelle est la meilleure solution parmi celles qui le sont ? »**. Cette série vous a donné l'API complète (types, théories, tactiques, quantificateurs), les deux postures (`Solver` pour décider, `Optimize` pour optimiser), et l'intuition des compromis (expressivité vs performance, contraintes dures vs souples, Pareto quand les objectifs se contredisent) — en gardant à l'esprit que Z3 n'est qu'un point du spectre des solveurs, et que la compétence est de savoir quand l'utiliser plutôt qu'un backtracking, un CP-SAT ou une métaheuristique.
+
+### Parité du compagnon 13b
+
+Le carnet [UNSAT cores et MUS en C#](Z3-13b-UnsatCores-MUS-CSharp.ipynb) reprend les deux modèles du [carnet Python](Z3-13b-UnsatCores-MUS-Python.ipynb) avec l'API native Microsoft.Z3 et vérifie l'irréductibilité par suppression. Les exercices dans les deux versions fournissent des modèles à compléter par des étiquettes et vérifient les réponses.

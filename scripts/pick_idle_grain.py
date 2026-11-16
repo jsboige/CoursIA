@@ -13848,6 +13848,31 @@ def _log_tirage_safe(*, lane, candidates, retained, urn, mode):
     return record
 
 
+# #26926 : le tapis lourd ne sert plus de grains aux lanes. Il mettait ~240 s a
+# rendre des grains non verifies (livres, couverts, chantiers coordinateur), et
+# la consigne ecrite n'a pas suffi : une lane qui le tirait de memoire repartait
+# pour quatre minutes de propositions bloquantes. Le refus vit donc dans
+# l'organe : un `--belt` sans `--diagnostic` rend la main tout de suite et
+# nomme le tapis rapide. La variable d'environnement sert aux tests, qui
+# exercent le tapis lourd comme outil de diagnostic.
+HEAVY_BELT_DIAGNOSTIC_ENV = "COURSIA_HEAVY_BELT_DIAGNOSTIC"
+FAST_BELT_COMMAND = "python scripts/coordination/tapis_rapide.py --lane {lane} --json"
+
+
+def heavy_belt_refusal(lane: str | None) -> dict:
+    """Le refus du tapis lourd, avec la commande qui le remplace."""
+    commande = FAST_BELT_COMMAND.format(lane=f'"{lane}"' if lane else "<machine:workspace>")
+    return {
+        "mode": "tapis-lourd-refuse",
+        "issue": 26926,
+        "raison": ("le tapis lourd ne sert plus de grains (240 s, grains non "
+                   "verifies) ; le tirage passe par le tapis rapide"),
+        "commande": commande,
+        "diagnostic": "--diagnostic (ou %s=1) pour un usage de diagnostic"
+                      % HEAVY_BELT_DIAGNOSTIC_ENV,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
@@ -13965,7 +13990,12 @@ def main(argv: list[str] | None = None) -> int:
                          "date de derniere livraison -- puis par createdAt puis "
                          "par numero. Pas de ponderation, pas d'urne. Les gardes "
                          "(rouge, WIP, secheresse) restent en tete et rende la "
-                         "file comme rappel, jamais comme motif de vide.")
+                         "file comme rappel, jamais comme motif de vide. "
+                         "#26926 : sans --diagnostic, refuse et nomme le "
+                         "tapis rapide (tapis_rapide.py).")
+    ap.add_argument("--diagnostic", action="store_true",
+                    help="#26926 : autorise le tapis lourd (--belt) pour un "
+                         "diagnostic ; il ne sert plus de grains aux lanes")
     ap.add_argument("--belt-replay-export", default=None, metavar="PATH",
                     help="#25082 : exporter hors depot les entrees preparees "
                          "par un tapis live pour un rejeu deterministe. Requiert "
@@ -14131,6 +14161,16 @@ def main(argv: list[str] | None = None) -> int:
                          "l'issue N (defaut : dry-run, impression seule)")
     ap.set_defaults(check_claims=True)
     args = ap.parse_args(argv)
+    if args.belt and not (args.diagnostic
+                          or os.environ.get(HEAVY_BELT_DIAGNOSTIC_ENV) == "1"):
+        refus = heavy_belt_refusal(args.lane)
+        if args.json:
+            print(json.dumps(refus, ensure_ascii=False, indent=2))
+        else:
+            print(f"REFUS (#26926) : {refus['raison']}.\n"
+                  f"Tirer : {refus['commande']}\n"
+                  f"Diagnostic seulement : {refus['diagnostic']}.")
+        return 2
     args.prev_genre = sorted(normalize_prev_genres(args.prev_genre))
     # #21436 : la borne de --grains est enforcee, pas seulement documentee.
     # Au-dela, la fenetre de service (grains*5+50) explose le mur de temps
