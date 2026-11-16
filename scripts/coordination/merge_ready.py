@@ -1251,7 +1251,7 @@ def _read_main_red_issue(
     Renvoie `(etat, issue)` avec `etat` dans ``{"ok", "absent", "illisible"}``.
 
     La lecture est le meme coup que l'edition : elle rend `state`, `title` et
-    `body` d'un coup. C'est elle qui permet deComparer avant d'editer, et de
+    `body` d'un coup. C'est elle qui permet de comparer avant d'editer, et de
     REOUVRIR une issue fermee alors que le rouge tient (#26706, revue
     ai-01 du 16/11) : une PR de reparation porte `See #`, donc la fermeture
     appartient a la sentinelle -- mais une PR ancienne portant encore
@@ -1305,7 +1305,7 @@ def _reopen_main_red_issue(
     """
     commentaire = (
         "Rouge de `main` toujours actif : le check `{check}` est en `failure` "
-        "au commit `{sha}`. Cette issue est **reeouverte** -- la fermeture "
+        "au commit `{sha}`. Cette issue est **réouverte** -- la fermeture "
         "d'un episode appartient a la sentinelle, au vert mesure (#26706)."
     ).format(check=check, sha=sha)
     result = runner.run(
@@ -1346,7 +1346,7 @@ def ensure_main_red_issue(
     retard — deux runs rapproches ne doivent pas ouvrir deux issues.
 
     Sur cette voie, l'ETAT de l'issue est relu avant toute ecriture : si elle
-    est **fermee** alors que le rouge tient, elle est **reeouverte** — une PR
+    est **fermee** alors que le rouge tient, elle est **réouverte** — une PR
     de reparation ancienne portant `Closes #` peut l'avoir fermee au merge,
     avant que `main` ait rejoue ses tests ; et titre et corps ne sont
     reecrits que s'ils different du verdict courant.
@@ -1362,7 +1362,7 @@ def ensure_main_red_issue(
                 ):
                     print(
                         "merge_ready : sentinelle main-red -- issue [main-red] "
-                        "#{} REOUVERTE (le rouge tient toujours au commit "
+                        "#{} RÉOUVERTE (le rouge tient toujours au commit "
                         "{})".format(known_number, sha[:9])
                     )
                     item = dict(item)

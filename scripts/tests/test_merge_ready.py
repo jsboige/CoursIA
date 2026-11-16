@@ -235,6 +235,13 @@ class ScriptedRunner:
         main_red_issues: list[dict] | None = None,
         main_red_search_rc: int = 0,
         main_red_issue_rc: int = 0,
+        # #26706 : reponse scriptee de ``gh issue view <numero>`` -- la
+        # lecture de l'ETAT d'une issue [main-red] connue par son numero.
+        # La CLE est le numero ; la VALEUR est soit un payload JSON (dict),
+        # soit un stdout BRUT (str : reponse malformee -> illisible).
+        # `main_red_view_rc` non nul simule une lecture ILLISIBLE.
+        main_red_views: dict[int, dict | str] | None = None,
+        main_red_view_rc: int = 0,
     ):
         self.rest_reviews = list(rest_reviews or [])
         self.user_types = user_types or {}
@@ -243,7 +250,10 @@ class ScriptedRunner:
         self.main_red_issues = list(main_red_issues or [])
         self.main_red_search_rc = main_red_search_rc
         self.main_red_issue_rc = main_red_issue_rc
+        self.main_red_views = dict(main_red_views or {})
+        self.main_red_view_rc = main_red_view_rc
         self.main_red_created: list[dict] = []
+        self.main_red_reopened: list[int] = []
         self.main_red_closed: list[int] = []
         self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
         self.main_check_runs = main_check_runs if main_check_runs is not None else json.dumps([
@@ -399,6 +409,42 @@ class ScriptedRunner:
                     row["body"] = Path(
                         c[c.index("--body-file") + 1]
                     ).read_text(encoding="utf-8")
+            return mr.RunResult(0, "", "")
+        if c[:3] == ["gh", "issue", "view"]:
+            # #26706 : lecture de l'ETAT d'une issue [main-red] connue par
+            # son numero (`_read_main_red_issue`). Les trois etats doivent
+            # etre scriptingables : `ok` (payload conforme), `absent` (le
+            # numero rendu ne correspond pas a celui demande) et
+            # `illisible` (rc non nul, ou stdout malforme).
+            if self.main_red_view_rc != 0:
+                return mr.RunResult(self.main_red_view_rc, "", "view refused")
+            number = int(c[3])
+            scripted = self.main_red_views.get(number)
+            if scripted is not None:
+                if isinstance(scripted, str):
+                    return mr.RunResult(0, scripted, "")
+                return mr.RunResult(0, json.dumps(scripted), "")
+            # Issue non scriptee : l'etat REEL du runner fait foi (comme
+            # pour la recherche), sinon la lecture est un refus.
+            for row in self.main_red_issues:
+                if row["number"] == number:
+                    return mr.RunResult(0, json.dumps({
+                        "number": row["number"],
+                        "title": row.get("title", ""),
+                        "body": row.get("body", ""),
+                        "state": row.get("state", "OPEN"),
+                    }), "")
+            return mr.RunResult(1, "", "issue introuvable")
+        if c[:3] == ["gh", "issue", "reopen"]:
+            # #26706 : rouverture d'une issue [main-red] fermee a tort, le
+            # rouge tenant toujours au commit courant.
+            if self.main_red_issue_rc != 0:
+                return mr.RunResult(self.main_red_issue_rc, "", "reopen refused")
+            number = int(c[3])
+            self.main_red_reopened.append(number)
+            for row in self.main_red_issues:
+                if row["number"] == number:
+                    row["state"] = "OPEN"
             return mr.RunResult(0, "", "")
         if c[:2] == ["gh", "api"] and "/commits?sha=" in c[2]:
             # Historique de main lu par la sentinelle (le plus recent d'abord).
