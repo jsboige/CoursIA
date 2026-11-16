@@ -2,8 +2,6 @@
 pagetitle: "Sudoku — comparer les méthodes de résolution"
 ---
 
-# Sudoku — comparer les méthodes de résolution
-
 <!-- CATALOG-STATUS
 series: Sudoku
 pedagogical_count: 41

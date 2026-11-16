@@ -36,12 +36,8 @@
 # 3. `check_pl_consistency` décide par le VRAI solveur (sonde ex falso :
 #    un ensemble est incohérent ssi il entraîne une contradiction) — le
 #    verdict n'est jamais fabriqué.
-# 4. Les moitiés FOL et modales rendent une erreur honnête et précise
-#    (handlers amont non importables au pin actuel) : la surface est
-#    préservée (8 fonctions, mêmes noms et descriptions), aucun verdict
-#    n'est simulé. Elles s'activeront au re-vendor des handlers (dérive
-#    mesurée c.#18390 du 22/10 : _fol_handler 12 commits, _modal_handler
-#    5 commits de retard).
+# 4. FOL reste indisponible. La logique modale K utilise MlParser et
+#    SPASSMlReasoner ; T et S5 restent indisponibles explicitement.
 # 5. Pas de couplage registre : le contrat amont rend du JSON ; les
 #    verdicts registre-bound du carnet 08b passent par
 #    `PLReasonerPlugin.pl_query` (belief_set_id, chaîne `ACCEPTED: ...`).
@@ -54,9 +50,8 @@
 """Plugin SK exposant les opérations logiques PL/FOL/Modales aux agents.
 
 Moitié verdict de la phase formelle (#18390) : les fonctions PL décident
-par le VRAI solveur Tweety (SatReasoner), les fonctions FOL/Modales
-rendent une erreur honnête tant que les handlers amont ne sont pas
-importables dans ce checkout. La traduction texte -> formule vit dans
+par le VRAI solveur Tweety (SatReasoner), les fonctions modales K utilisent
+Tweety/SPASS ; FOL reste indisponible. La traduction texte -> formule vit dans
 `NLToLogicPlugin` (`_nl_to_logic_plugin.py`).
 """
 
@@ -88,14 +83,6 @@ def _fol_unavailable() -> str:
     )
 
 
-def _modal_unavailable() -> str:
-    return _error_json(
-        "logique modale indisponible dans ce checkout : les handlers "
-        "amont (modal_handler via TweetyBridge) ne sont pas importables "
-        "au pin actuel (voir NOTICE-EPITA) — aucune requête n'est simulée."
-    )
-
-
 class LogicAgentPlugin:
     """Semantic Kernel plugin exposant les opérations logiques PL/FOL/Modales.
 
@@ -110,8 +97,8 @@ class LogicAgentPlugin:
         kernel.add_plugin(LogicAgentPlugin(), plugin_name="logic_agents")
 
     Dans ce checkout : les fonctions PL décident par le VRAI solveur
-    (`TweetyPLEngine`, SatReasoner) ; les fonctions FOL/Modales rendent
-    une erreur honnête — jamais un verdict simulé.
+    (`TweetyPLEngine`, SatReasoner) ; la logique modale K utilise SPASS.
+    FOL et les autres logiques modales restent indisponibles.
     """
 
     def __init__(self, engine: Any = None) -> None:
@@ -326,15 +313,33 @@ class LogicAgentPlugin:
         name="execute_modal_query",
         description=(
             "Exécuter une requête modale sur un ensemble de croyances. "
-            "Entrée: JSON {'belief_set': 'constant a\\nconstant b\\n[](a => b)', "
+            "Entrée: JSON {'belief_set': 'type(a)\\ntype(b)\\n[](a => b)\\n[](a)', "
             "'query': '[](a)', 'logic_type': 'K'}. "
-            "Types de logique: K, T, S5. "
+            "Logique K uniquement ; déclarer les prédicats avec type(a). "
             "Retourne JSON: {'result', 'query', 'accepted'}."
         ),
     )
     def execute_modal_query(self, payload: str) -> str:
-        """Exécuter une requête modale — moteur non câblé au pin actuel."""
-        return _modal_unavailable()
+        """Interroger SPASS via Tweety en logique K."""
+        from argumentation_lib._modal_reasoner import TweetyModalEngine
+        from argumentation_lib._pl_reasoner import (
+            EngineUnavailableError, FormulaSyntaxError,
+        )
+
+        try:
+            params = json.loads(payload)
+            if not isinstance(params, dict):
+                raise ValueError("objet JSON attendu")
+            belief_set, query = params.get("belief_set", ""), params.get("query", "")
+            if not isinstance(belief_set, str) or not isinstance(query, str) or not query.strip():
+                raise ValueError("belief_set et query doivent être des chaînes, query non vide")
+            if params.get("logic_type", "K") != "K":
+                return _error_json("logique modale indisponible : seul K est pris en charge")
+            accepted = TweetyModalEngine().entails(belief_set, query)
+        except (TypeError, ValueError, EngineUnavailableError, FormulaSyntaxError) as exc:
+            return _error_json(str(exc))
+        return json.dumps({"result": f"Résultat de l'inférence: {accepted}.",
+                           "query": query, "accepted": accepted}, ensure_ascii=False)
 
     @kernel_function(
         name="check_modal_consistency",
@@ -345,8 +350,26 @@ class LogicAgentPlugin:
         ),
     )
     def check_modal_consistency(self, payload: str) -> str:
-        """Vérifier la cohérence modale — moteur non câblé au pin actuel."""
-        return _modal_unavailable()
+        """Vérifier la cohérence par une sonde de contradiction SPASS."""
+        from argumentation_lib._modal_reasoner import TweetyModalEngine
+        from argumentation_lib._pl_reasoner import (
+            EngineUnavailableError, FormulaSyntaxError,
+        )
+
+        try:
+            params = json.loads(payload)
+            if not isinstance(params, dict):
+                raise ValueError("objet JSON attendu")
+            belief_set = params.get("belief_set", "")
+            if not isinstance(belief_set, str):
+                raise ValueError("belief_set doit être une chaîne")
+            if params.get("logic_type", "K") != "K":
+                return _error_json("logique modale indisponible : seul K est pris en charge")
+            consistent = not TweetyModalEngine().entails(belief_set, "-")
+        except (TypeError, ValueError, EngineUnavailableError, FormulaSyntaxError) as exc:
+            return _error_json(str(exc))
+        return json.dumps({"is_consistent": consistent,
+                           "message": "décidé par Tweety SPASSMlReasoner (K)"}, ensure_ascii=False)
 
     # --- Cross-logic utilities ---
 
@@ -355,7 +378,8 @@ class LogicAgentPlugin:
         description=(
             "Valider la syntaxe d'une formule logique. "
             "Entrée: JSON {'formula': 'a => b', 'logic_type': 'propositional'}. "
-            "Types: 'propositional', 'fol', 'modal'. "
+            "Types: 'propositional', 'fol', 'modal'. Pour modal, fournir "
+            "signature: déclarations type(a) séparées par des retours à la ligne. "
             "Retourne JSON: {'is_valid', 'formula', 'logic_type'}."
         ),
     )
@@ -382,5 +406,21 @@ class LogicAgentPlugin:
         if logic_type == "fol":
             return _fol_unavailable()
         if logic_type == "modal":
-            return _modal_unavailable()
+            from argumentation_lib._modal_reasoner import TweetyModalEngine
+            from argumentation_lib._pl_reasoner import (
+                EngineUnavailableError, FormulaSyntaxError,
+            )
+
+            try:
+                signature = params.get("signature", "")
+                if not isinstance(formula, str) or not formula.strip() or not isinstance(signature, str):
+                    raise ValueError("formule non vide et signature textuelle attendues")
+                TweetyModalEngine().validate(signature, formula)
+            except FormulaSyntaxError as exc:
+                return json.dumps({"is_valid": False, "formula": formula,
+                                   "logic_type": logic_type, "error": str(exc)}, ensure_ascii=False)
+            except (ValueError, EngineUnavailableError) as exc:
+                return _error_json(str(exc))
+            return json.dumps({"is_valid": True, "formula": formula,
+                               "logic_type": logic_type, "error": None}, ensure_ascii=False)
         return _error_json(f"Unknown logic_type: {logic_type}")

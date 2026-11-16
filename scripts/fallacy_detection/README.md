@@ -42,3 +42,28 @@ séparer les nœuds fins de la taxonomie : la discrimination fine n'est pas
 acquise au niveau de granularité visé. Toute évaluation de granularité doit
 passer par `--hard-distractors` ; durcir le contrôle par défaut pour tout le
 corpus reste un arbitrage ouvert (#17578).
+
+## Rapport reconstruit depuis le checkpoint (`--report-only`)
+
+Le rapport d'un run se recalcule **sans rappeler le maître** : le checkpoint
+`<split>_<lang>.jsonl` enregistre par paire tout ce que `summarise` agrège. Le
+mode `--report-only` relit ce checkpoint et le rapport qu'il a produit, rejoue
+`summarise`, et réécrit le rapport en conservant tels quels les paramètres du
+run et sa durée.
+
+```bash
+python -m fallacy_detection.generate_teacher_corpus \
+    --out MyIA.AI.Notebooks/GenAI/FallacyDetection/data/teacher \
+    --split val --lang fr --report-only
+```
+
+Ce que le checkpoint ne porte pas reste **absent**, et `report_provenance` le
+nomme : l'historique de reprise (`resumed`, `n_resumed`, `n_todo`) n'est écrit
+nulle part, une valeur inventée vaudrait moins qu'une absence nommée.
+
+Le rapport `val`/`fr` committé datait d'avant le correctif de fidélité #20137 :
+il ne publiait ni `n_generated` ni `n_below_floor`, et laissait donc croire que
+tout texte généré respectait le plancher de `min_tokens`. Sa reconstruction
+(2026-11-16) est **purement additive** — tous les chiffres déjà publiés sont
+identiques, y compris l'auto-accord de 0,8679 (243/280) — et révèle **une paire
+générée sous le plancher** sur 280, `val-V138-2.1.5`.
