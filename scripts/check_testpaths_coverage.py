@@ -380,7 +380,14 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # Les 611 « tests verts » du triage sont un SOUS-ensemble mesure en local
 # (conda projet-is) : ils ne sont pas recomputables par l'organe. Le
 # compteur `items` est l'invariant mecanique qui les englobe.
-CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 66, "items": 1097}
+#
+# Rebaseline du 2026-11-17 (#27121, PR #27122) : items 1097 -> 1103. Les six
+# items neufs sont les tests de la fenetre journaliere du RiskGate, ajoutes a
+# deux fichiers deja exclus (`paper_harness/tests`, plan « quotidien »). Aucun
+# marqueur ni fichier nouveau : l'exclusion existante couvre le correctif
+# qu'ils testent. Depuis la racine du depot, la collecte de ce dossier echoue
+# encore (3 erreurs d'import) : lever l'exclusion reste un geste a part.
+CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 66, "items": 1103}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
