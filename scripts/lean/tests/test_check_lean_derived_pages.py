@@ -232,9 +232,16 @@ def test_le_garde_couvre_les_pages_attendues():
     covered = {page for _, page in mod.PAGES}
     assert "docs/reference/lean-theorem-duplicates.md" in covered
     assert "docs/reference/lean-material-map.md" in covered
+    # La table de maturite vit dans le README de la serie, pas dans
+    # `docs/reference/` : une page derivee n'est pas forcement un document de
+    # reference. Ce qui compte est qu'elle soit produite par un generateur.
+    assert "MyIA.AI.Notebooks/SymbolicAI/Lean/README.md" in covered
     for generator, page in mod.PAGES:
         assert generator.endswith(".py")
-        assert page.startswith("docs/reference/")
+        assert (page.startswith("docs/reference/")
+                or (page.startswith("MyIA.AI.Notebooks/")
+                    and page.endswith("/README.md"))), (
+            "page derivee hors des deux emplacements canoniques : %s" % page)
 
 
 # --- la sortie machine doit etre un FICHIER, pas un flux melange -----------
