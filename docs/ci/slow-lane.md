@@ -50,7 +50,7 @@ cas**, et le défaut n'était pas visible depuis le tableau des runs.
 
 **1. La suite n'exécutait rien.** La commande du job était
 `python -m pytest tests ict/tests -q --no-header`, qui collecte **deux arbres
-de tests dans une seule session**. Les deux arbres partagent **16 basenames
+de tests dans une seule session**. Les deux arbres partageaient **16 basenames
 de modules** (`test_time_arrow.py`, `test_workspace.py`,
 `test_catastrophe.py`, `test_sensitivity.py`, …) et **aucun des deux ne porte
 de `__init__.py`** : pytest les importe alors par nom de fichier et refuse
