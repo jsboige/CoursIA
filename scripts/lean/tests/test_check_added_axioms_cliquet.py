@@ -20,6 +20,10 @@ Covers the cliquet responsibilities cited in #21387:
    ``[LEAN-ANCHOR-DECLARED]`` line.
 6. a diff without these tokens renders an empty report.
 7. a file deleted in head is skipped (no anchors possible).
+8. stale-base semantics (#27072): the diff is three-dot (merge-base..head)
+   -- a branch with no ``.lean`` change stays green when main advanced and
+   repaired a ``sorry`` after the fork point, while a genuinely added
+   anchor stays red.
 """
 from __future__ import annotations
 
@@ -223,6 +227,57 @@ class TestScanAddedLines:
         assert r.hits == []
         assert r.lines_added > 0
         assert r.hits_in_named_decls == []
+
+    def _stale_base_setup(self, branch_files: dict[str, str]) -> tuple[Path, str, str]:
+        """Fork-point repo where main advances INDEPENDENTLY of the branch.
+
+        Returns ``(repo, base, head)`` where ``base`` is the advanced main
+        (the stale-base ref the fast lane passes as ``--base origin/main``)
+        and ``head`` is the branch tip. Fork-point ``P.lean`` carries a
+        ``sorry`` that main then REPAIRS: a two-dot diff base..head inverts
+        that repair and surfaces the ``sorry`` as branch-added.
+        """
+        repo = _make_repo()
+        # Fork point: P.lean porte un sorry.
+        (repo / "P.lean").write_text("theorem p : True := by sorry\n")
+        subprocess.run(["git", "add", "P.lean"], check=True, cwd=repo)
+        subprocess.run(["git", "commit", "-q", "-m", "fork: sorry"], check=True, cwd=repo)
+        # Branche : ne touche PAS P.lean.
+        subprocess.run(["git", "checkout", "-q", "-b", "pr"], check=True, cwd=repo)
+        head = _commit(repo, branch_files, "branch tip")
+        # Main avance : RETIRE le sorry (preuve reparee).
+        subprocess.run(["git", "checkout", "-q", "main"], check=True, cwd=repo)
+        (repo / "P.lean").write_text("theorem p : True := by trivial\n")
+        subprocess.run(["git", "add", "P.lean"], check=True, cwd=repo)
+        subprocess.run(["git", "commit", "-q", "-m", "main: repair sorry"], check=True, cwd=repo)
+        base = subprocess.run(
+            ["git", "rev-parse", "HEAD"], capture_output=True, text=True, encoding="utf-8", cwd=repo
+        ).stdout.strip()
+        return repo, base, head
+
+    def test_stale_base_main_repairs_sorry_not_flagged(self):
+        # Regression #27072 : diff trois-points (merge-base..head). Une
+        # branche sans changement .lean doit rester verte meme si la base
+        # (origin/main) a avance et retire un sorry : le diff deux-points
+        # base..head inversait la reparation de main et criait "sorry
+        # re-ajoute" (mesure sur PR #27066).
+        repo, base, head = self._stale_base_setup({"script.py": "print('pr')\n"})
+        r = scan_added_lines(base, head, repo_root=repo)
+        assert r.files_scanned == 0
+        assert r.hits == []
+
+    def test_stale_base_branch_addition_still_flagged(self):
+        # Face positive : le passage aux trois-points n'aveugle pas la
+        # garde -- un sorry VRAIMENT ajoute par la branche reste rouge
+        # meme quand la base a avance entre-temps.
+        repo, base, head = self._stale_base_setup({
+            "script.py": "print('pr')\n",
+            "N.lean": "theorem n : True := by sorry\n",
+        })
+        r = scan_added_lines(base, head, repo_root=repo)
+        assert len(r.hits) == 1
+        assert r.hits[0].token == "sorry"
+        assert r.hits[0].file == "N.lean"
 
     def test_native_decide_in_named_theorem_is_rouge(self):
         repo = _make_repo()
