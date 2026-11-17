@@ -841,7 +841,7 @@ Inventaire kernels non encore relevé (po-2024 et po-2026 — ce dernier poste e
 
 ### GenAI GPU stack : triton-windows + bitsandbytes
 
-Les notebooks GenAI GPU (ex. [Video/02-5-LTX2-Audiovisual](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb), #2891) utilisent `triton` (JIT de kernels) et `bitsandbytes` (quantization INT4/NF4). `torch` embarque son runtime CUDA (`torch.cuda.is_available()=True` marche SANS le Toolkit), mais triton/bnb ont besoin de plus :
+Les notebooks GenAI GPU (ex. [Video/02-5-Video-Audio-Conjoint](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb), #2891) utilisent `triton` (JIT de kernels) et `bitsandbytes` (quantization INT4/NF4). `torch` embarque son runtime CUDA (`torch.cuda.is_available()=True` marche SANS le Toolkit), mais triton/bnb ont besoin de plus :
 
 | Besoin | Fourni par |
 |--------|-----------|
