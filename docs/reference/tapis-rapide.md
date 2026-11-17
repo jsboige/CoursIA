@@ -133,38 +133,72 @@ Un **rejeu** (`--lecture <dossier>`) est hors ligne par contrat : il ne refait *
 le prix du rejeu, et il est assumé. L'état rendu porte alors `measured: false` avec la cause « rejeu hors
 ligne ».
 
-## L'ordre et les poids
+## L'ordre : l'équilibrage des visites
 
-Les issues servables sont groupées par **famille** (la racine, en remontant `Part of #N` ou un titre
-`[EPIC … #N]`, `[#N …`, `kind(zone,#N):`, sur cinq niveaux au plus). On sert les familles **à tour de rôle** :
-huit grains viennent de huit familles dès qu'il y en a huit.
+Mandat user du 2026-11-16 : « Toute issue doit être visitée au moins une fois avant qu'une autre le soit
+deux fois, à l'exception de quelques issues anciennes de consolidation qui peuvent recevoir plusieurs visites,
+et des marathon csharp et Rust qui recevront le fruit du travail du nouveau harnais. Les issues récentes en
+particulier ne devraient pas recevoir plus de visites que les anciennes. » Le module
+`scripts/coordination/tapis_equilibre.py` porte cet ordre ; il remplace le tirage pondéré des familles.
 
-L'ordre des familles est un tirage pondéré sans remise (clé `u ** (1 / poids)`), semé par
-`"<lane>|<date UTC>|<heure // 4>"` : deux lanes ne reçoivent pas la même liste, une lane qui retire dans la
-même tranche de quatre heures retrouve la sienne. `--graine` force la graine.
+**Une visite est une séance.** Les marqueurs `[CLAIMED]`, `[CLAIMED-AMEND]` et `[DELIVERED]` d'une même
+lane à moins de 24 h d'intervalle (`SEANCE_H`) font une seule visite. Les commits de `origin/main` qui
+citent l'issue forment des séances sans lane. Le compte retenu est le plus grand des deux : un claim puis le
+merge de sa PR comptent une fois.
 
-| Constante | Valeur | Quand |
+**Le niveau compte les visites du tour, pas celles de toute la vie de l'issue.** Le tour vaut
+`FENETRE_J` = 7 jours. Mesure du 16/11 sur la lecture de 13:27Z : environ 47 séances par jour pour 395
+issues ouvertes, soit un tour complet de la flotte en 4 à 8 jours. Un compte sur la vie entière aurait l'effet
+inverse du mandat : les anciennes issues ont plus de visites parce qu'elles vivent plus longtemps (1,1 en
+moyenne avant 7 jours, 3,4 de 7 à 30 jours, 6,2 de 30 à 90 jours). Un niveau strict sur ce compte les
+affamerait.
+
+L'ordre des servables :
+
+1. vos claims ;
+2. le niveau croissant ;
+3. dans un niveau, l'issue jamais visitée d'abord, puis la plus ancienne par date de création. Une issue
+   récente reçoit sa première visite, puis attend que les anciennes aient reçu la leur dans le tour ;
+4. dans un niveau, les familles servies à tour de rôle (la famille de la plus ancienne issue d'abord), pour
+   que huit grains ne viennent pas d'une seule série.
+
+| Constante | Valeur | Rôle |
 | --- | --- | --- |
-| `PRIO_CONSOLIDATION` | 1,5 | une issue servable de la famille, ou sa racine, porte le label `consolidation` |
-| `PRIO_VIEIL_EPIC` | 1,5 | la racine est un conteneur ouvert depuis plus de `AGE_VIEIL_EPIC_J` = 60 jours |
+| `FENETRE_J` | 7 | le tour sur lequel se compte le niveau |
+| `SEANCE_H` | 24 | deux marqueurs d'une lane plus proches que cela font une visite |
+| `AGE_CONSOLIDATION_J` | 60 | au-delà, une issue de consolidation a droit à plusieurs visites par tour |
+| `VISITES_CONSOLIDATION` | 3 | son niveau vaut `visites // 3` |
+| `MARATHONS` | #26070, #26510 | racines des marathons de parité C# et Rust, hors équilibrage |
+| `TETE` | 24 | la tête de chaque niveau est décalée par lane |
 | `PART_CONTENEURS` | 0,25 | part au plus des conteneurs dans la liste (2 sur 8) ; ils la complètent s'il manque des grains |
 
-Les deux se cumulent (2,25). C'est une **légère** priorité : aucune famille n'est privée de service. Dans
-une famille : votre claim, puis les jamais visitées, puis la visite la plus ancienne
-(marqueurs de claim ou de livraison, commits qui la citent) ; à égalité, le grain avant son conteneur.
+**Les deux exceptions du mandat.** Une issue de consolidation (label `consolidation`, ou fille d'une racine
+labellisée) ouverte depuis plus de 60 jours a pour niveau `visites // 3`. Les marathons (familles #26070 et
+#26510, titres commençant par « Marathon ») passent après tout le pool équilibré : c'est le harnais sk-agent
+qui les servira. Le rapport JSON dit pour chaque grain son nombre de visites du tour et au total, et nomme
+l'exception qui s'applique (champ `priorite`).
 
-**Le rang des grains jamais visités d'une famille est décalé par lane** (`sha256(graine|famille)`, la graine
-portant la lane, la date et la tranche de quatre heures). Deux lanes qui servent la même famille ne
-reçoivent donc pas le même grain. Mesuré le 14/11 : deux sièges (même préfixe de machine, workspaces
-différents) avaient reçu les mêmes deux grains, parce que l'ordre des *familles* était semé par lane mais
-celui des *membres* d'une famille était le même pour toutes les lanes. Le décalage porte sur le **rang**,
-pas sur le contenu : l'ancienneté reste le critère à l'intérieur du décalage, et les grains jamais visités
-passent devant les conteneurs et devant les grains déjà visités. Résidu **calculé** (ce n'est pas une
-mesure) : sur une famille de *n* grains, deux lanes ont 1/*n* chance de partager le même rang — le taux de
-chevauchement porte sur la liste entière (8 familles servies), pas sur une famille isolée.
+**La tête de chaque niveau est décalée par lane** (`sha256(graine|niveau)`, la graine portant la lane, la
+date et la tranche de quatre heures). Deux lanes qui tirent au même moment ne reçoivent donc pas la même
+tête. Le décalage porte sur les 24 premiers grains du niveau (`TETE`), jamais sur les conteneurs, dont le
+quota se lit dans l'ordre. Une lane qui retire dans la même tranche retrouve sa liste ; `--graine` force la
+graine. Les plus récentes d'un niveau restent derrière la tête : le test le vérifie sur trente grains jamais
+visités et 300 graines, où les huit grains servis viennent toujours des 24 plus anciens.
+
+**Effet mesuré** sur la même lecture (11 lanes worker, 8 grains chacune, hors claims et marathons) :
+
+| | avant | après |
+| --- | --- | --- |
+| visites du tour des grains servis (moyenne) | 2,45 | 1,77 |
+| grains servis à 4 visites du tour ou plus | 18 | 10 |
+| âge médian des grains servis | 49 j | 54 j |
+| marathons servis | 4 | 0 |
+
+Les grains restent servis avant les conteneurs (#26926), même quand le conteneur est à un niveau plus bas : un
+conteneur demande une lecture et un `--paths`.
 
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 
-- Le **bandit de fermeture par zone** : la variété vient du tour de rôle par famille et du tirage semé par lane.
+- Le **bandit de fermeture par zone** : la variété vient du tour de rôle par famille dans un niveau et du décalage par lane.
 - Les **plafonds par EPIC côté tirage pondéré** : le tour de rôle borne déjà la part d'une famille à un grain par tour. Le plafond hebdomadaire #22500 lui **est** repris, sous la forme de l'écart `PLAFOND` ci-dessus, pour ne pas servir ce que le gate de claim refuse ; il ne pèse que les conteneurs, jamais les filles existantes (#26414).
 - La **file de réparation** : une réparation due passe par une issue ordinaire, servie comme les autres.
