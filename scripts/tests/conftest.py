@@ -157,3 +157,15 @@ def _gh_etag_desactive(monkeypatch):
     """
     monkeypatch.setenv("COURSIA_GH_ETAG", "0")
     yield
+
+
+@pytest.fixture(autouse=True)
+def _tapis_lourd_en_diagnostic(monkeypatch):
+    """#26926 : les tests exercent le tapis lourd comme outil de diagnostic.
+
+    Hors diagnostic, ``pick_idle_grain.py --belt`` refuse et nomme le tapis
+    rapide. Les suites du tapis lourd testent ses mecanismes : elles le lancent
+    donc en diagnostic. Le test du refus retire la variable explicitement.
+    """
+    monkeypatch.setenv("COURSIA_HEAVY_BELT_DIAGNOSTIC", "1")
+    yield

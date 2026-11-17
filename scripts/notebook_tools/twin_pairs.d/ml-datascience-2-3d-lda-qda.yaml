@@ -1,0 +1,10 @@
+- name: ML DataScience 2.3d LDA QDA
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Le LDA from scratch, les métriques et les projections sont calculés en C# avec MathNet ; les véritables estimateurs sklearn sont appelés via Python.NET sur les tirages NumPy.
+  known_differences:
+    - Les figures sont des SVG statiques ; les seuils numériques et les statuts QDA dépendent de la version de scikit-learn.
+    - La covariance from scratch utilise n−1 alors que le solveur sklearn lsqr utilise n.

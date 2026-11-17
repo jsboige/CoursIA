@@ -5,7 +5,7 @@
 #     constructibles a zero argument
 #   - gardes #23120 AVANT le solveur : une phrase (prose) rend une erreur
 #     de contenu, pas un verdict ; `->` est reecrit en `=>`
-#   - moities FOL/Modales : erreur honnete et precise, AUCUN verdict
+#   - FOL : erreur honnete et precise, AUCUN verdict
 #     simule (aucune cle accepted/is_consistent)
 #   - integration : le VRAI solveur Tweety decide via l'adaptateur
 #     (marquee, sautee sans les jars — meme garde que
@@ -27,6 +27,16 @@ _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 _ARGUMENT_ANALYSIS_DIR = os.path.dirname(_THIS_DIR)
 if _ARGUMENT_ANALYSIS_DIR not in sys.path:
     sys.path.insert(0, _ARGUMENT_ANALYSIS_DIR)
+
+# Le module d'init Tweety est la SOURCE UNIQUE de la liste des chemins
+# candidats SPASS (tweety_init.spass_candidate_paths) : la sonde de ce test
+# l'importe pour que la detection du moteur et la garde du test ne divergent
+# jamais (sonde native modale).
+_TWEETY_DIR = os.path.normpath(os.path.join(_ARGUMENT_ANALYSIS_DIR, "..", "Tweety"))
+if _TWEETY_DIR not in sys.path:
+    sys.path.insert(0, _TWEETY_DIR)
+
+import tweety_init  # noqa: E402
 
 
 def _install_sk_mock() -> None:
@@ -158,7 +168,7 @@ def test_consistency_prose_rejected():
 
 
 # --------------------------------------------------------------------------
-# Moities FOL/Modales : erreur honnete, JAMAIS un verdict simule
+# FOL : erreur honnete, JAMAIS un verdict simule
 # --------------------------------------------------------------------------
 
 
@@ -167,10 +177,8 @@ def test_consistency_prose_rejected():
     [
         lambda p: p.execute_fol_query('{"belief_set": "forall X: p(X)", "query": "exists Y: p(Y)"}'),
         lambda p: p.check_fol_consistency("forall X: p(X)"),
-        lambda p: p.execute_modal_query('{"belief_set": "[](a => b)", "query": "[](a)", "logic_type": "K"}'),
-        lambda p: p.check_modal_consistency('{"belief_set": "[](a)", "logic_type": "S5"}'),
     ],
-    ids=["fol-query", "fol-consistency", "modal-query", "modal-consistency"],
+    ids=["fol-query", "fol-consistency"],
 )
 def test_fol_modal_honest_error_never_simulated(call):
     """Erreur precise nommant ce qui manque ; aucune cle de verdict."""
@@ -256,6 +264,11 @@ def _tweety_jars_present() -> bool:
         return False
 
 
+def _spass_present() -> bool:
+    """Utilise la même détection SPASS que le moteur Tweety."""
+    return tweety_init.find_spass() is not None
+
+
 @pytest.mark.skipif(
     not _tweety_jars_present(),
     reason="jars Tweety absents : provisionner via "
@@ -285,3 +298,83 @@ def test_real_solver_through_adapter():
     assert "PARSE_VALID=True" in proc.stdout, proc.stdout
     assert "PARSE_INVALID=False" in proc.stdout, proc.stdout
     assert "PARSE_BAD_HAS_ERROR=True" in proc.stdout, proc.stdout
+
+
+# Sonde native asynchrone : aucun moteur ni Kernel ne sont simulés.
+_MODAL_REAL_PROBE = r"""
+import asyncio, json
+from semantic_kernel import Kernel
+from semantic_kernel.functions import KernelArguments
+from argumentation_lib._logic_agent_plugin import LogicAgentPlugin
+
+async def main():
+    kernel = Kernel()
+    kernel.add_plugin(LogicAgentPlugin(), plugin_name='logic_agents')
+    async def call(name, data):
+        result = await kernel.invoke(plugin_name='logic_agents', function_name=name, arguments=KernelArguments(payload=json.dumps(data)))
+        result = json.loads(str(result))
+        print(name, result)
+        return result
+    kb = 'type(a)\ntype(b)\n[](a => b)\n[](a)'
+    assert (await call('execute_modal_query', {'belief_set':kb,'query':'[](b)'}))['accepted'] is True
+    assert (await call('execute_modal_query', {'belief_set':kb,'query':'a'}))['accepted'] is False
+    assert (await call('execute_modal_query', {'belief_set':'type(a)\n+', 'query':'[](a) => a'}))['accepted'] is False
+    assert 'error' in await call('execute_modal_query', {'belief_set':kb, 'query':'[](a'})
+    assert (await call('check_modal_consistency', {'belief_set':kb}))['is_consistent'] is True
+    assert (await call('check_modal_consistency', {'belief_set':'type(a)\n[](a)\n!([](a))'}))['is_consistent'] is False
+    assert (await call('validate_formula', {'signature':'type(a)', 'formula':'[](a)', 'logic_type':'modal'}))['is_valid'] is True
+    assert (await call('validate_formula', {'signature':'type(a)', 'formula':'[](a', 'logic_type':'modal'}))['is_valid'] is False
+    assert 'error' in await call('execute_modal_query', {'belief_set':kb,'query':'a', 'logic_type':'S5'})
+    assert (await call('execute_pl_query', {'belief_set':'a => b\na','query':'b'}))['accepted'] is True
+    print('NATIVE_OK')
+asyncio.run(main())
+"""
+
+
+@pytest.mark.parametrize("nested_cwd", [False, True])
+def test_spass_detection_matches_engine_outside_path(tmp_path, monkeypatch, nested_cwd):
+    """La garde et le moteur voient le même fichier, quel que soit le cwd."""
+    module_dir = tmp_path / "Tweety"
+    binary = module_dir / "ext_tools" / "spass" / (
+        "SPASS.exe" if os.name == "nt" else "SPASS"
+    )
+    binary.parent.mkdir(parents=True)
+    binary.write_text("fixture de chemin", encoding="utf-8")
+    monkeypatch.setattr(tweety_init, "__file__", str(module_dir / "tweety_init.py"))
+    monkeypatch.setenv("PATH", "")
+    cwd = tmp_path / "racine"
+    if nested_cwd:
+        cwd = cwd / "isole"
+    cwd.mkdir(parents=True)
+    monkeypatch.chdir(cwd)
+    for name, value in tweety_init.EXTERNAL_TOOLS.copy().items():
+        monkeypatch.setitem(tweety_init.EXTERNAL_TOOLS, name, value)
+    tweety_init.EXTERNAL_TOOLS["SPASS"] = ""
+
+    assert _spass_present()
+    tweety_init._detect_tools()
+    assert tweety_init.EXTERNAL_TOOLS["SPASS"] == str(binary.resolve())
+
+    binary.unlink()
+    monkeypatch.setitem(tweety_init.EXTERNAL_TOOLS, "SPASS", "")
+    assert not _spass_present()
+    tweety_init._detect_tools()
+    assert tweety_init.EXTERNAL_TOOLS["SPASS"] == ""
+
+
+@pytest.mark.skipif(
+    not _tweety_jars_present() or not _spass_present(),
+    reason="jars Tweety et SPASS requis pour la sonde native "
+    "(SPASS 3.5 Linux en ext_tools/spass/, 3.0 Windows en SPASS-3.0/)",
+)
+def test_real_modal_solver_through_kernel():
+    import subprocess
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = _ARGUMENT_ANALYSIS_DIR + os.pathsep + env.get("PYTHONPATH", "")
+    proc = subprocess.run(
+        [sys.executable, "-c", _MODAL_REAL_PROBE],
+        capture_output=True, text=True, encoding="utf-8", env=env, timeout=120,
+    )
+    assert proc.returncode == 0, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+    assert "NATIVE_OK" in proc.stdout

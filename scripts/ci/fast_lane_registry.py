@@ -790,6 +790,36 @@ PILOT: list[Guard] = [
         blocking=False,
         needs_base=True,
     ),
+    # Integrite du ledger des renommages (#27015) : `docs/reference/
+    # rename-ledger.tsv` est un TSV append-only ecrit par N lanes (chaque
+    # renommage ajoute une ligne en fin de fichier -- deux PRs convergentes
+    # conflictent sur la fin, frein signale a ai-01 le 2026-11-16). Le
+    # `.gitattributes` declare `merge=union` dessus : le merge LOCAL concatene
+    # sans juger, donc la garde est la moitie porteuse (GO ai-01). Elle echoue
+    # sur les deux signatures d'un artefact d'union -- cle `ancien` dupliquee
+    # (deux lanes ayant renomme le meme carnet), cycle a dates repetees
+    # (aller-retour colle). Un cycle a dates toutes distinctes est une HISTOIRE
+    # legitime (iterations de structure de dossier : 4 cycles ICT a dates
+    # croissantes vivent sur main, dd06ce25ffe -- mesurees avant d'ecrire la
+    # regle) et passe en NOTE. Invariant de fichier entier, pas un delta :
+    # needs_base=False.
+    Guard(
+        name="rename-ledger integrity (union merge guard)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/reference/rename-ledger.tsv",
+            "scripts/notebook_tools/check_rename_ledger.py",
+            "scripts/notebook_tools/tests/test_check_rename_ledger.py",
+            # L'ecrivain du ledger : changer son format change la grammaire
+            # que la garde valide.
+            "scripts/notebook_tools/rename_notebooks.py",
+            ".gitattributes",
+        ],
+        argv=["python", "scripts/notebook_tools/check_rename_ledger.py"],
+        blocking=True,
+        needs_base=False,
+        shadow_reason=PILOT_SHADOW_NATIF,
+    ),
 ]
 
 
@@ -1328,6 +1358,14 @@ TRANCHE5: list[Guard] = [
         paths=[
             "pytest.ini",
             "scripts/check_testpaths_coverage.py",
+            # T4 (#25366) : le ratchet d'inventaire doit voir toute PR
+            # touchant un dossier de tests ou un module de test, où
+            # qu'il vive — scripts-tests.yml ne regarde que scripts/**
+            # et tests/**, or la dette mesurée vit surtout sous
+            # MyIA.AI.Notebooks/ (16 des 30 doublons : ICT-Series).
+            "scripts/tests/baseline_testpaths_inventory.json",
+            "**/tests/**",
+            "**/test_*.py",
             ".github/workflows/scripts-tests.yml",
             ".github/workflows/ml-tests.yml",
             ".github/workflows/secret-scan.yml",
@@ -1341,7 +1379,11 @@ TRANCHE5: list[Guard] = [
             ".github/workflows/sudoku-tests.yml",
             ".github/workflows/testpaths-coverage-guard.yml",
         ],
-        argv=["python", "scripts/check_testpaths_coverage.py", "--verbose"],
+        argv=[
+            "python", "scripts/check_testpaths_coverage.py",
+            "--verbose", "--inventory",
+            "--baseline", "scripts/tests/baseline_testpaths_inventory.json",
+        ],
         blocking=True,
         absorbed=True,
     ),
@@ -4472,5 +4514,252 @@ TRANCHE46: list[Guard] = [
         # rc=2 : abstention (merge-base introuvable) ou erreur
         # structurelle. Classe NEUTRE (« incident »), jamais un vert.
         warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 47 (#26690) -- code de notebook non commente
+#
+# Demande user, verbatim, en commentaire de PR le 2026-11-15 :
+#   #26607 « le code est non commente et tres difficile a lire. Le CI devrait
+#            le rejeter sur ces deux bases. »
+#   #26616 « code non commente et tres dur a lire. Il nous faut un organe
+#            contre ca. »
+#
+# BLOQUANT, et non advisory : le user demande le rejet, pas un signalement.
+# Un garde qui n'a jamais bloque est decoratif, et c'est exactement ce qu'il
+# denonce.
+#
+# Le stock de `main` ne rougit personne : le garde est borne au diff (l'argv
+# porte `--diff {base_ref}`, vu par l'heuristique du picker, donc pas de
+# `diff_bounded` a declarer en plus) et ne juge que les cellules AJOUTEES ou
+# MODIFIEES par la PR. Mesure du 2026-11-15 sur `main` a `ffdfd724e3f` :
+# 1988 cellules signalees dans 723 carnets sur 23531 cellules de code (8,4 %),
+# mediane 1 a 2 cellules par carnet -- jamais imputees a une PR qui ne les
+# touche pas.
+#
+# LA LANGUE DU NOYAU PORTE LA MESURE. Une premiere version comptait `#`
+# partout : 4490 cellules, dont 2703 C# sur 4092 -- or le C# ne commente pas
+# avec `#`. Ce n'etaient pas des defauts de lisibilite. Le compteur suit
+# desormais le kernelspec : `//` et `/* */` en C#, `--` et `/- -/` en Lean,
+# chaines masquees dans les deux cas. Resultat mesure : 1988 cellules, dont
+# 331 C# (8,1 % du C# au lieu de 66 %) et 3 Lean.
+#
+# Controles sur les deux PRs fondatrices, `--diff origin/main` a leur tete :
+#   #26607 -> 3 cellules, toutes dans le jumeau C# NEUF ; les 5 cellules
+#             Python deja fautives sur `main` ne sont pas imputees ;
+#   #26616 -> 3 cellules, dont la cellule Python de 75 lignes a 0 commentaire
+#             que le user citait nominativement.
+# ---------------------------------------------------------------------------
+TRANCHE47: list[Guard] = [
+    Guard(
+        name="Uncommented code (#26690)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_uncommented_code.py",
+            "scripts/notebook_tools/tests/test_check_uncommented_code.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        # Le detecteur prouve qu'il tire avant de rendre un vert (#11685).
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_check_uncommented_code.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_uncommented_code.py",
+            "--diff", "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+        # rc=2 : erreur d'invocation (carnet illisible). Incident, jamais un
+        # vert silencieux.
+        warn_rc=(2,),
+    ),
+]
+
+# TRANCHE 48 (#26782) : densite de commentaires du code des carnets.
+# Concerns user #26607/#26616 (via #26613) : « le code est non commente et
+# tres difficile a lire. Le CI devrait le rejeter ». Deux axes :
+#  - axe 1 BLOQUANT : ratchet base-vs-PR. Un carnet AJOUTE >= 40 lignes de
+#    code sous 5 % de densite rougit ; un carnet MODIFIE qui passe sous 5 %
+#    rougit ; le stock de main n'est jamais juge (un carnet deja sous le
+#    seuil a la base reste ALREADY_BELOW, dette §I, jamais rouge).
+#  - axe 2 ADVISORY : lisibilite (lignes > 120 caracteres, blocs > 60
+#    lignes sans commentaire, identifiants d'une lettre hors indices de
+#    boucle). Rapporte, jamais bloquant.
+# Garde natif ne dans la voie rapide : aucun workflow unitaire a retirer.
+# Numerotation : TRANCHE47 etait le numero de branche ; main l'a pris pour
+# l'organe #26690 (PR #26694) -- renumerote 48 au conflit, organes distincts.
+TRANCHE48: list[Guard] = [
+    Guard(
+        name="Comment-density ratchet (base vs PR)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_code_comment_density.py",
+            "scripts/notebook_tools/tests/test_check_code_comment_density.py",
+            "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json",
+        ],
+        pre_argv=[
+            # Pre-controle (lecon #11685/#12817) : un detecteur qui ne peut
+            # pas prouver qu'il tire est indiscernable d'un detecteur
+            # debranche.
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "{base_ref}",
+        ],
+        blocking=True,          # axe 1 : le gate exige par le Concern user
+        needs_base=True,        # le runner garantit origin/<base_ref>
+        diff_bounded=True,      # verdict base vs tete : le stock n'est pas juge
+        absorbed=True,
+    ),
+    Guard(
+        name="Comment-density readability (advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_code_comment_density.py",
+            "scripts/notebook_tools/tests/test_check_code_comment_density.py",
+            "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_code_comment_density.py",
+            "--readability", "{base_ref}",
+        ],
+        blocking=False,         # axe 2 : advisory, signale jamais bloque
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 49 -- SVG emis seulement en text/html (#26783).
+#
+# Garde NATIF : aucun workflow d'origine. L'organe
+# `scripts/notebook_tools/detect_svg_html_only.py` flagge toute sortie
+# `display_data`/`execute_result` dont le mime bundle contient un `<svg>` en
+# `text/html` mais NI `image/svg+xml` NI `image/png` : le SVG n'a alors aucune
+# representation que toute surface de rendu affiche (viewer GitHub, rich diff
+# de PR, nbviewer, VS Code, exports HTML ne sanitizent pas `text/html`
+# pareil). Les quatre detecteurs SVG existants jugent la GEOMETRIE du SVG
+# emis, pas son type MIME : cette classe leur est invisible par construction.
+#
+# Calibration census sur main (mesure firsthand, worktree b8bc690d) :
+# 198 sorties html-only dans 87 carnets -- exactement les chiffres de
+# l'issue. Controle positif reel : la tete de #26613 rend 4/4 (cellules
+# 13/20/25/28 de Z3-20 C#). Controle negatif : tout bundle doubled
+# `image/svg+xml` ou `image/png` est exempte (15 tests pytest + self-test
+# embarque en pre-controle).
+#
+# Pourquoi ADVISORY et non bloquant (ecart ASSUMI avec le body de l'issue,
+# qui demandait bloquant) : l'etape 0 de #26783 -- capture du rendu GitHub
+# par un agent qui voit, DOM cross-checke -- a REFUTE l'invisibilite sur la
+# surface blob/viewer pour les DEUX carnets tests (4 SVG rendus a 776x349
+# sur la tete de #26613, 6 sur Infer-07 main) ; la surface Files changed est
+# restee inobservable en sonde anonyme (diffs .ipynb bloques a « Loading »).
+# Brancher un gate BLOQUANT sur un defaut dont la manifestation visuelle
+# n'est pas demontree est interdit (gate-fp). Une capture AUTHENTIFIEE de
+# Files changed montrant le SVG absent fait basculer le garde en bloquant :
+# `blocking=True` sur ce garde, un commit d'une ligne. Clause de l'issue :
+# « Si l'un des deux s'affiche, le critere se raffine avant tout code » --
+# les deux s'affichent.
+#
+# `needs_base=True` + ratchet autonome : l'organe fait lui-meme son diff
+# merge-base...HEAD et ne juge que les AJOUTS (cle (cell_id, sha1 du
+# payload)) -- le stock de main n'est pas juge, contrat de l'issue. Un
+# carnet NOUVEAU compte toutes ses occurrences comme ajouts. Meme forme
+# moteur que TRANCHE11 (source-collapse) : self-test en pre-controle, argv
+# positionnel `{base_ref}`.
+# ---------------------------------------------------------------------------
+TRANCHE49: list[Guard] = [
+    Guard(
+        name="SVG html-only ratchet (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/detect_svg_html_only.py",
+            "scripts/notebook_tools/tests/test_detect_svg_html_only.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/detect_svg_html_only.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_svg_html_only.py",
+            "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE50 -- enrich-quality base-vs-PR : le geste d'AVANT-PUSH (#26973).
+#
+# Mesure #25692 : trois liens relatifs casses par une profondeur de chemin de
+# trop, decouverts SEULEMENT par la CI -- la logique du gate
+# `enrich-quality-gate.yml` vivait dans le YAML du workflow, donc aucun
+# auteur ne pouvait la rejouer avant de pousser. L'organe
+# `scripts/notebook_tools/enrich_quality_delta.py` sort cette logique du YAML
+# (en REUSANT `enrich_quality_ci.py` et `filter_pr_introduced_notebooks.py`),
+# et ce garde la fait tourner dans la voie rapide comme en local.
+#
+# Caractere ADVISORY, et c'est un choix mesure :
+#   - le workflow d'origine reste l'autorite BLOQUANTE du gate -- ce garde
+#     observe, il ne double pas un blocage ;
+#   - la voie rapide, dans le job « Always-on guards », ne passe pas le body
+#     de la PR a ses gardes (`ctx["pr_body_file"]` n'est peuple que par le
+#     job `--effects`) : sans le canal `ENRICH_QUALITY_PR_BODY`, les marqueurs
+#     `enrich-quality: reecriture assumee` (#17744) seraient ignores, et une
+#     reecriture ANNONCEE serait comptee comme une regression -- un faux
+#     positif. Un garde bloquant qui peut rougir a tort n'est pas un garde ;
+#   - l'absorption (le workflow d'origine cesse de declencher, ce garde
+#     devient l'unique emetteur bloquant) est une tranche ulterieure : elle
+#     exige de prouver l'egalite des deux canaux de body, pas seulement
+#     l'egalite des verdicts.
+#
+# En LOCAL, le meme organe est le geste d'avant-push : il rend 1 sur une
+# regression, ce que la voie rapide en ombre ne fait pas (un garde advisory
+# ne peut pas rougir le job).
+# ---------------------------------------------------------------------------
+TRANCHE50: list[Guard] = [
+    Guard(
+        name="Enrich-quality regression (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/enrich_quality_delta.py",
+            "scripts/notebook_tools/enrich_quality_ci.py",
+            "scripts/notebook_tools/scan_enrich_quality.py",
+            "scripts/ci/filter_pr_introduced_notebooks.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/enrich_quality_delta.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/enrich_quality_delta.py",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=False,
     ),
 ]
