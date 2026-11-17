@@ -68,6 +68,7 @@ import sys
 from check_output_failure_text import (
     EXCLUDE_MARKERS,
     changed_notebooks,
+    renamed_notebooks,
     resolve_base,
     read_notebook_at,
 )
@@ -167,14 +168,18 @@ def analyze(base_nb, head_nb):
     }
 
 
-def compare(base_ref, head_ref, paths, cwd=None):
+def compare(base_ref, head_ref, paths, cwd=None, renames=None):
     """Per-notebook growth of each axis between two refs.
 
     ``head_ref`` is None for the working tree (same contract as the sibling).
+    ``renames`` ({chemin tete: chemin base}, cf. ``renamed_notebooks``) lit la
+    base a l'ancien chemin d'un carnet renomme -- sans lui, un pur renommage
+    compte comme croissance de branche (#26381).
     """
     rows = []
     for path in paths:
-        base_nb = read_notebook_at(base_ref, path, cwd=cwd)
+        base_nb = read_notebook_at(base_ref, (renames or {}).get(path, path),
+                                   cwd=cwd)
         head_nb = read_notebook_at(head_ref, path, cwd=cwd)
         if head_nb is None:
             continue
@@ -349,7 +354,7 @@ def main(argv=None):
 
     base = resolve_base(args.base)
     paths = changed_notebooks(base)
-    rows = compare(base, None, paths)
+    rows = compare(base, None, paths, renames=renamed_notebooks(base))
     bad = [r for r in rows if r["regressed"]]
 
     if args.as_json:

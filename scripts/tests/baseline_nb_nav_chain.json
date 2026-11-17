@@ -152,17 +152,17 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory/SocialChoice"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory/SocialChoice"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/07-Committees-Core.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory/SocialChoice"
     },
     {

@@ -2,8 +2,6 @@
 pagetitle: "IIT - Integrated Information Theory"
 ---
 
-# IIT - Integrated Information Theory
-
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Probas](../Probas/README.md)
 
 ## Hook — pourquoi cette série
