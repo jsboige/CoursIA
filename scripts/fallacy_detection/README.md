@@ -107,3 +107,38 @@ Ce que le taux **ne dit pas** : un juge externe bas ne désigne pas le coupable
 (générateur ou juge), il dit que l'étiquette ne survit pas au changement de
 famille — trancher exigerait la vérité-terrain humaine (#20222), pas un troisième
 modèle.
+## Lot apparié : même scénario, même locuteur, avec et sans sophisme
+
+La revue EPITA de la série relève que le corpus historique donne le rôle du
+locuteur comme raccourci de classe : `smoothTalker` porte tous les sophismes,
+`drawer` toutes les vertus. `paired_scenario_corpus.py` construit le lot
+apparié demandé en retour :
+
+- **bras positif** : le texte déjà validé du split `val` FR, provenance
+  `generate_one(render_prompt)` conservée dans le rapport ;
+- **bras négatif** : même scénario, même locuteur `smoothTalker`, même position
+  défendue — seule la consigne change (`render_loyal_prompt`) : défense loyale,
+  raisons vérifiables, limites reconnues ;
+- **vérité-terrain du négatif mesurée, jamais supposée** : un vote de
+  reclassement doit écarter le sophisme cible ; quand la taxonomie Argumentum
+  déclare des vertus opposées au sophisme (`crossLink_Opposes`, cibles par PK),
+  chaque vertu liée doit être retrouvée par un second vote. Vote muet, vote
+  non parsé ou vertu manquante = paire **rejetée avec motif nommé** ;
+- **raccourci de rôle coupé par construction et mesuré dans le rapport** : le
+  rôle est constant dans chaque paire pendant que la polarité varie, donc il
+  ne porte plus aucune information de classe.
+
+Le lot publié (`paired_scenario_corpus.jsonl`, deux lignes par paire avec
+`pair_group_id`) ne contient que les paires acceptées ; le rapport JSON
+conserve toutes les tentatives, tous les votes et tous les motifs de rejet.
+Le checkpoint est local et non committé ; `--report-only` reconstruit le
+rapport sans clé ni réseau, depuis le checkpoint s'il existe, sinon depuis le
+rapport publié. Le pont vertu-sophisme vient de la taxonomie elle-même, sans
+approximation de titres : là où aucune vertu liée n'existe, cette absence est
+publiée, jamais comblée.
+
+```bash
+python -m fallacy_detection.paired_scenario_corpus --limit 60
+python -m fallacy_detection.paired_scenario_corpus --probe        # une paire, aucun corpus écrit
+python -m fallacy_detection.paired_scenario_corpus --report-only  # sans clé, sans réseau
+```

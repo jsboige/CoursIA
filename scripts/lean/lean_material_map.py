@@ -23,12 +23,25 @@ Usage :
 ``--with-sorry`` est opt-in : ``count_code_sorry.py --json`` parcourt tout le
 depot et depasse les deux minutes, ce qui est incompatible avec un ``--check``
 de CI. La page par defaut ne porte donc pas de colonne de dette.
+
+**Borne et incremental** (mesures du 2026-11-16 sur ai-01) : le ``--check``
+durat 397 s -- 77,5 s pour les naissances (une passe d'historique PAR lac,
+42 fois) et ~320 s pour la mesure de couverture. Les naissances passent
+maintenant par UNE passe (`_git_births`, memes dates mesurees sur les 42
+lacs reels), et la couverture est memoiree par empreinte de ses entrees
+(`_coverage_cached`) : la deuxieme verification sur le meme HEAD est
+immediate. Aucun appel n'est sans delai : un `git` qui ne rend pas la main
+dans son budget leve `MesureIndisponible`, et le verdict est alors
+**INCONNU** (code `UNMEASURABLE_RC`) -- jamais un faux « A JOUR », jamais
+une attente sans fin.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import re
 import subprocess
 import sys
@@ -56,6 +69,22 @@ COVERAGE_TIMEOUT = 1800
 # (`scripts/lean/check_lean_derived_pages.py`) classifie ce code
 # explicitement au lieu de le lire comme une divergence de l'arbre.
 UNMEASURABLE_RC = 2
+
+#: Budget d'un appel git. Aucun appel git n'etait borne : un clone
+#: corrompu, un index bloque ou un hook qui attendait pouvait faire
+#: attendre le `--check` sans fin, sans aucun verdict. Un appel qui depasse
+#: ce budget leve `MesureIndisponible` -- le verdict est alors INCONNU
+#: (`UNMEASURABLE_RC`), jamais un faux « A JOUR ».
+GIT_TIMEOUT_S = 120
+
+#: Cache local de la mesure de couverture, hors du depot. La clef vaut pour
+#: HEAD et pour le CONTENU des entrees de la mesure (les workflows, le
+#: manifeste des lacs, l'organe lui-meme) : une modification de l'une
+#: d'elles change la clef, donc le cache est invalide. Le depot n'est jamais
+#: pollue par un cache.
+COVERAGE_CACHE_DIR = Path(
+    os.environ.get("LOCALAPPDATA") or (Path.home() / ".cache")
+) / "CoursIA" / "lean_material_map"
 
 GENERATED_HEADER = (
     "<!-- fichier genere par scripts/lean/lean_material_map.py -- "
@@ -118,7 +147,16 @@ DECLARATION_RE = re.compile(
 
 
 def _git(*args: str) -> str:
-    """Rend la sortie de git, ou une chaine vide si la commande echoue."""
+    """Rend la sortie de git, ou une chaine vide si la commande echoue.
+
+    **Borne** : un appel qui depasse `GIT_TIMEOUT_S` leve
+    `MesureIndisponible`. Avant, aucun appel git n'avait de delai : un clone
+    bloque pouvait faire attendre le `--check` sans fin, sans aucun verdict
+    (c'est la classe « endless wait » signalee sur ce generateur). Une
+    commande qui ECHOUE (rc non nul) rend toujours la chaine vide : c'est un
+    resultat, pas une panne -- la distinction est celle de l'appel qui ne
+    rend jamais la main.
+    """
     try:
         r = subprocess.run(
             ["git", "-C", str(REPO_ROOT), *args],
@@ -126,7 +164,12 @@ def _git(*args: str) -> str:
             text=True,
             encoding="utf-8",
             errors="replace",
+            timeout=GIT_TIMEOUT_S,
         )
+    except subprocess.TimeoutExpired as exc:
+        raise MesureIndisponible(
+            "timeout de %d s sur `git %s`" % (GIT_TIMEOUT_S, " ".join(args[:3]))
+        ) from exc
     except OSError:
         return ""
     if r.returncode != 0:
@@ -159,6 +202,17 @@ def _declared_lakes() -> dict[str, dict]:
 
 class CoverageUnavailable(RuntimeError):
     """L'organe de couverture n'a pas repondu : la page ne peut pas etre certifiee."""
+
+
+class MesureIndisponible(RuntimeError):
+    """Une mesure n'a pas pu etre prise dans son budget : verdict INCONNU.
+
+    Distinct de `CoverageUnavailable` : celle-la dit que l'organe AMONT n'a
+    pas repondu, celle-ci dit qu'un appel du generateur lui-meme a depasse
+    son budget (un `git` qui ne rend pas la main). Les deux rendent le meme
+    code de sortie -- `UNMEASURABLE_RC`, celui que le garde des pages
+    derivees classe explicitement au lieu de le lire comme une divergence.
+    """
 
 
 def _coverage() -> dict:
@@ -199,6 +253,68 @@ def _coverage() -> dict:
     except json.JSONDecodeError as exc:
         raise CoverageUnavailable(
             "sortie illisible de %s : %s" % (COVERAGE.name, exc))
+
+
+def _entrees_couverture() -> list[Path]:
+    """Les fichiers dont le contenu determine la mesure de couverture."""
+    entrees = [COVERAGE, CI_LAKES]
+    if WORKFLOWS.is_dir():
+        entrees += sorted(WORKFLOWS.rglob("*.yml"))
+        entrees += sorted(WORKFLOWS.rglob("*.yaml"))
+    return entrees
+
+
+def _coverage_key() -> str:
+    """L'empreinte des entrees de la mesure de couverture.
+
+    Elle vaut pour HEAD **et** pour le contenu des fichiers dont la mesure
+    depend (les workflows, le manifeste des lacs, l'organe lui-meme) : une
+    modification de l'un d'eux change la clef, donc le cache est invalide.
+    Sans le contenu, un cache keyed sur le seul HEAD servirait une mesure
+    perimee apres un changement de workflow -- c'est-a-dire une page fausse.
+    """
+    empreinte = hashlib.sha256()
+    empreinte.update(_git("rev-parse", "HEAD").encode("utf-8"))
+    for chemin in _entrees_couverture():
+        empreinte.update(str(chemin).encode("utf-8"))
+        try:
+            empreinte.update(Path(chemin).read_bytes())
+        except OSError:
+            empreinte.update(b"<absent>")
+    return empreinte.hexdigest()
+
+
+def _coverage_cached() -> dict:
+    """La mesure de couverture, memoiree par empreinte des entrees.
+
+    L'organe de couverture est l'etape la plus longue du generateur (mesure
+    du 2026-11-16 : ~320 s sur ai-01, le reste du `--check` etant les
+    naissances). Le rejouer a chaque verification rendait le `--check`
+    impropre a un usage courant : il est incremental, donc la DEUXIEME
+    verification sur le meme HEAD est immediate.
+
+    Le cache est **hors du depot** (`COVERAGE_CACHE_DIR`) : le depot n'est
+    jamais pollue, et rien n'est commite par accident. Une clef qui ne
+    correspond pas est un MISS, jamais une reponse : la mesure est refaite.
+    """
+    clef = _coverage_key()
+    chemin = COVERAGE_CACHE_DIR / ("couverture-%s.json" % clef)
+    try:
+        donnees = json.loads(chemin.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        donnees = None
+    if isinstance(donnees, dict) and donnees.get("clef") == clef \
+            and isinstance(donnees.get("charge"), dict):
+        return donnees["charge"]
+    charge = _coverage()
+    try:
+        COVERAGE_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        chemin.write_text(
+            json.dumps({"clef": clef, "charge": charge}, ensure_ascii=False),
+            encoding="utf-8")
+    except OSError:
+        pass  # un cache qu'on ne peut pas ecrire n'est pas une erreur
+    return charge
 
 
 def _sorry_by_lake() -> dict[str, int]:
@@ -299,7 +415,43 @@ def _git_birth(lakefile: str) -> str:
     return lines[0] if lines else ""
 
 
-def _birth(lake: str, lakefile: str, pinned: dict[str, str] | None = None) -> str:
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _git_births(lakefiles: list[str]) -> dict[str, str]:
+    """Les naissances de TOUS les lakefiles en UNE passe git.
+
+    Une passe par lakefile parcourt tout l'historique a chaque fois : sur les
+    42 lacs du depot, c'etaient **77,5 s** du seul `--check` (mesure du
+    2026-11-16 sur ai-01). Une seule passe `git log --diff-filter=A
+    --name-only --reverse` rend les **memes** dates : `--reverse` ordonne les
+    commits du plus ancien au plus recent, donc la premiere apparition d'un
+    chemin est son ajout. Ecarts mesures sur les 42 lacs reels : **0**.
+
+    Le filtre `--diff-filter=A` est celui de `_git_birth` : un renommage (R)
+    n'est pas un ajout, et `--name-only` ne liste donc que les chemins
+    reellement ajoutes.
+    """
+    if not lakefiles:
+        return {}
+    out = _git("log", "--diff-filter=A", "--format=%cs", "--reverse",
+               "--name-only", "--", *lakefiles)
+    naissances: dict[str, str] = {}
+    date = ""
+    for ligne in out.splitlines():
+        ligne = ligne.strip()
+        if not ligne:
+            continue
+        if _DATE_RE.match(ligne):
+            date = ligne
+            continue
+        if date and ligne not in naissances:
+            naissances[ligne] = date
+    return naissances
+
+
+def _birth(lake: str, lakefile: str, pinned: dict[str, str] | None = None,
+           naissances: dict[str, str] | None = None) -> str:
     """Date (AAAA-MM-JJ) de naissance du lac ; vide si inconnue.
 
     L'epingle committée prime sur git : sans elle, la colonne dependrait de
@@ -315,7 +467,12 @@ def _birth(lake: str, lakefile: str, pinned: dict[str, str] | None = None) -> st
     """
     if pinned is None:
         pinned = _pinned_births()
-    return pinned.get(lake.replace("\\", "/").rstrip("/")) or _git_birth(lakefile)
+    epingle = pinned.get(lake.replace("\\", "/").rstrip("/"))
+    if epingle:
+        return epingle
+    if naissances is not None:
+        return naissances.get(lakefile, "")
+    return _git_birth(lakefile)
 
 
 def _owner_of(path: str, lake_dirs: list[str]) -> str | None:
@@ -458,7 +615,8 @@ def _shared_theorems(lake_dirs: list[str]) -> list[dict]:
 def collect(with_sorry: bool = False) -> dict:
     """Un enregistrement par lac, plus les fichiers hors lac : le fait mesure."""
     lakefiles = _git_paths("*lakefile.lean", "*lakefile.toml")
-    coverage = _coverage()
+    naissances = _git_births(lakefiles)  # UNE passe d'historique pour tous les lacs
+    coverage = _coverage_cached()
     gated = set(coverage.get("gated_lakes") or [])
     matrix = set(coverage.get("matrix_lakes") or [])
     ungated = set(coverage.get("matrix_lakes_without_gate") or [])
@@ -483,7 +641,7 @@ def collect(with_sorry: bool = False) -> dict:
         )
         # Un lac peut porter deux lakefiles (lean + toml) : la naissance est la
         # plus ancienne des deux, c'est celle du lac.
-        born = _birth(lake, lakefile, pinned)
+        born = _birth(lake, lakefile, pinned, naissances)
         if born and (not entry["birth"] or born < entry["birth"]):
             entry["birth"] = born
 
@@ -897,6 +1055,19 @@ def main(argv: list[str] | None = None) -> int:
         )
         # La cause est en DERNIER : le garde des pages derivees lit la derniere
         # ligne du generateur pour nommer le defaut.
+        print("Cause : %s" % exc)
+        return UNMEASURABLE_RC
+    except MesureIndisponible as exc:
+        # Un appel du generateur (un `git`) n'a pas rendu la main dans son
+        # budget : le verdict est INCONNU. Ni `--write` ni `--check` ne sont
+        # executes -- une page mesuree a moitie serait une page fausse, et le
+        # garde des pages derivees lit ce code comme « je n'ai pas pu
+        # mesurer », pas comme une divergence.
+        print("MESURE INCONNUE : la page derivee ne peut pas etre certifiee.")
+        print(
+            "Ni --write ni --check ne sont executes : la page sur disque n'est"
+            " pas modifiee."
+        )
         print("Cause : %s" % exc)
         return UNMEASURABLE_RC
 

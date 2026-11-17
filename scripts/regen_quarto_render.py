@@ -168,6 +168,9 @@ NOTEBOOKS_HORS_PERIMETRE = {
     "MyIA.AI.Notebooks/GradeBook.ipynb",
     # Recherche interne (validation e2e quant), hors publication pedagogique.
     "MyIA.AI.Notebooks/GenAI/_research/e2e_quant_validation.ipynb",
+    # Recherche interne (pilote RAG04-BPE, parite tokenizer C#/Qwen), hors
+    # publication pedagogique -- precedent e2e_quant_validation ci-dessus.
+    "MyIA.AI.Notebooks/GenAI/_research/RAG04-BPE-Parite-Natif-vs-Qwen-CSharp.ipynb",
     # Sondes d'outillage : reproduction du bug .NET #17361, smoke runtime.
     "scripts/notebook_tools/probes/dotnet-restore-bug-17361.ipynb",
     "scripts/notebook_tools/verify_runtime_smoke.ipynb",
