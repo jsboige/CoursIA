@@ -1,6 +1,6 @@
 # Slow lane (voie asynchrone) — tranches 1-2 #12856
 
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-17
 
 ## Strategie
 
