@@ -7,6 +7,10 @@ import Mathlib.Algebra.Homology.HomologicalComplex
 import Mathlib.Algebra.Homology.ShortComplex.HomologicalComplex
 import Mathlib.Algebra.Homology.ShortComplex.PreservesHomology
 import Mathlib.CategoryTheory.Comma.Arrow
+import Mathlib.CategoryTheory.Functor.ReflectsIso.Jointly
+import Mathlib.CategoryTheory.Functor.ReflectsIso.Exact
+import Mathlib.CategoryTheory.Limits.FunctorCategory.Basic
+import Mathlib.CategoryTheory.Limits.FunctorCategory.Finite
 
 /-!
 # Le complexe de Godement : l'itération du pas canonique à tous les degrés
@@ -745,5 +749,75 @@ theorem shortExact_app_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCa
   exact ShortComplex.ShortExact.mk' (exact_app_godementMapHom hS.exact U)
     ((NatTrans.mono_iff_mono_app _).mp (godementMapHom_mono S.f) (op U))
     ((NatTrans.epi_iff_epi_app _).mp (epi_godementMapHom_of_epi S.g) (op U))
+
+/-! ### Partie 99, tranche 1 - SES des images `C⁰` au niveau préfaisceau, degré zéro aux tiges
+
+La Partie 98 établissait la SES des images `C⁰` ouvert par ouvert. Les
+foncteurs d'évaluation des préfaisceaux préservent les limites et colimites
+finies et reflètent conjointement les isomorphismes :
+`JointlyReflectIsomorphisms.shortExact_iff` transporte donc l'énoncé évalué
+en énoncé catégorique dans la catégorie des préfaisceaux. Le foncteur tige,
+exact, en donne la version tigée, et la rangée de degré zéro des complexes
+canoniques s'identifie à la rangée des images `C⁰`
+(`godementCanonicalMap_zero` est `rfl`) : c'est la base `n = 0` de la SES
+degreewise. Les degrés `n + 1` (lemme du serpent aux tiges, annulation du
+morphisme connectant via `isZero_stalk_homology_godementCanonicalComplex`)
+et l'assemblage `shortExact_iff_degreewise_shortExact` vers la SES des
+complexes canoniques sont laissés à la tranche suivante. -/
+
+/-- **Les évaluations des préfaisceaux reflètent conjointement les
+isomorphismes** : un morphisme de préfaisceaux dont chaque composante est un
+isomorphisme est un isomorphisme. Ce pont transporte les énoncés « ouvert par
+ouvert » de la Partie 98 dans la catégorie des préfaisceaux. -/
+private lemma jointlyReflectIsomorphisms_evaluationPresheaf (X : TopCat.{u}) :
+    JointlyReflectIsomorphisms
+      (fun U : (Opens X)ᵒᵖ =>
+        (evaluation ((Opens X)ᵒᵖ) AddCommGrpCat.{u}).obj U) where
+  isIso f hf := by
+    rw [NatTrans.isIso_iff_isIso_app]
+    exact fun U => hf U
+
+/-- **La suite exacte courte des images `C⁰`, au niveau préfaisceau** : si
+`S` est courte exacte, la suite des images `C⁰` l'est aussi dans la catégorie
+des préfaisceaux. La Partie 98 l'avait établi ouvert par ouvert ; les
+foncteurs d'évaluation — qui préservent limites et colimites finies et
+reflètent conjointement les isomorphismes — transportent l'énoncé évalué en
+énoncé catégorique. Forme catégorique de la tranche 1 de la brique 3 de la
+Partie 95. -/
+theorem shortExact_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) :
+    (ShortComplex.mk (godementMapHom S.f) (godementMapHom S.g)
+      (by rw [← godementMapHom_comp, S.zero, godementMapHom_zero])).ShortExact :=
+  ((jointlyReflectIsomorphisms_evaluationPresheaf X).shortExact_iff _).mpr
+    fun U => shortExact_app_godementMapHom hS U.unop
+
+/-- **La SES des images `C⁰` en chaque tige** : le foncteur tige est exact
+(`stalkFunctor_preservesHomology`), il transporte la SES catégorique
+précédente en une SES de groupes abéliens en chaque point. C'est la rangée
+de base, « degré zéro », de la SES degreewise des complexes canoniques. -/
+theorem shortExact_stalk_godementMapHom {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.ShortExact) (x₀ : X) :
+    ((ShortComplex.mk (godementMapHom S.f) (godementMapHom S.g)
+      (by rw [← godementMapHom_comp, S.zero, godementMapHom_zero])).map
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).ShortExact := by
+  have h := (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).exact_tfae.out 2 0
+  exact h.mp inferInstance _ (shortExact_godementMapHom hS)
+
+/-- **Le degré zéro de la SES degreewise, en chaque tige** : la rangée de
+degré `0` des complexes canoniques, lue en chaque tige, est courte exacte.
+C'est le cas de base `n = 0` de la SES degreewise nommée par la Partie 98 ;
+les degrés suivants exigent le lemme du serpent aux tiges (tranche
+suivante). -/
+theorem shortExact_stalk_godementCanonicalMap_zero
+    {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})} (hS : S.ShortExact) (x₀ : X) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalMap S.X₁ S.X₂ S.f 0))
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalMap S.X₂ S.X₃ S.g 0))
+      (((ShortComplex.mk (godementMapHom S.f) (godementMapHom S.g)
+        (by rw [← godementMapHom_comp, S.zero, godementMapHom_zero])).map
+        (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).zero)).ShortExact :=
+  shortExact_stalk_godementMapHom hS x₀
 
 end Grothendieck
