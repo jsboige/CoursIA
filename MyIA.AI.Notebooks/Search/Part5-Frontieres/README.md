@@ -33,6 +33,7 @@ Des carnets qui ne traitent pas un problème classique pour l'apprendre — ils 
 | 9 | [Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python](Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb) | ~65 min | RCPSP/max : le lag maximal comme arc inverse, faisabilité NP-difficile et son témoin de circuit positif, balayage des trois régimes temporel/ressource/réalisable, échelle de bornes certifiées et repli explicite quand la référence externe manque — distillation PrCon B4 (Arthur Gallier, Nicolas Naegelen) | Projet étudiant (PrCon PR #51) |
 | 10 | [Frontieres-10-NeuralDiving-Coloration-Python](Frontieres-10-NeuralDiving-Coloration-Python.ipynb) | ~60 min | Neural diving : un plongeur MLP prédit une affectation partielle, injectée comme hint réparable dans CP-SAT ; la médiane des branches recule (2829 → 2325, 25/25 instances améliorées) alors que ≈ 49 % des arêtes du hint violent l'adjacence — cohérence du hint avec les contraintes, pas précision par bit — hommage Nair et al. 2021 | Recherche (Nair et al. 2021) |
 | 11 | [Frontieres-11-Abstraction-Dette-ShortestPath-Python](Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb) | ~55 min | Abstraction à dette bornée : partitionner la carte en provinces, agréger au minimum, resserrer la borne en payant l'interne minimal, puis relever dans le couloir désigné — l'agrégation moyenne sert de contre-témoin mesuré (elle viole l'admissibilité sur les requêtes courtes), et la dette de chaque échelle se chiffre au lieu de se prédire — hommage Culberson & Schaeffer 1998, Holte et al. 2005 | Recherche (Culberson & Schaeffer 1998 ; Holte et al. 2005) |
+| 12 | [Frontieres-12-WordProblem-Automata-Python](Frontieres-12-WordProblem-Automata-Python.ipynb) | ~55 min | Le problème du mot par automates finis : formes normales `Z²`/`F₂`, automates **construits** de géodésique (9 et 5 états) **affirmés par les propriétés**, contraste **mesuré** BFS quadratique vs automate linéaire, croissance **comptée** polynomial (`Z²`) vs exponentiel (`F₂`) — distillation *word processing* (Epstein, Cannon, Holt, Levy, Paterson, Thurston 1992) | Recherche (Epstein et al. 1992) |
 
 ## Prérequis par notebook
 
@@ -49,6 +50,7 @@ Des carnets qui ne traitent pas un problème classique pour l'apprendre — ils 
 | Frontieres-09 RCPSP Max Feasibility Bounds | CSP-4 (scheduling), CSP-3 (CP-SAT), Planners-8 (temporel) | ortools, pandas, numpy, matplotlib |
 | Frontieres-10 NeuralDiving Coloration | Frontieres-06 (composante branchement), CSP-3 (CP-SAT), MGS-16 (sélection d'algorithmes) | ortools, scikit-learn, numpy, pandas |
 | Frontieres-11 Abstraction Dette ShortestPath | Search-3 (A*, heuristiques admissibles), Frontieres-03 (validateur indépendant) | matplotlib |
+| Frontieres-12 WordProblem Automata | Search-2 (BFS, espaces d'états), compression d'une structure en état fini (Frontieres-11) | numpy, matplotlib |
 
 ## Origine des projets
 
@@ -75,6 +77,8 @@ Le [Frontieres-11-Abstraction-Dette-ShortestPath-Python](Frontieres-11-Abstracti
 ## Jumeaux Frontieres-11 — Abstraction et dette
 
 [Python](Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb) · [C#](Frontieres-11-Abstraction-Dette-ShortestPath-CSharp.ipynb). Les deux carnets exécutent Dijkstra, MIN/MOYENNE, 200 requêtes longues et 200 courtes, le relèvement et les six tailles 12/8/6/4/3/2. La borne renforcée distingue première sortie et revisite ; un témoin 8×8 montre la variante fusionnée à 14 pour un optimum 13, puis la borne corrigée à 8. Les trois exercices restent ouverts et répartis. Les RNG diffèrent : dimensions, graines et budgets sont conservés, les cartes et mesures peuvent différer. La BCL porte les algorithmes pédagogiques, sans bibliothèque de référence omise ; les SVG sont autonomes et opaques.
+
+Le [Frontieres-12-WordProblem-Automata-Python](Frontieres-12-WordProblem-Automata-Python.ipynb) distille l'idée de *word processing in groups* (Epstein, Cannon, Holt, Levy, Paterson, Thurston, 1992) : le problème du mot y est décidé par des **automates finis** qui reconnaissent les mots géodésiques. Le carnet **construit** (n'invoque pas) ces automates sur deux groupes témoins — le réseau `Z²` (automate à 9 états, signe engagé par générateur) et le groupe libre `F₂` (automate à 5 états, dernière lettre) —, **affirme** leur correction par les propriétés (accord 100 % avec l'oracle de géodésie sur 40 000 mots tirés), **mesure** le contraste BFS quadratique (`2R²+2R+1` nœuds) vs automate linéaire (`|mot|` pas) sur des rayons croissants, et **compte** la croissance (balle polynomial `2R²+2R+1` pour `Z²` vs `2·3^R−1` exponentielle pour `F₂`) au lieu de la citer. Pli 4 de l'[Epic Origami #20404](https://github.com/jsboige/CoursIA/issues/20404) ([#25674](https://github.com/jsboige/CoursIA/issues/25674)) ; carnet créé après la levée du veto de création (décision user 12/11, #26129).
 
 ## Ponts inter-séries
 
