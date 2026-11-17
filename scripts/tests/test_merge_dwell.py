@@ -985,6 +985,64 @@ def test_q67_date_et_sha_suivent_la_meme_remontee():
     assert when.isoformat().startswith("2026-09-07T09:00:00")
 
 
+# --- 7 bis. commit vide du cote PR (#26899, 2026-11-16) ------------------------
+
+def _empty_fetch(files=(), parent_tree="7ee0", compare="ahead", head="v1de"):
+    """Tete `v1de` = commit vide (files=[]) au-dessus de `c0de`, dernier commit
+    de contenu (09:00). `files=None` retire la cle ; `compare=None` rend la
+    comparaison illisible."""
+    def fetch(path):
+        if path == "repos/o/r/commits/m3rg3":
+            return _commit("m3rg3", "2026-11-16T15:17:00Z", ["v1de", "ba5e"],
+                           tree="7ee0")
+        if path == "repos/o/r/commits/v1de":
+            payload = _commit("v1de", "2026-11-16T15:13:00Z", ["c0de"],
+                              tree="7ee0")
+            if files is not None:
+                payload["files"] = list(files)
+            return payload
+        if path == "repos/o/r/commits/c0de":
+            return _commit("c0de", "2026-11-16T09:00:00Z", ["r00t"],
+                           tree=parent_tree)
+        if path == "repos/o/r/compare/ba5e...c0de":
+            if compare is None:
+                raise merge_dwell.DwellError("compare muet")
+            return {"status": compare}
+        raise AssertionError("chemin inattendu: " + path)
+    return fetch, head
+
+
+def _walk(fetch_head):
+    fetch, head = fetch_head
+    return merge_dwell.last_authoritative_sha(
+        "o/r", head, "ba5e", fetch=fetch, run_git=_git_proving("7ee0"))
+
+
+def test_26899_commit_vide_ne_rearme_pas_le_plancher():
+    fetch, head = _empty_fetch()
+    assert _walk((fetch, head)) == "c0de"
+    when = merge_dwell.last_authoritative_committed_at(
+        "o/r", head, "ba5e", fetch=fetch, run_git=_git_proving("7ee0"))
+    assert when.isoformat().startswith("2026-11-16T09:00:00")
+
+
+def test_26899_rafraichissement_puis_commit_vide_comme_sur_la_pr():
+    # la forme exacte de #26899 : fusion de main au-dessus du commit vide
+    assert _walk(_empty_fetch(head="m3rg3")) == "c0de"
+
+
+@pytest.mark.parametrize("kwargs", [
+    {"files": [{"filename": "a.py"}]},  # commit de contenu
+    {"files": None},                     # preuve absente
+    {"parent_tree": "d1ff"},             # arbre du parent different
+    {"compare": "behind"},               # parent sur la base : pas cote PR
+    {"compare": "identical"},
+    {"compare": None},                   # comparaison illisible
+])
+def test_26899_sans_les_trois_preuves_le_commit_se_mesure(kwargs):
+    assert _walk(_empty_fetch(**kwargs)) == "v1de"
+
+
 # --- 8. #18686 -- le label merge-dwell-waived ne joue que si main est rouge --
 
 def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
