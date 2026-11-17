@@ -97,6 +97,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/sota-verdicts-detail.md](reference/sota-verdicts-detail.md) | SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication |
 | [reference/submodule-maintenance-detail.md](reference/submodule-maintenance-detail.md) | Sous-modules — détail : état vérifié, incidents et mesures datées |
 | [reference/variation-protocol-detail.md](reference/variation-protocol-detail.md) | Protocole de variation — détail, justifications mesurées, incidents fondateurs |
+| [reference/github-access-policy.md](reference/github-access-policy.md) | Politique d'accès GitHub — arbre des usages, quotas et révocation (#27124, proposition) |
 
 ### Outils & méthodologie (docs/reference/)
 
