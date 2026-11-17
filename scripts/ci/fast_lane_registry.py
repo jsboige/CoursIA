@@ -4644,6 +4644,59 @@ TRANCHE48: list[Guard] = [
 ]
 
 # ---------------------------------------------------------------------------
+# TRANCHE 51 -- banniere NuGet Interactive dans les sorties des carnets
+# (#26932).
+#
+# Garde NATIF : aucun workflow d'origine. L'organe
+# `scripts/notebook_tools/strip_machine_paths.py` reconnait la banniere
+# .NET Interactive `Loading extensions from `<chemin absolu>/...`` que le
+# kernel REINJECTE a chaque execution -- une fuite de type A (le chemin du
+# cache NuGet de la machine). Tant que seul le hook pre-commit
+# `strip-dotnet-nuget-ext` la voyait, une lane sans hook laissait la classe
+# entrer sur `main` sans temoin : aucune jambe CI ne la regardait.
+#
+# Le garde est BLOQUANT et porte sur les carnets TOUCHES par la PR
+# (`iterate_paths` = les `.ipynb` modifies) : l'organe sort rc=1 des qu'un
+# carnet touche porte la banniere. Un carnet qui la porte deja sur la base
+# et la garde apres le PR est donc rouge : c'est voulu -- la classe ne se
+# propage plus, et le remede est une commande deterministe
+# (`strip_machine_paths.py --apply`).
+#
+# `warn_rc=(2,)` : rc=2 de l'organe, c'est le chemin absent ou illisible (le
+# carnet supprime par la PR) -- il ne doit pas rougir une PR pour un fichier
+# que la PR elle-meme a retire.
+#
+# La jambe repo-wide (`--scan-all --check`) n'est pas encore cablee : elle
+# exige que `main` soit propre, donc que tous les carnets de la classe
+# aient ete traites -- deux sont encore occupes par des PR ouvertes d'autres
+# lanes (#26635, #26349, #25262).
+#
+# Cette tranche est ecrite AVANT la 49 (et non a la fin du fichier) : les
+# tranches ajoutees recemment se suivent au meme endroit, et deux PRs qui
+# ajoutent chacune une tranche se marchent dessus. Ici les hunks sont
+# eloignes, donc les deux PRs fusionnent sans conflit.
+# ---------------------------------------------------------------------------
+TRANCHE51: list[Guard] = [
+    Guard(
+        name="No machine-path leak (NuGet banner) in changed notebooks",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/strip_machine_paths.py",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/strip_machine_paths.py",
+            "--scan", "{changed_paths}", "--check",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # TRANCHE 49 -- SVG emis seulement en text/html (#26783).
 #
 # Garde NATIF : aucun workflow d'origine. L'organe
