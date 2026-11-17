@@ -320,16 +320,16 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 | Kernelspec | Python | numpy | Executable |
 |---|---|---|---|
 | `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
-| `coursia-canonical` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
-| `coursia-ml-training` | 3.12.15 | 2.5.4 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training/python.exe` |
-| `coursia-ml-training-py310` | 3.10.22 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training-py310/python.exe` |
-| `coursia-pymc` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `coursia-canonical` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter/python.exe` |
+| `coursia-ml-training` | 3.12.15 | 2.5.4 | `%USERPROFILE%/miniconda3/envs/coursia-ml-training/python.exe` |
+| `coursia-ml-training-py310` | 3.10.22 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/coursia-ml-training-py310/python.exe` |
+| `coursia-pymc` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter/python.exe` |
 | `lean4-wsl` / `lean4-wsl-perc` / `python3-wsl` | non-Python (wsl) | - | wsl |
 | `py311-po2028` | 3.11.17 | 2.4.6 | `C:\Users\jsboi\.venvs\py311-po2028\Scripts\python.exe` — **réparé le 05/11** (venv reconstruit hors `%TEMP%`, règle F ; tuple d'origine : venv cassé sous `%TEMP%`, numpy AttributeError) |
-| `pymc-528` | 3.12.16 | 2.4.6 | `C:/Users/jsboi/miniconda3/envs/pymc528/python.exe` |
-| `pyphi` / `pyphi-iit` | 3.9.23 | 1.23.5 | `C:/Users/jsboi/miniconda3/envs/pyphi/python.exe` |
-| `python3` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
-| `python3-lean` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter-py313/python.exe` |
+| `pymc-528` | 3.12.16 | 2.4.6 | `%USERPROFILE%/miniconda3/envs/pymc528/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.23.5 | `%USERPROFILE%/miniconda3/envs/pyphi/python.exe` |
+| `python3` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter/python.exe` |
+| `python3-lean` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter-py313/python.exe` |
 
 **Canon de re-exécution po-2028** : `python3` → **(3.13.16, numpy 2.2.6)**, env `mcp-jupyter`.
 
@@ -338,22 +338,22 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 | Kernelspec | Python | numpy | Executable |
 |---|---|---|---|
 | `.net-csharp{,-r9,-r10,-r10-canon,-r11,-stdio}` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
-| `python3` / `python3-lean` / `mcp-jupyter` / `global-3.13` / `coursia-py313-argu` | 3.13.16 | 2.4.2 | `C:/Users/jsboi/AppData/Local/Programs/Python/Python313/python.exe` |
-| `py31315` | 3.13.16 | 2.5.4 | `C:/Users/jsboi/.venvs/py31315/Scripts/python.exe` |
+| `python3` / `python3-lean` / `mcp-jupyter` / `global-3.13` / `coursia-py313-argu` | 3.13.16 | 2.4.2 | `%USERPROFILE%/AppData/Local/Programs/Python/Python313/python.exe` |
+| `py31315` | 3.13.16 | 2.5.4 | `%USERPROFILE%/.venvs/py31315/Scripts/python.exe` |
 | `sheetsage2-gpu` | 3.13.16 | 2.5.3 | `D:/Dev/venvs/sheetsage2-gpu/Scripts/python.exe` |
 | `ict-py313` | 3.13.7 | 2.5.4 | `D:/Dev/venvs/ict-py3137/Scripts/python.exe` |
-| `coursia-ml-training` | 3.11.15 | 2.4.6 | `C:/Users/jsboi/.conda/envs/coursia-ml-training/python.exe` |
-| `coursia-drift` | 3.11.16 | 1.26.4 | `C:/Users/jsboi/.conda/envs/coursia-drift/python.exe` |
-| `python3119` | 3.11.9 | 2.4.6 | `C:/Users/jsboi/AppData/Local/CoursIA/venvs/py3119/Scripts/python.exe` |
-| `pyphi` / `pyphi-iit` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/pyphi/python.exe` |
-| `ict-py39` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** : `pip install numpy==1.26.4` (restaure le pin déclaré, tuple d'origine 1.26.4 mesuré le 08/11) puis `pip install "antropy<0.2" "cryptography>=3.4,<44"` (les deux deps déclarées de `ict-series` qui manquaient) ; après réparation `numpy 1.26.4`, `import pyemd` OK, `import ict` OK, `pip check` → « No broken requirements found » — étapes et mesures d'origine : commentaire `6870260888` de #24883 |
+| `coursia-ml-training` | 3.11.15 | 2.4.6 | `%USERPROFILE%/.conda/envs/coursia-ml-training/python.exe` |
+| `coursia-drift` | 3.11.16 | 1.26.4 | `%USERPROFILE%/.conda/envs/coursia-drift/python.exe` |
+| `python3119` | 3.11.9 | 2.4.6 | `%USERPROFILE%/AppData/Local/CoursIA/venvs/py3119/Scripts/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.26.4 | `%USERPROFILE%/.conda/envs/pyphi/python.exe` |
+| `ict-py39` | 3.9.23 | 1.26.4 | `%USERPROFILE%/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** : `pip install numpy==1.26.4` (restaure le pin déclaré, tuple d'origine 1.26.4 mesuré le 08/11) puis `pip install "antropy<0.2" "cryptography>=3.4,<44"` (les deux deps déclarées de `ict-series` qui manquaient) ; après réparation `numpy 1.26.4`, `import pyemd` OK, `import ict` OK, `pip check` → « No broken requirements found » — étapes et mesures d'origine : commentaire `6870260888` de #24883 |
 | `cb09-ass` / `pymc311` | **RETIRÉ le 14/11** | - | 0 consommateur sur `main` → enreg retiré, `kernel.json` sauvegardé (`%APPDATA%\jupyter\kernels\_bak-20261114-deadargv\`) |
 | `ft03-gpu` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/ft03-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.14.0+cu126 CUDA True, transformers 5.15.1, peft 0.20.0, datasets 5.0.1, pillow) ; **noyau lancé et dépendances importées** |
 | `mert2-gpu` | 3.13.16 | 2.5.4 | `D:/Dev/venvs/mert2-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.6.0+cu126, torchaudio 2.6.0+cu126, transformers 4.53.2, soundfile, scikit-learn, scipy) + `ipykernel` ; **noyau lancé et dépendances importées** |
 | `difflogic-sl12` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/difflogic-sl12/Scripts/python.exe` — **reconstruit le 14/11** ; **noyau lancé, `difflogic.LogicLayer` forward CUDA avec autograd vérifié** |
 | `lean4-wsl` / `python3-wsl` / `python3-wsl-swipl` / `python3-sc16-concrete-wsl` | non-Python (wsl) | - | `wsl.exe` |
 
-**Canon de re-exécution po-2024** : `python3` → **(3.13.16, numpy 2.4.2)**, `C:/Users/jsboi/AppData/Local/Programs/Python/Python313`.
+**Canon de re-exécution po-2024** : `python3` → **(3.13.16, numpy 2.4.2)**, `%USERPROFILE%/AppData/Local/Programs/Python/Python313`.
 
 **Preuve d'exécution, pas seulement de lancement** — les cellules **3** (résolution d'env), **5** (construction du modèle aux dimensions du carnet) et **6** (forward réel) de `SL-12-DifferentiableLogicGateNetworks` s'exécutent **sans erreur** dans l'enreg reconstruit : `difflogic : fork vendor chargé | Python 3.13.16 | PyTorch 2.14.0+cu126 | CUDA dispo : True | Execution : cpu (snapshot reproductible) | Graine : 42 | Algorithmes : deterministes`, puis `DEVICE : cpu | Implementation : python (pure PyTorch, reference CPU) | Modele difflogic : 96 000 parametres`, puis `Logits shape : (100, 10) (attendu : (100, 10)) | OK -- forward pass difflogic fonctionne`. C'est le **carnet lui-même** qui valide son env, pas une sonde exterior. (Cellules 8+ hors périmètre de cette preuve : téléchargement MNIST et campagne de 2 000 itérations.)
 
@@ -376,9 +376,9 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 | `coursia-pymc601` | 3.13.15 | 2.3.5 | `D:/dev/.venv-pymc601/Scripts/python.exe` |
 | `adkcheck` | 3.11.16 | 2.4.6 | `C:/Users/Jesse/miniconda3/envs/adkcheck/python.exe` |
 | `pyphi-iit` | 3.9.25 | 1.26.4 | `C:/Users/Jesse/miniconda3/envs/pyphi/python.exe` |
-| `gametheory-wsl` | 3.11.16 | 2.4.6 | `/home/jesse/venv-coursia/bin/python3.11` (WSL) |
-| `python3-wsl` | 3.11.16 | 2.4.6 | `/home/jesse/.lean4-venv/bin/python3.11` (WSL) |
-| `rvc-wsl` | 3.10.21 | **1.23.5** | `/home/jesse/miniconda3/envs/rvc/bin/python3.10` (WSL — plus vieux numpy du siège) |
+| `gametheory-wsl` | 3.11.16 | 2.4.6 | `~/venv-coursia/bin/python3.11` (WSL) |
+| `python3-wsl` | 3.11.16 | 2.4.6 | `~/.lean4-venv/bin/python3.11` (WSL) |
+| `rvc-wsl` | 3.10.21 | **1.23.5** | `~/miniconda3/envs/rvc/bin/python3.10` (WSL — plus vieux numpy du siège) |
 | `lean4-wsl` / `lean4-wsl-conway` / `lean4-wsl-groth` / `lean4-wsl-groth16200` / `lean4-wsl-perc` / `lean4-wsl-torchlean` / `rust-wsl` | non-Python (wsl) | - | `wsl.exe` |
 | `lean4` | **timeout readiness** (60 s) | - | `D:/dev/CoursIA/venv/Scripts/python.exe` — enreg vivante (carnets Lean Python-wrapped), noyau lent à signaler prêt ; statut mesuré tel quel |
 | `rust` | **timeout readiness** (60 s) | - | `evcxr_jupyter.exe` — kernel Rust natif, compilation au démarrage ; statut mesuré tel quel |
