@@ -46,6 +46,6 @@ que l'etiquette ne survit pas au changement de famille.
 ## Empreintes
 
 - corpus d'entree : `d7621fffa05dc857b2110fc44299b04fdbce670efbd76c633ec3917e83aef52c`
-- rapport JSON : `e0dc48a2d0c2720cfe25300f1fee1159eba81c803a41978b5da7a95b9de0b04b` (`judge_family_agreement.json`)
+- rapport JSON : `ac0ce3dabfefaac4f49704dc8f44adf404f75da808d4d9c421f5011440f78778` (`judge_family_agreement.json`)
 
 Rejouabilite : `python -m fallacy_detection.judge_family_agreement --report-only` reconstruit ce rapport sans aucun appel ni cle — depuis le checkpoint local s'il existe, sinon depuis le rapport publie.
