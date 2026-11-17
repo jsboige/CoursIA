@@ -555,7 +555,7 @@ def test_cli_pool_vide_dit_en_clair(tmp_path, capsysbinary):
                    run=lambda argv, timeout: "") == 0
     sortie = capsysbinary.readouterr().out.decode("utf-8")
     assert "Pool vide" in sortie and "LABEL 1" in sortie
-    assert "portez d'abord au merge celles de plus de 24 h" in sortie
+    assert "traitez d'abord leurs nits" in sortie
 
 
 def test_rapport_et_texte_portent_la_note_de_fetch():
