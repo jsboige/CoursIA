@@ -82,7 +82,7 @@ echo "Test 1 : miroir absent + bootstrap desactive -- aucun geste (fail-open)"
   else
     ok "T1 aucun miroir cree (le parc reste dans son etat d'avant)"
   fi
-  if echo "$out" | grep -q "bootstrap desactive"; then
+  if grep -q "bootstrap desactive" <<<"$out"; then
     ok "T1 le no-op est journalise (pas un silence)"
   else
     ko "T1 no-op silencieux : $out"
@@ -158,7 +158,7 @@ echo "Test 3 : throttle -- un second refresh immediat ne fetch pas"
   else
     ko "T3 throttle a 0 : main a $n commits, le refresh n'a pas eu lieu"
   fi
-  if echo "$out" | grep -q "rafraichi"; then
+  if grep -q "rafraichi" <<<"$out"; then
     ok "T3 le refresh est journalise"
   else
     ko "T3 refresh silencieux : $out"
@@ -200,7 +200,7 @@ echo "Test 5 : garde d'espace -- bootstrap refuse proprement, rien n'est cree"
   else
     ok "T5 aucun repertoire cree par le refus"
   fi
-  if echo "$out" | grep -q "bootstrap REFUSE"; then
+  if grep -q "bootstrap REFUSE" <<<"$out"; then
     ok "T5 le refus est nomme avec sa cause"
   else
     ko "T5 refus silencieux : $out"
@@ -213,45 +213,45 @@ echo "Test 6 : status -- taille, refs et date de refresh lus sur le miroir"
 (
   out="$(run_mirror status)"
   echo "$out" >> "$LOG"
-  if echo "$out" | grep -q "refs: "; then ok "T6 refs comptees"; else ko "T6 pas de compte de refs : $out"; fi
-  if echo "$out" | grep -q "taille: [0-9]"; then ok "T6 taille mesuree"; else ko "T6 taille absente : $out"; fi
+  if grep -q "refs: " <<<"$out"; then ok "T6 refs comptees"; else ko "T6 pas de compte de refs : $out"; fi
+  if grep -q "taille: [0-9]" <<<"$out"; then ok "T6 taille mesuree"; else ko "T6 taille absente : $out"; fi
   # Les DEUX horodatages (#26453) : le throttle (quand on a tente) et le
   # succes (quand le miroir a reellement ete rafraichi).
-  if echo "$out" | grep -q "dernier refresh (throttle): 2"; then
+  if grep -q "dernier refresh (throttle): 2" <<<"$out"; then
     ok "T6 horodatage de throttle presente"
   else
     ko "T6 horodatage de throttle absent : $out"
   fi
-  if echo "$out" | grep -q "dernier succes:"; then
+  if grep -q "dernier succes:" <<<"$out"; then
     ok "T6 horodatage de succes presente"
   else
     ko "T6 horodatage de succes absent : $out"
   fi
-  if echo "$out" | grep -q "echecs consecutifs: [0-9]"; then
+  if grep -q "echecs consecutifs: [0-9]" <<<"$out"; then
     ok "T6 compteur d'echecs consecutifs affiche"
   else
     ko "T6 compteur d'echecs consecutifs absent : $out"
   fi
   # L'ecart au remote est annonce : c'est la mesure qui dit si le miroir
   # traine (la panne du 26/10 se voyait justement par un ecart de 19 jours).
-  if echo "$out" | grep -q "origin/main: "; then
+  if grep -q "origin/main: " <<<"$out"; then
     ok "T6 origin/main interroge"
   else
     ko "T6 origin/main absent : $out"
   fi
-  if echo "$out" | grep -qE "origin/main: [0-9a-f]{40}|origin/main: injoignable"; then
+  if grep -qE "origin/main: [0-9a-f]{40}|origin/main: injoignable" <<<"$out"; then
     ok "T6 la source de la reference est nommee (sha ou etat degrade)"
   else
     ko "T6 source de la reference absente : $out"
   fi
-  if echo "$out" | grep -q "etat: "; then
+  if grep -q "etat: " <<<"$out"; then
     ok "T6 l'etat du miroir est annonce (mesure, pas supposition)"
   else
     ko "T6 etat absent : $out"
   fi
   # Controle negatif : aucun compte d'emprunteurs ne doit etre annonce depuis un
   # conteneur qui ne monte aucun volume _work -- ce serait un zero fabrique.
-  if echo "$out" | grep -q "emprunteurs"; then
+  if grep -q "emprunteurs" <<<"$out"; then
     ko "T6 un compte d'emprunteurs est annonce depuis un conteneur sans _work (zero fabrique)"
   else
     ok "T6 aucun compte d'emprunteurs fabrique"
@@ -271,7 +271,7 @@ echo "Test 7 : probe sur miroir absent -- echec distinct, rien de cree"
   out="$(COURSIA_RUNNER_MIRROR_PATH="$M2" run_mirror probe)"; rc=$?
   echo "$out" >> "$LOG"
   if [ "$rc" -eq 6 ]; then ok "T7 rc=6 sur miroir absent"; else ko "T7 rc=$rc (attendu 6)"; fi
-  if echo "$out" | grep -q 'probe ECHEC.*miroir absent'; then
+  if grep -q 'probe ECHEC.*miroir absent' <<<"$out"; then
     ok "T7 le verdict nomme l'absence du miroir"
   else
     ko "T7 verdict muet sur la cause : $out"
@@ -286,8 +286,8 @@ echo "Test 8 : probe sur miroir bootstrappe -- OK, emprunt prouve"
   out="$(run_mirror probe)"; rc=$?
   echo "$out" >> "$LOG"
   if [ "$rc" -eq 0 ]; then ok "T8 rc=0"; else ko "T8 rc=$rc : $out"; fi
-  if echo "$out" | grep -q 'probe OK'; then ok "T8 verdict OK rendu"; else ko "T8 pas de verdict OK : $out"; fi
-  if echo "$out" | grep -q 'budget 300s'; then
+  if grep -q 'probe OK' <<<"$out"; then ok "T8 verdict OK rendu"; else ko "T8 pas de verdict OK : $out"; fi
+  if grep -q 'budget 300s' <<<"$out"; then
     ok "T8 le budget par defaut (300 s) est nomme dans le verdict"
   else
     ko "T8 budget par defaut non nomme : $out"
@@ -296,12 +296,12 @@ echo "Test 8 : probe sur miroir bootstrappe -- OK, emprunt prouve"
   # rendrait « OK » sans avoir rien mesure. Le compte exact n'est pas epingle
   # (les blocs precedents ajoutent des fichiers a la fixture) -- c'est le fait
   # qu'il soit non nul qui porte la preuve.
-  if echo "$out" | grep -qE 'probe -- [1-9][0-9]* fichiers,'; then
+  if grep -qE 'probe -- [1-9][0-9]* fichiers,' <<<"$out"; then
     ok "T8 le probe a bien checkoute l'arbre (compte non nul)"
   else
     ko "T8 compte de fichiers inattendu : $out"
   fi
-  if echo "$out" | grep -qE '\(budget 300s\), 0 objet'; then
+  if grep -qE '\(budget 300s\), 0 objet' <<<"$out"; then
     ok "T8 zero objet LOCAL : le checkout vient de l'emprunt, pas d'une copie"
   else
     ko "T8 des objets locaux ont ete crees : $out"
@@ -314,7 +314,7 @@ echo "Test 9 : probe avec une tete inexistante -- echec au checkout (rc 4)"
   out="$(COURSIA_RUNNER_MIRROR_HEAD=pas-une-branche run_mirror probe)"; rc=$?
   echo "$out" >> "$LOG"
   if [ "$rc" -eq 4 ]; then ok "T9 rc=4 sur checkout impossible"; else ko "T9 rc=$rc (attendu 4) : $out"; fi
-  if echo "$out" | grep -q 'probe ECHEC.*checkout'; then
+  if grep -q 'probe ECHEC.*checkout' <<<"$out"; then
     ok "T9 le verdict nomme le checkout"
   else
     ko "T9 verdict muet : $out"
@@ -390,17 +390,17 @@ echo "Test 11 : garde de propriete -- une entree hors de portee, refus visible (
   else
     ko "T11 rc=$rc (attendu 7) : $out"
   fi
-  if echo "$out" | grep -q "garde de propriete REFUSEE"; then
+  if grep -q "garde de propriete REFUSEE" <<<"$out"; then
     ok "T11 le refus est nomme dans le journal"
   else
     ko "T11 refus muet : $out"
   fi
-  if echo "$out" | grep -qi "PAS le reseau"; then
+  if grep -qi "PAS le reseau" <<<"$out"; then
     ok "T11 la cause est distinguee d'une panne reseau"
   else
     ko "T11 la cause n'est pas distinguee du reseau : $out"
   fi
-  if echo "$out" | grep -q "FETCH_HEAD"; then
+  if grep -q "FETCH_HEAD" <<<"$out"; then
     ok "T11 l'entree fautive est nommee ($branche)"
   else
     ko "T11 l'entree fautive n'est pas nommee : $out"
@@ -446,7 +446,7 @@ echo "Test 12 : fetch en echec -- l'horodatage de succes n'est PAS pose"
   else
     ko "T12 un horodatage de succes a ete pose malgre l'echec"
   fi
-  if echo "$out" | grep -q "refresh echoue"; then
+  if grep -q "refresh echoue" <<<"$out"; then
     ok "T12 l'echec reseau est journalise"
   else
     ko "T12 echec reseau muet : $out"
@@ -464,17 +464,17 @@ echo "Test 13 : trois echecs consecutifs -- une ligne [WARN][mirror]"
   o3="$(COURSIA_RUNNER_MIRROR_REMOTE="$TEST_DIR/remote-absent.git" \
         COURSIA_RUNNER_MIRROR_REFRESH_EVERY=0 run_mirror refresh)"
   echo "$o1$o2$o3" >> "$LOG"
-  if echo "$o1" | grep -q "WARN"; then
+  if grep -q "WARN" <<<"$o1"; then
     ko "T13 une alerte est sortie au premier echec (un incident ponctuel n'alerte pas)"
   else
     ok "T13 pas d'alerte au premier echec"
   fi
-  if echo "$o3" | grep -q "\[WARN\]\[mirror\]"; then
+  if grep -q "\[WARN\]\[mirror\]" <<<"$o3"; then
     ok "T13 l'alerte [WARN][mirror] sort au troisieme echec consecutif"
   else
     ko "T13 aucune alerte au troisieme echec : $o3"
   fi
-  if echo "$o3" | grep -q "3 fois de suite"; then
+  if grep -q "3 fois de suite" <<<"$o3"; then
     ok "T13 l'alerte nomme le nombre d'echecs"
   else
     ko "T13 l'alerte ne nomme pas le nombre d'echecs : $o3"
@@ -485,7 +485,7 @@ echo "Test 13 : trois echecs consecutifs -- une ligne [WARN][mirror]"
   # qu'aucune ne soit vue).
   sout="$(run_mirror status)"
   echo "$sout" >> "$LOG"
-  if echo "$sout" | grep -q "\[WARN\]\[mirror\]"; then
+  if grep -q "\[WARN\]\[mirror\]" <<<"$sout"; then
     ok "T13 l'alerte est reprise dans le statut"
   else
     ko "T13 l'alerte n'apparait pas dans le statut : $sout"
@@ -510,7 +510,7 @@ echo "Test 14 : refresh reussi -- horodatage de succes pose, compteur a zero"
   else
     ko "T14 le compteur d'echecs est a $fails"
   fi
-  if echo "$out" | grep -q "rafraichi"; then
+  if grep -q "rafraichi" <<<"$out"; then
     ok "T14 le refresh est journalise"
   else
     ko "T14 refresh silencieux : $out"
@@ -548,12 +548,12 @@ FAKEGIT
   # « delai depasse » passerait quand meme.
   out_ok="$(run_mirror status)"
   echo "$out_ok" >> "$LOG"
-  if echo "$out_ok" | grep -qi "delai depasse"; then
+  if grep -qi "delai depasse" <<<"$out_ok"; then
     ko "T15 controle negatif : un delai depasse est annonce alors que le reseau repond"
   else
     ok "T15 controle negatif : aucune mention de delai depasse quand la mesure repond"
   fi
-  if echo "$out_ok" | grep -q "mesure distante: ls-remote borne a"; then
+  if grep -q "mesure distante: ls-remote borne a" <<<"$out_ok"; then
     ok "T15 la mesure en direct annonce sa borne"
   else
     ko "T15 la borne de la mesure en direct n'est pas annoncee : $out_ok"
@@ -573,14 +573,14 @@ FAKEGIT
     else
       ko "T15 le tick a pendu ${dur}s : la mesure en direct n'est pas bornee"
     fi
-    if echo "$out" | grep -qi "delai depasse"; then
+    if grep -qi "delai depasse" <<<"$out"; then
       ok "T15 le delai depasse est annonce (cause et non pas un silence)"
     else
       ko "T15 le delai depasse n'est pas annonce : $out"
     fi
     # La note doit SURVIVRE a la reconduction vers la reference hors-ligne :
     # sinon le tick suivant ne sait plus pourquoi la source a change.
-    if echo "$out" | grep -q "mesure distante:"; then
+    if grep -q "mesure distante:" <<<"$out"; then
       ok "T15 la note de la mesure distante est dans le statut"
     else
       ko "T15 la note de la mesure distante est absente : $out"

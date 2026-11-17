@@ -479,6 +479,28 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
     "ci-overflow-controller.yml",
+    # #26939 (owner myia-po-2027:CoursIA) : sonde legere de debordement CI,
+    #   petite soeur du controleur ci-dessus -- elle REVEILLE le controleur
+    #   entre ses passages (episode du 16/11 : ~0 a 386 runs en ~40 min sans
+    #   intercalage), elle ne decide pas. Meme profil que le controleur :
+    #   `schedule` ('4-59/12', jamais :00/:30/:31) + `workflow_dispatch`
+    #   UNIQUEMENT (advisory par construction, doctrine #12817), runs-on
+    #   STATIQUE [self-hosted, coursia-ephemeral, coursia-linux],
+    #   timeout-minutes: 10, garde same-repo au niveau job
+    #   (`if: github.repository == 'jsboige/CoursIA'`) malgre l'absence de
+    #   trigger `pull_request`. Pur-Python stdlib + `gh` binaire de l'image ;
+    #   seuils importes de l'organe (HOSTED_CONCURRENCY_CAP du controleur),
+    #   jamais reinventes ; 2 appels gh au repos (file + variable), un 3e
+    #   sur candidat dispatch, un 4e si elle dispatche -- c'est la seule
+    #   ecriture (dispatch du controleur, `permissions: actions: write`),
+    #   aucune ecriture dans le depot (`contents: read`) ; un exit 1
+    #   (mesure impossible) s'affiche en ::warning sans casser le passage.
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte
+    #   par `Scripts Tests (CPU)` (run 43895504161, 16/11) : la PR routait
+    #   le job self-hosted sans toucher cette allowlist fail-closed -- meme
+    #   classe que ci-overflow-controller.yml.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "ci-overflow-probe.yml",
     # runner-starvation-advisory.yml (#14846, owner myia-po-2027:CoursIA-2) :
     #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux
     #   2 labels waiter + lean (matrice GitHub Actions, 2 entrees include).
