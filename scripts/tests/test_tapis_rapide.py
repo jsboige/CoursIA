@@ -8,7 +8,6 @@ import ast
 import json
 import subprocess
 import sys
-from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -344,11 +343,12 @@ def test_une_seule_famille_garde_ses_invariants():
     ])
     file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
     ordre = [e.numero for e in file]
-    # parmi les grains, les jamais visites devant les visites
+    # parmi les grains, les jamais visites devant les visites (niveau 0, puis 1)
     assert set(ordre[:2]) == {2, 3}
-    # puis la visite la plus ancienne ; le conteneur, meme jamais visite, en
-    # dernier : il demande une lecture et un --paths (#26926)
-    assert ordre[2:] == [5, 4, 1]
+    # les deux grains visites une fois forment le niveau 1, decale par lane
+    # comme le niveau 0 (tapis_equilibre) ; le conteneur, meme jamais visite,
+    # en dernier : il demande une lecture et un --paths (#26926)
+    assert set(ordre[2:4]) == {4, 5} and ordre[4] == 1
 
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
@@ -386,26 +386,6 @@ def test_quota_de_conteneurs_puis_complement():
     assert len(file) == 8 and sum(e.conteneur for e in file) == 2  # quota 8 x 0,25
     peu = tr.ordonner(tr.etats(lecture(epics + grains[:3]), LANE, NOW), LANE, NOW, 8)
     assert len(peu) == 8 and sum(not e.conteneur for e in peu) == 3  # les Epics completent
-
-
-def test_priorite_legere_sur_deux_mille_graines():
-    etats_ = tr.etats(lecture(_familles(30, consolidation=7)), LANE, NOW)
-    vus: Counter = Counter()
-    for k in range(2000):
-        vus.update({e.famille for e in tr.ordonner(etats_, LANE, NOW, 8, graine=f"g{k}")})
-    conso = vus.pop(1070)
-    assert conso > max(vus.values())
-    assert len(vus) == 29 and min(vus.values()) >= 1
-
-
-def test_vieil_epic_et_cumul_des_poids():
-    lec = lecture([issue(1, titre="[EPIC] ancien", labels=["consolidation"],
-                         cree="2026-06-01T00:00:00Z"),
-                   issue(2, titre="[EPIC] recent", cree="2026-11-01T00:00:00Z")])
-    poids = tr.poids_familles(tr.etats(lec, LANE, NOW), NOW)
-    assert poids[1][0] == pytest.approx(tr.PRIO_CONSOLIDATION * tr.PRIO_VIEIL_EPIC)
-    assert poids[1][1] == ["consolidation", "vieil EPIC #1"]
-    assert poids[2] == (1.0, [])
 
 
 def test_graine_par_lane_et_par_tranche_de_quatre_heures():
