@@ -28,7 +28,7 @@ Références :
 ## Architecture honnête du schéma de Löb
 
 L'EPIC interdit de déclarer Löb comme axiome ad hoc puis de présenter
-FairBot comme « certifié ». Ce module procède autrement, en trois temps :
+FairBot comme « certifié ». Ce module procède autrement, en quatre temps :
 
 1. **Interface.** `ModalProvability box` capture toute modalité de
    prouvabilité au sens de Hilbert-Bernays-Löb : nécessitation (D1),
@@ -50,6 +50,19 @@ FairBot comme « certifié ». Ce module procède autrement, en trois temps :
    GL — **cité par référence, jamais importé, et ce module ne définit
    aucune instance de `ModalProvability`** : toute instance devra fournir
    le champ, le pont servant de témoin, pas d'instance.
+4. **Non-instanciation mesurée (T4, #26945).** Instancier l'interface par
+   une prouvabilité réelle (PA, l'organe GL du dépôt) ÉCHOUE — pas faute
+   de Löb, mais à cause du champ `nec` : écrit `(h : p) : box p`, il dit
+   « vrai ⇒ prouvable » (**réflexion**) et non « dérivé ⇒ prouvable » (la
+   méta-règle D1 des systèmes de Hilbert, `Provability.D1` dans l'organe
+   FFL). Réflexion + Löb effondrent toute instance
+   (`every_instance_boxes_false`, puis `every_instance_boxes_everything`)
+   : une prouvabilité réelle satisfait D2/D3/Löb mais refuse la réflexion
+   (premier théorème d'incomplétude — la phrase de Gödel est vraie et non
+   prouvable). L'instanciation qui existe vit un niveau plus haut, sur
+   les PHRASES : `FormalLogic.FairBotLoeb` (L3, #17537), coopération
+   mutuelle de FairBots arbitraires sous les hypothèses nommées
+   `Diagonalization T₀` (lemme diagonal) et `𝔅.HBL`.
 
 ## Résultats-phare
 
@@ -64,7 +77,13 @@ FairBot comme « certifié ». Ce module procède autrement, en trois temps :
     système de preuve qui certifie une coopération fausse ;
   - `fairBot_vs_coopBot` / `fairBot_vs_defectBot` : la table pédagogique —
     FairBot coopère avec qui coopère de façon prouvable, dévie contre
-    DefectBot *sous hypothèse explicite de cohérence* (`¬ box False`).
+    DefectBot *sous hypothèse explicite de cohérence* (`¬ box False`) ;
+  - `every_instance_boxes_false` / `every_instance_boxes_everything`
+    (T4 #26945) : toute instance boote `False`, puis toute proposition —
+    le champ `nec` est la réflexion, pas la nécessitation ; aucune
+    prouvabilité réelle n'instancie l'interface (premier théorème
+    d'incomplétude), et la version instanciable vit en L3
+    (`FormalLogic.FairBotLoeb`, #17537) sous lemme diagonal + HBL.
 
 ## Contraste avec le niveau L1
 
@@ -92,7 +111,12 @@ le champ n'est ni un axiome local ni importé ni redondant —
 `bump_loeb_fails` mesure son indépendance, sa non-vacuité est attestée par
 le témoin externe cité par référence). -/
 class ModalProvability (box : Prop → Prop) where
-  /-- D1 — nécessitation (méta-règle) : ce qui est établi est prouvable. -/
+  /-- D1 — nécessitation (méta-règle) : ce qui est établi est prouvable.
+  « Établi » y est lu au sens de VRAI (`h : p` est une preuve Lean de la
+  vérité de `p`) : le champ est donc la **réflexion** « vrai ⇒ prouvable »,
+  plus forte que la méta-règle de Hilbert `T ⊢ φ → T ⊢ □φ` (qui va de la
+  DÉRIVATION à la prouvabilité, `Provability.D1` dans l'organe FFL) —
+  l'écart est mesuré par `every_instance_boxes_false` (T4 #26945). -/
   nec {p : Prop} (h : p) : box p
   /-- D2 — distribution : la prouvabilité se distribue sur la modus ponens. -/
   dist {p q : Prop} (hpq : box (p → q)) (hp : box p) : box q
@@ -128,6 +152,65 @@ ponens). C'est la forme directement consommée par la coopération mutuelle :
 theorem loeb_russian {p : Prop} (h : box p → p) : p :=
   h (loeb (nec h))
 
+/-! ## T4 (#26945) : dégénerescence de l'interface — aucune prouvabilité
+réelle ne l'instancie
+
+La tranche T4 de #26945 demandait d'instancier l'interface par l'organe
+natif GL. La réponse tient en quatre lignes : le champ `nec` n'est pas la
+nécessitation des systèmes de Hilbert (une méta-règle, de la DÉRIVATION de
+`p` vers `T ⊢ □p`) mais le principe de RÉFLEXION (« vrai ⇒ prouvable »).
+Réflexion + Löb = effondrement : toute instance boote `False`, donc tout —
+l'interface ne distingue aucune proposition. Une prouvabilité réelle (PA,
+vérifiée par l'organe `FormalLogic.FairBotLoeb` du lake GL) satisfait D2,
+D3 et Löb — mais pas la réflexion (premier théorème d'incomplétude) :
+l'instanciation échoue exactement sur le champ `nec`, et la coopération
+mutuelle reste vraie un niveau plus haut (L3) sous les hypothèses nommées
+: lemme diagonal (`Diagonalization T₀`) + HBL (`𝔅.HBL`). Les résultats
+POSITIFS de ce module restent vrais — mais la dégénerescence mesure leur
+limite : dans l'interface, FairBot coopère TOUJOURS (`box r` pour tout
+`r`), alors que la coopération d'un vrai FairBot est conditionnelle (L3
+la prouve pour FairBot × FairBot, la réfute contre DefectBot). -/
+
+/-- **T4 (#26945) — l'effondrement réflexion + Löb.** Toute instance de
+`ModalProvability` satisfait `box False`. La preuve : si `box False`, c'est
+fini ; sinon la cohérence `¬ box False` est une vérité, donc `nec` la
+boote, et `loeb` en `p := False` transforme `box (box False → False)` en
+`box False`. Le champ `nec` n'est pas la méta-règle de nécessitation des
+systèmes de Hilbert (`T ⊢ φ → T ⊢ □φ`, de la DÉRIVATION à la prouvabilité
+— c'est `Provability.D1` dans l'organe natif FFL) mais le principe de
+RÉFLEXION (« vrai ⇒ prouvable »), et réflexion + Löb sont incompatibles
+avec la cohérence : c'est le schéma du second théorème d'incomplétude. -/
+theorem every_instance_boxes_false : box False := by
+  by_cases h : box False
+  · exact h
+  · exact loeb (p := False) (nec h)
+
+/-- **Corollaire : dégénerescence maximale.** Toute instance boote TOUTE
+proposition — ex falso boxée : `box False` puis `dist` sur `False → p`.
+L'interface ne distingue donc aucune proposition ; ses hypothèses
+négatives (`¬ box r`, `¬ box False`) sont insatisfaisables (voir
+`consistency_hypothesis_unsat` et `no_unprovable_proposition`). Les
+résultats POSITIFS du module (coopération mutuelle par Löb) restent
+intacts : ils ne consomment jamais une négation de box. -/
+theorem every_instance_boxes_everything {p : Prop} : box p :=
+  dist (nec (fun h => h.elim)) every_instance_boxes_false
+
+/-- L'hypothèse de cohérence `¬ box False` de `fairBot_vs_defectBot` est
+INSATISFIABLE dans l'interface : ce théorème est vrai de vacuité. T4
+(#26945) le mesure au lieu de le laisser implicite — la version
+instanciable de la cohérence vit un niveau plus haut, sur les phrases :
+c'est `Consistent T` dans l'organe `FormalLogic.FairBotLoeb` (L3). -/
+theorem consistency_hypothesis_unsat : ¬ (¬ box False) :=
+  fun h => h every_instance_boxes_false
+
+/-- Symétrique pour `fairBot_defects_without_proof` : dans l'interface,
+rien n'est non-prouvable — son hypothèse `¬ box r` est insatisfaisable
+pour tout `r`. Une prouvabilité réelle sépare les propositions (la phrase
+de Gödel est vraie et non prouvable) ; l'interface axiomatique, elle, ne
+peut pas. -/
+theorem no_unprovable_proposition {r : Prop} : ¬ (¬ box r) :=
+  fun h => h every_instance_boxes_everything
+
 /-! ## Actions modales et définition de FairBot -/
 
 /-- Action dictée par une proposition abstraite : coopérer si elle tient,
@@ -161,7 +244,10 @@ noncomputable def fairBotAction (box : Prop → Prop) (r : Prop) : PDAction :=
 theorem fairBot_cooperates_with_provable_cooperator {r : Prop} (h : box r) :
     fairBotAction box r = cooperate := modalAction_true h
 
-/-- FairBot dévie en l'absence de preuve de coopération adverse. -/
+/-- FairBot dévie en l'absence de preuve de coopération adverse.
+**Mesure T4 (#26945)** : l'hypothèse `¬ box r` est insatisfaisable dans
+l'interface (`no_unprovable_proposition`) — le théorème est vrai de
+vacuité ; voir la section T4. -/
 theorem fairBot_defects_without_proof {r : Prop} (h : ¬ box r) :
     fairBotAction box r = defect := modalAction_false h
 
@@ -275,7 +361,10 @@ theorem fairBot_vs_coopBot :
 du système (`¬ box False`). Sans cohérence, un système incohérent « prouve »
 tout, y compris la coopération de DefectBot : l'hypothèse n'est pas
 cosmétique, elle est exactement ce qui sépare défection mutuelle et
-coopération illusoire.
+coopération illusoire. **Mesure T4 (#26945)** : dans l'interface, cette
+hypothèse est INSATISFIABLE (`consistency_hypothesis_unsat`) — le théorème
+est vrai de vacuité ; la cohérence instanciable vit en L3 (`Consistent T`
+dans l'organe `FormalLogic.FairBotLoeb`).
 Preuve alternative déclarée (formulation différente) :
 `formal_logic_lean/FormalLogic/FairBotLoeb.lean` déclare un théorème du même
 nom sous `[Consistent T] [𝔅.Kreisel]` et conclut `T ⊬ p` : la coopération

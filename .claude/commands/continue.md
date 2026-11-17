@@ -21,6 +21,16 @@ Reprendre le travail sur cette lane : lire les directives coordinateur, puis enc
 
 ### Phase 2 : Choisir la tache
 
+**Avant le tirage : l'issue `[main-red]`.** Un rouge de `main` herite n'est plus un grain sans proprietaire : quand la sentinelle `main-red` de `merge_ready.py` retient les merges, elle ouvre (ou reutilise) UNE issue `[main-red] <check> — <test>`, que la lane qui repare reclame et que la sentinelle ferme au vert (#26706). La PR de reparation la **nomme** (`See #`), elle ne la ferme pas : la fermeture appartient a la sentinelle, qui la fait au vert mesure. A lire **avant** de reparer quoi que ce soit d'herite :
+
+```bash
+gh issue list --repo jsboige/CoursIA --state open --search "main-red in:title" --json number,title
+```
+
+- **Issue ouverte, claim d'une autre lane** → **ne pas ouvrir de travail dessus** : la cause est deja reprise. On attend son merge (verifie au cycle suivant) puis on `update-branch` sur nos branches. Ce n'est pas une attente bloquante : la file continue.
+- **Issue ouverte, aucun claim** → c'est un grain de fond : on le reclame (`[CLAIMED] lane <machine:workspace> -- <cause>`) apres `python scripts/check_lane_claim.py <N>`, et la PR de reparation porte `See #<N>` — **pas** `Closes`. La fermeture appartient a la sentinelle : le correctif fusionne alors que `main` n'a pas encore rejoue `Scripts Tests (CPU)` (20 a 30 min), et une fermeture par la PR laisserait l'episode sans issue ouverte pendant ce temps.
+- **Aucune issue** → le rouge n'est pas encore publie par la sentinelle (ou il est redevenu vert) : on suit la voie normale.
+
 **Un seul geste ouvre le choix, une fois par session** (mandat user du 13/11 : plusieurs grains par session, grande variete, tirage court) :
 
 ```bash
@@ -29,10 +39,10 @@ python scripts/coordination/tapis_rapide.py --lane <machine:workspace>
 
 Il rend **vos PRs ouvertes**, puis **8 grains de 8 familles differentes**, chacun avec la commande `check_lane_claim.py` a jouer avant d'editer ([tapis-rapide.md](../../docs/reference/tapis-rapide.md)). **La liste se sert en entier** ; on ne retire qu'une fois la liste epuisee. **Les grains passent avant les conteneurs** : un conteneur (EPIC, parapluie) vient en fin de liste, avec sa procedure (lire le fil entier, prendre l'etape suivante hors des chemins occupes qu'il imprime, verifier par `check_lane_claim.py N --lane <lane> --paths <vos chemins>`) ; sans `--paths`, l'organe refuse le conteneur entier des qu'une autre lane y tient un claim borne. Sortie 3 (lecture GitHub incomplete) : le tapis tire sur la derniere lecture complete de moins de 12 h du cache machine et le dit ; sans elle, rien n'est servi -- portez vos PRs, traitez votre file coordinateur, puis re-tirez. **Le tapis lourd `pick_idle_grain.py --belt` ne se tire plus** (240 s, grains non verifies, #26926). Sortie 4 (tirage REFUSE pour peremption — main local en retard ou organe du tirage divergent d'origin/main) : le remede est `git pull --ff-only` puis re-tirer, **JAMAIS le repli `pick_idle_grain`** — il se contente d'avertir et rejoue le meme incident (po-2028, 14/11, #26632).
 
-**P0 — Reparer SON PROPRE rouge.** Les PRs de la lane **ouvertes depuis plus de 24 h** sont la **premiere file de la session**, avant tout grain neuf : reparer le rouge, repondre aux reserves, rafraichir la branche. La drainer ne termine pas la session. La raison est mecanique, pas disciplinaire : une PR rouge ne peut etre reparee **que par sa lane** — le coordinateur ne peut ni rebaser ni corriger a sa place — donc tant que la lane ne revient pas dessus, elle reste ouverte indefiniment pendant que les PRs du jour, elles, mergent. C'est exactement ce qui produit le residu de vieilles PRs.
+**P0 — Reparer SON PROPRE rouge.** Les **nits** des PRs de la lane sont la **premiere file de la session**, avant tout grain neuf : repondre aux reserves, reparer un rouge propre a la PR, resoudre un conflit. Une PR verte, sans reserve ni conflit, qui n'attend que la review ou le merge du coordinateur **n'est pas du P0** : on ne la rafraichit pas, on ne la replie pas, on passe aux grains (mandat user du 17/11 : « Il devrait toujours être possible de produire, après le traitement prioritaire des nits »). La drainer ne termine pas la session. La raison est mecanique, pas disciplinaire : une PR rouge ne peut etre reparee **que par sa lane** — le coordinateur ne peut ni rebaser ni corriger a sa place — donc tant que la lane ne revient pas dessus, elle reste ouverte indefiniment pendant que les PRs du jour, elles, mergent. C'est exactement ce qui produit le residu de vieilles PRs.
 
 - Une PR reparee **et mergee compte comme un grain du cycle** — jamais comme le plancher R1, qui exige un DEEP de CONTENU (un REPAIR est au mieux MED) : ce n'est pas un a-cote, c'est du travail deja ecrit qu'on porte a son terme.
-- Rouge **non reparable par cette lane** (garde casse sur main, dependance d'une autre PR) : l'**ecrire en commentaire sur la PR**, puis passer aux grains. L'echappatoire se justifie par ecrit, elle ne se prend pas en silence.
+- Rouge **non reparable par cette lane** (garde casse sur main, dependance d'une autre PR) : l'**ecrire en commentaire sur la PR**, avec le **numero de l'issue `[main-red]`** qui porte la cause (#26706), puis passer aux grains. L'echappatoire se justifie par ecrit, elle ne se prend pas en silence.
 - Seule preemption : une mission coordinateur **URGENT** (le coordinateur voit le plateau entier).
 
 **P1 — Missions coordinateur** : DM HIGH, puis steers dashboard de ma lane. **La file dispatchee a la lane est le tirage du tapis fait par le coordinateur** : a chaque tour, il tire les issues les moins visitees et compose pour chaque lane un arc coherent, a enchainer en multi-grain jusqu'au tour suivant. Elle se traite **en entier, dans son ordre**, avant tout tirage personnel ; le tapis (P3) complete la session quand la file est videe.
@@ -60,7 +70,7 @@ Aucune attente externe — CI, review, DWELL, merge, reponse d'une autre lane, r
 - Notebooks : C.1 (pas d'erreur volontaire), C.2 (commit AVEC outputs, re-exec des cellules modifiees), H.3 (pre-commit) — cf [notebook-conventions.md](../rules/notebook-conventions.md).
 - Vrai outil SOTA, jamais workaround degrade ([sota-not-workaround.md](../rules/sota-not-workaround.md)) ; env casse = reparer, pas contourner (regle F).
 - Skills/sous-agents specialises quand ils existent : [docs/reference/subagents-reference.md](../../docs/reference/subagents-reference.md).
-- Avant d'impliquer reviewer, adjoint ou coordinateur, reproduire tout rouge propre a la PR, corriger sa cause et relancer les tests/gates pertinents. Un reviewer valide un livrable deja teste ; il ne sert jamais de premier test-runner. Un rouge confirme sur `main` est signale comme base-inherited avec preuve puis la lane poursuit sa file.
+- Avant d'impliquer reviewer, adjoint ou coordinateur, reproduire tout rouge propre a la PR, corriger sa cause et relancer les tests/gates pertinents. Un reviewer valide un livrable deja teste ; il ne sert jamais de premier test-runner. Un rouge confirme sur `main` est signale comme base-inherited avec preuve **et avec le numero de l'issue `[main-red]`** qui porte la cause, puis la lane poursuit sa file.
 
 ### Phase 4 : Avant de terminer (obligatoire)
 

@@ -52,7 +52,7 @@ References:
 ## Honest architecture of Löb's schema
 
 The EPIC forbids declaring Löb as an ad-hoc axiom and then presenting
-FairBot as "certified". This module proceeds differently, in three steps:
+FairBot as "certified". This module proceeds differently, in four steps:
 
 1. **Interface.** `ModalProvability box` captures any provability
    modality in the Hilbert-Bernays-Löb sense: necessitation (D1),
@@ -74,6 +74,19 @@ FairBot as "certified". This module proceeds differently, in three steps:
    **cited by reference, never imported, and this module defines no
    `ModalProvability` instance**: any instance must supply the field, the
    bridge acting as witness, not instance.
+4. **Measured non-instantiability (T4, #26945).** Instantiating the
+   interface by a real provability (PA, the repository's GL organ) FAILS —
+   not for lack of Löb, but because of the `nec` field: written
+   `(h : p) : box p`, it says "true ⇒ provable" (**reflection**) and not
+   "derived ⇒ provable" (Hilbert systems' meta-rule D1, `Provability.D1`
+   in the FFL organ). Reflection + Löb collapse every instance
+   (`every_instance_boxes_false`, then `every_instance_boxes_everything`)
+   : a real provability satisfies D2/D3/Löb but rejects reflection
+   (first incompleteness theorem — the Gödel sentence is true and
+   unprovable). The instantiation that exists lives one level up, on
+   SENTENCES: `FormalLogic.FairBotLoeb` (L3, #17537), mutual cooperation
+   of arbitrary FairBots under the named hypotheses `Diagonalization T₀`
+   (diagonal lemma) and `𝔅.HBL`.
 
 ## Headline results
 
@@ -89,7 +102,13 @@ FairBot as "certified". This module proceeds differently, in three steps:
   - `fairBot_vs_coopBot` / `fairBot_vs_defectBot`: the pedagogical table —
     FairBot cooperates with provably cooperating opponents, defects
     against DefectBot *under the explicit consistency hypothesis*
-    (`¬ box False`).
+    (`¬ box False`);
+  - `every_instance_boxes_false` / `every_instance_boxes_everything`
+    (T4 #26945): every instance boxes `False`, then every proposition —
+    the `nec` field is reflection, not necessitation; no real provability
+    instantiates the interface (first incompleteness theorem), and the
+    instantiable version lives in L3 (`FormalLogic.FairBotLoeb`, #17537)
+    under diagonal lemma + HBL.
 
 ## Contrast with level L1
 
@@ -117,7 +136,12 @@ neither a local axiom nor imported nor redundant — `bump_loeb_fails`
 measures its independence, its non-emptiness is attested by the external
 witness cited by reference). -/
 class ModalProvability (box : Prop → Prop) where
-  /-- D1 — necessitation (meta-rule): what is established is provable. -/
+  /-- D1 — necessitation (meta-rule): what is established is provable.
+  "Established" is read here as TRUE (`h : p` is a Lean proof of the truth
+  of `p`): the field is therefore **reflection** "true ⇒ provable",
+  stronger than Hilbert's meta-rule `T ⊢ φ → T ⊢ □φ` (which goes from the
+  DERIVATION to provability, `Provability.D1` in the FFL organ) — the gap
+  is measured by `every_instance_boxes_false` (T4 #26945). -/
   nec {p : Prop} (h : p) : box p
   /-- D2 — distribution: provability distributes over modus ponens. -/
   dist {p q : Prop} (hpq : box (p → q)) (hp : box p) : box q
@@ -153,6 +177,65 @@ modus ponens). This is the form directly consumed by mutual cooperation:
 theorem loeb_russian {p : Prop} (h : box p → p) : p :=
   h (loeb (nec h))
 
+/-! ## T4 (#26945): degeneration of the interface — no real provability
+instantiates it
+
+Tranche T4 of #26945 asked to instantiate the interface by the native GL
+organ. The answer fits in four lines: the `nec` field is not Hilbert
+systems' necessitation (a meta-rule, from the DERIVATION of `p` to
+`T ⊢ □p`) but the REFLECTION principle ("true ⇒ provable"). Reflection +
+Löb = collapse: every instance boxes `False`, hence everything — the
+interface distinguishes no proposition. A real provability (PA, verified
+by the `FormalLogic.FairBotLoeb` organ of the GL lake) satisfies D2, D3
+and Löb — but not reflection (first incompleteness theorem): the
+instantiation fails exactly on the `nec` field, and mutual cooperation
+remains true one level up (L3) under the named hypotheses: diagonal lemma
+(`Diagonalization T₀`) + HBL (`𝔅.HBL`). The POSITIVE results of this
+module remain true — but the degeneration measures their limit: in the
+interface, FairBot ALWAYS cooperates (`box r` for every `r`), whereas a
+real FairBot's cooperation is conditional (L3 proves it for FairBot ×
+FairBot, refutes it against DefectBot). -/
+
+/-- **T4 (#26945) — the reflection + Löb collapse.** Every instance of
+`ModalProvability` satisfies `box False`. The proof: if `box False`, done;
+otherwise the consistency `¬ box False` is a truth, so `nec` boxes it, and
+`loeb` at `p := False` turns `box (box False → False)` into `box False`.
+The `nec` field is not Hilbert systems' necessitation meta-rule
+(`T ⊢ φ → T ⊢ □φ`, from the DERIVATION to provability — that is
+`Provability.D1` in the native FFL organ) but the REFLECTION principle
+("true ⇒ provable"), and reflection + Löb are incompatible with
+consistency: this is the scheme of the second incompleteness theorem. -/
+theorem every_instance_boxes_false : box False := by
+  by_cases h : box False
+  · exact h
+  · exact loeb (p := False) (nec h)
+
+/-- **Corollary: maximal degeneration.** Every instance boxes EVERY
+proposition — boxed ex falso: `box False` then `dist` on `False → p`.
+The interface thus distinguishes no proposition; its negative hypotheses
+(`¬ box r`, `¬ box False`) are unsatisfiable (see
+`consistency_hypothesis_unsat` and `no_unprovable_proposition`). The
+POSITIVE results of the module (mutual cooperation via Löb) remain
+intact: they never consume a negated box. -/
+theorem every_instance_boxes_everything {p : Prop} : box p :=
+  dist (nec (fun h => h.elim)) every_instance_boxes_false
+
+/-- The consistency hypothesis `¬ box False` of `fairBot_vs_defectBot` is
+UNSATISFIABLE in the interface: that theorem is vacuously true. T4
+(#26945) measures it instead of leaving it implicit — the instantiable
+version of consistency lives one level up, on sentences: it is
+`Consistent T` in the `FormalLogic.FairBotLoeb` organ (L3). -/
+theorem consistency_hypothesis_unsat : ¬ (¬ box False) :=
+  fun h => h every_instance_boxes_false
+
+/-- Symmetric statement for `fairBot_defects_without_proof`: in the
+interface, nothing is unprovable — its hypothesis `¬ box r` is
+unsatisfiable for every `r`. A real provability separates propositions
+(the Gödel sentence is true and unprovable); the axiomatic interface
+cannot. -/
+theorem no_unprovable_proposition {r : Prop} : ¬ (¬ box r) :=
+  fun h => h every_instance_boxes_everything
+
 /-! ## Modal actions and the definition of FairBot -/
 
 /-- Action dictated by an abstract proposition: cooperate if it holds,
@@ -186,7 +269,10 @@ noncomputable def fairBotAction (box : Prop → Prop) (r : Prop) : PDAction :=
 theorem fairBot_cooperates_with_provable_cooperator {r : Prop} (h : box r) :
     fairBotAction box r = cooperate := modalAction_true h
 
-/-- FairBot defects absent a proof of the opponent's cooperation. -/
+/-- FairBot defects absent a proof of the opponent's cooperation.
+**T4 measure (#26945)**: the hypothesis `¬ box r` is unsatisfiable in the
+interface (`no_unprovable_proposition`) — the theorem is vacuously true;
+see the T4 section. -/
 theorem fairBot_defects_without_proof {r : Prop} (h : ¬ box r) :
     fairBotAction box r = defect := modalAction_false h
 
@@ -300,6 +386,10 @@ consistency of the system (`¬ box False`). Without consistency, an
 inconsistent system "proves" everything, including DefectBot's
 cooperation: the hypothesis is not cosmetic, it is exactly what
 separates mutual defection from illusory cooperation.
+**T4 measure (#26945)**: in the interface, this hypothesis is
+UNSATISFIABLE (`consistency_hypothesis_unsat`) — the theorem is
+vacuously true; the instantiable consistency lives in L3 (`Consistent T`
+in the `FormalLogic.FairBotLoeb` organ).
 Declared alternative proof (different formulation):
 `formal_logic_lean/FormalLogic/FairBotLoeb.lean` declares a theorem of the
 same name under `[Consistent T] [𝔅.Kreisel]` and concludes `T ⊬ p`: the
