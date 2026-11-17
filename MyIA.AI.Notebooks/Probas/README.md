@@ -2,13 +2,11 @@
 pagetitle: "Probas - Programmation Probabiliste"
 ---
 
-# Probas - Programmation Probabiliste
-
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 93
-breakdown: DecisionTheory=38, Infer=21, PyMC=20, Applications=12, Fondations=2
-maturity: BETA=88, ALPHA=4, DRAFT=1
+pedagogical_count: 96
+breakdown: DecisionTheory=26, Infer=21, PyMC=20, Applications=12, Causalite=12, Fondations=4, root=1
+maturity: BETA=91, ALPHA=4, DRAFT=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (total de la famille, notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour la **répartition par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — la décomposition **technique** par interpréteur, que le marqueur n'agrège pas —, la source est la lecture directe des `metadata.kernelspec` des notebooks : ces volumes dérivent à chaque ajout et **aucun chiffre n'est maintenu ici en prose**. Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée lors du prochain passage.
@@ -685,7 +683,7 @@ Cette série ancre mathématiquement ses résultats phares dans un assistant de 
 | ML ↔ Probas (PAC Learning) | [`learning_theory_lean`](../ML/learning_theory_lean/) | `pac_finite_class_bound` + `pac_agnostic_generalization` (`0 sorry bout-en-bout`) | [`2.8-Theorie-PAC`](../ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) + [`2.8b-Theorie-PAC-Lean`](../ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) |
 | Probas (DecisionTheory)  | `decision_theory_lean` Peters    | Indice de Gittins, identités d'escompte (`0 sorry`, ref `v4.27.0-rc1`)            | [`DecInfer-07b-Lean-Gittins`](DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb)                                          |
 | QC ↔ Probas              | `kelly_lean`                     | Fraction risquée `f* = μ−σ²/2` sous log-bienveillance (`0 sorry`)                  | [`Kelly_companion-Python.ipynb`](../QuantConnect/kelly_lean/Kelly_companion-Python.ipynb)                                           |
-| GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | [`01-Arrow-Impossibility-Theorem.ipynb`](../GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)                                          |
+| GameTheory ↔ Probas      | `game_theory_lean` (Arrow)       | Impossibilité d'Arrow (5 axiomes ⇒ dictature)                                     | [`ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb`](../GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb)                                          |
 | Search ↔ Probas          | `search_lean`                    | Consistance heuristique `h ≤ h*` ⇒ optimalité `A*`                                 | hub Search (cf [`search_lean/`](../Search/search_lean/))                                     |
 | SymbolicAI ↔ Probas      | `argumentation_lean`             | Extension Dung (`grounded`/`preferred`/`stable`) par cadre formel                 | [`Argumentation-03-Dung-AF-Semantics-Python.ipynb`](../SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb)                               |
 

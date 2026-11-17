@@ -1,12 +1,12 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-14
+> REFERENCE — vivante — dernière révision 2026-11-17
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
 le 2026-11-14 pour tenir le plafond de lignes), `scripts/coordination/tapis_origami.py` (parcage Origami,
 #26523) et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
-Elle vit **à côté** de `scripts/pick_idle_grain.py --belt`, qui reste la voie de repli.
+Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
 ## La commande
 
@@ -29,14 +29,24 @@ quand une lane retire ; `--cache-s 0` le désactive. `--lecture <dossier>` rejou
 le dépôt n'est pas touché.
 
 La sortie donne, dans l'ordre : l'en-tête (issues, servables, familles, durée, appels, cache, âge de
-`origin/main`), **vos PRs ouvertes** (à porter au merge d'abord quand elles ont plus de 24 h), les grains
-numérotés avec la commande `python scripts/check_lane_claim.py N --lane <lane>` à jouer **avant d'éditer**,
-puis le compte des écartées par code. `--json` rend les mêmes données (`grains`, `vos_prs`, `ecartees`,
+`origin/main`), **vos PRs ouvertes** (leurs nits d'abord ; une PR verte qui n'attend que la review ne se touche pas), les grains
+numérotés avec la commande `python scripts/check_lane_claim.py N --lane <lane>` à jouer **avant d'éditer**
+(les grains d'abord, les conteneurs ensuite, voir plus bas), puis le compte des écartées par code. `--json` rend les mêmes données (`grains`, `vos_prs`, `ecartees`,
 `lecture`).
 
 Codes de sortie : `0` grains servis, ou pool réellement vide dit en clair ; `3` lecture incomplète (502/504
-répétés à toutes les tailles de page, panne `gh` ou `git`) : rien n'est servi, le message nomme la lecture en
-panne et la commande de repli `python scripts/pick_idle_grain.py --belt --lane <lane>`. Il n'y a ni mur de
+répétés à toutes les tailles de page, panne `gh` ou `git`) **et** aucune lecture de secours : rien n'est
+servi, et le message dit quoi faire à la place (porter ses PRs, traiter la file du coordinateur, re-tirer).
+**Aucune sortie ne renvoie au tapis lourd** `pick_idle_grain.py --belt` (#26926) : il mettait 240 s à servir des
+grains non vérifiés, et chaque panne réseau y renvoyait toute la flotte. `4` : main local en retard ou organe
+du tirage divergent d'`origin/main` (`git pull --ff-only`, puis re-tirer).
+
+**Lecture de secours** (#26926) : quand la lecture réseau échoue, le tapis tire sur la dernière lecture
+**complète** du cache machine (`%LOCALAPPDATA%/CoursIA/tapis_rapide/lecture-<jours>j.json`) si elle a moins
+de 12 h ; la sortie est alors `0`, et `lecture.fetch_note` dit la panne et la date de la lecture servie.
+Une lecture incomplète n'est jamais mise en cache, donc jamais servie ; un rejeu (`--lecture`) n'a pas de
+secours. Le pool d'une lecture de quelques heures reste juste à la marge, puisque `check_lane_claim.py`
+fait autorité avant d'éditer. Il n'y a ni mur de
 temps ni budget de sondes : le nombre d'appels est fixé par construction. Mesure du 2026-11-13 : 14 appels
 (15 depuis la lecture de la pointe `origin/main`, plus un `git fetch` quand elle dépasse 6 h),
 lecture réseau de 25 à 101 s selon GitHub, rejeu d'un instantané en ~1 s (l'ancienne voie : 295 à 382 s).
@@ -74,6 +84,17 @@ l'issue à la lane qui le pose. Un claim de **votre** lane n'écarte pas : l'iss
 Un **conteneur** (issue nommée comme parent par une autre issue ouverte, label `epic`/`umbrella`, ou titre
 `[EPIC` sans parent) se sert : la lane y prend une tranche. C'est pourquoi ni une PR, ni un commit, ni un
 `[DELIVERED]` de tranche ne l'écartent.
+
+**Les grains d'abord, les conteneurs ensuite** (#26926). Un conteneur demande une lecture du fil et un choix de
+tranche ; il ne passe donc jamais devant un grain (vos claims restent en tête). Il est servi avec :
+
+- la commande `python scripts/check_lane_claim.py N --lane <lane> --paths <vos chemins>` : sans `--paths`,
+  l'organe refuse le conteneur entier dès qu'une autre lane y tient un claim borné (mesure du 2026-11-16 :
+  six claims bornés sur #19297, et la commande servie sans `--paths` était refusée par construction) ;
+- sa **procédure** (lire le fil entier, prendre l'étape suivante non faite hors des chemins occupés,
+  vérifier par `--paths`, poser `[CLAIMED] … -- paths: …`) ;
+- les **chemins occupés**, en entier, lane par lane (`chemins_occupes` en JSON), et les PRs ouvertes qui le
+  citent (`prs_ouvertes`).
 
 ## Le parcage Origami (#26523, parité de #24373)
 

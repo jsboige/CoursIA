@@ -6,9 +6,9 @@ pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 169
-breakdown: Part3-Cas-pratiques=52, Part1-Foundations=51, Part4-Metaheuristics=35, Part2-CSP=20, Part5-Frontieres=11
-maturity: BETA=165, ALPHA=4
+pedagogical_count: 173
+breakdown: Part1-Foundations=55, Part3-Cas-pratiques=52, Part4-Metaheuristics=35, Part2-CSP=20, Part5-Frontieres=11
+maturity: BETA=170, ALPHA=3
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -129,9 +129,9 @@ Problèmes du monde réel adaptés de projets étudiants, en dossier plat. Chaqu
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-12b-ConnectFour-Python](Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-12c-ConnectFour-CSharp](Part3-Cas-pratiques/App-12c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1b | [App-12b-ConnectFour-CSharp](Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial-Python](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
-| 2b | [App-14-ConnectFour-CSharp](Part3-Cas-pratiques/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 2b | [App-14-ConnectFour-Adversarial-CSharp](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
 ### Cas pratiques CSP
 
