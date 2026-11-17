@@ -127,7 +127,15 @@ def cohen_kappa(
 
     observed = sum(confusion[c][c] for c in cats) / n
     marg_a = {c: sum(confusion[c].values()) / n for c in cats}
-    marg_b = {c: sum(confusion[c][d] for d in cats) / n for c in cats}
+    # La marginale de B se lit sur les COLONNES de la matrice de confusion.
+    # Lire les lignes (comme avant) reproduisait la marginale de A : l'accord
+    # attendu valait alors somme(p_a^2) au lieu de somme(p_a * p_b), c'est-a-dire
+    # le kappa d'un annotateur compare a lui-meme. Le defaut etait invisible
+    # tant que les deux marginales etaient symetriques -- le cas de tous les
+    # tests anterieurs. Il rendait en outre le kappa indefini des qu'une seule
+    # marginale etait degeneree, y compris sur les populations ou l'accord
+    # observe etait parfait (une seule categorie des deux cotes).
+    marg_b = {c: sum(confusion[d][c] for d in cats) / n for c in cats}
     expected = sum(marg_a[c] * marg_b[c] for c in cats)
 
     if expected >= 1.0:
