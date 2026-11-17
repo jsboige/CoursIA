@@ -102,8 +102,9 @@ def texte(r: dict, source: str) -> str:
                f"{lu['familles']} familles ; lecture {lu['secondes']} s, {lu['appels']} "
                f"appels, cache {'oui' if lu['depuis_cache'] else 'non'} ; origin/main "
                f"local : dernier commit {age}{fetch}"),
-              (f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- portez d'abord au merge "
-               "celles de plus de 24 h :")]
+              (f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits "
+               "(reserves, rouge propre, conflit) ; une PR verte qui n'attend que la "
+               "review ne se touche pas :")]
     lignes += [f"  #{p['numero']}  {p['age_j']} j  {_court(p['titre'], 90)}"
                for p in r["vos_prs"]]
     lignes.append(f"\nGrains ({len(r['grains'])}) -- les grains d'abord, les conteneurs "
