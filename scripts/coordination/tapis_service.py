@@ -115,6 +115,9 @@ def texte(r: dict, source: str) -> str:
     comptes = ", ".join(f"{code} {len(v)}" for code, v in r["ecartees"].items())
     total = sum(len(v) for v in r["ecartees"].values())
     lignes.append(f"\nEcartees sans sonde : {comptes} (total {total})")
+    if recul := r.get("en_recul"):
+        lignes.append("Servies en recul, apres les autres : " + ", ".join(
+            f"{code} {len(v)}" for code, v in recul.items()))
     orig = r.get("origami_parking") or {}
     if orig.get("measured"):
         parcs = orig.get("parked") or []
