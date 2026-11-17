@@ -9,6 +9,8 @@
   - `CooperativeGames.ConeKernel`   (FR, namespace `BondarevaCone`,
     importe transitivement par `Basic`)                             — c.306
   - `CooperativeGames.Shapley`      (FR, namespace `ShapleyValue`)  — c.307b
+  - `CooperativeGames.GroupShapley` (FR, namespace `GroupShapley`,
+    importe transitivement par `Shapley`)                           — #25966
 
   Les siblings EN restent **exprès non importes ici** pour eviter une
   collision top-level sur l'abbrev `Coalition` declaree dans Basic.lean
@@ -61,4 +63,5 @@
 
 import CooperativeGames.Basic
 import CooperativeGames.ConeKernel
+import CooperativeGames.GroupShapley
 import CooperativeGames.Shapley

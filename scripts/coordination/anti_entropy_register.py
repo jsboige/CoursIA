@@ -254,23 +254,61 @@ REGISTRE: tuple[Entree, ...] = (
         # tiendra par la SOURCE du script puis par l'identite derivee a la
         # fin du jour de la reference.
         #
-        # SIXIEME rebasage (2026-11-13, #5081) -- et le deuxieme qui change
-        # la GRANDEUR : l'instrument reconnait desormais le prefixe de
-        # kernel d'env `coursia-py313` (publie dans la table des kernels du
-        # depot : `coursia-py313-argu`, meme mecanique que le bloc #23193).
-        # Deux carnets au nom canonique sortent du bucket (`Argumentation-
-        # 08b-Executor-Python`, nomme le 09/11 dans la visite du registre,
-        # et `Complexity-02c-XOR-SAT-Phase-Transition-Python`, meme famille
-        # de nommage). Comparer 25 a 26 fabriquerait un AVANCE qui ne dit
-        # rien du depot : l'entree repart d'une reference NEUVE, comme le
-        # demande le critere 2 de l'issue. Le point d'avant le correctif
-        # reste dans la serie (`historique`, valeur 27).
-        reference=Reference(25.0, "2026-11-13",
-                            "issue #5081, re-mesure du 2026-11-13 sur "
-                            "l'arbre 9f2ffff292b9",
+        # SIXIEME rebasage (2026-11-13, #5081, arrive sur main entre-temps)
+        # -- et le deuxieme qui change la GRANDEUR : l'instrument reconnait
+        # desormais le prefixe de kernel d'env `coursia-py313` (publie dans
+        # la table des kernels du depot : `coursia-py313-argu`, meme
+        # mecanique que le bloc #23193). Deux carnets au nom canonique
+        # sortent du bucket (`Argumentation-08b-Executor-Python`, nomme le
+        # 09/11 dans la visite du registre, et `Complexity-02c-XOR-SAT-
+        # Phase-Transition-Python`, meme famille de nommage). Comparer 25 a
+        # 26 fabriquerait un AVANCE qui ne dit rien du depot : l'entree
+        # repart d'une reference NEUVE, comme le demande le critere 2 de
+        # l'issue.
+        #
+        # SEPTIEME rebasage (2026-11-13, PR #26349) : le renommage T8 de
+        # SocialChoice touche l'instrument par son balayage de referents
+        # (un cas de self-test et un exemple de docstring citaient l'ancien
+        # nom), puis le correctif du cas (idx attendu None pour une serie a
+        # prefixe). Correctif sans effet sur la grandeur : la logique de
+        # classification ne change pas, `ambigu` vaut 27 sur l'arbre de la
+        # PR comme sur `origin/main` nu (eac923be842) -- l'ecart 26 -> 27
+        # depuis la reference du 2026-11-06 vient de l'arbre main (un
+        # carnet de plus dans le bucket), pas de l'instrument ni des 16
+        # renommages (net neutres : mesure egale sur les deux arbres).
+        #
+        # HUITIEME rebasage (2026-11-13, PR #26349, review ai-01 point 2) :
+        # l'organe APPREND l'index d'accretion des series a prefixe -- le
+        # nom livre ChoixSocial-01b-...-Lean echouait l'organe d'inventaire
+        # que la PR modifie (self-test KO). Correctif qui change ce que
+        # l'instrument COMPTE, comme le quatrieme rebasage : un nom a
+        # prefixe PORTANT une lettre d'accretion rend son numero+lettre
+        # comme index, et la conformite se lit alors sur le NOM seul
+        # (zero-pad) au lieu de la branche base implicite gatee sur le
+        # kernel. Sur le meme arbre, ambigu passe de 27 a 21 : 6 carnets
+        # paddes (`02b`, `01b`) a kernel non lu quittent le bucket. En
+        # retour, 2 dettes reelles non paddes (SC-7b, SL-1b) deviennent
+        # visibles `rename_proposed` -- hors de cette grandeur, mais
+        # documentees ici pour la lecture croisee.
+        #
+        # NEUVIEME point (2026-11-15, PR #26349, merge de main b73e66c94e4)
+        # : les deux correctifs se COMBINENT dans l'instrument du merge --
+        # prefixe coursia-py313 (#5081) ET index d'accretion (PR #26349).
+        # Ils se recouvrent sur les carnets a lettre d'accretion ET kernel
+        # d'env (Argumentation-08b, Complexity-02c : sortis par l'une ou
+        # l'autre voie) : la re-mesure sur l'arbre fusionne rend 21. La
+        # reference NEUVE du #5081 (25, instrument e7c3de1b, arbre
+        # 9f2ffff292b9) rejoint l'historique comme point reel de la serie
+        # de CET instrument. Meme mecanique d'instrument declare : le sha
+        # de branche ne survivra pas au squash, la comparaison tiendra par
+        # la SOURCE du script puis par l'identite derivee a la fin du jour
+        # de la reference.
+        reference=Reference(21.0, "2026-11-15",
+                            "PR #26349 merge de main (b73e66c94e4), "
+                            "re-mesure du 2026-11-15 sur l'arbre fusionne",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@e7c3de1b80d0e6b40422307f52929d6af7b977b3")),
+                                        "@0ed9229a6b579541747f106ef93d405a7c377eb3")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
@@ -327,25 +365,58 @@ REGISTRE: tuple[Entree, ...] = (
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@30c90b42b6b19ead9d2872495cba9547d6bf1c58")),
-            # Reference precedente (26), mesuree le 2026-11-06 sur l'arbre
-            # a284df8293f. Point AVANT le sixieme rebasage (#5081,
-            # 2026-11-13) : l'instrument du correctif reconnait le prefixe
-            # `coursia-py313`, la grandeur change (26 -> 25), la comparaison
-            # transverse est refusee. La valeur 27 mesuree les 09/11 et
-            # 12/11 sur ce meme instrument documentait deux carnets arrives
-            # sur main (dont `Argumentation-08b-Executor-Python`, nomme dans
-            # la visite du 09/11) ; le correctif les reconnait, ils ne
-            # comptent plus. Identite : le correctif #23655 declarait le sha
-            # de branche (18c887da79d), mort au squash -- comme le 3e
-            # rebasage, la serie declare l'identite RESOLVABLE de main
-            # (400799b0f4, meme contenu, mesurant 26 puis 27 sur les arbres
-            # de l'epoque).
+            # Mesure du 2026-11-06 (cinquieme rebasage, #23655) : 26.
+            # Reference vivante jusqu'au sixieme rebasage. En serie,
+            # l'identite declaree ne peut pas etre le sha de branche
+            # (18c887da79d, mort au squash -- meme defaut que le 3e
+            # rebasage documente pour 735ada5ba) : le point declare
+            # l'identite RESOLVABLE de main (400799b0f43, meme contenu,
+            # mesurant 26 puis 27 sur les arbres de l'epoque).
             Reference(26.0, "2026-11-06",
-                      "issue #23655, reference precedente (arbre "
-                      "a284df8293f, contenu = 400799b0f4 sur main)",
+                      "issue #23655, re-mesure du 2026-11-06 sur "
+                      "l'arbre a284df8293f (contenu = 400799b0f4 sur main)",
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@400799b0f4362e2c87982cd5631f6a745d0b3ab4")),
+            # Mesure du 2026-11-13 (septieme rebasage, PR #26349) : 27, sur
+            # l'instrument AVANT l'apprentissage de l'index d'accretion des
+            # series a prefixe. Reference vivante jusqu'au huitieme
+            # rebasage (meme PR, review ai-01 point 2). Le sha de branche
+            # 8434d7f3a8f (blob b7fd82ef de l'instrument) est mort au
+            # squash de #26349 (27e3e88afb7) : il n'est ancetre de rien sur
+            # main, et le test d'identite a la date rougissait main. Le
+            # septieme rebasage ne touchait pas la classification : la
+            # mesure vaut 27 sur l'origin/main nu du jour (eac923be842),
+            # dont l'instrument est le blob 8d3dd65 de 400799b0f43. Le
+            # point declare donc cette identite, resoluble sur main, comme
+            # le 3e rebasage (735ada5ba) et le point de #23655 ci-dessus.
+            Reference(27.0, "2026-11-13",
+                      "PR #26349, re-mesure du 2026-11-13 ; meme valeur "
+                      "27 sur origin/main nu eac923be842, instrument de "
+                      "main 400799b0f43",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@400799b0f4362e2c87982cd5631f6a745d0b3ab4")),
+            # Mesure du 2026-11-13 (sixieme rebasage, #5081, sur main) :
+            # 25 -- l'instrument reconnait le prefixe `coursia-py313`, la
+            # grandeur change (26 -> 25), la comparaison transverse est
+            # refusee. La valeur 27 mesuree les 09/11 et 12/11 documentait
+            # deux carnets arrives sur main ; le correctif les reconnait,
+            # ils ne comptent plus. Le producteur vivait sur la branche
+            # #5081 (e7c3de1b, arbre 9f2ffff292b9) : comme pour le point
+            # #23655, la serie declare l'identite RESOLVABLE de main -- le
+            # squash #26304 (dfa29e000a1, 2026-11-14T23:52+01:00, meme
+            # contenu de l'instrument) -- et date le point du jour ou
+            # cette identite est devenue derivable. Un sha de branche
+            # mort n'est l'ancetre de rien : le declarer ferait rougir le
+            # controle d'ancetre sur tout arbre qui ne porte pas la
+            # branche.
+            Reference(25.0, "2026-11-14",
+                      "issue #5081, re-mesure du 2026-11-13 sur "
+                      "l'arbre 9f2ffff292b9",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@dfa29e000a1cb77d13b825b90f0d5a2165214ab6")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit

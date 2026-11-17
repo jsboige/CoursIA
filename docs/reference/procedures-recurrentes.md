@@ -1,8 +1,51 @@
 # Procédures récurrentes — CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-16
 
 Détail des workflows référencés dans [CLAUDE.md](../../CLAUDE.md) section "PROCEDURES RECURRENTES".
+
+## Geste d'avant-push — rejouer les gardes en local
+
+**Pourquoi.** Plusieurs gardes du depot n'existent que dans la CI : leur
+logique est écrite dans le YAML du workflow, donc inaccessible avant de
+pousser. Mesure #25692 : trois liens relatifs cassés par une profondeur de
+chemin de plus — un `../` de trop — n'ont été vus que par la CI — `check-navlinks`
+et le job « No enrich-quality regression in changed notebooks » — soit un
+aller-retour pour une faute d'un cran.
+
+**Le geste.**
+
+```bash
+# 1. la voie rapide, en local : aucun check-run publie, les verdicts affiches
+python scripts/ci/fast_lane.py --dry-run --base-ref origin/main
+
+# 2. la jambe enrich-quality (base-vs-PR sur les carnets de la PR)
+python scripts/notebook_tools/enrich_quality_delta.py --base-ref origin/main
+```
+
+`--dry-run` publie **rien** (aucun check-run, aucun commentaire) : c'est un
+verdict local, pas une publication. La voie rapide compare la branche de
+travail a `origin/main` ; sur une branche empilée, penser a pointer
+`--base-ref` sur la base réelle de la PR.
+
+**Ce que la jambe enrich-quality fait.** Elle rejoue la logique du gate
+`enrich-quality-gate.yml`, désormais **extraite** dans un organe
+(`scripts/notebook_tools/enrich_quality_delta.py`) qui *consomme* les deux
+organes existants au lieu de les réécrire :
+`enrich_quality_ci.py` (la comparaison base-vs-tête d'un carnet) et
+`filter_pr_introduced_notebooks.py` (le filtre « ce carnet a été touché par un
+commit propre à la PR »). Elle rend **1** si un carnet régresse (finding
+`HIGH` nouveau : lien cassé, ancre pendante, perte de diacritiques…), **0**
+sinon. Un finding déjà présent en base ne bloque pas : le contrat du gate est
+la *régression*, pas le stock.
+
+**Le canal du body.** Les marqueurs `enrich-quality: reecriture assumee --
+<carnet> : <raison>` (#17744) ne sont honorés que si le body de la PR est
+connu de l'organe : en local, `--pr-body-file <fichier>` ; en CI, la variable
+d'environnement `ENRICH_QUALITY_PR_BODY`. Sans ce canal, une réécriture
+*annoncée* est comptée comme une régression — d'où le caractère **advisory**
+de la jambe dans la voie rapide (le workflow d'origine reste l'autorité
+bloquante ; voir `scripts/ci/fast_lane_registry.py`, TRANCHE50).
 
 ## Workflow PR
 
