@@ -868,6 +868,143 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "du carnet 02, decrit en miroir ici. Cellules du probleme."
         ),
     ),
+    # --- Tranche GenAI/Audio (#17636 volet 2, lane myia-po-2023:CoursIA) ---
+    # Le stock Audio comptait 38 compteurs sur 9 fichiers. 17 ont ete RETIRES
+    # par edition de prose (doctrine #9377 : supprimer la mesure, garder le
+    # predicat) : comptes de cellules et de lignes de code dans 06-3, taille
+    # de dialogue/version dans 01-1 et 02-3, inventaire d'export et de contrat
+    # dans 04-8. Les 21 restants decrivent une propriete du DOMAINE (norme de
+    # sous-titrage broadcast, axe MFCC d'une figure, longueur de section de
+    # paroles, classes de hauteur d'un chromagramme) ou un RECIT D'AUDIT DATE :
+    # les supprimer demanderait de reecrire le propos, ou de falsifier un
+    # constat date. Chemins exacts et motifs etroits, comme les entrees
+    # precedentes ; une occurrence ajoutee ailleurs dans le meme fichier reste
+    # signalee.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/"
+            "02-9-AceStep-Music-Generation.ipynb"
+        ),
+        motif=re.compile(r"Chaque section devrait contenir 2-6 lignes de texte"),
+        raison=(
+            "« 2-6 lignes de texte » = longueur usuelle d'une section de "
+            "paroles (couplet/refrain) en ecriture de chanson, pas un compte "
+            "de lignes de carnet. Regle de metier, elle ne derive pas avec le "
+            "depot."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
+            "04-14-VoiceLeading-Rendu-GenAI.ipynb"
+        ),
+        motif=re.compile(r"donne 12 lignes \(classes\)"),
+        raison=(
+            "« 12 lignes » = les douze classes de hauteur que rend "
+            "librosa.feature.chroma_cqt (l'axe du chromagramme), pas des "
+            "lignes de code. Propriete de l'outil et de la theorie musicale."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
+            "04-2-Transcription-Pipeline.ipynb"
+        ),
+        motif=re.compile(r"chaque bloc a 2 lignes maximum"),
+        raison=(
+            "« 2 lignes maximum » = norme de sous-titrage broadcast (42 "
+            "caracteres par ligne, 2 lignes par bloc). Constante du domaine, "
+            "pas un compte de lignes du carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/"
+            "04-2-Transcription-Pipeline.ipynb"
+        ),
+        motif=re.compile(r"2 lignes max"),
+        raison=(
+            "Meme norme broadcast, dans ses trois autres formulations du "
+            "carnet (consigne, indice, bonnes pratiques). Le motif ne couvre "
+            "que la locution « 2 lignes max » : une mesure de carnet ajoutee "
+            "ailleurs dans le fichier reste signalee."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"40 lignes"),
+        raison=(
+            "« 40 lignes » = l'axe des 40 coefficients MFCC de la figure "
+            "decrite (0→39), pas des lignes de fichier. Propriete de l'image, "
+            "figee par le SHA de l'asset cite sur la meme entree."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"0 notebook re-exécuté"),
+        raison=(
+            "Bilan d'un audit DATE (G.1, 2026-07-15, c.445) : « 0 notebook "
+            "re-execute » qualifie ce qui a ete fait ce jour-la, avec le "
+            "detail des corrections apportees. Recit au passe."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"\d\d-\d cell\[\d+\]"),
+        raison=(
+            "« 01-3 cell[12] », « 03-1 cell[29] » : le nombre fait partie de "
+            "l'IDENTIFIANT du carnet source (01-3, 02-4, 03-1), suivi d'un "
+            "index de cellule. Faux positif structurel de la classe artifact "
+            "-- ce n'est pas un compte. Chaque reference est de surcroit "
+            "epinglee par le MD5 et la taille en octets cites sur la meme "
+            "ligne (table de provenance c.529)."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"les 3 notebooks référencés"),
+        raison=(
+            "Constat d'audit DATE (c.529, 2026-07-16) : « les 3 notebooks "
+            "references » designe les trois carnets sources de l'audit de "
+            "provenance, nommes dans le fichier. Recit au passe, il ne se "
+            "re-mesure pas."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"les 3 notebooks 01-3 / 02-4 / 03-1"),
+        raison=(
+            "Les trois carnets sources sont NOMMES sur la ligne meme : le "
+            "nombre ne peut pas deriver sans que la ligne change. Provenance "
+            "d'une figure (audio3) dont la cellule source n'est pas committee."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"des 3 notebooks sources"),
+        raison=(
+            "En-tete du scan nbformat de l'audit c.529 : les trois carnets "
+            "sources y sont nommes (01-3, 02-4, 03-1). Meme classe que "
+            "l'entree precedente -- fait d'audit date."
+        ),
+    ),
+    ArtifactExemption(
+        path="MyIA.AI.Notebooks/GenAI/Audio/assets/readme/MANIFEST.md",
+        motif=re.compile(r"\*\*0 notebook ré-exécuté\*\*"),
+        raison=(
+            "Bilan d'un audit DATE (c.751, 2026-07-22) : « 0 notebook "
+            "re-execute » qualifie le respect de C.3 pendant la migration "
+            "description_visuelle. Recit au passe. Le motif inclut les "
+            "asterisques de gras parce que COUNT_RE les capture dans son "
+            "span, et l'exemption exige une containment STRICTE."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------

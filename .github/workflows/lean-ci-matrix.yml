@@ -153,9 +153,9 @@ on:
       # manifeste. Le wrapper declarait aussi lakefile.toml : le lake n'en a
       # pas (mesure au repertoire), le pattern mort n'est pas reporte.
       # lean_server.py / lean_utils.py sont self-cover globaux ci-dessous.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
@@ -429,9 +429,9 @@ on:
       # manifeste. Le wrapper declarait aussi lakefile.toml : le lake n'en a
       # pas (mesure au repertoire), le pattern mort n'est pas reporte.
       # lean_server.py / lean_utils.py sont self-cover globaux ci-dessous.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
