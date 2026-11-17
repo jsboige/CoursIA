@@ -554,6 +554,20 @@ L'env dédié `ict-py39` unifie les trois dans **un seul** env Python 3.9, pour 
 
 **Prérequis** : l'env `pyphi` doit exister (créé par `setup_pyphi_env.ps1`) ; `setup_ict_env` le clone. **C.2** : une re-exécution sous `ict-py39` fait repasser le `Kernel drift guard` de la même façon que sous `pyphi` (numpy 1.x, même noyau 3.9) — le kernelspec stocké dans le notebook doit être `ict-py39`, et le paramètre `--ExecutePreprocessor.kernel_name=ict-py39` passé explicitement (cf. § « Série IIT/ICT » plus haut).
 
+### Env dédié RVC — `rvc` (py3.10 + rvc-python CPU, 2026-11-15, #26682)
+
+Le carnet `GenAI/Audio/02-Advanced/02-11-SVS-Singing-Voice-RVC.ipynb` (conversion de voix chantée par RVC v2) exige `rvc-python`, qui n'existe pas dans les env partagés et dont les contraintes de pins sont incompatibles d'un env généraliste (numpy ≤ 1.23.5 exigé par fairseq).
+
+| Élément | Valeur |
+|---------|--------|
+| Env conda | `rvc`, Python **3.10**, dans WSL (Ubuntu) — `conda create -n rvc python=3.10` puis pip (voir ligne Construction) |
+| Construction | `pip install rvc-python==0.1.5 numpy<=1.23.5 fairseq==0.12.2 "setuptools<81"` puis `pip install praat-parselmouth soundfile matplotlib` |
+| Kernelspec | `rvc-wsl` (wrapper `wsl.exe` + `conda run -n rvc python -m ipykernel`) |
+| Stack mesurée (2026-11-15, po-2027) | Python 3.10.21 · rvc-python 0.1.5 · torch 2.4.1+cpu · numpy 1.23.5 · scipy 1.15.3 · praat-parselmouth 0.4.5 · soundfile 0.13.1 |
+| Usage | Exécution du carnet 02-11 (SVS/RVC) sur **CPU** — pas de GPU requis ; checkpoint v2 ungated ~55 Mo téléchargé depuis Hugging Face au premier chargement |
+
+**Sémantique du cwd, mesurée.** Papermill exécuté avec le carnet **à son emplacement final** (`02-Advanced/`) démarre le kernel avec cwd = ce répertoire : `Path("assets/...")` résout. En revanche un kernel géré par MCP (`execute_on_kernel`) démarre avec cwd = home WSL — le carnet ne doit donc être exécuté que via Papermill depuis son répertoire, pas cellule par cellule via MCP.
+
 ### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
 
 - Python 3.11.15
