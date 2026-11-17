@@ -790,6 +790,36 @@ PILOT: list[Guard] = [
         blocking=False,
         needs_base=True,
     ),
+    # Integrite du ledger des renommages (#27015) : `docs/reference/
+    # rename-ledger.tsv` est un TSV append-only ecrit par N lanes (chaque
+    # renommage ajoute une ligne en fin de fichier -- deux PRs convergentes
+    # conflictent sur la fin, frein signale a ai-01 le 2026-11-16). Le
+    # `.gitattributes` declare `merge=union` dessus : le merge LOCAL concatene
+    # sans juger, donc la garde est la moitie porteuse (GO ai-01). Elle echoue
+    # sur les deux signatures d'un artefact d'union -- cle `ancien` dupliquee
+    # (deux lanes ayant renomme le meme carnet), cycle a dates repetees
+    # (aller-retour colle). Un cycle a dates toutes distinctes est une HISTOIRE
+    # legitime (iterations de structure de dossier : 4 cycles ICT a dates
+    # croissantes vivent sur main, dd06ce25ffe -- mesurees avant d'ecrire la
+    # regle) et passe en NOTE. Invariant de fichier entier, pas un delta :
+    # needs_base=False.
+    Guard(
+        name="rename-ledger integrity (union merge guard)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/reference/rename-ledger.tsv",
+            "scripts/notebook_tools/check_rename_ledger.py",
+            "scripts/notebook_tools/tests/test_check_rename_ledger.py",
+            # L'ecrivain du ledger : changer son format change la grammaire
+            # que la garde valide.
+            "scripts/notebook_tools/rename_notebooks.py",
+            ".gitattributes",
+        ],
+        argv=["python", "scripts/notebook_tools/check_rename_ledger.py"],
+        blocking=True,
+        needs_base=False,
+        shadow_reason=PILOT_SHADOW_NATIF,
+    ),
 ]
 
 
@@ -4667,14 +4697,71 @@ TRANCHE49: list[Guard] = [
 ]
 
 
-# TRANCHE 50 (#24698, garde bloquant) -- copies du noyau de risque. Le noyau
+# ---------------------------------------------------------------------------
+# TRANCHE50 -- enrich-quality base-vs-PR : le geste d'AVANT-PUSH (#26973).
+#
+# Mesure #25692 : trois liens relatifs casses par une profondeur de chemin de
+# trop, decouverts SEULEMENT par la CI -- la logique du gate
+# `enrich-quality-gate.yml` vivait dans le YAML du workflow, donc aucun
+# auteur ne pouvait la rejouer avant de pousser. L'organe
+# `scripts/notebook_tools/enrich_quality_delta.py` sort cette logique du YAML
+# (en REUSANT `enrich_quality_ci.py` et `filter_pr_introduced_notebooks.py`),
+# et ce garde la fait tourner dans la voie rapide comme en local.
+#
+# Caractere ADVISORY, et c'est un choix mesure :
+#   - le workflow d'origine reste l'autorite BLOQUANTE du gate -- ce garde
+#     observe, il ne double pas un blocage ;
+#   - la voie rapide, dans le job « Always-on guards », ne passe pas le body
+#     de la PR a ses gardes (`ctx["pr_body_file"]` n'est peuple que par le
+#     job `--effects`) : sans le canal `ENRICH_QUALITY_PR_BODY`, les marqueurs
+#     `enrich-quality: reecriture assumee` (#17744) seraient ignores, et une
+#     reecriture ANNONCEE serait comptee comme une regression -- un faux
+#     positif. Un garde bloquant qui peut rougir a tort n'est pas un garde ;
+#   - l'absorption (le workflow d'origine cesse de declencher, ce garde
+#     devient l'unique emetteur bloquant) est une tranche ulterieure : elle
+#     exige de prouver l'egalite des deux canaux de body, pas seulement
+#     l'egalite des verdicts.
+#
+# En LOCAL, le meme organe est le geste d'avant-push : il rend 1 sur une
+# regression, ce que la voie rapide en ombre ne fait pas (un garde advisory
+# ne peut pas rougir le job).
+# ---------------------------------------------------------------------------
+TRANCHE50: list[Guard] = [
+    Guard(
+        name="Enrich-quality regression (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/enrich_quality_delta.py",
+            "scripts/notebook_tools/enrich_quality_ci.py",
+            "scripts/notebook_tools/scan_enrich_quality.py",
+            "scripts/ci/filter_pr_introduced_notebooks.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/enrich_quality_delta.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/enrich_quality_delta.py",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=False,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 51 (#24698, garde bloquant) -- copies du noyau de risque. Le noyau
 # (plafond, stop ATR, coupe-circuit) vit dans projects/RiskKernel/risk_kernel.py ;
 # QuantConnect n'important que les fichiers du projet, chaque strategie qui
 # l'utilise en porte une copie identique. La garde rougit sur une copie qui
 # derive (COPY_DRIFT) ou un projet qui importe le noyau sans copie (COPY_MISSING,
 # sinon echec a Initialize() sur QC Cloud). Meme forme que TRANCHE41.
 # ---------------------------------------------------------------------------
-TRANCHE50: list[Guard] = [
+TRANCHE51: list[Guard] = [
     Guard(
         name="risk-kernel-copies-guard",
         source=FAST_LANE_NATIVE,
