@@ -23,6 +23,7 @@ import check_docs_links
 from check_docs_links import (
     BASELINE_PATH,
     CODE_BASELINE_PATH,
+    REPO_BASELINE_PATH,
     DOC_CITATION_PATTERN,
     LinkRef,
     ScanResult,
@@ -30,6 +31,7 @@ from check_docs_links import (
     check_regression,
     find_code_files,
     find_deck_files,
+    find_repo_scan_files,
     find_orphan_docs,
     find_scan_files,
     format_report,
@@ -930,7 +932,7 @@ class TestPositiveControl:
         """
         monkeypatch.setattr(
             "check_docs_links.run_scan",
-            lambda report_orphans=False, code=False: ScanResult())
+            lambda report_orphans=False, code=False, scope="default": ScanResult())
         monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--expect-broken", "1"])
         with pytest.raises(SystemExit) as exc:
             check_docs_links.main()
@@ -944,7 +946,7 @@ class TestPositiveControl:
         trained away within a week, so it is confined to the bare scan.
         """
         monkeypatch.setattr("check_docs_links.run_scan",
-                            lambda report_orphans=False, code=False: ScanResult())
+                            lambda report_orphans=False, code=False, scope="default": ScanResult())
         monkeypatch.setattr("check_docs_links.load_baseline",
                             lambda *a, **k: {"broken_links": []})
         monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--check"])
@@ -1352,6 +1354,164 @@ class TestIssueReproducibleCases:
                                  scanner=fake_scanner, exists_in_tree=fake_oracle)
         assert out == {("README.md", "docs/x.md")}
         assert seen == {"scanned": "README.md", "oracle": True}
+
+
+
+
+class TestRepoScope:
+    """`--scope repo` opens the pages the default scope never watched (#26793).
+
+    The default scope watched 1 010 of the 1 955 tracked `.md`/`.qmd` pages;
+    the other 466 were invisible, so a rename left dead citations behind and
+    no organ said so. These tests pin the three claims of the tranche:
+
+    * the repo scope SEES a page the default scope ignores;
+    * the exclusions are the NAMED ones, and they are not over-broad (a deck
+      stays in scope);
+    * the positive control BITES: a broken link outside the default scope is a
+      finding (rc=1), and the same tree under an unreachable threshold is a
+      control failure (rc=2).
+    """
+
+    def _page_outside_the_default_scope(self, tmp_path):
+        """A page with a broken link that the default scope never opens."""
+        page = tmp_path / "notes" / "sous-series" / "page.md"
+        page.parent.mkdir(parents=True)
+        page.write_text("[absent](../carnet-absent.ipynb)\n", encoding="utf-8")
+        return page
+
+    def test_default_scope_ignores_the_page(self, tmp_path, monkeypatch):
+        """The contrast: the default scope does NOT open that page."""
+        self._page_outside_the_default_scope(tmp_path)
+        (tmp_path / "README.md").write_text("# racine\n", encoding="utf-8")
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+
+        assert find_scan_files() == [tmp_path / "README.md"]
+
+    def test_repo_scope_sees_the_page_and_its_broken_link(self, tmp_path, monkeypatch):
+        """The repo scope opens it, and reports the broken link."""
+        self._page_outside_the_default_scope(tmp_path)
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+
+        sources = {path.relative_to(tmp_path).as_posix()
+                   for path in find_repo_scan_files()}
+        assert "notes/sous-series/page.md" in sources
+
+        result = run_scan(scope="repo")
+        assert [ref.target for ref in result.broken] == ["../carnet-absent.ipynb"]
+
+    @pytest.mark.parametrize("relpath", [
+        "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Roo-Code/CONTRIBUTING.md",
+        "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/docs/INSTALLATION.md",
+        "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claw-Systems/docs/DEPLOY.md",
+        "slides/03-logique/analysis/notes.md",
+        "scripts/tests/fixtures/sample.md",
+        "MyIA.AI.Notebooks/GenAI/extracted/slide.md",
+        "COURSE_CATALOG.generated.md",
+    ])
+    def test_repo_scope_excludes_the_named_trees(self, tmp_path, monkeypatch, relpath):
+        """Every named exclusion is excluded -- and named, not regexp-hidden."""
+        page = tmp_path / relpath
+        page.parent.mkdir(parents=True, exist_ok=True)
+        page.write_text("[absent](cible-absente.md)\n", encoding="utf-8")
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+
+        sources = {path.relative_to(tmp_path).as_posix()
+                   for path in find_repo_scan_files()}
+        assert relpath not in sources
+
+    def test_repo_scope_keeps_the_decks(self, tmp_path, monkeypatch):
+        """The deck is a delivered page: the slides exclusion must not eat it."""
+        deck = tmp_path / "slides" / "03-logique" / "slides.md"
+        deck.parent.mkdir(parents=True)
+        deck.write_text("[cassee](../../MyIA.AI.Notebooks/absent.ipynb)\n",
+                        encoding="utf-8")
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+
+        sources = {path.relative_to(tmp_path).as_posix()
+                   for path in find_repo_scan_files()}
+        assert "slides/03-logique/slides.md" in sources
+
+    def test_repo_scope_reads_tracked_pages_only(self, tmp_path, monkeypatch):
+        """The scope is what the repository SHIPS, not what a machine holds."""
+        git = subprocess.run(["git", "--version"], capture_output=True)
+        if git.returncode != 0:
+            pytest.skip("git absent")
+        subprocess.run(["git", "init", "-q"], cwd=tmp_path, capture_output=True)
+        tracked = tmp_path / "notes" / "suivi.md"
+        tracked.parent.mkdir(parents=True)
+        tracked.write_text("# suivi\n", encoding="utf-8")
+        untracked = tmp_path / "notes" / "brouillon.md"
+        untracked.write_text("# brouillon\n", encoding="utf-8")
+        subprocess.run(["git", "add", "notes/suivi.md"], cwd=tmp_path,
+                       capture_output=True)
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+
+        sources = {path.relative_to(tmp_path).as_posix()
+                   for path in find_repo_scan_files()}
+        assert "notes/suivi.md" in sources
+        assert "notes/brouillon.md" not in sources
+
+    def test_positive_control_bites_outside_the_default_scope(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """Acceptance: a broken link outside the default scope IS detected.
+
+        Without this, "no broken link" on the widened scope is
+        indistinguishable from a dead detection path.
+        """
+        self._page_outside_the_default_scope(tmp_path)
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(check_docs_links, "REPO_BASELINE_PATH",
+                            tmp_path / "baseline-repo.json")
+        monkeypatch.setattr(sys, "argv",
+                            ["check_docs_links.py", "--scope", "repo",
+                             "--expect-broken", "1", "--quiet"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 1
+
+    def test_same_tree_under_an_unreachable_threshold_is_a_control_failure(
+        self, tmp_path, monkeypatch, capsys
+    ):
+        """The threshold decides, on ONE tree: rc=2, not rc=1."""
+        self._page_outside_the_default_scope(tmp_path)
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(check_docs_links, "REPO_BASELINE_PATH",
+                            tmp_path / "baseline-repo.json")
+        monkeypatch.setattr(sys, "argv",
+                            ["check_docs_links.py", "--scope", "repo",
+                             "--expect-broken", "2", "--quiet"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 2
+        assert "POSITIVE CONTROL FAILED" in capsys.readouterr().err
+
+    def test_repo_scope_has_its_own_baseline(self):
+        """The three passes answer three questions: three frozen states."""
+        assert REPO_BASELINE_PATH != BASELINE_PATH
+        assert REPO_BASELINE_PATH != CODE_BASELINE_PATH
+        assert REPO_BASELINE_PATH.name == "baseline_docs_links_repo.json"
+
+    def test_repo_scope_check_is_quiet_on_a_baselined_tree(self, tmp_path, monkeypatch):
+        """`--scope repo --check` on the frozen baseline is rc=0."""
+        monkeypatch.setattr(check_docs_links, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(check_docs_links, "REPO_BASELINE_PATH",
+                            tmp_path / "baseline-repo.json")
+        monkeypatch.setattr(sys, "argv",
+                            ["check_docs_links.py", "--scope", "repo", "--check"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 0
+
+    def test_code_scope_and_repo_scope_are_mutually_exclusive(self, monkeypatch, capsys):
+        """`--scope repo --code` is refused: one pass at a time."""
+        monkeypatch.setattr(sys, "argv",
+                            ["check_docs_links.py", "--scope", "repo", "--code"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 2
+        assert "one pass" in capsys.readouterr().err
 
 
 if __name__ == "__main__":
