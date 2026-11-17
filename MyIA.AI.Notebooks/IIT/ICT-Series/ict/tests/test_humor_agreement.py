@@ -50,6 +50,36 @@ class TestCohenKappa(unittest.TestCase):
         self.assertIsNotNone(summary["undefined_reason"])
         self.assertIn("indefini", summary["interpretation"])
 
+    def test_marges_asymetriques_accord_attendu_correct(self):
+        # A : 3 fois 0 puis 1 fois 1 ; B : l'inverse.
+        # marg_a = {0: 0.75, 1: 0.25} ; marg_b = {0: 0.25, 1: 0.75}
+        # accord attendu = 0.75*0.25 + 0.25*0.75 = 0.375
+        # (lire la marginale de B sur les LIGNES donnerait somme(p_a^2) = 0.625)
+        summary = cohen_kappa([0, 0, 0, 1], [1, 1, 1, 0])
+        self.assertAlmostEqual(summary["expected_agreement"], 0.375, places=12)
+        self.assertAlmostEqual(summary["observed_agreement"], 0.0, places=12)
+        self.assertAlmostEqual(summary["kappa"], -0.6, places=12)
+
+    def test_kappa_reste_dans_son_domaine(self):
+        # Temoin de falsification : avec la marginale de B lue sur les lignes,
+        # le kappa de ce cas sortait du domaine [-1, 1].
+        summary = cohen_kappa([0, 0, 0, 1], [1, 1, 1, 0])
+        self.assertGreaterEqual(summary["kappa"], -1.0)
+        self.assertLessEqual(summary["kappa"], 1.0)
+
+    def test_marginale_degeneree_d_un_seul_cote_kappa_defini(self):
+        # A n'utilise qu'une categorie, B en utilise deux : l'accord attendu
+        # n'est pas nul, le kappa est donc defini (il valait 0.0).
+        summary = cohen_kappa(["rien"] * 5, ["rien"] * 3 + ["humour"] * 2)
+        self.assertIsNotNone(summary["kappa"])
+        self.assertAlmostEqual(summary["expected_agreement"], 0.6, places=12)
+        self.assertAlmostEqual(summary["kappa"], 0.0, places=12)
+
+    def test_marginale_b_lue_sur_les_colonnes(self):
+        summary = cohen_kappa([0, 0, 0, 1], [1, 1, 1, 0])
+        self.assertAlmostEqual(summary["marginals"]["a"][0], 0.75, places=12)
+        self.assertAlmostEqual(summary["marginals"]["b"][0], 0.25, places=12)
+
     def test_longueurs_differentes_refusees(self):
         with self.assertRaises(ValueError):
             cohen_kappa([0, 1], [0])
