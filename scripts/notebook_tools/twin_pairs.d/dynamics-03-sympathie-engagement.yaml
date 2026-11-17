@@ -1,0 +1,13 @@
+- name: Dynamics-03 Sympathie Engagement
+  family: GameTheory/Dynamics
+  python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Python utilise scipy.stats.t.ppf et NumPy ; C# invoque MathNet.Numerics
+    5.0.0 pour StudentT.InvCDF et les systèmes linéaires IRLS.
+  known_differences:
+  - 'Le quantile de Student a été corrigé pour chaque n : n−1 degrés de liberté, y
+    compris n=8 ; les budgets MLE et bootstrap sont préservés.'
+  - 'Les générateurs NumPy et .NET diffèrent : le contrôle bruité à 95 % échoue sur
+    la réalisation .NET car son IC bootstrap exclut zéro ; aucun réglage de graine.'

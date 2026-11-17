@@ -12,6 +12,14 @@ n'y existe pas encore, et pourquoi.
 
 **Une série plate.** Positions numérotées (03, 04, …) et approfondissements par lettres (02b, 02c, …) vivent côte à côte à la racine : chaque lettre creuse la position dont elle porte le numéro, et les séparer en dossiers couperait la paire qu'elles forment. C'est un choix de niveau déclaré (règle 2 de [niveau-serie.md](../../docs/reference/niveau-serie.md)), pas un oubli.
 
+## Comment lire ce README — découverte
+
+Trois vitesses, trois entrées — la série se lit de haut en bas et chaque position ne suppose que les précédentes.
+
+- **En découverte** (Python seul, rien d'autre à savoir) : commencez par [Complexity-01 — compter des pas](Complexity-01-StepCounting-Python.ipynb) puis [Complexity-02 — vérifier ou trouver](Complexity-02-P-NP-Reduction-Python.ipynb), les deux seuls notebooks de ce niveau. La table [Notebooks](#notebooks) dit ensuite pour chaque carnet son public et ce qu'il apporte.
+- **En licence** : suivez le [Parcours](#parcours), une position à la fois — 03 hiérarchie temporelle, 04 décider sans connaître la suite, 05 compter, 06 simuler un circuit quantique. Chaque lettre d'approfondissement se greffe sur sa position et ne se lit qu'après elle.
+- **En recherche** : entrez par la lettre qui porte votre question — 02b/02c (le seuil du SAT, avec ou sans mur), 03d/03e/03f (les preuves machine d'octobre 2026, lues à la source), 04c/04d (une conjecture chacune, mesurée à fond), 05b (la permanente, frontière quantique), 06b/06c/06d (déquantifier et la structure des speedups), 07/07b/07c (Kolmogorov bornée et ses miroirs), 08/08b/08c (Wolfram, arrivés d'ICT) ; la table [Notebooks](#notebooks) relie chacun à sa position.
+
 ## Jumeau Python/C# — simulation classique d’une loi quantique connue
 
 [Complexity-06 Python](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) ⇄ [Complexity-06 C#](Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb). Le port BCL/Complex construit réellement les amplitudes et probabilités, puis compare 4096 tirages aux mêmes tailles avec un tirage direct uniforme. Le second n’est pas Gottesman–Knill ; ce banc ne démontre aucune séparation BQP/P. Les PRNG diffèrent, les budgets restent identiques.
@@ -28,7 +36,7 @@ n'y existe pas encore, et pourquoi.
 
 ## Notebooks
 
-| Notebook | Public | Accrétion | Hommage | Contenu | Langue |
+| Notebook | Public | Accrétion | Hommage | Ce qu'on y apprend | Langue |
 |---|---|---|---|---|---|
 | [`Complexity-01-StepCounting-Python.ipynb`](Complexity-01-StepCounting-Python.ipynb) | Découverte | — | — (socle) | Le chronomètre ment un peu : compter des **pas** plutôt que des secondes ; taille d'entrée ; machine de Turing construite pas à pas (incrément binaire, palindrome en $n^2$) ; trois croissances comptées ($n \log n$, $n^2$, $2^n$) par le test de doublement et les pentes log-log ; table de budget à $10^8$ pas/s : ce que chaque croissance permet de traiter en une seconde, une minute, un jour | Français |
 | [`Complexity-02-P-NP-Reduction-Python.ipynb`](Complexity-02-P-NP-Reduction-Python.ipynb) | Découverte | — | — (socle) | Vérifier contre trouver sur le Sudoku (324 lectures contre des centaines de milliers d'appels) et sur subset-sum ; programmation dynamique **pseudo-polynomiale** mesurée ; définitions de P et NP ; réduction subset-sum → Partition **exécutée de bout en bout** (transformer, résoudre, retraduire le certificat) et testée sur 400 instances ; le mur exponentiel face à une machine mille fois plus rapide | Français |
@@ -94,6 +102,15 @@ principal de niveau licence qui en pose d'abord les notions.
 | 05 | [Compter est plus dur que vérifier](Complexity-05-CountingHarder-Permanent-Python.ipynb) | Licence | [05b — La permanente, frontière quantique](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) |
 | 06 | [Simuler un circuit quantique classiquement](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) | Licence | [06b — Aaronson–Gottesman](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb), [06c — Classical at heart](Complexity-06c-ClassicalAtHeart-Python.ipynb), [06d — Aaronson–Ambainis, la variable influente](Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb) |
 | 07 | [Complexité de Kolmogorov bornée : séquences à mémoire limitée](Complexity-07-KolmogorovBornee-Sequences-Python.ipynb) | Recherche | [07b — Le tour des grands nombres](Complexity-07b-LeTourDesGrandsNombres-Python.ipynb), [07c — Le bilan mathocalypse](Complexity-07c-LeBilanMathocalypse-Python.ipynb) |
+
+## Approfondissements — au-delà du parcours principal
+
+Quatre directions, chacune déjà amorcée dans ce README — les portes d'entrée existent, il suffit de les suivre.
+
+- **Le fil Aaronson** : du Zoo navigué ([03c](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb)) à la permanente comme frontière quantique ([05b](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb)), puis la déquantification des circuits stabilisateurs ([06b](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb)), « Classical at heart » ([06c](Complexity-06c-ClassicalAtHeart-Python.ipynb)) et la variable influente ([06d](Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb)) — un même auteur, des questions qui se répondent, du comptage à la structure des speedups quantiques.
+- **La veille des preuves annoncées** : l'automne 2026 a produit des réfutations machine à lire avec instrument — l'ETH « réfutée » ([03d](Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb)), les barrières d'exposants tombées ([03e](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb), [03f](Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb)), le bilan de la vague ([07c](Complexity-07c-LeBilanMathocalypse-Python.ipynb)) ; l'arbitrage formel de ces preuves vit dans l'EPIC [#19898](https://github.com/jsboige/CoursIA/issues/19898) — la veille, elle, vit dans cette série.
+- **Le miroir descriptif de Kolmogorov** : [07](Complexity-07-KolmogorovBornee-Sequences-Python.ipynb) demande quelles séquences une mémoire bornée peut écrire court ; [07b](Complexity-07b-LeTourDesGrandsNombres-Python.ipynb) retourne la question sur les nombres (du googol au nombre de Rayo), [07c](Complexity-07c-LeBilanMathocalypse-Python.ipynb) sur les preuves (vérifier ce qui est écrit court). Le pli relie la série à l'EPIC Compression [#18706](https://github.com/jsboige/CoursIA/issues/18706).
+- **Le dialogue formel avec Mathlib** : chaque position mesure ce que la couche complexité exigerait — les encarts gap des notebooks 03b, 03c, 04b et 05b (la calculabilité y est formalisée, pas la complexité) ; le [06d](Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb) confronte Aaronson–Ambainis au théorème de Huang du lac [`sensitivity_lean`](../SymbolicAI/Lean/sensitivity_lean/), deux théorèmes miroirs sur le même cube.
 
 ## Jumeau C# — Complexity-02
 
@@ -233,4 +250,6 @@ dépôt) et les corrigés restent la propriété de l'étudiant.
 ## Jumeau C# et différences de portage
 
 - [Complexity-04 — Décider sans connaître la suite (C#)](Complexity-04-OnlineAlgorithms-CSharp.ipynb) : même couverture conceptuelle, implémentations idiomatiques avec la bibliothèque standard .NET ; espérances des skis calculées par sommes discrètes exactes, et permutations du secrétaire générées réellement par Fisher–Yates (`Random(42)`). Les résultats Monte Carlo peuvent différer de NumPy malgré la graine commune. Les exercices LFU et secrétaire fine vérifient leurs fixtures et leurs budgets.
+- [Complexity-04c — k-server et work function (C#)](Complexity-04c-KServer-WorkFunction-CSharp.ipynb) : même couverture que le jumeau Python, implémentations BCL pures (WFA et OPT from scratch, aucune librairie d'algorithmique online) ; les quatre figures sont du SVG inline émis en `text/html` (zéro restore NuGet). Correction pédagogique de l'exercice LRU : en paging, LRU **est** k-compétitif (Sleator–Tarjan 1985) avec une constante additive — `faults(LRU) ≤ k·faults(OPT) + (k−1)` — un ratio multiplicatif fini au-dessus de k ne réfute pas cette garantie.
 - [Complexity-04d — secrétaire matroïdal (C#)](Complexity-04d-Secretaire-Matroidal-CSharp.ipynb) accompagne la [version Python](Complexity-04d-Secretaire-Matroidal-Python.ipynb) : trois oracles d'indépendance, glouton offline et algorithme de Singla en BCL pure, six instances × 4 000 essais et comparatif secrétaire classique à 4 000 essais conservés, figure de garantie en SVG opaque. L'exercice 1 y est corrigé par rapport à sa formulation fautive : l'intersection jointe est mesurée directement sur l'échantillon, jamais multipliée depuis les marginales — et un taux observé n'est pas une borne démontrée. Les générateurs aléatoires diffèrent.
+- [Complexity-06c — « Classical at heart » (C#)](Complexity-06c-ClassicalAtHeart-CSharp.ipynb) : même récit que le jumeau Python, jouet BCL (état cible sur 3 qubits, support, décompte des paramètres d'une unitaire) et trois exercices compilés (`return null`).
