@@ -1,0 +1,274 @@
+{
+  "issue": "#26317",
+  "phase": "Phase H -- resolution du substrat : B5 en Hour puis Daily (2021-2024), puis cadran de fenetre 2022 avec ses Buy & Hold",
+  "date": "2026-11-16",
+  "worker": "lane myia-po-2024:CoursIA-3",
+  "trigger": "Instruction D1-D3 de #26317 (D4, substrats degeneres) : separer la part du contre-resultat des Phases D-F due au substrat (resolution Minute, ou le captage du retour a la moyenne ~0,1-0,3 % ne couvre pas les frais aller-retour 0,2 %) de la part verdict-honnete a conserver. Grain nomme dans la cellule 'Lecture du resultat' de la Phase F : 'Le remede structurel (resolution Hour, ou bandes elargies) est un grain ulterieur'.",
+  "deliverable": "Six backtests QC Cloud d'un meme code (B6, projet 39528163, sha256 de04bff7716b7708) : H1/H2 = B5 en resolution Hour/Daily sur 2021-2024 (une variable vs B5 : la resolution) ; H3/H4 = memes resolutions sur la seule annee 2022 ; H5/H6 = Buy & Hold BTC/ETH a 100 % sur 2022. B6 = B5 + parametres (resolution, mode, fenetre) + compteurs publies par set_runtime_statistic ; les deux branches de sortie de B5 sont fusionnees en une (meme comportement) et les logs SAMPLE retires.",
+  "qc_project_id": 39528163,
+  "qc_project_url": "https://www.quantconnect.com/project/39528163",
+  "sha256_main_py": "de04bff7716b7708d195e8abfb2f26dad5ab2734e7ffcfb911700495243d5e8d",
+  "compile_id": "27f028dddc0a63ecc6ac59b093e9b189-1f918262601fe3a99026e3849a5df866",
+  "results_summary": {
+    "H1": {
+      "backtest_id": "b8233bcc14e2cc3d436e6a4e3e490879",
+      "backtest_name": "26317-H1_B6_hour_2021_2024",
+      "compile_id": "27f028dddc0a63ecc6ac59b093e9b189-1f918262601fe3a99026e3849a5df866",
+      "qc_url": "https://www.quantconnect.com/project/39528163/backtest/b8233bcc14e2cc3d436e6a4e3e490879",
+      "created": "2026-11-16 21:12:23",
+      "completed": "2026-11-16 (completed: true verifie avant lecture)",
+      "parametres": {
+        "mode": "strategy",
+        "resolution": "hour",
+        "start": "2021-01-01",
+        "end": "2024-12-31"
+      },
+      "tradeableDates": 1461,
+      "totalOrders": 1794,
+      "statistics": {
+        "sharpeRatio": "-1.001",
+        "compoundingAnnualReturn": "-20.631%",
+        "drawdown": "68.100%",
+        "totalNetProfit": "-60.342%",
+        "probabilisticSharpeRatio": "0.001%",
+        "totalFees": "₮4648.40",
+        "winRate": "59%"
+      },
+      "compteurs_B6": {
+        "Mode": "strategy",
+        "Resolution": "hour",
+        "Barres": "70130",
+        "Signaux": "2773",
+        "Fronts": "1343",
+        "Entrees": "897",
+        "Sorties": "897",
+        "Remplis": "1794",
+        "Invalides": "0",
+        "Part investie": "0.1764"
+      },
+      "variable_changee_vs_B5": "Resolution Hour (au lieu de Minute) ; fenetre 2021-2024 inchangee",
+      "resultat_avant_frais_approx_USDT": -1385.79,
+      "frais_USDT": 4648.4,
+      "exposition_moyenne_capital_estimee": 0.1411
+    },
+    "H2": {
+      "backtest_id": "5552b112ae19c438f1bcd041a31fd90f",
+      "backtest_name": "26317-H2_B6_daily_2021_2024",
+      "compile_id": "27f028dddc0a63ecc6ac59b093e9b189-1f918262601fe3a99026e3849a5df866",
+      "qc_url": "https://www.quantconnect.com/project/39528163/backtest/5552b112ae19c438f1bcd041a31fd90f",
+      "created": "2026-11-16 21:12:25",
+      "completed": "2026-11-16 (completed: true verifie avant lecture)",
+      "parametres": {
+        "mode": "strategy",
+        "resolution": "daily",
+        "start": "2021-01-01",
+        "end": "2024-12-31"
+      },
+      "tradeableDates": 1461,
+      "totalOrders": 72,
+      "statistics": {
+        "sharpeRatio": "0.704",
+        "compoundingAnnualReturn": "13.580%",
+        "drawdown": "28.300%",
+        "totalNetProfit": "66.525%",
+        "probabilisticSharpeRatio": "22.900%",
+        "totalFees": "₮403.30",
+        "winRate": "58%"
+      },
+      "compteurs_B6": {
+        "Mode": "strategy",
+        "Resolution": "daily",
+        "Barres": "2924",
+        "Signaux": "85",
+        "Fronts": "39",
+        "Entrees": "36",
+        "Sorties": "36",
+        "Remplis": "72",
+        "Invalides": "0",
+        "Part investie": "0.0882"
+      },
+      "variable_changee_vs_B5": "Resolution Daily (au lieu de Minute) ; fenetre 2021-2024 inchangee",
+      "resultat_avant_frais_approx_USDT": 7055.76,
+      "frais_USDT": 403.3,
+      "exposition_moyenne_capital_estimee": 0.0706
+    },
+    "H3": {
+      "backtest_id": "b9b3dd46bd172b059addf1db6def4e61",
+      "backtest_name": "26317-H3_B6_hour_2022",
+      "compile_id": "27f028dddc0a63ecc6ac59b093e9b189-1f918262601fe3a99026e3849a5df866",
+      "qc_url": "https://www.quantconnect.com/project/39528163/backtest/b9b3dd46bd172b059addf1db6def4e61",
+      "created": "2026-11-16 21:12:28",
+      "completed": "2026-11-16 (completed: true verifie avant lecture)",
+      "parametres": {
+        "mode": "strategy",
+        "resolution": "hour",
+        "start": "2022-01-01",
+        "end": "2022-12-31"
+      },
+      "tradeableDates": 365,
+      "totalOrders": 514,
+      "statistics": {
+        "sharpeRatio": "-2.019",
+        "compoundingAnnualReturn": "-48.162%",
+        "drawdown": "50.200%",
+        "totalNetProfit": "-48.162%",
+        "probabilisticSharpeRatio": "0.002%",
+        "totalFees": "₮1550.15",
+        "winRate": "54%"
+      },
+      "compteurs_B6": {
+        "Mode": "strategy",
+        "Resolution": "hour",
+        "Barres": "17522",
+        "Signaux": "824",
+        "Fronts": "385",
+        "Entrees": "257",
+        "Sorties": "257",
+        "Remplis": "514",
+        "Invalides": "0",
+        "Part investie": "0.2043"
+      },
+      "variable_changee_vs_B5": "Resolution Hour ; fenetre reduite a 2022 (annee baissiere)",
+      "resultat_avant_frais_approx_USDT": -3266.04,
+      "frais_USDT": 1550.15,
+      "exposition_moyenne_capital_estimee": 0.1634
+    },
+    "H4": {
+      "backtest_id": "cfa5cb66789c64c6aa1760bc4a11d422",
+      "backtest_name": "26317-H4_B6_daily_2022",
+      "compile_id": "27f028dddc0a63ecc6ac59b093e9b189-1f918262601fe3a99026e3849a5df866",
+      "qc_url": "https://www.quantconnect.com/project/39528163/backtest/cfa5cb66789c64c6aa1760bc4a11d422",
+      "created": "2026-11-16 21:13:32",
+      "completed": "2026-11-16 (completed: true verifie avant lecture)",
+      "parametres": {
+        "mode": "strategy",
+        "resolution": "daily",
+        "start": "2022-01-01",
+        "end": "2022-12-31"
+      },
+      "tradeableDates": 365,
+      "totalOrders": 26,
+      "statistics": {
+        "sharpeRatio": "-0.981",
+        "compoundingAnnualReturn": "-20.160%",
+        "drawdown": "25.700%",
+        "totalNetProfit": "-20.199%",
+        "probabilisticSharpeRatio": "2.322%",
+        "totalFees": "₮89.28",
+        "winRate": "23%"
+      },
+      "compteurs_B6": {
+        "Mode": "strategy",
+        "Resolution": "daily",
+        "Barres": "732",
+        "Signaux": "36",
+        "Fronts": "14",
+        "Entrees": "13",
+        "Sorties": "13",
+        "Remplis": "26",
+        "Invalides": "0",
+        "Part investie": "0.1230"
+      },
+      "variable_changee_vs_B5": "Resolution Daily ; fenetre reduite a 2022 (annee baissiere)",
+      "resultat_avant_frais_approx_USDT": -1930.63,
+      "frais_USDT": 89.28,
+      "exposition_moyenne_capital_estimee": 0.0984
+    },
+    "BnH_BTC_2022": {
+      "backtest_id": "96e4e1e2430bd855def3878063cac349",
+      "backtest_name": "26317-H5_BnH_BTC_hour_2022",
+      "compile_id": "27f028dddc0a63ecc6ac59b093e9b189-1f918262601fe3a99026e3849a5df866",
+      "qc_url": "https://www.quantconnect.com/project/39528163/backtest/96e4e1e2430bd855def3878063cac349",
+      "created": "2026-11-16 21:13:34",
+      "completed": "2026-11-16 (completed: true verifie avant lecture)",
+      "parametres": {
+        "mode": "bnh_btc",
+        "resolution": "hour",
+        "start": "2022-01-01",
+        "end": "2022-12-31"
+      },
+      "tradeableDates": 365,
+      "totalOrders": 1,
+      "statistics": {
+        "sharpeRatio": "-0.916",
+        "compoundingAnnualReturn": "-64.438%",
+        "drawdown": "67.000%",
+        "totalNetProfit": "-64.438%",
+        "probabilisticSharpeRatio": "1.012%",
+        "totalFees": "₮9.96",
+        "winRate": "0%"
+      },
+      "compteurs_B6": {
+        "Mode": "bnh_btc",
+        "Resolution": "hour",
+        "Barres": "0",
+        "Signaux": "0",
+        "Fronts": "0",
+        "Entrees": "0",
+        "Sorties": "0",
+        "Remplis": "1",
+        "Invalides": "0",
+        "Part investie": "0.0000"
+      },
+      "variable_changee_vs_B5": "Benchmark : Buy & Hold BTCUSDT a 100 %, fenetre 2022"
+    },
+    "BnH_ETH_2022": {
+      "backtest_id": "dea3a9fc499578823bcbdefa4b1c5386",
+      "backtest_name": "26317-H6_BnH_ETH_hour_2022",
+      "compile_id": "27f028dddc0a63ecc6ac59b093e9b189-1f918262601fe3a99026e3849a5df866",
+      "qc_url": "https://www.quantconnect.com/project/39528163/backtest/dea3a9fc499578823bcbdefa4b1c5386",
+      "created": "2026-11-16 21:13:36",
+      "completed": "2026-11-16 (completed: true verifie avant lecture)",
+      "parametres": {
+        "mode": "bnh_eth",
+        "resolution": "hour",
+        "start": "2022-01-01",
+        "end": "2022-12-31"
+      },
+      "tradeableDates": 365,
+      "totalOrders": 1,
+      "statistics": {
+        "sharpeRatio": "-0.661",
+        "compoundingAnnualReturn": "-67.623%",
+        "drawdown": "76.400%",
+        "totalNetProfit": "-67.623%",
+        "probabilisticSharpeRatio": "2.646%",
+        "totalFees": "₮9.96",
+        "winRate": "0%"
+      },
+      "compteurs_B6": {
+        "Mode": "bnh_eth",
+        "Resolution": "hour",
+        "Barres": "0",
+        "Signaux": "0",
+        "Fronts": "0",
+        "Entrees": "0",
+        "Sorties": "0",
+        "Remplis": "1",
+        "Invalides": "0",
+        "Part investie": "0.0000"
+      },
+      "variable_changee_vs_B5": "Benchmark : Buy & Hold ETHUSDT a 100 %, fenetre 2022"
+    }
+  },
+  "references_phases_precedentes": {
+    "B5_minute_2021_2024": "QC-Py-40-Phase-F.json, results_summary.B5 (1 140 574 ordres, net -99,874 %, Sharpe -2,527)",
+    "BnH_BTC_2021_2024": "QC-Py-40-Phase-G.json, results_summary.BnH_BTC (Minute ; un seul ordre, la resolution ne change que le prix du remplissage initial)",
+    "BnH_ETH_2021_2024": "QC-Py-40-Phase-G.json, results_summary.BnH_ETH (idem)"
+  },
+  "verdict": "NO BEATS. (1) Part substrat : la resolution Minute etait degeneree. En Daily, 72 ordres au lieu de 1 140 574 et un resultat net de +66,5 % au lieu de -99,87 % : l'effondrement des Phases D-F tenait a l'echelle de temps, pas a l'idee de retour a la moyenne. (2) Part verdict-honnete, a conserver : en Hour la strategie perd meme avant frais (environ -1 386 USDT avant 4 648 USDT de frais) ; en Daily elle gagne, mais reste sous les Buy & Hold de la meme fenetre en rendement (+66,5 % contre +219 % et +348 %) et en Sharpe (0,704 contre 0,942 et 1,216). En 2022 elle perd moins que le Buy & Hold (-20,2 % contre -64,4 % et -67,6 %) sans meilleur Sharpe (-0,981 contre -0,916 et -0,661). Son moindre drawdown s'explique par l'exposition : 7 a 10 % du capital investi en moyenne (estimation), contre 100 % pour le Buy & Hold.",
+  "confusion_exposition": "Une strategie investie 7-10 % du temps perd mecaniquement moins qu'un Buy & Hold en annee baissiere ; comparer leurs rendements ou leurs drawdowns ne dit rien du signal. Le Sharpe corrige en partie (rendement par unite de risque), mais le Sharpe de QC retranche un taux sans risque, ce qui penalise davantage une strategie peu exposee : seul un Buy & Hold a exposition egale separerait le signal de l'exposition.",
+  "path_forward": [
+    "Benchmark a exposition egale : Buy & Hold BTC/ETH a poids constant egal a l'exposition moyenne mesuree (~7 % sur 2021-2024, ~10 % sur 2022), meme fenetre ; une variable (le poids). C'est le run qui trancherait si le signal Daily a un avantage propre.",
+    "Fenetres : un seul cadran (2022) a ete teste ; 2021 (haussier) et 2023-2024 (reprise) diraient si le +66,5 % Daily vient d'une seule annee.",
+    "Hour : negatif avant frais sur 2021-2024 et sur 2022 ; aucun reglage a ouvrir a cette resolution sans hypothese nouvelle.",
+    "Question laissee ouverte par la Phase F (tempete de re-soumissions en fin de vie du compte, en Minute) : B6 en mode minute publie les compteurs Invalides et Remplis, lisibles par l'API ; un run suffirait a la trancher, sans l'interface QC Cloud."
+  ],
+  "tells_observed": [
+    "completed: true verifie avant chaque lecture de metriques (6/6).",
+    "Compteurs publies par set_runtime_statistic : lisibles par read_backtest, ce qui leve pour les nouveaux runs la limite RECOVERABLE-USER-HAND de la Phase F (compteurs seulement dans les logs).",
+    "Invalides = 0 sur les six runs : aucun ordre rejete en Hour ni en Daily.",
+    "Le cooldown de 60 minutes herite de B5 vaut une barre en Hour et aucune en Daily : il ne contraint plus rien a ces resolutions.",
+    "Regle C (verdict honnete) : NO BEATS explicite, confusion d'exposition nommee, aucun 'prometteur'."
+  ]
+}

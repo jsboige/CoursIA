@@ -158,9 +158,9 @@ EXTRA_SELECTORS: dict[str, tuple[str, ...]] = {
         # arete #25360 : test_setup_native_lean4_import.py relit le script
         # d'install WSL de GameTheory via une ancre __file__
         "MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh",
-        # arete #26269 : test_socialchoice_08.py relit le carnet SocialChoice
+        # arete #26269 : test_socialchoice_08.py relit le carnet ChoixSocial
         # 08 via une ancre __file__ (parents[2])
-        "MyIA.AI.Notebooks/GameTheory/SocialChoice/08-Kemeny-RankedPairs-Dodgson.ipynb",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb",
     ),
     "tests": ("scripts/ci/", "scripts/notebook_tools/"),
     "scripts/lean/tests": ("scripts/ci/",),
