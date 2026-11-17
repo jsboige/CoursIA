@@ -2,8 +2,6 @@
 pagetitle: "Physique — des modèles aux calculs vérifiables"
 ---
 
-# Physique — des modèles aux calculs vérifiables
-
 [↑ Parcours de notebooks](../README.md)
 
 Comment savoir si un calcul physique représente bien le phénomène annoncé ? Cette famille part de lois de conservation, de symétries et d'intégrales de Feynman pour construire des calculs dont on peut examiner les hypothèses, les références et les limites. Une solution analytique, une identité symbolique, une simulation et la reproduction d'un résultat publié apportent des contrôles différents : apprendre à les distinguer fait partie du cours.

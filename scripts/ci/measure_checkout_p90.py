@@ -22,9 +22,13 @@ et un instrument qui ne verrait que le checkout lirait ce deplacement comme
 un gain. C'est pourquoi la somme heal + checkout est rendue.
 
 Limites annoncees :
-- la pagination de l'API Actions est plafonnee a 1 000 resultats filtres ; la
-  fenetre reellement couverte se deduit des runs eux-memes, jamais d'un
-  `total_count` ;
+- les requetes sont decoupees en fenetres de creation bornees pour eviter
+  le plafond de 1 000 runs ; une seconde contenant plus de 1 000 runs ne
+  peut pas etre subdivisee et provoque une erreur explicite ;
+- `--runs` borne les runs inspectes apres filtrage du workflow : le rapport
+  indique si la fenetre a ete parcourue entierement. Les dates observees
+  ne prouvent pas a elles seules la couverture ; les suppressions ou
+  modifications concurrentes cote API peuvent affecter la collecte ;
 - le nom de l'etape de checkout a change selon la version de l'action
   ("Checkout repository", "actions/checkout") : les deux formes sont
   reconnues, et une job sans etape reconnue est comptee a part ;
@@ -94,24 +98,95 @@ def percentile(values: list[float], fraction: float) -> float:
     return ordered[index]
 
 
-def runs_url(since: str, page: int, event: str = "pull_request") -> str:
-    """L'URL de lecture des runs, fenetre **reellement appliquee**.
-
-    L'API Actions attend la cle `created` avec l'operateur `>=` : la forme
-    est donc `created=%3E%3D{since}`. La forme `created%3E={since}` se decode
-    en une cle `created>` -- que l'API ignore : le filtre ne porte alors sur
-    rien et l'instrument mesure n'importe quelle fenetre. Mesure du
-    2026-11-09 sur la meme fenetre de 2 h : 2 500 runs non filtres contre
-    733 filtres.
-
-    La chaine est **construite ici** et non concatenee dans l'appel : c'est
-    ce qui permet a un test de verifier la forme reellement envoyee, sans
-    appel reseau.
-    """
+def runs_url(since: str, page: int, event: str = "pull_request", *, until: str | None = None) -> str:
+    """URL Actions : le filtre `created` est une valeur, pas une cle."""
+    created = f"{since}..{until}" if until is not None else f">={since}"
     return (
         f"/repos/{REPO}/actions/runs?event={event}"
-        f"&created=%3E%3D{quote(since)}&per_page=100&page={page}"
+        f"&created={quote(created, safe='')}&per_page=100&page={page}"
     )
+
+
+def collect_runs(start: datetime, end: datetime, limit: int, workflow: str = "") -> tuple[list[dict], bool]:
+    """Collecte du plus recent au plus ancien, bornes inclusives a la seconde.
+
+    Un temoin supplementaire permet de distinguer une limite atteinte d'une
+    fenetre complete. Les fenetres filles sont disjointes, meme aux bornes.
+    """
+    found: list[dict] = []
+    seen: set[int] = set()
+
+    def visit(lo: datetime, hi: datetime) -> bool:
+        first = gh(runs_url(lo.strftime(FMT), 1, until=hi.strftime(FMT)))
+        count = first.get("total_count")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0:
+            raise RuntimeError("total_count des runs invalide")
+        if count > 1000:
+            if lo == hi:
+                raise RuntimeError(f"plus de 1000 runs a la meme seconde : {lo.strftime(FMT)}")
+            middle = lo + timedelta(seconds=int((hi - lo).total_seconds()) // 2)
+            return visit(middle + timedelta(seconds=1), hi) and visit(lo, middle)
+
+        batch = first.get("workflow_runs")
+        if not isinstance(batch, list):
+            raise RuntimeError("liste des runs invalide")
+        all_runs = list(batch)
+        for page in range(2, (count + 99) // 100 + 1):
+            data = gh(runs_url(lo.strftime(FMT), page, until=hi.strftime(FMT)))
+            if data.get("total_count") != count or not isinstance(data.get("workflow_runs"), list):
+                raise RuntimeError("pagination des runs incoherente")
+            all_runs.extend(data["workflow_runs"])
+        if len(all_runs) != count:
+            raise RuntimeError("nombre de runs incoherent avec total_count")
+        for run in all_runs:
+            try:
+                run_id = run["id"]
+                created = ts(run["created_at"])
+                if not isinstance(run_id, int) or created is None or not lo <= created <= hi:
+                    raise ValueError
+            except (KeyError, TypeError, ValueError) as exc:
+                raise RuntimeError("run invalide ou hors fenetre") from exc
+            if run_id in seen:
+                raise RuntimeError("run duplique pendant la pagination")
+            seen.add(run_id)
+            if not workflow or run.get("name") == workflow:
+                found.append(run)
+                if len(found) > limit:
+                    return False
+        return True
+
+    complete = visit(start, end)
+    return found[:limit], complete
+
+
+def collect_jobs(run_id: int) -> list[dict]:
+    """Toutes les pages de jobs ou une erreur, jamais un resultat partiel muet."""
+    jobs: list[dict] = []
+    seen: set[int] = set()
+    page = 1
+    expected = None
+    while True:
+        data = gh(f"/repos/{REPO}/actions/runs/{run_id}/jobs?per_page=100&page={page}")
+        count, batch = data.get("total_count"), data.get("jobs")
+        if not isinstance(count, int) or isinstance(count, bool) or count < 0 or not isinstance(batch, list):
+            raise RuntimeError(f"pagination des jobs invalide pour {run_id}")
+        if expected is None:
+            expected = count
+        if count != expected or len(jobs) + len(batch) > count:
+            raise RuntimeError(f"pagination des jobs incoherente pour {run_id}")
+        for job in batch:
+            job_id = job.get("id") if isinstance(job, dict) else None
+            if not isinstance(job_id, int) or isinstance(job_id, bool) or job_id <= 0:
+                raise RuntimeError(f"ID de job invalide pour {run_id}")
+            if job_id in seen:
+                raise RuntimeError(f"job duplique pendant la pagination pour {run_id}: {job_id}")
+            seen.add(job_id)
+        jobs.extend(batch)
+        if len(jobs) == expected:
+            return jobs
+        if not batch:
+            raise RuntimeError(f"pagination des jobs incomplete pour {run_id}")
+        page += 1
 
 
 def step_minutes(steps: list[dict] | None, markers: tuple[str, ...]) -> float | None:
@@ -163,28 +238,17 @@ def main() -> int:
     parser.add_argument("--out", default="")
     args = parser.parse_args()
 
-    since = (datetime.now(timezone.utc) - timedelta(hours=args.hours)).strftime(FMT)
-    runs: list[dict] = []
-    page = 1
-    while page <= 10 and len(runs) < args.runs:
-        data = gh(runs_url(since, page))
-        batch = data.get("workflow_runs", [])
-        runs.extend(batch)
-        if len(batch) < 100:
-            break
-        page += 1
-
-    if args.workflow:
-        runs = [r for r in runs if r.get("name") == args.workflow]
-    runs = runs[: args.runs]
+    if args.hours <= 0 or args.runs <= 0:
+        parser.error("--hours et --runs doivent etre strictement positifs")
+    end = datetime.now(timezone.utc).replace(microsecond=0)
+    start = end - timedelta(hours=args.hours)
+    since = start.strftime(FMT)
+    runs, complete = collect_runs(start, end, args.runs, args.workflow)
 
     per_workflow: dict[str, dict] = defaultdict(_bucket)
     slow: list[dict] = []
     for run in runs:
-        try:
-            jobs = gh(f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100").get("jobs", [])
-        except RuntimeError:
-            continue
+        jobs = collect_jobs(run["id"])
         for job in jobs:
             bucket = per_workflow[run.get("name", "?")]
             bucket["jobs"] += 1
@@ -265,6 +329,14 @@ def main() -> int:
         "measured_at": datetime.now(timezone.utc).strftime(FMT),
         "window_requested_hours": args.hours,
         "window_created_since": since,
+        "window_created_until": end.strftime(FMT),
+        "workflow_filter": args.workflow or None,
+        "runs_limit": args.runs,
+        "window_complete": complete,
+        "window_complete_note": (
+            "Toutes les pages filtrees ont ete lues ; les changements concurrents cote API restent possibles."
+            if complete else "Limite --runs atteinte ; la fenetre n'est pas couverte entierement."
+        ),
         "runs_inspectes": len(runs),
         "seuil_checkout_lent_min": args.slow_min,
         "checkouts_lents": len(slow),
