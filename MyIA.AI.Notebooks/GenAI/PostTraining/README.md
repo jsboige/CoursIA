@@ -46,6 +46,7 @@ Les variantes du palier 11 sont présentées sous [Approfondissements](#autour-d
 | 16 | [Vérification formelle du code généré](PT_16_vericoding_formal_verification.ipynb) | Boucler spécification, génération, vérification et réparation ; éprouver la spécification elle-même. | Ollama, Dafny et Lean. | Gardes anti-contournement et spécifications incomplètes. |
 | 17 | [Récompenses propres et calibration](PT_17_laya_proper_rewards_toy.ipynb) | Comparer règles de score, calibration et optimisation directe ou par perturbation. | Probabilités et gradients ; CPU. | Comparer calibration et exactitude prédictive. |
 | 18 | [Ablation de distillation](PT_18_laya_ablation_distillation.ipynb) | Analyser des agrégats de distillation et éprouver un gain avec des comparaisons statistiques. | Après 17 ; analyse CPU de mesures enregistrées. | La grille d'entraînement vit dans les scripts associés. |
+| 19 | [Stratification inter-tailles](PT_19_stratification_inter_tailles.ipynb) | Comparer l'uptake de faille et l'effet d'une inoculation à travers les tailles du modèle, sur des mesures déjà enregistrées. | Lecture d'artefacts JSON produits par les runs GPU de la série ICT ; CPU. | Déplacé depuis ICT-25b (#20298, fournée F3) ; le Cohen's d change de signe entre tailles. |
 
 ### Du signal d'apprentissage à la preuve d'un gain
 

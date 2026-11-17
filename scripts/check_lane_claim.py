@@ -109,6 +109,7 @@ from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
 from grain_tag import extract_lane, lane_marker_residues
+from claim_cap_advice import cap_action_line, open_daughters
 
 # #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
 # `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
@@ -5648,6 +5649,8 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         if cause:
             verdict.update(cause=cause, epic=target["number"])
             break
+    if verdict.get("cause") and pool:  # #27012 : filles reelles de l'EPIC
+        verdict["daughters"] = open_daughters(pool, verdict.get("epic"), picker.parent_refs)
     verdict["error"] = "; ".join(errors) or None
     return verdict
 
@@ -6814,11 +6817,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"de lane y a ete pose, il y a moins de 7 jours (#22500 point 3). "
             f"Le plafond exempte les EPICs de classe `consolidation`, et "
             f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
-            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC {where} "
-            f"(#26414 : une fille existante se sert librement, seul le claim "
-            f"pose sur l'EPIC est plafonne), ou prendre un autre grain du "
-            f"pool. Re-scoper avec `--paths` ne leve pas ce plafond ; "
-            f"`--force` reste reserve a l'arbitrage coordinateur.",
+            f"{cap_action_line(where, epic_cap_verdict.get('daughters') or [])}",
             file=sys.stderr,
         )
         return 1
