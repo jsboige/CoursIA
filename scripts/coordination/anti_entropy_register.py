@@ -382,16 +382,19 @@ REGISTRE: tuple[Entree, ...] = (
             # l'instrument AVANT l'apprentissage de l'index d'accretion des
             # series a prefixe. Reference vivante jusqu'au huitieme
             # rebasage (meme PR, review ai-01 point 2). Le sha de branche
-            # (8434d7f3a8f) ne survivra pas au squash : le point declare
-            # l'identite derivee a la fin du jour du squash de #26349 --
-            # remplacee par la comparaison par SOURCE tant que la reference
-            # n'est pas resolue.
-            Reference(27.0, "2026-11-13",
+            # (8434d7f3a8f) est mort au squash -- resolu comme pour les
+            # points #23655 et #5081 ci-dessous : la serie declare
+            # l'identite RESOLVABLE de main -- le squash #26349
+            # (27e3e88afb, 2026-11-17T01:22:44+01:00, meme contenu de
+            # l'instrument) -- et date le point du jour ou cette identite
+            # est devenue derivable. La valeur 27.0 reste celle mesuree au
+            # septieme rebasage, sur l'arbre de branche avant le squash.
+            Reference(27.0, "2026-11-17",
                       "PR #26349, re-mesure du 2026-11-13 sur "
-                      "l'arbre 8434d7f3a8f",
+                      "l'arbre de branche 8434d7f3a8f (mort au squash)",
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
-                                  "@8434d7f3a8f14ca64e10c5666c206f8f1af9799a")),
+                                  "@27e3e88afb76b73335b7651e064629573c96ec45")),
             # Mesure du 2026-11-13 (sixieme rebasage, #5081, sur main) :
             # 25 -- l'instrument reconnait le prefixe `coursia-py313`, la
             # grandeur change (26 -> 25), la comparaison transverse est
