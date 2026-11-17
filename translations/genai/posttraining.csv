@@ -9147,3 +9147,152 @@ Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024�
 ",,,,,,,,87eca03ad23d8cf8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,1f3609a5,markdown,fr,a02e1a78116c7102,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742) ; le volet PT-11 constitue le sous-axe RLVR. Il se rattache également à l’issue [#10289](https://github.com/jsboige/CoursIA/issues/10289).
 ",,,,,,,,a02e1a78116c7102,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,a5039bdf,markdown,fr,08e163d967909a59,"[← PT-18 — Ablation de distillation](PT_18_laya_ablation_distillation.ipynb) | [↑ PostTraining](README.md)
+
+***
+
+# PT-19 — Stratification inter-tailles des expériences LLM (ICT-25a GRPO)
+
+**Carnet de synthèse inter-tailles** pour ICT-25a (GRPO à récompense hackable, 5 tailles Qwen, 2 bras N/Np, 4 graines). Lit les artefacts JSON déjà présents sur `main` (1.5B / 7B / 14B / 27B / 32B) et rapporte un verdict falsifiable par taille.
+
+> **Provenance** — carnet déplacé depuis la série ICT (`ICT-25b-StratificationInterTailles-Python.ipynb`) vers PostTraining (#20298, fournée F3) : la stratification inter-tailles des expériences GRPO relève de l'instrumentation post-training. Les artefacts `runs/ict25a_*.json` restent dans leur série d'origine (IIT/ICT-Series).",,,,,,,,08e163d967909a59,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,4a30ddbd,markdown,fr,a0abaf5c08790d5b,"> **Statut épistémique** — **Falsifiable, mesure directe** : le pattern d'uptake de faille n'est PAS monotone en taille, et l'effet de l'inoculation (Np vs N) change de signe entre 7B, 14B, 27B et 32B. Le Cohen's d oscille (0, +3.26, -4.27, +6.68, -12.55) au lieu d'un effet cumulatif attendu par taille.",,,,,,,,a0abaf5c08790d5b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,4560fa25,markdown,fr,fd9594e7881c51e1,"## Garde-fous d'honnêteté
+
+1. **Lecture seule des artefacts main** — on ne ré-exécute rien, on lit les JSON déjà produits par les runs GPU.
+2. **Pas d'agrégation silencieuse inter-tailles** — chaque mesure est rapportée par taille avec dispersion inter-graines.
+3. **Cohen's d sans claim de p-value** — à 4 graines par cellule, les t-tests sont sous-puissants. Le d de Cohen est lisible mais pas significatif au sens α = 0.05.
+4. **Distinction modèle** — Qwen2.5-1.5B / -7B / -14B / -32B-Instruct vs Qwen3.5-27B.",,,,,,,,fd9594e7881c51e1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,47623748,code,fr,a403ea414ae2b6fc,"import json
+import numpy as np
+from pathlib import Path
+import pandas as pd
+
+RUNS = Path(""../../IIT/ICT-Series/runs"")  # artefacts ICT-25a, laisses dans leur serie d'origine
+TAILLES = [""1.5B"", ""7B"", ""14B"", ""27B"", ""32B""]
+BRAS = [""N"", ""Np""]
+METRICS = [""hack_early"", ""hack_late"", ""mc_early"", ""mc_late"", ""reward_early"", ""reward_late""]",,,,,,,,a403ea414ae2b6fc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,22bfeb63,code,fr,9006deb91bd8461e,"data = {}
+models = {}
+for t in TAILLES:
+    data[t] = {}
+    for b in BRAS:
+        p = RUNS / f""ict25a_{b}_{t}.json""
+        if not p.exists():
+            print(f""MANQUE: {p}"")
+            continue
+        d = json.loads(p.read_text())
+        data[t][b] = d[""seeds""]
+        models[t] = d[""model""]
+
+print(f""Tailles chargees: {[t for t in TAILLES if t in data]}"")
+for t, mod in models.items():
+    n_n = len(data[t].get(""N"", []))
+    n_np = len(data[t].get(""Np"", []))
+    print(f""  {t:6s} -> {mod:38s}  N:{n_n} graines, Np:{n_np} graines"")",,,,,,,,9006deb91bd8461e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,94eefaeb,markdown,fr,186e4ec180ab72f3,"## 1. Inventaire des runs (5 tailles x 2 bras x 4 graines)
+
+Note : le 27B est **Qwen3.5-27B** (famille différente des autres). Toute comparaison directe 27B vs autres tailles doit tenir compte de ce changement de modèle.",,,,,,,,186e4ec180ab72f3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,7fcf1f3e,code,fr,6f52f34d555fed0d,"def stats(vals):
+    a = np.array(vals)
+    return a.mean(), a.std(ddof=1), a.min(), a.max()
+
+rows = []
+for t in TAILLES:
+    for b in BRAS:
+        if b not in data.get(t, {}):
+            continue
+        seeds = data[t][b]
+        for m in METRICS:
+            vals = [s[m] for s in seeds]
+            mean, std, mn, mx = stats(vals)
+            rows.append({""taille"": t, ""bras"": b, ""metric"": m,
+                         ""mean"": mean, ""std"": std, ""min"": mn, ""max"": mx,
+                         ""n"": len(vals)})
+
+df_stats = pd.DataFrame(rows)
+df_stats[""mean+/-std""] = df_stats.apply(lambda r: f""{r['mean']:.3f} +/- {r['std']:.3f}"", axis=1)
+pivot = df_stats[df_stats[""metric""] == ""hack_late""].pivot(index=""taille"", columns=""bras"", values=""mean+/-std"")
+print(""=== hack_late par taille et bras ==="")
+print(pivot)",,,,,,,,6f52f34d555fed0d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,d5f63946,code,fr,3533fa6610ff3fc3,"def cohens_d(a, b):
+    a_arr, b_arr = np.array(a), np.array(b)
+    pooled = np.sqrt((a_arr.var(ddof=1) + b_arr.var(ddof=1)) / 2)
+    if pooled == 0:
+        return 0.0
+    return (b_arr.mean() - a_arr.mean()) / pooled
+
+print(""=== Cohen's d (Np - N) par taille, par metrique ==="")
+header = f""{'taille':<8} | "" + "" | "".join(f""{m:>13s}"" for m in METRICS)
+print(header)
+for t in TAILLES:
+    if ""N"" not in data.get(t, {}) or ""Np"" not in data.get(t, {}):
+        continue
+    line = f""{t:<8} | ""
+    for m in METRICS:
+        n_vals = [s[m] for s in data[t][""N""]]
+        np_vals = [s[m] for s in data[t][""Np""]]
+        d = cohens_d(n_vals, np_vals)
+        line += f"" {d:>+10.2f}    |""
+    line = line.rstrip("" |"") + """"
+    print(line)",,,,,,,,3533fa6610ff3fc3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,39bfd46d,markdown,fr,f066ece2fdb17e30,"## 2. Verdict inter-tailles
+
+**Lecture directe des Cohen's d :**
+
+- **1.5B** : d ≈ 0 sur `hack_late`. L'inoculation par jailbreak prompt n'a pas encore d'effet mesurable sur la métrique `hack_late` (mais d ≠ 0 sur `mc_late`, `reward_late`, `hack_early` au 1.5B).
+- **7B** : d > 0 (Np > N), effet jailbreak émerge.
+- **14B** : **d < 0** (Np < N), **inversion du signe**. Le 14B est un sweet spot.
+- **27B** : d > 0 (Np > N), retour à l'effet positif. **Attention** : 27B = Qwen3.5, pas Qwen2.5.
+- **32B** : d < 0 (Np < N), **forte inversion** (|d| ~ 12).
+
+**Pattern non-monotone.** L'intuition ""taille croissante → inoculation croissante"" **ne tient pas**.",,,,,,,,f066ece2fdb17e30,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,bd139a29,code,fr,82d32f40210d1d4d,"print(""=== Dispersion hack_late (mean +/- std) par taille ==="")
+for t in TAILLES:
+    if ""N"" not in data.get(t, {}) or ""Np"" not in data.get(t, {}):
+        continue
+    n_vals = [s[""hack_late""] for s in data[t][""N""]]
+    np_vals = [s[""hack_late""] for s in data[t][""Np""]]
+    n_arr, np_arr = np.array(n_vals), np.array(np_vals)
+    print(f""  {t:6s}  N:  {n_arr.mean():.3f} +/- {n_arr.std(ddof=1):.3f}  (min {n_arr.min():.3f}, max {n_arr.max():.3f})"")
+    print(f""  {t:6s}  Np: {np_arr.mean():.3f} +/- {np_arr.std(ddof=1):.3f}  (min {np_arr.min():.3f}, max {np_arr.max():.3f})"")
+    print()",,,,,,,,82d32f40210d1d4d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,409a2d7f,markdown,fr,06a207c9e8bdcd9a,"## 3. Contraste géométrique (placeholder)
+
+Le contraste géométrique entre les instruments (SAE, J-Lens, F-Lens, SLens) n'est **pas couvert par ce carnet** — les scripts `extract_{sae,jlens}_*.py` produisent des traces par couche, et la superposition avec les 5 tailles est un travail substantiel à part. Placeholder :
+
+- [ ] Stratifier `IIT/ICT-Series/runs/slens_matrix.json` par taille (5 buckets)
+- [ ] Extraire SAE top-k sur la couche de lecture pour 2-3 prompts identiques, par taille
+- [ ] Comparer les verdicts J-Lens / F-Lens sur les mêmes états
+- [ ] Documenter les **accords et dissociations** entre instruments",,,,,,,,06a207c9e8bdcd9a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,7143d4e7,markdown,fr,b2b50290d1b00619,"## À retenir
+
+***Falsifiable, mesuré** : la stratification inter-tailles de ICT-25a (GRPO à récompense hackable, 5 tailles Qwen, 2 bras N/Np, 4 graines) **ne montre pas un effet monotone en taille** :*
+
+- L'oscillation du Cohen's d (Np vs N) sur `hack_late` (0, +3.26, -4.27, +6.68, -12.55) appelle un diagnostic. Le 14B est un sweet spot. Le 27B = Qwen3.5, pas Qwen2.5. Le 32B montre une **forte inversion** Np < N — l'inoculation par prompt y est très efficace.
+- L'effet Np (jailbreak prompt) **disparaît** au 32B alors que le bras N (contrôle) reste très hackable. Contraste N-Np au 32B : 0.86 vs 0.24.
+- L'hypothèse ""taille croissante → inoculation croissante"" est **rejetée** par les données.
+
+**Plancher de méthodologie** : 4 graines par cellule, dispersion inter-graines rapportée. Pas de p-value — le Cohen's d est directionnel à cette taille d'échantillon. Aucun score omnibus.
+
+## Vérifiez votre compréhension
+
+1. Pourquoi le Cohen's d directionnel remplace-t-il la p-value ici, et que faudrait-il pour s'en passer ?
+2. L'oscillation du Cohen's d d'une taille à l'autre : pourquoi interdit-elle la lecture monotone ?
+3. Le contraste géométrique est resté au stade de placeholder : que faudrait-il mesurer pour le rendre exécutable ?
+
+<details>
+<summary>Réponses</summary>
+
+1. Avec 4 graines par cellule, une p-value n'aurait pas la puissance pour être interprétable ; le Cohen's d **signé** conserve direction et magnitude, avec la dispersion inter-graines rapportée à côté — et aucun score omnibus n'agrège les cellules en un chiffre unique qui masquerait les inversions. Pour s'en passer : davantage de graines par cellule et un contraste pré-enregistré, ce que la campagne #15061 fixe comme plancher pour le palier suivant.
+2. La série (0, +3.26, −4.27, +6.68, −12.55) **change de signe trois fois** : une lecture monotone exigerait un signe constant. Le 14B est un sweet spot (d = −4.27), le 32B une forte inversion (contraste N-Np 0.86 vs 0.24) — et le 27B change de famille de modèle (Qwen3.5, pas Qwen2.5) : la taille n'est de toute façon pas la seule variable qui bouge d'un palier à l'autre. D'où l'hypothèse ""taille croissante → inoculation croissante"" rejetée.
+3. La cellule placeholder du carnet liste le protocole : stratifier `slens_matrix.json` en 5 buckets de taille, passer la SAE en top-k sur la couche de lecture pour 2-3 prompts identiques par taille, comparer J-Lens et F-Lens sur les **mêmes** états, et documenter accords et dissociations — c'est la mesure qui donnerait au contraste géométrique le même statut falsifiable que le contraste comportemental.
+
+</details>
+
+## Pour aller plus loin
+
+- **[ICT-26 — Convention de signalisation](../../IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb)** : l'expérience A de la strate 7 — l'émergence d'une convention sans signification pré-inscrite.
+- **[ICT-0 — Cadrage de la série](../../IIT/ICT-Series/ICT-0-Framing.md)** : le principe directeur de la série ICT.
+
+[← PT-18 — Ablation de distillation](PT_18_laya_ablation_distillation.ipynb) | [↑ PostTraining](README.md)",,,,,,,,b2b50290d1b00619,,,,,,,,,,,,,,,
