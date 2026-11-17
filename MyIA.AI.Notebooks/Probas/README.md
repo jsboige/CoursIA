@@ -27,6 +27,14 @@ La **percolation** ([`Applications/Percolation/`](Applications/Percolation/READM
 
 Enfin, un **pont causal** ([`Causalite/`](Causalite/README.md), kernels `python3` et `coursia-ml-training`) fédère les quatre traitements de la causalité disséminés dans le dépôt — Tweety (logique), Infer.NET, PyMC et l'émergence causale (PyPhi) — autour de l'échelle de Pearl et du do-calculus. Sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/), le pont identifie l'estimande (backdoor, front-door, variable instrumentale), l'estime puis le réfute ; il monte au troisième échelon de Pearl (contrefactuel individuel), couvre les méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD), et pousse chaque hypothèse d'identification dans ses retranchements : découverte de structure quand le graphe manque (`causal-learn` : PC, GES, LiNGAM — Causalite-04, ex-DoWhy-3), sensibilité au confondeur caché (robustness value, E-value, Rosenbaum — Causalite-05, ex-DoWhy-4) et instrument faible (F-stat, biais IV vs OLS — Causalite-06, ex-DoWhy-5).
 
+## Comment lire ce README — découverte
+
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue parcours principal, approfondissements et prolongements de recherche.
+
+- **Vous découvrez** : choisissez d'abord votre stack avec l'arbre [« Quel stack choisir ? »](#quel-stack-choisir) — `Infer-1b` pour un premier modèle en C#, `PyMC-01-Setup` côté Python — puis suivez le [parcours d'apprentissage](#parcours-dapprentissage) phase par phase : fondations, modèles classiques, frontières.
+- **Vous approfondissez** : croisez les deux stacks sur des modèles jumeaux avec le [parcours inférence comparée](#parcours-inference-comparee-infernet-vs-pymc-15h), puis descendez dans les tables [« Ce que chaque notebook apporte »](#ce-que-chaque-notebook-apporte) — la colonne « Ce qu'on y apprend » résume l'apport de chaque carnet au-delà du titre ; l'arc décision ([`DecInfer/`](DecisionTheory/DecInfer/README.md), [`DecPyMC/`](DecisionTheory/DecPyMC/README.md)) prolonge l'inférence vers la théorie de la décision.
+- **Vous cherchez des prolongements** : la sous-série causale ([`Causalite/`](Causalite/README.md)) monte l'échelle de Pearl jusqu'au contrefactuel ; les applications standalone (percolation, concentration de la mesure, géométrie catégorique) et le [pont vers les preuves formelles Lean 4](#pont-vers-les-preuves-formelles-lean-4--différenciant-coursia) prolongent la série au-delà du socle bayésien — voir [Approfondissements](#approfondissements--au-delà-du-parcours-principal).
+
 ## Pourquoi cette série
 
 La programmation probabiliste occupe une place singulière dans le paysage de l'IA. Alors que le machine learning classique fournit des prédictions ponctuelles (un score, une classe), il ne dit pas à quel point il a confiance en cette prédiction. La programmation probabiliste, elle, quantifie cette incertitude de façon native.
@@ -261,11 +269,11 @@ Probas/
 
 ## Ce que chaque notebook apporte
 
-Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — au-delà du titre, c'est le **concept clé** qu'il enseigne.
+Chaque notebook introduit un concept ou modèle spécifique. Les tableaux ci-dessous résument en une ligne l'apport de chacun — au-delà du titre, c'est le **concept clé** qu'il enseigne.
 
 ### Série Infer.NET
 
-| # | Notebook | Apport pédagogique |
+| # | Notebook | Ce qu'on y apprend |
 |---|----------|-------------------|
 | 1 | Setup | Boucle fondamentale : définition du modèle → création du moteur → inférence |
 | 2 | Gaussian Mixtures | Distributions continues, mélanges gaussiens, estimation de params — **+ comparaison EP vs VMP sur bimodal [#7590]** |
@@ -292,7 +300,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 ### Série PyMC
 
-| # | Notebook | Apport pédagogique |
+| # | Notebook | Ce qu'on y apprend |
 |---|----------|-------------------|
 | 1 | Setup | Boucle PyMC : pm.Model() → pm.sample(NUTS) → arviz |
 | 2 | Gaussian Mixtures | Mélanges gaussiens MCMC, trace plots, convergence diagnostics |
@@ -726,6 +734,17 @@ La double culture Probas tient en deux gestes complémentaires. D'un côté, **s
 
 EPIC [#4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) · cross-ref hubs [`QC` ↔ `kelly_lean`](../QuantConnect/README.md), [central P0](../README.md), [`GameTheory` ↔ `game_theory_lean`](../GameTheory/README.md), [`SymbolicAI/Lean`](../SymbolicAI/Lean/README.md).
 
+## Approfondissements — au-delà du parcours principal
+
+Le parcours principal (fondations, modèles classiques, décision) se lit de façon linéaire. Quatre directions prolongent la série, chacune avec sa porte d'entrée :
+
+- **L'inférence comparée** : reprendre un même modèle dans les deux stacks (Infer-N ↔ PyMC-N) et comparer les intervalles de crédibilité — la table du [parcours inférence comparée](#parcours-inference-comparee-infernet-vs-pymc-15h) cartographie les paires. La section [EP vs VMP sur Infer-2](#au-delà-du-consensus-par-défaut--ep-vs-vmp-un-cas-bimodal-discriminant-infer-2) montre ce que ce croisement révèle qu'aucune stack seule ne dit : le même modèle bimodal, deux moteurs, des conclusions inversées.
+- **La causalité** : la sous-série [`Causalite/`](Causalite/README.md) exécute l'échelle complète de Pearl sur `dowhy` — identification de l'estimande, estimation, réfutation, contrefactuel individuel — puis pousse chaque hypothèse d'identification dans ses retranchements : découverte de structure quand le graphe manque, sensibilité au confondeur caché, instrument faible, méthodes quasi-expérimentales, équité causale.
+- **Les contrepoints non-bayésiens** : les [`Fondations/`](Fondations/README.md) mesurent le théorème central limite et Metropolis–Hastings au lieu de les énoncer ; [`Applications/`](Applications/README.md) abrite la concentration de la mesure (constante de Cheeger, marche hit-and-run, thin shell), la géométrie catégorique (quotients, fibres, recollement) et la percolation sur tore fini — cette dernière avec son compagnon Lean prouvé sans `sorry`.
+- **Les preuves formelles** : le [pont vers les preuves formelles Lean 4](#pont-vers-les-preuves-formelles-lean-4--différenciant-coursia) relie les théorèmes de la série — utilité espérée de von Neumann-Morgenstern, indice de Gittins, fraction de Kelly — à leurs lakes certifiés : l'assurance que les identités numériques sont des théorèmes, pas des approximations accidentelles.
+
+La [Conclusion](#conclusion--prochaines-étapes) situe ces prolongements dans le fil de la série ; les [références canoniques](#références-canoniques-audit-distillation-8081) documentent la distillation des sources (MBML, TrueSkill, PRML).
+
 ## Conclusion / Prochaines étapes
 
 ### Ce que vous avez appris
@@ -771,5 +790,7 @@ Les notebooks qui distillent directement MBML (Infer-3 Murder Mystery, PyMC-3 Mu
 Voir la licence du repository principal.
 
 ---
+
+*Version 1.4.0 — Novembre 2026 — mise à la forme cible des grands README (#3973, See #25509).*
 
 *Version 1.3.0 — Septembre 2026*
