@@ -18,10 +18,6 @@ GROTH-02 / 03 / 04 (tranche T3 de la carte, [#17545](https://github.com/jsboige/
 une fois la contrainte de séquençage (§8 : pas de renommage sous une PR vivante) levée
 par la clôture des PRs [#21223](https://github.com/jsboige/CoursIA/pull/21223), [#21235](https://github.com/jsboige/CoursIA/pull/21235), [#21337](https://github.com/jsboige/CoursIA/pull/21337), [#21407](https://github.com/jsboige/CoursIA/pull/21407) et [#21413](https://github.com/jsboige/CoursIA/pull/21413).
 
-Le companion complet du parcours (adjonctions, topologies, cribles) vit dans le lake
-[`grothendieck_lean/`](grothendieck_lean/README.md) — modules `Grothendieck/CategoryAndSites.lean`
-et `Grothendieck/Adjunction.lean`.
-
 ## Deux repères de provenance Stacks
 
 Ces lignes relient deux tags présents dans le code Axiom à des déclarations déjà
@@ -44,3 +40,9 @@ Le contrôle réutilise le parseur de déclarations Lean de
 `scripts/lean/lean_material_map.py` et vérifie les deux témoins depuis ce README,
 l'extrait amont et les fichiers réellement suivis dans le lake. Il ne lance aucun
 build d'AxiomMath/Stacks et ne change pas le périmètre du lake GROTH.
+
+## Compagnons Lean
+
+Le companion complet du parcours (adjonctions, topologies, cribles) vit dans le lake
+[`grothendieck_lean/`](grothendieck_lean/README.md) — modules `Grothendieck/CategoryAndSites.lean`
+et `Grothendieck/Adjunction.lean`.
