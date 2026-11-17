@@ -113,6 +113,8 @@ Uses the QC API v2 authentication pattern:
 
 10 calls/min enforced in-process. Matches the fleet-wide QC API rate limit.
 
+**Portée exacte** : le garde est une deque en mémoire, donc **10 appels/min par processus**, pas un verrou distribué. La limite flotte de 10 appels/min entre TOUS les agents reste une règle de coordination que ce garde local ne peut pas faire respecter à lui seul : deux processus lancés en parallèle tiennent chacun leur propre fenêtre, et deux projets distincts n'ajoutent aucun nœud de calcul.
+
 ## Reverting to Full MCP
 
 To switch back to the official Docker MCP:
