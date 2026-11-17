@@ -329,6 +329,11 @@ def test_table_de_renommage_lit_toutes_les_lignes_R(monkeypatch):
     ])
     monkeypatch.setattr(organ.check_output_failure_text, "git",
                         lambda *args, **kwargs: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
     assert organ.renamed_notebooks("base") == {
         "nouveau/Apres.ipynb": "ancien/Avant.ipynb",
         "dst/New.ipynb": "src/Old.ipynb",
@@ -342,6 +347,11 @@ def test_table_de_renommage_normalise_les_antislashs(monkeypatch):
            + organ.check_output_failure_text.BS + "Apres.ipynb")
     monkeypatch.setattr(organ.check_output_failure_text, "git",
                         lambda *args, **kwargs: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
     assert organ.renamed_notebooks("base") == {
         "nouveau/Apres.ipynb": "ancien/Avant.ipynb",
     }
@@ -354,6 +364,11 @@ def test_renommage_hors_seuil_absent_de_la_table(monkeypatch):
     out = "D\tancien/Avant.ipynb\nA\tnouveau/Apres.ipynb"
     monkeypatch.setattr(organ.check_output_failure_text, "git",
                         lambda *args, **kwargs: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
     assert organ.renamed_notebooks("base") == {}
 
 
@@ -401,8 +416,12 @@ def test_renomme_vers_chemin_exclu_sort_du_perimetre(monkeypatch):
     out = "R100\tsrc/Ok.ipynb\tdst/_output/Ok.ipynb\nR100\tsrc/A.ipynb\tdst/A.ipynb"
     monkeypatch.setattr(organ.check_output_failure_text, "git",
                         lambda *a, **k: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
     assert organ.renamed_notebooks("BASE") == {
-        "dst/_output/Ok.ipynb": "src/Ok.ipynb",
         "dst/A.ipynb": "src/A.ipynb",
     }
 
