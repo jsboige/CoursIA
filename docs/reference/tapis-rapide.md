@@ -29,7 +29,7 @@ quand une lane retire ; `--cache-s 0` le désactive. `--lecture <dossier>` rejou
 le dépôt n'est pas touché.
 
 La sortie donne, dans l'ordre : l'en-tête (issues, servables, familles, durée, appels, cache, âge de
-`origin/main`), **vos PRs ouvertes** (à porter au merge d'abord quand elles ont plus de 24 h), les grains
+`origin/main`), **vos PRs ouvertes** (leurs nits d'abord ; une PR verte qui n'attend que la review ne se touche pas), les grains
 numérotés avec la commande `python scripts/check_lane_claim.py N --lane <lane>` à jouer **avant d'éditer**
 (les grains d'abord, les conteneurs ensuite, voir plus bas), puis le compte des écartées par code. `--json` rend les mêmes données (`grains`, `vos_prs`, `ecartees`,
 `lecture`).
