@@ -363,15 +363,41 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 
 **`difflogic` n'est PAS « GPU-only » pour la copie du dépôt — le fork vendored l'est.** Le paquet PyPI `difflogic` 0.1.0 déclare `CUDAExtension` inconditionnellement et importe `difflogic_cuda` sans garde : son installation exige un **CUDA Toolkit assorti au torch** (13.3 installé ici, mais les wheels torch cp313 existent en cu126/cu128/cu130 — **pas de cu133**), et son import échoue sans l'extension. La copie **vendored** `SymbolicAI/SymbolicLearning/vendor/difflogic/` corrige cela : `setup.py` ne construit `CUDAExtension` que si le **major** de `nvcc` égale celui de `torch.version.cuda`, et `difflogic.py` garde l'import de `difflogic_cuda` sous `try/except ImportError`. Conséquence mesurée : avec torch cu126 (major 12) face à nvcc 13.3 (major 13), **l'extension est sautée et l'implémentation `python` (PyTorch pur) est la seule disponible** — ce qui est exactement le mode du snapshot commité de `SL-12` (`IMPL = "python"`). Le carnet n'exige donc **ni CUDA Toolkit-matching ni GPU** pour sa ré-exécution ; réinstaller le **fork vendored** (et non le paquet PyPI) suffit. Le mismatch de **major** est le seul bloquant de compilation (`torch/utils/cpp_extension.py` : major différent → `RuntimeError`, minor différent → simple avertissement).
 
-### Ce que les trois rangées mesurées établissent
+### MYIA-PO-2027 (mesuré 2026-11-17T10:45Z — rangée d'origine : #24883, commentaire `6945968196`)
 
-1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023), **2.2.6** (po-2028), **2.4.2** (po-2024). Le cas fondateur de #24883 en version mineure — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
-2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310`. Dans les deux sens, le nom ne dénote pas l'artefact.
-3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028, **(3.11.15, 2.4.6)** sur po-2024 — le nom le plus « canonique » du dépôt n'est pas plus dénotatif que les autres.
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | `dotnet` |
+| `python3` / `coursia-venv-cu126` | 3.13.16 | **2.5.4** | `D:/dev/CoursIA/venv/Scripts/python.exe` |
+| `py313` / `py313gpu` / `python3-lean` | 3.13.15 | 2.4.6 | `C:/Program Files/Python313/python.exe` |
+| `pipecat-kokoro` | 3.13.16 | 2.5.4 | `D:/dev/CoursIA/.venvs/pipecat/Scripts/python.exe` |
+| `coursia-ml-training` / `python3-coursia2` / `sw14-coursia16120` | 3.13.15 | 2.4.6 | `D:/dev/CoursIA-2/venv/Scripts/python.exe` |
+| `coursia-pymc05` | 3.13.15 | 2.4.4 | `D:/dev/.venv-pymc05/Scripts/python.exe` |
+| `coursia-pymc601` | 3.13.15 | 2.3.5 | `D:/dev/.venv-pymc601/Scripts/python.exe` |
+| `adkcheck` | 3.11.16 | 2.4.6 | `C:/Users/Jesse/miniconda3/envs/adkcheck/python.exe` |
+| `pyphi-iit` | 3.9.25 | 1.26.4 | `C:/Users/Jesse/miniconda3/envs/pyphi/python.exe` |
+| `gametheory-wsl` | 3.11.16 | 2.4.6 | `/home/jesse/venv-coursia/bin/python3.11` (WSL) |
+| `python3-wsl` | 3.11.16 | 2.4.6 | `/home/jesse/.lean4-venv/bin/python3.11` (WSL) |
+| `rvc-wsl` | 3.10.21 | **1.23.5** | `/home/jesse/miniconda3/envs/rvc/bin/python3.10` (WSL — plus vieux numpy du siège) |
+| `lean4-wsl` / `lean4-wsl-conway` / `lean4-wsl-groth` / `lean4-wsl-groth16200` / `lean4-wsl-perc` / `lean4-wsl-torchlean` / `rust-wsl` | non-Python (wsl) | - | `wsl.exe` |
+| `lean4` | **timeout readiness** (60 s) | - | `D:/dev/CoursIA/venv/Scripts/python.exe` — enreg vivante (carnets Lean Python-wrapped), noyau lent à signaler prêt ; statut mesuré tel quel |
+| `rust` | **timeout readiness** (60 s) | - | `evcxr_jupyter.exe` — kernel Rust natif, compilation au démarrage ; statut mesuré tel quel |
+| `torch2121` | **RETIREE le 17/11** | - | pointait sous `D:/dev/CoursIA/.tmp/torch2121_venv/` (répertoire scratch purgé par les nettoyages de session — classe #23997), **0 consommateur sur `main`** ; `kernel.json` sauvegardée (`%APPDATA%\jupyter\kernels\_bak-20261117-tmp-pointers\`) avant retrait |
+
+**Canon de re-exécution po-2027** : `python3` → **(3.13.16, numpy 2.5.4)**, `D:/dev/CoursIA/venv` (venv du projet).
+
+Prédicat #23997 re-attesté après retrait : `check_kernelspec_temp_paths.py --check-exists` → `CLEAN : aucun interpreteur sous un chemin temporaire`.
+
+### Ce que les quatre rangées mesurées établissent
+
+1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023), **2.2.6** (po-2028), **2.4.2** (po-2024), **2.5.4** (po-2027). Le cas fondateur de #24883 en version mineure, désormais complet sur les quatre sièges mesurés — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
+2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310` ; po-2027 `python3` == `coursia-venv-cu126`, `coursia-ml-training` == `python3-coursia2` == `sw14-coursia16120` (venv du second checkout), `py313` == `py313gpu` == `python3-lean`. Dans les deux sens, le nom ne dénote pas l'artefact.
+3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028, (3.11.15, 2.4.6) sur po-2024, **(3.13.15, 2.4.6) sur po-2027** — quatre environnements pour le nom le plus « canonique » du dépôt ; sur po-2027 il pointe sur le venv de l'autre checkout (`CoursIA-2`), partagé avec deux autres enregs.
+4. **Les enregs WSL rendent du Python réel mesuré** (po-2027) : trois enregs `*-wsl` exécutent des interpréteurs Linux distincts (`venv-coursia`, `.lean4-venv`, conda `rvc` — numpy 1.23.5, la plus ancienne du siège) : le préfixe « wsl » ne dénote pas non plus un environnement unique.
 
 ### Sièges restants
 
-Non mesurés à la date de cette section : `ai-01`, `po-2025`, `po-2026`, `po-2027`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
+Non mesurés à la date de cette section : `ai-01`, `po-2025`, `po-2026`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
 
 ## Python 3.10+ (notebooks Python)
 
