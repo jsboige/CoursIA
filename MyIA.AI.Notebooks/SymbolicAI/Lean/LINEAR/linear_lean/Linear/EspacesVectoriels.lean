@@ -117,7 +117,13 @@ Cible prover : easy — construire `x = (3 : K)⁻¹ • (w - v)` (existence par
 calcul, `smul_sub`/`add_smul`), puis unicité par `smul_right_injective`
 (ou `inject_smul`) avec `(3 : K) ≠ 0`. Tenté : la construction seule ; la
 composante `∃!` reste à écrire. -/
-theorem exercice_1B_3 (v w : V) : ∃! x : V, v + (3 : K) • x = w := by
+-- Hypothese de caracteristique (correctif #26894, nit coordinateur) : sans
+-- `[CharZero K]`, en caracteristique 3 on a `(3 : K) = 0`, donc `v + 3 • x = v`
+-- independamment de `x` — l'existence exigerait `v = w` et l'unicite est fausse.
+-- `CharZero` rend `(3 : K)` non nul et inversible, ce qui valide la construction
+-- ci-dessus. Axler travaille sur R ou C (caracteristique 0) : l'hypothese est
+-- fidele a la source. Le `sorry` (cible etudiant) est conserve (anti-regression).
+theorem exercice_1B_3 [CharZero K] (v w : V) : ∃! x : V, v + (3 : K) • x = w := by
   sorry
 
 end Linear
