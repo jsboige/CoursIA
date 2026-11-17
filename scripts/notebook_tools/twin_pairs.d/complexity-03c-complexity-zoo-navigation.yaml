@@ -8,3 +8,4 @@
   known_differences:
     - "System.Random et Python random engendrent des graphes et des instances SAT distincts pour une meme graine."
     - "Matplotlib en Python et SVG statique opaque en C#."
+    - "Garde clause-vide en tete de recursion du DPLL presente en Python (review #26935 R3, necessaire et suffisante d'apres Hermes), absente du jumeau C# qui ne l'attrape que pendant la propagation d'unite."
