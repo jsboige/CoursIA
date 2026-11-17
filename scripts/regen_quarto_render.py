@@ -85,6 +85,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/Sudoku/",                # tranche 2 #10923 (37)
     "MyIA.AI.Notebooks/GameTheory/",            # tranche 2 #10923 (56)
     "MyIA.AI.Notebooks/Probas/",                # tranche 2 #10923 (58)
+    "MyIA.AI.Notebooks/Symmetry/",              # serie Symmetry #25324 (groupes de frieze, art generatif)
     "MyIA.AI.Notebooks/CaseStudies/",            # tranche 15 #10923 (6)
     "MyIA.AI.Notebooks/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
     "MyIA.AI.Notebooks/NLP/",                    # tranche 19 #18423 (5, TAL/TALN)
@@ -167,6 +168,9 @@ NOTEBOOKS_HORS_PERIMETRE = {
     "MyIA.AI.Notebooks/GradeBook.ipynb",
     # Recherche interne (validation e2e quant), hors publication pedagogique.
     "MyIA.AI.Notebooks/GenAI/_research/e2e_quant_validation.ipynb",
+    # Recherche interne (pilote RAG04-BPE, parite tokenizer C#/Qwen), hors
+    # publication pedagogique -- precedent e2e_quant_validation ci-dessus.
+    "MyIA.AI.Notebooks/GenAI/_research/RAG04-BPE-Parite-Natif-vs-Qwen-CSharp.ipynb",
     # Sondes d'outillage : reproduction du bug .NET #17361, smoke runtime.
     "scripts/notebook_tools/probes/dotnet-restore-bug-17361.ipynb",
     "scripts/notebook_tools/verify_runtime_smoke.ipynb",

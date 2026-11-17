@@ -101,14 +101,14 @@ Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion 
 
 ## Spécificité PyMC : Thompson Sampling par MCMC
 
-Là où l'arc [Infer.NET](../DecInfer/README.md) calcule les posteriors de bandits par message passing (EP/VMP, analytique), cet arc PyMC les obtient par **échantillonnage NUTS**. La valeur distinctive apparaît sur des modèles de bandits **non conjugués** (priors Beta-Bernoulli conjugués mis à part) : seul l'échantillonnage MCMC sait alors explorer le posterior, et Thompson Sampling se nourrit directement des échantillons. Le sujet de [DecInfer-10-Thompson-Sampling](../DecInfer/DecInfer-10-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [DecPyMC-07-Sequential](DecPyMC-07-Sequential.ipynb) (section bandits bayésiens MCMC).
+Là où l'arc [Infer.NET](../DecInfer/README.md) calcule les posteriors de bandits par message passing (EP/VMP, analytique), cet arc PyMC les obtient par **échantillonnage NUTS**. La valeur distinctive apparaît sur des modèles de bandits **non conjugués** (priors Beta-Bernoulli conjugués mis à part) : seul l'échantillonnage MCMC sait alors explorer le posterior, et Thompson Sampling se nourrit directement des échantillons. Le sujet de [DecInfer-08-Thompson-Sampling](../DecInfer/DecInfer-08-Thompson-Sampling.ipynb) est, côté Python, **intégré dans** [DecPyMC-07-Sequential](DecPyMC-07-Sequential.ipynb) (section bandits bayésiens MCMC).
 
 ## Ponts inter-series
 
 | Série | Lien | Relation |
 | --- | --- | --- |
 | [Corpus bayésien PyMC](../../PyMC/README.md) | Posteriors (Beta, gaussiennes) | Le posterior est l'input de la politique de décision |
-| [Arc décision Infer.NET](../DecInfer/README.md) | DecInfer-01 à DecInfer-10 | Même arc décision en C# (message passing EP/VMP), avec companions Lean 4 (vNM, Gittins) |
+| [Arc décision Infer.NET](../DecInfer/README.md) | DecInfer-01 à DecInfer-09 | Même arc décision en C# (message passing EP/VMP), avec companions Lean 4 (vNM, Gittins) |
 | [Inférence causale PyMC-05](../../PyMC/PyMC-05-Causal-Inference.ipynb) | `do(·)` de Pearl | L'intervention comme transformation de modèle avant la décision |
 | [Lake `decision_theory_lean`](../decision_theory_lean/) | Formalisation | Preuves formelles Lean 4 (vNM sound, Gittins) — companions côté Infer.NET |
 | [GameTheory](../../../GameTheory/README.md) | Décision sous incertitude | Miroir : adversaire rationnel vs processus stochastique |

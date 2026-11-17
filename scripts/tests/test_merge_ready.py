@@ -163,6 +163,11 @@ class ScriptedRunner:
         nits_rc: int = 0,
         pulls: list[dict] | None = None,
         merge_rc: int = 0,
+        # Scenario de merge consomme **dans l'ordre** : chaque appel a
+        # `gh pr merge` prend le couple (rc, stderr) suivant ; la liste
+        # epuisee, le runner retombe sur ``merge_rc``. Sert a simuler une
+        # course de base puis un rejeu (#26771).
+        merge_script: list[tuple[int, str]] | None = None,
         fetch_rc: int = 0,
         twin_rc: int = 0,
         twin_stdout: str = "",
@@ -206,20 +211,62 @@ class ScriptedRunner:
         # l'organe retombe alors sur les lignes du payload ``pr view``
         # (non typees) — le chemin des tests historiques.
         rest_reviews: list[dict] | None = None,
+        # #26799 : etats servis par le RECHAUFFAGE (lecture a effet de bord,
+        # qui demarre le calcul de mergeabilite de la PR). La cle est le
+        # numero de PR, la valeur l'etat renvoye. Ces lectures NE CONSOMMENT
+        # PAS la pile ``pulls`` : elles n'ont aucun etat a faire valoir.
+        warmup_states: dict[int, str] | None = None,
+        # #26799 (revue coordinateur du 16/11) : PRs qui portent une voix du
+        # coordinateur dans ``latestReviews`` (la lecture de liste). Defaut :
+        # TOUTES -- le chemin nominal du rechauffage. Une PR absente de la
+        # liste n'est pas rechauffee : elle s'arrete a l'etape 2 (pas
+        # d'approbation), donc elle n'atteint jamais la lecture de
+        # mergeabilite.
+        coordinator_voices: tuple[int, ...] | None = None,
         # #25510 T-J : etapes du job associe a un check-run de job. La
-        # CLE est l'identifiant de job, la VALEUR est le nom de la PREMIERE
-        # etape en echec ("" = aucune etape en echec). Sert a prouver que
-        # la sentinelle distingue une panne d'infrastructure d'un verdict
-        # de code.
-        job_steps: dict[str, str] | None = None,
+        # CLE est l'identifiant de job, la VALEUR est soit le nom de la
+        # PREMIERE etape en echec (forme historique : une seule etape en
+        # echec, "" = aucune), soit la LISTE des etapes (forme T-J : chaque
+        # etape porte son nom `n`, son numero `o`, son statut `s` et sa
+        # conclusion `c`). Sert a prouver que la sentinelle distingue une
+        # panne d'infrastructure d'un verdict de code, et un runner perdu
+        # d'un verdict de code.
+        job_steps: dict[str, str | list[dict]] | None = None,
+        # Code de sortie de la lecture de job, par identifiant de job.
+        # 0 (defaut) = lecture reussie ; autre chose = lecture ILLISIBLE
+        # (fail-closed : la retenue doit rester).
+        job_steps_rc: dict[str, int] | None = None,
         # Log d'echec du run (`gh run view --log-failed`). Vide par defaut :
         # aucun test n'y est identifie.
         run_log: str = "",
+        # #26706 : issue canonique du rouge de `main`. `main_red_issues` =
+        # les issues [main-red] VIVantes (comme la recherche GitHub les
+        # rendrait) ; `main_red_search_rc` non nul simule une recherche
+        # illisible (fail-closed : aucune creation) ; `main_red_issue_rc`
+        # non nul simule un refus de creation ou de fermeture.
+        main_red_issues: list[dict] | None = None,
+        main_red_search_rc: int = 0,
+        main_red_issue_rc: int = 0,
+        # #26706 : reponse scriptee de ``gh issue view <numero>`` -- la
+        # lecture de l'ETAT d'une issue [main-red] connue par son numero.
+        # La CLE est le numero ; la VALEUR est soit un payload JSON (dict),
+        # soit un stdout BRUT (str : reponse malformee -> illisible).
+        # `main_red_view_rc` non nul simule une lecture ILLISIBLE.
+        main_red_views: dict[int, dict | str] | None = None,
+        main_red_view_rc: int = 0,
     ):
         self.rest_reviews = list(rest_reviews or [])
         self.user_types = user_types or {}
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
+        self.main_red_issues = list(main_red_issues or [])
+        self.main_red_search_rc = main_red_search_rc
+        self.main_red_issue_rc = main_red_issue_rc
+        self.main_red_views = dict(main_red_views or {})
+        self.main_red_view_rc = main_red_view_rc
+        self.main_red_created: list[dict] = []
+        self.main_red_reopened: list[int] = []
+        self.main_red_closed: list[int] = []
         self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
         self.main_check_runs = main_check_runs if main_check_runs is not None else json.dumps([
             {"name": "Scripts Tests (CPU)", "conclusion": "success",
@@ -230,6 +277,11 @@ class ScriptedRunner:
         self.main_history = list(main_history) if main_history is not None else [main_sha]
         self.main_checks_by_sha = main_checks_by_sha or {}
         self.job_steps = job_steps or {}
+        self.warmup_states = warmup_states or {}
+        self.coordinator_voices = (
+            set(coordinator_voices) if coordinator_voices is not None else None
+        )
+        self.job_steps_rc = job_steps_rc or {}
         self.run_log = run_log
         self.token = token
         self.token_rc = token_rc
@@ -240,6 +292,7 @@ class ScriptedRunner:
         self.nits_rc = nits_rc
         self.pulls = pulls or [{"mergeable_state": "clean", "head": {"sha": HEAD}}]
         self.merge_rc = merge_rc
+        self.merge_script = list(merge_script or [])
         self.fetch_rc = fetch_rc
         self.twin_rc = twin_rc
         # stdout de l'organe twin : porte le JSON classifie quand twin_rc=1.
@@ -296,9 +349,20 @@ class ScriptedRunner:
             rows = self.base_search.get(search_key or "", [])
             return mr.RunResult(0, json.dumps(rows), "")
         if c[:3] == ["gh", "pr", "list"]:
-            return mr.RunResult(
-                0, json.dumps([{"number": n} for n in self.prs]), ""
-            )
+            rows = []
+            for n in self.prs:
+                row = {"number": n}
+                if (self.coordinator_voices is None
+                        or n in self.coordinator_voices):
+                    row["latestReviews"] = [{
+                        "author": {"login": "myia-ai-01"},
+                        "state": "APPROVED",
+                        "body": "",
+                    }]
+                else:
+                    row["latestReviews"] = []
+                rows.append(row)
+            return mr.RunResult(0, json.dumps(rows), "")
         if c[:3] == ["gh", "pr", "view"]:
             if self.view_rc != 0:
                 return mr.RunResult(self.view_rc, "", self.view_stderr)
@@ -306,6 +370,9 @@ class ScriptedRunner:
             view = self.views.get(pr, default_view(pr=pr))
             return mr.RunResult(0, json.dumps(view), "")
         if c[:3] == ["gh", "pr", "merge"]:
+            if self.merge_script:
+                rc, err = self.merge_script.pop(0)
+                return mr.RunResult(rc, "", err)
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
@@ -319,6 +386,93 @@ class ScriptedRunner:
             return mr.RunResult(1, "", "HTTP 404")
         if c[:2] == ["gh", "api"] and "/commits/main" in c[2]:
             return mr.RunResult(0, self.main_sha + "\n", "")
+        if "search/issues" in c:
+            # #26706 : recherche de l'issue canonique du rouge de `main`.
+            if self.main_red_search_rc != 0:
+                return mr.RunResult(self.main_red_search_rc, "", "search failed")
+            return mr.RunResult(
+                0,
+                json.dumps(
+                    {"total_count": len(self.main_red_issues),
+                     "items": self.main_red_issues}
+                ),
+                "",
+            )
+        if c[:2] == ["gh", "issue"] and c[2] == "create":
+            # #26706 : ouverture de l'issue du rouge de `main`.
+            if self.main_red_issue_rc != 0:
+                return mr.RunResult(self.main_red_issue_rc, "", "create refused")
+            number = 26710 + len(self.main_red_created)
+            row = {
+                "number": number,
+                "title": c[c.index("--title") + 1],
+                "body": Path(c[c.index("--body-file") + 1]).read_text(encoding="utf-8"),
+            }
+            self.main_red_created.append(row)
+            self.main_red_issues.append(row)
+            return mr.RunResult(
+                0, f"https://github.com/jsboige/CoursIA/issues/{number}\n", ""
+            )
+        if c[:2] == ["gh", "issue"] and c[2] == "close":
+            # #26706 : fermeture de l'issue du rouge de `main`.
+            if self.main_red_issue_rc != 0:
+                return mr.RunResult(self.main_red_issue_rc, "", "close refused")
+            number = int(c[3])
+            self.main_red_closed.append(number)
+            self.main_red_issues = [
+                row for row in self.main_red_issues if row["number"] != number
+            ]
+            return mr.RunResult(0, "", "")
+        if c[:2] == ["gh", "issue"] and c[2] == "edit":
+            if self.main_red_issue_rc != 0:
+                return mr.RunResult(self.main_red_issue_rc, "", "edit refused")
+            number = int(c[3])
+            for row in self.main_red_issues:
+                if row["number"] != number:
+                    continue
+                if "--title" in c:
+                    row["title"] = c[c.index("--title") + 1]
+                if "--body-file" in c:
+                    row["body"] = Path(
+                        c[c.index("--body-file") + 1]
+                    ).read_text(encoding="utf-8")
+            return mr.RunResult(0, "", "")
+        if c[:3] == ["gh", "issue", "view"]:
+            # #26706 : lecture de l'ETAT d'une issue [main-red] connue par
+            # son numero (`_read_main_red_issue`). Les trois etats doivent
+            # etre scriptingables : `ok` (payload conforme), `absent` (le
+            # numero rendu ne correspond pas a celui demande) et
+            # `illisible` (rc non nul, ou stdout malforme).
+            if self.main_red_view_rc != 0:
+                return mr.RunResult(self.main_red_view_rc, "", "view refused")
+            number = int(c[3])
+            scripted = self.main_red_views.get(number)
+            if scripted is not None:
+                if isinstance(scripted, str):
+                    return mr.RunResult(0, scripted, "")
+                return mr.RunResult(0, json.dumps(scripted), "")
+            # Issue non scriptee : l'etat REEL du runner fait foi (comme
+            # pour la recherche), sinon la lecture est un refus.
+            for row in self.main_red_issues:
+                if row["number"] == number:
+                    return mr.RunResult(0, json.dumps({
+                        "number": row["number"],
+                        "title": row.get("title", ""),
+                        "body": row.get("body", ""),
+                        "state": row.get("state", "OPEN"),
+                    }), "")
+            return mr.RunResult(1, "", "issue introuvable")
+        if c[:3] == ["gh", "issue", "reopen"]:
+            # #26706 : rouverture d'une issue [main-red] fermee a tort, le
+            # rouge tenant toujours au commit courant.
+            if self.main_red_issue_rc != 0:
+                return mr.RunResult(self.main_red_issue_rc, "", "reopen refused")
+            number = int(c[3])
+            self.main_red_reopened.append(number)
+            for row in self.main_red_issues:
+                if row["number"] == number:
+                    row["state"] = "OPEN"
+            return mr.RunResult(0, "", "")
         if c[:2] == ["gh", "api"] and "/commits?sha=" in c[2]:
             # Historique de main lu par la sentinelle (le plus recent d'abord).
             return mr.RunResult(0, "\n".join(self.main_history) + "\n", "")
@@ -337,10 +491,20 @@ class ScriptedRunner:
             return mr.RunResult(0, self.check_runs, "")
         if c[:2] == ["gh", "api"] and "/actions/jobs/" in c[2]:
             # #25510 T-J : etapes du job associe au check-run. La reponse
-            # est le nom de la premiere etape en echec ("" = aucune).
+            # est la LISTE des etapes (nom `n`, numero `o`, statut `s`,
+            # conclusion `c`). La forme historique (une chaine) reste
+            # acceptee : elle vaut UNE etape en echec.
             job_id = c[2].rsplit("/", 1)[-1]
-            step = self.job_steps.get(job_id, "")
-            return mr.RunResult(0, (step + "\n") if step else "\n", "")
+            rc = self.job_steps_rc.get(job_id, 0)
+            if rc != 0:
+                return mr.RunResult(rc, "", "gh failed")
+            scripted = self.job_steps.get(job_id, [])
+            if isinstance(scripted, str):
+                steps = ([{"n": scripted, "o": 1, "s": "completed",
+                           "c": "failure"}] if scripted else [])
+            else:
+                steps = list(scripted)
+            return mr.RunResult(0, json.dumps(steps), "")
         if c[:3] == ["gh", "run", "view"]:
             # Log d'echec du run : la sentinelle le lit quand le resume du
             # check-run ne nomme aucun test.
@@ -364,6 +528,15 @@ class ScriptedRunner:
             # ``/pulls/``. ``--slurp`` rend une liste de pages.
             return mr.RunResult(
                 0, json.dumps([list(self.rest_reviews)]), "")
+        if c[:2] == ["gh", "api"] and "/pulls/" in c[2] and "--jq" in c:
+            # Rechauffage (#26799) : lecture a EFFET DE BORD -- elle demarre
+            # le calcul de mergeabilite de la PR cote GitHub. Elle ne consomme
+            # donc PAS la pile des etats : la pile alimente les lectures qui,
+            # elles, portent un etat a faire valoir.
+            pr = int(c[2].rsplit("/", 1)[1])
+            return mr.RunResult(
+                0, (self.warmup_states.get(pr, "unknown") + "\n"), ""
+            )
         if c[:2] == ["gh", "api"] and "/pulls/" in c[2]:
             row = self.pulls.pop(0) if len(self.pulls) > 1 else self.pulls[0]
             return mr.RunResult(0, json.dumps(row), "")
@@ -384,6 +557,17 @@ class ScriptedRunner:
     def sleep(self, seconds: float) -> None:
         self.sleeps.append(seconds)
 
+    def run_many(
+        self, cmds: list[list[str]], env: dict | None = None
+    ) -> list[mr.RunResult]:
+        """Lectures en parallele : le fake les sert SEQUENTIELLEMENT.
+
+        L'ordre reste deterministe (une course ici rendrait les assertions
+        sur l'ordre des lectures_flaky), et le parallélisme reel n'est
+        mesure que par le runner de production.
+        """
+        return [self.run(cmd, env) for cmd in cmds]
+
 
 def run_organ(tmp_path: Path, runner: ScriptedRunner, extra: tuple[str, ...] = ()) -> tuple[int, list[dict], Path]:
     """Lance un run avec journal isole ; retourne (rc, lignes de journal, chemin)."""
@@ -393,6 +577,42 @@ def run_organ(tmp_path: Path, runner: ScriptedRunner, extra: tuple[str, ...] = (
     if journal.is_file():
         lines = [json.loads(row) for row in journal.read_text(encoding="utf-8").splitlines() if row.strip()]
     return rc, lines, journal
+
+
+def _mergeable_reads(runner: ScriptedRunner) -> list[list[str]]:
+    """Lectures de mergeabilite QUI PORTENT UN ETAT.
+
+    Le rechauffage (#26799) est une lecture a effet de bord : elle ne porte
+    aucun etat et ne se compte donc pas ici.
+    """
+    return [
+        cmd for cmd in runner.cmds()
+        if cmd[:2] == ["gh", "api"] and "/pulls/" in cmd[2]
+        and "--jq" not in cmd
+        and not cmd[2].split("?", 1)[0].endswith("/reviews")
+    ]
+
+
+def _warmup_reads(runner: ScriptedRunner) -> list[list[str]]:
+    """Lectures de RECHAUFFAGE (#26799) : une par PR, sans attente."""
+    return [
+        cmd for cmd in runner.cmds()
+        if cmd[:2] == ["gh", "api"] and "/pulls/" in cmd[2] and "--jq" in cmd
+    ]
+
+
+def _evaluated(runner: ScriptedRunner, pr: int) -> list[list[str]]:
+    """Commandes qui EVALUENT une PR (vue, merge).
+
+    Le rechauffage (#26799) n'en fait pas partie : c'est une lecture a effet
+    de bord, sans etat a faire valoir et sans verdict -- une PR « touchee »
+    par le rechauffage n'est pas une PR evaluee.
+    """
+    return [
+        cmd for cmd in runner.cmds()
+        if (cmd[:3] == ["gh", "pr", "view"] and cmd[3] == str(pr))
+        or (cmd[:3] == ["gh", "pr", "merge"] and cmd[3] == str(pr))
+    ]
 
 
 # --- chaque raison de skip, une par une ----------------------------------------
@@ -725,8 +945,7 @@ def test_mergeable_unknown_then_clean_merges(tmp_path):
     assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
     # 2 lectures en prelecture (unknown puis clean), 1 garde finale clean,
     # et un seul sommeil entre les deux lectures `unknown` et `clean`.
-    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]
-                   and not c[2].split("?", 1)[0].endswith("/reviews")) == 3
+    assert len(_mergeable_reads(runner)) == 3
     assert runner.sleeps == [mr.MERGEABLE_RETRY_SLEEP_S]
 
 
@@ -737,12 +956,234 @@ def test_mergeable_unknown_persistant_skippe(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["reason"] == "mergeable-state:unknown"
-    # La prelecture seule est payee : 1 lecture initiale + MERGEABLE_RETRIES
-    # relectures, autant de sommeils ; la garde finale n'est pas atteinte.
-    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]
-                   and not c[2].split("?", 1)[0].endswith("/reviews")
-               ) == mr.MERGEABLE_RETRIES + 1
-    assert len(runner.sleeps) == mr.MERGEABLE_RETRIES
+    # Budget COURT a son tour (3 lectures), puis rejeu avec le budget LONG
+    # (13 lectures) : ce n'est plus une attente serielle de 120 s dans la
+    # passe, c'est un PARKING suivi d'un rejeu en fin de passe (#26799).
+    assert len(_mergeable_reads(runner)) == (
+        mr.MERGEABLE_SHORT_RETRIES + 1 + mr.MERGEABLE_RETRIES + 1
+    )
+    assert len(runner.sleeps) == (
+        mr.MERGEABLE_SHORT_RETRIES + mr.MERGEABLE_RETRIES
+    )
+    # La PR est parsee puis rejouee : UNE seule ligne de journal, portant le
+    # verdict final -- le parking n'est pas un verdict.
+    assert len(lines) == 1
+
+
+# --- rechauffage, budget court, rejeu (#26799) -----------------------------------
+#
+# Mesure du 16/11 (ai-01) : l'etat de mergeabilite d'une PR passe de `unknown`
+# a `clean`/`blocked` en 10 a 20 s, SANS intervention -- le calcul se fait seul
+# cote GitHub. L'organe attendait 120 s sur chaque PR rencontree, et chaque
+# merge rebascule les PRs soeurs en `unknown` : 28 PRs sur 132 portaient 90 %
+# du passage (1 h 41).
+#
+# Le correctif ne touche pas la GARANTIE (la mergeabilite est relue au moment
+# du merge) ; il change QUAND la lecture a lieu.
+
+
+def test_le_rechauffage_est_emis_en_tete_de_passe(tmp_path):
+    """Une lecture sans attente par PR ouverte : elle demarre le calcul de
+    mergeabilite de chaque PR, en parallele, au lieu qu'elles soient servies
+    une par une par la passe."""
+    runner = ScriptedRunner(prs=(101, 102, 103))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    warm = _warmup_reads(runner)
+    assert len(warm) >= 3
+    assert [int(cmd[2].rsplit("/", 1)[1]) for cmd in warm[:3]] == [101, 102, 103]
+
+
+def test_le_rechauffage_rechauffe_les_prs_restantes_apres_chaque_merge(tmp_path):
+    """C'est le MERGE qui rebascule les PRs soeurs en `unknown` : le
+    rechauffage suit donc chaque merge, sur les PRs restantes seulement."""
+    runner = ScriptedRunner(prs=(101, 102, 103))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    numbers = [int(cmd[2].rsplit("/", 1)[1]) for cmd in _warmup_reads(runner)]
+    # tete de passe : les 3 PRs ; puis, apres le merge de 101 : 102 et 103 ;
+    # apres le merge de 102 : 103 ; apres le merge de 103 : plus rien.
+    assert numbers == [101, 102, 103, 102, 103, 103]
+
+
+# --- restriction du rechauffage aux candidates (revue du 16/11) ----------------
+#
+# Le rechauffage de TOUT le pool ouvert coutait ~1 500 lectures REST par
+# passage (178 PRs en tete de passe, puis toutes les restantes apres chaque
+# merge), sous le jeton que le coordinateur partage avec l'attestation Lean
+# et les relectures (05:06Z : 1 879 restants sur 5 000). Seules les PRs qui
+# peuvent atteindre l'etape 6 (la lecture de mergeabilite) ont besoin d'etre
+# rechauffees : celles qui portent une voix du coordinateur.
+
+
+def test_le_rechauffage_ne_touche_que_les_prs_avec_une_voix_du_coordinateur(tmp_path):
+    """Une PR sans approbation s'arrete a l'etape 2 : la rechauffer
+    consommerait le jeton partage pour rien."""
+    runner = ScriptedRunner(prs=(301, 302, 303), coordinator_voices=(302,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    numbers = sorted({
+        int(cmd[2].rsplit("/", 1)[1]) for cmd in _warmup_reads(runner)
+    })
+    assert numbers == [302]
+
+
+def test_le_cout_du_rechauffage_est_nomme_dans_le_bilan(tmp_path, capsys):
+    """Le nombre de lectures REST du rechauffage est publie : c'est lui qui
+    pesait sur le jeton partage (revue du 16/11)."""
+    runner = ScriptedRunner(prs=(401, 402), coordinator_voices=(401,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "rechauffage :" in out
+    assert "1 candidate(s)" in out
+    assert "pool ouvert : 2 PRs" in out
+
+
+def test_les_candidates_se_lisent_dans_la_lecture_de_liste():
+    """Le critere : une voix du coordinateur, approuvante ou commentant apres
+    avoir approuve. Une reserve (`CHANGES_REQUESTED`) ne candidate pas."""
+    rows = [
+        {"number": 1, "latestReviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "APPROVED", "body": ""}]},
+        {"number": 2, "latestReviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "COMMENTED",
+             "body": "leve la reserve, la PR est approuvee"}]},
+        {"number": 3, "latestReviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "CHANGES_REQUESTED",
+             "body": ""}]},
+        {"number": 4, "latestReviews": [
+            {"author": {"login": "autre-lane"}, "state": "APPROVED", "body": ""}]},
+        {"number": 5, "latestReviews": []},
+    ]
+    assert mr.warm_up_candidates(rows) == [1, 2]
+
+
+def test_un_comment_qui_porte_un_verdict_reserve_ne_candidate_pas():
+    """Le canal du jeton du cluster porte son verdict dans le CORPS : un
+    COMMENT qui dit CONCERNS n'est pas une approbation."""
+    rows = [
+        {"number": 7, "latestReviews": [
+            {"author": {"login": "myia-ai-01"}, "state": "COMMENTED",
+             "body": "[Hermes] COMMENT_WITH_CONCERNS"}]},
+    ]
+    assert mr.warm_up_candidates(rows) == []
+
+
+def test_la_lecture_de_liste_porte_desormais_les_dernieres_reviews(tmp_path):
+    """UNE SEULE lecture de liste : elle porte aussi `latestReviews`, sinon le
+    choix des candidates coute un appel REST par PR."""
+    runner = ScriptedRunner(prs=(501,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    list_cmds = [cmd for cmd in runner.cmds() if cmd[:3] == ["gh", "pr", "list"]]
+    assert list_cmds
+    assert "number,latestReviews" in list_cmds[0]
+
+
+def test_lordre_des_merges_est_inchange(tmp_path):
+    """Le rechauffage ne reordonne rien : les merges se font dans l'ordre de
+    la liste, comme avant."""
+    runner = ScriptedRunner(prs=(201, 202, 203))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    merged = [
+        int(cmd[3]) for cmd in runner.cmds() if cmd[:3] == ["gh", "pr", "merge"]
+    ]
+    assert merged == [201, 202, 203]
+    assert [row["pr"] for row in lines] == [201, 202, 203]
+
+
+def test_le_passage_normal_ne_paie_plus_l_attente_de_120_s(tmp_path):
+    """Le cas nominal : l'etat est defini, la PR est lue et mergee sans
+    aucune attente. Avant #26799, un etat `unknown` coteait 120 s par PR."""
+    runner = ScriptedRunner(prs=(123,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert runner.sleeps == []
+    # prelecture + garde finale : deux lectures, pas plus.
+    assert len(_mergeable_reads(runner)) == 2
+
+
+def test_une_pr_parsee_puis_rejouee_est_mergee_au_rejeu(tmp_path):
+    """Une PR dont l'etat etait en cours de calcul a son tour n'est pas
+    COMPTEe COMME UN REFUS : elle est parsee, puis rejouee en fin de passe,
+    ou son calcul est termine -- et elle est alors mergee.
+
+    Avant #26799, l'organe attendait 120 s sur cette PR, puis la skippait
+    (`mergeable-state:unknown`) : une PR mergeable perdait un passage.
+    """
+    runner = ScriptedRunner(
+        prs=(301, 302),
+        pulls=[
+            {"mergeable_state": "unknown", "head": {"sha": HEAD}},  # 301, prelecture
+            {"mergeable_state": "unknown", "head": {"sha": HEAD}},  # 301, relecture
+            {"mergeable_state": "unknown", "head": {"sha": HEAD}},  # 301, relecture
+            {"mergeable_state": "clean", "head": {"sha": HEAD}},    # 302, puis rejeu de 301
+        ],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    # Les DEUX PRs sont mergees : celle qui etait parsee d'abord, puis celle
+    # qui l'a ete apres. L'ordre du rejeu est la seule consequence de forme
+    # du correctif (la garantie, elle, est intacte : l'etat est relu au
+    # moment du merge).
+    merged = [
+        int(cmd[3]) for cmd in runner.cmds() if cmd[:3] == ["gh", "pr", "merge"]
+    ]
+    assert merged == [302, 301]
+    assert all(row["verdict"] == "merged" for row in lines)
+    assert len(lines) == 2
+
+
+def test_un_etat_absent_n_est_plus_un_refus_immediat(tmp_path):
+    """`mergeable_state: null` (l'absence de valeur) signifie « calcul en
+    cours », pas « refus » : avant #26799, l'organe sortait de la lecture
+    la-dessus et skippait la PR sans attendre -- il evaluait une PR
+    mergeable avant la fin de son calcul.
+
+    Mesure du 16/11 : `#26829` et `#26827` sont passees de `unknown` a
+    `blocked`/`clean` en moins de 20 s.
+    """
+    runner = ScriptedRunner(
+        prs=(123,), pulls=[{"head": {"sha": HEAD}}]  # pas de mergeable_state
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    # L'absence de valeur est traitee comme un etat EN COURS DE CALCUL : la
+    # PR est parsee puis rejouee, avec le budget court puis le budget long.
+    assert len(_mergeable_reads(runner)) == (
+        mr.MERGEABLE_SHORT_RETRIES + 1 + mr.MERGEABLE_RETRIES + 1
+    )
+    assert lines[-1]["reason"] == "mergeable-state:absent"
+
+
+def test_le_rejeu_dispose_du_budget_long(tmp_path):
+    """Le budget long est RESERVE au rejeu : c'est la que l'etat a eu le
+    temps de se calculer."""
+    runner = ScriptedRunner(
+        prs=(123,), pulls=[{"mergeable_state": "unknown", "head": {"sha": HEAD}}]
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    # budget court (passe normale) + budget long (rejeu)
+    assert len(runner.sleeps) == (
+        mr.MERGEABLE_SHORT_RETRIES + mr.MERGEABLE_RETRIES
+    )
+
+
+def test_une_passe_arretee_ne_perd_pas_les_prs_parquees(tmp_path):
+    """Si la passe s'arrete (disjoncteur), les PRs parkees sont journalisees
+    telles quelles : une PR ne disparait pas du bilan."""
+    runner = ScriptedRunner(
+        prs=(123, 124),
+        pulls=[{"mergeable_state": "unknown", "head": {"sha": HEAD}}],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply", "--max", "0"))
+    assert rc == 0
+    assert [row["pr"] for row in lines] == []
+    # --max 0 : la passe n'evalue rien, le journal est vide.
+    assert not _evaluated(runner, 123)
 
 
 # --- dry-run et --apply -----------------------------------------------------------
@@ -783,7 +1224,8 @@ def test_max_arrete_le_run(tmp_path):
     merge_cmds = [c for c in runner.cmds() if c[:3] == ["gh", "pr", "merge"]]
     assert len(merge_cmds) == 1
     # la seconde PR n'est meme pas evaluee une fois le plafond atteint
-    assert not any("102" in flat for flat in runner.flat())
+    # (le rechauffage la LIT, sans l'evaluer : il ne porte aucun verdict)
+    assert not _evaluated(runner, 102)
     assert [row["pr"] for row in lines] == [101]
 
 
@@ -828,7 +1270,7 @@ def test_erreur_de_portee_generale_arrete_le_run(tmp_path):
     assert rc == 1
     assert lines[-1]["verdict"] == "run-error"
     assert "Bad credentials" in lines[-1]["reason"]
-    assert not any("202" in flat for flat in runner.flat())
+    assert not _evaluated(runner, 202)
 
 
 def test_erreur_dune_pr_est_isolee_et_le_balayage_continue(tmp_path, capsys):
@@ -881,7 +1323,85 @@ def test_merge_echoue_arrete_le_run(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 1
     assert lines[-1]["verdict"] == "merge-failed" and lines[-1]["merged"] is False
-    assert not any("302" in flat for flat in runner.flat())
+    assert not _evaluated(runner, 302)
+
+
+# --- course de base (#26771) ----------------------------------------------------
+#
+# « Base branch was modified » n'est ni une panne de l'organe ni une PR cassee :
+# `main` a bouge entre la lecture de l'etat et la pose du merge. Le passage du
+# 15/11 a merge 11 PRs, s'est arrete sur la 12e, et toute la suite de la file
+# a attendu un passage de plus. Le motif est REJOUABLE pour la PR.
+
+
+BASE_RACE_TEXT = (
+    "GraphQL: Base branch was modified. Review and try the merge again. "
+    "(mergePullRequest)"
+)
+
+
+def test_le_motif_de_course_de_base_est_reconnu():
+    assert mr.is_base_modified_race(BASE_RACE_TEXT)
+    assert mr.is_base_modified_race(BASE_RACE_TEXT.upper())
+    # Un motif non reconnu n'est JAMAIS lu comme une course : il garde le
+    # disjoncteur.
+    assert not mr.is_base_modified_race("merge refused")
+    assert not mr.is_base_modified_race("Head branch was modified")
+    assert not mr.is_base_modified_race("")
+
+
+def test_course_de_base_rejouee_la_pr_est_mergee_et_le_passage_continue(tmp_path):
+    """Echec de course puis rejeu reussi : la PR part en `merged`."""
+    runner = ScriptedRunner(prs=(501, 502), merge_script=[(1, BASE_RACE_TEXT)])
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert [row["pr"] for row in lines] == [501, 502]
+    assert all(row["verdict"] == "merged" for row in lines)
+    merges = [c for c in runner.flat() if c.startswith("gh pr merge")]
+    # PR 501 : un echec + un rejeu ; PR 502 : un merge.
+    assert len(merges) == 3
+    # Le rejeu est pose a la MEME tete (--match-head-commit).
+    assert all("--match-head-commit" in c for c in merges)
+    assert all(c.endswith(HEAD) for c in merges), merges
+    # La courte pause prevue a ete respectee.
+    assert runner.sleeps == [mr.MERGEABLE_RETRY_SLEEP_S]
+
+
+def test_course_de_base_rejouee_echouant_la_pr_est_skippee_et_la_suivante_est_evaluee(tmp_path):
+    """Deux echecs de course : la PR est `skipped base-modified-race`, et le
+    balayage CONTINUE -- c'est le point de la demande."""
+    runner = ScriptedRunner(
+        prs=(601, 602),
+        merge_script=[(1, BASE_RACE_TEXT), (1, BASE_RACE_TEXT)],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0, "une course de base ne doit pas arreter le passage"
+    assert lines[0]["pr"] == 601
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "base-modified-race"
+    assert lines[0]["merged"] is False
+    # La PR suivante est bien evaluee (et mergee).
+    assert lines[1]["pr"] == 602 and lines[1]["verdict"] == "merged"
+
+
+def test_autre_echec_de_merge_garde_le_disjoncteur(tmp_path):
+    """Non-regression : un motif inconnu arrete TOUJOURS le passage."""
+    runner = ScriptedRunner(prs=(701, 702), merge_rc=1)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 1
+    assert lines[-1]["verdict"] == "merge-failed"
+    assert lines[-1]["reason"] != "base-modified-race"
+    assert not _evaluated(runner, 702)
+
+
+def test_la_course_ne_declenche_pas_de_rejeu_sur_une_erreur_inconnue(tmp_path):
+    """Un echec inconnu ne doit pas lancer de rejeu : un seul appel a
+    `gh pr merge`, et le passage s'arrete."""
+    runner = ScriptedRunner(prs=(801, 802), merge_rc=1)
+    run_organ(tmp_path, runner, extra=("--apply",))
+    merges = [c for c in runner.flat() if c.startswith("gh pr merge")]
+    assert len(merges) == 1
+    assert runner.sleeps == []
 
 
 # --- journal -----------------------------------------------------------------------
@@ -1168,8 +1688,13 @@ def test_main_rouge_pose_hold_nommee_et_bloque_tout_merge(tmp_path):
     assert not any("gh pr view" in cmd or "gh pr merge" in cmd for cmd in red.flat())
     assert hold.read_text(encoding="utf-8").splitlines() == [
         "16808 attente utilisateur",
+        # #26706 : la retenue porte le numero de l'issue du rouge -- c'est
+        # la voie deterministe de reutilisation (l'index de recherche peut
+        # avoir du retard, deux runs rapproches ne doivent pas ouvrir deux
+        # issues).
         "0 main-red-sentinel sha=" + red.main_sha
-        + " check=Scripts Tests (CPU) conclusion=failure test=scripts/tests/test_guard.py::test_case",
+        + " check=Scripts Tests (CPU) conclusion=failure test=scripts/tests/test_guard.py::test_case"
+        + " issue=26710",
     ]
 
     # Le vert retire uniquement la ligne appartenant a la sentinelle.
@@ -1204,6 +1729,72 @@ def _scripts_check(conclusion, status="completed", summary="21 000 passed", star
 def _job_url(job_id: int) -> str:
     """`details_url` d'un check-run de job (forme mesuree sur l'API)."""
     return f"https://github.com/jsboige/CoursIA/actions/runs/43316243195/job/{job_id}"
+
+
+def test_le_rouge_de_main_ouvre_une_issue_et_le_vert_la_ferme(tmp_path):
+    """#26706, de bout en bout dans le run : l'issue est le canal de coordination.
+
+    Le 15/11, le rouge de `main` a recu QUATRE reparations concurrentes
+    (#26696, #26697, #26698, plus une tentative locale) : rien ne disait
+    aux lanes que le rouge etait deja pris. La sentinelle ouvre donc UNE
+    issue `[main-red] <check> — <test>`, que la lane de reparation reclame,
+    et la ferme des que le verdict redevient vert.
+    """
+    main_sha = "c" * 40
+    runner = ScriptedRunner(
+        main_sha=main_sha,
+        main_history=[main_sha],
+        main_checks_by_sha={
+            main_sha: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_guard.py::test_case - assertion",
+            )
+        },
+    )
+    journal = tmp_path / "journal.jsonl"
+    hold = tmp_path / "hold.txt"
+
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold)], runner=runner)
+    assert rc == 0
+    assert len(runner.main_red_created) == 1, "le rouge n'a pas ouvert d'issue"
+    assert runner.main_red_created[0]["title"] == (
+        "[main-red] Scripts Tests (CPU) — scripts/tests/test_guard.py::test_case"
+    )
+    assert "0 main-red-sentinel sha=" + main_sha in hold.read_text(encoding="utf-8")
+
+    # Le vert arrive sur `main` : l'issue se ferme et la retenue tombe.
+    runner.main_checks_by_sha[main_sha] = _scripts_check("success")
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold)], runner=runner)
+    assert rc == 0
+    assert runner.main_red_closed == [runner.main_red_created[0]["number"]]
+    assert "main-red-sentinel" not in hold.read_text(encoding="utf-8")
+
+
+def test_une_recherche_d_issue_illisible_n_ouvre_rien_mais_pose_la_retenue(tmp_path):
+    """#26706, fail-closed : une recherche illisible n'ouvre AUCUNE issue.
+
+    Une retention en double est pire qu'une absence : deux lanes y
+    reclameraient le meme rouge. La retenue, elle, reste posee.
+    """
+    main_sha = "d" * 40
+    runner = ScriptedRunner(
+        main_sha=main_sha,
+        main_history=[main_sha],
+        main_red_search_rc=1,
+        main_checks_by_sha={
+            main_sha: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_guard.py::test_case - assertion",
+            )
+        },
+    )
+    journal = tmp_path / "journal.jsonl"
+    hold = tmp_path / "hold.txt"
+
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold)], runner=runner)
+    assert rc == 0
+    assert runner.main_red_created == [], "une issue a ete ouverte malgre la recherche"
+    assert "0 main-red-sentinel sha=" + main_sha in hold.read_text(encoding="utf-8")
 
 
 def test_sentinelle_juge_le_commit_derriere_une_tete_en_cours(tmp_path):
@@ -1396,6 +1987,117 @@ def test_sentinelle_failure_a_l_etape_de_test_garde_la_retenue(tmp_path):
     contenu = hold.read_text(encoding="utf-8")
     assert f"sha={tete}" in contenu
     assert "test=test-non-identifie-dans-le-check" in contenu
+
+
+def test_sentinelle_runner_perdu_en_cours_d_etape_remonte_au_commit_precedent(tmp_path, capsys):
+    """CONTROLE POSITIF (#25510 T-J) : un job `failure` SANS etape en echec
+    est un runner perdu, pas un verdict de code.
+
+    Mesure du 2026-11-16 (run 43777127542, job 133012644184, runner
+    `myia-ai-01-linux-main-1`) : le job a rendu `completed/failure` alors que
+    l'etape 11 « Run tests » etait restee `in_progress` (conclusion nulle) et
+    que les etapes suivantes etaient `pending` -- le runner avait disparu au
+    milieu d'une etape (reboot de l'hote a 00:32Z). Aucune etape n'etant en
+    `failure`, la sentinelle lisait un verdict de code et retenait `main` sur
+    une perte d'infrastructure : le verdict doit remonter au commit precedent.
+
+    Le controle porte sur le **mecanisme** (`runner perdu`), pas seulement
+    sur l'ecart du commit : sans le correctif, l'ancien code lisait la liste
+    JSON des etapes comme un NOM d'etape, et le motif retenu etait
+    `infra(failure-step:<blob>)` -- un verdict de code deguise en panne.
+    """
+    tete = "e1" * 20
+    ancien = "e2" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(133012644184)),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+        job_steps={
+            "133012644184": [
+                {"n": "Set up job", "o": 1, "s": "completed", "c": "success"},
+                {"n": "Run actions/checkout@v4", "o": 5, "s": "completed", "c": "success"},
+                {"n": "Run tests", "o": 11, "s": "in_progress", "c": None},
+                {"n": "Publish results", "o": 12, "s": "queued", "c": None},
+            ],
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert f"sha={tete}" not in contenu
+    assert f"sha={ancien}" in contenu
+    out = capsys.readouterr().out
+    assert "runner perdu en cours d'etape" in out
+
+
+def test_sentinelle_une_etape_en_echec_emporte_la_retenue(tmp_path):
+    """CONTROLE NEGATIF (#25510 T-J) : la presence d'UNE etape en echec
+    interdit la lecture « runner perdu ».
+
+    Meme mesure que le controle positif, mais l'etape de test a rendu
+    `failure` : c'est un verdict de code, la retenue doit etre conservee --
+    meme si une autre etape du job est restee en cours.
+    """
+    tete = "e3" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(133012644185)),
+        },
+        job_steps={
+            "133012644185": [
+                {"n": "Run actions/checkout@v4", "o": 5, "s": "completed", "c": "success"},
+                {"n": "Run tests", "o": 11, "s": "completed", "c": "failure"},
+                {"n": "Publish results", "o": 12, "s": "queued", "c": None},
+            ],
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={tete}" in contenu
+
+
+def test_sentinelle_lecture_de_job_illisible_garde_la_retenue(tmp_path):
+    """CONTROLE NEGATIF (#25510 T-J) : une lecture ILLISIBLE reste
+    fail-closed -- elle ne devient jamais un « runner perdu ».
+
+    Une lecture impossible ne vaut pas une preuve : sans etapes, on ne peut
+    rien conclure sur le job, donc la retenue est conservee.
+    """
+    tete = "e4" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(133012644186)),
+        },
+        job_steps={"133012644186": []},
+        job_steps_rc={"133012644186": 1},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={tete}" in contenu
 
 
 def test_sentinelle_reconnait_les_etapes_du_checkout_borne_t_k(tmp_path):
