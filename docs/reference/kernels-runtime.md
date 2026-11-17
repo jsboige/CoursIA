@@ -1,6 +1,6 @@
 # Kernels & Runtime — Cluster CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-15
+> REFERENCE — vivante — dernière révision 2026-11-17
 
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
