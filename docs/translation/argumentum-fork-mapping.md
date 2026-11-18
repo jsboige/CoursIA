@@ -1,5 +1,7 @@
 # Mapping de fork Argumentum → CoursIA (moteur T3)
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 > **Statut** : référence pérenne pour la couche T3 (moteur de traduction).
 > Issue [#6949](https://github.com/jsboige/CoursIA/issues/6949) — **OUVERTE (resserrée 2026-07-28 par ai-01, close refusée)** : livrable court-terme expédié (fork T3 `#6976` + ce doc), mais l'issue reste ouverte — le titre porte deux engagements et le second (dépôt de traductions, 0/7 langues cibles remplies) n'est pas tenu. Règle posée c.31 : plus de PR *resync-only* sur `translations/**/*.csv` jusqu'au GO moteur. PRs du scope original : #6980 (ce doc, `fb9bff827`) + #6976 (fork code T3, `84ba7ac70`).
 > Fork code : PR #6976 (`scripts/translation/translate_csv.py`).

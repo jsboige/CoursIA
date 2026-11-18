@@ -773,7 +773,22 @@ REFERENCE: dict[str, dict[str, dict]] = {
                 "cabled_in": ["enrich-quality-gate.yml"],
             },
             "env:ENRICH_QUALITY_PR_BODY": {
-                "cabled_in": ["enrich-quality-gate.yml"],
+                # #26973 (ligne 2) : la voie rapide de always-on-guards.yml
+                # exporte ce canal pour la jambe advisory enrich-quality.
+                "cabled_in": ["always-on-guards.yml", "enrich-quality-gate.yml"],
+            },
+        },
+    },
+    "scripts/notebook_tools/enrich_quality_delta.py": {
+        "channels": {
+            "cli:--pr-body-file": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "geste local d'avant-push : `scripts/ci/fast_lane.py` "
+                    "l'appelle via `scripts/ci/fast_lane_registry.py` (TRANCHE50) "
+                    "en lui passant le body ; aucun workflow ne le cable, "
+                    "l'option sert l'appel sur poste."
+                ),
             },
         },
     },

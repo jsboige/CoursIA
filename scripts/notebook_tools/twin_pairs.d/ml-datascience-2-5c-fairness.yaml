@@ -1,0 +1,10 @@
+- name: ML DataScience 2.5c fairness
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Les métriques, bootstraps appariés, bins quantiles, poids, seuils et intervalles Wilson sont natifs C# ; Python.NET conserve les vrais LogisticRegression et CalibratedClassifierCV avec FrozenEstimator, ainsi que les données et indices NumPy/sklearn identiques.
+  known_differences:
+    - Deux figures C# SVG remplacent les figures Matplotlib ; les mêmes 1500 observations et métriques sont représentées.
+    - Python.NET exige un CPython compatible, NumPy et scikit-learn au moins 1.6 pour FrozenEstimator ; les mesures sur cet échantillon de test ne garantissent pas une équité en population.
