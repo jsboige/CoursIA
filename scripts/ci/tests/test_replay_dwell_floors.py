@@ -106,6 +106,33 @@ def test_egalite_au_plancher_rejoue():
     assert action == "rejouer"
 
 
+def test_jambe_en_cours_n_est_pas_un_rouge_reel():
+    """Une jambe EN COURS porte un titre vide (GitHub ne l'ecrit qu'a la fin du
+    job) : sans test de `status`, elle tombait dans « pas le minuteur » et le
+    verdict devenait « rouge reel ». Mesure : #26989 (18/11 20:45:34Z)."""
+    action, motif = decide(conclusion="", title="", committed_at=HEAD_AT,
+                           now=HEAD_AT + timedelta(hours=3), status="in_progress")
+    assert action == "attendre"
+    assert "en cours" in motif
+    assert "reel" not in motif
+
+
+def test_jembe_en_cours_n_est_jamais_rejouee():
+    """Meme au-dela du plancher : une jambe qui tourne n'est pas rejouee."""
+    action, _motif = decide(conclusion="", title="", committed_at=HEAD_AT,
+                            now=HEAD_AT + timedelta(hours=3), status="queued")
+    assert action == "attendre"
+
+
+def test_le_minuteur_reconnu_passe_meme_si_la_jambe_echoue():
+    """Le cas inverse : le minuteur reste detectable sur une jambe terminee."""
+    action, motif = decide(conclusion="failure", title=_pending_title(),
+                           committed_at=HEAD_AT, now=HEAD_AT + timedelta(hours=3),
+                           status="completed")
+    assert action == "rejouer"
+    assert "2026-11-18T20:57:52Z" in motif
+
+
 def test_horloge_en_arriere_ou_future_ne_passe_pas():
     """Une tete datee dans le futur (decalage de machine) ne doit pas etre
     lue comme un plancher ecoule : fail-CLOSED."""

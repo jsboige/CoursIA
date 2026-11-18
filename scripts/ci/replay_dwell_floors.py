@@ -24,7 +24,9 @@ Ce que fait l'organe, donc :
   1. relit la tete de la PR et l'heure de commit (celle du minuteur) ;
   2. calcule le **plancher brut** = heure de commit + `DEFAULT_DWELL_MIN` ;
   3. verifie que la jambe `PR gate` est bien un minuteur DWELL (pas un rouge
-     reel) -- un rouge de code n'est **jamais** rejoue par cet organe ;
+     reel) -- un rouge de code n'est **jamais** rejoue par cet organe ; une
+     jambe **en cours** n'est ni verte ni rouge (GitHub n'ecrit son titre
+     qu'a la fin du job : un titre vide y ressemble a un echec etrange) ;
   4. rejoue la jambe (`gh run rerun <run_id> --job <job_id>`) si et seulement
      si le plancher brut est passe.
 
@@ -98,22 +100,33 @@ def decide(
     now: datetime,
     dwell_min: float = DEFAULT_DWELL_MIN,
     waived: bool = False,
+    status: str = "completed",
 ) -> tuple[str, str]:
     """Decide quoi faire d'une jambe `PR gate`. Fonction PURE.
 
     Renvoie `(action, motif)` avec `action` dans :
       - ``"rejouer"``  : le plancher brut est passe, la jambe est un minuteur ;
-      - ``"attendre"`` : plancher brut pas encore passe ;
+      - ``"attendre"`` : plancher brut pas encore passe, ou jambe EN COURS ;
       - ``"ignorer"``  : rien a faire (legende verte, derogation, rouge reel).
 
     Un rouge **reel** (echec qui n'est pas le minuteur) n'est jamais rejoue :
     rejouer un test rouge rend le MEME rouge, et le cache des legs la rendrait
     silencieuse.
+
+    Cas mesure le 2026-11-18 (#26989) : une jambe **en cours** porte un
+    `output.title` **vide** (GitHub ne l'ecrit qu'a la fin du job). Sans le
+    test de `status`, un titre vide passait pour « pas le minuteur » et le
+    verdict tombait sur « rouge reel » : un minuteur etait classe dans la
+    mauvaise famille, et un consommateur qui s'arrete sur ce verdict abandonnait
+    la PR. Une jambe qui n'a pas fini n'est **ni verte ni rouge** -- elle est en
+    cours, et le seul geste possible est d'attendre.
     """
     if conclusion == "success":
         return "ignorer", "jambe verte"
     if waived:
         return "ignorer", "derogation par label `{}`".format(WAIVER_LABEL)
+    if status and status != "completed":
+        return "attendre", "jambe en cours (statut `{}`)".format(status)
     if not is_dwell_timer(title):
         return "ignorer", "echec qui n'est pas le minuteur DWELL (rouge reel)"
     floor = dwell_floor(committed_at, dwell_min)
@@ -199,13 +212,16 @@ def inspect_pr(repo: str, number: int, now: datetime,
         return entry
     title = (gate.get("output") or {}).get("title") or ""
     conclusion = gate.get("conclusion") or ""
+    status = gate.get("status") or ""
     entry["conclusion"] = conclusion
+    entry["status"] = status
     entry["gate_title"] = title[:200]
     committed_at = head_committed_at(repo, sha)
     entry["committed_at"] = committed_at.strftime("%Y-%m-%dT%H:%M:%SZ")
     entry["floor"] = dwell_floor(committed_at, dwell_min).strftime("%Y-%m-%dT%H:%M:%SZ")
     action, motif = decide(conclusion=conclusion, title=title,
-                           committed_at=committed_at, now=now, dwell_min=dwell_min)
+                           committed_at=committed_at, now=now, dwell_min=dwell_min,
+                           status=status)
     entry["action"] = action
     entry["motif"] = motif
     ref = job_ref(gate.get("details_url") or "")
