@@ -27,6 +27,19 @@ modifiée sans re-déclaration. Le manifeste
 (`scripts/quantconnect/pcm_single_source.json`) porte la source canonique,
 les copies déclarées et la raison de chaque déclaration.
 
+**Ce qu'elle refuse aussi (invariant du défaut).** Le défaut `additive` du
+canonique doit rester `False` : un consommateur qui omet le paramètre
+hériterait sinon d'un mode qu'il n'a pas demandé — et, avec le défaut `True`
+d'avant, `additive=True` sans `algorithm` était un `ValueError` chez un
+consommateur qui ne l'aurait pas vu venir. Aucun consommateur ne doit
+instancier le canonique sans passer `additive` explicitement : il hériterait
+du défaut, et son comportement changerait si le défaut change. Les deux
+contrôles sont syntaxiques (AST) : le défaut est lu dans la signature, et
+la fourniture du paramètre est lue dans l'appel — par mot-clé **ou par
+position** (la position de `additive` est elle-même lue dans la signature du
+canonique ; un appel positionnel dont la position n'est pas établissable est
+déclaré non certifiable, `CANONICAL_SIGNATURE_UNREADABLE`).
+
 **Contrôle positif.** Une copie volontairement modifiée fait rougir la
 garde : c'est le cas `DECLARATION_STALE` du corps de tests
 (`scripts/quantconnect/tests/test_check_pcm_single_source.py`), qui crée un
@@ -105,6 +118,9 @@ CODES = {
     "DECLARATION_STALE": "Une copie declaree a ete modifiee sans re-declaration.",
     "DECLARED_COPY_MISSING": "Une copie declaree n'existe plus : declaration a retirer.",
     "CLASS_MISMATCH": "Les classes declarees ne correspondent pas au contenu du fichier.",
+    "CANONICAL_DEFAULT_UNSAFE": "Le defaut `additive` du canonique n'est pas `False` : un consommateur qui omet le parametre herite d'un mode qu'il n'a pas demande.",
+    "CONSUMER_IMPLICIT_DEFAULT": "Un consommateur instancie le canonique sans passer `additive` : il herite du defaut, son comportement changerait si le defaut change.",
+    "DERIVED_IMPLICIT_DEFAULT": "Un consommateur instancie une sous-classe du canonique sans passer `additive` : le defaut du canonique est atteint a travers le forward de la sous-classe.",
 }
 
 
@@ -258,6 +274,246 @@ def scan_notebook_copies(root: Path) -> list[str]:
     return hits
 
 
+def canonical_additive_default(path: Path) -> tuple[str, object]:
+    """Etat du parametre `additive` du canonique.
+
+    Retourne (etat, valeur) :
+      ("default", True/False) — le parametre a un defaut booleen litteral ;
+      ("default", None)       — le defaut n'est pas une constante booleenne ;
+      ("required", None)      — le parametre est exige, sans defaut ;
+      ("absent", None)        — le parametre n'existe pas, ou le fichier ne
+                                 se parse pas (les deux font echouer la
+                                 garde : fail-CLOSED).
+    """
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, SyntaxError, ValueError):
+        return ("absent", None)
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.ClassDef) and node.name == CANONICAL_CLASS):
+            continue
+        for sub in node.body:
+            if isinstance(sub, ast.FunctionDef) and sub.name == "__init__":
+                args = sub.args
+                index = None
+                for position, arg in enumerate(args.args):
+                    if arg.arg == "additive":
+                        index = position
+                        break
+                if index is None:
+                    return ("absent", None)
+                first_default = len(args.args) - len(args.defaults)
+                if index < first_default:
+                    return ("required", None)
+                default = args.defaults[index - first_default]
+                if isinstance(default, ast.Constant) and isinstance(default.value, bool):
+                    return ("default", default.value)
+                return ("default", None)
+    return ("absent", None)
+
+
+def additive_positional_index(path: Path) -> int | None:
+    """Position de `additive` parmi les arguments de `__init__` du canonique.
+
+    Renvoie l'index du parametre dans la liste des arguments (index 0 =
+    `self`), ou None quand la position ne peut pas etre etablie : classe
+    sans `__init__`, signature illisible, ou `*args` present — dans ce
+    dernier cas la correspondance positionnelle est ambigue.
+
+    L'index sert a lever un angle mort de la garde des consommateurs : un
+    appel `MultiStrategyPouchesPCM(allocations, rebalance, False)` passe
+    `additive` en positionnel. Signaler ce code correct serait un faux
+    positif sur du code valide (reserve de la revue Hermes sur #25924).
+    """
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, SyntaxError, ValueError):
+        return None
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.ClassDef) and node.name == CANONICAL_CLASS):
+            continue
+        for sub in node.body:
+            if not (isinstance(sub, ast.FunctionDef) and sub.name == "__init__"):
+                continue
+            if sub.args.vararg is not None:
+                return None  # `*args` : correspondance positionnelle ambigue
+            for position, arg in enumerate(sub.args.args):
+                if arg.arg == "additive":
+                    return position
+            return None
+    return None
+
+
+def canonical_subclasses(root: Path, canonical_rel: str) -> dict[str, str]:
+    """Sous-classes du canonique : nom de classe -> fichier qui la declare.
+
+    Une sous-classe qui forwarde `**kwargs` au `super().__init__` atteint le
+    defaut `additive` DU CANONIQUE sans que l'appel du consommateur ne nomme
+    le canonique : la famille etait invisible a la garde (reserve du
+    coordinateur sur #25924, mesuree sur `composite-c1-multiasset`, qui
+    instancie `CappedPouchesPCM(MultiStrategyPouchesPCM)`).
+    """
+    base = root / SCAN_SUBTREE
+    found: dict[str, str] = {}
+    if not base.is_dir():
+        return found
+    for path in sorted(base.rglob("*.py")):
+        rel = path.relative_to(root).as_posix()
+        if rel == canonical_rel:
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, SyntaxError, ValueError):
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ClassDef):
+                continue
+            bases = []
+            for base_node in node.bases:
+                if isinstance(base_node, ast.Name):
+                    bases.append(base_node.id)
+                elif isinstance(base_node, ast.Attribute):
+                    bases.append(base_node.attr)
+            if CANONICAL_CLASS in bases:
+                found[node.name] = rel
+    return found
+
+
+def subclass_pins_additive(root: Path, rel: str, class_name: str) -> bool:
+    """La sous-classe fixe-t-elle elle-meme `additive` ?
+
+    Deux cas rendent l'appel du consommateur sans effet sur le defaut :
+    la sous-classe Declare son propre parametre `additive`, ou elle passe
+    `additive` explicitement a `super().__init__(...)`. Dans les deux cas le
+    defaut du canonique n'est pas atteint par l'appel du consommateur.
+    """
+    path = root / rel
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, SyntaxError, ValueError):
+        return False
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.ClassDef) and node.name == class_name):
+            continue
+        for sub in node.body:
+            if not (isinstance(sub, ast.FunctionDef) and sub.name == "__init__"):
+                continue
+            if any(arg.arg == "additive" for arg in sub.args.args):
+                return True
+            for inner in ast.walk(sub):
+                if isinstance(inner, ast.Call):
+                    func = inner.func
+                    name = None
+                    if isinstance(func, ast.Attribute) and func.attr == "__init__":
+                        name = "super"
+                    if name != "super":
+                        continue
+                    if any(keyword.arg == "additive" for keyword in inner.keywords):
+                        return True
+                # `kwargs["additive"] = True` : la sous-classe epingle le mode
+                # avant le forward, sans ecrire le mot-cle dans l'appel.
+                if (
+                    isinstance(inner, ast.Assign)
+                    and len(inner.targets) == 1
+                    and isinstance(inner.targets[0], ast.Subscript)
+                ):
+                    target = inner.targets[0]
+                    if (
+                        isinstance(target.value, ast.Name)
+                        and target.value.id == "kwargs"
+                        and isinstance(target.slice, ast.Constant)
+                        and target.slice.value == "additive"
+                    ):
+                        return True
+    return False
+
+
+def scan_implicit_consumers(
+    root: Path,
+    canonical_rel: str,
+    additive_index: int | None = None,
+    derived: dict[str, str] | None = None,
+) -> list[dict]:
+    """Consommateurs qui instancient le canonique SANS passer `additive`.
+
+    Un consommateur qui n'ecrit pas le parametre herite du defaut du
+    canonique : si le defaut change, son comportement change aussi, et
+    personne ne le voit. C'est l'invariant que #20188 veut tenir (« chaque
+    projet garde son comportement actuel »).
+
+    `additive` passe en positionnel compte comme passe : la position du
+    parametre est lue dans la signature du canonique
+    (`additive_positional_index`), et un appel dont le nombre d'arguments
+    positionnels atteint cette position n'est pas signale — c'etait un faux
+    positif sur du code correct (reserve Hermes sur #25924). Si la position
+    ne peut pas etre etablie, aucun appel positionnel n'est signale : la
+    garde ne peut pas certifier l'invariant dans ce cas, et le dit
+    (`CANONICAL_SIGNATURE_UNREADABLE`).
+
+    **La sous-classe est un second chemin vers le defaut.** Un consommateur
+    qui instancie une sous-classe du canonique (`CappedPouchesPCM`) sans
+    ecrire `additive` atteint le defaut du canonique a travers le forward
+    de la sous-classe : le chemin etait invisible, la garde le voyait vert
+    sur un code qui herite du defaut (reserve du coordinateur sur #25924).
+    Une sous-classe qui Declare `additive` ou qui le passe a
+    `super().__init__` ecarte le signalement : elle fixe le mode elle-meme.
+
+    Bornes assumees : un appel qui passe `**kwargs` n'est pas compte (le
+    parametre peut y etre fourni) ; un appel dont le symbole est aliase
+    n'est pas vu non plus — l'angle mort du nom de symbole, le meme que
+    celui de la famille de classes.
+    """
+    base = root / SCAN_SUBTREE
+    derived = derived or {}
+    hits: list[dict] = []
+    if not base.is_dir():
+        return hits
+    for path in sorted(base.rglob("*.py")):
+        rel = path.relative_to(root).as_posix()
+        if rel == canonical_rel:
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+        except (OSError, SyntaxError, ValueError):
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if isinstance(func, ast.Name):
+                name = func.id
+            elif isinstance(func, ast.Attribute):
+                name = func.attr
+            else:
+                continue
+            is_derived = name in derived and name != CANONICAL_CLASS
+            if name != CANONICAL_CLASS and not is_derived:
+                continue
+            if any(keyword.arg is None for keyword in node.keywords):
+                continue  # **kwargs : le parametre peut etre fourni ailleurs
+            if any(keyword.arg == "additive" for keyword in node.keywords):
+                continue
+            if is_derived:
+                # La sous-classe fixe-t-elle le mode elle-meme ?
+                if subclass_pins_additive(root, derived[name], name):
+                    continue
+                hits.append(
+                    {
+                        "path": rel,
+                        "line": node.lineno,
+                        "class": name,
+                        "derived": True,
+                    }
+                )
+                continue
+            if additive_index is not None and len(node.args) >= additive_index:
+                continue  # `additive` passe en positionnel : il est fourni
+            if additive_index is None and node.args:
+                continue  # position non etablie : ne pas signaler du code correct
+            hits.append({"path": rel, "line": node.lineno, "class": name})
+    return hits
+
+
 def analyse(root: Path, manifest_path: Path) -> dict:
     findings = []
     # Empreintes pleines (declaree + actuelle) : la « cle » qui permet de
@@ -400,6 +656,73 @@ def analyse(root: Path, manifest_path: Path) -> dict:
                 "code": "UNDECLARED_COPY",
                 "path": rel,
                 "detail": detail,
+            }
+        )
+
+    # 4. Le defaut du canonique est sur (`additive=False`) et aucun
+    #    consommateur n'en herite : changer le defaut ne peut alors changer
+    #    le comportement d'aucun projet qui ne l'a pas demande.
+    additive_index = None
+    if canonical_path and canonical_path.is_file():
+        state, value = canonical_additive_default(canonical_path)
+        if not (state == "default" and value is False):
+            detail = {
+                "required": "parametre `additive` exige, sans defaut "
+                "(attendu `additive=False`)",
+                "absent": "parametre `additive` absent du canonique "
+                "(attendu `additive=False`)",
+            }.get(
+                state,
+                "defaut `additive` = %s (attendu `additive=False`)" % value,
+            )
+            findings.append(
+                {
+                    "code": "CANONICAL_DEFAULT_UNSAFE",
+                    "path": canonical_rel,
+                    "detail": detail,
+                }
+            )
+        # Position positionnelle de `additive` : sans elle, la garde ne peut
+        # pas distinguer « passe en positionnel » de « omis » sur un appel
+        # positionnel. On ne le devine pas : on le dit (fail-CLOSED), plutot
+        # que de laisser l'invariant non verifie en silence.
+        additive_index = additive_positional_index(canonical_path)
+        if additive_index is None:
+            findings.append(
+                {
+                    "code": "CANONICAL_SIGNATURE_UNREADABLE",
+                    "path": canonical_rel,
+                    "detail": "position positionnelle de `additive` non "
+                    "etablie (classe sans `__init__`, signature illisible ou "
+                    "`*args`) : la garde ne peut pas certifier l'invariant "
+                    "du defaut sur les appels positionnels",
+                }
+            )
+    for hit in scan_implicit_consumers(root, canonical_rel, additive_index):
+        findings.append(
+            {
+                "code": "CONSUMER_IMPLICIT_DEFAULT",
+                "path": hit["path"],
+                "detail": "instancie %s sans passer `additive` (ligne %d) : "
+                "il herite du defaut, son comportement suivrait un changement "
+                "de defaut" % (CANONICAL_CLASS, hit["line"]),
+            }
+        )
+    # Sous-classes du canonique : un appel a une sous-classe qui ne fixe pas
+    # `additive` atteint le defaut du canonique par le forward de la
+    # sous-classe (reserve du coordinateur sur #25924).
+    derived = canonical_subclasses(root, canonical_rel)
+    for hit in scan_implicit_consumers(root, canonical_rel, None, derived):
+        if not hit.get("derived"):
+            continue
+        findings.append(
+            {
+                "code": "DERIVED_IMPLICIT_DEFAULT",
+                "path": hit["path"],
+                "detail": "instancie %s (sous-classe de %s) sans passer "
+                "`additive` (ligne %d) : le defaut du canonique est atteint "
+                "a travers le forward de la sous-classe"
+                % (hit["class"], CANONICAL_CLASS, hit["line"]),
             }
         )
 

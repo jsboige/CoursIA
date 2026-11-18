@@ -888,6 +888,15 @@ def _collector_run() -> str:
     ))
 
 
+def _collector_source() -> str:
+    """Le collecteur des jambes : depuis #26739, c'est LUI qui lit les
+    jambes, la carte des runs et les conclusions de run (le `run` du
+    workflow lui delegue la production du fichier JSONL)."""
+    path = os.path.join(REPO_ROOT, "scripts", "ci", "fetch_pr_checkruns.py")
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
 def test_workflows_map_is_inert_without_a_gate_leg(tmp_path):
     """La carte `workflows` ne change RIEN pour une PR sans jambe `PR gate`.
 
@@ -915,37 +924,66 @@ def test_workflows_map_is_inert_without_a_gate_leg(tmp_path):
     assert out.strip() == "203 deadbeef false 0"
 
 
-def test_workflow_fetches_wfmap_only_for_gate_bearing_prs():
-    """Garde structurelle de l'economie #15770 : le garde PRECEDE la collecte.
+def test_workflow_delegates_the_legs_to_the_collector():
+    """#26739 : le `run` du sweep ne fait PLUS de lecture `check-runs` par
+    PR dans son corps -- il delegue au collecteur du depot.
 
-    Le selecteur, lui, est garde par `test_workflows_map_is_inert_without_a_gate_leg` ;
-    ce pin garde le COLLECTEUR des deux derives symetriques : l'appel
-    inconditionnel (l'economie disparait en silence) et un garde debranche du
-    motif reel (`"name":"PR gate"` est la forme que le jq du collecteur emet).
+    Le pin verifie la DELEGATION (le workflow ne paie plus l'appel par PR
+    lui-meme) et que le collecteur reste un fichier du depot : un
+    collecteur reecrit dans le `run` (inline) serait revenu au cout
+    d'avant, et la suite du collecteur ne le couvrirait plus.
     """
     run = _collector_run()
-    guard = run.find("""grep -q '"name":"PR gate"'""")
-    fetch = run.find("WFMAP=$(gh api")
+    assert "check-runs?per_page=100" not in run, \
+        "le workflow lit encore les check-runs par PR (#26739)"
+    assert "fetch_pr_checkruns.py" in run, \
+        "le workflow ne delega pas au collecteur (#26739)"
+
+
+def test_workflow_fetches_wfmap_only_for_gate_bearing_prs():
+    """Garde structurelle de l'economie #15770 : le cout PAR PR ne doit
+    porter que sur la population qui le consomme.
+
+    Depuis #26739, la lecture est DELIVREE par le collecteur : la carte
+    `workflow_id` est lue en GraphQL, EN BLOC (une page de PRs, pas une
+    lecture par PR), et la seule lecture REST par PR qui subsiste -- la
+    conclusion du run, consommee par la seule detection `startup_failure`
+    (#21300) -- est demandee UNIQUEMENT pour les PRs qui portent une jambe
+    `PR gate` ROUGE. L'economie est donc STRICTE : elle ne peut pas
+    disparaitre en silence, et ce pin garde les deux derives symetriques
+    (appel inconditionnel, garde debranche du motif reel). Le comportement
+    est verrouille par la suite du collecteur
+    (`scripts/ci/tests/test_fetch_pr_checkruns.py`).
+    """
+    source = _collector_source()
+    guard = source.find("def red_gate_legs")
+    fetch = source.find("read_run_conclusions(repo, sha")
     assert guard != -1, "garde de collecte de la carte absent (#15770)"
     assert fetch != -1
     assert guard < fetch, "la carte est demandee hors du garde (#15770)"
+    assert "if not red_gate_legs(pr_legs):" in source, \
+        "la lecture par PR n'est plus gardee par la jambe rouge (#15770)"
 
 
 def test_workflow_fetches_wfmap_for_blocked_gate_absent_prs():
-    """#21463 : le garde de collecte est ETLARGI a la population BLOCKED sans
-    check-run `PR gate`. Sans ce pin, un revert silencieux du `|| [ BLOCKED ]`
-    refermerait l'angle mort (la carte WFMAP ne serait plus demandee pour ces
-    PRs, donc le run `PR gate` de leur tete ne serait plus trouvable a
-    relancer) -- exactement la derive que ce pin doit rendre impossible.
+    """#21463 : la population BLOCKED sans check-run `PR gate` doit
+    pouvoir trouver le run `PR gate` de sa tete.
+
+    Depuis #26739, la carte `workflow_id` est lue en BLOC pour TOUTES les
+    PRs du pool (une page GraphQL, pas une lecture par PR) : cette
+    population est couverte PAR CONSTRUCTION, et plus par un garde
+    conditionnel qu'un revert silencieux pourrait refermer. Le pin garde
+    les deux pieces qui restent : la carte n'est PAS conditionnee a la
+    presence d'une jambe `PR gate` (comportement verrouille par la suite
+    du collecteur), et l'etat `merge_state` est toujours porte par la
+    ligne JSONL -- sans lui, le selecteur ne peut pas distinguer une PR
+    BLOCKED gate-absent de n'importe laquelle.
     """
-    run = _collector_run()
-    assert """grep -q '"name":"PR gate"'""" in run, "garde d'origine absente"
-    assert '[ "${MSTATE:-}" = "BLOCKED" ]' in run, \
-        "elargissement BLOCKED absent du garde de collecte (#21463)"
-    # Le 4e champ de la ligne jsonl doit porter l'etat : sans lui le selecteur
-    # ne peut pas distinguer une PR BLOCKED gate-absent de n'importe laquelle.
-    assert '"merge_state":"%s"' in run, \
+    source = _collector_source()
+    assert '"merge_state": pr["merge_state"]' in source, \
         "merge_state absent de la ligne jsonl (#21463)"
+    assert "read_run_maps(repo, transport=graphql)" in source, \
+        "la carte des runs n'est plus lue en bloc (#21463)"
 
 
 # --- #21300 : STARTUP_FAILURE -- `gh run rerun` INERT sur run jamais demarre --
@@ -1056,13 +1094,22 @@ def test_startup_failure_silenced_when_no_red_gate_leg(tmp_path):
 
 
 def test_workflow_pin_collects_run_conclusion():
-    """#21300 garde structurelle : le collecteur du sweep inclut le
-    `conclusion` du run dans le payload jq, sinon la detection ne peut
-    jamais s'alimenter (les tests passent par `run_conclusions`, mais
-    la production ne peut pas inventer la donnee)."""
-    run = _collector_run()
-    # Le jq doit projeter la clef `c` sur la conclusion du run.
-    assert '.conclusion' in run or '"c":.conclusion' in run
+    """#21300 garde structurelle : la conclusion du run doit etre
+    COLLECTEE, sinon la detection `startup_failure` ne peut jamais
+    s'alimenter (les tests passent par `run_conclusions`, mais la
+    production ne peut pas inventer la donnee).
+
+    Depuis #26739, la collecte vit dans le collecteur : c'est lui qui lit
+    `conclusion` dans la reponse `workflow_runs`. Aucun champ GraphQL ne
+    l'expose (mesure 2026-11-15 : `WorkflowRun` n'a ni `conclusion` ni
+    `workflowId`), donc la lecture REST reste necessaire -- et elle est
+    restreinte a la population qui la consomme (#21300).
+    """
+    source = _collector_source()
+    assert '"c": run.get("conclusion") or ""' in source, \
+        "la conclusion du run n'est plus collectee (#21300)"
+    assert "actions/runs?head_sha=" in source, \
+        "la lecture des runs de workflow a disparu (#21300)"
 
 
 # --- #22117 : un run PR gate `queued` n'est pas un run fige -----------
