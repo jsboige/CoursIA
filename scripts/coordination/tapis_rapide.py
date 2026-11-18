@@ -94,13 +94,22 @@ def parent_de(it: dict) -> int | None:
     return None
 
 
-def _conteneur_propre(it: dict) -> bool:
+def _conteneur_de(titre: str, labels: list[str]) -> bool:
     """Label EPIC/umbrella, ou titre `[EPIC...` qui ne nomme pas de parent
-    (un `[EPIC #N] Phase 2` est une tranche)."""
-    if any(lab.strip().lower() in LABELS_CONTENEUR for lab in it.get("labels") or []):
+    (un `[EPIC #N] Phase 2` est une tranche).
+
+    C'est la meme regle sur les **metadonnees seules** (titre + labels) que sur
+    le corps complet : la voie legere doit classer un conteneur comme un
+    conteneur, sans attendre la lecture de son corps."""
+    if any(lab.strip().lower() in LABELS_CONTENEUR for lab in labels):
         return True
-    titre = it.get("title") or ""
+    titre = titre or ""
     return titre.lstrip(" [").upper().startswith("EPIC") and not _TITRE_EPIC_RE.match(titre)
+
+
+def _conteneur_propre(it: dict) -> bool:
+    """Le conteneur, d'apres le titre et les labels de l'issue."""
+    return _conteneur_de(it.get("title") or "", list(it.get("labels") or []))
 
 
 def _ancetres(n: int, parents: dict[int, int | None]) -> tuple[list[int], int]:
@@ -387,8 +396,8 @@ def _voie_leger(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None
               file=sys.stderr)
         return 3
     r["fraicheur"] = fraicheur
-    source = "GitHub + origin/main local (voie leger)"
-    out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else texte(r, source)
+    out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else \
+        tapis_leger.texte(r)
     sys.stdout.buffer.write((out + "\n").encode("utf-8"))
     return code
 

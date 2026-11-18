@@ -37,7 +37,7 @@ QUERY_METADONNEES = """query($owner:String!,$name:String!,$n:Int!,$after:String)
    nodes{number title createdAt updatedAt labels(first:20){nodes{name}}}}}}"""
 
 QUALIFICATION_CHAMP = """number title body createdAt updatedAt labels(first:20){nodes{name}}
-    comments(last:12){totalCount nodes{createdAt author{login} body}}}"""
+    comments(last:12){totalCount nodes{createdAt author{login} body}}"""
 
 
 def metadonnee(node: dict) -> dict:

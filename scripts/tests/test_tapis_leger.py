@@ -1,13 +1,14 @@
 """Tests de la voie LEGERE du tirage (`coordination/tapis_leger.py`) -- #27225.
 
-La bascule a trois garanties, et chacune se verifie ici :
+La bascule separe deux temps, et chacun se verifie ici :
 
-1. le **classement** ne lit que des metadonnees -- ni corps, ni commentaires ;
-2. la **qualification** du grain servi se fait sur son **FIL COMPLET**
-   (l'organe REST `gh_snapshot`), pas sur la fenetre des 12 derniers
-   commentaires de la lecture groupee ;
-3. le tirage **par defaut** est leger ; la voie lourde reste accessible
-   (`--voie lourd`) et le rejeu `--lecture` y reste.
+1. le **tirage** ne lit que des metadonnees -- ni corps, ni commentaires : il
+   tourne la tete de niveau sur TOUTES les issues ouvertes et rend l'**etat**
+   de chaque grain et l'**action** a faire ;
+2. la **qualification** (prise en charge) lit le corps et le **FIL COMPLET**
+   (l'organe REST `gh_snapshot`), jamais la fenetre des 12 derniers
+   commentaires de la lecture groupee, et **rejoue les neuf regles** de la
+   voie lourde -- dont elle affiche le code et le motif.
 
 Aucun test ne touche le reseau : `run` est un faux, le fil est monkeypatche.
 """
@@ -44,25 +45,19 @@ def _page_metas(nodes: list[dict], suivant: bool = False) -> str:
         "nodes": nodes}}}})
 
 
-def _page_corps(n: int) -> str:
-    node = {"number": n, "title": f"Grain {n}", "body": f"Part of #{n}",
-            "createdAt": "2026-11-01T00:00:00Z", "updatedAt": "2026-11-01T00:00:00Z",
-            "labels": {"nodes": []}}
-    return json.dumps({"data": {"repository": {"i0": node}}})
-
-
-def _page_corps_multiples(requete: str) -> str:
+def _page_issues_multiples(requete: str) -> str:
     """La reponse au lot : un alias par issue demandee (`i0`, `i1`, ...)."""
     alias: dict[str, dict] = {}
     for k, n in re.findall(r"i(\d+):\s*issue\(number:(\d+)\)", requete):
         alias[f"i{k}"] = {"number": int(n), "title": f"Grain {n}",
                           "body": f"Part of #{n}", "createdAt": "2026-11-01T00:00:00Z",
-                          "updatedAt": "2026-11-01T00:00:00Z", "labels": {"nodes": []}}
+                          "updatedAt": "2026-11-01T00:00:00Z", "labels": {"nodes": []},
+                          "comments": {"totalCount": 0, "nodes": []}}
     return json.dumps({"data": {"repository": alias}})
 
 
-def _run_faux(appels: list[list[str]] | None = None, nb: int = 2):
-    """Un faux `run` : metadonnees, corps, citations (vide) et PRs (vides)."""
+def _run_faux(appels: list[list[str]] | None = None, nb: int = 4):
+    """Un faux `run` : metadonnees, lecture ciblee, citations (vide), PRs (vides)."""
     def run(argv, timeout):
         if appels is not None:
             appels.append(list(argv))
@@ -74,7 +69,7 @@ def _run_faux(appels: list[list[str]] | None = None, nb: int = 2):
             if requete.count("{") != requete.count("}"):
                 raise AssertionError(f"requete GraphQL mal formee : {requete[:160]}")
         if "issue(number:" in requete:
-            return _page_corps_multiples(requete)
+            return _page_issues_multiples(requete)
         if "graphql" in requete:
             return _page_metas([_noeud(7 + k) for k in range(nb)])
         if argv[0] == "git":
@@ -84,7 +79,78 @@ def _run_faux(appels: list[list[str]] | None = None, nb: int = 2):
     return run
 
 
-# --- la qualification lit le FIL COMPLET --------------------------------------
+# --- le tirage ne lit que des metadonnees -------------------------------------
+
+def test_le_classement_ne_lit_que_des_metadonnees():
+    """Le classement ne demande ni corps ni commentaires : la requete le dit."""
+    appels: list[list[str]] = []
+    gh_selection.lire_metadonnees_issues(_run_faux(appels))
+    requete = " ".join(appels[0])
+    assert "body" not in requete and "comments" not in requete
+
+
+def test_le_tirage_leger_ne_decide_aucun_ecart(monkeypatch):
+    """Le tirage n'ecarte rien : les neuf regles ne sont pas decidables sur
+    des metadonnees, elles se decident a la prise en charge.
+
+    Une exclusion decidable sur metadonnees (le label `candidate-delivered`)
+    ne doit donc PAS disparaitre du classement : elle est rendue avec son
+    etat, et l'action qui va avec.
+    """
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
+                                       _run_faux(nb=6))
+    assert code == 0
+    assert rapport["voie"] == "leger"
+    assert rapport["pool"] == 6
+    for g in rapport["grains"]:
+        assert "action" in g and g["action"]
+        assert g["action"].startswith("qualifier #")
+
+
+def test_le_tirage_leger_sert_une_file_plus_longue_que_le_nombre_de_grains():
+    """La file sert plus de grains que demande : la qualification ecarte au
+    moment de l'action, et la file doit rester pleine."""
+    rapport, _ = tapis_leger.tirage(LANE, 2, NOW, 45, "g", Path("."),
+                                    _run_faux(nb=12))
+    assert len(rapport["grains"]) > 2
+
+
+def test_un_conteneur_ne_passe_jamais_devant_un_grain(monkeypatch):
+    """Un EPIC est un conteneur : il ne passe jamais devant un grain (#26926).
+
+    La detection se fait sur les metadonnees (titre `[EPIC ...]`, labels), donc
+    elle ne peut pas attendre la lecture du corps.
+    """
+    def run_epic(argv, timeout):
+        requete = " ".join(argv)
+        if "graphql" in requete and "issue(number:" not in requete:
+            return _page_metas([_noeud(7), _noeud(8, titre="[EPIC] Cadre"),
+                                _noeud(9)])
+        return _run_faux()(argv, timeout)
+
+    rapport, _ = tapis_leger.tirage(LANE, 3, NOW, 45, "g", Path("."), run_epic)
+    numeros = [g["numero"] for g in rapport["grains"]]
+    if 8 in numeros:
+        autres = [i for i, n in enumerate(numeros) if n != 8]
+        assert numeros.index(8) > max(autres), \
+            "un conteneur ne passe jamais devant un grain"
+
+
+# --- la qualification de la prise en charge -----------------------------------
+
+def test_la_requete_de_qualification_est_bien_formee():
+    """La requete de qualification doit etre ACCEPTEE par GraphQL.
+
+    Defaut deja mesure : un bloc de champs qui se ferme lui-meme produit une
+    accolade de trop, et l'erreur n'apparait qu'aupres de GitHub, en
+    `Expected one of SCHEMA, SCALAR, TYPE...`.
+    """
+    appels: list[list[str]] = []
+    tq.qualifier([7, 8], LANE, NOW, 45, [], {}, _run_faux(appels))
+    requete = " ".join(appels[0])
+    assert requete.count("{") == requete.count("}")
+    assert requete.count("issue(number:") == 2
+
 
 def test_la_qualification_lit_le_fil_complet(monkeypatch):
     """Le fil qualifie n'est PAS la fenetre des 12 derniers commentaires.
@@ -96,51 +162,142 @@ def test_la_qualification_lit_le_fil_complet(monkeypatch):
 
     def faux_fil(repo, number):
         vus.append(number)
-        return [{"createdAt": f"2026-11-0{k + 1}T00:00:00Z",
+        return [{"createdAt": "2026-11-17T00:00:00Z",
                  "author": {"login": "jsboige"},
-                 "body": f"[CLAIMED] lane autre -- commentaire {k}"} for k in range(40)]
+                 "body": f"[CLAIMED] lane myia-po-2025:CoursIA-2 -- commentaire {k}"} for k in range(40)]
 
-    monkeypatch.setattr(tq.gh_snapshot, "fetch_issue_comments", faux_fil)
-    issues, echecs = tq.qualifier_candidats([7], _run_faux())
+    monkeypatch.setattr(tq.tapis_fil_complet.gh_snapshot, "fetch_issue_comments", faux_fil)
+    # La fenetre annonce 40 commentaires, la lecture ciblee n'en rend que 12 :
+    # le fil complet est donc requis, et c'est lui qui tranche.
+    def run_tronque(argv, timeout):
+        requete = " ".join(argv)
+        if "issue(number:" in requete:
+            alias: dict[str, dict] = {}
+            for k, n in re.findall(r"i(\d+):\s*issue\(number:(\d+)\)", requete):
+                alias[f"i{k}"] = {"number": int(n), "title": f"Grain {n}", "body": "",
+                                  "createdAt": "2026-11-01T00:00:00Z",
+                                  "updatedAt": "2026-11-01T00:00:00Z",
+                                  "labels": {"nodes": []},
+                                  "comments": {"totalCount": 40, "nodes": []}}
+            return json.dumps({"data": {"repository": alias}})
+        return _run_faux()(argv, timeout)
+
+    servis, ecartees, echecs, arrete, appels = tq.qualifier(
+        [7], LANE, NOW, 45, [], {}, run_tronque)
     assert not echecs
-    qualifie = issues[0]
-    assert len(qualifie["comments"]) == 40, "le fil doit etre complet, pas une fenetre"
-    assert qualifie["comments_total"] == 40
-    assert vus == [7]
+    assert vus == [7], "le fil complet doit etre relu"
+    assert len(servis) == 0, "un claim vivant d'une autre lane ecarte le grain"
+    assert ecartees[7]["code"] == "RECLAMEE"
 
 
-def test_un_fil_illisible_ecarte_le_grain_sans_bloquer_le_tirage(monkeypatch):
-    """Un fil illisible ne bloque pas le tirage : le grain est absent de la
-    liste qualifiee, le reste du tirage continue (fail-OPEN)."""
+def test_un_fil_illisible_ne_bloque_pas_la_qualification(monkeypatch):
+    """Un fil illisible ne bloque pas : le grain reste servi (fail-OPEN)."""
     def faux_fil(repo, number):
         raise RuntimeError("fil indisponible")
 
-    monkeypatch.setattr(tq.gh_snapshot, "fetch_issue_comments", faux_fil)
-    issues, echecs = tq.qualifier_candidats([7], _run_faux())
-    assert issues == [] and echecs == [7]
+    monkeypatch.setattr(tq.tapis_fil_complet.gh_snapshot, "fetch_issue_comments", faux_fil)
+    servis, ecartees, echecs, arrete, appels = tq.qualifier(
+        [7], LANE, NOW, 45, [], {}, _run_faux())
+    assert not ecartees and not echecs
+    assert len(servis) == 1
 
 
-def test_la_requete_du_corps_est_bien_formee():
-    """La requete du corps doit etre ACCEPTEE par GraphQL : ses accolades
-    sont equilibrees, et chaque alias porte une issue.
+def test_les_ecarts_sont_affiches_avec_leur_code_et_leur_motif():
+    """Une exclusion n'est jamais silencieuse : elle porte son code et son motif."""
+    claim = {"created_at": "2026-11-17T00:00:00Z", "author": "jsboige",
+             "body": "[CLAIMED] lane myia-po-2025:CoursIA-2 -- paths: a/**"}
+    lec = gh_bulk.Lecture(issues=[{
+        "number": 7, "title": "Grain 7", "body": "", "created_at": "2026-11-01T00:00:00Z",
+        "updated_at": "2026-11-01T00:00:00Z", "labels": [], "comments_total": 1,
+        "comments": [claim]}],
+        prs=[], citations={}, lu_a="2026-11-18T08:00:00Z")
+    etats_ = tapis_rapide.etats(lec, LANE, NOW)
+    assert etats_[0].ecart == "RECLAMEE"
+    assert etats_[0].motif
 
-    Defaut deja mesure : un bloc de champs qui se ferme lui-meme produit une
-    accolade de trop -- l'erreur n'apparait qu'aupres de GitHub, en
-    `Expected one of SCHEMA, SCALAR, TYPE...`.
+
+def test_la_qualification_rejoue_les_memes_regles_que_la_voie_lourde():
+    """Les neuf ecarts de `tapis_rapide.etats` sont inchanges : la voie leger
+    ne redecide pas, elle ALIMENTE la meme decision sur un grain qualifie."""
+    autre = "myia-po-2025:CoursIA-2"
+    claim = {"created_at": "2026-11-17T00:00:00Z", "author": "jsboige",
+             "body": f"[CLAIMED] lane {autre} -- paths: a/**"}
+    lec = gh_bulk.Lecture(issues=[{
+        "number": 7, "title": "Grain 7", "body": "", "created_at": "2026-11-01T00:00:00Z",
+        "updated_at": "2026-11-01T00:00:00Z", "labels": [], "comments_total": 1,
+        "comments": [claim]}],
+        prs=[], citations={}, lu_a="2026-11-18T08:00:00Z")
+    etats_ = tapis_rapide.etats(lec, LANE, NOW)
+    assert etats_[0].ecart is not None, "un claim vivant d'une autre lane ecarte"
+    lec2 = gh_bulk.Lecture(issues=[{
+        "number": 7, "title": "Grain 7", "body": "", "created_at": "2026-11-01T00:00:00Z",
+        "updated_at": "2026-11-01T00:00:00Z", "labels": [], "comments_total": 1,
+        "comments": [claim]}],
+        prs=[], citations={}, lu_a="2026-11-18T08:00:00Z")
+    etats2 = tapis_rapide.etats(lec2, LANE, NOW)
+    assert etats2[0].ecart == etats_[0].ecart
+    assert etats2[0].motif == etats_[0].motif
+
+
+# --- la bascule : le tirage par defaut est leger -------------------------------
+
+def test_le_tirage_par_defaut_est_leger(monkeypatch, capsysbinary):
+    """Sans `--voie`, le tirage passe par la voie LEGERE.
+
+    Le test le prouve par l'absence : la lecture lourde du pool entier
+    (`gh_bulk.lire_tout`) ne doit jamais etre appelee.
     """
-    appels: list[list[str]] = []
-    tq.lire_corps(_run_faux(appels), gh_bulk.DEPOT_GH, [7, 8, 9])
-    requete = " ".join(appels[0])
-    assert requete.count("{") == requete.count("}")
-    assert requete.count("issue(number:") == 3
+    def run_interdite(*a, **k):
+        raise AssertionError("la voie lourde ne doit pas lire le pool entier")
+
+    monkeypatch.setattr(gh_bulk, "lire_tout", run_interdite)
+    code = tapis_rapide.main(["--lane", LANE, "--json"], run=_run_faux(),
+                              maintenant=NOW)
+    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
+    assert code == 0
+    assert sortie["voie"] == "leger"
+    assert sortie["qualification"]["organe"].endswith("tapis_prise_en_charge.py")
 
 
-def test_le_classement_ne_lit_que_des_metadonnees():
-    """Le classement ne demande ni corps ni commentaires : la requete le dit."""
-    appels: list[list[str]] = []
-    gh_selection.lire_metadonnees_issues(_run_faux(appels))
-    requete = " ".join(appels[0])
-    assert "body" not in requete and "comments" not in requete
+def test_un_rejeu_reste_sur_la_voie_lourde(monkeypatch, tmp_path, capsysbinary):
+    """Le rejeu `--lecture` est hors ligne : il reste sur la voie lourde,
+    seule voie qui sait relire un dossier de lecture."""
+    (tmp_path / "issues.json").write_text(json.dumps([{
+        "number": 7, "title": "Grain 7", "body": "", "created_at": "2026-11-01T00:00:00Z",
+        "updated_at": "2026-11-01T00:00:00Z", "labels": [], "comments_total": 0,
+        "comments": []}]), encoding="utf-8")
+    (tmp_path / "prs_ouvertes.json").write_text("[]", encoding="utf-8")
+    (tmp_path / "meta.json").write_text(json.dumps({"fetched_at": "2026-11-18T08:00:00Z"}),
+                                        encoding="utf-8")
+    code = tapis_rapide.main(["--lane", LANE, "--lecture", str(tmp_path), "--json"],
+                              run=_run_faux(), maintenant=NOW)
+    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
+    assert code == 0
+    assert "voie" not in sortie, "un rejeu ne porte pas la voie leger"
+
+
+def test_la_voie_lourde_reste_explicite(monkeypatch, capsysbinary):
+    """`--voie lourd` garde l'ancienne lecture : elle est demandee, elle sert."""
+    monkeypatch.setattr(gh_bulk, "lire_tout", lambda *a, **k: gh_bulk.Lecture(
+        issues=[], prs=[], citations={}, lu_a="2026-11-18T08:00:00Z"))
+    monkeypatch.setattr(tapis_leger.tapis_origami, "mesurer", lambda *a, **k: (
+        {}, {"active": False, "measured": False, "parked": [], "reason": "test"}))
+    code = tapis_rapide.main(["--lane", LANE, "--cache-s", "0", "--json",
+                               "--voie", "lourd"], run=_run_faux(), maintenant=NOW)
+    assert code == 0
+    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
+    assert "voie" not in sortie
+
+
+def test_la_lecture_incomplete_du_pool_ne_sert_rien(monkeypatch, capsysbinary):
+    """Sortie 3 : une selection incomplete ne rend aucune liste a moitie."""
+    def run_panne(argv, timeout):
+        raise subprocess.TimeoutExpired(argv, timeout)
+
+    code = tapis_rapide.main(["--lane", LANE], run=run_panne, maintenant=NOW)
+    capture = capsysbinary.readouterr()
+    assert code == 3
+    assert "Lecture incomplete" in capture.err.decode("utf-8")
 
 
 # --- la lecture ciblee des issues nommees (gh_issues) --------------------------
@@ -171,139 +328,3 @@ def test_la_lecture_ciblee_ne_devine_pas_une_issue_absente():
 
     assert gh_issues.lire_champs(run_absente, gh_bulk.DEPOT_GH, [7], "number",
                                   "corps") == {}
-
-
-def test_le_plafond_de_qualification_suit_le_nombre_de_grains_demandes(monkeypatch):
-    """La ceinture du coordinateur (`--grains 60`) doit rendre 60 grains : le
-    plafond de qualification ne peut pas etre un nombre fixe, sinon la bascule
-    casserait l'usage le plus large du tapis (le board du coordinateur)."""
-    monkeypatch.setattr(tq.gh_snapshot, "fetch_issue_comments",
-                        lambda repo, number: [])
-    rapport, code = tapis_leger.tirage(LANE, 20, NOW, 45, "g", Path("."),
-                                       _run_faux(nb=30))
-    assert code == 0
-    assert rapport["qualification"]["candidats"] == 20
-    assert len(rapport["grains"]) == 20
-
-
-def test_une_vague_entierement_ecartee_ouvre_la_suivante(monkeypatch):
-    """Les neuf ecarts peuvent ecarter TOUS les premiers candidats : la
-    qualification ouvre alors la vague suivante.
-
-    Servir 0 grain alors que le pool en contient serait un echec de methode,
-    pas un pool vide (mesure du 2026-11-18).
-    """
-    autre = "myia-po-2025:CoursIA-2"
-
-    vus: list[int] = []
-
-    def faux_fil(repo, number):
-        # La premiere VAGUE (12 candidats, dans l'ordre de la rotation) est
-        # occupee par une autre lane ; les suivants sont libres.
-        vus.append(number)
-        if len(vus) <= 12:
-            return [{"created_at": "2026-11-17T00:00:00Z", "author": "jsboige",
-                     "body": f"[CLAIMED] lane {autre} -- paths: a/**"}]
-        return []
-
-    monkeypatch.setattr(tq.gh_snapshot, "fetch_issue_comments", faux_fil)
-    rapport, code = tapis_leger.tirage(LANE, 2, NOW, 45, "g", Path("."),
-                                       _run_faux(nb=30))
-    assert code == 0
-    assert rapport["qualification"]["candidats"] > 12, "la vague suivante a ete ouverte"
-    assert len(rapport["grains"]) == 2
-    assert rapport["grains"][0]["numero"] == vus[12]
-
-
-# --- la bascule : le tirage par defaut est leger -------------------------------
-
-def test_le_tirage_par_defaut_est_leger(monkeypatch, capsysbinary):
-    """Sans `--voie`, le tirage passe par la voie LEGERE.
-
-    Le test le prouve par l'absence : la lecture lourde du pool entier
-    (`gh_bulk.lire_tout`) ne doit jamais etre appelee.
-    """
-    def run_interdite(*a, **k):
-        raise AssertionError("la voie lourde ne doit pas lire le pool entier")
-
-    monkeypatch.setattr(gh_bulk, "lire_tout", run_interdite)
-    monkeypatch.setattr(tq.gh_snapshot, "fetch_issue_comments",
-                        lambda repo, number: [])
-    code = tapis_rapide.main(["--lane", LANE, "--json"], run=_run_faux(),
-                              maintenant=NOW)
-    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
-    assert code == 0
-    assert sortie["voie"] == "leger"
-    assert sortie["qualification"]["fil"] == "complet"
-
-
-def test_un_rejeu_reste_sur_la_voie_lourde(monkeypatch, tmp_path, capsysbinary):
-    """Le rejeu `--lecture` est hors ligne : il reste sur la voie lourde,
-    seule voie qui sait relire un dossier de lecture."""
-    (tmp_path / "issues.json").write_text(json.dumps([{
-        "number": 7, "title": "Grain 7", "body": "", "created_at": "2026-11-01T00:00:00Z",
-        "updated_at": "2026-11-01T00:00:00Z", "labels": [], "comments_total": 0,
-        "comments": []}]), encoding="utf-8")
-    (tmp_path / "prs_ouvertes.json").write_text("[]", encoding="utf-8")
-    (tmp_path / "meta.json").write_text(json.dumps({"fetched_at": "2026-11-18T08:00:00Z"}),
-                                        encoding="utf-8")
-    monkeypatch.setattr(tq.gh_snapshot, "fetch_issue_comments",
-                        lambda repo, number: [])
-    code = tapis_rapide.main(["--lane", LANE, "--lecture", str(tmp_path), "--json"],
-                              run=_run_faux(), maintenant=NOW)
-    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
-    assert code == 0
-    assert "voie" not in sortie, "un rejeu ne porte pas la voie leger"
-
-
-def test_la_voie_lourde_restexplicite(monkeypatch, capsysbinary):
-    """`--voie lourd` garde l'ancienne lecture : elle est demandee, elle sert."""
-    monkeypatch.setattr(gh_bulk, "lire_tout", lambda *a, **k: gh_bulk.Lecture(
-        issues=[], prs=[], citations={}, lu_a="2026-11-18T08:00:00Z"))
-    monkeypatch.setattr(tapis_leger.tapis_origami, "mesurer", lambda *a, **k: (
-        {}, {"active": False, "measured": False, "parked": [], "reason": "test"}))
-    code = tapis_rapide.main(["--lane", LANE, "--cache-s", "0", "--json",
-                               "--voie", "lourd"], run=_run_faux(), maintenant=NOW)
-    assert code == 0
-    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
-    assert "voie" not in sortie
-
-
-def test_la_lecture_incomplete_du_pool_ne_sert_rien(monkeypatch, capsysbinary):
-    """Sortie 3 : une selection incomplete ne rend aucune liste a moitie."""
-    def run_panne(argv, timeout):
-        raise subprocess.TimeoutExpired(argv, timeout)
-
-    monkeypatch.setattr(tq.gh_snapshot, "fetch_issue_comments",
-                        lambda repo, number: [])
-    code = tapis_rapide.main(["--lane", LANE], run=run_panne, maintenant=NOW)
-    capture = capsysbinary.readouterr()
-    assert code == 3
-    assert "Lecture incomplete" in capture.err.decode("utf-8")
-
-
-# --- les regles de decision sont les memes qu'en voie lourde --------------------
-
-def test_la_qualification_rejoue_les_memes_regles_que_la_voie_lourde():
-    """Les neuf ecarts de `tapis_rapide.etats` sont inchanges : la voie leger
-    ne redecide pas, elle ALIMENTE la meme decision sur un grain qualifie."""
-    autre = "myia-po-2025:CoursIA-2"
-    claim = {"created_at": "2026-11-17T00:00:00Z", "author": "jsboige",
-             "body": f"[CLAIMED] lane {autre} -- paths: a/**"}
-    lec = gh_bulk.Lecture(issues=[{
-        "number": 7, "title": "Grain 7", "body": "", "created_at": "2026-11-01T00:00:00Z",
-        "updated_at": "2026-11-01T00:00:00Z", "labels": [], "comments_total": 1,
-        "comments": [claim]}],
-        prs=[], citations={}, lu_a="2026-11-18T08:00:00Z")
-    etats_ = tapis_rapide.etats(lec, LANE, NOW)
-    assert etats_[0].ecart is not None, "un claim vivant d'une autre lane ecarte"
-    qualifie = tq.qualifier(7, {"title": "Grain 7", "body": "",
-                                         "created_at": "2026-11-01T00:00:00Z",
-                                         "updated_at": "2026-11-01T00:00:00Z",
-                                         "labels": []},
-                                     [claim])
-    lec2 = gh_bulk.Lecture(issues=[qualifie], prs=[], citations={},
-                            lu_a="2026-11-18T08:00:00Z")
-    etats2 = tapis_rapide.etats(lec2, LANE, NOW)
-    assert etats2[0].ecart == etats_[0].ecart
-    assert etats2[0].motif == etats_[0].motif

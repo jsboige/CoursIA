@@ -81,6 +81,8 @@ ORGANES = (
     "scripts/coordination/tapis_avantages.py",
     "scripts/coordination/tapis_leger.py",
     "scripts/coordination/tapis_qualification.py",
+    "scripts/coordination/tapis_fil_complet.py",
+    "scripts/coordination/tapis_prise_en_charge.py",
     "scripts/coordination/tapis_reverif.py",
     "scripts/coordination/tapis_origami.py",
 )
