@@ -1347,7 +1347,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-9](SL-9-LLM-SymbolicLearning.ipynb) | [SL-11 >>](SL-11-Capstone-NeuroSymbolic.ipynb)
 ",,,,,,,,8556450240d40c45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,1074edf7,markdown,fr,c3d8c31a1a2e7fbd,"# SL-10 --- Apprentissage Actif d'Automates (L* d'Angluin) --- twin C# .NET
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,1074edf7,markdown,fr,c3d8c31a1a2e7fbd,"# SL-10 --- Apprentissage Actif d'Automates (L* d'Angluin) --- twin C# .NET
 
 **Navigation** : [Index](./README.md) | [twin Python](SL-10-ActiveAutomataLearning.ipynb) | [<< SL-9](SL-9-LLM-SymbolicLearning.ipynb) | [SL-11 >>](SL-11-Capstone-NeuroSymbolic.ipynb)
 
@@ -1389,7 +1389,7 @@ probabiliste. Deux **annexes** facultatives en fin de carnet :
 
 **Déjà à l'aise avec DFA et table d'observation ?** Sauter directement à la
 section 8.",,,,,,,,c3d8c31a1a2e7fbd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,0219832f,markdown,fr,d0d0fbd6af7e370b,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,0219832f,markdown,fr,d0d0fbd6af7e370b,"***
 
 ## 1. Du passif a l'actif : le modèle MAT
 
@@ -1421,7 +1421,7 @@ poser des questions change la classe de complexite du problème.
 Commencons par la cible : un DFA jouet que L* devra decouvrir *sans jamais regarder
 sa structure*, uniquement en l'interrogeant.
 ",,,,,,,,d0d0fbd6af7e370b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,c10e0b0d,code,fr,89076cd8914119c5,"// Un DFA = (etats, alphabet, transitions, etat initial, etats acceptants)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,c10e0b0d,code,fr,89076cd8914119c5,"// Un DFA = (etats, alphabet, transitions, etat initial, etats acceptants)
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -1478,7 +1478,7 @@ foreach (var w in new[] { """", ""a"", ""b"", ""ab"", ""aabb"", ""abab"", ""aab"
     int na = w.Count(c => c == 'a'), nb = w.Count(c => c == 'b');
     Console.WriteLine($""{(w == """" ? ""eps"" : w),8} | {na,4} | {nb,4} | {(MembershipQuery(w) ? ""OUI"" : ""non"")}"");
 }",,,,,,,,89076cd8914119c5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,2d81c7c9,markdown,fr,025d5246aab2ecc1,"### Pourquoi ce langage ?
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,2d81c7c9,markdown,fr,025d5246aab2ecc1,"### Pourquoi ce langage ?
 
 Le mot vide est accepte (0 est pair), `ab` est rejete (1 'a', 1 'b'), `aabb` et
 `abab` sont acceptes. Le DFA minimal a exactement **4 etats** --- le produit des
@@ -1491,7 +1491,7 @@ L'apprenant ne voit que `membership_query` : une boite noire mot -> booléen.
 Tout l'enjeu est de reconstruire la structure (etats, transitions) a partir de
 reponses oui/non bien choisies.
 ",,,,,,,,025d5246aab2ecc1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,afd974af,markdown,fr,d4f14c369c3f1365,"### Schema : le DFA cible (invisible pour l'apprenant)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,afd974af,markdown,fr,d4f14c369c3f1365,"### Schema : le DFA cible (invisible pour l'apprenant)
 
 Le langage cible -- *nombre pair de `a` **et** pair de `b`* -- est reconnu par le DFA
 minimal a **4 etats**, un par couple (parite des `a`, parite des `b`). C'est cette
@@ -1525,7 +1525,7 @@ stateDiagram-v2
 > la SL-1 ne capture ce **compteur modulaire** : c'est précisément ce qui place ce
 > concept hors de portee de l'apprentissage passif et dans celui de L*.
 ",,,,,,,,d4f14c369c3f1365,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,908b2d73,markdown,fr,f66f959a35f4cf76,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,908b2d73,markdown,fr,f66f959a35f4cf76,"***
 
 ## 2. La table d'observation
 
@@ -1550,7 +1550,7 @@ Pour pouvoir construire un DFA a partir de la table, deux proprietes sont requis
 | **Fermeture** | $\forall s \in S, a \in \Sigma$, $row(s a)$ est la ligne d'un élément de $S$ | la transition $row(s) \xrightarrow{a} {?}$ sort de la table : **promouvoir** $sa$ dans $S$ |
 | **Consistance** | $row(s_1) = row(s_2) \Rightarrow \forall a, row(s_1 a) = row(s_2 a)$ | deux etats fusionnes a tort : **ajouter** le suffixe $a e$ qui les separe a $E$ |
 ",,,,,,,,f66f959a35f4cf76,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,9e076da6,code,fr,c3956fbc37834ed0,"public class ObservationTable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,9e076da6,code,fr,c3956fbc37834ed0,"public class ObservationTable
 {
     public List<char> A { get; set; }
     public Func<string, bool> Mq { get; set; }
@@ -1632,7 +1632,7 @@ table.Show();
 var sa0 = table.FindUnclosed();
 Console.WriteLine($""\nRequetes MQ posees : {table.NMq}"");
 Console.WriteLine($""Fermee ? {(sa0 == null ? ""oui"" : ""NON : row("" + sa0 + "") absente de S"")}"");",,,,,,,,c3956fbc37834ed0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,271575fc,markdown,fr,346614ffc6241391,"### Lecture de la table initiale
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,271575fc,markdown,fr,346614ffc6241391,"### Lecture de la table initiale
 
 La ligne de $\varepsilon$ vaut $(1)$ (le mot vide est dans $L$), mais celles de
 `a` et `b` valent $(0)$ : la table n'est **pas fermee** --- l'automate conjecture
@@ -1641,7 +1641,7 @@ promouvoir le prefixe fautif dans $S$, ce qui *créé* l'etat manquant, puis re-
 la table. L'algorithme L* n'est rien d'autre que la repetition disciplinee de ce
 geste, plus le traitement des contre-exemples.
 ",,,,,,,,346614ffc6241391,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,1a710b59,markdown,fr,dd28e82d9b311a3a,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,1a710b59,markdown,fr,dd28e82d9b311a3a,"***
 
 ## 3. L'algorithme L*
 
@@ -1663,7 +1663,7 @@ sa première colonne ($e = \varepsilon$) vaut 1, et la transition par $a$ envoie
 $row(s)$ sur $row(sa)$ --- la fermeture garantit que cette ligne existe, la
 consistance qu'elle ne depend pas du representant $s$ choisi.
 ",,,,,,,,dd28e82d9b311a3a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,e4407dce,code,fr,19ae8ef1adb44657,"Dfa Conjecture(ObservationTable table)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,e4407dce,code,fr,19ae8ef1adb44657,"Dfa Conjecture(ObservationTable table)
 {
     var reps = new Dictionary<string, string>();  // ligne (signature) -> prefixe representant
     foreach (var s in table.S)
@@ -1729,7 +1729,7 @@ string FindCounterexample(Dfa hyp, Dfa target, IEnumerable<char> alphabet)
 }
 
 Console.WriteLine(""L* implemente : ObservationTable + conjecture + boucle de raffinement."");",,,,,,,,19ae8ef1adb44657,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,1e879b52,markdown,fr,1166641d402347af,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,1e879b52,markdown,fr,1166641d402347af,"***
 
 ## 4. Exécution complete sur le langage cible
 
@@ -1737,7 +1737,7 @@ Lancons L* contre la boite noire. L'oracle d'equivalence est ici *exact* (BFS su
 l'automate produit) : un luxe possible seulement parce que nous connaissons la cible
 --- la section 6 le remplacera par ce qu'on a vraiment en pratique.
 ",,,,,,,,1166641d402347af,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,6544dcb7,code,fr,aa9e11017536766d,"var (learned, finalTable, nEqRun) = Lstar(ALPHABET, MembershipQuery,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,6544dcb7,code,fr,aa9e11017536766d,"var (learned, finalTable, nEqRun) = Lstar(ALPHABET, MembershipQuery,
     h => FindCounterexample(h, TARGET, ALPHABET));
 
 Console.WriteLine($""\nDFA appris : {learned}"");
@@ -1763,7 +1763,7 @@ IEnumerable<string> AllWords(List<char> alphabet, int maxLen)
 var allW = AllWords(ALPHABET, 10).ToList();
 int mismatch = allW.Count(w => learned.Accepts(w) != TARGET.Accepts(w));
 Console.WriteLine($""\nVerification exhaustive : {allW.Count - mismatch}/{allW.Count} mots (longueur <= 10) identiques"");",,,,,,,,aa9e11017536766d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,ea739970,markdown,fr,9986b15a37f10b42,"### Interpretation : que s'est-il passe ?
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,ea739970,markdown,fr,9986b15a37f10b42,"### Interpretation : que s'est-il passe ?
 
 1. **La première conjecture est minuscule et fausse.** Avec $S = E = \{\varepsilon\}$
    stabilises, la table ne distingue que « accepte / rejette » : 2 etats. Le
@@ -1781,7 +1781,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Cshar
    des questions est la source de l'efficacite --- chaque requête de la table sert a
    trancher une distinction precise entre deux etats candidats.
 ",,,,,,,,9986b15a37f10b42,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,7453720a,markdown,fr,9c6619158465de97,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,7453720a,markdown,fr,9c6619158465de97,"***
 
 ## 5. Garanties : minimalite et complexite polynomiale
 
@@ -1804,7 +1804,7 @@ requêtes d'appartenance, ou $n$ est le nombre d'etats du minimal et $m$ la long
 du plus long contre-exemple. Verifions empiriquement la croissance sur la famille
 $L_k$ = « le nombre de 'a' est divisible par $k$ » (DFA minimal a $k$ etats) :
 ",,,,,,,,9c6619158465de97,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,fc77f50e,code,fr,624801f377abda42,"// Verification empirique 1 : les classes de Myhill-Nerode du langage cible
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,fc77f50e,code,fr,624801f377abda42,"// Verification empirique 1 : les classes de Myhill-Nerode du langage cible
 Dictionary<string, List<string>> NerodeClasses(Func<string, bool> mq, List<char> alphabet, int maxPrefix = 4, int maxSuffix = 4)
 {
     var suffixes = AllWords(alphabet, maxSuffix).ToList();
@@ -1836,7 +1836,7 @@ for (int k = 2; k <= 6; k++)
     var (h, tbl, neq) = Lstar(ALPHABET, MqK, h2 => FindCounterexample(h2, dk, ALPHABET), verbose: false);
     Console.WriteLine($""{k,3} | {h.StateCount,12} | {tbl.NMq,4} | {neq,2}"");
 }",,,,,,,,624801f377abda42,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,e3859f6c,markdown,fr,9119cb1d4cfec988,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,e3859f6c,markdown,fr,9119cb1d4cfec988,"### Interpretation
 
 Les classes empiriques de Myhill-Nerode sont bien au nombre de **4** --- et L* a
 appris un DFA a 4 etats : la garantie de minimalite n'est pas un a-cote théorique,
@@ -1849,7 +1849,7 @@ A noter : c'est un des rares algorithmes de la serie a venir avec une garantie
 sans oracle d'equivalence fiable, la garantie s'evapore --- voyons précisément
 comment.
 ",,,,,,,,9119cb1d4cfec988,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,eb7a7f14,markdown,fr,c21ff909daa0fef2,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,eb7a7f14,markdown,fr,c21ff909daa0fef2,"***
 
 ## 6. L'oracle d'equivalence en pratique
 
@@ -1867,7 +1867,7 @@ le langage des parites (ou une hypothese fausse se trompe sur environ un mot sur
 quatre) et un langage-aiguille, « les mots contenant le facteur `aabbaabb` », ou
 les mots discriminants sont rares.
 ",,,,,,,,c21ff909daa0fef2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,a64892b1,code,fr,1deee4d093f26f99,"using System.Globalization;
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,a64892b1,code,fr,1deee4d093f26f99,"using System.Globalization;
 // Oracle d'equivalence approximatif : N mots aleatoires, premier desaccord.
 Func<Dfa, string> MakeSamplingEq(Func<string, bool> mq, List<char> alphabet, int nSamples, int maxLen = 20, int seed = 0)
 {
@@ -1931,7 +1931,7 @@ foreach (var (name, mq, tgt) in new (string, Func<string, bool>, Dfa)[]
     }
     Console.WriteLine();
 }",,,,,,,,1deee4d093f26f99,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,a1048106,markdown,fr,860ee7b97d3e25ae,"### Interpretation : tout depend de la densite des desaccords
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,a1048106,markdown,fr,860ee7b97d3e25ae,"### Interpretation : tout depend de la densite des desaccords
 
 Sur les **parites**, les desaccords sont suffisamment denses pour que peu
 d'essais suffisent : des N=10, l'EQ trouve les 4 etats exacts. A N=1, un seul mot
@@ -1955,7 +1955,7 @@ fragilise par un oracle faillible. Dans un pipeline neuro-symbolique, *identifie
 qui joue le rôle de l'oracle et ce qu'il garantit vraiment* est la première
 question d'architecture.
 ",,,,,,,,860ee7b97d3e25ae,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,2eb3b6ee,markdown,fr,a3d7d3e20fe38e22,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,2eb3b6ee,markdown,fr,a3d7d3e20fe38e22,"***
 
 ## Annexe A — Postérité : le *model learning*
 
@@ -1982,7 +1982,7 @@ Et la boucle se referme avec les LLM : des travaux recents utilisent un LLM comm
 contre-exemples) et L* comme *apprenant exact* qui en extrait un automate verifiable
 --- la division générateur faillible / verificateur symbolique de SL-9, devenue
 protocole d'apprentissage.",,,,,,,,a3d7d3e20fe38e22,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,9398165e,markdown,fr,c4be120f350d4872,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,9398165e,markdown,fr,c4be120f350d4872,"***
 
 ## 7. Exercices
 
@@ -1996,7 +1996,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Cshar
 | Consistance | lignes egales -> successeurs egaux | `find_inconsistency()` |
 | Conjecture | DFA des lignes distinctes | `conjecture()` |
 | EQ approximatif | echantillonnage, garantie PAC | `make_sampling_eq()` |",,,,,,,,c4be120f350d4872,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,4af4e53f,code,fr,20c3c2c56e9899c0,"// Exemple guide 1 : Apprendre le langage ""contient 'abb' comme facteur""
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,4af4e53f,code,fr,20c3c2c56e9899c0,"// Exemple guide 1 : Apprendre le langage ""contient 'abb' comme facteur""
 // Etape 1 : requete d'appartenance -- une ligne suffit (""abb"" in word)
 bool MqAbb(string word) => word.Contains(""abb"");
 
@@ -2024,7 +2024,7 @@ foreach (var w in testWords)
     bool pred = learnedAbb.Accepts(w), vrai = w.Contains(""abb"");
     Console.WriteLine($""{(w == """" ? ""(eps)"" : w),10} | {(pred ? 1 : 0),3} | {(vrai ? 1 : 0),4} | {(pred == vrai ? ""OK"" : ""ECHEC"")}"");
 }",,,,,,,,20c3c2c56e9899c0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,1e4abd18,markdown,fr,4608579b53655cc8,"### Exercice 1 (variation) : Apprendre un autre langage-facteur
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,1e4abd18,markdown,fr,4608579b53655cc8,"### Exercice 1 (variation) : Apprendre un autre langage-facteur
 
 Reprenez la méthode de l'exemple guide pour apprendre par L* le langage des mots (sur {a, b}) qui contiennent la sous-chaîne **""ba""** (au lieu de ""abb""). Combien d'etats le DFA minimal comporte-t-il, et pourquoi ?
 
@@ -2035,7 +2035,7 @@ Reprenez la méthode de l'exemple guide pour apprendre par L* le langage des mot
 4. Verifier sur 8 mots de votre choix
 
 ",,,,,,,,4608579b53655cc8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,72bdd513,code,fr,b4d372206dfecc7f,"// EXERCICE 1 (variation) : apprendre le langage ""contient 'ba' comme facteur""
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,72bdd513,code,fr,b4d372206dfecc7f,"// EXERCICE 1 (variation) : apprendre le langage ""contient 'ba' comme facteur""
 // TODO etudiant : reprenez l'exemple guide ci-dessus avec le motif ""ba"".
 Console.WriteLine(""Exercice a completer : apprenez le langage 'contient ba' par L*"");
 Console.WriteLine(""Etape 1 : ecrivez MqBa(word) avec .Contains(\""ba\"")"");
@@ -2049,11 +2049,11 @@ Console.WriteLine(""Etape 4 : verifiez sur 8 mots"");
 // Etape 4 : boucle de verification sur 8 mots
 Dfa learnedBa = null;  // TODO etudiant : le DFA appris (a remplir)
 Console.WriteLine($""Resultat : {(learnedBa == null ? ""(a completer)"" : learnedBa.ToString())}"");",,,,,,,,b4d372206dfecc7f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,fd20a706,markdown,fr,4a01f3a396902583,"L'exercice suivant quantifie ce que la section 6 a montre qualitativement : la
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,fd20a706,markdown,fr,4a01f3a396902583,"L'exercice suivant quantifie ce que la section 6 a montre qualitativement : la
 fiabilite de l'oracle d'equivalence par echantillonnage est une variable aleatoire,
 qui se mesure en repetant l'expérience.
 ",,,,,,,,4a01f3a396902583,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,cc11ba64,code,fr,1d2ed7d1652aa1c3,"// Exemple guide 2 : Fiabilite de l'oracle d'equivalence approximatif
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,cc11ba64,code,fr,1d2ed7d1652aa1c3,"// Exemple guide 2 : Fiabilite de l'oracle d'equivalence approximatif
 // Etape 1 : taux de reussite sur n_seeds graines
 double TauxFiabilite(Func<string, bool> mq, Dfa target, int nSamples, int nSeeds = 20)
 {
@@ -2083,7 +2083,7 @@ Console.WriteLine(""Lecture : le seuil de fiabilite (n_samples au-dela duquel le
 Console.WriteLine(""vers 100%) depend fortement du langage. NEEDLE a des desaccords RARES --"");
 Console.WriteLine(""il faut beaucoup d'echantillons pour tomber sur un mot revelateur. TARGET"");
 Console.WriteLine(""(parite) a des desaccords DENSES -- donc peu d'echantillons suffisent."");",,,,,,,,1d2ed7d1652aa1c3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,d2377b97,markdown,fr,15b2707100073e3e,"### Exercice 2 (variation) : Fiabilite vs longueur des mots echantillonnes
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,d2377b97,markdown,fr,15b2707100073e3e,"### Exercice 2 (variation) : Fiabilite vs longueur des mots echantillonnes
 
 Pour NEEDLE, le contre-exemple revelateur est un mot LONG (il faut un mot contenant ""aabbaabb""). L'oracle echantillonne des mots de longueur `<= max_len` : que se passe-t-il si `max_len < 8` (aucun mot genere ne peut contenir le motif) ? Mesurez le taux de fiabilite pour `max_len` dans `[5, 8, 12, 20]`, a `n_samples` fixe.
 
@@ -2093,7 +2093,7 @@ Pour NEEDLE, le contre-exemple revelateur est un mot LONG (il faut un mot conten
 3. Pourquoi `max_len < len(motif)` annule-t-il la fiabilite même avec beaucoup d'echantillons ?
 
 ",,,,,,,,15b2707100073e3e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,f8119638,code,fr,87f8d3341d21873a,"// EXERCICE 2 (variation) : fiabilite vs longueur des mots echantillonnes
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,f8119638,code,fr,87f8d3341d21873a,"// EXERCICE 2 (variation) : fiabilite vs longueur des mots echantillonnes
 // TODO etudiant : pour NEEDLE, la fiabilite depend de max_len (longueur max des mots tires).
 Console.WriteLine(""Exercice a completer : fiabilite vs longueur des mots echantillonnes"");
 Console.WriteLine(""Etape 1 : reutilisez TauxFiabilite en variant max_len (n_samples=200 fixe)"");
@@ -2106,11 +2106,11 @@ Console.WriteLine(""Etape 3 : expliquez pourquoi max_len < 8 annule la fiabilite
 // Etape 2 : foreach (var ml in new[] { 5, 8, 12, 20 }) Console.WriteLine($""  max_len={ml} : {TauxFiabiliteMaxLen(ml):P0}"");
 Dictionary<int, double> resultat2 = null;  // TODO etudiant : dict {max_len: taux}
 Console.WriteLine($""Resultat : {(resultat2 == null ? ""(a completer)"" : string.Join("", "", resultat2.Select(kv => kv.Key + "":"" + kv.Value.ToString(""P0""))))}"");",,,,,,,,87f8d3341d21873a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,d742e0e2,markdown,fr,0c9706b76fa5766d,"L'exercice suivant touche au coeur algorithmique : la maniere d'integrer le
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,d742e0e2,markdown,fr,0c9706b76fa5766d,"L'exercice suivant touche au coeur algorithmique : la maniere d'integrer le
 contre-exemple. Angluin ajoute tous ses **prefixes** a $S$ ; la variante de
 Maler-Pnueli ajoute tous ses **suffixes** a $E$ --- même garantie, couts différents.
 ",,,,,,,,0c9706b76fa5766d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,88e80a27,code,fr,cd063b8e94c2aaff,"// Exemple guide 3 : Variante de traitement du contre-exemple (suffixes vs prefixes)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,88e80a27,code,fr,cd063b8e94c2aaff,"// Exemple guide 3 : Variante de traitement du contre-exemple (suffixes vs prefixes)
 // L* variante Maler-Pnueli : integre le contre-exemple par ses SUFFIXES (ajoutes a E).
 (Dfa hyp, ObservationTable table, int nEq) LstarSuffixes(IEnumerable<char> alphabet, Func<string, bool> mq,
                                                           Func<Dfa, string> eq, bool verbose = false)
@@ -2174,7 +2174,7 @@ Console.WriteLine();
 Console.WriteLine(""Lecture : les deux variantes echangent |S| contre |E|. Angluin ajoute des"");
 Console.WriteLine(""PREFIXES a S ; Maler-Pnueli ajoute des SUFFIXES a E. La compacite globale"");
 Console.WriteLine(""n'avantage aucune des deux variantes en general."")",,,,,,,,cd063b8e94c2aaff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,97779ae6,markdown,fr,7fc4ba503857c918,"### Exercice 3 (variation) : Variante Rivest-Schapire (un seul suffixe, par dichotomie)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,97779ae6,markdown,fr,7fc4ba503857c918,"### Exercice 3 (variation) : Variante Rivest-Schapire (un seul suffixe, par dichotomie)
 
 Angluin ajoute **tous** les prefixes, Maler-Pnueli **tous** les suffixes. La variante de Rivest-Schapire (1993) est plus parcimonieuse : par **recherche dichotomique** sur le contre-exemple, elle identifie **un seul** suffixe distinguant et l'ajoute a `E`. Implementez cette recherche.
 
@@ -2184,7 +2184,7 @@ Angluin ajoute **tous** les prefixes, Maler-Pnueli **tous** les suffixes. La var
 3. Comparez le nombre total de MQ avec la variante Maler-Pnueli (tous les suffixes) sur `TARGET` : Rivest ajoute-t-il moins de colonnes ?
 
 ",,,,,,,,7fc4ba503857c918,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,6fcf565b,code,fr,750b6819eb4170b2,"// EXERCICE 3 (variation) : variante Rivest-Schapire (un seul suffixe par dichotomie)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,6fcf565b,code,fr,750b6819eb4170b2,"// EXERCICE 3 (variation) : variante Rivest-Schapire (un seul suffixe par dichotomie)
 // TODO etudiant : au lieu d'ajouter TOUS les suffixes du contre-exemple a E,
 // n'en ajouter qu'UN, trouve par recherche dichotomique.
 Console.WriteLine(""Exercice a completer : variante Rivest-Schapire (un seul suffixe par dichotomie)"");
@@ -2199,10 +2199,10 @@ Console.WriteLine(""Etape 3 : comparez n_mq et |E| avec Maler-Pnueli sur TARGET"
 // Etape 3 : comparer n_mq et |E| avec Maler-Pnueli sur TARGET
 Dfa learnedRivest = null;  // TODO etudiant : le DFA appris par LstarRivest
 Console.WriteLine($""Resultat : {(learnedRivest == null ? ""(a completer)"" : learnedRivest.ToString())}"");",,,,,,,,750b6819eb4170b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,e241fc91,markdown,fr,623f03afd2197a45,"Dernier exercice : la robustesse. Tous les algorithmes de la serie rencontrent
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,e241fc91,markdown,fr,623f03afd2197a45,"Dernier exercice : la robustesse. Tous les algorithmes de la serie rencontrent
 tot ou tard cette question, et la reponse de L* est singuliere.
 ",,,,,,,,623f03afd2197a45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,4df712b2,code,fr,495673ea8411d0e2,"// Exemple guide 4 : Oracle d'appartenance bruite
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,4df712b2,code,fr,495673ea8411d0e2,"// Exemple guide 4 : Oracle d'appartenance bruite
 // Oracle qui MENT avec probabilite p, de facon DETERMINISTE par mot (memoire par mot).
 Func<string, bool> MakeNoisyMq(Func<string, bool> trueMq, double p = 0.05, int seed = 0)
 {
@@ -2276,7 +2276,7 @@ Console.WriteLine();
 Console.WriteLine(""Lecture : le resultat n'est PAS monotone en p -- il depend de QUELS mots"");
 Console.WriteLine(""l'oracle ment. Un apprenant EXACT comme L* n'a AUCUNE degradation gracieuse"");
 Console.WriteLine(""face au bruit : un seul mensonge memorise dans T cree un etat fantome permanent."");",,,,,,,,495673ea8411d0e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,54d65cbf,markdown,fr,2fdd38f0fd923fb8,"### Exercice 4 (variation) : Robustesse par vote majoritaire
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,54d65cbf,markdown,fr,2fdd38f0fd923fb8,"### Exercice 4 (variation) : Robustesse par vote majoritaire
 
 Le bruit de l'oracle d'appartenance casse l'hypothese d'exactitude de L*. La parade classique : pour chaque mot, poser la requête `K` fois a l'oracle bruite et garder la **reponse majoritaire** (le vrai verdict ressort des que `K` est grand devant le taux de mensonges). Implementez ce `robust_mq` et montrez qu'il permet a L* de retrouver le DFA exact.
 
@@ -2286,7 +2286,7 @@ Le bruit de l'oracle d'appartenance casse l'hypothese d'exactitude de L*. La par
 3. Le DFA appris est-il exact vs `TARGET` ? Quel `K` minimal suffit pour p=0.05 ? pour p=0.20 ?
 
 ",,,,,,,,2fdd38f0fd923fb8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,c7ebae7b,code,fr,413ae4c2f372808f,"// EXERCICE 4 (variation) : robustesse par vote majoritaire
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,c7ebae7b,code,fr,413ae4c2f372808f,"// EXERCICE 4 (variation) : robustesse par vote majoritaire
 // TODO etudiant : diluez le bruit en posant K fois chaque requete et en gardant la majorite.
 Console.WriteLine(""Exercice a completer : robustesse par vote majoritaire"");
 Console.WriteLine(""Etape 1 : ecrivez MakeRobustMq(noisyMq, K) (vote majoritaire par mot)"");
@@ -2299,7 +2299,7 @@ Console.WriteLine(""Etape 3 : le DFA est-il exact vs TARGET ? K minimal pour p=0
 // Etape 3 : exact vs TARGET ; K minimal
 Dfa learnedRobust = null;  // TODO etudiant : le DFA robuste appris
 Console.WriteLine($""Resultat : {(learnedRobust == null ? ""(a completer)"" : learnedRobust.ToString())}"");",,,,,,,,413ae4c2f372808f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,e4fca3db,markdown,fr,50c1a89d7312dac6,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,e4fca3db,markdown,fr,50c1a89d7312dac6,"***
 
 ## 8. Pont vers Infer.NET : du DFA exact a la reconnaissance probabiliste de motifs
 
@@ -2330,7 +2330,7 @@ sur les symboles eux-mêmes (pensez OCR, parole, capteurs). Le mot vrai `w` pass
 dans un canal qui retourne chaque symbole correct avec probabilite `1 - epsilon`
 et le corrompt avec probabilite `epsilon`. On observe `w` *abime* et l'on cherche
 `P(w vrai appartient au langage | observation)`.",,,,,,,,50c1a89d7312dac6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,6495c484,code,fr,985bbb4efdfdbf5b,"// Reconnaissance probabiliste : l'algorithme forward sur les etats du DFA.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,6495c484,code,fr,985bbb4efdfdbf5b,"// Reconnaissance probabiliste : l'algorithme forward sur les etats du DFA.
 // alpha_t[q] = masse des prefixes vrais finissant dans l'etat q, sachant o_1..o_t.
 double ForwardAcceptProb(Dfa dfa, string observed, double epsilon)
 {
@@ -2379,7 +2379,7 @@ foreach (var eps in new[] { 0.0, 0.05, 0.10, 0.20, 0.35 })
     string note = p > 0.95 ? ""certain"" : (p > 0.5 ? ""penche accepte"" : ""doute"");
     Console.WriteLine($""{eps.ToString(""F2"", CultureInfo.InvariantCulture),7} | {p.ToString(""F3"", CultureInfo.InvariantCulture),16} | {note}"");
 }",,,,,,,,985bbb4efdfdbf5b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,267d40d8,markdown,fr,60e424e845de1656,"### Lecture : une probabilite calibree, pas un meilleur verdict
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,267d40d8,markdown,fr,60e424e845de1656,"### Lecture : une probabilite calibree, pas un meilleur verdict
 
 A partir d'**une seule** observation, la decision a seuil 0.5 du recognizer
 probabiliste coincide avec le parcours dur du DFA sur l'observation : pour
@@ -2393,7 +2393,7 @@ Le vrai gain d'exactitude vient quand on dispose de **plusieurs** observations
 bruitees du même mot (plusieurs lectures OCR, plusieurs trames audio). C'est la
 version probabiliste -- et correcte -- du vote majoritaire de l'exercice 4.
 ",,,,,,,,60e424e845de1656,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,52072e9a,code,fr,fce21f000b488bde,"// Agregation de preuves : k observations independantes du meme mot vrai.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,52072e9a,code,fr,fce21f000b488bde,"// Agregation de preuves : k observations independantes du meme mot vrai.
 double ForwardAcceptProbMulti(Dfa dfa, List<string> observations, double epsilon)
 {
     var A = dfa.Alphabet;
@@ -2484,7 +2484,7 @@ Console.WriteLine($""exact {1.0.ToString(""F2"", CultureInfo.InvariantCulture)} 
 for (int y = 0; y < H; y++) { Console.Write(""       |""); for (int x = 0; x < W; x++) Console.Write(g[y, x]); Console.WriteLine(); }
 Console.WriteLine($""exact {0.7.ToString(""F2"", CultureInfo.InvariantCulture)} +{new string('-', W)}  k -> {ks.Last()}"");
 Console.WriteLine(""O = forward eps=0.20 ; X = forward eps=0.30 ; - = plafond DFA dur (1 obs)."");",,,,,,,,fce21f000b488bde,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,f60d94a5,markdown,fr,ab3b4bfbced3cf1e,"### Le pont : Infer.NET fait exactement cela, automatiquement
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,f60d94a5,markdown,fr,ab3b4bfbced3cf1e,"### Le pont : Infer.NET fait exactement cela, automatiquement
 
 Trois faits reunis ferment la boucle :
 
@@ -2523,7 +2523,7 @@ que l'inverse. Reprenez `forward_accept_prob` avec une matrice de confusion
 `epsilon`, puis verifiez que la coherence canal-parfait (matrice identite =
 verdict exact) tient toujours. Indice : seule la ligne `lik = ...` change.
 ",,,,,,,,ab3b4bfbced3cf1e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,ea12aa8d,code,fr,9aab275a19f7f20d,"// Exercice du pont : canal d'observation ASYMETRIQUE (matrice de confusion).
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,ea12aa8d,code,fr,9aab275a19f7f20d,"// Exercice du pont : canal d'observation ASYMETRIQUE (matrice de confusion).
 // confusion[(vrai, observe)] = P(observer 'observe' | vrai symbole 'vrai').
 double ForwardAcceptProbConfusion(Dfa dfa, string observed, Dictionary<(char, char), double> confusion)
 {
@@ -2544,7 +2544,7 @@ double ForwardAcceptProbConfusion(Dfa dfa, string observed, Dictionary<(char, ch
 //     if ((p > 0.5) != MembershipQuery(w)) Console.WriteLine($""ECHEC canal identite sur {w}"");
 // }
 Console.WriteLine(""Exercice du pont : generalisez ForwardAcceptProb a une matrice de confusion."");",,,,,,,,9aab275a19f7f20d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,bd1249a2,markdown,fr,90456de1308756f3,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,bd1249a2,markdown,fr,90456de1308756f3,"***
 
 ## 9. Conclusion
 
@@ -2589,7 +2589,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Cshar
 | Capstone | LLM professeur / oracle symbolique | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) |
 | Pont probabiliste | Reconnaissance de sequences sous bruit | [Infer.NET](../../Probas/Infer/Infer-01b-Premiers-Modeles.ipynb), [Infer-14-Sequences](../../Probas/Infer/Infer-14-Sequences.ipynb) |
 | Automates & verification | Model checking | Serie SymbolicAI |",,,,,,,,90456de1308756f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,617c6c79,markdown,fr,e12a0bd8b488de68,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,617c6c79,markdown,fr,e12a0bd8b488de68,"***
 
 ## Defi presentation
 
@@ -2605,7 +2605,7 @@ Elle fait partie integrante de la presentation attendue.
 | **Ex. 3 (prefixes vs suffixes)** | Exhibez le pire cas : une famille de langages ou les contre-exemples sont longs et ou la variante prefixes fait exploser $\vert S\vert $. La variante de Rivest-Schapire n'ajoute qu'UN suffixe trouve par dichotomie sur le contre-exemple : quel est son cout en MQ et pourquoi est-ce le bon compromis ? |
 | **Ex. 4 (oracle bruite)** | Peut-on reparer L* par vote majoritaire (poser chaque MQ 2k+1 fois) ? Calculez le surcout en requêtes et la probabilite residuelle d'erreur ; comparez avec la degradation *graduelle* d'un classifieur statistique sous le même bruit. Que conclure sur le contrat exactitude-contre-robustesse du symbolique ? |
 ",,,,,,,,e12a0bd8b488de68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,8d8fda2e,markdown,fr,8556450240d40c45,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,8d8fda2e,markdown,fr,8556450240d40c45,"***
 
 ## Ressources
 
@@ -3976,7 +3976,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetwo
 - Registre SOTA axe-2 : #3801.",,,,,,,,dc12f8db2e8b1733,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,6b0e8fee,markdown,fr,eb4e029432845aa0,"# SL-1 - Apprentissage Logique : CBH Search et Version Space
 
-**Navigation** : [Index](./README.md) | [Twin C#](SL-1-LogicalLearning-Csharp.ipynb) | [EBL & RBL >>](SL-2-KnowledgeBasedLearning.ipynb)
+**Navigation** : [Index](./README.md) | [Twin C#](SL-1-LogicalLearning-CSharp.ipynb) | [EBL & RBL >>](SL-2-KnowledgeBasedLearning.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -5519,9 +5519,9 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,902a1f8
 
 **Retour** : [Index SymbolicLearning](./README.md) | [SL-2 >>](SL-2-KnowledgeBasedLearning.ipynb)
 ",,,,,,,,a534e951ba730d53,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,91b0f063,markdown,fr,1b0c76855f00e00d,"# SL-1 - Apprentissage Logique : CBH Search et Version Space (C#)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,91b0f063,markdown,fr,1b0c76855f00e00d,"# SL-1 - Apprentissage Logique : CBH Search et Version Space (C#)
 
-**Navigation** : [Index](./README.md) | [Twin Python](SL-1-LogicalLearning.ipynb) | [Suivant >>](SL-2-KnowledgeBasedLearning-Csharp.ipynb)
+**Navigation** : [Index](./README.md) | [Twin Python](SL-1-LogicalLearning.ipynb) | [Suivant >>](SL-2-KnowledgeBasedLearning-CSharp.ipynb)
 
 > **Jumeau C#** du notebook [SL-1-LogicalLearning.ipynb](SL-1-LogicalLearning.ipynb).
 > Version Python ↔ Version C# (.NET Interactive) — parité pédagogique du marathon #4956.
@@ -5551,7 +5551,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,
 - Mitchell, T. M. *Machine Learning* (1997), ch. 2 (Version Space).
 - Notebook Python associé : [SL-1-LogicalLearning.ipynb](SL-1-LogicalLearning.ipynb).
 ",,,,,,,,1b0c76855f00e00d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,c8a0312f,markdown,fr,ba8316ff53832d45,"## 1. Le problème restaurant (AIMA)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,c8a0312f,markdown,fr,ba8316ff53832d45,"## 1. Le problème restaurant (AIMA)
 
 Le problème canonique d'AIMA : décider si l'on attend une table dans un restaurant,
 à partir de 10 attributs descriptifs. L'objectif est d'apprendre la fonction cible
@@ -5568,7 +5568,7 @@ Une hypothèse est un tuple de 10 contraintes, une par attribut :
 - une valeur spécifique (ex `""Thai""`) = contrainte stricte,
 - `null` = aucune valeur acceptée (hypothèse vide — *spécifique à l'extrême*).
 ",,,,,,,,ba8316ff53832d45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,f10b9494,code,fr,5b41faed96ea7df9,"// Définition du domaine : attributs et leurs valeurs possibles.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,f10b9494,code,fr,5b41faed96ea7df9,"// Définition du domaine : attributs et leurs valeurs possibles.
 var ATTRIBUTES = new[] {
     ""Alternate"",    // Yes, No
     ""Bar"",          // Yes, No
@@ -5630,13 +5630,13 @@ int nPos = EXAMPLES.Count(e => e[""WillWait""]==""Yes"");
 Console.WriteLine($""Domaine : {ATTRIBUTES.Length} attributs"");
 Console.WriteLine($""Exemples : {EXAMPLES.Count} ({nPos} positifs, {EXAMPLES.Count-nPos} négatifs)"");
 ",,,,,,,,5b41faed96ea7df9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,0ca9dac3,markdown,fr,cdb112affbb72338,"## 2. Représentation des hypothèses et consistance
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,0ca9dac3,markdown,fr,cdb112affbb72338,"## 2. Représentation des hypothèses et consistance
 
 ### Consistance
 
 Une hypothèse est **consistante** avec un ensemble d'exemples si elle produit la
 bonne étiquette pour chacun : couvrir les positifs, ne pas couvrir les négatifs.",,,,,,,,cdb112affbb72338,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,513768b0,code,fr,713c634e396e86fe,"// Une hypothèse = tableau de 10 contraintes (string). null = aucune valeur; ""?"" = joker.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,513768b0,code,fr,713c634e396e86fe,"// Une hypothèse = tableau de 10 contraintes (string). null = aucune valeur; ""?"" = joker.
 using Hypothesis = string[];
 
 // Hypothèses extrêmes.
@@ -5680,7 +5680,7 @@ Console.WriteLine();
 Console.WriteLine($""S0 (plus spécifique) : {HStr(S0)}"");
 Console.WriteLine($""  Couvre exemple 1 : {Covers(S0, EXAMPLES[0])}"");
 ",,,,,,,,713c634e396e86fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,047bb07e,markdown,fr,b72c2c929aebd7ce,"## 3. Généralisation et spécialisation
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,047bb07e,markdown,fr,b72c2c929aebd7ce,"## 3. Généralisation et spécialisation
 
 ### Hiérarchie de généralisation
 
@@ -5689,7 +5689,7 @@ Deux opérations asymétriques :
 - **Spécialiser** (pour un faux positif) : resserrer une contrainte `""?""` vers une
   valeur spécifique.
 ",,,,,,,,b72c2c929aebd7ce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,8a5c6b93,code,fr,319ef5fa425a6b68,"// h1 est-elle plus générale que h2 ? (h1 >= h2)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,8a5c6b93,code,fr,319ef5fa425a6b68,"// h1 est-elle plus générale que h2 ? (h1 >= h2)
 bool IsMoreGeneralThan(string[] h1, string[] h2) {
     for (int i = 0; i < ATTRIBUTES.Length; i++) {
         if (h1[i] != ""?"" && h1[i] != h2[i]) return false;
@@ -5733,7 +5733,7 @@ Console.WriteLine();
 var g1 = GeneralizeFor(h1, EXAMPLES[0]);
 Console.WriteLine($""Après généralisation pour ex1 : {HStr(g1)}"");
 ",,,,,,,,319ef5fa425a6b68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,28bad09f,markdown,fr,403e1cc85694f27a,"## 4. Algorithme Current-Best-Hypothesis (CBH)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,28bad09f,markdown,fr,403e1cc85694f27a,"## 4. Algorithme Current-Best-Hypothesis (CBH)
 
 ### Pseudo-code (AIMA 19.2)
 
@@ -5745,7 +5745,7 @@ exemple :
 
 Si aucune spécialisation consistante n'existe → **backtrack** (échec).
 ",,,,,,,,403e1cc85694f27a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,d097393d,code,fr,df2e83c9dd2a8814,"// CBH (AIMA Figure 19.2). Retourne (hypothèse, trace).
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,d097393d,code,fr,df2e83c9dd2a8814,"// CBH (AIMA Figure 19.2). Retourne (hypothèse, trace).
 (string[] h, List<(int step, bool label, string action, string[] hyp)> trace)
     CurrentBestHypothesis(List<Dictionary<string,string>> examples) {
 
@@ -5799,7 +5799,7 @@ Console.WriteLine($""\nHypothèse finale CBH : {HStr(cbhResult)}"");
 Console.WriteLine($""Faux positifs : {fp}, Faux négatifs : {fn}"");
 Console.WriteLine($""Consistante : {IsConsistent(cbhResult, EXAMPLES)}"");
 ",,,,,,,,df2e83c9dd2a8814,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,b5385e82,markdown,fr,17f249b9f12597ed,"## 5. Algorithme Candidate Elimination (Version Space)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,b5385e82,markdown,fr,17f249b9f12597ed,"## 5. Algorithme Candidate Elimination (Version Space)
 
 Candidate Elimination maintient **deux ensembles** :
 - **G** (ensemble des frontières générales),
@@ -5807,7 +5807,7 @@ Candidate Elimination maintient **deux ensembles** :
 
 et ajuste les deux à chaque exemple. La version space est l'ensemble des hypothèses
 comprises entre S et G.",,,,,,,,17f249b9f12597ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,54818407,code,fr,52f4f16416c4875c,"// Candidate Elimination (AIMA Figure 19.3). Retourne (G_set, S_set, trace).
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,54818407,code,fr,52f4f16416c4875c,"// Candidate Elimination (AIMA Figure 19.3). Retourne (G_set, S_set, trace).
 // Les hypothèses sont comparées/hachées via leur représentation string.
 (string Gkey, string Skey, List<(int ex,bool label,int g,int s)> trace)
     CandidateElimination(List<Dictionary<string,string>> examples) {
@@ -5865,18 +5865,18 @@ Console.WriteLine(new string('-', 25));
 foreach (var (ex, label, g, s) in ceTrace)
     Console.WriteLine($"" {ex,2} | {(label?""+"":""-""),5} | {g,3} | {s,3}"");
 ",,,,,,,,52f4f16416c4875c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,747349c3,markdown,fr,49d42ec07185578d,"### Interprétation : Version Space sur 12 exemples
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,747349c3,markdown,fr,49d42ec07185578d,"### Interprétation : Version Space sur 12 exemples
 
 Le VS **s'effondre** (`|G|=0` ou `|S|=0`) avant la fin : aucune clause conjonctive
 unique n'est consistante avec les 12 exemples. C'est la **limite fondamentale** des
 hypothèses conjonctives pures — AIMA le souligne : le domaine restaurant réel
 nécessite soit une disjonction, soit une représentation plus riche. CBH, lui,
 garde une hypothèse (faute de mieux) mais reste inconsistante.",,,,,,,,49d42ec07185578d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,0b624b32,markdown,fr,092ad85f49237516,"## 6. Comparaison CBH vs Version Space
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,0b624b32,markdown,fr,092ad85f49237516,"## 6. Comparaison CBH vs Version Space
 
 Pour comparer les stratégies là où le VS est encore **large** (après 4 exemples,
 `|G|=8`), on entraîne sur les 4 premiers et on teste sur les 8 suivants.",,,,,,,,092ad85f49237516,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,5065a562,code,fr,1efddcd4a3116512,"// Comparaison : entraîner sur N_TRAIN=4, tester sur le reste.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,5065a562,code,fr,1efddcd4a3116512,"// Comparaison : entraîner sur N_TRAIN=4, tester sur le reste.
 int N_TRAIN = 4;
 var (_, _, _) = CandidateElimination(EXAMPLES.Take(N_TRAIN).ToList());
 
@@ -5930,14 +5930,14 @@ Console.WriteLine(""Hypothèse CBH : "" + HStr(cbh4));
 Console.WriteLine($""Frontières S ({S.Count}) : "" + string.Join("" ; "", S.Take(3).Select(s => HStr(Deser(s)))));
 Console.WriteLine($""Frontières G ({G.Count}) : "" + string.Join("" ; "", G.Take(3).Select(g => HStr(Deser(g)))));
 ",,,,,,,,1efddcd4a3116512,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,ffa93071,markdown,fr,36a283c21dec9404,"## 7. Exercices
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,ffa93071,markdown,fr,36a283c21dec9404,"## 7. Exercices
 
 ### Exercice 1 : Variantes du domaine restaurant
 
 Expérimentez avec le domaine pour comprendre la robustesse des deux algorithmes :
 trouvez un sous-ensemble de 6 à 8 exemples pour lequel le Version Space converge
 vers une frontière unique (|G| = |S| = 1) — la cellule suivante fournit le squelette.",,,,,,,,36a283c21dec9404,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,4b2470bc,code,fr,3a8bc377b8ca149d,"// EXERCICE : Modifier les labels pour rendre le VS consistant sur 12 exemples
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,4b2470bc,code,fr,3a8bc377b8ca149d,"// EXERCICE : Modifier les labels pour rendre le VS consistant sur 12 exemples
 public string[] FindConsistentSubspace(List<Dictionary<string,string>> examples) {
     // TODO etudiant : trouvez un sous-ensemble de 6-8 exemples pour lequel le
     // Version Space converge vers une frontière unique (|G|=|S|=1).
@@ -5950,7 +5950,7 @@ public string[] FindConsistentSubspace(List<Dictionary<string,string>> examples)
 
 Console.WriteLine(""Exercice à compléter (sous-espace consistant)."");
 ",,,,,,,,3a8bc377b8ca149d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,85dc5cfd,markdown,fr,c9a3a81475387106,"### Exercice 2 : Affinage de la frontière (nettoyage de G et S)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,85dc5cfd,markdown,fr,c9a3a81475387106,"### Exercice 2 : Affinage de la frontière (nettoyage de G et S)
 
 L'implémentation de `CandidateElimination` (§5) accumule parfois des hypothèses **redondantes**
 dans les frontières : un $g \in G$ strictement moins général qu'un autre $g' \in G$ n'apporte rien
@@ -5967,7 +5967,7 @@ qu'une autre de $G$, et de $S$ toute hypothèse strictement plus spécifique qu'
 - *Étape 2* : opération symétrique sur $S$ avec `IsMoreSpecificThan`.
 - *Étape 3* : vérifier que $|G|$ et $|S|$ ne font que diminuer après chaque appel (invariant de
   minimalité), et que le pouvoir prédictif (cellule §6) est inchangé.",,,,,,,,c9a3a81475387106,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,6d740dea,code,fr,6bbe393dc3cbaaa0,"// EXERCICE 2 : Affinage de la frontiere — retirer les hypotheses redondantes de G et S.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,6d740dea,code,fr,6bbe393dc3cbaaa0,"// EXERCICE 2 : Affinage de la frontiere — retirer les hypotheses redondantes de G et S.
 // (Reprend Ser/Deser definies dans les cellules precedentes.)
 public void PruneFrontier(HashSet<string> Gset, HashSet<string> Sset) {
     // TODO etudiant : nettoyer G (retirer tout g strictement moins general qu'un autre g') puis S.
@@ -5984,7 +5984,7 @@ var S_prune = new HashSet<string>(S);
 int gBefore = G_prune.Count, sBefore = S_prune.Count;
 PruneFrontier(G_prune, S_prune);
 Console.WriteLine($""Exercice 2 a completer : |G| {gBefore} -> {G_prune.Count}, |S| {sBefore} -> {S_prune.Count}"");",,,,,,,,6bbe393dc3cbaaa0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,10348024,markdown,fr,402fbfb3c4fe6d79,"### Exercice 3 : Prédiction par vote majoritaire (Version Space complet)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,10348024,markdown,fr,402fbfb3c4fe6d79,"### Exercice 3 : Prédiction par vote majoritaire (Version Space complet)
 
 La comparaison §6 **approxime** le vote en ne regardant que les frontières $S$ et $G$. Ici, on
 veut le vote **exact** : énumérer (ou échantillonner) les hypothèses $h$ du Version Space — celles
@@ -6004,7 +6004,7 @@ Implémentez `PredictByMajorityVote(G, S, ex)` retournant `""Yes""` ou `""No""`.
 - *Étape 3* : retourner `""Yes""` si `voteYes >= voteNo`, `""No""` sinon.
 - *Étape 4* (si l'espace est grand) : borner en échantillonnant un sous-ensemble aléatoire fixé
   d'hypothèses (ex. 200) plutôt qu'en énumérant tout — l'étudiante documente alors le tirage.",,,,,,,,402fbfb3c4fe6d79,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,fa9a1d50,code,fr,a63c4ef972dcf972,"// EXERCICE 3 : Prediction par vote majoritaire sur le Version Space complet.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,fa9a1d50,code,fr,a63c4ef972dcf972,"// EXERCICE 3 : Prediction par vote majoritaire sur le Version Space complet.
 // Contrairement a la cellule 13 (§6) qui n'utilise que les frontieres S et G,
 // on enumere ici les hypotheses h du VS (s <= h <= g) et on fait voter chacune.
 public string PredictByMajorityVote(HashSet<string> Gset, HashSet<string> Sset,
@@ -6023,7 +6023,7 @@ public string PredictByMajorityVote(HashSet<string> Gset, HashSet<string> Sset,
 var ex5 = EXAMPLES[5];
 string vote5 = PredictByMajorityVote(G, S, ex5);
 Console.WriteLine($""Exercice 3 a completer : vote VS pour exemple 5 (label reel {ex5[""WillWait""]}) = {vote5 ?? ""(a completer)""}"");",,,,,,,,a63c4ef972dcf972,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,8b683c65,markdown,fr,bbb9cdb103867076,"## Bilan
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,8b683c65,markdown,fr,bbb9cdb103867076,"## Bilan
 
 Ce notebook a présenté l'apprentissage logique **from-scratch** en C#, jumeau du
 notebook Python. Points clés :
@@ -6048,7 +6048,7 @@ notebook Python. Points clés :
 ",,,,,,,,bbb9cdb103867076,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb,0c89ba96,markdown,fr,ddaa25f3e5a24862,"# SL-2 --- Apprentissage et Connaissance (EBL & RBL)
 
-**Navigation** : [Index](./README.md) | [<< SL-1](SL-1-LogicalLearning.ipynb) | [Twin C#](SL-2-KnowledgeBasedLearning-Csharp.ipynb) | [Suivant >>](SL-3-RelevanceLearning.ipynb)
+**Navigation** : [Index](./README.md) | [<< SL-1](SL-1-LogicalLearning.ipynb) | [Twin C#](SL-2-KnowledgeBasedLearning-CSharp.ipynb) | [Suivant >>](SL-3-RelevanceLearning.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -7433,9 +7433,9 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb,
 ***
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-1](SL-1-LogicalLearning.ipynb) | [SL-3 >>](SL-3-RelevanceLearning.ipynb)",,,,,,,,323777b4dd98a6fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,833fe12e,markdown,fr,a4f9dafb61211fce,"# SL-2 - Apprentissage et Connaissance : EBL & RBL (C#)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,833fe12e,markdown,fr,a4f9dafb61211fce,"# SL-2 - Apprentissage et Connaissance : EBL & RBL (C#)
 
-**Navigation** : [Index](./README.md) | [<< SL-1 C#](SL-1-LogicalLearning-Csharp.ipynb) | [Twin Python](SL-2-KnowledgeBasedLearning.ipynb) | [Suivant >>](SL-3-RelevanceLearning-Csharp.ipynb)
+**Navigation** : [Index](./README.md) | [<< SL-1 C#](SL-1-LogicalLearning-CSharp.ipynb) | [Twin Python](SL-2-KnowledgeBasedLearning.ipynb) | [Suivant >>](SL-3-RelevanceLearning-CSharp.ipynb)
 
 > **Jumeau C#** du notebook [SL-2-KnowledgeBasedLearning.ipynb](SL-2-KnowledgeBasedLearning.ipynb).
 > Version Python ↔ Version C# (.NET Interactive) — parité pédagogique du marathon #4956.
@@ -7454,7 +7454,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp
 ### Prérequis
 - Notions de logique propositionnelle + chaînage avant.
 - .NET 9.0 + dotnet-interactive (kernel `.net-csharp`).
-- Avoir suivi [SL-1-LogicalLearning-Csharp.ipynb](SL-1-LogicalLearning-Csharp.ipynb) (CBH / Version Space).
+- Avoir suivi [SL-1-LogicalLearning-CSharp.ipynb](SL-1-LogicalLearning-CSharp.ipynb) (CBH / Version Space).
 
 ### Durée estimée : 55 minutes
 
@@ -7462,7 +7462,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp
 - Russell & Norvig, *AIMA* (3e éd.), §19.3-19.4.
 - Notebook Python : [SL-2-KnowledgeBasedLearning.ipynb](SL-2-KnowledgeBasedLearning.ipynb).
 ",,,,,,,,a4f9dafb61211fce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,dfb36b89,markdown,fr,12fc52521d180cb5,"## 1. Les 4 contraintes d'apprentissage
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,dfb36b89,markdown,fr,12fc52521d180cb5,"## 1. Les 4 contraintes d'apprentissage
 
 AIMA distingue 4 façons dont la connaissance interagit avec l'apprentissage, selon
 ce qui est **déjà connu** avant l'apprentissage et ce que l'exemple doit apporter.
@@ -7489,7 +7489,7 @@ Zog, les 4 formes d'apprentissage sont toutes **cohérentes** avec la connaissan
 de fond. C'est le **rôle différent** de la connaissance de fond qui les distingue,
 pas le résultat final : EBL s'appuie sur le fond sans données, RBL et KBIL croisent
 fond et observation, l'induction pure ignore le fond.",,,,,,,,12fc52521d180cb5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,84828b87,code,fr,720e597bac73adba,"using System.Linq;
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,84828b87,code,fr,720e597bac73adba,"using System.Linq;
 
 // Mini-monde propositionnel : 3 atomes.
 string[] ATOMS = {""pointu"", ""perce"", ""tue""};
@@ -7546,7 +7546,7 @@ var kbilKb = new List<Func<Dictionary<string,bool>,bool>>{hypothesis, descriptio
 kbilKb.AddRange(background);
 Console.WriteLine($""   -> {Entails(kbilKb, classification)}"");
 ",,,,,,,,720e597bac73adba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,e11f0b6d,markdown,fr,630d138bdc42984f,"## 2. EBL : chaînage avant avec unification
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,e11f0b6d,markdown,fr,630d138bdc42984f,"## 2. EBL : chaînage avant avec unification
 
 EBL **explique** un exemple en rejouant la déduction à partir des règles de fond :
 au lieu d'apprendre un classifieur, il *déroule* la chaîne d'inférences qui relie
@@ -7566,7 +7566,7 @@ L'output montre la trace d'inférence complète, de `Pointu(Baton)` jusqu'à
 instanciée : la première (`Pointu(Baton) => Perce(Baton)`) lie `x` à `Baton` ;
 la seconde enchaîne avec `PeauMolle(Gibier)` en liant `y` à `Gibier`. La
 classification `Meurt(Gibier)` est finalement dérivée (`True`).",,,,,,,,630d138bdc42984f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,af71d914,code,fr,e31ec11d234046e9,"// Représentation : un atome = (prédicat, args). Variables en minuscules.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,af71d914,code,fr,e31ec11d234046e9,"// Représentation : un atome = (prédicat, args). Variables en minuscules.
 // Comparateur structurel (sinon string[] est comparé par référence => boucle infinie).
 public class AtomEq : IEqualityComparer<(string,string[])> {
     public bool Equals((string,string[]) x, (string,string[]) y) =>
@@ -7653,7 +7653,7 @@ Console.WriteLine();
 var goal = (""Meurt"", new[]{""Gibier""});
 Console.WriteLine($""Classification expliquée : {Fmt(goal)} ?  {derived.Contains(goal)}"");
 ",,,,,,,,e31ec11d234046e9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,76864c51,markdown,fr,519fd95deaffae09,"## 3. EBL sur la simplification arithmétique
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,76864c51,markdown,fr,519fd95deaffae09,"## 3. EBL sur la simplification arithmétique
 
 Un 2e exemple d'EBL : simplifier `1*(0+x)` en `x`. On représente les expressions
 comme des chaînes et les règles de fond comme des réécritures (`1*u → u`,
@@ -7671,7 +7671,7 @@ l'expression. Sur `1*(0+x)`, la règle `1*u → u` (pattern `1*`) s'applique
 immédiatement : le résultat affiché est `('(0+x)', 1*u -> u)` — le `1*` disparaît
 et l'expression restante `(0+x)` attend la règle `0+u → u` à l'étape suivante.
 L'ordre des règles compte : la réécriture est dirigée, pas commutative.",,,,,,,,519fd95deaffae09,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,49c84277,code,fr,ae8b8b486a32f740,"// Règle de réécriture : pattern -> résultat (string-based pour lisibilité).
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,49c84277,code,fr,ae8b8b486a32f740,"// Règle de réécriture : pattern -> résultat (string-based pour lisibilité).
 public record RewriteRule(string Name, string Pattern, string Result) {
     public string Apply(string expr) => expr.Contains(Pattern)
         ? expr.Replace(Pattern, Result)  // remplace 1re occurrence
@@ -7710,7 +7710,7 @@ Console.WriteLine();
 var (res, ruleName, just) = SimplifyStep(""1*(0+x)"");
 Console.WriteLine($""SimplifyStep('1*(0+x)') = ('{res}', {ruleName})"");
 ",,,,,,,,ae8b8b486a32f740,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,cd660084,markdown,fr,5e519e75c28a78b7,"### 3.1 Arbre de preuve + variabilisation
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,cd660084,markdown,fr,5e519e75c28a78b7,"### 3.1 Arbre de preuve + variabilisation
 
 `BuildProof` applique `SimplifyStep` jusqu'à atteindre un primitif, en enregistrant
 chaque étape. `VariabilizeProof` remplace ensuite les constantes par des variables
@@ -7728,7 +7728,7 @@ La variabilisation remplace les constantes par des variables selon un mapping
 règle compilée affichée est `a*(b+c) -> c`. Les constantes de l'exemple
 (`1`, `0`, `x`) sont ainsi *abstraites* : la règle apprise ne dépend plus de
 l'exemple particulier qui l'a produite — c'est le cœur de l'apprentissage EBL.",,,,,,,,5e519e75c28a78b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,69179cf3,code,fr,4cb7fd71a42542a8,"public record ProofStep(int Step, string InputExpr, string OutputExpr, string RuleName, string Justification);
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,69179cf3,code,fr,4cb7fd71a42542a8,"public record ProofStep(int Step, string InputExpr, string OutputExpr, string RuleName, string Justification);
 
 // Construit l'arbre de preuve pour la simplification complète.
 List<ProofStep> BuildProof(string expr) {
@@ -7772,7 +7772,7 @@ foreach (var p in genProof)
 Console.WriteLine();
 Console.WriteLine(""Règle compilée par EBL : a*(b+c) -> c  (généralisée de 1*(0+x) -> x)"");
 ",,,,,,,,4cb7fd71a42542a8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,a9fe7947,markdown,fr,5436184f03b31446,"## 4. Mesurer le speedup EBL
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,a9fe7947,markdown,fr,5436184f03b31446,"## 4. Mesurer le speedup EBL
 
 L'intérêt d'EBL : une fois les règles apprises (compilées), la simplification de
 nouvelles expressions est **plus rapide** car on évite de re-dériver la preuve.
@@ -7802,7 +7802,7 @@ simulé** entre deux stratégies sur 8 expressions, le second mesure l'**algorit
 — une règle compilée remplace deux réécritures par un lookup. C'est la distinction
 que le jumeau Python explicite (« le speedup de l'EBL est algorithmique, pas
 (toujours) wall-clock »).",,,,,,,,5436184f03b31446,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,ffa366ee,code,fr,56a93f2efc0dc36b,"using System.Diagnostics;
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,ffa366ee,code,fr,56a93f2efc0dc36b,"using System.Diagnostics;
 
 // Expressions de test (similaires mais non identiques à l'exemple d'apprentissage).
 var testExprs = new List<string> {""1*(0+a)"",""1*(0+b)"",""1*(0+c)"",""1*(0+d)"",""1*(0+e)"",""1*f"",""0+g"",""1*(0+h)""};
@@ -7841,7 +7841,7 @@ Console.WriteLine($""  Coût SANS règles apprises (re-derive) : {costWithoutEBL
 Console.WriteLine($""  Coût AVEC règles apprises (compilé)   : {costWithEBL}"");
 Console.WriteLine($""  Speedup = {costWithoutEBL}/{costWithEBL} = {(double)costWithoutEBL/costWithEBL:F2}x"");
 ",,,,,,,,56a93f2efc0dc36b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,8eff589b,markdown,fr,5939bc8fb1cd858c,"## 5. RBL : vérification de détermination
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,8eff589b,markdown,fr,5939bc8fb1cd858c,"## 5. RBL : vérification de détermination
 
 RBL (Relevance-Based Learning) identifie les **attributs déterminants** : un ensemble
 `det_attrs` *détermine* `target_attr` si, pour chaque combinaison de valeurs de
@@ -7860,7 +7860,7 @@ Le résultat remarquable est que `Type` seul est déjà déterminant sur ce peti
 (`True`) alors que `Patrons` seul ne l'est pas (`False`) : la détermination dépend
 des **données observées**, pas d'une intuition a priori. C'est ce que RBL cherche
 à extraire : l'ensemble minimal d'attributs qui prédit la cible.",,,,,,,,5939bc8fb1cd858c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,8b0129dc,code,fr,a403cee86fb98994,"// Vérifie si detAttrs déterminent targetAttr dans les données.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,8b0129dc,code,fr,a403cee86fb98994,"// Vérifie si detAttrs déterminent targetAttr dans les données.
 bool CheckDetermination(List<Dictionary<string,string>> data,
                          List<string> detAttrs, string targetAttr) {
     var groups = new Dictionary<string, HashSet<string>>();
@@ -7889,7 +7889,7 @@ Console.WriteLine($""  (Patrons)        -> WillWait ? {CheckDetermination(data, 
 Console.WriteLine($""  (Type)           -> WillWait ? {CheckDetermination(data, new(){""Type""}, ""WillWait"")}"");
 Console.WriteLine($""  (Patrons, Type)  -> WillWait ? {CheckDetermination(data, new(){""Patrons"",""Type""}, ""WillWait"")}"");
 ",,,,,,,,a403cee86fb98994,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,ee11c81a,markdown,fr,dfdf9bb972a58fc0,"## Exercice 1 : EBL sur la différentiation symbolique
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,ee11c81a,markdown,fr,dfdf9bb972a58fc0,"## Exercice 1 : EBL sur la différentiation symbolique
 
 Appliquez EBL à un nouveau domaine : la différentiation. Variabilisez la preuve de
 `d/dx(x^2) = 2x` en une règle générale `d/dx(u^2) = 2u`.
@@ -7904,7 +7904,7 @@ usuelles : `d/dx(u^n) = n*u^(n-1)`, `d/dx(const) = 0`, `d/dx(u+v) = du/dx + dv/d
 - `# Étape 2` : construire l'arbre de preuve de `d/dx(x^2)` avec `BuildProof`.
 - `# Étape 3` : variabiliser (`x → u`, `2 → n`) pour généraliser la règle.
 - `# Indice` : réutiliser `RewriteRule`, `BuildProof` et `VariabilizeProof` de §3.",,,,,,,,dfdf9bb972a58fc0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,600a72d5,code,fr,62f4a010d779dcc4,"// EXERCICE : EBL sur la différentiation symbolique
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,600a72d5,code,fr,62f4a010d779dcc4,"// EXERCICE : EBL sur la différentiation symbolique
 public List<ProofStep> EBL_Differentiation(string expr) {
     // TODO etudiant : construisez l'arbre de preuve pour d/dx(x^2) -> 2x
     // via les règles de fond : d/dx(u^n) = n*u^(n-1), d/dx(const) = 0, etc.
@@ -7916,7 +7916,7 @@ public List<ProofStep> EBL_Differentiation(string expr) {
 
 Console.WriteLine(""Exercice à compléter (EBL différentiation)."");
 ",,,,,,,,62f4a010d779dcc4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,cell-67d68a8d,code,fr,50599861a8e9d0d5,"// EXERCICE 2 : RBL robuste au bruit (cf. Bilan, cellule 22 : ""Exercice 2 : RBL robuste au bruit"").
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,cell-67d68a8d,code,fr,50599861a8e9d0d5,"// EXERCICE 2 : RBL robuste au bruit (cf. Bilan, cellule 22 : ""Exercice 2 : RBL robuste au bruit"").
 // On ajoute un attribut bruite (Raining, valeur aleatoire) au jeu de donnees
 // restaurant de la cellule 17, puis on verifie que (Patrons, Type) reste
 // determinant malgre le bruit : RBL doit filtrer les attributs non pertinents.
@@ -7935,7 +7935,7 @@ bool RBL_Robust_To_Noise(int nTrials) {
 
 Console.WriteLine(""Exercice 2 a completer : implementez RBL_Robust_To_Noise(nTrials) pour verifier que (Patrons, Type) reste determinant malgre le bruit."");
 ",,,,,,,,50599861a8e9d0d5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,cell-711161da,code,fr,e5092d567a2ce324,"// EXERCICE 3 : Seuil de desapprentissage (cf. Bilan, cellule 22 : ""Exercice 3 : Seuil de desapprentissage"").
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,cell-711161da,code,fr,e5092d567a2ce324,"// EXERCICE 3 : Seuil de desapprentissage (cf. Bilan, cellule 22 : ""Exercice 3 : Seuil de desapprentissage"").
 // EBL peut sur-specialiser. On veut un mecanisme de ""forgetting"" : si une regle
 // apprise ne s'applique jamais sur N nouveaux exemples, la retirer de la base.
 // Indice : modele par une liste de reggles (string) + un compteur d'inutilisation
@@ -7952,7 +7952,7 @@ List<string> Forget_Stale_Rules(List<string> learnedRules, int N) {
 
 Console.WriteLine(""Exercice 3 a completer : implementez Forget_Stale_Rules(learnedRules, N) pour retirer les regles apprises jamais declenchees."");
 ",,,,,,,,e5092d567a2ce324,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,2b376daa,markdown,fr,9e4b8a46004b13bf,"## Bilan
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,2b376daa,markdown,fr,9e4b8a46004b13bf,"## Bilan
 
 Ce notebook a présenté EBL et RBL **from-scratch** en C#, jumeau du notebook Python :
 
@@ -9126,7 +9126,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,73092
 ***
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-2](SL-2-KnowledgeBasedLearning.ipynb) | [SL-4 >>](SL-4-InductiveLogicProgramming.ipynb)",,,,,,,,2170f0c3a85a9646,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,50a20e10,markdown,fr,388937d4e5ce6d01,"# SL-3 — Apprentissage basé sur la pertinence (twin C# from-scratch)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,50a20e10,markdown,fr,388937d4e5ce6d01,"# SL-3 — Apprentissage basé sur la pertinence (twin C# from-scratch)
 
 Ce notebook est le **jumeau C# / .NET** de [SL-3-RelevanceLearning.ipynb](SL-3-RelevanceLearning.ipynb) — marathon de parité #4956.
 
@@ -9137,12 +9137,12 @@ borne PAC, information mutuelle pour la sélection d'attributs. Le twin Python s
 **Idée centrale (RBL)** : au lieu d'apprendre dans l'espace d'hypothèses complet (2^n sous-ensembles d'attributs),
 on cherche le **plus petit sous-ensemble d'attributs qui détermine fonctionnellement la cible** — la *détermination minimale*.
 Cela réduit exponentiellement l'espace (2^n → 2^d, d ≪ n) et le nombre d'exemples requis devient linéaire en d.",,,,,,,,388937d4e5ce6d01,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,1a053018,markdown,fr,d69cd043e9deddb9,"## 1. Déterminations fonctionnelles
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,1a053018,markdown,fr,d69cd043e9deddb9,"## 1. Déterminations fonctionnelles
 
 Une **détermination** `attrs → target` tient si, pour tout groupe de lignes partageant les mêmes valeurs d'`attrs`, la valeur de `target` est constante. C'est l'analogue d'une **dépendance fonctionnelle** en théorie des bases de données. Une violation = deux lignes mêmes attrs, target différent.
 
 **Implémentation C#** : une ligne est un `Row` (sous-classe de `Dictionary<string,string>` — domaine discret string). `CheckDetermination` groupe les lignes par **signature** (concaténation des valeurs d'`attrs`), puis vérifie que chaque groupe a une seule valeur de `target`. Le résultat `DeterminationResult` expose trois diagnostics : `Holds` (booléen), `Violations` (première paire de lignes en conflit — utile pour le débogage pédagogique), et `Coverage` (nombre de groupes distincts, i.e. combien de signatures existent dans les données).",,,,,,,,d69cd043e9deddb9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,78db8fdb,code,fr,a4e2a29f54778484,"using System;
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,78db8fdb,code,fr,a4e2a29f54778484,"using System;
 using System.Linq;
 using System.Text;
 using System.Collections.Generic;
@@ -9150,7 +9150,7 @@ using System.Collections.Generic;
 static void Show(string s) { s.Display(); }
 Show(""Apprentissage base sur la pertinence (RBL, AIMA 19.4) — moteur from-scratch."");
 ",,,,,,,,a4e2a29f54778484,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,401bb366,code,fr,12354fe0f6ae2b57,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,401bb366,code,fr,12354fe0f6ae2b57,"#nullable enable
 // Une ligne de donnees : dictionnaire attribut -> valeur (string, domaine discret).
 public sealed class Row : Dictionary<string,string> { }
 
@@ -9206,12 +9206,12 @@ public static DeterminationResult CheckDetermination(List<Row> data, List<string
 
 Show(""CheckDetermination pret : groupe par signature, detecte les violations de target constante."");
 ",,,,,,,,12354fe0f6ae2b57,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,a6091c05,markdown,fr,44eb6147ed8bf194,"## 2. Treillis des déterminations (powerset)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,a6091c05,markdown,fr,44eb6147ed8bf194,"## 2. Treillis des déterminations (powerset)
 
 L'ensemble des sous-ensembles d'attributs forme un **treillis**. Pour chaque sous-ensemble, on note s'il détermine la cible. Visualiser ce treillis révèle la structure : la détermination est **anti-monotone** (si un ensemble détermine, ses sur-ensembles aussi).
 
 **Implémentation C#** : deux utilitaires from-scratch remplacent `itertools`. `Combinations(items, k)` est un `IEnumerable` récursif (head + tail) qui énumère les combinaisons de taille `k` sans doublons. `SortedKey(attrs)` produit une clé triée `string` (`""a,b,c""`) pour indexer le `Dictionary<string,bool>` du treillis — on évite `HashSet` comme clé de dict car non hashable par défaut en C#. `BuildDeterminationLattice` parcourt les tailles 0 → n ; cas particulier : l'ensemble vide ne détermine la cible que s'il n'existe qu'une seule valeur cible.",,,,,,,,44eb6147ed8bf194,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,fba8797a,code,fr,70a25d8431cec07d,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,fba8797a,code,fr,70a25d8431cec07d,"#nullable enable
 
 // Toutes les combinaisons de taille k (substitut a itertools.combinations).
 public static IEnumerable<List<string>> Combinations(List<string> items, int k)
@@ -9257,12 +9257,12 @@ public static Dictionary<string,bool> BuildDeterminationLattice(List<Row> data, 
 
 Show(""BuildDeterminationLattice pret : powerset complet evalue."");
 ",,,,,,,,70a25d8431cec07d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,4ac26f00,markdown,fr,bc04987bfbab1d0a,"## 3. Détermination minimale (clé candidate)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,4ac26f00,markdown,fr,bc04987bfbab1d0a,"## 3. Détermination minimale (clé candidate)
 
 La **détermination minimale** est le plus petit sous-ensemble qui détermine la cible. On l'obtient par recherche en largeur (BFS par taille croissante) — le premier trouvé est minimal. C'est l'analogue d'une **clé candidate minimale** en bases de données.
 
 **Implémentation C#** : `MinimalConsistentDet` parcourt les tailles `size = 1, 2, …, n` et à chaque niveau énumère `Combinations(allAttrs, size)`. Le premier sous-ensemble dont `CheckDetermination.Holds == true` est renvoyé immédiatement (garantie de minimalité par BFS). Le `DetSearchResult` instrumente la recherche : `SubsetsTested` (combien de nœuds du treillis ont été evalués), `LevelsExplored` et `FoundAtLevel` — ces compteurs rendent **visible** l'économie du BFS vs un parcours exhaustif du powerset.",,,,,,,,bc04987bfbab1d0a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,3c3ee7e3,code,fr,6f5a94a0298467d7,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,3c3ee7e3,code,fr,6f5a94a0298467d7,"#nullable enable
 
 public sealed class DetSearchResult
 {
@@ -9298,12 +9298,12 @@ public static DetSearchResult MinimalConsistentDet(List<Row> data, List<string> 
 
 Show(""MinimalConsistentDet pret : BFS par taille, retourne le + petit sous-ensemble valide."");
 ",,,,,,,,6f5a94a0298467d7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,dff01d39,markdown,fr,423f4618b73d3f38,"## 4. Application — activité biologique des molécules
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,dff01d39,markdown,fr,423f4618b73d3f38,"## 4. Application — activité biologique des molécules
 
 Quelles propriétés moléculaires (mw, logp, hbd, hba) déterminent si une molécule est **active** ? La recherche de détermination minimale répond en explorant le treillis par taille croissante.
 
 **Implémentation C#** : le helper `R(params (string k, string v)[])` construit une `Row` en syntaxe concise. `moleculeData` est une `List<Row>` discrétisée (valeurs `high`/`low` plutôt que continues — la détermination fonctionnelle exige un domaine fini). L'appel `MinimalConsistentDet(moleculeData, MOL_ATTRS, ""activity"")` renvoie la clé minimale `d`, comparée à `n = 4` attributs : l'écart `n − d` quantifie la réduction.",,,,,,,,423f4618b73d3f38,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,3ea6e7c6,code,fr,985f687d73c2dd50,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,3ea6e7c6,code,fr,985f687d73c2dd50,"#nullable enable
 
 Row R(params (string k,string v)[] pairs)
 {
@@ -9352,7 +9352,7 @@ else
     Show(""-> Le concept est probablement disjonctif ou depend d'interactions."");
 }
 ",,,,,,,,985f687d73c2dd50,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,9bada08c,markdown,fr,05b9b416beef12e9,"## 5. Borne PAC — l'avantage quantifié
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,9bada08c,markdown,fr,05b9b416beef12e9,"## 5. Borne PAC — l'avantage quantifié
 
 En apprentissage PAC (Probably Approximately Correct), le nombre d'exemples suffisant pour apprendre dans un espace d'hypothèses fini vaut :
 
@@ -9361,7 +9361,7 @@ En apprentissage PAC (Probably Approximately Correct), le nombre d'exemples suff
 Le RBL réduit |H| de 2^n à 2^d (d = taille de la détermination) : le nombre d'exemples devient **linéaire en d** au lieu de n.
 
 **Implémentation C#** : `PacBound(nAttrs, epsilon, delta)` calcule `ln|H| = n·ln(2)` (donc `|H| = 2^n`) et renvoie `⌈(1/ε)·(n·ln2 + ln(1/δ))⌉`. Le formateur `HStr(k)` affiche `2^k` littéral au-delà de k=62 (dépassement `long`). La table parcourt `(n,d)` ∈ {(5,1), (10,2), (20,2), (20,3), (50,3), (100,5)} : comparer la colonne « brute » (2^n) à la colonne « après RBL » (2^d) matérialise le gain exponentiel.",,,,,,,,05b9b416beef12e9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,8c4d6537,code,fr,fd7f4cb64628ae23,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,8c4d6537,code,fr,fd7f4cb64628ae23,"#nullable enable
 
 // Borne PAC : m >= (1/eps) * (ln|H| + ln(1/delta)), avec |H| = 2^n_attrs.
 public static int PacBound(int nAttrs, double epsilon = 0.1, double delta = 0.05)
@@ -9383,12 +9383,12 @@ foreach (var (n, d) in new[] { (5,1), (10,2), (20,2), (20,3), (50,3), (100,5) })
 Show(""\nLa reduction de l'espace est EXPONENTIELLE (2^n -> 2^d) ; m devient lineaire en d."");
 Show($""Pour n=100 et d=5 : {PacBound(100)} exemples sans RBL contre {PacBound(5)} avec la determination."");
 ",,,,,,,,fd7f4cb64628ae23,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,518ae76c,markdown,fr,0092bd1a7a3920b0,"## 6. Parallèle RBL ↔ Web Sémantique (OWL)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,518ae76c,markdown,fr,0092bd1a7a3920b0,"## 6. Parallèle RBL ↔ Web Sémantique (OWL)
 
 Une détermination `metal → conductivité` (RBL) correspond à déclarer `:aConductivite` comme **`owl:FunctionalProperty`** : chaque sujet a au plus une valeur. Un reasoner OWL (HermiT, Pellet) détecterait les violations comme une incohérence.
 
 **Implémentation C#** : un mini **triple-store** from-scratch — le `record Triple(string S, string P, string O)` — suffit à démontrer l'idée. `FunctionalViolations(triples, prop)` regroupe les objets par sujet dans un `Dictionary<string, HashSet<string>>` et signale tout sujet ayant > 1 objet distinct. Le dataset de test injecte un cuivre cohérent (doublon même valeur) et une incohérence volontaire (fer `Fe` avec deux conductivités) pour montrer la distinction « doublon légitime » vs « vraie violation fonctionnelle ».",,,,,,,,0092bd1a7a3920b0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,5a603d09,code,fr,8038268b64dbd035,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,5a603d09,code,fr,8038268b64dbd035,"#nullable enable
 
 // Mini triple-store (sujet, predicat, objet) en pur C#.
 public sealed record Triple(string S, string P, string O);
@@ -9433,12 +9433,12 @@ foreach (var kv in viol)
 Show(""\nUne determination RBL = exactement une owl:FunctionalProperty ; les deux formalismes"");
 Show(""expriment la meme contrainte fonctionnelle (un sujet -> au plus un objet)."");
 ",,,,,,,,8038268b64dbd035,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,846f8493,markdown,fr,746d8789cfaf362b,"## 7. Information mutuelle — sélection guidée
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,846f8493,markdown,fr,746d8789cfaf362b,"## 7. Information mutuelle — sélection guidée
 
 Le treillis des déterminations grandit comme 2^n. Une heuristique : guider la recherche par **l'information mutuelle** I(attr ; target). Les attributs à forte MI sont des candidats prioritaires pour la détermination.
 
 **Implémentation C#** : `Entropy(values)` calcule l'entropie de Shannon en base 2 (`Σ −p·log₂ p` sur les groupes de valeurs identiques). `MutualInformation(data, attr, target)` applique la décomposition `I(attr; target) = H(target) − H(target | attr)`, où l'entropie conditionnelle est la moyenne pondérée `Σ P(attr=v)·H(target | attr=v)`. Le tri `OrderByDescending` produit un classement des attributs : ceux dont la MI est proche de `H(target)` sont presque déterminants et bornent la recherche de la clé minimale.",,,,,,,,746d8789cfaf362b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,a016d1f6,code,fr,43c96d075ec0d45e,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,a016d1f6,code,fr,43c96d075ec0d45e,"#nullable enable
 
 // Entropie de Shannon (base 2) d'une distribution de valeurs.
 public static double Entropy(IEnumerable<string> values)
@@ -9467,7 +9467,7 @@ foreach (var kv in miScores.OrderByDescending(kv => kv.Value))
 
 Show(""\nL'attribut avec la plus forte MI est le meilleur candidat pour demarrer la recherche de determination."");
 ",,,,,,,,43c96d075ec0d45e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,c25c7f04,markdown,fr,04cd80d747b4f7a5,"## 8. Exercices
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,c25c7f04,markdown,fr,04cd80d747b4f7a5,"## 8. Exercices
 
 ### Exercice 1 — Prédiction par détermination
 
@@ -9475,7 +9475,7 @@ Utilisez la détermination minimale trouvée (section 4) pour **prédire** l'act
 Si ses valeurs pour les attributs déterminants correspondent à un groupe connu, renvoyez l'activité de ce groupe ; sinon `""?""`.
 
 > Indice : groupez `moleculeData` par signature de la détermination ; cherchez le groupe correspondant à la nouvelle ligne.",,,,,,,,04cd80d747b4f7a5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,ce50643a,code,fr,7383bece6d98c2a7,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,ce50643a,code,fr,7383bece6d98c2a7,"#nullable enable
 
 // TODO etudiant : predire l'activite d'une nouvelle molecule via la determination minimale.
 // Si aucune ligne connue ne partage la signature -> renvoyer ""?"".
@@ -9490,11 +9490,11 @@ string? predicted = null;  // TODO etudiant : PredictActivity(moleculeData, molR
 Show(""Exercice 1 a completer"");
 Show($""  (attendu pour {testRow[""mw""]}/{testRow[""logp""]}/{testRow[""hbd""]}/{testRow[""hba""]} : 'active')"");
 ",,,,,,,,7383bece6d98c2a7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,f6af317f,markdown,fr,6cfb5bb0c2373afd,"### Exercice 2 — Borne PAC stratifiée
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,f6af317f,markdown,fr,6cfb5bb0c2373afd,"### Exercice 2 — Borne PAC stratifiée
 
 Après RBL, la borne PAC peut être **resserrée** : si la détermination a taille d, |H| = 2^d.
 Implémentez une borne qui prend en compte la détermination trouvée et comparez-la à la borne brute.",,,,,,,,6cfb5bb0c2373afd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,945f13fb,code,fr,08c6c899e11299bf,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,945f13fb,code,fr,08c6c899e11299bf,"#nullable enable
 
 // TODO etudiant : borne PAC apres RBL (|H| = 2^d au lieu de 2^n).
 // Retourner (mSansRBL, mAvecRBL) pour n attributs dont d pertinents.
@@ -9508,12 +9508,12 @@ var sp = (0, 0);  // TODO etudiant : StratifiedPacBound(20, 2);
 Show(""Exercice 2 a completer"");
 Show(""  (attendu : mSans > mAvec, reduction ~ factorielle en n-d)"");
 ",,,,,,,,08c6c899e11299bf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,de9f1c08,markdown,fr,311045987d99235e,"### Exercice 3 — Pruning anti-monotone du treillis
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,de9f1c08,markdown,fr,311045987d99235e,"### Exercice 3 — Pruning anti-monotone du treillis
 
 La détermination est **anti-monotone** : si un sous-ensemble ne détermine pas la cible, aucun de ses sous-ensembles ne le peut non plus
 (en fait c'est l'inverse — si un sur-ensemble détermine, ses sous-ensembles aussi... à vérifier !).
 Implémentez une recherche de détermination minimale qui **élague** le treillis en exploitant cette propriété pour éviter des tests inutiles.",,,,,,,,311045987d99235e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,bdebdef8,code,fr,6305bff372a2de6c,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,bdebdef8,code,fr,6305bff372a2de6c,"#nullable enable
 
 // TODO etudiant : MinimalConsistentDet avec pruning anti-monotone.
 // Si un sous-ensemble de taille k ne determine PAS, aucun sous-ensemble de taille < k contenu dedans
@@ -9528,7 +9528,7 @@ List<string>? pruned = null;  // TODO etudiant : PrunedMinimalDet(moleculeData, 
 Show(""Exercice 3 a completer"");
 Show(""  (reflechir : anti-monotonie = si A determine, tout sur-ensemble de A determine aussi)"");
 ",,,,,,,,6305bff372a2de6c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,70763225,markdown,fr,d7fd70da02f4f5fb,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,70763225,markdown,fr,d7fd70da02f4f5fb,"***
 
 ## Synthèse
 
@@ -9546,7 +9546,7 @@ Ce twin C# a réimplémenté **from-scratch** les piliers du Relevance-Based Lea
 La lib Python (sklearn/AIMA) fournit ces constructions en boîte noire ; l'implémentation from-scratch rend **visible**
 pourquoi la détermination minimale réduit exponentiellement l'espace d'hypothèses (2^n → 2^d) et rend le nombre d'exemples linéaire en d.
 
-**Voir aussi** : [SL-3-RelevanceLearning.ipynb](SL-3-RelevanceLearning.ipynb) (Python), [SL-4-InductiveLogicProgramming-Csharp.ipynb](SL-4-InductiveLogicProgramming-Csharp.ipynb), marathon #4956, EPIC #3801.",,,,,,,,d7fd70da02f4f5fb,,,,,,,,,,,,,,,
+**Voir aussi** : [SL-3-RelevanceLearning.ipynb](SL-3-RelevanceLearning.ipynb) (Python), [SL-4-InductiveLogicProgramming-CSharp.ipynb](SL-4-InductiveLogicProgramming-CSharp.ipynb), marathon #4956, EPIC #3801.",,,,,,,,d7fd70da02f4f5fb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,266f89ed,markdown,fr,b2de25c095fef3bb,"# SL-4 --- Programmation Logique Inductive (ILP)
 
 **Navigation** : [Index](./README.md) | [<< SL-3](SL-3-RelevanceLearning.ipynb)
@@ -11171,7 +11171,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipy
 ***
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-3](SL-3-RelevanceLearning.ipynb) | [SL-5 >>](SL-5-InverseResolution.ipynb)",,,,,,,,50d175a667ee2db0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,0539e864,markdown,fr,48e8f4323d557da8,"# SL-4 — Programmation Logique Inductive (ILP) — Twin C# (FOIL from-scratch)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,0539e864,markdown,fr,48e8f4323d557da8,"# SL-4 — Programmation Logique Inductive (ILP) — Twin C# (FOIL from-scratch)
 
 **Twin C# (.NET Interactive)** de [SL-4-InductiveLogicProgramming](SL-4-InductiveLogicProgramming.ipynb) — marathon **#4956** (parité .NET ⇄ Python), série **SymbolicLearning**, axe-2 SOTA **#3801** Prong B.
 
@@ -11185,7 +11185,7 @@ Le notebook Python déroule l'ILP **from-scratch** (clauses Horn, unification, F
 4. Apprendre une règle **récursive** sur le problème classique des ancêtres `ancestor(X, Y)`.
 5. Découvrir des règles ILP sur un mini **Knowledge Graph** (symétrie, transitivité).
 ",,,,,,,,48e8f4323d557da8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,a71360f7,markdown,fr,acf9111a795b0e49,"## Introduction
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,a71360f7,markdown,fr,acf9111a795b0e49,"## Introduction
 
 ### Pourquoi l'ILP ?
 
@@ -11207,13 +11207,13 @@ FOIL part d'une règle vide et **ajoute** des littéraux pour réduire les néga
 | Moteur from-scratch | stdlib (dataclass) | **record C# + BCL, 0 NuGet** |
 | SOTA ILP | **Popper** (ASP + Prolog) | **SOTA-OK** : pont clingo `Process.Start` (§9) |
 ",,,,,,,,acf9111a795b0e49,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,98632c76,markdown,fr,793ecb46f5bb0a57,"## 1. Clauses Horn et unification
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,98632c76,markdown,fr,793ecb46f5bb0a57,"## 1. Clauses Horn et unification
 
 Un **littéral** = `predicat(arg1, arg2, ...)` éventuellement nié. Convention (suivie par le twin Python) : un argument en **minuscule** est une **variable**, en **majuscule** une **constante**. Une **clause Horn** = une tête (head) et un corps (body de littéraux) : `head :- body1, body2, ...` (« si body alors head »).
 
 L'**unification** trouve une substitution θ rendant deux littéraux opposés compatibles (résolution). C'est le moteur de toute déduction en logique du premier ordre.
 ",,,,,,,,793ecb46f5bb0a57,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,a9a3aca9,code,fr,8d8382504596a4da,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,a9a3aca9,code,fr,8d8382504596a4da,"#nullable enable
 // Cellule 1 — Literal, HornClause, unification (persistant cross-cell .net-csharp)
 using System;
 using System.Collections.Generic;
@@ -11296,7 +11296,7 @@ $""  unify(parent(x,y), ~parent(Alice,Bob)) = {{{(s1 is null ? """" : string.Joi
 var s2 = Unify(new Literal(""parent"", new[]{""x"",""y""}, false), new Literal(""parent"", new[]{""x"",""Bob""}, true));
 $""  unify(parent(x,y), ~parent(x,Bob)) = {{{(s2 is null ? """" : string.Join("", "", s2.Select(kv => $""{kv.Key}={kv.Value}"")))}}}"".Display();
 ",,,,,,,,8d8382504596a4da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,430ef3f7,markdown,fr,f61ad52b771fc7a7,"## 2. Briques de FOIL
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,430ef3f7,markdown,fr,f61ad52b771fc7a7,"## 2. Briques de FOIL
 
 FOIL (First-Order Inductive Learner) apprend une clause en **ajoutant** itérativement des littéraux au corps pour réduire les exemples négatifs couverts, mesurés par un **gain d'information** à la Quinlan.
 
@@ -11304,7 +11304,7 @@ FOIL (First-Order Inductive Learner) apprend une clause en **ajoutant** itérati
 - `CheckClauseCovers` : énumère toutes les substitutions des variables, vérifie le corps, et retourne les **exemples distincts** (positifs/négatifs) couverts. Le dédoublonnage sur le tuple-cible est crucial (sinon un littéral comme `parent(x,z)` paraît faussement meilleur en multipliant les bindings).
 - `FoilGain` : gain = $p_n \cdot (\log_2 \frac{p_n}{p_n+n_n} - \log_2 \frac{p_0}{p_0+n_0})$ où $p_0, n_0$ sont les positifs/négatifs avant, $p_n, n_n$ après.
 ",,,,,,,,f61ad52b771fc7a7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,ac28569d,code,fr,7b14ad3bcc7261d4,"// Cellule 2 — Briques FOIL (EvaluateLiteral, CheckClauseCovers, FoilGain)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,ac28569d,code,fr,7b14ad3bcc7261d4,"// Cellule 2 — Briques FOIL (EvaluateLiteral, CheckClauseCovers, FoilGain)
 // Background : ensemble de (predicate, args[]) faits connus.
 using System.Collections.Generic;
 using System.Linq;
@@ -11379,13 +11379,13 @@ $""  10 pos / 5 neg -> 8 pos / 1 neg : {FoilGain(10,5,8,1):F3}"".Display();
 $""  10 pos / 5 neg -> 9 pos / 4 neg : {FoilGain(10,5,9,4):F3}"".Display();
 $""  10 pos / 5 neg -> 0 pos / 0 neg : {FoilGain(10,5,0,0):F3} (elimine)"".Display();
 ",,,,,,,,7b14ad3bcc7261d4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,c1c33137,markdown,fr,569a9ebb09e98208,"## 3. Le problème des ancêtres
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,c1c33137,markdown,fr,569a9ebb09e98208,"## 3. Le problème des ancêtres
 
 Problème classique d'ILP : apprendre `ancestor(X, Y)` à partir de faits `parent/2`. On donne une famille sur 3 générations (Arthur → Bob/Catherine → Diana/Eve → Frank), des exemples positifs (tous les couples ancêtre vrais) et négatifs (couples non-ancêtre). L'objectif : redécouvrir les règles
 
 $$\text{ancestor}(x,y) :- \text{parent}(x,y). \quad \text{ancestor}(x,y) :- \text{parent}(x,z), \text{ancestor}(z,y).$$
 ",,,,,,,,569a9ebb09e98208,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,bf0052cf,code,fr,647d02d2f8b0526d,"// Cellule 3 — Le probleme ancestor(X, Y)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,bf0052cf,code,fr,647d02d2f8b0526d,"// Cellule 3 — Le probleme ancestor(X, Y)
 public static HashSet<(string Pred, string[] Args)> BACKGROUND = new() {
     (""parent"", new[]{""Arthur"",""Bob""}),
     (""parent"", new[]{""Arthur"",""Catherine""}),
@@ -11414,11 +11414,11 @@ $""Negatifs : {NEGATIVES.Count} couples non-ancestor"".Display();
 foreach (var (pred, args) in BACKGROUND.OrderBy(t => t.Args[0]))
     $""  parent({args[0]}, {args[1]})"".Display();
 ",,,,,,,,647d02d2f8b0526d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,b408a87e,markdown,fr,56b4cc472affac49,"## 4. Évaluation de clauses candidates
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,b408a87e,markdown,fr,56b4cc472affac49,"## 4. Évaluation de clauses candidates
 
 On teste 3 clauses candidates et leur gain FOIL. La clause récursive `ancestor(x,y) :- parent(x,z), ancestor(z,y)` nécessite une **extension** de la cible (les positifs connus) pour évaluer le littéral récursif `ancestor(z,y)` — procédé standard de FOIL pour les prédicats récursifs.
 ",,,,,,,,56b4cc472affac49,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,58744f18,code,fr,c50e686cedaf9bfb,"// Cellule 4 — Clauses candidates pour ancestor
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,58744f18,code,fr,c50e686cedaf9bfb,"// Cellule 4 — Clauses candidates pour ancestor
 // Extension du background avec les ancetres directs (pour evaluer la recursion)
 public static HashSet<(string Pred, string[] Args)> BgWithDirectAncestors()
 {
@@ -11460,14 +11460,14 @@ $""  Couvre {cp3.Count} positifs : [{string.Join("", "", cp3.OrderBy(p=>p.X).Tak
 $""  Couvre {cn3.Count} negatifs"".Display();
 $""  Gain FOIL : {FoilGain(POSITIVES.Count, NEGATIVES.Count, cp3.Count, cn3.Count):F3}"".Display();
 ",,,,,,,,c50e686cedaf9bfb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,6e53df30,markdown,fr,0f6964ddea75a4b7,"## 5. Résolution inverse (bottom-up)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,6e53df30,markdown,fr,0f6964ddea75a4b7,"## 5. Résolution inverse (bottom-up)
 
 À l'inverse de FOIL (top-down), la **résolution inverse** part des faits et **généralise**. Deux opérateurs fondateurs (Muggleton) :
 
 - **Opérateur V** (absorption) : si un littéral du corps d'une clause unifie avec un fait du background (nié), on **retire** ce littéral — il est « absorbé ».
 - **Opérateur W** (identification) : on **combine** deux clauses en résolvant un littéral commun, produisant une clause plus générale.
 ",,,,,,,,0f6964ddea75a4b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,755e9fc5,code,fr,4db879f6c7e9704d,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,755e9fc5,code,fr,4db879f6c7e9704d,"#nullable enable
 // Cellule 5 — Operateurs V (absorption) et W (identification)
 public static HornClause? ApplyVOperator(HornClause clause, Literal backgroundFact)
 {
@@ -11548,13 +11548,13 @@ $""  Clause 1 : {c1w}"".Display();
 $""  Clause 2 : {c2w}"".Display();
 foreach (var r in ApplyWOperator(c1w, c2w))
     $""  W-operator result : {r}"".Display();",,,,,,,,4db879f6c7e9704d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,76d24ec5,markdown,fr,ecbeac49a17842e9,"## 6. FOIL pas-à-pas (covering séquentiel)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,76d24ec5,markdown,fr,ecbeac49a17842e9,"## 6. FOIL pas-à-pas (covering séquentiel)
 
 L'algorithme complet de FOIL en **covering séquentiel** : on apprend une clause, on retire les positifs couverts, on recommence jusqu'à couvrir tous les positifs. Chaque clause est construite en ajoutant itérativement le littéral de **meilleur gain** (parmi les candidats, incluant le littéral **récursif** `ancestor(.,.)`), jusqu'à ce qu'elle ne couvre plus aucun négatif (clause consistante).
 
 Deux ingrédients rendent la récursion apprenable : (a) la couverture compte des **exemples distincts** ; (b) le littéral récursif est évalué contre l'**extension connue** de la cible (les positifs déjà connus).
 ",,,,,,,,ecbeac49a17842e9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,7901d67e,code,fr,514442e7e134246f,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,7901d67e,code,fr,514442e7e134246f,"#nullable enable
 // Cellule 6 — FOIL covering sequentiel avec trace
 public static (List<HornClause> rules, HashSet<(string X,string Y)> uncovered) FoilStepByStep(
     string targetPred, string[] targetArgs, string[] constants,
@@ -11632,11 +11632,11 @@ new string('=', 55).Display();
 foreach (var r in rules) $""  {r}"".Display();
 $""Positifs non couverts : {(uncovered.Count == 0 ? ""aucun (couverture complete)"" : string.Join("", "", uncovered.OrderBy(p=>p.X)))}"".Display();
 ",,,,,,,,514442e7e134246f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,86e01782,markdown,fr,7a0afa9b06824dc4,"## 7. ILP sur un mini Knowledge Graph
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,86e01782,markdown,fr,7a0afa9b06824dc4,"## 7. ILP sur un mini Knowledge Graph
 
 Au-delà des arbres généalogiques, l'ILP découvre des **règles relationnelles** sur des KG (triples sujet-prédicat-objet). On illustre trois motifs classiques : **symétrie** du mariage, **transitivité** de localisation, et **co-résidence** des époux.
 ",,,,,,,,7a0afa9b06824dc4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,38f9c9a5,code,fr,5b1615cab6a6fbc4,"// Cellule 7 — Regles ILP sur un mini Knowledge Graph
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,38f9c9a5,code,fr,5b1615cab6a6fbc4,"// Cellule 7 — Regles ILP sur un mini Knowledge Graph
 var KG = new HashSet<(string S, string P, string O)> {
     (""Alice"",""marriedTo"",""Bob""), (""Bob"",""marriedTo"",""Alice""),
     (""Alice"",""livesIn"",""Paris""), (""Bob"",""livesIn"",""Paris""),
@@ -11685,17 +11685,17 @@ foreach (var (s1,p1,o1) in KG) if (p1 == ""marriedTo"")
     }
 $""   Total inferences : {countCore}"".Display();
 ",,,,,,,,5b1615cab6a6fbc4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,19d976b4,markdown,fr,05f826e37cbc4c34,"## 8. Exercices
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,19d976b4,markdown,fr,05f826e37cbc4c34,"## 8. Exercices
 
 Trois extensions à compléter (stubs C.1). Le notebook s'exécute end-to-end même non complété.
 ",,,,,,,,05f826e37cbc4c34,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,d6f7497c,markdown,fr,83b0c3ed02ef3a5b,"### Exercice 1 — Négation par échec (NAF)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,d6f7497c,markdown,fr,83b0c3ed02ef3a5b,"### Exercice 1 — Négation par échec (NAF)
 
 L'**échec par négation** (Negation As Failure) : `not p(X)` est vrai si `p(X)` ne peut pas être prouvé. Étendre `EvaluateLiteral` pour gérer les littéraux niés dans le corps via NAF.
 
 > **Indice :** un littéral nié `~lit` est vrai si la version positive `lit` n'est PAS dans le background (déjà géré), mais pour un littéral contenant des variables liées, vérifier qu'aucune instanciation ne le satisfait.
 ",,,,,,,,83b0c3ed02ef3a5b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,fbf850e4,code,fr,b33a5309453a28c2,"// Cellule 8 — Exercice 1 (a completer) : negation par echec etendue
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,fbf850e4,code,fr,b33a5309453a28c2,"// Cellule 8 — Exercice 1 (a completer) : negation par echec etendue
 // TODO etudiant : etendre EvaluateLiteral pour la NAF sur variables liees
 // Etape 1 : si lit.Negated est faux, comportement actuel (fact in background).
 // Etape 2 : si lit.Negated est vrai ET certaines args sont des variables libres,
@@ -11708,13 +11708,13 @@ public static bool EvaluateLiteralNAF(Literal lit, Dictionary<string,string> bin
 }
 display(""Exercice 1 (negation par echec) : stub a completer."");
 ",,,,,,,,b33a5309453a28c2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,f9d768ec,markdown,fr,06a1334cb8b97ba4,"### Exercice 2 — Gain FOIL alternatif (entropie de Shannon)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,f9d768ec,markdown,fr,06a1334cb8b97ba4,"### Exercice 2 — Gain FOIL alternatif (entropie de Shannon)
 
 FOIL utilise $p \cdot \log_2(\frac{p}{p+n})$ comme gain. Une variante classique est le **gain d'information de Shannon** : $\text{Gain} = H(parent) - \frac{N_{child}}{N_{parent}} H(child)$ où $H(S) = -\frac{p}{p+n}\log_2\frac{p}{p+n} - \frac{n}{p+n}\log_2\frac{n}{p+n}$. L'implémenter et comparer les littéraux choisis.
 
 > **Indice :** attention aux cas limites (p=0 ou n=0 → H=0 par convention). Comparer le littéral sélectionné à chaque profondeur avec FOIL classique.
 ",,,,,,,,06a1334cb8b97ba4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,188b5294,code,fr,8e3f3fb604fdc831,"// Cellule 9 — Exercice 2 (a completer) : gain d'information de Shannon
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,188b5294,code,fr,8e3f3fb604fdc831,"// Cellule 9 — Exercice 2 (a completer) : gain d'information de Shannon
 // TODO etudiant : implementer ShannonGain(oldPos, oldNeg, newPos, newNeg)
 // Etape 1 : definir H(p, n) = entropie de Shannon (0 si p=0 ou n=0).
 // Etape 2 : Gain = H(oldPos, oldNeg) - (newTotal/oldTotal) * H(newPos, newNeg).
@@ -11726,13 +11726,13 @@ public static double ShannonGain(int oldPos, int oldNeg, int newPos, int newNeg)
 }
 display(""Exercice 2 (gain de Shannon) : stub a completer."");
 ",,,,,,,,8e3f3fb604fdc831,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,a0c0f5a5,markdown,fr,76af84769e8e2a4b,"### Exercice 3 — Apprentissage de la règle de transitivité
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,a0c0f5a5,markdown,fr,76af84769e8e2a4b,"### Exercice 3 — Apprentissage de la règle de transitivité
 
 Sur le mini-KG, apprendre la règle **transitive** `livesIn(X, Z) :- livesIn(X, Y), locatedIn(Y, Z)` par FOIL (sans l'écrire à la main). Définir `positives` = tous les `(X, Z)` inférés, `negatives` = contre-exemples, `background` = le KG, et lancer `FoilStepByStep`.
 
 > **Indice :** convertir le KG en background `(predicat, args[2])`, définir les positifs comme les paires `(X, Z)` où il existe une chaîne `livesIn-locatedIn`, les négatifs comme des paires au hasard non connectées.
 ",,,,,,,,76af84769e8e2a4b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,8332c7ef,code,fr,6d44356d9ffbb84b,"// Cellule 10 — Exercice 3 (a completer) : apprendre la regle transitive livesIn
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,8332c7ef,code,fr,6d44356d9ffbb84b,"// Cellule 10 — Exercice 3 (a completer) : apprendre la regle transitive livesIn
 // TODO etudiant : definir positifs/negatifs/background et appeler FoilStepByStep
 // Etape 1 : background = KG converti en HashSet<(string, string[])>.
 // Etape 2 : positifs = paires (X,Z) avec une chaine livesIn(X,Y)+locatedIn(Y,Z).
@@ -11745,7 +11745,7 @@ public static void LearnTransitivityRule(HashSet<(string S,string P,string O)> k
 }
 display(""Exercice 3 (apprentissage transitivite) : stub a completer."");
 ",,,,,,,,6d44356d9ffbb84b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,9cec227d,markdown,fr,c9d6e71012416780,"## 9. Pont vers le solveur SOTA : clingo (Process.Start)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,9cec227d,markdown,fr,c9d6e71012416780,"## 9. Pont vers le solveur SOTA : clingo (Process.Start)
 
 Le twin Python apprend `ancestor/2` via **Popper**, qui formule l'ILP comme un problème ASP (Answer Set Programming) résolu par **clingo** (Potassco). Le verdict **INTRINSIC** (#10406) qui fermait cette section est **révoqué** par l'arbitrage #10382 : clingo est un **binaire** invocable, et le pendant C# honnête est `Process.Start` sur ce même binaire clingo (celui que le twin Python invoque via Popper ; axe **CLI** de la checklist SOTA #10459) — pas une réimplémentation.
 
@@ -11761,7 +11761,7 @@ puis invoque clingo (`--outf=2`) et vérifie que les **ancêtres dérivés** cor
 |---------|--------|
 | **SOTA-OK (pont)** | clingo (Potassco) invoqué depuis C# via `Process.Start` (axe CLI). Axes binding : pas de NuGet .NET (1), pas de P/Invoke (2), **CLI = le canal** (3), pas d'IKVM (4), pas de PythonNet (5). Le from-scratch FOIL (cellules 1-7) est **conservé** : le pont est **en plus**, jamais à la place — FOIL = l'algorithme fondateur d'AIMA §19.5, clingo = le moteur que Popper utilise en interne. |
 ",,,,,,,,c9d6e71012416780,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,5aa92035,markdown,fr,405cc8e5cd250f82,"## 10. Résumé
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,5aa92035,markdown,fr,405cc8e5cd250f82,"## 10. Résumé
 
 Ce twin C# a reconstruit **from-scratch** (BCL .NET 9, 0 NuGet) le moteur de la programmation logique inductive :
 
@@ -12684,7 +12684,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,sl9-2
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-4](SL-4-InductiveLogicProgramming.ipynb) | [SL-7 >>](SL-7-NeuroSymbolic.ipynb)
 ",,,,,,,,58482698989ee907,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,f009a5b2,markdown,fr,a2a9d0ee6ce13f1f,"# SL-5 - Resolution Inverse & ILP (C#)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,f009a5b2,markdown,fr,a2a9d0ee6ce13f1f,"# SL-5 - Resolution Inverse & ILP (C#)
 
 > **Jumeau C#** du notebook [SL-5-InverseResolution.ipynb](SL-5-InverseResolution.ipynb).
 > Marathon parite .NET ⇄ Python (#4956), EPIC #3801 Prong B.
@@ -12702,7 +12702,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipyn
 ### Prérequis
 - Notions de logique du premier ordre (clauses Horn, variables, unification).
 - .NET 9.0 + dotnet-interactive (kernel `.net-csharp`).
-- Avoir suivi [SL-1](SL-1-LogicalLearning-Csharp.ipynb), [SL-2](SL-2-KnowledgeBasedLearning-Csharp.ipynb).
+- Avoir suivi [SL-1](SL-1-LogicalLearning-CSharp.ipynb), [SL-2](SL-2-KnowledgeBasedLearning-CSharp.ipynb).
 
 ### Durée estimée : 65 minutes
 
@@ -12711,12 +12711,12 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipyn
 - Muggleton, S. *Inductive Logic Programming* (1991-1995) — Progol, clause bottom.
 - Notebook Python : [SL-5-InverseResolution.ipynb](SL-5-InverseResolution.ipynb).
 ",,,,,,,,a2a9d0ee6ce13f1f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,88ed0203,markdown,fr,362d71be67825482,"## 1. Représentation : atomes, clauses, couverture
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,88ed0203,markdown,fr,362d71be67825482,"## 1. Représentation : atomes, clauses, couverture
 
 Un **atome** = `(prédicat, args)` (ValueTuple) où les args sont des termes (constantes
 en minuscule, variables en majuscule). Une **clause** = `record Clause(Head, Body)`.
 La clause couvre un exemple si la tête s'unifie et le corps est satisfiable sur les faits.",,,,,,,,362d71be67825482,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,08fc4cd5,code,fr,d81d1d3d4febb113,"using System.Linq;
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,08fc4cd5,code,fr,d81d1d3d4febb113,"using System.Linq;
 
 // Comparateur structurel d'atomes (sinon string[] compare par reference =>HashSet bug).
 public class AtomEq : IEqualityComparer<(string,string[])> {
@@ -12801,12 +12801,12 @@ foreach (var e in POS.Concat(NEG)) {
     Console.WriteLine($""{Fmt(e),24} |    {exp}    |   {couv}"");
 }
 ",,,,,,,,d81d1d3d4febb113,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,88775903,markdown,fr,d866eb3b5b37f34f,"## 2. LGG — Least General Generalization (Plotkin)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,88775903,markdown,fr,d866eb3b5b37f34f,"## 2. LGG — Least General Generalization (Plotkin)
 
 La **LGG** de deux clauses généralise leurs termes : si deux termes diffèrent, on
 introduit une nouvelle variable partagée (table de mapping). C'est l'inverse de
 l'unification : on remonte vers le plus général.",,,,,,,,d866eb3b5b37f34f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,18d4f2b1,code,fr,3a607ea35579a29e,"// LGG de deux termes : meme terme -> lui-meme ; sinon variable fraiche partagee.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,18d4f2b1,code,fr,3a607ea35579a29e,"// LGG de deux termes : meme terme -> lui-meme ; sinon variable fraiche partagee.
 string LggTerm(string t1, string t2, Dictionary<(string,string),string> mapping) {
     if (t1 == t2) return t1;
     if (!mapping.ContainsKey((t1, t2))) mapping[(t1, t2)] = $""V{mapping.Count + 1}"";
@@ -12850,12 +12850,12 @@ int posCovered = POS.Count(e => Covers(g, e, FACTS));
 int negCovered = NEG.Count(e => Covers(g, e, FACTS));
 Console.WriteLine($""Couverture : {posCovered}/4 positifs, {negCovered}/6 negatifs"");
 ",,,,,,,,3a607ea35579a29e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,bbf1b5f0,markdown,fr,8f70caf5bccd6e5c,"## 3. θ-subsomption — ordre de généralité
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,bbf1b5f0,markdown,fr,8f70caf5bccd6e5c,"## 3. θ-subsomption — ordre de généralité
 
 `C θ-subsume D` s'il existe une substitution `θ` plongeant chaque littéral de `C`
 dans `D`. On **skolémise** `D` (variables → constantes) puis on cherche `θ` par
 backtracking. La clause la plus générale (`top`) subsume toutes les autres.",,,,,,,,8f70caf5bccd6e5c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,6e824d31,code,fr,31294b03cd5da286,"// Variables d'une clause, et constantes d'une clause (IsVar : une variable commence
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,6e824d31,code,fr,31294b03cd5da286,"// Variables d'une clause, et constantes d'une clause (IsVar : une variable commence
 // par une majuscule). Les deux servent a construire une skolemisation a la fois
 // INJECTIVE et FRAICHE.
 HashSet<string> VarsOf(Clause cl) {
@@ -12936,12 +12936,12 @@ for (int j = 0; j < chain.Length; j++) {
     Console.WriteLine($""  {chain[i].Item1,15} subsume {chain[j].Item1,-15} ? {Subsumes(chain[i].Item2, chain[j].Item2)}"");
 }
 ",,,,,,,,31294b03cd5da286,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,dcc44a2d,markdown,fr,e148c8a1b0f5ae47,"## 4. Clause bottom — saturation bornée
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,dcc44a2d,markdown,fr,e148c8a1b0f5ae47,"## 4. Clause bottom — saturation bornée
 
 La **clause bottom** d'un exemple positif = on enrichit l'exemple avec tous les faits
 atteignables (profondeur `depth`), puis on **variabilise** les constantes. C'est la
 clause la **plus spécifique** qui couvre l'exemple ; la cible recherchée la subsume.",,,,,,,,e148c8a1b0f5ae47,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,e485ab3b,code,fr,6d52c6292e5c6443,"// Clause bottom de l'exemple : saturation bornee puis variabilisation.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,e485ab3b,code,fr,6d52c6292e5c6443,"// Clause bottom de l'exemple : saturation bornee puis variabilisation.
 (Clause clause, Dictionary<string,string> mapping) BottomClause(
         (string,string[]) example, List<(string,string[])> facts,
         HashSet<string> bodyPreds, int depth = 2) {
@@ -12973,13 +12973,13 @@ Console.WriteLine($""  {ShowClause(bottom)}"");
 Console.WriteLine($""\nVariabilisation : "" + string.Join("", "", bottomMap.Select(kv => $""{kv.Key} -> {kv.Value}"")));
 Console.WriteLine($""\nLa cible subsume-t-elle la clause bottom ? {Subsumes(target, bottom)}"");
 ",,,,,,,,6d52c6292e5c6443,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,3a3eefda,markdown,fr,06d0946a92d849c2,"## 5. Recherche Progol — meilleure clause consistante
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,3a3eefda,markdown,fr,06d0946a92d849c2,"## 5. Recherche Progol — meilleure clause consistante
 
 Dans le treillis `[top, bottom]`, on cherche la clause la **plus générale consistante**
 (couvre des positifs, aucun négatif). Score = `positifs couverts − longueur du corps`
 (biais de parcimonie). On restreint aux sous-ensembles **connectés** (liaison par variables)
 et on énumère les combinaisons.",,,,,,,,06d0946a92d849c2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,277ec634,code,fr,59f81755e7b72b7f,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,277ec634,code,fr,59f81755e7b72b7f,"#nullable enable
 // Chaque litteral du corps doit etre relie a la tete par les variables.
 bool IsConnected((string,string[]) head, List<(string,string[])> bodySubset) {
     var reached = new HashSet<string>(head.Item2);
@@ -13054,13 +13054,13 @@ int okPos = theory.Sum(c => POS.Count(e => Covers(c, e, FACTS)));
 int okNeg = theory.Sum(c => NEG.Count(e => Covers(c, e, FACTS)));
 Console.WriteLine($""\nVerification : {okPos}/{POS.Count} positifs couverts, {okNeg}/{NEG.Count} negatifs couverts"");
 ",,,,,,,,59f81755e7b72b7f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,2813e827,markdown,fr,ee781e4fc058512a,"## 6. Exemple guide — apprendre `grandmother/2`
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,2813e827,markdown,fr,ee781e4fc058512a,"## 6. Exemple guide — apprendre `grandmother/2`
 
 Sur le même arbre, la seule grand-mère est `liz` (de `eve`) : `liz` parent de `sue`,
 `sue` parent de `eve`, et `liz` est `female`. Les autres grands-parents sont des
 grands-pères (`male`) → un seul positif. **Avec un seul positif, ce sont les négatifs
 qui portent le signal** et forcent le littéral `female(X)` (vs `male(X)` pour grandfather).",,,,,,,,ee781e4fc058512a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,1bf1eb1b,code,fr,630d9fd26a481688,"var POS_GM = new List<(string,string[])>{ (""grandmother"", new[]{""liz"",""eve""}) };
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,1bf1eb1b,code,fr,630d9fd26a481688,"var POS_GM = new List<(string,string[])>{ (""grandmother"", new[]{""liz"",""eve""}) };
 var NEG_GM = new List<(string,string[])> {
     (""grandmother"", new[]{""tom"",""ann""}), (""grandmother"", new[]{""tom"",""pat""}),
     (""grandmother"", new[]{""tom"",""sue""}), (""grandmother"", new[]{""bob"",""jim""}),
@@ -13082,7 +13082,7 @@ var targetGm = new Clause(
 bool equiv = theoryGm.Any(c => Subsumes(c, targetGm) && Subsumes(targetGm, c));
 Console.WriteLine($""Equivalente a grandmother(X,Y) :- female(X), parent(X,Z), parent(Z,Y) ? {equiv}"");
 ",,,,,,,,630d9fd26a481688,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,695bf88e,markdown,fr,115bf45174b659c4,"## 7. Pont vers le solveur SOTA : SWI-Prolog (Process.Start)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,695bf88e,markdown,fr,115bf45174b659c4,"## 7. Pont vers le solveur SOTA : SWI-Prolog (Process.Start)
 
 Le notebook Python [SL-5-InverseResolution.ipynb](SL-5-InverseResolution.ipynb)
 invoque les **vrais moteurs ILP** via `janus_swi` : **Aleph** (Progol en chair et en
@@ -13114,7 +13114,7 @@ La cellule suivante :
 Verdict : **SOTA-OK (pont)** — le from-scratch est conservé (il enseigne les
 **internes** de Progol), le pont est **en plus**, jamais à la place.
 ",,,,,,,,115bf45174b659c4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,c5938dda,markdown,fr,605ea1e06b0c838f,"## Exercice : apprendre `uncle/2`
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,c5938dda,markdown,fr,605ea1e06b0c838f,"## Exercice : apprendre `uncle/2`
 
 Appliquez `ProgolLearn` pour apprendre `uncle(X, Y)` : X est l'**oncle** de Y,
 c'est-à-dire le **frère d'un parent** de Y — et **pas** le parent lui-même.
@@ -13172,7 +13172,7 @@ symptôme d'une spécialisation manquée.
 (b) le **père lui-même** (un parent direct) — ex. `bob` est père d'`ann` ;
 (c) les **grands-pères** — ex. `tom` est grand-père de `sue`.
 ",,,,,,,,605ea1e06b0c838f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,940fe07a,code,fr,eaced93922083aca,"// EXERCICE : apprendre uncle/2
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,940fe07a,code,fr,eaced93922083aca,"// EXERCICE : apprendre uncle/2
 // X est l'oncle de Y = le frere d'un parent de Y -- et PAS le parent lui-meme.
 // Cible SEMANTIQUE (avec inegalite ; le Progol from-scratch ne sait pas l'ecrire) :
 //     uncle(X,Y) :- male(X), parent(W,X), parent(W,Z), parent(Z,Y), X \= Z.
@@ -13201,7 +13201,7 @@ Console.WriteLine($""Cible Horn (reference, sans inegalite) : {ShowClause(cibleH
 //   specialisation : Subsumes(cibleHorn, theoryUncle) -> True   ET   Subsumes(theoryUncle, cibleHorn) -> False.
 Console.WriteLine(""Exercice uncle/2 a completer (voir indice ci-dessus)."");
 ",,,,,,,,eaced93922083aca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,cell-d79cad6e,code,fr,663dda45084dad5a,"// EXERCICE 2 : profondeur de la clause bottom (cf. ""Bilan"" -> ""Exercices supplementaires"" -> ""Exercice 2"").
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,cell-d79cad6e,code,fr,663dda45084dad5a,"// EXERCICE 2 : profondeur de la clause bottom (cf. ""Bilan"" -> ""Exercices supplementaires"" -> ""Exercice 2"").
 // On teste BottomClause avec depth=1 vs depth=3 sur l'exemple grandmother (POS_GM et FACTS : voir la cellule ""Domaine : arbre genealogique"").
 // Questions : combien de litteraux dans chaque clause bottom ? La cible (grandmother) subsume-t-elle
 // toujours la clause bottom a profondeur 1 ? Pourquoi une profondeur importante cree une explosion
@@ -13220,7 +13220,7 @@ void Compare_BottomClause_Depth() {
 
 Console.WriteLine(""Exercice 2 a completer : profondeur de la clause bottom (depth 1 vs 3)."");
 ",,,,,,,,663dda45084dad5a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,cell-5b05ed18,code,fr,a38385eaccc10020,"// EXERCICE 3 : tolerance au bruit (cf. ""Bilan"" -> ""Exercices supplementaires"" -> ""Exercice 3"").
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,cell-5b05ed18,code,fr,a38385eaccc10020,"// EXERCICE 3 : tolerance au bruit (cf. ""Bilan"" -> ""Exercices supplementaires"" -> ""Exercice 3"").
 // On ajoute un exemple positif erronne (ex : (""grandfather"", new[]{""ann"",""jim""}) alors qu'ann est
 // female) au jeu grandmother. Que se passe-t-il avec ProgolLearn (qui rejette toute clause couvrant
 // un negatif) ? Proposez un mecanisme de tolerance : score p - n - L autorisant quelques negatifs
@@ -13242,7 +13242,7 @@ List<string> ProgolLearn_Noise_Tolerant(
 
 Console.WriteLine(""Exercice 3 a completer : tolerance au bruit (k=1 negatif autorise)."");
 ",,,,,,,,a38385eaccc10020,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,a59f1286,markdown,fr,44b85134f727bb55,"## Bilan
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,a59f1286,markdown,fr,44b85134f727bb55,"## Bilan
 
 Ce notebook a présenté la **résolution inverse et l'ILP** from-scratch en C#, jumeau
 du notebook Python :
@@ -14011,7 +14011,7 @@ Metagol, Popper) versus robustesse au bruit et integration neuronale (dILP).
 ***
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-5 Resolution inverse](SL-5-InverseResolution.ipynb) | [SL-7 Neuro-symbolique >>](SL-7-NeuroSymbolic.ipynb)",,,,,,,,87e4854a613777bc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,e57472c7,markdown,fr,c9c1162d8c80f981,"# SL-6 (C#) : Moteurs ILP modernes — apprendre des programmes recursifs
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,e57472c7,markdown,fr,c9c1162d8c80f981,"# SL-6 (C#) : Moteurs ILP modernes — apprendre des programmes recursifs
 
 **Twin C# (.NET Interactive / from-scratch) du notebook Python [SL-6-ModernILP](SL-6-ModernILP.ipynb)** (Aleph, Metagol, Popper, dILP).
 
@@ -14020,19 +14020,19 @@ L'**Inductive Logic Programming (ILP)** apprend un **programme logique** (un ens
 Ce twin C# implemente **from-scratch** l'algorithme fondateur **FOIL** (Quinlan 1990) — la reference algorithmique de l'ILP relationnel — qui apprend les deux clauses recursives d'`ancestor` par **recherche dans le graphe de raffinement** guidee par un gain d'information (FOIL_Gain). Les 4 moteurs du twin Python (bases sur SWI-Prolog, clingo/ASP, TensorFlow) relevent de **RECOVERABLE-MACHINE / INTRINSIC** (verdict SOTA section 6) — sauf le pont **§7** : `Process.Start` vers **clingo**, le solveur ASP que le jumeau Python pilote via Popper (**SOTA-OK** ; le carnet ne lance pas Popper lui-même, il rejoue sous clingo le programme appris par FOIL).
 
 > **Parite** : le twin Python compare 4 frameworks externes (Aleph/Metagol = Prolog, Popper = ASP+clingo, dILP = TensorFlow). Cote .NET, nous implementons le **noyau algorithmique** (FOIL) en C# pur (0 NuGet), qui est la **substance** que ces frameworks automatisent. Le verdict SOTA (#3801) est explicite section 6.",,,,,,,,c9c1162d8c80f981,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,895f0094,code,fr,6033c79d69d65710,"using System;
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,895f0094,code,fr,6033c79d69d65710,"using System;
 using System.Linq;
 using System.Collections.Generic;
 
 Console.WriteLine(""SL-6 ModernILP (C# twin) - environnement pret."");",,,,,,,,6033c79d69d65710,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,19365de6,markdown,fr,1cf01a66a702391a,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,19365de6,markdown,fr,1cf01a66a702391a,"***
 
 ## 1. La tâche commune : apprendre `ancestor`
 
 Tous les moteurs ILP recevront **exactement la même tâche** : etant donne 5 faits `parent(X,Y)` sur 6 personnes, inferer la relation `ancestor(X,Y)` (cloture transitive). La **source unique de verite** = la cloture transitive calculee en code (une liste manuelle oubliait `ancestor(bob, sue)` via `bob -> ann -> sue`, cf twin Python).
 
 **Exemples positifs** = les 11 couples `(x,y)` tels que `x` est un ancetre de `y`. **Exemples negatifs** = les 19 couples `(x,y)` avec `x != y` hors cloture.",,,,,,,,1cf01a66a702391a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ff084b72,code,fr,3f561585aa708e19,"// Base de connaissances commune (parite exacte avec twin Python)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,ff084b72,code,fr,3f561585aa708e19,"// Base de connaissances commune (parite exacte avec twin Python)
 var PEOPLE = new List<string>{""tom"",""bob"",""ann"",""pat"",""jim"",""sue""};
 var PARENT = new List<(string,string)>{(""tom"",""bob""),(""bob"",""ann""),(""bob"",""pat""),(""pat"",""jim""),(""ann"",""sue"")};
 
@@ -14058,7 +14058,7 @@ Console.WriteLine($""parent/2 : {PARENT.Count} faits"");
 Console.WriteLine($""positifs : {POS.Count} couples ancestor (cloture transitive)"");
 foreach (var (a,b) in POS) Console.WriteLine($""    ancestor({a}, {b})"");
 Console.WriteLine($""negatifs : {NEG.Count} couples (x != y, hors cloture)"");",,,,,,,,3f561585aa708e19,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,7a695109,markdown,fr,e8459478f67081be,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,7a695109,markdown,fr,e8459478f67081be,"***
 
 ## 2. L'algorithme FOIL (Quinlan 1990)
 
@@ -14076,7 +14076,7 @@ Le **FOIL_Gain** d'un literal = `t * [ log2(p/(p+n)) - log2(p0/(p0+n0)) ]` ou `t
 Ces departages ne sont pas un detail d'implementation : **ils decident du programme appris**. Mesure de controle (audit #22838) : au gain FOIL pur, la seconde clause apprend `parent, parent, parent` — sans recursion ; c'est le departage de mode-bias qui fait emerger la forme recursive canonique `parent(A,C), ancestor(C,B)`. La recursion n'est pas un sous-produit du gain : elle est **choisie** par le biais.
 
 Key : FOIL autorise le **predicat cible** (`ancestor`) dans le corps — c'est ce qui permet la **recursion**.",,,,,,,,e8459478f67081be,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,f097fcf6,code,fr,378c337e275c127c,"// Representations : Term (Variable | Constant), Literal, Clause
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,f097fcf6,code,fr,378c337e275c127c,"// Representations : Term (Variable | Constant), Literal, Clause
 record Term(string Var, string Const) {
     public bool IsVar => Var != null;
     public string Show => IsVar ? Var : Const;
@@ -14094,10 +14094,10 @@ record Clause(Literal Head, List<Literal> Body) {
 // Base extensionnelle : faits ground par predicat. ancestorDB sera recalculee des clauses apprises.
 var parentDB = new HashSet<(string,string)>(PARENT);
 Console.WriteLine(""parentDB : "" + parentDB.Count + "" faits ground."");",,,,,,,,378c337e275c127c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,cb486a4e,markdown,fr,f252294b172e86bc,"### 2.1 Evaluation extensionnelle et couverture
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,cb486a4e,markdown,fr,f252294b172e86bc,"### 2.1 Evaluation extensionnelle et couverture
 
 Une clause `ancestor(A,B) :- body` **couvre** un exemple `(x,y)` s'il existe une assignation `A=x, B=y` et des valeurs pour les variables existentielles telles que **tous** les literals du corps soient vrais dans la base extensionnelle. On evalue par enumeration des constantes pour les variables nouvelles (petite base = tractable).",,,,,,,,f252294b172e86bc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,96c983ea,code,fr,dba9dbbddf309f22,"// Evaluer si une clause couvre un exemple (x,y), en retournant aussi les bindings couverts.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,96c983ea,code,fr,dba9dbbddf309f22,"// Evaluer si une clause couvre un exemple (x,y), en retournant aussi les bindings couverts.
 // ancestorDB passe en parametre (pour evaluer ancestor dans le corps via clauses deja apprises).
 static bool Covers(Clause cl, (string x,string y) ex, HashSet<(string,string)> parentDB, HashSet<(string,string)> ancestorDB, List<string> consts) {
     // Binder les variables de tete A=x, B=y
@@ -14130,10 +14130,10 @@ static bool Covers(Clause cl, (string x,string y) ex, HashSet<(string,string)> p
     return false;
 }
 Console.WriteLine(""Helper Covers pret (backtracking extensionnel)."");",,,,,,,,dba9dbbddf309f22,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ced7f9d4,markdown,fr,ff5f08c5fda87606,"### 2.2 Generation des literals candidats + FOIL_Gain
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,ced7f9d4,markdown,fr,ff5f08c5fda87606,"### 2.2 Generation des literals candidats + FOIL_Gain
 
 A chaque étape, on genere les literals candidats : pour chaque predicat `p` dans `{parent, ancestor}` et chaque paire de variables prise dans `{A, B, C}` (C = variable nouvelle), on evalue le score de selection : **FOIL_Gain + bonus de range restriction** (+3.0 si le literal lie une variable de tete encore libre), puis a egalite deux departages — moins de variables nouvelles, puis biais de mode vers la recursion `ancestor` (voir section 2). On retient le meilleur.",,,,,,,,ff5f08c5fda87606,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,2b88e2fa,code,fr,c33213c4f7b393c7,"static double FoilGain(int p0, int n0, int p, int n) {
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,2b88e2fa,code,fr,c33213c4f7b393c7,"static double FoilGain(int p0, int n0, int p, int n) {
     // t = positifs encore couverts apres ajout du literal
     if (p==0) return double.NegativeInfinity;
     double before = (p0+n0)==0 ? 0 : Math.Log2((double)p0/(p0+n0));
@@ -14154,7 +14154,7 @@ static List<Literal> Candidates(List<string> vars, Literal head) {
     return cands;
 }
 Console.WriteLine(""FOIL_Gain + Candidates prets."");",,,,,,,,c33213c4f7b393c7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ffa3ba34,markdown,fr,97d814f67ccd18d3,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,ffa3ba34,markdown,fr,97d814f67ccd18d3,"***
 
 ## 3. FOIL apprend `ancestor` : les deux clauses recursives
 
@@ -14163,7 +14163,7 @@ Lançons la boucle FOIL complete sur la tâche `ancestor`. L'algorithme doit dec
 - **Clause 2 (pas récursif)** : `ancestor(A,B) :- parent(A,C), ancestor(C,B).`
 
 La clause 2 utilise `ancestor` dans son propre corps : c'est la **recursion**, possible parce que FOIL evalue `ancestor(C,B)` avec les clauses déjà apprises (la clause 1 a ce stade).",,,,,,,,97d814f67ccd18d3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,2f279168,code,fr,f955a811cae4667e,"// FOIL complet : apprend un ensemble de clauses pour le predicat cible.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,2f279168,code,fr,f955a811cae4667e,"// FOIL complet : apprend un ensemble de clauses pour le predicat cible.
 static List<Clause> Foil(
     List<(string x,string y)> pos, List<(string x,string y)> neg,
     HashSet<(string,string)> parentDB, List<string> consts, int maxBody=3) {
@@ -14252,12 +14252,12 @@ static HashSet<(string,string)> DeriveAncestor(List<Clause> learned, HashSet<(st
 var learnedClauses = Foil(POS, NEG, parentDB, PEOPLE);
 Console.WriteLine($""\nFOIL a appris {learnedClauses.Count} clause(s) :"");
 foreach (var cl in learnedClauses) Console.WriteLine(""  "" + cl.Show);",,,,,,,,f955a811cae4667e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,45aef68a,markdown,fr,900431b71264ed8f,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,45aef68a,markdown,fr,900431b71264ed8f,"***
 
 ## 4. Verification : couverture et corrections
 
 Un bon programme ILP doit couvrir **tous** les positifs et **aucun** negatif. Verifions le programme appris (re-derive a la main les 11 couples attendus).",,,,,,,,900431b71264ed8f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,9c8eed6f,code,fr,c4433ec95ba80cb5,"var finalAnc = DeriveAncestor(learnedClauses, parentDB, PEOPLE);
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,9c8eed6f,code,fr,c4433ec95ba80cb5,"var finalAnc = DeriveAncestor(learnedClauses, parentDB, PEOPLE);
 int tp = POS.Count(p => finalAnc.Contains(p));
 int fn = POS.Count(p => !finalAnc.Contains(p));
 int fp = NEG.Count(n => finalAnc.Contains(n));
@@ -14269,12 +14269,12 @@ Console.WriteLine($""  FP (faux positifs)   = {fp}  (doit etre 0 : aucun negatif
 Console.WriteLine($""  TN (vrais negatifs)  = {tn} / {NEG.Count}"");
 Console.WriteLine($""\nVerdict : {(fn==0 && fp==0 ? ""PARFAIT"" : ""IMPARFAIT"")} — {(fn==0&&fp==0 ? ""programme ILP correct (11/11 positifs, 0 negatif)"" : ""erreurs residuelles"")}"");
 Console.WriteLine($""\nLes 11 couples ancestor reconstruits : {finalAnc.Count}"");",,,,,,,,c4433ec95ba80cb5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,79cae3d3,markdown,fr,4dcbfbe6cd92d547,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,79cae3d3,markdown,fr,4dcbfbe6cd92d547,"***
 
 ## 5. Benchmark : FOIL sur un graphe parent croissant
 
 Mesurons le temps d'apprentissage FOIL quand la taille du graphe `parent` augmente (chaîne lineaire de profondeur variable).",,,,,,,,4dcbfbe6cd92d547,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,0a4fae7b,code,fr,92f2fff86d458478,"Console.WriteLine(""profondeur  parents  positifs  clauses  temps(ms)"");
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,0a4fae7b,code,fr,92f2fff86d458478,"Console.WriteLine(""profondeur  parents  positifs  clauses  temps(ms)"");
 Console.WriteLine(new string('-',52));
 foreach (int depth in new[]{5,8,12,16,20}) {
     var p2 = new List<(string,string)>();
@@ -14292,7 +14292,7 @@ foreach (int depth in new[]{5,8,12,16,20}) {
     Console.WriteLine($""{depth,-11} {p2.Count,-8} {pos2.Count,-9} {cls.Count,-8} {sw.Elapsed.TotalMilliseconds:F1}"");
 }
 Console.WriteLine(""\nFOIL apprend toujours 2 clauses (base + recursion) ; le cout croit avec la profondeur."");",,,,,,,,92f2fff86d458478,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,1dd4c812,markdown,fr,3ce6791bf15e841a,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,1dd4c812,markdown,fr,3ce6791bf15e841a,"***
 
 ## 6. Verdict SOTA : les 4 moteurs du twin Python
 
@@ -14307,7 +14307,7 @@ Le twin Python compare 4 frameworks ILP externes. Verdict SOTA (#3801) sur leur 
 | dILP / Lernd | TensorFlow | **INTRINSIC** | apprentissage differentiable par gradient (paradigme différent) |
 
 **Lecon** : la **substance algorithmique** de l'ILP relationnel (recherche dans le graphe de raffinement, FOIL_Gain, couverture extensionnelle, recursion via clauses apprises) est entierement capturable en C# from-scratch. Les frameworks externes (Aleph, Metagol, Popper) automatisent cette recherche avec des optimisations (headless Prolog, ASP metier), et dILP est un **paradigme différent** (neuro-symbolique differentiable) — ce sont des compagnons, pas des prerequis.",,,,,,,,3ce6791bf15e841a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,3197dd54,markdown,fr,baee933096258256,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,3197dd54,markdown,fr,baee933096258256,"***
 
 ## Synthese : FOIL vs les 4 moteurs
 
@@ -14326,20 +14326,20 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,3197dd
 4. **Compromis expressivite/bruit** : l'ILP classique (FOIL, Aleph) est déterministe et exact mais fragile au bruit ; dILP sacrifie l'exactitude symbolique pour la robustesse (gradient).
 
 **Parite avec le twin Python** : la substance algorithmique (sections 2-5) est equivalente. Aleph/Metagol (Prolog) et dILP (TF) n'ont pas de port .NET natif — verdict RECOVERABLE-MACHINE/INTRINSIC section 6, conformement a la discipline SOTA (#3801). **Popper** (ASP) est en revanche **bridge par `Process.Start`** vers clingo (**§7, SOTA-OK**) — le même moteur que le jumeau Python invoque.",,,,,,,,baee933096258256,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,c8a49270,markdown,fr,0917de454f2de9f5,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,c8a49270,markdown,fr,0917de454f2de9f5,"***
 
 ## Exercices
 
 Completez les squelettes ci-dessous (`result = null  // TODO`).",,,,,,,,0917de454f2de9f5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,eb4afe8f,code,fr,4e8c643ec8d4aa20,"// Exercice 1 : Sur la tache ancestor, combien de clauses FOIL apprend-il ?
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,eb4afe8f,code,fr,4e8c643ec8d4aa20,"// Exercice 1 : Sur la tache ancestor, combien de clauses FOIL apprend-il ?
 // (re-derive, puis verifiez avec learnedClauses.Count)
 object exo1Result = null;  // TODO etudiant : int attendu
 Console.WriteLine(exo1Result == null ? ""Exercice a completer"" : exo1Result);",,,,,,,,4e8c643ec8d4aa20,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,d28c42bf,code,fr,828d0d54456a0a2b,"// Exercice 2 : Definir un jeu de test ou la relation a apprendre est NON recursive
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,d28c42bf,code,fr,828d0d54456a0a2b,"// Exercice 2 : Definir un jeu de test ou la relation a apprendre est NON recursive
 // (ex. grandparent(X,Y) :- parent(X,Z), parent(Z,Y)) et lancer FOIL.
 object exo2Result = null;  // TODO etudiant : liste de clauses attendues
 Console.WriteLine(exo2Result == null ? ""Exercice a completer"" : exo2Result);",,,,,,,,828d0d54456a0a2b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,b69a3061,code,fr,3463186b68598390,"// Exercice 3 : empoisonner cette fois les POSITIFS — ajouter un positif incorrect
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,b69a3061,code,fr,3463186b68598390,"// Exercice 3 : empoisonner cette fois les POSITIFS — ajouter un positif incorrect
 // (ancestor(jim,tom) est FAUX dans la cloture) au jeu d'apprentissage, relancer FOIL,
 // et predire PUIS verifier le verdict TP/FN/FP. Quel defaut l'exemple contradictoire
 // paie-t-il quand il est cote positif ?
@@ -16797,7 +16797,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,cf1
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-7](SL-7-NeuroSymbolic.ipynb) | [SL-9 >>](SL-9-LLM-SymbolicLearning.ipynb)
 ",,,,,,,,a7888692c72394b5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,0187ac35,markdown,fr,d8aa884bf330652c,"# SL-8 (C#) : ILP Moderne et Knowledge Graphs
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,0187ac35,markdown,fr,d8aa884bf330652c,"# SL-8 (C#) : ILP Moderne et Knowledge Graphs
 
 **Navigation** : [Index](./README.md) | [<< SL-7](SL-7-NeuroSymbolic.ipynb) | [Twin Python >>](SL-8-KnowledgeGraphs-ILP.ipynb)
 
@@ -16826,9 +16826,9 @@ A la fin de ce notebook, vous saurez :
 | `g.triples((None, p, None))` | `g.GetTriplesWithPredicate(p)` |
 | `set` de paires `(s,o)` | `HashSet<(string s, string o)>` |
 ",,,,,,,,d8aa884bf330652c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,63480710,markdown,fr,7eeb39dbdfcbceaf,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,63480710,markdown,fr,7eeb39dbdfcbceaf,"***
 ## 1. Installation et imports dotNetRDF",,,,,,,,7eeb39dbdfcbceaf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,9f6c5e13,code,fr,2671f38911eb5d9d,"#r ""nuget: dotNetRDF, 3.4.1""
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,9f6c5e13,code,fr,2671f38911eb5d9d,"#r ""nuget: dotNetRDF, 3.4.1""
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -16842,11 +16842,11 @@ CultureInfo.DefaultThreadCurrentUICulture = CultureInfo.InvariantCulture;
 
 const string FAM = ""http://example.org/family/"";
 Console.WriteLine(""dotNetRDF 3.4.1 charge. Namespace FAM = "" + FAM);",,,,,,,,2671f38911eb5d9d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,0856c7b9,markdown,fr,ae9fb5f4f0d878eb,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,0856c7b9,markdown,fr,ae9fb5f4f0d878eb,"***
 ## 2. Construction du Knowledge Graph familial
 
 Nous creons un KG de **14 personnes** sur 4 generations avec 4 types de relations : `parentOf`, `grandparentOf` (INCOMPLET — c'est le coeur du problème ILP), `siblingOf`, `marriedTo`. Le notebook Python explique pourquoi `grandparentOf` est volontairement tronque : simuler un KG reel incomplet que l'ILP doit completer.",,,,,,,,ae9fb5f4f0d878eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,617af7af,code,fr,1906690f2141f46c,"var g = new Graph();
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,617af7af,code,fr,1906690f2141f46c,"var g = new Graph();
 g.NamespaceMap.AddNamespace(""fam"", new Uri(FAM));
 g.NamespaceMap.AddNamespace(""rdf"", new Uri(""http://www.w3.org/1999/02/22-rdf-syntax-ns#""));
 
@@ -16913,7 +16913,7 @@ Console.WriteLine($""  grandparentOf : {Count(g, U(g, ""fam:grandparentOf""))} t
 Console.WriteLine($""  siblingOf : {Count(g, U(g, ""fam:siblingOf""))} triples"");
 Console.WriteLine($""  marriedTo : {Count(g, U(g, ""fam:marriedTo""))} triples"");
 Console.WriteLine($""  Total triplets : {g.Triples.Count()}"");",,,,,,,,1906690f2141f46c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,449e2a7b,markdown,fr,adae5fef1309fba7,"### Interpretation : Knowledge Graph familial
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,449e2a7b,markdown,fr,adae5fef1309fba7,"### Interpretation : Knowledge Graph familial
 
 Le KG contient **47 triplets** (14 `rdf:type Person` + 14 `parentOf` + 5 `grandparentOf` + 12 `siblingOf` + 2 `marriedTo`). Notons que `grandparentOf` est **incomplet** : seules 5 des 14 vraies paires grand-parent/petit-enfant sont explicitement stockees. C'est précisément ce que l'ILP va exploiter.
 
@@ -16921,7 +16921,7 @@ Le KG contient **47 triplets** (14 `rdf:type Person` + 14 `parentOf` + 5 `grandp
 ## 3. Extraction des relations pour le rule mining
 
 Avant de miner des règles, on convertit le graphe RDF en dictionnaires `predicate -> {(subject, object)}`, le format attendu par le mineur.",,,,,,,,adae5fef1309fba7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,3ae8ad58,code,fr,c973b7e85532a46f,"static Dictionary<string, HashSet<(string s, string o)>> ExtractRelations(IGraph graph)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,3ae8ad58,code,fr,c973b7e85532a46f,"static Dictionary<string, HashSet<(string s, string o)>> ExtractRelations(IGraph graph)
 {
     var relations = new Dictionary<string, HashSet<(string s, string o)>>();
     foreach (var t in graph.Triples)
@@ -16956,7 +16956,7 @@ foreach (var pairs in relations.Values)
     foreach (var (s, o) in pairs) { allEntities.Add(s); allEntities.Add(o); }
 Console.WriteLine($""Total entites uniques : {allEntities.Count}"");
 Console.WriteLine($""Total relations : {relations.Count}"");",,,,,,,,c973b7e85532a46f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,c6e5218a,markdown,fr,0d2263bea1d27856,"### Interpretation : Extraction des relations
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,c6e5218a,markdown,fr,0d2263bea1d27856,"### Interpretation : Extraction des relations
 
 L'extraction convertit le graphe RDF en dictionnaires de paires. On retrouve `parentOf` (14), `grandparentOf` (5), `siblingOf` (12), `marriedTo` (2).
 
@@ -16966,7 +16966,7 @@ L'extraction convertit le graphe RDF en dictionnaires de paires. On retrouve `pa
 On implemente deux briques :
 - **`ComputeBodyPairs`** : jointure `r1(A,B) JOIN r2(B,C) -> (A,C)` (on indexe `r2` par sujet).
 - **`EvaluateRule`** : support, standard confidence, **PCA confidence**.",,,,,,,,0d2263bea1d27856,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,ceafedc4,code,fr,021a10c1f5a4376c,"static HashSet<(string a, string c)> ComputeBodyPairs(
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,ceafedc4,code,fr,021a10c1f5a4376c,"static HashSet<(string a, string c)> ComputeBodyPairs(
     HashSet<(string a, string b)> r1, HashSet<(string b, string c)> r2)
 {
     // Indexer r2 par sujet pour un lookup O(1)
@@ -17020,7 +17020,7 @@ Console.WriteLine($""  r1 = {{(A,B), (C,D)}}"");
 Console.WriteLine($""  r2 = {{(B,E), (D,F)}}"");
 Console.WriteLine($""  JOIN result = {string.Join("", "", joined.Select(p => $""({p.Item1},{p.Item2})""))}"");
 Console.WriteLine($""  Attendu : (A,E), (C,F)"");",,,,,,,,021a10c1f5a4376c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,ab4998c5,markdown,fr,5f663ca0a2837f0c,"### Interpretation : Jointure relationnelle
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,ab4998c5,markdown,fr,5f663ca0a2837f0c,"### Interpretation : Jointure relationnelle
 
 `ComputeBodyPairs` realise une **jointure naturelle** : elle apparie l'objet de `r1` avec le sujet de `r2`. Sur le test, `r1={(A,B),(C,D)}` JOIN `r2={(B,E),(D,F)}` = `{(A,E),(C,F)}` : la jointure propage la variable partagee `B`/`D`. C'est l'opération fondamentale du rule mining sur KG.
 
@@ -17032,7 +17032,7 @@ On enumere systematiquement :
 - les règles a **1 atome** en body : `r1(A,B) => head(A,B)`
 
 en filtrant par `min_support=1` et `min_confidence=0.3`, et en ignorant les règles triviales (`r ^ r => r`, `r => r`).",,,,,,,,5f663ca0a2837f0c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,4221a27b,code,fr,bcd4e08950ccbe3d,"record Rule(string[] Body, string Head, int Support, int BodySize, double Confidence, double PcaConfidence);
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,4221a27b,code,fr,bcd4e08950ccbe3d,"record Rule(string[] Body, string Head, int Support, int BodySize, double Confidence, double PcaConfidence);
 
 static List<Rule> MineRules(
     Dictionary<string, HashSet<(string, string)>> relations,
@@ -17085,7 +17085,7 @@ foreach (var rule in rules)
     string headAtom = rule.Body.Length == 2 ? $""{rule.Head}(A,C)"" : $""{rule.Head}(A,B)"";
     Console.WriteLine($""{body} => {headAtom,-22} | {rule.Support,4} | {rule.BodySize,4} | {rule.Confidence,6:F2} | {rule.PcaConfidence,6:F2}"");
 }",,,,,,,,bcd4e08950ccbe3d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,06c8d6b5,markdown,fr,2139efbae4f6aea5,"### Interpretation : Règles decouvertes
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,06c8d6b5,markdown,fr,2139efbae4f6aea5,"### Interpretation : Règles decouvertes
 
 L'algorithme decouvre plusieurs règles. La plus importante est :
 
@@ -17099,7 +17099,7 @@ La **standard confidence est faible (0.36)** : c'est l'effet de l'incompletude d
 ## 6. Des règles d'association aux règles logiques
 
 La distinction : une **règle d'association** (statistique) exprime une correlation ; une **règle logique** (Horn) exprime une dépendance causale exploitable pour inferer. `parentOf ^ parentOf => grandparentOf` est logique (la grand-parente est *définie* par composition), pas une simple correlation.",,,,,,,,2139efbae4f6aea5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,106704b4,code,fr,9b12fd239293b682,"// Analyse detaillee de la meilleure regle (grandparent)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,106704b4,code,fr,9b12fd239293b682,"// Analyse detaillee de la meilleure regle (grandparent)
 var gpRule = rules.First(r => r.Body.Length == 2
     && r.Body[0] == ""parentOf"" && r.Body[1] == ""parentOf"" && r.Head == ""grandparentOf"");
 
@@ -17117,11 +17117,11 @@ Console.WriteLine(""que les paires body ou le sujet A a au moins un head triple 
 Console.WriteLine(""pas toutes les paires body (14). Les 6 paires de Jean/Claire"");
 Console.WriteLine(""(qui n'ont aucun head triple) sont exclues : on ne sait pas si"");
 Console.WriteLine(""leur absence de grandparentOf est un vrai negatif ou un trou."");",,,,,,,,9b12fd239293b682,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,01083334,markdown,fr,4d51864c95b1024e,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,01083334,markdown,fr,4d51864c95b1024e,"***
 ## 7. Application pratique : completer le Knowledge Graph
 
 On utilise les règles decouvertes (qualifiees par leur PCA confidence) pour **inferer** de nouveaux triplets `grandparentOf` manquants. C'est tout l'intérêt de l'ILP : transformer un KG incomplet en KG complete.",,,,,,,,4d51864c95b1024e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,8d143f8c,code,fr,a4edd875a63806d7,"static int ApplyRules(
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,8d143f8c,code,fr,a4edd875a63806d7,"static int ApplyRules(
     IGraph graph,
     Dictionary<string, HashSet<(string, string)>> relations,
     List<Rule> rules,
@@ -17159,11 +17159,11 @@ Console.WriteLine($""  grandparentOf APRES : {after} triples"");
 Console.WriteLine();
 Console.WriteLine(""Le KG est desormais complete : les 14 vraies paires"");
 Console.WriteLine(""grand-parent/petit-enfant sont inferrees par la regle."");",,,,,,,,a4edd875a63806d7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,861b4688,markdown,fr,c8983f75fce073c6,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,861b4688,markdown,fr,c8983f75fce073c6,"***
 ## 8. Visualisation du Knowledge Graph familial
 
 Arbre genealogique (relations `parentOf`) sur 4 generations.",,,,,,,,c8983f75fce073c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,9fc192c8,code,fr,447ee0da6a782763,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,9fc192c8,code,fr,447ee0da6a782763,"#nullable enable
 static void PrintFamilyTree(Dictionary<string, HashSet<(string s, string o)>> rels, string root, string indent = """", HashSet<string>? visited = null)
 {
     visited ??= new HashSet<string>();
@@ -17186,7 +17186,7 @@ var roots = allEntities.Where(e => relations[""parentOf""].Any(p => p.s == e) &&
 foreach (var root in roots)
     PrintFamilyTree(relations, root);
 ",,,,,,,,447ee0da6a782763,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,ccfd9430,markdown,fr,bb4844cbffe459b7,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,ccfd9430,markdown,fr,bb4844cbffe459b7,"***
 ## 9. Comparaison ILP classique vs Rule Mining sur KG
 
 | Dimension | ILP classique (FOIL, SL-4/SL-6) | Rule Mining (AMIE3, ce notebook) |
@@ -17196,7 +17196,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ip
 | Type de règles | Horn générales | Règles fermees (closed rules) |
 | Couverture | Backtracking, couverture exacte | Jointure relationnelle |
 | Sortie | Programme logique récursif | Liste de reglesplatees |",,,,,,,,bb4844cbffe459b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,acc19ad6,code,fr,cb05e63f2f58dc33,"// Tableau comparatif synthetique
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,acc19ad6,code,fr,cb05e63f2f58dc33,"// Tableau comparatif synthetique
 Console.WriteLine(""ILP Classique (SL-4/SL-6 FOIL) vs Rule Mining sur KG (SL-8 AMIE3)"");
 Console.WriteLine(new string('=', 65));
 Console.WriteLine($""{""Dimension"",-25} | {""ILP classique (FOIL)"",-20} | {""Rule Mining (AMIE3)"",-20}"");
@@ -17210,7 +17210,7 @@ var rows = new (string, string, string)[] {
 };
 foreach (var (dim, ilp, amie) in rows)
     Console.WriteLine($""{dim,-25} | {ilp,-20} | {amie,-20}"");",,,,,,,,cb05e63f2f58dc33,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,f6355029,markdown,fr,2038111912294d32,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,f6355029,markdown,fr,2038111912294d32,"***
 ## 10. Au-dela : Answer Set Programming (clingo) — limite honnete du twin C#
 
 Le notebook Python poursuit avec **clingo** (ASP solver de Potassco) pour :
@@ -17219,7 +17219,7 @@ Le notebook Python poursuit avec **clingo** (ASP solver de Potassco) pour :
 - les **contraintes d'integrite** (repair minimal d'un KG cyclique).
 
 **Verdict SOTA** : clingo est une librairie C/C++ sans binding .NET natif. Une traduction litterale est **INTRINSIC** en .NET (pas d'equivalent SOTA installable sans appel externe a un binaire). Le twin C# implemente a la place la **saturation au point fixe** from-scratch ci-dessous (equivalent au cas non-récursive documente dans le notebook Python), qui couvre le cas pedagogique. La recursion + contraintes d'integrite restent l'apanage de clingo (RECOVERABLE-MACHINE via appel processus externe au binaire `clingo`, hors scope de ce twin).",,,,,,,,2038111912294d32,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,24e45675,code,fr,6f492197d4aaed20,"// Saturation au point fixe : on re-applique ApplyRules jusqu'a ce qu'aucun
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,24e45675,code,fr,6f492197d4aaed20,"// Saturation au point fixe : on re-applique ApplyRules jusqu'a ce qu'aucun
 // nouveau triplet ne soit ajoute (equivalent clingo sans recursion).
 // Sur le KG familial (regles non-recursives), 1 iteration suffit.
 static int Saturate(IGraph graph, Dictionary<string, HashSet<(string,string)>> rels, List<Rule> rules, double minPca = 0.5)
@@ -17247,7 +17247,7 @@ Console.WriteLine(""Sur ce KG, les regles sont non-recursives : 1 seule iteratio
 Console.WriteLine(""suffit. clingo ferait la meme chose (point fixe) MAIS saurait"");
 Console.WriteLine(""aussi resoudre ancestorOf recursif et le repair minimal —"");
 Console.WriteLine(""cas honnetement hors scope du twin C# (INTRINSIC sans clingo natif)."");",,,,,,,,6f492197d4aaed20,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,7795167a,markdown,fr,95ab9e524b70865c,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,7795167a,markdown,fr,95ab9e524b70865c,"***
 ## Exercices
 
 > **Convention** (cf [notebook-conventions.md](../../../.claude/rules/notebook-conventions.md) C.1) : les stubs d'exercice utilisent `pass`-equivalents C# (`// TODO etudiant`, commentaire sans erreur). Le notebook s'execute de bout en bout même exercices non completes.
@@ -17255,7 +17255,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ip
 ### Exemple guide 1 : Ajouter `uncleOf` et rediscover sa règle
 
 > Solution demontree ci-dessous (See #2161). `uncleOf(X,Y) :- parentOf(Z,Y), siblingOf(Z,X)` (le frere d'un parent est l'oncle).",,,,,,,,95ab9e524b70865c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,d378262a,code,fr,2e449424114d7fd4,"// Exemple guide 1 : uncleOf(X,Y) :- parentOf(Z,Y) ^ siblingOf(Z,X)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,d378262a,code,fr,2e449424114d7fd4,"// Exemple guide 1 : uncleOf(X,Y) :- parentOf(Z,Y) ^ siblingOf(Z,X)
 // Variante : on ajoute manuellement quelques uncleOf, puis on verifie
 // si le mineur retrouve la regle parentOf(B,Y) ^ siblingOf(A,B) => uncleOf(A,Y).
 // (La regle demande un schema de jointure legerement different ; on
@@ -17269,20 +17269,20 @@ foreach (var (z, y) in relations[""parentOf""])
 Console.WriteLine($""Paires uncleOf attendues (parentOf(Z,Y) ^ siblingOf(Z,X)) : {uncleExpected.Count}"");
 foreach (var (u, n) in uncleExpected.OrderBy(p => p.Item1).ThenBy(p => p.Item2).Take(8))
     Console.WriteLine($""  {u} est l'oncle/la tante de {n}"");",,,,,,,,2e449424114d7fd4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,86a51928,markdown,fr,8e51c33a2201268f,"### Exercice 1 (variation) : Ajouter `cousinOf` au KG
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,86a51928,markdown,fr,8e51c33a2201268f,"### Exercice 1 (variation) : Ajouter `cousinOf` au KG
 
 Construisez un petit ensemble de triples `cousinOf` et constatez que le mineur a 2 atomes peut retrouver `cousinOf(X,Y) :- parentOf(Z,X) ^ siblingOf(Z,W) ^ parentOf(W,Y)` ... sauf que cette règle a **3 atomes** : notre mineur (limite a 2) ne la trouve pas. Reflechissez a comment l'etendre.",,,,,,,,8e51c33a2201268f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,c9f2d580,code,fr,de6bcb0494d3ad2d,"// Exercice 1 : cousinOf a 3 atomes — le mineur a 2 atomes ne le trouve pas.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,c9f2d580,code,fr,de6bcb0494d3ad2d,"// Exercice 1 : cousinOf a 3 atomes — le mineur a 2 atomes ne le trouve pas.
 // TODO etudiant : ajoutez quelques triples cousinOf, puis minez et constatez
 // l'absence de la regle cousinOf(X,Y) :- parentOf(Z,X) ^ siblingOf(Z,W) ^ parentOf(W,Y).
 // Indice : la regle demande d'etendre MineRules aux bodies a 3 atomes
 // (enumeration r1^r2^r3 => head, cout |preds|^3).
 var placeholder = 0;  // TODO etudiant
 Console.WriteLine(""Exercice a completer : etendre MineRules aux regles a 3 atomes."");",,,,,,,,de6bcb0494d3ad2d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,174ecdf8,markdown,fr,4821eb8beb384f8a,"### Exemple guide 2 : Reimplementer la PCA confidence
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,174ecdf8,markdown,fr,4821eb8beb384f8a,"### Exemple guide 2 : Reimplementer la PCA confidence
 
 > Solution demontree (See #2161). On re-calcule la PCA de la règle grandparent et on verifie qu'elle vaut 0.625.",,,,,,,,4821eb8beb384f8a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,145a5354,code,fr,c09b1c8193b440e1,"// Exemple guide 2 : verification manuelle de la PCA pour grandparent
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,145a5354,code,fr,c09b1c8193b440e1,"// Exemple guide 2 : verification manuelle de la PCA pour grandparent
 var bodyGp = ComputeBodyPairs(relations[""parentOf""], relations[""parentOf""]);
 var headGp = relations[""grandparentOf""];
 var (sup, bs, conf, pca, denom) = EvaluateRule(bodyGp, headGp, headGp);
@@ -17292,25 +17292,25 @@ Console.WriteLine($""  support         = {sup}   (body ∩ head)"");
 Console.WriteLine($""  pca_denominator = {denom} (paires body ou A a un head triple)"");
 Console.WriteLine($""  PCA confidence  = {sup}/{denom} = {pca:F4}"");
 Console.WriteLine($""  Attendu         : 5/8 = 0.625  -> {(pca == 0.625 ? ""OK"" : ""ECHEC"")}"");",,,,,,,,c09b1c8193b440e1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,6d151742,markdown,fr,0360959878f89665,"### Exercice 2 (variation) : Un mini-KG ou la PCA est trompeuse
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,6d151742,markdown,fr,0360959878f89665,"### Exercice 2 (variation) : Un mini-KG ou la PCA est trompeuse
 
 Construisez un mini-KG ou la PCA **surestime** une règle fausse (la PCA suppose que les sujets a head triple sont complets, ce qui peut etre faux).",,,,,,,,0360959878f89665,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,e37d631f,code,fr,7acebc4ac1224440,"// Exercice 2 : mini-KG piegeux pour la PCA.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,e37d631f,code,fr,7acebc4ac1224440,"// Exercice 2 : mini-KG piegeux pour la PCA.
 // TODO etudiant : construisez un KG ou un sujet a un seul head triple (donc
 // compte au denominateur PCA) mais ou ce head triple est lui-meme incomplet.
 // Indice : la PCA echoue quand la ""completude partielle"" supposee est fausse.
 var ex2 = 0;  // TODO etudiant
 Console.WriteLine(""Exercice a completer : construire un KG piegeux pour la PCA."");",,,,,,,,7acebc4ac1224440,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,d1d7201d,markdown,fr,f85cacfa76e79952,"### Exercice 3 : Règles fermees vs ouvertes
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,d1d7201d,markdown,fr,f85cacfa76e79952,"### Exercice 3 : Règles fermees vs ouvertes
 
 AMIE n'enumere que des **règles fermees** (toutes les variables du body sont dans le head). Quantifiez le gain d'expressivite des règles ouvertes.",,,,,,,,f85cacfa76e79952,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,50fe00ee,code,fr,ed570c6bd8c2abfc,"// Exercice 3 : regles fermees vs ouvertes.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,50fe00ee,code,fr,ed570c6bd8c2abfc,"// Exercice 3 : regles fermees vs ouvertes.
 // TODO etudiant : enumerer combien de regles ouvertes (avec une variable
 // existentielle dans le body absente du head) deviendraient minables si
 // on levait la contrainte ""fermee"".
 var ex3 = 0;  // TODO etudiant
 Console.WriteLine(""Exercice a completer : regles ouvertes (variable existentielle)."");",,,,,,,,ed570c6bd8c2abfc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb,0b622000,markdown,fr,9c84ee282c0af6cc,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb,0b622000,markdown,fr,9c84ee282c0af6cc,"***
 ## 11. Resume
 
 | Concept | Description |
@@ -19446,14 +19446,14 @@ Avec la graine 42, la perte passe de **1,715** à **1,114** entre les points de 
 Cette variabilité locale s'explique d'abord par la mesure sur un seul mini-lot brassé à chaque point de contrôle : `train_acc` n'est pas une précision cumulée sur tout le jeu d'entraînement. Elle reflète aussi la différence entre les deux régimes du réseau. Pendant `model.train()`, les portes logiques discrètes sont remplacées par des fonctions réelles différentiables afin que la descente de gradient puisse ajuster leurs poids. Une variation continue de ces paramètres peut alors modifier la fonction logique privilégiée par une porte et produire une évolution irrégulière sur un mini-lot particulier. Pendant `model.eval()`, le réseau utilise au contraire sa configuration logique pour effectuer une évaluation cohérente sur l'ensemble de test.
 
 Il ne faut donc pas comparer directement la précision ponctuelle du dernier mini-lot d'entraînement à la précision calculée sur tout le jeu de test : elles ne portent ni sur le même échantillon ni sur le même agrégat. Le snapshot déterministe obtient **0,826 (8261/10000)** sur les 10 000 images de test, dans la fourchette pédagogique attendue pour ce modèle CPU à 2000 itérations. Le papier *difflogic* rapporte des résultats supérieurs avec une campagne et une architecture différentes ; la comparaison sert ici de repère, pas d'équivalence expérimentale. La section suivante inspecte les fonctions logiques apprises afin de relier cette trajectoire à la structure discrète du réseau.",,,,,,,,951df2dfcff7a7cb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,2878ea2d,markdown,fr,e7b975e7176b539b,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,2878ea2d,markdown,fr,e7b975e7176b539b,"***
 
 ## 9. Parite lib-vs-lib : ML.NET (PFI) branche un moteur de production
 
 Le twin Python (SL-3-RelevanceLearning.ipynb) sélectionne les attributs avec **sklearn** — `mutual_info_classif` (cellule 21) — une librairie de reference. Jusqu'ici, ce twin C# reimplementait la selection **from-scratch** (section 7 : information mutuelle, base 2). Cette tranche 2 (parite lib-vs-lib, epic #10382) branche **Microsoft.ML**, le moteur d'apprentissage de production .NET, sur le **meme** jeu `moleculeData` (cellule 9) : on entraîne un classifieur binaire (foret gradient-boostee FastTree) et on en tire l'importance des attributs par **PFI** (*Permutation Feature Importance*, Breiman 2001) — le pendant ML.NET de `mutual_info_classif`, qui repond a la meme question : *quels attributs portent l'activite ?*
 
 Le verdict porte sur le **rang** : les attributs que ML.NET juge importants coincident-ils avec (a) le classement de l'information mutuelle from-scratch (cellule 15) et (b) la determination minimale `{mw, logp}` (cellule 9) ?",,,,,,,,e7b975e7176b539b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,7de11843,code,fr,4b6d8354aad6a0bc,"// === Tranche 2 : bridge lib-vs-lib vers ML.NET (PFI — moteur de production) ===
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,7de11843,code,fr,4b6d8354aad6a0bc,"// === Tranche 2 : bridge lib-vs-lib vers ML.NET (PFI — moteur de production) ===
 
 #r ""nuget: Microsoft.ML, 5.0.0""
 #r ""nuget: Microsoft.ML.FastTree, 5.0.0""
@@ -19537,7 +19537,7 @@ var top2 = importances.Take(2).Select(x => x.Key).ToHashSet();
 var detSet = (molRes.Determination ?? new List<string>()).ToHashSet();
 Show($""Concordance top-2 PFI == determination minimale : {top2.SetEquals(detSet)}"");
 Show(""Stabilite top-2 sur 5 seeds : "" + rankBySeed.Count(r => r.Take(2).ToHashSet().SetEquals(detSet)) + "" / 5"");",,,,,,,,4b6d8354aad6a0bc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb,6db303b4,markdown,fr,c552cb8485ee9f0a,"### Lecture du résultat : ML.NET (PFI) confirme le classement from-scratch
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb,6db303b4,markdown,fr,c552cb8485ee9f0a,"### Lecture du résultat : ML.NET (PFI) confirme le classement from-scratch
 
 **Contexte pédagogique.** Le bridge ne mesure pas la performance predictive (10 molecules, pas de split train/test) : il mesure la **pertinence des attributs** — la chute d'AUC quand on permute un attribut. C'est exactement la question de la section 7 (information mutuelle) et de la section 4 (determination minimale), posee cette fois par un **moteur de production**.
 
@@ -19548,7 +19548,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipyn
 - **Concordance** : le top-2 PFI {logp, mw} est exactement la determination minimale `{mw, logp}` (cellule 9), et les deux premiers du rang PFI (logp > mw) sont les deux premiers du rang MI from-scratch (logp > mw > hba > hbd, cellule 15). Les attributs hors determination (hbd, hba) sont en queue dans les deux instruments.
 
 **Parite lib-vs-lib (epic #10382).** Le twin Python selectionne via sklearn ; ce twin C# via ML.NET. Les deux jumeaux referencent desormais un **moteur d'apprentissage de production** — `parity_level: native-both`. Le from-scratch (sections 4 et 7) garde sa valeur : il montre *comment* l'information mutuelle se calcule et pourquoi la determination minimale est une contrainte logique ; ML.NET verifie que le resultat du moteur est coherent avec cette lecture.",,,,,,,,c552cb8485ee9f0a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,b6adf2d6,code,fr,3e9a1f481626b88b,"// === Pont clingo (Process.Start) : le moteur SOTA derrière Popper, invoqué depuis C# ===
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,b6adf2d6,code,fr,3e9a1f481626b88b,"// === Pont clingo (Process.Start) : le moteur SOTA derrière Popper, invoqué depuis C# ===
 // Parite lib-vs-lib (#10382) : le twin Python apprend `ancestor/2` via Popper, qui formule
 // l'ILP comme un probleme ASP resolu par clingo (Potassco). Verdict INTRINSIC #10406 est
 // REVOQUE : clingo est un binaire invocable via Process.Start (axe CLI checklist SOTA).
@@ -19656,7 +19656,7 @@ $""POSITIVES couverts : {posCovers}/{POSITIVES.Count}"".Display();
 $""NEGATIVES atteints  : {negLeaks}/{NEGATIVES.Count}"".Display();
 $""Verdict parite : {(posCovers == POSITIVES.Count && negLeaks == 0 ? ""FOIL from-scratch == clingo (SOTA) sur ancestor/2"" : ""ECART - investiguer"")}"".Display();
 ",,,,,,,,3e9a1f481626b88b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,c7a59b8e,markdown,fr,ef5af08b4ac06936,"### Lecture du résultat : FOIL from-scratch ≡ clingo (SOTA)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb,c7a59b8e,markdown,fr,ef5af08b4ac06936,"### Lecture du résultat : FOIL from-scratch ≡ clingo (SOTA)
 
 Les deux clauses apprises par le covering séquentiel de la cellule 6 sont **rejouées telles quelles** par le solveur ASP : `ancestor(X,Y) :- parent(X,Y)` (base) + `ancestor(X,Y) :- parent(X,Z), ancestor(Z,Y)` (récursion). clingo les **dérive par résolution** — l'exacte mécanique que la cellule 5 reproduit opérateur V/W — et retrouve les **9 couples** du problème, dont les transitifs (`Arthur→Diana`, `Arthur→Eve`, `Arthur→Frank`, `Catherine→Frank`). Aucun des 10 couples **négatifs** (remontées de graphe) n'est dérivé : le programme est **correct** au sens ILP (couvre tous les positifs, n'atteint aucun négatif).
 
@@ -19672,7 +19672,7 @@ La cellule suivante met en œuvre deux pratiques centrales en apprentissage auto
 
 Ces deux réflexes incarnent la thèse de Popper, **Learning From Failures** : on apprend en accumulant les échecs, et l'ablation est la forme la plus directe de « faire échouer » pour isoler ce qui compte vraiment.
 ",,,,,,,,78e59eea178f39f4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,8eb8fb42,code,fr,afd67973d3ae5243,"// === Pont SWI-Prolog (Process.Start) : le moteur SOTA derrière Aleph, invoqué depuis le C# ===
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,8eb8fb42,code,fr,afd67973d3ae5243,"// === Pont SWI-Prolog (Process.Start) : le moteur SOTA derrière Aleph, invoqué depuis le C# ===
 using System.IO;
 using System.Diagnostics;
 
@@ -19775,7 +19775,7 @@ Console.WriteLine($""POSITIVES couverts : {posCovers}/{POS_GM.Count}"");
 Console.WriteLine($""NEGATIVES atteints  : {negLeaks}/{NEG_GM.Count}"");
 Console.WriteLine($""Verdict parite : {(posCovers == POS_GM.Count && negLeaks == 0 ? ""theorie from-scratch == SWI-Prolog (SOTA) sur grandmother/2"" : ""ECART - investiguer"")}"");
 ",,,,,,,,afd67973d3ae5243,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,d3c53cc4,markdown,fr,85efd9f54e48bee5,"### Lecture du résultat : théorie from-scratch ≡ SWI-Prolog (SOTA)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,d3c53cc4,markdown,fr,85efd9f54e48bee5,"### Lecture du résultat : théorie from-scratch ≡ SWI-Prolog (SOTA)
 
 SWI-Prolog dérive exactement **1** couple : `grandmother(liz, eve)` — le seul positif
 `POS_GM`. Les 10 négatifs (`tom→ann`, `liz→sue`, `pat→jim`, …) ne sont **jamais**
@@ -19789,7 +19789,7 @@ jumeau Python invoque via `janus_swi` pour Aleph : la parité est ici
 > la clause bottom et explore le treillis `[top, bottom]`. Le pont vérifie que ce
 > que la théorie apprend est bien ce que le moteur réel dérive.
 ",,,,,,,,85efd9f54e48bee5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,f0de1ca3,markdown,fr,2943f131e34b1288,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,f0de1ca3,markdown,fr,2943f131e34b1288,"***
 
 ## 7. Pont vers le solveur SOTA : clingo (Process.Start)
 
@@ -19812,7 +19812,7 @@ La cellule suivante :
 
 Verdict : **SOTA-OK (pont)** — le from-scratch FOIL est conservé (il enseigne la **recherche dans le graphe de raffinement**), le pont est **en plus**, jamais à la place.
 ",,,,,,,,2943f131e34b1288,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,c39eb958,code,fr,935d9b63955a3b06,"// === Pont clingo (Process.Start) : le moteur ASP SOTA derrière Popper, invoqué depuis le C# ===
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,c39eb958,code,fr,935d9b63955a3b06,"// === Pont clingo (Process.Start) : le moteur ASP SOTA derrière Popper, invoqué depuis le C# ===
 using System.IO;
 using System.Diagnostics;
 using System.Text.Json;
@@ -19913,7 +19913,7 @@ Console.WriteLine($""  FP (faux positifs)   = {fp2}"");
 Console.WriteLine($""  TN (vrais negatifs)  = {tn2} / {NEG.Count}"");
 Console.WriteLine($""Verdict parite : {(fn2 == 0 && fp2 == 0 ? ""FOIL from-scratch == clingo (SOTA) sur ancestor/2"" : ""ECART - investiguer"")}"");
 ",,,,,,,,935d9b63955a3b06,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,c8bc93a3,markdown,fr,5ff2df8fddf0ab49,"### Lecture du résultat : FOIL from-scratch ≡ clingo (SOTA)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,c8bc93a3,markdown,fr,5ff2df8fddf0ab49,"### Lecture du résultat : FOIL from-scratch ≡ clingo (SOTA)
 
 clingo dérive exactement les **11 couples** `ancestor/2` de la cloture transitive —
 `TP = 11/11`, `FP = 0`, et les 19 négatifs sont tous exclus (`TN = 19/19`). Les deux
@@ -19927,7 +19927,7 @@ les deux jumeaux référencent clingo (Popper côté Python, ce pont côté C#).
 > recherche dans le graphe de raffinement construit ces deux clauses. Le pont
 > vérifie que le résultat est bien ce que le moteur SOTA dérive.
 ",,,,,,,,5ff2df8fddf0ab49,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,sl1-aima-bridge-md,markdown,fr,21bc8692f82ac726,"## 6bis. Implémentation de référence : aima-python (pont PythonNet)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,sl1-aima-bridge-md,markdown,fr,21bc8692f82ac726,"## 6bis. Implémentation de référence : aima-python (pont PythonNet)
 
 Le jumeau Python de cette série (section 9) confronte son CBH from-scratch à
 **l'implémentation de référence d'aima-python** (`knowledge.py`, Figure 19.2,
@@ -19942,7 +19942,7 @@ CBH et le Candidate Elimination codés à la main (c'est le sujet du notebook) ;
 la référence externe joue le rôle d'arbitre, exactement comme la section 9 du
 jumeau Python.
 ",,,,,,,,21bc8692f82ac726,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,sl1-aima-bridge-code,code,fr,247320a6f1834196,"#r ""nuget: pythonnet, 3.1.0""
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb,sl1-aima-bridge-code,code,fr,247320a6f1834196,"#r ""nuget: pythonnet, 3.1.0""
 #load ""../../Config/PythonNetLoader.cs""
 using Python.Runtime;
 
@@ -19992,7 +19992,7 @@ using (Py.GIL())
 }
 Console.WriteLine(""PONT .NET -> aima-python : OK"");
 ",,,,,,,,247320a6f1834196,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,stearns-sl10-cs,markdown,fr,9ef0745def44787b,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb,stearns-sl10-cs,markdown,fr,9ef0745def44787b,"***
 
 ## Annexe B — Hommage : Richard Stearns et la théorie des automates
 
@@ -20034,7 +20034,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetwo
 ",,,,,,,,c98a47fa6ebcea06,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb,e7121f30,markdown,fr,94c00ff1c1dc8fba,"**Lecture chiffree — ce que le compilateur retient, et l'echec documente.** La sortie annonce `Skipping torch.nn.Flatten layer` puis `Skipping GroupSum layer`, avant `created and has 3 layers` : sur les 5 modules du Sequential de la section 1, l'export ne garde que les 3 `LogicLayer` — Flatten est de la mise en forme, GroupSum de l'agregation de logits, aucun des deux n'est un circuit de portes. Le compte se referme : 3 couches construites, 3 couches exportees. Et la tentative se termine par `CompiledLogicNet indisponible -- RECOVERABLE-MACHINE (compilation exited with error code 1)` : l'echec de la chaine C est affiche, verdict pose, rien de masque — le notebook poursuit sur le chemin PyTorch de reference sans sortie fabriquee.
 ",,,,,,,,94c00ff1c1dc8fba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,33ce8189,markdown,fr,230b45b0f725faf6,"## 4bis. EBL complet : extraction de règle et apprentissage réel
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,33ce8189,markdown,fr,230b45b0f725faf6,"## 4bis. EBL complet : extraction de règle et apprentissage réel
 
 La section 4 mesurait le speedup avec une règle **codée à la main** (pattern
 `""1*(0+""`). On implémente ici le pipeline EBL **complet** — expliquer →
@@ -20053,7 +20053,7 @@ Nuance de variabilisation (différente du §3.1 qui abstrait tout) : l'EBL n'abs
 que la **constante de l'exemple** (`x → z`). Les constantes **structurelles** (`1`,
 `0`) restent dans le pattern, car la preuve dépend précisément de leur présence —
 généraliser au-delà produirait une règle fausse.",,,,,,,,230b45b0f725faf6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,78c8d80c,code,fr,26cd30135e20867f,"using System.Text.RegularExpressions;
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,78c8d80c,code,fr,26cd30135e20867f,"using System.Text.RegularExpressions;
 
 // Regle extraite par EBL.
 public record LearnedRule(string OriginalExample, string Pattern, string Result,
@@ -20173,7 +20173,7 @@ public class ArithmeticEBL {
         return (expr, ""bloque"", 0);
     }
 }",,,,,,,,26cd30135e20867f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,8bd73eb3,code,fr,654151568b1a6e2e,"// Demonstration : preuve de 1*(0+x), variabilisation de la SEULE constante
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,8bd73eb3,code,fr,654151568b1a6e2e,"// Demonstration : preuve de 1*(0+x), variabilisation de la SEULE constante
 // d'exemple (x -> z), puis extraction de la regle.
 var eblX = new ArithmeticEBL();
 var proofX = eblX.Explain(""1*(0+x)"");
@@ -20214,7 +20214,7 @@ Console.WriteLine($""Regles apprises : {eblDemo.Learned.Count}"");
 foreach (var (r, i) in eblDemo.Learned.Select((r, i) => (r, i)))
     Console.WriteLine($""  {i+1}. {r.Precondition} => Simplify({r.Pattern}, {r.Result})"");
 ",,,,,,,,654151568b1a6e2e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,ad6ffeb4,code,fr,f87a97ee454098a2,"// Speedup REEL : deux instances identiques, l'une vierge (KB seule), l'autre
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,ad6ffeb4,code,fr,f87a97ee454098a2,"// Speedup REEL : deux instances identiques, l'une vierge (KB seule), l'autre
 // ayant appris 3 regles. Le cout est mesure en ETAPES de simplification
 // (comptage effectif, pas un facteur simule comme en section 4).
 var eblFresh = new ArithmeticEBL();   // pas de Learn()
@@ -20251,7 +20251,7 @@ double reductionX = (1 - (double)totalSmart / totalFresh) * 100;
 Console.WriteLine($""Speedup moyen : {speedupX:F1}x"");
 Console.WriteLine($""Reduction d'etapes : {reductionX:F0}%"");
 ",,,,,,,,f87a97ee454098a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,bf1b8ea1,markdown,fr,a3fbf67b29150670,"### Interprétation : EBL complet
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb,bf1b8ea1,markdown,fr,a3fbf67b29150670,"### Interprétation : EBL complet
 
 | Phase | Expression | Commentaire |
 |-------|-----------|-------------|
@@ -20333,7 +20333,7 @@ injective donne les memes six reponses (`top` subsume tout, la cible subsume
 l'exemple au sol, l'inverse non). Le correctif change l'allocation des
 constantes, pas l'ordre du treillis.
 ",,,,,,,,df23541c3af806ee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,792de2da,markdown,fr,b96ed89570e19c04,"### Contre-exemples : la skolémisation doit être injective **et** fraîche
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,792de2da,markdown,fr,b96ed89570e19c04,"### Contre-exemples : la skolémisation doit être injective **et** fraîche
 
 Skolémiser une clause remplace ses variables par des **constantes fraîches** : deux
 variables distinctes de la clause doivent donner deux constantes distinctes, et
@@ -20365,7 +20365,7 @@ les affirmer.
 > l'issue #23495. Elle n'est pas corrigée ici pour garder cette PR sur le seul
 > carnet C# ; sa correction demandera une ré-exécution du carnet Python.
 ",,,,,,,,b96ed89570e19c04,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,8b5a6714,code,fr,082dbadc67c740db,"// === Contre-exemples executes : la skolemisation doit etre INJECTIVE et FRAICHE ===
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,8b5a6714,code,fr,082dbadc67c740db,"// === Contre-exemples executes : la skolemisation doit etre INJECTIVE et FRAICHE ===
 // Affiche la clause skolemisee de D (constantes fresh) dans les deux modes.
 string Skolemise(Clause c, Clause d, bool parInitiale) {
     var map = SkolemMap(c, d, parInitiale);
@@ -20421,7 +20421,7 @@ Console.WriteLine($""  d skolemise, frais : {Skolemise(cSkv, dVar, false)}"");
 Console.WriteLine($""  d skolemise, historique : {Skolemise(cSkv, dVar, true)}"");
 Console.WriteLine($""  c subsome d ?  frais={Subsumes(cSkv, dVar)}   historique={Subsumes(cSkv, dVar, true)}   (attendu : False / True)"");
 ",,,,,,,,082dbadc67c740db,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,25353e06,markdown,fr,0746e30416e85f64,"### Lecture du résultat
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb,25353e06,markdown,fr,0746e30416e85f64,"### Lecture du résultat
 
 **Témoin 0 — la casse des initiales.** Avec la skolémisation **injective**,
 `d_ordre` devient `grandpere(sk0_V1, sk1_V2) :- parent(sk0_V1, sk1_V2)` et
@@ -20456,10 +20456,10 @@ section suivante : ses variables `V1`…`V6` partagent toutes l'initiale `V`, et
 test « la cible subsume-t-elle la clause bottom ? » ne doit pas pouvoir les
 confondre.
 ",,,,,,,,0746e30416e85f64,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ee2839a1,markdown,fr,ec96f3315e4bb6e2,"### Exemple guide — un négatif contradictoire : ce que FOIL fait vraiment
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,ee2839a1,markdown,fr,ec96f3315e4bb6e2,"### Exemple guide — un négatif contradictoire : ce que FOIL fait vraiment
 
 L'énoncé historique de l'exercice 3 annonçait : « ajouter un exemple négatif incorrect (`ancestor(bob, jim)` est VRAI mais marqué négatif) et observer comment FOIL **échoue à couvrir tous les positifs** ». Ce n'est pas ce que l'algorithme produit — et la sortie en était d'ailleurs jamais enregistrée. Regardons ce qui se passe réellement : `(bob, jim)` figure **aussi dans `POS`** (il appartient à la clôture transitive), donc toute clause qui couvre les 11 positifs couvre forcément ce couple, quoi que dise le jeu négatif. L'exemple contradictoire ne peut pas se payer en faux négatif — il se paie en **faux positif**.",,,,,,,,ec96f3315e4bb6e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ee2839a2,code,fr,82b7c9e3c54eb985,"// Exemple guide : experience executee, sortie enregistree (digestion de l'exercice 3 historique).
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,ee2839a2,code,fr,82b7c9e3c54eb985,"// Exemple guide : experience executee, sortie enregistree (digestion de l'exercice 3 historique).
 var NEGpoison = new List<(string,string)>(NEG) { (""bob"",""jim"") };
 Console.WriteLine($""Jeu empoisonne : {NEG.Count} negatifs -> {NEGpoison.Count} (ancestor(bob, jim) marque negatif alors qu'il est VRAI)"");
 var learnedPoison = Foil(POS, NEGpoison, parentDB, PEOPLE);
@@ -20473,6 +20473,6 @@ Console.WriteLine(""\nCouverture sur le jeu empoisonne :"");
 Console.WriteLine($""  TP = {tpP} / {POS.Count}   FN = {fnP}   FP = {fps.Count}"");
 foreach (var f in fps) Console.WriteLine($""  faux positif : ancestor({f.Item1}, {f.Item2})"");
 Console.WriteLine($""\nVerdict : {(fnP==0 && fps.Count==0 ? ""PARFAIT"" : ""IMPARFAIT"")} — couverture des positifs {(fnP==0 ? ""maintenue (11/11)"" : ""perdue"")}, l'exemple contradictoire se paie en faux positif"");",,,,,,,,82b7c9e3c54eb985,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ee2839a3,markdown,fr,c3f06a6656cb0e33,"**Lecture du résultat** : FOIL n'échoue **pas** à couvrir les positifs — TP = 11/11, FN = 0, et l'unique défaut est un faux positif : `ancestor(bob, jim)` lui-même, qui reste dans `POS` — couvrir les 11 positifs force à le couvrir. Un négatif contradictoire ne casse pas l'apprentissage : il le **paie en précision** (FP = 1). Son autre effet est visible sur le programme : la recherche de raffinement est perturbée — FOIL produit 4 clauses au lieu des 2 de la run de base, dont deux portent des littéraux redondants (`parent(V3,B)`, déjà couvert par `parent(A,V3), ancestor(V3,B)`, et `ancestor(A,V3)`, auto-référentiel). Le jeu d'exemples contradictoire dégrade l'**économie** du programme appris, pas sa couverture. Leçon générale de l'ILP extensionniste : exemples positifs et négatifs ne s'annulent pas — un positif suffit à forcer la couverture, un négatif contradictoire ne peut qu'être violé, une fois.",,,,,,,,c3f06a6656cb0e33,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ee2839a4,markdown,fr,596f4162a52f315b,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,ee2839a3,markdown,fr,c3f06a6656cb0e33,"**Lecture du résultat** : FOIL n'échoue **pas** à couvrir les positifs — TP = 11/11, FN = 0, et l'unique défaut est un faux positif : `ancestor(bob, jim)` lui-même, qui reste dans `POS` — couvrir les 11 positifs force à le couvrir. Un négatif contradictoire ne casse pas l'apprentissage : il le **paie en précision** (FP = 1). Son autre effet est visible sur le programme : la recherche de raffinement est perturbée — FOIL produit 4 clauses au lieu des 2 de la run de base, dont deux portent des littéraux redondants (`parent(V3,B)`, déjà couvert par `parent(A,V3), ancestor(V3,B)`, et `ancestor(A,V3)`, auto-référentiel). Le jeu d'exemples contradictoire dégrade l'**économie** du programme appris, pas sa couverture. Leçon générale de l'ILP extensionniste : exemples positifs et négatifs ne s'annulent pas — un positif suffit à forcer la couverture, un négatif contradictoire ne peut qu'être violé, une fois.",,,,,,,,c3f06a6656cb0e33,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb,ee2839a4,markdown,fr,596f4162a52f315b,"***
 ",,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,

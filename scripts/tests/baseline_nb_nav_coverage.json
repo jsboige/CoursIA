@@ -310,16 +310,16 @@
       "SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb"
     ],
     "SymbolicAI/SymbolicLearning": [
-      "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb",
       "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb",
       "SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-output.ipynb",
       "SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb",
       "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb"
+      "SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb",
+      "SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb"
     ],
     "SymbolicAI/Tweety": [
       "SymbolicAI/Tweety/Tweety-04-Belief-Revision-CSharp.ipynb",

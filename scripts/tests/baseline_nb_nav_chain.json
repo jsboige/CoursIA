@@ -1042,12 +1042,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
     {
@@ -1077,32 +1077,32 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-Csharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
     },
     {
