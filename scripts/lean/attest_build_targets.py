@@ -41,14 +41,37 @@ depend d'aucun `lake`, d'aucun reseau, d'aucun etat de la machine.
 Usage
 -----
     from attest_build_targets import resolve_targets
-    verdict = resolve_targets(lake_root, repo_root, changed_paths)
+    verdict = resolve_targets(lake_root, changed_paths, lake_prefix="<lake>/")
     verdict["targets"]      # les modules a passer a `lake build`
+
+Les selecteurs de bibliotheques sont lus par l'organe canonique
+`lake_selectors` (meme semantique que `Lake.Glob`) : le parseur local qui
+vivait ici ne connaissait ni `.andSubmodules`, ni le sucre `` `X.*`` / ``
+`X.+``, ni les lakefiles TOML, ni les commentaires -- et perdait des modules
+sur 21 lakes du manifeste (#26812).
 """
 
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
+
+# L'organe canonique de lecture des selecteurs de bibliotheques Lake est
+# `lake_selectors` : c'est lui qui connait les formes `Glob` reelles
+# (`one`, `submodules`, `andSubmodules`, le sucre `` `X.*`` / `` `X.+``),
+# qui masque les commentaires et qui lit les lakefiles TOML.
+#
+# Le parseur local qui vivait ici ne connaissait que `one` et `submodules` :
+# sur 36 lakes du manifeste, il en oubliait 21 -- dont `knot` (1 module
+# enumere sur 49) et `gametheory` (7 sur 70). Consequence mesuree : toute
+# PR touchant ces lakes retombait sur le build du lac ENTIER, et le verdict
+#annonçait « aucun module Lean touche » (#26812). Un doublon d'organe
+# etait la cause ; la reparation est de reutiliser l'organe, pas d'en ecrire
+# un deuxieme (#24666).
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from lake_selectors import LakefileError, lake_selectors  # noqa: E402
 
 #: Un `import Foo.Bar` (en tete de fichier ou dans le corps).
 IMPORT_RE = re.compile(
@@ -70,17 +93,8 @@ AGGREGATOR_LINE_RE = re.compile(
     r"|open[ \t]+[A-Za-z_][A-Za-z0-9_'.]*[ \t]*)$"
 )
 
-#: `lean_lib «Nom»` / `lean_lib Nom`.
-LIB_RE = re.compile(r"lean_lib[ \t]+(?:«([^»]+)»|`([^`]+)`|([A-Za-z_][A-Za-z0-9_']*))")
-
-#: `globs := #[...]`.
-GLOBS_RE = re.compile(r"globs[ \t]*:=[ \t]*#\[([^\]]*)\]")
-
 #: `srcDir := "..."` (Lean) ou `srcDir = "..."` (TOML).
 SRCDIR_RE = re.compile(r"srcDir[ \t]*(?::=|=)[ \t]*\"([^\"]+)\"")
-
-#: Une entree de glob : `.submodules `X`, `.one `X`, ou `` `X ``.
-GLOB_ENTRY_RE = re.compile(r"\.?(submodules|one)?[ \t]*`?([A-Za-z_][A-Za-z0-9_'.]*)`?")
 
 
 def _read(path: Path) -> str:
@@ -111,60 +125,26 @@ def source_root(lake_root: Path) -> Path:
     return lake_root.resolve()
 
 
-def libraries(lake_root: Path) -> list[dict]:
-    """Les bibliotheques Lean declarees par le lakefile.
+def selectors(lake_root: Path) -> list[tuple[str, str]]:
+    """Les selecteurs de bibliotheques du lake, lus par l'organe canonique.
 
-    Chaque entree porte le nom de la lib et ses globs. Le defaut de Lake pour
-    une `lean_lib` sans globs explicites est `.one Nom` : **seul** le module
-    racine est construit. Une lib qui veut ses sous-modules le declare
-    (`.submodules`), comme le fait `conway_lean` (#26699).
+    Une entree est un couple `(kind, nom)` :
 
-    Une lecture impossible ne devine pas : la liste est vide et l'appelant
-    bascule sur le build integral.
+    - `one` -- ce module et lui seul ;
+    - `sub` -- les modules **strictement** sous ce prefixe ;
+    - `all` -- le prefixe **et** ses sous-modules.
+
+    C'est la semantique de `Lake.Glob.matches` (`one n` : `n == m` ;
+    `submodules n` : `n.isPrefixOf m && n != m` ; `andSubmodules n` :
+    `n.isPrefixOf m`), et le sucre `` `X.*`` / `` `X.+`` la desugarise.
+
+    Un lakefile illisible ou ambigu ne se devine pas : la liste est VIDE et
+    l'appelant bascule sur le build integral.
     """
-    text = _read(lake_root / "lakefile.lean") or _read(lake_root / "lakefile.toml")
-    if not text:
+    try:
+        return lake_selectors(lake_root)
+    except (LakefileError, OSError):
         return []
-    out: list[dict] = []
-    # Les globs sont associes a la lib qui les precede : on parcourt les
-    # lignes dans l'ordre et on rattache chaque `globs :=` a la derniere lib
-    # vue.
-    current: dict | None = None
-    for line in text.splitlines():
-        lib_match = LIB_RE.search(line)
-        if lib_match:
-            name = lib_match.group(1) or lib_match.group(2) or lib_match.group(3)
-            current = {"name": name, "globs": None}
-            out.append(current)
-            continue
-        globs_match = GLOBS_RE.search(line)
-        if globs_match and current is not None and current["globs"] is None:
-            current["globs"] = _parse_globs(globs_match.group(1))
-    for entry in out:
-        if entry["globs"] is None:
-            entry["globs"] = [{"kind": "one", "name": entry["name"]}]
-    return out
-
-
-def _parse_globs(raw: str) -> list[dict]:
-    """Une liste de globs lake : `.submodules `X`, `.one `X`, `` `X ``."""
-    globs: list[dict] = []
-    for chunk in raw.split(","):
-        entry = chunk.strip()
-        if not entry:
-            continue
-        kind = "one"
-        name = entry
-        if entry.startswith(".submodules"):
-            kind = "submodules"
-            name = entry[len(".submodules"):].strip()
-        elif entry.startswith(".one"):
-            kind = "one"
-            name = entry[len(".one"):].strip()
-        name = name.strip().strip("`").strip()
-        if name:
-            globs.append({"kind": kind, "name": name})
-    return globs
 
 
 def module_name_of(rel_to_src: str) -> str | None:
@@ -178,35 +158,39 @@ def module_name_of(rel_to_src: str) -> str | None:
 def enumerate_modules(lake_root: Path) -> dict[str, str]:
     """Les modules du lake : nom de module -> chemin relatif a sa racine.
 
-    L'ensemble suit les **globs** du lakefile : un fichier `.lean` qui
-    n'appartient a aucune lib n'est pas un module constructible (le nommer a
-    `lake build` echouerait). Un lake dont le lakefile est illisible donne un
-    ensemble vide : l'appelant bascule sur le build integral.
+    L'ensemble suit les **selecteurs** du lakefile : un fichier `.lean` qui
+    n'appartient a aucune bibliotheque declaree n'est pas un module
+    constructible (le nommer a `lake build` echouerait). Un lake dont le
+    lakefile est illisible donne un ensemble vide : l'appelant bascule sur le
+    build integral.
+
+    L'enumeration suit `Lake.Glob.forEachModuleIn` : `one` prend le seul
+    fichier du prefixe, `sub` les fichiers **sous** le prefixe, `all` le
+    prefixe et ces fichiers.
     """
-    libs = libraries(lake_root)
-    if not libs:
+    sels = selectors(lake_root)
+    if not sels:
         return {}
     src = source_root(lake_root)
     modules: dict[str, str] = {}
-    for lib in libs:
-        for glob in lib["globs"]:
-            name = glob["name"]
-            if glob["kind"] == "submodules":
-                base = src / name
-                candidates = []
-                if base.with_suffix(".lean").is_file():
-                    candidates.append(base.with_suffix(".lean"))
-                if base.is_dir():
-                    candidates.extend(sorted(base.rglob("*.lean")))
-                for candidate in candidates:
-                    rel = candidate.relative_to(src).as_posix()
-                    module = module_name_of(rel)
-                    if module:
-                        modules[module] = rel
-            else:
-                candidate = src / (name + ".lean")
-                if candidate.is_file():
-                    modules[name] = candidate.relative_to(src).as_posix()
+    for kind, name in sels:
+        rel_prefix = name.replace(".", "/")
+        if kind == "one":
+            candidate = src / (rel_prefix + ".lean")
+            if candidate.is_file():
+                modules[name] = candidate.relative_to(src).as_posix()
+            continue
+        if kind == "all":
+            leaf = src / (rel_prefix + ".lean")
+            if leaf.is_file():
+                modules[name] = leaf.relative_to(src).as_posix()
+        base = src / rel_prefix
+        if base.is_dir():
+            for candidate in sorted(base.rglob("*.lean")):
+                rel = candidate.relative_to(src).as_posix()
+                module = module_name_of(rel)
+                if module:
+                    modules[module] = rel
     return modules
 
 
@@ -434,7 +418,20 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
         return verdict
 
     if not roots:
-        verdict["reason"] = "aucun module Lean touche dans ce lake"
+        # Les fichiers `.lean` touches qui ne sont PAS des modules du lake
+        # sont la cause du repli : ils sont NOMMES. Les perdre ici
+        # transformait une cause lisible (« ce fichier n'est pas un
+        # module ») en un verdict trompeur (« aucun module touche »),
+        # et c'est ce qui a fait chercher le defaut dans les globs au lieu
+        # de le chercher ici (#26812).
+        verdict["unresolved"] = sorted(unresolved)
+        verdict["reason"] = (
+            "fichier .lean touche hors module : {}".format(
+                ", ".join(sorted(unresolved)[:5])
+            )
+            if unresolved
+            else "aucun module Lean touche dans ce lake"
+        )
         return verdict
     if unresolved:
         # Un fichier `.lean` touche qui n'est pas un module du lake : le

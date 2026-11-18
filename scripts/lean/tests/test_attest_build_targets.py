@@ -1,19 +1,23 @@
 """Tests for scripts/lean/attest_build_targets.py — resolution des cibles de `lake build`.
 
 Couvre la resolution pure (aucun `lake`, aucun reseau, aucune machine) :
-- lecture du lakefile (lib, globs, srcDir) ;
-- enumeration des modules **du lac** (les globs font foi, pas la presence du fichier) ;
+- lecture du lakefile par l'organe canonique `lake_selectors` (selecteurs
+  `one` / `sub` / `all`, sucre `` `X.*`` / `` `X.+``, TOML, commentaires) ;
+- enumeration des modules **du lac** (les selecteurs font foi, pas la
+  presence du fichier) ;
 - resolution d'un fichier touche -> module Lean ;
 - jumeau `_en` (deux fichiers, deux modules) ;
 - dependants **transitifs** ;
 - agregateur ecarte **et nomme** (une borne invisible surdeclare la portee) ;
 - agregateur **strict** : un fichier qui porte une commande n'en est pas un (#26966) ;
-- repli explicite quand un fichier `.lean` touche n'est pas un module du lac ;
+- repli explicite **et nomme** quand un fichier `.lean` touche n'est pas un
+  module du lac (#26812 : le repli doit dire QUEL fichier, pas « rien ») ;
 - repli explicite quand un fichier **non `.lean`** du lake est touche (#26966).
 
 Fixtures synthetiques sous ``tmp_path``. Zero dependance externe.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -25,9 +29,9 @@ from attest_build_targets import (  # noqa: E402
     enumerate_modules,
     import_graph,
     is_aggregator,
-    libraries,
     module_name_of,
     resolve_targets,
+    selectors,
     sibling_en_module,
     source_root,
 )
@@ -83,11 +87,7 @@ def _make_lake(root: Path) -> Path:
 
 def test_le_globs_sont_lus(tmp_path):
     lake = _make_lake(tmp_path)
-    libs = libraries(lake)
-    assert len(libs) == 1
-    assert libs[0]["name"] == "Demo"
-    assert {"kind": "submodules", "name": "Demo"} in libs[0]["globs"]
-    assert {"kind": "one", "name": "Demo_en"} in libs[0]["globs"]
+    assert selectors(lake) == [("sub", "Demo"), ("one", "Demo_en")]
 
 
 def test_une_lib_sans_globs_constructit_seulement_son_module_racine(tmp_path):
@@ -95,8 +95,7 @@ def test_une_lib_sans_globs_constructit_seulement_son_module_racine(tmp_path):
     _write(lake / "lakefile.lean", "import Lake\n@[default_target]\nlean_lib «Plain» where\n")
     _write(lake / "Plain.lean", "theorem ok : True := trivial\n")
     _write(lake / "Plain" / "Sub.lean", "theorem sub : True := trivial\n")
-    libs = libraries(lake)
-    assert libs[0]["globs"] == [{"kind": "one", "name": "Plain"}]
+    assert selectors(lake) == [("one", "Plain")]
     modules = enumerate_modules(lake)
     # `Plain.Sub` n'est pas dans les globs : il n'est pas constructible.
     assert set(modules) == {"Plain"}
@@ -104,17 +103,80 @@ def test_une_lib_sans_globs_constructit_seulement_son_module_racine(tmp_path):
 
 def test_le_srcdir_est_honore(tmp_path):
     lake = tmp_path / "s"
-    _write(lake / "lakefile.lean", "import Lake\n@[default_target]\nlean_lib «S» where\n  srcDir := \"src\"\n  globs := #[.submodules `S]\n")
+    _write(lake / "lakefile.lean", "import Lake\n@[default_target]\nlean_lib «S» where\n  srcDir := \"src\"\n  globs := #[.andSubmodules `S]\n")
     _write(lake / "src" / "S.lean", "theorem ok : True := trivial\n")
+    _write(lake / "src" / "S" / "Sub.lean", "theorem sub : True := trivial\n")
     assert source_root(lake) == (lake / "src").resolve()
-    assert set(enumerate_modules(lake)) == {"S"}
+    assert set(enumerate_modules(lake)) == {"S", "S.Sub"}
 
 
 def test_un_lakefile_illisible_ne_devine_pas(tmp_path):
     lake = tmp_path / "vide"
     lake.mkdir()
-    assert libraries(lake) == []
+    assert selectors(lake) == []
     assert enumerate_modules(lake) == {}
+
+
+# ---------------------------------------------------------------------------
+# formes de glob reellement employees par les lakes du manifeste (#26812)
+# ---------------------------------------------------------------------------
+
+def test_le_glob_andsubmodules_couvre_le_prefixe_et_ses_sous_modules(tmp_path):
+    """`.andSubmodules `X` -- la forme du lac `knot` (#26812)."""
+    lake = tmp_path / "knot"
+    _write(lake / "lakefile.lean", "import Lake\n@[default_target]\nlean_lib «Knots» where\n  globs := #[.andSubmodules `Knots, `Knots_en]\n")
+    _write(lake / "Knots.lean", "import Knots.Alpha\n")
+    _write(lake / "Knots" / "Alpha.lean", "theorem a : True := trivial\n")
+    _write(lake / "Knots" / "Alpha_en.lean", "theorem a : True := trivial\n")
+    _write(lake / "Knots_en.lean", "import Knots.Alpha_en\n")
+    assert selectors(lake) == [("all", "Knots"), ("one", "Knots_en")]
+    # Le prefixe ET ses sous-modules : sans cela, le lac entier etait construit.
+    assert set(enumerate_modules(lake)) == {
+        "Knots", "Knots_en", "Knots.Alpha", "Knots.Alpha_en",
+    }
+
+
+def test_le_sucre_etoile_desugare_en_prefixe_et_sous_modules(tmp_path):
+    """`` `X.*`` -- la forme des lakes `galois`, `grothendieck`, `gametheory`."""
+    lake = tmp_path / "g"
+    _write(lake / "lakefile.lean", "import Lake\n@[default_target]\nlean_lib «G» where\n  globs := #[`G.*]\n")
+    _write(lake / "G.lean", "import G.Sub\n")
+    _write(lake / "G" / "Sub.lean", "theorem s : True := trivial\n")
+    assert selectors(lake) == [("all", "G")]
+    assert set(enumerate_modules(lake)) == {"G", "G.Sub"}
+
+
+def test_un_glob_commente_ne_compte_pas(tmp_path):
+    """Un `globs :=` cite dans un commentaire n'est PAS une declaration."""
+    lake = tmp_path / "c"
+    _write(lake / "lakefile.lean", "import Lake\n-- globs := #[`Fake, `Fake_en]\n@[default_target]\nlean_lib «Real» where\n  globs := #[`Real]\n")
+    _write(lake / "Real.lean", "theorem r : True := trivial\n")
+    assert selectors(lake) == [("one", "Real")]
+
+
+def test_un_lakefile_toml_est_lu(tmp_path):
+    lake = tmp_path / "t"
+    _write(lake / "lakefile.toml", 'name = "t"\n\n[[lean_lib]]\nname = "T"\nglobs = ["T", "T_en"]\n')
+    _write(lake / "T.lean", "theorem t : True := trivial\n")
+    _write(lake / "T_en.lean", "theorem t : True := trivial\n")
+    assert selectors(lake) == [("one", "T"), ("one", "T_en")]
+    assert set(enumerate_modules(lake)) == {"T", "T_en"}
+
+
+# ---------------------------------------------------------------------------
+# resolution
+# ---------------------------------------------------------------------------
+
+def test_un_fichier_lean_hors_module_est_nomme_meme_sans_une_seule_racine(tmp_path):
+    """#26812 : le repli doit nommer le fichier, pas dire « aucun module »."""
+    lake = tmp_path / "plain"
+    _write(lake / "lakefile.lean", "import Lake\n@[default_target]\nlean_lib «Plain» where\n")
+    _write(lake / "Plain.lean", "theorem ok : True := trivial\n")
+    verdict = resolve_targets(lake, ["plain/Note.lean"], lake_prefix="plain/")
+    assert not verdict["ok"]
+    assert verdict["targets"] == []
+    assert "Note.lean" in verdict["reason"]
+    assert verdict["unresolved"] == ["plain/Note.lean"]
 
 
 # ---------------------------------------------------------------------------
@@ -124,8 +186,12 @@ def test_un_lakefile_illisible_ne_devine_pas(tmp_path):
 def test_les_modules_suivent_les_globs(tmp_path):
     lake = _make_lake(tmp_path)
     modules = enumerate_modules(lake)
+    # `.submodules `Demo` ne couvre PAS le module racine `Demo` : la
+    # semantique Lake est `Glob.submodules` (strictement sous le prefixe).
+    # C'est ce qui vaut pour `lake build` -- nommer `Demo` serait un
+    # module inconnu. Les lakes qui veulent le prefixe disent
+    # `.andSubmodules` (cf. `knot`).
     assert set(modules) == {
-        "Demo",
         "Demo_en",
         "Demo.Alpha",
         "Demo.Alpha_en",
@@ -320,6 +386,34 @@ def test_le_jumeau_en_est_resolu_dans_les_deux_sens(tmp_path):
     # `Demo.Beta` a un jumeau `_en` ; `Demo.Delta` n'en a pas.
     assert sibling_en_module(lake, modules, "Demo.Beta") == "Demo.Beta_en"
     assert sibling_en_module(lake, modules, "Demo.Delta") is None
+
+
+# ---------------------------------------------------------------------------
+# manifeste reel (#26812)
+# ---------------------------------------------------------------------------
+
+def test_aucun_lake_du_manifeste_ne_tombe_a_zero_module():
+    """Aucun lake du manifeste ne doit s'enumerer a zero module.
+
+    Zero module = repli sur le build du lac ENTIER : c'est ce que le
+    parseur local provoquait sur 6 lakes (galois, grothendieck, gamedefs,
+    gamedefsext, asymmetricinformation, conwaycgt) et ce qui rendait
+    l'attestation de #26812 equivalente a un build complet.
+    """
+    here = Path(__file__).resolve()
+    manifest = here.parents[1] / "ci_lakes.json"
+    if not manifest.is_file():
+        pytest.skip("manifeste des lakes absent")
+    repo_root = here.parents[3]
+    lakes = json.loads(manifest.read_text(encoding="utf-8")).get("lakes") or []
+    vides = []
+    for entry in lakes:
+        root = repo_root / entry["project-path"]
+        if not root.is_dir():
+            continue
+        if not enumerate_modules(root):
+            vides.append(entry["lake"])
+    assert not vides, "lakes sans module enumeré : {}".format(", ".join(vides))
 
 
 # ---------------------------------------------------------------------------
