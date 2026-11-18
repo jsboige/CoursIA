@@ -77,10 +77,10 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 <!-- MyIA.AI.Notebooks/GenAI/Video/01-Foundation -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-Comprehension-Video-API.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Comprehension-Video-Locale.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Texte -->
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Texte/02_PromptEngineering.ipynb`
