@@ -1,0 +1,9 @@
+- name: Z3-Python-13b Unsat Cores MUS
+  family: SMT/Z3-API
+  python: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Les deux carnets exécutent les mêmes modèles d'ordonnancement et l'algorithme de suppression sur les bindings natifs Z3 Python et Microsoft.Z3 .NET.
+  known_differences:
+    - Les deux versions fournissent des modèles étiquetés et contrôlent les réponses ; le binding NuGet 4.12.2 utilise le chargeur natif de la série.
