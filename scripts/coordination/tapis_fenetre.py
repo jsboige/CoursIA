@@ -48,17 +48,21 @@ def _decalage(lane: str, cle: str, n: int) -> int:
 
 
 def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
-         maintenant: datetime) -> tuple[list, dict]:
+         maintenant: datetime, bloc_suivant: int = 0) -> tuple[list, dict]:
     """Le bloc servi : la fenetre qui avance sur le pool classe.
 
     Les GRAINS et les CONTENEURS ont chacun leur tranche et leur bloc : un
     conteneur ne passe jamais devant un grain (#26926), et son quota tient
     dans la file comme dans la voie lourde.
+
+    `bloc_suivant` decale le bloc de N blocs : c'est la VAGUE suivante de la
+    prise en charge -- le bloc suivant dans le meme ordre classe, donc
+    toujours dans la fenetre de la lane.
     """
     quota = max(1, int(n_grains * PART_CONTENEURS)) if conteneurs else 0
     part = max(taille - quota, 1)
     n_g, n_c = len(grains), len(conteneurs)
-    compteur = _compteur(maintenant)
+    compteur = _compteur(maintenant) + bloc_suivant
     d_g = (_decalage(lane, "grains", n_g) + compteur * part) % n_g if n_g else 0
     d_c = (_decalage(lane, "conteneurs", n_c) + compteur * quota) % n_c if n_c else 0
     b_g = [grains[(d_g + i) % n_g] for i in range(min(part, n_g))]

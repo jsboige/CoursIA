@@ -87,12 +87,38 @@ def _rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
                      "age_j": _age(maintenant, pr.get("created_at"), 86400)} for pr in vos],
         "qualification": {
             "organe": "scripts/coordination/tapis_prise_en_charge.py",
+            "vagues": "scripts/coordination/tapis_vagues.py : la file se remplit",
             "quand": "avant l'action, sur le grain pris en charge",
             "ecarts": "les neuf regles se decident sur le fil complet",
         },
         "origami_parking": origami,
     })
     return rapport
+
+
+def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
+            run=gh_bulk.run_defaut,
+            budget_s: float = gh_selection.MUR_GLOBAL_S) -> dict:
+    """Le POOL classe : l'ordre fair des grains, et les conteneurs.
+
+    C'est la lecture de metadonnees du tirage leger, SANS la fenetre : la
+    prise en charge s'en sert pour les VAGUES (ouvrir la vague suivante
+    quand la fenetre ne donne aucun grain servable).
+    """
+    debut = time.monotonic()
+    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s)
+    t1 = time.monotonic()
+    citations = gh_bulk.lire_citations_mergees(depot, jours, run)
+    t2 = time.monotonic()
+    prs = gh_bulk.lire_prs_ouvertes(run)
+    t3 = time.monotonic()
+    etats_ = tapis_universel.etats_leger(metas, citations, maintenant)
+    grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
+    return {"metas": metas, "citations": citations, "prs": prs, "etats": etats_,
+            "grains": grains_, "conteneurs": conteneurs,
+            "phases": {"selection_s": duree, "citations_s": round(t2 - t1, 1),
+                       "prs_s": round(t3 - t2, 1)},
+            "secondes": round(time.monotonic() - debut, 1)}
 
 
 def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str,
@@ -105,29 +131,22 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     equivalente : la selection paginee est complete ou elle echoue.
     """
     debut = time.monotonic()
-    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=budget_s)
-    t1 = time.monotonic()
-    citations = gh_bulk.lire_citations_mergees(depot, jours, run)
-    t2 = time.monotonic()
-    prs = gh_bulk.lire_prs_ouvertes(run)
-    t3 = time.monotonic()
-    etats_ = tapis_universel.etats_leger(metas, citations, maintenant)
-    grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
-    file, fenetre = tapis_fenetre.bloc(grains_, conteneurs, grains,
-                                       max(grains * CANDIDATS_MULT, grains),
+    classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
+    file, fenetre = tapis_fenetre.bloc(classe["grains"], classe["conteneurs"],
+                                       grains, max(grains * CANDIDATS_MULT, grains),
                                        lane, maintenant)
     secondes = time.monotonic() - debut
-    phases = {"selection_s": duree, "citations_s": round(t2 - t1, 1),
-              "prs_s": round(t3 - t2, 1)}
+    phases = classe["phases"]
     try:
         _, origami = tapis_origami.mesurer(
-            gh_bulk.Lecture(issues=[], prs=prs, citations=citations,
+            gh_bulk.Lecture(issues=[], prs=classe["prs"], citations=classe["citations"],
                             lu_a=_iso(maintenant), secondes=round(secondes, 1),
                             appels=0), reseau=True)
     except Exception:  # noqa: BLE001 - un garde ne doit pas casser le tirage
         origami = {"measured": False, "reason": "mesure Origami en echec"}
-    rapport = _rapport(lane, graine, maintenant, metas, duree, secondes,
-                       budget_s, etats_, file, prs, origami, phases, fenetre)
+    rapport = _rapport(lane, graine, maintenant, classe["metas"],
+                       phases["selection_s"], secondes, budget_s, classe["etats"],
+                       file, classe["prs"], origami, phases, fenetre)
     return rapport, 0
 
 
