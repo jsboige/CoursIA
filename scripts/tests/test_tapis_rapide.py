@@ -138,6 +138,31 @@ def test_pr_ouverte_cite_un_grain_contre_un_conteneur():
     assert etat(lec, 123).ecart is None  # #1234 ne couvre pas #123
 
 
+def test_fil_complet_reprise_bascule_le_grain_tronque(monkeypatch):
+    """#27179 : un grain servi dont le fil est tronque est re-decide sur le fil
+    COMPLET ; si le verdict bascule (ici [RELEASED] hors de la fenetre de 12),
+    il sort du tirage. Temoignage #26534 : fenetre 12/29 -> servable, fil complet
+    -> RELACHEE."""
+    import check_lane_claim
+    fenetre = [com(1 * i, f"visite {i}") for i in range(1, 13)]  # 12 visites (forme GraphQL)
+    lec = lecture([issue(1, comments=fenetre, total=29)])
+    tous = tr.etats(lec, LANE, NOW)
+    assert tous[0].tronque and tous[0].ecart is None  # servable sur la fenetre, fil 12/29
+    # Fil complet en forme REST (cle camelCase `createdAt`, comme
+    # `check_lane_claim._rest_issue_payload`) : le [RELEASED] (2.1 j) est le seul
+    # marqueur -> RELACHEE. Le camelCase importe : sans la normalisation, `evenements`
+    # lirait `created_at`, ne rien trouverait, et le [RELEASED] deviendrait _JAMAIS.
+    full = ([{"createdAt": _h(24 * 2.1),
+              "body": f"[RELEASED] lane {AUTRE} -- barriere reelle, mesuree"}]
+            + [{"createdAt": _h(1 * i), "body": f"visite {i}"} for i in range(1, 13)])
+    payload = {"number": 1, "title": "Grain 1", "body": "", "labels": [], "comments": full}
+    monkeypatch.setattr(check_lane_claim, "_rest_issue_payload", lambda n: payload)
+    file = tr._redecider_fil_complet(tous, lec, LANE, NOW, 45, 8, "g")
+    assert file == []  # le grain est sorti du tirage
+    assert tous[0].ecart == "RELACHEE"
+    assert "fil complet relu : bascule RELACHEE" in tous[0].notes
+
+
 def test_claims_vivant_perime_mien_et_borne():
     """Depuis PLAFOND, un [CLAIMED] d'une autre lane sur un CONTENEUR est
     une visite recente : il ecarte via PLAFOND (borne ou pas), avant RECLAMEE.

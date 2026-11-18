@@ -21,7 +21,7 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -81,6 +81,7 @@ class Etat:
     notes: list[str] = field(default_factory=list)
     mon_claim: bool = False
     occupes: list[tuple[str, str]] = field(default_factory=list)  # (lane, paths) bornes
+    tronque: bool = False  # #27179 : fil tronque (comments < comments_total)
 
 
 def parent_de(it: dict) -> int | None:
@@ -270,6 +271,7 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
             evts, lecture.citations.get(n, []), maintenant)
         _decider(e, it, evts, ancetres, ctx)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
+        e.tronque = total > lus
         if e.ecart is None and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
         resultat.append(e)
@@ -312,6 +314,80 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
     # Vos claims, puis les grains, puis les conteneurs (#26926) : un conteneur
     # demande une lecture et un --paths, il ne passe jamais devant un grain.
     return sorted(file[:max(grains, 0)], key=lambda e: (not e.mon_claim, e.conteneur))
+
+
+def _basculer(e: Etat, parents: dict[int, int | None], ctx: dict,
+              check_lane_claim) -> bool:
+    """#27179 : relire le fil COMPLET de `e` en REST (l'organe present
+    `check_lane_claim._rest_issue_payload`, pas de second lecteur) et re-appliquer
+    le meme `_decider`. Retourne True si le verdict bascule en ecart -- le grain
+    devient non servable. Une panne de relue est fail-OPEN : le grain reste en
+    l'etat (jamais pire que le verdict sur la fenetre de 12)."""
+    try:
+        payload = check_lane_claim._rest_issue_payload(str(e.numero))
+    except Exception:
+        return False
+    # Le lecteur REST rend `createdAt` (camelCase) ; `evenements` et les regles de
+    # `_decider` lisent `created_at`. Normalise la date, sinon chaque marqueur prendrait
+    # la sentinelle _JAMAIS et les ecarts bornes en duree (RELACHEE, RECLAMEE, PLAFOND)
+    # seraient silencieusement supprimes.
+    coms = [{"created_at": c.get("createdAt") or "", "body": c.get("body") or ""}
+            for c in payload.get("comments") or []]
+    evts = evenements(coms)
+    it = {"body": payload.get("body") or "",
+          "labels": [(lb or {}).get("name") for lb in payload.get("labels") or []],
+          "comments": coms}
+    copie = replace(e)
+    ancetres, _ = _ancetres(e.numero, parents)
+    _decider(copie, it, evts, ancetres, ctx)
+    if copie.ecart is not None:
+        e.ecart, e.motif = copie.ecart, copie.motif
+        e.notes.append(f"fil complet relu : bascule {copie.ecart}")
+        return True
+    e.notes.append("fil complet relu : servable confirme")
+    return False
+
+
+def _redecider_fil_complet(tous: list[Etat], lecture: gh_bulk.Lecture, lane: str,
+                           maintenant: datetime, jours: int, grains: int,
+                           graine: str) -> list[Etat]:
+    """#27179 : le verdict de servabilite d'un grain servi est pris sur son fil
+    COMPLET, pas sur la fenetre de 12 commentaires de `gh_bulk`. Seuls les grains
+    servis dont le fil est tronque sont relus en REST pagination, au plus `grains`
+    relues (mesure : ~0.55 s/issue). Un grain dont le verdict bascule en ecart
+    devient non servable ; on re-ordonne et la lane recoit le suivant. La boucle
+    est bornee (budget de relues + ensemble de tries) et ne change rien quand
+    aucun grain servi n'est tronque (un seul `ordonner`, zero reseau)."""
+    import check_lane_claim
+    parents = {e.numero: e.parent for e in tous}
+    filles: dict[int, list[tuple[int, str | None]]] = {}
+    for e in tous:
+        if e.parent is not None:
+            filles.setdefault(e.parent, []).append((e.numero, e.cree_le))
+    ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
+           "limite": maintenant - timedelta(days=jours), "filles": filles,
+           "prs_par_issue": _prs_par_issue(lecture.prs)}
+    budget = max(1, grains)
+    lus = 0
+    tries: set[int] = set()
+    file: list[Etat] = []
+    while True:
+        file = ordonner(tous, lane, maintenant, grains, graine)
+        candidats = [e for e in file if e.tronque and e.ecart is None
+                     and e.numero not in tries]
+        if not candidats or lus >= budget:
+            break
+        avance = False
+        for e in candidats:
+            if lus >= budget:
+                break
+            tries.add(e.numero)
+            lus += 1
+            if _basculer(e, parents, ctx, check_lane_claim):
+                avance = True
+        if not avance:
+            break
+    return file
 
 
 def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane: str,
@@ -395,7 +471,8 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     tous = etats(lecture, args.lane, maintenant, args.jours)
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
-    file = ordonner(tous, args.lane, maintenant, args.grains, graine)
+    file = _redecider_fil_complet(tous, lecture, args.lane, maintenant, args.jours,
+                                   args.grains, graine)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
     if fraicheur is not None:
