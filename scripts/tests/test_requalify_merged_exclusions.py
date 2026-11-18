@@ -53,14 +53,19 @@ def test_un_reste_posterieur_au_merge_rend_l_issue_servable(corpus):
     assert verdict["preuve"], "la preuve doit etre citee"
 
 
-def test_une_phrase_de_reste_anterieure_au_merge_ne_requalifie_pas():
-    """CONTROLE NEGATIF : un reste ecrit AVANT le merge decrit la tranche."""
+def test_une_phrase_de_reste_anterieure_au_merge_ne_sert_pas_de_preuve():
+    """CONTROLE NEGATIF : un reste ecrit AVANT le merge decrit la tranche.
+
+    La phrase pre-merge ne devient **jamais** la preuve : le verdict reste
+    celui d'une tranche livree sans reste (`a_clore`), et la preuve est vide.
+    """
     cas = {
         "number": 999999,
         "title": "cas de controle",
         "labels": [],
         "body": "",
-        "merged_refs": [{"pr": 1, "merged_at": "2026-11-18T12:00:00Z"}],
+        "merged_refs": [{"pr": 1, "merged_at": "2026-11-18T12:00:00Z",
+                         "body": "Tranche 1 livree.\n\nSee #999999", "title": "x"}],
         "prs_ouverts": [],
         "comments": [
             {"created_at": "2026-11-18T11:00:00Z", "author": "jsboige",
@@ -70,13 +75,55 @@ def test_une_phrase_de_reste_anterieure_au_merge_ne_requalifie_pas():
         ],
     }
     verdict = classer(cas)
-    assert verdict["verdict"] == "livre", verdict
+    assert verdict["verdict"] == "a_clore", verdict
+    assert verdict["preuve"] is None, "la phrase pre-merge ne doit pas etre la preuve"
 
 
 def test_une_issue_livree_sans_pr_en_vol_reste_hors_du_pool(corpus):
-    """#26911 : livree, fil sans reste apres le merge, aucune PR en vol."""
+    """#26911 : les PRs MERGEE n'ont livre qu'une TRANCHE, rien ne reste.
+
+    Le verdict n'est pas ``livre`` : aucune PR MERGEE ne porte la **cloture**
+    de l'issue (marqueur partiel mesure sur #26829, #26924, #26940, #26963),
+    donc l'ecart MERGEE etait faux -- mais l'action qui reste est une
+    **cloture administrative**, pas un grain de production.
+    """
     verdict = classer(_cas(corpus, 26911))
+    assert verdict["verdict"] == "a_clore"
+    assert "TRANCHE" in verdict["motif"]
+
+
+def test_une_pr_mergee_qui_clot_une_issue_reste_hors_du_pool():
+    """Une PR qui porte `Closes #N` : la livraison est complete."""
+    cas = {
+        "number": 424242,
+        "title": "cas de controle",
+        "labels": [],
+        "body": "",
+        "merged_refs": [{"pr": 7, "merged_at": "2026-11-18T12:00:00Z",
+                         "body": "Tranche livree.\n\nCloses #424242", "title": "x"}],
+        "prs_ouverts": [],
+        "comments": [{"created_at": "2026-11-18T13:00:00Z", "author": "jsboige",
+                      "body": "[DELIVERED] lane myia-ai-01:CoursIA-2 -- PR #7"}],
+    }
+    verdict = classer(cas)
     assert verdict["verdict"] == "livre"
+
+
+def test_une_mention_contextuelle_sans_marqueur_laisse_l_issue_vivante():
+    """Une PR MERGEE qui cite l'issue sans marqueur ne l'a pas livree."""
+    cas = {
+        "number": 424243,
+        "title": "cas de controle",
+        "labels": [],
+        "body": "",
+        "merged_refs": [{"pr": 8, "merged_at": "2026-11-18T12:00:00Z",
+                         "body": "Bilan de la journee ; voir #424243 et #424244.",
+                         "title": "x"}],
+        "prs_ouverts": [],
+        "comments": [],
+    }
+    verdict = classer(cas)
+    assert verdict["verdict"] == "requalifiee"
 
 
 def test_une_pr_en_vol_rend_l_issue_vivante_mais_pas_servable(corpus):
