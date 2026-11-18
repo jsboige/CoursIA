@@ -44,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # bloc ci-dessous : les tranches voisines sont modifiees par d'autres PRs en
 # vol, et un bloc reecrit fusionne moins bien qu'un ajout de ligne eloigne.
 from fast_lane_registry import TRANCHE51  # noqa: E402
+from fast_lane_registry import TRANCHE52  # noqa: E402  # #27231, meme motif
 
 from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
@@ -894,7 +895,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(changed)} fichier(s) modifie(s) "
           f"contre {args.base_ref}")
 
-    guards = [g for g in PILOT + TRANCHE51
+    guards = [g for g in PILOT + TRANCHE51 + TRANCHE52
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
