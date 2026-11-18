@@ -174,6 +174,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
@@ -354,6 +355,45 @@ PR_LIST_LIMIT = 500  # le pool ouvert mesure ~220 PRs ; au-dela, ordre ancien d'
 MERGEABLE_RETRIES = 12
 MERGEABLE_RETRY_SLEEP_S = 10.0
 
+# --- attente de mergeabilite : budget court + rejeu (#26799) -----------------
+#
+# Mesure du 16/11 (ai-01, 12 PRs sondees) : l'etat de mergeabilite passe de
+# `unknown` a `clean`/`blocked` en 10 a 20 s, SANS intervention -- le calcul
+# se fait seul cote GitHub. L'organe attendait 120 s (12 x 10 s) sur CHAQUE PR
+# rencontree, et chaque merge rebascule les PRs soeurs en `unknown` : le
+# passage du 16/11 evaluait 132 PRs en 1 h 41, dont 90 % du temps porte par
+# 28 PRs (#26799).
+#
+# Le correctif ne change pas la GARANTIE (la mergeabilite est verifiee au
+# moment du merge) ; il change QUAND la lecture a lieu :
+#
+#   1. RECHAUFFAGE : une lecture sans attente par PR restante, juste apres
+#      chaque merge et au debut du passage. Chaque lecture DEMARRE le calcul
+#      de la PR ; les calculs se font en parallele cote serveur, au lieu
+#      d'etre servis un par un par la passe.
+#   2. BUDGET COURT : au tour d'une PR, l'etat est lu avec un budget court.
+#      S'il est encore en cours de calcul, la PR est PARQUEE, pas refusee.
+#   3. REJEU : les PRs parkees sont reevaluees en fin de passage, avec le
+#      budget long -- leur calcul a eu tout le temps de se faire.
+#
+#: Budget court de la passe normale : deux relectures apres la premiere.
+MERGEABLE_SHORT_RETRIES = 2
+
+#: Etats de mergeabilite « en cours de calcul » : la valeur textuelle
+#: `unknown` et l'ABSENCE de valeur (null). Les deux se resolvent seuls ;
+#: traiter l'absence comme un refus definitif evaluait une PR mergeable
+#: avant la fin de son calcul (mesure du 16/11 : `#26829` et `#26827` sont
+#: passees de `unknown` a `blocked`/`clean` en moins de 20 s).
+MERGEABLE_PENDING_STATES = ("", "unknown")
+
+#: Motifs de skip qui signifient « etat en cours de calcul » : ces PRs sont
+#: rejouees en fin de passage, pas comptees comme un refus.
+PENDING_MERGEABLE_REASONS = ("mergeable-state:unknown", "mergeable-state:absent")
+
+#: Nombre de LECTURES de rechauffage en parallele. Le rechauffage ne touche
+#: qu'a des lectures : les merges restent strictement sequentiels.
+WARMUP_MAX_WORKERS = 8
+
 
 class CannotRunError(Exception):
     """Le run ne peut pas demarrer (jeton irresolu, env invalide)."""
@@ -473,8 +513,42 @@ class SubprocessRunner:
         )
         return RunResult(proc.returncode, proc.stdout or "", proc.stderr or "")
 
+    def run_many(
+        self, cmds: list[list[str]], env: dict[str, str] | None = None
+    ) -> list[RunResult]:
+        """Execute plusieurs LECTURES en parallele (rechauffage, #26799).
+
+        Le parallélisme ne porte que sur des lectures : les merges, eux,
+        restent strictement sequentiels (contrainte de #26799). L'ordre des
+        resultats suit l'ordre des commandes.
+        """
+        if not cmds:
+            return []
+        if len(cmds) == 1:
+            return [self.run(cmds[0], env)]
+        with ThreadPoolExecutor(
+            max_workers=min(WARMUP_MAX_WORKERS, len(cmds))
+        ) as pool:
+            futures = [pool.submit(self.run, cmd, env) for cmd in cmds]
+            return [future.result() for future in futures]
+
     def sleep(self, seconds: float) -> None:
         time.sleep(seconds)
+
+
+def run_reads(
+    runner: Runner, cmds: list[list[str]], gh_env: dict[str, str]
+) -> list[RunResult]:
+    """Execute des lectures, en parallele si le runner le permet.
+
+    Le repli est SEQUENTIEL : un runner de test (ou tout runner qui n'implemente
+    pas ``run_many``) reste utilisable tel quel, et l'ordre des lectures est
+    alors deterministe.
+    """
+    many = getattr(runner, "run_many", None)
+    if callable(many):
+        return list(many(cmds, env=gh_env))
+    return [runner.run(cmd, gh_env) for cmd in cmds]
 
 
 # --- petites pieces pures -----------------------------------------------------
@@ -534,6 +608,21 @@ HOLD_LINE = re.compile(r"^(\d+)(?:\s+(.*))?$")
 MAIN_RED_HOLD_PREFIX = "main-red-sentinel "
 MAIN_RED_HOLD_NUMBER = 0  # identifiant global reserve, jamais un numero de PR
 SCRIPTS_TESTS_CHECK = "Scripts Tests (CPU)"
+
+#: L'issue canonique du rouge de `main` (#26706). La sentinelle ne se
+#: contente plus de retenir les merges : elle ouvre (ou REUTILISE) UNE issue
+#: vivante, que la lane de reparation reclame (`[CLAIMED]`) et que la PR de
+#: reparation nomme (`See #`). La FERMETURE appartient a la sentinelle, qui la
+#: fait au VERT mesure -- pas au merge du correctif, qui precede le rejeu de
+#: `main`. Un episode = une issue, pas une issue par run : le titre est le
+#: prefixe ci-dessous, suivi du check et du test en echec.
+MAIN_RED_ISSUE_TITLE_PREFIX = "[main-red]"
+
+#: Marqueur HTML de l'issue du rouge. Le titre est l'index (GitHub indexe
+#: `main-red`, pas les crochets) ; le marqueur, lui, survit a une
+#: renumeration par un humain et se relit par `grep` dans le depot comme
+#: sur GitHub. Les deux sont poses sur l'issue.
+MAIN_RED_ISSUE_MARKER = "<!-- coursia:main-red-sentinel -->"
 
 #: Borne ECRITE de la remontee dans l'historique de `main` (#24828, revue
 #: ai-01 du 2026-11-10, point 1). On juge le dernier commit qui porte un
@@ -695,29 +784,112 @@ def _job_id_of_check(check: dict) -> str:
     return raw if raw.isdigit() else ""
 
 
-def _first_failing_step(runner: Runner, gh_env: dict[str, str],
-                        check: dict) -> str:
-    """Nom de la PREMIERE etape en echec du job ("" si elle est illisible).
+def _parse_job_steps(stdout: str) -> list[dict] | None:
+    """Liste des etapes lue dans la reponse ``gh api``.
+
+    ``None`` = lecture illisible (fail-closed) ; une liste vide = lecture
+    reussie sans etape. Le retour accepte les deux formes de sortie de
+    ``--jq`` : un tableau JSON (forme compacte) ou un objet par ligne.
+    """
+    text = (stdout or "").strip()
+    if not text:
+        return []
+    try:
+        payload = json.loads(text)
+    except ValueError:
+        payload = None
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    if isinstance(payload, dict):
+        return [payload]
+    steps: list[dict] = []
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            return None
+        if not isinstance(row, dict):
+            return None
+        steps.append(row)
+    return steps or None
+
+
+def _read_job_steps(runner: Runner, gh_env: dict[str, str],
+                    check: dict) -> list[dict] | None:
+    """Etapes du job associe au check-run (``None`` si la lecture echoue).
 
     Une seule lecture de job par commit juge, et seulement dans le cas
-    `failure` sans test identifie. Le tri se fait sur le numero d'etape :
-    l'API renvoie les etapes dans l'ordre, mais le tri le rend explicite.
+    `failure` sans test identifie. La lecture est **globale** : elle rend
+    toutes les etapes, avec leur statut ET leur conclusion, parce que la
+    decision "runner perdu" (#25510 T-J) porte sur l'ensemble des etapes et
+    pas sur la premiere etape en echec.
     """
     job_id = _job_id_of_check(check)
     if not job_id:
-        return ""
+        return None
     result = runner.run(
         [
             "gh", "api", f"repos/{REPO}/actions/jobs/{job_id}",
             "--jq",
-            '[.steps[] | select(.conclusion == "failure")'
-            ' | {n: .name, o: .number}] | sort_by(.o) | .[0].n // ""',
+            '[.steps[] | {n: .name, o: .number, s: .status, c: .conclusion}]',
         ],
         env=gh_env,
     )
     if result.returncode != 0:
+        return None
+    return _parse_job_steps(result.stdout or "")
+
+
+def _first_failing_step(steps: list[dict]) -> str:
+    """Nom de la PREMIERE etape en echec ("" si aucune).
+
+    Fonction PURE sur la liste des etapes : la decision se teste sans
+    `jq` ni reseau. Le tri se fait sur le numero d'etape : l'API renvoie les
+    etapes dans l'ordre, mais le tri le rend explicite.
+    """
+    failing = [row for row in steps
+               if str(row.get("c") or "").lower() == "failure"]
+    if not failing:
         return ""
-    return (result.stdout or "").strip().strip('"')
+    ordered = sorted(failing, key=_step_order)
+    return str(ordered[0].get("n") or "")
+
+
+def _step_order(step: dict) -> int:
+    """Numero d'etape (ordre d'execution) ; 0 quand il est absent."""
+    try:
+        return int(step.get("o") or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+def _runner_lost(steps: list[dict]) -> bool:
+    """Vrai si le job a echoue SANS qu'aucune etape soit en echec.
+
+    C'est la mesure du 2026-11-16 (run 43777127542, job 133012644184,
+    runner `myia-ai-01-linux-main-1`) : le job a rendu `completed/failure`
+    alors que l'etape 11 « Run tests » etait restee `in_progress` (conclusion
+    nulle) et que les etapes suivantes etaient `pending` -- le runner a
+    disparu au milieu d'une etape (reboot de l'hote a 00:32Z). Aucune etape
+    n'etant en `failure`, la sentinelle lisait un **verdict de code** la ou
+    il y avait une perte d'infrastructure.
+
+    Fonction PURE : la liste des etapes suffit, rien n'est relu.
+
+    - aucune etape en `failure` ET au moins une etape non `completed`
+      -> runner perdu (infrastructure) ;
+    - une etape en `failure` -> verdict de code, ce n'est pas un runner perdu ;
+    - toutes les etapes `completed` sans etape en echec -> on ne sait pas :
+      la retenue reste (fail-closed).
+    """
+    if not steps:
+        return False
+    if any(str(row.get("c") or "").lower() == "failure" for row in steps):
+        return False
+    return any(str(row.get("s") or "").lower() != "completed" for row in steps)
 
 
 def _is_infra_step(step_name: str) -> bool:
@@ -777,9 +949,14 @@ def refresh_main_red_hold(
        commits ne porte de verdict termine, l'organe refuse de demarrer et
        nomme la borne.
     4. **Une `failure` sans test identifie peut etre une panne
-       d'infrastructure.** On lit alors les etapes du job : si la PREMIERE
-       etape en echec est une etape d'infrastructure (checkout, setup-python,
-       installation, purge HEAL), le commit est ecarte comme
+       d'infrastructure.** On lit alors les etapes du job : si le job a
+       echoue **sans qu'aucune etape ne soit en echec** et qu'au moins une
+       etape ne soit pas terminee, c'est un **runner perdu en cours
+       d'etape** (#25510 T-J) : le commit est ecarte comme
+       `infra(runner-lost)` et le verdict remonte au commit precedent, comme
+       `cancelled`. Sinon, si la PREMIERE etape en echec est une etape
+       d'infrastructure (checkout, setup-python, installation, purge HEAL),
+       le commit est ecarte comme
        `infra(failure-step:<nom>)` et le verdict remonte au commit
        precedent, comme pour `cancelled`. Le cas mesure (12/11, run
        43316243195) : le checkout avait echoue sur `curl 28` apres 19 min
@@ -816,16 +993,34 @@ def refresh_main_red_hold(
             if not test_name:
                 # Aucun test identifie : la `failure` peut venir de
                 # l'infrastructure. UNE lecture de job, dans ce cas seul.
-                step = _first_failing_step(runner, gh_env, check)
-                if step and _is_infra_step(step):
-                    skipped.append((sha, f"infra(failure-step:{step})"))
+                steps = _read_job_steps(runner, gh_env, check)
+                if steps is None:
+                    # Lecture illisible : fail-closed, la retenue reste.
+                    pass
+                elif _runner_lost(steps):
+                    # Runner perdu en cours d'etape (#25510 T-J) : le job a
+                    # rendu `failure` sans qu'aucune etape ne soit en echec.
+                    # C'est de l'infrastructure, pas un verdict de code : le
+                    # verdict remonte au commit precedent, comme `cancelled`.
+                    skipped.append((sha, "infra(runner-lost)"))
                     print(
                         "merge_ready : sentinelle main-red -- commit "
-                        f"{sha[:9]} ecarte, premiere etape en echec "
-                        f"'{step}' (infrastructure) : le verdict remonte au "
-                        "commit precedent"
+                        f"{sha[:9]} ecarte, runner perdu en cours d'etape "
+                        "(job en echec sans etape en echec) : le verdict "
+                        "remonte au commit precedent"
                     )
                     continue
+                else:
+                    step = _first_failing_step(steps)
+                    if step and _is_infra_step(step):
+                        skipped.append((sha, f"infra(failure-step:{step})"))
+                        print(
+                            "merge_ready : sentinelle main-red -- commit "
+                            f"{sha[:9]} ecarte, premiere etape en echec "
+                            f"'{step}' (infrastructure) : le verdict remonte "
+                            "au commit precedent"
+                        )
+                        continue
         judged = (sha, check, conclusion, test_name)
         break
 
@@ -843,6 +1038,11 @@ def refresh_main_red_hold(
     lines = hold_path.read_text(encoding="utf-8-sig").splitlines() if hold_path.exists() else []
     owned = [line for line in lines if line.strip().startswith(f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}")]
     retained = [line for line in lines if line not in owned]
+    # Le numero d'issue inscrit par un run precedent est la voie
+    # DETERMINISTE de reutilisation : l'index de recherche de GitHub peut
+    # avoir du retard, et deux runs rapproches ne doivent pas ouvrir deux
+    # issues pour le meme episode.
+    known_issue = _issue_number_from_line(owned[0] if owned else "")
     if conclusion == "success":
         updated = retained
     else:
@@ -851,12 +1051,60 @@ def refresh_main_red_hold(
             f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}sha={sha} "
             f"check={SCRIPTS_TESTS_CHECK} conclusion={conclusion} test={test_name}"
         )
+        if known_issue is not None:
+            reason += f" issue={known_issue}"
         updated = [*retained, reason]
     if updated != lines:
         hold_path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = hold_path.with_name(hold_path.name + ".tmp")
         tmp_path.write_text("\n".join(updated) + ("\n" if updated else ""), encoding="utf-8")
         tmp_path.replace(hold_path)
+
+    # L'issue canonique du rouge (#26706) : c'est elle que la lane de
+    # reparation reclame. Elle est traitee APRES la retenue, qui est deja
+    # ecrite : une panne de l'issue ne doit jamais faire perdre la
+    # retenue -- l'issue est un canal de coordination, pas la porte.
+    if conclusion == "success":
+        etat, numero = close_main_red_issue(
+            runner, gh_env, sha, SCRIPTS_TESTS_CHECK, known_issue
+        )
+        if etat == "ferme":
+            print(
+                "merge_ready : sentinelle main-red -- issue [main-red] #{} "
+                "fermee (vert au commit {})".format(numero, sha[:9])
+            )
+        elif etat == "echec":
+            print(
+                "merge_ready : sentinelle main-red -- fermeture de l'issue "
+                "[main-red] impossible ; elle sera reprise au run suivant"
+            )
+    else:
+        etat, numero = ensure_main_red_issue(
+            runner, gh_env, sha, SCRIPTS_TESTS_CHECK, test_name, known_issue
+        )
+        if etat == "create":
+            print(
+                "merge_ready : sentinelle main-red -- issue [main-red] #{} "
+                "ouverte ({} en echec au commit {})".format(
+                    numero, SCRIPTS_TESTS_CHECK, sha[:9]
+                )
+            )
+        elif etat == "reuse":
+            print(
+                "merge_ready : sentinelle main-red -- issue [main-red] #{} "
+                "reutilisee ({} en echec au commit {})".format(
+                    numero, SCRIPTS_TESTS_CHECK, sha[:9]
+                )
+            )
+        else:
+            print(
+                "merge_ready : sentinelle main-red -- issue [main-red] non "
+                "ouverte ; la retenue reste posee"
+            )
+        if numero is not None and known_issue != numero:
+            # On inscrit le numero dans la retenue : le run suivant vise
+            # CETTE issue, sans repasser par la recherche.
+            _record_issue_in_hold(hold_path, numero)
 
 
 def clear_main_red_hold(hold_path: Path) -> bool:
@@ -882,6 +1130,427 @@ def clear_main_red_hold(hold_path: Path) -> bool:
     tmp_path.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
     tmp_path.replace(hold_path)
     return True
+
+
+# --- l'issue canonique du rouge de `main` (#26706) -----------------------------
+#
+# Le 15/11, le rouge de `main` a recu QUATRE reparations concurrentes
+# (#26696, #26697, #26698, plus une tentative locale) : quatre lanes ont
+# repare le meme defaut sans le savoir, parce que rien ne leur disait que
+# le rouge etait deja pris. La sentinelle retenait les merges, mais elle ne
+# PUBLIAIT rien : elle ne donnait a personne une adresse a reclamer.
+#
+# Le canal de coordination est donc une ISSUE, pas la retenue elle-meme :
+# une seule issue vivante par episode, que la lane qui repare reclame avec
+# `[CLAIMED]`. La PR de reparation porte `See #` : la FERMETURE appartient a
+# la sentinelle seule, qui la fait au VERT -- une fois `main` rejoue. La
+# sentinelle l'ouvre au rouge et la ferme au vert.
+
+
+def _issue_number_from_line(line: str) -> int | None:
+    """Numero d'issue inscrit dans une ligne de retenue, ou None."""
+    match = re.search(r"(?:^|\s)issue=(\d+)(?:\s|$)", line or "")
+    return int(match.group(1)) if match else None
+
+
+def _record_issue_in_hold(hold_path: Path, number: int) -> bool:
+    """Inscrit le numero de l'issue du rouge dans la ligne de la sentinelle.
+
+    La retenue est la VOIE DETERMINISTE : le run suivant sait quelle issue
+    viser, sans repasser par la recherche (dont l'index peut avoir du
+    retard). Renvoie True si la ligne a ete reecrite.
+    """
+    if not hold_path.exists():
+        return False
+    lines = hold_path.read_text(encoding="utf-8-sig").splitlines()
+    changed = False
+    updated = []
+    for line in lines:
+        if line.strip().startswith(
+            f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}"
+        ) and _issue_number_from_line(line) is None:
+            line = f"{line} issue={number}"
+            changed = True
+        updated.append(line)
+    if not changed:
+        return False
+    tmp_path = hold_path.with_name(hold_path.name + ".tmp")
+    tmp_path.write_text("\n".join(updated) + "\n", encoding="utf-8")
+    tmp_path.replace(hold_path)
+    return True
+
+
+def main_red_issue_title(check: str, test: str) -> str:
+    """Titre canonique de l'issue du rouge : `[main-red] <check> — <test>`."""
+    return "{} {} — {}".format(
+        MAIN_RED_ISSUE_TITLE_PREFIX, check, test or "test-non-identifie"
+    )
+
+
+def main_red_issue_body(sha: str, check: str, test: str) -> str:
+    """Corps de l'issue : ce qui est rouge, ou, et ce qu'on attend."""
+    return (
+        "{marker}\n"
+        "\n"
+        "Rouge de `main` : le check `{check}` est en `failure` au commit `{sha}`.\n"
+        "\n"
+        "- **Test en echec** : `{test}`\n"
+        "- **Commit juge** : `{sha}`\n"
+        "- **Posee par** : `scripts/coordination/merge_ready.py` (sentinelle "
+        "`main-red`, #24828)\n"
+        "- **Effet** : la retenue globale `main-red-sentinel` est posee — "
+        "aucun merge n'est possible tant que ce verdict tient.\n"
+        "\n"
+        "## Ce qu'une lane de reparation fait\n"
+        "\n"
+        "1. Reclamer cette issue : `[CLAIMED] lane <machine:workspace> -- "
+        "<cause>`.\n"
+        "2. Reparer la cause, pousser le correctif, le faire merger.\n"
+        "3. Nommer la livraison : `See #N`, ou N est le numero de cette "
+        "issue — **pas** `Closes`.\n"
+        "\n"
+        "**La fermeture appartient a la sentinelle, pas a la PR.** Le correctif "
+        "fusionne alors que `main` n'a pas encore rejoue `Scripts Tests (CPU)` "
+        "(20 a 30 min) : une fermeture par la PR rendrait l'episode sans "
+        "issue ouverte pendant ce temps, et la branche « aucune issue → voie "
+        "normale » enverrait alors chaque lane reparer seule. La PR porte donc "
+        "`See #N`, et l'issue reste **ouverte** jusqu'au vert mesure par la "
+        "sentinelle.\n"
+        "\n"
+        "L'issue est **fermee automatiquement** par la sentinelle des que le "
+        "verdict redevient vert : aucune fermeture manuelle n'est necessaire.\n"
+        "\n"
+        "Refs #24828 · #26706\n"
+    ).format(
+        marker=MAIN_RED_ISSUE_MARKER,
+        check=check,
+        sha=sha,
+        test=test or "test-non-identifie",
+    )
+
+
+def _search_main_red_issue(
+    runner: Runner, gh_env: dict[str, str]
+) -> tuple[str, dict | None]:
+    """Cherche l'issue `[main-red]` VIVANTE du depot.
+
+    Renvoie `(etat, issue)` avec `etat` dans ``{"ok", "absent", "illisible"}``.
+
+    ``illisible`` n'est PAS un ``absent`` : une recherche qui echoue ne
+    prouve pas qu'aucune issue n'existe. Ouvrir dans ce cas creerait un
+    doublon — deux lanes y reclameraient le meme rouge. Le defaut est donc
+    fail-CLOSED : recherche illisible -> aucune creation.
+    """
+    result = runner.run(
+        [
+            "gh",
+            "api",
+            "-X",
+            "GET",
+            "search/issues",
+            "-f",
+            "q=repo:{} is:issue is:open in:title main-red".format(REPO),
+            "-f",
+            "per_page=20",
+        ],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        return ("illisible", None)
+    try:
+        payload = json.loads(result.stdout or "{}")
+    except ValueError:
+        return ("illisible", None)
+    items = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(items, list):
+        return ("illisible", None)
+    trouvee = None
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get("title") or "")
+        body = str(item.get("body") or "")
+        # Le titre est l'index, le marqueur HTML est la preuve : une issue
+        # renumerotee a la main reste reconnaissable par son marqueur.
+        if not title.startswith(MAIN_RED_ISSUE_TITLE_PREFIX) and (
+            MAIN_RED_ISSUE_MARKER not in body
+        ):
+            continue
+        try:
+            number = int(item.get("number"))
+        except (TypeError, ValueError):
+            continue
+        if trouvee is None:
+            trouvee = {
+                "number": number,
+                "title": title,
+                "body": body,
+            }
+        else:
+            # Episode incoherent : deux issues vivantes pour le meme rouge.
+            # On garde la plus ancienne et on le signale.
+            print(
+                "merge_ready : sentinelle main-red -- DEUX issues [main-red] "
+                "vivantes ({} et {}) ; la plus ancienne est retenue".format(
+                    trouvee["number"], number
+                )
+            )
+    if trouvee is None:
+        return ("absent", None)
+    return ("ok", trouvee)
+
+
+def _write_body_file(body: str) -> str:
+    """Ecrit un corps dans un fichier temporaire et rend son chemin.
+
+    Le corps passe par un fichier, jamais par `-f body=@...` : ce dernier
+    n'est expanse que par `-F`, et GitHub recevrait alors le litteral
+    `@chemin` (regle `gh-posting-hygiene`).
+    """
+    handle = tempfile.NamedTemporaryFile(
+        "w", suffix=".md", delete=False, encoding="utf-8"
+    )
+    try:
+        handle.write(body)
+    finally:
+        handle.close()
+    return handle.name
+
+
+def _read_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], number: int
+) -> tuple[str, dict | None]:
+    """Lit l'ETAT d'une issue connue par son numero.
+
+    Renvoie `(etat, issue)` avec `etat` dans ``{"ok", "absent", "illisible"}``.
+
+    La lecture est le meme coup que l'edition : elle rend `state`, `title` et
+    `body` d'un coup. C'est elle qui permet de comparer avant d'editer, et de
+    REOUVRIR une issue fermee alors que le rouge tient (#26706, revue
+    ai-01 du 16/11) : une PR de reparation porte `See #`, donc la fermeture
+    appartient a la sentinelle -- mais une PR ancienne portant encore
+    `Closes #` peut l'avoir fermee au merge, avant le rejeu de `main`.
+    """
+    result = runner.run(
+        [
+            "gh",
+            "issue",
+            "view",
+            str(number),
+            "--repo",
+            REPO,
+            "--json",
+            "number,title,body,state",
+        ],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        return ("illisible", None)
+    try:
+        payload = json.loads(result.stdout or "{}")
+    except ValueError:
+        return ("illisible", None)
+    if not isinstance(payload, dict):
+        return ("illisible", None)
+    try:
+        lu = int(payload.get("number"))
+    except (TypeError, ValueError):
+        return ("absent", None)
+    if lu != number:
+        return ("absent", None)
+    return (
+        "ok",
+        {
+            "number": lu,
+            "title": str(payload.get("title") or ""),
+            "body": str(payload.get("body") or ""),
+            "state": str(payload.get("state") or "").upper(),
+        },
+    )
+
+
+def _reopen_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], number: int, sha: str, check: str
+) -> bool:
+    """Rouvre l'issue du rouge fermee a tort, en citant le SHA rouge.
+
+    Le SHA rouge est dans le commentaire : c'est la preuve que l'issue
+    vivante porte CET episode-la, et pas un episode deja resolu.
+    """
+    commentaire = (
+        "Rouge de `main` toujours actif : le check `{check}` est en `failure` "
+        "au commit `{sha}`. Cette issue est **réouverte** -- la fermeture "
+        "d'un episode appartient a la sentinelle, au vert mesure (#26706)."
+    ).format(check=check, sha=sha)
+    result = runner.run(
+        [
+            "gh",
+            "issue",
+            "reopen",
+            str(number),
+            "--repo",
+            REPO,
+            "--comment",
+            commentaire,
+        ],
+        env=gh_env,
+    )
+    return result.returncode == 0
+
+
+def ensure_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], sha: str, check: str, test: str,
+    known_number: int | None = None,
+) -> tuple[str, int | None]:
+    """Ouvre ou REUTILISE l'issue canonique du rouge de `main` (#26706).
+
+    Renvoie `("create"|"reuse"|"echec", numero)` :
+
+    - ``reuse`` : une issue vivante existe, son titre et son corps ont ete
+      alignes sur le verdict courant (un meme episode qui change de test
+      en echec reste UNE issue) ;
+    - ``create`` : l'issue vient d'etre ouverte ;
+    - ``echec`` : rien n'a ete fait — recherche illisible, creation refusee
+      ou impossible a lire. La RETENUE reste posee dans tous les cas : elle
+      est ecrite AVANT, l'issue n'est qu'un canal de coordination.
+
+    ``known_number`` est le numero inscrit dans la retenue par un run
+    precedent : c'est la voie DETERMINISTE de reutilisation. Elle prime sur
+    la recherche, parce que l'index de recherche de GitHub peut avoir du
+    retard — deux runs rapproches ne doivent pas ouvrir deux issues.
+
+    Sur cette voie, l'ETAT de l'issue est relu avant toute ecriture : si elle
+    est **fermee** alors que le rouge tient, elle est **réouverte** — une PR
+    de reparation ancienne portant `Closes #` peut l'avoir fermee au merge,
+    avant que `main` ait rejoue ses tests ; et titre et corps ne sont
+    reecrits que s'ils different du verdict courant.
+    """
+    title = main_red_issue_title(check, test)
+    body = main_red_issue_body(sha, check, test)
+    if known_number is not None:
+        etat_lu, item = _read_main_red_issue(runner, gh_env, known_number)
+        if etat_lu == "ok" and item is not None:
+            if item.get("state") == "CLOSED":
+                if _reopen_main_red_issue(
+                    runner, gh_env, known_number, sha, check
+                ):
+                    print(
+                        "merge_ready : sentinelle main-red -- issue [main-red] "
+                        "#{} RÉOUVERTE (le rouge tient toujours au commit "
+                        "{})".format(known_number, sha[:9])
+                    )
+                    item = dict(item)
+                    item["state"] = "OPEN"
+                else:
+                    print(
+                        "merge_ready : sentinelle main-red -- issue [main-red] "
+                        "#{} fermee et rouverture impossible ; elle sera "
+                        "reprise au run suivant".format(known_number)
+                    )
+            _align_main_red_issue(
+                runner, gh_env, known_number, title, body, item
+            )
+        else:
+            _align_main_red_issue(runner, gh_env, known_number, title, body)
+        return ("reuse", known_number)
+    etat, item = _search_main_red_issue(runner, gh_env)
+    if etat == "illisible":
+        return ("echec", None)
+    if etat == "absent":
+        body_path = _write_body_file(body)
+        try:
+            result = runner.run(
+                [
+                    "gh",
+                    "issue",
+                    "create",
+                    "--repo",
+                    REPO,
+                    "--title",
+                    title,
+                    "--body-file",
+                    body_path,
+                ],
+                env=gh_env,
+            )
+        finally:
+            os.unlink(body_path)
+        if result.returncode != 0:
+            return ("echec", None)
+        match = re.search(r"/issues/(\d+)", result.stdout or "")
+        if not match:
+            return ("echec", None)
+        return ("create", int(match.group(1)))
+
+    number = int(item["number"])
+    _align_main_red_issue(runner, gh_env, number, title, body, item)
+    return ("reuse", number)
+
+
+def _align_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], number: int, title: str, body: str,
+    item: dict | None = None,
+) -> None:
+    """Aligne titre et corps de l'issue sur le verdict courant."""
+    if item is not None and item.get("title") == title and item.get("body") == body:
+        return
+    if item is None or item.get("title") != title:
+        runner.run(
+            ["gh", "issue", "edit", str(number), "--repo", REPO, "--title", title],
+            env=gh_env,
+        )
+    if item is None or item.get("body") != body:
+        body_path = _write_body_file(body)
+        try:
+            runner.run(
+                [
+                    "gh",
+                    "issue",
+                    "edit",
+                    str(number),
+                    "--repo",
+                    REPO,
+                    "--body-file",
+                    body_path,
+                ],
+                env=gh_env,
+            )
+        finally:
+            os.unlink(body_path)
+
+
+def close_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], sha: str, check: str,
+    known_number: int | None = None,
+) -> tuple[str, int | None]:
+    """Ferme l'issue `[main-red]` vivante, si elle existe.
+
+    Renvoie `("ferme"|"rien"|"echec", numero)`. Une recherche illisible ne
+    ferme rien : l'issue sera reprise au run suivant. ``known_number``
+    (inscrit dans la retenue) prime sur la recherche : la fermeture vise
+    alors exactement l'issue de l'episode.
+    """
+    if known_number is not None:
+        number = known_number
+    else:
+        etat, item = _search_main_red_issue(runner, gh_env)
+        if etat == "illisible":
+            return ("echec", None)
+        if etat == "absent":
+            return ("rien", None)
+        number = int(item["number"])
+    commentaire = (
+        "Vert au commit `{sha}` : le check `{check}` est redevenu `success`. "
+        "La sentinelle `main-red` retire la retenue globale ; cette issue "
+        "est fermee automatiquement (#26706)."
+    ).format(sha=sha, check=check)
+    result = runner.run(
+        ["gh", "issue", "close", str(number), "--repo", REPO, "--comment", commentaire],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        return ("echec", number)
+    return ("ferme", number)
 
 
 def scope_exclusion(path: str) -> str | None:
@@ -959,11 +1628,21 @@ def _json_stdout(res: RunResult, what: str) -> object:
         raise UnexpectedError(f"{what} : stdout illisible ({exc})") from exc
 
 
-def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
-    """Numeros des PRs ouvertes, triees croissant (la plus ancienne d'abord)."""
+def list_open_prs(
+    runner: Runner, gh_env: dict[str, str]
+) -> tuple[list[int], list[int]]:
+    """PRs ouvertes triees croissant, et PRs a rechauffer.
+
+    UNE SEULE lecture de liste : elle porte aussi les DERNIERES reviews
+    (``latestReviews``), ce qui permet de choisir les PRs a rechauffer SANS
+    appel REST supplementaire. Revue coordinateur du 16/11 : le rechauffage
+    de TOUT le pool ouvert coutait ~1 500 lectures REST par passage, sous le
+    jeton que le coordinateur partage avec l'attestation Lean et les
+    relectures (05:06Z : 1 879 restants sur 5 000).
+    """
     res = runner.run(
         ["gh", "pr", "list", "--repo", REPO, "--state", "open",
-         "--limit", str(PR_LIST_LIMIT), "--json", "number"],
+         "--limit", str(PR_LIST_LIMIT), "--json", "number,latestReviews"],
         env=gh_env,
     )
     if res.returncode != 0:
@@ -978,7 +1657,68 @@ def list_open_prs(runner: Runner, gh_env: dict[str, str]) -> list[int]:
         for row in rows
         if isinstance(row, dict) and row.get("number") is not None
     )
-    return numbers
+    return numbers, warm_up_candidates(rows)
+
+
+#: Les PRs rechauffees sont celles qui peuvent atteindre l'etape 6 (la lecture
+#: de mergeabilite) : celles qui portent une VOIX du coordinateur. Une PR
+#: sans approbation s'arrete a l'etape 2 (``no-coordinator-approval``) : la
+#: rechauffer consommerait le jeton partage pour rien.
+#:
+#: Ce choix NE DECIDE RIEN : le rechauffage est une lecture a EFFET DE BORD,
+#: sans verdict. Une PR mal rechauffee n'est jamais mergee a tort -- elle est
+#: PARQUEE puis rejouee au budget long. Le critere est donc VOLONTAIREMENT
+#: permissif (une voix qui approuve, ou qui commente apres avoir approuve) :
+#: mieux vaut rechauffer une PR de trop qu'une de moins.
+WARMUP_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_LANE_APP_LOGIN))
+
+#: Etats d'une review qui disent « cette PR peut encore etre mergee ».
+WARMUP_STATES = frozenset(("APPROVED", "COMMENTED", "LGTM"))
+
+
+def _warmup_state(review: dict) -> str:
+    """Etat d'une review, pour le CHOIX du rechauffage (aucun verdict).
+
+    Un ``COMMENTED`` porte son verdict dans son CORPS (le canal du jeton du
+    cluster) : c'est ce verdict qui compte, pas l'etat muet. L'extraction
+    est celle du CANON (``pool_review_verdicts._voice``) -- la meme pour les
+    deux formes (``VERDICT: X`` et le prefixe de persona) : un verdict
+    reecrit ici derivera de celui qui gouverne.
+    """
+    state = str(review.get("state") or "")
+    voice = review_canon._voice(review.get("body")) or {}
+    verdict = str(voice.get("verdict") or "")
+    if state == "COMMENTED" and verdict:
+        return verdict
+    return state or verdict
+
+
+def warm_up_candidates(rows: list) -> list[int]:
+    """PRs a rechauffer : celles qui portent une voix du coordinateur.
+
+    Les PRs sans aucune voix du coordinateur s'arretent a l'etape 2 : elles
+    n'atteignent jamais la lecture de mergeabilite, et les rechauffer
+    consommerait le jeton partage pour rien. Mesure du 16/11 sur le pool
+    vivant : 178 PRs ouvertes, 35 candidates.
+    """
+    out: list[int] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        number = row.get("number")
+        if number is None:
+            continue
+        for review in row.get("latestReviews") or []:
+            if not isinstance(review, dict):
+                continue
+            author = review.get("author") or {}
+            login = str(author.get("login") or "") if isinstance(author, dict) else ""
+            if login not in WARMUP_VOICES:
+                continue
+            if _warmup_state(review) in WARMUP_STATES:
+                out.append(int(number))
+                break
+    return sorted(set(out))
 
 
 #: ``reviews`` est lu par la MEME commande que le reste : la disposition de
@@ -1728,17 +2468,36 @@ def base_ref_liveness(
     return "gone"
 
 
+def mergeable_pending(state: str) -> bool:
+    """L'etat de mergeabilite est-il EN COURS DE CALCUL ?
+
+    Deux formes, meme sens : la valeur textuelle ``unknown`` et l'absence de
+    valeur (``null``). Une PR dont l'etat est en cours de calcul n'est pas
+    une PR refusee : son etat se resout tout seul en 10 a 20 s (mesure du
+    16/11). La traiter comme un refus evaluait une PR mergeable avant la
+    fin de son calcul -- et la traiter comme un etat stable bloquait le
+    passage (#26799).
+    """
+    return state in MERGEABLE_PENDING_STATES
+
+
 def mergeable_state_and_head(
-    runner: Runner, pr: int, gh_env: dict[str, str]
+    runner: Runner, pr: int, gh_env: dict[str, str], retries: int | None = None
 ) -> tuple[str, str]:
-    """Etape 6 : (mergeable_state, head.sha) via REST, avec retry sur ``unknown``.
+    """Etape 6 : (mergeable_state, head.sha) via REST, avec retry sur l'etat
+    « en cours de calcul ».
 
     Apres un merge, les PRs soeurs passent ``unknown`` le temps que GitHub
-    recalcule : jusqu'a MERGEABLE_RETRIES relectures avec court sommeil avant
-    de conclure au skip.
+    recalcule : jusqu'a `retries` relectures avec court sommeil avant de
+    conclure.
+
+    Le budget par defaut est COURT (#26799) : au-dela, l'appelant parke la PR
+    et la rejoue en fin de passage, ou le calcul a eu le temps de se faire.
+    Le budget LONG (`MERGEABLE_RETRIES`) est reserve a ce rejeu.
     """
+    budget = MERGEABLE_SHORT_RETRIES if retries is None else retries
     data: dict = {}
-    for attempt in range(MERGEABLE_RETRIES + 1):
+    for attempt in range(budget + 1):
         res = runner.run(
             ["gh", "api", f"repos/{REPO}/pulls/{pr}"], env=gh_env
         )
@@ -1750,12 +2509,47 @@ def mergeable_state_and_head(
         if not isinstance(data, dict):
             raise UnexpectedError(f"pulls/{pr} : la reponse n'est pas un objet")
         state = str(data.get("mergeable_state") or "")
-        if state != "unknown":
+        if not mergeable_pending(state):
             return state, str(((data.get("head") or {}).get("sha")) or "")
-        if attempt < MERGEABLE_RETRIES:
+        if attempt < budget:
             runner.sleep(MERGEABLE_RETRY_SLEEP_S)
     state = str(data.get("mergeable_state") or "")
     return state, str(((data.get("head") or {}).get("sha")) or "")
+
+
+def warm_up_mergeability(
+    runner: Runner, gh_env: dict[str, str], prs: list[int]
+) -> int:
+    """Rechauffage : une lecture REST par PR CANDIDATE, sans attente (#26799).
+
+    Chaque lecture DEMARRE le calcul de mergeabilite de la PR cote GitHub,
+    et ces calculs se font en parallele cote serveur. Sans rechauffage, la
+    passe sert ces calculs UN PAR UN : la premiere PRRencontre paie seule
+    son attente (120 s), puis la suivante, et ainsi de suite -- 28 PRs
+    portaient 90 % du passage du 16/11.
+
+    Seules les PRs CANDIDATES (celles qui portent une voix du
+    coordinateur, donc les seules qui peuvent atteindre l'etape 6) sont
+    rechauffees : rechauffer tout le pool ouvert coutait ~1 500 lectures
+    REST par passage, sous le jeton que le coordinateur partage (revue du
+    16/11). Le choix ne porte AUCUN verdict -- une PR mal rechauffee est
+    parkee puis rejouee, jamais mergee a tort.
+
+    Le rechauffage ne LIT aucun etat a exploiter : c'est un effet de bord
+    serveur. Il ne change donc aucun verdict, et les merges restent
+    strictement sequentiels (les lectures sont les seules paralleles).
+
+    L'etat de chaque PR est relu normalement, au tour de la PR : c'est cette
+    relecture qui fait foi, et elle est faite au moment du merge.
+    """
+    if not prs:
+        return 0
+    cmds = [
+        ["gh", "api", f"repos/{REPO}/pulls/{pr}", "--jq", ".mergeable_state"]
+        for pr in prs
+    ]
+    run_reads(runner, cmds, gh_env)
+    return len(cmds)
 
 
 # --- etape 6 bis : `unstable` est-il un etat mergeable ? (#25059) -------------
@@ -1975,7 +2769,11 @@ _STACK_PARTNER_RE = re.compile(r"OPEN #(\d+)")
 
 
 def evaluate_pr(
-    view: dict, pr: int, runner: Runner, gh_env: dict[str, str]
+    view: dict,
+    pr: int,
+    runner: Runner,
+    gh_env: dict[str, str],
+    retries: int | None = None,
 ) -> PRVerdict:
     """Applique dans l'ordre les controles pre-merge (1 a 6, 5bis compris). Tout echec = skip nomme.
 
@@ -2125,8 +2923,13 @@ def evaluate_pr(
     # Prelecture REST bon marche : ne pas payer les tests d'arbre fusionne
     # pour une PR que l'etape 6 refuserait. L'etape 6 reste la garde finale
     # contre une evolution de l'etat ou de la tete pendant ces tests.
-    pre_state, pre_live_head = mergeable_state_and_head(runner, pr, gh_env)
+    pre_state, pre_live_head = mergeable_state_and_head(
+        runner, pr, gh_env, retries=retries
+    )
     if pre_state not in ("clean", "unstable"):
+        # Etat « en cours de calcul » : la PR n'est pas refusee, elle est
+        # PARQUEE (motif repris dans PENDING_MERGEABLE_REASONS) et rejouee en
+        # fin de passe, quand le calcul sera termine (#26799).
         return skip(f"mergeable-state:{pre_state or 'absent'}",
                     stack_state, stack_inc)
     if pre_live_head != view_head:
@@ -2138,7 +2941,9 @@ def evaluate_pr(
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
     # 6. REST : mergeable + tete.
-    state, live_head = mergeable_state_and_head(runner, pr, gh_env)
+    state, live_head = mergeable_state_and_head(
+        runner, pr, gh_env, retries=retries
+    )
     accepted_detail: str | None = None
     if state == "unstable":
         # 6bis (#25059) : `unstable` n'est pas un refus automatique. La chaine
@@ -2218,6 +3023,7 @@ def emit_output(
     results: list[PRVerdict],
     stopped_reason: str | None,
     exit_code: int,
+    warmup: dict | None = None,
 ) -> None:
     """Resume humain sur stdout, ou payload machine unique en --json."""
     if args.json:
@@ -2228,6 +3034,8 @@ def emit_output(
             "exit_code": exit_code,
             "results": [v.journal_dict() for v in results],
         }
+        if warmup:
+            payload["warmup"] = warmup
         print(json.dumps(payload, ensure_ascii=False))
         return
     mode = "APPLY" if args.apply else "DRY-RUN"
@@ -2259,9 +3067,71 @@ def emit_output(
     )
     if stopped_reason:
         print(f"arret : {stopped_reason}")
+    if warmup:
+        # Le cout du rechauffage est nomme : c'est lui qui pesait sur le
+        # jeton partage du coordinateur (revue du 16/11).
+        print(
+            "rechauffage : %d lecture(s) REST sur %d candidate(s) "
+            "(pool ouvert : %d PRs)"
+            % (
+                int(warmup.get("reads") or 0),
+                int(warmup.get("candidates") or 0),
+                int(warmup.get("pool") or 0),
+            )
+        )
 
 
 # --- boucle de run ---------------------------------------------------------------
+
+
+def merge_verdict(
+    runner: Runner, gh_env: dict[str, str], pr: int, decision: PRVerdict,
+    results: list[PRVerdict], journal_path: Path,
+) -> tuple[PRVerdict, str | None, int]:
+    """Applique le merge d'une PR et journalise le verdict.
+
+    Rend (verdict, raison d'arret du passage, code de sortie). Le verdict
+    porte le sort du merge : ``merged`` (reussi), ``merge-failed`` (le
+    passage s'arrete) ou ``skipped`` (course de base -- le balayage
+    CONTINUE, #26771).
+
+    La boucle principale et le rejeu (#26799) partagent CETTE gestion du
+    merge : la copier deux fois avait deux chemins de sortie pour un meme
+    evenement (revue coordinateur du 16/11).
+    """
+    try:
+        merge_pr(runner, pr, decision.head or "", gh_env)
+    except MergeFailedError as exc:
+        failed = PRVerdict(
+            pr, decision.head, "merge-failed", str(exc), False,
+            decision.review, decision.stack, decision.stack_incidents,
+        )
+        results.append(failed)
+        append_journal(journal_path, failed)
+        return failed, f"merge-failed:PR-{pr}", 1
+    except BaseModifiedRaceError as exc:
+        # Course de base (#26771) : le motif est REJOUABLE pour la PR. La PR
+        # est journalisee ``skipped`` et le balayage CONTINUE -- une course
+        # sur la 12e PR d'un passage ne doit plus faire attendre toute la
+        # suite de la file. Le motif est nu dans le journal (greppable) ; le
+        # detail est sur stderr.
+        print(f"merge_ready : {exc}", file=sys.stderr)
+        skipped = PRVerdict(
+            pr, decision.head, "skipped", BASE_MODIFIED_RACE_REASON, False,
+            decision.review, decision.stack, decision.stack_incidents,
+        )
+        results.append(skipped)
+        append_journal(journal_path, skipped)
+        return skipped, None, 0
+    merged = PRVerdict(
+        pr, decision.head, "merged", decision.reason, True,
+        decision.review, decision.stack, decision.stack_incidents,
+    )
+    # Le verdict de succes n'est PAS journalise ici : l'appelant le
+    # journalise apres le rechauffage qui suit le merge (ordre de la boucle
+    # principale). Les deux sorties qui arrevent le passage sont, elles,
+    # journalisees sur place.
+    return merged, None, 0
 
 
 def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
@@ -2311,7 +3181,7 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     stopped_reason: str | None = None
     exit_code = 0
     try:
-        prs = list_open_prs(active_runner, gh_env)
+        prs, warm_candidates = list_open_prs(active_runner, gh_env)
     except UnexpectedError as exc:
         # Echec avant la boucle : aucune PR evaluee, rien a journeler.
         print(f"merge_ready : ARRET sur erreur inattendue -- {exc}", file=sys.stderr)
@@ -2319,6 +3189,22 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         return 1
 
     merged_count = 0
+    #: PRs dont l'etat de mergeabilite etait « en cours de calcul » a leur
+    #: tour : elles sont PARQUEES, pas refusees, et rejouees en fin de
+    #: passe (#26799).
+    replay_queue: list[tuple[int, PRVerdict]] = []
+
+    # Rechauffage de tete (#26799) : une lecture par PR CANDIDATE, sans
+    # attente. Chaque lecture demarre le calcul de mergeabilite de sa PR ;
+    # les calculs se font en parallele cote serveur. Sans ce geste, la passe
+    # sert ces calculs un par un, et chaque PR paie seule son attente.
+    #
+    # Seules les PRs qui peuvent atteindre l'etape 6 sont rechauffees (une
+    # voix du coordinateur) : rechauffer tout le pool coutait ~1 500
+    # lectures REST par passage, sous le jeton partage du coordinateur
+    # (revue du 16/11).
+    warmup_reads = warm_up_mergeability(active_runner, gh_env, warm_candidates)
+
     for pr in prs:
         # Disjoncteur --max : plafond de DECISIONS de merge du run (merges
         # reels en --apply, would-merge en dry-run : le dry-run doit refléter
@@ -2343,43 +3229,40 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             decision = evaluate_pr(view, pr, active_runner, gh_env)
             if decision.verdict == "would-merge":
                 if args.apply:
-                    try:
-                        merge_pr(active_runner, pr, decision.head or "", gh_env)
-                    except MergeFailedError as exc:
-                        failed = PRVerdict(
-                            pr, decision.head, "merge-failed", str(exc), False,
-                            decision.review, decision.stack,
-                            decision.stack_incidents,
-                        )
-                        results.append(failed)
-                        append_journal(journal_path, failed)
-                        stopped_reason = f"merge-failed:PR-{pr}"
-                        exit_code = 1
-                        break
-                    except BaseModifiedRaceError as exc:
-                        # Course de base (#26771) : le motif est REJOUABLE pour
-                        # la PR. La PR est journalisee ``skipped`` et le
-                        # balayage CONTINUE -- c'est le point de la demande :
-                        # une course sur la 12e PR d'un passage ne doit plus
-                        # faire attendre toute la suite de la file. Le motif
-                        # est nu dans le journal (greppable) ; le detail est
-                        # sur stderr.
-                        print(f"merge_ready : {exc}", file=sys.stderr)
-                        skipped = PRVerdict(
-                            pr, decision.head, "skipped",
-                            BASE_MODIFIED_RACE_REASON, False,
-                            decision.review, decision.stack,
-                            decision.stack_incidents,
-                        )
-                        results.append(skipped)
-                        append_journal(journal_path, skipped)
-                        continue
-                    decision = PRVerdict(
-                        pr, decision.head, "merged", decision.reason, True,
-                        decision.review,
-                        decision.stack, decision.stack_incidents,
+                    decision, stop, code = merge_verdict(
+                        active_runner, gh_env, pr, decision, results, journal_path
                     )
+                    if stop:
+                        stopped_reason = stop
+                        exit_code = code
+                        break
+                    if not decision.merged:
+                        # Course de base (#26771) : deja journalise, le
+                        # balayage CONTINUE (le motif est nu dans le
+                        # journal, le detail est sur stderr).
+                        continue
+                    # Le merge rebascule les PRs soeurs en « etat en cours de
+                    # calcul » : on les rechauffe TOUTES maintenant, en
+                    # parallele, au lieu de les servir une par une au fil de
+                    # la passe (#26799). Seules les CANDIDATES restantes le
+                    # sont : rechauffer le pool entier coutait ~1 500
+                    # lectures REST par passage (revue du 16/11).
+                    warmup_reads += warm_up_mergeability(
+                        active_runner, gh_env,
+                        [p for p in warm_candidates if p > pr],
+                    )
+                    results.append(decision)
+                    append_journal(journal_path, decision)
+                    merged_count += 1
+                    continue
                 merged_count += 1
+            elif (decision.reason or "") in PENDING_MERGEABLE_REASONS:
+                # Etat de mergeabilite « en cours de calcul » a son tour : la
+                # PR est parsee, PAS refusee. Elle sera reevaluee en fin de
+                # passe, avec le budget long -- son calcul aura eu le temps
+                # de se faire pendant le reste du passage (#26799).
+                replay_queue.append((pr, decision))
+                continue
             results.append(decision)
             append_journal(journal_path, decision)
         except UnexpectedError as exc:
@@ -2398,7 +3281,75 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             # constat faux (le bilan, lui, compte les erreurs isolees).
             continue
 
-    emit_output(args, results, stopped_reason, exit_code)
+    # --- rejeu des PRs parkees ------------------------------------------------
+    #
+    # Le calcul de mergeabilite de ces PRs a ete demarre a leur tour ; il a
+    # eu tout le reste du passage pour se faire. Elles sont donc reevaluees
+    # ici, avec le budget LONG : la garantie reste intacte (la mergeabilite
+    # est lue au moment du merge), mais le passage ne l'a plus payee en
+    # attente serielle.
+    if replay_queue:
+        if stopped_reason is not None:
+            # La passe s'est arretee avant le rejeu : les PRs parkees sont
+            # journalisees telles quelles (un motif nomme, jamais une PR
+            # disparue du bilan).
+            for pr, parked in replay_queue:
+                results.append(parked)
+                append_journal(journal_path, parked)
+            replay_queue = []
+        else:
+            for pr, parked in replay_queue:
+                if merged_count >= args.max:
+                    stopped_reason = "max-merges-reached"
+                    results.append(parked)
+                    append_journal(journal_path, parked)
+                    break
+                try:
+                    view = fetch_pr_view(active_runner, pr, gh_env)
+                    decision = evaluate_pr(
+                        view, pr, active_runner, gh_env,
+                        retries=MERGEABLE_RETRIES,
+                    )
+                    if decision.verdict == "would-merge":
+                        if args.apply:
+                            # Meme gestion du merge que la boucle principale
+                            # (helper partage) : le rejeu ne connait pas une
+                            # seconde porte de sortie.
+                            decision, stop, code = merge_verdict(
+                                active_runner, gh_env, pr, decision,
+                                results, journal_path,
+                            )
+                            if stop:
+                                stopped_reason = stop
+                                exit_code = code
+                                break
+                            if not decision.merged:
+                                continue
+                            results.append(decision)
+                            append_journal(journal_path, decision)
+                            merged_count += 1
+                            continue
+                        merged_count += 1
+                    results.append(decision)
+                    append_journal(journal_path, decision)
+                except UnexpectedError as exc:
+                    errored = PRVerdict(pr, None, "run-error", str(exc), False)
+                    results.append(errored)
+                    append_journal(journal_path, errored)
+                    exit_code = 1
+                    if is_pass_wide(exc):
+                        stopped_reason = f"unexpected-error:{exc}"
+                        break
+                    continue
+
+    emit_output(
+        args, results, stopped_reason, exit_code,
+        warmup={
+            "reads": warmup_reads,
+            "candidates": len(warm_candidates),
+            "pool": len(prs),
+        },
+    )
     return exit_code
 
 

@@ -2,8 +2,6 @@
 pagetitle: "Sudoku — comparer les méthodes de résolution"
 ---
 
-# Sudoku — comparer les méthodes de résolution
-
 <!-- CATALOG-STATUS
 series: Sudoku
 pedagogical_count: 41
@@ -29,6 +27,14 @@ Une même case vide change de rôle selon la méthode. Pour le retour arrière, 
 | Variables et contraintes | Réduire les domaines puis brancher lorsque la propagation ne suffit plus. | Fidélité du modèle aux règles du Sudoku et statut retourné par le solveur. |
 | Grille candidate et conflits | Modifier une configuration pour améliorer son score. | Zéro conflit, conservation des indices et taux de réussite sur plusieurs essais. |
 | Distributions ou prédictions | Proposer des valeurs à partir d'un modèle probabiliste ou de données. | Validité de la grille entière, au-delà de la confiance ou de la précision par case. |
+
+## Objectifs d'apprentissage
+
+À l'issue de la série, vous saurez (le carnet qui enseigne chaque objectif est indiqué dans la table de la série ci-dessous) :
+
+**Techniques** — implémenter un solveur exact par retour arrière et l'accélérer par des structures dédiées (Dancing Links) ; déclarer les règles du Sudoku à des solveurs de contraintes (Choco, OR-Tools, Z3) et à des encodages logiques (BDD, automates symboliques) ; piloter des métaheuristiques (algorithme génétique, recuit simulé, essaims particulaires) sur une grille candidate ; instrumenter des approches prédictives — réseau de neurones, modèle de langage, programmation probabiliste — et mesurer ce qu'une prédiction par case vaut pour résoudre une grille entière.
+
+**Méthodologiques** — choisir une représentation (affectations partielles, domaines et contraintes, configuration et conflits, distributions) en connaissance de ce qu'elle rend possible et de ce qu'elle exige de contrôler ; définir le critère de réussite d'une méthode avant de la comparer — validité de la grille entière, taux de réussite sur plusieurs essais, temps de résolution — puis comparer statistiquement des solveurs sur un corpus de grilles plutôt que sur une instance isolée ; distinguer une solution vérifiée d'une sortie plausible, jusqu'à la vérification formelle en Lean.
 
 ## Comment lire ce README — Découverte
 
@@ -57,7 +63,7 @@ Le public indiqué reprend la profondeur des contenus : les preuves du palier 19
 |---|---|---|---|---|
 | 00 | Environment — [C#](Sudoku-00-Environment-CSharp.ipynb) | Préparer les grilles, interfaces de solveur et outils de mesure utilisés dans les carnets C#. | Découverte | — |
 | 01 | Backtracking — [C#](Sudoku-01-Backtracking-CSharp.ipynb) · [Python](Sudoku-01-Backtracking-Python.ipynb) | Explorer une grille par retour arrière ; relier ordre des choix, validité et coût de recherche. | Découverte | — |
-| 02 | Dancing Links — [C#](Sudoku-02-DancingLinks-CSharp.ipynb) · [Python](Sudoku-02-DancingLinks-Python.ipynb) | Traduire le Sudoku en couverture exacte et organiser la recherche avec les Dancing Links de Knuth. | Découverte | — |
+| 02 | Dancing Links — [C#](Sudoku-02-DancingLinks-CSharp.ipynb) · [Python](Sudoku-02-DancingLinks-Python.ipynb) · [Rust](Sudoku-02-DancingLinks-Rust.ipynb) | Traduire le Sudoku en couverture exacte et organiser la recherche avec les Dancing Links de Knuth. | Découverte | — |
 | 03 | Genetic — [C#](Sudoku-03-Genetic-CSharp.ipynb) · [Python](Sudoku-03-Genetic-Python.ipynb) | Faire évoluer une population de grilles ; comparer les effets du codage, du croisement et de la mutation. | Découverte | — |
 | 04 | Simulated Annealing — [C#](Sudoku-04-SimulatedAnnealing-CSharp.ipynb) · [Python](Sudoku-04-SimulatedAnnealing-Python.ipynb) | Explorer un paysage de conflits par recuit simulé : voisinage, température et acceptation de dégradations. | Découverte | — |
 | 05 | PSO — [C#](Sudoku-05-PSO-CSharp.ipynb) · [Python](Sudoku-05-PSO-Python.ipynb) | Adapter l'essaim de particules à un problème discret et étudier ses paramètres. | Découverte | — |
