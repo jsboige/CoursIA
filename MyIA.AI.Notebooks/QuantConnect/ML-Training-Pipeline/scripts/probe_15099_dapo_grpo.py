@@ -1418,7 +1418,11 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
     # Le tableau comparatif en markdown est un livrable de l'issue (#15293) :
     # il est ecrit a cote du JSON, pas calcule a la main.
     table_md = results_dir / "tableau_comparatif.md"
-    table_md.write_text(render_comparative_table(summary), encoding="utf-8")
+    # newline explicite : sans lui, l'ecriture texte de Windows convertit les
+    # \n en \r\n et l'artefact differe d'une machine a l'autre (churn CRLF/LF
+    # dans le diff du depot).
+    table_md.write_text(render_comparative_table(summary), encoding="utf-8",
+                        newline="\n")
     print(json.dumps({k: v for k, v in summary.items() if k != "runs"}, indent=2)[:1500])
     print(f"courbes -> {png} | summary -> {summary_json} | tableau -> {table_md}")
     return 0
