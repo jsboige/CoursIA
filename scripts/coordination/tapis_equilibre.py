@@ -60,13 +60,26 @@ def _seances(instants: list[datetime], depuis: datetime | None = None) -> int:
 
 
 def compter(evts: list[Evt], citations: list[dict],
-            maintenant: datetime) -> tuple[str | None, int, int]:
-    """La derniere visite (ISO), les visites au total, celles du tour."""
+            maintenant: datetime,
+            grains_seulement: bool = False) -> tuple[str | None, int, int]:
+    """La derniere visite (ISO), les visites au total, celles du tour.
+
+    `grains_seulement` (raccord du classement, c3274) : une **prise en
+    charge** nominative est une visite ; une simple **citation Git** n'en est
+    pas une. Par defaut le comportement est inchange (le mode historique
+    compte les citations comme visites) : la voie legere, qui ne lit pas le
+    fil, n'a que les citations pour signal -- elle ne peut pas distinguer un
+    grain d'un passage, et le dit.
+    """
     par_lane: dict[str, list[datetime]] = {}
     for ev in evts:
         if ev.marque in VISITE:
+            if grains_seulement and not ev.lane:
+                continue  # un marqueur sans lane nommee n'est un grain de personne
             par_lane.setdefault(ev.lane or "?", []).append(ev.quand)
     commits = [d for c in citations if (d := _dt(c.get("date")))]
+    if grains_seulement:
+        commits = []
     tous = [t for ts in par_lane.values() for t in ts] + commits
 
     def compte(depuis: datetime | None) -> int:
@@ -137,6 +150,27 @@ def _decaler(tour: list, graine: str, cle: float) -> list:
     return tete + list(tour[TETE:])
 
 
+def _cle_tri(e) -> tuple:
+    """La cle de tri du classement : l'etat de grain d'abord.
+
+    Historique : `(visites_total > 0, cree_le, derniere_visite, numero)` --
+    une issue jamais visitee passe devant, puis la plus ancienne.
+
+    Raccord du classement (c3274) : quand l'etat de grain est connu, c'est
+    lui qui trie. Les trois etats qu'il distingue ne se confondent pas :
+    l'absence **etablie** (`jamais_servie`) passe devant l'absence **non
+    mesurable** (`non_measurable`, fil partiel) et devant les passages
+    seuls ; une issue qui a recu un grain passe en **derNIER**, meme si son
+    grain est ancien : le tour est une fenetre, pas une date.
+    """
+    etat = getattr(e, "etat_grain", None)
+    if etat is None:
+        return (e.visites_total > 0, e.cree_le, e.derniere_visite or "", e.numero)
+    from coordination.tapis_dernier_grain import RANG
+    return (RANG.get(etat, len(RANG)), e.cree_le,
+            e.derniere_visite or "", e.numero)
+
+
 def ordre(etats_, servables, graine: str, maintenant: datetime,
           rotation: bool = True) -> list:
     """Niveau croissant ; dans un niveau, la jamais visitee puis la plus
@@ -147,8 +181,7 @@ def ordre(etats_, servables, graine: str, maintenant: datetime,
 
     conso = familles_consolidation(etats_)
     niveaux: dict[float, dict[int, list]] = {}
-    for e in sorted(servables, key=lambda e: (e.visites_total > 0, e.cree_le,
-                                             e.derniere_visite or "", e.numero)):
+    for e in sorted(servables, key=_cle_tri):
         niveaux.setdefault(niveau(e, conso, maintenant), {}).setdefault(e.famille, []).append(e)
     tour: list = []
     for n in sorted(niveaux):
