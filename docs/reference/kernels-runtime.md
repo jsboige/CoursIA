@@ -291,23 +291,23 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 | Kernelspec | Python | numpy | Executable |
 |---|---|---|---|
 | `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet) | - | `dotnet` |
-| `acestep` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\acestep\python.exe` |
+| `acestep` | 3.10.20 | 2.2.6 | `%USERPROFILE%\.conda\envs\acestep\python.exe` |
 | `acestep-venv` | 3.11.15 | 2.4.4 | `D:\envs\acestep-venv\Scripts\python.exe` |
-| `argu-reexec-310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `argu-reexec-310` | 3.10.18 | 1.26.0 | `%USERPROFILE%\.conda\envs\mcp-jupyter-py310\python.exe` |
 | `arviz11-py312` | 3.12.10 | 2.5.3 | `D:\Dev\venvs\arviz11-py312\Scripts\python.exe` |
-| `bonsai-gpu` | 3.11.15 | 2.4.4 | `C:\Users\jsboi\.conda\envs\bonsai\python.exe` |
-| `chc-py312` | 3.12.10 | 2.5.3 | `C:\Users\jsboi\.venvs\chc-py312\Scripts\python.exe` |
+| `bonsai-gpu` | 3.11.15 | 2.4.4 | `%USERPROFILE%\.conda\envs\bonsai\python.exe` |
+| `chc-py312` | 3.12.10 | 2.5.3 | `%USERPROFILE%\.venvs\chc-py312\Scripts\python.exe` |
 | `cogvideox` | 3.13.3 | 2.4.4 | `C:\Tools\venv-cogvideox\Scripts\python.exe` |
-| `coursia-gpu-tests` | 3.11.15 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-gpu-tests\python.exe` |
-| `coursia-ml-training` | 3.11.16 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-ml-training\python.exe` |
-| `coursia-py313-argu` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
-| `dia-tts` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\dia-tts\python.exe` |
+| `coursia-gpu-tests` | 3.11.15 | 2.4.6 | `%USERPROFILE%\.conda\envs\coursia-gpu-tests\python.exe` |
+| `coursia-ml-training` | 3.11.16 | 2.4.6 | `%USERPROFILE%\.conda\envs\coursia-ml-training\python.exe` |
+| `coursia-py313-argu` | 3.13.16 | 2.5.2 | `%USERPROFILE%\.conda\envs\coursia-canonical\python.exe` |
+| `dia-tts` | 3.10.20 | 2.2.6 | `%USERPROFILE%\.conda\envs\dia-tts\python.exe` |
 | `gametheory-wsl` / `python3-wsl` / `lean4-wsl` | non-Python (wsl) | - | `wsl` |
-| `gsplat310` | 3.10.22 | 2.2.6 | `C:\Users\jsboi\.conda\envs\gsplat310\python.exe` |
-| `mcp-jupyter-py310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `gsplat310` | 3.10.22 | 2.2.6 | `%USERPROFILE%\.conda\envs\gsplat310\python.exe` |
+| `mcp-jupyter-py310` | 3.10.18 | 1.26.0 | `%USERPROFILE%\.conda\envs\mcp-jupyter-py310\python.exe` |
 | `py313-clean` | 3.13.3 | 2.3.5 | `D:\Dev\venvs\py313-clean\Scripts\python.exe` |
-| `pyphi` | 3.9.25 | 1.26.4 | `C:\Users\jsboi\.conda\envs\pyphi\python.exe` |
-| `python3` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
+| `pyphi` | 3.9.25 | 1.26.4 | `%USERPROFILE%\.conda\envs\pyphi\python.exe` |
+| `python3` | 3.13.16 | 2.5.2 | `%USERPROFILE%\.conda\envs\coursia-canonical\python.exe` |
 | `python3-lean` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
 | `sheetsage2-gpu` | 3.13.3 | 2.5.3 | `D:\Dev\venvs\sheetsage2\Scripts\python.exe` |
 | `smartcontracts` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
@@ -325,7 +325,7 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 | `coursia-ml-training-py310` | 3.10.22 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/coursia-ml-training-py310/python.exe` |
 | `coursia-pymc` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter/python.exe` |
 | `lean4-wsl` / `lean4-wsl-perc` / `python3-wsl` | non-Python (wsl) | - | wsl |
-| `py311-po2028` | 3.11.17 | 2.4.6 | `C:\Users\jsboi\.venvs\py311-po2028\Scripts\python.exe` — **réparé le 05/11** (venv reconstruit hors `%TEMP%`, règle F ; tuple d'origine : venv cassé sous `%TEMP%`, numpy AttributeError) |
+| `py311-po2028` | 3.11.17 | 2.4.6 | `%USERPROFILE%\.venvs\py311-po2028\Scripts\python.exe` — **réparé le 05/11** (venv reconstruit hors `%TEMP%`, règle F ; tuple d'origine : venv cassé sous `%TEMP%`, numpy AttributeError) |
 | `pymc-528` | 3.12.16 | 2.4.6 | `%USERPROFILE%/miniconda3/envs/pymc528/python.exe` |
 | `pyphi` / `pyphi-iit` | 3.9.23 | 1.23.5 | `%USERPROFILE%/miniconda3/envs/pyphi/python.exe` |
 | `python3` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter/python.exe` |
@@ -374,8 +374,8 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 | `coursia-ml-training` / `python3-coursia2` / `sw14-coursia16120` | 3.13.15 | 2.4.6 | `D:/dev/CoursIA-2/venv/Scripts/python.exe` |
 | `coursia-pymc05` | 3.13.15 | 2.4.4 | `D:/dev/.venv-pymc05/Scripts/python.exe` |
 | `coursia-pymc601` | 3.13.15 | 2.3.5 | `D:/dev/.venv-pymc601/Scripts/python.exe` |
-| `adkcheck` | 3.11.16 | 2.4.6 | `C:/Users/Jesse/miniconda3/envs/adkcheck/python.exe` |
-| `pyphi-iit` | 3.9.25 | 1.26.4 | `C:/Users/Jesse/miniconda3/envs/pyphi/python.exe` |
+| `adkcheck` | 3.11.16 | 2.4.6 | `%USERPROFILE%/miniconda3/envs/adkcheck/python.exe` |
+| `pyphi-iit` | 3.9.25 | 1.26.4 | `%USERPROFILE%/miniconda3/envs/pyphi/python.exe` |
 | `gametheory-wsl` | 3.11.16 | 2.4.6 | `~/venv-coursia/bin/python3.11` (WSL) |
 | `python3-wsl` | 3.11.16 | 2.4.6 | `~/.lean4-venv/bin/python3.11` (WSL) |
 | `rvc-wsl` | 3.10.21 | **1.23.5** | `~/miniconda3/envs/rvc/bin/python3.10` (WSL — plus vieux numpy du siège) |
@@ -484,16 +484,16 @@ des sièges manquants et à la publication de leurs mesures réelles.
 
 | Env | Python | Path | Usage principal |
 |-----|--------|------|-----------------|
-| **coursia-ml-training** | 3.11.15 | `C:\Users\MYIA\miniconda3\envs\coursia-ml-training` | ML training (PyTorch CUDA 12.6 RTX 4090, sklearn, scipy, hmmlearn, pyarrow) |
-| **coursia-sae** | 3.12.13 | `C:\Users\MYIA\miniconda3\envs\coursia-sae` | Traces SAE / substrat LLM série ICT (ICT-21+, #5643) : torch 2.12 CUDA 12.6, transformers 5.x. Extraction GPU = `CUDA_VISIBLE_DEVICES=2` obligatoire (cf Quick Reference GPU) |
-| `mcp-jupyter` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\mcp-jupyter` | MCP Jupyter server (kernels Python du MCP) |
-| `epita_symbolic_ai` | 3.10+ | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai` | EPITA SymbolicAI : `rdflib`, `owlready2`, `reasonable`, `pyshacl` |
-| `epita_symbolic_ai_sherlock` | 3.10+ | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai_sherlock` | Variante Sherlock |
-| `llmcompressor` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\llmcompressor` | LLM quantization tooling |
-| `e2e_test_env` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\e2e_test_env` | E2E tests |
-| **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`C:\Users\jsboi\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
+| **coursia-ml-training** | 3.11.15 | `%USERPROFILE%\miniconda3\envs\coursia-ml-training` | ML training (PyTorch CUDA 12.6 RTX 4090, sklearn, scipy, hmmlearn, pyarrow) |
+| **coursia-sae** | 3.12.13 | `%USERPROFILE%\miniconda3\envs\coursia-sae` | Traces SAE / substrat LLM série ICT (ICT-21+, #5643) : torch 2.12 CUDA 12.6, transformers 5.x. Extraction GPU = `CUDA_VISIBLE_DEVICES=2` obligatoire (cf Quick Reference GPU) |
+| `mcp-jupyter` | 3.10+ | `%USERPROFILE%\miniconda3\envs\mcp-jupyter` | MCP Jupyter server (kernels Python du MCP) |
+| `epita_symbolic_ai` | 3.10+ | `%USERPROFILE%\.conda\envs\epita_symbolic_ai` | EPITA SymbolicAI : `rdflib`, `owlready2`, `reasonable`, `pyshacl` |
+| `epita_symbolic_ai_sherlock` | 3.10+ | `%USERPROFILE%\.conda\envs\epita_symbolic_ai_sherlock` | Variante Sherlock |
+| `llmcompressor` | 3.10+ | `%USERPROFILE%\miniconda3\envs\llmcompressor` | LLM quantization tooling |
+| `e2e_test_env` | 3.10+ | `%USERPROFILE%\miniconda3\envs\e2e_test_env` | E2E tests |
+| **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`%USERPROFILE%\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
 | **ict-py39** | **3.9** | env **dédié** série IIT/ICT — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_ict_env.ps1` (ou `.sh`), cloné de `pyphi` | Unifie numpy<2 + torch CPU + package local `ict` : strates cœur Φ **et** LLM/SAE dans un seul env. Cf. § « Env dédié ICT » ci-dessous |
-| `base` | 3.10+ | `C:\Users\MYIA\miniconda3` | Conda base — NE PAS modifier |
+| `base` | 3.10+ | `%USERPROFILE%\miniconda3` | Conda base — NE PAS modifier |
 
 ### Série IIT/ICT — env canonique `pyphi` (PyPhi 1.2.0)
 
@@ -607,7 +607,7 @@ Le carnet `GenAI/Audio/02-Advanced/02-11-SVS-Singing-Voice-RVC.ipynb` (conversio
 **Direct execution** (recommande pour scripts long-running) :
 
 ```powershell
-& "C:\Users\MYIA\miniconda3\envs\coursia-ml-training\python.exe" train_moe.py --symbol SPY --regime-method hmm --n-folds 5 --seed 42
+& "%USERPROFILE%\miniconda3\envs\coursia-ml-training\python.exe" train_moe.py --symbol SPY --regime-method hmm --n-folds 5 --seed 42
 ```
 
 **Activation interactive** :
@@ -620,7 +620,7 @@ python train_moe.py ...
 **Background avec log** :
 
 ```bash
-nohup "C:/Users/MYIA/miniconda3/envs/coursia-ml-training/python.exe" train_moe.py ... > run.log 2>&1 &
+nohup "%USERPROFILE%/miniconda3/envs/coursia-ml-training/python.exe" train_moe.py ... > run.log 2>&1 &
 ```
 
 ### Pourquoi un env Conda dédié ?
@@ -637,21 +637,21 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 
 #### Python PATH piège
 
-`python` sur PATH = MS Store Python 3.13 (`C:\Users\jsboi\AppData\Local\Microsoft\WindowsApps\...\python.exe`). Le kernel Jupyter `python3` = conda base (`C:\ProgramData\miniconda3\python.exe`). Pour papermill : utiliser **toujours** le chemin complet du binaire cible.
+`python` sur PATH = MS Store Python 3.13 (`%USERPROFILE%\AppData\Local\Microsoft\WindowsApps\...\python.exe`). Le kernel Jupyter `python3` = conda base (`C:\ProgramData\miniconda3\python.exe`). Pour papermill : utiliser **toujours** le chemin complet du binaire cible.
 
 #### Conda environments
 
 | Env | Python | Path | Usage |
 |-----|--------|------|-------|
 | base (ProgramData) | - | `C:\ProgramData\miniconda3` | Conda système |
-| base (user) | - | `C:\Users\jsboi\miniconda3` | Conda user |
-| coursia-ml-training | 3.12 | `C:\Users\jsboi\.conda\envs\...` | ML training (torch CPU-only) |
-| epita_symbolic_ai | 3.12 | `C:\Users\jsboi\.conda\envs\...` | SemanticWeb Python (rdflib, owlready2, pyshacl) |
-| mcp-jupyter | 3.10 | `C:\Users\jsboi\.conda\envs\...` | MCP Jupyter server |
-| mcp-jupyter-py310 | 3.10 | `C:\Users\jsboi\.conda\envs\...` | Papermill execution (Tweety, SW Python, Lean Python, GT) |
-| mcp-markitdown | - | `C:\Users\jsboi\.conda\envs\...` | Document conversion |
-| mcp-powerpoint | - | `C:\Users\jsboi\.conda\envs\...` | PPTX handling |
-| projet-is-roo-new | - | `C:\Users\jsboi\.conda\envs\...` | Roo dev |
+| base (user) | - | `%USERPROFILE%\miniconda3` | Conda user |
+| coursia-ml-training | 3.12 | `%USERPROFILE%\.conda\envs\...` | ML training (torch CPU-only) |
+| epita_symbolic_ai | 3.12 | `%USERPROFILE%\.conda\envs\...` | SemanticWeb Python (rdflib, owlready2, pyshacl) |
+| mcp-jupyter | 3.10 | `%USERPROFILE%\.conda\envs\...` | MCP Jupyter server |
+| mcp-jupyter-py310 | 3.10 | `%USERPROFILE%\.conda\envs\...` | Papermill execution (Tweety, SW Python, Lean Python, GT) |
+| mcp-markitdown | - | `%USERPROFILE%\.conda\envs\...` | Document conversion |
+| mcp-powerpoint | - | `%USERPROFILE%\.conda\envs\...` | PPTX handling |
+| projet-is-roo-new | - | `%USERPROFILE%\.conda\envs\...` | Roo dev |
 
 #### .NET
 
