@@ -979,17 +979,24 @@ def mode_selftest() -> int:
     # sont construites pour tomber sur les trois verdicts de l'organe
     # (SIGNAL_NUL / SIGNAL_PARTIEL / SIGNAL_UTILE).
     def _sat_run(model_key: str, seed: int, *, longueur: float,
-                 grads: list[float]) -> dict[str, Any]:
-        return {
+                 grads: list[float], reward: float = 0.2,
+                 zero_std: float = 0.0,
+                 pre: float | None = None, post: float | None = None) -> dict[str, Any]:
+        artefact: dict[str, Any] = {
             "model_key": model_key, "model": MODELS[model_key]["label"],
             "seed": seed, "max_completion_length": 384,
             "log_history": [
                 {"completions/mean_length": longueur,
                  "completions/clipped_ratio": 1.0 if longueur >= 384 else 0.0,
-                 "grad_norm": g, "loss": 0.5, "frac_reward_zero_std": 0.0,
-                 "reward": 0.2}
+                 "grad_norm": g, "loss": 0.5, "frac_reward_zero_std": zero_std,
+                 "reward": reward}
                 for g in grads],
         }
+        if pre is not None:
+            artefact["pre_eval"] = {"reward_mean": pre}
+        if post is not None:
+            artefact["post_eval"] = {"reward_mean": post}
+        return artefact
 
     run_sature = _sat_run("qwen3_8b", 0, longueur=384.0, grads=[0.0] * 10)
     run_utile = _sat_run("qwen3_8b", 1, longueur=100.0, grads=[0.5] * 10)
@@ -1052,6 +1059,59 @@ def mode_selftest() -> int:
         if "verdict saturation" not in md_sat:
             tier_fails.append("md_saturation")
             print("FAIL: le tableau markdown ne porte pas la colonne de saturation")
+
+        # --- Axe « reponse au reward » (2e axe du critere 2) ----------------
+        # Un batch sans dispersion de reward (`frac_reward_zero_std >= 1`) ne
+        # permet aucun gradient d'advantage : c'est la panne du REWARD, et
+        # elle est distincte de la panne de l'optimiseur (gradient sature).
+        run_degenere = _sat_run("qwen3_8b", 3, longueur=100.0,
+                                grads=[0.5] * 10, reward=0.0, zero_std=1.0)
+        tier_total += 1
+        axe_degenere = build_saturation_axis([run_degenere])
+        bras_deg = axe_degenere.get("par_bras", {}).get("qwen3_8b", {})
+        if bras_deg.get("frac_steps_sans_signal") is None \
+                or abs(bras_deg["frac_steps_sans_signal"] - 1.0) > 1e-6:
+            tier_fails.append("reward_sans_signal")
+            print("FAIL: frac_steps_sans_signal =",
+                  bras_deg.get("frac_steps_sans_signal"), "(attendu 1,0)")
+        tier_total += 1
+        if bras_deg.get("frac_steps_recompense_nulle") is None \
+                or abs(bras_deg["frac_steps_recompense_nulle"] - 1.0) > 1e-6:
+            tier_fails.append("reward_nulle")
+            print("FAIL: frac_steps_recompense_nulle =",
+                  bras_deg.get("frac_steps_recompense_nulle"), "(attendu 1,0)")
+        # le tableau markdown porte les deux colonnes de reponse au reward
+        tier_total += 1
+        if "steps sans signal reward" not in md_sat or "reward nulle" not in md_sat:
+            tier_fails.append("md_reward")
+            print("FAIL: le tableau markdown ne porte pas les colonnes de reponse au reward")
+        # garde de comparabilite du gain par step porteur : un bras dont la
+        # mediane des steps porteurs de gradient vaut moins de 1 ne publie
+        # pas ce gain (divise par 0,5, il doublerait un gain reel) -- meme
+        # regle que l'organe. Deux graines : 0 step porteur et 1 step porteur
+        # -> mediane 0,5 -> non comparable.
+        tier_total += 1
+        run_faible_a = _sat_run("qwen3_8b", 4, longueur=100.0, grads=[0.0],
+                                pre=0.1, post=0.3)
+        run_faible_b = _sat_run("qwen3_8b", 5, longueur=100.0, grads=[0.5],
+                                pre=0.1, post=0.3)
+        bras_faible = build_saturation_axis([run_faible_a, run_faible_b])["par_bras"]["qwen3_8b"]
+        if bras_faible.get("gain_eval_par_step_avec_gradient") is not None \
+                or bras_faible.get("gain_eval_par_step_comparable") is not False:
+            tier_fails.append("gain_non_comparable")
+            print("FAIL: un gain par step porteur non comparable est publie :",
+                  bras_faible.get("gain_eval_par_step_avec_gradient"))
+        # ... et il est publie quand la mediane des steps porteurs vaut 1
+        tier_total += 1
+        run_suffisant = _sat_run("qwen3_8b", 5, longueur=100.0, grads=[0.5] * 3,
+                                 pre=0.1, post=0.3)
+        bras_suffisant = build_saturation_axis([run_suffisant])["par_bras"]["qwen3_8b"]
+        if bras_suffisant.get("gain_eval_par_step_avec_gradient") is None \
+                or abs(bras_suffisant["gain_eval_par_step_avec_gradient"] - 0.066667) > 1e-5:
+            tier_fails.append("gain_comparable")
+            print("FAIL: gain par step porteur =",
+                  bras_suffisant.get("gain_eval_par_step_avec_gradient"),
+                  "(attendu +0,0667)")
 
     total_ok = n_match + n_xlam + n_guard + (2 - len(hub_fails))
     total = len(cases) + len(xlam_cases) + len(guard_cases) + 2
@@ -1273,6 +1333,33 @@ def build_saturation_axis(runs: list[dict[str, Any]],
                      if isinstance(g.get("frac_steps_sans_gradient"), (int, float))]
         vivantes = [g.get("steps_avec_gradient") for g in graines
                     if isinstance(g.get("steps_avec_gradient"), (int, float))]
+        # --- Axe « reponse au reward » -------------------------------------
+        # Mesures de l'ORGANE, jamais recalculees ici :
+        #  - `frac_steps_sans_signal`     : steps dont le batch de reward n'a
+        #    aucune dispersion (`frac_reward_zero_std >= 1`) -> aucun gradient
+        #    d Advantage possible : le modele ne peut rien apprendre de ce
+        #    step, meme si le gradient existe ;
+        #  - `frac_steps_recompense_nulle`: steps dont la reward moyenne est
+        #    nulle (le modele ne produit aucune reponse correcte) ;
+        #  - `gain_eval_par_step_avec_gradient` : gain d'eval **normalise** par
+        #    le nombre de steps porteurs de gradient -- sans quoi un bras qui
+        #    n'a appris que sur 2 steps parait comparable a un bras qui en a
+        #    appris sur 24 (le point 51 de l'organe).
+        # Ces trois grandeurs separent deux pannes distinctes : celle de
+        # l'OPTIMISEUR (le gradient sature) et celle du REWARD (le batch est
+        # degenere). Le tableau ne les confondait pas.
+        sans_signal = [g.get("frac_steps_sans_signal") for g in graines
+                       if isinstance(g.get("frac_steps_sans_signal"), (int, float))]
+        recompense_nulle = [g.get("frac_steps_recompense_nulle") for g in graines
+                            if isinstance(g.get("frac_steps_recompense_nulle"), (int, float))]
+        gain_normalise = [g.get("gain_eval_par_step_avec_gradient") for g in graines
+                          if isinstance(g.get("gain_eval_par_step_avec_gradient"), (int, float))]
+        # Meme garde de comparabilite que l'organe : le gain par step porteur
+        # n'est publie que si la MEDIANE des steps porteurs de gradient vaut au
+        # moins 1 (divise par 0,5, il doublerait un gain reel). Sans cette
+        # garde, l'axe afficherait un chiffre que l'organe refuse de publier.
+        median_vivantes = statistics.median(vivantes) if vivantes else None
+        comparable_gain = median_vivantes is not None and median_vivantes >= 1
         axes[model_key] = {
             "verdict": sat.verdict_bras(graines),
             "n_seeds": len(graines),
@@ -1280,6 +1367,14 @@ def build_saturation_axis(runs: list[dict[str, Any]],
             "frac_steps_satures": round(statistics.median(frac), 4) if frac else None,
             "frac_steps_sans_gradient": (round(statistics.median(sans_grad), 4)
                                          if sans_grad else None),
+            "frac_steps_sans_signal": (round(statistics.median(sans_signal), 4)
+                                       if sans_signal else None),
+            "frac_steps_recompense_nulle": (round(statistics.median(recompense_nulle), 4)
+                                            if recompense_nulle else None),
+            "gain_eval_par_step_avec_gradient": (
+                round(statistics.median(gain_normalise), 6)
+                if gain_normalise and comparable_gain else None),
+            "gain_eval_par_step_comparable": bool(comparable_gain),
             # MEDIANE comme l'organe (sans arrondi : sur deux graines elle
             # vaut 1,5 -- un entier l'aurait transforme en 1 et aurait fait
             # diverger l'axe de la sortie de l'organe).
@@ -1288,6 +1383,8 @@ def build_saturation_axis(runs: list[dict[str, Any]],
                 {"graine": g.get("graine"), "verdict": g.get("verdict"),
                  "frac_steps_satures": g.get("frac_steps_satures"),
                  "frac_steps_sans_gradient": g.get("frac_steps_sans_gradient"),
+                 "frac_steps_sans_signal": g.get("frac_steps_sans_signal"),
+                 "frac_steps_recompense_nulle": g.get("frac_steps_recompense_nulle"),
                  "steps_avec_gradient": g.get("steps_avec_gradient")}
                 for g in graines],
         }
@@ -1296,15 +1393,25 @@ def build_saturation_axis(runs: list[dict[str, Any]],
             axes[model_key]["organe"] = {
                 cle: reference.get(cle) for cle in
                 ("verdict", "frac_steps_satures", "frac_steps_sans_gradient",
-                 "steps_avec_gradient")}
+                 "steps_avec_gradient", "gain_eval_par_step_avec_gradient")}
             axes[model_key]["concordant"] = bool(
                 reference.get("verdict") == axes[model_key]["verdict"]
                 and reference.get("frac_steps_satures") == axes[model_key]["frac_steps_satures"]
-                and reference.get("steps_avec_gradient") == axes[model_key]["steps_avec_gradient"])
+                and reference.get("steps_avec_gradient") == axes[model_key]["steps_avec_gradient"]
+                and reference.get("gain_eval_par_step_avec_gradient")
+                == axes[model_key]["gain_eval_par_step_avec_gradient"])
     return {"disponible": True, "par_bras": axes,
             "source": "scripts/analyse_dapo_saturation.py",
             "tous_concordants": all(a.get("concordant") for a in axes.values())
-            if axes else None}
+            if axes else None,
+            # Les deux mesures de reponse au reward (`frac_steps_sans_signal`,
+            # `frac_steps_recompense_nulle`) viennent de l'ORGANE graine par
+            # graine, mais son agregat par bras ne les publie pas : il n'y a
+            # donc aucune reference contre laquelle comparer. Elles sont
+            # agregees ici avec la MEME regle de mediane que l'organe, et le
+            # tableau les presente comme des mesures de l'organe, pas comme
+            # un calcul du harness.
+            "reponse_au_reward_agreggee_par_l_organe": True}
 
 
 def _mean_optional(values: list[Any]) -> float | None:
@@ -1407,13 +1514,16 @@ def render_comparative_table(summary: dict[str, Any]) -> str:
     """Rend le tableau comparatif en markdown (critere "tableau comparatif"
     de #15293) : une ligne par modele, puis le verdict inter-etage.
 
-    Les trois axes demandes par l'issue sont dans le tableau : trainabilite
-    (delta eval), reponse au reward (meme delta, courbes saines) et
-    saturation (fraction de steps saturees + verdict PAR BRAS, donne par
-    l'organe `analyse_dapo_saturation.py`).
+    Les trois axes demandes par l'issue sont dans le tableau :
+    trainabilite (delta eval, et gain **normalise** par step porteur),
+    reponse au reward (fraction de steps dont le batch **n'a aucune
+    dispersion de reward** -> aucun gradient d'Advantage possible, et
+    fraction de steps a recompense nulle), et saturation (fraction de steps
+    saturees + verdict PAR BRAS). Les trois viennent de l'organe
+    `analyse_dapo_saturation.py` : le harness ne recalcule aucun seuil.
     """
-    lines = ["| Modele | Etage | Graines | eval pre | eval post | delta | +- 1 std | courbes saines | steps satures | verdict saturation |",
-             "|---|---|---:|---:|---:|---:|---:|---|---:|---|"]
+    lines = ["| Modele | Etage | Graines | eval pre | eval post | delta | +- 1 std | courbes saines | steps satures | verdict saturation | steps sans signal reward | reward nulle | gain/step porteuse |",
+             "|---|---|---:|---:|---:|---:|---:|---|---:|---|---:|---:|---:|"]
     tiers = summary.get("tiers", {}).get("tiers", {})
     for tier in TIERS:
         t = tiers.get(tier)
@@ -1424,19 +1534,25 @@ def render_comparative_table(summary: dict[str, Any]) -> str:
             pm = summary["per_model"][k]
             sat = sat_bras.get(k) or {}
             frac = sat.get("frac_steps_satures")
+            sans_signal = sat.get("frac_steps_sans_signal")
+            reward_nulle = sat.get("frac_steps_recompense_nulle")
+            gain_step = sat.get("gain_eval_par_step_avec_gradient")
             lines.append(
                 f"| {pm['label']} | {tier} | {pm['n_seeds']} | "
                 f"{pm['pre_mean']:.4f} | {pm['post_mean']:.4f} | "
                 f"{pm['delta_mean']:+.4f} | {pm['delta_std']:.4f} | "
                 f"{'oui' if t['courbes_saines'].get(k) else 'non'} | "
                 f"{'n.d.' if frac is None else format(frac, '.2f')} | "
-                f"{sat.get('verdict', 'n.d.')} |")
+                f"{sat.get('verdict', 'n.d.')} | "
+                f"{'n.d.' if sans_signal is None else format(sans_signal, '.2f')} | "
+                f"{'n.d.' if reward_nulle is None else format(reward_nulle, '.2f')} | "
+                f"{'n.d.' if gain_step is None else format(gain_step, '+.4f')} |")
         frac_tier = (t.get("saturation") or {}).get("frac_satures_moyenne_bras")
         lines.append(f"| **moyenne etage {tier}** | {tier} | {t['n_seeds']} | | | "
                      f"{t['delta_mean']:+.4f} | {t['delta_std']:.4f} | "
                      f"{'oui' if t['toutes_courbes_saines'] else 'non'} | "
                      f"{'n.d.' if frac_tier is None else format(frac_tier, '.2f')} | "
-                     f"moyenne sur les bras |")
+                     f"moyenne sur les bras | | | |")
     cross = summary.get("tiers", {}).get("cross_tier", {})
     lines.append("")
     lines.append(f"Verdict inter-etage ({cross.get('tier_bas', '?')} vs "
@@ -1454,6 +1570,19 @@ def render_comparative_table(summary: dict[str, Any]) -> str:
                  "graines) et n'est donc pas fusionne entre etages. La ligne "
                  "d'etage est une moyenne de branches, pas un chiffre de "
                  "l'organe.")
+    lines.append("")
+    lines.append("Reponse au reward : `steps sans signal reward` est la fraction "
+                 "de steps dont le batch de reward n'a **aucune dispersion** "
+                 "(`frac_reward_zero_std >= 1`) : l'algorithme d Advantage n'a "
+                 "rien a y comparer, donc **aucun gradient d'advantage n'y est "
+                 "possible** meme si le gradient existe. C'est la panne du "
+                 "REWARD, distincte de la panne de l'OPTIMISEUR (le gradient "
+                 "sature). `reward nulle` est la fraction de steps dont la "
+                 "reward moyenne est nulle (aucune reponse correcte). "
+                 "`gain/step porteuse` est le gain d'eval divise par le nombre "
+                 "de steps porteurs de gradient, avec la meme garde de "
+                 "comparabilite que l'organe (non publie si la mediane des "
+                 "steps porteurs vaut moins de 1).")
     return "\n".join(lines) + "\n"
 
 

@@ -40,6 +40,10 @@
         ],
         "frac_steps_satures": 0.92,
         "frac_steps_sans_gradient": 0.985,
+        "frac_steps_sans_signal": 0.53,
+        "frac_steps_recompense_nulle": 0.53,
+        "gain_eval_par_step_avec_gradient": 0.017188,
+        "gain_eval_par_step_comparable": true,
         "steps_avec_gradient": 1.5,
         "graines": [
           {
@@ -47,6 +51,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.9,
             "frac_steps_sans_gradient": 0.98,
+            "frac_steps_sans_signal": 0.62,
+            "frac_steps_recompense_nulle": 0.62,
             "steps_avec_gradient": 2
           },
           {
@@ -54,6 +60,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.94,
             "frac_steps_sans_gradient": 0.99,
+            "frac_steps_sans_signal": 0.44,
+            "frac_steps_recompense_nulle": 0.44,
             "steps_avec_gradient": 1
           }
         ],
@@ -61,7 +69,8 @@
           "verdict": "SIGNAL_PARTIEL",
           "frac_steps_satures": 0.92,
           "frac_steps_sans_gradient": 0.985,
-          "steps_avec_gradient": 1.5
+          "steps_avec_gradient": 1.5,
+          "gain_eval_par_step_avec_gradient": 0.017188
         },
         "concordant": true
       }
@@ -86,6 +95,10 @@
         ],
         "frac_steps_satures": 0.97,
         "frac_steps_sans_gradient": 0.995,
+        "frac_steps_sans_signal": 0.62,
+        "frac_steps_recompense_nulle": 0.62,
+        "gain_eval_par_step_avec_gradient": null,
+        "gain_eval_par_step_comparable": false,
         "steps_avec_gradient": 0.5,
         "graines": [
           {
@@ -93,6 +106,8 @@
             "verdict": "SIGNAL_NUL",
             "frac_steps_satures": 0.95,
             "frac_steps_sans_gradient": 1.0,
+            "frac_steps_sans_signal": 0.68,
+            "frac_steps_recompense_nulle": 0.68,
             "steps_avec_gradient": 0
           },
           {
@@ -100,6 +115,8 @@
             "verdict": "SIGNAL_NUL",
             "frac_steps_satures": 0.99,
             "frac_steps_sans_gradient": 0.99,
+            "frac_steps_sans_signal": 0.56,
+            "frac_steps_recompense_nulle": 0.56,
             "steps_avec_gradient": 1
           }
         ],
@@ -107,7 +124,8 @@
           "verdict": "SIGNAL_NUL",
           "frac_steps_satures": 0.97,
           "frac_steps_sans_gradient": 0.995,
-          "steps_avec_gradient": 0.5
+          "steps_avec_gradient": 0.5,
+          "gain_eval_par_step_avec_gradient": null
         },
         "concordant": true
       }
@@ -134,6 +152,10 @@
         ],
         "frac_steps_satures": 0.65,
         "frac_steps_sans_gradient": 0.79,
+        "frac_steps_sans_signal": 0.48,
+        "frac_steps_recompense_nulle": 0.45,
+        "gain_eval_par_step_avec_gradient": 0.002604,
+        "gain_eval_par_step_comparable": true,
         "steps_avec_gradient": 21,
         "graines": [
           {
@@ -141,6 +163,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.64,
             "frac_steps_sans_gradient": 0.76,
+            "frac_steps_sans_signal": 0.48,
+            "frac_steps_recompense_nulle": 0.45,
             "steps_avec_gradient": 24
           },
           {
@@ -148,6 +172,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.65,
             "frac_steps_sans_gradient": 0.79,
+            "frac_steps_sans_signal": 0.47,
+            "frac_steps_recompense_nulle": 0.38,
             "steps_avec_gradient": 21
           },
           {
@@ -155,6 +181,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.83,
             "frac_steps_sans_gradient": 0.88,
+            "frac_steps_sans_signal": 0.63,
+            "frac_steps_recompense_nulle": 0.61,
             "steps_avec_gradient": 12
           }
         ],
@@ -162,7 +190,8 @@
           "verdict": "SIGNAL_PARTIEL",
           "frac_steps_satures": 0.65,
           "frac_steps_sans_gradient": 0.79,
-          "steps_avec_gradient": 21
+          "steps_avec_gradient": 21,
+          "gain_eval_par_step_avec_gradient": 0.002604
         },
         "concordant": true
       }
@@ -187,6 +216,10 @@
         ],
         "frac_steps_satures": 0.92,
         "frac_steps_sans_gradient": 0.985,
+        "frac_steps_sans_signal": 0.53,
+        "frac_steps_recompense_nulle": 0.53,
+        "gain_eval_par_step_avec_gradient": 0.017188,
+        "gain_eval_par_step_comparable": true,
         "steps_avec_gradient": 1.5,
         "graines": [
           {
@@ -194,6 +227,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.9,
             "frac_steps_sans_gradient": 0.98,
+            "frac_steps_sans_signal": 0.62,
+            "frac_steps_recompense_nulle": 0.62,
             "steps_avec_gradient": 2
           },
           {
@@ -201,6 +236,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.94,
             "frac_steps_sans_gradient": 0.99,
+            "frac_steps_sans_signal": 0.44,
+            "frac_steps_recompense_nulle": 0.44,
             "steps_avec_gradient": 1
           }
         ],
@@ -208,7 +245,8 @@
           "verdict": "SIGNAL_PARTIEL",
           "frac_steps_satures": 0.92,
           "frac_steps_sans_gradient": 0.985,
-          "steps_avec_gradient": 1.5
+          "steps_avec_gradient": 1.5,
+          "gain_eval_par_step_avec_gradient": 0.017188
         },
         "concordant": true
       },
@@ -221,6 +259,10 @@
         ],
         "frac_steps_satures": 0.97,
         "frac_steps_sans_gradient": 0.995,
+        "frac_steps_sans_signal": 0.62,
+        "frac_steps_recompense_nulle": 0.62,
+        "gain_eval_par_step_avec_gradient": null,
+        "gain_eval_par_step_comparable": false,
         "steps_avec_gradient": 0.5,
         "graines": [
           {
@@ -228,6 +270,8 @@
             "verdict": "SIGNAL_NUL",
             "frac_steps_satures": 0.95,
             "frac_steps_sans_gradient": 1.0,
+            "frac_steps_sans_signal": 0.68,
+            "frac_steps_recompense_nulle": 0.68,
             "steps_avec_gradient": 0
           },
           {
@@ -235,6 +279,8 @@
             "verdict": "SIGNAL_NUL",
             "frac_steps_satures": 0.99,
             "frac_steps_sans_gradient": 0.99,
+            "frac_steps_sans_signal": 0.56,
+            "frac_steps_recompense_nulle": 0.56,
             "steps_avec_gradient": 1
           }
         ],
@@ -242,7 +288,8 @@
           "verdict": "SIGNAL_NUL",
           "frac_steps_satures": 0.97,
           "frac_steps_sans_gradient": 0.995,
-          "steps_avec_gradient": 0.5
+          "steps_avec_gradient": 0.5,
+          "gain_eval_par_step_avec_gradient": null
         },
         "concordant": true
       },
@@ -256,6 +303,10 @@
         ],
         "frac_steps_satures": 0.65,
         "frac_steps_sans_gradient": 0.79,
+        "frac_steps_sans_signal": 0.48,
+        "frac_steps_recompense_nulle": 0.45,
+        "gain_eval_par_step_avec_gradient": 0.002604,
+        "gain_eval_par_step_comparable": true,
         "steps_avec_gradient": 21,
         "graines": [
           {
@@ -263,6 +314,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.64,
             "frac_steps_sans_gradient": 0.76,
+            "frac_steps_sans_signal": 0.48,
+            "frac_steps_recompense_nulle": 0.45,
             "steps_avec_gradient": 24
           },
           {
@@ -270,6 +323,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.65,
             "frac_steps_sans_gradient": 0.79,
+            "frac_steps_sans_signal": 0.47,
+            "frac_steps_recompense_nulle": 0.38,
             "steps_avec_gradient": 21
           },
           {
@@ -277,6 +332,8 @@
             "verdict": "SIGNAL_PARTIEL",
             "frac_steps_satures": 0.83,
             "frac_steps_sans_gradient": 0.88,
+            "frac_steps_sans_signal": 0.63,
+            "frac_steps_recompense_nulle": 0.61,
             "steps_avec_gradient": 12
           }
         ],
@@ -284,13 +341,15 @@
           "verdict": "SIGNAL_PARTIEL",
           "frac_steps_satures": 0.65,
           "frac_steps_sans_gradient": 0.79,
-          "steps_avec_gradient": 21
+          "steps_avec_gradient": 21,
+          "gain_eval_par_step_avec_gradient": 0.002604
         },
         "concordant": true
       }
     },
     "source": "scripts/analyse_dapo_saturation.py",
-    "tous_concordants": true
+    "tous_concordants": true,
+    "reponse_au_reward_agreggee_par_l_organe": true
   },
   "tiers": {
     "tiers": {
@@ -323,6 +382,10 @@
               ],
               "frac_steps_satures": 0.92,
               "frac_steps_sans_gradient": 0.985,
+              "frac_steps_sans_signal": 0.53,
+              "frac_steps_recompense_nulle": 0.53,
+              "gain_eval_par_step_avec_gradient": 0.017188,
+              "gain_eval_par_step_comparable": true,
               "steps_avec_gradient": 1.5,
               "graines": [
                 {
@@ -330,6 +393,8 @@
                   "verdict": "SIGNAL_PARTIEL",
                   "frac_steps_satures": 0.9,
                   "frac_steps_sans_gradient": 0.98,
+                  "frac_steps_sans_signal": 0.62,
+                  "frac_steps_recompense_nulle": 0.62,
                   "steps_avec_gradient": 2
                 },
                 {
@@ -337,6 +402,8 @@
                   "verdict": "SIGNAL_PARTIEL",
                   "frac_steps_satures": 0.94,
                   "frac_steps_sans_gradient": 0.99,
+                  "frac_steps_sans_signal": 0.44,
+                  "frac_steps_recompense_nulle": 0.44,
                   "steps_avec_gradient": 1
                 }
               ],
@@ -344,7 +411,8 @@
                 "verdict": "SIGNAL_PARTIEL",
                 "frac_steps_satures": 0.92,
                 "frac_steps_sans_gradient": 0.985,
-                "steps_avec_gradient": 1.5
+                "steps_avec_gradient": 1.5,
+                "gain_eval_par_step_avec_gradient": 0.017188
               },
               "concordant": true
             },
@@ -357,6 +425,10 @@
               ],
               "frac_steps_satures": 0.97,
               "frac_steps_sans_gradient": 0.995,
+              "frac_steps_sans_signal": 0.62,
+              "frac_steps_recompense_nulle": 0.62,
+              "gain_eval_par_step_avec_gradient": null,
+              "gain_eval_par_step_comparable": false,
               "steps_avec_gradient": 0.5,
               "graines": [
                 {
@@ -364,6 +436,8 @@
                   "verdict": "SIGNAL_NUL",
                   "frac_steps_satures": 0.95,
                   "frac_steps_sans_gradient": 1.0,
+                  "frac_steps_sans_signal": 0.68,
+                  "frac_steps_recompense_nulle": 0.68,
                   "steps_avec_gradient": 0
                 },
                 {
@@ -371,6 +445,8 @@
                   "verdict": "SIGNAL_NUL",
                   "frac_steps_satures": 0.99,
                   "frac_steps_sans_gradient": 0.99,
+                  "frac_steps_sans_signal": 0.56,
+                  "frac_steps_recompense_nulle": 0.56,
                   "steps_avec_gradient": 1
                 }
               ],
@@ -378,7 +454,8 @@
                 "verdict": "SIGNAL_NUL",
                 "frac_steps_satures": 0.97,
                 "frac_steps_sans_gradient": 0.995,
-                "steps_avec_gradient": 0.5
+                "steps_avec_gradient": 0.5,
+                "gain_eval_par_step_avec_gradient": null
               },
               "concordant": true
             }
@@ -413,6 +490,10 @@
               ],
               "frac_steps_satures": 0.65,
               "frac_steps_sans_gradient": 0.79,
+              "frac_steps_sans_signal": 0.48,
+              "frac_steps_recompense_nulle": 0.45,
+              "gain_eval_par_step_avec_gradient": 0.002604,
+              "gain_eval_par_step_comparable": true,
               "steps_avec_gradient": 21,
               "graines": [
                 {
@@ -420,6 +501,8 @@
                   "verdict": "SIGNAL_PARTIEL",
                   "frac_steps_satures": 0.64,
                   "frac_steps_sans_gradient": 0.76,
+                  "frac_steps_sans_signal": 0.48,
+                  "frac_steps_recompense_nulle": 0.45,
                   "steps_avec_gradient": 24
                 },
                 {
@@ -427,6 +510,8 @@
                   "verdict": "SIGNAL_PARTIEL",
                   "frac_steps_satures": 0.65,
                   "frac_steps_sans_gradient": 0.79,
+                  "frac_steps_sans_signal": 0.47,
+                  "frac_steps_recompense_nulle": 0.38,
                   "steps_avec_gradient": 21
                 },
                 {
@@ -434,6 +519,8 @@
                   "verdict": "SIGNAL_PARTIEL",
                   "frac_steps_satures": 0.83,
                   "frac_steps_sans_gradient": 0.88,
+                  "frac_steps_sans_signal": 0.63,
+                  "frac_steps_recompense_nulle": 0.61,
                   "steps_avec_gradient": 12
                 }
               ],
@@ -441,7 +528,8 @@
                 "verdict": "SIGNAL_PARTIEL",
                 "frac_steps_satures": 0.65,
                 "frac_steps_sans_gradient": 0.79,
-                "steps_avec_gradient": 21
+                "steps_avec_gradient": 21,
+                "gain_eval_par_step_avec_gradient": 0.002604
               },
               "concordant": true
             }
