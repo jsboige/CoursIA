@@ -27,6 +27,7 @@ import numpy as np
 import pytest
 
 from ict.humor_power import (
+    exact_null_rates,
     n_for_power,
     null_norms,
     observed_z,
@@ -34,6 +35,7 @@ from ict.humor_power import (
     power_by_trace,
     power_curve,
     power_vs_pairs,
+    power_vs_threshold,
     z_ceiling,
 )
 
@@ -288,6 +290,107 @@ def test_power_by_trace_null_effect_never_fires_the_rule() -> None:
     row = res["legs"][0]["rows"][0]
     assert row["p_rule"] == 0.0
     assert row["p_any"] < 0.15
+
+
+# --------------------------------------------------------------------------- #
+# Le seuil : ce que la convention pre-enregistree coute
+# --------------------------------------------------------------------------- #
+
+
+def test_power_vs_threshold_contract() -> None:
+    diffs = _synthetic_diffs(n_pairs=12, n_features=200)
+    res = power_vs_threshold(
+        diffs, [2.0, 3.0], [0.0, 0.5], n_values=[10], n_bootstraps=2,
+        n_replicates=20, seed=4,
+    )
+    assert res["min_same_side"] == 3
+    assert res["source_pairs"] == 12
+    assert len(res["rows"]) == 4          # 1 n x 2 seuils x 2 effets
+    for row in res["rows"]:
+        assert 0.0 <= row["p_rule"] <= 1.0
+        assert 0.0 <= row["p_any"] <= 1.0
+        assert row["z_shift"] == pytest.approx(row["effect_size"] * np.sqrt(10))
+
+
+def test_power_vs_threshold_false_positives_rise_as_threshold_falls() -> None:
+    # Baisser le seuil fait s'ecoler la regle **sous null** : le seuil
+    # pre-enregistre n'est pas un detail de forme, c'est ce qui tient la
+    # specificite.
+    diffs = _synthetic_diffs(n_pairs=12, n_features=400)
+    res = power_vs_threshold(
+        diffs, [1.5, 2.0, 3.0, 4.0], [0.0], n_values=[12], n_bootstraps=3,
+        n_replicates=40, seed=6,
+    )
+    fpr = {row["threshold"]: row["p_rule"] for row in res["rows"]}
+    assert fpr[1.5] >= fpr[2.0] >= fpr[3.0] >= fpr[4.0]
+    assert fpr[4.0] == 0.0
+
+
+def test_power_vs_threshold_effect_adds_power_over_the_null() -> None:
+    # A seuil fixe, l'effet doit augmenter la frequence d'ecol de la regle
+    # par rapport au null : sinon la mesure ne mesure rien.
+    diffs = _synthetic_diffs(n_pairs=12, n_features=300)
+    res = power_vs_threshold(
+        diffs, [3.0], [0.0, 0.8], n_values=[12], n_bootstraps=3,
+        n_replicates=40, seed=8,
+    )
+    p = {row["effect_size"]: row["p_rule"] for row in res["rows"]}
+    assert p[0.8] > p[0.0]
+
+
+def test_n_for_power_refuses_mixed_thresholds() -> None:
+    # Des lignes portant plusieurs seuils sans seuil demande : l'appel
+    # echoue plutot que de melanger des seuils en silence.
+    rows = [
+        {"n_pairs": 30, "threshold": 2.0, "effect_size": 0.5, "p_rule": 0.9},
+        {"n_pairs": 30, "threshold": 3.0, "effect_size": 0.5, "p_rule": 0.1},
+    ]
+    with pytest.raises(ValueError):
+        n_for_power(rows, 0.5, 0.8)
+    assert n_for_power(rows, 0.5, 0.8, threshold=2.0) == 30
+    assert n_for_power(rows, 0.5, 0.8, threshold=3.0) is None
+
+
+# --------------------------------------------------------------------------- #
+# La reference qui ne degrade pas : null exact (sixieme lecture)
+# --------------------------------------------------------------------------- #
+
+
+def test_exact_null_rates_contract() -> None:
+    diffs = _synthetic_diffs(n_pairs=16, n_features=300)
+    res = exact_null_rates(diffs, [2.0, 3.0], n_flips=200, seed=5)
+    assert res["n_flips"] == 200
+    assert res["n_pairs"] == 16
+    assert res["min_same_side"] == 3
+    assert len(res["rows"]) == 2
+    for row in res["rows"]:
+        assert 0.0 <= row["p_any"] <= 1.0
+        assert 0.0 <= row["p_rule"] <= row["p_any"] + 1e-12
+        assert row["n_over_mean"] >= 0.0
+
+
+def test_exact_null_rates_matches_power_curve_null_row() -> None:
+    # Les deux procedures mesurent le meme objet (la queue nulle exacte) par
+    # des chemins differents : `power_curve` en rangant les nulls par
+    # replicat, `exact_null_rates` par blocs de retournements. Elles doivent
+    # s'accorder sur la meme queue.
+    diffs = _synthetic_diffs(n_pairs=16, n_features=400)
+    exact = exact_null_rates(diffs, [3.0], n_flips=2000, seed=9)
+    curve = power_curve(diffs, [0.0], n_replicates=2000, seed=9)
+    assert abs(exact["rows"][0]["p_any"] - curve["rows"][0]["p_any"]) <= 0.03
+    assert exact["rows"][0]["p_rule"] <= exact["rows"][0]["p_any"] + 1e-12
+
+
+def test_exact_null_rates_never_exceeds_threshold_rate() -> None:
+    # Baisser le seuil ne peut pas diminuer le taux de faux positifs : le
+    # seuil pre-enregistre (3) est celui qui tient la specificite.
+    diffs = _synthetic_diffs(n_pairs=16, n_features=400)
+    rows = exact_null_rates(diffs, [2.0, 2.5, 3.0, 3.5], n_flips=600, seed=13)["rows"]
+    p_any = [row["p_any"] for row in rows]
+    p_rule = [row["p_rule"] for row in rows]
+    assert p_any == sorted(p_any, reverse=True)
+    assert p_rule == sorted(p_rule, reverse=True)
+    assert rows[-1]["p_rule"] < 0.02
 
 
 # --------------------------------------------------------------------------- #

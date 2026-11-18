@@ -25,6 +25,21 @@ bruit) : deux jambes dont les bruits different d'un facteur cinq sont
 directement comparables dans l'unite ``d``, ce qui n'etait pas vrai dans
 l'unite de la premiere lecture.
 
+La cinquieme lecture (``power_vs_threshold``) mesure ce que la **convention
+pre-enregistree** ``|z| > 3`` coute : le seuil est-il un detail de forme, ou
+est-ce lui qui tient la specificite de l'instrument ? La reponse est la
+seconde : sous null, la regle s'ecole dans 99,9 % des cas a un seuil de 2, et
+dans 0,01 % des cas a un seuil de 3.
+
+La sixieme lecture (``exact_null_rates``) est la **reference qui ne degrade
+pas** : les lectures par `n` extrapolent en reechantillonnant les 30 paires
+reelles, et ce substitut n'est valide qu'a ``n = 30`` -- au-dela, les
+"paires ajoutees" sont des repetitions, et la queue nulle du substitut se
+degrade (la regle s'ecole sous null dans 0,00 % des cas a 30 paires, contre
+28,6 % a 240). `exact_null_rates` applique le null **exact** de
+l'instrument (retournement de signe intra-paire, aucun re-tirage), qui est la
+seule procedure dont la validite ne depend pas du nombre de paires.
+
 **Les cinq questions de l'organ-first** (regle ``organ-first-implementation``) :
 
 1. *Quelle serie possede la semantique ?* La serie ICT (carnets ICT-35b/35c/35d)
@@ -82,6 +97,7 @@ import numpy as np
 from .humor_pairs import _common_prefix_len, _zone_vec
 
 __all__ = [
+    "exact_null_rates",
     "n_for_power",
     "null_norms",
     "observed_z",
@@ -89,6 +105,7 @@ __all__ = [
     "power_by_trace",
     "power_curve",
     "power_vs_pairs",
+    "power_vs_threshold",
     "z_ceiling",
     "zone_diffs",
 ]
@@ -370,23 +387,142 @@ def power_vs_pairs(
     }
 
 
+def power_vs_threshold(
+    diffs: np.ndarray,
+    thresholds: Sequence[float],
+    effect_sizes: Sequence[float],
+    *,
+    n_values: Sequence[int] = (30,),
+    n_planted: int = DEFAULT_MIN_SAME_SIDE,
+    n_bootstraps: int = 4,
+    n_replicates: int = 100,
+    seed: int = 42,
+    min_same_side: int = DEFAULT_MIN_SAME_SIDE,
+) -> dict[str, Any]:
+    """Puissance et faux positifs **en fonction du seuil** de la regle.
+
+    Le seuil ``|z| > 3`` est une **convention pre-enregistree** de
+    l'instrument, pas une propriete de la loi. Les lectures precedentes
+    mesurent la puissance a ce seuil-la ; celle-ci mesure ce que le
+    seuil **coute**, et ce qu'un seuil different pourrait rapporter.
+
+    Deux colonnes se lisent ensemble, pour chaque couple
+    ``(seuil, taille d'effet)`` :
+
+    * ``p_rule`` a ``effect_size = 0`` est le **taux de faux positifs**
+      (la regle s'ecole sous null) ;
+    * ``p_rule`` a ``effect_size > 0`` est la **puissance** (la regle
+      s'ecole quand l'effet est present).
+
+    Baisser le seuil augmente les deux : la question n'est donc pas « quel
+    seuil est le mieux », mais « quel seuil achete combien de puissance
+    pour combien de faux positifs ». Les deux quantites sont mesurees sur
+    les **memes tirages nuls** (paired design) : la comparaison entre
+    seuils ne repose pas sur deux lots de hasard independants.
+
+    L'effet est exprime dans la meme unite que les lectures precedentes
+    (bruit par paire), le deplacement du z valant ``d * sqrt(n)``.
+
+    Retourne une ligne par triplet ``(n, seuil, taille d'effet)``.
+    """
+    diffs = np.asarray(diffs, dtype=np.float64)
+    n_source = diffs.shape[0]
+    rng = np.random.default_rng(seed)
+    rows: list[dict[str, Any]] = []
+
+    for n in n_values:
+        n = int(n)
+        if n < 2:
+            raise ValueError(f"n={n} : il faut au moins deux paires")
+        counts: dict[tuple[float, float], dict[str, float]] = {
+            (float(t), float(d)): {"rule": 0, "any": 0, "n_over": 0}
+            for t in thresholds
+            for d in effect_sizes
+        }
+        n_draws = 0
+        for _ in range(n_bootstraps):
+            idx = rng.integers(0, n_source, size=n)
+            sample = diffs[idx]
+            norms = null_norms(sample)
+            eligible = np.flatnonzero(norms > 0)
+            if eligible.size < n_planted:
+                continue
+            safe = np.where(norms > 0, norms, np.inf)
+            signs = rng.choice(np.array([-1.0, 1.0]), size=(n_replicates, n))
+            z_null = (signs @ sample) / safe          # (n_replicates, d_sae)
+            for r in range(n_replicates):
+                planted = rng.choice(eligible, size=n_planted, replace=False)
+                for d in effect_sizes:
+                    z = z_null[r].copy()
+                    if float(d) != 0.0:
+                        z[planted] += float(d) * np.sqrt(float(n))
+                    absz = np.abs(z)
+                    for t in thresholds:
+                        over = absz > float(t)
+                        n_over = int(over.sum())
+                        pos = int((z[over] > 0).sum())
+                        c = counts[(float(t), float(d))]
+                        c["rule"] += int(max(pos, n_over - pos) >= min_same_side)
+                        c["any"] += int(n_over >= 1)
+                        c["n_over"] += n_over
+            n_draws += n_replicates
+        denom = max(n_draws, 1)
+        for t in thresholds:
+            for d in effect_sizes:
+                c = counts[(float(t), float(d))]
+                rows.append(
+                    {
+                        "n_pairs": n,
+                        "threshold": float(t),
+                        "effect_size": float(d),
+                        "p_rule": c["rule"] / denom,
+                        "p_any": c["any"] / denom,
+                        "n_over_mean": c["n_over"] / denom,
+                        "z_shift": float(d) * np.sqrt(float(n)),
+                    }
+                )
+    return {
+        "rows": rows,
+        "n_bootstraps": int(n_bootstraps),
+        "n_replicates": int(n_replicates),
+        "n_planted": int(n_planted),
+        "min_same_side": int(min_same_side),
+        "seed": int(seed),
+        "source_pairs": int(n_source),
+    }
+
+
 def n_for_power(
     rows: Sequence[dict[str, Any]],
     effect_size: float,
     target: float = 0.8,
+    threshold: float | None = None,
 ) -> int | None:
     """Plus petit nombre de paires pour lequel ``P(regle) >= target``.
 
-    ``rows`` est la liste produite par :func:`power_vs_pairs` ou
-    :func:`power_by_trace` (meme format). La reponse est ``None`` quand
-    meme la plus grande valeur de ``n`` balayee n'atteint pas la cible :
-    c'est une reponse, pas une absence de reponse -- elle dit que le
-    budget de paires mesure ne suffit pas.
+    ``rows`` est la liste produite par :func:`power_vs_pairs`,
+    :func:`power_by_trace` ou :func:`power_vs_threshold` (meme format). La
+    reponse est ``None`` quand meme la plus grande valeur de ``n`` balayee
+    n'atteint pas la cible : c'est une reponse, pas une absence de
+    reponse -- elle dit que le budget de paires mesure ne suffit pas.
+
+    ``threshold`` selectionne un seuil quand les lignes en portent
+    plusieurs (cas de :func:`power_vs_threshold`) : sans lui, un lot
+    melangeant plusieurs seuils serait ambigu et l'appel **echoue** plutot
+    que de melanger silencieusement des seuils.
     """
+    if threshold is None and any("threshold" in row for row in rows):
+        thresholds = {float(row["threshold"]) for row in rows if "threshold" in row}
+        if len(thresholds) > 1:
+            raise ValueError(
+                "les lignes portent plusieurs seuils : "
+                f"precisez threshold= (seuils presents : {sorted(thresholds)})"
+            )
     candidates = [
         int(row["n_pairs"])
         for row in rows
         if abs(float(row["effect_size"]) - float(effect_size)) <= 1e-12
+        and (threshold is None or abs(float(row["threshold"]) - float(threshold)) <= 1e-12)
         and float(row["p_rule"]) >= float(target)
     ]
     return min(candidates) if candidates else None
@@ -470,4 +606,89 @@ def power_by_trace(
         "min_same_side": int(min_same_side),
         "seed": int(seed),
         "source_pairs": len(pairs),
+    }
+
+
+def exact_null_rates(
+    diffs: np.ndarray,
+    thresholds: list[float],
+    *,
+    n_flips: int = 20000,
+    seed: int = 42,
+    min_same_side: int = DEFAULT_MIN_SAME_SIDE,
+    chunk: int = 256,
+) -> dict[str, Any]:
+    """Queue nulle **exacte** du seuil, sans reechantillonnage des paires.
+
+    Les lectures par ``power_vs_pairs`` / ``power_vs_threshold`` extrapollent
+    a plus de 30 paires en **reechantillonnant les 30 paires reelles avec
+    remise** (bootstrap). Ce substitut n'est valide qu'a ``n = 30`` : au-dela,
+    les lignes ajoutees sont des **repetitions** du meme couple (paire,
+    signe), et sa queue nulle se degrade (section 11 du ledger
+    ``docs/ledgers/11690-ict-puissance-seuil-z.md``).
+
+    Cette fonction donne la reference qui ne degrade pas : le null
+    **exact** de l'instrument, obtenu en retournant le signe de chaque
+    paire independamment (le flip intra-paire de ``ict/humor_pairs.py``),
+    sans jamais remplacer une paire. Elle n'est definie que pour le
+    ``n`` observe.
+
+    Pour chaque seuil, elle rend :
+
+    * ``p_any`` -- probabilite qu'**au moins une** feature depasse le seuil
+      sous null (le « null global sur le maximum ») ;
+    * ``p_rule`` -- probabilite que la **regle** de l'instrument
+      (``>= min_same_side features du meme cote``) s'ecole sous null ;
+    * ``n_over_mean`` -- nombre moyen de features au-dela du seuil par
+      tirage.
+
+    Les retournements sont traites par blocs (``chunk``) pour que la
+    memoire reste bornee : une matrice de 20 000 x 32 768 tiendrait 5 Go.
+    """
+    diffs = np.asarray(diffs, dtype=np.float64)
+    if diffs.ndim != 2:
+        raise ValueError("diffs doit etre une matrice (n_paires, n_features)")
+    n_pairs = diffs.shape[0]
+    if n_flips < 1:
+        raise ValueError(f"n_flips={n_flips} : il faut au moins un retournement")
+    norms = null_norms(diffs)
+    safe = np.where(norms > 0, norms, np.inf)
+    rng = np.random.default_rng(seed)
+    thresholds = [float(t) for t in thresholds]
+    counts: dict[float, dict[str, int]] = {
+        t: {"any": 0, "rule": 0, "n_over": 0} for t in thresholds
+    }
+    done = 0
+    while done < n_flips:
+        m = min(int(chunk), n_flips - done)
+        signs = rng.choice(np.array([-1.0, 1.0]), size=(m, n_pairs))
+        z = (signs @ diffs) / safe
+        absz = np.abs(z)
+        for t in thresholds:
+            over = absz > t
+            n_over = over.sum(axis=1)
+            pos = ((z > 0) & over).sum(axis=1)
+            neg = ((z < 0) & over).sum(axis=1)
+            c = counts[t]
+            c["any"] += int((n_over >= 1).sum())
+            c["rule"] += int((np.maximum(pos, neg) >= min_same_side).sum())
+            c["n_over"] += int(n_over.sum())
+        done += m
+        del z, absz, over
+    denom = max(done, 1)
+    rows = [
+        {
+            "threshold": t,
+            "p_any": counts[t]["any"] / denom,
+            "p_rule": counts[t]["rule"] / denom,
+            "n_over_mean": counts[t]["n_over"] / denom,
+        }
+        for t in thresholds
+    ]
+    return {
+        "rows": rows,
+        "n_flips": done,
+        "n_pairs": int(n_pairs),
+        "min_same_side": int(min_same_side),
+        "seed": int(seed),
     }

@@ -21,6 +21,17 @@ La presente lecture quantifie la puissance : **quelle taille d'effet
 faudrait-il pour que la regle de detection s'ecole ?** Sans cette reponse,
 « aucune feature » ne peut pas etre lu comme « l'effet n'existe pas ».
 
+**Les lectures, dans l'ordre ou elles s'enchainent :**
+
+| # | Question | Section |
+| ---: | --- | ---: |
+| 1 | quelle taille d'effet faut-il, en unites de la statistique ? | 3 |
+| 2 | le null de l'instrument confirme-t-il la queue nulle publiee ? | 4 |
+| 3 | combien de paires faut-il ? (lecture **brute**, corrigee en 11) | 8 |
+| 4 | la puissance est-elle la meme sur toutes les jambes ? | 9 |
+| 5 | que **coute** la convention pre-enregistree `\|z\| > 3` ? | 10 |
+| 6 | jusqu'ou l'extrapolation en nombre de paires est-elle valide ? | 11 |
+
 ## 2. Modele (declare)
 
 Sous H1, la statistique observee d'une feature est
@@ -132,6 +143,11 @@ limite de l'estimation empirique de l'instrument.
   plafond de 10 et une fenetre de detection plus large. C'est la voie
   d'amelioration de l'instrument que la mesure designe — et c'est
   l'objet de la section 8, qui la chiffre.
+* **L'extrapolation en nombre de paires est une lecture brute** : elle est
+  produite par un substitut (bootstrap sur les 30 paires reelles) dont la
+  queue nulle se degrade avec `n`. La section 11 mesure cette degradation
+  et corrige les sections 8 et 9 en consequence. Seul `n = 30` est mesure
+  de maniere exacte.
 
 ## 8. Combien de paires pour 80 % de puissance ?
 
@@ -174,6 +190,20 @@ independamment des autres, donc reechantillonner les paires est legitime
 | 0,40 | ~120 paires | x4 |
 | 0,30 | **~210 paires** (grille fine, section 9) | x7 |
 | 0,20 | > 240 paires (47 % a 240) | > x8 |
+
+> **Correction (section 11).** Ce tableau est une **puissance brute** : il
+> compte l'ecol de la regle sous l'effet, **effet nul compris**. Or le
+> substitut qui produit ces nombres (bootstrap sur les 30 paires reelles)
+> a une **queue nulle qui se degrade avec `n`** : a `n = 90`, la regle
+> s'ecole deja dans **9,1 %** des cas *sans aucun effet* ; a `n = 210`, dans
+> **23,5 %**. Lue en **contraste** (puissance brute moins taux de faux
+> positifs), la ligne `d = 0,50` resiste (0,866 a `n = 90`, au-dessus de
+> 0,80), mais les lignes `d = 0,40` et `d = 0,30` **ne resistent pas** :
+> leur contraste plafonne a **0,77** et **0,68**, quel que soit `n`.
+> Ce que ces lignes etablissent n'est donc pas un nombre de paires, mais
+> une **borne** : ces 30 paires ne permettent pas d'extrapoler un
+> protocole, et le nombre de paires **independantes** necessaire n'est pas
+> estimable ici. Le seul `n` mesure de maniere exacte est **30**.
 
 > **Correction (section 9).** La grille grossiere de cette section (n =
 > 30, 60, 90, 120, 180, 240 ; 8 bootstraps x 100 replicats) plaçait `d = 0,3`
@@ -239,6 +269,9 @@ x 200 replicats par point (3 200 tirages, erreur type ~0,4 point), grille
    Les six jambes franchissent le seuil de 80 % de puissance aux **memes**
    nombres de paires : 90 a `d=0,5`, 120 a `d=0,4`, 210 a `d=0,3`, jamais
    a `d=0,2` (47 % a 240 paires). Aucune jambe n'est « la jambe faible ».
+   *(Lecture brute : le seuil de 80 % est ici la puissance **brute**,
+   effet nul compris — voir la correction de la section 11, qui ne laisse
+   debout que la ligne `d = 0,5`.)*
 2. **L'heterogeneite des traces est reelle mais sans effet sur la
    puissance.** Le bruit par paire median varie d'un facteur **5,4** (de
    0,00629 a la couche 4 *trained* a 0,03368 a la couche 19 *trained*) et
@@ -254,6 +287,10 @@ x 200 replicats par point (3 200 tirages, erreur type ~0,4 point), grille
    Le protocole manque d'environ **x3** les paires pour un effet net, et
    d'environ **x7** pour un effet de 0,3 par paire -- quel que soit le
    point du reseau ou l'on se place.
+   *(Les multiplicateurs `x4` et `x7` sont des lectures **brutes** ;
+   la section 11 montre qu'ils ne resistent pas a la lecture en
+   contraste, et qu'ils doivent etre lus comme une **borne** plutot que
+   comme un nombre de paires a commander.)*
 4. **Ce que cela ne dit pas.** La mesure porte sur six traces sur dix-huit
    jambes : les douze autres (les « 3 types » du protocole) n'ont pas de
    trace humour commitee. Rien ici ne les couvre.
@@ -270,7 +307,183 @@ x 200 replicats par point (3 200 tirages, erreur type ~0,4 point), grille
   point) : les ecarts de quelques points entre jambes ne sont pas
   significatifs, et ne sont pas interpretes comme tels.
 
-## 10. Reproduction
+## 10. Le seuil : ce que la convention pre-enregistree coute
+
+`|z| > 3` est une **convention** de l'instrument, pas une propriete de la
+loi. Les sections precedentes mesurent la puissance a ce seuil-la ; celle-ci
+mesure ce qu'il **coute**, et ce qu'un seuil different rapporterait.
+
+Deux mesures se lisent ensemble, a `n = 30` (couche 12/24, bras *trained*) :
+
+* la **queue nulle exacte** (`exact_null_rates`, 20 000 retournements de
+  signe intra-paire sur les 30 paires reelles, **aucun re-tirage**) : ce que
+  la regle ferait si le signal etait absent ;
+* la **puissance brute** au meme seuil (substitut bootstrap, 8 bootstraps x
+  100 replicats, `seed=42`, `k = 3` features plantees) : ce que la regle
+  fait quand l'effet est present.
+
+| Seuil | queue nulle exacte : `p_any` | queue nulle exacte : **`p_rule`** | puissance brute `d=0,3` | puissance brute `d=0,5` |
+| ---: | ---: | ---: | ---: | ---: |
+| 1,5 | 1,0000 | **1,0000** | 1,000 | 1,000 |
+| 2,0 | 1,0000 | **0,9986** | 0,889 | 0,946 |
+| 2,5 | 0,6066 | **0,0423** | 0,259 | 0,451 |
+| **3,0 (pre-enregistre)** | 0,0345 | **0,0001** | 0,003 | **0,079** |
+| 3,5 | 0,0006 | **0,0000** | 0,000 | 0,031 |
+| 4,0 | 0,0000 | **0,0000** | 0,000 | 0,000 |
+
+### Ce que la mesure dit
+
+1. **Le seuil n'est pas un detail de forme : c'est lui qui tient la
+   specificite.** A un seuil de 2, la regle s'ecole sous null dans
+   **99,86 %** des cas -- l'instrument ne mesurerait plus rien, il
+   declarerait une humidity. A 2,5, la regle deborde encore dans 4,2 % des
+   cas. A **3**, elle est quasi muette : **0,01 %**. Toute la specificite de
+   l'instrument tient dans ce choix de convention.
+2. **L'ancre de l'organe natif se confirme a 0,15 point.** ICT-35d publie
+   que le null global sur le maximum produit zero feature au-dela de 3
+   sigma dans **96,7 %** des cas (soit `p_any` = 3,3 %). Le null exact
+   mesure ici `p_any` = **3,45 %** -- l'ecart (0,15 point) est dans la
+   bande d'erreur type des 1 000 tirages de l'organe natif. Les deux
+   lectures, faites par deux chemins differents (estimateur empirique
+   d'un cote, null exact de l'autre), convergent.
+3. **Le prix du seuil est une puissance, pas une erreur.** A `d=0,5` par
+   paire, la regle passe de **45 %** (seuil 2,5) a **7,9 %** (seuil 3) :
+   un facteur 5,7 de puissance pour 4,2 points de faux positifs. L'instrument
+   a 30 paires est donc **precis et muet** -- et c'est un choix coherent :
+   sans la convention `|z| > 3`, ICT-35d aurait mesure l'humidite.
+4. **Le seuil 3 est au coude de la courbe.** Au-dela, la specificite
+   continue de monter (`p_any` passe de 0,0345 a 0,0006 a 3,5) mais la
+   puissance est **deja nulle** a 3,5 (0 % a `d=0,3`) : le seuil n'achete
+   plus rien. En deçà, il vend de la puissance contre de la specificite.
+   Le seuil 3 est le point ou les deux courbes se croisent -- c'est la
+   lecture qui justifie la convention, et non une convention heritee.
+
+## 11. Une borne sur l'extrapolation : le substitut n'ajoute pas d'information independante
+
+Les sections 8 et 9 extrapolent a plus de 30 paires en **reechantillonnant
+les 30 paires reelles avec remise** (bootstrap). Ce substitut est valide a
+`n = 30`. Au-dela, il n'ajoute pas des observations : il ajoute des
+**repetitions**. Cette section mesure ce que cela coute, et corrige les
+sections 8 et 9 en consequence.
+
+### 11.1 Le null exact, qui ne degrade pas
+
+`exact_null_rates` (module `ict/humor_power.py`) retourne le signe de
+chaque paire independamment, **sans jamais remplacer une paire** : c'est
+le null exact de l'instrument, et il n'est defini que pour le `n` observe.
+Sur les 30 paires reelles (20 000 retournements) :
+
+| Seuil | `p_any` (exact) | `p_rule` (exact) | features au-dela, en moyenne |
+| ---: | ---: | ---: | ---: |
+| 1,5 | 1,0000 | 1,0000 | 193,9 |
+| 2,0 | 1,0000 | 0,9986 | 14,9 |
+| 2,5 | 0,6066 | 0,0423 | 1,00 |
+| **3,0** | **0,0345** | **0,0001** | 0,036 |
+| 3,5 | 0,0006 | 0,0000 | 0,001 |
+| 4,0 | 0,0000 | 0,0000 | 0,000 |
+
+### 11.2 Le substitut se degrade avec `n`
+
+Meme statistique (la regle s'ecole sous null), mesuree sur le substitut
+(8 bootstraps x 100 replicats, `seed=42`) :
+
+| `n` | paires **distinctes** utilisees (max de copies) | `p_rule` a `t=3` | `p_any` a `t=3` | effectif effectif median (Kish) |
+| ---: | --- | ---: | ---: | ---: |
+| 30 | 19,4 / 30 (3) | 0,0000 | 0,0537 | 1,0 (0,03 n) |
+| 60 | 25,9 / 30 (5,2) | 0,0375 | 0,2087 | 2,9 (0,05 n) |
+| 90 | 29,1 / 30 (6,6) | 0,0813 | 0,3187 | 4,0 (0,04 n) |
+| 120 | 29,1 / 30 (8,5) | 0,1325 | 0,3950 | 5,4 (0,04 n) |
+| 180 | 30,0 / 30 (11,6) | 0,2275 | 0,4863 | 7,9 (0,04 n) |
+| 240 | 30,0 / 30 (14,0) | 0,2863 | 0,5350 | 10,2 (0,04 n) |
+
+Trois faits, tous mesures :
+
+1. **A 30 paires, le substitut est deja un peu plus bavard que l'exact**
+   (`p_any` 0,0537 contre 0,0345 ; `p_rule` 0,0013 contre 0,0001) : le
+   reechantillonnage n'est pas neutre, il perd des paires (19,4 distinctes
+   sur 30) et change la geometrie du design.
+2. **La queue nulle du substitut se degrade avec `n`** : la regle s'ecole
+   sous null dans 3,8 % des cas a 60 paires, 9,1 % a 90, 28,6 % a 240. La
+   degradation vient du fait que les lignes ajoutees sont des repetitions
+   du meme couple (paire, signe) : le design s'aplatit, et l'information
+   effective par feature (**effectif effectif de Kish**
+   `(Σ|x|)² / Σx²`) plafonne a **4 % de `n`** -- « 240 paires » ne
+   transportent qu'une dizaine de paires effectives par feature. La part
+   des features a effectif effectif < 10 passe de 99 % (design exact) a 47 %.
+3. **Le `n` mesure n'est donc pas un protocole realisable.** Une vague de
+   240 paires **independantes** n'a pas la meme queue nulle que le
+   substitut : la queue nulle reelle d'un design de paires independantes
+   ne se degrade pas comme cela. Le substitut ne mesure donc pas « la
+   puissance a 240 paires » : il mesure « ce que donne un design qui
+   repete 240 fois 30 paires ».
+
+### 11.3 La lecture en contraste, et ce qu'elle corrige
+
+La grandeur qui resteinterpretable est le **contraste** : puissance brute
+moins taux de faux positifs au meme `n` et au meme seuil. Les deux
+termes sont mesures sur les memes tirages, au seuil pre-enregistre
+`t = 3` (couche 12/24 *trained*, 8 bootstraps x 100 replicats) :
+
+| `n` | faux positifs (brut) | `d=0,3` | `d=0,4` | `d=0,5` |
+| ---: | ---: | --- | --- | --- |
+| 30 | 0,0013 | 0,003 / **0,001** | 0,041 / **0,040** | 0,079 / **0,077** |
+| 60 | 0,0200 | 0,083 / **0,062** | 0,273 / **0,253** | 0,477 / **0,457** |
+| 90 | 0,0912 | 0,228 / **0,136** | 0,557 / **0,466** | 0,958 / **0,866** |
+| 120 | 0,1375 | 0,412 / **0,275** | 0,806 / **0,669** | 0,998 / **0,860** |
+| 180 | 0,2288 | 0,774 / **0,545** | 0,998 / **0,769** | 1,000 / **0,771** |
+| 210 | 0,2350 | 0,882 / **0,647** | 1,000 / **0,765** | 1,000 / **0,765** |
+| 240 | 0,2662 | 0,944 / **0,677** | 1,000 / **0,734** | 1,000 / **0,734** |
+
+*(cellule = brut / contraste ; le contraste est en gras)*
+
+**Ce que cette lecture corrige** (correction visible, dans le ledger et
+dans le body de la PR) :
+
+| Ce qui etait publie | Lecture brute | Lecture en contraste | Verdict |
+| --- | --- | --- | --- |
+| `d=0,5` : ~90 paires | 0,958 | **0,866** | **resiste** (au-dessus de 0,80) |
+| `d=0,4` : ~120 paires | 0,819 | 0,669 | **ne resist pas** (plafond 0,77) |
+| `d=0,3` : ~210 paires | 0,882 | 0,647 | **ne resist pas** (plafond 0,68) |
+
+Le contraste **plafonne** : l'ecol brute sature a 1 pendant que le taux de
+faux positifs continue de monter. Ce plateau n'est pas une loi de la
+puissance -- c'est la signature du substitut : on ne peut pas acheter de la
+puissance en repetant les memes 30 paires.
+
+**Ce qui reste etabli, et qui est la seule lecture defensive :**
+
+1. **A 30 paires, l'instrument est sous-equipe**, sur les six jambes
+   (section 9) : 8 a 10 % d'ecol a `d=0,5`, et une queue nulle de 0,01 %
+   pour la regle complete (exact) ou 3,45 % pour « au moins une feature
+   au-dela de 3 ». Le zero d'ICT-35d n'interdit donc pas un effet net : il
+   l'interdit *a 30 paires*.
+2. **Le cout est en paires independantes**, pas en fichiers ni en
+   calcul : chaque paire independante ajoute une observation, la regle
+   gagne `sqrt(n)` de contraste, et rien de ce que nous mesurons ici ne
+   peut etre obtenu en repetant les 30 paires existantes.
+3. **Le nombre de paires independantes necessaires n'est pas estimable
+   depuis ces 30 paires** : il faut des paires *nouvelles*, dont le
+   protocole ne dispose pas. Les nombres « ~120 » et « ~210 » des sections
+   8 et 9 doivent donc etre lus comme des **bornes** (« au-dela de 120
+   paires independantes, l'effet `d=0,4` devient plausible »), pas comme
+   un nombre a commander.
+
+### Limites de cette lecture
+
+* Le contraste est mesure sur **une** jambe (couche 12/24 *trained*) avec le
+  budget de la grille grossiere (8 bootstraps x 100 replicats, erreur type
+  ~1 point sur les taux, ~2 points sur les contrastes). La section 9 montre
+  que l'ecart entre jambes est de l'ordre du point de pourcentage : la
+  correction est donc **commune aux six jambes**, sans qu'il faille la
+  remesurer sur chacune.
+* Le mecanisme de degradation est **mesure** (multiplicite, effectif
+  effectif, taux de faux positifs), pas **modelise** : la section dit
+  *que* le substitut se degrade et de combien, pas pourquoi la queue nulle
+  se deploie exactement de cette maniere.
+* L'exactitude du null est etablie **pour `n = 30`** : elle ne se transpose
+  pas a un `n` superieur, faute de paires independantes.
+
+## 12. Reproduction
 
 ```bash
 cd MyIA.AI.Notebooks/IIT/ICT-Series
@@ -314,3 +527,21 @@ for leg in res["legs"]:
 ```
 
 Duree : ~4 min pour les six jambes (numpy seul, aucune resource GPU).
+
+La section 10 (cout du seuil) se relit par :
+
+```python
+from ict.humor_power import power_vs_threshold
+res = power_vs_threshold(d, [1.5, 2.0, 2.5, 3.0, 3.5, 4.0], [0.0, 0.3, 0.5],
+                          n_values=[30], n_bootstraps=8, n_replicates=100, seed=42)
+```
+
+La section 11 (null exact) se relit par :
+
+```python
+from ict.humor_power import exact_null_rates
+exact_null_rates(d, [1.5, 2.0, 2.5, 3.0, 3.5, 4.0], n_flips=20000, seed=42)
+```
+
+Duree : ~26 s pour 20 000 retournements sur 32 768 features (numpy seul,
+memoire bornee par blocs de 256 retournements).
