@@ -154,6 +154,19 @@ def test_le_normaliseur_rend_la_forme_posix():
     assert csf.normalize_series_path("A/../B") is None
 
 
+def test_le_refus_textuel_de_remontee_et_de_lecteur_est_tue_par_test():
+    """La PREMIERE couche de defense a son propre test qui la tue SEUL.
+
+    Le refus de `..` et de la lettre de lecteur est TEXTUEL : il vit dans
+    `normalize_series_path`. Sans ces assertions, retirer ces deux gardes
+    laisse la suite verte -- la defense RESOLUE (`_confine_sous_series_root`)
+    couvre alors seule le cas, et le mutant passe. Ce test ferme la premiere
+    couche, pas seulement la seconde.
+    """
+    assert csf.normalize_series_path("../x") is None
+    assert csf.normalize_series_path("C:/x") is None
+
+
 def test_une_serie_plate_ne_bascule_pas_en_sous_serie():
     """Une serie simple ne doit pas devenir un chemin de deux segments."""
     assert csf.normalize_series_path("ML") == "ML"
