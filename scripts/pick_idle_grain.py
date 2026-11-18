@@ -299,6 +299,19 @@ except ImportError:
     except ImportError:
         frozen_campaigns = None  # type: ignore[assignment]
 
+# #26893 : la declaration d'exemption « Hors flotte » (#17713), partagee avec
+# le tapis rapide. Import best-effort, comme frozen_campaigns : sans module,
+# le tirage lourd tourne sans cette lecture (fail-OPEN), jamais l'inverse.
+try:
+    import tapis_hors_flotte
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import tapis_hors_flotte
+    except ImportError:
+        tapis_hors_flotte = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -4828,6 +4841,13 @@ def filter_candidates(
     urns = urns or set(URN_NAMES)
     checks = [
         ("exclude_issue", lambda item, labels: item["number"] in exclude_issues),
+        # #26893 : une issue dont le body DECLARE l'exemption « Hors flotte »
+        # (#17713) n'est pas un grain de lane -- la raison est nommee dans
+        # l'entonnoir, jamais tuee. La prose qui mentionne une session hors
+        # flotte ne declare rien (cf. tapis_hors_flotte.py).
+        ("hors_flotte", lambda item, labels: tapis_hors_flotte is not None
+         and tapis_hors_flotte.hors_flotte_declaration(item.get("body"))
+         is not None),
         ("require_label", lambda item, labels: not required_labels.issubset(labels)),
         ("exclude_label", lambda item, labels: bool(excluded_labels & labels)),
         ("min_age_days", lambda item, labels: min_age_days is not None
@@ -5671,7 +5691,12 @@ def check_claims(numbers: list[int], lane: str, *,
 #   - un echec de TRANSPORT n'ecrit aucun cache : le lecteur refait sa
 #     propre enumeration complete (le repli d'avant) ;
 #   - l'ecriture est ATOMIQUE (fichier temporaire + `os.replace`).
-_OPEN_PRS_CACHE_FORMAT = "open-prs-v2"
+# v3 (#26725) -- l'enveloppe suit le LECTEUR : les entrees portent
+# `baseRefName` et, pour une PR empilee, une liste `files` reduite a ce
+# qu'elle change (au lieu de la diff base-relative de `/pulls/{n}/files`).
+# Un cache v2 relu par un lecteur v3 serait rejete -- deux constantes qui
+# divergent refont payer l'enumeration a chaque candidat (#19643).
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v3"
 
 # Enumeration complete, MEMOISEE : une passe de tirage n'enumerere qu'une
 # fois, et la sonde de couverture (#16589) consomme la meme enumeration.
@@ -6955,6 +6980,32 @@ def is_aggregator_check(name: str) -> bool:
             or name.startswith(AGGREGATOR_CHECK_PREFIXES))
 
 
+def _gate_verdicts():
+    """`ci/gate_verdicts`, ou None si l'import est impossible.
+
+    Import tardif et defensif : l'organe est optionnel, son absence rend les
+    verdicts d'etat illisibles -- donc le fail-closed de l'appelant.
+    """
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+        import gate_verdicts  # noqa: PLC0415 - import tardif
+        return gate_verdicts
+    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+        return None
+
+
+def _read_check_annotations(check_run_id: int) -> list | None:
+    """Annotations d'un check-run, ou None si illisibles.
+
+    La lecture est dans `ci/gate_verdicts` (cache du picker passe en
+    rappel) : un seul endroit lit les annotations (#26564).
+    """
+    gv = _gate_verdicts()
+    if gv is None:
+        return None
+    return gv.read_annotations(check_run_id, _repair_read_annotation, _repair_store_annotation)
+
+
 def fetch_check_organs(check_run_id: int) -> list[str]:
     """Organes nommes par la banniere d'annotation de l'agregateur.
 
@@ -6964,18 +7015,8 @@ def fetch_check_organs(check_run_id: int) -> list[str]:
     annotation illisible rend [], et l'appelant exclut alors le check de la
     corroboration au lieu de le laisser corroborer par son nom.
     """
-    try:
-        cached = _repair_read_annotation(check_run_id)
-        if cached is not None:
-            annotations = cached
-        else:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-            ).stdout
-            annotations = json.loads(raw)
-            _repair_store_annotation(check_run_id, annotations)
-    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+    annotations = _read_check_annotations(check_run_id)
+    if annotations is None:
         return []
     organs: list[str] = []
     for ann in annotations or []:
@@ -7052,18 +7093,8 @@ def fetch_gate_cut_evidence(check_run_id: int) -> tuple[list[str], list[str]]:
     fail-closed comme ``fetch_check_organs`` : annotations illisibles ou
     verdict non-FAIL rendent ([], []), et SANS preuve la lane repare.
     """
-    try:
-        cached = _repair_read_annotation(check_run_id)
-        if cached is not None:
-            annotations = cached
-        else:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-            ).stdout
-            annotations = json.loads(raw)
-            _repair_store_annotation(check_run_id, annotations)
-    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+    annotations = _read_check_annotations(check_run_id)
+    if annotations is None:
         return [], []
     failed: list[str] = []
     cut: list[str] = []
@@ -7092,43 +7123,23 @@ def fetch_check_dwell(check_run_id: int) -> dict | None:
     Best-effort comme son voisin : annotation illisible -> ``None``, et
     l'appelant retombe sur le fail-closed (le rouge reste a la lane).
     """
-    parser = _dwell_message_parser()
-    if parser is None:
-        return None
-    try:
-        cached = _repair_read_annotation(check_run_id)
-        if cached is not None:
-            annotations = cached
-        else:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-            ).stdout
-            annotations = json.loads(raw)
-            _repair_store_annotation(check_run_id, annotations)
-    except Exception:  # noqa: BLE001 - reseau/parse : jamais un crash de picker
-        return None
-    for ann in annotations or []:
-        parsed = parser(ann.get("message") or "")
-        if parsed:
-            return parsed
-    return None
+    verdict = fetch_check_unknown_verdict(check_run_id)
+    return verdict if (verdict or {}).get("state") == "dwell" else None
 
 
-def _dwell_message_parser():
-    """`merge_dwell.parse_pending_message`, ou None si l'import est impossible.
+def fetch_check_unknown_verdict(check_run_id: int) -> dict | None:
+    """Verdict d'etat NON REPARABLE porte par l'annotation, ou None.
 
-    Import tardif et defensif, comme `_is_adjacency_red` : l'organe est
-    optionnel, une `ImportError` ici ne doit pas casser le tirage -- elle doit
-    seulement rendre le DWELL illisible, c'est-a-dire retomber sur le
-    fail-closed d'avant #15910 (le rouge reste a la lane).
+    DWELL (#15910, un plancher a ecouler) ou INCONCLUSIVE du gate (#26564,
+    quota d'installation epuise : l'etat des checks est INCONNU, pas faux).
+    Aucun des deux ne nomme d'organe : ce sont des ETATS, pas des defauts de
+    la PR. La lecture est dans `ci/gate_verdicts` ; le format de chaque
+    message appartient a son emetteur (`merge_dwell`, `pr_gate`).
     """
-    try:
-        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
-        from merge_dwell import parse_pending_message  # noqa: PLC0415 - import tardif
-        return parse_pending_message
-    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+    gv = _gate_verdicts()
+    if gv is None:
         return None
+    return gv.unknown_verdict(check_run_id, _repair_read_annotation, _repair_store_annotation)
 
 
 def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
@@ -8847,6 +8858,7 @@ def red_backlog(lane: str, threshold_hours: float,
     for pr in mine + others:
         lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
     organ_cache: dict[int, list[str]] = {}
+    # #26564 : cache des verdicts d'etat NON REPARABLE (DWELL, INCONCLUSIVE).
     dwell_cache: dict[int, dict] = {}
     # #15764 : cache des verdicts FAIL parsés par check-run -- partage entre
     # PRs de la lane dans ce passage, comme organ_cache.
@@ -8891,10 +8903,10 @@ def red_backlog(lane: str, threshold_hours: float,
                 ctx_name = ctx.get("name") or ctx.get("context") or "?"
                 keys_by_name.setdefault(ctx_name, set()).update(
                     failed_check_keys(ctx, organ_cache))
-        # #15910 : un agregateur rouge par DWELL n'a pas d'organe a lire. On ne
-        # paie la lecture d'annotation que pour les agregateurs dont AUCUN
-        # organe n'a pu etre resolu -- exactement le cas ambigu, jamais le cas
-        # nominal (un organe nomme tranche deja la question).
+        # #15910 / #26564 : un agregateur rouge par DWELL ou par verdict
+        # INCONCLUSIVE du gate n'a pas d'organe a lire. Une seule passe sur les
+        # agregateurs dont AUCUN organe n'a pu etre resolu -- le cas ambigu,
+        # jamais le nominal (un organe nomme tranche deja la question).
         dwell_by_name: dict[str, dict] = {}
         for ctx in _failed_contexts(state):
             ctx_name = ctx.get("name") or ctx.get("context") or "?"
@@ -8906,14 +8918,18 @@ def red_backlog(lane: str, threshold_hours: float,
             if ctx_run_id is None:
                 continue
             if ctx_run_id not in dwell_cache:
-                dwell_cache[ctx_run_id] = fetch_check_dwell(ctx_run_id) or {}
+                dwell_cache[ctx_run_id] = fetch_check_unknown_verdict(ctx_run_id) or {}
             dwell = dwell_cache[ctx_run_id]
             if dwell:
                 dwell_by_name[ctx_name] = dwell
         for ctx_name, info in sorted(dwell_by_name.items()):
-            dwell_waiting.append({"number": pr["number"], "check": ctx_name,
-                                  "lift_at": info.get("lift_at"),
-                                  "remaining_min": info.get("remaining_min")})
+            entry = {"number": pr["number"], "check": ctx_name,
+                     "state": info.get("state", "dwell"),
+                     "lift_at": info.get("lift_at"),
+                     "remaining_min": info.get("remaining_min")}
+            if info.get("detail"):
+                entry["detail"] = info["detail"]
+            dwell_waiting.append(entry)
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
                                  infra_rerun=set(infra_rerun),
@@ -9092,6 +9108,7 @@ def red_backlog(lane: str, threshold_hours: float,
             # #15910 : les agregateurs rouges par DWELL. Ni un defaut a
             # reparer, ni un rouge impute a la base : un minuteur qu'aucune
             # lane ne peut avancer en poussant (pousser le remet a zero).
+            # #26564 : meme categorie pour l'INCONCLUSIVE (`kind` distingue).
             "dwell_waiting": dwell_waiting,
             "nits_unavailable": nits_unavailable,
             # Q41 : plafond de WIP. wip_triggered porte le verdict (compte >=
@@ -9209,22 +9226,29 @@ def print_dwell_waiting(backlog: dict) -> None:
     items = backlog.get("dwell_waiting") or []
     if not items:
         return
-    print("PLANCHER DE DWELL -- un minuteur, pas un defaut, rien a reparer :")
-    for item in items:
-        # « reste » est le chiffre du gate AU MOMENT DU CHECK : sur une PR dont
-        # le plancher est deja ecoule il est perime (mesure du 2026-09-13 :
-        # #15952 annoncait « reste ~23 min » pour une levee passee depuis 20
-        # min). L'heure de levee absolue est la seule donnee qui ne vieillit
-        # pas -- c'est elle qui decide, « reste » n'est qu'un contexte.
-        reste = item.get("remaining_min")
-        reste_txt = f" (reste ~{reste} min lu au moment du check)" if reste is not None else ""
-        quand = f" -- plancher ecoule a {item['lift_at']}" if item.get("lift_at") else ""
-        print(f"  - #{item['number']} {item['check']}{quand}{reste_txt}")
-    print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
-    print("base. NE PAS repousser : un push remet le plancher a zero. Apres")
-    print("l'echeance, rejouer la jambe soi-meme (`gh run rerun <run_id> --job")
-    print("<job_id>`) ou enchainer un autre grain -- c'est la candidate qui")
-    print("attend, pas la lane.")
+    dwell = [i for i in items if i.get("state", "dwell") == "dwell"]
+    unknown = [i for i in items if i.get("state") == "inconclusive"]
+    if dwell:
+        print("PLANCHER DE DWELL -- un minuteur, pas un defaut, rien a reparer :")
+        for item in dwell:
+            # « reste » est le chiffre du gate AU MOMENT DU CHECK : sur une PR dont
+            # le plancher est deja ecoule il est perime (mesure du 2026-09-13 :
+            # #15952 annoncait « reste ~23 min » pour une levee passee depuis 20
+            # min). L'heure de levee absolue est la seule donnee qui ne vieillit
+            # pas -- c'est elle qui decide, « reste » n'est qu'un contexte.
+            reste = item.get("remaining_min")
+            reste_txt = f" (reste ~{reste} min lu au moment du check)" if reste is not None else ""
+            quand = f" -- plancher ecoule a {item['lift_at']}" if item.get("lift_at") else ""
+            print(f"  - #{item['number']} {item['check']}{quand}{reste_txt}")
+        print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
+        print("base. NE PAS repousser : un push remet le plancher a zero. Apres")
+        print("l'echeance, rejouer la jambe soi-meme (`gh run rerun <run_id> --job")
+        print("<job_id>`) ou enchainer un autre grain -- c'est la candidate qui")
+        print("attend, pas la lane.")
+    if unknown:
+        gv = _gate_verdicts()
+        if gv is not None:
+            gv.print_inconclusive_waiting(unknown)
     print()
 
 
@@ -13824,6 +13848,31 @@ def _log_tirage_safe(*, lane, candidates, retained, urn, mode):
     return record
 
 
+# #26926 : le tapis lourd ne sert plus de grains aux lanes. Il mettait ~240 s a
+# rendre des grains non verifies (livres, couverts, chantiers coordinateur), et
+# la consigne ecrite n'a pas suffi : une lane qui le tirait de memoire repartait
+# pour quatre minutes de propositions bloquantes. Le refus vit donc dans
+# l'organe : un `--belt` sans `--diagnostic` rend la main tout de suite et
+# nomme le tapis rapide. La variable d'environnement sert aux tests, qui
+# exercent le tapis lourd comme outil de diagnostic.
+HEAVY_BELT_DIAGNOSTIC_ENV = "COURSIA_HEAVY_BELT_DIAGNOSTIC"
+FAST_BELT_COMMAND = "python scripts/coordination/tapis_rapide.py --lane {lane} --json"
+
+
+def heavy_belt_refusal(lane: str | None) -> dict:
+    """Le refus du tapis lourd, avec la commande qui le remplace."""
+    commande = FAST_BELT_COMMAND.format(lane=f'"{lane}"' if lane else "<machine:workspace>")
+    return {
+        "mode": "tapis-lourd-refuse",
+        "issue": 26926,
+        "raison": ("le tapis lourd ne sert plus de grains (240 s, grains non "
+                   "verifies) ; le tirage passe par le tapis rapide"),
+        "commande": commande,
+        "diagnostic": "--diagnostic (ou %s=1) pour un usage de diagnostic"
+                      % HEAVY_BELT_DIAGNOSTIC_ENV,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
@@ -13941,7 +13990,12 @@ def main(argv: list[str] | None = None) -> int:
                          "date de derniere livraison -- puis par createdAt puis "
                          "par numero. Pas de ponderation, pas d'urne. Les gardes "
                          "(rouge, WIP, secheresse) restent en tete et rende la "
-                         "file comme rappel, jamais comme motif de vide.")
+                         "file comme rappel, jamais comme motif de vide. "
+                         "#26926 : sans --diagnostic, refuse et nomme le "
+                         "tapis rapide (tapis_rapide.py).")
+    ap.add_argument("--diagnostic", action="store_true",
+                    help="#26926 : autorise le tapis lourd (--belt) pour un "
+                         "diagnostic ; il ne sert plus de grains aux lanes")
     ap.add_argument("--belt-replay-export", default=None, metavar="PATH",
                     help="#25082 : exporter hors depot les entrees preparees "
                          "par un tapis live pour un rejeu deterministe. Requiert "
@@ -14107,6 +14161,16 @@ def main(argv: list[str] | None = None) -> int:
                          "l'issue N (defaut : dry-run, impression seule)")
     ap.set_defaults(check_claims=True)
     args = ap.parse_args(argv)
+    if args.belt and not (args.diagnostic
+                          or os.environ.get(HEAVY_BELT_DIAGNOSTIC_ENV) == "1"):
+        refus = heavy_belt_refusal(args.lane)
+        if args.json:
+            print(json.dumps(refus, ensure_ascii=False, indent=2))
+        else:
+            print(f"REFUS (#26926) : {refus['raison']}.\n"
+                  f"Tirer : {refus['commande']}\n"
+                  f"Diagnostic seulement : {refus['diagnostic']}.")
+        return 2
     args.prev_genre = sorted(normalize_prev_genres(args.prev_genre))
     # #21436 : la borne de --grains est enforcee, pas seulement documentee.
     # Au-dela, la fenetre de service (grains*5+50) explose le mur de temps

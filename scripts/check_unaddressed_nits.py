@@ -108,6 +108,15 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
 
+# Lectures REST conditionnelles (ETag persiste, partage par machine) : meme
+# protocole que pr_gate #26260, etendu aux processus courts de B.0. Le module
+# porte les invariants ; `gh_json` ne fait que router les argv applicables.
+try:
+    import gh_etag
+except ImportError:  # meme shim que gh_identity (tests hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_etag
+
 REPO = "jsboige/CoursIA"
 
 # Les deux orthographes d'un meme bot : la lecture normalisee (voir
@@ -304,7 +313,19 @@ AGENT_PREFIXES = (
 # #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
 # donc dans cette constante, consommee uniquement par classify ; can_lift
 # reste sur AGENT_PREFIXES.
-CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
+#
+# #26364 (tranche B.0, [ACTION] ai-01 du 2026-11-15) : `[BASE-INHERITED` rejoint
+# l'extension, meme mecanisme que [DIAG. Motif : un rouge herite de la base
+# n'avait pas de canal sur la PR -- l'ecrire (comme l'exige la regle worker
+# « ecrire en commentaire puis --ignore-red ») creait un nit B.0 qui bloquait
+# la PR qu'il documentait (7 occurrences mesurees par po-2028, cycles 86-89).
+# Le commentaire de signalement est un SIGNAL, pas une reserve : il sort de la
+# classification. Une reserve vivante reste un nit par la garde habituelle
+# (ligne 51xx), et le tag ne touche ni les levees (can_lift lit
+# AGENT_PREFIXES) ni la boucle DIAG (COMMENT_TAG_RE ne le lit pas).
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + (
+    "[ACTION", "[DIAG", "[BASE-INHERITED",
+)
 
 # #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
 # ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
@@ -339,20 +360,26 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
-# #17437 : la voix App n'est PAS jointe a la voix du coordinateur (arbitrage
-# ai-01 du 2026-11-13). La cle privee de ``coursia-lane-ai-01`` vit sur la
-# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
-# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
-# fichier et forge le meme jeton. Une App par machine ne peut donc pas
-# representer la lane coordinateur seule -- un ``[OVERRIDE]`` de CoursIA-2
-# vaudrait celui du coordinateur, exactement ce que la borne #12737/#12836
-# interdit. Une App PROPRE a la lane coordinateur est le prealable.
+# #17437 : la voix App PROPRE a la lane coordinateur rejoint la voix humaine
+# (Q187, 2026-11-14). L'App existe desormais (App 5763709, slug
+# ``coursia-coord-ai01``, creee le 2026-11-14 sur le go du user, installee
+# sur jsboige/CoursIA seulement, cle dediee
+# ``.secrets/github-apps/coursia-coord-ai01.pem``), DISTINCTE de la cle de
+# l'App de machine ``coursia-lane-ai-01`` que la lane worker sœur
+# ``myia-ai-01:CoursIA-2`` lit aussi : seul le coordinateur forge le jeton
+# de l'App propre. L'App de MACHINE ``coursia-lane-ai-01[bot]`` reste
+# EXCLUE pour la raison d'origine (arbitrage ai-01 du 2026-11-13) : sa cle
+# vivant dans le clone partage, un ``[OVERRIDE]`` de CoursIA-2 sous cette
+# App vaudrait celui du coordinateur, exactement ce que la borne
+# #12737/#12836 interdit.
 #
 # La preuve d'identite reste typee par ligne (``_author_login`` +
-# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique, et une
-# forme nue sans type ne leve rien. Le jour ou une App de lane coordinateur
-# existe, son login REST rejoint cet ensemble par une edition consciente.
-LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique. La forme
+# REST suffixee ``coursia-coord-ai01[bot]`` et la forme GraphQL typee
+# ``Bot`` (repliee par normalisation) levent ; une forme nue sans type ne
+# leve rien, et l'homonyme UTILISATEUR type ``User`` reste nu donc hors de
+# l'ensemble -- fail-closed.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01", "coursia-coord-ai01[bot]"}
 # Q185 (sign-off user 2026-11-13) -- l'ADJOINT coordonnateur, borne aux
 # reserves de BOT. La lane adjointe myia-po-2025:CoursIA-2 poste sous son
 # identite GitHub App propre (``coursia-lane-po-2025[bot]`` : forme REST
@@ -3736,7 +3763,11 @@ def _nits_budget_exhausted() -> bool:
 #    `pr list --json`, `issue view --json` = GraphQL ; `api repos/...` = REST.
 # 2. B.0 publie desormais son propre compte, sur stderr et dans la sortie
 #    JSON de l'audit retro.
-API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
+# 3. `rest_304` (#26260, extension cross-processus) : lectures REST servies
+#    par un 304 ETag serveur -- un 304 ne consomme AUCUN quota (mesure
+#    #26260), le compte `rest` compte les appels gh, `rest_304` la part
+#    servie gratuitement. L'economie devient mesurable par run, pas supposee.
+API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0, "rest_304": 0}
 
 
 def _count_api_call(args: list[str]) -> None:
@@ -3765,6 +3796,20 @@ def gh_json(args: list[str]) -> object:
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
     _count_api_call(args)
+    # Lectures REST conditionnelles (#26260, extension cross-processus) : les
+    # chemins `api repos/...` sans drapeau passent par l'ETag persiste partage
+    # par machine. Un 304 est une PREUVE SERVEUR que le chemin est inchange
+    # depuis le corps cache -- B.0 est un organe de merge, aucun corps n'est
+    # jamais servi sans reponse du serveur, donc aucun faux vert possible.
+    # Tout echec non-304 leve les memes exceptions que le chemin d'origine
+    # (CalledProcessError / JSONDecodeError / TimeoutExpired).
+    etag_path = gh_etag.etag_applicable(args)
+    if etag_path is not None:
+        body, served_by_304 = gh_etag.conditional_get(
+            etag_path, timeout=GH_CALL_TIMEOUT_S)
+        if served_by_304:
+            API_USAGE["rest_304"] += 1
+        return _project_gh_payload(args, body)
     out = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
         timeout=GH_CALL_TIMEOUT_S,
@@ -6687,7 +6732,8 @@ def main() -> int:
         # #17315 : la consommation sort sur stderr, comme le fait le gate --
         # un compteur publie n'est lu par personne s'il reste dans le JSON.
         print(f"API-USAGE (#17315) : rest={API_USAGE['rest']} "
-              f"graphql={API_USAGE['graphql']}", file=sys.stderr)
+              f"graphql={API_USAGE['graphql']} "
+              f"rest_304={API_USAGE['rest_304']}", file=sys.stderr)
         return rc
     except subprocess.TimeoutExpired as exc:
         # #19643 (residu) : gh n'a pas repondu dans sa borne -- aucun verdict.

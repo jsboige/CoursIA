@@ -28,6 +28,7 @@ and clear a tripped breaker.
 from __future__ import annotations
 
 import json
+import math
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -58,6 +59,7 @@ class RiskGate:
     """
 
     def __init__(self, risk: RiskConfig, starting_capital: float):
+        self._require_finite(starting_capital, "starting_capital")
         self.risk = risk
         self.starting_capital = starting_capital
         self.peak_equity = starting_capital
@@ -75,6 +77,12 @@ class RiskGate:
             return 0.0
         return 0.5 if self.reduced else 1.0
 
+    @staticmethod
+    def _require_finite(value: float, name: str) -> None:
+        """Refuse une référence non finie avant toute mutation comptable."""
+        if not math.isfinite(value):
+            raise ValueError(f"{name} must be finite")
+
     # -- accounting state -------------------------------------------------
 
     def update_equity(self, equity: float) -> RiskDecision:
@@ -83,6 +91,7 @@ class RiskGate:
         Flips to ``halted`` (rejecting all future orders) if either breaker
         trips, until :meth:`reset_day` / :meth:`clear_halt` is called.
         """
+        self._require_finite(equity, "equity")
         if equity > self.peak_equity:
             self.peak_equity = equity
 
@@ -115,6 +124,7 @@ class RiskGate:
 
     def reset_day(self, equity: float) -> None:
         """Roll the daily accounting window (call at session/day start)."""
+        self._require_finite(equity, "equity")
         self.day_start_equity = equity
 
     def _halt(self, reason: str) -> None:
@@ -148,8 +158,12 @@ class RiskGate:
         if missing:
             raise ValueError(f"risk state is missing {missing}")
         gate = cls(risk, float(state["starting_capital"]))
-        gate.peak_equity = float(state["peak_equity"])
-        gate.day_start_equity = float(state["day_start_equity"])
+        peak_equity = float(state["peak_equity"])
+        day_start_equity = float(state["day_start_equity"])
+        cls._require_finite(peak_equity, "peak_equity")
+        cls._require_finite(day_start_equity, "day_start_equity")
+        gate.peak_equity = peak_equity
+        gate.day_start_equity = day_start_equity
         gate.halted = bool(state["halted"])
         gate.halt_reason = state["halt_reason"]
         # A file from before the liquidation flag: a drawdown halt meant liquidation.
@@ -199,6 +213,13 @@ class RiskGate:
         gate is halted or the order is large: a breaker exists to cut risk, so
         it must never prevent going back to cash.
         """
+        for name, value in (
+            ("sleeve_capital", sleeve_capital),
+            ("order_notional", order_notional),
+            ("gross_exposure_after", gross_exposure_after),
+        ):
+            if not math.isfinite(value):
+                return RiskDecision(False, f"{name} must be finite")
         if sleeve_capital <= 0:
             return RiskDecision(False, "sleeve capital <= 0")
         if order_notional < 0:

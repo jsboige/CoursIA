@@ -187,6 +187,33 @@ utilise comme convention.
 organes qui l'importent doivent continuer a lire la meme cle. Aucun chemin de
 verdict de ce module ne l'emploie plus -- la cle unique, c'est `_scan_slot`.
 
+DEUX FAUX REFUS MESURES (dispatch ai-01, 2026-11-16)
+----------------------------------------------------
+1. **L'artefact de squash** (a). `added_notebooks` lit le diff depuis le
+   MERGE-BASE (`base...head`). Une branche empilee dont la mere a ete
+   SQUASH-mergee voit donc remonter comme « ajout » un fichier dont le contenu
+   exact vit deja sur la base : la PR ne prend aucun numero, et le refuser
+   bloquait une pile entiere (mesure : #25027, `Chaines-04` byte-identique a
+   origin/main apres le squash de #25025). Un « ajout » dont le blob a la tete
+   EGALe celui de la base est maintenant ecarte des cibles en mode revision,
+   et dit. Le temoin negatif reste couvert : meme chemin au contenu DIFFERENT
+   sur la base = une reecriture, verdict `taken_on_base` conserve. Le mode
+   `--target` (preflight AVANT edition) n'est pas touche : y viser le nom exact
+   d'un fichier de la base reste une prise, byte-identique ou non -- c'est le
+   sens du preflight.
+
+2. **La regle d'anciennete des PR ouvertes** (b). Deux PRs ouvertes qui
+   revendiquent le meme numero se bloquaient MUTUELLEMENT : chaque examen
+   voyait l'autre comme occupant, aucune ne pouvait merger (mesure : #26585 du
+   14/11 contre #26710 du 15/11 sur `02-Advanced/02-11`). Une PR ouverte ne
+   reserve desormais son numero que contre une PR STRICTEMENT plus jeune
+   qu'elle -- l'ainnee garde la main, la plus jeune cede (c'est elle qui
+   renumerote). La cle d'anciennete est le NUMERO de PR : GitHub l'alloue
+   sequentiellement a la creation, l'ordre des numeros est donc l'ordre
+   d'ouverture, sans appel supplementaire et lisible hors ligne. La reference
+   est `--exclude-pr` (la PR examinee) : sans elle, tout claimant reserve,
+   comme avant.
+
 Sortie : 0 = tous les slots examines sont libres (ou exempts) ; 1 = au moins un
 conflit ; 2 = erreur d'invocation, ou controle de self-test non satisfait (le
 detecteur est casse -- distinct d'une collision reelle, qui sort 1).
@@ -294,6 +321,38 @@ def added_notebooks(base, head):
                         "%s...%s" % (base, head)]).splitlines())
 
 
+def _blob_ids(ref, paths):
+    """{chemin: oid de blob} pour `paths` a `ref` -- absents s'ils n'y sont pas."""
+    out: dict[str, str] = {}
+    if not paths:
+        return out
+    for line in _git(["ls-tree", ref, "--"] + sorted(paths)).splitlines():
+        meta, _, path = line.partition("\t")
+        parts = meta.split()
+        if len(parts) == 3 and parts[1] == "blob":
+            out[path] = parts[2]
+    return out
+
+
+def squash_artifacts(base, head, added):
+    """Ajouts dont le blob a la tete EGALe celui de la base (fix a).
+
+    Un « ajout » byte-identique a la base n'est pas une prise de slot : c'est
+    l'artefact d'une branche empilee dont la mere a ete squash-mergee -- le
+    diff merge-base voit encore le fichier comme ajout, alors que son contenu
+    exact vit deja sur la base (mesure : #25027, `Chaines-04` apres le squash
+    de #25025). Le temoin negatif reste hors de cette fonction : un meme
+    chemin au contenu DIFFERENT sur la base est une REECRITURE, verdict
+    `taken_on_base` conserve par l'examen normal.
+    """
+    if not added:
+        return set()
+    ids_head = _blob_ids(head, added)
+    ids_base = _blob_ids(base, added)
+    return {p for p in added
+            if ids_head.get(p) is not None and ids_head.get(p) == ids_base.get(p)}
+
+
 def removed_notebooks(base, head):
     """Slots que la revision LIBERE -- invisibles dans le garde d'index (cf docstring)."""
     return _ipynb(_git(["diff", "--no-renames", "--diff-filter=D", "--name-only",
@@ -379,20 +438,38 @@ def group_by_slot(paths, source, detail=""):
     return out
 
 
-def pr_claims(prs, removed=None):
+def pr_claims(prs, removed=None, examined_pr=None):
     """Slots tenus par les PRs ouvertes.
 
     `prs` = la charge rendue par ``gh pr list --json number,files``.
     `removed` = ``{numero de PR: {chemins}}``, les chemins REELLEMENT retires --
     la seule chose que `gh pr list --json files` ne sait pas dire (cf docstring).
+    `examined_pr` = la PR examinee (en pratique `--exclude-pr`) : une PR ouverte
+    ne reserve son numero que contre une PR STRICTEMENT plus jeune qu'elle.
 
-    Une entree n'est donc ecartee que si son chemin figure dans `removed`.
+    Anciennete (fix b) : la cle retenue est le NUMERO de PR. GitHub l'alloue
+    sequentiellement a la creation, l'ordre des numeros est donc l'ordre
+    d'ouverture -- sans appel supplementaire, et lisible hors ligne. Sans cette
+    regle, deux PRs ouvertes qui revendiquent le meme numero se bloquaient
+    MUTUELLEMENT et aucune des deux ne pouvait merger (mesure : #26585 du
+    14/11 contre #26710 du 15/11 sur `02-Advanced/02-11`). Avec elle, l'ainnee
+    garde la main et la plus jeune cede -- c'est elle qui renumerote.
+    `examined_pr` absent (None) conserve l'ancien comportement : tout claimant
+    reserve.
+
+    Une entree n'est donc ecartee que si son chemin figure dans `removed` ou si
+    son numero n'est pas STRICTEMENT plus jeune que `examined_pr` (l'egalite
+    est l'examinee elle-meme, deja exclue par l'appelant -- la garder en
+    reserve serait un auto-blocage).
     `additions == 0` n'est plus un motif d'exclusion : mesure, il recouvre aussi
     la modification qui ne retire que des lignes et le rename byte-identique.
     """
     claims: dict[tuple[str, str], list[Occupant]] = {}
     for pr in prs or []:
         num = pr.get("number")
+        if (examined_pr is not None and isinstance(num, int)
+                and isinstance(examined_pr, int) and num >= examined_pr):
+            continue          # pas strictement plus jeune : ne reserve pas contre elle
         gone = (removed or {}).get(num) or set()
         for f in pr.get("files") or []:
             path = f.get("path") or ""
@@ -843,7 +920,7 @@ def _strip_kernel_middle(stem: str) -> str:
     a jumeaux noyau (`SW-10/11/13`, `App-14`, `Tweety-03/04`). La
     comparaison retient le `prefix-rest` pour neutraliser la difference
     Python/CSharp. Echec du pattern (le token apres le slot n'est PAS un
-    noyau connu, ex. `App-14-ConnectFour-Adversarial`) : on rend le
+    noyau connu, ex. `App-14-ConnectFour-Adversarial-Python`) : on rend le
     stem inchange, et la collision est le SUJET different, pas un
     jumeau a exclure.
     """
@@ -871,8 +948,10 @@ def _same_item_scan(a: str, b: str) -> bool:
     #    le strip_lang ne le voit pas, on le retire a la main avant
     #    la comparaison. Echec du pattern (le token n'est pas un noyau
     #    connu) -> inchange, et la collision reste un vrai conflit de
-    #    sujet (ex. `App-14-ConnectFour-Adversarial` vs
-    #    `App-14-ConnectFour-CSharp` ne SONT PAS jumeaux).
+    #    sujet (cas historique : `App-14-ConnectFour-Adversarial-Python` vs
+    #    `App-14-ConnectFour-CSharp` avant le renommage #12933 ne
+    #    SONT PAS jumeaux ; depuis, le jumeau C# porte
+    #    `-Adversarial-CSharp` en suffixe et le stem matche).
     sa = _strip_kernel_middle(sa)
     sb = _strip_kernel_middle(sb)
     return sa.lower() == sb.lower()
@@ -974,7 +1053,20 @@ def load_open_pr_claims(limit, repo, exclude_pr, offline, status):
     if exclude_pr:
         prs = [p for p in prs if p.get("number") != exclude_pr]
     status[SOURCE_OPEN_PRS] = {"status": "ok", "prs": len(prs)}
-    return pr_claims(prs, load_removed_paths(ambiguous_pr_numbers(prs), repo, status))
+    claims = pr_claims(prs, load_removed_paths(ambiguous_pr_numbers(prs), repo, status),
+                       examined_pr=exclude_pr)
+    # La regle d'anciennete (fix b) s'ECRIT, elle ne se devine pas : un lecteur
+    # du rapport doit voir que les PRs plus jeunes que l'examinee n'ont pas
+    # servi de reserve.
+    if exclude_pr:
+        younger = sum(1 for p in prs
+                      if isinstance(p.get("number"), int) and p["number"] > exclude_pr)
+        if younger:
+            status[SOURCE_OPEN_PRS]["age_rule"] = (
+                "%d PR(s) plus jeune(s) que #%d ignoree(s) : une PR ouverte ne "
+                "reserve son numero que contre une PR plus jeune qu'elle"
+                % (younger, exclude_pr))
+    return claims
 
 
 def read_declared_doc(path, status):
@@ -1177,6 +1269,29 @@ def self_test():
          [A], pr_claims([{"number": 5, "files": [
              {"path": C, "additions": 8, "deletions": 2}]}], {5: set()}),
          set(), ["reserved_by_open_pr"]),
+        # --- anciennete des PR ouvertes (fix b) : l'ainnee garde la main ---
+        # Mesure fondatrice : #26585 (ouverte le 14/11) contre #26710 (ouverte
+        # le 15/11) sur le meme slot -- chaque examen voyait l'autre comme
+        # occupant, aucune des deux ne pouvait merger.
+        ("VRAI POSITIF  PR plus ANCIENNE reserve contre l'examinee (b)",
+         [A], pr_claims([{"number": 2, "files": [
+             {"path": C, "additions": 8, "deletions": 2}]}], {2: set()},
+                        examined_pr=5),
+         set(), ["reserved_by_open_pr"]),
+        ("NEGATIF       PR plus JEUNE ne reserve pas contre l'ainnee (b)",
+         [A], pr_claims([{"number": 7, "files": [
+             {"path": C, "additions": 8, "deletions": 2}]}], {7: set()},
+                        examined_pr=5),
+         set(), ["free"]),
+        ("VRAI POSITIF  SANS PR examinee, tout claimant reserve (comme avant)",
+         [A], pr_claims([{"number": 7, "files": [
+             {"path": C, "additions": 8, "deletions": 2}]}], {7: set()}),
+         set(), ["reserved_by_open_pr"]),
+        ("NEGATIF       la PR examinee elle-meme ne s'auto-reserve pas (b)",
+         [A], pr_claims([{"number": 5, "files": [
+             {"path": C, "additions": 8, "deletions": 2}]}], {5: set()},
+                        examined_pr=5),
+         set(), ["free"]),
     ]
 
     print("")
@@ -1241,7 +1356,9 @@ def main(argv=None):
     ap.add_argument("--offline", action="store_true",
                     help="ne pas interroger les PRs ouvertes (sources arbre + revision + declarees)")
     ap.add_argument("--exclude-pr", type=int, default=None,
-                    help="numero de PR a exclure de la source PR ouvertes (la sienne)")
+                    help="numero de PR a exclure de la source PR ouvertes (la sienne) ; "
+                         "sert aussi de reference d'anciennete : une PR ouverte plus "
+                         "JEUNE ne reserve pas contre elle (l'ainnee garde la main)")
     ap.add_argument("--limit", type=int, default=500,
                     help="plafond de PRs lues (defaut 500 ; le defaut de gh est 30)")
     ap.add_argument("--repo", default=None, help="override du depot pour gh")
@@ -1305,7 +1422,14 @@ def main(argv=None):
     mode = "target" if a.target else "revision"
     status: dict[str, dict] = {}
     try:
-        rev_added = added_notebooks(a.base, a.head)
+        raw_added = added_notebooks(a.base, a.head)
+        # Fix (a) : un « ajout » byte-identique a la base est un artefact de
+        # squash, pas une prise de slot -- il quitte les cibles AVANT tout
+        # verdict. Mode revision SEULEMENT : en mode --target, viser le nom
+        # exact d'un fichier de la base reste une prise (preflight avant
+        # edition), byte-identique ou non.
+        artifacts = sorted(squash_artifacts(a.base, a.head, raw_added))
+        rev_added = [p for p in raw_added if p not in set(artifacts)]
         targets = list(a.target) if a.target else rev_added
         releases = set(removed_notebooks(a.base, a.head))
         base_files = notebooks_at(a.base)
@@ -1321,7 +1445,8 @@ def main(argv=None):
     rev_occ = group_by_slot(rev_added, SOURCE_REVISION)
     status[SOURCE_REVISION] = {
         "status": "ok",
-        "added": len(rev_added),
+        "added": len(raw_added),
+        "squash_artifacts": len(artifacts),
         "examined": len(targets),
         "released": len(releases),
     }
@@ -1408,9 +1533,15 @@ def main(argv=None):
     print("  base      : %d notebooks (%s)" % (len(base_files), a.base))
     print("  revision  : %d cible(s) examinee(s), %d liberee(s)"
           % (len(targets), len(releases)))
+    if artifacts:
+        print("              %d artefact(s) de squash ecarte(s) -- blob identique "
+              "a la base, pas une prise de slot : %s"
+              % (len(artifacts), ", ".join(artifacts)))
     pr_status = status.get(SOURCE_OPEN_PRS, {})
     if pr_status.get("status") == "ok":
         print("  open_prs  : %d PR(s) ouverte(s)" % pr_status.get("prs", 0))
+        if pr_status.get("age_rule"):
+            print("    anciennete: %s" % pr_status["age_rule"])
         rem = status.get(SOURCE_OPEN_PRS_REMOVED, {})
         if rem.get("status") == "ok":
             print("    retraits  : %d PR(s) ambigue(s) (additions==0) lue(s), "

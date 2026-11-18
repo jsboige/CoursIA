@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-16
 
 # QuantConnect (QC) - Configuration et règles
 
@@ -22,6 +22,7 @@ Le repo contient déjà plusieurs documents canoniques. **Ne pas dupliquer ici**
 | [MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md](../../MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md) | Registry training | 70+ checkpoints, stages -1/0/1/2, Anti-Bias |
 | [docs/archive/ml-trading-state.md](../archive/ml-trading-state.md) | Leçons ML trading | Pattern central vol vs direction, 7 disciplines, anti-FAANG |
 | [MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md](../../MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md) | Assistants QC Cloud | 8 assistants, protocole coûts QCC, matrice delegation |
+| [docs/qc/qc-pieges-mesures.md](qc-pieges-mesures.md) | Pièges mesurés QC/Lean | Lecture d'un backtest, ordres, données, framework, graphiques, outils, suivi en ombre : entrées sourcées |
 
 **Règle de coherence** : pour les performances par stratégie (Sharpe, CAGR) -> `qc_strategies_catalog.md`. Pour les patterns réutilisables -> ce fichier. Pour les leçons ML trans-iteration -> `docs/archive/ml-trading-state.md`. Pour le mapping livre -> `BOOK_MAPPING.md` (racine, pas doublon `docs/`).
 
@@ -72,10 +73,10 @@ L'absence d'un appel `SetEndDate` (Python : `self.set_end_date(...)`) **n'est pa
 
 ## QC Cloud API - Accès MCP (trois voies : REST-lite canonique, Docker officiel, distant)
 
-**Méthode d'accès** : Utiliser le MCP Docker `quantconnect/mcp-server` configure dans `.mcp.json` a la racine du projet.
+**Méthode d'accès** : la voie canonique du dépôt est le **REST-lite** (`scripts/qc-mcp-lite/`, ci-dessous) pour les backtests, la lecture de projets et les fichiers. Le MCP Docker officiel reste disponible quand l'API complète est nécessaire, et le MCP distant couvre Research quand son accès est débloqué. **Aucune des trois ne déprécie les autres** : ni rupture REST, ni retrait du serveur Docker n'ont été établis (qualification du 2026-11-08, §« Troisième voie » ci-dessous).
 
-- **NE PAS** utiliser de scripts Python avec l'API REST directe (provoque du rate-limiting et des erreurs d'auth)
-- Le MCP gère l'authentification et le rate-limiting automatiquement
+- **NE PAS** écrire de script Python ad-hoc contre l'API REST directe : il contourne le rate-limiting partagé et les gardes d'authentification que les trois serveurs appliquent
+- Les serveurs gèrent l'authentification et le rate-limiting
 - Fichier de config : `.mcp.json` (déjà dans `.gitignore`, JAMAIS committer)
 
 ### Configuration `.mcp.json`
@@ -104,9 +105,9 @@ L'absence d'un appel `SetEndDate` (Python : `self.set_end_date(...)`) **n'est pa
 
 ### Alternative légère : `qc-mcp-lite` (~5k tokens vs ~40k)
 
-Le MCP Docker officiel charge un schema d'outils volumineux (~40k tokens). Pour les workflows de backtest standard, le dépôt fournit un wrapper Python léger **`scripts/qc-mcp-lite/server.py`** (~10 outils, schema <5k tokens) qui re-expose l'API QC v2 sans conteneur Docker.
+Le MCP Docker officiel charge un schema d'outils volumineux (~40k tokens). Pour les workflows de backtest standard, le dépôt fournit un wrapper Python léger **`scripts/qc-mcp-lite/server.py`** (**12 outils**, schema <5k tokens) qui re-expose l'API QC v2 sans conteneur Docker.
 
-Outils exposes : `create_compile`, `read_compile`, `create_backtest`, `read_backtest` (Sharpe/CAGR/MaxDD), `read_backtest_chart` (graphique écrit sur disque : equity, exposition, rotation, graphique personnalisé), `list_backtests`, `list_projects`, `read_project`, `read_file`, `create_file`, `update_file_contents`. Auth = pattern QC v2 (`SHA256(token:timestamp)` + header `Basic userId:hash`). Rate limiting 10 appels/min applique in-process (même limite fleet-wide).
+Outils exposes (**12**) : `create_compile`, `read_compile`, `create_backtest`, `read_backtest` (Sharpe/CAGR/MaxDD), `read_backtest_chart` (graphique écrit sur disque : equity, exposition, rotation, graphique personnalisé), `list_backtests`, `create_project` (`language`, et `organization_id` optionnel — l'échappatoire d'une organisation saturée, #19760), `list_projects`, `read_project`, `read_file`, `create_file`, `update_file_contents`. Aucun outil Jupyter : l'exécution QuantBook passe par le MCP distant ou le Research Assistant (§« Troisième voie », [quantbook-execution-routes.md](quantbook-execution-routes.md)). Auth = pattern QC v2 (`SHA256(token:timestamp)` + header `Basic userId:hash`). Rate limiting 10 appels/min applique in-process — donc **par processus**, pas un verrou distribué : la limite flotte du §« Rate limiting strict » reste une règle de coordination que ce garde local ne fait pas respecter à lui seul.
 
 Config `.mcp.json` (remplace l'entrée Docker `qc-mcp` ; secrets dans `.env` gitignore, **JAMAIS inline**) :
 
@@ -187,16 +188,17 @@ QC est multi-tenant via les "organizations". Le cluster CoursIA utilise plusieur
 
 ### Switcher d'org
 
-L'orga par défaut du MCP est définie par `QUANTCONNECT_ORGANIZATION_ID` dans `.mcp.json`. Deux options pour changer ponctuellement :
+L'orga par défaut du MCP est définie par `QUANTCONNECT_ORGANIZATION_ID` dans `.mcp.json`. Trois options pour changer ponctuellement :
 
-1. Éditer `.mcp.json` env var et rebuild le MCP Docker container
-2. Spécifier `organizationId` explicitement par appel quand le tool MCP l'accepte
+1. Spécifier `organizationId` explicitement par appel quand le tool MCP l'accepte — côté lite, c'est `create_project(organization_id=...)` ; côté Docker, le champ `organizationId` des tools qui le portent
+2. Éditer l'env var de `.mcp.json`
+3. Pour le MCP Docker, rebuild le conteneur après l'édition
 
 Note : `read_account` retourne TOUJOURS l'orga par défaut du USER_ID (la research tier quand non force par env var).
 
 ### Énumération des orgs
 
-Il n'existe pas d'endpoint `list_organizations`. La seule façon : `mcp__qc-mcp__list_projects` retourne les projets de toutes les orgs dont l'user est membre+ — agréger les `organizationId` distincts.
+Il n'existe pas d'endpoint `list_organizations`. La seule façon : `list_projects` (lite ou Docker) retourne les projets de toutes les orgs dont l'user est membre+ — agréger les `organizationId` distincts.
 
 ## Structure QC dans le dépôt
 
@@ -273,7 +275,7 @@ Pattern standardise pour combiner plusieurs strategies dans un même algo QC :
 
 - Groupe les insights par `source_model`
 - Alloue une poche de capital par strategie via dict `alpha_allocations`
-- Mode intent par defaut (`additive=True`, exige `algorithm=self`) : dernier insight actif par couple (symbole, source_model), somme des poches par symbole, sans levier (#19740, #19759)
+- Mode intent **opt-in** (`additive=True`, exige `algorithm=self`) : dernier insight actif par couple (symbole, source_model), somme des poches par symbole, sans levier (#19740, #19759). Le défaut est `additive=False` (#20188) : chaque consommateur écrit son mode explicitement, donc le défaut du canonique n'est atteint par aucun d'eux et le remettre ne change le comportement d'aucun projet
 - Supporte branches weight-hint ET equal-weight
 - Utilise `set_rebalancing_func` pour le rebalance timing
 
@@ -288,7 +290,7 @@ Le modèle par poches a longtemps existé en plusieurs copies, en plusieurs vari
 | `partner-course-quant-trading/kit-transitoire/03-Framework-Composite/main.py` | kit pédagogique **autonome** : le code est lu et modifié par l'apprenant dans un seul fichier, sans bibliothèque QC attachée — le canonique ne peut pas y être importé | le correctif `additive` et les diagnostics XLU de #20188 |
 | `projects/TrendWeatherPointInTime/portfolio_construction.py` | candidate **gelée** du registre de l'ombre (entrée `tw-pit`, code rejoué au SHA gelé) : #20188 interdit que l'extraction la touche | la variante antérieure au correctif `additive` — une seule insight par symbole, pas de reconstruction par `(symbole, source_model)` |
 
-La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une **nouvelle** copie apparaisse sans déclaration, et qu'une copie **déclarée** soit modifiée sans re-déclaration.
+La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une **nouvelle** copie apparaisse sans déclaration, et qu'une copie **déclarée** soit modifiée sans re-déclaration. Elle refuse aussi trois dérives de l'invariant du **défaut** (#20188) : un défaut `additive=True` sur le canonique (`CANONICAL_DEFAULT_UNSAFE`), un consommateur qui instancie le canonique sans écrire `additive` (`CONSUMER_IMPLICIT_DEFAULT`) — il hériterait du défaut, et son comportement changerait si le défaut change —, et un consommateur qui instancie une **sous-classe** du canonique sans écrire `additive` (`DERIVED_IMPLICIT_DEFAULT`) : le défaut est alors atteint par le forward `**kwargs` de la sous-classe vers `super().__init__`, sans qu'aucun appel ne nomme le canonique. Les trois contrôles sont syntaxiques (AST) : le défaut est lu dans la signature du canonique, la présence du mot-clé dans l'appel du consommateur, et l'ascendance de classe pour le chemin indirect.
 
 ```bash
 python scripts/quantconnect/check_pcm_single_source.py          # verdict humain
@@ -302,6 +304,10 @@ python scripts/quantconnect/check_pcm_single_source.py --json   # verdict struct
 **Câblage CI** : la garde est un garde **natif de la voie rapide** (`TRANCHE38` du registre `scripts/ci/fast_lane_registry.py`), **bloquant** : son check-run porte son nom canonique, donc un verdict rouge arrête la PR. Elle se déclenche sur toute modification d'un `.py` sous `MyIA.AI.Notebooks/QuantConnect/`, sur le manifeste et sur l'organe lui-même (une révision qui change la portée de la garde doit la rejouer).
 
 **Contrôle positif** : le corps de tests (`scripts/quantconnect/tests/test_check_pcm_single_source.py`) crée un arbre temporaire où une copie déclarée est volontairement modifiée et exige un verdict rouge (`DECLARATION_STALE`) ; le cas nominal, l'arbre du dépôt, doit rester vert. Une garde qui ne rougit pas sur une copie modifiée n'est pas une garde.
+
+### Noyau de risque déterministe — module commun
+
+Le noyau de risque déterministe (plafond d'exposition à 90 %, stop à 2 ATR(14), coupe-circuit à −3 %, #24698) vit dans `projects/RiskKernel/risk_kernel.py`. `HAR-RV-Kelly` et `Cloud-VolTargeting` en portent chacun une copie identique à l'octet, à côté de leur `main.py` : une copie se téléverse avec le projet, là où une bibliothèque QC manquante ne se voit qu'au lancement du backtest. La garde `scripts/quantconnect/check_risk_kernel_copies.py` (voie rapide, `risk-kernel-copies-guard`, bloquante) rougit sur une copie qui diverge ou un import sans copie. API, procédure de modification et choix copie contre bibliothèque : [RiskKernel/README.md](../../MyIA.AI.Notebooks/QuantConnect/projects/RiskKernel/README.md).
 
 ### AlphaModel — règles
 
@@ -362,6 +368,8 @@ python scripts/quantconnect/check_pcm_single_source.py --json   # verdict struct
 - **USD trend filter degrade FX momentum**
 
 ## Leçons techniques QC
+
+Les pièges mesurés, détaillés et sourcés (lecture d'un backtest, ordres et exécution, données et univers, framework, graphiques, outils, suivi en ombre) sont dans [qc-pieges-mesures.md](qc-pieges-mesures.md) ; la liste ci-dessous reste le précis court.
 
 - `read_file` AVANT `update_file_contents` : collaboration lock (expire vite)
 - Options : `Resolution.MINUTE` sinon chain vide

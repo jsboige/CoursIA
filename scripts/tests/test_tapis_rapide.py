@@ -8,7 +8,6 @@ import ast
 import json
 import subprocess
 import sys
-from collections import Counter
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -18,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk
 from coordination import tapis_rapide as tr
+from coordination import tapis_hors_flotte as thf
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -159,7 +159,8 @@ def test_claims_vivant_perime_mien_et_borne():
     assert etat(lec, 4).ecart == "PLAFOND"  # un claim borne reste une visite
     assert etat(lec, 5).ecart == "PLAFOND"
     borne = etat(lec, 7)
-    assert borne.ecart is None and borne.notes == [f"claim borne de {AUTRE} : a/b/**"]
+    assert borne.ecart is None and borne.notes == [f"claim borne de {AUTRE}"]
+    assert borne.occupes == [(AUTRE, "a/b/**")]  # le chemin entier, jamais tronque
     # Le claim est ferme, mais le [RELEASED] d'il y a 1 h tient l'issue a l'ecart.
     assert etat(lec, 6).ecart == "RELACHEE"
 
@@ -259,6 +260,46 @@ def test_l_ordre_des_ecarts_le_premier_gagne():
     assert etat(lec, 1).ecart == "LABEL"
 
 
+# --- hors flotte (#17713, #26893) -------------------------------------------
+
+def test_hors_flotte_les_quatre_formes_declarees():
+    for corps in (
+        "Hors flotte — Marathon II. Part of #26078 ; See #26070.",
+        "**Hors flotte** — Marathon II.",
+        "- Hors flotte — Epic #26070, parent #26081.",
+        "**Travail hors flotte déjà en cours par root dans la session Marathon II.**",
+        "**État du 16 novembre 2026 — livré hors flotte sous #26070 / #26078.**",
+        "Contexte.\n\nSuivi Marathon II hors flotte #17713. Livraison groupée.",
+    ):
+        assert thf.hors_flotte_declaration(corps), corps[:40]
+
+
+def test_hors_flotte_prose_citation_et_code_ne_declarent_pas():
+    for corps in (
+        "Deux PRs ont fermé la même issue : #26598, une session hors flotte ouverte le 14/11.",
+        "1. **`--claim` saute la jambe.** Le chemin parle d'une session hors flotte.",
+        "> Hors flotte — Marathon II. Part of #26078.",
+        # faux positifs mesures (#10643, #25509) : une puce ou un bloc qui
+        # decrit une livraison cloud cite la regle, l'EPIC reste de flotte.
+        "> - **Parcours visiteur POSIX (clone vierge)** : #25469 — session "
+        "hors flotte #17713, clone vierge rejoue.",
+        "- **Une PR par README.** Une livraison hors flotte #17713 couvre "
+        "la vague batch20.",
+        "Exemple :\n```\nHors flotte — Marathon II.\n```",
+        "",
+    ):
+        assert thf.hors_flotte_declaration(corps) is None, corps[:40]
+
+
+def test_ecart_hors_flotte_domine_le_label():
+    lec = lecture([issue(1, labels=["candidate-delivered"],
+                         body="Hors flotte — Marathon II."),
+                   issue(2, body="Texte ordinaire de flotte.")])
+    e1, e2 = etat(lec, 1), etat(lec, 2)
+    assert e1.ecart == "HORSFLOTTE" and "#17713" in e1.motif
+    assert e2.ecart is None
+
+
 def test_parent_famille_conteneur_et_derniere_visite():
     lec = lecture([issue(10, titre="Racine"), issue(11, body="Part of #10"),
                    issue(12, titre="[EPIC #11] Phase 2 : tranche"),
@@ -302,24 +343,31 @@ def test_une_seule_famille_garde_ses_invariants():
     ])
     file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
     ordre = [e.numero for e in file]
-    # jamais visitees devant les visitees
-    assert set(ordre[:3]) == {1, 2, 3}
-    # le grain avant son conteneur
-    assert ordre.index(2) < ordre.index(1) and ordre.index(3) < ordre.index(1)
-    # puis la visite la plus ancienne
-    assert ordre.index(5) < ordre.index(4)
+    # parmi les grains, les jamais visites devant les visites (niveau 0, puis 1)
+    assert set(ordre[:2]) == {2, 3}
+    # les deux grains visites une fois forment le niveau 1, decale par lane
+    # comme le niveau 0 (tapis_equilibre) ; le conteneur, meme jamais visite,
+    # en dernier : il demande une lecture et un --paths (#26926)
+    assert set(ordre[2:4]) == {4, 5} and ordre[4] == 1
 
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
     """Mesure du 14/11 : deux sieges ont recu les memes grains, parce que
-    l'ordre des membres d'une famille ne dependait pas de la lane."""
+    l'ordre des membres d'une famille ne dependait pas de la lane.
+
+    La tete d'un niveau tourne d'une lane a l'autre (le decalage depend de la
+    graine, donc de la lane). Deux lanes particularieres peuvent colliding par
+    hasard -- la tete est une FONCTION de la graine, pas un tirage sans
+    rappel : l'assertion porte donc sur l'ensemble des lanes, ou la
+    diversification est une consequence et non une chance."""
     lec = lecture([issue(1, titre="[EPIC] Racine", cree="2026-01-01T00:00:00Z")]
                   + [issue(k, body="Part of #1", cree=f"2026-02-0{k - 1}T00:00:00Z")
                      for k in (2, 3, 4, 5)])
     etats_ = tr.etats(lec, LANE, NOW)
-    tetes = {lane: tr.ordonner(etats_, lane, NOW, 8)[0].numero
-             for lane in (LANE, AUTRE)}
-    assert len(set(tetes.values())) == 2, tetes
+    lanes = (LANE, AUTRE, "myia-po-2025:CoursIA-2", "myia-po-2026:CoursIA",
+             "myia-po-2028:CoursIA", "myia-po-2023:CoursIA", "myia-po-2024:CoursIA")
+    tetes = {lane: tr.ordonner(etats_, lane, NOW, 8)[0].numero for lane in lanes}
+    assert len(set(tetes.values())) > 1, tetes
 
 
 def test_le_decalage_est_deterministe_pour_une_lane_et_une_tranche():
@@ -347,26 +395,6 @@ def test_quota_de_conteneurs_puis_complement():
     assert len(peu) == 8 and sum(not e.conteneur for e in peu) == 3  # les Epics completent
 
 
-def test_priorite_legere_sur_deux_mille_graines():
-    etats_ = tr.etats(lecture(_familles(30, consolidation=7)), LANE, NOW)
-    vus: Counter = Counter()
-    for k in range(2000):
-        vus.update({e.famille for e in tr.ordonner(etats_, LANE, NOW, 8, graine=f"g{k}")})
-    conso = vus.pop(1070)
-    assert conso > max(vus.values())
-    assert len(vus) == 29 and min(vus.values()) >= 1
-
-
-def test_vieil_epic_et_cumul_des_poids():
-    lec = lecture([issue(1, titre="[EPIC] ancien", labels=["consolidation"],
-                         cree="2026-06-01T00:00:00Z"),
-                   issue(2, titre="[EPIC] recent", cree="2026-11-01T00:00:00Z")])
-    poids = tr.poids_familles(tr.etats(lec, LANE, NOW), NOW)
-    assert poids[1][0] == pytest.approx(tr.PRIO_CONSOLIDATION * tr.PRIO_VIEIL_EPIC)
-    assert poids[1][1] == ["consolidation", "vieil EPIC #1"]
-    assert poids[2] == (1.0, [])
-
-
 def test_graine_par_lane_et_par_tranche_de_quatre_heures():
     etats_ = tr.etats(lecture(_familles(30)), LANE, NOW)
 
@@ -380,14 +408,109 @@ def test_graine_par_lane_et_par_tranche_de_quatre_heures():
 
 # --- CLI --------------------------------------------------------------------
 
-def test_cli_lecture_en_panne_code_3_et_repli(capsys):
-    def run(argv, timeout):
-        raise subprocess.CalledProcessError(1, argv, output="", stderr="HTTP 401")
+def _panne(argv, timeout):
+    raise subprocess.CalledProcessError(1, argv, output="", stderr="HTTP 401")
 
-    assert tr.main(["--lane", LANE, "--cache-s", "0"], run=run, maintenant=NOW) == 3
+
+def test_cli_lecture_en_panne_code_3_sans_tapis_lourd(capsys):
+    """Sans secours, rien n'est servi -- et rien ne renvoie au tapis lourd (#26926)."""
+    assert tr.main(["--lane", LANE, "--cache-s", "0"], run=_panne, maintenant=NOW) == 3
     err = capsys.readouterr().err
     assert "Lecture incomplete (issues" in err
-    assert f"python scripts/pick_idle_grain.py --belt --lane {LANE}" in err
+    assert "pick_idle_grain" not in err and "Ne tirez pas le tapis lourd" in err
+
+
+def _cache(dossier: Path, age_s: float, lec: gh_bulk.Lecture) -> None:
+    import dataclasses
+    import time
+    dossier.mkdir(parents=True, exist_ok=True)
+    brut = {**dataclasses.asdict(lec), "_epoch": time.time() - age_s}
+    (dossier / "lecture-45j.json").write_text(json.dumps(brut), encoding="utf-8")
+
+
+def test_cli_lecture_en_panne_tire_sur_le_cache_de_secours(tmp_path, monkeypatch, capsysbinary):
+    """Une panne reseau tire sur la derniere lecture COMPLETE de moins de 12 h,
+    et le dit dans la ligne de lecture ; au-dela de 12 h, sortie 3 (#26926)."""
+    lec = lecture([issue(7, titre="Grain du cache")])
+    lec.lu_a = tr._iso(NOW - timedelta(hours=2))
+    monkeypatch.setattr(tr.gh_bulk, "dossier_cache_defaut", lambda: tmp_path)
+    monkeypatch.setattr(tr.tapis_origami, "mesurer", lambda *a, **k: (
+        {}, {"active": False, "measured": False, "parked": [], "reason": "test"}))
+    _cache(tmp_path, 3 * 3600, lec)
+    monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: (_ for _ in ()).throw(
+        gh_bulk.LectureIncomplete("issues", 1, "HTTP 502")))
+    assert tr.main(["--lane", LANE], run=_panne, maintenant=NOW) == 0
+    capture = capsysbinary.readouterr()
+    out, err = capture.out.decode("utf-8"), capture.err.decode("utf-8")
+    assert "#7 Grain du cache" in out and "lecture reseau en echec (issues" in out
+    assert "lecture de secours" in err and "pick_idle_grain" not in out + err
+    _cache(tmp_path, 13 * 3600, lec)
+    assert tr.main(["--lane", LANE], run=_panne, maintenant=NOW) == 3
+
+
+def test_conteneur_servi_apres_les_grains_avec_sa_procedure_paths():
+    """Un conteneur ne passe jamais devant un grain, et sa commande porte
+    `--paths` : sans elle, check_lane_claim refuse le conteneur entier des
+    qu'une autre lane y tient un claim borne (6 sur #19297, 16/11)."""
+    borne = com(2, f"[OVERRIDE] lane {AUTRE} -- paths: MyIA.AI.Notebooks/Search/**, "
+                   "MyIA.AI.Notebooks/Sudoku/Sudoku-12-Long-Chemin-De-Fichier.ipynb")
+    lec = lecture([issue(1, titre="[EPIC] racine", labels=["consolidation"], comments=[borne]),
+                   issue(2), issue(3)],
+                  prs=[{"number": 900, "title": "Fix(x,#1): y", "body": ""}])
+    etats_ = tr.etats(lec, LANE, NOW)
+    file = tr.ordonner(etats_, LANE, NOW, 8)
+    assert [e.conteneur for e in file] == [False, False, True]
+    r = tr.rapport(lec, etats_, file, LANE, NOW, "g")
+    g = r["grains"][-1]
+    assert g["avant_d_editer"] == f"python scripts/check_lane_claim.py 1 --lane {LANE} " \
+                                  "--paths <vos chemins>"
+    assert "gh issue view 1 --comments" in g["procedure"]
+    assert g["chemins_occupes"][0]["paths"].endswith("Sudoku-12-Long-Chemin-De-Fichier.ipynb")
+    assert g["prs_ouvertes"] == [900]
+    assert "--paths" not in r["grains"][0]["avant_d_editer"]  # un grain : la commande nue
+    sortie = tr.texte(r, "test")
+    assert "[CONTENEUR]" in sortie and "Sudoku-12-Long-Chemin-De-Fichier.ipynb" in sortie
+
+
+def test_cli_mesure_origami_en_panne_sort_0_et_la_cause(monkeypatch, capsysbinary):
+    """Une protection auxiliaire en panne n'eteint pas le tirage (#26528).
+
+    Le parcage Origami est une protection **auxiliaire** ; le tapis rapide est
+    le tirage de reference de toute la flotte. Une mesure impossible laisse la
+    sortie a `0`, la cause nommee, un avertissement sur stderr -- et l'EPIC
+    Origami **sert**, parce que rien n'a ete mesure.
+    """
+    lec = lecture([issue(19309, titre="[EPIC Origami] Le chantier long"),
+                   issue(7, titre="Grain ordinaire")])
+    monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: lec)
+    monkeypatch.setattr(tr.tapis_origami, "mesurer", lambda *a, **k: (
+        {}, {"active": True, "measured": False, "parked": [],
+            "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
+
+    code = tr.main(["--lane", LANE, "--cache-s", "0"], run=lambda argv, timeout: "",
+                    maintenant=NOW)
+    capture = capsysbinary.readouterr()
+    out, err = capture.out.decode("utf-8"), capture.err.decode("utf-8")
+    assert code == 0
+    assert "Parcage Origami : NON MESURE" in out and "mesure en echec" in out
+    assert "Mesure Origami impossible" in err and "mesure en echec" in err
+    assert "#19309" in out  # l'EPIC Origami est servi : rien n'a ete ecarte
+
+
+def test_cli_json_porte_la_mesure_non_faite(monkeypatch, capsysbinary):
+    """Le `--json` nomme la cause : jamais un etat vide qui se lit « rien »."""
+    lec = lecture([issue(19309, titre="[EPIC Origami] Le chantier long")])
+    monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: lec)
+    monkeypatch.setattr(tr.tapis_origami, "mesurer", lambda *a, **k: (
+        {}, {"active": True, "measured": False, "parked": [],
+            "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
+
+    code = tr.main(["--lane", LANE, "--cache-s", "0", "--json"],
+                    run=lambda argv, timeout: "", maintenant=NOW)
+    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
+    assert code == 0
+    assert sortie["origami_parking"]["measured"] is False
+    assert "mesure en echec" in sortie["origami_parking"]["reason"]
 
 
 def _dossier(tmp_path: Path, issues: list[dict], prs: list[dict]) -> Path:
@@ -419,7 +542,7 @@ def test_cli_pool_vide_dit_en_clair(tmp_path, capsysbinary):
                    run=lambda argv, timeout: "") == 0
     sortie = capsysbinary.readouterr().out.decode("utf-8")
     assert "Pool vide" in sortie and "LABEL 1" in sortie
-    assert "portez d'abord au merge celles de plus de 24 h" in sortie
+    assert "traitez d'abord leurs nits" in sortie
 
 
 def test_rapport_et_texte_portent_la_note_de_fetch():
@@ -464,8 +587,9 @@ def _violations(source: str) -> list[str]:
 
 
 def test_tapis_rapide_ne_lance_aucun_processus():
-    for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "gh_cache.py",
-                "gh_cache_fichier.py"):
+    for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "tapis_hors_flotte.py",
+                "gh_cache.py", "gh_cache_fichier.py", "tapis_service.py",
+                "tapis_reverif.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -477,11 +601,24 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # gh_cache.py la seconde (cache et verrou de la lecture, #22630, 14/11) ;
 # gh_cache_fichier.py la troisieme (le fichier de cache : lire si frais, ecrire
 # atomiquement -- extraction demandee par les replis de la review Hermes,
-# #22630, 14/11 : le protocole a grandi de 41 lignes).
+# #22630, 14/11 : le protocole a grandi de 41 lignes) ; tapis_service.py la
+# quatrieme (ce que le tapis sert : procedure des conteneurs, secours, sortie
+# texte, #26926, 16/11) ; gh_selection.py la cinquieme (le chemin de selection
+# leger : metadonnees seules, budget global, #27223, 18/11) ; tapis_avantages.py
+# la sixieme (les deux priorites legeres du mandat du 18/11) ; tapis_universel.py
+# la septieme (la rotation universelle, #27223) ; tapis_reverif.py la huitieme
+# (re-decision des grains servis au fil tronque sur leur fil complet, #27179,
+# 18/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
+                                              ("tapis_hors_flotte.py", 60),
                                               ("gh_cache.py", 130),
-                                              ("gh_cache_fichier.py", 60)])
+                                              ("gh_cache_fichier.py", 60),
+                                              ("tapis_service.py", 140),
+                                              ("gh_selection.py", 140),
+                                              ("tapis_avantages.py", 80),
+                                              ("tapis_universel.py", 160),
+                                              ("tapis_reverif.py", 120)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

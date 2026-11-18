@@ -26,7 +26,7 @@ fil qui ne porte que des gestes laisse le Concern NON REPONDU.
 
 Classe ``user-remark`` (#20185, classe 2) : sous le login partage, l'auteur ne
 separe pas un post de lane d'une remarque du mainteneur — c'est la FORME du corps
-qui tranche (six signatures mesurees, ``lane_signature``). Une reponse non signee
+qui tranche (sept signatures mesurees, ``lane_signature``). Une reponse non signee
 sans reponse reste ouverte ; un post de lane signe n'est jamais un candidat ; une
 citation forte (horodatage) referme ; le mot « Concern » ne referme pas une
 remarque ; un geste de lane apres la remarque leve ``gesture-after``.
@@ -615,6 +615,135 @@ class LaneSignatureTests(unittest.TestCase):
         )
 
 
+class AgentTaxonomyTagTests(unittest.TestCase):
+    """#26791 : la taxonomie d'emission `[ACTION]`/`[DIAG]`/`[ASK]` est une signature.
+
+    Sans elle, ces posts d'agent tombent dans ``head-tag``, qui est ambigu et
+    route en ``MANUAL_REVIEW`` : la mesure de #26791 rendait 164 remarques
+    « non resolues » sur les PRs, presque toutes du bruit d'agent tague.
+    """
+
+    def test_action_diag_ask_are_signatures(self):
+        for body in (
+            "[ACTION] Trois gardes rouges levees — branche poussee, CI relancee.",
+            "[DIAG] Mesure du jour : 3 PRs vertes, 0 rouge.",
+            "[ASK] Qui porte la tranche 2 de la serie ?",
+            "[ASK USER] Arbitrage requis sur le capstone.",
+            "[ASK-USER] Arbitrage requis sur le capstone.",
+        ):
+            with self.subTest(body=body):
+                self.assertEqual(mod.lane_signature(body), "agent-taxonomy-tag")
+
+    def test_decoration_does_not_hide_the_tag(self):
+        self.assertEqual(
+            mod.lane_signature("**[ACTION] B.0 levee, thread resolu.**"),
+            "agent-taxonomy-tag",
+        )
+
+    def test_tag_cited_mid_body_is_not_an_emission(self):
+        # Mention, pas emission (#13030) : la prose cite le tag sans le porter.
+        self.assertEqual(
+            mod.lane_signature("Les commentaires `[ACTION]` de #23506 sont du bruit."),
+            "",
+        )
+
+    def test_tagged_agent_post_is_excluded_from_remarks(self):
+        report = mod.analyse_comments(
+            23506,
+            [c(1, "2026-11-15T18:00:00Z", "[ACTION] Trois gardes rouges levees.")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks, [])
+        self.assertEqual(report.excluded.get("agent-taxonomy-tag"), 1)
+
+    def test_untagged_maintainer_remark_stays_a_candidate(self):
+        # Controle negatif exige par l'acceptance : la signature ne doit pas
+        # avaler une remarque du mainteneur qui ne porte aucun tag.
+        body = "Il faut reprendre ce point : la mesure de ce matin ne tient pas."
+        self.assertEqual(mod.lane_signature(body), "")
+        report = mod.analyse_comments(
+            1, [c(1, "2026-11-15T18:00:00Z", body)], classes=("user-remark",)
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
+
+
+class ListIssueNumbersTests(unittest.TestCase):
+    """#26791 : la recherche par defaut couvre les PRs ouvertes.
+
+    Les deux types sont interroges SEPAREMENT (``is:issue OR is:pr`` n'est pas
+    garanti par l'API de recherche) puis fusionnes sans doublon, issues d'abord.
+    """
+
+    def setUp(self):
+        self._orig = mod.gh_json
+        self.queries: list[str] = []
+
+    def tearDown(self):
+        mod.gh_json = self._orig
+
+    def _serve(self, mapping: dict[str, list[int]]) -> None:
+        def fake(args):
+            query = next(a.split("=", 1)[1] for a in args if a.startswith("q="))
+            self.queries.append(query)
+            nodes = mapping.get(query)
+            if nodes is None:
+                raise AssertionError(f"requete inattendue : {query}")
+            return {
+                "data": {
+                    "search": {
+                        "nodes": [{"number": n} for n in nodes],
+                        "pageInfo": {"hasNextPage": False, "endCursor": None},
+                    }
+                }
+            }
+
+        mod.gh_json = fake
+
+    def test_default_covers_issues_and_pull_requests(self):
+        base = f"repo:{mod.REPO}"
+        self._serve(
+            {
+                f"{base} is:issue updated:>=2026-09-25 is:open": [11, 12],
+                f"{base} is:pr updated:>=2026-09-25 is:open": [12, 13],
+            }
+        )
+        numbers = mod.list_issue_numbers("2026-09-25", "open")
+        self.assertEqual(numbers, [11, 12, 13])
+        self.assertEqual(len(self.queries), 2)
+        self.assertIn("is:issue", self.queries[0])
+        self.assertIn("is:pr", self.queries[1])
+
+    def test_issues_only_restores_the_previous_scope(self):
+        base = f"repo:{mod.REPO}"
+        self._serve(
+            {f"{base} is:issue updated:>=2026-09-25 is:open": [11]}
+        )
+        numbers = mod.list_issue_numbers("2026-09-25", "open", ("issue",))
+        self.assertEqual(numbers, [11])
+        self.assertEqual(len(self.queries), 1)
+        self.assertNotIn("is:pr", self.queries[0])
+
+    def test_graphql_document_covers_both_node_types(self):
+        # #26791 : ``search`` rend une union. Sans le fragment PullRequest, un
+        # noeud PR revient sans ``number`` — le smoke test du correctif a rendu
+        # un KeyError avant que le fragment soit ajoute.
+        self.assertIn("... on Issue { number }", mod.GRAPHQL_SEARCH)
+        self.assertIn("... on PullRequest { number }", mod.GRAPHQL_SEARCH)
+
+    def test_state_filter_is_appended_per_kind(self):
+        base = f"repo:{mod.REPO}"
+        self._serve(
+            {
+                f"{base} is:issue updated:>=2026-09-25 is:closed": [21],
+                f"{base} is:pr updated:>=2026-09-25 is:closed": [22],
+            }
+        )
+        self.assertEqual(
+            mod.list_issue_numbers("2026-09-25", "closed"), [21, 22]
+        )
+
+
 class RemarkActTests(unittest.TestCase):
     """L'intention declaree est enregistree, pas filtrante."""
 
@@ -822,18 +951,26 @@ class Utf8OutputTests(unittest.TestCase):
         emoji_concern = "Concern: le rendu casse \U0001f680 partout"
         original = sys.stdout
         original_fetch = mod.fetch_comments
+        original_state = mod.fetch_issue_state
         raw = _io.BytesIO()
         sys.stdout = _io.TextIOWrapper(raw, encoding="cp1252")
         try:
             mod.fetch_comments = lambda number: [
                 c(60, "2026-10-19T09:00:00Z", emoji_concern)
             ]
+            # CI sans GH_TOKEN : l'etat d'issue ne part jamais en vrai gh api
+            # (le defaut de --classes inclut la classe 6, closed-over-remark).
+            mod.fetch_issue_state = lambda number: {
+                "state": "open",
+                "closed_at": None,
+            }
             rc = mod.main(["--issues", "15"])
             sys.stdout.flush()
             payload = raw.getvalue()
         finally:
             sys.stdout = original
             mod.fetch_comments = original_fetch
+            mod.fetch_issue_state = original_state
         self.assertEqual(rc, 0)
         out = payload.decode("utf-8")
         self.assertIn("non resolu", out)
@@ -1513,6 +1650,230 @@ def test_cli_resolved_ask_is_counted_but_not_open(monkeypatch, capsys):
     assert payload["unresolved"] == 0
     assert payload["asks_total"] == 1
     assert payload["asks_unresolved"] == 0
+
+
+CONCERN_BARE = "**Concern** : la preuve mesuree manque (log CI absent du body)."
+#: Reponse de lane fortement citante : signature de lane + horodatage
+#: ``10:00Z`` du commentaire porteur (la forme mesuree #18601).
+LANE_REPLY_10Z = (
+    "[INFO] lane myia-po-2025:CoursIA-2 -- reponse au 10:00Z : preuve "
+    "livree dans la PR #123, log CI cite dans le body."
+)
+
+
+class ClosedOverRemarkTests(unittest.TestCase):
+    """Classe 6 ``closed-over-remark`` (#20185) : la VUE contextuelle.
+
+    L'evenement n'est pas un commentaire mais une FERMETURE d'issue posee
+    au-dessus d'une detection des classes 1-5. Trois statuts : sans reponse
+    (verbatim, non resolu), repondu AVANT la fermeture (pas d'evenement),
+    repondu APRES la fermeture (``REPONDU APRES CLOTURE`` : rendu avec preuve,
+    non resolu = faux — l'arbitrage rouvrir/justifier appartient a la phase 2).
+    """
+
+    def test_closure_over_unanswered_concern(self):
+        # Forme fondee : Concern jamais repondu, issue fermee dessous —
+        # l'evenement SUPPLEE la detection (un seul non resolu, cadre fermeture).
+        report = mod.analyse_comments(
+            30,
+            [
+                c(1, "2026-10-01T10:00:00Z", CONCERN_BARE),
+                c(2, "2026-10-02T09:00:00Z",
+                  "[CLAIMED] lane myia-po-2025:CoursIA-2"),
+            ],
+            classes=("closed-over-remark",),
+            state="closed",
+            closed_at="2026-10-05T00:00:00Z",
+        )
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(len(report.closures), 1)
+        closure = report.closures[0]
+        self.assertEqual(closure.comment_id, 1)
+        self.assertEqual(closure.status, "NON REPONDU")
+        self.assertEqual(closure.source, "user-concern")
+        self.assertEqual(closure.closed_at, "2026-10-05T00:00:00Z")
+        # La detection source n'est pas comptee deux fois : l'unresolved est
+        # l'evenement de fermeture, pas le Concern nu.
+        self.assertEqual(
+            [(x.slug, x.comment_id) for x in report.unresolved],
+            [("closed-over-remark", 1)],
+        )
+
+    def test_answered_before_closure_is_not_an_event(self):
+        # Reponse forte AVANT la fermeture : la fermeture est legitime, aucun
+        # evenement a arbitrer.
+        report = mod.analyse_comments(
+            30,
+            [
+                c(1, "2026-10-01T10:00:00Z", CONCERN_BARE),
+                c(2, "2026-10-03T08:00:00Z", LANE_REPLY_10Z),
+            ],
+            classes=("closed-over-remark",),
+            state="closed",
+            closed_at="2026-10-05T00:00:00Z",
+        )
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(report.closures, [])
+        self.assertEqual(report.unresolved, [])
+
+    def test_answered_after_closure_is_reported_not_unresolved(self):
+        # Reponse forte APRES la fermeture : l'evenement existe et porte sa
+        # preuve, mais il n'est PAS non resolu — rouvrir ou justifier par
+        # ecrit appartient a la phase 2 de la campagne.
+        report = mod.analyse_comments(
+            30,
+            [
+                c(1, "2026-10-01T10:00:00Z", CONCERN_BARE),
+                c(2, "2026-10-06T08:00:00Z", LANE_REPLY_10Z),
+            ],
+            classes=("closed-over-remark",),
+            state="closed",
+            closed_at="2026-10-05T00:00:00Z",
+        )
+        self.assertEqual(report.concerns[0].status, "REPONDU")
+        self.assertEqual(len(report.closures), 1)
+        closure = report.closures[0]
+        self.assertEqual(closure.status, "REPONDU APRES CLOTURE")
+        self.assertEqual(closure.proof, 2)
+        self.assertNotIn(closure, report.unresolved)
+
+    def test_open_issue_never_builds_closures(self):
+        report = mod.analyse_comments(
+            30,
+            [c(1, "2026-10-01T10:00:00Z", CONCERN_BARE)],
+            classes=("closed-over-remark",),
+            state="open",
+        )
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(report.closures, [])
+        self.assertEqual(
+            [(x.slug, x.comment_id) for x in report.unresolved],
+            [("user-concern", 1)],
+        )
+
+    def test_requesting_the_view_forces_the_five_detections(self):
+        # Demander SEULE la classe 6 detecte les classes 1-5 : l'evenement de
+        # fermeture vit au-dessus d'un commentaire porte par sa classe source.
+        report = mod.analyse_comments(
+            30,
+            [c(1, "2026-10-01T10:00:00Z", CONCERN_BARE)],
+            classes=("closed-over-remark",),
+            state="closed",
+            closed_at="2026-10-05T00:00:00Z",
+        )
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(report.closures[0].source, "user-concern")
+
+    def test_manual_review_carries_to_the_closure(self):
+        # Une detection MANUAL_REVIEW (reponse sans preuve) reste un evenement
+        # ouvert sous la fermeture — le plancher fail-closed traverse la vue.
+        report = mod.analyse_comments(
+            30,
+            [
+                c(1, "2026-10-01T10:00:00Z", CONCERN_BARE),
+                c(2, "2026-10-02T08:00:00Z",
+                  "Vu sur le dashboard, la decision est en cours."),
+            ],
+            classes=("closed-over-remark",),
+            state="closed",
+            closed_at="2026-10-05T00:00:00Z",
+        )
+        closure = report.closures[0]
+        self.assertEqual(closure.status, "MANUAL_REVIEW")
+        self.assertIn(closure, report.unresolved)
+
+    def test_closure_over_ask(self):
+        report = mod.analyse_comments(
+            31,
+            [c(80, "2026-11-13T14:15:14Z", ASK_BARE)],
+            classes=("closed-over-remark",),
+            state="closed",
+            closed_at="2026-11-14T00:00:00Z",
+        )
+        self.assertEqual(report.closures[0].source, "ask-unanswered")
+        self.assertEqual(report.closures[0].status, "NON REPONDU")
+
+    def test_missing_closed_at_fails_closed(self):
+        # Issue fermee sans ``closed_at`` exploitable : tout non-repondu reste
+        # un evenement, aucun ``APRES CLOTURE`` n'est fabrique (l'instant
+        # manque, on ne l'invente pas) — le REPONDU reste saute.
+        report = mod.analyse_comments(
+            31,
+            [
+                c(1, "2026-10-01T10:00:00Z", CONCERN_BARE),
+                c(2, "2026-10-03T08:00:00Z", LANE_REPLY_10Z),
+                c(3, "2026-11-13T14:15:14Z", ASK_BARE),
+            ],
+            classes=("closed-over-remark",),
+            state="closed",
+            closed_at=None,
+        )
+        by_id = {f.comment_id: f for f in report.closures}
+        self.assertNotIn(1, by_id)  # REPONDU : fermeture legitime, saute
+        self.assertEqual(by_id[3].status, "NON REPONDU")
+        self.assertEqual(by_id[3].source, "ask-unanswered")
+
+    def test_render_labels_closures(self):
+        report = mod.analyse_comments(
+            30,
+            [c(1, "2026-10-01T10:00:00Z", CONCERN_BARE)],
+            classes=("closed-over-remark",),
+            state="closed",
+            closed_at="2026-10-05T00:00:00Z",
+        )
+        text = mod.render_text([report], "2026-10-01", "closed", 1)
+        self.assertIn("1 cloture(s)-dessus", text)
+        self.assertIn("[fermee 2026-10-05T00:00:00Z sur user-concern]", text)
+
+    def test_as_dict_carries_closures(self):
+        report = mod.analyse_comments(
+            30,
+            [c(1, "2026-10-01T10:00:00Z", CONCERN_BARE)],
+            classes=("closed-over-remark",),
+            state="closed",
+            closed_at="2026-10-05T00:00:00Z",
+        )
+        payload = report.as_dict()
+        self.assertEqual(len(payload["closures"]), 1)
+        self.assertEqual(payload["closures"][0]["source"], "user-concern")
+        self.assertEqual(
+            payload["closures"][0]["status"], "NON REPONDU"
+        )
+
+
+def test_cli_closure_view_wires_issue_state(monkeypatch, capsys):
+    # Le CLI demande l'etat de l'issue quand la classe 6 est requise : une
+    # seule requete supplementaire par issue, et le compte JSON porte la vue.
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(1, "2026-10-01T10:00:00Z", CONCERN_BARE),
+        c(2, "2026-10-02T09:00:00Z", "[CLAIMED] lane myia-po-2025:CoursIA-2"),
+    ])
+    monkeypatch.setattr(mod, "fetch_issue_state", lambda number: {
+        "state": "closed", "closed_at": "2026-10-05T00:00:00Z",
+    })
+    rc = mod.main(["--issues", "30", "--classes", "closed-over-remark",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1  # l'evenement de fermeture est non resolu
+    assert payload["closures_total"] == 1
+    assert payload["closures_unresolved"] == 1
+    assert payload["issues"][0]["closures"][0]["source"] == "user-concern"
+
+
+def test_cli_open_issue_skips_state_noise(monkeypatch, capsys):
+    # Hors classe 6, ``fetch_issue_state`` n'est JAMAIS appele : la vue
+    # contextuelle ne coute rien aux passes existantes.
+    calls = []
+
+    def _spy(number):
+        calls.append(number)
+        return {"state": "open", "closed_at": None}
+
+    monkeypatch.setattr(mod, "fetch_issue_state", _spy)
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [])
+    mod.main(["--issues", "30", "--classes", "ask-unanswered", "--json"])
+    capsys.readouterr()
+    assert calls == []
 
 
 if __name__ == "__main__":
