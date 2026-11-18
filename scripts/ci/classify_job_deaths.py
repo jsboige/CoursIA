@@ -102,6 +102,7 @@ INFRA_DEATH_CLASSES: tuple[str, ...] = (
     "RUNNER_LOST_COMM",
     "OOM",
     "WORKER_DEATH",
+    "GIT_OBJECT_MISSING",
 )
 
 # Signatures de mort de SESSION, lues au LOG (pas a l'annotation). Deux sont
@@ -119,6 +120,85 @@ WORKER_DEATH_SIGNATURES: tuple[str, ...] = (
     "KeyError: <WorkerController",
     "Fatal Python error: Aborted",
 )
+
+# Signatures de la famille GIT_OBJECT_MISSING (issue #18312, mesuree le
+# 2026-09-28 sur 13 jobs) : l'hote ne trouve pas un objet du depot au
+# checkout ou a la comparaison de base. Le clone est incomplet, git va
+# chercher l'objet a la demande et le transfert echoue. Trois signatures,
+# toutes lues a l'ANNOTATION du check-run (c'est la surface qu'avait
+# balayee la mesure fondatrice) :
+#   * "fatal: Could not read <sha>" puis exit 128 -- jobs 108750636316
+#     (ai-01-wsl-5, MD Hierarchy Drift Advisory) et 109081425089
+#     (ai-01-wsl-2, Notebook Kernel Drift Guard).
+#   * "could not fetch <sha> from promisor remote" puis "fetch-pack:
+#     invalid index-pack output" -- job 108953753880 (ai-01-wsl-10,
+#     Translation Drift Check, etape Checkout PR).
+#   * "Process completed with exit code 128." pose sur l'etape de CHECKOUT
+#     elle-meme -- jobs 108980481356 (ai-01-wsl-4) et 108947216571
+#     (po-2024-linux-docker-4).
+# Ce qui n'est PAS en cause : le diff (ces jobs repassent verts au rejeu a
+# tete constante, 8 jambes mesurees par po-2025) -- d'ou le classement infra.
+GIT_OBJECT_MISSING_NEEDLES: tuple[str, ...] = (
+    "from promisor remote",
+    "invalid index-pack output",
+)
+
+# "Could not read " exige un SHA adjacent : le verbe seul se rencontre dans
+# des messages de contenu (fichier illisible par un test), seul le couple
+# verbe + hexa designe l'operation git sur un objet du depot.
+GIT_OBJECT_READ_RE = re.compile(r"Could not read [0-9a-fA-F]{7,40}")
+GIT_PROMISOR_FETCH_RE = re.compile(
+    r"could not fetch [0-9a-fA-F]{40} from promisor remote", re.IGNORECASE
+)
+GIT_PROMISOR_TRANSFER_FAILURE_NEEDLES: tuple[str, ...] = (
+    "fatal: early eof",
+    "fetch-pack: invalid index-pack output",
+)
+
+
+def git_object_missing(job: dict, annotations: list[dict]) -> bool:
+    """L'annotation designe-t-elle un objet git introuvable (issue #18312) ?
+
+    Conservateur par construction, comme worker_death_from_log : les deux
+    premieres signatures sont non ambigues (un fetch promisor ou un
+    index-pack invalide ne vient jamais d'un rouge de contenu). La troisieme
+    -- exit 128 nu -- n'est retenue QUE si les etapes en echec sont toutes
+    des checkouts : un exit 128 sur une etape de test reste un rouge de
+    contenu, l'organe ne doit pas offrir de blanchiment.
+    """
+    messages = [a.get("message", "") for a in annotations]
+    if any(needle in m for needle in GIT_OBJECT_MISSING_NEEDLES for m in messages):
+        return True
+    if any(GIT_OBJECT_READ_RE.search(m) for m in messages):
+        return True
+    if any("exit code 128" in m for m in messages):
+        failed = [
+            s for s in (job.get("steps") or [])
+            if s.get("conclusion") == "failure"
+        ]
+        if failed and all(
+            "checkout" in (s.get("name") or "").lower() for s in failed
+        ):
+            return True
+    return False
+
+
+def git_object_missing_from_log(log_text: str) -> bool:
+    """Reconnaît le fetch promisor interrompu dans le journal brut du job.
+
+    Les annotations d'un check-run peuvent ne contenir que l'étape et son
+    code de sortie. Pour éviter de reclasser un simple timeout ou une erreur
+    de contenu, le journal doit nommer un SHA complet demandé au promisor et
+    une fin de transfert Git tronquée.
+    """
+    if not log_text or not GIT_PROMISOR_FETCH_RE.search(log_text):
+        return False
+    lowered = log_text.lower()
+    if TEST_SUMMARY_MARKER in lowered:
+        return False  # un test nomme en echec garde priorite sur le teardown
+    return any(
+        needle in lowered for needle in GIT_PROMISOR_TRANSFER_FAILURE_NEEDLES
+    )
 
 # Marqueur du bloc que pytest imprime quand il a NOMME des tests en echec. Sa
 # presence est ce qui rend une reclassification impossible : si pytest a
@@ -208,13 +288,27 @@ def fetch_job_log(job_id: int) -> str:
     l'instrument perdrait precisement la cause qu'il doit nommer.
     """
     url = f"repos/{REPO_SLUG}/actions/jobs/{job_id}/logs"
+    # `--allow-escape-sequences` : les logs de job contiennent regulierement
+    # des sequences d'echappement ANSI (couleurs de steps), et les gh >= 2.63
+    # refusent de les sortir sans ce drapeau — c'est la panne qui tuait le
+    # census a chaque tir depuis le 22/09 (#19095, run 37202480910). Le repli
+    # couvre les gh anterieurs au garde-fou, qui sortaient le log sans rien
+    # demander et rejetteraient le drapeau inconnu.
     result = subprocess.run(
-        ["gh", "api", url],
+        ["gh", "api", "--allow-escape-sequences", url],
         capture_output=True,
         timeout=120,
         encoding="utf-8",
         errors="replace",
     )
+    if result.returncode != 0 and "unknown flag" in (result.stderr or ""):
+        result = subprocess.run(
+            ["gh", "api", url],
+            capture_output=True,
+            timeout=120,
+            encoding="utf-8",
+            errors="replace",
+        )
     body = result.stdout or ""
     if result.returncode != 0:
         if "BlobNotFound" in body or "BlobNotFound" in (result.stderr or ""):
@@ -284,13 +378,22 @@ def window_from_hours(hours: int, now: datetime | None = None) -> str:
 def iter_red_runs(
     branch: str, event: str, created: str, max_runs: int
 ) -> list[dict]:
-    """Runs non-verts de la fenetre, en deux passes (failure puis cancelled)."""
+    """Runs non-verts de la fenetre, en deux passes (failure puis cancelled).
+
+    ``branch`` vide omet le filtre : sur l'evenement ``pull_request`` le
+    parametre API ``branch`` designe la branche HEAD de la PR, pas sa base
+    (mesure #18312 : ``branch=main&event=pull_request`` rend 0 run, zero
+    propre indiscernable d'une absence reelle). La mesure du critere de
+    fermeture de #18312 exige toutes branches -- c'est ce que balayait la
+    mesure fondatrice des 414 runs du 28/09.
+    """
     runs: list[dict] = []
+    branch_param = f"branch={branch}&" if branch else ""
     for status in ("failure", "cancelled"):
         page = 1
         while True:
             params = (
-                f"?branch={branch}&event={event}&status={status}"
+                f"?{branch_param}event={event}&status={status}"
                 f"&created={created}&per_page=100&page={page}"
             )
             data = gh_api("actions/runs", params)
@@ -352,16 +455,31 @@ def analyse_runs(runs: list[dict]) -> dict:
             )
             continue
         for job in jobs:
-            klass = classify_job(job, fetch_annotations(job["id"]))
-            if klass == "REAL_STEP_FAILURE" and worker_death_from_log(
-                fetch_job_log(job["id"])
+            annotations = fetch_annotations(job["id"])
+            klass = classify_job(job, annotations)
+            if klass == "REAL_STEP_FAILURE" and git_object_missing(
+                job, annotations
             ):
-                # Le fetch du log est borne a cette SEULE classe ambigue : une
-                # etape a conclu `failure`, mais le log ne nomme aucun test et
-                # porte une signature de mort de session -- c'est le parc, pas
-                # le contenu. Les autres classes sont tranchees par
-                # l'annotation, sans cout reseau supplementaire.
-                klass = "WORKER_DEATH"
+                # Famille #18312 : l'etape a conclu `failure` (checkout ou
+                # comparaison de base) mais l'ANNOTATION porte une signature
+                # d'objet git introuvable -- c'est le clone de l'hote, pas le
+                # contenu. Teste AVANT worker_death : les annotations sont
+                # deja chargees, ce test ne coute aucun fetch de log.
+                klass = "GIT_OBJECT_MISSING"
+            if klass == "REAL_STEP_FAILURE":
+                # Le log est déjà la source canonique de WORKER_DEATH. Il
+                # porte aussi les détails Git absents de certaines
+                # annotations (récurrence #18312 : early EOF / invalid
+                # index-pack puis fetch promisor). Une seule lecture sert aux
+                # deux diagnostics ; la réclassification promisor reste
+                # conditionnée à un SHA complet et une fin de transfert.
+                log_text = fetch_job_log(job["id"])
+                if git_object_missing_from_log(log_text):
+                    klass = "GIT_OBJECT_MISSING"
+                elif worker_death_from_log(log_text):
+                    # Le log ne nomme aucun test et porte une signature de
+                    # mort de session -- c'est le parc, pas le contenu.
+                    klass = "WORKER_DEATH"
             if klass in ("SUCCESS", "SKIPPED"):
                 continue
             steps = job.get("steps") or []
@@ -423,7 +541,9 @@ def render_markdown(payload: dict) -> str:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--branch", default="main", help="branche analysee (defaut main)"
+        "--branch", default="main", help="branche analysee (defaut main) ; "
+        "chaine vide = toutes branches (requis pour la mesure #18312 : sur "
+        "pull_request le filtre branch designe la HEAD de la PR)"
     )
     parser.add_argument(
         "--event", default="push", help="evenement (defaut push)"

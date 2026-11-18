@@ -1,0 +1,8 @@
+# Coherence (mesure sur les artefacts ci-dessus)
+
+- requetes '#print axioms' : 67
+- reponses 'depends on axioms' : 62
+- reponses 'does not depend on any axioms' : 5
+- occurrences de sorryAx : 0
+- occurrences de native_decide : 0
+- lignes d'erreur : 0

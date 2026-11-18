@@ -46,7 +46,7 @@ ne suppose de « but » : le gel GPU est respecte.
 
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -244,7 +244,8 @@ def basin_return_at_scale(
     tol: float = 0.2,
     n_trials: int = 5,
     rng: Optional[np.random.Generator] = None,
-) -> float:
+    return_trials: bool = False,
+) -> Union[float, Dict[str, object]]:
     """Probabilite de retour au bassin a l'echelle ``block`` (mesure stochastique).
 
     Variante de :func:`ict.agency.basin_return_probability` ou la structure finale
@@ -253,14 +254,34 @@ def basin_return_at_scale(
     succes si la structure regionale (variance du champ moyenne) revient dans
     ``[target_structure*(1-tol), target_structure*(1+tol)]``.
 
+    Retour (issue #20320 — renforcement des effectifs) :
+
+      - ``return_trials=False`` (defaut) : la probabilite, un float dans
+        ``[0, 1]`` — **contrat historique conserve** pour tous les appelants
+        existants ;
+      - ``return_trials=True`` : un dict detaille :
+        ``probability`` (le meme float), ``n_trials``, ``n_successes``,
+        ``success_flags`` (liste de booleens, un par essai) et
+        ``n_distinct_masks`` — le nombre de masques DISTINCTS par contenu
+        (cle : octets du tableau). LORSQUE la dynamique de ``model.run`` est
+        deterministe — c'est le cas du solveur Gray-Scott qui pilote le
+        carnet ICT-11, mais rien ne le garantit pour un modele quelconque —
+        deux masques identiques produisent la meme trajectoire et le meme
+        verdict : un essai duplique n'apporte alors AUCUNE information, et
+        l'effectif informatif est ``n_distinct_masks``, pas ``n_trials``.
+        Le notebook affiche ce compte plutot que de supposer que
+        ``n_trials`` tirages aleatoires garantissent des perturbations
+        distinctes.
+
     AVERTISSEMENT (honnetete) : comme pour :func:`ict.agency.basin_return_probability`,
     cette mesure est stochastique et couteuse (une simulation complete par
     essai) ; avec peu d'essais l'estimation a une forte variance. Le notebook
-    l'utilise avec un ``n_trials`` modeste et le documente comme tel.
+    l'utilise avec ``n_trials >= 16`` et documente ses effectifs reels.
     """
     if rng is None:
         rng = np.random.default_rng(0)
-    successes = 0
+    success_flags: List[bool] = []
+    distinct_masks: set = set()
     lo = target_structure * (1.0 - tol)
     hi = target_structure * (1.0 + tol)
     for _ in range(n_trials):
@@ -268,9 +289,19 @@ def basin_return_at_scale(
         U0, V0 = A.ablate(U_ref, V_ref, mask)
         _, V_end, _ = model.run(U0, V0, steps)
         s = float(np.var(block_average(V_end, block)))
-        if lo <= s <= hi:
-            successes += 1
-    return successes / float(n_trials)
+        ok = bool(lo <= s <= hi)
+        success_flags.append(ok)
+        distinct_masks.add(np.ascontiguousarray(mask).tobytes())
+    p = sum(success_flags) / float(n_trials)
+    if return_trials:
+        return {
+            "probability": p,
+            "n_trials": int(n_trials),
+            "n_successes": int(sum(success_flags)),
+            "success_flags": success_flags,
+            "n_distinct_masks": len(distinct_masks),
+        }
+    return p
 
 
 # --------------------------------------------------------------------------- #
@@ -367,3 +398,90 @@ def pearson_corr(x: List[float], y: List[float]) -> Tuple[Optional[float], int]:
     xm, ym = x - x.mean(), y - y.mean()
     r = float(np.dot(xm, ym) / (np.sqrt(np.dot(xm, xm)) * np.sqrt(np.dot(ym, ym)) + 1e-12))
     return float(np.clip(r, -1.0, 1.0)), n
+
+
+def bootstrap_corr_ci(
+    x: List[float],
+    y: List[float],
+    n_boot: int = 2000,
+    ci: float = 0.95,
+    rng: Optional[np.random.Generator] = None,
+) -> Dict[str, object]:
+    """Intervalle de confiance bootstrap (percentile) pour la correlation de Pearson.
+
+    Reechantillonnage APPARIE des points ``(x_i, y_i)`` avec remise : chaque
+    tirage redessonne ``n`` indices parmi ``0..n-1`` (les paires restent
+    intactes) et la correlation est recalculee via :func:`pearson_corr`.
+
+    Honnetete sur les tirages inutilisables (issue #20320) : un tirage peut
+    produire une serie a variance nulle (p. ex. tous les indices egaux) — la
+    correlation y est alors INDÉFINIE (``pearson_corr`` rend ``None``). Ces
+    tirages sont comptes comme inutilisables, exclus des percentiles, et la
+    fraction utilisable ``usable_fraction`` est RAPPORTEE : la distribution
+    n'est jamais conditionnee en silence, et l'intervalle ne constitue PAS un
+    test de significativite.
+
+    Limites explicites : l'intervalle est EXPLORATOIRE. Il reechantillonne
+    les ``n`` points OBSERVES — dans le carnet, quatre echelles FIXES et
+    imbriquees, donc des points non IID — et AUCUNE garantie de couverture
+    n'est etablie ici. Il ne propage en outre ni l'incertitude des essais
+    ``basin_return`` (chaque point est une proportion binomiale estimee sur
+    ``n_trials`` essais) ni celle de l'estimation de la TPM (``n_seeds``
+    trajectoires). Indicatif, jamais une preuve.
+
+    Retourne un dict :
+
+      - ``r_obs`` : correlation observee (``None`` si indefinie ou non finie) ;
+      - ``lo``, ``hi`` : bornes de l'intervalle au niveau ``ci``
+        (``None`` si aucun tirage utilisable) ;
+      - ``level`` : niveau de confiance demande ;
+      - ``n_points`` : nombre de points apparies ;
+      - ``n_boot`` : nombre de tirages demandes ;
+      - ``n_usable`` : tirages ou la correlation est definie et finie ;
+      - ``usable_fraction`` : ``n_usable / n_boot``.
+    """
+    if n_boot < 1:
+        raise ValueError(f"n_boot doit etre >= 1, recu {n_boot}")
+    if not 0.0 < ci < 1.0:
+        raise ValueError(f"ci doit etre dans (0, 1), recu {ci}")
+    if rng is None:
+        rng = np.random.default_rng(0)
+
+    x_arr = np.asarray(x, dtype=float)
+    y_arr = np.asarray(y, dtype=float)
+    r_obs, n = pearson_corr(x_arr, y_arr)
+    common = {
+        "level": float(ci),
+        "n_points": int(n),
+        "n_boot": int(n_boot),
+    }
+    if r_obs is None or not np.isfinite(r_obs):
+        return {
+            "r_obs": None, "lo": None, "hi": None,
+            "n_usable": 0, "usable_fraction": 0.0, **common,
+        }
+
+    x_arr = x_arr[:n]
+    y_arr = y_arr[:n]
+    idx = np.arange(n)
+    usable: List[float] = []
+    for _ in range(int(n_boot)):
+        sample = idx[rng.integers(0, n, size=n)]
+        r_b, _ = pearson_corr(x_arr[sample], y_arr[sample])
+        if r_b is not None and np.isfinite(r_b):
+            usable.append(float(r_b))
+    if not usable:
+        return {
+            "r_obs": float(r_obs), "lo": None, "hi": None,
+            "n_usable": 0, "usable_fraction": 0.0, **common,
+        }
+    alpha = 100.0 * (1.0 - ci) / 2.0
+    lo, hi = np.percentile(usable, [alpha, 100.0 - alpha])
+    return {
+        "r_obs": float(r_obs),
+        "lo": float(lo),
+        "hi": float(hi),
+        "n_usable": len(usable),
+        "usable_fraction": len(usable) / float(n_boot),
+        **common,
+    }

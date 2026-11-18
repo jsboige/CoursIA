@@ -1,6 +1,6 @@
 import Mathlib.Tactic
 
-import RepeatedGames.Stage
+import RepeatedGames.Stage_en
 import RepeatedGames.Discounting_en
 import RepeatedGames.GrimTrigger_en
 import Mathlib.Topology.Algebra.InfiniteSum.Defs
@@ -16,19 +16,20 @@ import Mathlib.Topology.Basic
   ===================================
 
   English mirror of `RepeatedGames/Folk.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
+  Convention i18n Lean ratified by ai-01 (2026-07-04, #4980 comment-4881909354):
   distinct `.lean` files FR + EN siblings in the same lake, both compile.
   Drift-CI detectable: non-docstring content byte-identical between siblings.
 
-  Note méthodologique : traduction manuelle du FR canonique (pas de source
-  EN historique pré-Option A à recover, fichier FR-first depuis origin).
+  Methodological note: manual translation of the FR canonical (no historical
+  pre-Option-A EN source to recover; FR-first file since origin).
 
-  Namespace sibling : `RepeatedGames_en` (the FR canonical stays
-  `RepeatedGames`). Shared types `PrisonersDilemma`, `PDAction` (defined in
-  `Stage.lean` under `namespace RepeatedGames`) are re-exposed via
-  `open RepeatedGames` so the EN sibling resolves them as FR `GrimTrigger_en`
-  does. Field projections `g.P`/`g.R`/`g.S`/`g.T` are structure-field access
-  (not namespace dot-notation), hence safe under the open.
+  Namespace sibling: `RepeatedGames_en` (the FR canonical stays
+  `RepeatedGames`). Shared types `PrisonersDilemma`, `PDAction` are defined
+  in `Stage_en.lean` under `namespace RepeatedGames_en` and consumed via
+  `import RepeatedGames.Stage_en`; every higher-level EN sibling of this
+  series resolves them through `open RepeatedGames_en`. Field
+  projections `g.P`/`g.R`/`g.S`/`g.T` are structure-field access
+  (not namespace dot-notation), hence unaffected by the open.
 
   See #4980. Part of #4208 (axe E).
 -/
@@ -74,7 +75,7 @@ import Mathlib.Topology.Basic
 
 namespace RepeatedGames_en
 
-open RepeatedGames
+open RepeatedGames_en
 open scoped Topology
 open Filter
 
@@ -553,10 +554,10 @@ theorem folk_theorem_discounted (g : PrisonersDilemma) :
   --
   -- Statement edge repaired (2026-08-15): the old quantifier "∀ d ≥ δ*"
   -- (no d < 1 bound) made the theorem FALSE — at d ≥ 1 the series
-  -- ∑' d^n · payoff diverge and `tsum` is 0 (junk value), so no u ≠ 0 is
-  -- realizable (witness: g = ⟨3, 2, 1, 0⟩, u = (2, 2), d = 2).
-  -- The "d < 1" bound repairs without strengthening: the prover picks
-  -- δ* ≥ 0, hence d ∈ [δ*, 1) ⊆ [0, 1) and the series converge absolutely.
+  -- ∑' d^n · payoff diverge and `tsum` is 0 (junk value), so no
+  -- u ≠ 0 is realizable (witness: g = ⟨3, 2, 1, 0⟩, u = (2, 2), d = 2).
+  -- The "d < 1" bound repairs without strengthening: the prover picks δ* ≥ 0,
+  -- hence d ∈ [δ*, 1) ⊆ [0, 1) and the series converge absolutely.
   sorry
 
 /-- Boundary case δ = 0: with no weight on the future, the discounted values

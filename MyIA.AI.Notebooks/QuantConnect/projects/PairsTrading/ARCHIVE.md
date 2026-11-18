@@ -55,8 +55,8 @@ de la cointégration. Le `main.py` reste un **template valide** pour
   Sharpe -0.361 mesuré). Le `config.json` est absent du repo, ce qui
   rend la **re-productibilité du backtest** incertaine (pas de seed,
   pas de paramètres exacts commités).
-- **quantbook.ipynb** : 4/7 cellules non-exécutées — substance
-  préservée dans `main.py` (176 lignes, `PairsTrading`) + `README.md`
+- **quantbook.ipynb** : cellules non-exécutées — substance
+  préservée dans `main.py` (`PairsTrading`) + `README.md`
   (analyse cause racine).
 - **Cause racine pédagogique** : la doc README explique que le
   problème est **la cointégration instable**, pas le code. Pattern
@@ -84,9 +84,9 @@ de la cointégration. Le `main.py` reste un **template valide** pour
 
 ## Fichiers
 
-- `main.py` (8.3 KB) — `PairsTrading` (176 lignes, `compute_spread_zscore`
+- `main.py` (8.3 KB) — `PairsTrading` (`compute_spread_zscore`
   + `check_pairs` schedule)
-- `quantbook.ipynb` (32 KB) — exploration QuantBook (4/7 cells unexec)
+- `quantbook.ipynb` (32 KB) — exploration QuantBook (cells unexec)
 - `README.md` — Description + analyse cause racine cointégration instable
   + Sharpe -0.361 BROKEN
 

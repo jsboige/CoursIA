@@ -1,0 +1,47 @@
+{
+ "types": [
+  "pun",
+  "topical",
+  "sociale"
+ ],
+ "pair_types": {
+  "joke-p02": "pun",
+  "joke-p03": "pun",
+  "joke-p04": "topical",
+  "joke-p05": "sociale",
+  "joke-p06": "pun",
+  "joke-p07": "topical",
+  "joke-p08": "pun",
+  "joke-p09": "sociale",
+  "joke-p10": "pun",
+  "joke-p11": "pun",
+  "joke-p12": "topical",
+  "joke-p13": "sociale",
+  "joke-p14": "pun",
+  "joke-p15": "topical",
+  "joke-p16": "sociale",
+  "joke-p18": "topical",
+  "joke-p19": "pun",
+  "joke-p20": "pun",
+  "joke-p21": "pun",
+  "joke-p22": "topical",
+  "joke-p23": "sociale",
+  "joke-p24": "topical",
+  "joke-p25": "topical",
+  "joke-p26": "topical",
+  "joke-p27": "pun",
+  "joke-p28": "topical",
+  "joke-p29": "topical",
+  "joke-p30": "topical",
+  "edge-04": "pun",
+  "edge-05": "pun"
+ },
+ "borderline": [
+  "joke-p10",
+  "joke-p13",
+  "joke-p16",
+  "joke-p20",
+  "joke-p22"
+ ],
+ "min_per_type": 5
+}

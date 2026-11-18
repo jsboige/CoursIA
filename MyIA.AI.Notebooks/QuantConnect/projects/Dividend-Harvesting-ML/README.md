@@ -5,7 +5,7 @@
 
 ## Description
 
-Prédiction de dividendes par `DecisionTreeRegressor`. Prédit le rendement des dividendes à partir de ratios fondamentaux. Achète trimestriellement les 10 actions à dividendes élevés les mieux prédites.
+Prédiction de dividendes par `DecisionTreeRegressor`. Prédit le rendement des dividendes à partir de ratios fondamentaux. Univers filtré dans QQQ (ETF Nasdaq-100), rééquilibrage mensuel sur les 100 meilleures positions.
 
 ## Comment exécuter
 
@@ -20,7 +20,7 @@ Prédiction de dividendes par `DecisionTreeRegressor`. Prédit le rendement des 
 | CAGR | 12.66% |
 | Max Drawdown | 30.6% |
 | Modèle | DecisionTreeRegressor |
-| Rebalancement | Trimestriel |
+| Rebalancement | Mensuel |
 
 ## Fichiers
 

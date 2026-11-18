@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "MyIA.AI.Notebooks" / "Search" / "Applications" / "Hybrid"))
+sys.path.insert(0, str(REPO_ROOT / "MyIA.AI.Notebooks" / "Search" / "Part3-Cas-pratiques"))
 
 from tuning_harness import (  # noqa: E402
     BenchResult,

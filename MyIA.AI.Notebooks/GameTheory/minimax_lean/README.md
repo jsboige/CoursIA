@@ -38,7 +38,7 @@ Ce premier livrable établit le **cœur formel** documenté de la preuve — la
 
 ## Statut
 
-- **Toolchain** : `leanprover/lean4:v4.32.1` + Mathlib4 (`v4.32.1`, aligné sur le pin effectif du `lean-toolchain` et du `lake-manifest.json`)
+- **Toolchain** : `leanprover/lean4:v4.33.0` + Mathlib4 (commit `db584cd6d46c`, le pin effectif du `lake-manifest.json`)
 - **Sorry** : **0** sur tout le module. L'additivité + l'homogénéité du payoff en
   chaque variable, la continuité (jointe et restreinte), la concavité/cvxicité du
   payoff sur les simplexes, les **4 hyps analytiques de Sion** (quasi-convexité,
@@ -47,7 +47,7 @@ Ce premier livrable établit le **cœur formel** documenté de la preuve — la
 - **Build** : `lake build Minimax` (dépend de Mathlib4)
 - **CI** : `.github/workflows/lean-minimax.yml` (`sorry-filter-mode: standalone-tactic`,
   baseline `0`)
-- **Couverture i18n (EPIC #4980)** : **bilingue complet — Pattern A**. Les 3 modules
+- **Couverture i18n (EPIC #4980)** : **bilingue complet — Pattern A**. Les modules
   `Minimax/ZeroSum.lean`, `Minimax/Concavity.lean`, `Minimax/SionApplication.lean`
   ont chacun un miroir `_en.lean` (`ZeroSum_en`, `Concavity_en`, `SionApplication_en`),
   plus les deux agrégateurs `Minimax.lean` (FR canonique) et `Minimax_en.lean` (miroir

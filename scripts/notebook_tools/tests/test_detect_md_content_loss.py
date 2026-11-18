@@ -262,28 +262,160 @@ class TestReorderSafeByCellID:
         assert findings[0]["kind"] == "TRUNCATED_CELL"
         assert findings[0]["cell_idx"] == 1
 
-    def test_zero_id_same_length_substitution_still_signals(self):
-        # #10873 garde anti-blanc-seing des TOTAUX : substitution + reorder.
+    def test_zero_id_same_length_substitution_preserved_no_signal(self):
+        # #19870 : substitution meme-longueur + reorder, substance preservee.
         # base = [X (L), Y (S)], head = [Y (S), X' (L)] ou X' est DISTINCT de
-        # X mais de MEME longueur normalisee (mots de meme longueur). Les
-        # TOTAUX sont egaux au caractere pres -- un critere sur les totaux
-        # disculperait a tort (blanc-seing). Le critere implemente est le
-        # MULTISET des chaines : il differe, le court-circuit ne s'arme pas,
-        # l'appariement index signale le desalignement (X perdu, X' apparu).
+        # X mais de MEME longueur normalisee (mots de meme longueur).
+        # L'appariement par intersection multiset des contenus normalises
+        # retire Y (present des deux cotes), apparie X <-> X' par contenu ;
+        # longueurs normalisees egales -> ratio 1.0 -> 0 finding. C'est le
+        # **comportement desire** : la substance est preservee au caractere
+        # pres, le garde n'a pas vocation a juger la qualite d'une
+        # reformulation.
+        #
+        # #10873 (reprise review #19893) : ce test n'epingle PLUS le critere
+        # multiset-contre-totaux -- son assertion est desormais ``== []``.
+        # Le critere MULTISET DES CHAINES (pas les TOTAUX de caracteres)
+        # est desormais epingle par
+        # ``test_zero_id_equal_totals_truncation_compensated_signals``
+        # ci-dessous : le cas totaux egaux + vraie troncature compensee par
+        # l'expansion d'une autre cellule, ou un critere de totaux
+        # rendrait 0 finding (blanc-seing).
+        #
+        # Pour verifier qu'une **vraie** perte est toujours signalee dans
+        # ce regime, voir `test_substitution_with_real_truncation_signals`
+        # ci-dessous (la cellule `X_prime` est plus courte que `X` et
+        # signale un TRUNCATED_CELL).
         x = "## Analyse technique\n\n" + ("Regarder la volatilite. " * 20)
         x_prime = "## Analyse technique\n\n" + ("Analyser la volatilite. " * 20)
         y = "## Section breve\n\n" + ("Rappel court. " * 12)
         assert len(dml._normalize(x)) == len(dml._normalize(x_prime)), (
             "fixtures: X et X' doivent totaliser la meme longueur normalisee "
-            "pour que ce test prouve multiset != totaux"
+            "(substitution preservee au caractere pres)"
         )
         base = _nb(_md(x), _md(y))
         head = _nb(_md(y), _md(x_prime))  # X substitue par X' + reorder
         findings = dml._compare_cells(dml.extract_md_cells(base),
                                       dml.extract_md_cells(head))
-        assert len(findings) >= 1, (
-            "une substitution meme-longueur + reorder doit signaler (multiset "
-            f"different, totaux egaux -- trouve: {findings!r})"
+        # L'appariement par intersection retire Y (present des deux cotes),
+        # apparie X <-> X' par contenu. Longueurs normalisees egales -> 0
+        # finding. C'est correct : on a preserve la substance.
+        assert findings == [], (
+            "une substitution meme-longueur preservee au caractere pres ne "
+            "doit PAS signaler (appariement par intersection, contenu "
+            f"preserve). Trouve: {findings!r}"
+        )
+
+    def test_zero_id_equal_totals_truncation_compensated_signals(self):
+        # #10873 / review #19893 -- CE test epingle le critere multiset
+        # contre le critere des TOTAUX de caracteres. Cas exact de la
+        # review : base = [A (~700c), B (~150c)], head = [A tronquee
+        # (~150c), B etendue (~700c)]. Les TOTAUX normalises sont egaux au
+        # caractere pres -- un court-circuit sur les totaux rendrait 0
+        # finding (blanc-seing : une vraie troncature masquee par
+        # l'expansion d'une AUTRE cellule). Le MULTISET des chaines
+        # different (4 chaines deux a deux distinctes) : le court-circuit
+        # ne s'arme pas, l'intersection ne retire rien, l'appariement index
+        # residual apparie A <-> A_trunc (ratio ~0.2) et signale, pendant
+        # que B <-> B_ext (expansion, ratio > 1) ne signale pas.
+        a = "## Section A\n\n" + ("Regarder la volatilite. " * 30)
+        b = "## Section B\n\n" + ("Rappel court. " * 9)
+        a_trunc = "## Section A\n\n" + ("Analyse breve. " * 9)
+        # B_ext : extension de B jusqu'a egaliser les TOTAUX normalises au
+        # caractere pres (remplissage deterministe -- la normalisation
+        # retire les espaces, chaque mot ajoute sa longueur en lettres).
+        b_ext = "## Section B\n\n"
+        deficit = (dml._norm_len(a) + dml._norm_len(b)
+                   - dml._norm_len(a_trunc) - dml._norm_len(b_ext))
+        filler = "developpement"
+        while deficit >= len(filler):
+            b_ext += filler + " "
+            deficit -= len(filler)
+        b_ext += "d" * deficit
+        assert (dml._norm_len(a) + dml._norm_len(b)
+                == dml._norm_len(a_trunc) + dml._norm_len(b_ext)), (
+            "fixtures: les TOTAUX normalises doivent etre egaux pour que ce "
+            "test prouve multiset != totaux"
+        )
+        assert len({dml._normalize(a), dml._normalize(b),
+                    dml._normalize(a_trunc), dml._normalize(b_ext)}) == 4, (
+            "fixtures: les 4 chaines normalisees doivent etre distinctes "
+            "(sinon l'intersection pourrait retirer le signal)"
+        )
+        base = _nb(_md(a), _md(b))
+        head = _nb(_md(a_trunc), _md(b_ext))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["cell_idx"] == 0  # A tronquee, position head
+        assert findings[0]["ratio"] < 0.5
+
+    def test_substitution_with_real_truncation_signals(self):
+        # #19870 garde anti-blanc-seing du fix : une substitution pure (IDs
+        # distincts, compte constant) avec une VRAIE perte de substance
+        # (X_prime est beaucoup plus court que X) doit toujours signaler.
+        # C'est l'equivalent du `test_zero_id_real_truncation_still_signals`
+        # pour le regime substitution-a-IDs-differents : l'appariement par
+        # intersection ne peut pas blanchir une reduction reelle.
+        long_x = "## Section\n\n" + ("Phrase pedagogique substantielle. " * 30)  # ~700c
+        short_x_prime = "## Section\n\n"  # ~14c (frontmatter H2 + newline)
+        y = "## Section breve\n\n" + ("Rappel court. " * 12)  # ~150c
+        base = _nb(_md(long_x), _md(y))
+        head = _nb(_md(y), _md(short_x_prime))  # X reduit a 2% + reorder
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        # Y apparie en intersection (present des deux cotes) -> retire.
+        # Residu [long_x] vs [short_x_prime] : longueur 700 -> 14, ratio 0.02
+        # -> 1 finding TRUNCATED_CELL.
+        assert len(findings) == 1
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert findings[0]["ratio"] < 0.1
+
+    def test_substitution_keeps_unchanged_cells_no_false_positive(self):
+        # #19870 cas fondateur (PR #19831 PyMC-04) : sur 36 cellules md,
+        # 6 byte-identiques, 8 reellement reduites, 1 creee. La PR supprime
+        # la cellule campagne `fuse-16` et cree `lecture-marginales`. Le
+        # multiset des contenus normalises differe (la nouvelle cellule a
+        # un contenu distinct), les IDs different (cellule creee, pas
+        # d'ancien ID) : on tombe dans la branche `else` de
+        # `_compare_cells`. AVANT #19870, l'index-legacy croisait les
+        # cellules et produisait 15 faux positifs TRUNCATED_CELL. APRES
+        # #19870, l'intersection multiset retire les 6 cellules
+        # byte-identiques avant l'appariement, le residu est trivial, et
+        # seules les VRAIES reductions apparaissent.
+        body_long = "## Section pedagogique\n\n" + ("Contenu substantiel. " * 30)  # ~700c
+        body_intact_a = "## Cellule intacte A\n\n" + ("Detail pedagogique. " * 30)  # ~700c
+        body_intact_b = "## Cellule intacte B\n\n" + ("Autre detail. " * 30)  # ~700c
+        body_intact_c = "## Cellule intacte C\n\n" + ("Encore un detail. " * 30)  # ~700c
+        body_intact_d = "## Cellule intacte D\n\n" + ("Suite. " * 30)  # ~700c
+        body_intact_e = "## Cellule intacte E\n\n" + ("Plus. " * 30)  # ~700c
+        body_intact_f = "## Cellule intacte F\n\n" + ("Encore. " * 30)  # ~700c
+        body_truncated = "## Cellule reduite\n\n" + ("Tronquee. " * 5)  # ~80c
+        body_new = "## Cellule creee\n\n" + ("Substance nouvelle. " * 20)  # ~400c
+        # base : 6 cellules intactes, 1 reduite, 1 longue (substituee en head)
+        base = _nb(
+            _md(body_intact_a), _md(body_intact_b), _md(body_intact_c),
+            _md(body_intact_d), _md(body_intact_e), _md(body_intact_f),
+            _md(body_long),        # X : longue, sera substituee en head
+            _md(body_truncated),   # Y : tronquee dans la PR (idx reel)
+        )
+        # head : 6 intactes (meme ordre), 1 nouvelle (au lieu de X), 1 tronquee
+        head = _nb(
+            _md(body_intact_a), _md(body_intact_b), _md(body_intact_c),
+            _md(body_intact_d), _md(body_intact_e), _md(body_intact_f),
+            _md(body_new),        # X' : substituee a la place de X
+            _md(body_truncated),
+        )
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        # Les 6 cellules intactes sont retirees par l'intersection multiset.
+        # body_truncated est present des deux cotes (meme contenu) -> retire.
+        # Residu [body_long] vs [body_new] : 700c -> 400c, ratio ~0.57 < 0.75
+        # -> 1 finding TRUNCATED_CELL.
+        assert len(findings) == 1, (
+            "6 cellules intactes retirees, 1 vraie reduction signalee. "
+            f"Trouve: {findings!r}"
         )
         assert findings[0]["kind"] == "TRUNCATED_CELL"
 
@@ -398,9 +530,9 @@ class TestNavLinkDistinctLiveTargets:
         # (VIVANT aussi : existe depuis 7e69518092, 2026-07-21 -- verifie
         # `git cat-file -e` origin/main et merge-base #17392 ; re-audite par
         # l'adjoint 2026-09-23, corrige ici).
-        lab6 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Labs" / "Lab6-First-Agent"
+        lab6 = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Labs" / "Lab6-First-Agent"
         lab6.mkdir(parents=True)
-        (tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "README.md").write_text(
+        (tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "README.md").write_text(
             "day3", encoding="utf-8")
         (tmp_path / "README.md").write_text("serie", encoding="utf-8")
         nb = lab6 / "Lab6-First-Agent.ipynb"
@@ -468,7 +600,7 @@ class TestNavLinkDistinctLiveTargets:
         # garde un lien (perte PARTIELLE : le regime LOST_NAV_LINKS, pas le
         # LOST_MOTIF de la disparition totale).
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Extras](../../Extras/Extras.ipynb) [Index](../../README.md)"))
@@ -486,7 +618,7 @@ class TestNavLinkDistinctLiveTargets:
         # cible vivante -> seule la vivante compte, la morte est listee comme
         # reparee (audit) dans le finding.
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Mort](../../Old/README.md) [Vivant](../../Extras/Extras.ipynb) [Index](../../README.md)"))
@@ -506,7 +638,7 @@ class TestNavLinkDistinctLiveTargets:
         # etiquette, ce n'est pas une perte (cf. note NAV_LINK_RE : re-cible
         # notebook -> README de serie, convention majoritaire).
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Index](../../README.md) [Notes](../../Extras/Extras.ipynb)"))
@@ -523,7 +655,7 @@ class TestNavLinkDistinctLiveTargets:
         # cible n'a pas change, ce n'est pas un deplacement. La perte de la
         # cible vivante reste signalee (frontiere option a, ai-01 2026-09-24).
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Index](../../Extras/Extras.ipynb) [Index](../../README.md)"))
@@ -541,7 +673,7 @@ class TestNavLinkDistinctLiveTargets:
         # tete une cible NOUVELLE pour lui (appariement change) -> deplacement
         # REEL, excuse e2.
         nb = self._lab6_fixture(tmp_path)
-        extras = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Extras"
+        extras = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Extras"
         extras.mkdir()
         (extras / "Extras.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Index](../../Extras/Extras.ipynb)"))
@@ -569,11 +701,11 @@ class TestNavLinkDistinctLiveTargets:
         # 1 gagnee -> ROUGE. L'ancien `if gained: continue` non borne
         # laissait ce cas propre (moins detecteur que le garde d'origine).
         nb = self._lab6_fixture(tmp_path)
-        day3 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents"
+        day3 = tmp_path / "06-Data-Agents" / "Day3-Data-Agents"
         extras = day3 / "Extras"
         extras.mkdir()
         (extras / "E.ipynb").write_text("{}", encoding="utf-8")
-        lab5 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents" / "Labs" / "Lab5-Viz-ML"
+        lab5 = tmp_path / "06-Data-Agents" / "Day3-Data-Agents" / "Labs" / "Lab5-Viz-ML"
         lab5.mkdir()
         (lab5 / "Lab5-Viz-ML.ipynb").write_text("{}", encoding="utf-8")
         base = _nb(_md("[Prev](../../README.md) [Next](../../Extras/E.ipynb) "
@@ -593,7 +725,7 @@ class TestNavLinkDistinctLiveTargets:
         # (e3) au pair : 1 cible vivante perdue, 1 cible nouvelle gagnee ->
         # la barre est reconstruite a l'identique -> vert.
         nb = self._lab6_fixture(tmp_path)
-        day3 = tmp_path / "Track1-LangChain" / "Day3-Data-Agents"
+        day3 = tmp_path / "06-Data-Agents" / "Day3-Data-Agents"
         extras = day3 / "Extras"
         extras.mkdir()
         (extras / "E.ipynb").write_text("{}", encoding="utf-8")
@@ -1314,3 +1446,168 @@ class TestAnchoredMotifs:
     def test_structural_forms_are_counted(self, src):
         counts = dml._collect_motifs(_nb(_md(src)))
         assert sum(counts[k] for k in ("Navigation", "Objectif(s)", "Prerequis")) == 1
+
+
+# ---------------------------------------------------------------------------
+# 6c. Deplacement de frontiere (#22307)
+# ---------------------------------------------------------------------------
+# Forme mesuree sur #22187 (GenAI/Video/01-1-Video-Operations-Basics.ipynb) :
+# la cellule d'interpretation et l'en-tete de section cohabitaient dans UNE
+# cellule markdown ; la PR #17040 remonte l'interpretation dans la cellule de
+# lecture voisine et ne laisse que l'en-tete. Compte de cellules inchange,
+# contenu intact, mais l'appariement par index voit une cellule qui tombe de
+# 887c a 184c.
+READING_15 = (
+    "### Lecture de l'exemple guide 1\n\n"
+    "L'appel a `VideoFileClip` ouvre le fichier sans le decoder entierement : "
+    "seules les metadonnees sont lues, ce qui rend l'operation quasi "
+    "instantannee sur un fichier de quelques dizaines de megaoctets.\n\n"
+    "Le decoupage `subclip(2, 4)` materialise une seconde entite video qui "
+    "reference le meme fichier source : il n'y a pas de copie sur disque, et "
+    "fermer le sous-clip ne ferme pas le lecteur parent.\n\n"
+    "**Points cles**\n\n"
+    "- l'ouverture est paresseuse (lazy) ;\n"
+    "- le sous-clip partage le lecteur du parent ;\n"
+    "- `.close()` libere le descripteur de fichier.\n"
+)
+
+INTERP_16 = (
+    "### Interpretation : Manipulations moviepy\n\n"
+    "| Operation | Effet observe |\n"
+    "|---|---|\n"
+    "| `subclip` | nouvelle entite, aucune copie disque |\n"
+    "| `concatenate_videoclips` | recollage en memoire, ordre conserve |\n"
+    "| `CompositeVideoClip` | superposition, logo en incrustation |\n"
+    "| `write_videofile` | seul point d'ecriture reel |\n\n"
+    "**Points cles**\n\n"
+    "- la paresse (lazy) explique le cout quasi nul des trois premieres "
+    "operations de montage ;\n"
+    "- le fichier de police TTF doit exister pour le texte incruste ;\n"
+    "- `.close()` est obligatoire, sinon le descripteur reste ouvert.\n"
+)
+
+SECTION_3 = "## Section 3 : Analyse des metadonnees avec ffmpeg-python"
+
+
+class TestRelocatedCell:
+    """Un bloc qui change de cellule n'est pas un bloc perdu (#22307)."""
+
+    def test_block_moved_to_neighbour_is_relocated_not_lost(self):
+        # Base : lecture seule / interpretation + en-tete de section.
+        # Tete : lecture + interpretation fusionnees / en-tete de section seul.
+        base = _nb(_md(READING_15, cell_id="read"),
+                   _md(INTERP_16 + "\n\n" + SECTION_3, cell_id="interp"))
+        head = _nb(_md(READING_15 + "\n\n" + INTERP_16, cell_id="read"),
+                   _md(SECTION_3, cell_id="interp"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1, findings
+        f = findings[0]
+        assert f["kind"] == "RELOCATED_CELL"
+        assert f["cell_idx"] == 1               # la cellule qui parait tronquee
+        assert f["relocated_to"] == [0]         # le texte est alle en cellule 0
+        assert f["relocated_chars"] > 0
+        assert f["relocated_chars"] <= f["removed_chars"]
+        # Informatif : le verdict --check ne doit PAS mordre dessus.
+        assert dml._is_blocking_finding(f) is False
+
+    def test_real_truncation_absent_everywhere_still_blocks(self):
+        # Controle negatif 1 (acceptance #22307) : le texte retire n'existe
+        # nulle part dans la tete -> TRUNCATED_CELL bloquant.
+        base = _nb(_md(READING_15, cell_id="read"),
+                   _md(INTERP_16 + "\n\n" + SECTION_3, cell_id="interp"))
+        head = _nb(_md(READING_15, cell_id="read"),
+                   _md(SECTION_3, cell_id="interp"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1, findings
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert dml._is_blocking_finding(findings[0]) is True
+
+    def test_text_still_present_in_own_cell_still_blocks(self):
+        # Controle negatif 2 : le texte survit DANS sa propre cellule
+        # (duplication interne). Se deplacer dans soi-meme n'est pas un
+        # deplacement -- une copie perdue reste une perte.
+        base = _nb(_md(READING_15, cell_id="read"),
+                   _md(READING_15 + "\n\n" + READING_15, cell_id="dup"))
+        head = _nb(_md(READING_15, cell_id="read"),
+                   _md(READING_15, cell_id="dup"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert findings, "une copie doublee qui disparait est une perte"
+        assert all(f["kind"] == "TRUNCATED_CELL" for f in findings)
+
+    def test_verbatim_copy_in_a_cell_that_did_not_grow_still_blocks(self):
+        # Controle negatif 3 (le piege du blanc-seing) : deux cellules de meme
+        # corps en base, l'une tronquee a la tete. Le texte existe bien
+        # ailleurs -- mais la cellule voisine n'a pas grossi : elle le portait
+        # deja. Sans le budget de croissance, cette perte serait absoute.
+        long_body = "## Section\n\n" + ("Phrase substantielle. " * 30)
+        base = _nb(_md(long_body, cell_id="alpha"),
+                   _md(long_body, cell_id="bravo"))
+        head = _nb(_md(long_body, cell_id="alpha"),
+                   _md("> **Titre :**", cell_id="bravo"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1, findings
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert dml._is_blocking_finding(findings[0]) is True
+
+    def test_short_segments_never_buy_the_excuse(self):
+        # Une cellule qui perd un long paragraphe ET une foule de fragments
+        # courts ne doit pas voir la perte absorbee par le paragraphe retrouve :
+        # les fragments pesent au denominateur. Ici la cellule cible n'a
+        # absorbe QUE le paragraphe long ; le reste n'existe nulle part.
+        kept = "## Section A\n\n" + ("Paragraphe de section A. " * 12)
+        moved = "## Bloc deplace\n\n" + ("Paragraphe deplace integralement. " * 8)
+        vanished = "## Bloc disparu\n\n" + ("Contenu disparu sans trace. " * 20)
+        base = _nb(_md(kept, cell_id="a"),
+                   _md(moved + "\n\n" + vanished, cell_id="b"))
+        head = _nb(_md(kept + "\n\n" + moved, cell_id="a"),
+                   _md("## Rien", cell_id="b"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1, findings
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+
+    def test_host_growth_measures_migrated_frontmatter_base(self):
+        # Review NanoClaw #22308, reserve 1 : la cellule d'ACCUEIL portait un
+        # frontmatter cost migre vers metadata (#8919) dans sa propre base. La
+        # croissance doit se mesurer sur le texte SANS frontmatter -- sinon le
+        # volume du frontmatter absorbe masque l'arrivee du texte deplace et
+        # la garde comptable refuse le deplacement (TRUNCATED_CELL a tort).
+        kept = "## Section A\n\n" + ("Paragraphe de section A. " * 12)
+        moved = "## Bloc deplace\n\n" + ("Paragraphe deplace integralement. " * 4)
+        base_md = dml.extract_md_cells(_nb(
+            _md(FRONTMATTER_COST_BLOCK + kept, cell_id="host"),
+            _md(moved, cell_id="src")))
+        head_nb = _nb(_md(kept + "\n\n" + moved, cell_id="host"),
+                      _md("## Section B", cell_id="src"))
+        head_nb["metadata"]["cost"] = FAITHFUL_COST
+        head_md = dml.extract_md_cells(head_nb)
+        findings = dml._compare_cells(base_md, head_md, FAITHFUL_COST)
+        assert len(findings) == 1, findings
+        f = findings[0]
+        assert f["kind"] == "RELOCATED_CELL", f
+        assert f["relocated_to"] == [0]
+        assert dml._is_blocking_finding(f) is False
+
+    def test_no_head_cells_keeps_legacy_behaviour(self):
+        # Sans la vue des cellules de tete, l'emission reste historique : les
+        # appelants qui ne la fournissent pas ne changent pas de verdict.
+        findings: list[dict] = []
+        dml._emit_cell_finding(0, INTERP_16, 0, SECTION_3, None, findings)
+        assert [f["kind"] for f in findings] == ["TRUNCATED_CELL"]
+
+    def test_body_marker_does_not_downgrade_relocated(self):
+        # La voie declarative (#13491) n'est pas retiree par #22307 : un marker
+        # de body sur la meme cellule convertit toujours un TRUNCATED_CELL.
+        # Mais il ne degrade PAS un RELOCATED_CELL -- le deplacement est une
+        # mesure mecanique, plus informative que « reecriture assumee », et le
+        # finding est deja hors du verdict. La conversion ne s'applique donc
+        # qu'a la forme bloquante.
+        relocated = {"kind": "RELOCATED_CELL", "cell_idx": 16}
+        truncated = {"kind": "TRUNCATED_CELL", "cell_idx": 17}
+        out = dml._apply_body_justifications([relocated, truncated], {16, 17}, set())
+        assert out[0]["kind"] == "RELOCATED_CELL"
+        assert out[1]["kind"] == "TRUNCATED_CELL_JUSTIFIED_BY_BODY"

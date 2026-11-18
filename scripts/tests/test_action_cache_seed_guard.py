@@ -24,7 +24,9 @@ ici, chacun avec son test :
   la compte ;
 - **la meme action sous un sous-chemin** : `github/codeql-action/init@v4` et
   `.../analyze@v4` sont deux entrees `uses:` mais **un seul** depot a cacher.
-  Le compte brut (13 entrees) n'est pas le compte des archives (11 depots).
+  Le compte brut (15 entrees) n'est pas le compte des archives (11 depots).
+  Meme forme depuis #19658 : `actions/cache/restore@v4` et
+  `actions/cache/save@v4` partagent l'archive de `actions/cache`.
 """
 
 import os

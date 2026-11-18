@@ -11,12 +11,19 @@ All tests use the `--input` snapshot mode so they are hermetic -- no live
 5. The pr-closed ghost class (#18215): a queued pull_request run whose PR
    is closed is a permanent ghost regardless of age, and a prior-analysis
    snapshot replays its ghost class through `_ghost_reason`.
+6. The no-job class (#26357): a queued comment/review-triggered run whose
+   job list is EMPTY was never admitted to a runner, so it carries no
+   check-run and can be cancelled without turning any check red. The class
+   requires a positive proof (an empty job list): a failed probe excludes
+   the run, and a run that gained a job before the cancellation is dropped
+   from the batch.
 
 Plus direct CLI tests asserting EXIT_GHOST / EXIT_OK on CoursIA-shaped
 snapshots.
 """
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import json
 import subprocess
@@ -266,6 +273,102 @@ def test_18215_classify_without_pr_states_keeps_post_cutoff_live() -> None:
     out = mod.classify_runs(runs, cutoff)
     assert out["ghosts"] == []
     assert len(out["live"]) == 1
+
+
+def test_20249_classify_scheduled_orphan_ghost_class() -> None:
+    """A no-PR-event run queued past SCHEDULED_ORPHAN_HOURS is a ghost.
+
+    The measured shape (issue #20249): 4 "Linux runner starvation advisory"
+    runs created 2026-10-07 15:08-15:11Z stayed queued across 4 consecutive
+    daily snapshots (~12 days), while a 5th run of the same workflow drained
+    on its own -- so the class must be structural (event set + age), never an
+    ID set. The live API measures the event as `workflow_run` (not
+    `schedule`; the workflow name misleads), so both are covered. Non-
+    regression: a young run of that kind stays live, and a non-PR event
+    outside the set (`push`) of the same age stays live too.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    now = dt.datetime(2026, 10, 20, 12, 0, tzinfo=dt.timezone.utc)
+    runs = [
+        {"id": 1, "name": "starvation-advisory-old",
+         "created_at": "2026-10-07T15:08:59Z", "event": "schedule",
+         "head_branch": "main"},
+        {"id": 2, "name": "starvation-advisory-fresh",
+         "created_at": "2026-10-19T15:08:59Z", "event": "schedule",
+         "head_branch": "main"},
+        {"id": 3, "name": "old-push-run",
+         "created_at": "2026-10-07T15:08:59Z", "event": "push",
+         "head_branch": "main"},
+        {"id": 4, "name": "starvation-advisory-workflow-run",
+         "created_at": "2026-10-07T15:09:12Z", "event": "workflow_run",
+         "head_branch": "main"},
+    ]
+    out = mod.classify_runs(runs, cutoff, now=now)
+    assert [g["reason"] for g in out["ghosts"]] == ["scheduled-orphan",
+                                                    "scheduled-orphan"]
+    assert [g["id"] for g in out["ghosts"]] == [1, 4]
+    assert {entry["id"] for entry in out["live"]} == {2, 3}
+
+
+def test_20249_classify_without_now_keeps_scheduled_live() -> None:
+    """Control: no `now` passed (raw snapshot replay) -> scheduled stays live.
+
+    Mirrors the pr-closed control: an offline replay has no reference
+    instant, so the age class cannot be derived. The prior-analysis replay
+    (`_ghost_reason`) is the fidelity-preserving path.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    runs = [{"id": 1, "name": "would-be-scheduled-orphan",
+             "created_at": "2026-10-07T15:08:59Z", "event": "schedule",
+             "head_branch": "main"}]
+    out = mod.classify_runs(runs, cutoff)
+    assert out["ghosts"] == []
+    assert len(out["live"]) == 1
+
+
+def test_20249_cli_replay_without_now_keeps_scheduled_live(tmp_path: Path) -> None:
+    """#20249 review -- the CLI replay path, not just classify_runs.
+
+    main() used to resolve `now` unconditionally (wall clock) and pass it
+    to classify_runs on every path, `--input` included: replaying the same
+    prior-analysis snapshot at D+0 and at D+10 rendered different verdicts
+    once a scheduled/workflow_run live entry crossed SCHEDULED_ORPHAN_HOURS.
+    The fix keeps the classification instant None on a replay without an
+    explicit --now, so the verdict survives replay unchanged (#13966).
+    """
+    analysis = {
+        "cutoff": "2026-08-20",
+        "verdict": "CLEAN",
+        "counts": {"total": 1, "ghosts": 0, "live": 1, "parse_failures": 0},
+        "snapshot_size": 1,
+        "ghosts": [],
+        "live": [
+            {"id": 1, "name": "starvation-advisory",
+             "created_at": "2026-10-07T15:08:59Z", "event": "workflow_run",
+             "head_branch": "main", "html_url": "https://gh/live/1"},
+        ],
+        "parse_failures": [],
+    }
+    snapshot = tmp_path / "replay.json"
+    snapshot.write_text(json.dumps(analysis), encoding="utf-8")
+    proc = _run("--input", str(snapshot))
+    # created_at is fixed and already > 168 h old at any wall clock after
+    # 2026-10-14: with a wall-clock classification instant this flips to
+    # scheduled-orphan -> STALE_FLOOR / exit 1. The frozen replay stays
+    # CLEAN / exit 0.
+    assert proc.returncode == 0, (
+        f"expected EXIT_OK=0 (CLEAN), got {proc.returncode}; stderr={proc.stderr}"
+    )
+    body = json.loads(proc.stdout)
+    assert body["verdict"] == "CLEAN"
+    assert body["counts"]["live"] == 1
+    assert body["counts"]["ghosts"] == 0
 
 
 def test_18215_classify_replayed_reason_is_authoritative() -> None:
@@ -791,3 +894,874 @@ def test_18131_invalid_now_is_broken(tmp_path: Path) -> None:
     snapshot.write_text(_make_snapshot(_floor_runs()), encoding="utf-8")
     proc = _run("--watch", "--input", str(snapshot), "--now", "yesterday")
     assert proc.returncode == 2, proc.stdout + proc.stderr
+
+
+# ---------------------------------------------------------------------------
+# #17397 -- stale-runs-on ghost class. A run was queued against a workflow
+# that requested runners X; main HEAD now requests Y. The API will never
+# admit the run (it waits for X, the workflow asks for Y). Cancellation
+# is safe (no 409 "has not been queued yet" because the run IS queued --
+# it's just queued against the wrong pool). Detection is structural: the
+# (job, runs-on) fingerprint at head_sha vs at main HEAD. The function
+# is pure -- the test injects a fake runs_on_at_ref so the test never
+# touches the API.
+# ---------------------------------------------------------------------------
+
+
+def test_17397_normalize_runs_on_accepts_known_shapes() -> None:
+    """Scalar, list of scalars, selector dict, list of selectors."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod._normalize_runs_on("ubuntu-latest") == ["ubuntu-latest"]
+    assert mod._normalize_runs_on(["self-hosted", "linux", "x64"]) == [
+        "self-hosted", "linux", "x64"]
+    assert mod._normalize_runs_on(
+        {"group": "my-group", "labels": ["self-hosted", "linux"]}) == [
+            "self-hosted", "linux"]
+    # List of selectors -- the typical mixed-OS shape.
+    assert mod._normalize_runs_on([
+        "ubuntu-latest",
+        {"labels": ["self-hosted", "gpu"]},
+    ]) == ["ubuntu-latest", "self-hosted", "gpu"]
+
+
+def test_17397_normalize_runs_on_returns_none_for_unknown_shapes() -> None:
+    """A runs-on of a shape the function doesn't recognize is a hard None.
+
+    The caller treats None as 'skip the comparison' -- never as 'empty list'
+    or 'no runs-on at all'. This is the contract that keeps a malformed
+    workflow from being misclassified as fresh-maintained.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod._normalize_runs_on(42) is None
+    assert mod._normalize_runs_on([{"no-labels-here": True}]) is None
+    # A label of unknown type in a list -> None (caller skips).
+    assert mod._normalize_runs_on([42]) is None
+
+
+def test_17397_workflow_runs_on_fingerprint() -> None:
+    """The fingerprint captures (job, runs-on) pairs, order-independent.
+
+    The same workflow with jobs reordered or with extra whitespace must
+    produce the same fingerprint -- a class is a property of the workflow
+    file, not a property of its serialization.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    yaml_a = """
+jobs:
+  build:
+    runs-on: ubuntu-latest
+  test:
+    runs-on: [self-hosted, linux]
+"""
+    yaml_b = """
+jobs:
+  test:
+    runs-on:
+      - self-hosted
+      - linux
+  build:
+    runs-on: ubuntu-latest
+"""
+    fp_a = mod._workflow_runs_on_fingerprint(yaml_a)
+    fp_b = mod._workflow_runs_on_fingerprint(yaml_b)
+    assert fp_a == fp_b
+    assert ("build", ("ubuntu-latest",)) in fp_a
+    assert ("test", ("self-hosted", "linux")) in fp_a
+
+
+def test_17397_workflow_runs_on_fingerprint_inherits_default() -> None:
+    """Jobs without `runs-on` inherit the workflow top-level default."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    yaml_text = """
+runs-on: ubuntu-latest
+jobs:
+  a:
+  b:
+    runs-on: self-hosted
+"""
+    fp = mod._workflow_runs_on_fingerprint(yaml_text)
+    assert ("a", ("ubuntu-latest",)) in fp
+    assert ("b", ("self-hosted",)) in fp
+
+
+def test_17397_workflow_runs_on_fingerprint_returns_none_on_bad_yaml() -> None:
+    """A workflow file that doesn't parse -> None (caller skips the run)."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod._workflow_runs_on_fingerprint("not: valid: yaml: [") is None
+    assert mod._workflow_runs_on_fingerprint("") == frozenset()
+    assert mod._workflow_runs_on_fingerprint("just a string") == frozenset()
+
+
+def test_17397_detect_stale_runs_on_when_fingerprints_differ() -> None:
+    """The defining case: a run's head_sha fingerprint != main fingerprint."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    head_fp = frozenset({("build", ("self-hosted", "linux"))})
+    main_fp = frozenset({("build", ("ubuntu-latest",))})
+    runs = [
+        {"id": 1, "path": "ci.yml", "head_sha": "abc123"},
+        {"id": 2, "path": "ci.yml", "head_sha": "def456"},
+    ]
+
+    def lookup(path: str, ref: str) -> frozenset | None:
+        if ref == "abc123" or ref == "def456":
+            return head_fp
+        if ref == "main":
+            return main_fp
+        return None
+
+    stale = mod.detect_stale_runs_on(runs, lookup)
+    assert stale == {1, 2}
+
+
+def test_17397_detect_stale_runs_on_when_fingerprints_match() -> None:
+    """Control: same fingerprint on both sides -> empty stale set.
+
+    A run whose workflow was re-pinned to the new runner pool before
+    being queued would not be stale -- the lookup returns the same set
+    on both sides.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    same = frozenset({("build", ("ubuntu-latest",))})
+    runs = [{"id": 1, "path": "ci.yml", "head_sha": "abc123"}]
+
+    def lookup(path: str, ref: str) -> frozenset | None:
+        return same
+
+    assert mod.detect_stale_runs_on(runs, lookup) == set()
+
+
+def test_17397_detect_stale_runs_on_skips_when_either_side_unknown() -> None:
+    """A None on either side skips the run -- never synthesizes a verdict."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1, "path": "ci.yml", "head_sha": "abc123"},
+        {"id": 2, "path": "ci.yml", "head_sha": "def456"},
+        {"id": 3, "path": "ci.yml", "head_sha": "ghi789"},
+    ]
+
+    def lookup(path: str, ref: str) -> frozenset | None:
+        if ref == "abc123":
+            return None  # head unknown
+        if ref == "def456":
+            return frozenset({("build", ("self-hosted",))})
+        if ref == "main":
+            return frozenset({("build", ("ubuntu-latest",))})  # only id=2 lands
+        return None  # ghi789 unknown
+
+    stale = mod.detect_stale_runs_on(runs, lookup)
+    assert stale == {2}
+
+
+def test_17397_detect_stale_runs_on_skips_runs_without_path_or_sha() -> None:
+    """A run without `path` or `head_sha` is skipped -- it cannot be classified.
+
+    This is the row-shape discipline the live API gives us: pre-cutoff
+    ghosts and older API versions sometimes lack `path` or `head_sha` in
+    the workflow_runs payload. They stay live until the next watch cycle
+    repopulates them -- a measured, non-fatal failure.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1},  # no path, no head_sha
+        {"id": 2, "path": "ci.yml"},  # no head_sha
+        {"id": 3, "head_sha": "abc"},  # no path
+    ]
+    assert mod.detect_stale_runs_on(runs, lambda p, r: frozenset()) == set()
+
+
+def test_17397_classify_routes_stale_runs_on_to_ghosts() -> None:
+    """The stale_runs_on set moves runs from `live` to `ghosts`.
+
+    The classify_runs integration: a run whose ID is in the stale set
+    becomes a `stale-runs-on` ghost, regardless of cutoff / PR state.
+    The pr-closed and pre-cutoff classes still take precedence -- a
+    closed-PR run is a permanent ghost even if it also happens to be
+    stale-runs-on.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1, "created_at": "2026-09-15T10:00:00Z"},
+        {"id": 2, "created_at": "2026-09-15T10:00:00Z"},
+        {"id": 3, "created_at": "2026-08-19T03:00:00Z"},  # pre-cutoff
+    ]
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    out = mod.classify_runs(runs, cutoff, stale_runs_on={1, 2})
+    reasons = {g["id"]: g["reason"] for g in out["ghosts"]}
+    assert reasons == {1: "stale-runs-on", 2: "stale-runs-on",
+                       3: "pre-cutoff"}
+    assert out["live"] == []
+
+
+def test_17397_cancel_runs_parallel_invokes_per_run(monkeypatch) -> None:
+    """8-worker parallelism: each ID calls cancel_run once.
+
+    Uses a fake cancel_run so the test is hermetic. The test asserts:
+    (1) the per-run result carries its ID; (2) exactly the input IDs are
+    processed; (3) parallel execution is requested (we set max_workers=8
+    to make the contract explicit).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    seen: list[int] = []
+
+    def fake_cancel(repo: str, run_id: int) -> dict:
+        seen.append(run_id)
+        return {"ok": True, "status": "cancelled", "id": run_id}
+
+    monkeypatch.setattr(mod, "cancel_run", fake_cancel)
+    results = mod.cancel_runs_parallel("jsboige/CoursIA",
+                                       [11, 22, 33, 44, 55],
+                                       max_workers=8)
+    assert sorted(seen) == [11, 22, 33, 44, 55]
+    assert sorted(r["id"] for r in results) == [11, 22, 33, 44, 55]
+    assert all(r["ok"] for r in results)
+
+
+def test_17397_cancel_runs_parallel_handles_empty_list() -> None:
+    """An empty input is a no-op -- no workers spawned, no calls made."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod.cancel_runs_parallel("jsboige/CoursIA", []) == []
+
+
+def test_17397_fetch_workflow_runs_on_at_ref_handles_bad_payload(monkeypatch) -> None:
+    """The API path returns None on any structural failure -- never raises.
+
+    A non-dict payload, a missing `content` field, an invalid base64
+    string, or a non-UTF-8 decode all flow to None. The caller treats
+    None as 'skip the comparison'.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    class _Proc:
+        def __init__(self, payload):
+            self.returncode, self.stdout, self.stderr = 0, json.dumps(payload), ""
+
+    def fake_run(cmd, **kwargs):
+        endpoint = cmd[-1] if cmd else ""
+        if "non-dict" in endpoint:
+            return _Proc(["not a dict"])
+        if "no-content" in endpoint:
+            return _Proc({"encoding": "base64"})
+        if "bad-b64" in endpoint:
+            return _Proc({"content": "!!!not base64!!!"})
+        return _Proc({"unexpected": "shape"})
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    assert mod.fetch_workflow_runs_on_at_ref("o/r", "non-dict", "main") is None
+    assert mod.fetch_workflow_runs_on_at_ref("o/r", "no-content", "main") is None
+    assert mod.fetch_workflow_runs_on_at_ref("o/r", "bad-b64", "main") is None
+
+
+def test_17397_fetch_workflow_runs_on_at_ref_returns_fingerprint(monkeypatch) -> None:
+    """Happy path: a base64-encoded workflow yields its (job, runs-on) pairs."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    yaml_text = "jobs:\n  build:\n    runs-on: ubuntu-latest\n"
+    b64 = base64.b64encode(yaml_text.encode("utf-8")).decode("ascii")
+
+    class _Proc:
+        returncode, stdout, stderr = 0, json.dumps({"content": b64}), ""
+
+    def fake_run(cmd, **kwargs):
+        return _Proc()
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    fp = mod.fetch_workflow_runs_on_at_ref("o/r", "ci.yml", "main")
+    assert fp == frozenset({("build", ("ubuntu-latest",))})
+
+
+def test_17397_cli_cancel_rejects_input_mode(tmp_path: Path) -> None:
+    """--cancel on a snapshot is rejected -- the fingerprint isn't in the snapshot.
+
+    The fingerprint is computed from `git show` of the workflow at a ref,
+    which requires live API access. Snapshot mode has no channel for it,
+    so the option is rejected with an explicit message.
+    """
+    snapshot = tmp_path / "snap.json"
+    snapshot.write_text(_make_snapshot(_floor_runs()), encoding="utf-8")
+    proc = _run("--cancel", "stale-runs-on", "--input", str(snapshot))
+    assert proc.returncode == 2, (
+        f"expected EXIT_BROKEN=2, got {proc.returncode}; stderr={proc.stderr}"
+    )
+    assert "stale-runs-on requires --repo" in proc.stderr
+
+
+# ---------------------------------------------------------------------------
+# no-job class (#26357): queued runs with no job created
+# ---------------------------------------------------------------------------
+
+def test_26357_fetch_run_jobs_returns_none_on_bad_payload(monkeypatch) -> None:
+    """A failed probe returns None -- never an empty list.
+
+    None means "unknown"; an empty list means "proved job-less". The
+    distinction is the whole safety argument of the class, so a broken
+    payload must never masquerade as a proof.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    class _Proc:
+        def __init__(self, payload):
+            self.returncode, self.stdout, self.stderr = 0, json.dumps(payload), ""
+
+    def fake_run(cmd, **kwargs):
+        endpoint = cmd[-1] if cmd else ""
+        if "not-a-dict" in endpoint:
+            return _Proc(["nope"])
+        if "no-jobs-key" in endpoint:
+            return _Proc({"total_count": 0})
+        if "bad-jobs" in endpoint:
+            return _Proc({"jobs": "not-a-list"})
+        if "failed" in endpoint:
+            class _Fail:
+                returncode, stdout, stderr = 1, "", "HTTP 404"
+            return _Fail()
+        return _Proc({"jobs": []})
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    assert mod.fetch_run_jobs("o/r", 1) == []
+    assert mod.fetch_run_jobs("o/r", "not-a-dict") is None
+    assert mod.fetch_run_jobs("o/r", "no-jobs-key") is None
+    assert mod.fetch_run_jobs("o/r", "bad-jobs") is None
+    assert mod.fetch_run_jobs("o/r", "failed") is None
+
+
+def test_26357_detect_no_job_runs_requires_an_empty_job_list(monkeypatch) -> None:
+    """Only a PROVED empty job list enters the class.
+
+    A run with a job is excluded (it carries a live check-run), and a
+    failed probe is excluded too (unknown, never a proof).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    probed: list[int] = []
+
+    def fake_jobs(repo: str, run_id: int):
+        probed.append(run_id)
+        if run_id == 11:
+            return []           # proved job-less
+        if run_id == 22:
+            return [{"name": "build"}]  # has a job -> carries a check-run
+        return None            # unknown -> excluded
+
+    monkeypatch.setattr(mod, "fetch_run_jobs", fake_jobs)
+    now = dt.datetime(2026, 11, 14, 6, 0, tzinfo=dt.timezone.utc)
+    runs = [
+        {"id": 11, "event": "issue_comment", "created_at": "2026-11-11T10:00:00Z"},
+        {"id": 22, "event": "issue_comment", "created_at": "2026-11-11T10:00:00Z"},
+        {"id": 33, "event": "issue_comment", "created_at": "2026-11-11T10:00:00Z"},
+    ]
+    out = mod.detect_no_job_runs("jsboige/CoursIA", runs,
+                                 events=mod.NO_JOB_EVENTS,
+                                 min_age_hours=24.0, now=now)
+    assert out["ids"] == {11}
+    assert out["checked"] == 3
+    assert out["unknown"] == 2
+    assert sorted(probed) == [11, 22, 33]
+
+
+def test_26357_detect_no_job_runs_skips_other_events_and_fresh_runs(monkeypatch) -> None:
+    """Only comment/review events older than the threshold are probed.
+
+    A `pull_request` run is never eligible: admitting it would create a
+    real check-run on the head SHA, and cancelling it could suppress a
+    gate the branch protection expects. A fresh run is ordinary backlog.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    probed: list[int] = []
+
+    def fake_jobs(repo: str, run_id: int):
+        probed.append(run_id)
+        return []
+
+    monkeypatch.setattr(mod, "fetch_run_jobs", fake_jobs)
+    now = dt.datetime(2026, 11, 14, 6, 0, tzinfo=dt.timezone.utc)
+    runs = [
+        {"id": 41, "event": "pull_request", "created_at": "2026-11-01T10:00:00Z"},
+        {"id": 42, "event": "push", "created_at": "2026-11-01T10:00:00Z"},
+        {"id": 43, "event": "issue_comment", "created_at": "2026-11-14T04:00:00Z"},
+        {"id": 44, "event": "issue_comment", "created_at": "2026-11-01T10:00:00Z"},
+    ]
+    out = mod.detect_no_job_runs("jsboige/CoursIA", runs,
+                                 events=mod.NO_JOB_EVENTS,
+                                 min_age_hours=24.0, now=now)
+    assert probed == [44]
+    assert out["ids"] == {44}
+    assert out["checked"] == 1
+
+
+def test_26357_classify_routes_no_job_to_ghosts() -> None:
+    """The no_job set moves runs from `live` to `ghosts`.
+
+    The permanent classes keep their precedence: a pre-cutoff run stays
+    `pre-cutoff` even when it also carries no job.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1, "created_at": "2026-09-15T10:00:00Z"},
+        {"id": 2, "created_at": "2026-09-15T10:00:00Z"},
+        {"id": 3, "created_at": "2026-08-19T03:00:00Z"},  # pre-cutoff
+    ]
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    out = mod.classify_runs(runs, cutoff, no_job={1, 2})
+    reasons = {g["id"]: g["reason"] for g in out["ghosts"]}
+    assert reasons == {1: "no-job", 2: "no-job", 3: "pre-cutoff"}
+    assert out["live"] == []
+
+
+def test_26357_verify_no_job_before_cancel_drops_admitted_runs(monkeypatch) -> None:
+    """A run that gained a job between detection and cancellation is dropped.
+
+    Cancelling an admitted run would cancel its live job, and a CANCELLED
+    check-run blocks the merge like a failure (c.925). The re-probe is the
+    guard that keeps the class safe.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def fake_jobs(repo: str, run_id: int):
+        if run_id == 22:
+            return [{"name": "check-variation-adjacency-comment"}]
+        return []
+
+    monkeypatch.setattr(mod, "fetch_run_jobs", fake_jobs)
+    keep, dropped = mod.verify_no_job_before_cancel("jsboige/CoursIA", [11, 22])
+    assert keep == [11]
+    assert dropped == [22]
+
+
+def test_26357_cli_cancel_no_job_rejects_input_mode(tmp_path: Path) -> None:
+    """--cancel no-job on a snapshot is rejected -- the job state is live-only.
+
+    The proof that a run carries no job comes from the API, not from the
+    snapshot: a snapshot cannot answer it, so the option refuses rather
+    than guessing.
+    """
+    snapshot = tmp_path / "snap.json"
+    snapshot.write_text(_make_snapshot(_floor_runs()), encoding="utf-8")
+    proc = _run("--cancel", "no-job", "--input", str(snapshot))
+    assert proc.returncode == 2, (
+        f"expected EXIT_BROKEN=2, got {proc.returncode}; stderr={proc.stderr}"
+    )
+    assert "no-job requires --repo" in proc.stderr
+
+
+def test_26357_no_job_events_exclude_pr_and_push() -> None:
+    """The eligible events carry no PR head by construction.
+
+    A `pull_request` or `push` run decides something on a head SHA: if it
+    is admitted it creates a real check-run, and cancelling it could
+    suppress a gate the branch protection expects to see. Comment- and
+    review-triggered runs do not.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert "issue_comment" in mod.NO_JOB_EVENTS
+    assert "pull_request" not in mod.NO_JOB_EVENTS
+    assert "push" not in mod.NO_JOB_EVENTS
+
+
+def test_26357_count_by_event_sorts_and_labels_unknown() -> None:
+    """The free proxy: the live queue's share per event.
+
+    No API call, so the scheduled watch can always afford it. The
+    comment- and review-triggered share is the padding signal (#26357).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1, "event": "pull_request"},
+        {"id": 2, "event": "issue_comment"},
+        {"id": 3, "event": "issue_comment"},
+        {"id": 4, "event": None},
+    ]
+    assert mod._count_by_event(runs) == {
+        "issue_comment": 2, "pull_request": 1, "unknown": 1,
+    }
+
+
+# ---------------------------------------------------------------------------
+# #26718 -- la profondeur VIVANTE de la file (pagination + fantomes exclus)
+# ---------------------------------------------------------------------------
+
+def _queued_run(run_id: int, created: str, event: str = "pull_request",
+                branch: str = "feature/x") -> dict:
+    return {"id": run_id, "created_at": created, "event": event,
+            "head_branch": branch, "name": "PR gate",
+            "path": ".github/workflows/pr-gate.yml",
+            "html_url": f"https://github.com/jsboige/CoursIA/actions/runs/{run_id}"}
+
+
+def test_26718_paging_continues_past_a_short_page(monkeypatch) -> None:
+    """A SHORT page is not the end of the population.
+
+    The queue churns while it is read: measured 2026-11-15 on
+    jsboige/CoursIA, pages of 99, 100, 100 and 59 items for a
+    `total_count` of 358. The former stop condition (a page shorter than
+    `PER_PAGE`) truncated the collection at 99 of 358 -- three quarters of
+    the population invisible to EVERY class.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    pages = {1: 99, 2: 100, 3: 100, 4: 59}
+    next_id = 1
+
+    def fake_api(endpoint: str) -> dict:
+        nonlocal next_id
+        page = int(endpoint.rsplit("page=", 1)[1])
+        if page > len(pages):
+            return {"workflow_runs": [], "total_count": 358}
+        batch = []
+        for _ in range(pages[page]):
+            batch.append(_queued_run(next_id, "2026-11-01T00:00:00Z"))
+            next_id += 1
+        return {"workflow_runs": batch, "total_count": 358}
+
+    monkeypatch.setattr(mod, "_gh_api_json", fake_api)
+    population = mod.fetch_queued_population("jsboige/CoursIA")
+    assert len(population["runs"]) == 358
+    assert population["total_count"] == 358
+    assert population["pages"] == 4          # the empty fifth page ends it
+    assert population["duplicate_ids"] == 0
+
+
+def test_26718_paging_dedups_a_repeated_run_id(monkeypatch) -> None:
+    """A run seen twice is counted once (the queue is read while it churns).
+
+    The population is a SET of runs, not a list of pages: the same run
+    appearing on two pages must not inflate the depth.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def fake_api(endpoint: str) -> dict:
+        page = int(endpoint.rsplit("page=", 1)[1])
+        if page == 1:
+            return {"workflow_runs": [_queued_run(1, "2026-11-01T00:00:00Z"),
+                                      _queued_run(2, "2026-11-01T00:00:00Z")],
+                    "total_count": 3}
+        if page == 2:
+            return {"workflow_runs": [_queued_run(2, "2026-11-01T00:00:00Z"),
+                                      _queued_run(3, "2026-11-01T00:00:00Z")],
+                    "total_count": 3}
+        return {"workflow_runs": [], "total_count": 3}
+
+    monkeypatch.setattr(mod, "_gh_api_json", fake_api)
+    population = mod.fetch_queued_population("jsboige/CoursIA")
+    assert [r["id"] for r in population["runs"]] == [1, 2, 3]
+    assert population["duplicate_ids"] == 1
+
+
+def test_26718_fetch_queued_runs_wrapper_returns_the_population(monkeypatch) -> None:
+    """The historical entry point still returns the raw run list."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    monkeypatch.setattr(mod, "fetch_queued_population",
+                        lambda repo: {"runs": [{"id": 7}], "total_count": 1,
+                                      "pages": 1, "duplicate_ids": 0})
+    assert mod.fetch_queued_runs("jsboige/CoursIA") == [{"id": 7}]
+
+
+def _depth_runs() -> list[dict]:
+    return [
+        _queued_run(1, "2026-11-01T00:00:00Z", event="push"),      # live
+        _queued_run(2, "2026-11-01T00:00:00Z", event="push"),      # live
+        _queued_run(3, "2026-11-01T00:00:00Z", event="push"),      # live
+        _queued_run(4, "2026-08-01T00:00:00Z"),                    # pre-cutoff
+        _queued_run(5, "2026-11-01T00:00:00Z", branch="closed-br"),  # pr-closed
+        _queued_run(6, "2026-11-01T00:00:00Z", event="schedule"),  # scheduled-orphan
+        _queued_run(7, "2026-11-01T00:00:00Z", event="issue_comment"),  # no-job
+    ]
+
+
+def _depth_population() -> dict:
+    return {"runs": _depth_runs(), "total_count": 7, "pages": 1,
+            "duplicate_ids": 0}
+
+
+def test_26718_live_depth_excludes_every_measured_ghost_class(monkeypatch) -> None:
+    """The live depth is the population MINUS every measured ghost class.
+
+    Measured 2026-11-15 on jsboige/CoursIA: 326 queued runs, 234 of them
+    measured ghosts (142 pr-closed, 88 no-job, 4 scheduled-orphan) -- the
+    live depth was 92, and it is THAT number the lanes cite.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    monkeypatch.setattr(mod, "fetch_queued_population", lambda repo: _depth_population())
+    monkeypatch.setattr(mod, "fetch_pr_states",
+                        lambda repo, branches: {"closed-br": "closed"})
+    monkeypatch.setattr(
+        mod, "detect_no_job_runs",
+        lambda repo, runs, **kw: {"ids": {7}, "checked": 1, "probed": 1,
+                                  "unknown": 0})
+    report = mod.live_depth_report(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 12, 0, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0)
+    assert report["live_depth"] == 3
+    assert report["population"] == 7
+    assert report["ghosts"] == 4
+    assert report["ghosts_by_class"] == {
+        "pre-cutoff": 1, "pr-closed": 1, "scheduled-orphan": 1, "no-job": 1}
+    assert report["parse_failures"] == 0
+
+
+def test_26718_cli_live_depth_prints_a_bare_integer(monkeypatch, capsys) -> None:
+    """The command the lanes cite prints ONE integer on stdout.
+
+    `$(python3 scripts/ci/gh_queue_health.py --repo X --live-depth)` must
+    yield the depth and nothing else -- the sweep captures it verbatim.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    monkeypatch.setattr(mod, "fetch_queued_population", lambda repo: _depth_population())
+    monkeypatch.setattr(mod, "fetch_pr_states",
+                        lambda repo, branches: {"closed-br": "closed"})
+    monkeypatch.setattr(
+        mod, "detect_no_job_runs",
+        lambda repo, runs, **kw: {"ids": {7}, "checked": 1, "probed": 1,
+                                  "unknown": 0})
+    rc = mod.main(["--repo", "jsboige/CoursIA", "--live-depth"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert captured.out.strip() == "3"
+
+
+def test_26718_cli_live_depth_json_carries_the_whole_report(monkeypatch, capsys) -> None:
+    """`--json` renders the report: population, ghosts per class, churn."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    monkeypatch.setattr(mod, "fetch_queued_population", lambda repo: _depth_population())
+    monkeypatch.setattr(mod, "fetch_pr_states",
+                        lambda repo, branches: {"closed-br": "closed"})
+    monkeypatch.setattr(
+        mod, "detect_no_job_runs",
+        lambda repo, runs, **kw: {"ids": {7}, "checked": 1, "probed": 1,
+                                  "unknown": 0})
+    rc = mod.main(["--repo", "jsboige/CoursIA", "--live-depth", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["live_depth"] == 3
+    assert payload["total_count"] == 7
+    assert payload["ghosts_by_class"]["pr-closed"] == 1
+
+
+def test_26718_cli_live_depth_refuses_a_snapshot(capsys) -> None:
+    """A snapshot cannot prove the job state of a run: it is refused."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    rc = mod.main(["--input", "snapshot.json", "--live-depth"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert "--live-depth requires --repo" in captured.err
+
+
+def test_26718_cli_live_depth_exit_two_on_an_incomplete_population(monkeypatch, capsys) -> None:
+    """A run whose `created_at` cannot be parsed is not a depth: exit 2.
+
+    An incomplete measurement is never published as a depth (the caller
+    then falls back to the age-only verdict).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    broken = {"runs": [{"id": 9, "created_at": "not-a-date",
+                        "event": "push", "head_branch": "b"}],
+              "total_count": 1, "pages": 1, "duplicate_ids": 0}
+    monkeypatch.setattr(mod, "fetch_queued_population", lambda repo: broken)
+    monkeypatch.setattr(mod, "fetch_pr_states", lambda repo, branches: {})
+    monkeypatch.setattr(
+        mod, "detect_no_job_runs",
+        lambda repo, runs, **kw: {"ids": set(), "checked": 0, "probed": 0,
+                                  "unknown": 0})
+    rc = mod.main(["--repo", "jsboige/CoursIA", "--live-depth"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert "BROKEN INSTRUMENT" in captured.err
+
+
+# ---------------------------------------------------------------- #26739 --
+# Le cout de la mesure vivante (114 appels API par invocation) et la porte
+# qui l'evite : le BRUT majore la profondeur VIVANTE, donc un brut sous le
+# seuil PROUVE que la file n'est pas saturee -- la mesure ne peut pas
+# changer le verdict et n'est pas payee.
+
+def _raw_api(total_count: int):
+    """A fake `_gh_api_json` serving ONE cheap raw-count answer."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def _fake(endpoint: str, **kwargs):
+        assert "per_page=1" in endpoint, endpoint
+        mod.count_api_call()
+        return {"total_count": total_count, "workflow_runs": []}
+    return _fake
+
+
+def test_26739_raw_under_the_threshold_skips_the_live_measurement(monkeypatch) -> None:
+    """Brut < seuil : la mesure vivante n'est PAS payee, et le brut est
+    publie comme MAJORANT de la profondeur vivante."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def _must_not_measure(**kwargs):
+        raise AssertionError("la mesure vivante ne doit pas etre payee")
+
+    monkeypatch.setattr(mod, "_gh_api_json", _raw_api(326))
+    monkeypatch.setattr(mod, "live_depth_report", _must_not_measure)
+    report = mod.measure_queue_depth(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 13, 40, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0,
+        saturation_threshold=800)
+    assert report["depth_kind"] == "raw-upper-bound"
+    assert report["depth"] == 326
+    assert report["live_depth"] is None
+    assert report["saturated"] is False
+    # UNE seule appel : la lecture du brut. Les 114 appels de la mesure
+    # vivante sont epargnes.
+    assert report["api_calls"] == 1
+
+
+def test_26739_raw_at_the_threshold_measures_the_live_depth(monkeypatch) -> None:
+    """Brut >= seuil : la saturation peut encore etre exclue par la
+    vivante -- la mesure est donc payee."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    calls = []
+
+    def _fake_report(**kwargs):
+        calls.append(kwargs)
+        return {"live_depth": 42, "population": 900, "total_count": 900,
+                "pages": 9, "duplicate_ids": 0, "ghosts": 858,
+                "ghosts_by_class": {}, "parse_failures": 0,
+                "no_job_checked": 0, "no_job_unknown": 0,
+                "cutoff": "2026-08-20", "measured_at": "2026-11-15T13:40:00+00:00"}
+
+    monkeypatch.setattr(mod, "_gh_api_json", _raw_api(900))
+    monkeypatch.setattr(mod, "live_depth_report", _fake_report)
+    report = mod.measure_queue_depth(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 13, 40, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0,
+        saturation_threshold=800)
+    assert len(calls) == 1
+    assert report["depth_kind"] == "live"
+    assert report["depth"] == 42
+    assert report["saturated"] is False
+
+
+def test_26739_unreadable_raw_count_measures_anyway(monkeypatch) -> None:
+    """Un brut ILLISIBLE ne prouve rien : la mesure a lieu (fail-CLOSED
+    cote cout, fail-safe cote verdict)."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    calls = []
+
+    def _fake_report(**kwargs):
+        calls.append(kwargs)
+        return {"live_depth": 11, "population": 12, "total_count": 12,
+                "pages": 1, "duplicate_ids": 0, "ghosts": 1,
+                "ghosts_by_class": {}, "parse_failures": 0,
+                "no_job_checked": 0, "no_job_unknown": 0,
+                "cutoff": "2026-08-20", "measured_at": "2026-11-15T13:40:00+00:00"}
+
+    def _broken(endpoint: str, **kwargs):
+        raise mod.InstrumentError("gh API muette")
+
+    monkeypatch.setattr(mod, "_gh_api_json", _broken)
+    monkeypatch.setattr(mod, "live_depth_report", _fake_report)
+    report = mod.measure_queue_depth(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 13, 40, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0,
+        saturation_threshold=800)
+    assert len(calls) == 1
+    assert report["depth_kind"] == "live"
+    assert report["raw_probe_error"]
+
+
+def test_26739_cli_live_depth_with_a_threshold_prints_the_bound(monkeypatch, capsys) -> None:
+    """En mode borne, la sortie porte le NOM de la borne : un entier lu
+    sans son stderr serait un majorant pris pour une profondeur."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def _must_not_measure(**kwargs):
+        raise AssertionError("la mesure vivante ne doit pas etre payee")
+
+    monkeypatch.setattr(mod, "_gh_api_json", _raw_api(326))
+    monkeypatch.setattr(mod, "live_depth_report", _must_not_measure)
+    rc = mod.main(["--repo", "jsboige/CoursIA", "--live-depth",
+                   "--saturation-threshold", "800"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert captured.out.strip() == "326"
+    assert "NON MESUREE" in captured.err
+    assert "majoration" in captured.err
+    assert "api-quota: 1" in captured.err
+
+
+def test_26739_depth_measurement_plan_is_pure() -> None:
+    """La decision est une fonction pure : elle se teste sans reseau."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod.depth_measurement_plan(326, 800) == "bound"
+    assert mod.depth_measurement_plan(799, 800) == "bound"
+    assert mod.depth_measurement_plan(800, 800) == "measure"
+    assert mod.depth_measurement_plan(900, 800) == "measure"
+    assert mod.depth_measurement_plan(None, 800) == "measure"

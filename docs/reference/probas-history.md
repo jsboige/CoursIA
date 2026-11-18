@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-08
+
 # Portage Infer.NET → Python — `MyIA.AI.Notebooks/Probas/`
 
 > Référence pérenne. Ce document porte le **périmètre intentionnel** et la **recommandation de bibliothèques** d'un portage de la série Infer.NET (.NET Interactive, C#) vers des notebooks Python (PyMC, NumPyro, pgmpy, hmmlearn, Pyro). Il ne porte **PAS** le mapping d'API détaillé (daté PyMC v5, 2026-05-11) — voir section *« Mapping d'API = à re-dériver »*.
@@ -56,7 +58,7 @@ L'objectif du portage (intent original, 2024) : **rendre la série accessible au
 | 17 | Kalman Filter | Filtre de Kalman, état-espace | PyMC | **Absorbé** (`PyMC-17-Kalman-Filter.ipynb`) |
 | 18 | Change Point Detection | Détection de ruptures | PyMC | **Absorbé** (`PyMC-18-Change-Point.ipynb`) |
 | 19 | Survival Analysis | Modèles de survie, censures | PyMC (lifelines) | **Absorbé** (`PyMC-19-Survival-Analysis.ipynb`) |
-| 20 | Decision Theory (track séparé) | Utility, value of information | PyMC | **Absorbé** (`DecisionTheory/DecPyMC/DecPyMC-1..7.ipynb`) |
+| 20 | Decision Theory (track séparé) | Utility, value of information | PyMC | **Absorbé** (`DecisionTheory/DecPyMC/DecPyMC-01..07.ipynb`) |
 
 **Total : 20 notebooks PyMC + 7 notebooks DecPyMC + 1 notebook Pyro_RSA = 28 notebooks Python trackés**, soit **largement plus que les 20 initialement planifiés** — le périmètre a été étendu (track Decision Theory) et plusieurs notebooks ont été dédoublés.
 
@@ -71,7 +73,7 @@ Si un nouveau portage équivalent était à planifier aujourd'hui, l'estimer à 
 | Cible | Pattern | Exemple |
 |---|---|---|
 | Portage direct d'un notebook Infer | `PyMC-{N}-{Title}.ipynb` | `PyMC-02-Gaussian-Mixtures.ipynb` |
-| Track Decision Theory | `DecPyMC-{N}-{Title}.ipynb` | `DecPyMC-1-Utility-Foundations.ipynb` |
+| Track Decision Theory | `DecPyMC-{N}-{Title}.ipynb` | `DecPyMC-01-Utility-Foundations.ipynb` |
 | Numéro non-Infer | Préfixe thématique | `Pyro_RSA_Hyperbole.ipynb` |
 
 **Nommage par concept, pas par source** : un `PyMC-12-Modeles-Hierarchiques.ipynb` est rangé par le concept qu'il couvre (modèles hiérarchiques), pas par le numéro du notebook Infer correspondant.
@@ -108,10 +110,11 @@ Ces dépendances **ne sont pas figées** : les notebooks trackés utilisent prob
 - **#297** — issue cible exemple, CLOSED 2026-05-02 (work absorbé)
 - **#9914** — PR d'archive c.1284 (`feature/c1284-9535-port-py-plan-archive`) qui a supprimé `PORT_PYTHON_PLAN.md` + `PORT_PYTHON_PLAN.en.md`
 - **#1650** — EPIC traduction multilingue (interdit de traduire des fichiers transitoires)
-- `MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-1..7.ipynb` — track Decision Theory en PyMC
+- `MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-01..07.ipynb` — track Decision Theory en PyMC
 - `MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb` — précédent Pyro
 - `docs/reference/mbml-source-attribution.md` — modèle de référence suivi pour ce document (note *« ce qui est pérenne et ce qui ne l'est pas »*)
 
 ## Historique
 
 - **2026-08-07** — Création (c.1285), portée depuis `PORT_PYTHON_PLAN.md` (sha `48428c7e3d2fd20c682a2f4e49cec4b9894f4f30`) suite à la note de préservation user 2026-08-07T18:56:55Z sur #9911 (comment #5220921176) : *« la suppression sans que la substance ait été portée ailleurs d'abord »* est l'interdit, pas la suppression elle-même.
+- **2026-11-08** — Trancher du cas laissé *borderline* par le tri de la vague 4 (#14623, `docs/transients/2026-11-02-tri-perennel-stale-56.md`) : le document **reste dans la lane pérenne** et n'est pas déplacé en transiente. Motif, à la lecture : il porte des décisions de conception durables (périmètre intentionnel, recommandation de bibliothèque par concept, convention de nommage) et il **exclut explicitement** de son périmètre ce qui se périme (mapping d'API à re-dériver, estimation d'effort datée, statut au 2026-08-07) — ces parties sont déjà balisées comme datées dans le corps, ce qui est précisément la séparation que la lane cherche à rendre visible. Son en-tête reçoit le marqueur de référence vivante pour qu'il participe au contrat de la lane perenne et non plus seulement par son emplacement.

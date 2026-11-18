@@ -1,0 +1,126 @@
+{
+  "rescan_date": "2026-10-05",
+  "epic": "#11168",
+  "lane": "myia-po-2023:CoursIA-2",
+  "objet": "Verdict par ID pour les 9 identifiants non couverts nommes par ai-01 (commentaire du 2026-10-04T21:04Z sur #11168).",
+  "method": "Transport = pages abs arxiv.org, meta tags citation_title / citation_author / citation_date (l'API export.arxiv.org a rendu HTTP 429 pendant toute la passe ; le repli 'pages abs' est celui deja utilise par l'artefact 2026-09-24). Confrontation titre + auteurs + date contre la prose de la cellule citante, lue firsthand.",
+  "covered_source": "scripts/results/arxiv_rescan_2026-09-03.json + arxiv_rescan_2026-09-21.json + arxiv_rescan_2026-09-24.json + arxiv_rescan_2026-09-27.json + arxiv_attributions_registry.yaml",
+  "scope": "MyIA.AI.Notebooks (markdown cells only)",
+  "totals": {
+    "ids_nommes_par_ai_01": 9,
+    "delta_reel": 7,
+    "faux_delta_reconstruction": 2,
+    "verdicts_ok": 8,
+    "mauvaise_attribution": 1,
+    "id_fantome": 0,
+    "corrections_appliquees": 1
+  },
+  "delta_verdicts": [
+    {
+      "arxiv_id": "1806.07572",
+      "verdict": "OK",
+      "title": "Neural Tangent Kernel: Convergence and Generalization in Neural Networks",
+      "authors": ["Jacot, Arthur", "Gabriel, Franck", "Hongler, Clement"],
+      "published": "2018/06/20",
+      "citation_in_notebook": "Jacot, A., Gabriel, F. & Hongler, C. (2018). *Neural Tangent Kernel: Convergence and Generalization in Neural Networks*. NeurIPS 2018.",
+      "notebooks": ["ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb"],
+      "cell_index": 20,
+      "rationale": "Titre et les trois auteurs exacts ; annee 2018 = annee arXiv, coherente avec la mention NeurIPS 2018."
+    },
+    {
+      "arxiv_id": "1806.08734",
+      "verdict": "OK",
+      "title": "On the Spectral Bias of Neural Networks",
+      "authors": ["Rahaman, Nasim", "Baratin, Aristide", "Arpit, Devansh", "Draxler, Felix", "Lin, Min", "Hamprecht, Fred A.", "Bengio, Yoshua", "Courville, Aaron"],
+      "published": "2018/06/22",
+      "citation_in_notebook": "Rahaman, N., Baratin, A., Arpit, D., Draxler, F., Lin, M., Hamprecht, F., Bengio, Y. & Courville, A. (2019). *On the Spectral Bias of Neural Networks*. ICML 2019.",
+      "notebooks": ["ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb"],
+      "cell_index": 20,
+      "rationale": "Titre et les huit auteurs exacts. L'annee citee (2019) est celle des actes ICML ; le preprint arXiv est de 2018/06 — ecart de regime deja rencontre et non un defaut (meme convention que Jacot 2018/NeurIPS 2018 et Mildenhall 2020/ECCV 2020 dans la meme cellule)."
+    },
+    {
+      "arxiv_id": "2003.08934",
+      "verdict": "OK",
+      "title": "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis",
+      "authors": ["Mildenhall, Ben", "Srinivasan, Pratul P.", "Tancik, Matthew", "Barron, Jonathan T.", "Ramamoorthi, Ravi", "Ng, Ren"],
+      "published": "2020/03/19",
+      "citation_in_notebook": "Mildenhall, B., Srinivasan, P. P., Tancik, M., Barron, J. T., Ramamoorthi, R. & Ng, R. (2020). *NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis*. ECCV 2020.",
+      "notebooks": ["ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb"],
+      "cell_index": 20,
+      "rationale": "Titre et les six auteurs exacts, dans l'ordre ; ECCV 2020."
+    },
+    {
+      "arxiv_id": "2006.10739",
+      "verdict": "OK",
+      "title": "Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains",
+      "authors": ["Tancik, Matthew", "Srinivasan, Pratul P.", "Mildenhall, Ben", "Fridovich-Keil, Sara", "Raghavan, Nithin", "Singhal, Utkarsh", "Ramamoorthi, Ravi", "Barron, Jonathan T.", "Ng, Ren"],
+      "published": "2020/06/18",
+      "citation_in_notebook": "Tancik, M., Srinivasan, P. P., Mildenhall, B., Fridovich-Keil, S., Raghavan, N., Singhal, U., Ramamoorthi, R., Barron, J. T. & Ng, R. (2020). *Fourier Features Let Networks Learn High Frequency Functions in Low Dimensional Domains*. NeurIPS 2020.",
+      "notebooks": ["ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb"],
+      "cell_index": 20,
+      "rationale": "Titre et les neuf auteurs exacts, dans l'ordre ; NeurIPS 2020."
+    },
+    {
+      "arxiv_id": "1603.04244",
+      "verdict": "MAUVAISE-ATTRIBUTION",
+      "title": "Reactivity of OH and CH3OH between 22 and 64 K: Modelling the gas phase production of CH3O in Barnard 1b",
+      "authors": ["Antinolo, M.", "Agundez, M.", "Jimenez, E.", "Ballesteros, B.", "Canosa, A.", "Dib, G. El", "Albaladejo, J.", "Cernicharo, J."],
+      "published": "2016/03/14",
+      "citation_in_notebook": "et Cohn, Kumar, Miller, Radchenko, Viazovska, *The sphere packing problem in dimension 24*, Annals **185** (2017) — [arXiv:1603.04244](https://arxiv.org/abs/1603.04244)",
+      "notebooks": ["SymbolicAI/Lean/Serre100/10-empilements-borne-lp-cohn-elkies.ipynb"],
+      "cell_index": 23,
+      "correct_arxiv_id": "1603.06518",
+      "correct_title": "The sphere packing problem in dimension 24",
+      "correct_authors": ["Cohn, Henry", "Kumar, Abhinav", "Miller, Stephen D.", "Radchenko, Danylo", "Viazovska, Maryna"],
+      "correct_published": "2016/03/21",
+      "rationale": "L'ID cite resout vers un papier d'astrochimie (Antinolo et al. 2016). Le titre et les cinq auteurs ecrits dans le carnet sont, eux, exacts : seule l'attribution de l'ID etait fausse — meme classe que le cas Nanda/grokking du 2026-09-21. ID corrige en 1603.06518, verifie sur page abs (titre + les cinq auteurs)."
+    },
+    {
+      "arxiv_id": "1603.04246",
+      "verdict": "OK",
+      "title": "The sphere packing problem in dimension 8",
+      "authors": ["Viazovska, Maryna"],
+      "published": "2016/03/14",
+      "citation_in_notebook": "M. Viazovska, *The sphere packing problem in dimension 8*, Annals of Mathematics **185** (2017) — [arXiv:1603.04246](https://arxiv.org/abs/1603.04246)",
+      "notebooks": ["SymbolicAI/Lean/Serre100/10-empilements-borne-lp-cohn-elkies.ipynb"],
+      "cell_index": 23,
+      "rationale": "Titre et autrice exacts ; Annals 185 (2017) est la reference de publication, le preprint etant de 2016."
+    },
+    {
+      "arxiv_id": "math/0110009",
+      "verdict": "OK",
+      "title": "New upper bounds on sphere packings I",
+      "authors": ["Cohn, Henry", "Elkies, Noam"],
+      "published": "2001/10/01",
+      "citation_in_notebook": "H. Cohn, N. Elkies, *New upper bounds on sphere packings I*, Annals of Mathematics **157** (2003), 689-714 — [arXiv:math/0110009](https://arxiv.org/abs/math/0110009)",
+      "notebooks": ["SymbolicAI/Lean/Serre100/10-empilements-borne-lp-cohn-elkies.ipynb"],
+      "cell_index": 23,
+      "rationale": "Titre et les deux auteurs exacts ; Annals 157 (2003) est la reference de publication, le preprint etant de 2001. ID a prefixe ancien, resolu directement."
+    }
+  ],
+  "false_delta_excluded": [
+    {
+      "arxiv_id": "cs/0011047",
+      "reason": "Deja verdict OK (method manual_legacy_id) dans arxiv_rescan_2026-09-03.json, et deja inscrit en false_delta_excluded dans arxiv_rescan_2026-09-27.json. Invisible a la reconstruction d'ensemble couvert parce que l'artefact 2026-09-03 stocke l'ID sans son prefixe ('0011047'), que la regex dotted ne reconnait pas. Titre et auteur re-verifies ce jour sur page abs : 'Dancing links', Knuth, Donald E., 2000/11/15.",
+      "notebooks": ["Search/Part1-Foundations/Search-08-DancingLinks.ipynb", "Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb", "Sudoku/Sudoku-02-DancingLinks-Python.ipynb"],
+      "verdict": "OK (deja couvert)"
+    },
+    {
+      "arxiv_id": "quant-ph/0604079",
+      "reason": "Meme classe que ci-dessus : deja verdict OK (manual_legacy_id) dans arxiv_rescan_2026-09-03.json, deja inscrit en false_delta_excluded dans arxiv_rescan_2026-09-27.json. Titre et auteurs re-verifies ce jour sur page abs : 'The Free Will Theorem', Conway, John & Kochen, Simon, 2006/04/11.",
+      "notebooks": ["SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb", "SymbolicAI/Lean/Lean-16f-Conway-Free-Will-Theorem.ipynb"],
+      "verdict": "OK (deja couvert)"
+    }
+  ],
+  "corrections": [
+    {
+      "arxiv_id": "1603.06518",
+      "replaces": "1603.04244",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/10-empilements-borne-lp-cohn-elkies.ipynb",
+      "cell_index": 23,
+      "expected_citation": "*The sphere packing problem in dimension 24*, Annals **185** (2017) — [arXiv:1603.06518](https://arxiv.org/abs/1603.06518)",
+      "registry_entry_added": true
+    }
+  ],
+  "limite": "La confrontation porte sur titre, auteurs et date de l'ID cite. Une prose qui citerait un ID exact pour un contenu sans rapport lexical reste detectable ici parce que l'ID resolvait vers un domaine etranger (astrochimie) — c'est le cas 1603.04244 ; une divergence plus fine demanderait la lecture du papier."
+}

@@ -27,6 +27,21 @@ CROSSFADE_MS = 20
 BITRATE = "192k"
 
 
+class IncompleteAudiobookError(RuntimeError):
+    """Levee quand l'audiobook compile a des segments manquants.
+
+    P6 ecartait un segment dont le MP3 est absent ou indécodable, exportait
+    malgre tout le fichier, puis imprimait "Done" -- le seul signal etait un
+    "Skipped: N" noye dans les lignes de succes, et un audiobook troue
+    passait pour un audiobook fini.
+
+    Les artefacts restent sur le disque (le rendu dont ils viennent coute des
+    heures) mais la phase echoue, pour qu'un appelant ne puisse pas confondre
+    "exporte" et "complet". ``allow_missing=True`` est le desistement
+    explicite, pour un run de diagnostic.
+    """
+
+
 def _detect_act_boundaries(dramatic_path: Path) -> dict[int, str]:
     """Build seg_index -> act label mapping for act boundary detection."""
     if not dramatic_path.exists():
@@ -208,8 +223,13 @@ def _run_ffmpeg_m4b(ffmpeg_exe, mp3_path, m4b_path, chapters, tags):
 
 
 
-def run(force: bool = False) -> Path:
-    """Run P6 — MP3 compilation. Returns path to audiobook MP3."""
+def run(force: bool = False, allow_missing: bool = False) -> Path:
+    """Run P6 — MP3 compilation. Returns path to audiobook MP3.
+
+    ``allow_missing`` : par defaut la phase ECHOUE quand des segments manquent
+    (cf ``IncompleteAudiobookError``) ; le passer a True produit quand meme
+    l'audiobook, pour un run de diagnostic.
+    """
     output_path = BASE_DIR / "outputs" / "boule_de_suif_v4.mp3"
     tts_path = BASE_DIR / "outputs" / "tts_results.json"
     annotated_path = BASE_DIR / "outputs" / "annotated_v4.json"
@@ -259,6 +279,12 @@ def run(force: bool = False) -> Path:
     prev_act: str | None = None
     compiled = 0
     skipped = 0
+    # Deux causes distinctes, gardees separees parce qu'elles appellent deux
+    # reparations differentes : un MP3 absent veut dire que P5 ne l'a jamais
+    # produit (rendu en echec), un MP3 illisible veut dire que le fichier
+    # existe mais qu'on ne peut pas l'ouvrir.
+    missing_segments: list[dict] = []
+    unreadable_segments: list[dict] = []
 
     for entry in segments_ordered:
         seg_idx = entry["seg_index"]
@@ -266,6 +292,14 @@ def run(force: bool = False) -> Path:
 
         if not mp3_path or not Path(mp3_path).exists():
             skipped += 1
+            missing_segments.append(
+                {
+                    "seg_index": seg_idx,
+                    "speaker": entry.get("speaker", ""),
+                    "status": entry.get("status", ""),
+                    "reason": "no_mp3_path" if not mp3_path else "mp3_absent",
+                }
+            )
             continue
 
         try:
@@ -273,6 +307,13 @@ def run(force: bool = False) -> Path:
         except Exception as e:
             print(f"  [P6] Error loading seg {seg_idx}: {e}")
             skipped += 1
+            unreadable_segments.append(
+                {
+                    "seg_index": seg_idx,
+                    "speaker": entry.get("speaker", ""),
+                    "error": str(e),
+                }
+            )
             continue
 
         # Act boundary detection
@@ -358,10 +399,63 @@ def run(force: bool = False) -> Path:
     duration_s = len(audiobook) / 1000.0
     size_mb = output_path.stat().st_size / (1024 * 1024)
 
+    complete = not missing_segments and not unreadable_segments
+    report = {
+        "complete": complete,
+        "segments_expected": total,
+        "segments_compiled": compiled,
+        "segments_missing": len(missing_segments),
+        "segments_unreadable": len(unreadable_segments),
+        "missing_segments": missing_segments,
+        "unreadable_segments": unreadable_segments,
+        "duration_s": round(duration_s, 1),
+        "size_mb": round(size_mb, 2),
+        "mp3_path": str(output_path),
+        "m4b_path": str(m4b_path) if m4b_path.exists() else "",
+        "regle": (
+            "un segment que P5 n'a pas pu rendre n'est jamais silencieux : "
+            "il est nomme ici, et la phase echoue au lieu d'exporter un "
+            "audiobook troue en le declarant termine"
+        ),
+    }
+    report_path = BASE_DIR / "outputs" / "compile_report.json"
+    report_path.write_text(
+        json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8"
+    )
+
     print(f"[P6] Done: {output_path}")
     print(f"  Compiled: {compiled}, Skipped: {skipped}")
     print(f"  Duration: {duration_s:.1f}s ({duration_s/60:.1f}min)")
     print(f"  Size: {size_mb:.1f} MB")
+
+    if not complete:
+        print("")
+        print("  " + "!" * 68)
+        print(
+            f"  [P6] INCOMPLET : {skipped} segment(s) sur {total} absent(s) de "
+            f"l'audiobook -- le fichier exporte COMPORTE DES TROUS."
+        )
+        if missing_segments:
+            print(
+                "    sans MP3 (rendu P5 en echec) : "
+                + ", ".join(str(s["seg_index"]) for s in missing_segments)
+            )
+        if unreadable_segments:
+            print(
+                "    MP3 illisibles : "
+                + ", ".join(str(s["seg_index"]) for s in unreadable_segments)
+            )
+        print(f"    detail machine : {report_path}")
+        print("  " + "!" * 68)
+        print("")
+
+        if not allow_missing:
+            raise IncompleteAudiobookError(
+                f"{skipped} segment(s) sur {total} manquants -- audiobook "
+                f"incomplet exporte vers {output_path} (detail : {report_path}). "
+                "Relancer P5 sur ces segments, ou re-executer p6 avec "
+                "allow_missing=True pour un run de diagnostic."
+            )
 
     return output_path
 

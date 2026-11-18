@@ -154,7 +154,8 @@ def test_t4_render_byte_stable():
     stats = report["t4_render_dry"]["stats"]
     assert "markdown" in stats, f"markdown stats missing: {stats}"
     assert "code" in stats, f"code stats missing: {stats}"
-    # Le notebook FT-01 a 17 markdown + 8 code (25 cells total)
-    # Aprés extraction, 12 markdown traduits + 13 code copies = 25 cells
-    assert "12" in stats["markdown"], f"unexpected markdown stats: {stats['markdown']}"
+    # Le notebook FT-01 a 30 markdown + 13 code (43 cells total)
+    # Aprés extraction T1 + remplissage EN complet (#1650 tranche FT, #18968),
+    # 30 markdown traduits + 13 code copies = 43 cells
+    assert "30" in stats["markdown"], f"unexpected markdown stats: {stats['markdown']}"
     assert "13" in stats["code"], f"unexpected code stats: {stats['code']}"

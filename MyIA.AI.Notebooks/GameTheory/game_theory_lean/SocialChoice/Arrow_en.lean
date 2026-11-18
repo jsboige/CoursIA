@@ -17,6 +17,13 @@
   2. Pivot existence: Every alternative has a pivotal individual
   3. Dictatorial extension: Pivots become dictators over pairs
   4. Complete dictatorship: Partial dictator becomes full dictator
+
+  Convention i18n (Option A ratified by ai-01, Epic #4980) :
+  section headers, definition/theorem docstrings, lemma comments and PROOF
+  SKETCH are **English-first** in this EN sibling ; the FR canonical
+  Arrow.lean keeps the French-first convention. The Lean tactical code
+  (tactic names, Mathlib lemmas, identifiers) stays in English, the canonical
+  language of Lean/Mathlib. Reference: option A ratified by ai-01.
 -/
 
 import SocialChoice.Framework_en
@@ -692,6 +699,11 @@ theorem partial_dictator_is_full_dictator (f : SWF ι σ) (X : Finset σ)
 Arrow's Impossibility Theorem:
 Any social welfare function over at least 3 alternatives that satisfies
 Weak Pareto and Independence of Irrelevant Alternatives must be a dictatorship.
+
+Declared alternative proof: `lean_game_defs/SocialChoice_en.lean` (the
+canonical home of the statement, Lean core only) establishes it in negative
+form (`¬ NonDictatorial swf`), by propagation of decisiveness and bounded to
+`Fin nI` / `Fin nA`.
 -/
 theorem arrow (f : SWF ι σ) (X : Finset σ)
     (hwp : weak_pareto f X) (hind : ind_of_irr_alts f X) (hX : 3 ≤ X.card) :

@@ -1,0 +1,14 @@
+date: '2026-10-13'
+by: hors-flotte:claude-session-20547
+python_sha: 3c6eab8cec5b300f4a03902c551a7644f2279e8f
+csharp_sha: 3951d1955efbf83a78396c3ff8bc91a81c808734
+content_python_sha: a33c80dbff3627bf5fa865c1f9bb637952933bf3d3b9c7e06675753f1f270f7c
+content_csharp_sha: 4f7a6916b711fd53236b2ea7be72270cca9299443b31ec20c01d9c1f5707c555
+reason: >-
+  Audit firsthand #20547 (session cloud hors flotte), apres complexification. Cellule de
+  convergence Python : trois positions (grille vide, gain immediat et blocage force en
+  milieu de partie, un coup optimal unique), 30 repetitions seedees, budgets 2 a 500 ;
+  carnet re-execute de bout en bout (43 cellules, 16 code, 0 erreur). Cellule C# 26
+  inchangee (action de reference unique, taux bruite) : ecart de metrique documente dans
+  known_differences. Parite native-both intacte : socle MCTS from-scratch des deux cotes,
+  OpenSpiel (cellule 16) inchange. Aucun strip outille apres cette attestation.

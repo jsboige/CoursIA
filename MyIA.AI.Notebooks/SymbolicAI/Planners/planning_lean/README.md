@@ -76,7 +76,7 @@ flowchart TD
 | [`Planning/Relaxation.lean`](Planning/Relaxation.lean) | Exécution réelle `run` et relaxée `runR`, `reaches`/`reachesR`, **monotonie de l'atteignabilité relaxée** `runR_mono`, **lemme central** `run_subset_runR`. |
 | [`Planning/Admissibility.lean`](Planning/Admissibility.lean) | **Théorème phare `relaxed_plan_admissible`** (h⁺ ≤ h\*) : tout plan réel est un plan relaxé. |
 
-- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — 3 modules `.lean` livrés en FR canonique + 3 siblings `*_en.lean` miroirs sur `main` (`Planning/Strips_en.lean`, `Planning/Relaxation_en.lean`, `Planning/Admissibility_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques. Vérifié par `scripts/lean/check_i18n_siblings.py` : 3/3 paires byte-identical, 0 drift, 0 orphan.
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — chaque module `.lean` livré en FR canonique a son sibling `*_en.lean` miroir sur `main` (`Planning/Strips_en.lean`, `Planning/Relaxation_en.lean`, `Planning/Admissibility_en.lean`). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques. Vérifié par `scripts/lean/check_i18n_siblings.py` : toutes les paires byte-identical, 0 drift, 0 orphan.
 
 ## Théorèmes prouvés (0 sorry)
 
@@ -98,7 +98,9 @@ lake build Planning          # 8496 jobs, 0 sorry, exit 0
 ```
 
 Vérifié localement : `lake build Planning` SUCCESS, `grep -E '^\s*sorry\b' Planning/` = 0,
-CI `lean-planning.yml` (`sorry-baseline: "0"`, `sorry-filter-mode: standalone-tactic`).
+CI [`lean-ci-matrix.yml`](https://github.com/jsboige/CoursIA/blob/main/.github/workflows/lean-ci-matrix.yml),
+entrée `planning` du manifeste `scripts/lean/ci_lakes.json` depuis la consolidation
+#13751 (`sorry-baseline: "0"`, `sorry-filter-mode: real`, `axiom-target-modules: "*"`).
 
 ## Jalon ouvert (non sorry-backed)
 

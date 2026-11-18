@@ -52,8 +52,10 @@ class FilingLanguageStabilityAlgorithm(QCAlgorithm):
         self._universe = self.add_universe(
             BrainCompanyFilingLanguageMetricsUniverseAll, self._select_assets)
 
+        # month_start sans symbole saute les mois dont le 1er n'est pas une
+        # seance (#18941) ; l'ancrage sur SPY cible le premier jour bourse.
         self.schedule.on(
-            self.date_rules.month_start(),
+            self.date_rules.month_start("SPY"),
             self.time_rules.at(8, 0),
             self._rebalance)
 

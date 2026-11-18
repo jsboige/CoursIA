@@ -14,6 +14,12 @@ CLI usage
         --notebook MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb \\
         --lang en --out /tmp/FT-01_en.ipynb [--dry-run] [--verbose]
 
+    # Re-stamper la provenance d'un jumeau deja derive (sans re-render) :
+    python render_notebook.py --reprovenance \\
+        --notebook MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-...-Python_en.ipynb \\
+        --source MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-...-Python.ipynb \\
+        --lang en [--apply]
+
 The output language's column in the CSV (``text_<lang>``) supplies the
 translated prose. Empty cells fall back to the FR source (never a blank cell,
 never a placeholder). Cells in the CSV that are absent from the notebook
@@ -37,6 +43,36 @@ The three invariants (issue #10039, also mandated by #10038 §3) :
 
 Corollary (CLAUDE.md §E) : comments and printed literals in code remain in
 French. This is part of the convention and is the price of honest outputs.
+
+Provenance (issue #21496, reserve adjointe 6399643921)
+------------------------------------------------------
+A derived notebook carries **copied** outputs, not its own execution: its
+``metadata.papermill`` must never describe a run of the derived file itself,
+and it must never inherit the source's papermill block either (a reader would
+mistake the source's execution for the twin's). The render therefore strips
+``metadata.papermill`` (notebook level AND per-cell blocks) and stamps an
+explicit copy-provenance block instead::
+
+    metadata.t4 = {
+        "tool": "render_notebook.py",
+        "lang": "en",
+        "source": "<repo-relative POSIX path of the FR source>",
+        "source_papermill": { ...verbatim block of the source notebook... },
+    }
+
+``source_papermill`` preserves the execution provenance of the run that
+produced the copied outputs (start/end/duration, input/output paths) without
+claiming any execution of the twin. The stamp derives from the source content
+only — no wall-clock — so re-renders stay byte-identical (idempotence).
+
+:func:`reprovenance` is the canonical repair path for an existing derived
+notebook whose provenance is incoherent (e.g. FR outputs assembled onto a twin
+that still carries an older native run's papermill). It verifies the copy
+preconditions first — cell count, ``cell_id`` order, code ``source`` /
+``outputs`` / ``execution_count`` byte-identical to the source — and refuses
+to stamp anything otherwise: the stamp is earned by measurement, never
+cosmetic. Markdown cells are left untouched (translation drift is the CSV's
+business, not provenance's).
 """
 
 from __future__ import annotations
@@ -72,6 +108,81 @@ class RenderResult:
     nb_cells_out: int  # cell count in output notebook
     stats: RenderStats
     orphan_keys: List[str] = field(default_factory=list)
+
+
+@dataclass
+class ReprovenanceStats:
+    """Counters emitted by :func:`reprovenance` for diagnostics + tests."""
+
+    n_cells: int = 0  # total cells compared (must match between twin and source)
+    n_code_cells: int = 0  # code cells verified byte-identical (source+outputs+exec_count)
+    n_papermill_blocks_stripped: int = 0  # per-cell papermill blocks removed
+    n_execution_blocks_stripped: int = 0  # per-cell metadata.execution blocks removed
+    stamped: bool = False  # metadata.t4 written
+
+
+# --- Provenance helpers (#21496) ------------------------------------------- #
+
+T4_PROVENANCE_KEY = "t4"
+
+
+def _canonical_source_ref(nb_path: Path) -> str:
+    """Repo-relative POSIX path of a notebook when derivable, else its basename.
+
+    The render must stamp a path form that does not depend on the caller's
+    cwd or absolute location (idempotence across invocations): the walk-up
+    finds the ``MyIA.AI.Notebooks`` repo-root marker, as in :func:`render`.
+    """
+    try:
+        for parent in [nb_path.parent, *nb_path.parents]:
+            if (parent / "MyIA.AI.Notebooks").is_dir():
+                return nb_path.relative_to(parent).as_posix()
+    except Exception:
+        pass
+    return nb_path.name
+
+
+def _t4_stamp(source_nb: dict, source_path: Path, lang: str) -> Dict[str, object]:
+    """Build the copy-provenance block stamped on every T4 output.
+
+    ``source_papermill`` is the verbatim papermill block of the SOURCE notebook
+    (or ``None``): it documents the execution that produced the copied outputs
+    without ever claiming an execution of the derived file. Derived from source
+    content only — deterministic, no wall-clock.
+    """
+    src_meta = source_nb.get("metadata") or {}
+    return {
+        "tool": "render_notebook.py",
+        "lang": lang,
+        "source": _canonical_source_ref(source_path),
+        "source_papermill": src_meta.get("papermill"),
+    }
+
+
+# Per-cell metadata keys that describe an execution of THAT cell. On a derived
+# twin both are either stale (an old native run) or borrowed (the source's run),
+# and both misattribute the copied outputs (#21496). They are stripped, never
+# re-stamped: the honest provenance of a copied output is recorded once, at
+# notebook level, in ``metadata.t4.source_papermill``.
+_CELL_EXECUTION_PROVENANCE_KEYS = ("papermill", "execution")
+
+
+def _strip_cell_execution_provenance(cell: dict) -> dict:
+    """Copy of ``cell`` whose metadata no longer carries an execution block.
+
+    ``metadata.papermill`` and ``metadata.execution`` both describe an execution
+    of the cell. A derived twin copies the source's *outputs*, so keeping either
+    channel makes the cell claim an execution that did not produce them — a
+    stale EN run down to the ``execute_input`` timestamps (#21496).
+    """
+    new_cell = dict(cell)
+    meta = cell.get("metadata")
+    if isinstance(meta, dict):
+        kept = {k: v for k, v in meta.items()
+                if k not in _CELL_EXECUTION_PROVENANCE_KEYS}
+        if len(kept) != len(meta):
+            new_cell["metadata"] = kept
+    return new_cell
 
 
 def read_csv_for_lang(csv_path: Path, notebook_keys: List[str], lang: str) -> Tuple[List[str], Dict[str, str]]:
@@ -152,7 +263,9 @@ def render(
     translated prose. Empty cells fall back to the FR source. Structure is
     preserved bit-for-bit : ``nbformat``, ``metadata`` (sans
     ``metadata.papermill``), cell order, ``cell_id``, and code cells' ``source``
-    + ``outputs`` + ``execution_count``.
+    + ``outputs`` + ``execution_count``. Per-cell execution blocks
+    (``metadata.papermill``, ``metadata.execution``) are stripped — see
+    :func:`_strip_cell_execution_provenance` (#21496).
 
     Guardrails (issue #13544) :
 
@@ -210,7 +323,15 @@ def render(
 
     stats = RenderStats()
     orphan_keys: List[str] = []
-    out_nb = dict(nb)  # shallow copy — preserves nbformat, metadata, etc.
+    out_nb = dict(nb)  # shallow copy — preserves nbformat, etc.
+    # Provenance (#21496) : the output NEVER inherits the source's papermill
+    # block (notebook level) — it gets an explicit copy-provenance stamp
+    # instead. The docstring contract « metadata (sans metadata.papermill) »
+    # is enforced here, not assumed.
+    out_meta = {k: v for k, v in (nb.get("metadata") or {}).items()
+                if k not in ("papermill", T4_PROVENANCE_KEY)}
+    out_meta[T4_PROVENANCE_KEY] = _t4_stamp(nb, nb_path, lang)
+    out_nb["metadata"] = out_meta
     new_cells: List[dict] = []
 
     for cell in nb.get("cells", []):
@@ -218,7 +339,7 @@ def render(
         cell_type = cell.get("cell_type", "unknown")
         if cell_type == "markdown":
             stats.n_md_cells += 1
-            new_cell = dict(cell)
+            new_cell = _strip_cell_execution_provenance(cell)
             original_source = "".join(cell.get("source", []))
             translated = text_map.get(cell_id, "") if cell_id else ""
             if translated.strip():
@@ -235,11 +356,13 @@ def render(
             stats.n_code_cells += 1
             # Invariant #2 : code cells copied byte-for-byte (source, outputs,
             # execution_count). We don't even check the CSV for code cells —
-            # the CSV doesn't carry outputs by design.
-            new_cells.append(dict(cell))
+            # the CSV doesn't carry outputs by design. The per-cell papermill
+            # block is stripped (#21496) : it describes an execution of the
+            # source, never of the twin.
+            new_cells.append(_strip_cell_execution_provenance(cell))
             continue
         # Unknown cell_type — preserve as-is, do not touch.
-        new_cells.append(dict(cell))
+        new_cells.append(_strip_cell_execution_provenance(cell))
 
     # Orphan CSV keys (in CSV but not in notebook) : preserved in sidecar
     # .stale (CSV keys whose cell_id was not present in the source notebook).
@@ -319,6 +442,111 @@ def render(
     )
 
 
+def reprovenance(
+    nb_path: Path,
+    source_path: Path,
+    lang: str,
+    *,
+    apply: bool = False,
+) -> ReprovenanceStats:
+    """Re-stamp the copy-provenance of an existing derived notebook (#21496).
+
+    Canonical repair for a twin whose provenance is incoherent — e.g. FR
+    outputs assembled onto a derived file that still carries an older native
+    run's ``metadata.papermill`` (reserve adjointe 6399643921 : le dérivé
+    « assemble les sorties FR et la provenance d'exécution EN antérieure »).
+    The tool owns the stamp so the repair goes through the generation path,
+    never through hand-edited JSON.
+
+    Precondition gates (fail-closed, the stamp is earned by measurement):
+
+    * cell count and ``cell_id`` order identical between twin and source;
+    * every code cell byte-identical to its source counterpart on
+      ``source``, ``outputs`` and ``execution_count`` — the copied outputs
+      must be the source's outputs, or there is nothing to attest;
+    * the source must exist and be readable.
+
+    On success (``apply=True``) the twin's notebook-level ``metadata.papermill``
+    and every per-cell execution block (``metadata.papermill`` and
+    ``metadata.execution``) are removed, ``metadata.t4`` is stamped from the
+    source, and the file is atomically rewritten. Markdown cells, widget state
+    and every other metadata key are left untouched. The stamp derives from the
+    source content only, so the operation is idempotent : a second run rewrites
+    byte-identical content.
+
+    Raises :class:`ValueError` on any gate failure — no file is written.
+    """
+    if not nb_path.exists():
+        raise FileNotFoundError(f"Notebook derivé introuvable : {nb_path}")
+    if not source_path.exists():
+        raise FileNotFoundError(f"Notebook source introuvable : {source_path}")
+
+    nb = json.loads(nb_path.read_text(encoding="utf-8"))
+    src = json.loads(source_path.read_text(encoding="utf-8"))
+
+    nb_cells = nb.get("cells", [])
+    src_cells = src.get("cells", [])
+    stats = ReprovenanceStats(n_cells=len(nb_cells))
+
+    if len(nb_cells) != len(src_cells):
+        raise ValueError(
+            f"gate structure : {len(nb_cells)} cellules dans le dérivé vs "
+            f"{len(src_cells)} dans la source — le stamp T4 exige la parité "
+            f"de structure (refus, aucun fichier écrit)."
+        )
+    for i, (twin_cell, src_cell) in enumerate(zip(nb_cells, src_cells)):
+        if twin_cell.get("id") != src_cell.get("id"):
+            raise ValueError(
+                f"gate structure : cellule {i} — id dérivé "
+                f"{twin_cell.get('id')!r} != id source {src_cell.get('id')!r} "
+                f"(refus, aucun fichier écrit)."
+            )
+        if twin_cell.get("cell_type") != src_cell.get("cell_type"):
+            raise ValueError(
+                f"gate structure : cellule {i} (id={twin_cell.get('id')!r}) — "
+                f"type dérivé {twin_cell.get('cell_type')!r} != type source "
+                f"{src_cell.get('cell_type')!r}. Un changement de type ferait "
+                f"échapper la cellule à la porte de copie : un code devenu "
+                f"markdown ne serait plus comparé du tout (refus, aucun "
+                f"fichier écrit)."
+            )
+        if twin_cell.get("cell_type") == "code":
+            stats.n_code_cells += 1
+            for field_name in ("source", "outputs", "execution_count"):
+                if twin_cell.get(field_name) != src_cell.get(field_name):
+                    raise ValueError(
+                        f"gate copie : cellule {i} (id={twin_cell.get('id')!r}) "
+                        f"— le champ code {field_name!r} du dérivé diffère de "
+                        f"la source. Le stamp attesterait une copie qui n'est "
+                        f"pas byte-identique (refus, aucun fichier écrit)."
+                    )
+
+    new_cells = []
+    for cell in nb_cells:
+        meta = cell.get("metadata")
+        if isinstance(meta, dict):
+            stats.n_papermill_blocks_stripped += 1 if "papermill" in meta else 0
+            stats.n_execution_blocks_stripped += 1 if "execution" in meta else 0
+        new_cells.append(_strip_cell_execution_provenance(cell))
+
+    nb_out = dict(nb)
+    out_meta = {k: v for k, v in (nb.get("metadata") or {}).items()
+                if k not in ("papermill", T4_PROVENANCE_KEY)}
+    out_meta[T4_PROVENANCE_KEY] = _t4_stamp(src, source_path, lang)
+    nb_out["metadata"] = out_meta
+    nb_out["cells"] = new_cells
+
+    if apply:
+        tmp_path = nb_path.with_suffix(nb_path.suffix + ".tmp")
+        tmp_path.write_text(
+            json.dumps(nb_out, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
+        tmp_path.replace(nb_path)
+        stats.stamped = True
+
+    return stats
+
+
 # --- Falsification helpers (used by tests) --------------------------------- #
 
 
@@ -357,10 +585,27 @@ def main(argv: Optional[List[str]] = None) -> int:
     p = argparse.ArgumentParser(
         description="Render a notebook into a target language from a translation CSV."
     )
-    p.add_argument("--csv", required=True, type=Path, help="Translation CSV (schema #4957 §1)")
-    p.add_argument("--notebook", required=True, type=Path, help="Source notebook (FR)")
+    p.add_argument("--csv", type=Path, help="Translation CSV (schema #4957 §1) — requis hors mode --reprovenance")
+    p.add_argument("--notebook", required=True, type=Path, help="Source notebook (FR) — ou notebook dérivé en mode --reprovenance")
     p.add_argument("--lang", required=True, help="Target language code (e.g. en, es, ar)")
     p.add_argument("--out", type=Path, help="Output notebook path (e.g. X_en.ipynb)")
+    p.add_argument(
+        "--reprovenance", action="store_true",
+        help="Mode réparation de provenance (#21496) : --notebook désigne le "
+             "dérivé, --source le carnet source (FR). Vérifie la parité de "
+             "structure et de copie code (source/outputs/execution_count), "
+             "retire metadata.papermill (notebook + cellules) et stamp "
+             "metadata.t4. Sans --apply : contrôle seul, aucun écrit.",
+    )
+    p.add_argument(
+        "--source", type=Path,
+        help="Mode --reprovenance : carnet source (FR) dont les sorties ont "
+             "été copiées dans le dérivé.",
+    )
+    p.add_argument(
+        "--apply", action="store_true",
+        help="Mode --reprovenance : écrire le re-stamp (défaut : dry-run).",
+    )
     p.add_argument("--dry-run", action="store_true", help="Compute diff/stats, do not write")
     p.add_argument("--verbose", action="store_true", help="Print per-cell diagnostics")
     p.add_argument(
@@ -384,6 +629,33 @@ def main(argv: Optional[List[str]] = None) -> int:
              "(#13544 §3, supersedes the #13546 opt-in).",
     )
     args = p.parse_args(argv)
+
+    if args.reprovenance:
+        if args.source is None:
+            p.error("--reprovenance exige --source (le carnet source FR)")
+        try:
+            rstats = reprovenance(
+                nb_path=args.notebook,
+                source_path=args.source,
+                lang=args.lang,
+                apply=args.apply,
+            )
+        except (FileNotFoundError, ValueError) as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 2
+        mode = f"-> {args.notebook} (re-stamp)" if args.apply else "(dry-run, aucun écrit)"
+        print(
+            f"[reprovenance] {args.notebook} <- {args.source} ({args.lang}) {mode}\n"
+            f"  cells:     {rstats.n_cells} (structure vérifiée)\n"
+            f"  code:      {rstats.n_code_cells} byte-identiques à la source\n"
+            f"  stripped:  {rstats.n_papermill_blocks_stripped} bloc(s) papermill cellulaires\n"
+            f"             {rstats.n_execution_blocks_stripped} bloc(s) execution cellulaires\n"
+            f"  stamped:   {rstats.stamped}"
+        )
+        return 0
+
+    if args.csv is None:
+        p.error("--csv est requis hors mode --reprovenance")
 
     dry_run = args.dry_run or args.out is None
     if not dry_run and args.out is None:

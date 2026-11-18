@@ -70,15 +70,15 @@ ce coût est évité.
 
 | Notebook | Refs inbound | Notebook | Refs inbound |
 |----------|-------------|----------|-------------|
-| Infer-1-Setup | 23 | Infer-11-Topic-Models | 14 |
-| Infer-2-Gaussian-Mixtures | 34 | Infer-12-Modeles-Hierarchiques | 19 |
-| Infer-3-Factor-Graphs | 31 | Infer-13-Crowdsourcing | 7 |
-| Infer-4-Bayesian-Networks | 28 | Infer-14-Sequences | 44 |
-| Infer-5-Causal-Inference | 30 | Infer-15-Recommenders | 11 |
+| Infer-01-Setup | 23 | Infer-11-Topic-Models | 14 |
+| Infer-02-Gaussian-Mixtures | 34 | Infer-12-Modeles-Hierarchiques | 19 |
+| Infer-03-Factor-Graphs | 31 | Infer-13-Crowdsourcing | 7 |
+| Infer-04-Bayesian-Networks | 28 | Infer-14-Sequences | 44 |
+| Infer-05-Causal-Inference | 30 | Infer-15-Recommenders | 11 |
 | Infer-6-Debugging | 32 | Infer-16-Sparse-Gaussian-Process | 15 |
-| Infer-7-Skills-IRT | 19 | Infer-17-Kalman-Filter | 21 |
-| Infer-8-TrueSkill | 14 | Infer-18-Change-Point | 11 |
-| Infer-9-Classification | 21 | Infer-19-Survival-Analysis | 9 |
+| Infer-07-Skills-IRT | 19 | Infer-17-Kalman-Filter | 21 |
+| Infer-08-TrueSkill | 14 | Infer-18-Change-Point | 11 |
+| Infer-09-Classification | 21 | Infer-19-Survival-Analysis | 9 |
 | Infer-10-Model-Selection | 21 | | |
 
 ## Baseline `check_docs_links`

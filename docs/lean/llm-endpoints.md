@@ -25,6 +25,8 @@ Configuration des providers LLM utilises par le multi-agent prover dans `MyIA.AI
 
 4. **Nom de modèle case-sensitive** : si une cle valide retourne 404, verifier le nom exact via `curl /v1/models` avant de presumer une cle expiree.
 
+5. **Le proxy OpenAI `models.myia.io/v1` ignore la coupure du raisonnement** (constat rapporte le 2026-10-10 par la lane `myia-po-2027:CoursIA`, #17578 c.6092022867 ; non reproduit par le coordinateur). Les sondes directes montrent que ni `chat_template_kwargs.enable_thinking: false` ni `reasoning_effort: "none"` ne reduisent le raisonnement (`reasoning_len` reste entre 619 et 804 caracteres). Avec `max_tokens 300`, un run reel rend `text=''` et `finish_reason='length'`. Le hub vLLM LAN, lui, honore `chat_template_kwargs.enable_thinking: false` (24/24 generations non vides dans le meme protocole). **Consequence** : un generateur qui a besoin d'une sortie sans raisonnement vise le hub LAN, pas le proxy. Basculer en cours de corpus d'un endpoint a l'autre melange des generations thinking-off et des generations tronquees, ce qui donne un corpus heterogene. Signale a la lane claudish, qui tranche si le comportement est voulu.
+
 ## Cout indicatif (estimation 2026-05)
 
 | Provider | Cycle prover BG 20 iter (~40min) |

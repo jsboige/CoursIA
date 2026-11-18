@@ -1,0 +1,51 @@
+# Le Jeu de la Vie de Conway — Archive de Motifs RLE
+
+Source : miroir [copy.sh/life](https://copy.sh/life/) des motifs de [LifeWiki](https://conwaylife.com/wiki/Main_Page).
+
+## Motifs
+
+| Fichier | Motif | Auteur | Taille | Grille | Période |
+|---------|-------|--------|--------|--------|---------|
+| `otcametapixel.rle` | OTCA Metapixel | Brice Due (2006) | 165 KB | 2058x2058 | 35 328 |
+| `turingmachine.rle` | Machine de Turing | Paul Rendell (2000) | 104 KB | 1714x1647 | N/A |
+| `p5760unitlifecell.rle` | Cellule de Vie unitaire p5760 | David Bell | 15 KB | 499x499 | 5 760 |
+| `gemini.rle` | Auto-réplicateur Gemini | Andrew Wade (2010) | 5,3 MB | immense | 33 699 586 |
+
+## Correspondance avec Pillars.lean
+
+Ces fichiers RLE correspondent aux théorèmes témoins échafaudés dans
+`Conway.Life.Pillars` :
+
+| Théorème pilier | Fichier RLE | Nombre de générations |
+|-----------------|-------------|------------------------|
+| `otca_initial_population` | `otcametapixel.rle` | 35 328 (cycle publié ; confinement observé sur 1 800 générations — période non vérifiée ; évaluation du témoin de période non terminée en 2 h) |
+| `unitcell_initial_population` | `p5760unitlifecell.rle` | 5 760 (période mesurée) |
+| `turingmachine_initial_population` | `turingmachine.rle` | N/A (témoin de chargement et de dynamique : la grille n'est pas inerte, aucune période n'est visée) |
+| `gemini_witness` | `gemini.rle` | 33 699 586 |
+| `cpu_witness` | pas encore disponible | 1 048 576 |
+
+**Le pilier « Unit cell » et le fichier présent ne sont pas le même motif.**
+`Pillars.lean` visait l'UnitCell de Beluchenko (2011, période 4 096) ; l'archive
+ne contient que le p5760 de David Bell, retenu comme « le plus proche
+disponible ». La période 5 760 du fichier présent a été mesurée le 2026-10-09
+(tore 500 × 500, première répétition génération 11324 == 5564). Le motif de
+Beluchenko reste absent de l'archive ; l'attribution d'auteur du fichier
+présent (David Bell ici, Beluchenko 2011 dans `Pillars.lean`) n'est pas
+tranchée par la mesure.
+
+## Téléchargement
+
+```bash
+# Depuis le miroir copy.sh (accessible sans détection de bot)
+MIRROR="https://copy.sh/life/examples"
+curl -L -A "Mozilla/5.0" "$MIRROR/otcametapixel.rle" -o otcametapixel.rle
+curl -L -A "Mozilla/5.0" "$MIRROR/gemini.rle" -o gemini.rle
+curl -L -A "Mozilla/5.0" "$MIRROR/turingmachine.rle" -o turingmachine.rle
+curl -L -A "Mozilla/5.0" "$MIRROR/p5760unitlifecell.rle" -o p5760unitlifecell.rle
+```
+
+## Note sur Gemini
+
+`gemini.rle` (5,3 Mo) est gitignoré en raison de sa taille. Il peut être
+re-téléchargé depuis le miroir copy.sh avec la commande ci-dessus. La fonction
+`fetch_rle()` du notebook gère ce cas gracieusement via un cache disque.

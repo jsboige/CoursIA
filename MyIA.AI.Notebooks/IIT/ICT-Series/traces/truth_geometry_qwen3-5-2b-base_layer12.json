@@ -1,0 +1,42 @@
+{
+  "meta": {
+    "issue": "#16760",
+    "protocol": "geometry-of-truth-v2-G2",
+    "rung": "R1",
+    "model": "Qwen/Qwen3.5-2B-Base",
+    "generation": "Qwen3.5",
+    "mode": "bf16",
+    "layer": 12,
+    "layer_frac": 0.5217,
+    "n_layers": 24,
+    "gpu": "NVIDIA GeForce RTX 4060 Laptop GPU",
+    "total_vram_gib": 8.0,
+    "seed": 42,
+    "tf32": false,
+    "datasets": {
+      "cities": 600,
+      "neg_cities": 600
+    },
+    "n_statements": 1200,
+    "n_train": 840,
+    "n_test": 360,
+    "test_frac": 0.3,
+    "torch": "2.6.0+cu124",
+    "transformers": "5.15.1",
+    "measured": true
+  },
+  "probes_test": {
+    "MM": 0.7917,
+    "LR": 0.95,
+    "MMIID": 0.9694
+  },
+  "pca_test": {
+    "align_pc1": 0.5278
+  },
+  "verbalized_test": {
+    "accuracy": 0.7611,
+    "mean_dlp": 1.2481
+  },
+  "extract_seconds": 86.56,
+  "load_seconds": 8.82
+}

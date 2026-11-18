@@ -8,7 +8,7 @@
 
 Les 3 foundation rungs (Chronos-Bolt #8610, Kronos #8620, M15 LSTM #8625) sont tous NO BEATS vs majority sur le panier ETF (SPY/TLT/GLD), et pairwise indiscernables (c.905, PR #8631 : Kronos↔M15 p=0.91). Ce module pose le **contrepoint** :
 
-> La baseline directionnelle la plus triviale qui soit — **persistence** (prédire que la direction de demain = la direction d'aujourd'hui, naive momentum d'une ligne) — fait-elle mieux ou pire que les modèles foundation/fine-tuned qui « apprennent » la série ?
+> La baseline directionnelle la plus triviale qui soit — **persistence** (prédire que la direction de demain = la direction d'aujourd'hui, naive momentum) — fait-elle mieux ou pire que les modèles foundation/fine-tuned qui « apprennent » la série ?
 
 Si oui, la sophistication est inutile. Si une triviale atterrit sur le même edge, **#1409 (alpha = politiques d'action L4-DT, pas prévision de direction) est renforcé par exhaustion du spectre méthodologique** : trivial → classique → foundation → fine-tuned, tous NO BEATS.
 
@@ -40,7 +40,7 @@ Persistence = déterministe (pas de seed) → 9/9 DEGENERATE au seed-level test 
 
 ## Finding clé — la sophistication n'apporte rien sur ETF direction
 
-- **persistence ≈ Kronos ≈ M15 ≈ Chronos ≈ -0.03** sous majority. Une baseline triviale de **1 ligne** (prédire la dernière direction) atterrit sur le **même edge** que Chronos-Bolt pré-entraîné sur des millions de séries temporelles, Kronos AR, et un LSTM fine-tuned sur le log-return.
+- **persistence ≈ Kronos ≈ M15 ≈ Chronos ≈ -0.03** sous majority. Une baseline triviale (prédire la dernière direction) atterrit sur le **même edge** que Chronos-Bolt pré-entraîné sur des millions de séries temporelles, Kronos AR, et un LSTM fine-tuned sur le log-return.
 - **Le résultat n'était PAS triviallement prévisible** : persistence aurait pu être strictement pire (si les ETF étaient fortement anti-persistents / mean-reverting) ou strictement meilleure (si fortement trend-following). Elle atterrit pile au même endroit que les SOTA — ni mieux ni pire, tous fiablement sous majority.
 - **Exhaustion du spectre #1409** : la prévision de direction prix sur ETF liquide est absente **à tous les niveaux de sophistication** — trivial (persistence), zero-shot langage-TS (Chronos), zero-shot OHLCV AR (Kronos), fine-tuned LSTM (M15). Aucun n'extrait d'edge directionnel ; tous sont ~-0.03 sous majority. L'alpha vient de **politiques d'action** (L4-DT), pas de la prévision de direction — désormais étayé par exhaustion méthodologique complète.
 

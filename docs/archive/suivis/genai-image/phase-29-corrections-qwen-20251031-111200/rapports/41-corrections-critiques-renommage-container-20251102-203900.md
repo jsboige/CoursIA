@@ -216,9 +216,9 @@ python scripts/genai-auth/utils/test_generation_image_fp8_officiel.py
 - **Total** : ~47 minutes
 
 ### Fichiers Modifiés
-- **Scripts renommés** : 6 fichiers
-- **Références mises à jour** : 2 fichiers
-- **Rapport généré** : 1 fichier (41-corrections-critiques-renommage-container-20251102-203900.md)
+- **Scripts renommés**
+- **Références mises à jour**
+- **Rapport généré** : (41-corrections-critiques-renommage-container-20251102-203900.md)
 
 ### Outils Utilisés
 - **Quickfiles MCP** : Renommage batch et recherche

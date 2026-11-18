@@ -12,10 +12,10 @@
 
 La famille `ML/` contient **deux sous-séries au numérotage indépendant** :
 
-1. **`ML/ML.Net/`** (20 notebooks) — le parcours ML.NET canonique `ML-1`..`ML-9` (C# + jumeaux Python
+1. **`ML/ML.Net/`** — le parcours ML.NET canonique `ML-1`..`ML-9` (C# + jumeaux Python
    `*-Python.ipynb`), la variante `ML-4b-ModelComparison`, et le TP capstone. **Cette sous-série est
    l'objet de la présente analyse** : numérotation séquentielle plate, soumise au test #5081.
-2. **`ML/DataScienceWithAgents/`** (28 notebooks) — un cours structuré en Days/Labs
+2. **`ML/DataScienceWithAgents/`** — un cours structuré en Days/Labs
    (`1.2-…`, `2.1-…`, `Day1-…/Lab1-…`). Ce track utilise un **schéma de numérotation hiérarchique
    différent** (module.leçon / Day/Lab), pas une séquence plate ML-N. Il **n'entre pas dans le
    périmètre #5081** : la question « l'ordre numérique est-il un tri topologique valide ? » ne se pose

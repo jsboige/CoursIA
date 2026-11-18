@@ -1,0 +1,24 @@
+probe gpt-4o-mini: OK -> OK
+ADK version: google-adk 2.8.0
+
+Give Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new
+LiteLLM.Info: If you need to debug this error, use `litellm.turn_on_debug()'.
+
+sonde echec (modele inexistant): NotFoundError
+charge: distill_charge_fixture.md (4859 caracteres, fixture figee)
+[run 1] tours=1 verdict_critique=ACCEPTE wall=4.03s appels=3
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquée, ce qui empêche une distillati
+    appel[producteur]: latence=2.21s
+    appel[critique]: latence=0.68s
+    appel[arbitre]: latence=1.14s
+[run 2] tours=1 verdict_critique=ACCEPTE wall=4.56s appels=3
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: RESIDUEL tour 1: La cellule d'authentification est tronquée, ce qui empêche une distillati
+    appel[producteur]: latence=2.87s
+    appel[critique]: latence=0.58s
+    appel[arbitre]: latence=1.11s
+DETERMINISME (tours, decision, tour d'arbitrage): OK (1, 'RESIDUEL', '1') vs (1, 'RESIDUEL', '1')
+LLM CALLS: 7/16
+LOC PILOT: 411 lignes
+PILOT OK orchestration=ADK(designation explicite, session partagee) charge=distillation

@@ -17,7 +17,16 @@ Defect classes and their mechanical checks:
                                notebook's code sources or text outputs
   Class (b) "extended cells" must not become rewrites
     HIGH  MD_REWRITE           < 25% of the base's substantive markdown lines
-                               survive verbatim in head (vs --base only)
+                               survive in head (vs --base only). The comparison
+                               is neutral on the diacritics (NFKD, then the
+                               combining marks are dropped) and on the Latin
+                               ligatures (explicit fold: Unicode gives them NO
+                               decomposition mapping, so NFKD leaves them
+                               untouched), significant on the case: an
+                               accentuation pass rewrites every accented line,
+                               so a verbatim-only read calls it a rewrite
+                               (#23268: 9/44 lines "survived" while the base
+                               and the head were identical on the skeleton)
     MED   MD_SURVIVAL_LOW      < 50% survive -- the rewrite-more-than-extend
                                signature of the wave (#14161 measured 30%,
                                #14166 20%, #14164 31%)
@@ -306,6 +315,62 @@ def _deaccent(text: str) -> str:
                    if not unicodedata.combining(ch))
 
 
+# Latin ligature LETTERS have no Unicode decomposition mapping: measured
+# 2026-10-30, ``unicodedata.decomposition("œ")`` returns the empty
+# string, and NFKD/NFD both leave the letter untouched. So neither
+# normalization unifies ``noeud`` and ``nœud`` -- they are folded
+# explicitly here. NFKD is still used for the diacritics and for the
+# compatibility forms (the presentation ligatures such as ``ﬁ``, the
+# superscripts), which DO have a decomposition.
+#
+# The capital ligature expands to the French convention, and the context
+# decides: ``Œuvre`` is a capitalised word, so the expansion capitalises
+# the pair on its first letter only (``Oeuvre``), while an all-caps word
+# (``ŒUVRE``) expands to ``OEUVRE``. The corpus carries both forms.
+_LIGATURES = ("œ", "Œ", "æ", "Æ")
+
+
+def _fold_ligatures(text: str) -> str:
+    """Unify the Latin ligature letters with their two-letter expansion.
+
+    The capital ligature takes its expansion from the character that
+    follows it: a lowercase follower means the word is capitalised and the
+    pair is expanded on its first letter only (``Œuvre`` -> ``Oeuvre``), an
+    uppercase follower means an all-caps word (``ŒUVRE`` -> ``OEUVRE``).
+    """
+    if not any(ligature in text for ligature in _LIGATURES):
+        return text
+    out: list[str] = []
+    for index, char in enumerate(text):
+        if char == "œ":
+            out.append("oe")
+        elif char == "æ":
+            out.append("ae")
+        elif char == "Œ":
+            follower = text[index + 1] if index + 1 < len(text) else ""
+            out.append("OE" if follower.isupper() else "Oe")
+        elif char == "Æ":
+            follower = text[index + 1] if index + 1 < len(text) else ""
+            out.append("AE" if follower.isupper() else "Ae")
+        else:
+            out.append(char)
+    return "".join(out)
+
+
+def _skeleton(text: str) -> str:
+    """Case-preserving skeleton: the accents and the ligatures drop out.
+
+    The diacritics drop out through NFKD (a compatibility form is kept as
+    its base letter plus its combining marks, which are then stripped); the
+    Latin ligature letters need the explicit fold above, NFKD leaving them
+    untouched. The case is kept on purpose: lowercasing would let a rewrite
+    that only changes the case pass for a surviving line.
+    """
+    folded = _fold_ligatures(text)
+    return "".join(ch for ch in unicodedata.normalize("NFKD", folded)
+                   if not unicodedata.combining(ch))
+
+
 def scan_diacritics(head_cells: list[dict], base_cells: list[dict] | None) -> list[dict]:
     """Class (c): surviving markdown lines must keep their accents.
 
@@ -353,7 +418,16 @@ def scan_diacritics(head_cells: list[dict], base_cells: list[dict] | None) -> li
 
 
 def scan_survival(head_cells: list[dict], base_cells: list[dict] | None) -> list[dict]:
-    """Class (b): extended cells keep their substance; rewrites get flagged."""
+    """Class (b): extended cells keep their substance; rewrites get flagged.
+
+    Survival is counted on the skeleton (accents and ligatures disregarded,
+    the case still significant): a tranche that only adds diacritics keeps the
+    substance of the base, and the accents are already the business of class
+    (c). Counting the diacritics twice made the two classes contradict each
+    other -- measured on #23268 (2026-10-30), a carnet whose 44 markdown
+    cells were all identical on the skeleton was reported as rewritten
+    (survival 9/44, 20 %).
+    """
     if base_cells is None:
         return []
     lines = []
@@ -364,21 +438,31 @@ def scan_survival(head_cells: list[dict], base_cells: list[dict] | None) -> list
     if not lines:
         return []
     head_text = "\n".join(_src(c) for _, c in _md_cells(head_cells))
-    survived = sum(1 for ln in lines if ln in head_text)
+    # Survival is measured on the SKELETON. A tranche that only ADDS
+    # diacritics keeps the substance of the base, and the accent question is
+    # already the business of class (c) (scan_diacritics). Counting it twice
+    # made the two classes contradict each other: measured on #23268
+    # (2026-10-30), 44 markdown cells identical on the NFKD skeleton and zero
+    # differing beyond the diacritics, survival counted verbatim 9/44 (20 %)
+    # -- MD_REWRITE on a carnet that had changed nothing but its diacritics.
+    head_skeleton = _skeleton(head_text)
+    survived = sum(1 for ln in lines if _skeleton(ln) in head_skeleton)
     pct = survived / len(lines)
     if pct < 0.25:
         return [{
             "cell_index": 0, "category": "MD_REWRITE", "severity": "HIGH",
             "evidence": f"{survived}/{len(lines)} base lines survive",
             "message": f"only {survived}/{len(lines)} substantive markdown lines of the base "
-                       f"survive verbatim ({pct:.0%}) -- announced extension is a rewrite",
+                       f"survive (diacritics and ligatures disregarded) ({pct:.0%}) "
+                       f"-- announced extension is a rewrite",
         }]
     if pct < 0.5:
         return [{
             "cell_index": 0, "category": "MD_SURVIVAL_LOW", "severity": "MED",
             "evidence": f"{survived}/{len(lines)} base lines survive",
-            "message": f"{survived}/{len(lines)} substantive markdown lines survive verbatim "
-                       f"({pct:.0%}) -- rewrite-more-than-extend signature",
+            "message": f"{survived}/{len(lines)} substantive markdown lines survive "
+                       f"(diacritics and ligatures disregarded) ({pct:.0%}) "
+                       f"-- rewrite-more-than-extend signature",
         }]
     return []
 

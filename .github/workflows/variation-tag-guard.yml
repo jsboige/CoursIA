@@ -315,7 +315,13 @@ jobs:
           # faux positif contre les lanes productives (cf #10328, 2026-08-10 :
           # 60 mergees pour 30 vues). Meme correctif dans variation-light-genre.yml.
           gh pr list --state merged --search "merged:$TODAY" --limit 500 \
-            --json number,body,mergedAt,labels > /tmp/merged.json 2>/dev/null || true
+            --json number,body,mergedAt,labels,baseRefName > /tmp/merged.json 2>/dev/null || true
+          # #18940 : filtre --base main. Voir justification au site 1 de
+          # always-on-guards.yml ; ce guard sert de controle positif de la
+          # suppression de l'adjacence sur PR empilee (cf. #18910).
+          jq '[.[] | select((.baseRefName == "main") or (.baseRefName == null))]' /tmp/merged.json > /tmp/merged.main.json 2>/dev/null || \
+            cp /tmp/merged.json /tmp/merged.main.json
+          mv /tmp/merged.main.json /tmp/merged.json
 
           # Le body circule par fichier : printf '%s' ne reinterprete rien
           # (newlines, quotes, $), contrairement a un passage en arg CLI.
@@ -372,19 +378,29 @@ jobs:
             # a chaque synchronize. On ne poste que si aucun commentaire ne le
             # porte deja.
             MARK="<!-- gvar2-light-cap -->"
-            if ! gh pr view "$PR_NUMBER" --json comments --jq '.comments[].body' 2>/dev/null | grep -qF "$MARK"; then
-              BODY="${MARK}
+            # #15511 -- UN SEUL commentaire collant par PR, une section par
+            # organe (`scripts/ci/advisory_sticky.py`). L'upsert remplace le
+            # create-only : plus de POST a chaque run.
+            cat > /tmp/advisory_gvar2.md <<EOF
+          ${MARK}
           **G-VAR-2 light cap reached** (advisory, non bloquant).
           La lane \`${LANE}\` a deja consomme son budget LIGHT du jour (${CB}).
           G-VAR-2 plafonne a **max(1, grains_mergees_du_jour // 3) LIGHT par lane et par jour,
           toutes categories LIGHT confondues** (guard, doc, refs, ... partagent un seul budget) :
-          c'est un RATIO, pas un plafond plat. La decision de merge reste au coordinateur."
-              gh pr comment "$PR_NUMBER" --body "$BODY" 2>/dev/null || true
-            fi
+          c'est un RATIO, pas un plafond plat. La decision de merge reste au coordinateur.
+          EOF
+            python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" \
+              --organ variation-light-cap --body-file /tmp/advisory_gvar2.md \
+              || echo "::warning::G-VAR-2 light-cap : section non ecrite (quota/API ?)."
             echo "::notice::G-VAR-2 cap reached pour la lane ${LANE} (consomme par ${CB})."
           else
             # Cas nominal : on retire un label obsolete colle par un push anterieur.
             gh pr edit "$PR_NUMBER" --remove-label variation-light-cap-reached 2>/dev/null || true
+            # L'organe redevient vert : sa section est RETIREE ; rien n'est
+            # ecrit si elle n'existe pas (le succes ne parle pas).
+            python3 scripts/ci/advisory_sticky.py --pr "$PR_NUMBER" \
+              --organ variation-light-cap --clear \
+              || echo "::warning::G-VAR-2 light-cap : section non retiree."
           fi
           exit 0
 

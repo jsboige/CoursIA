@@ -1,0 +1,264 @@
+{
+  "case": "19-butlin-rpt1-using",
+  "seeds": [
+    0,
+    1,
+    7,
+    42,
+    99
+  ],
+  "n_test": 500,
+  "task": "y = x_s, s = x_T (T=8, K=8)",
+  "truth": {
+    "real": true,
+    "twin": true,
+    "puppet": false
+  },
+  "structural": {
+    "s1_cycle": {
+      "real": true,
+      "twin": false,
+      "puppet": true
+    },
+    "s2_cycle_or_shared": {
+      "real": true,
+      "twin": true,
+      "puppet": true
+    },
+    "s1_exact": 1,
+    "s2_exact": 2
+  },
+  "baseline_acc_by_seed": [
+    {
+      "real": 1.0,
+      "twin": 1.0,
+      "puppet": 1.0
+    },
+    {
+      "real": 1.0,
+      "twin": 1.0,
+      "puppet": 1.0
+    },
+    {
+      "real": 1.0,
+      "twin": 1.0,
+      "puppet": 1.0
+    },
+    {
+      "real": 1.0,
+      "twin": 1.0,
+      "puppet": 1.0
+    },
+    {
+      "real": 1.0,
+      "twin": 1.0,
+      "puppet": 1.0
+    }
+  ],
+  "probe_by_seed": [
+    {
+      "real": {
+        "carrier": "loop",
+        "verdict": true,
+        "deltas": {
+          "loop": 0.78,
+          "monitor": 0.0
+        }
+      },
+      "twin": {
+        "carrier": "chain",
+        "verdict": true,
+        "deltas": {
+          "chain": 0.78,
+          "monitor": 0.0
+        }
+      },
+      "puppet": {
+        "carrier": "selector",
+        "verdict": false,
+        "deltas": {
+          "loop": 0.0,
+          "selector": 0.896,
+          "monitor": 0.0
+        }
+      }
+    },
+    {
+      "real": {
+        "carrier": "loop",
+        "verdict": true,
+        "deltas": {
+          "loop": 0.766,
+          "monitor": 0.0
+        }
+      },
+      "twin": {
+        "carrier": "chain",
+        "verdict": true,
+        "deltas": {
+          "chain": 0.766,
+          "monitor": 0.0
+        }
+      },
+      "puppet": {
+        "carrier": "selector",
+        "verdict": false,
+        "deltas": {
+          "loop": 0.0,
+          "selector": 0.916,
+          "monitor": 0.0
+        }
+      }
+    },
+    {
+      "real": {
+        "carrier": "loop",
+        "verdict": true,
+        "deltas": {
+          "loop": 0.784,
+          "monitor": 0.0
+        }
+      },
+      "twin": {
+        "carrier": "chain",
+        "verdict": true,
+        "deltas": {
+          "chain": 0.784,
+          "monitor": 0.0
+        }
+      },
+      "puppet": {
+        "carrier": "selector",
+        "verdict": false,
+        "deltas": {
+          "loop": 0.0,
+          "selector": 0.898,
+          "monitor": 0.0
+        }
+      }
+    },
+    {
+      "real": {
+        "carrier": "loop",
+        "verdict": true,
+        "deltas": {
+          "loop": 0.78,
+          "monitor": 0.0
+        }
+      },
+      "twin": {
+        "carrier": "chain",
+        "verdict": true,
+        "deltas": {
+          "chain": 0.78,
+          "monitor": 0.0
+        }
+      },
+      "puppet": {
+        "carrier": "selector",
+        "verdict": false,
+        "deltas": {
+          "loop": 0.0,
+          "selector": 0.892,
+          "monitor": 0.0
+        }
+      }
+    },
+    {
+      "real": {
+        "carrier": "loop",
+        "verdict": true,
+        "deltas": {
+          "loop": 0.768,
+          "monitor": 0.0
+        }
+      },
+      "twin": {
+        "carrier": "chain",
+        "verdict": true,
+        "deltas": {
+          "chain": 0.768,
+          "monitor": 0.0
+        }
+      },
+      "puppet": {
+        "carrier": "selector",
+        "verdict": false,
+        "deltas": {
+          "loop": 0.0,
+          "selector": 0.894,
+          "monitor": 0.0
+        }
+      }
+    }
+  ],
+  "c_exact_by_seed": [
+    3,
+    3,
+    3,
+    3,
+    3
+  ],
+  "sham_max_abs_delta": 0.0,
+  "gate_baseline": false,
+  "gate_sham": false,
+  "p1_baseline_perfect": true,
+  "p2_s1_fails": true,
+  "p3_s2_fails": true,
+  "p4_causal_exact": true,
+  "verdict": "SUPPORTED",
+  "bands": {
+    "collapse": 0.5,
+    "inert": 0.01,
+    "acc_lesion_window": [
+      0.1,
+      0.35
+    ]
+  },
+  "calibration": {
+    "seeds": [
+      11,
+      22,
+      33
+    ],
+    "n_test": 500,
+    "by_seed": [
+      {
+        "seed": 11,
+        "acc_base_real": 1.0,
+        "acc_lesion_real": 0.228,
+        "delta_real": 0.772,
+        "acc_base_twin": 1.0,
+        "acc_lesion_twin": 0.228,
+        "delta_twin": 0.772,
+        "delta_sham": 0.0
+      },
+      {
+        "seed": 22,
+        "acc_base_real": 1.0,
+        "acc_lesion_real": 0.232,
+        "delta_real": 0.768,
+        "acc_base_twin": 1.0,
+        "acc_lesion_twin": 0.232,
+        "delta_twin": 0.768,
+        "delta_sham": 0.0
+      },
+      {
+        "seed": 33,
+        "acc_base_real": 1.0,
+        "acc_lesion_real": 0.248,
+        "delta_real": 0.752,
+        "acc_base_twin": 1.0,
+        "acc_lesion_twin": 0.248,
+        "delta_twin": 0.752,
+        "delta_sham": 0.0
+      }
+    ],
+    "acc_lesion_window": [
+      0.1,
+      0.35
+    ],
+    "acc_lesion_theoretical": 0.234375,
+    "bands_ok": true
+  }
+}

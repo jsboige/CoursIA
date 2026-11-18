@@ -124,3 +124,44 @@ def realized_variance_to_log(rv: pd.Series, eps: float = 1e-12) -> pd.Series:
     """log(RV) with floor on zeros to keep the regression well-defined."""
     rv = rv.astype(float)
     return np.log(rv.clip(lower=eps))
+
+
+_GK_CLOSE_OPEN_COEF = 2.0 * np.log(2.0) - 1.0
+
+
+def daily_ohlc_variance(ohlc: pd.DataFrame, overnight: bool = True) -> pd.Series:
+    """Daily variance proxy from daily OHLC bars (no intraday data needed).
+
+    v_t = ln(O_t / C_{t-1})^2  +  GK_t, with the Garman & Klass (1980) term
+    GK_t = 0.5 * ln(H_t / L_t)^2 - (2 ln 2 - 1) * ln(C_t / O_t)^2.
+
+    The overnight term restores the close-to-open gap that a pure intraday
+    range estimator ignores; set `overnight=False` to get GK alone. The first
+    bar has no previous close and is dropped when `overnight` is True. Bars
+    with an inconsistent range (adjusted data can give H < max(O, C)) may
+    yield a slightly negative GK term: the sum is clipped at 0, and callers
+    taking the log should go through `realized_variance_to_log` (floor).
+
+    `ohlc` needs columns Open, High, Low, Close (case-insensitive) on a
+    DatetimeIndex. Returns a Series named "RV_ohlc" indexed by normalized date.
+    """
+    if not isinstance(ohlc.index, pd.DatetimeIndex):
+        raise TypeError("ohlc must have a DatetimeIndex")
+    cols = {c.lower(): c for c in ohlc.columns}
+    missing = [c for c in ("open", "high", "low", "close") if c not in cols]
+    if missing:
+        raise ValueError(f"ohlc is missing columns: {missing}")
+    o = ohlc[cols["open"]].astype(float)
+    h = ohlc[cols["high"]].astype(float)
+    lo = ohlc[cols["low"]].astype(float)
+    c = ohlc[cols["close"]].astype(float)
+    gk = 0.5 * np.log(h / lo) ** 2 - _GK_CLOSE_OPEN_COEF * np.log(c / o) ** 2
+    v = gk
+    if overnight:
+        v = np.log(o / c.shift(1)) ** 2 + gk
+        v = v.iloc[1:]
+    v = v.clip(lower=0.0)
+    v.index = pd.DatetimeIndex(v.index).normalize()
+    v.index.name = "date"
+    v.name = "RV_ohlc"
+    return v

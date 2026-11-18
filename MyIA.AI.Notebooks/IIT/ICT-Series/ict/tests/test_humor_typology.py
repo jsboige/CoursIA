@@ -22,10 +22,10 @@ def _load_pairs_module():
 
 
 def _pairs_stub(hp):
-    """Paires factices couvrant les 30 ids reels de _PAIR_EDITS."""
+    """Paires factices couvrant les 30 ids reels de la table d'edits."""
     return [
         {"id": jid, "setup": "s", "humour": "s h", "unfun": "s u", "ctrl_edit": "s c"}
-        for jid in hp._PAIR_EDITS
+        for jid in hp.load_pair_edits()
     ]
 
 
@@ -35,7 +35,7 @@ class TestAnnotation(unittest.TestCase):
 
         hp = _load_pairs_module()
         pairs = _pairs_stub(hp)
-        self.assertEqual(set(PAIR_TYPES), set(hp._PAIR_EDITS))
+        self.assertEqual(set(PAIR_TYPES), set(hp.load_pair_edits()))
         validate_typology(pairs)  # couverture + plancher par type, sans lever
 
     def test_plancher_par_type(self):

@@ -7,12 +7,13 @@ converti vit ici.
 
 ## Contenu
 
-147 questions publiées, par thème (décision mainteneur 28/09) :
+146 questions publiées, par thème (décision mainteneur 28/09, puis retrait du doublon
+ia2-010 le 06/10) :
 
 | Fichier | Thème | Questions |
 |---|---|---:|
 | `ia-1-introduction-agents.yaml` | IA — Introduction, agents | 15 |
-| `ia-2-resolution-problemes.yaml` | IA — Résolution de problèmes | 36 |
+| `ia-2-resolution-problemes.yaml` | IA — Résolution de problèmes | 35 |
 | `ia-3-logique-bases-connaissances.yaml` | IA — Logique et bases de connaissances | 19 |
 | `ia-4-systemes-probabilistes.yaml` | IA — Systèmes probabilistes | 24 |
 | `ia-5-apprentissage.yaml` | IA — Apprentissage | 21 |
@@ -43,8 +44,9 @@ Un fichier par thème, une liste YAML de questions. Chaque question porte :
 
 Les images embarquées vivent dans `images/` (référencées depuis l'énoncé par `[figure: images/…]` ; `check`
 signale comme orphelin tout fichier non référencé). Une question dont la figure n'est pas
-embarquée — cas de ia2-010, dont l'export ne porte qu'une URL externe — est signalée en
-`ATTENTION`, cf [RELECTURE-2026-09.md](RELECTURE-2026-09.md).
+embarquée serait signalée en `ATTENTION` ; le seul cas, ia2-010 (URL externe expirée), est
+retiré de la banque depuis le 06/10 au profit de son doublon ia2-027, cf
+[RELECTURE-2026-09.md](RELECTURE-2026-09.md).
 
 Trois figures des exports ne sont **pas** republiables en l'état (photographie d'une page de
 manuel, captures d'écran de la même page, URL de partage personnelle) : le convertisseur
@@ -80,17 +82,18 @@ Chaque thème pointe vers les notebooks qui enseignent la notion :
 | Thème | Série d'accueil | Notebooks d'ancrage |
 |---|---|---|
 | `ia-1-introduction-agents` | [`Search/`](../../Search/) | [`Search-01-StateSpace.ipynb`](../../Search/Part1-Foundations/Search-01-StateSpace.ipynb) (agents, environnements) |
-| `ia-2-resolution-problemes` | [`Search/`](../../Search/) | [`Search-02-Uninformed.ipynb`](../../Search/Part1-Foundations/Search-02-Uninformed.ipynb) ; CSP : [`Part2-CSP/`](../../Search/Part2-CSP/) et [`Applications/CSP/`](../../Search/Applications/CSP/) |
+| `ia-2-resolution-problemes` | [`Search/`](../../Search/) | [`Search-02-Uninformed.ipynb`](../../Search/Part1-Foundations/Search-02-Uninformed.ipynb) ; CSP : [`Part2-CSP/`](../../Search/Part2-CSP/) et [`Part3-Cas-pratiques/`](../../Search/Part3-Cas-pratiques/) |
 | `ia-3-logique-bases-connaissances` | [`SymbolicAI/`](../../SymbolicAI/) | [`SMT/`](../../SymbolicAI/SMT/), [`Tweety/`](../../SymbolicAI/Tweety/), [`SemanticWeb/`](../../SymbolicAI/SemanticWeb/) |
 | `ia-4-systemes-probabilistes` | [`Probas/`](../../Probas/) | [`DecInfer-01-Utility-Foundations.ipynb`](../../Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) (utilité, axiomes) ; réseaux bayésiens Infer.NET de la série |
 | `ia-5-apprentissage` | [`ML/`](../../ML/) | [`2.1-Workflow-ML.ipynb`](../../ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) |
-| `dl-evaluation-seance` | [`ML/`](../../ML/) | [`03-DeepLearning/`](../../ML/DataScienceWithAgents/03-DeepLearning/) (rétropropagation, attention) et [`04-Vision/`](../../ML/DataScienceWithAgents/04-Vision/) (CNN) |
+| `dl-evaluation-seance` | [`ML/`](../../ML/) | [`03-Deep-Learning/`](../../ML/DataScienceWithAgents/03-Deep-Learning/) (rétropropagation, attention) et [`04-Vision/`](../../ML/DataScienceWithAgents/04-Vision/) (CNN) |
 
 Questions sans notebook d'accueil : la passe de relecture prévue par #18223
 (tranche 4) les énumère par identifiant au fil de la lecture — une question
 sans ancrage se signale, elle ne s'invente pas de place. Cette relecture est
 livrée : [RELECTURE-2026-09.md](RELECTURE-2026-09.md) registre daté des constats
-(coquilles de source, clés contestables, doublons attribués à la source Moodle).
+(coquilles de source, clés contestables, doublons), et l'arbitrage du mainteneur
+du 06/10 : clés prouvées fausses corrigées dans la banque, chacune avec sa note.
 Les sujets de rattrapage Trading, distincts de cette banque, vivent dans la série
 QuantConnect (`examens/`, même issue #18223) avec leur propre rattachement.
 

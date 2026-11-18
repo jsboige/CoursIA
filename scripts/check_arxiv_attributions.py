@@ -12,19 +12,50 @@ Quand un notebook est renommé ou restructuré, mettre à jour le registre —
 **ne pas adapter le check pour qu'il passe en silence** (règle Stop & Repair :
 corriger la cause, pas maquiller la sortie).
 
+Mode détection `--detect` (#22566)
+----------------------------------
+Le registre est un CLIQUET : il ne voit que les attributions déjà enregistrées.
+Un identifiant FAUX jamais enregistré y est structurellement invisible (cas
+fondateur #22537 : `arXiv:1505.04322` citait un article réel mais sans rapport).
+Le mode `--detect` complète le cliquet en DETECTEUR :
+
+  1. Énumère tous les identifiants `arXiv:NNNN.NNNNN` du dépôt HORS registre.
+     Périmètre couvert : cellules des notebooks (`*.ipynb`), sources Python
+     (`*.py`, docstrings comprises) et documentation (`docs/**/*.md`), en
+     excluant les répertoires vendus/non gérés (`.lake`, `node_modules`,
+     `foundry-lib`, `_archives`, checkpoints).
+  2. Résout chaque identifiant via l'API arXiv (organe natif
+     `notebook_tools.verify_arxiv_ids.verify_ids`) et contrôle l'IDENTITÉ :
+     la part des tokens salients du titre résolu présente dans le contexte
+     de citation (±240 caractères autour de l'occurrence). En dessous de 50 %,
+     le fichier attribue l'identifiant au MAUVAIS article → rouge.
+     Un identifiant inexistant (verdict `notfound`) est aussi rouge : l'identité
+     échoue a fortiori. Un échec de réseau (`transport`) ne prononce AUCUN
+     verdict → SKIPPED, jamais rouge (l'infra n'est pas une mesure).
+
 Usage:
   python scripts/check_arxiv_attributions.py
   python scripts/check_arxiv_attributions.py --registry /path/to/registry.yaml
   python scripts/check_arxiv_attributions.py --paths scope1/**/*.ipynb scope2/**/*.ipynb
   python scripts/check_arxiv_attributions.py --json
+  python scripts/check_arxiv_attributions.py --detect
+  python scripts/check_arxiv_attributions.py --detect --paths "MyIA.AI.Notebooks/**/*.ipynb"
 
 Options:
   --registry PATH    Chemin du registre YAML (défaut: arxiv_attributions_registry.yaml)
-  --paths GLOB ...   Limiter la vérification aux notebooks matchant les globs
+  --paths GLOB ...   Mode registre : limiter aux notebooks matchant les globs.
+                     Mode --detect : globs de fichiers (fnmatch sur le chemin
+                     relatif POSIX) limitant l'énumération.
+  --detect           Mode détection (identifiants hors registre + contrôle
+                     d'identité via l'API arXiv) au lieu du mode registre.
   --json             Sortie JSON structurée (pour CI)
   --strict           Traiter les renames (notebook déplacé) comme un échec rouge
                      (défaut: WARN avec suggestion de mise à jour du registre)
   --repo-root PATH   Racine du dépôt (défaut: répertoire parent du script)
+
+Seam de test : `ARXIV_DETECT_RESOLUTIONS=<fichier JSON>` — `{id: {verdict,
+title, authors}}` rejoué à la place de l'API (déterminisme hors réseau ;
+l'organe lui-même n'a aucun comportement mock, seul le transport est substitué).
 """
 
 from __future__ import annotations
@@ -207,6 +238,218 @@ def _check_attribution(
     return result
 
 
+# ---------------------------------------------------------------------------
+# Mode détection (#22566) — identifiants hors registre + contrôle d'identité
+# ---------------------------------------------------------------------------
+
+#: Forme explicite des identifiants : `arXiv:NNNN.NNNNN` (version optionnelle).
+ARXIV_ID_RE = re.compile(r"arXiv:(\d{4}\.\d{4,5})(?:v\d+)?")
+
+#: Répertoires vendus / non gérés : hors périmètre du détecteur (le périmètre
+#: est le contenu propre du dépôt, pas les dépendances).
+_DETECT_EXCLUDE_DIRS = frozenset({
+    ".git", ".lake", "node_modules", ".ipynb_checkpoints",
+    "_archives", "foundry-lib", ".tmp", "scratchpad",
+})
+
+#: Sous-répertoires de racine où les `.md` sont dans le périmètre de détection.
+_DETECT_MD_UNDER = ("docs",)
+
+#: Part minimale des tokens salients du titre résolu, présents dans le contexte
+#: de citation, pour que l'attribution soit considérée concordante. En dessous
+#: : le fichier attribue l'identifiant au mauvais article (#22537).
+_IDENTITY_THRESHOLD = 0.5
+
+#: Rayon du contexte de citation (caractères de part et d'autre de l'occurrence).
+_CONTEXT_RADIUS = 240
+
+#: Tokens sans signal pour l'identité (fr + en), minuscules.
+_TITLE_STOP = frozenset(
+    "a an the of on in for and to with over under from by is are be as at "
+    "les le la un une du de des en dans par sur sous entre au aux vers"
+    .split()
+)
+
+
+def _detect_files(repo_root: Path, scope_patterns: list[str] | None) -> list[Path]:
+    """Fichiers du périmètre de détection : `*.ipynb`, `*.py`, `docs/**/*.md`."""
+    out: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(repo_root):
+        dirnames[:] = [d for d in dirnames if d not in _DETECT_EXCLUDE_DIRS]
+        rel_parts = Path(dirpath).relative_to(repo_root).parts
+        for fn in filenames:
+            p = Path(dirpath) / fn
+            suffix = p.suffix.lower()
+            if suffix in (".ipynb", ".py"):
+                take = True
+            elif suffix == ".md" and rel_parts and rel_parts[0] in _DETECT_MD_UNDER:
+                take = True
+            else:
+                take = False
+            if take:
+                out.append(p)
+    if scope_patterns:
+        import fnmatch
+        out = [
+            p for p in out
+            if any(fnmatch.fnmatch(p.relative_to(repo_root).as_posix(), pat)
+                   for pat in scope_patterns)
+        ]
+    return sorted(out)
+
+
+def _file_text(p: Path) -> str:
+    """Texte parcourable : toutes les cellules d'un notebook (markdown + code),
+    texte brut pour `.py`/`.md`."""
+    if p.suffix.lower() == ".ipynb":
+        try:
+            nb = json.loads(p.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return ""
+        return "\n".join("".join(c.get("source", [])) for c in nb.get("cells", []))
+    try:
+        return p.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+
+
+def _enumerate_arxiv_ids(repo_root: Path,
+                         scope_patterns: list[str] | None) -> dict[str, list[str]]:
+    """{identifiant: [chemins relatifs]} pour chaque occurrence du périmètre."""
+    found: dict[str, list[str]] = {}
+    for p in _detect_files(repo_root, scope_patterns):
+        for m in ARXIV_ID_RE.finditer(_file_text(p)):
+            found.setdefault(m.group(1), []).append(
+                p.relative_to(repo_root).as_posix())
+    return {k: sorted(set(v)) for k, v in found.items()}
+
+
+def _resolve_ids(ids: list[str], fixture: str | None) -> list[dict]:
+    """Résout les IDs via l'API arXiv (organe natif `verify_arxiv_ids`), ou via
+    le fixture JSON du seam de test `ARXIV_DETECT_RESOLUTIONS`."""
+    if fixture:
+        data = json.loads(Path(fixture).read_text(encoding="utf-8"))
+        return [
+            {"id": i,
+             "verdict": data.get(i, {}).get("verdict", "notfound"),
+             "title": data.get(i, {}).get("title"),
+             "authors": data.get(i, {}).get("authors", []),
+             "error": None}
+            for i in ids
+        ]
+    from notebook_tools.verify_arxiv_ids import verify_ids
+    return verify_ids(ids)
+
+
+def _title_tokens(title: str) -> set[str]:
+    """Tokens salients d'un titre : minuscules, ponctuation retirée,
+    stopwords exclus, longueur >= 4."""
+    words = re.findall(r"[a-z0-9]+", (title or "").lower())
+    return {w for w in words if len(w) >= 4 and w not in _TITLE_STOP}
+
+
+def _identity_ratio(resolved_title: str, context: str) -> float | None:
+    """Part des tokens salients du titre résolu présents dans le contexte.
+    None si non mesurable (aucun token salient)."""
+    tokens = _title_tokens(resolved_title)
+    if not tokens:
+        return None
+    ctx = set(re.findall(r"[a-z0-9]+", (context or "").lower()))
+    return len(tokens & ctx) / len(tokens)
+
+
+def _check_detect_id(arxiv_id: str, locations: list[str],
+                     text_cache: dict[str, str], resolution: dict) -> dict:
+    """Verdict d'identité d'un identifiant hors registre."""
+    result: dict = {
+        "arxiv_id": arxiv_id, "locations": locations, "status": "OK", "detail": "",
+    }
+    if resolution.get("verdict") == "transport":
+        result["status"] = "SKIPPED"
+        result["detail"] = (
+            f"API injoignable ({resolution.get('error')}) — aucun verdict prononcé"
+        )
+        return result
+    if resolution.get("verdict") != "ok":
+        result["status"] = "MISMATCH"
+        result["detail"] = (
+            "identifiant non résolu par l'API arXiv — le fichier attribue un "
+            "article inexistant"
+        )
+        return result
+    title = resolution.get("title") or ""
+    best: float | None = None
+    for loc in locations:
+        for m in ARXIV_ID_RE.finditer(text_cache.get(loc, "")):
+            if m.group(1) != arxiv_id:
+                continue
+            window = m.string[max(0, m.start() - _CONTEXT_RADIUS):
+                               m.end() + _CONTEXT_RADIUS]
+            r = _identity_ratio(title, window)
+            if r is not None and (best is None or r > best):
+                best = r
+    if best is None:
+        result["status"] = "SKIPPED"
+        result["detail"] = "titre non mesurable (aucun token salient)"
+        return result
+    if best < _IDENTITY_THRESHOLD:
+        result["status"] = "MISMATCH"
+        result["detail"] = (
+            f"titre résolu « {title} » ne concorde pas avec le contexte de "
+            f"citation (concordance {best:.0%} < seuil {_IDENTITY_THRESHOLD:.0%})"
+        )
+    else:
+        result["detail"] = f"identité OK (concordance {best:.0%}) — titre : {title}"
+    return result
+
+
+def run_detect(repo_root: Path, registry: list[dict],
+               scope_patterns: list[str] | None,
+               fixture: str | None, as_json: bool) -> int:
+    """Mode détection (#22566). Rouge si un identifiant hors registre est
+    résolu mais non concordant, ou inexistant."""
+    # `str()` : un `arxiv_id` non quoté dans le YAML serait lu comme float et
+    # détruirait l'exclusion des IDs enregistrés.
+    registered = {str(a["arxiv_id"]) for a in registry}
+    found = _enumerate_arxiv_ids(repo_root, scope_patterns)
+    unreg = {i: l for i, l in found.items() if i not in registered}
+    resolutions = {r["id"]: r for r in _resolve_ids(sorted(unreg), fixture)}
+    text_cache: dict[str, str] = {}
+    results: list[dict] = []
+    for iid in sorted(unreg):
+        for loc in unreg[iid]:
+            text_cache.setdefault(loc, _file_text(repo_root / loc))
+        results.append(_check_detect_id(
+            iid, unreg[iid], text_cache,
+            resolutions.get(iid, {"id": iid, "verdict": "notfound"})))
+    counts = {"OK": 0, "MISMATCH": 0, "SKIPPED": 0}
+    for r in results:
+        counts[r["status"]] = counts.get(r["status"], 0) + 1
+
+    if as_json:
+        print(json.dumps({
+            "mode": "detect",
+            "registered": len(registered),
+            "enumerated": len(found),
+            "unregistered": len(unreg),
+            "summary": counts,
+            "results": results,
+        }, indent=2, ensure_ascii=False))
+    else:
+        print(f"# Détection arXiv — {len(found)} identifiant(s) énuméré(s), "
+              f"{len(unreg)} hors registre")
+        for r in results:
+            tag = {"OK": "✓", "MISMATCH": "✗", "SKIPPED": "~"}.get(r["status"], "?")
+            print(f"{tag} [{r['status']}] {r['arxiv_id']} @ "
+                  f"{', '.join(r['locations'])}")
+            if r["detail"]:
+                print(f"    {r['detail']}")
+        print(f"# Summary: {counts['OK']} OK, {counts['MISMATCH']} MISMATCH, "
+              f"{counts['SKIPPED']} SKIPPED")
+
+    return 1 if counts["MISMATCH"] > 0 else 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Vérifie les attributions arXiv du registre."
@@ -235,6 +478,12 @@ def main() -> int:
         help="Traiter les renames (notebook déplacé) comme FAIL au lieu de RENAMED.",
     )
     parser.add_argument(
+        "--detect",
+        action="store_true",
+        help="Mode détection (#22566) : énumérer les identifiants hors registre et "
+             "contrôler leur identité via l'API arXiv. --paths = globs de fichiers.",
+    )
+    parser.add_argument(
         "--json",
         action="store_true",
         help="Sortie JSON structurée (utile en CI).",
@@ -245,6 +494,11 @@ def main() -> int:
     registry = args.registry or _default_registry_path(repo_root)
 
     attributions = _load_registry(registry)
+
+    if args.detect:
+        fixture = os.environ.get("ARXIV_DETECT_RESOLUTIONS")
+        return run_detect(repo_root, attributions, args.paths, fixture, args.json)
+
     scope = _glob_to_paths(args.paths, repo_root) if args.paths else None
 
     results: list[dict] = []

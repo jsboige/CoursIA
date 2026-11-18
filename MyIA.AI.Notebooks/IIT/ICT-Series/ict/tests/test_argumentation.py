@@ -403,3 +403,129 @@ def test_refus_code_inconnu_rejete():
     """Un code de refus hors enumeration est une erreur de programmation."""
     with pytest.raises(ValueError):
         arg.RefusDeMesure("CODE_INCONNU", "test")
+
+
+# --------------------------------------------------------------------------- #
+#  Gate : derivation du labelling depuis l'extension (parite labelling, #7742)
+#  Proposition consultant du 24/10 : la parite sur les seuls ensembles IN ne
+#  voit pas la separation out/undec. Ces tests sont PUR PYTHON -- aucun
+#  organe Java requis -- la reference etant l'instrument lui-meme.
+# --------------------------------------------------------------------------- #
+
+
+def test_labelling_from_extension_reproduit_instrument():
+    """La derivation (in/out/undec depuis l'extension) = le labelling direct.
+
+    Sur les 12 cas canoniques + les 200 aleatoires (seed 42, la banque de la
+    parite 212), le labelling derive de l'extension IN de l'instrument est
+    EGAL au labelling iterate-au-point-fixe. Si une future refactor de
+    ``grounded_labeling`` brise cette coherence, la jambe labelling de la
+    parite la verra -- l'ancienne jambe IN, elle, ne la verrait pas.
+    """
+    from ict import tweety_bridge as bridge
+
+    bank = bridge.canonical_cases() + bridge.random_cases(seed=42)
+    for _, af in bank:
+        extension = bridge.instrument_grounded(af)
+        assert bridge.labelling_from_extension(af, extension) == arg.grounded_labeling(af)
+
+
+def test_mutant_undec_en_out_passe_la_parite_in_pas_le_labelling():
+    """Temoir rouge : le mutant exact decrit par le consultant (24/10).
+
+    Un mutant qui etiquette ``undec`` en ``out`` : (a) son ensemble IN est
+    IDENTIQUE a celui de l'instrument -- la parite IN historique l'acquitte ;
+    (b) son labelling complet diverge de la derivation sur tout cas portant
+    au moins un ``undec`` -- la jambe labelling l'attrape.
+    """
+    from ict import tweety_bridge as bridge
+
+    def mutant_labeling(af):
+        return {
+            a: ("out" if v == "undec" else v)
+            for a, v in arg.grounded_labeling(af).items()
+        }
+
+    nixon = arg.DungAF([0, 1], [(0, 1), (1, 0)])
+    # (a) meme ensemble IN -> la jambe IN ne distingue pas
+    mutant_in = frozenset(a for a, v in mutant_labeling(nixon).items() if v == "in")
+    assert mutant_in == bridge.instrument_grounded(nixon) == frozenset()
+    # (b) labelling divergent -> la jambe labelling attrape
+    derived = bridge.labelling_from_extension(nixon, mutant_in)
+    assert mutant_labeling(nixon) != derived
+    assert all(v == "undec" for v in derived.values())
+
+
+def test_banque_212_porte_147_cas_undec():
+    """Compte de la banque : 147/212 cas portent au moins un ``undec``.
+
+    Chiffre mesure par le consultant (24/10) sur la meme banque
+    (canonical_cases + random_cases(seed=42)). Le pinner ici rend toute
+    derivee de la banque detectable : si le compte change, la donnee de
+    reference des deux jambes de parite a bouge.
+    """
+    from ict import tweety_bridge as bridge
+
+    bank = bridge.canonical_cases() + bridge.random_cases(seed=42)
+    assert len(bank) == 212
+    n_undec = sum(
+        1
+        for _, af in bank
+        if any(v == "undec" for v in arg.grounded_labeling(af).values())
+    )
+    assert n_undec == 147
+
+
+# Une arrivée par argument : les comptes et la signature portent les mêmes
+# transitions, même si seul le second encodage conserve leur identité.
+def _assert_tpm_alignee(summary, signature, summary_indices, signature_indices):
+    """Compare les transitions dans l'ordre de la trajectoire, pas des indices."""
+    assert len(set(summary_indices)) == len(summary_indices)
+    assert len(set(signature_indices)) == len(signature_indices)
+    a = summary[np.ix_(summary_indices, summary_indices)]
+    b = signature[np.ix_(signature_indices, signature_indices)]
+    np.testing.assert_array_equal(a, b)
+    attendu = np.zeros_like(a)
+    for i in range(len(summary_indices) - 1):
+        attendu[i, i + 1] = 1.0
+    attendu[-1, -1] = 1.0
+    np.testing.assert_array_equal(a, attendu)
+
+
+@pytest.mark.parametrize("factory", [arg.nixon_diamond, arg.tweety_bird])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_encodages_et_ordres_alignent_transitions(factory, reverse):
+    af = factory()
+    order = list(range(af.n()))
+    if reverse:
+        order.reverse()
+    trajectory = arg.belief_trajectory(af, order, include_empty=True)
+    # Le premier argument arrivé est bien celui demandé, même en ordre inverse.
+    assert set(trajectory[1]) == {order[0]}
+    assert all(set(lab) == set(order[:i]) for i, lab in enumerate(trajectory))
+    summary = [arg.belief_summary(lab) for lab in trajectory]
+    signature = [arg.state_signature(lab, n_args=af.n()) for lab in trajectory]
+    p, p_map = arg.belief_transition_matrix(af, order, encoding="summary")
+    q, q_map = arg.belief_transition_matrix(af, order, encoding="signature")
+    si = [p_map[state] for state in summary]
+    qi = [q_map[state] for state in signature]
+    _assert_tpm_alignee(p, q, si, qi)
+
+
+def test_temoin_refuse_fusion_et_transition_modifiee():
+    """Une fusion ou une transition erronée ne satisfait pas le contrôle."""
+    af = arg.tweety_bird()
+    order = list(range(af.n()))
+    trajectory = arg.belief_trajectory(af, order, include_empty=True)
+    p, p_map = arg.belief_transition_matrix(af, order, encoding="summary")
+    q, q_map = arg.belief_transition_matrix(af, order, encoding="signature")
+    si = [p_map[arg.belief_summary(lab)] for lab in trajectory]
+    qi = [q_map[arg.state_signature(lab, n_args=af.n())] for lab in trajectory]
+    _assert_tpm_alignee(p, q, si, qi)
+    with pytest.raises(AssertionError):
+        _assert_tpm_alignee(p, q, si, [qi[0], qi[0], *qi[2:]])
+    altered = q.copy()
+    altered[qi[0]] = 0.0
+    altered[qi[0], qi[0]] = 1.0
+    with pytest.raises(AssertionError):
+        _assert_tpm_alignee(p, altered, si, qi)

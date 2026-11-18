@@ -243,16 +243,101 @@ def core_vertices_2d(
 
 def core_vertices_3d(
     game: CoalitionGame,
+    tolerance: float = 1e-9
+) -> Optional[np.ndarray]:
+    """
+    For 3-player games, compute the EXACT vertices of the Core.
+
+    The Core lives on the efficiency plane x1 + x2 + x3 = v(N), cut by one
+    half-space per proper non-empty coalition S (sum_{i in S} x_i >= v(S)).
+    Parameterising that plane by (x1, x2) - so x3 = v(N) - x1 - x2 - turns each
+    coalition constraint into a half-plane in 2D, and the Core is their
+    intersection: a convex polygon whose vertices are the feasible pairwise
+    intersections of the constraint boundaries.
+
+    No non-negativity is assumed. For a game whose coalitions carry negative
+    values, the Core reaches outside the positive simplex and its vertices
+    carry negative coordinates - precisely the region a non-negative grid can
+    never reach (#20307). Use `sample_core_3d` for a visualisation cloud.
+
+    Returns:
+        Array of shape (k, 3) with the k distinct Core vertices, or None if
+        the Core is empty
+    """
+    if game.n_players != 3:
+        raise ValueError("This function only works for 3-player games")
+
+    # Non-emptiness gate. 'center' (not 'any') because scipy's linprog defaults
+    # to non-negative bounds when none are given: the 'any' objective would
+    # itself reject a Core that lies entirely outside the positive orthant -
+    # the very case this function exists to reach.
+    is_nonempty, _ = compute_core(game, objective='center')
+    if not is_nonempty:
+        return None
+
+    v_N = game.grand_coalition_value()
+
+    # Half-planes in (x1, x2): A1*x1 + A2*x2 >= B, obtained from
+    # a1*x1 + a2*x2 + a3*x3 >= v(S) after substituting x3 = v_N - x1 - x2.
+    half_planes = []
+    for coalition in game.all_coalitions():
+        if len(coalition) == 0 or len(coalition) == 3:
+            continue
+        a = [1.0 if i in coalition else 0.0 for i in range(3)]
+        half_planes.append((
+            a[0] - a[2],
+            a[1] - a[2],
+            game.value(coalition) - a[2] * v_N,
+        ))
+
+    # Candidate vertices: every intersection of two non-parallel boundaries,
+    # kept only if it satisfies ALL half-planes (i.e. it is in the Core).
+    core_vertices = []
+    for i in range(len(half_planes)):
+        a1_i, a2_i, b_i = half_planes[i]
+        for j in range(i + 1, len(half_planes)):
+            a1_j, a2_j, b_j = half_planes[j]
+            det = a1_i * a2_j - a1_j * a2_i
+            if abs(det) < tolerance:
+                continue  # parallel boundaries: no unique intersection
+            x1 = (b_i * a2_j - b_j * a2_i) / det
+            x2 = (a1_i * b_j - a1_j * b_i) / det
+            candidate = np.array([x1, x2, v_N - x1 - x2])
+
+            in_core, _ = is_in_core(game, candidate, tolerance=1e-7)
+            if not in_core:
+                continue
+            if all(np.linalg.norm(candidate - v) > 1e-7 for v in core_vertices):
+                core_vertices.append(candidate)
+
+    if not core_vertices:
+        # Every boundary pair was parallel (a degenerate Core spanning a line):
+        # fall back to a single feasible point rather than reporting emptiness.
+        _, point = compute_core(game, objective='center')
+        if point is None:
+            return None
+        return np.array([point])
+
+    return np.array(core_vertices)
+
+
+def sample_core_3d(
+    game: CoalitionGame,
     n_points: int = 100
 ) -> Optional[np.ndarray]:
     """
-    For 3-player games, sample the Core boundary.
+    For 3-player games, sample the Core on a non-negative grid.
 
-    The Core lives on the 2-simplex (efficiency plane).
-    This function samples points and finds which are in the Core.
+    This is a VISUALISATION helper, not a vertex computation: it walks an
+    n_points x n_points grid of allocations x_i = (k / n_points) * v(N) with
+    k >= 0 and returns every grid point that satisfies the Core constraints.
+    It is therefore a cloud of points, with duplicates, and it only explores
+    the part of the Core that is non-negative and proportional to v(N) - a
+    game whose Core reaches negative coordinates is misrepresented by it.
+    Use `core_vertices_3d` for the exact vertices.
 
     Returns:
-        Array of Core vertices, or None if empty
+        Array of shape (m, 3) with the m sampled Core points, or None if none
     """
     if game.n_players != 3:
         raise ValueError("This function only works for 3-player games")

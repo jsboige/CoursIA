@@ -28,7 +28,13 @@ MODES
               when already in sync).
   --check     report drift only (any service .env whose value for a
               SECRET key differs from master), exit 1 on drift. Use as a
-              CI / pre-commit gate.
+              CI / pre-commit gate. (#17558 phase 4) --check ALSO compares
+              the MyIA-Keys vault to master.env by fingerprint (never a
+              value): a shared key whose stored fingerprint diverges is
+              drift (exit 1); keys of master.env absent from the vault are
+              NAMED (unmigrated, exit 1 only with --strict); an unreachable
+              vault is UNKNOWN and never fails --check (doctor owns vault
+              state).
   --strict    exit 1 when a SECRET key declared in SECRET_KEYS is absent
               from master.env (so a CI can distinguish "in sync" from
               "in sync on what I watch" -- a declared key that drifts can
@@ -112,7 +118,7 @@ TARGET_ENVS = [
     # AgenticDataScience (ML/DataScienceWithAgents series). ECE TP uses
     # OPENAI_API_KEY + OPENAI_BASE_URL; OPENROUTER is a duplicate alias.
     REPO_ROOT / "MyIA.AI.Notebooks" / "ML" / "DataScienceWithAgents" / "AgenticDataScience" / ".env",
-    # Track2-GoogleADK (ML/DataScienceWithAgents series, #13955). Lab11 reads
+    # 07-Agent-Orchestration (ML/DataScienceWithAgents series, #13955). Lab11 reads
     # OPENAI_API_KEY + OPENROUTER_API_KEY + OPENAI_BASE_URL via
     # config/providers.py (Path(__file__).parent.parent / ".env"). Without
     # this entry, --check sees [OK] on machines that have NOT provisioned the
@@ -120,7 +126,7 @@ TARGET_ENVS = [
     # from before master.env was canonical, the drift is invisible. Adding
     # the path closes that blind spot for the series that PR #13933
     # introduced.
-    REPO_ROOT / "MyIA.AI.Notebooks" / "ML" / "DataScienceWithAgents" / "Track2-GoogleADK" / ".env",
+    REPO_ROOT / "MyIA.AI.Notebooks" / "ML" / "DataScienceWithAgents" / "07-Agent-Orchestration" / ".env",
     # SemanticKernel notebooks (.NET Interactive). 0-AI-settings.ipynb +
     # 09-SemanticKernel-Building-CLR consume this via Settings.LoadFromFile
     # (config/settings.json is gitignored and derived from this key -- see
@@ -270,6 +276,60 @@ REQUIRED_KEYS: dict[str, frozenset[str]] = {
 }
 
 
+# URL de la passerelle claudish (modèle myia.io, #14926). Toute cible dont le
+# .env pointe cette URL doit porter CLAUDISH_PROXY_KEY -- sans la cle, le
+# proxy renvoie 401 sur l'endpoint OpenAI derriere l'URL. La constante est
+# lue par derived_required() qui complete REQUIRED_KEYS par une regle
+# derivee : on declare la cle requise sans enumerer statiquement les 3
+# cibles, ce qui reagit aux futures series ajoutees a TARGET_ENVS qui
+# adoptent la passerelle.
+CLAUDISH_PROXY_URL = "models.myia.io"
+CLAUDISH_PROXY_KEY_NAME = "CLAUDISH_PROXY_KEY"
+
+
+def derived_required(env: Path, target_keys: set[str]) -> frozenset[str]:
+    """Regle derivee issue de l'etat OBSERVE du .env, pas d'une table
+    statique. Une cible qui pointe la passerelle claudish
+    (OPENAI_BASE_URL contient ``CLAUDISH_PROXY_URL``) doit porter la cle
+    d'authentification correspondante -- sinon 401. Issue #19462 (Q6
+    option b, decision user) : preferer une regle derivee a 3 entrees
+    statiques pour qu'une cible ajoutee demain herite du couplage sans
+    qu'on y pense.
+    Couvre aussi le cas ``.env`` absent : la fonction n'est appelee que
+    dans la branche ``if not env.exists(): continue`` de sync(), donc
+    un worktree frais sans la cible ne declenche pas la regle.
+    Une ligne commentee (``# OPENAI_BASE_URL=...``) NE declenche PAS
+    la regle : la cle n'est pas portee en subject, l'utilisateur
+    l'a explicitement mise hors service.
+    """
+    if CLAUDISH_PROXY_KEY_NAME in target_keys:
+        # Deja provisionnee -- rien a signaler.
+        return frozenset()
+    if "OPENAI_BASE_URL" not in target_keys:
+        return frozenset()
+    # Re-lire la valeur depuis le fichier (read_env a parse_kv qui strippe
+    # les commentaires inline ; ici on veut la valeur brute pour detecter
+    # la presence de l'URL dans une ligne non commentee).
+    try:
+        for line in env.read_text(encoding="utf-8").splitlines():
+            stripped = line.lstrip()
+            if stripped.startswith("#") or stripped.startswith("export "):
+                # On accepte 'export OPENAI_BASE_URL=...' (gate forward) mais
+                # pas '# OPENAI_BASE_URL=...' (desactive par l'utilisateur).
+                pass
+            m = _LINE_RE.match(line)
+            if not m or m.group(1) != "OPENAI_BASE_URL":
+                continue
+            if parse_kv(m.group(2)).strip().startswith("#"):
+                continue  # commentaire inline
+            value = parse_kv(m.group(2))
+            if CLAUDISH_PROXY_URL in value:
+                return frozenset({CLAUDISH_PROXY_KEY_NAME})
+    except OSError:
+        pass
+    return frozenset()
+
+
 def env_label(env: Path) -> str:
     """Repo-relative posix path for reports and REQUIRED_KEYS lookup;
     absolute posix when the path is outside the repo (hermetic tmp tests)."""
@@ -305,6 +365,135 @@ def read_env(path: Path) -> dict[str, str]:
         if m:
             out[m.group(1)] = parse_kv(m.group(2))
     return out
+
+
+# --------------------------------------------------------------------------- #
+# Phase 4 de #17558 : --check compare AUSSI le coffre MyIA-Keys a master.env
+# --------------------------------------------------------------------------- #
+# Angle mort #14373 : des cles declarees dans SECRET_KEYS pouvaient etre hors
+# perimetre de tout .env consommateur, et ``--check`` lisait quand meme
+# ``[OK] No drift`` -- le perimetre de comparaison s'arretait a master.env.
+# Depuis la phase 3 (import des cles partagees au coffre), la question de
+# coherence qui reste ouverte est coffre <-> master.env : la meme cle doit
+# porter la MEME valeur des deux cotes, sinon la "source unique" n'en est pas
+# une. La comparaison se fait par EMPREINTE (meme organe que ``doctor`` :
+# PBKDF2 couteux, deterministe), et AUCUNE empreinte ni valeur n'est affichee
+# -- seule l'egalite ou la divergence des noms de cles sort.
+#
+# Coffre injoignable (GDrive non monte, passphrase absente, pykeepass absent) :
+# UNKNOWN nomme, ni drift ni ecart -- l'etat du coffre reste l'affaire de
+# ``agent_keyring.py doctor`` ; render_envs ne fabrique ni faux vert ni faux
+# rouge sur ce qu'il ne peut pas lire.
+
+
+def _vault_fingerprints():
+    """(title -> empreinte de la valeur stockee, None), ou (None, raison).
+
+    Import paresseux du module sibling : pykeepass est une dependance du
+    coffre, pas de render_envs -- sans coffre, --check doit rester utilisable.
+    """
+    try:
+        import agent_keyring
+    except ImportError as exc:
+        return None, f"agent_keyring import ({type(exc).__name__})"
+    try:
+        kp = agent_keyring.open_vault(quiet=True)
+    except SystemExit as exc:
+        return None, f"coffre injoignable (agent_keyring exit {exc.code})"
+    except Exception as exc:  # pragma: no cover - transport GDrive inattendu
+        return None, f"coffre injoignable ({type(exc).__name__})"
+    fp: dict[str, str] = {}
+    for entry in agent_keyring.iter_entries(kp, None):
+        title = (entry.title or "").strip()
+        if title and entry.password:
+            fp[title] = agent_keyring.fingerprint(entry.password)
+    return fp, None
+
+
+def _master_fingerprints(master: dict[str, str]) -> dict[str, str]:
+    """Empreinte PBKDF2 de chaque valeur de master.env (cf.
+    _vault_fingerprints : meme organe, jamais affiche).
+    ~0,3 s par cle -- n'appeler que coffre lu."""
+    import agent_keyring
+    return {key: agent_keyring.fingerprint(val) for key, val in master.items()}
+
+
+def keyring_master_report(master_fp: dict[str, str],
+                          vault_fp: "dict[str, str] | None",
+                          vault_reason: "str | None" = None):
+    """Rapport coffre <-> master.env, par empreintes pre-calculees.
+
+    Retour (lines, drift_keys, unmigrated) :
+      * lines      -- lignes a afficher (noms de cles seulement, aucune valeur
+                      ni empreinte) ;
+      * drift_keys -- cles presentes des deux cotes dont l'empreinte diverge :
+                      la source unique n'est pas unique, --check sort 1 ;
+      * unmigrated -- cles de master.env absentes du coffre (phase 3 non
+                      terminee pour elles) : nommees par --check, exit 1
+                      seulement en --strict, comme les autres ecarts nommes.
+
+    Pure : les tests fabriquent les empreintes qu'ils veulent.
+    """
+    if vault_fp is None:
+        return ([f"  keyring: UNKNOWN ({vault_reason}) -- coffre non compare, "
+                 f"cf. agent_keyring.py doctor"], [], [])
+    common = sorted(master_fp.keys() & vault_fp.keys())
+    diverging = sorted(k for k in common if master_fp[k] != vault_fp[k])
+    unmigrated = sorted(master_fp.keys() - vault_fp.keys())
+    vault_only = sorted(vault_fp.keys() - master_fp.keys())
+    lines = [f"  keyring: {len(vault_fp)} entree(s) au coffre, "
+             f"{len(common)} commune(s) avec master.env"]
+    if diverging:
+        lines.append(f"  keyring DRIFT: {len(diverging)} cle(s) commune(s) "
+                     f"dont l'empreinte diverge: {diverging}")
+    if unmigrated:
+        lines.append(f"  keyring: {len(unmigrated)} cle(s) de master.env "
+                     f"absentes du coffre (migration #17558 phase 3 "
+                     f"non terminee): {unmigrated}")
+    if vault_only:
+        lines.append(f"  keyring: {len(vault_only)} cle(s) au coffre sans "
+                     f"ligne master.env (post-phase 6 c'est la norme): "
+                     f"{vault_only}")
+    return lines, diverging, unmigrated
+
+
+# --------------------------------------------------------------------------- #
+# Couplage passerelle claudish : l'endpoint implique la cle d'authentification
+# --------------------------------------------------------------------------- #
+# Un .env qui porte l'endpoint de la passerelle (OPENAI_BASE_URL vers
+# models.myia.io) SANS CLAUDISH_PROXY_KEY part avec une adresse valide et le
+# credential qui l'authentifie absent -> 401 "invalid proxy authentication".
+#
+# Le piege est exactement celui que REQUIRED_KEYS rend mesurable (#15145) : la
+# cle EST dans master.env et EST dans SECRET_KEYS, donc tous les rapports la
+# disaient diffusee -- mais une cle absente d'une cible est rapportee "not
+# provisioned", indiscernable de "pas necessaire". La question "atteint-elle un
+# consommateur reel ?" n'avait donc pas de reponse mesurable ; mesuree, elle
+# rendait : aucun des consommateurs de la passerelle.
+#
+# Derive plutot que trois entrees statiques : une cible ajoutee demain a
+# TARGET_ENVS qui pointe la passerelle herite du couplage sans qu'on y pense, et
+# une cible dont le .env est absent ne fabrique aucun faux rouge sur un clone
+# neuf (la derivation ne voit que les fichiers PRESENTS).
+GATEWAY_HOST = "models.myia.io"
+GATEWAY_ENDPOINT_KEY = "OPENAI_BASE_URL"
+GATEWAY_AUTH_KEY = "CLAUDISH_PROXY_KEY"
+
+
+def _gateway_consumers() -> dict[str, frozenset[str]]:
+    """Targets whose .env points OPENAI_BASE_URL at the claudish gateway."""
+    out: dict[str, frozenset[str]] = {}
+    for env in TARGET_ENVS:
+        if GATEWAY_HOST in read_env(env).get(GATEWAY_ENDPOINT_KEY, ""):
+            out[env_label(env)] = frozenset({GATEWAY_AUTH_KEY})
+    return out
+
+
+# Additive: a static REQUIRED_KEYS entry for the same target keeps its own keys.
+REQUIRED_KEYS.update({
+    lbl: REQUIRED_KEYS.get(lbl, frozenset()) | keys
+    for lbl, keys in _gateway_consumers().items()
+})
 
 
 def mask(value: str) -> str:
@@ -467,7 +656,14 @@ def sync(check_only: bool, strict: bool = False) -> int:
                 f"  {label}: {len(gap)} master key(s) have no line here "
                 f"(not provisioned): {gap}")
         # #15145 geste 3 : les cles DECLAREES requisent deviennent mesurables.
-        required = REQUIRED_KEYS.get(label)
+        # Issue #19462 (Q6 option b) : la regle statique REQUIRED_KEYS est
+        # augmentee par derived_required(), qui regarde l'etat observe du
+        # .env (presence de OPENAI_BASE_URL -> models.myia.io) pour declarer
+        # CLAUDISH_PROXY_KEY comme requise. Le couplage reste une regle, pas
+        # une liste de cibles, ce qui reagit aux ajouts de TARGET_ENVS.
+        required_static = REQUIRED_KEYS.get(label, frozenset())
+        required_derived = derived_required(env, target_keys)
+        required = required_static | required_derived
         if required:
             missing_req = sorted(k for k in required
                                  if k not in target_keys
@@ -491,6 +687,24 @@ def sync(check_only: bool, strict: bool = False) -> int:
         if changed and not check_only:
             env.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
             written.append(env.parent.name)
+
+    # Phase 4 de #17558 : en mode --check uniquement (render_envs n'ecrit
+    # JAMAIS dans le coffre -- un seul ecrivain, cf. l'issue), la comparaison
+    # s'etend au coffre MyIA-Keys. Divergence d'empreinte -> drift (exit 1) ;
+    # cles non migrees -> nommees, exit 1 seulement en --strict.
+    keyring_lines: list[str] = []
+    keyring_unmigrated: list[str] = []
+    if check_only:
+        vault_fp, vault_reason = _vault_fingerprints()
+        master_fp = (_master_fingerprints(master)
+                     if vault_fp is not None else {})
+        keyring_lines, keyring_diverging, keyring_unmigrated = \
+            keyring_master_report(master_fp, vault_fp, vault_reason)
+        for key in keyring_diverging:
+            drift.append(f"  keyring: {key} empreinte coffre != master.env")
+        print("[i] coffre MyIA-Keys vs master.env (#17558 phase 4):")
+        for line in keyring_lines:
+            print(line)
 
     if absent_targets:
         for lbl in absent_targets:
@@ -541,7 +755,7 @@ def sync(check_only: bool, strict: bool = False) -> int:
     else:
         print(f"[OK] {on_disk}/{len(TARGET_ENVS)} target .env on disk, in sync "
               f"with master.env ({len(master)} secret keys). No drift.")
-    if strict and (missing_in_master or required_gaps):
+    if strict and (missing_in_master or required_gaps or keyring_unmigrated):
         return 1
     return 0
 

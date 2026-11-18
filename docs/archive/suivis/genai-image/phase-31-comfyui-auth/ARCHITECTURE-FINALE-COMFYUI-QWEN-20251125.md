@@ -26,26 +26,22 @@ L'architecture finale de l'écosystème ComfyUI-Qwen repose sur une approche mod
 
 #### `setup_complete_qwen.py` - Wrapper d'Installation Complète
 - **Fonctionnalité** : Installation automatisée de l'écosystème complet
-- **Lignes** : 527 lignes
 - **Dépendances** : token_synchronizer, validate_genai_ecosystem
 - **Validation** : Tests intégrés avec rapports détaillés
 - **Rollback** : Restauration automatique si erreur
 
 #### `validate_genai_ecosystem.py` - Validation Complète de l'Écosystème
 - **Fonctionnalité** : Validation exhaustive de tous les composants
-- **Lignes** : 487 lignes
 - **Tests** : Authentification, Docker, GPU, modèles
 - **Rapports** : JSON + Markdown
 
 #### `diagnose_comfyui_auth.py` - Diagnostic d'Authentification
 - **Fonctionnalité** : Analyse approfondie des problèmes d'authentification
-- **Lignes** : 423 lignes
 - **Détection** : Configuration, tokens, compatibilité
 - **Correction** : Suggestions automatiques
 
 #### `install_comfyui_login.py` - Installation Plugin ComfyUI-Login
 - **Fonctionnalité** : Installation et configuration du plugin d'authentification
-- **Lignes** : 234 lignes
 - **Détection** : Version ComfyUI existante
 - **Configuration** : Intégration transparente
 
@@ -53,26 +49,22 @@ L'architecture finale de l'écosystème ComfyUI-Qwen repose sur une approche mod
 
 #### `token_synchronizer.py` - Synchroniseur Unifié de Tokens
 - **Fonctionnalité** : Synchronisation automatique des tokens bcrypt
-- **Lignes** : 567 lignes
 - **Audit** : Scan configurations existantes
 - **Unification** : Création source de vérité unique
 - **Propagation** : Mise à jour automatique
 
 #### `comfyui_client_helper.py` - Client HTTP ComfyUI Complet
 - **Fonctionnalité** : Client ComfyUI avec authentification intégrée
-- **Lignes** : 445 lignes
 - **Authentification** : Support bcrypt automatique
 - **Workflows** : Soumission et monitoring
 
 #### `docker_qwen_manager.py` - Gestion Docker ComfyUI-Qwen
 - **Fonctionnalité** : Contrôle complet des services Docker
-- **Lignes** : 398 lignes
 - **Contrôle** : Start/stop/restart/status
 - **Monitoring** : Logs et métriques
 
 #### `validate_tokens_simple.py` - Validation Simple des Tokens
 - **Fonctionnalité** : Validation rapide des tokens
-- **Lignes** : 234 lignes
 - **Tests** : Format, cohérence, validité
 - **Rapports** : Résumé clair et concis
 

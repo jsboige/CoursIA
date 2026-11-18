@@ -378,43 +378,65 @@ def cech_obstruction_class(
 def cech_obstruction_verdict(
     report: Mapping[str, Any],
     *,
-    dim_threshold: float = 0.10,
-    coboundary_floor: float = 0.05,
+    cocycle_floor: float = 0.05,
+    ratio_floor: float = 0.05,
+    sign_floor: float = 0.5,
 ) -> str:
     """Verdict falsifiable sur la classe d'obstruction.
 
-    Mesure primaire : la **dimensionnalité effective** (``s2_over_s1``). Les
-    proxys se recollent en une mesure globale unique ssi ils vivent en
-    dimension 1 (``s2/s1`` petit) ; sinon l'obstruction est non-triviale.
+    Mesure primaire : le **cocycle triple** (``mean_cocycle``). L'obstruction
+    de Čech est un défaut de recollement des proxys ; c'est le cocycle qui la
+    porte, pas la dimension du nuage qu'ils forment. Le rang SVD
+    (``s2_over_s1``) est un indicateur de forme -- il reste rapporté, il ne
+    décide plus : un cocycle rigoureusement nul (proxys recollables) peut
+    cohabiter avec une dimensionnalité effective maximale, et conclure
+    ``NON_TRIVIAL`` sur le seul rang SVD reviendrait à lire une obstruction
+    qui n'existe pas (contre-exemple ``axelrod`` : ``s2/s1 = 1.0``,
+    ``mean_cocycle = 0.0``).
 
     Paramètres
     ----------
     report : sortie de :func:`cech_obstruction_class`.
-    dim_threshold : ``s2/s1`` au-dessus duquel la dimension 2 devient
-        significative -> obstruction non-triviale (défaut 0.10).
-    coboundary_floor : ``mean_coboundary`` sous lequel les proxys sont
-        affinement cohérents (aucun désaccord à obstructer) -> TRIVIAL quoi
-        qu'il arrive (défaut 0.05).
+    cocycle_floor : ``mean_cocycle`` sous lequel le cocycle est considéré nul
+        -- les proxys se recollent, la classe se trivialise (défaut 0.05).
+    ratio_floor : ``obstruction_ratio`` sous lequel le désaccord ne porte pas
+        de cocycle (défaut 0.05) ; redondant avec ``cocycle_floor`` sur les
+        témoins mesurés, gardé comme second regard.
+    sign_floor : ``sign_consistency`` minimale pour qu'un cocycle non nul
+        porte une **direction** (défaut 0.5 : au moins la moitié des
+        holonomies partagent le signe majoritaire). Un cocycle non nul sans
+        direction majoritaire n'est pas une obstruction lisible.
 
     Verdicts
     --------
-    * ``NON_TRIVIAL`` : ``s2/s1 > dim_threshold`` ET ``mean_coboundary >
-      floor`` -- les proxys ne se réduisent pas à un signal latent unique,
-      obstruction candidate (#7744 acceptance positive).
-    * ``TRIVIAL`` : ``mean_coboundary <= floor`` (proxys affinement cohérents,
-      la classe se trivialise -- une différence d'échelle n'est PAS une
-      obstruction, c'est la confusion de Phase Zéro) OU ``s2/s1 <= threshold``.
-    * ``INCONCLUSIVE`` : < 3 proxys (pas de cocycle triple défini).
+    * ``NON_TRIVIAL`` : cocycle non nul, porté par un ``obstruction_ratio``
+      non nul, et directionnellement cohérent (``sign_consistency >=
+      sign_floor``) -- obstruction candidate (#7744 acceptance positive).
+    * ``TRIVIAL`` : ``mean_cocycle <= cocycle_floor`` (proxys recollables --
+      une différence d'échelle n'est PAS une obstruction, c'est la confusion
+      de Phase Zéro) ou ``obstruction_ratio <= ratio_floor``.
+    * ``INCONCLUSIVE`` : < 3 proxys (pas de cocycle triple défini), ou cocycle
+      non nul mais sans direction majoritaire (``sign_consistency <
+      sign_floor``).
+
+    Témoins mesurés (``n_windows=60``, seeds 0-11) : le banc affine porte
+    ``mean_cocycle = 0.0000`` et ``sign_consistency = 0.0000`` sur les douze
+    graines ; le banc multi-dimensionnel porte ``mean_cocycle`` dans
+    [0.8662, 1.2527] et ``sign_consistency`` dans [0.5000, 0.5667]. Les douze
+    graines sortent ``NON_TRIVIAL`` ; les graines 1, 2 et 7 touchent le
+    plancher ``sign_floor = 0.5`` sans le franchir (la comparaison en vigueur
+    est ``sign < sign_floor``, donc 0.5000 est retenu).
     """
     if report["n_proxies"] < 3:
         return "INCONCLUSIVE"
-    cob = float(report["mean_coboundary"])
-    s2s1 = float(report["s2_over_s1"])
-    if cob <= coboundary_floor:
+    cocycle = float(report["mean_cocycle"])
+    ratio = float(report["obstruction_ratio"])
+    sign = float(report["sign_consistency"])
+    if cocycle <= cocycle_floor or ratio <= ratio_floor:
         return "TRIVIAL"
-    if s2s1 > dim_threshold:
-        return "NON_TRIVIAL"
-    return "TRIVIAL"
+    if sign < sign_floor:
+        return "INCONCLUSIVE"
+    return "NON_TRIVIAL"
 
 
 # --------------------------------------------------------------------------- #
@@ -476,6 +498,10 @@ def cech_obstruction_test(
         "multi_s2_over_s1": rep_mul["s2_over_s1"],
         "multi_coboundary": rep_mul["mean_coboundary"],
         "multi_effective_rank": rep_mul["effective_rank"],
+        "affine_cocycle": rep_aff["mean_cocycle"],
+        "affine_sign_consistency": rep_aff["sign_consistency"],
+        "multi_cocycle": rep_mul["mean_cocycle"],
+        "multi_sign_consistency": rep_mul["sign_consistency"],
         "multi_verdict": verdict_mul,
         "passes": 1.0 if passes else 0.0,
     }

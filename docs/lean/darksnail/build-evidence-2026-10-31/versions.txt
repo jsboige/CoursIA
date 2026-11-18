@@ -1,0 +1,8 @@
+# Versions de l'outil
+
+- toolchain declare : leanprover/lean4:v4.33.0
+- lake : Lake version 5.0.0-src+d8b1897 (Lean version 4.33.0)
+- lean : Lean (version 4.33.0, x86_64-unknown-linux-gnu, commit d8b18978322de05a8f3dba51ef03cf5461676c17, Release)
+- mathlib (rev du manifeste) : db584cd6d46c92f209a44c0f1c829460d327499d
+- commit amont mesure : 043c9d26fc86816e4272d37e755c5918282bfb52
+- instantane : 2026-10-31T12:44:56Z

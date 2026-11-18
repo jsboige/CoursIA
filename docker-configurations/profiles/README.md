@@ -98,7 +98,7 @@ Utilise pour: LTX-Video (8GB), Wan 2.1 (10GB), SVD (10GB), ESRGAN (4GB).
 
 ## Batches d'Execution
 
-Execution sequentielle des 32 notebooks Audio/Video organisee en 8 batches:
+Execution sequentielle des notebooks Audio/Video organisee en batches:
 
 | Batch | Profil GPU | Notebooks | Description |
 |-------|-----------|-----------|-------------|

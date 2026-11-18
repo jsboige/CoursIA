@@ -15,6 +15,11 @@ subprocess reel sur kernel python3 — le parametre kernel est generique, pas
 besoin de .NET. Les executeurs exigeant une infra non disponible en CI
 (exec_dotnet_persist : kernel .NET ; execute_qcpy_docker : Docker/quantbook)
 sont testes sur leur point d'ecriture extrait, ``_save_executed``.
+
+Le kernelspec ``python3`` est une dependance **reparee** (job CI :
+``pip install ipykernel``), pas une condition de skip :
+``test_python3_kernelspec_is_registered`` rougit s'il manque, pour que
+l'integration cesse d'etre invisible sur une partie du parc (#18279).
 """
 
 import json
@@ -66,23 +71,65 @@ def _papermill_block_of(path: Path):
 
 # --- notebook_helpers : executeur de kernel generique (2 points d'ecriture) ---
 
-def test_notebook_helpers_save_strips_stale_block(tmp_path):
+def test_notebook_helpers_save_strip_is_optin(tmp_path):
+    """#24434, second site : le strip de save() est opt-in, comme celui de
+    write_notebook.
+
+    Ce test disait l'inverse jusqu'au 2026-11-04. Le contrat a change parce
+    que la mesure l'a contredit : ``save()`` n'a **aucun** appelant executeur
+    (mesure du 04/11 : seuls la docstring du module, la delegation de
+    ``NotebookCellCorrector.save()`` et les tests l'appellent), tandis que
+    les quatre executeurs qui reecrivent des sorties fraiches appellent
+    ``strip_stale_papermill_metadata`` directement (``dotnet_executor``,
+    ``exec_single_cell``, ``exec_dotnet_persist``, ``execute_qcpy_docker``).
+    Le strip inconditionnel ne protegeait donc aucun run reel, et detruisait
+    la provenance a chaque edition markdown-only : mesure sur
+    ``SW-09-JSONLD-Python.ipynb``, 1 insertion / 984 suppressions, 107 blocs
+    ``metadata.papermill`` et 37 blocs ``metadata.execution`` tombes a 0
+    sans qu'un seul ``execution_count`` bouge.
+    """
     from notebook_helpers import NotebookHelper
     p = _write_fake_nb(tmp_path / "nb.ipynb")
     helper = NotebookHelper(str(p))
     helper.notebook["cells"][0]["execution_count"] = 1
     helper.save()
+    assert _papermill_block_of(p) is not None, (
+        "NotebookHelper.save() sans re-execution ne doit PAS retirer le bloc "
+        "papermill (provenance du dernier run, #24434)")
+    helper.save(strip_stale_metadata=True)
     assert _papermill_block_of(p) is None, (
-        "NotebookHelper.save() doit retirer le bloc perime : les sorties "
-        "fraiches decrivent CE run, pas la passe papermill du 2026-05-31")
+        "l'opt-in strip_stale_metadata=True doit retirer le bloc perime : "
+        "c'est le chemin des executeurs qui ont reecrit des sorties")
 
 
-def test_notebook_helpers_write_notebook_strips_stale_block(tmp_path):
+def test_cell_iterator_save_preserves_papermill(tmp_path):
+    """Le troisieme chemin (``CellIterator.save()``) heritait du strip via sa
+    delegation : il detruisait la provenance sur une simple correction de
+    source. Il doit desormais la preserver par defaut."""
+    from notebook_helpers import CellIterator
+    p = _write_fake_nb(tmp_path / "nb.ipynb")
+    iterator = CellIterator(str(p), cell_index=0, objective="noop")
+    iterator.save()
+    assert _papermill_block_of(p) is not None, (
+        "CellIterator.save() corrige une source, il ne reexecute rien : la "
+        "provenance papermill doit survivre (#24434)")
+
+
+def test_notebook_helpers_write_notebook_strip_is_optin(tmp_path):
     from notebook_helpers import write_notebook
     p = _write_fake_nb(tmp_path / "nb.ipynb")
     nb = json.loads(p.read_text(encoding="utf-8"))
+    # Depuis #24434, write_notebook est un writer generique : le strip est
+    # opt-in (strip_stale_metadata=True). Les executeurs qui reecrivent les
+    # sorties strippent explicitement ; une ecriture sans re-execution
+    # preserve la provenance papermill du carnet.
     write_notebook(str(p), nb)
-    assert _papermill_block_of(p) is None
+    assert _papermill_block_of(p) is not None, (
+        "write_notebook sans re-execution ne doit PAS retirer le bloc "
+        "papermill (provenance du dernier run, #24434)")
+    write_notebook(str(p), nb, strip_stale_metadata=True)
+    assert _papermill_block_of(p) is None, (
+        "l'opt-in strip_stale_metadata=True doit retirer le bloc perime")
 
 
 # --- exec_dotnet_persist : point d'ecriture extrait (kernel .NET requis sinon) ---
@@ -108,22 +155,41 @@ def test_execute_qcpy_docker_save_executed_strips_stale_block(tmp_path):
 
 # --- executeurs kernel generiques : subprocess reel sur kernel python3 ---------
 
-def _python3_kernel_available() -> bool:
-    """Le runner CI n'enregistre pas de kernelspec python3 : le subprocess
-    reel echouerait sur NoSuchKernel avant meme de toucher au code teste
-    (incident #12724, run 32681713419). On skippe l'integration, les tests
-    d'ecriture unitaires ci-dessus couvrent le cablage du strip."""
+def _python3_kernel_missing_reason() -> "str | None":
+    """Pourquoi le kernelspec ``python3`` est-il inutilisable ici ?
+
+    ``None`` quand il l'est. Cette fonction remplace un ``skipif`` qui faisait
+    disparaitre les deux tests d'integration sur toute machine sans kernelspec
+    (incident #12724, run 32681713419) : la faute -- kernel qui meurt au spawn,
+    #18279 -- n'existait alors plus que sur le sous-ensemble de machines qui
+    avaient le kernel. Le defaut paraissait machine-specifique alors qu'il
+    etait **filtre**, et c'est ce filtrage qui a fait suivre pendant dix jours
+    un axe de diagnostic .NET alors qu'aucun noyau .NET n'est lance ici.
+
+    Regle F : un environnement se repare, il ne se contourne pas par un skip.
+    """
     try:
         from jupyter_client.kernelspec import KernelSpecManager
-        return "python3" in KernelSpecManager().find_kernel_specs()
-    except Exception:
-        return False
+    except Exception as exc:
+        return ("jupyter_client indisponible ({}) : pip install jupyter_client"
+                .format(exc))
+    if "python3" in KernelSpecManager().find_kernel_specs():
+        return None
+    return ("kernelspec `python3` non enregistre : pip install ipykernel "
+            "(#18279 -- ce skip masquait la panne sur les machines sans kernel)")
 
 
-requires_python3_kernel = pytest.mark.skipif(
-    not _python3_kernel_available(),
-    reason="kernel python3 non enregistre sur ce runner (NoSuchKernel)",
-)
+def test_python3_kernelspec_is_registered():
+    """Garde de visibilite (#18279) : l'absence de kernelspec doit ROUGIR.
+
+    Sans ce test, l'absence se traduisait par deux ``skip`` silencieux et la
+    faute n'existait plus que sur les machines qui avaient le kernel -- un
+    rapport de CI nommait « kernel mort » la ou le meme code passait. Le job
+    CI installe desormais ``ipykernel`` ; si ce kernelspec disparait a nouveau,
+    c'est ici que ca se voit, pas dans un tableau de skips.
+    """
+    reason = _python3_kernel_missing_reason()
+    assert reason is None, reason
 
 
 def _run_subprocess(script: str, args: list, tmp_path: Path):
@@ -137,13 +203,110 @@ def _run_subprocess(script: str, args: list, tmp_path: Path):
         f"{script} reecrit le notebook sans retirer le bloc papermill perime")
 
 
-@requires_python3_kernel
 def test_dotnet_executor_subprocess_strips_stale_block(tmp_path):
     _run_subprocess("dotnet_executor.py", ["--kernel", "python3",
                                            "--timeout", "60"], tmp_path)
 
 
-@requires_python3_kernel
 def test_exec_single_cell_subprocess_strips_stale_block(tmp_path):
     _run_subprocess("exec_single_cell.py", ["--index", "0",
                                             "--timeout", "60"], tmp_path)
+
+
+# --- exec_single_cell : le strip doit etre BORNE a la cellule executee ---------
+
+STALE_CELL_PM = {"start_time": "2026-05-31T22:54:53Z", "end_time":
+                 "2026-05-31T22:54:54Z", "duration": 1.0, "exception": None}
+STALE_CELL_EXEC = {
+    "iopub.status.busy": "2026-05-31T22:54:53.100Z",
+    "iopub.status.idle": "2026-05-31T22:54:53.900Z",
+    "iopub.execute_input": "2026-05-31T22:54:53.200Z",
+    "shell.execute_reply": "2026-05-31T22:54:53.800Z",
+    "papermill": {"start_time": "2026-05-31T22:54:53Z", "duration": 0.8},
+}
+
+
+def _write_fake_nb_multicell(path: Path) -> "tuple[Path, dict]":
+    """Carnet a 5 cellules dont chaque cellule porte ses blocs papermill +
+    execution : la forme reelle des carnets executes par Papermill. Retourne
+    (chemin, carnet original) pour comparaison cellule par cellule."""
+    def code(i, executed):
+        meta = {"papermill": dict(STALE_CELL_PM),
+                "execution": {k: dict(v) if isinstance(v, dict) else v
+                              for k, v in STALE_CELL_EXEC.items()}}
+        return {"cell_type": "code", "id": f"c{i}", "metadata": meta,
+                "execution_count": i if executed else None,
+                "outputs": [{"output_type": "stream", "name": "stdout",
+                             "text": f"out{i}"}] if executed else [],
+                "source": f"print({i})"}
+
+    nb = {
+        "cells": [
+            {"cell_type": "markdown", "id": "m0",
+             "metadata": {"papermill": dict(STALE_CELL_PM)},
+             "source": "# Titre"},
+            code(1, executed=True),
+            {"cell_type": "code", "id": "c2", "metadata": {
+                 "papermill": dict(STALE_CELL_PM),
+                 "execution": dict(STALE_CELL_EXEC)},
+             "execution_count": None, "outputs": [], "source": "1 + 1"},
+            code(3, executed=True),
+            {"cell_type": "markdown", "id": "m4",
+             "metadata": {"papermill": dict(STALE_CELL_PM)},
+             "source": "## Fin"},
+        ],
+        "metadata": {
+            "kernelspec": {"display_name": "Python 3", "language": "python",
+                           "name": "python3"},
+            "language_info": {"name": "python"},
+            "papermill": dict(STALE_BLOCK),
+            "execution": {"iopub.execute_input": "2026-05-31T22:54:50Z"},
+        },
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    path.write_text(json.dumps(nb, indent=1, ensure_ascii=False) + "\n",
+                    encoding="utf-8")
+    return path, nb
+
+
+def test_exec_single_cell_scopes_strip_to_executed_cell(tmp_path):
+    """exec_single_cell reecrit UNE cellule : le strip des blocs perimes doit
+    etre borne a cette cellule + au niveau carnet.
+
+    Avant le fix du 14/11, le strip global retirait ``metadata.papermill`` et
+    ``metadata.execution`` de TOUTES les cellules : mesure sur un carnet de
+    70 cellules, +50/-716 au lieu de +50/-7, ~30 min de reparation manuelle
+    par PR. Les cellules non re-executees voient leurs sorties intactes :
+    leurs blocs decrivent encore le run qui les a produites, les retirer
+    detruit une provenance valide (meme classe que #24434 sur le writer
+    generique). Le bloc niveau carnet part bien : le ratchet #11155 autorise
+    son absence (BLOCK_REMOVED), pas sa survie sur des sorties changees
+    (STALE_BLOCK).
+    """
+    p, original = _write_fake_nb_multicell(tmp_path / "nb.ipynb")
+    r = subprocess.run(
+        [sys.executable, str(TOOLS / "exec_single_cell.py"), str(p),
+         "--index", "2", "--timeout", "60"],
+        capture_output=True, text=True, timeout=180, cwd=str(TOOLS),
+        encoding="utf-8", errors="replace")
+    assert r.returncode == 0, f"exec_single_cell stderr:\n{r.stderr[-800:]}"
+    after = json.loads(p.read_text(encoding="utf-8"))
+
+    # Niveau carnet : le bloc perime part (chemin #12722 conserve).
+    assert "papermill" not in after["metadata"]
+    assert "execution" not in after["metadata"]
+
+    # Cellule cible : blocs perimes retires, execution fraiche ecrite.
+    target = after["cells"][2]
+    assert "papermill" not in target["metadata"]
+    assert "execution" not in target["metadata"]
+    assert target["execution_count"] is not None
+    assert target["outputs"], "la cellule executee doit porter ses sorties"
+
+    # Cellules non cibles (code ET markdown) : integralement identiques,
+    # metadonnees comprises -- octet pour octet au sens du contrat du tool.
+    for i in (0, 1, 3, 4):
+        assert after["cells"][i] == original["cells"][i], (
+            f"cellule non cible {i} a ete modifiee : le strip doit etre "
+            f"borne a la cellule executee")

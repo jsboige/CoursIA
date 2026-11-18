@@ -54,9 +54,9 @@ from typing import Any, Dict, List, Optional
 TWEETY_NOTEBOOKS = [
     "Tweety-01-Setup-Python.ipynb",
     "Tweety-02-Basic-Logics-Python.ipynb",
-    "Tweety-3-Advanced-Logics.ipynb",
-    "Tweety-4-Belief-Revision.ipynb",
-    "Tweety-5-Abstract-Argumentation.ipynb",
+    "Tweety-03-Advanced-Logics-Python.ipynb",
+    "Tweety-04-Belief-Revision-Python.ipynb",
+    "Tweety-05-Abstract-Argumentation-Python.ipynb",
     "Tweety-06-Structured-Argumentation-Python.ipynb",
     # Tweety-7 divided into 7a and 7b
     "Tweety-07a-Extended-Frameworks-Python.ipynb",
@@ -101,15 +101,15 @@ TWEETY_VERSIONS = {
 # Known issues per notebook (expected failures)
 # These limitations are present in Tweety 1.28, 1.29, and 1.30
 KNOWN_ISSUES = {
-    "Tweety-3-Advanced-Logics.ipynb": [
+    "Tweety-03-Advanced-Logics-Python.ipynb": [
         "SimpleMlReasoner may hang indefinitely without SPASS external prover",
         "Limitation: Install SPASS for modal logic reasoning"
     ],
-    "Tweety-4-Belief-Revision.ipynb": [
+    "Tweety-04-Belief-Revision-Python.ipynb": [
         "CrMas imports may fail - InformationObject class removed in Tweety 1.28 API refactoring",
         "Limitation: Multi-agent belief revision unavailable via JPype"
     ],
-    "Tweety-5-Abstract-Argumentation.ipynb": [
+    "Tweety-05-Abstract-Argumentation-Python.ipynb": [
         "AF Learning disabled - ClassCastException (Tautology cannot be cast to AssociativePlFormula)",
         "Limitation: Internal Tweety bug, section commented out"
     ],
@@ -386,7 +386,7 @@ def find_libs_directory(tweety_dir: Path) -> Optional[Path]:
     possible_paths = [
         tweety_dir / "libs",
         tweety_dir.parent / "libs",  # SymbolicAI/libs
-        tweety_dir.parent / "Argument_Analysis" / "libs",
+        tweety_dir.parent / "ArgumentAnalysis" / "libs",
     ]
 
     for path in possible_paths:
@@ -430,7 +430,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     if not env.jdk_installed:
         portable_paths = [
             tweety_dir / "jdk-17-portable",
-            tweety_dir.parent / "Argument_Analysis" / "jdk-17-portable",
+            tweety_dir.parent / "ArgumentAnalysis" / "jdk-17-portable",
         ]
         for portable_path in portable_paths:
             if portable_path.exists():
@@ -478,7 +478,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     if not env.clingo_installed:
         local_clingo_paths = [
             tweety_dir / "ext_tools" / "clingo" / "clingo.exe",
-            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "clingo" / "clingo.exe",
+            tweety_dir.parent / "ArgumentAnalysis" / "ext_tools" / "clingo" / "clingo.exe",
         ]
         for clingo_path in local_clingo_paths:
             if clingo_path.exists():
@@ -493,7 +493,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     else:
         local_spass_paths = [
             tweety_dir / "ext_tools" / "spass" / "SPASS.exe",
-            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "spass" / "SPASS.exe",
+            tweety_dir.parent / "ArgumentAnalysis" / "ext_tools" / "spass" / "SPASS.exe",
         ]
         for spass_path in local_spass_paths:
             if spass_path.exists():
@@ -508,7 +508,6 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     else:
         local_eprover_paths = [
             tweety_dir.parent / "ext_tools" / "EProver" / "eprover.exe",
-            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "EProver" / "eprover.exe",
         ]
         for ep_path in local_eprover_paths:
             if ep_path.exists():

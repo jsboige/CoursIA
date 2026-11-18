@@ -601,7 +601,7 @@ def test_categorize_ambiguous_only_when_neither() -> None:
 #  Proposee par po-2024, c.66 (comment #5232772579) sur 14 + 45 findings FP
 #  dans Infer-101 / Infer-2 (durees trajet velo). Falsifiable :
 #    - PyMC-2 cell[17] : 3 wallclock -> 0 (composantes, observations)
-#    - DecInfer-04 cell[18] : 2 wallclock -> 0 (Trajet: 60min -> 10min)
+#    - DecInfer-03 cell[18] : 2 wallclock -> 0 (Trajet: 60min -> 10min)
 # --------------------------------------------------------------------------- #
 def test_class5_distribution_keywords_composante_observation_trajet_ecarttype() -> None:
     """Les discriminants bayesiens sont detectes par DISTRIBUTION_KEYWORDS.
@@ -615,7 +615,7 @@ def test_class5_distribution_keywords_composante_observation_trajet_ecarttype() 
     Cas verbatim :
     - PyMC-2 cell[17] : 'La composante "normale" capture les trajets de
       11 a 20 minutes' (composantes + trajets)
-    - DecInfer-04 cell[18] : 'Trajet: 60min -> 10min' (Trajet)
+    - DecInfer-03 cell[18] : 'Trajet: 60min -> 10min' (Trajet)
     - 'observations (13, 17, 16 min)' (observations)
     - 'ecart-type 4.14 min' (ecart-type)
     """
@@ -656,7 +656,7 @@ def test_class5_pymc2_composante_routed_to_distribution() -> None:
 
 
 def test_class5_decinfer4_trajet_routed_to_distribution() -> None:
-    """Verbatim DecInfer-04 cell[18] : 'Trajet: 60min -> 10min' -> distribution_param.
+    """Verbatim DecInfer-03 cell[18] : 'Trajet: 60min -> 10min' -> distribution_param.
 
     Cas reel (#10178 Classe 5, indice 2 notebook pedagogique) : un swing
     decisionnel sur la duree de trajet n'est pas un wallclock, c'est une
@@ -679,7 +679,7 @@ def test_class5_does_not_break_sudoku13_control() -> None:
     classes wallclock.
 
     Controle synthetique sur lignes verbatim de la cellule 43 de
-    Sudoku-13-SymbolicAutomata-Csharp (banc d'essai). L'ancienne version
+    Sudoku-13-SymbolicAutomata-CSharp (banc d'essai). L'ancienne version
     scannait le notebook reel (attendu >= 25 wallclock) ; la vague #9434
     draine la serie Sudoku en continu (26 -> 0 sur ce notebook), un
     controle sur fichier reel re-casserait a chaque drain. Le sens du test
@@ -989,7 +989,7 @@ def test_empty_explicit_scan_is_error_residu3(tmp_path: Path) -> None:
 def test_silence_pacing_duration_with_lecture_qualifier() -> None:
     """Frontiere : « N min (lecture + execution) » = pacing (effort humain).
 
-    Cas reel ICT-19-EnjeuBattery cell[0] : « 45 min (lecture + execution
+    Cas reel ICT-19-EnjeuBattery-Python cell[0] : « 45 min (lecture + execution
     sequentielle) ». C'est l'estimation d'effort demande a l'etudiant, pas une
     duree machine -- meme rationale que le pacing deja exempte (arbitrage
     jsboige 14:05:37Z #9434). La duree PRECEDE la parenthese (inhabituel), ce
@@ -1011,7 +1011,7 @@ def test_silence_pacing_duration_with_lecture_qualifier() -> None:
 def test_plan_table_cost_routed_to_domain_quantity() -> None:
     """Frontiere : « N + M = K min » = cout d'action dans une table de plan.
 
-    Cas reel Planners-8-Temporal cell[37] : « | D1 | A -> B | 5 + 4 = 9 min | ».
+    Cas reel Planners-08-Temporal-Python cell[37] : « | D1 | A -> B | 5 + 4 = 9 min | ».
     Le « 9 min » est la duree DETERMINISTE d'une livraison drone (somme acces +
     vol), pas une duree machine. Routed vers domain_quantity (compte, visible),
     pas wallclock.

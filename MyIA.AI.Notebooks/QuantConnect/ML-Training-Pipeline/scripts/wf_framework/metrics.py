@@ -3,6 +3,11 @@
 Computes Sharpe, MaxDD, CAGR, HitRate, Calmar, and related statistics
 from equity curves or return series. Designed for direct consumption
 by backtest_walk_forward.py and the validation pipeline.
+
+Sharpe, drawdown and CAGR are computed by ``strategy_metrics`` (#19016), the
+pipeline's single definition. The functions below keep two conventions of their
+own, stated in their docstrings: they return 0.0 where a metric is undefined,
+and CAGR counts years in periods because an equity array carries no dates.
 """
 
 from __future__ import annotations
@@ -10,6 +15,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+
+import strategy_metrics
 
 
 @dataclass
@@ -49,42 +56,42 @@ def compute_sharpe(
     periods_per_year: int = 252,
     risk_free: float = 0.0,
 ) -> float:
-    """Annualized Sharpe ratio from return series."""
+    """Annualized Sharpe ratio from return series (``strategy_metrics.sharpe``).
+
+    Returns 0.0 when the ratio is undefined (fewer than 2 returns, or a standard
+    deviation below 1e-12); ``strategy_metrics.sharpe`` would return inf or nan.
+    """
     returns = np.asarray(returns, dtype=float)
-    if len(returns) < 2:
-        return 0.0
-
-    mean_r = np.mean(returns)
-    std_r = np.std(returns, ddof=1)
-
-    if std_r < 1e-12:
+    if len(returns) < 2 or np.std(returns, ddof=1) < 1e-12:
         return 0.0
 
     daily_rf = risk_free / periods_per_year
-    sharpe = (mean_r - daily_rf) / std_r
-
-    if annualize:
-        sharpe *= np.sqrt(periods_per_year)
-
-    return float(sharpe)
+    return float(strategy_metrics.sharpe(returns - daily_rf,
+                                         periods_per_year=periods_per_year if annualize else 1))
 
 
 def compute_max_drawdown(equity_curve: np.ndarray) -> float:
-    """Maximum drawdown from equity curve. Returns negative value."""
+    """Maximum drawdown from equity curve (``strategy_metrics.max_drawdown_of_equity``).
+
+    Returns a negative value, or 0.0 for fewer than 2 points.
+    """
     equity = np.asarray(equity_curve, dtype=float)
     if len(equity) < 2:
         return 0.0
-
-    peak = np.maximum.accumulate(equity)
-    drawdown = (equity - peak) / peak
-    return float(np.min(drawdown))
+    return strategy_metrics.max_drawdown_of_equity(equity)
 
 
 def compute_cagr(
     equity_curve: np.ndarray,
     periods_per_year: int = 252,
 ) -> float:
-    """Compound Annual Growth Rate from equity curve."""
+    """Compound Annual Growth Rate from equity curve (``strategy_metrics.cagr_of_equity``).
+
+    Years are counted in periods, ``(len(equity) - 1) / periods_per_year``: an
+    equity array carries no dates. Scripts that have dated returns count calendar
+    days / 365.25 instead (see ``strategy_metrics``). Returns 0.0 for fewer than
+    2 points or a non-positive start, and -1.0 for a non-positive end.
+    """
     equity = np.asarray(equity_curve, dtype=float)
     if len(equity) < 2 or equity[0] <= 0:
         return 0.0
@@ -95,7 +102,7 @@ def compute_cagr(
     if n_years <= 0 or total_return <= 0:
         return -1.0 if total_return < 1.0 else 0.0
 
-    return float(total_return ** (1.0 / n_years) - 1)
+    return strategy_metrics.cagr_of_equity(equity, n_years)
 
 
 def compute_hit_rate(returns: np.ndarray) -> float:

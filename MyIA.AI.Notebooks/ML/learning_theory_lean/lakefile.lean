@@ -38,14 +38,23 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Perceptron» where
-  globs := #[.submodules `Perceptron, `Perceptron_en]
+  -- `.submodules `Perceptron` ne couvre que Perceptron.*, pas le module
+  -- racine `Perceptron.lean` : sans le glob nu, `lake build` ne produit jamais
+  -- Perceptron.olean. Le gate d'axiomes (#22519, `target-modules: "*"`)
+  -- enumere tout `*.lean` du projet et echoue faute d'olean a inspecter.
+  -- Meme lecon que `GradientFlow` plus bas, ou le glob nu est deja pose.
+  globs := #[.submodules `Perceptron, `Perceptron, `Perceptron_en]
 
 /-- Module `PacLearning` — théorie PAC (Valiant 1984), sample complexity classe finie.
 Frère de `Perceptron` dans le lake ML généraliste `learning_theory_lean` (cf
 `decision_theory_lean` qui mutualise Gittins + Utility + Coherence). Voir #4293. -/
 @[default_target]
 lean_lib «PacLearning» where
-  globs := #[.submodules `PacLearning, `PacLearning_en]
+  -- Meme lecon que `Perceptron` ci-dessus et `GradientFlow` plus bas :
+  -- `.submodules` ne couvre pas le module racine, donc sans le glob nu
+  -- PacLearning.olean n'existe pas et le gate d'axiomes (#22519) n'a rien
+  -- a inspecter pour ce module.
+  globs := #[.submodules `PacLearning, `PacLearning, `PacLearning_en]
 
 /-- Module `GradientFlow` — digestion #13106 (forme formalisation) :
 évanouissement du gradient `c ^ n` dans une pile plain vs survie `(1-c) ^ n`
@@ -71,3 +80,51 @@ et `GradientFlow`. -/
 @[default_target]
 lean_lib «EffectiveTheory» where
   globs := #[.submodules `EffectiveTheory, `EffectiveTheory]
+
+/-- Module `MathUniverse` — digestion #16741/arc B (issue #16753) : Annexe A de
+R16 (*The Mathematical Universe*, Tegmark) — structures mathématiques finies
+(signature + relations décidables), Aut(S) comme groupe, décidabilité de
+l'équivalence de deux définitions finies (« simple algorithme haltant » rendu
+comme instance `Decidable`), et les exemples §A.2 : C₂, C₃, algèbre de Boole à
+deux éléments (A1) et sa génération par NAND seul (A2). Frère de
+`Perceptron`, `PacLearning`, `GradientFlow` et `EffectiveTheory`. -/
+@[default_target]
+lean_lib «MathUniverse» where
+  /- Pas de `.submodules` : MathUniverse est un module plat (deux fichiers
+  racine, aucune arborescence `MathUniverse/`). Un glob `.submodules` sur un
+  module sans repertoire fait echouer la resolution de la cible bibliotheque
+  (`no such file or directory: .../MathUniverse`). -/
+  globs := #[`MathUniverse, `MathUniverse_en]
+
+/-- Module `Renaming` — tranche 2 de l'issue #16753 : l'équivalence de
+structures sous renommage (R16 §III « baggage »), suite de `MathUniverse` —
+EquivStruct est une équivalence à travers les types porteurs, invariants de
+cardinalité et de taille des tableaux (`relFinset`), énumération des
+permutations (`m!` vs `m^m`, `equivStruct_iff_perm`), torseur des renommages
+sous Aut(S) et transport par conjugaison — corollaire `aut_trivial_of_equiv_bool8`
+(pont vers `EffectiveTheory.InfoBits`). -/
+@[default_target]
+lean_lib «Renaming» where
+  /- Module plat, meme forme que MathUniverse : pas d'arborescence
+  `Renaming/`. -/
+  globs := #[`Renaming, `Renaming_en]
+/-- Module `Generators` — suite de #16753 : réifie le critère « générateurs
++ composition » que `MathUniverse` laissait en exhibition concrète — syntaxe
+de termes `Term ν` sur un générateur binaire, évaluation `Term.eval`,
+prédicat `Generates`, l'équation (A2) comme DONNÉE (les huit termes
+`termA2`), et le pont prouvé vers les tables de `bool8`/`nand8`
+(`relA1_iff_generated`, `relA2_iff_generated`, `relA1_iff_relA2`). Frère
+cadet de `MathUniverse` dans le lake ML généraliste. -/
+@[default_target]
+lean_lib «Generators» where
+  /- Module plat, même leçon que MathUniverse : pas de `.submodules`. -/
+  globs := #[`Generators, `Generators_en]
+
+/-- Module `MutualGen` — digestion #16741/arc B (issue #16753, tranche 4) :
+génération mutuelle générale de l'Annexe A de R16 — termes sur signature
+quelconque (le tuple d'arité quelconque, multi-générateurs) et le théorème
+« se générer l'un l'autre ⇒ mêmes fonctions engendrées » (`mutual_gen_iff`).
+Frère de `MathUniverse` dans le lake. -/
+@[default_target]
+lean_lib «MutualGen» where
+  globs := #[`MutualGen, `MutualGen_en]

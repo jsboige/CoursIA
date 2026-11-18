@@ -123,6 +123,15 @@ layout: cover
 
 <img src="./images/img_003.png" alt="Chronologie de l'IA des années 1990 aux années 2010 : agents, data mining, deep learning" style="display:block; margin:10px auto; max-width:100%;">
 
+<style scoped>
+/* Quatorze puces puis une figure pleine largeur : la derniere puce « 2010s »
+   s'ecrivait sur le pied de page et la ligne suivante sortait du canvas.
+   Mesure `scan_slidev_overflow --threshold 0.0005 --rows 10` : ink 0.0090. */
+:deep(ul) { font-size: 0.72em !important; }
+:deep(li) { margin: 0 !important; line-height: 1.12 !important; }
+img { max-height: 110px !important; }
+</style>
+
 
 ---
 
@@ -210,6 +219,15 @@ layout: cover
 <img src="./images/img_008.png" height="150" alt="Automates">
 <img src="./images/img_009.jpg" height="150" alt="Algorithmes">
 </div>
+
+<style scoped>
+/* La classe `image-row` n'a aucun style dans ce deck : les trois figures
+   s'empilaient, chacune en pleine largeur, et des la deuxieme le bas du canvas
+   etait franchi. L'attribut HTML `height="150"` est ecrase par le CSS de l'image
+   qui impose la largeur. Mesure : ink 0.1020. */
+:deep(.image-row) { display: flex !important; gap: 10px !important; align-items: flex-start !important; justify-content: center !important; }
+:deep(.image-row img) { height: 150px !important; width: auto !important; max-width: 32% !important; object-fit: contain !important; }
+</style>
 
 
 ---
@@ -497,7 +515,21 @@ layout: two-cols
 - Si + de cannibales que de missionnaires d'un côté ou l'autre
   - ils se font manger
 
-![w:500 center](./images/img_024.png)
+![Illustration du probleme des missionnaires et des cannibales](./images/img_024.png)
+
+<style scoped>
+/* Le theme plafonne toute image de paragraphe a 65vh (702 px sur un canvas de
+   1080) : le titre, quatre lignes de puces et cette figure ne tiennent pas
+   ensemble, et le
+   bas de l'illustration sortait du canvas. Mesure : ink 0.6790.
+   L'image n'est atteignable par AUCUN selecteur de ce bloc (ni `img`, ni
+   `:deep(img)`, ni une classe porteuse, ni l'attribut `width`, ni un style
+   inline : cinq iterations, encre inchangee). Le levier qui reste est donc le
+   bloc de puces, qui lui repond : on lui rend la hauteur dont la figure a
+   besoin. */
+:deep(li) { font-size: 0.8em !important; margin: 0 !important; line-height: 1.2 !important; }
+:deep(ul) { margin-bottom: 0 !important; }
+</style>
 
 
 ---
@@ -674,6 +706,13 @@ layout: two-cols
 <img src="./images/img_034.png" width="380">
 <img src="./images/img_035.png" width="380">
 
+<style scoped>
+/* Quatre figures empilees a 380 px dans la colonne de droite : la troisieme
+   rangee de la sequence sortait sous le canvas. Mesure : ink 0.0070.
+   `max-height` par figure, la largeur suit le rapport d'aspect. */
+img { max-height: 125px !important; width: auto !important; }
+</style>
+
 
 
 ---
@@ -781,6 +820,12 @@ layout: two-cols
 <img src="./images/img_042.png" width="380">
 <img src="./images/img_043.png" width="380">
 
+<style scoped>
+/* Trois figures empilees a 380 px : les diagrammes de Venn de la derniere
+   rangee sortaient du canvas. Mesure : ink 0.1870. */
+img { max-height: 170px !important; width: auto !important; }
+</style>
+
 
 
 ---
@@ -886,6 +931,12 @@ layout: two-cols
 <img src="./images/img_044.png" width="380">
 <img src="./images/img_045.png" width="380">
 <img src="./images/img_046.png" width="380">
+
+<style scoped>
+/* Trois figures empilees a 380 px sous douze puces : la seconde table
+   (coordonnees de la grille Wumpus) sortait sous le canvas. Mesure : ink 0.0330. */
+img { max-height: 170px !important; width: auto !important; }
+</style>
 
 
 
@@ -1072,6 +1123,13 @@ layout: two-cols
 
 <img src="./images/img_054.png" width="200" alt="Smart contracts">
 
+<style scoped>
+/* La colonne de gauche enchaine deux sections de puces et deux figures
+   intercalees : la pile de couches « Trust / Proof / Logic / … » sortait sous le
+   canvas, sa derniere ligne etant deja sur le pied de page. Mesure : ink 0.2110. */
+img { max-height: 150px !important; width: auto !important; }
+</style>
+
 
 
 ---
@@ -1093,7 +1151,7 @@ layout: section
 - **Algorithmes génétiques** : `Sudoku/Sudoku-02-Genetic.ipynb`
   - `Search/Portfolio_Optimization_GeneticSharp.ipynb`
 - **Z3 / SMT** : `Sudoku/Sudoku-04-Z3.ipynb`
-- **Logique formelle** : `SymbolicAI/Lean/` (10 notebooks)
+- **Logique formelle** : `SymbolicAI/Lean/`
 - **CSP** : `Search/CSPs_Intro.ipynb`, `Sudoku/Sudoku-03-ORTools.ipynb`
 
 

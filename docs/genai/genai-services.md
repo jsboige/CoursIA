@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-31
+
 # GenAI Services - ComfyUI Image Generation
 
 ## Services disponibles
@@ -303,12 +305,59 @@ BATCH_MODE=false
 | vllm-zimage | po-2023 | Z-Image-Turbo | bfloat16 (fp8 opt via `VLLM_QUANTIZATION=fp8`) | ~5-10 GB |
 | sd-forge-main | po-2023 | SD Forge SDXL | xformers fp16 | ~6-10 GB |
 | forge-turbo | po-2023 | SD Forge Turbo | xformers fp16 | ~6-10 GB |
-| tts-fishaudio | po-2023 | FishAudio S2-Pro | BnB 4-bit NF4 | ~5 GB |
+| tts-fishaudio | po-2023 | FishAudio S2-Pro | fp16 (`--half`) — 20,3 Go de VRAM mesurés ; NF4 : 5,00 Go de **fichiers** via le fork, VRAM non mesurée (voir README du service) | ~20 GB |
 | tts-kokoro | po-2023 | Kokoro TTS | fp32/fp16 default | ~1-2 GB |
 | musicgen-api | po-2023 | MusicGen-medium | fp16 | ~10 GB |
 | qwen-asr-api | po-2023 | Qwen3-ASR-1.7B | bfloat16 | ~3-4 GB |
 | comfyui-video | po-2023 | HunyuanVideoWrapper | fp16 | varies |
 | whisper-webui | po-2023 | Whisper WebUI | unknown | varies |
+
+### Quantification — mesures du 2026-10-29
+
+Relevé de départ de la RTX 3090 de `po-2023` (24 576 MiB) : **23 419 MiB occupés**, avec `vllm-zimage` en fp8, `tts-fishaudio` en fp16 (`--half`), la pile `tts-multi`, Whisper et un serveur d'embeddings. Chaque ligne du tableau ci-dessus est donc une question de quantification, pas une fatalité.
+
+Dérivés quantifiés mesurés pour `fishaudio/s2-pro` (tailles réelles fichier par fichier, `api/models/<repo>?blobs=true`) :
+
+| Dérivé | Total | Remarque |
+|---|---|---|
+| `groxaxo/s2-pro-BnB-4Bits` | **5,00 Go** | NF4 — **exige le fork** `groxaxo/fish-speech-int4-patch` |
+| `scarxity/fish-speech-s2-pro-nf4` | 5,00 Go | NF4 |
+| `baicai1145/s2-pro-w4a16` | 6,13 Go | safetensors |
+| `drbaph/s2-pro-fp8` | 8,05 Go | fp8 |
+
+Écart de référence — **attention, deux grandeurs de nature différente** : le fp16 occupe **20,3 Go de VRAM résidente** au warm-up (mesure du 2026-10-06), tandis que les **5,00 Go du NF4 sont une taille de fichiers** (somme des blobs du dépôt, `?blobs=true`), **pas une mémoire d'exécution**. Le « facteur 4 » est donc un rapport **poids-sur-VRAM contre poids-sur-disque**, pas un rapport VRAM/VRAM : la **VRAM résidente du NF4 n'est mesurée nulle part**, et la model card vise elle-même « 12 GB+ VRAM » pour ce dérivé. Ce qui est établi : le **poids téléchargé** tombe de 20,3 Go à 5,00 Go, et la cible de la model card rend l'hébergement en NF4 envisageable sur une carte de 12 Go et plus — à confirmer par un warm-up NF4 mesuré, qui n'est pas fait à ce jour. Le piège vérifié (ajouter `bitsandbytes` et `accelerate` ne suffit pas : le loader officiel ne lit pas un state dict préquantifié) est détaillé dans [`docker-configurations/services/tts-fishaudio/README.md`](../../docker-configurations/services/tts-fishaudio/README.md).
+
+### Politique d'hébergement — le plus petit quant, et le sleep
+
+Un service s'héberge dans la **plus petite quantification qui tient** ; fp16/bf16 est un dernier recours documenté, jamais le point de départ. Un modèle chargé qui ne sert pas consomme la ressource qu'il prétend économiser : le régime attendu est **chargement à la demande, endormissement ensuite**. Le geste de vérification est `python scripts/genai-stack/genai.py quant summary`, qui confronte la quantification configurée à celle que le service charge réellement.
+
+#### Chercher le quant communautaire avant de conclure qu'un modèle ne rentre pas
+
+L'absence de flag `--quantization` dans une image ne dit rien de ce que la communauté a publié : c'est une limite d'outillage, pas une impossibilité du modèle.
+
+```bash
+# dérivés quantifiés d'un modèle donné
+curl -s "https://huggingface.co/api/models?other=base_model:quantized:<org>/<model>&limit=50"
+# recherche large, puis filtrer int4|int8|awq|gptq|gguf|nf4|w4a16|fp8|bnb
+curl -s "https://huggingface.co/api/models?search=<model>&limit=60"
+# tailles réelles, fichier par fichier — le nom du repo n'est pas une mesure
+curl -s "https://huggingface.co/api/models/<repo>?blobs=true"
+```
+
+- Mesurer la **taille totale** (`siblings[].size`) et retenir le plus petit dérivé qui fait le travail.
+- **Écarter les dérivés MLX** (Apple) : nos machines sont NVIDIA.
+- Distinguer un `.pth`/`.safetensors` BnB d'un **GGUF** (runtime llama.cpp) : deux chemins d'exécution différents.
+- Un checkpoint quantifié peut exiger une dépendance absente de l'image : c'est **une couche à ajouter**, pas un moteur à reconstruire — `docker run --rm --entrypoint /app/.venv/bin/python <image> -c "import bitsandbytes"`.
+
+#### Le piège du loader : un state dict préquantifié n'est pas lu par le loader officiel
+
+Ajouter `bitsandbytes` et `accelerate` ne suffit pas. Sur `fishaudio/s2-pro`, charger le dérivé NF4 avec le loader upstream échoue : le loader reconstruit les poids depuis la configuration d'origine et ignore les tenseurs préquantifiés. Le chemin qui fonctionne est celui du **fork** qui accompagne le dérivé (`groxaxo/fish-speech-int4-patch` pour `groxaxo/s2-pro-BnB-4Bits`). Détail vérifié : [`docker-configurations/services/tts-fishaudio/README.md`](../../docker-configurations/services/tts-fishaudio/README.md).
+
+#### vLLM — trois précautions, pas une
+
+1. **Les endpoints n'existent qu'en mode dev.** `POST /sleep` et `/wake_up` ne sont servis qu'avec `VLLM_SERVER_DEV_MODE=1`, que la [doc vLLM](https://docs.vllm.ai/en/latest/features/sleep_mode.html) qualifie d'endpoints à ne pas exposer aux utilisateurs. Nos services sont publiés derrière des URLs `*.myia.io` : ils se pilotent **derrière le proxy**, jamais exposés.
+2. **Le niveau décide de ce qu'on libère.** **Niveau 1** décharge les poids **en RAM CPU** (la doc demande « enough CPU memory ») ; **niveau 2** les jette.
+3. **Le critère de choix est la RAM hôte, pas la VRAM.** Un sommeil de niveau 1 sur une machine dont la mémoire est déjà tendue **déplace la pression au lieu de la libérer** : il rend la carte et dépose le modèle dans la RAM que les runners ou le moteur voisin réclament.
 
 ### Idle Management
 

@@ -295,21 +295,21 @@ Authorization: Bearer $2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5
 
 #### 1. Scripts GenAI-Auth Consolidés
 **`scripts/genai-auth/core/`** - Scripts principaux
-- `setup_complete_qwen.py` : Wrapper d'installation complète (527 lignes)
+- `setup_complete_qwen.py` : Wrapper d'installation complète
 - `validate_genai_ecosystem.py` : Validation complète écosystème
 - `diagnose_comfyui_auth.py` : Diagnostic authentification
 - `install_comfyui_login.py` : Installation ComfyUI-Login
 
 **`scripts/genai-auth/utils/`** - Utilitaires spécialisés
-- `token_synchronizer.py` : Synchroniseur unifié de tokens (608 lignes)
-- `comfyui_client_helper.py` : Client HTTP ComfyUI complet (1305 lignes)
-- `workflow_utils.py` : Manipulation de workflows (489 lignes)
-- `diagnostic_utils.py` : Utilitaires de diagnostic (426 lignes)
+- `token_synchronizer.py` : Synchroniseur unifié de tokens
+- `comfyui_client_helper.py` : Client HTTP ComfyUI complet
+- `workflow_utils.py` : Manipulation de workflows
+- `diagnostic_utils.py` : Utilitaires de diagnostic
 
 #### 2. Docker Configurations Organisées
 **`docker-configurations/services/comfyui-qwen/`** - Configuration principale
 - `docker-compose.yml` : Service ComfyUI + Qwen avec GPU
-- `.env` : Variables d'environnement unifiées (99 lignes)
+- `.env` : Variables d'environnement unifiées
 - `workspace/` : Volume persistant pour ComfyUI
 - `README.md` : Documentation complète d'utilisation
 
@@ -425,9 +425,9 @@ Authorization: Bearer $2b$12$2jPJrb7dmsM7fw0..PoEqu8nmGarw0vnYYdGw5BFmcZ52bGfwf5
 ## 📚 Documentation Complète
 
 ### 1. Documentation Technique
-- **Scripts GenAI-Auth** : `scripts/genai-auth/README.md` (376 lignes)
-- **Docker Configurations** : `docker-configurations/README.md` (170 lignes)
-- **Rapport Unification** : `RAPPORT-RESOLUTION-UNIFICATION-TOKENS-COMFYUI-20251125.md` (201 lignes)
+- **Scripts GenAI-Auth** : `scripts/genai-auth/README.md`
+- **Docker Configurations** : `docker-configurations/README.md`
+- **Rapport Unification** : `RAPPORT-RESOLUTION-UNIFICATION-TOKENS-COMFYUI-20251125.md`
 
 ### 2. Guides d'Utilisation
 - **Installation complète** : Instructions étape par étape

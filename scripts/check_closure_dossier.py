@@ -52,6 +52,15 @@ pour valider post-hoc un temoin historique deja FERME) :
                          existe et est OUVERTE.
   6. lecture complete -- ``comments-reviewed`` egale le nombre de
                          commentaires anterieurs au dossier.
+  7. crible amont     -- (#23815 point 2) un CLOSE sur une issue que le
+                         crible ``verifier_cleanup`` classe
+                         ``PARTIAL_TRANCHE`` (marqueur partiel seul :
+                         ``See``/``Part of`` = tranche livree, pas la
+                         livraison complete) est refuse -- lecture
+                         IN_FLIGHT-like, coherente avec git-workflow.md.
+                         ``residue: waiver: <motif>`` leve la garde :
+                         l'arbitrage passe alors dans le dossier, lu par
+                         ai-01.
 
 Usage::
 
@@ -77,13 +86,18 @@ from os.path import dirname, abspath
 from typing import Any
 
 try:
-    from check_adjoint_prevalidation import QUALIFYING_LANES, GRAIN_LANE_RE
+    import gh_identity
+    from check_adjoint_prevalidation import QUALIFYING_LANES, GRAIN_LANE_RE, LANE_TOKEN
+    from verifier_cleanup import classify_one
 except ImportError:  # charge depuis scripts/ en invocation directe
     sys.path.insert(0, dirname(abspath(__file__)))
+    import gh_identity  # type: ignore[no-redef]
     from check_adjoint_prevalidation import (  # type: ignore[no-redef]
         QUALIFYING_LANES,
         GRAIN_LANE_RE,
+        LANE_TOKEN,
     )
+    from verifier_cleanup import classify_one  # type: ignore[no-redef]
 
 REPO = "jsboige/CoursIA"
 LABEL = "candidate-delivered"
@@ -119,9 +133,13 @@ _RESIDUE_NONE_RE = re.compile(r"^none$")
 _RESIDUE_FOLLOWUP_RE = re.compile(r"^followup\s+#(\d+)$")
 _RESIDUE_WAIVER_RE = re.compile(r"^waiver:\s+\S.+")
 
-#: ``[DELIVERED] lane <machine:workspace> ...`` -- protocole lane-claim.
+#: ``[DELIVERED] lane <machine:workspace> ...`` -- protocole lane-claim. Le
+#: token reprend ``LANE_TOKEN`` (voir check_adjoint_prevalidation) : un point
+#: final de phrase n'entre plus dans la lane capturee (#15864, mesure #14549) --
+#: sinon une lane marquee uniquement sous forme ponctuee echappe a
+#: ``delivering_lanes`` et son dossier d'auto-attestation passe le gate.
 _DELIVERED_LANE_RE = re.compile(
-    r"\[DELIVERED\][^\n]*?\blane\s+([A-Za-z0-9_.-]+:[A-Za-z0-9_.-]+)"
+    r"\[DELIVERED\][^\n]*?\blane\s+(" + LANE_TOKEN + r")"
 )
 
 #: Un item d'acceptance : ``<critere> -> <preuve>``.
@@ -140,6 +158,14 @@ _NEUTRAL_PREFIXES = (
     "<!-- variation-genre-signals -->",
     "<!-- gvar2-light-cap -->",
     "<!-- trivial-diff-15740 -->",
+    # #15511 : le commentaire collant unique des advisory (une section par
+    # organe) -- reecrit en place a chaque run, donc neutre pour la
+    # posteriorite d'un dossier.
+    "<!-- coursia:advisory-sticky -->",
+    # #15511 : le commentaire RENVOI d'un doublon fusionne (marqueur
+    # principal retire, contenu porte par le canonique) -- jamais supprime,
+    # donc lui aussi neutre pour la posteriorite d'un dossier.
+    "<!-- coursia:advisory-sticky:forwarded -->",
 )
 
 
@@ -241,13 +267,19 @@ def _merged_referring_prs(repo: str, number: int) -> list[dict[str, Any]]:
         # sinon gh rend "Could not resolve to a PullRequest" et l'organe crashe
         # (mesure 2026-09-28, blocage Lot D #18140 sur #17301).
         src_repo = ((src.get("repository") or {}).get("full_name")) or repo
-        # Pas de --jq : gh l'ecrit en TEXTE BRUT, que json.loads refuse
-        # (defaut mesure c.5849452860 -- tout temoin rendait UNKNOWN rc=2).
-        row = gh_json([
-            "pr", "view", str(src["number"]), "--repo", src_repo,
-            "--json", "body",
-        ])
-        body = row.get("body") if isinstance(row, dict) else None
+        # Body preferentiellement lu depuis la timeline (source.issue.body),
+        # ce qui economise un appel `gh pr view` par PR mergee referencee.
+        # Mesure #15578 : 555 references = 4 min de latence eliminees.
+        # Fallback `gh pr view` si le champ body est absent de la timeline
+        # (defense en profondeur : payload timeline peut etre tronque sur PRs
+        # tres anciennes ou via depot soeur).
+        body = src.get("body")
+        if body is None:
+            row = gh_json([
+                "pr", "view", str(src["number"]), "--repo", src_repo,
+                "--json", "body",
+            ])
+            body = row.get("body") if isinstance(row, dict) else None
         out.append({"number": src["number"], "merged_at": pr["merged_at"],
                     "repo": src_repo,
                     "body": str(body) if body else ""})
@@ -262,22 +294,60 @@ def _open_pr_refs(repo: str, number: int) -> list[int]:
     return [int(item["number"]) for item in out if item.get("number")]
 
 
+def _issue_comments(repo: str, number: int) -> list[dict[str, Any]]:
+    """Commentaires de l'issue, avec un auteur NORMALISE (#21818).
+
+    La lecture se fait en REST (`user`), pas via `gh issue view --json
+    comments` (GraphQL) : GraphQL rend le login d'un acteur de type `Bot`
+    SANS le suffixe `[bot]` (`"github-actions"`), REST le rend AVEC
+    (`"github-actions[bot]"`) et fournit en plus le type de l'acteur
+    (`user.type`). `ACCEPTED_DOSSIER_AUTHORS` est ecrit en orthographe REST :
+    sans cette normalisation, une App de lane signe un dossier que le gate
+    refuse -- symptome mesure : "comment author 'coursia-lane-po-2026' is not
+    an accepted dossier author" (issue #21818).
+
+    La normalisation passe par `gh_identity.normalize_author_login` : c'est le
+    point de passage UNIQUE, partage avec le gate de prevalidation adjointe.
+    """
+    rows = gh_json([
+        "api", f"repos/{repo}/issues/{number}/comments", "--paginate",
+    ]) or []
+    out = []
+    for row in rows:
+        user = row.get("user") or {}
+        out.append({
+            "author": {
+                "login": gh_identity.normalize_author_login(user),
+                "type": user.get("type") or "",
+            },
+            "created_at": row.get("created_at") or "",
+            "body": row.get("body") or "",
+        })
+    return out
+
+
 def load_snapshot(repo: str, number: int) -> dict[str, Any]:
     """Tout ce que le gate lit sur une issue, en un endroit."""
     issue = gh_json([
         "issue", "view", str(number), "--repo", repo,
-        "--json", "number,title,state,labels,comments,createdAt,closedAt",
+        "--json", "number,title,state,labels,createdAt,closedAt",
     ])
     if not isinstance(issue, dict) or "number" not in issue:
         raise RuntimeError(f"issue #{number} introuvable")
-    comments = [
-        {
-            "author": c.get("author") or {},
-            "created_at": c.get("createdAt") or "",
-            "body": c.get("body") or "",
-        }
-        for c in (issue.get("comments") or [])
-    ]
+    comments = _issue_comments(repo, number)
+    # #23815 point 2 : le gate consomme le verdict du crible amont. Calcule
+    # ICI, une fois, avec le reste de la lecture. strict_gh=True : une panne
+    # gh des lecteurs du crible leve GhUnavailableError (RuntimeError), que
+    # le sweep traduit en UNKNOWN rc 2 (fail-closed) -- une lecture cassee
+    # ne se lit JAMAIS comme « pas de dossier » ni comme un verdict degrades
+    # (falsification mesuree par la review Hermes du 11/11 : un body de PR
+    # illisible rendait un dossier CLOSE legitime REFUSED).
+    crible = classify_one(repo, {
+        "number": int(issue["number"]),
+        "title": issue.get("title") or "",
+        "labels": [{"name": lab.get("name") or ""}
+                   for lab in (issue.get("labels") or [])],
+    }, strict_gh=True)
     return {
         "repo": repo,
         "number": int(issue["number"]),
@@ -289,6 +359,8 @@ def load_snapshot(repo: str, number: int) -> dict[str, Any]:
         "comments": comments,
         "merged_prs": _merged_referring_prs(repo, number),
         "open_prs": _open_pr_refs(repo, number),
+        "crible_verdict": crible.get("verdict") or "",
+        "crible_reason": crible.get("reason") or "",
     }
 
 
@@ -326,8 +398,16 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
 
     if f.get("schema") != "1":
         errors.append("schema must be '1'")
-    if dossier.author != SHARED_GITHUB_LOGIN:
-        errors.append(f"comment author must be {SHARED_GITHUB_LOGIN!r}")
+    # #17437: same accepted-author set as the adjoint gate, read from the
+    # identity organ -- a lane posting its closure dossier under its GitHub App
+    # identity must not be refused here after being accepted there.
+    if dossier.author not in gh_identity.ACCEPTED_DOSSIER_AUTHORS:
+        errors.append(
+            f"comment author {dossier.author!r} is not an accepted dossier author "
+            f"(expected {SHARED_GITHUB_LOGIN!r} or a fleet App identity "
+            f"{gh_identity.APP_LOGIN_PREFIX}<lane>[bot] with <lane> in "
+            f"{', '.join(gh_identity.APP_DOSSIER_LANES)})"
+        )
     if snapshot.get("state") != "OPEN" and not replay:
         errors.append(f"issue state must be OPEN, live={snapshot.get('state')}")
 
@@ -402,6 +482,20 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
                 f"residue followup #{followup_m.group(1)} is "
                 f"{child['state']} -- a closed child does not keep the parent open"
             )
+
+    # #23815 point 2 : controle 7 -- un CLOSE sur une issue PARTIAL_TRANCHE
+    # est refuse (marqueur partiel = tranche livree, la suite est attendue).
+    # La cle vient du contrat load_snapshot ; un KEEP reste toujours recevable
+    # (attester qu'une issue partiellement livree reste ouverte est correct).
+    if (verdict == VERDICT_CLOSE
+            and snapshot.get("crible_verdict") == "PARTIAL_TRANCHE"
+            and not _RESIDUE_WAIVER_RE.match(residue)):
+        errors.append(
+            "partial delivery: upstream crible verdict PARTIAL_TRANCHE ("
+            + (snapshot.get("crible_reason") or "")[:90]
+            + ") -- the merged marker is a tranche (See/Part of), not a "
+            "closing one; CLOSE requires 'residue: waiver: <motif>'"
+        )
 
     # PRs citees dans les preuves : toutes MERGED. Le raccourci ne couvre que
     # les PRs du MEME depot : un #N nu dans le dossier designe une PR du depot
@@ -487,8 +581,15 @@ def render_template(snapshot: dict[str, Any], lane: str) -> str:
         ("open-prs", str(len(snapshot["open_prs"]))),
         ("comments-reviewed", str(n_comments)),
     )
-    lines = [START, *(f"{key}: {value}" for key, value in fields)]
-    lines.append("  - REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>")
+    lines = [START]
+    for key, value in fields:
+        lines.append(f"{key}: {value}".rstrip())
+        if key == "acceptance":
+            # Les items vivent SOUS `acceptance:` : poses apres
+            # `comments-reviewed`, ils sont lus comme lignes malformees et le
+            # dossier rempli tel quel est refuse (mesure sur #18480).
+            lines.append(
+                "  - REPLACE_WITH <critère du body> -> <PR#/commit/fichier:ligne>")
     lines.append(END)
     return "\n".join(lines)
 

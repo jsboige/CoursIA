@@ -1,5 +1,7 @@
 # Prévalidation — pourquoi l'ordre compte, et ce que la tête vient périmer (#16878)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Détail déporté de la puce « `update-branch` tue AUSSI le dossier de prévalidation » de [`git-workflow.md`](../../.claude/rules/git-workflow.md). Le sujet : **le dossier de prévalidation atteste une tête, pas une PR** — et l'ordre des gestes qui en découle.
 
 **La règle fait foi** pour l'ordre et le gel ; ce document ne les rejoue pas, il donne le **pourquoi** (le mécanisme vérifié à la source, la boucle réelle, et les deux prémisses de l'issue fondatrice qui étaient fausses).
@@ -20,7 +22,7 @@ Distinction à tenir : le **fait** « 17/17, aucun défaut de PR » est un témo
 
 `scripts/check_adjoint_prevalidation.py` épingle dans le dossier des **surfaces mesurées à l'instant T**, puis refuse si elles ont bougé.
 
-Surfaces comparées — `diff-files`, `diff-additions`, `diff-deletions` :
+Surfaces comparées — `diff-files`, `diff-additions`, `diff-deletions` — plus l'empreinte `surfaces-sha256` des corps de discussion, qui atteste que les surfaces lues par B.0 n'ont pas bougé :
 
 ```python
 # validate_dossier() : surfaces comptees relevees a l'instant T

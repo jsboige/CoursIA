@@ -1,5 +1,6 @@
 # region imports
 from AlgorithmImports import *
+from datetime import datetime
 # endregion
 
 class MLXGBoostAlgorithm(QCAlgorithm):
@@ -17,11 +18,36 @@ class MLXGBoostAlgorithm(QCAlgorithm):
 
     Results v1 (2020-2026): Sharpe 0.195
     Results v2 (2015-2026): Sharpe 0.566, CAGR 14.8%, MaxDD 38.6%
+
+    Backtest : 2015-01-01 -> 2024-12-31 par defaut (parametres start_date / end_date, %Y%m%d).
+
+    Parametre mode (#21894) :
+    - strategy (defaut) : la strategie ci-dessus ;
+    - spy : SPY detenu ;
+    - 6040 : SPY 60 %, BND 40 % ;
+    - ew15 : les quinze titres de l'univers, un quinzieme chacun.
+    Les trois references se reequilibrent au debut de chaque mois, une minute apres
+    l'ouverture ; dans ces trois modes, weekly_action() sort aussitot, et un prechauffage
+    de 60 seances donne un prix a chaque titre avant le premier achat. BND n'est abonne
+    qu'en mode 6040. Le mode strategy n'a pas de prechauffage, comme le code d'origine.
+    Trace journaliere "shadow" (e0..e4, #18923) : valeur du portefeuille a l'ouverture
+    de chaque seance de SPY.
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew15"):
+            raise ValueError(f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | ew15)")
+        start_date_param = self._parse_date_param("start_date")
+        end_date_param = self._parse_date_param("end_date")
+        if start_date_param is not None:
+            self.set_start_date(start_date_param)
+        else:
+            self.set_start_date(2015, 1, 1)
+        if end_date_param is not None:
+            self.set_end_date(end_date_param)
+        else:
+            self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
@@ -36,7 +62,7 @@ class MLXGBoostAlgorithm(QCAlgorithm):
             self.symbols[ticker] = self.add_equity(ticker, Resolution.DAILY).symbol
 
         # Add SPY for scheduling
-        self.add_equity("SPY", Resolution.DAILY)
+        self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
 
         # XGBoost parameters
         self.lookback = 90
@@ -62,6 +88,47 @@ class MLXGBoostAlgorithm(QCAlgorithm):
         self.scaler = None
         self.feature_names = None
         self.selected_tickers = []
+
+        # Mesure #21894 : references detenues et trace journaliere, hors decision de la strategie
+        self._bnd = (self.add_equity("BND", Resolution.DAILY).symbol
+                     if self._mode == "6040" else None)
+        if self._mode != "strategy":
+            self.set_warm_up(60, Resolution.DAILY)
+            self.schedule.on(
+                self.date_rules.month_start("SPY"),
+                self.time_rules.after_market_open("SPY", 1),
+                self._rebalance_reference
+            )
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day("SPY"),
+            self.time_rules.after_market_open("SPY", 0),
+            self._trace
+        )
+
+    def _parse_date_param(self, name):
+        raw = self.get_parameter(name)
+        if raw is None or str(raw).strip() == "":
+            return None
+        return datetime.strptime(str(raw).strip(), "%Y%m%d")
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            targets = [PortfolioTarget(self._spy, 1.0)]
+        elif self._mode == "6040":
+            targets = [PortfolioTarget(self._spy, 0.6), PortfolioTarget(self._bnd, 0.4)]
+        else:
+            weight = 1.0 / len(self.tickers)
+            targets = [PortfolioTarget(self.symbols[t], weight) for t in self.tickers]
+        self.set_holdings(targets)
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
 
     def calculate_features(self, history, ticker):
         """Calculate comprehensive features for XGBoost."""
@@ -173,11 +240,16 @@ class MLXGBoostAlgorithm(QCAlgorithm):
 
         for ticker in self.tickers:
             try:
-                history = self.history(self.symbols[ticker], self.lookback, Resolution.DAILY)
+                # Fenetre double (#20286) : sur une demi-seance, history() rend
+                # moins de barres que demandees et le ticker saute de
+                # l'entrainement. On demande le double puis on re-slice sur la
+                # fenetre d'origine : memes features, meme cible.
+                history = self.history(self.symbols[ticker], 2 * self.lookback, Resolution.DAILY)
 
                 if history.empty or len(history) < self.lookback:
                     continue
 
+                history = history.iloc[-self.lookback:]
                 features = self.calculate_features(history, ticker)
                 closes = history['close']
 
@@ -248,6 +320,8 @@ class MLXGBoostAlgorithm(QCAlgorithm):
 
     def weekly_action(self):
         """Alternate between training and trading on successive Mondays."""
+        if self._mode != "strategy":
+            return
         self.monday_count += 1
 
         if self.monday_count % 2 == 1:

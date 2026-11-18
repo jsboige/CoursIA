@@ -258,6 +258,12 @@ def test_15837_residu_assume_narration_levee_avant_merge():
     assert mod.has_live_marker(mod._strip_quoted(body), mod.CONCERN_MARKERS) is True
 
 
+def test_15837_residu_assume_narration_levee_avant_merge_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
+    body = "La reserve est levee [BEFORE-MERGE]."
+    assert mod.has_live_marker(mod._strip_quoted(body), mod.CONCERN_MARKERS) is True
+
+
 if __name__ == "__main__":
     tests = [v for k, v in sorted(globals().items()) if k.startswith("test_")]
     failed = 0

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Audio
-pedagogical_count: 38
-breakdown: Audio=38
-maturity: BETA=36, DRAFT=2
+pedagogical_count: 43
+breakdown: Audio=43
+maturity: BETA=41, ALPHA=1, DRAFT=1
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)
@@ -17,7 +17,7 @@ Les notebooks de cette série sont répartis sur 4 niveaux progressifs, des base
 
 Les cas d'usage qui motivent cette série sont concrets et variés : rendre un cours accessible en version audio narrée ([04-1](04-Applications/04-1-Educational-Audio-Content.ipynb)), transcrire un épisode ou un corpus entier ([04-2](04-Applications/04-2-Transcription-Pipeline.ipynb)), produire un jingle ou une bande sonore ([04-3](04-Applications/04-3-Music-Composition-Workflow.ipynb)), cloner une voix pour obtenir un narrateur cohérent, ou assembler un podcast ou un livre audio de bout en bout. Chaque niveau répond à un de ces besoins.
 
-Spécificité technique : l'audio est un signal continu — échantillonnage, spectre, coefficients cepstraux (MFCC, voir [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb)) — très différent du texte et de l'image discrets. La reconnaissance (STT) et la synthèse (TTS) en sont les deux faces symétriques, que les niveaux Foundation et Advanced déclinent. Le contrôle fin de l'identité (clonage vocal) et de l'émotion (prosodie) s'ajoute ensuite, puis l'orchestration assemble ces briques en pipelines, jusqu'au temps réel avec l'OpenAI Realtime API ([03-3](03-Orchestration/03-3-Realtime-Voice-API.ipynb)).
+Spécificité technique : l'audio est un signal continu — échantillonnage, spectre, coefficients cepstraux (MFCC, voir [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb)) — très différent du texte et de l'image discrets. La reconnaissance (STT) et la synthèse (TTS) en sont les deux faces symétriques, que les niveaux Foundation et Advanced déclinent. Le contrôle fin de l'identité (clonage vocal) et de l'émotion (prosodie) s'ajoute ensuite, puis l'orchestration assemble ces briques en pipelines, jusqu'au temps réel avec l'OpenAI Realtime API ([03-3](03-Orchestration/03-3-Realtime-Voice-API.ipynb)) et au TTS streaming local servi par pipecat ([03-4](03-Orchestration/03-4-TTS-Streaming-Local-Pipecat.ipynb)).
 
 Là où les séries Texte et Image traitent des signaux discrets (tokens, pixels), l'audio impose une contrainte de flux et de temps : il faut produire des dizaines de milliers d'échantillons par seconde, synchronisables avec une piste vidéo. C'est cette contrainte temporelle qui justifie l'accent sur l'orchestration et les pipelines dans les niveaux 3 et 4, ainsi que le pont naturel avec la série Video (synchronisation audio-vidéo, [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb)).
 
@@ -96,6 +96,8 @@ Un podcast de qualité demande une voix naturelle et une identité sonore distin
 | [02-7-YuE2-Song-Generation](02-Advanced/02-7-YuE2-Song-Generation.ipynb) | YuE2-3B : zero-shot, cover, édition agentique | Routée GPU 24 GB (Linux) | ~24 GB |
 | [02-8-Expressive-TTS](02-Advanced/02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
 | [02-9-AceStep-Music-Generation](02-Advanced/02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
+| [02-10-Effets-Sonores-AudioLDM2](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) | AudioLDM2, text-to-SFX, descripteurs mesurés | Local GPU | <3 GB |
+| [02-12-SVS-Singing-Voice-RVC](02-Advanced/02-12-SVS-Singing-Voice-RVC.ipynb) | RVC v2, conversion de voix chantée sur CPU | Kernel WSL (CPU) | — |
 
 La séparation de sources en est l'exemple le plus visuel : plutôt que de régénérer, Demucs ([02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb)) décompose un mix stéréo en quatre stems (batterie, basse, autre, voix) et en mesure l'énergie RMS :
 
@@ -106,17 +108,20 @@ La séparation de sources en est l'exemple le plus visuel : plutôt que de rég�
 
 ### 03-Orchestration - Multi-modèles & Temps réel
 
-Les composants existent, il faut les assembler. Ce niveau construit les pipelines qui transforment un audio en texte (STT), l'enrichissent via un LLM, puis le reconvertissent en parole (TTS). Le notebook 03-2 réalise explicitement un pipeline de podcast. L'API Realtime d'OpenAI (03-3) montre la version temps réel pour les interactions live.
+Les composants existent, il faut les assembler. Ce niveau construit les pipelines qui transforment un audio en texte (STT), l'enrichissent via un LLM, puis le reconvertissent en parole (TTS). Le notebook 03-2 réalise explicitement un pipeline de podcast. L'API Realtime d'OpenAI (03-3) montre la version temps réel pour les interactions live. Le TTS streaming local (03-4) ajoute la brique sans dépendance cloud : le moteur Kokoro servi par le framework pipecat, mesuré en débit (RTF) et en latence premier audio (TTFA).
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [03-1-Multi-Model-Audio-Comparison](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) | Benchmark STT et TTS | Mixed | ~12 GB |
 | [03-2-Audio-Pipeline-Orchestration](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) | Pipelines STT->LLM->TTS, podcast | Mixed | ~14 GB |
 | [03-3-Realtime-Voice-API](03-Orchestration/03-3-Realtime-Voice-API.ipynb) | OpenAI Realtime API, WebSocket | OpenAI API | 0 |
+| [03-4-TTS-Streaming-Local-Pipecat](03-Orchestration/03-4-TTS-Streaming-Local-Pipecat.ipynb) | TTS streaming local Kokoro via pipecat, RTF et TTFA | Local (Kokoro ONNX) | 0 |
 
 ### 04-Applications - Cas d'usage production
 
-Application directe : les notebooks de ce niveau mettent en œuvre des workflows complets. 04-1 à 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-vidéo et le live coding. 04-6 à 04-12 forment un pipeline audiobook agentique complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. 04-13 étend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels. 04-14 rend le voice leading en audio GenAI, et 04-15 ouvre la voie compréhension musicale de la famille YuE2 avec les embeddings MERT2. 04-16 ouvre un axe différent : la **transcription** audio vers partition ABC éditable (SheetSage2), comparée à une vérité-terrain construite puis rebouclée vers l'audio par resynthèse.
+Application directe : les notebooks de ce niveau mettent en œuvre des workflows complets. 04-1 à 04-5 couvrent la narration de cours, la transcription batch, la composition musicale, la synchronisation audio-vidéo et le live coding. 04-6 à 04-12 forment un pipeline audiobook agentique complet : benchmark des voix, analyse littéraire, casting vocal, annotation prosodique, génération TTS et compilation finale. 04-13 étend le pipeline avec FishAudio S2-Pro et 29 tags prosodiques officiels. 04-14 rend le voice leading en audio GenAI, et 04-15 ouvre la voie compréhension musicale de la famille YuE2 avec les embeddings MERT2. 04-16 ouvre un axe différent : la **transcription** audio vers partition ABC éditable (SheetSage2), comparée à une vérité-terrain construite puis rebouclée vers l'audio par resynthèse. 04-18 prolonge cette transcription au niveau de la **note** : basic-pitch (Spotify, ICASSP 2022, export ONNX) détecte onset, hauteur et durée de chaque note, avec rappel/précision mesurés sur vérité-terrain synthétique, sur CPU seul. 04-17 pose le socle **classique** du MIR — beat tracking, tempo, tonalité Krumhansl–Schmuckler, accords par templates, avec librosa — le signal et les statistiques qui ont précédé les modèles neuronaux de 04-15 et 04-16. 04-19 referme la boucle d'**évaluation** subjective : le protocole d'écoute (ITU-T P.800) et l'agrégateur MOS que la grille de 04-7 laissaient ouverts. 04-20 ferme la série en **mesurant** la séparation de sources : trois générations de Demucs (v3, v4, v4 fine-tuné par source) comparées sur une piste MUSDB18 à stems de référence — SDR par stem, témoin négatif et cohérence d'énergie.
+
+Le dossier est rangé en trois sous-séries — [`04-Audiobook/`](04-Applications/04-Audiobook/) pour la chaîne de production, [`04-Voix/`](04-Applications/04-Voix/) pour la voix mesurée, [`04-Musique/`](04-Applications/04-Musique/) pour le signal musical ; les workflows généraux et le rendu voice-leading restent à sa racine. Les carnets ci-dessous gardent leur numéro : c'est le sous-répertoire qui porte le regroupement. Structure et table de correspondance des phases : [04-Applications/README.md](04-Applications/README.md).
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -125,17 +130,21 @@ Application directe : les notebooks de ce niveau mettent en œuvre des workflows
 | [04-3-Music-Composition-Workflow](04-Applications/04-3-Music-Composition-Workflow.ipynb) | Création musicale multi-étapes | Local GPU | ~14 GB |
 | [04-4-Audio-Video-Sync](04-Applications/04-4-Audio-Video-Sync.ipynb) | Synchronisation audio-vidéo | Mixed | ~10 GB |
 | [04-5-LiveCoding-LLM-Music](04-Applications/04-5-LiveCoding-LLM-Music.ipynb) | Strudel.cc + LLM, live coding musical | OpenAI API | 0 |
-| [04-6-Audiobook-Pipeline](04-Applications/04-6-Audiobook-Pipeline.ipynb) | Pipeline audiobook orchestrateur | Mixed | ~10 GB |
-| [04-7-TTS-Voice-Benchmark](04-Applications/04-7-TTS-Voice-Benchmark.ipynb) | Benchmark comparatif TTS | Kokoro + OpenAI | ~2 GB |
-| [04-8-Lecture-Analytique](04-Applications/04-8-Lecture-Analytique.ipynb) | Analyse littéraire, segmentation | OpenAI API | 0 |
-| [04-9-Voice-Casting](04-Applications/04-9-Voice-Casting.ipynb) | Attribution voix par personnage | OpenAI API | 0 |
-| [04-10-Annotation-Prosodique](04-Applications/04-10-Annotation-Prosodique.ipynb) | Tags prosodiques FishAudio S2-Pro ; mesure de la prosodie par partition syllabique (pyin, verdict bourdon/mélodie, seuil 60 syllabes) | OpenAI API + local | 0 |
-| [04-11-Generation-TTS](04-Applications/04-11-Generation-TTS.ipynb) | Génération TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
-| [04-12-Compilation-Audio](04-Applications/04-12-Compilation-Audio.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
-| [04-13-Audiobook-FishAudio-S2Pro](04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
+| [04-6-Audiobook-Pipeline](04-Applications/04-Audiobook/04-6-Audiobook-Pipeline.ipynb) | Pipeline audiobook orchestrateur | Mixed | ~10 GB |
+| [04-7-TTS-Voice-Benchmark](04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb) | Benchmark comparatif TTS | Kokoro + OpenAI | ~2 GB |
+| [04-8-Lecture-Analytique](04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb) | Analyse littéraire, segmentation | OpenAI API | 0 |
+| [04-9-Voice-Casting](04-Applications/04-Voix/04-9-Voice-Casting.ipynb) | Attribution voix par personnage | OpenAI API | 0 |
+| [04-10-Annotation-Prosodique](04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb) | Tags prosodiques FishAudio S2-Pro ; mesure de la prosodie par partition syllabique (pyin, verdict bourdon/mélodie, seuil 60 syllabes) | OpenAI API + local | 0 |
+| [04-11-Generation-TTS](04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb) | Génération TTS multi-voix Kokoro | Kokoro TTS | ~2 GB |
+| [04-12-Compilation-Audio](04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb) | FFmpeg concat + normalisation | FFmpeg | 0 |
+| [04-13-Audiobook-FishAudio-S2Pro](04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) | Pipeline v4 FishAudio S2-Pro, 29 tags prosodiques, validation WER | FishAudio + Whisper | ~2 GB |
 | [04-14-VoiceLeading-Rendu-GenAI](04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb) | Rendu audio intelligent du voice leading App-21 : baseline téléphone vs MusicGen-melody (3 styles H1), spectrogrammes mesurés | MusicGen-melody (GPU local) | ~6 GB |
-| [04-15-MERT2-Music-Understanding](04-Applications/04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : similarité cosinus, retrieval contexte long FullSong, sondes linéaires motif vs timbre | Local GPU (kernel `mert2-gpu`) | ~4 GB |
-| [04-16-SheetSage2-Audio-To-Score](04-Applications/04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio → partition ABC éditable, comparaison à une vérité-terrain, boucle symbole ↔ audio | SheetSage2 (local) | ~3,5 GB |
+| [04-15-MERT2-Music-Understanding](04-Applications/04-Musique/04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : similarité cosinus, retrieval contexte long FullSong, sondes linéaires motif vs timbre | Local GPU (kernel `mert2-gpu`) | ~4 GB |
+| [04-16-SheetSage2-Audio-To-Score](04-Applications/04-Musique/04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio → partition ABC éditable, comparaison à une vérité-terrain, boucle symbole ↔ audio | SheetSage2 (local) | ~3,5 GB |
+| [04-17-MIR-Classique](04-Applications/04-Musique/04-17-MIR-Classique.ipynb) | MIR classique : beat tracking et tempo, tonalité Krumhansl–Schmuckler, accords par templates — validés sur vérité-terrain synthétique puis vraie musique | librosa (CPU local) | 0 |
+| [04-18-Basic-Pitch-Transcription](04-Applications/04-Musique/04-18-Basic-Pitch-Transcription.ipynb) | Transcription note à note (onset, hauteur, durée), rappel/précision sur vérité-terrain synthétique, piano-roll, balayage des seuils du décodeur | basic-pitch (ONNX, CPU local) | 0 |
+| [04-19-Evaluation-MOS](04-Applications/04-Voix/04-19-Evaluation-MOS.ipynb) | Évaluation subjective : protocole d'écoute ITU-T P.800, MOS + IC 95 %, rejet des auditeurs aberrants, proxies objectifs (SNR, SI-SDR, STOI) | CPU local | 0 |
+| [04-20-Separation-Avancee-Qualite](04-Applications/04-Musique/04-20-Separation-Avancee-Qualite.ipynb) | Séparation de sources mesurée : trois générations de Demucs (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) sur une piste MUSDB18 à stems de référence — SDR par stem, témoin négatif, cohérence d'énergie | Demucs 4.1.0 (GPU local, HF streaming) | ~6 GB |
 
 Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare la latence et la taille audio des modèles kokoro vs openai/tts-1 selon le type de texte (dialogue, monologue, narration) — l'axe log-latence ms discrimine Kokoro (~3·10³ ms) d'openai/tts-1 (~3,5–4·10³ ms), tandis que l'axe taille audio KB (0–350) reste dominé par openai/tts-1 sur tous les types de texte :
 
@@ -159,7 +168,10 @@ Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) com
 | **midi-model (SkyTNT)** | 02-6 | GPU ~2 GB VRAM, FluidSynth |
 | **YuE / SongGeneration 2** | 02-7 | GPU 10-24 GB VRAM |
 | **Fish S2 Pro / Dia TTS** | 02-8 | GPU 6-18 GB VRAM |
+| **AudioLDM2 (cvssp)** | 02-10 | GPU ~2,5 GB VRAM |
+| **RVC v2 (checkpoint DaFeiYu)** | 02-12 | Kernel WSL `rvc-wsl` (CPU) |
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
+| **pipecat + Kokoro ONNX** | 03-4 | CPU local, modèles mis en cache au premier run |
 | **FFmpeg** | 04-12 | Installé système |
 
 ## Concepts clés
@@ -167,8 +179,10 @@ Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) com
 - **STT (Speech-to-Text)** — reconnaître la parole pour la transcrire en texte. Cœur des notebooks [01-2](01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) (API cloud) et [01-4](01-Foundation/01-4-Whisper-Local.ipynb) (Whisper local).
 - **TTS (Text-to-Speech)** — synthétiser de la parole à partir de texte. Cœur des notebooks [01-1](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) (OpenAI) et [01-5](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) (Kokoro local).
 - **Voice cloning** — reproduire l'identité vocale d'un locuteur à partir d'un court échantillon, pour un narrateur cohérent. Notebook [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) (XTTS v2).
-- **Prosodie** — l'intonation, le rythme et l'émotion qui rendent une voix naturelle ; pilotable par tags expressifs, et mesurable objectivement par partition syllabique (notes effectives, recouvrement top-3, motifs répétés — [04-10, section 10](04-Applications/04-10-Annotation-Prosodique.ipynb)). Notebooks [02-8](02-Advanced/02-8-Expressive-TTS.ipynb), [04-10](04-Applications/04-10-Annotation-Prosodique.ipynb) (tags + mesure) et [04-13](04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb) (FishAudio S2-Pro, 29 tags).
+- **Singing voice conversion (SVC)** — remplacer le timbre d'un chant enregistré en préservant la mélodie, mesurée note par note. Notebook [02-12](02-Advanced/02-12-SVS-Singing-Voice-RVC.ipynb) (RVC v2, CPU).
+- **Prosodie** — l'intonation, le rythme et l'émotion qui rendent une voix naturelle ; pilotable par tags expressifs, et mesurable objectivement par partition syllabique (notes effectives, recouvrement top-3, motifs répétés — [04-10, section 10](04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb)). Notebooks [02-8](02-Advanced/02-8-Expressive-TTS.ipynb), [04-10](04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb) (tags + mesure) et [04-13](04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) (FishAudio S2-Pro, 29 tags).
 - **Source separation** — isoler les composantes d'un mix (voix, batterie, basse...). Notebook [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) (Demucs v4).
+- **Text-to-SFX (effets sonores)** — générer un effet sonore (impact, pluie, verre brisé) à partir d'une description, et le distinguer d'une musique par des descripteurs mesurés (flatness, centroïde, attaques). Notebook [02-10](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) (AudioLDM2).
 - **Spectrogramme / MFCC** — représentations temps-fréquence du signal audio, base de l'analyse. Notebook [01-3](01-Foundation/01-3-Basic-Audio-Operations.ipynb).
 
 ## Prérequis
@@ -220,9 +234,9 @@ Le fil rouge de cette série est la création d'un podcast généré par IA. Voi
 
 1. **01-Foundation** (TTS + STT) : [01-1](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) et [01-5](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) vous donnent les bases de la synthèse vocale. [01-2](01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) et [01-4](01-Foundation/01-4-Whisper-Local.ipynb) couvrent la reconnaissance vocale. À la fin de ce niveau, vous savez transformer du texte en audio et inversement.
 
-2. **02-Advanced** (voix + musique) : [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) clone une voix pour créer un narrateur cohérent. [02-3](02-Advanced/02-3-MusicGen-Generation.ipynb) génère le jingle et le fond sonore. [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) isole les pistes si besoin, et [02-8](02-Advanced/02-8-Expressive-TTS.ipynb) ajoute de l'expressivité.
+2. **02-Advanced** (voix + musique + effets) : [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) clone une voix pour créer un narrateur cohérent. [02-3](02-Advanced/02-3-MusicGen-Generation.ipynb) génère le jingle et le fond sonore. [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) isole les pistes si besoin, et [02-8](02-Advanced/02-8-Expressive-TTS.ipynb) ajoute de l'expressivité. Pour l'habillage, [02-10](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) peut fournir les effets sonores décrits par le texte.
 
-3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles pour choisir le meilleur STT/TTS selon le budget. [03-2](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) assemble le pipeline STT vers LLM vers TTS qui constitue le cœur du podcast automatisé.
+3. **03-Orchestration** (assemblage) : [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles pour choisir le meilleur STT/TTS selon le budget. [03-2](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) assemble le pipeline STT vers LLM vers TTS qui constitue le cœur du podcast automatisé. [03-4](03-Orchestration/03-4-TTS-Streaming-Local-Pipecat.ipynb) mesure la brique TTS en local : débit et latence premier audio, sans dépendance cloud.
 
 4. **04-Applications** (production) : [04-1](04-Applications/04-1-Educational-Audio-Content.ipynb) applique le pipeline à la narration de cours. [04-2](04-Applications/04-2-Transcription-Pipeline.ipynb) gère la transcription batch pour les épisodes longs. [04-4](04-Applications/04-4-Audio-Video-Sync.ipynb) synchronise avec la piste vidéo si le podcast a une composante visuelle.
 
@@ -246,6 +260,7 @@ flowchart TD
         C1["03-1 : benchmark STT / TTS"]
         C2["03-2 : pipeline STT→LLM→TTS"]
         C3["03-3 : Realtime Voice API"]
+        C4["03-4 : TTS streaming local (pipecat)"]
     end
     subgraph N4["4 · Produire — 04-Applications"]
         D1["04-1 : narration de cours"]

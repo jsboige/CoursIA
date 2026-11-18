@@ -53,7 +53,19 @@ import pandas as pd
 
 
 def _max_drawdown_pct(net_returns: np.ndarray) -> float:
-    """Max drawdown in percentage terms from log-return series."""
+    """Max drawdown in percentage terms from log-return series.
+
+    Ecart de definition ecrit ici conformement a #19016 (tranche 5) : cette
+    fonction opere en espace LOG (``cumsum`` des log-rendements, puis
+    ``1 - exp(min_dd)``) et rend une **fraction positive de baisse**, quand
+    ``strategy_metrics.max_drawdown`` compose des rendements **simples**
+    (``cumprod(1 + r)``, capital de depart compris) et rend une fraction
+    negative. Les deux conventions ne se convertissent PAS par un simple
+    changement de signe : pour les memes donnees,
+    ``_max_drawdown_pct(L) == -strategy_metrics.max_drawdown(np.exp(L) - 1)``
+    (pinner par la tranche 5) -- lui donner des rendements simples, ou donner
+    les log-rendements a l'organe, produit une valeur fausse.
+    """
     cum = np.cumsum(net_returns)
     peak = np.maximum.accumulate(cum)
     dd_log = cum - peak

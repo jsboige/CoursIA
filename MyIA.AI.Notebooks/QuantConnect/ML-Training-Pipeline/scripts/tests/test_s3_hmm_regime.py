@@ -166,7 +166,7 @@ class TestStatistics:
     def test_sharpe_known_value(self) -> None:
         rng = np.random.default_rng(0)
         r = rng.standard_normal(252) * 0.01
-        expected = float(r.mean() / r.std() * np.sqrt(252))  # ddof=0
+        expected = float(r.mean() / r.std(ddof=1) * np.sqrt(252))  # strategy_metrics, #19016
         np.testing.assert_allclose(_sharpe(r), expected, rtol=1e-12)
 
     def test_max_drawdown_monotonic_up_is_zero(self) -> None:

@@ -6,6 +6,7 @@ dans l'ordre FAILURE / CANCELLED / SUCCESS -- non chronologique. Un fold
 premiere-occurrence retient le FAILURE perime : c'est le defaut mesure par
 ai-01. Le fold latest-wins retient le SUCCESS : #16232 est MERGED.
 """
+import itertools
 import sys
 from pathlib import Path
 
@@ -140,6 +141,71 @@ def test_tie_break_id_puis_ordre_quand_started_at_identiques():
     assert fold_latest(legs_sans_id)["X"]["conclusion"] == "success"
 
 
+def test_le_repli_sur_le_skip_garde_le_verdict_reel_anterieur():
+    """#25510 (T-C) : une jambe `skipped` plus RECENTE ne remplace pas une
+    jambe anterieure non-skipped du meme nom.
+
+    `skipped` compte comme VERT (GREEN) : sous un repli latest-wins simple,
+    une edition de titre emettrait un `skipped` plus recent que le verdict
+    reel, et une PR ROUGE se debloquerait d'elle-meme. Le repli garde le
+    verdict reel.
+    """
+    legs = [
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T1", "id": 1},
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T2", "id": 2},
+    ]
+    assert fold_latest(legs)["PR gate"]["conclusion"] == "failure"
+    state = render("ab", legs)
+    assert state["latest_reds"] == ["PR gate"]
+    assert state["latest"]["PR gate"]["conclusion"] == "failure"
+
+
+def test_un_verdict_reel_remplace_un_skipped_anterieur():
+    """Le repli joue dans un seul sens : un VERDIT reel remplace toujours un
+    skip anterieur, et l'ordre de la liste ne decide de rien."""
+    legs = [
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T1", "id": 1},
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T2", "id": 2},
+    ]
+    assert fold_latest(legs)["PR gate"]["conclusion"] == "failure"
+    legs_inverse = list(reversed(legs))
+    assert fold_latest(legs_inverse)["PR gate"]["conclusion"] == "failure"
+
+
+def test_un_skipped_seul_reste_vert_dans_la_vue_latest():
+    """Le cas ordinaire n'est pas casse : un job saute sans verdict anterieur
+    (filtre `paths:`) reste VERT -- sinon le gate bloquerait des PRs dont le
+    job n'a rien a mesurer."""
+    legs = [{"name": "Lean CI", "conclusion": "skipped", "started_at": "T1", "id": 1}]
+    state = render("ab", legs)
+    assert state["latest_reds"] == []
+    assert state["latest"]["Lean CI"]["conclusion"] == "skipped"
+
+
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : l'API rend les check-runs du PLUS RECENT au PLUS
+    ANCIEN, et aucun appelant ne retrie. Le repli doit tenir dans cet
+    ordre-la (skip d'abord, verdict reel ensuite)."""
+    legs = [
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T2", "id": 2},
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T1", "id": 1},
+    ]
+    assert fold_latest(legs)["PR gate"]["conclusion"] == "failure"
+    state = render("ab", legs)
+    assert state["latest_reds"] == ["PR gate"]
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : toutes les permutations d'un meme lot rendent le meme
+    verdict -- le repli ne doit dependre d'aucun ordre d'arrivee."""
+    lot = [
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T1", "id": 1},
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T2", "id": 2},
+    ]
+    for permutation in itertools.permutations(lot):
+        assert fold_latest(list(permutation))["PR gate"]["conclusion"] == "failure"
+
+
 def test_fold_latest_preserve_les_champs_bruts_de_la_jambe():
     """#16889 : la jambe rendue est la BRUTE enrichie des champs canoniques --
     un consommateur qui lit isRequired ou databaseId sur une jambe du rollup
@@ -171,6 +237,12 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
     dans la vue latest, 2 = erreur d'instrument."""
     import scripts.check_run_state as m
 
+    # #21463 : main() lit AUSSI le jeu des checks requis (protection de
+    # branche). On le moque a None (indeterminable) pour garder ce test SANS
+    # RESEAU : le code de sortie porte sur la vue latest seule, et
+    # missing_required (None) n'y participe pas.
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: None)
+
     monkeypatch.setattr(m, "collect", lambda pr=None, sha=None:
                         ("94e31d7e", REST_16232_ALWAYS_ON))
     assert m.main(["--sha", "94e31d7e"]) == 0
@@ -190,6 +262,50 @@ def test_main_exit_codes_sans_reseau(monkeypatch, capsys):
     assert m.main(["--sha", "ab"]) == 2
 
 
+def test_main_missing_required_check_is_non_green(monkeypatch, capsys):
+    """#21463 : un check requis ABSENT de la tete (jamais poste) rend le
+    verdict NON-vert (exit 1), meme si la vue latest est toute verte -- la
+    classe 'gate absent' que le fold par nom ne voit pas (la liste plate ne la
+    contient tout simplement pas)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    # La tete ne porte PAS `PR gate`, mais la branche l'exige :
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: {"PR gate"})
+    assert m.main(["--sha", "ab"]) == 1
+    out = capsys.readouterr().out
+    assert "missing_required" in out and "PR gate" in out
+
+
+def test_main_missing_required_indeterminable_stays_green(monkeypatch, capsys):
+    """#21463 : protection de branche illisible (None) = aucune absence n'est
+    AFFIRMEE -- le verdict reste vert si la vue latest l'est. Un 403 ne doit
+    ni blanchir ni rougir la classe gate-absent (fail-closed cote
+    determination, pas cote verdict)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: None)
+    assert m.main(["--sha", "ab"]) == 0
+
+
+def test_render_missing_required_tri_state():
+    """#21463 : `missing_required` distingue TROIS etats -- None (protection
+    illisible), [] (aucun manque), et une liste non vide (absence reelle). Les
+    deux premiers doivent rester indiscernables d'un vert."""
+    import scripts.check_run_state as m
+
+    legs = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    assert m.render("ab", legs, None)["missing_required"] is None
+    assert m.render("ab", legs, {"Always-on guards"})["missing_required"] == []
+    assert m.render("ab", legs, {"PR gate"})["missing_required"] == ["PR gate"]
+
+
 def test_collect_reads_every_page(monkeypatch):
     """#17807 : 110 jambes au head, une lecture a une page en voyait 100."""
     import scripts.check_run_state as m
@@ -201,3 +317,52 @@ def test_collect_reads_every_page(monkeypatch):
     monkeypatch.setattr(m, "_run_gh", fake_run_gh)
     m.collect(sha="ab")
     assert "--paginate" in seen[0]
+
+
+def test_head_sha_survit_a_un_throttle_graphql(monkeypatch):
+    """Fondateur 2026-10-08 : `gh pr view` (GraphQL) throttlé tuait l'instrument
+    entier, et `pick_idle_grain.py` en concluait « organe non lisible » -- un
+    defaut d'instrument lu comme un defaut de PR. Le head doit rester lisible
+    par REST quand GraphQL refuse."""
+    import scripts.check_run_state as m
+    seen = []
+
+    def fake_run_gh(args):
+        seen.append(args)
+        if args[0] == "pr":          # tout appel GraphQL est throttlé
+            raise RuntimeError("gh pr view 19912... -> 1: GraphQL: API rate limit "
+                               "already exceeded for user ID 3159389.")
+        return '{"head": {"sha": "359ea17fa33b3770346c091aa024c182876d6f5c"}}'
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._head_sha(19912) == "359ea17fa33b3770346c091aa024c182876d6f5c"
+    assert seen and seen[0][0] == "api", "REST doit etre tente AVANT GraphQL"
+    assert not any(a[0] == "pr" for a in seen), "aucun appel GraphQL sous throttle"
+
+
+def test_head_sha_replie_sur_graphql_si_rest_indisponible(monkeypatch):
+    """Cas inverse : l'endpoint REST tombe (jeton sans scope `pulls`), le repli
+    GraphQL doit rendre le meme SHA. La redondance va dans les deux sens."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        if args[0] == "api":
+            raise RuntimeError("gh api repos/.../pulls/19912... -> 1: Not Found")
+        return '{"headRefOid": "359ea17fa33b3770346c091aa024c182876d6f5c"}'
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._head_sha(19912) == "359ea17fa33b3770346c091aa024c182876d6f5c"
+
+
+def test_head_sha_leve_quand_les_deux_chemins_tombent(monkeypatch):
+    """Un instrument qui ne peut pas lire doit LE DIRE (exit 2 en amont), pas
+    rendre un SHA vide : c'est la garantie que l'echec ne redevient pas
+    silencieux."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        raise RuntimeError(f"gh {args[0]} ... -> 1: down")
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    with pytest.raises(RuntimeError):
+        m._head_sha(19912)

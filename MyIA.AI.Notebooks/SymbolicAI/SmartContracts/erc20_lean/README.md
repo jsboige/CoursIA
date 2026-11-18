@@ -147,5 +147,5 @@ Phases suivantes (suivi #4047) :
 - F. Vogelsteller, V. Buterin, *ERC-20 Token Standard*, Ethereum EIP-20, 2015.
 - V. Buterin, *Ethereum: A Next-Generation Smart Contract and Decentralized
   Application Platform*, Ethereum White Paper, 2014.
-- K. Bhargavan et al., *Formal Verification of Smart Contracts*, WPCE 2016.
-- Notebook compagnon : [`SC-07-Token-Standards-Python.ipynb`](../02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb).
+- K. Bhargavan et al., *Formal Verification of Smart Contracts: Short Paper*, PLAS@CCS 2016 (Vienna, p. 91-96, DOI 10.1145/2993600.2993611).
+- Notebooks compagnons : [`SC-7b-ERC20-Lean-Verification-Companion.ipynb`](../02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) (confrontation runtime ↔ formel) et [`Lean-23-ERC20-Invariant-Companion.ipynb`](../../Lean/Lean-23-ERC20-Invariant-Companion.ipynb) (interrogation du lac). Le contrat Solidity déployable vit dans [`SC-07-Token-Standards-Python.ipynb`](../02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) (cellule 7).

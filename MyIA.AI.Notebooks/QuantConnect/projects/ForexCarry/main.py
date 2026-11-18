@@ -42,9 +42,14 @@ class ForexCarryTradeStrategy(QCAlgorithm):
         self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
 
-        # Brokerage: G10 FX traded via OANDA margin account
-        # Configurable brokerage for fee sweep (default: OANDA margin with real fees)
-        self._brokerage_mode = self.get_parameter("brokerage", "oanda")
+        # Brokerage: default = QC brokerage, the only mode where set_holdings
+        # FILLS in a cloud backtest. Under OANDA MARGIN every set_holdings order
+        # is submitted and NEVER filled (166 orders, $0 volume, flat $100k equity
+        # over 2015-2024) - a known QC cloud limitation (#21759). A plain
+        # backtest (no brokerage parameter) therefore uses the default brokerage
+        # and actually trades; pass brokerage="oanda" only for the fee sweep,
+        # where the no-fill is the expected behaviour.
+        self._brokerage_mode = self.get_parameter("brokerage", "none")
         if self._brokerage_mode != "none":
             self.set_brokerage_model(BrokerageName.OANDA_BROKERAGE, AccountType.MARGIN)
 
@@ -84,12 +89,17 @@ class ForexCarryTradeStrategy(QCAlgorithm):
             symbol = self.forex_symbols[pair]
             # Fetch enough history: lookback_mom + vol_lookback days
             history_len = self.lookback_mom + self.vol_lookback + 5
-            history = self.history(symbol, history_len, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte la paire. On demande le
+            # double puis on re-slice sur la fenetre d'origine : les index
+            # negatifs (iloc[-lookback_mom], iloc[-skip_days]) visent ainsi les
+            # memes barres qu'avant, le calcul est inchange.
+            history = self.history(symbol, 2 * history_len, Resolution.DAILY)
             if len(history) < self.lookback_mom + self.skip_days:
                 continue
 
             try:
-                closes = history['close']
+                closes = history['close'].iloc[-history_len:]
 
                 # Skip-month momentum: return from J-lookback to J-skip
                 # Excludes the last month (J-21 to J-0) which contains mean-reversion

@@ -41,18 +41,65 @@ Le mot `figé` est le marqueur du contrat : un document qui le porte est un inst
 
 Un rapport ne s'accumule pas. Quand sa conclusion est durable, elle est **distillée** dans le document pérenne qui la porte (règle, référence, procédure, README de série), et ce document **cite** le rapport. Une fois la distillation faite, le rapport a fini son office : il peut être archivé ou retiré. La lane est un **transit**, pas un stock.
 
+## Sortie d'archive (`docs/archive/`)
+
+L'archive est un **stock à résorber, pas une destination** (tranche 2 de #14623). Elle ne grandit plus par dépôt de rapports neufs ; elle se résorbe par trois voies, chacune appuyée sur une preuve citée dans la PR :
+
+| Voie | Quand | Preuve exigée dans la PR |
+|---|---|---|
+| **Distillation** | le contenu durable d'un document archivé sert un document vivant | le diff du document pérenne enrichi, plus le chemin de l'original archivé — qui **reste en place** : l'archive ne réécrit pas l'histoire, elle se résorbe morceau par morceau |
+| **Restauration** | un document archivé s'avère mal classé : c'est une référence pérenne | la citation de l'en-tête ou du contenu qui fonde le caractère pérenne — établie sur **lecture complète** du fichier, jamais sur le titre (leçon de la re-vérification #14623 : « état d'une série » est pérenne par la table des catégories elle-même) |
+| **Retrait** | contenu intégralement absorbé ou dupliqué ailleurs | preuve de préservation : diff vide contre le document survivant, ou contenu byte-identique cité |
+
+**Entrée : un rapport daté neuf ne rejoint plus `docs/archive/`.** La destination d'un rapport daté est cette lane, `docs/transients/` (nom daté + en-tête gelé). Déplacer un document **existant** vers l'archive reste légitime — c'est une reclasse, pas une création. La distinction est mécanique : l'organe signale toute **création** (statut `A` du diff ; les renames `R` sont des reclasses) sous `docs/archive/` portant la signature transiente — nom daté `<YYYY-MM-DD>-…` ou en-tête gelé en tête :
+
+```bash
+python scripts/check_docs_transients_lane.py --base origin/main
+```
+
+La garde CI [docs-transients-guard](../../.github/workflows/docs-transients-guard.yml) applique ce contrôle à chaque PR touchant `docs/**/*.md`.
+
 ## Vérification
 
 ```bash
-python scripts/check_docs_transients_lane.py            # CONFORME (0) / VIOLATION (1)
-python scripts/check_docs_transients_lane.py --json     # verdict machine
+python scripts/check_docs_transients_lane.py                          # CONFORME (0) / VIOLATION (1)
+python scripts/check_docs_transients_lane.py --json                   # verdict machine
+python scripts/check_docs_transients_lane.py --base origin/main       # + contrôle d'entrée d'archive
 python -m pytest scripts/tests/test_check_docs_transients_lane.py -q
 ```
 
-L'organe vérifie les **deux sens** du contrat :
+L'organe vérifie les **trois sens** du contrat :
 
 - **dans la lane** — chaque `*.md` (sauf ce README) est daté et porte l'en-tête gelé, dont la date concorde avec celle du nom ;
-- **hors de la lane** — aucun fichier de `docs/` (hors `docs/archive/` et cette lane) ne porte l'en-tête `> RAPPORT —` en tête de document : un transient égaré dans l'arbre pérenne est exactement la dérive que cette lane existe pour rendre visible.
+- **hors de la lane** — aucun fichier de `docs/` (hors `docs/archive/` et cette lane) ne porte l'en-tête `> RAPPORT —` en tête de document : un transient égaré dans l'arbre pérenne est exactement la dérive que cette lane existe pour rendre visible ;
+- **entrée d'archive** (avec `--base <ref>`) — aucune **création** de rapport daté sous `docs/archive/` dans le diff `<ref>...HEAD` : les reclasses (renames) restent permises, les créations portant la signature transiente sont signalées. Un échec du `git diff` sous-jacent est lui-même un finding (`GIT_DIFF_FAILED`), jamais un acquittement silencieux.
+
+## Sens perenne
+
+Le miroir : les documents de **référence vivante** de `docs/` (hors cette lane, hors `docs/archive/`, hors artefacts générés) portent l'en-tête
+
+```
+> REFERENCE — vivante — dernière révision <date>
+```
+
+et cette date est **lue dans l'historique git** (`git log -1 --format=%cs` du fichier), jamais recopiée : un en-tête dont la date ne concorde plus avec la dernière révision est périmé (le document a évolué sans que l'en-tête ne soit rafraîchi) ou fabriqué.
+
+L'organe `scripts/check_docs_reference_lane.py` vérifie **deux sens**, dans **deux modes** :
+
+- **couverture** (les deux modes) — un **plancher monotone** : le nombre de documents perennes balisés ne descend pas sous `--baseline` (vague initiale = 9, `docs/notebook-metadata/`). La couverture ne se **déclare** pas : elle se mesure, et ne fait que croître ; le plancher est relevé au fil des vagues ;
+- **intégrité** (mode PR seulement) — pour les documents *modifiés par la PR*, la date de l'en-tête doit concorder avec le dernier commit **propre au fichier** sur la branche ; un écart est un finding (`STALE_DATE`), un `git log`/`git diff` en échec est un finding (`GIT_LOG_FAILED` / `GIT_DIFF_FAILED`), jamais un acquittement silencieux.
+
+**Pourquoi deux modes.** Le merge de ce dépôt est un **squash** : son commit porte la date du merge en `%cs` (mesuré sur #22216 : dernier commit de branche 05:57Z, squash 10:32Z), et le commit intermédiaire de la branche — le seul qui portait la vraie date de révision — est effacé. Une comparaison de dates sur **tout l'arbre** (le mode unique d'origine) rougirait donc `main` et chaque PR à chaque merge franchissant un jour UTC : un défaut de convention transformé en rouge permanent. Le mode **arbre** (défaut, sans `--base`) ne vérifie que ce qui **survit** au squash — le marqueur et le plancher — ; le mode **PR** (`--base <ref>`, exécuté depuis le checkout de la tête de la branche, jamais du merge ref) vérifie les dates, mais **uniquement** pour les docs du diff `<ref>...HEAD` : c'est le seul endroit où `git log -1` lit encore une date de contenu, et un doc pérenne périmé qui n'est pas touché par la PR n'est pas le signal de cette PR.
+
+```bash
+python scripts/check_docs_reference_lane.py                          # mode arbre : marqueur + plancher
+python scripts/check_docs_reference_lane.py --base origin/main       # mode PR : dates des docs modifiés
+python scripts/check_docs_reference_lane.py --json                   # verdict machine
+python scripts/check_docs_reference_lane.py --baseline 9             # plancher explicite
+python -m pytest scripts/tests/test_check_docs_reference_lane.py -q
+```
+
+La lane perenne se **peuple par vagues** : chaque tranche balise un ensemble cohérent de références et relève le plancher. Garde CI : `docs-reference-guard` (miroir de `docs-transients-guard`), exécutée en **mode PR** depuis la tête de la branche (`ref: …head.sha`, `fetch-depth: 0`, `filter: blob:none` — les deux lectures de l'organe ne consomment que commits et arbres, mesure 2026-10-27 : 9/9 dates identiques sur un clone blobless).
 
 ## État
 

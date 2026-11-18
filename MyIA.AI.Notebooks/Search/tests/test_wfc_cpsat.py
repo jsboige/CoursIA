@@ -1,6 +1,6 @@
 """
 Tests pour le module WFC (Wave Function Collapse) du notebook Search App-19
-(`Applications/CSP/wfc_cpsat.py`).
+(`Part3-Cas-pratiques/wfc_cpsat.py`).
 
 Le module implemente la generation procedurale de niveaux par collapse de la
 fonction d'onde, en trois variantes :
@@ -31,8 +31,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-# Ajoute Applications/CSP/ au path pour importer wfc_cpsat.
-sys.path.insert(0, str(Path(__file__).parent.parent / "Applications" / "CSP"))
+# Ajoute Part3-Cas-pratiques/ au path pour importer wfc_cpsat.
+sys.path.insert(0, str(Path(__file__).parent.parent / "Part3-Cas-pratiques"))
 
 import wfc_cpsat  # noqa: E402
 from wfc_cpsat import (  # noqa: E402

@@ -1,7 +1,7 @@
 import Mathlib
-import Astar.Graph
-import Astar.Heuristic
-import Astar.Optimality
+import Astar.Graph_en
+import Astar.Heuristic_en
+import Astar.Optimality_en
 
 /-!
 # Astar.Consistency — consistency ⟹ admissibility (telescoping)
@@ -46,7 +46,7 @@ Nilsson & Raphael (1968).
 
 namespace Astar_en
 
-open Astar
+open Astar_en
 
 variable {V : Type*} (G : WeightedGraph V)
 

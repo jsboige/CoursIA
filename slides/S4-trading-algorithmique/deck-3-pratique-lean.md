@@ -110,7 +110,7 @@ layout: section
 <div v-click="4">
 
 - **Ressources du depot**
-  - 28 notebooks progressifs + 67 projets prets a backtester
+  - notebooks progressifs + 67 projets prets a backtester
   - Communaute, forums, tutoriels, documentation
 
 </div>
@@ -478,7 +478,7 @@ layout: section
 layout: dense
 ---
 
-# Vos 28 notebooks et 67 projets
+# Vos notebooks et 67 projets
 
 | Phase | Notebooks | Titre |
 |-------|-----------|-------|
@@ -526,7 +526,7 @@ class EMACrossStocksAlgorithm(QCAlgorithm):
                 self.liquidate(self.symbols[ticker])
 ```
 
-**15 lignes de code, 5 actions, 11 ans de backtest.** Sharpe ~0.87, soit +74% de mieux que le buy-and-hold.
+**5 actions, 11 ans de backtest.** Sharpe ~0.87, soit +74% de mieux que le buy-and-hold.
 
 ---
 layout: section
@@ -639,7 +639,7 @@ sharpe calculé manuell.   →   résultats backtest complets
 
 </div>
 
-> Notebook: `QC-Py-04-Research-Workflow.ipynb` (21/22 cellules executées)
+> Notebook: `QC-Py-04-Research-Workflow.ipynb`
 
 ---
 layout: section
@@ -867,7 +867,7 @@ layout: section
 </div>
 <div v-click="2">
 
-- **39 features** dans `QC-Py-18-ML-Features-Engineering.ipynb` (21/22 cellules executees)
+- **39 features** dans `QC-Py-18-ML-Features-Engineering.ipynb`
 - **Triple Barrier** (Lopez de Prado) : label 1/0/-1 selon stop-loss, take-profit ou expiration
 - La qualite des features > le choix du modèle
 
@@ -933,7 +933,7 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
 <div v-click="2">
 
 > ML vaut le cout quand : univers large, features fondamentales disponibles, regime complexe
-> Pour votre projet : RandomForest ou XGBoost sur secteurs sont accessibles en 50 lignes
+> Pour votre projet : RandomForest ou XGBoost sur secteurs sont accessibles
 
 </div>
 
@@ -1166,7 +1166,7 @@ layout: section
 <div v-click="1">
 
 - Chaque projet contient :
-  - `main.py` : l'algorithme complet (50-200 lignes)
+  - `main.py` : l'algorithme complet
   - `research.ipynb` : notebook d'exploration avec yfinance
   - Metriques documentees dans le README du projet
 
@@ -1263,7 +1263,7 @@ Jean-Sylvain Boige -- jsboige@myia.org
 **Tout est dans le depot pour demarrer des aujourd'hui :**
 
 - **QC Cloud** : quantconnect.com (compte gratuit)
-- **Repo GitHub** : github.com/jsboige/CoursIA (28 notebooks + 67 projets)
+- **Repo GitHub** : github.com/jsboige/CoursIA (67 projets)
 - **Livre** : *Hands-On AI Trading* (Pik, Chan, Broad, Sun, Singh -- Wiley 2025)
 - **MCP Server** : github.com/QuantConnect/mcp-server
 - **Claude Code** : claude.ai/code

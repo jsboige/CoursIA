@@ -106,7 +106,7 @@ Tracker global: issue #29
 4. Verifier si un notebook existe deja
    - projects/{Strategy}/research.ipynb
    - partner-course-quant-trading/examples/{Strategy}/research.ipynb
-   - partner-course-quant-trading/lean-workspace/{Strategy}-Researcher/research.ipynb
+   - MyIA.AI.Notebooks/QuantConnect/research/{Strategy}-*.ipynb
 ```
 
 ## Phase 2: Research Notebook (COEUR DU WORKFLOW)
@@ -263,3 +263,5 @@ Le workflow est concu pour survivre aux redemarrages:
 ## Prochaines etapes
 {next_steps pour la prochaine iteration}
 ```
+
+Pièges mesurés (lecture d'un backtest, ordres, données, framework, outils) : [docs/qc/qc-pieges-mesures.md](../../../docs/qc/qc-pieges-mesures.md).

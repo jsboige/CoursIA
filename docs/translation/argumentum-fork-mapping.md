@@ -1,5 +1,7 @@
 # Mapping de fork Argumentum → CoursIA (moteur T3)
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 > **Statut** : référence pérenne pour la couche T3 (moteur de traduction).
 > Issue [#6949](https://github.com/jsboige/CoursIA/issues/6949) — **OUVERTE (resserrée 2026-07-28 par ai-01, close refusée)** : livrable court-terme expédié (fork T3 `#6976` + ce doc), mais l'issue reste ouverte — le titre porte deux engagements et le second (dépôt de traductions, 0/7 langues cibles remplies) n'est pas tenu. Règle posée c.31 : plus de PR *resync-only* sur `translations/**/*.csv` jusqu'au GO moteur. PRs du scope original : #6980 (ce doc, `fb9bff827`) + #6976 (fork code T3, `84ba7ac70`).
 > Fork code : PR #6976 (`scripts/translation/translate_csv.py`).
@@ -43,6 +45,29 @@ les patterns identifiés** côté CoursIA, en s'appuyant sur l'exploration du
 | Cache / resume | JSON output reuse | — | `text_<lang>` non-vide = déjà traduit (skip) |
 | Sortie | re-import JSON 2sxc | — | Réécrit le CSV (`text_<lang>` + `hash_<lang>`) |
 | Hash drift | — | `cell_hash = sha256(normalize)[:16]` | **Réutilisé tel quel** (cohérence T2) |
+
+### 3.1 Proposition illustrative de mapping des chemins
+
+**Proposition à valider dans [#1650](https://github.com/jsboige/CoursIA/issues/1650)**, pour le point 4 de [#25327](https://github.com/jsboige/CoursIA/issues/25327) : un TSV par langue, avec deux colonnes de chemins complets relatifs à la racine du dépôt. La première désigne le chemin français courant, la seconde le chemin proposé dans le dépôt de la langue cible. Le `cell_id` reste l'identifiant de cellule du CSV : il est distinct de ce mapping de chemins. L'architecture envisagée par #1650 comprend un dépôt par langue et l'exécution réelle du code traduit ; ce tableau n'active aucune de ces étapes. Voici un exemple pour `en`, portant sur trois répertoires et leurs six carnets `student` et `solution` :
+
+```tsv
+# chemin_fr_canonique	chemin_en_propose
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical	MyIA.AI.Notebooks/CaseStudies/Medical-Diagnosis
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb	MyIA.AI.Notebooks/CaseStudies/Medical-Diagnosis/solution/Medical-Diagnosis-Python.ipynb
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb	MyIA.AI.Notebooks/CaseStudies/Medical-Diagnosis/student/Medical-Diagnosis-Python.ipynb
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie	MyIA.AI.Notebooks/CaseStudies/Oncology-Planning
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb	MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning-Python.ipynb
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Planification-Oncologie-Python.ipynb	MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning-Python.ipynb
+MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent	MyIA.AI.Notebooks/CaseStudies/Smart-Grid
+MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/solution/Reseau-Electrique-Intelligent-Python.ipynb	MyIA.AI.Notebooks/CaseStudies/Smart-Grid/solution/Smart-Grid-Python.ipynb
+MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-Python.ipynb	MyIA.AI.Notebooks/CaseStudies/Smart-Grid/student/Smart-Grid-Python.ipynb
+```
+
+L'en-tête est commenté : le lecteur existant `scripts/notebook_tools/rename_notebooks.py` ignore les lignes commençant par `#` et lit les deux colonnes séparées par une tabulation. Les chemins complets distinguent les six carnets, alors que leurs seuls noms de fichier ne donnent que trois noms distincts : `student` et `solution` partagent chaque basename. Les suffixes de noyau `-Python` sont conservés et les neuf destinations proposées sont distinctes.
+
+Les chemins FR ci-dessus sont ceux présents au moment de cette illustration, pas des noms définitifs ratifiés. Le renommage du répertoire `CaseStudies` en `Etudes-de-cas` reste proposé dans #25327 ; au moment d'une éventuelle mise en œuvre, il faudra d'abord résoudre chaque ancien chemin vers le chemin FR courant au moyen du [registre historique des renommages](../reference/rename-ledger.tsv), puis actualiser les clés du mapping. Les 14 arêtes historiques de cette série se raccordent aux six chemins de carnets ici illustrés. Un ancien nom anglais du registre est une trace d'un renommage réel, pas automatiquement la traduction à retenir.
+
+Ce tableau ne modifie pas le registre des renommages réels : les destinations EN sont proposées, non inscrites comme des déplacements accomplis. Il ne lance ni renommage ni traduction, ne crée pas de fichier traduit et ne décide pas du format final ou de l'activation du moteur.
 
 ## 4. Lessons apprises d'Argumentum (intégrées au fork)
 

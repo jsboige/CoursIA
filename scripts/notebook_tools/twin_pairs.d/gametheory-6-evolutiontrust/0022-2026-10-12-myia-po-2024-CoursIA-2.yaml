@@ -1,0 +1,14 @@
+date: '2026-10-12'
+by: myia-po-2024:CoursIA-2
+reason: 'Code edit on the Python side of GameTheory-06-EvolutionTrust (#20327): 4
+  cells modified to align inline copies of run_tournament / compute_payoff_matrix
+  on the clone() contract of the shared Strategy class (cell 1: import copy; cell
+  6: clone() method on the local Strategy class; cells 17 and 27: type(s)() replaced
+  by s.clone()). The C# twin keeps no parallel implementation of these helpers, so
+  no new known_differences and no parity-level change. Rebaseline is parity-preserving
+  for the documented divergence (Python-side Strategy hierarchy is a pedagogical re-derivation,
+  not a re-implementation of the C# twin).'
+python_sha: 5d99ec8f61904458fce89fafb9c677babd8c64b4
+csharp_sha: 4a83e62d4fd31067172d56b76ac5ae379e9f05e2
+content_python_sha: df2dd20c9a95f51df82f1123c3bf8021fc4fa7088465f221c934e652a210fede
+content_csharp_sha: 57bc44d4b19063db77a8927442e7675072886d2b7a60826aa564fa4b36e7321d

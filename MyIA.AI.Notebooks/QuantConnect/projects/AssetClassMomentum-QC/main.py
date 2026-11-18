@@ -19,6 +19,17 @@ from datetime import datetime
 class AssetClassMomentumAlgorithm(QCAlgorithm):
 
     def initialize(self):
+        # Mesure contre références détenues (#22828, protocole de #21594) :
+        # `strategy` (défaut) garde la décision du code ; `spy` (SPY détenu) et
+        # `6040` (SPY 60 %, BND 40 %) sont les deux références du verdict ;
+        # `ew13` (les 13 ETFs à poids égal) et `nohedge` (la même règle sans le
+        # hedge) sont deux diagnostics.
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew13", "nohedge"):
+            raise ValueError(
+                f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | ew13 | nohedge)"
+            )
+
         # Dates paramétrables pour les runs Dev / OOS / Full (backtests QC Cloud).
         start = self.get_parameter("start_date", "2016-01-01")
         end = self.get_parameter("end_date", "2026-07-01")
@@ -49,6 +60,53 @@ class AssetClassMomentumAlgorithm(QCAlgorithm):
                          self.time_rules.at(8, 0),
                          self._rebalance)
 
+        # BND n'est abonné qu'en mode `6040` : le mode `strategy` garde les
+        # abonnements du code d'origine, dont dépend la corrélation par `history()`.
+        spy = self.securities["SPY"].symbol
+        self._spy = spy
+        self._bnd = (
+            self.add_equity("BND", Resolution.DAILY).symbol
+            if self._mode == "6040"
+            else None
+        )
+
+        # Références : aucune décision de stratégie (`_rebalance` sort aussitôt),
+        # rééquilibrage au début de chaque mois, une minute après l'ouverture.
+        if self._mode in ("spy", "6040", "ew13"):
+            self.settings.seed_initial_prices = True
+            self.schedule.on(
+                self.date_rules.month_start(spy),
+                self.time_rules.after_market_open(spy, 1),
+                self._rebalance_reference,
+            )
+
+        # Trace journalière `shadow` (contrat #18923) : valeur du portefeuille à
+        # l'ouverture de chaque séance de SPY, répartie sur e0..e4. Tous les modes
+        # la prennent au même instant, sur la clôture précédente.
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day(spy),
+            self.time_rules.after_market_open(spy, 0),
+            self._trace,
+        )
+
+    def _rebalance_reference(self):
+        if self._mode == "spy":
+            self.set_holdings([PortfolioTarget(self._spy, 1.0)])
+        elif self._mode == "6040":
+            self.set_holdings([
+                PortfolioTarget(self._spy, 0.6),
+                PortfolioTarget(self._bnd, 0.4),
+            ])
+        else:
+            weight = 1.0 / len(self.tickers)
+            self.set_holdings([PortfolioTarget(self.securities[ticker].symbol, weight)
+                               for ticker in self.tickers])
+
+    def _trace(self):
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
+
     def _avg_pairwise_correlation(self, window):
         # Corrélation moyenne des 78 paires de l'univers (triangle supérieur
         # de la matrice de corrélation des rendements quotidiens) sur `window` jours.
@@ -60,6 +118,8 @@ class AssetClassMomentumAlgorithm(QCAlgorithm):
         return float(corr[iu].mean())
 
     def _rebalance(self):
+        if self._mode not in ("strategy", "nohedge"):
+            return
         # Score de momentum = moyenne des 4 ROC ; top-4 en long équipondéré.
         scored = sorted(self.securities.values(),
                         key=lambda s: sum(ind.current.value for ind in s.rocp))
@@ -67,7 +127,9 @@ class AssetClassMomentumAlgorithm(QCAlgorithm):
                    for s in scored[-self.num_long:]]
         # Hedge court GATED (article #21050) : corr moyenne 20 j > corr moyenne 250 j
         # → -30 % sur l'ETF au momentum le plus faible, sinon 100 % long-only.
-        if (self._avg_pairwise_correlation(self.corr_short_window)
+        # Le mode `nohedge` (diagnostic #22828) saute ce bloc.
+        if (self._mode == "strategy"
+                and self._avg_pairwise_correlation(self.corr_short_window)
                 > self._avg_pairwise_correlation(self.corr_long_window)):
             targets.append(PortfolioTarget(scored[0].symbol, self.short_weight))
         self.set_holdings(targets, liquidate_existing_holdings=True)

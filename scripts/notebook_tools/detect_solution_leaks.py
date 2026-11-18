@@ -131,7 +131,7 @@ def code_cell_first_comment_labels_example(source: str) -> bool:
 # a code cell whose nearest header is a methodological commentary section
 # (NOT an Exercice and NOT an Exemple guide) is a data table / worked
 # derivation attached to the surrounding narrative, NOT an exercise
-# solution leak. Closes the Lean-17b-Knots-Invariants-Companion cell 14
+# solution leak. Closes the KNOTS-02-Invariants-Python cell 14
 # FP class (c.875 sub-grain of EPIC #8053): a slice-genus data table
 # sitting under ``### Interprétation`` between the exercise header and
 # the next exercise sub-section. Cf exercise-example-labeling.md
@@ -1132,7 +1132,7 @@ def scan_notebook(path: str) -> list[dict]:
             # / ``### Analyse`` / ``### Discussion`` / ...), the code cell is a
             # data table or worked derivation attached to the surrounding
             # narrative, NOT an exercise solution leak. Closes the
-            # Lean-17b-Knots-Invariants-Companion cell 14 FP class (c.875
+            # KNOTS-02-Invariants-Python cell 14 FP class (c.875
             # sub-grain of EPIC #8053): a slice-genus data table sitting
             # under ``### Interprétation`` between the exercise header and
             # the next exercise sub-section. Recall-safe: a real exercise
@@ -1173,7 +1173,7 @@ def scan_notebook(path: str) -> list[dict]:
             if exercise_with_none_stub_or_marker(next_code_source):
                 continue
             # MiniZinc/C# exercise with `A COMPLETER` markers in a model string.
-            # App-8-MiniZinc pattern (% A COMPLETER :...). The student fills
+            # App-08-MiniZinc-Python pattern (% A COMPLETER :...). The student fills
             # the missing constraints. Not a leak.
             if exercise_with_a_completer_minizinc(next_code_source):
                 continue

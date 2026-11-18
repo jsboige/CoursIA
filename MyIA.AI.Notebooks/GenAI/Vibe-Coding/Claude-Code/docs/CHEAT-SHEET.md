@@ -277,7 +277,7 @@ claude mcp add --transport stdio db -- \
     ]
   },
   "env": {
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
     "ANTHROPIC_API_KEY": ""
   }
@@ -289,7 +289,7 @@ claude mcp add --transport stdio db -- \
 ```json
 {
   "env": {
-    "ANTHROPIC_BASE_URL": "http://127.0.0.1:8899/api",
+    "ANTHROPIC_BASE_URL": "https://openrouter.ai/api",
     "ANTHROPIC_AUTH_TOKEN": "sk-or-v1-VOTRE_CLE",
     "ANTHROPIC_API_KEY": ""
   },
@@ -445,12 +445,12 @@ A configurer dans `settings.json` :
 
 ```bash
 # Windows (PowerShell)
-$env:ANTHROPIC_BASE_URL = "http://127.0.0.1:8899/api"
+$env:ANTHROPIC_BASE_URL = "https://openrouter.ai/api"
 $env:ANTHROPIC_AUTH_TOKEN = "sk-or-v1-VOTRE_CLE"
 $env:ANTHROPIC_API_KEY = ""
 
 # Linux/macOS (bash/zsh)
-export ANTHROPIC_BASE_URL="http://127.0.0.1:8899/api"
+export ANTHROPIC_BASE_URL="https://openrouter.ai/api"
 export ANTHROPIC_AUTH_TOKEN="sk-or-v1-VOTRE_CLE"
 export ANTHROPIC_API_KEY=""
 ```

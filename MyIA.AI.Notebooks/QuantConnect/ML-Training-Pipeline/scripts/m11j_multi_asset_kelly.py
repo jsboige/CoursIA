@@ -44,6 +44,7 @@ from m11g_fee_aware_kelly import (  # noqa: E402
     _net_at_fee,
 )
 from realized_variance import daily_realized_variance  # noqa: E402
+import strategy_metrics  # noqa: E402
 
 # M11i winners only
 WINNERS = ["BTC-USD", "XRP-USD", "ADA-USD", "DOT-USD"]
@@ -63,20 +64,23 @@ def _load_one_coin(coin: str) -> pd.Series:
 
 
 def _sharpe_ann(returns: np.ndarray) -> float:
-    if len(returns) < 10:
+    """Annualized Sharpe (``strategy_metrics.sharpe``: ddof=1, risk-free 0, 365 days).
+
+    Returns nan for fewer than 10 returns or a standard deviation <= 1e-12.
+    """
+    if len(returns) < 10 or float(np.std(returns, ddof=1)) <= 1e-12:
         return float("nan")
-    mu = float(np.mean(returns))
-    sigma = float(np.std(returns, ddof=1))
-    return (mu / sigma) * np.sqrt(365) if sigma > 1e-12 else float("nan")
+    return float(strategy_metrics.sharpe(returns, periods_per_year=365))
 
 
 def _max_drawdown(returns: np.ndarray) -> float:
+    """Max drawdown, starting capital as first peak (``strategy_metrics.max_drawdown``).
+
+    Returns nan for fewer than 10 returns.
+    """
     if len(returns) < 10:
         return float("nan")
-    cum = np.cumprod(1 + returns)
-    peak = np.maximum.accumulate(cum)
-    dd = (cum - peak) / peak
-    return float(np.min(dd))
+    return strategy_metrics.max_drawdown(returns)
 
 
 def _prepare_coin_data(

@@ -22,6 +22,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import time
 from pathlib import Path
@@ -32,6 +33,7 @@ import torch
 import torch.nn as nn
 
 from bias_metrics import (  # Epic #1454: shared organ (#14363) + 4-state machine (#14388)
+    joined_pair_errors,
     _aggregate_state,
     _dm_centered_mse,
     _is_beats,
@@ -342,24 +344,19 @@ def _mse_without_bias(errors: np.ndarray) -> float:
     return float(np.mean((errors - np.mean(errors)) ** 2))
 
 
-def _aligned_errors(
-    dl_forecasts: pd.Series,
-    dl_targets: pd.Series,
-    har_forecasts: pd.Series,
-    har_targets: pd.Series,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Date-align the DLinear and HAR OOS error series (inner join).
+def _joined_or_sentinel(series_pair: tuple, row_extra: dict) -> tuple | None:
+    """`joined_pair_errors` wrapper that records the refusal instead of dying.
 
-    Lesson #12684: the two walk-forwards emit their forecasts on their own
-    date indexes; the centered-DM leg compares errors of the SAME days, so the
-    join must happen on dates, never positionally.
+    A shared-target mismatch must not silently degrade to positional pairing
+    (the #18190 lesson) nor abort the whole run: the offending combo gets an
+    explicit `TARGET_MISMATCH` verdict and the run carries on.
     """
-    dl_err = (dl_forecasts - dl_targets).dropna()
-    har_err = (har_forecasts - har_targets).dropna()
-    joined = pd.concat(
-        [dl_err.rename("dl"), har_err.rename("har")], axis=1, join="inner",
-    ).dropna()
-    return joined["dl"].to_numpy(), joined["har"].to_numpy()
+    try:
+        return joined_pair_errors(*series_pair)
+    except ValueError as exc:
+        row_extra["dm_target_refusal"] = str(exc)
+        print(f"    [DM-REFUSED] {exc}")
+        return None
 
 
 def _edge_pct(baseline_mse: float, model_mse: float) -> float:
@@ -556,6 +553,8 @@ def _eval_one_coin(
             har_calibrated_mse = har_calibrated_out["aggregate_mse_logrv"]
             har_forecasts = har_out["forecasts"]
             har_targets = har_out["targets"]
+            har_calibrated_forecasts = har_calibrated_out["forecasts"]
+            har_calibrated_targets = har_calibrated_out["targets"]
             har_errors = (har_forecasts - har_targets).dropna().values
             har_calibrated_errors = (
                 har_calibrated_out["forecasts"] - har_calibrated_out["targets"]
@@ -608,26 +607,33 @@ def _eval_one_coin(
                 continue
 
             # DM tests: raw HAR is retained for comparability; the calibrated
-            # baseline drives the verdict because it removes a train-estimated offset.
+            # baseline drives the verdict because it removes a train-estimated
+            # offset. All DM legs join the two walk-forwards on their common
+            # ORIGIN dates and validate the shared targets first (#18190
+            # protocol, ported from M17): the previous positional truncation
+            # `[:min_len]` silently paired different days as soon as the two
+            # date indexes diverged (fold skips, dropna differences).
             dm_info = {}
-            if (
-                har_errors is not None
-                and har_calibrated_errors is not None
-                and len(dl_errors) >= 10
-                and len(har_errors) >= 10
-                and len(har_calibrated_errors) >= 10
-            ):
-                min_len = min(len(dl_errors), len(har_errors), len(har_calibrated_errors))
+            raw_join = _joined_or_sentinel(
+                (dl_forecasts, dl_targets, har_forecasts, har_targets), dm_info,
+            )
+            cal_join = _joined_or_sentinel(
+                (dl_forecasts, dl_targets, har_calibrated_forecasts, har_calibrated_targets),
+                dm_info,
+            )
+            if raw_join is not None and cal_join is not None and min(
+                raw_join["n_joined"], cal_join["n_joined"]
+            ) >= 10:
                 try:
                     dm = dm_verdict(
-                        dl_errors[:min_len], har_errors[:min_len],
+                        raw_join["a_errors"], raw_join["b_errors"],
                         horizon=h, loss_fn=loss_fn,
                     )
                     calibrated_dm = dm_verdict(
-                        dl_errors[:min_len], har_calibrated_errors[:min_len],
+                        cal_join["a_errors"], cal_join["b_errors"],
                         horizon=h, loss_fn=loss_fn,
                     )
-                    dm_info = {
+                    dm_info.update({
                         "dm_stat": dm["dm_statistic"],
                         "dm_pvalue": dm["p_value"],
                         "dm_verdict": dm["verdict"],
@@ -636,26 +642,37 @@ def _eval_one_coin(
                         "calibrated_dm_pvalue": calibrated_dm["p_value"],
                         "calibrated_dm_verdict": calibrated_dm["verdict"],
                         "calibrated_dm_mean_loss_diff": calibrated_dm["mean_loss_diff"],
-                    }
+                        "dm_raw_n_aligned": raw_join["n_joined"],
+                        "dm_cal_n_aligned": cal_join["n_joined"],
+                        "dm_target_gap_max": max(
+                            raw_join["target_gap_max"], cal_join["target_gap_max"]
+                        ),
+                    })
                     print(
                         f"  h={h} seed={seed} DLinear MSE={dl_mse:.5f} "
                         f"edge_raw={_edge_pct(har_mse, dl_mse):+.2f}% "
                         f"edge_calibrated={_edge_pct(har_calibrated_mse, dl_mse):+.2f}% "
                         f"DM_cal={calibrated_dm['dm_statistic']:.3f} "
                         f"p={calibrated_dm['p_value']:.4f} "
+                        f"(joined {cal_join['n_joined']} origins) "
                         f"-> {calibrated_dm['verdict']}"
                     )
                 except Exception as exc:
                     print(f"  h={h} seed={seed} DM FAILED: {exc}")
-                    dm_info = {
+                    dm_info.update({
                         "dm_verdict": "DM_FAILED",
                         "calibrated_dm_verdict": "DM_FAILED",
-                    }
+                    })
+            elif raw_join is None or cal_join is None:
+                dm_info.update({
+                    "dm_verdict": "TARGET_MISMATCH",
+                    "calibrated_dm_verdict": "TARGET_MISMATCH",
+                })
             else:
-                dm_info = {
+                dm_info.update({
                     "dm_verdict": "INSUFFICIENT_DATA",
                     "calibrated_dm_verdict": "INSUFFICIENT_DATA",
-                }
+                })
 
             dl_debiased_mse = _mse_without_bias(dl_errors)
 
@@ -670,10 +687,19 @@ def _eval_one_coin(
             #   * the share of HAR's MSE that is bias^2, read by the doc table.
             dl_decomp = _mse_decomposition(dl_errors)
             har_decomp_raw = _mse_decomposition(har_errors)
-            dl_al, har_al = _aligned_errors(
-                dl_forecasts, dl_targets, har_forecasts, har_targets,
-            )
-            dm_centered = _dm_centered_mse(dl_al, har_al, horizon=h)
+            if raw_join is not None:
+                dm_centered = _dm_centered_mse(
+                    raw_join["a_errors"], raw_join["b_errors"], horizon=h,
+                )
+                n_aligned_centered = raw_join["n_joined"]
+            else:
+                dm_centered = {
+                    "dm_stat": float("nan"),
+                    "dm_pvalue": float("nan"),
+                    "dm_verdict": "TARGET_MISMATCH",
+                    "mean_loss_diff": float("nan"),
+                }
+                n_aligned_centered = 0
 
             # Per-observation persistence (lesson #12684): the out-of-bias
             # (recentred error) DM re-validation needs the forecast series,
@@ -715,7 +741,7 @@ def _eval_one_coin(
                 "dm_centered_pvalue": dm_centered["dm_pvalue"],
                 "dm_centered_verdict": dm_centered["dm_verdict"],
                 "dm_centered_mean_loss_diff": dm_centered.get("mean_loss_diff", float("nan")),
-                "n_aligned_centered": int(len(dl_al)),
+                "n_aligned_centered": int(n_aligned_centered),
                 "dl_dates": [d.strftime("%Y-%m-%d") for d in dl_targets.index],
                 "dl_pred": [float(x) for x in dl_forecasts.values],
                 "dl_target": [float(x) for x in dl_targets.values],
@@ -730,6 +756,83 @@ def _eval_one_coin(
                     f.write(json.dumps(row, default=str) + "\n")
 
     return rows
+
+
+def _sha256_text(text: str) -> str:
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _write_cluster_manifest(
+    manifest_path: Path,
+    all_rows: list[dict],
+    agg: list[dict],
+    out_path: Path,
+    args: argparse.Namespace,
+    elapsed_s: float,
+) -> None:
+    """Compact in-repo cluster manifest (results-artifact-policy #15890).
+
+    The full run JSON embeds per-observation forecast series and can exceed
+    the 512 KB CI bar; the manifest keeps every verdict, the per-combo
+    alignment diagnostics and per-coin SHA-256 anchors of the full rows, so
+    the aggregate stays falsifiable in-repo without shipping the series.
+    """
+    per_coin: dict[str, list[dict]] = {}
+    for r in all_rows:
+        per_coin.setdefault(r["coin"], []).append(r)
+
+    alignment = []
+    for entry in agg:
+        coin, h = entry["coin"], entry["horizon"]
+        seed_rows = [r for r in per_coin.get(coin, []) if r.get("horizon") == h]
+        n_joined = [r.get("dm_cal_n_aligned") for r in seed_rows if r.get("dm_cal_n_aligned") is not None]
+        gaps = [r.get("dm_target_gap_max") for r in seed_rows if r.get("dm_target_gap_max") is not None]
+        refusals = sum(1 for r in seed_rows if r.get("calibrated_dm_verdict") == "TARGET_MISMATCH")
+        alignment.append({
+            "coin": coin,
+            "horizon": h,
+            "dm_cal_n_aligned_min": min(n_joined) if n_joined else None,
+            "dm_cal_n_aligned_max": max(n_joined) if n_joined else None,
+            "dm_target_gap_max": max(gaps) if gaps else None,
+            "n_target_mismatch": refusals,
+        })
+
+    full_text = out_path.read_text(encoding="utf-8")
+    manifest = {
+        "protocol": (
+            "paired-origin cluster revalidation (#18190 port): DM legs join "
+            "walk-forwards on common origin dates and refuse on shared-target "
+            "mismatch, never positional truncation"
+        ),
+        "config": {
+            "coins": sorted(per_coin.keys()),
+            "horizons": args.horizons,
+            "seeds": args.seeds,
+            "seq_len": args.seq_len,
+            "n_splits": args.n_splits,
+            "refit_every": args.refit_every,
+            "epochs": args.epochs,
+            "decompose": args.decompose,
+            "debias": args.debias,
+            "loss_fn": args.loss_fn,
+        },
+        "elapsed_s": elapsed_s,
+        "total_rows": len(all_rows),
+        "artifact": {
+            "path": out_path.name,
+            "bytes": out_path.stat().st_size,
+            "sha256": _sha256_text(full_text),
+        },
+        "per_coin_sha256": {
+            coin: _sha256_text(json.dumps(rows, sort_keys=True, default=str))
+            for coin, rows in sorted(per_coin.items())
+        },
+        "alignment": alignment,
+        "aggregated": agg,
+    }
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    print(f"[manifest] wrote {manifest_path} ({manifest_path.stat().st_size} bytes)")
 
 
 def main() -> None:
@@ -753,6 +856,8 @@ def main() -> None:
     parser.add_argument("--loss-fn", type=str, choices=["mse", "mae", "linear"], default="mse",
                         help="Loss applied to forecast errors before the DM test (pr-review §C requires 'linear' for sign-preservation)")
     parser.add_argument("--out-json", type=str, default="results/m4_dlinear_vol.json")
+    parser.add_argument("--manifest-out", type=str, default=None,
+                        help="Also write the compact cluster manifest (verdicts + per-coin SHA-256 anchors, no series)")
     args = parser.parse_args()
 
     t0 = time.time()
@@ -814,6 +919,11 @@ def main() -> None:
           f"(out of {len(agg)} configs)")
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    # newline="\n" + encoding : l'empreinte declaree par _write_cluster_manifest est
+    # calculee sur le texte normalise en LF (read_text normalise CRLF -> LF) ; les
+    # octets sur disque doivent etre ce texte-la, sinon le couple (bytes, sha256)
+    # du manifeste decrit deux jeux d'octets differents (issue #19104 ; meme
+    # correctif que m13_ms_har.py et merge_m13_partials.py).
     out_path.write_text(json.dumps({
         "rows": all_rows,
         "aggregated": agg,
@@ -829,8 +939,13 @@ def main() -> None:
             "debias": args.debias,
             "loss_fn": args.loss_fn,
         },
-    }, indent=2))
+    }, indent=2), encoding="utf-8", newline="\n")
     print(f"\n[done] {time.time() - t0:.1f}s -- wrote {out_path}")
+    if args.manifest_out:
+        _write_cluster_manifest(
+            Path(args.manifest_out), all_rows, agg, out_path, args,
+            elapsed_s=time.time() - t0,
+        )
 
 
 if __name__ == "__main__":

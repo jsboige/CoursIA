@@ -3623,7 +3623,7 @@ Mission accomplie ! J'ai créé un corrigé complet pour l'exercice "demo-1-plan
 - **Structure exemplaire** : rétroplanning, organisation des équipes, mesures de succès
 - **Vision long terme** : perspectives d'évolution et prochaines éditions
 
-Le plan de 438 lignes constitue un exemple complet de ce qu'un étudiant devrait produire, avec le niveau de détail et de professionnalisme attendu pour un exercice de planification de tâches avec Roo.
+Le plan constitue un exemple complet de ce qu'un étudiant devrait produire, avec le niveau de détail et de professionnalisme attendu pour un exercice de planification de tâches avec Roo.
 </result>
 </attempt_completion>
 

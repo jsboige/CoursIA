@@ -1,0 +1,553 @@
+{
+ "phase": "study",
+ "seeds": [
+  0,
+  1,
+  7,
+  42,
+  99
+ ],
+ "per_seed": [
+  {
+   "seed": 0,
+   "arms": {
+    "reactive": {
+     "stabilite": 0.18322359498088417,
+     "correction": 14.88888888888889,
+     "correction_par_perturbation": [
+      66,
+      17,
+      32,
+      6,
+      12,
+      0,
+      0,
+      1,
+      0
+     ],
+     "adaptation": 7.856009758726504e-05
+    },
+    "schema": {
+     "stabilite": 0.18349479800947033,
+     "correction": 14.555555555555555,
+     "correction_par_perturbation": [
+      1,
+      72,
+      34,
+      0,
+      12,
+      0,
+      0,
+      12,
+      0
+     ],
+     "adaptation": 3.2396118012774835,
+     "erreur_pred": 0.028118562281072595,
+     "baseline_persistance": 0.01240789151738052,
+     "baseline_ema_vitesse": 0.011948257223197438,
+     "erreur_rapport": 0.0025131817004899297,
+     "confiance_moyenne": 0.7666971019557423
+    },
+    "schema_shuffled": {
+     "stabilite": 0.13417289727743995,
+     "correction": 22.11111111111111,
+     "correction_par_perturbation": [
+      0,
+      37,
+      46,
+      0,
+      1,
+      80,
+      10,
+      0,
+      25
+     ],
+     "adaptation": 1.3572088082974534,
+     "erreur_pred": 0.17916315948232103,
+     "baseline_persistance": 0.09613001930161054,
+     "baseline_ema_vitesse": 0.107810800317391,
+     "erreur_rapport": 0.002475601785375076,
+     "confiance_moyenne": 0.19344678666900983
+    },
+    "schema_distorted_d0.025": {
+     "stabilite": 0.01681616956251208,
+     "correction": 27.333333333333332,
+     "correction_par_perturbation": [
+      0,
+      73,
+      80,
+      0,
+      13,
+      80,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 1.0,
+     "erreur_pred": 0.03644071219174874,
+     "baseline_persistance": 0.013219151277243534,
+     "baseline_ema_vitesse": 0.013280566322953198,
+     "erreur_rapport": 0.024931262656210214,
+     "confiance_moyenne": 0.7500242191963767
+    },
+    "schema_distorted_d0.050": {
+     "stabilite": 0.027469694145206357,
+     "correction": 10.333333333333334,
+     "correction_par_perturbation": [
+      0,
+      74,
+      5,
+      0,
+      14,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 1.0,
+     "erreur_pred": 0.02717565062422344,
+     "baseline_persistance": 0.010327711192843573,
+     "baseline_ema_vitesse": 0.00968932372519589,
+     "erreur_rapport": 0.05008409851657788,
+     "confiance_moyenne": 0.7659713936177386
+    }
+   }
+  },
+  {
+   "seed": 1,
+   "arms": {
+    "reactive": {
+     "stabilite": 0.0006410302911956256,
+     "correction": 29.0,
+     "correction_par_perturbation": [
+      0,
+      17,
+      9,
+      54,
+      0,
+      0,
+      60,
+      52,
+      69
+     ],
+     "adaptation": 0.00010476895531716471
+    },
+    "schema": {
+     "stabilite": 0.01695324212926309,
+     "correction": 4.444444444444445,
+     "correction_par_perturbation": [
+      0,
+      17,
+      2,
+      12,
+      9,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 0.00010000000000000009,
+     "erreur_pred": 0.037935668783450734,
+     "baseline_persistance": 0.014086754371867377,
+     "baseline_ema_vitesse": 0.014525215808125744,
+     "erreur_rapport": 0.0024560849559767746,
+     "confiance_moyenne": 0.6898563865610945
+    },
+    "schema_shuffled": {
+     "stabilite": 0.13732448364138372,
+     "correction": 24.444444444444443,
+     "correction_par_perturbation": [
+      0,
+      38,
+      29,
+      17,
+      0,
+      80,
+      41,
+      5,
+      10
+     ],
+     "adaptation": 1.0470137930043817,
+     "erreur_pred": 0.20493813503518798,
+     "baseline_persistance": 0.09605018616201436,
+     "baseline_ema_vitesse": 0.10925607873853975,
+     "erreur_rapport": 0.002450815219337195,
+     "confiance_moyenne": 0.166086487605498
+    },
+    "schema_distorted_d0.025": {
+     "stabilite": 0.015893117111538766,
+     "correction": 11.0,
+     "correction_par_perturbation": [
+      71,
+      14,
+      3,
+      11,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 3.483006636813291e-05,
+     "erreur_pred": 0.03479836746681099,
+     "baseline_persistance": 0.013147067749107576,
+     "baseline_ema_vitesse": 0.013366640137968703,
+     "erreur_rapport": 0.025010446971362562,
+     "confiance_moyenne": 0.7119957114157637
+    },
+    "schema_distorted_d0.050": {
+     "stabilite": 0.025735633168108486,
+     "correction": 10.222222222222221,
+     "correction_par_perturbation": [
+      71,
+      6,
+      4,
+      11,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 3.8335448407248864e-05,
+     "erreur_pred": 0.03334066148505015,
+     "baseline_persistance": 0.012366159452207894,
+     "baseline_ema_vitesse": 0.0125219681381186,
+     "erreur_rapport": 0.04999010267608065,
+     "confiance_moyenne": 0.7222745588662366
+    }
+   }
+  },
+  {
+   "seed": 7,
+   "arms": {
+    "reactive": {
+     "stabilite": 0.014684525153500036,
+     "correction": 17.11111111111111,
+     "correction_par_perturbation": [
+      16,
+      61,
+      0,
+      0,
+      1,
+      0,
+      76,
+      0,
+      0
+     ],
+     "adaptation": 1.0000000000000018e-08
+    },
+    "schema": {
+     "stabilite": 0.012831879654383508,
+     "correction": 18.0,
+     "correction_par_perturbation": [
+      72,
+      68,
+      2,
+      12,
+      8,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 3.0285343213869033e-05,
+     "erreur_pred": 0.035230503122861925,
+     "baseline_persistance": 0.012717465915049915,
+     "baseline_ema_vitesse": 0.012673708306818314,
+     "erreur_rapport": 0.0025647250530843853,
+     "confiance_moyenne": 0.7120016116304311
+    },
+    "schema_shuffled": {
+     "stabilite": 0.12280028316804524,
+     "correction": 21.0,
+     "correction_par_perturbation": [
+      11,
+      0,
+      13,
+      0,
+      50,
+      80,
+      6,
+      7,
+      22
+     ],
+     "adaptation": 1.6303244155029162,
+     "erreur_pred": 0.15579796578554195,
+     "baseline_persistance": 0.10417819752125873,
+     "baseline_ema_vitesse": 0.11461359611195339,
+     "erreur_rapport": 0.0025335044365393726,
+     "confiance_moyenne": 0.2521521705716775
+    },
+    "schema_distorted_d0.025": {
+     "stabilite": 0.021550782987555687,
+     "correction": 17.77777777777778,
+     "correction_par_perturbation": [
+      71,
+      68,
+      2,
+      11,
+      8,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 3.0426865564669723e-05,
+     "erreur_pred": 0.03461574115593117,
+     "baseline_persistance": 0.012626255037259178,
+     "baseline_ema_vitesse": 0.012518197961269668,
+     "erreur_rapport": 0.02490685020183083,
+     "confiance_moyenne": 0.7147919754081696
+    },
+    "schema_distorted_d0.050": {
+     "stabilite": 0.02258792980164348,
+     "correction": 17.11111111111111,
+     "correction_par_perturbation": [
+      70,
+      67,
+      0,
+      10,
+      7,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 1.0000000000000018e-08,
+     "erreur_pred": 0.03376736787712868,
+     "baseline_persistance": 0.011936937899271067,
+     "baseline_ema_vitesse": 0.011798811582860166,
+     "erreur_rapport": 0.04996401926997836,
+     "confiance_moyenne": 0.7199227293609359
+    }
+   }
+  },
+  {
+   "seed": 42,
+   "arms": {
+    "reactive": {
+     "stabilite": 0.0,
+     "correction": 13.0,
+     "correction_par_perturbation": [
+      3,
+      0,
+      47,
+      4,
+      0,
+      0,
+      63,
+      0,
+      0
+     ],
+     "adaptation": 2.5022202498347694e-08
+    },
+    "schema": {
+     "stabilite": 0.08462319919636657,
+     "correction": 14.222222222222221,
+     "correction_par_perturbation": [
+      4,
+      0,
+      28,
+      16,
+      0,
+      0,
+      0,
+      0,
+      80
+     ],
+     "adaptation": 0.00019129311827723898,
+     "erreur_pred": 0.04147933885979326,
+     "baseline_persistance": 0.015029782979863206,
+     "baseline_ema_vitesse": 0.015721008703217233,
+     "erreur_rapport": 0.00251842515844428,
+     "confiance_moyenne": 0.7123326930507318
+    },
+    "schema_shuffled": {
+     "stabilite": 0.12400832546669423,
+     "correction": 6.333333333333333,
+     "correction_par_perturbation": [
+      0,
+      8,
+      0,
+      4,
+      13,
+      0,
+      0,
+      32,
+      0
+     ],
+     "adaptation": 0.00010000000000000009,
+     "erreur_pred": 0.19013276483277408,
+     "baseline_persistance": 0.08972120550638507,
+     "baseline_ema_vitesse": 0.10178571718692579,
+     "erreur_rapport": 0.002583608868972882,
+     "confiance_moyenne": 0.20062511801403074
+    },
+    "schema_distorted_d0.025": {
+     "stabilite": 0.028293267995406827,
+     "correction": 3.7777777777777777,
+     "correction_par_perturbation": [
+      6,
+      0,
+      11,
+      17,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 0.0001223903410341661,
+     "erreur_pred": 0.04442141016209816,
+     "baseline_persistance": 0.015137016624553731,
+     "baseline_ema_vitesse": 0.01587399478954866,
+     "erreur_rapport": 0.024986810624856737,
+     "confiance_moyenne": 0.6847720062443223
+    },
+    "schema_distorted_d0.050": {
+     "stabilite": 0.028347238788257633,
+     "correction": 7.222222222222222,
+     "correction_par_perturbation": [
+      7,
+      0,
+      41,
+      17,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 0.0001802583005304597,
+     "erreur_pred": 0.04248174853370266,
+     "baseline_persistance": 0.014858919875726847,
+     "baseline_ema_vitesse": 0.016147231026693302,
+     "erreur_rapport": 0.049998012830986545,
+     "confiance_moyenne": 0.7036281057322237
+    }
+   }
+  },
+  {
+   "seed": 99,
+   "arms": {
+    "reactive": {
+     "stabilite": 0.0,
+     "correction": 8.666666666666666,
+     "correction_par_perturbation": [
+      20,
+      19,
+      25,
+      0,
+      0,
+      14,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 1.077217345015942
+    },
+    "schema": {
+     "stabilite": 0.020087917571723683,
+     "correction": 19.11111111111111,
+     "correction_par_perturbation": [
+      73,
+      72,
+      2,
+      13,
+      12,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 3.0146417667793094e-05,
+     "erreur_pred": 0.044439529538422375,
+     "baseline_persistance": 0.016767808825027642,
+     "baseline_ema_vitesse": 0.017147102556535874,
+     "erreur_rapport": 0.002656578796726155,
+     "confiance_moyenne": 0.6938086020470838
+    },
+    "schema_shuffled": {
+     "stabilite": 0.15056153407955522,
+     "correction": 21.444444444444443,
+     "correction_par_perturbation": [
+      5,
+      41,
+      62,
+      1,
+      60,
+      2,
+      0,
+      22,
+      0
+     ],
+     "adaptation": 2.9161994716534236,
+     "erreur_pred": 0.18882625918674742,
+     "baseline_persistance": 0.09783529456497334,
+     "baseline_ema_vitesse": 0.11233004405987897,
+     "erreur_rapport": 0.0025845394274901816,
+     "confiance_moyenne": 0.18932061423091848
+    },
+    "schema_distorted_d0.025": {
+     "stabilite": 0.025086709326804228,
+     "correction": 13.777777777777779,
+     "correction_par_perturbation": [
+      28,
+      39,
+      57,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+     ],
+     "adaptation": 1.2673763775476121,
+     "erreur_pred": 0.04533770978687384,
+     "baseline_persistance": 0.01581565775552219,
+     "baseline_ema_vitesse": 0.01664534209118255,
+     "erreur_rapport": 0.02496401771006345,
+     "confiance_moyenne": 0.6813802444930065
+    },
+    "schema_distorted_d0.050": {
+     "stabilite": 0.1415695101939246,
+     "correction": 24.333333333333332,
+     "correction_par_perturbation": [
+      33,
+      36,
+      59,
+      0,
+      11,
+      0,
+      0,
+      80,
+      0
+     ],
+     "adaptation": 1.213703741053436,
+     "erreur_pred": 0.04368557641598292,
+     "baseline_persistance": 0.014550467589631532,
+     "baseline_ema_vitesse": 0.015678371104978925,
+     "erreur_rapport": 0.0502554587143461,
+     "confiance_moyenne": 0.6896992015024092
+    }
+   }
+  }
+ ],
+ "predictions": {
+  "P1a": false,
+  "P1b": false,
+  "P1c": false,
+  "P2": false,
+  "P3a": true,
+  "P3b": true,
+  "P4": false,
+  "P5": false
+ },
+ "verdict": "REFUTED",
+ "sealed": {
+  "doc": "docs/ict/attention-schema-control-pre-enregistrement.md",
+  "commit": "fb74ec445",
+  "sealed_at": "2026-10-30"
+ }
+}

@@ -79,7 +79,14 @@ list means the flag did not fire — it never means "measured clean".
 CLI::
 
     python verify_prosody.py --audio-dir DIR [--json OUT] [--reject-only]
-    python verify_prosody.py --single seg.mp3
+    python verify_prosody.py --single seg.mp3 [--window-s 180]
+
+A clip longer than ``LONG_FORM_WINDOW_S`` (180 s) is gated in WINDOWS
+(#21485): the structural criteria are functions of the sequence length, so a
+verdict taken on a whole chapter measures the aggregation rather than the take.
+Each window goes through the unchanged short-segment path; the fold keeps the
+worst melody verdict, the widest span, the fastest motion and the narrowest
+global range, and reads breath/voice over the whole file.
 
 Env: needs a Python with librosa/scipy/sklearn/matplotlib (miniconda base has
 librosa 0.11). The prosody_lab dir is auto-located from the repo layout; override
@@ -100,6 +107,41 @@ ERRATIC_SPAN_ST = 18.0      # syllable span above this == over-modulated (Kokoro
 ERRATIC_MOTION_ST = 2.5     # mean |interval| per syllable above this == erratic
 MIN_SYLLABLES = 4           # fewer voiced syllables than this -> INCONCLUSIVE
 DECAY_MIN_DURATION_S = 60.0 # below this, decay_db is masked (noisy on short clips)
+
+# --- Long-form artefacts (a chapter is not a segment) ----------------------
+# A segment is 30-130 s; a delivered audiobook chapter is ~1400 s. The two
+# structural criteria are FUNCTIONS OF THE SEQUENCE LENGTH, not only of the
+# melody: `motif3_repeat_pct` counts the positions whose 3-note motif occurs
+# at least twice *anywhere in the sequence*, so it saturates as the sequence
+# grows (#21485, measured on the chapter-1 delivery: 85.2% on the 1365-s file
+# against 44.3-49.7% on its 170-s windows -- the same audio, and the 60%
+# drone threshold crossed by duration alone). `melodic_span_st` drifts the
+# same way. A verdict computed on the whole artefact therefore measures the
+# aggregation, not the take.
+# So a long artefact is gated in FIXED-LENGTH WINDOWS: each window goes
+# through the unchanged short-segment path, and a window's verdict is exactly
+# what the same instrument gives on a clip of that length.
+LONG_FORM_WINDOW_S = 180.0
+
+# A file above this size that NEITHER backend can probe is treated as a
+# possible long-form artefact, not as a short clip: ``analyze_file`` would
+# otherwise take the short path silently — the pre-#21485 behaviour, with no
+# signal at all (#21521 reserve 1). 1.44 MB is 180 s at 64 kbit/s mono, the
+# low end for an audiobook delivery, so the threshold means "could plausibly
+# exceed one window". Under it, an unreadable header is an instrument problem
+# the short path already reports on its own metrics.
+UNKNOWN_DURATION_WARN_BYTES = 1_440_000
+
+# Melody verdicts, worst first. FLAT and DRONE are both reject classes
+# (`classify_segment`), so they share the top rank.
+MELODY_SEVERITY = {
+    None: 0,
+    "INSUFFICIENT": 0,
+    "EXPRESSIVE": 1,
+    "MODERATE": 2,
+    "FLAT": 3,
+    "DRONE": 3,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -126,6 +168,13 @@ def classify_segment(
     axis fired (``"span"`` / ``"motion"``); it is ``None`` — never ``[]`` — when
     the segment was too short to evaluate, so "not measured" and "measured,
     nothing fired" never share one value.
+
+    ``n_syllables`` is a TOTAL, not a density: on the long-form path it is
+    the sum over windows (``aggregate_window_measurements``), on the short
+    path one clip's count. The name is kept short for the consumers that
+    already read it (#21521 reserve 2) — the contract lives here, at the
+    point of consumption: compare it to ``MIN_SYLLABLES`` only, never against
+    a per-window count, and never as syllables per second.
 
     ``breath_trusted`` (default True) is False when the spectral breath instrument
     returned a verdict but the clip is too short for ``decay_db`` to be reliable
@@ -207,6 +256,72 @@ def classify_segment(
                 "erratic_axes": erratic_axes}
     return {"gate": "PASS-TO-EAR", "reasons": [], "reason_kinds": [],
             "erratic_axes": erratic_axes}
+
+
+def aggregate_window_measurements(windows: List[Dict[str, object]]) -> Dict[str, object]:
+    """Fold per-window measurements into the one set the gate policy reads.
+
+    Pure — no audio, no I/O, unit-testable. The rules are the conservative
+    direction (a floor may only get stricter as the material grows):
+
+    * ``melody_verdict`` — the WORST window verdict. A window that is FLAT or
+      DRONE rejects the artefact, wherever it sits.
+    * ``melodic_span_st`` / ``mean_abs_interval_st`` — the MAXIMUM over the
+      windows: an over-modulated window must not be hidden by a calm one.
+    * ``global_range_st`` — the MINIMUM over the windows: the narrowest global
+      range is the one that can trip the monotone floor, and the whole-file
+      value only grows with the material.
+    * ``n_syllables`` — the sum, so the "too short to read" abstention cannot
+      fire on an artefact that is long in total.
+
+    ``worst_window`` is returned alongside: the window the concentration
+    metrics (``effective_notes``, ``motif3_repeat_pct``, ...) are read from.
+    Its tie-break is lexicographic ``(severity, motif3, span)``, so at equal
+    verdict the *most concentrated* window wins — a very wide but low-motif
+    window is never the one reported (the choice is about where concentration
+    is read, not about which window is worst on every axis). The widest span
+    is therefore not carried by ``worst_window``; ``widest_window`` names the
+    window it came from, next to the ``melodic_span_st`` maximum that already
+    feeds the gate (#21521 reserve 3).
+    """
+    if not windows:
+        return {
+            "melody_verdict": None,
+            "melodic_span_st": None,
+            "mean_abs_interval_st": None,
+            "global_range_st": None,
+            "n_syllables": 0,
+            "worst_window": None,
+            "widest_window": None,
+        }
+
+    def _rank(w: Dict[str, object]) -> tuple:
+        return (
+            MELODY_SEVERITY.get(w.get("melody_verdict"), 0),
+            w.get("motif3_repeat_pct") or 0.0,
+            w.get("melodic_span_st") or 0.0,
+        )
+
+    worst = max(windows, key=_rank)
+    widest = max(windows, key=lambda w: w.get("melodic_span_st") or 0.0)
+
+    def _collect(key: str) -> List[float]:
+        return [w[key] for w in windows
+                if isinstance(w.get(key), (int, float))]
+
+    spans = _collect("melodic_span_st")
+    motions = _collect("mean_abs_interval_st")
+    ranges = _collect("global_range_st")
+
+    return {
+        "melody_verdict": worst.get("melody_verdict"),
+        "melodic_span_st": max(spans) if spans else None,
+        "mean_abs_interval_st": max(motions) if motions else None,
+        "global_range_st": min(ranges) if ranges else None,
+        "n_syllables": sum(w.get("n_syllables") or 0 for w in windows),
+        "worst_window": worst,
+        "widest_window": widest,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -308,6 +423,232 @@ def analyze_segment(path: str, instruments) -> Dict[str, object]:
     }
 
 
+# ---------------------------------------------------------------------------
+# Long-form artefacts — gate a chapter in windows, not in one gulp.
+# ---------------------------------------------------------------------------
+
+def _probe_duration_s(path: str) -> Optional[float]:
+    """Duration of *path* in seconds, or None when it cannot be probed.
+
+    Cheap first (header only), then the lab's own loader (which has the
+    pydub/ffmpeg fallback for mp3 without a libsndfile mp3 build) so an mp3
+    delivery is not silently treated as a short segment.
+    """
+    try:
+        import soundfile as sf
+        info = sf.info(str(path))
+        if info.samplerate and info.frames:
+            return float(info.frames) / float(info.samplerate)
+    except Exception:
+        pass
+    try:
+        from pydub import AudioSegment
+        seg = AudioSegment.from_file(str(path))
+        if seg.frame_rate:
+            return len(seg) / float(seg.frame_rate)
+    except Exception:
+        pass
+    return None
+
+
+def _plan_window_bounds(n_samples: int, step: int) -> List[tuple]:
+    """Return the ``(start, end)`` sample bounds of the analysis windows.
+
+    Pure sample arithmetic -- no audio, no I/O -- so the cut the organ makes
+    is unit-testable in plain CI (the defect class of #21521 item 3 lives
+    here, not in the fold). Fixed windows of ``step`` samples, with ONE
+    exception: the closing queue. A tail shorter than half a window is
+    narrow-range BY CONSTRUCTION (a 10-s remainder of a 1 450-s chapter),
+    and the fold takes the WORST melody verdict and the MINIMUM global
+    range over the windows -- such a tail read FLAT on its own would reject
+    the whole chapter on the monotone floor by duration alone, the exact
+    false-REJECT-by-duration class #21486 retired. A sub-half tail is
+    therefore merged into the previous window; the merged window stays
+    under 1.5x window_s, still in the regime the instruments were calibrated
+    on (30-130 s segments, window 180 s). An artefact shorter than one
+    window is returned as the single window it is.
+    """
+    if n_samples <= 0 or step <= 0:
+        return []
+    bounds = [(s, min(s + step, n_samples)) for s in range(0, n_samples, step)]
+    if len(bounds) >= 2 and (bounds[-1][1] - bounds[-1][0]) < step // 2:
+        prev_start, _ = bounds[-2]
+        bounds[-2] = (prev_start, bounds[-1][1])
+        bounds.pop()
+    return bounds
+
+
+def _window_audio_files(path: str, window_s: float, tmp_dir: str) -> List[str]:
+    """Split *path* into fixed-length windows; return the written file paths.
+
+    The audio is read once through the lab's own loader (resampled to the
+    lab's rate, so the windows are exactly what the instruments would have
+    read) and each window is written as a wav the short-segment path can
+    analyse unchanged. The cut itself is planned by ``_plan_window_bounds``
+    (queue-window guard, #21521).
+    """
+    import soundfile as sf
+    from prosody_metrics import load_audio
+
+    y, sr = load_audio(str(path))
+    if not sr:
+        return []
+    step = max(1, int(window_s * sr))
+    out: List[str] = []
+    for i, (start, end) in enumerate(_plan_window_bounds(len(y), step)):
+        p = Path(tmp_dir) / ("w%02d.wav" % i)
+        sf.write(str(p), y[start:end], sr)
+        out.append(str(p))
+    return out
+
+
+def analyze_long_form(
+    path: str,
+    instruments,
+    window_s: float = LONG_FORM_WINDOW_S,
+) -> Dict[str, object]:
+    """Gate a long artefact in fixed-length windows, then fold the windows.
+
+    Each window goes through the unchanged short-segment path, so a window's
+    verdict is exactly what the instrument gives on a clip of that length —
+    which is what makes the verdict independent of how the caller chose to
+    cut the material.
+
+    The breath/voice reading is taken on the WHOLE file, not per window:
+    essoufflement and voice identity are measured over the whole signal, and
+    windowing them would hide a voice swap between two halves of a chapter
+    (and would answer no question about endurance over the duration, which is
+    the first question a long listening raises).
+
+    The fold is the conservative one: the worst melody verdict wins, the
+    widest span and fastest motion win, the narrowest global range wins.
+    """
+    import tempfile
+
+    analyze_syllables, compute_metrics, analyze_spectral = instruments
+
+    with tempfile.TemporaryDirectory(prefix="prosody_windows_") as tmp:
+        window_paths = _window_audio_files(path, window_s, tmp)
+        windows: List[Dict[str, object]] = []
+        for i, wp in enumerate(window_paths):
+            r = analyze_segment(wp, instruments)
+            r["label"] = "w%02d" % i
+            windows.append(r)
+
+    if not windows:
+        return analyze_segment(path, instruments)
+
+    # Whole-file spectral reading: endurance + voice identity over the duration.
+    spec = analyze_spectral(path)
+    spec.pop("_plot", None)
+    duration_s = spec.get("duration_s")
+    breath_verdict = spec.get("breath_verdict")
+    voice_verdict = spec.get("voice_verdict")
+    decay_db = spec.get("decay_db")
+
+    agg = aggregate_window_measurements(windows)
+    worst = agg["worst_window"] or {}
+
+    decision = classify_segment(
+        melody_verdict=agg["melody_verdict"],
+        global_range_st=agg["global_range_st"],
+        breath_verdict=breath_verdict,
+        voice_verdict=voice_verdict,
+        n_syllables=agg["n_syllables"],
+        melodic_span_st=agg["melodic_span_st"],
+        mean_abs_interval_st=agg["mean_abs_interval_st"],
+        breath_trusted=duration_s is None or duration_s >= DECAY_MIN_DURATION_S,
+    )
+
+    counts: Dict[str, int] = {}
+    for w in windows:
+        counts[str(w.get("gate"))] = counts.get(str(w.get("gate")), 0) + 1
+
+    return {
+        "label": Path(path).stem,
+        "path": Path(path).name,
+        "duration_s": duration_s,
+        "gate": decision["gate"],
+        "reasons": decision["reasons"],
+        "reason_kinds": decision["reason_kinds"],
+        "erratic_axes": decision["erratic_axes"],
+        "melody_verdict": agg["melody_verdict"],
+        "drone_reasons": worst.get("drone_reasons", []),
+        "effective_notes": worst.get("effective_notes"),
+        "top3_note_pct": worst.get("top3_note_pct"),
+        "motif3_repeat_pct": worst.get("motif3_repeat_pct"),
+        "melodic_span_p5p95_st": worst.get("melodic_span_p5p95_st"),
+        # SUM over the windows, not a per-window density (#21521 reserve 2).
+        "n_syllables": agg["n_syllables"],
+        "melodic_span_st": agg["melodic_span_st"],
+        "mean_abs_interval_st": agg["mean_abs_interval_st"],
+        "pct_flat_transitions": worst.get("pct_flat_transitions"),
+        "global_range_st": agg["global_range_st"],
+        "breath_verdict": spec.get("breath_verdict"),
+        "breath_verdict_effective": breath_verdict,
+        "decay_db": decay_db,
+        "decay_trusted": duration_s is None or duration_s >= DECAY_MIN_DURATION_S,
+        "max_voiced_run_s": spec.get("max_voiced_run_s"),
+        "voice_verdict": voice_verdict,
+        "n_voice_clusters": spec.get("n_voice_clusters"),
+        "long_form": True,
+        "window_s": window_s,
+        "n_windows": len(windows),
+        "window_counts": counts,
+        "widest_window": {
+            "label": (agg["widest_window"] or {}).get("label"),
+            "melodic_span_st": (agg["widest_window"] or {}).get("melodic_span_st"),
+        },
+        "windows": [
+            {
+                "label": w.get("label"),
+                "gate": w.get("gate"),
+                "reasons": w.get("reasons"),
+                "melody_verdict": w.get("melody_verdict"),
+                "motif3_repeat_pct": w.get("motif3_repeat_pct"),
+                "melodic_span_st": w.get("melodic_span_st"),
+                "mean_abs_interval_st": w.get("mean_abs_interval_st"),
+                "n_syllables": w.get("n_syllables"),
+            }
+            for w in windows
+        ],
+    }
+
+
+def analyze_file(
+    path: str,
+    instruments,
+    window_s: float = LONG_FORM_WINDOW_S,
+) -> Dict[str, object]:
+    """Gate *path*: the short-segment path, or the windowed path if it is long.
+
+    The dispatch is by DURATION, not by a flag: a caller that hands a whole
+    chapter to the gate gets the windowed reading whether it meant to or not
+    (#21485 — the defect was that the gate measured the aggregation).
+    """
+    duration = _probe_duration_s(path)
+    if duration is not None and duration > window_s:
+        return analyze_long_form(path, instruments, window_s=window_s)
+    result = analyze_segment(path, instruments)
+    if duration is None:
+        # Neither backend could probe the header. On a file large enough to be
+        # several windows, falling through to the short path is exactly the
+        # #21485 defect with no signal (#21521 reserve 1): say so, and never
+        # let it read as PASS-TO-EAR. A REJECT still wins; an INCONCLUSIVE
+        # (nothing measured) stays INCONCLUSIVE.
+        try:
+            size_bytes = os.path.getsize(path)
+        except OSError:
+            size_bytes = 0
+        result["duration_unknown"] = True
+        result["size_bytes"] = size_bytes
+        if size_bytes >= UNKNOWN_DURATION_WARN_BYTES and result.get("gate") == "PASS-TO-EAR":
+            result["gate"] = "WARN"
+            result["reasons"] = list(result.get("reasons") or []) + ["LONG-FORM-UNVERIFIED"]
+            result["reason_kinds"] = list(result.get("reason_kinds") or []) + ["finding"]
+    return result
+
+
 def verify_batch(
     audio_dir: str,
     lab_dir: Optional[str] = None,
@@ -390,11 +731,13 @@ def main() -> None:
     ap.add_argument("--lab-dir", default=None, help="override prosody_lab location")
     ap.add_argument("--json", default=None, help="write the gate report to this JSON")
     ap.add_argument("--reject-only", action="store_true", help="report only REJECT/ERROR")
+    ap.add_argument("--window-s", type=float, default=LONG_FORM_WINDOW_S,
+                    help="window length for a long-form artefact (default %(default)s s)")
     args = ap.parse_args()
 
     if args.single:
         instruments = _import_instruments(Path(args.lab_dir) if args.lab_dir else _default_lab_dir())
-        r = analyze_segment(args.single, instruments)
+        r = analyze_file(args.single, instruments, window_s=args.window_s)
         print(json.dumps(r, indent=2, ensure_ascii=False))
         return
 

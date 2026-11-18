@@ -1,6 +1,6 @@
 # MANIFEST des figures README
 
-Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks).
+Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'outputs de notebooks). Les indices de cellule et de sortie commencent à 0 et comptent toutes les cellules.
 
 **Audit G.1 fondateur** : relecture visuelle via outil `Read` par `myia-po-2025` le **2026-07-14** (cycle c.486 du rollout [issue #5780](../../../../../issues/5780)). Bilan : 0/6 ACCURATE mature + 6/6 corrections réelles (3 refontes alt-text + 3 enrichissements). Migration format : table simple (vague-1) → liste détaillé standard (cf [c.469 SemanticWeb](../../../../SymbolicAI/SemanticWeb/assets/readme/MANIFEST.md), [c.481 GenAI/Image racine](../../../Image/assets/readme/MANIFEST.md), [c.484 GenAI/Image/03-Orchestration](../../../Image/03-Orchestration/assets/readme/MANIFEST.md), [c.485 GenAI/Video/04-Applications](../../04-Applications/assets/readme/MANIFEST.md)).
 
@@ -23,7 +23,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## video1-frames.png
 
-- **Source** : notebook `01-Foundation/01-1-Video-Operations-Basics.ipynb` (cellule 16, output 2 — display_data `image/png`, 72 144 B)
+- **Source** : notebook `01-Foundation/01-1-Video-Operations-Basics.ipynb` (cellule 20, output 2 — display_data `image/png`)
 - **Description visuelle** : Mosaique pédagogique 2 lignes × 4 colonnes (1200×509 max-dim 1200 policy #5654) sur fond uni. **8 vignettes successives d'une balle blanche** circulaire bondissante à des positions spatiales distinctes. Frame labels superposés : `Frame 0 / t=0.00s`, `Frame 17 / t=0.71s`, `Frame 34 / t=1.42s`, `Frame 51 / t=2.12s`, `Frame 68 / t=2.83s`, `Frame 85 / t=3.54s`, `Frame 102 / t=4.25s`, `Frame 119 / t=4.96s` (extraction uniforme par pas de 17 frames sur 120 frames totales, soit 24fps × 5s). **Fonds colorés cycliques 8-couleurs avec retour à lime** : `lime / orange / red / magenta-pink / blue / cyan-teal / green / lime`. Watermark `Frame X/Y 640×480 @ 24fps` en haut-gauche de chaque vignette. Titre global gras `Extraction uniforme - 8 frames via decord`. Stats RGB : mean (151.5, 162.2, 141.8) std 94.4 — variance modérée typique d'une mosaique 8 fonds distincts sur blanc. Tell structurel = **mosaique temporelle uniforme (8 frames équidistantes, palette cyclique)** illustrant la régularité de l'extraction décord.
 - **Alt-text (FR)** : Extraction uniforme de 8 frames via decord : mosaique pédagogique 2×4 d'une balle blanche bondissante (Frame 0/17/34/51/68/85/102/119 sur fonds colorés alternés lime/orange/rouge/magenta/bleu/cyan/vert/lime, palette cyclique 640×480 @ 24fps).
 - **Dimensions effectives (vérifiées `PIL.Image.open` 2026-07-22)** : 1200×509 max-dim 1200 (downscale policy #5654) vs 640×480 source authentique = ratio d'aspect 2.36 (mosaïque 4×2, non ratio-préservante vs source 1.33), ratio disque/source = 0.94× (PNG lossless).
@@ -34,7 +34,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## video4-esrgan.png
 
-- **Source** : notebook `01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb` (cellule 8, output 3 — display_data `image/png`, 102 147 B)
+- **Source** : notebook `01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb` (cellule 9, output 3 — display_data `image/png`)
 - **Description visuelle** : Grille 2 lignes × 4 colonnes (503×1200) sur fond blanc-légèrement-bleuté. **Titre global gras** `Reference HR vs Input LR`. **Rangée haute = HR (High Resolution, label HR320x240)** : 4 vignettes nettes d'une balle rouge (cercle plein avec léger quadrillage rouge interne) et 4 billes vertes en haut, sur fond **navy foncé quadrillé blanc**. Frame labels `HR - Frame 0`, `HR - Frame 12`, `HR - Frame 24`, `HR - Frame 35` superposés au-dessus de chaque vignette (compte des frames affichées : 0, 12, 24, 35). Watermark diagonal `Frame X/36` en blanc en haut-gauche de chaque vignette. **Rangée basse = LR (Low Resolution, label HR320x240)** : 4 vignettes identiques en composition mais avec un **blur léger** (soft/blur appliqué uniformément). Frame labels `LR - Frame 0 / 12 / 24 / 35`. **Les deux rangées ont strictement la même résolution 320×240 affichée** — la démonstration ESRGAN visible dans cette figure est une **comparaison qualité HR vs LR à résolution identique**, pas un upscaling visuel HR→LR.
 - **Alt-text (FR)** : Comparaison HR vs LR sur 4 frames — balle rouge + 4 billes vertes sur fond noir quadrillé, HR (320×240, nette) vs LR (320×240, soft/blur), même résolution, aucune démo d'upscaling visuel dans cette figure.
 - **Dimensions effectives (vérifiées `PIL.Image.open` 2026-07-22)** : 503×1200 max-dim 1200 vs 320×240 source authentique par vignette = ratio d'aspect 1.33 (4:3 standard).
@@ -45,7 +45,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## video5-animatediff.png
 
-- **Source** : notebook `01-Foundation/01-5-AnimateDiff-Introduction.ipynb` (cellule 10, output 3 — display_data `image/png`, 2 152 764 B source authentique, 195.7 KB downscale agressive max-dim 500)
+- **Source** : notebook `01-Foundation/01-5-AnimateDiff-Introduction.ipynb` (cellule 13, output 3 — display_data `image/png`, downscale agressif max-dim 500)
 - **Description visuelle** : Grille 2 lignes × 4 colonnes (252×500 max-dim 500, compression agressive) sur fond uni. **8 vignettes successives d'un paysage lacustre au coucher de soleil**, montagnes se reflétant dans l'eau, lumière dorée chaude, nuages orangés. Frame labels superposés `Frame 1/24`, `Frame 2/24`, ..., `Frame 8/24` (1 frame par vignette, 8 vignettes sur les 24 totales, extraction tous les 3 frames). **Prompt injecté visible** dans le titre central `AnimateDiff - a serene lake at sunset with mountains in the background, g...` (tronqué par la largeur d'image). Cohérence visuelle forte entre les 8 frames : la scène illustre une continuité temporelle typique d'une génération text-to-video AnimateDiff.
 - **Alt-text (FR)** : Génération AnimateDiff text-to-video depuis prompt « a serene lake at sunset with mountains in the background » — grille 2×4 frames d'un paysage lacustre au coucher de soleil (montagnes + lac reflétant, lumière dorée).
 - **Dimensions effectives (vérifiées `PIL.Image.open` 2026-07-22)** : 252×500 max-dim 500 (downscale agressive, ratio disque/source = 0.09×) — politique #5654 tolère ce type de compression pour les frames de génération (taille source 2.15 MB → 195.7 KB).
@@ -56,7 +56,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## video-svd.png
 
-- **Source** : notebook `02-Advanced/02-4-SVD-Image-to-Video.ipynb` (cellule 9, output 1 — display_data `image/png`, 18 333 B)
+- **Source** : notebook `02-Advanced/02-4-SVD-Image-to-Video.ipynb` (cellule 11, output 1 — display_data `image/png`)
 - **Description visuelle** : Figure **3 vignettes côte-à-côte** (250×1200) avec **titre gras central** `Images de test pour SVD`. Les 3 vignettes servent d'**inputs** (images statiques) pour Stable Video Diffusion : **gauche** `Paysage avec montagnes` — ciel bleu, sol vert, montagne grise, soleil jaune (cercle) en haut à droite ; **centre** `Silhouette portrait` — silhouette beige (tête) sur fond violet, torse bleu, forme humanoïde stylisée ; **droite** `Coucher de soleil sur l'eau` — dégradé rose-orange en haut, eau bleue en bas, soleil jaune (cercle) au centre. **Ce sont les données d'entrée fournies à SVD, PAS une sortie SVD générée.** Cohérence stylistique : les 3 vignettes adoptent un **style minimaliste plat** (3-5 couleurs par vignette, formes géométriques simples) cohérent avec un dataset de test synthétique. Tell structurel = **3 inputs juxtaposes pour démo image-to-video**.
 - **Alt-text (FR)** : « Images de test pour SVD » — 3 vignettes côte-à-côte servant d'inputs pour Stable Video Diffusion (Paysage avec montagnes / Silhouette portrait / Coucher de soleil sur l'eau), pas une sortie SVD.
 - **Dimensions effectives (vérifiées `PIL.Image.open` 2026-07-22)** : 250×1200 (3 vignettes côte-à-côte, ratio d'aspect 4.8:1) — embeddings inline au README narratif.
@@ -67,7 +67,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## video-creative-style.png
 
-- **Source** : notebook `04-Applications/04-2-Creative-Video-Workflows.ipynb` (cellule 7, output 1 — display_data `image/png`, 43 947 B)
+- **Source** : notebook `04-Applications/04-2-Creative-Video-Workflows.ipynb` (cellule 7, output 1 — display_data `image/png`)
 - **Description visuelle** : Mosaique **4 lignes × 3 colonnes** (1135×1200 max-dim 1200) avec **titre gras central** `Comparaison des styles artistiques`. **4 styles** appliqués en lignes : `Original` (frame 0/48/96), `Peinture à l'huile`, `Aquarelle`, `Dessin`. **3 frames temporelles** en colonnes : frame 0, frame 48, frame 96. Scène de base : **carré cyan + cercle jaune** sur fond dégradé. **Variations par style** : Original = mosaique bleu-violet-orange avec carré cyan translucide et cercle jaune plein ; Peinture à l'huile = versions aux couleurs plus sourdes (bleu-violet-gris-vert olive) et verts-jaunes pastels ; Aquarelle = couleurs vives proches de l'original (légèrement translucides) ; Dessin = contours noirs sur fond blanc (line-art, sans remplissage couleur). Tell discriminant = **la rangée Dessin (row 4) = blanchâtre high-key** tandis que les 3 autres rangées = colorées mid-saturation.
 - **Alt-text (FR)** : Comparaison côte-à-côte de 4 styles artistiques (Original / Peinture à l'huile / Aquarelle / Dessin) appliqués à 3 frames (t=0/48/96), mosaique 4×3 d'une scène avec carré cyan + cercle jaune sur fond dégradé.
 - **Dimensions effectives (vérifiées `PIL.Image.open` 2026-07-22)** : 1135×1200 max-dim 1200 (presque pas de downscale). 4×3 = 12 vignettes sur fond blanc dominant (45.6% blanc pur — tell contrasté `multi-color + blanc`).
@@ -78,7 +78,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## video-sora-cost.png
 
-- **Source** : notebook `04-Applications/04-3-Sora-API-Cloud-Video.ipynb` (cellule 17, output 0 — display_data `image/png`, 55 058 B source authentique, 79.5 KB après export policy)
+- **Source** : notebook `04-Applications/04-3-Sora-API-Cloud-Video.ipynb` (cellule 20, output 0 — display_data `image/png`, après export policy)
 - **Description visuelle** : Figure **2 panneaux côte-à-côte** (427×1200 max-dim 1200) avec **titre gras central** `Analyse comparative : Sora API vs Generation Video Locale`. Tell dominant = **matplotlib-blanc** (mean (231.5, 229.4, 232.1), 79.1% blanc pur — seaborn-darkgrid-like fond blanc dominant cohérent avec `plt.subplots()` sans `sns.set_theme()`). **Panneau gauche** `Coût mensuel : Cloud vs Local` — lineplot : courbe **bleue pleine `Sora (cloud)`** linéaire de 0 → 250 $/mois sur l'axe X (0-1000 vidéos par mois), **ligne rouge pointillée `GPU local`** constante à ~95 $/mois, **ligne verticale grise pointillée `Seuil ~375 vid/mois`** marquant le point de rentabilité (intersection Sora=Local). Légende coin haut-gauche. **Panneau droite** `Comparaison qualitative` — barplot groupé sur 5 critères (`Qualité / Cohérence temporelle / Durée max / Latence / Facilité setup`), chaque critère avec 2 barres (`Sora` bleu, `Local (best)` orange), échelle y 0-10. **Sora domine sur 4 critères** (Qualité 9 vs 7, Cohérence 9 vs 6, Durée max 9 vs 5, Latence 7 vs 5) ; **Local l'emporte uniquement sur Facilité setup** (10 vs 4). Tell discriminant `matplotlib-blanc L778-L2` cohérent avec figure politique/comparative sur fond clair.
 - **Alt-text (FR)** : « Analyse comparative : Sora API vs Generation Video Locale » — 2 panneaux (coût mensuel Cloud vs Local avec seuil rentabilité ~375 vid/mois, comparatif qualitatif sur 5 critères : Qualité, Cohérence temporelle, Durée max, Latence, Facilité setup).
 - **Dimensions effectives (vérifiées `PIL.Image.open` 2026-07-22)** : 427×1200 max-dim 1200 (presque pas de downscale), ratio d'aspect 2.8:1 typique d'un layout `plt.subplots(1, 2)`.
@@ -91,7 +91,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## Vérification G.1 — provenance investigation (préservée byte-identity)
 
-Investigation `nbformat` Python pour identifier les cellules sources et valider les attributions :
+Investigation historique `nbformat` : les indices et empreintes ci-dessous correspondent à la version du notebook lors de cet audit ; les références actuelles figurent dans les entrées ci-dessus.
 
 | Fichier | Cell | Out | MD5 cell output | Taille cell | Taille disque | Ratio |
 |---|---|---|---|---|---|---|
@@ -102,7 +102,7 @@ Investigation `nbformat` Python pour identifier les cellules sources et valider 
 | `video-creative-style.png` | 7 | 1 | `3b67d71c` | 43 947 B | 71.3 KB | 1.62× |
 | `video-sora-cost.png` | 17 | 0 | `b012c4d0` | 55 058 B | 79.5 KB | 1.44× |
 
-**MD5 cell output ≠ MD5 disque** (chaîne d'extraction → compression PNG max-dim 1200 = artefacts différents), mais **tailles relatives cohérentes** avec chaîne d'extraction : ratios source→disk 0.09× à 1.62× selon downscale/upscale appliqué par figure. Toutes les attributions cell[X]/out[Y] confirmées.
+**MD5 cell output ≠ MD5 disque** (chaîne d'extraction → compression PNG max-dim 1200 = artefacts différents), mais **tailles relatives cohérentes** avec chaîne d'extraction : ratios source→disk 0.09× à 1.62× selon downscale/upscale appliqué par figure. Les attributions cell[X]/out[Y] avaient été confirmées à cette date.
 
 **SHA256 unique par fichier sur disque** (ré-vérifié 2026-07-22 c.753, MATCH vs c.486) :
 - `2d2c48d7fad7a5ae19b25d9f6aa39ad4ebb98de45d118eed32fee02fd51a81aa` (video1)

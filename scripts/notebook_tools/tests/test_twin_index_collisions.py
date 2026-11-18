@@ -24,6 +24,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from check_twin_index_collisions import (  # noqa: E402
     exit_code,
     find_conflicts,
+    gate_verdict,
     registry_of_ref,
     registry_of_worktree,
 )
@@ -163,18 +164,24 @@ def _has_ref(ref: str) -> bool:
         capture_output=True).returncode == 0
 
 
-@pytest.mark.skipif(not _has_ref("origin/main"),
-                    reason="origin/main absent (checkout detache en CI)")
-def test_le_registre_de_main_ne_porte_aucun_doublon_intra_revision():
+def test_le_registre_de_la_revision_testee_ne_porte_aucun_doublon_intra_revision():
     """Controle positif : le predicat du garde CI, rejoue par cet organe sur le
-    registre reel de `origin/main`. Si ce test rougit alors que le garde CI est
-    vert, c'est que les deux instruments ont diverge -- le defaut que
-    `audit_index` existe pour empecher."""
-    reg = registry_of_ref("origin/main", REPO)
+    registre reel de la revision testee. Si ce test rougit alors que le garde CI
+    est vert, c'est que les deux instruments ont diverge -- le defaut que
+    `audit_index` existe pour empecher.
+
+    La revision lue est `HEAD`, pas `origin/main` (#18558). Sur une PR, le
+    checkout CI est la ref de merge : `HEAD` est donc `main` tel qu'il sera
+    apres le merge, et sur `main` c'est `main` lui-meme. Lire `origin/main` en
+    direct faisait rougir ce test sur TOUTES les PRs des qu'un doublon arrivait
+    sur `main`, y compris sur la PR qui le corrigeait : le correctif ne pouvait
+    plus passer le gate requis, et aucun compte ne pouvait le merger."""
+    reg = registry_of_ref("HEAD", REPO)
     assert reg, "registre vide : la lecture des revisions est cassee"
-    got = find_conflicts({"origin/main": reg})
+    got = find_conflicts({"HEAD": reg})
     assert got["intra_ref"] == [], (
-        "doublon d'index intra-revision sur origin/main : %s" % got["intra_ref"])
+        "doublon d'index intra-revision sur la revision testee : %s"
+        % got["intra_ref"])
     assert got["cross_ref"] == []
 
 
@@ -188,3 +195,60 @@ def test_registry_of_worktree_rend_la_meme_forme_que_registry_of_ref():
         for idx, names in idxs.items():
             assert idx and names, (pair, idx)
             assert all(n.endswith(".yaml") for n in names)
+
+
+# --- mode PORTE (#23208) -----------------------------------------------------
+# La porte ne juge que l'AGRAVATION : « cette revision introduit-elle une
+# collision ? ». Sans cette separation, une porte bloquerait toute PR
+# touchant le registre tant que la base porte la dette -- et la PR qui la
+# REPAIRE ne pourrait plus passer.
+
+
+def test_porte_refuse_une_collision_inter_revisions():
+    """Le cas fondateur : la base porte l'index sous un nom, la tete sous un
+    autre -> le merge cree deux fichiers au meme index."""
+    base = _reg({"app": [("0007", A_0007)]})
+    head = _reg({"app": [("0007", B_0007)]})
+    got = find_conflicts({"origin/main": base, "head": head})
+    verdict = gate_verdict(got["cross_ref"], got["intra_ref"],
+                           base_ref="origin/main")
+    assert verdict["fail"] is True
+    assert verdict["reasons"][0]["kind"] == "cross_ref"
+    assert verdict["reasons"][0]["index"] == "0007"
+
+
+def test_porte_refuse_un_doublon_introduit_par_la_tete():
+    """La tete ajoute un second nom pour un index que la base porte deja :
+    `main` rougira au merge sur le garde d'unicite."""
+    base = _reg({"app": [("0007", A_0007)]})
+    head = _reg({"app": [("0007", A_0007), ("0007", B_0007)]})
+    got = find_conflicts({"origin/main": base, "head": head})
+    for c in got["intra_ref"]:
+        c["on_base"] = "origin/main" in c["refs"]
+    verdict = gate_verdict(got["cross_ref"], got["intra_ref"],
+                           base_ref="origin/main")
+    assert verdict["fail"] is True
+    assert verdict["reasons"][0]["kind"] == "intra_ref"
+
+
+def test_porte_laisse_passer_un_doublon_herite_de_la_base():
+    """La dette appartient a la base : une PR qui ne l'aggrave pas -- et la PR
+    qui la repare -- doivent passer."""
+    base = _reg({"app": [("0007", A_0007), ("0007", B_0007)]})
+    head = _reg({"app": [("0007", A_0007), ("0007", B_0007)]})
+    got = find_conflicts({"origin/main": base, "head": head})
+    for c in got["intra_ref"]:
+        c["on_base"] = "origin/main" in c["refs"]
+    verdict = gate_verdict(got["cross_ref"], got["intra_ref"],
+                           base_ref="origin/main")
+    assert verdict["fail"] is False
+    assert verdict["reasons"] == []
+
+
+def test_porte_accepte_un_registre_propre():
+    base = _reg({"app": [("0007", A_0007)]})
+    head = _reg({"app": [("0007", A_0007), ("0008", "0008-b.yaml")]})
+    got = find_conflicts({"origin/main": base, "head": head})
+    verdict = gate_verdict(got["cross_ref"], got["intra_ref"],
+                           base_ref="origin/main")
+    assert verdict["fail"] is False

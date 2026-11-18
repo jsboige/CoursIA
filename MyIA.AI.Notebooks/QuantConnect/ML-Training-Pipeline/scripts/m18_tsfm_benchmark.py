@@ -62,7 +62,7 @@ RESULTS_DIR = Path(__file__).resolve().parent / "results"
 from realized_variance import daily_realized_variance, realized_variance_to_log
 from dm_test import dm_verdict
 from har_model import HARModel
-from har_asymmetric import _load_panel
+from har_asymmetric import _load_panel, validate_requested_panel
 from har_lj_asym import _panel_hash
 
 HORIZONS_DEFAULT = [1, 5, 22]  # issue #14768 protocol (not the M4/M17 1/5/10)
@@ -724,7 +724,12 @@ def main() -> None:
           f"in {time.time()-t0:.1f}s", flush=True)
 
     print("[load] panel ...", flush=True)
-    panel = _load_panel(args.skip_remote)
+    # _load_panel returns (panel, failures) since the M16 cluster refactor of
+    # har_asymmetric: the tuple was previously assigned whole, making every
+    # coin silently "not in panel" and the run exit 0 with 0 series served
+    # (reproduced 2026-10-03, Epic #1454 cluster run).
+    panel, panel_failures = _load_panel(args.skip_remote)
+    validate_requested_panel(panel, args.coins, panel_failures, args.skip_remote)
 
     configs: list[dict] = []
     for coin in args.coins:
@@ -773,6 +778,13 @@ def main() -> None:
         "summary": summary,
         "elapsed_s": round(time.time() - t0, 1),
     }
+    # Fail-closed: a run that served no series must never exit 0 with an
+    # "empty manifest that looks like a clean result" (the tuple bug above
+    # produced exactly that — exit 0, 0 series served).
+    if tsfm.n_calls == 0:
+        raise SystemExit(
+            "0 TimesFM series served — refusing to write an empty manifest "
+            "(fail-explicit #14768, Epic #1454 cluster guard)")
     args.out_json.parent.mkdir(parents=True, exist_ok=True)
     args.out_json.write_text(json.dumps(manifest, indent=1), encoding="utf-8")
     print(f"[done] wrote {args.out_json} "

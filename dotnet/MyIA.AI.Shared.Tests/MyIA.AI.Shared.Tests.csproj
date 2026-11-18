@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MyIA.AI.Shared\MyIA.AI.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Fixture de validation croisee du moteur Go (EPIC #7265, tranche 2b) :
+         verdicts figes de pyspiel (OpenSpiel) et gnugo 3.8, regenerables par
+         Search/Go/oracles/generate_go_oracle_fixture.py -->
+    <None Include="Search/Go/oracles/go_oracle_fixture.json" CopyToOutputDirectory="PreserveNewest" />
+    <!-- Modele d'evaluation apprise + temoins (EPIC #7265, tranche 8) :
+         regenerables par Search/Go/oracles/train_go_eval_onnx.py -->
+    <None Include="Search/Go/oracles/go_eval_9x9_v1.onnx" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Search/Go/oracles/go_eval_onnx_expected.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

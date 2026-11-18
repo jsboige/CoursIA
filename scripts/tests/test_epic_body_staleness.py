@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import sys
 from pathlib import Path
@@ -63,6 +64,115 @@ def test_up_to_date_epic_has_no_signal():
     ) == []
 
 
+def test_citation_list_pr_reports_its_epic_breadth():
+    """A PR quoting several EPICs is a citation list, not a delivery."""
+    epics = [
+        Epic(10355, "[EPIC] Fallacy detection", "## Objectif\nDetecter."),
+        Epic(7265, "[EPIC] Heritage", "## Objectif\nHeriter."),
+        Epic(11044, "[EPIC] Debt", "## Objectif\nPayer."),
+    ]
+    shared = _pr(19147, "Belt dump: #10355 #7265 #11044", title="fix(picker)")
+
+    findings = analyze_epics(epics, [shared])
+
+    assert sorted(f.number for f in findings) == [7265, 10355, 11044]
+    assert all(f.citation_breadth == 3 for f in findings)
+
+
+def test_single_epic_citation_keeps_breadth_one():
+    """The ordinary 1:1 shape stays distinguishable from a citation list."""
+    epics = [
+        Epic(10355, "[EPIC] Fallacy detection", "## Objectif\nDetecter."),
+        Epic(7265, "[EPIC] Heritage", "## Objectif\nHeriter."),
+    ]
+
+    findings = analyze_epics(epics, [_pr(19147, "See #10355")])
+
+    assert len(findings) == 1
+    assert findings[0].number == 10355
+    assert findings[0].citation_breadth == 1
+
+
+def test_breadth_zero_when_the_citing_pr_is_already_recorded():
+    """A stance-only finding carries no PR breadth at all."""
+    epic = Epic(
+        7,
+        "[EPIC] Veille",
+        "Pas pour maintenant.\n\n## Suivi\n- #80 — deja inscrit",
+    )
+
+    findings = analyze_epics([epic], [_pr(80, "See #7")])
+
+    assert len(findings) == 1
+    assert findings[0].unrecorded_merged == ()
+    assert findings[0].citation_breadth == 0
+
+
+def test_citation_wrapped_in_inline_code_is_not_a_citation():
+    """#13906: a number in inline code is not a mention, so it is not a citation.
+
+    Measured on PR #18300, whose only mention of #4208 was the escaped
+    template literal ``axe A `#4208` `` -- it delivered nothing of that EPIC.
+    """
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics(
+        [epic],
+        [_pr(18300, "axe A `#4208` echappe en code inline")],
+    )
+
+    assert findings == []
+
+
+def test_citation_inside_a_fenced_block_is_not_a_citation():
+    """A template shown in a fenced block is quoted text, not a mention."""
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics(
+        [epic],
+        [_pr(18300, "```yaml\nrationale: #4208\n```")],
+    )
+
+    assert findings == []
+
+
+def test_citation_inside_a_blockquote_is_not_a_citation():
+    """A quoted passage reproduces the EPIC body, it does not deliver it."""
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics(
+        [epic],
+        [_pr(18300, "> reliquat du corps : #4208")],
+    )
+
+    assert findings == []
+
+
+def test_prose_citation_still_counts_after_the_quoting_filter():
+    """Positive control: an ordinary prose mention is still a citation."""
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics([epic], [_pr(18301, "Delivers the axis A of #4208")])
+
+    assert len(findings) == 1
+    assert findings[0].unrecorded_merged == (18301,)
+
+
+def test_payload_exposes_citation_breadth():
+    """The additive field survives serialization for downstream triage."""
+    epics = [
+        Epic(10355, "[EPIC] Fallacy detection", "## Objectif\nDetecter."),
+        Epic(7265, "[EPIC] Heritage", "## Objectif\nHeriter."),
+    ]
+
+    payload = build_payload(epics, [_pr(19147, "Belt dump: #10355 #7265")])
+
+    assert {f["number"]: f["citation_breadth"] for f in payload["findings"]} == {
+        10355: 2,
+        7265: 2,
+    }
+
+
 def test_quoted_dormant_stance_is_not_live():
     epic = Epic(
         1210,
@@ -82,6 +192,12 @@ def test_quoted_dormant_stance_is_not_live():
     [
         "Statut corrigé : ce fut un oubli, pas une position.",
         "Statut corrigé. Ce n'était pas une position, juste un oubli.",
+        # Measured 2026-10-01: the three rectification phrasings the #13906
+        # repair pattern produces, each suppressing the stance signal while
+        # the dormant wording survives below in preserved historical prose.
+        "Les mentions « ne pas démarrer » du corps historique ci-dessous ne décrivent plus son état.",
+        "La contradiction institutionnelle décrite ci-dessous ne tient plus sous sa forme initiale.",
+        "Nouvelle classe de faux positif du signal 2, mesurée ce jour.",
     ],
 )
 def test_explicit_corrected_status_overrides_preserved_historical_prose(correction):
@@ -96,6 +212,34 @@ def test_explicit_corrected_status_overrides_preserved_historical_prose(correcti
     )
 
     assert analyze_epics([epic], [_pr(6542, "See #1210")]) == []
+
+
+def test_rectification_header_unquotes_stance_on_measured_11690_shape():
+    """Regression (2026-10-01): #11690 stayed flagged after its rectification.
+
+    The rectification lives in prose under a heading, the dormant wording in
+    preserved historical prose below it (not in a block quote, so the quote
+    exclusion cannot apply). The retraction marker must suppress the stance
+    signal while the unrecorded-delivery signal stays independent.
+    """
+    epic = Epic(
+        11690,
+        "[EPIC][ICT] Consolidation de la serie",
+        (
+            "## État de travail vérifié le 2026-09-08\n\n"
+            "**La lecture a démarré et a livré.** Les mentions « ne pas démarrer » "
+            "du corps historique ci-dessous ne décrivent plus son état.\n\n"
+            "---\n\n"
+            "## Corps historique conservé intégralement\n\n"
+            "**Cette issue n'est pas à démarrer.** Elle existe pour fixer le mandat."
+        ),
+    )
+
+    findings = analyze_epics([epic], [_pr(17861, "See #11690")])
+    assert len(findings) == 1
+    assert findings[0].unrecorded_merged == (17861,)
+    assert findings[0].stance_contradicted is False
+    assert findings[0].stance_pattern is None
 
 
 @pytest.mark.parametrize(
@@ -276,6 +420,67 @@ def test_cli_prints_json_and_never_writes(monkeypatch, capsys):
     assert payload["corpus"]["open_epics_examined"] == 1
 
 
+def test_cli_writes_utf8_even_on_a_cp1252_stdout(monkeypatch):
+    """Regression: un titre d'EPIC hors cp1252 faisait perdre le rapport entier.
+
+    Sur une console Windows cp1252, `json.dump(..., sys.stdout)` levait
+    UnicodeEncodeError sur U+21C4 et n'ecrivait rien du tout -- pas meme les
+    EPIC dont le titre etait encodable.
+    """
+    epic = Epic(42, "[EPIC] chaine ⇄ collision", "")
+    pr = _pr(101, "See #42")
+    monkeypatch.setattr(_MODULE, "list_open_epics", lambda repo: [epic])
+    monkeypatch.setattr(_MODULE, "list_merged_prs", lambda repo, limit: [pr])
+
+    raw = io.BytesIO()
+    console = io.TextIOWrapper(raw, encoding="cp1252", newline="")
+    monkeypatch.setattr(_MODULE.sys, "stdout", console)
+
+    assert _MODULE._cli(["--repo", "example/repo"]) == 0
+    payload = json.loads(raw.getvalue().decode("utf-8"))
+    assert payload["finding_count"] == 1
+    assert "⇄" in payload["findings"][0]["title"]
+
+
+class _StreamSansReconfigure:
+    """Flux cp1252 sans ``reconfigure`` : force le repli ASCII de ``_emit_utf8``."""
+
+    def __init__(self) -> None:
+        self._raw = io.BytesIO()
+
+    @property
+    def encoding(self) -> str:
+        return "cp1252"
+
+    def write(self, text: str) -> int:
+        data = text.encode("cp1252")  # strict : leve comme une vraie console
+        self._raw.write(data)
+        return len(data)
+
+    def flush(self) -> None:
+        pass
+
+    def ascii_text(self) -> str:
+        return self._raw.getvalue().decode("ascii")
+
+
+def test_ascii_fallback_stays_valid_json_for_an_astral_title(monkeypatch):
+    """Regression (repli de #24622) : un emoji astral cassait l'echappement.
+
+    Le repli encodait le texte rendu en ``backslashreplace``, qui produit
+    ``\\U0001f9ed`` pour un caractere astral -- pas un echappement JSON
+    valide (``\\uXXXX``, 4 chiffres). Le repli devait alors un document
+    indechiffrable, exactement ce qu'il existait pour eviter.
+    """
+    stream = _StreamSansReconfigure()
+    monkeypatch.setattr(_MODULE.sys, "stdout", stream)
+
+    _MODULE._emit_utf8(json.dumps({"title": "constellation 🧭 07"}, ensure_ascii=False))
+
+    payload = json.loads(stream.ascii_text())
+    assert payload["title"] == "constellation 🧭 07"
+
+
 def test_cli_reports_read_failure(monkeypatch, capsys):
     def fail(_repo):
         raise RuntimeError("GitHub unavailable")
@@ -369,3 +574,28 @@ def test_list_open_epics_keeps_only_epics(monkeypatch):
     monkeypatch.setattr(_MODULE, "_gh_json", lambda args: rows)
 
     assert [epic.number for epic in _MODULE.list_open_epics("example/repo")] == [1, 3]
+
+
+def test_daily_sweep_workflow_runs_staleness_detector_advisory():
+    """#18203 geste 4: the analyzer is wired into the daily EPIC sweep.
+
+    On `main` the workflow never invokes epic_body_staleness.py: the analyzer
+    exists but nothing schedules it, so a stale body stays invisible between
+    two manual looks. Wiring contract asserted here: the sweep job invokes
+    the analyzer, its payload goes to the run summary, and the invocation is
+    guarded so a failed fetch never reds the advisory job.
+    """
+    wf_path = (
+        Path(__file__).resolve().parents[2]
+        / ".github" / "workflows" / "epic-neglect-sweep.yml"
+    )
+    text = wf_path.read_text(encoding="utf-8")
+    assert "epic_body_staleness.py" in text, (
+        "the daily sweep must run the staleness analyzer"
+    )
+    assert "GITHUB_STEP_SUMMARY" in text, (
+        "the staleness payload goes to the run summary"
+    )
+    assert "if ! python scripts/epic_body_staleness.py" in text, (
+        "the invocation is guarded: advisory means a failed fetch warns, never reds"
+    )

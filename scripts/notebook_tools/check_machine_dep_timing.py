@@ -304,7 +304,7 @@ STUDENT_PACING_RE = re.compile(
     # humain entre parentheses -- « 45 min (lecture + execution sequentielle) ».
     # C'est le meme signal que le pacing ci-dessus (effort demande a l'etudiant,
     # arbitrage jsboige 14:05:37Z #9434), mais la duree PRECEDE la parenthese au
-    # lieu de s'y trouver (ex ICT-19-EnjeuBattery cell[0], ICT-19b cell[0]).
+    # lieu de s'y trouver (ex ICT-19-EnjeuBattery-Python cell[0], ICT-19b cell[0]).
     # NB : on cible le qualificatif d'effort (lecture/cours/tp) precisement -- la
     # forme « moins de N » / « plus de N » est un signal de borne runtime OU de
     # probabilite de domaine (P(trajet < 18 min)), PAS de pacing, et ne doit PAS
@@ -502,7 +502,7 @@ def _categorize(line: str, snippet: str) -> str:
         return CATEGORY_DOMAIN_QUANTITY
     # Frontiere FP (frontier issue) : cout d'action dans une table de plan.
     # La duree est le RESULTAT d'une arithmetique « N + M = K unit » (ex
-    # Planners-8-Temporal cell[37] « 5 + 4 = 9 min » = duree d'une livraison
+    # Planners-08-Temporal-Python cell[37] « 5 + 4 = 9 min » = duree d'une livraison
     # drone). C'est un parametre DETERMINISTE du domaine planifie, pas une
     # duree machine. Le motif est precis (un vrai wallclock ne se rend presque
     # jamais comme une somme explicite `a + b = c unit`) -- Sudoku-13 (controle

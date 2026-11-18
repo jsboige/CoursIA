@@ -44,9 +44,30 @@ the 21 in-repo reference zips: every line carries ``00:00`` (e.g. ``spy.zip``
 first line ``19980102 00:00,973100,975300,965300,973600,2150000``). LEAN's daily
 reader keys on the date, so a wrong time does not break loudly -- which is why
 the convention is pinned by an anchoring test in the test suite. Prices are RAW
-(unadjusted for dividends) -- benign for a price-momentum signal, documented
-transparently in the quantbook (cell[6]) and here. A full adjusted-close path
-needs a Security Master or a dividend-aware converter (deferred).
+for **dividends** (the ``Adj Close`` column carries the dividend-adjusted path,
+documented in the quantbook cell[6] and in the factor-file contract below) but
+**adjusted for splits** under yfinance's default ``auto_adjust=False`` -- so a
+4:1 split is already folded into ``Close`` and must NOT be re-applied by
+LEAN's normalisation (see factor-file contract below).
+
+A full adjusted-close path (dividend *and* split adjustments under the user's
+control, surfaced in the quantbook without modifying the OHLCV zip) needs the
+factor-file contract this module now writes alongside the data zip:
+
+``<data-folder>/equity/usa/factor_files/<ticker>.csv``
+formatted as ``DateTime,FactorPrice,FactorSplit`` per the LEAN factor-file
+convention. The values:
+
+- ``FactorSplit = 1`` everywhere. yfinance has already split-adjusted
+  ``Close``, so LEAN must NOT re-apply any split (otherwise it counts the
+  split twice -- see issue #21122 measurement: AAPL 2020-08-31 split 4:1,
+  factor-file from ``lean init`` -> +1362.9 % total return vs +275.1 % with the
+  dividend-only factor file the converter now writes).
+- ``FactorPrice = Adj Close / Close``, **normalised to 1 on the last date of
+  the downloaded window and held flat backwards in time**, written only at the
+  dates where the value changes (i.e. ex-dividend dates). A quantbook running
+  in LEAN's ``Adjusted`` normalisation therefore sees ``Close`` as the raw
+  dividend-unadjusted price; one running ``Raw`` keeps ``Close`` as-is.
 
 Usage
 -----
@@ -129,6 +150,76 @@ def write_lean_zip(ticker: str, rows: Iterable[str], out_folder: Path) -> Path:
     return zip_path
 
 
+def build_factor_file_rows(df, time: str = LEAN_DAILY_TIME) -> list[str]:
+    """Build LEAN factor-file CSV rows for a yfinance daily OHLCV frame.
+
+    The factor file at ``<data-folder>/equity/usa/factor_files/<ticker>.csv``
+    carries ``DateTime,FactorPrice,FactorSplit``. ``FactorSplit`` is always
+    ``1`` here because yfinance has already split-adjusted ``Close`` (see
+    module docstring + issue #21122). ``FactorPrice`` is ``Adj Close / Close``,
+    **normalised to 1 on the last date of the window** and held flat backwards
+    in time; only dates where the value changes are emitted (LEAN factor files
+    are sparse, like the LEAN daily price file itself).
+
+    Returns a list of ``YYYYMMDD HH:MM,FactorPrice,FactorSplit`` strings.
+    Raises ``KeyError`` if ``Adj Close`` is missing from ``df`` -- callers
+    that supply a pre-aggregated frame must keep the ``Adj Close`` column.
+    """
+    if "Adj Close" not in df.columns or "Close" not in df.columns:
+        raise KeyError(
+            "build_factor_file_rows requires both 'Close' and 'Adj Close' in df "
+            f"(got columns: {list(df.columns)})"
+        )
+    # Drop rows with NaN in either column (yfinance's intraday-incomplete latest
+    # bar would otherwise produce a NaN factor_price that propagates downstream).
+    df = df.dropna(subset=["Close", "Adj Close"])
+    if df.empty:
+        return []
+    raw = (df["Adj Close"] / df["Close"]).astype(float)
+    # Normalise so the LAST date carries factor_price == 1. We iterate in
+    # reverse-chronological order starting from the last date (the anchor) and
+    # only emit a row when the value DIFFERS from the most recent emitted
+    # value (so the resulting factor file is sparse, like LEAN's own daily
+    # factor-file convention). Reversing the iteration guarantees the LAST
+    # date is always emitted (as the 1.0 anchor) and earlier rows only when
+    # they mark a step (an ex-dividend date, in practice).
+    normalised = raw / raw.iloc[-1]
+    rows_reverse: list[str] = []
+    last_emitted: Optional[float] = None
+    for ts, fp in reversed(list(normalised.items())):
+        try:
+            ts = ts.tz_localize(None) if ts.tzinfo is not None else ts
+        except AttributeError:
+            pass
+        fp_val = float(fp)
+        if last_emitted is not None and fp_val == last_emitted:
+            continue
+        rows_reverse.append(f"{ts:%Y%m%d} {time},{fp_val:.8f},1")
+        last_emitted = fp_val
+    # Restore chronological order (LE factor files are written forward).
+    return list(reversed(rows_reverse))
+
+
+def write_lean_factor_file(ticker: str, rows: Iterable[str],
+                            factor_folder: Path) -> Path:
+    """Write ``<factor_folder>/<ticker>.csv`` (LOWERCASE) for LEAN factor files.
+
+    The factor file path mirrors the data zip path under the data folder:
+    ``<data-folder>/equity/usa/factor_files/<ticker>.csv``. The default
+    ``--out-folder`` of the CLI is ``/Lean/Data/equity/usa/daily``; the
+    matching factor folder is therefore ``/Lean/Data/equity/usa/factor_files``.
+    The ticker is lowercased unconditionally for the same case-sensitivity
+    reason as ``write_lean_zip``. Returns the path to the written CSV.
+    """
+    factor_folder = Path(factor_folder)
+    factor_folder.mkdir(parents=True, exist_ok=True)
+    ticker_low = ticker.lower()
+    csv_path = factor_folder / f"{ticker_low}.csv"
+    body = "\n".join(rows) + ("\n" if rows else "")
+    csv_path.write_text(body, encoding="utf-8")
+    return csv_path
+
+
 def fetch_yfinance(ticker: str, start: Optional[str] = None,
                    end: Optional[str] = None):
     """Lazily import yfinance and download daily OHLCV for one ticker.
@@ -150,17 +241,40 @@ def fetch_yfinance(ticker: str, start: Optional[str] = None,
 
 
 def convert_one(ticker: str, out_folder: Path, start: Optional[str] = None,
-                end: Optional[str] = None, dry_run: bool = False) -> int:
-    """Download, convert, and write one ticker. Returns the number of bars."""
+                end: Optional[str] = None, dry_run: bool = False,
+                factor_folder: Optional[Path] = None) -> int:
+    """Download, convert, and write one ticker. Returns the number of bars.
+
+    When ``factor_folder`` is provided, also writes the matching LEAN factor
+    file (``<factor_folder>/<ticker>.csv``) with the split=1 + dividend-aware
+    price factor the module contract specifies (see module docstring).
+    """
     df = fetch_yfinance(ticker, start=start, end=end)
     rows = df_to_lean_rows(df)
     if dry_run:
         print(f"[dry-run] {ticker}: {len(rows)} bars; first 3:")
         for r in rows[:3]:
             print("   ", r)
+        if factor_folder is not None:
+            try:
+                f_rows = build_factor_file_rows(df)
+                print(f"[dry-run] {ticker}: {len(f_rows)} factor-file rows; first 3:")
+                for r in f_rows[:3]:
+                    print("   ", r)
+            except KeyError as exc:
+                print(f"[dry-run] {ticker}: factor-file skipped ({exc})")
         return len(rows)
     zip_path = write_lean_zip(ticker, rows, out_folder)
     print(f"[ok] {ticker}: {len(rows)} bars -> {zip_path}")
+    if factor_folder is not None:
+        try:
+            f_rows = build_factor_file_rows(df)
+            factor_path = write_lean_factor_file(ticker, f_rows, factor_folder)
+            print(f"[ok] {ticker}: {len(f_rows)} factor rows -> {factor_path}")
+        except KeyError as exc:
+            # Adj Close missing -- data source without dividend adjustment (rare
+            # for yfinance). Skip factor file with a warning rather than fail.
+            print(f"[warn] {ticker}: factor file skipped ({exc})")
     return len(rows)
 
 
@@ -172,16 +286,39 @@ def main(argv: Optional[list[str]] = None) -> int:
     p.add_argument("--out-folder", type=Path,
                    default=Path("/Lean/Data/equity/usa/daily"),
                    help="LEAN daily equity output folder (default /Lean/Data/equity/usa/daily).")
+    p.add_argument("--factor-folder", type=Path, default=None,
+                   help="LEAN factor-files output folder. When set, writes "
+                        "<factor-folder>/<ticker>.csv alongside the data zip "
+                        "with the split=1 + dividend-aware price factor the "
+                        "module docstring describes. Default: derived from "
+                        "--out-folder as a sibling "
+                        "`factor_files/` directory; pass `--no-factor-file` "
+                        "to disable.")
+    p.add_argument("--no-factor-file", action="store_true",
+                   help="Skip writing the LEAN factor file (legacy behaviour, "
+                        "relies on whatever factor file LEAN finds in the data "
+                        "folder).")
     p.add_argument("--start", default=None, help="ISO start date (optional).")
     p.add_argument("--end", default=None, help="ISO end date (optional).")
     p.add_argument("--dry-run", action="store_true",
                    help="Print first rows per ticker, write nothing.")
     args = p.parse_args(argv)
 
+    # Resolve factor folder: explicit --no-factor-file disables; explicit
+    # --factor-folder wins; otherwise derive as a sibling of --out-folder
+    # (the LEAN data layout places factor_files/ next to daily/).
+    if args.no_factor_file:
+        factor_folder: Optional[Path] = None
+    elif args.factor_folder is not None:
+        factor_folder = args.factor_folder
+    else:
+        factor_folder = args.out_folder.parent / "factor_files"
+
     total = 0
     for tk in args.tickers:
         try:
-            total += convert_one(tk, args.out_folder, args.start, args.end, args.dry_run)
+            total += convert_one(tk, args.out_folder, args.start, args.end,
+                                 args.dry_run, factor_folder)
         except Exception as exc:  # pragma: no cover - network / ticker errors
             print(f"[FAIL] {tk}: {exc}")
     print(f"\nDone: {total} bars across {len(args.tickers)} tickers.")

@@ -4,6 +4,7 @@ commands/quant.py - Gestion de la quantification GenAI
 
 Sous-commandes:
     genai.py quant summary       Afficher le résumé des configurations
+    genai.py quant check         Confronter la doc à la quantification réellement chargée
     genai.py quant apply         Appliquer toutes les configurations
     genai.py quant apply zimage  Configurer Z-Image avec FP8
     genai.py quant apply qwen    Configurer Qwen avec Nunchaku INT4
@@ -34,6 +35,17 @@ def register(subparsers):
     # Summary
     sub.add_parser('summary', help='Afficher le résumé des configurations')
 
+    # Check — confrontation doc <-> quantification reelement chargee (#23252).
+    # Additif : `summary` decrit la configuration DECLAREE, `check` la CONFRONTE
+    # a ce que les composes chargent. Deux gestes distincts, deux sous-commandes.
+    check_parser = sub.add_parser(
+        'check',
+        help='Confronter la doc à la quantification réellement chargée')
+    check_parser.add_argument('--json', action='store_true',
+                              help='Sortie JSON (verdicts machine)')
+    check_parser.add_argument('--as-of', dest='as_of', default=None,
+                              help='Révision git : rejouer le contrôle sur un état passé')
+
     # Apply
     apply_parser = sub.add_parser('apply', help='Appliquer les configurations')
     apply_parser.add_argument('service', nargs='?', const='all',
@@ -52,6 +64,21 @@ def execute(args):
     if args.quant_action == 'summary':
         show_summary()
         return 0
+
+    if args.quant_action == 'check':
+        # La commande ne mesure RIEN elle-meme : elle delegue a l'organe, qui lit
+        # les blocs `command:`/`environment:` des composes et les confronte a la
+        # table de la doc. Sans ce branchement, `genai.py quant summary` pointerait
+        # vers un geste de verification inexistant (releve par la relecture Hermes
+        # de #23238). Le code de sortie est celui de l'organe : 1 sur divergence
+        # lourde ou ligne orpheline, 0 sinon -- `UNKNOWN` ne fait jamais echouer.
+        from check_quant_doc_divergence import main as check_main
+        argv = []
+        if getattr(args, 'json', False):
+            argv.append('--json')
+        if getattr(args, 'as_of', None):
+            argv += ['--as-of', args.as_of]
+        return check_main(argv)
 
     if args.quant_action == 'apply':
         project_root = Path(__file__).resolve().parent.parent.parent.parent

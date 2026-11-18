@@ -1,6 +1,7 @@
 import Sudoku.Basic
 import Sudoku.Propagation
 import Sudoku.ExactCover
+import Sudoku.Certificate_en
 
 /-!
 # Sudoku — soundness of propagation + exact-cover reduction (Lean 4)
@@ -24,6 +25,12 @@ OR-Tools, .NET). See issue #4055 (Lean roadmap #4038).
   direction, via `toSelection` and the full-house lemma `full_house_present`) +
   `exact_cover_imp_solution` (reverse direction, via the inverse construction
   `fromSelection`), 0 `sorry`.
+- `Sudoku.Certificate`: **concrete DLX certificates** verified by the native lake
+  (issue #22375) — `sudokuScopes` (the 27 concrete scopes of the 9×9), a staged
+  computable checker `checkCertificate` (raw duplicate, cell conflict, completeness,
+  exact cover, clue respect), and the soundness bridge `checkOk_isExactCover`:
+  checker acceptance entails `ExactCover.IsExactCover`, then `checkOk_givesSolution`
+  extracts a real `Solution`, 0 `sorry`.
 
 ## Status
 - Proved without `sorry`: (1) the soundness of the naked/hidden single rules

@@ -14,11 +14,11 @@ Agent orchestrateur pour iterer sur les 110 notebooks GenAI (`MyIA.AI.Notebooks/
 
 ## Stack GenAI (services verifies)
 
-| Service | GPU | VRAM | Sous-domaine | Auth |
+| Service | GPU | VRAM idle (cf. `docs/genai/genai-services.md`) | Sous-domaine | Auth |
 |---------|-----|------|--------------|------|
-| comfyui-qwen | GPU0 | ~20GB | qwen-image-edit.myia.io | Bearer (bcrypt) |
-| forge-turbo | GPU1 | ~8GB | turbo...myia.io | Basic |
-| vllm-zimage | GPU1 | ~15GB | z-image.myia.io | aucune |
+| comfyui-qwen | GPU0 | cf. table canonique | qwen-image-edit.myia.io | Bearer (bcrypt) |
+| forge-turbo | GPU1 | cf. table canonique | turbo...myia.io | Basic |
+| vllm-zimage | GPU1 | cf. table canonique | z-image.myia.io | aucune |
 
 ## Config & secrets (HARD)
 
@@ -51,6 +51,8 @@ Commandes :
 - Config max-quant : `scripts/genai-stack/configure_max_quantization.py`.
 
 **Choix quant = arbitrage VRAM** : sur un GPU 8GB, Nunchaku INT4 (~4GB) est obligatoire ; FP8 (~29GB) demande un GPU haut de gamme. Documenter le choix par service.
+
+**Plus petit quant, communautaire compris, et sleep quand le service ne sert pas** — recettes de recherche HF, piège du fork loader NF4, précautions vLLM (modes/niveaux, RAM hôte) : [docs/genai/genai-services.md](../../docs/genai/genai-services.md#quantification--mesures-du-2026-10-29) ; table de quantification **déclarée** par service via `python genai.py quant summary` (la confrontation à l'état réellement chargé est l'organe de #23252).
 
 ## GPU / VRAM ventilation
 

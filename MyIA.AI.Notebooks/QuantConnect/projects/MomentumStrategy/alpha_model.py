@@ -10,6 +10,11 @@ class SectorMomentumAlpha(AlphaModel):
     Emits UP for top N sectors with positive momentum, FLAT otherwise.
     In risk-off mode, only XLP and XLU get UP insights.
     Monthly emission.
+
+    Every FLAT carries weight 0. InsightWeightingPortfolioConstructionModel
+    only builds a target for a weighted insight: an unweighted FLAT left the
+    previous UP in charge, so a deselected or stopped line was never sold
+    (#20264).
     """
 
     def __init__(self, sector_tickers, top_n=4, lookback=252,
@@ -28,6 +33,28 @@ class SectorMomentumAlpha(AlphaModel):
         self.spy_sma20 = None
         self._last_month = -1
         self.entry_prices = {}
+        # Insight life in daily bars: longer than the gap between two monthly
+        # emissions, so the next emission always replaces the previous one.
+        self.period = timedelta(days=30)
+
+    def _flat(self, symbol):
+        return Insight.price(
+            symbol, self.period, InsightDirection.FLAT,
+            weight=0, source_model=self.name
+        )
+
+    def _arm_stop(self, algorithm, ticker, symbol):
+        """Arm the stop-loss of a retained line.
+
+        A line bought at this emission takes the current price, as in the
+        standalone version. A line already held without an entry price takes
+        the average price of the position.
+        """
+        holding = algorithm.portfolio[symbol]
+        if not holding.invested:
+            self.entry_prices[ticker] = algorithm.securities[symbol].price
+        elif ticker not in self.entry_prices:
+            self.entry_prices[ticker] = holding.average_price
 
     def update(self, algorithm, data):
         if algorithm.is_warming_up:
@@ -40,7 +67,9 @@ class SectorMomentumAlpha(AlphaModel):
 
         insights = []
 
-        # Daily stop-loss check: emit FLAT for stopped positions
+        # Daily stop-loss check: emit FLAT for stopped positions. The FLAT lives
+        # as long as a monthly insight, so the UP of the month cannot take over
+        # again when a shorter FLAT expires and buy the line back.
         for ticker in list(self.entry_prices.keys()):
             symbol = self.symbols.get(ticker)
             if symbol is None:
@@ -53,10 +82,7 @@ class SectorMomentumAlpha(AlphaModel):
             if current_price > 0 and entry > 0:
                 pct = (current_price / entry) - 1
                 if pct < self.stop_loss_pct:
-                    insights.append(Insight.price(
-                        symbol, timedelta(days=1), InsightDirection.FLAT,
-                        source_model=self.name
-                    ))
+                    insights.append(self._flat(symbol))
                     del self.entry_prices[ticker]
 
         # Monthly rebalancing
@@ -87,7 +113,7 @@ class SectorMomentumAlpha(AlphaModel):
         below_sma20 = spy_price < self.spy_sma20.current.value
         risk_off = below_sma200 and below_sma20
 
-        period = timedelta(days=30)
+        period = self.period
 
         if not risk_off:
             sorted_sectors = sorted(
@@ -109,11 +135,10 @@ class SectorMomentumAlpha(AlphaModel):
                             symbol, period, InsightDirection.UP,
                             weight=0.5, source_model=self.name
                         ))
+                        self._arm_stop(algorithm, ticker, symbol)
                     else:
-                        insights.append(Insight.price(
-                            symbol, period, InsightDirection.FLAT,
-                            source_model=self.name
-                        ))
+                        insights.append(self._flat(symbol))
+                        self.entry_prices.pop(ticker, None)
                 return insights
 
             weight = 1.0 / len(top_sectors)
@@ -127,14 +152,9 @@ class SectorMomentumAlpha(AlphaModel):
                         symbol, period, InsightDirection.UP,
                         weight=weight, source_model=self.name
                     ))
-                    if not algorithm.portfolio[symbol].invested:
-                        self.entry_prices[ticker] = \
-                            algorithm.securities[symbol].price
+                    self._arm_stop(algorithm, ticker, symbol)
                 else:
-                    insights.append(Insight.price(
-                        symbol, period, InsightDirection.FLAT,
-                        source_model=self.name
-                    ))
+                    insights.append(self._flat(symbol))
                     self.entry_prices.pop(ticker, None)
         else:
             # Risk-off: only XLP and XLU
@@ -147,20 +167,22 @@ class SectorMomentumAlpha(AlphaModel):
                         symbol, period, InsightDirection.UP,
                         weight=0.5, source_model=self.name
                     ))
-                    if not algorithm.portfolio[symbol].invested:
-                        self.entry_prices[ticker] = \
-                            algorithm.securities[symbol].price
+                    self._arm_stop(algorithm, ticker, symbol)
                 else:
-                    insights.append(Insight.price(
-                        symbol, period, InsightDirection.FLAT,
-                        source_model=self.name
-                    ))
+                    insights.append(self._flat(symbol))
                     self.entry_prices.pop(ticker, None)
 
         return insights
 
     def _momentum_score(self, algorithm, symbol):
-        history = algorithm.history(symbol, self.lookback + 5, Resolution.DAILY)
+        # On the 13:00 close slice of a US half-session, a daily history request
+        # by bar count comes back short (44 bars out of 257 measured on this
+        # alpha, #20264). Ask for twice the bars and keep the most recent ones,
+        # as in the standalone main.py (#20286).
+        history = algorithm.history(
+            symbol, 2 * (self.lookback + 5), Resolution.DAILY
+        )
+        history = history.iloc[-(self.lookback + 5):]
         if len(history) < self.lookback:
             return None
 

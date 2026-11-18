@@ -322,13 +322,15 @@
   - texte: ¬q⇒¬p
     correcte: true
   - texte: ¬(¬p∧¬q)
-    correcte: true
+    correcte: false
   - texte: ¬q∨p
     correcte: false
   - texte: p∧¬q
     correcte: false
   - texte: q⇒p
     correcte: false
+  explication: 'Correction de la relecture d''octobre 2026 : ¬(¬p∧¬q) équivaut à p∨q, et non à p⇒q (c''est-à-dire
+    ¬p∨q). Contre-exemple : p vrai et q faux rendent p∨q vrai et p⇒q faux.'
 - id: ia3-016
   theme: ia-3-logique-bases-connaissances
   type: multichoice
@@ -434,10 +436,12 @@
   - texte: ¬q⇒¬p
     correcte: false
   - texte: ¬(¬p∧¬q)
-    correcte: false
+    correcte: true
   - texte: ¬q∨p
     correcte: true
   - texte: p∧¬q
     correcte: true
   - texte: q⇒p
     correcte: true
+  explication: 'Correction de la relecture d''octobre 2026 : ¬(¬p∧¬q) équivaut à p∨q, qui n''est pas équivalent
+    à p⇒q (contre-exemple : p vrai et q faux). Cette option fait donc partie des réponses attendues.'

@@ -1,0 +1,18 @@
+{
+  "module": "ML-Training-Pipeline",
+  "issue": 15294,
+  "mode": "baseline",
+  "dataset": "hermes",
+  "dataset_label": "Hermes-function-calling-v1 (singleturn)",
+  "chat_mode": "nonthinking",
+  "max_completion_length": 384,
+  "model": "Qwen3.5-0.8B",
+  "model_key": "qwen35",
+  "model_path": "C:\\Users\\jsboi\\.cache\\huggingface\\hub\\models--Qwen--Qwen3.5-0.8B\\snapshots\\2fc06364715b967f1860aea9cf38778875588b17",
+  "eval": {
+    "n_gens": 160.0,
+    "reward_mean": 0.20625,
+    "length_mean": 397.725
+  },
+  "wallclock_s": 977.9
+}

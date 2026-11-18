@@ -62,24 +62,44 @@ import os
 username = os.environ.get('COMFYUI_USERNAME', 'admin')
 password_dir = os.path.join('login')
 password_path = os.path.join(password_dir, 'PASSWORD')
+# Le hash bcrypt EST le credential lui-meme (le Bearer accepte par
+# ComfyUI-Login). S'il est regenere a chaque boot, le Bearer change a chaque
+# redemarrage et tout client qui garde l'ancien echoue. Charger un hash
+# STABLE depuis un fichier monte supprime cette derive -- meme mecanisme que
+# comfyui-qwen (cf .secrets/qwen-api-user.token).
+secret_token_path = os.path.join('.secrets', 'video-api-user.token')
 
 if not os.path.exists(password_dir):
     os.makedirs(password_dir)
 
 password = os.environ.get('COMFYUI_PASSWORD', '').encode('utf-8')
-if password:
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(password, salt)
+hashed = None
+
+# 1) Voie durable : hash stable monte en lecture seule.
+if os.path.exists(secret_token_path):
+    try:
+        with open(secret_token_path, 'rb') as f:
+            content = f.read().strip()
+        if content:
+            hashed = content
+            print(f'Token stable charge depuis {secret_token_path}')
+    except Exception as exc:
+        print(f'Erreur lecture token secret: {exc}')
+
+# 2) Repli : generation depuis le mot de passe (comportement historique,
+#    derive par construction -- le Bearer change a chaque redemarrage).
+if not hashed and password:
+    print('Pas de token stable monte, generation depuis COMFYUI_PASSWORD (Bearer instable)')
+    hashed = bcrypt.hashpw(password, bcrypt.gensalt())
+
+if hashed:
     with open(password_path, 'wb') as f:
         f.write(hashed + b'\n' + username.encode('utf-8'))
-    # Self-check : confirme que le .env (env au startup) verifie le hash ecrit.
-    # Previent le 'drift' (container au hash perime si .env change sans restart).
-    with open(password_path, 'rb') as f:
-        stored = f.read().split(b'\n')[0]
-    if bcrypt.checkpw(password, stored):
+    # Self-check : le hash ecrit doit verifier le mot de passe configure.
+    if password and bcrypt.checkpw(password, hashed):
         print(f'AUTH OK: utilisateur {username} configure, hash verifie contre COMFYUI_PASSWORD')
     else:
-        print('AUTH WARNING: le hash ecrit ne verifie pas COMFYUI_PASSWORD (propagation env defectueuse ?)')
+        print(f'AUTH OK: utilisateur {username} configure (token stable monte)')
 else:
     print('Aucun mot de passe configure, authentification desactivee')
 "

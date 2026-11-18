@@ -1,0 +1,59 @@
+# Sonde d'API courante -- moteur sk
+# generee le 2026-11-04 par current_api_probe.py --engine sk
+# aucune requete LLM, aucune cle API ; environnement de mesure dedie
+VERSION semantic-kernel=1.46.0
+DEPRECATIONS_A_L_IMPORT 0
+SYMBOLES_PUBLICS 1158
+CONTROLE NEGATIF INTER-MOTEURS (doivent etre NON importables)
+  NEGATIF absent OK  agent_framework
+  NEGATIF absent OK  google.adk
+CAPACITE topologies_orchestration
+  POSITIF PRESENT OK  semantic_kernel.agents.orchestration.sequential.SequentialOrchestration  (ok)
+  POSITIF PRESENT OK  semantic_kernel.agents.orchestration.concurrent.ConcurrentOrchestration  (ok)
+  POSITIF PRESENT OK  semantic_kernel.agents.orchestration.group_chat.GroupChatOrchestration  (ok)
+  POSITIF PRESENT OK  semantic_kernel.agents.orchestration.magentic.MagenticOrchestration  (ok)
+  POSITIF PRESENT OK  semantic_kernel.agents.orchestration.handoffs.HandoffOrchestration  (ok)
+  SYMBOLE ConcurrentOrchestration (semantic_kernel.agents)
+  SYMBOLE GroupChatOrchestration (semantic_kernel.agents)
+  SYMBOLE HandoffOrchestration (semantic_kernel.agents)
+  SYMBOLE MagenticOrchestration (semantic_kernel.agents)
+  SYMBOLE OrchestrationBase (semantic_kernel.agents.orchestration.concurrent)
+  SYMBOLE OrchestrationHandoffs (semantic_kernel.agents)
+  SYMBOLE OrchestrationResult (semantic_kernel.agents.orchestration.orchestration_base)
+  SYMBOLE SequentialOrchestration (semantic_kernel.agents)
+CAPACITE agents
+  POSITIF PRESENT OK  semantic_kernel.agents.ChatCompletionAgent  (ok)
+  POSITIF PRESENT OK  semantic_kernel.agents.runtime.InProcessRuntime  (ok)
+  POSITIF PRESENT OK  semantic_kernel.agents.GroupChatOrchestration  (ok)
+  NEGATIF absent OK  semantic_kernel.agents.orchestration.SequentialOrchestration
+  SYMBOLE AgentGroupChat (semantic_kernel.agents)
+  SYMBOLE ChatCompletionAgent (semantic_kernel.agents)
+  SYMBOLE ProcessBuilder (semantic_kernel.processes)
+CAPACITE checkpoint_reprise
+  SYMBOLE aucun pour ['checkpoint', 'resume', 'restore', 'snapshot'] -- ABSENT
+CAPACITE observabilite
+  SYMBOLE NoOpTracerProvider (semantic_kernel.agents.runtime.core.telemetry.tracing)
+  SYMBOLE Tracer (semantic_kernel.connectors.ai.chat_completion_client_base)
+  SYMBOLE TracerProvider (semantic_kernel.agents.runtime.core.telemetry.tracing)
+  SYMBOLE get_tracer (semantic_kernel.connectors.ai.chat_completion_client_base)
+  SYMBOLE get_tracer_provider (semantic_kernel.agents.runtime.core.telemetry.tracing)
+  SYMBOLE tracer (semantic_kernel.connectors.ai.chat_completion_client_base)
+CAPACITE comptage_tokens
+  SYMBOLE CompletionUsage (semantic_kernel.connectors.ai)
+  SYMBOLE OpenAICompletionUsage (semantic_kernel.connectors.ai.completion_usage)
+CAPACITE endpoint_local
+  SYMBOLE AsyncOpenAI (semantic_kernel.agents.channels.open_ai_assistant_channel)
+  SYMBOLE OpenAIChatCompletion (semantic_kernel.connectors.ai.open_ai)
+  SYMBOLE OpenAIChatCompletionBase (semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion)
+CAPACITE comptage_tokens (CHAMPS de classe, pas symboles)
+  CHAMPS PRESENT OK  semantic_kernel.connectors.ai.completion_usage.CompletionUsage
+      champ prompt_tokens
+      champ prompt_tokens_details
+      champ completion_tokens
+      champ completion_tokens_details
+  CHAMPS ABSENT  semantic_kernel.contents.chat_message_content.ChatMessageContent
+CONSTRUCTION (sans requete)
+  SIGNATURE OpenAIChatCompletion.__init__ params=['self', 'ai_model_id', 'service_id', 'api_key', 'org_id', 'default_headers', 'async_client', 'env_file_path', 'env_file_encoding', 'instruction_role']
+  ACCEPTE base_url=False
+  CONSTRUCTION OK OpenAIChatCompletion(async_client=AsyncOpenAI(base_url=...)) service_id=gpt-4o-mini
+SONDE FIN sk

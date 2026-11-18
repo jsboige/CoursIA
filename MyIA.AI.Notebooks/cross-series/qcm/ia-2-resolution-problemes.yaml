@@ -169,21 +169,21 @@
     Quelle est la complexité en temps de l''exploration bidirectionnelle?'
   choix_unique: true
   options:
-  - texte: 2O(bd/2)
+  - texte: 2O(b^(d/2))
     correcte: true
-  - texte: 2O(bd)
+  - texte: 2O(b^d)
     correcte: false
-  - texte: O(b2d)
+  - texte: O(b^(2d))
     correcte: false
-  - texte: O(bd)/2
+  - texte: O(b^d)/2
     correcte: false
-  - texte: O(bd²)
+  - texte: O(b^(d²))
     correcte: false
-  - texte: O((b/2)d)
+  - texte: O((b/2)^d)
     correcte: false
-  - texte: O((2b)d)
+  - texte: O((2b)^d)
     correcte: false
-  - texte: O((b/2)2d)
+  - texte: O((b/2)^(2d))
     correcte: false
 - id: ia2-008
   theme: ia-2-resolution-problemes
@@ -195,15 +195,15 @@
     Quelle est la complexité en mémoire de l''exploration itérative en profondeur ?'
   choix_unique: true
   options:
-  - texte: O(bd/2)
+  - texte: O(b^(d/2))
     correcte: false
-  - texte: O(bd)
+  - texte: O(b^d)
     correcte: false
-  - texte: O(bm)
+  - texte: O(b^m)
     correcte: false
-  - texte: O(dm)
+  - texte: O(d^m)
     correcte: false
-  - texte: O(db)
+  - texte: O(d^b)
     correcte: false
   - texte: O(bm)
     correcte: false
@@ -211,11 +211,11 @@
     correcte: true
   - texte: O(dm)
     correcte: false
-  - texte: O(db/2)
+  - texte: O(d^(b/2))
     correcte: false
-  - texte: O(mb)
+  - texte: O(m^b)
     correcte: false
-  - texte: O(md/2)
+  - texte: O(m^(d/2))
     correcte: false
 - id: ia2-009
   theme: ia-2-resolution-problemes
@@ -235,32 +235,6 @@
   - texte: '3'
     correcte: false
   - texte: '4'
-    correcte: false
-- id: ia2-010
-  theme: ia-2-resolution-problemes
-  type: multichoice
-  source: MSMEM4EN08 2018
-  enonce: 'La figure suivante donne la description d''un espace d''exploration où sont représentés les 
-    coûts d''étapes, et les valeurs d''une fonction heuristique utilisée en exploration informée.
-
-    [figure externe non disponible]
-
-
-    Quels sont les solutions renvoyées respectivement par une exploration en profondeur d''abord, une
-    exploration glouton, et une exploration A étoile?'
-  choix_unique: true
-  options:
-  - texte: SAEFG, SCDFG, SBEFG
-    correcte: true
-  - texte: SBEFG, SAEFG, SCDFG
-    correcte: false
-  - texte: SCDFG, SBEFG, SAEFG
-    correcte: false
-  - texte: SAEFG, SBEFG, SCDFG
-    correcte: false
-  - texte: SBEFG, SCDFG, SAEFG
-    correcte: false
-  - texte: SCDFG, SAEFG, SBEFG
     correcte: false
 - id: ia2-011
   theme: ia-2-resolution-problemes
@@ -484,13 +458,16 @@
   - texte: '2.2'
     correcte: false
   - texte: '3.2'
-    correcte: true
+    correcte: false
   - texte: '4.2'
     correcte: false
   - texte: '5.2'
     correcte: false
   - texte: '6.2'
     correcte: false
+  explication: 'Correction de la relecture d''octobre 2026 : sous C1, Min choisit 2 puis 4 (0,8 × 2 +
+    0,2 × 4 = 2,4) ; sous C2, 1 puis 5 (0,9 × 1 + 0,1 × 5 = 1,4). Max retient 2,4. La valeur 3,2, cochée
+    dans la source, ne se déduit d''aucune lecture de l''arbre.'
 - id: ia2-019
   theme: ia-2-resolution-problemes
   type: multichoice
@@ -526,7 +503,7 @@
   - texte: '9.8'
     correcte: false
   - texte: '4.7'
-    correcte: true
+    correcte: false
   - texte: '5.7'
     correcte: false
   - texte: '6.7'
@@ -537,6 +514,9 @@
     correcte: false
   - texte: '9.7'
     correcte: false
+  explication: 'Correction de la relecture d''octobre 2026 : sous C1, Min choisit 5 puis 4 (0,8 × 5 +
+    0,2 × 4 = 4,8) ; sous C2, 8 puis 5 (0,9 × 8 + 0,1 × 5 = 7,7). Max retient 7,7. La valeur 4,7, cochée
+    dans la source, ne se déduit d''aucune lecture de l''arbre.'
 - id: ia2-020
   theme: ia-2-resolution-problemes
   type: multichoice
@@ -684,21 +664,21 @@
     Quelle est la complexité en temps de l''exploration bidirectionnelle?'
   choix_unique: true
   options:
-  - texte: O(bd/2)
+  - texte: O(b^(d/2))
     correcte: true
-  - texte: O(bd)
+  - texte: O(b^d)
     correcte: false
-  - texte: O(b2d)
+  - texte: O(b^(2d))
     correcte: false
-  - texte: O(bd)/2
+  - texte: O(b^d)/2
     correcte: false
-  - texte: O(bd²)
+  - texte: O(b^(d²))
     correcte: false
-  - texte: O((b/2)d)
+  - texte: O((b/2)^d)
     correcte: false
-  - texte: O((2b)d)
+  - texte: O((2b)^d)
     correcte: false
-  - texte: O((b/2)2d)
+  - texte: O((b/2)^(2d))
     correcte: false
 - id: ia2-026
   theme: ia-2-resolution-problemes

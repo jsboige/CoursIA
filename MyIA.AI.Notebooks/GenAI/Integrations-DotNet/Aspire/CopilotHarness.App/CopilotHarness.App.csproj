@@ -11,4 +11,11 @@
     <PackageReference Include="GitHub.Copilot.SDK" Version="1.0.13" />
   </ItemGroup>
 
+  <!-- Mode `serve` : le harness expose ses capacites sur HTTP pour qu'un AppHost
+       Aspire l'orchestre. Reference de framework plutot que Sdk.Web : les modes
+       CLI (auth/models/ask/events) gardent exactement le meme binaire. -->
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
 </Project>

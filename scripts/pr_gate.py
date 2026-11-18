@@ -155,6 +155,7 @@ Run locally against any PR head:
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import re
@@ -537,7 +538,42 @@ class GateError(RuntimeError):
     """Raised when the check state cannot be established. Always fatal."""
 
 
+# --- quota verdicts: INCONCLUSIVE, replayable (2026-11-14) ----------------
+#
+# The installation-quota 403 is a shared, server-side exhaustion with an
+# hourly reset: the check state is unreadable because the API refuses to
+# answer, NOT because the PR carries a defect. Rule 1 still forbids a PASS,
+# but the verdict must not READ like a content verdict, and the chain must
+# be able to REPLAY it instead of hunting a defect that does not exist.
+#
+# The exit code is the contract: 1 is FAIL (a content verdict, rule 1),
+# 3 is INCONCLUSIVE (the answer is unknown, replay me). The chainer reads
+# the code to tell "fix the PR" from "replay the job".
+QUOTA_INCONCLUSIVE_CODE = 3
+
+
+class QuotaInconclusive(GateError):
+    """The installation-quota family at its bound: unreadable, replayable.
+
+    A subclass of `GateError`, so every existing `except GateError` still
+    catches it; `main` handles it FIRST, because its verdict differs from
+    the generic unreadable state.
+    """
+
+
 # --- pure decision layer (no network; this is what the unit tests pin) -------
+
+
+def _is_skipped(check: Mapping[str, object]) -> bool:
+    """Whether the entry is a SKIPPED job (a job-level guard, a `paths:` filter).
+
+    A skipped job measured NOTHING about the code: it is the absence of a
+    verdict, not a verdict. It must therefore never be read as the newest
+    opinion about the name it carries (#25510, tranche T-C).
+    """
+    if str(check.get("conclusion") or "").lower() == "skipped":
+        return True
+    return str(check.get("status") or "").lower() == "skipped"
 
 
 def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
@@ -547,6 +583,27 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     all of them makes a benign concurrency cancellation indistinguishable from a
     real failure. Ordering key is `started_at` then `id`, both monotonic per name;
     entries missing both keep their input order as a last resort.
+
+    THE SKIPPED FALLBACK (#25510, tranche T-C). A `skipped` entry never replaces
+    an EARLIER non-skipped entry of the same name, on the same head. A skipped
+    job says nothing about the code, and `skipped` counts as a PASS
+    (`CONCLUSION_OK`): under a plain latest-wins fold, a job skipped by a
+    guard -- a title edit, a `paths:` filter -- emits a `skipped` NEWER than
+    the real verdict and would WHITEN a red PR. The failure mode was already
+    documented from the other side in
+    `scripts/tests/test_pr_gate_edited_trigger.py` (#16624): a job-level guard
+    on `edited` emits a verdict-shaped check-run, and under latest-wins that
+    is the newest verdict for the name.
+
+    The accepted side effect is fail-closed: after a base change that takes
+    the job out of the diff, a red stays displayed until the next push.
+
+    ORDER. The nature of the entry heads the ordering key, so the fold does
+    not depend on the order in which the entries arrive: the REST endpoint
+    `commits/<sha>/check-runs` returns them from the MOST RECENT to the OLDEST
+    (measured on three heads: 31, 53 and 70 runs, decreasing ids), and no
+    caller re-sorts them. A fold that kept "the first seen" would therefore
+    have kept the skip.
 
     PREMISE -- the rendered check-run `name` identifies the job uniquely. This
     premise is enforced by `scripts/ci/check_unique_check_run_names.py` and its
@@ -569,9 +626,22 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     best: dict[str, tuple[tuple, dict]] = {}
     for index, check in enumerate(checks):
         name = check.get("name") or ""
-        key = (check.get("started_at") or "", check.get("id") or 0, index)
+        # THE SKIPPED FALLBACK (#25510, T-C) : la NATURE est en TETE de la cle.
+        # Un `skipped` mesure rien et compte comme un PASS : il ne doit donc
+        # jamais remplacer un verdict reel du meme nom. La nature en tete rend
+        # le repli INDEPENDANT DE L'ORDRE d'arrivee -- ce qui compte, parce que
+        # `commits/<sha>/check-runs` rend les entrees du PLUS RECENT au PLUS
+        # ANCIEN (mesure sur 3 tetes : 31, 53 et 70 runs, ids decroissants),
+        # alors que les tests historiques fournissaient l'ordre croissant.
+        key = (not _is_skipped(check),
+               check.get("started_at") or "",
+               check.get("id") or 0,
+               index)
         current = best.get(name)
-        if current is None or key >= current[0]:
+        if current is None:
+            best[name] = (key, check)
+            continue
+        if key >= current[0]:
             best[name] = (key, check)
     return [entry[1] for entry in best.values()]
 
@@ -629,6 +699,39 @@ def unconcluded_with_inflight_successor(
         if check.get("successor_run_inflight"):
             names.append(name)
     return sorted(names)
+
+
+def pending_all_queued(
+    checks: Sequence[dict],
+    self_name: str = DEFAULT_SELF_NAME,
+    advisory_jobs: frozenset[str] = frozenset(),
+) -> bool:
+    """Whether every blocking pending constituent sits at status=queued.
+
+    #13363: under self-hosted pool saturation, a gate waiter polls constituents
+    that sit ``queued`` with no runner assigned -- the verdict cannot change
+    until a constituent STARTS, so a starved queue entry is parked, not slow.
+    True means "waiting cannot change the verdict": every unconcluded blocking
+    check is queued (none in_progress). False when no pending constituent
+    exists -- the ordinary settle path owns that case.
+
+    The iteration mirrors `classify` (dedupe_latest, self/advisory excluded,
+    conclusion-authoritative #14976) so this predicate judges the SAME entry
+    per name the wait loop judges.
+    """
+    saw_pending = False
+    for check in dedupe_latest(checks):
+        name = check.get("name") or "<unnamed>"
+        if name == self_name or name.startswith(f"{self_name} /"):
+            continue
+        if _is_advisory_name(name, advisory_jobs):
+            continue
+        if (check.get("conclusion") or "").lower():
+            continue
+        saw_pending = True
+        if (check.get("status") or "").lower() != "queued":
+            return False
+    return saw_pending
 
 
 def classify(
@@ -951,13 +1054,83 @@ def verdict(
 
 
 # --- network layer ----------------------------------------------------------
+#
+# The shared installation token is capped at 1000 requests/hour (#25510), and
+# this gate is one of its largest consumers: `fetch_checks` polls `check-runs`
+# (one call per page) plus `/status` for every head every `--poll-sec` (30 s).
+# A 304 from the Checks API costs NO installation quota (measured: `remaining`
+# unchanged before and after a conditional re-read). So repeated reads of the
+# SAME path are made CONDITIONAL: the response's `Etag` is sent back as
+# `If-None-Match`, and a 304 re-uses the last body we read for that path.
+#
+# Two invariants from the #17262 / #15342 line stay intact:
+#   * a 304 is a SUCCESS -- it re-uses the last readable body;
+#   * an unreadable read -- a non-zero exit, OR a 200 whose body is not JSON --
+#     is a FAILURE (GateError), never a silent reuse of a stale body.
+# The two counters below make the per-run consumption measurable (T-I point 1)
+# instead of estimated; `_entry` prints them once at the end of every run.
+_GH_API_CALLS = 0
+_GH_API_304 = 0
+# path -> (etag, last readable body). Keyed by the FULL request path, so each
+# (sha, page) of `check-runs` and each `/status` / `actions/runs` is distinct:
+# a changed head is a new path and thus a fresh 200, never a stale 304.
+_GITHUB_READ_CACHE: dict[str, tuple[str, object]] = {}
+
+
+def _gh_http_status(header_block: str) -> int:
+    """Status code from a `gh api -i` header block (line 1: `HTTP/2.0 200 OK`)."""
+    parts = header_block.splitlines()[0].split() if header_block else []
+    return int(parts[1]) if len(parts) >= 2 else 0
+
+
+def _gh_etag(header_block: str) -> str | None:
+    for line in header_block.splitlines():
+        if line.lower().startswith("etag:"):
+            return line.split(":", 1)[1].strip()
+    return None
+
+
+def _gh_ratelimit_reset(header_block: str) -> float | None:
+    """The `x-ratelimit-reset` instant of a failed read, in epoch seconds.
+
+    `None` when the header is absent or unparsable -- the waiter then
+    keeps its own escalating schedule (#17681). The value is a
+    GitHub-provided timestamp, never computed here.
+    """
+    for line in header_block.splitlines():
+        if line.lower().startswith("x-ratelimit-reset:"):
+            try:
+                return float(line.split(":", 1)[1].strip())
+            except ValueError:
+                return None
+    return None
 
 
 def _gh_api(path: str) -> object:
-    """Call `gh api <path>` and parse JSON. Any failure is fatal (rule 1)."""
+    """Call `gh api <path>` and parse JSON. Any failure is fatal (rule 1).
+
+    Repeated reads of the same path are conditional (#25510 T-I): a stored
+    `Etag` is sent as `If-None-Match`, and a 304 re-uses the last body we read
+    for that path (a 304 costs no installation quota). The HTTP status is read
+    from the `-i` header block BEFORE the returncode is judged, because
+    `gh api` exits 1 on a 304 (measured) -- a 304 with a cached body is a
+    success on any rc. Any OTHER non-zero exit, or a 200 whose body is not
+    JSON, is a GateError: an unreadable state is a failure, never a pass, and
+    never a silent reuse of a stale body.
+    """
+    global _GH_API_CALLS, _GH_API_304
+    _GH_API_CALLS += 1
+
+    entry = _GITHUB_READ_CACHE.get(path)
+    etag = entry[0] if entry else None
+
     try:
+        cmd = ["gh", "api", "-i"]
+        if etag:
+            cmd += ["-H", f"If-None-Match: {etag}"]
+        cmd.append(path)
         completed = subprocess.run(
-            ["gh", "api", path],
+            cmd,
             capture_output=True,
             text=True, encoding="utf-8", errors="replace",
             check=False,
@@ -965,15 +1138,44 @@ def _gh_api(path: str) -> object:
     except FileNotFoundError as exc:  # pragma: no cover - environment problem
         raise GateError(f"gh CLI not available: {exc}") from exc
 
+    # `gh api -i` prints the status line + headers, a blank line, then body.
+    # The status is read from that header block BEFORE the returncode is judged:
+    # `gh api` exits 1 on a 304 (measured -- stdout `HTTP/2.0 304 Not Modified`,
+    # stderr `gh: HTTP 304`), so a 304 must be resolved as a success first.
+    header_block, _, body_text = completed.stdout.partition("\n\n")
+    status = _gh_http_status(header_block)
+
+    if status == 304:
+        # Unchanged since our stored Etag: re-use the last readable body, on
+        # any rc. (We only send If-None-Match when we have one, so `entry` is
+        # set here.) A deepcopy: the cache must not alias a caller's object.
+        _GH_API_304 += 1
+        if entry is None:
+            raise GateError(f"gh api {path} returned 304 with no cached body")
+        return copy.deepcopy(entry[1])
+
+    # Any OTHER non-zero exit is an unreadable read: fatal, never a cache-reuse.
     if completed.returncode != 0:
-        raise GateError(
-            f"gh api {path} failed (exit {completed.returncode}): "
+        exc = GateError(
+            f"gh api {path} failed (exit {completed.returncode}, HTTP {status}): "
             f"{completed.stderr.strip()[:400]}"
         )
+        # The reset instant of the installation quota, when the API told
+        # us (the `x-ratelimit-reset` header). Absent on some failures:
+        # the waiter then falls back on its own backoff schedule.
+        exc.reset_epoch = _gh_ratelimit_reset(header_block)
+        raise exc
+
+    new_etag = _gh_etag(header_block)
     try:
-        return json.loads(completed.stdout)
+        body = json.loads(body_text)
     except json.JSONDecodeError as exc:
         raise GateError(f"gh api {path} returned non-JSON: {exc}") from exc
+    if new_etag:
+        # Store a copy so a caller mutating the returned body can't corrupt the
+        # cache that a later 304 would re-use.
+        _GITHUB_READ_CACHE[path] = (new_etag, copy.deepcopy(body))
+    return body
 
 
 # --- transient vs permanent API failures (#17262) ---------------------------
@@ -1048,14 +1250,25 @@ def _is_transient_api_error(exc: BaseException) -> bool:
 # changes is the SPACING: an escalating schedule that rides out a minutes-long
 # burst inside the SAME absolute deadline, never extending `--timeout-min`.
 # Rule 1 is untouched -- a state still unreadable at the bound still ends in
-# FAIL naming the quota family, so an infrastructure outage is never hunted
-# as a content defect (and never flips to a pass).
+# the replayable INCONCLUSIVE naming the quota family (#26542), so an
+# infrastructure outage is never hunted as a content defect (and never flips
+# to a pass).
 INSTALLATION_QUOTA_MARKERS = (
     # Verbatim production signature, #17262/#17681:
     #   gh: API rate limit exceeded for installation. (HTTP 403)
     "rate limit exceeded for installation",
 )
 INSTALLATION_QUOTA_BACKOFF_SEC = (30.0, 120.0, 300.0, 600.0, 900.0)
+# #26739 -- the far-reset bound. Sleeping to an ANNOUNCED reset only pays
+# when the reset is close: the sleep holds a runner, and the measured
+# incident (2026-11-15, jobs 132806296573/132806304780) burned 59 min of a
+# runner -- on a starved pool -- for 3 API calls, then rendered the very
+# INCONCLUSIVE it could have rendered at minute one. `pr-gate-stale-sweep`
+# replays that verdict on its own schedule, so the replay, not the sleep,
+# is the cheap path to a green leg. 300 s is the middle stage of the
+# escalating schedule above: a reset within it is a wait the gate already
+# accepts, anything farther is a runner held for a verdict already decided.
+INSTALLATION_QUOTA_MAX_WAIT_SEC = 300.0
 
 
 def _is_installation_quota_error(exc: BaseException) -> bool:
@@ -1067,6 +1280,23 @@ def _is_installation_quota_error(exc: BaseException) -> bool:
     """
     text = str(exc).lower()
     return any(marker in text for marker in INSTALLATION_QUOTA_MARKERS)
+
+
+def _quota_inconclusive_message(
+    exc: BaseException, transient_reads: int
+) -> str:
+    """The bound message of the installation-quota family -- ONE format.
+
+    Two exits render this message (#26739): the bound itself (retry cap or
+    deadline reached) and the far-reset early exit in the wait loop. A
+    single builder keeps them byte-identical, so the replay chain (`main`'s
+    INCONCLUSIVE, the stale sweep, the picker) never meets two formats for
+    one state.
+    """
+    return (
+        f"{exc} -- {transient_reads} installation-quota read failure(s) "
+        "in a row: the check state stayed unreadable (rule 1)"
+    )
 
 
 def _gh_api_post(path: str, fields: dict[str, str]) -> dict:
@@ -1291,6 +1521,34 @@ def cancel_own_run(repo: str, run_id: str) -> bool:
     return True
 
 
+def _foreign_suite_detail(response: dict, name: str) -> str | None:
+    """#21505 : message d'avertissement quand un check-run porte a la creation
+    dans une suite ETRANGERE, sinon None.
+
+    L'endpoint `POST /repos/.../check-runs` ne porte AUCUN selecteur de suite :
+    GitHub rattache le run a la suite qu'il resout pour (app, commit). Mesure
+    sur #18985 : la jambe `PR gate` a atterri dans la suite CodeQL `dynamic`
+    (run non relancable) et le rouge n'a plus pu etre remplace. Le tell est la
+    `details_url` : une suite d'Actions workflow pointe vers
+    `/actions/runs/<id>/...` ; une URL qui n'en porte PAS le segment signale
+    une suite etrangere. On la signale AU MOMENT du POST (la creation fabrique
+    la condition en silence), en nommant `check_suite.id`.
+    """
+    if not isinstance(response, dict):
+        return None
+    details_url = response.get("details_url") or ""
+    if not details_url or "/actions/runs/" in details_url:
+        return None
+    suite = response.get("check_suite") or {}
+    suite_id = suite.get("id") if isinstance(suite, dict) else None
+    return (
+        f"[pr-gate] WARN -- check-run `{name}` poste dans une suite ETRANGERE "
+        f"(details_url hors /actions/runs/) : suite id={suite_id} ; une suite "
+        f"`dynamic`/etrangere n'est pas relancable, le rouge ne sera pas "
+        f"remplace par le sweep (#21505)."
+    )
+
+
 def post_check_run(
     repo: str,
     sha: str,
@@ -1325,7 +1583,11 @@ def post_check_run(
         "output[title]": f"{name}: {title}"[:255],
         "output[summary]": message or title,
     }
-    return poster(f"repos/{repo}/check-runs", fields)
+    response = poster(f"repos/{repo}/check-runs", fields)
+    warning = _foreign_suite_detail(response, name)
+    if warning:
+        print(warning, flush=True)
+    return response
 
 
 def fetch_checks(repo: str, sha: str) -> list[dict]:
@@ -1595,8 +1857,10 @@ def wait_and_decide(
     sleep=time.sleep,
     fetch=fetch_checks,
     now=time.monotonic,
+    epoch_now=time.time,
     detail: "dict | None" = None,
     fetch_job=None,
+    all_queued_polls: int = 0,
 ) -> tuple[int, str]:
     """Poll until the check set is stable, then decide.
 
@@ -1619,6 +1883,28 @@ def wait_and_decide(
     can publish it in the step summary (#15693) without changing this
     function's 2-tuple return. The last classify is authoritative: the
     deadline path re-classifies into `final_*` and overwrites the entry.
+
+    `all_queued_polls` (#13363) arms the pool-saturation early exit: when
+    every pending constituent has sat at status=queued (no runner assigned)
+    for this many consecutive polls once `polls_seen >= settle_polls` (the
+    floor poll counts toward the streak), the loop returns a STARVED verdict
+    immediately instead of burning the remaining budget polling a queue that
+    cannot move. 0 (default) disables the rule -- the historical behaviour.
+    A healthy pool flips a queued job to in_progress within seconds, so the
+    streak only accumulates under real starvation. The message starts with
+    "STARVED" so `main`'s self-cancel (#13510) and the stale sweep's
+    cancelled-leg remedy apply unchanged.
+
+    Two clocks, each for its own use (#26869). `now` is MONOTONIC (seconds
+    since an arbitrary origin): it measures the gate's own budget, the
+    absolute `deadline`. `epoch_now` is EPOCH (seconds since 1970): it is
+    the only scale on which GitHub's `x-ratelimit-reset` header lives, hence
+    the only scale on which the announced reset can be compared to "now".
+    The two are NEVER subtracted from one another -- doing so measured a
+    duration of ~1,79e9 s for every reset (job 133062303546,
+    2026-11-16T02:57:47Z : `announced reset 1794790081s away`) and made the
+    "wait for a near reset" branch unreachable: every installation-quota 403
+    rendered INCONCLUSIVE at once, even when the reset was seconds away.
     """
     deadline = now() + timeout_min * 60.0
     quiet_streak = 0
@@ -1627,6 +1913,8 @@ def wait_and_decide(
     adv_jobs = advisory_jobs or frozenset()
     timeouts = declared_timeouts or {}
     transient_reads = 0
+    polls_seen = 0
+    all_queued_streak = 0
 
     while True:
         try:
@@ -1650,28 +1938,70 @@ def wait_and_decide(
                 # #17681 -- name the family so a quota-exhaustion FAIL is
                 # legible as infrastructure, never read as a check verdict.
                 # The verdict direction is unchanged: rule 1, never a pass.
-                family = (
-                    "installation-quota read failure"
-                    if _is_installation_quota_error(exc)
-                    else "transient read failure"
-                )
+                if _is_installation_quota_error(exc):
+                    # An exhausted installation quota is not a content
+                    # verdict: it is an unreadable state with a KNOWN
+                    # replay gesture. `main` renders it INCONCLUSIVE.
+                    raise QuotaInconclusive(
+                        _quota_inconclusive_message(exc, transient_reads)
+                    ) from exc
                 raise GateError(
-                    f"{exc} -- {transient_reads} {family}(s) in a row: "
-                    "the check state stayed unreadable (rule 1)"
+                    f"{exc} -- {transient_reads} transient read failure(s) "
+                    "in a row: the check state stayed unreadable (rule 1)"
                 ) from exc
             if _is_installation_quota_error(exc):
                 # #17681 -- a shared hourly quota is not crossed by 30 s
                 # retries: escalate the spacing, but never sleep past the
                 # absolute deadline. An unreadable state at the deadline
-                # still fails rather than becoming a check verdict.
+                # still ends INCONCLUSIVE (#26542), never a check verdict.
                 stage = min(
                     transient_reads - 1,
                     len(INSTALLATION_QUOTA_BACKOFF_SEC) - 1,
                 )
-                wait_sec = min(
-                    INSTALLATION_QUOTA_BACKOFF_SEC[stage],
-                    max(deadline - now_ts, 0.0),
-                )
+                reset_at = getattr(exc, "reset_epoch", None)
+                # #26869 -- the announced reset is an EPOCH instant (the
+                # `x-ratelimit-reset` header, seconds since 1970). It is
+                # compared to the EPOCH clock, never to the monotonic one:
+                # subtracting a monotonic reading from an epoch instant
+                # measured ~1,79e9 s for every reset, which made the
+                # "wait for a near reset" branch below unreachable.
+                epoch_ts = epoch_now()
+                if reset_at is not None and reset_at > epoch_ts:
+                    reset_in = reset_at - epoch_ts
+                    if reset_in > INSTALLATION_QUOTA_MAX_WAIT_SEC:
+                        # #26739 -- the announced reset is too far to be
+                        # worth the wait: sleeping to it holds a runner for
+                        # a verdict that is already decided. The stale
+                        # sweep replays this leg on its own schedule, after
+                        # the hourly reset -- so render the INCONCLUSIVE
+                        # NOW, through the same exit as the deadline bound.
+                        print(
+                            f"[pr-gate] installation-quota 403 -- announced "
+                            f"reset {reset_in:.0f}s away "
+                            f"(> {INSTALLATION_QUOTA_MAX_WAIT_SEC:.0f}s): "
+                            "rendering INCONCLUSIVE now and releasing the "
+                            "runner; pr-gate-stale-sweep replays this leg "
+                            "after the hourly reset",
+                            flush=True,
+                        )
+                        raise QuotaInconclusive(
+                            _quota_inconclusive_message(exc, transient_reads)
+                        ) from exc
+                    # The API told us when the quota resets: sleep until
+                    # then (bounded by the absolute deadline) instead of
+                    # spending the budget on short retries that cannot
+                    # cross an hourly reset. The duration comes from the
+                    # epoch difference; the remaining budget from the
+                    # monotonic clock -- two clocks, never mixed.
+                    wait_sec = min(
+                        reset_in,
+                        max(deadline - now_ts, 0.0),
+                    )
+                else:
+                    wait_sec = min(
+                        INSTALLATION_QUOTA_BACKOFF_SEC[stage],
+                        max(deadline - now_ts, 0.0),
+                    )
                 print(
                     f"[pr-gate] installation-quota 403 (GitHub App quota, "
                     "shared, hourly reset -- not a check verdict), backoff "
@@ -1693,6 +2023,10 @@ def wait_and_decide(
             # wait into a PASS -- the one direction rule 1 forbids.
             continue
         transient_reads = 0
+        # #13363: counts successful polls only -- a transient retry that
+        # `continue`d above never reaches here, so it cannot advance the
+        # settle floor the all-queued streak is gated on.
+        polls_seen += 1
         pending, bad, ok, advisory = classify(checks, self_name, adv_jobs)
         if detail is not None:
             detail["advisory"] = list(advisory)
@@ -1830,6 +2164,46 @@ def wait_and_decide(
                 declared_timeouts=timeouts,
             )
 
+        # #13363: pool-saturation early exit. A pending constituent at
+        # status=queued has NO runner assigned: further polling cannot change
+        # what it reports, because it has not started. When every pending
+        # constituent is queued for `all_queued_polls` consecutive polls PAST
+        # the settle_polls floor, the verdict is already decided by the queue,
+        # and burning the remaining hosted budget polling it is the waste this
+        # issue measures (waiters burning up to 45 hosted-minutes apiece under
+        # self-hosted saturation). The message deliberately starts with
+        # "STARVED" so `main`'s self-cancel (#13510) and the stale sweep's
+        # cancelled-leg remedy apply unchanged -- the same terminal state as
+        # the deadline STARVED, reached earlier. Fail-closed toward waiting: a
+        # single in_progress constituent (a runner picked the job up) resets
+        # the streak, and so does an empty pending set -- evidence older than
+        # the current poll never triggers the exit.
+        if all_queued_polls:
+            if (
+                pending
+                and polls_seen >= settle_polls
+                and pending_all_queued(checks, self_name, adv_jobs)
+            ):
+                all_queued_streak += 1
+            else:
+                all_queued_streak = 0
+            if all_queued_streak >= all_queued_polls:
+                _report_advisory(advisory)
+                print(
+                    f"[pr-gate] every pending constituent queued with no "
+                    f"runner for {all_queued_streak} poll(s) -- early "
+                    "STARVED instead of polling a parked queue (#13363)",
+                    flush=True,
+                )
+                return 1, (
+                    "STARVED -- every pending constituent is queued with "
+                    "no runner (pool saturated): "
+                    + ", ".join(pending)
+                    + " -- waiting cannot change the verdict until a "
+                    "constituent starts; the stale sweep re-drives this "
+                    "gate when runners free up (#13363)"
+                )
+
         print(
             f"[pr-gate] waiting on {len(pending)} check(s): "
             f"{', '.join(pending[:6])}{' ...' if len(pending) > 6 else ''}",
@@ -1863,6 +2237,17 @@ def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
     real one was already repaired 18 min earlier).
     """
     lines = [message]
+    if message.startswith("INCONCLUSIVE"):
+        lines += [
+            "",
+            "Panne d'infrastructure, pas un defaut de la PR : l'etat "
+            "des checks est INCONNU (quota d'installation GitHub App "
+            "epuise). Rien a reparer dans le code, et rien a chercher "
+            "dans la PR. Rejouer la jambe apres le reset horaire "
+            "(`gh run rerun <run_id> --job <job_id>`) ou attendre le "
+            "balayage `pr-gate-stale-sweep` : la chaine ne doit pas "
+            "traquer un defaut qui n'existe pas.",
+        ]
     if message.startswith("DWELL"):
         lines += [
             "",
@@ -1874,6 +2259,15 @@ def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
             "(`gh run rerun <run_id> --job <job_id>`) ou laisser le "
             "balayage la reprendre -- sa cadence mesuree est de 2 h 33 "
             "a 5 h 18, pas horaire (#15197).",
+            "",
+            "Note #21300 : `gh run rerun` est INERT sur un run en "
+            "`startup_failure` (le re-run recopie la sortie de la "
+            "tentative precedente -- 9 tentatives mesurees sans "
+            "progres, #20874). Le sweep detecte maintenant ce cas et "
+            "ne rejoue plus : voir le log du sweep pour le geste "
+            "applique (`update-branch` ou signalement). Si la jambe "
+            "est muette (output vide), c'est la voie de reparation "
+            "de #15825, pas un re-run.",
         ]
     if advisory:
         lines += ["", "Advisory (not blocking):"]
@@ -1958,6 +2352,11 @@ def main(argv: Iterable[str] | None = None) -> int:
     parser.add_argument("--timeout-min", type=float, default=90.0)
     parser.add_argument("--poll-sec", type=float, default=30.0)
     parser.add_argument("--settle-polls", type=int, default=2)
+    # #13363: early STARVED when every pending constituent sits queued with no
+    # runner for this many consecutive polls (0 disables -- historical
+    # behaviour; pr-gate.yml passes an explicit value so the behavior change
+    # is visible and revertable in one place).
+    parser.add_argument("--all-queued-polls", type=int, default=0)
     # Issue #10072 -- fork PRs short-circuit to PASS. Student PRs come from a
     # fork and have no internal convention to police; `enforce_admins: true` on
     # main's required checks would otherwise deadlock their admin merge. This
@@ -2102,6 +2501,21 @@ def main(argv: Iterable[str] | None = None) -> int:
             advisory_jobs,
             declared_timeouts,
             detail=detail,
+            all_queued_polls=args.all_queued_polls,
+        )
+    except QuotaInconclusive as exc:
+        # The installation quota is exhausted: the state is UNKNOWN, not
+        # false. Rule 1 forbids a PASS; it does not forbid a verdict that
+        # says "unknown, replay me". The distinct exit code is the
+        # contract the chainer reads to replay the job instead of hunting
+        # a defect that does not exist.
+        code = QUOTA_INCONCLUSIVE_CODE
+        message = (
+            "INCONCLUSIVE -- quota d'installation GitHub App epuisee : "
+            "l'etat des checks est INCONNU, pas faux. REJOUABLE : "
+            "relancer la jambe (`gh run rerun <run_id> --job <job_id>`) "
+            "apres le reset horaire, ou attendre le balayage "
+            "`pr-gate-stale-sweep`. Source : {}".format(exc)
         )
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass. Fall
@@ -2227,8 +2641,12 @@ def main(argv: Iterable[str] | None = None) -> int:
         # Le message peut porter %, CR ou LF (stderr gh multi-ligne) : un LF
         # brut tronque l'annotation, un % brut avale les octets suivants --
         # echappement protocolaire workflow-command, % EN PREMIER (#15472).
+        # An INCONCLUSIVE verdict is not a defect: it is rendered as a
+        # WARNING so the UI does not read it as a content failure. The
+        # step still exits non-zero -- the state is unknown (rule 1).
+        level = "warning" if code == QUOTA_INCONCLUSIVE_CODE else "error"
         print(
-            f"::error::[pr-gate] {_workflow_command_escape(message)}",
+            f"::{level}::[pr-gate] {_workflow_command_escape(message)}",
             file=sys.stderr,
             flush=True,
         )
@@ -2243,8 +2661,32 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
     before #10433 item-1), never a false PASS. The exit code already reflects
     the verdict; this only concerns whether the fresh verdict *surfaces* on the
     PR head.
+
+    A DWELL verdict is a merge-floor timer, not a content failure -- POSTing it
+    as ``conclusion=failure`` lands an unliftable red on the PR head (#21543):
+    the POSTed check-run sits in a foreign suite (no workflow run behind it),
+    GitHub ANDs every same-named check, and neither re-run nor PATCH can lift
+    it.  The real ``PR gate`` job leg already surfaces the DWELL message, so
+    skipping the POST loses nothing.
     """
     if not args.post_check_run:
+        return
+    if code == QUOTA_INCONCLUSIVE_CODE:
+        # An INCONCLUSIVE verdict is a timer like DWELL, not a failure:
+        # POSTing it as `conclusion=failure` lands an unliftable red on
+        # the PR head (#21543). The job leg itself surfaces the message.
+        print(
+            "[pr-gate] INCONCLUSIVE verdict -- skipping check-run POST "
+            "(an unreadable state is not a failure; #21543)",
+            flush=True,
+        )
+        return
+    if message.startswith("DWELL"):
+        print(
+            "[pr-gate] DWELL verdict -- skipping check-run POST "
+            "(a timer is not a failure; #21543)",
+            flush=True,
+        )
         return
     try:
         post_check_run(args.repo, args.sha, args.self_name, code, message)
@@ -2259,6 +2701,36 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
         f"[pr-gate] posted check-run on {args.sha[:7]} (conclusion={conclusion})",
         flush=True,
     )
+
+
+def parse_inconclusive_message(message: str) -> dict | None:
+    """L'INVERSE de l'emetteur INCONCLUSIVE, expose pour ses consommateurs.
+
+    Meme discipline que `merge_dwell.parse_pending_message` : le FORMAT
+    appartient a l'emetteur (`QuotaInconclusive` -> le message construit
+    dans `main()`), jamais a celui qui le lit. Une copie locale deriverait
+    en silence des que l'emetteur change.
+
+    Rend None si le message n'est pas un verdict INCONCLUSIVE : un FAIL
+    nomme, un DWELL ou une annotation d'organe ne sont pas des etats
+    inconclusifs.
+
+    Contexte (#26551) : le verdict INCONCLUSIVE (quota d'installation
+    GitHub App epuisee) dit que l'etat des checks est **INCONNU, pas
+    faux**. Rendu comme un `::warning::`, il ne nomme aucun organe : un
+    consommateur qui ne sait pas le lire le confond avec un defaut de la
+    lane et envoie celle-ci chercher une cause qui n'existe pas.
+    """
+    if not isinstance(message, str):
+        return None
+    marker = "INCONCLUSIVE -- "
+    pos = message.find(marker)
+    if pos == -1:
+        return None
+    detail = message[pos + len(marker):].strip()
+    if not detail:
+        return None
+    return {"kind": "quota-installation", "detail": detail}
 
 
 def _crash_fallback_publish(exc: BaseException) -> None:
@@ -2294,6 +2766,24 @@ def _crash_fallback_publish(exc: BaseException) -> None:
             f"[pr-gate] WARN -- crash fallback not published: {pub_exc!r}",
             flush=True,
         )
+
+
+def _print_api_quota_summary() -> None:
+    """(#25510 T-I) End-of-run tally of the gate's own `gh api` calls.
+
+    Printed once by `_entry`'s `finally`, so it lands no matter how the run
+    ends (success, GateError, crash, argparse exit). Pure reporting: it never
+    raises, so it cannot disturb the exit code. The second figure is the quota
+    saving made visible -- how many of the calls were served by a free 304.
+    """
+    try:
+        print(
+            f"[pr-gate] api-quota: {_GH_API_CALLS} gh api call(s), "
+            f"{_GH_API_304} served by a 304 (0 quota)",
+            flush=True,
+        )
+    except Exception:
+        pass
 
 
 def _entry(argv: "Iterable[str] | None" = None) -> int:
@@ -2346,6 +2836,9 @@ def _entry(argv: "Iterable[str] | None" = None) -> int:
             flush=True,
         )
         return 1
+    finally:
+        # (#25510 T-I) the per-run `gh api` tally, on every exit path.
+        _print_api_quota_summary()
 
 
 if __name__ == "__main__":

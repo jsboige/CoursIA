@@ -11,7 +11,7 @@
   - `aucun_chemin_court` (dans `Basic.lean`) réfute **7 chemins** — le
     chemin vide et les six chemins d'un pas — par énumération
     décidable. Sa portée est exactement la taille de l'énumération.
-  - Le notebook `GameTheory-24b` certifie l'impossibilité **relative à
+  - Le notebook `GameTheory-20b` certifie l'impossibilité **relative à
     un budget** : `IMPOSSIBLE` dès que `d_ligne + d_colonne > k_max`.
     Le graphe des chambres étant connexe (576 sommets, degré 6,
     diamètre 12), c'est la seule lecture non vide — le notebook le dit

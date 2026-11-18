@@ -61,6 +61,14 @@ verdict: BLOCKED
 note: thread inline #2 non leve au head -- re-review exact-head exigee avant merge
 [/ADJOINT PREFLIGHT]"""
 
+# Meme dossier, la note portant la forme BRACKETED : la variante de couverture du
+# marqueur canonique. Le fixture naturel ci-dessus porte la forme que l'incident
+# fondateur a reellement emise (« avant merge », cf commentaire l.38-40) ; ce
+# jumeau couvre la seconde forme sans la substituer a la premiere.
+DOSSIER_16173_BLOCKED_BRACKETED = DOSSIER_16173_BLOCKED.replace(
+    " avant merge", " [BEFORE-MERGE]"
+)
+
 # Dossier interim d'une lane (forme reelle #16449, 2026-09-16T23:35:02Z) :
 # laneattribue, verdict hors enum, honnete sur l'attente CI. Aucun marqueur
 # de reserve ne doit en sortir non plus.
@@ -103,6 +111,11 @@ def test_dossier_bloque_nest_pas_un_nit():
     assert mod.classify("jsboige", DOSSIER_16173_BLOCKED) is None
 
 
+def test_dossier_bloque_nest_pas_un_nit_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
+    assert mod.classify("jsboige", DOSSIER_16173_BLOCKED_BRACKETED) is None
+
+
 def test_dossier_interim_nest_pas_un_nit():
     assert mod.classify("jsboige", DOSSIER_16449_INTERIM) is None
 
@@ -138,6 +151,14 @@ def test_bloc_malforme_sans_fermant_nest_pas_retire():
     # Delimiter ouvrant sans fermant : le gate (check_adjoint_prevalidation)
     # refuse ce dossier ; l'organe ne doit pas non plus le blanchir.
     malformed = DOSSIER_16173_BLOCKED.replace("[/ADJOINT PREFLIGHT]", "")
+    assert mod.classify("jsboige", malformed) is not None
+
+
+def test_bloc_malforme_sans_fermant_nest_pas_retire_bracketed():
+    """Variante de couverture : la meme reserve portee par le marqueur canonique [BEFORE-MERGE]."""
+    # Delimiter ouvrant sans fermant : le gate (check_adjoint_prevalidation)
+    # refuse ce dossier ; l'organe ne doit pas non plus le blanchir.
+    malformed = DOSSIER_16173_BLOCKED_BRACKETED.replace("[/ADJOINT PREFLIGHT]", "")
     assert mod.classify("jsboige", malformed) is not None
 
 

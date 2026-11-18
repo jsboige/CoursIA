@@ -86,7 +86,7 @@ Le script imprime `VERDICT: HELPS vs kelly_har_mu60 (ensemble adds value)` parce
 ## Fichiers
 
 - Verdict (this) : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/docs/M11e_ENSEMBLE.md`
-- Script : `scripts/m11e_ensemble.py` (~280 lines, reuses `simulate_har_kelly` + LW2008 from `m11c_sharpe_test`)
+- Script : `scripts/m11e_ensemble.py` (reuses `simulate_har_kelly` + LW2008 from `m11c_sharpe_test`)
 - Results : `results/m11e_ensemble/results.{csv,json}` (35 combos × 1 strategy)
 
 ## Cross-references

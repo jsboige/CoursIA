@@ -37,6 +37,18 @@ pyemd==0.5.1                 # EMD backend de pyphi (wheel numpy1-compatible)
 # Scientific
 numpy>=1.21,<2.0             # Numerical computing (numpy<2 for pyemd/pyphi compat)
 scipy>=0.13.3                # Scientific computing
+antropy<0.2                  # entropies non lineaires (Higuchi, Lempel-Ziv) --
+                             # importe par ICT-36c-FLens-HiguchiBridge et
+                             # ICT-36d-FLens-DecorrelationTemporelle
+                             # (`import antropy as ent` -> ent.higuchi_fd,
+                             # ent.lziv_complexity). Borne haute 0.2 : le pyproject
+                             # epingle Python >=3.9,<3.10 (pyphi) et antropy >=0.2.0
+                             # exige Python >=3.10 -- sans borne, pip resout
+                             # silencieusement 0.1.9 sur le chemin documente et le
+                             # requirements.txt installerait 0.2.3 sur un pip sans
+                             # garde. higuchi_fd(x, kmax=10) et
+                             # lziv_complexity(sequence, normalize=False) existent
+                             # a signatures identiques depuis 0.1.9 (verifie wheel).
 
 # Visualisation (massivement utilisee par les notebooks ICT : trajectoires, heatmaps, EWS)
 matplotlib

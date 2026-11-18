@@ -401,6 +401,53 @@ def test_iter_csvs_directory_sorted(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
+#  Out-of-scope scan (étape 5 de #10329, --report-out-of-scope)                #
+# --------------------------------------------------------------------------- #
+
+
+def test_find_out_of_scope_known_in_notebooks_root_form(tmp_path):
+    """Contrat de la fonction : known au format relatif a notebooks_root."""
+    nb_root = tmp_path / "MyIA.AI.Notebooks" / "S"
+    _write_notebook(nb_root / "S-01-A.ipynb", [_make_cell("c1", "markdown", "# Titre")])
+    _write_notebook(nb_root / "S-02-B.ipynb", [_make_cell("c2", "markdown", "# Autre")])
+    known = {"S/S-01-A.ipynb"}
+    oos = t2.find_out_of_scope_notebooks(nb_root.parent, known)
+    assert [e["notebook"] for e in oos] == ["S/S-02-B.ipynb"]
+    assert all(e["verdict"] == "MISSING_FROM_CSV" for e in oos)
+
+
+def test_main_out_of_scope_only_reports_uncovered(tmp_path, capsys, monkeypatch):
+    """Régression #4208 : known collecté au format repo-root doit matcher.
+
+    Avant le fix, main() passait a find_out_of_scope_notebooks des chemins
+    ``MyIA.AI.Notebooks/...`` compares a des chemins relatifs au notebooks
+    root : la comparaison ne matchait jamais et TOUT pivot FR etait rapporte
+    MISSING_FROM_CSV (1591/1591 sur main@5d177839f90b).
+    """
+    repo = tmp_path / "repo"
+    nb_dir = repo / "MyIA.AI.Notebooks" / "S"
+    _write_notebook(nb_dir / "S-01-A.ipynb", [_make_cell("c1", "markdown", "# Titre")])
+    _write_notebook(nb_dir / "S-02-B.ipynb", [_make_cell("c2", "markdown", "# Autre")])
+    csv_path = repo / "translations" / "s" / "s.csv"
+    _write_csv(csv_path, [{
+        "notebook": "MyIA.AI.Notebooks/S/S-01-A.ipynb",
+        "cell_id": "c1", "cell_type": "markdown", "src_lang": "fr",
+        "src_hash": t2.cell_hash("# Titre"), "text_fr": "# Titre",
+    }])
+    monkeypatch.setattr(sys, "argv", [
+        "check_translation_sync.py", str(repo / "translations"),
+        "--check", "--report-out-of-scope", "--repo-root", str(repo),
+    ])
+    rc = t2.main()
+    assert rc == 0  # --check : non-bloquant meme avec drift
+    report = json.loads(capsys.readouterr().out)
+    assert report["out_of_scope_count"] == 1
+    assert report["out_of_scope"] == [
+        {"notebook": "MyIA.AI.Notebooks/S/S-02-B.ipynb", "verdict": "MISSING_FROM_CSV"}
+    ]
+
+
+# --------------------------------------------------------------------------- #
 #  Roundtrip determinisme (T1 write -> T2 check) — anti-regression global      #
 # --------------------------------------------------------------------------- #
 
@@ -699,3 +746,117 @@ def test_roundtrip_extract_then_check_pivot_clean(tmp_path):
     csv = _write_csv(tmp_path / "drift.csv", rows)
     anomalies = t2.check_csv(csv, repo)
     assert all(a["verdict"] != "PIVOT_HASH_MISMATCH" for a in anomalies)
+
+
+# --------------------------------------------------------------------------- #
+#  STALE_TRAD (#20836) — extraction --update efface le signal de retraduction #
+# --------------------------------------------------------------------------- #
+
+
+def test_stale_trad_detected_when_src_hash_drifted(tmp_path):
+    """Scénario de l'issue #20836 : la traduction est cohérente avec son _<lang>.ipynb
+    (hash_<lang> matche) mais date d'un source antérieur. src_hash_<lang> != src_hash
+    -> STALE_TRAD. Le seul signal que la retraduction est requise survit ici
+    alors qu'il était effacé par --update."""
+    repo = tmp_path
+    # Le notebook source COURANT contient "nouveau" (le pivot a bougé).
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", "nouveau")])
+    # Le _en.ipynb contient toujours "hello" (la traduction existe, cohérente).
+    _write_notebook(repo / "S" / "Foo_en.ipynb", [_make_cell("c1", "markdown", "hello")])
+    # CSV : src_hash = hash("nouveau") (post-update), hash_en = hash("hello")
+    # (la traduction existe), src_hash_en = hash("ancien") (la traduction a été
+    # faite quand le source était "ancien").
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", t2.cell_hash("nouveau"),
+             **{"hash_en": t2.cell_hash("hello"),
+                "src_hash_en": t2.cell_hash("ancien")})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    verdicts = [(a["verdict"], a.get("lang")) for a in anomalies]
+    # Le verdict clé : la retraduction EN est sémantiquement requise, et aucun
+    # autre verdict ne le dit. SRC_DRIFT compare le pivot au notebook, mais le
+    # pivot est aligné (csv_src_hash = cell_hash("nouveau") = current_src).
+    # TRAD_DRIFT ne tire pas (hash_en = hash courant du _en.ipynb). Le seul
+    # verdict qui survit au scénario est STALE_TRAD.
+    assert ("STALE_TRAD", "en") in verdicts
+    # Pas de SRC_DRIFT (pivot aligné) ni de TRAD_DRIFT (trad cohérente).
+    assert all(v != "SRC_DRIFT" for v, _ in verdicts)
+    assert all(v != "TRAD_DRIFT" for v, _ in verdicts)
+
+
+def test_no_stale_trad_when_src_hash_aligned(tmp_path):
+    """Ligne avec src_hash_<lang> = src_hash (traduction faite sur le source
+    courant) -> IN_SYNC, pas de STALE_TRAD. C'est le cas post-T3 propre."""
+    repo = tmp_path
+    text_fr = "bonjour"
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", text_fr)])
+    _write_notebook(repo / "S" / "Foo_en.ipynb", [_make_cell("c1", "markdown", "hello")])
+    src_hash = t2.cell_hash(text_fr)
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", src_hash,
+             **{"hash_en": t2.cell_hash("hello"),
+                "src_hash_en": src_hash})  # aligné sur le pivot
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    assert anomalies == []
+
+
+def test_no_stale_trad_when_src_hash_lang_legacy_empty(tmp_path):
+    """Rétro-compat : un ancien CSV sans la colonne src_hash_<lang> (DictReader
+    fill missing → "") ne signale pas STALE_TRAD. Le fix ne réveille pas
+    rétrospectivement des années de stock — chaque ligne sera marquée au
+    prochain passage T3 qui pose src_hash_<lang> = src_hash courant."""
+    repo = tmp_path
+    text_fr = "bonjour"
+    _write_notebook(repo / "S" / "Foo.ipynb", [_make_cell("c1", "markdown", text_fr)])
+    _write_notebook(repo / "S" / "Foo_en.ipynb", [_make_cell("c1", "markdown", "hello")])
+    src_hash = t2.cell_hash(text_fr)
+    # Pas de src_hash_en : la ligne est "legacy" (CSV écrit avant #20836).
+    csv = _write_csv(tmp_path / "drift.csv", [
+        _row("S/Foo.ipynb", "c1", src_hash,
+             **{"hash_en": t2.cell_hash("hello")})
+    ])
+    anomalies = t2.check_csv(csv, repo)
+    assert all(a["verdict"] != "STALE_TRAD" for a in anomalies)
+
+
+def test_update_existing_csv_preserves_src_hash_lang(tmp_path):
+    """T1 --update doit préserver src_hash_<lang> quand il change le pivot
+    src_hash (#20836). C'est la condition pour que STALE_TRAD fonctionne
+    en aval : la trace par langue doit survivre à la mise à jour du pivot,
+    exactement comme text_<lang> et hash_<lang> survivent déjà."""
+    existing = [
+        {"notebook": "S/Foo.ipynb", "cell_id": "c1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "ancien", "text_fr": "ancien", "hash_fr": "ancien",
+         "text_en": "old-translation", "hash_en": "h-old",
+         "src_hash_en": "ancien",  # posée par T3 quand le source était "ancien"
+         "translate_policy": ""}
+    ]
+    fresh = [
+        {"notebook": "S/Foo.ipynb", "cell_id": "c1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "nouveau", "text_fr": "nouveau", "hash_fr": "nouveau",
+         "translate_policy": ""}
+    ]
+    rows, _stats = t1.update_existing_csv(existing, fresh, target_notebooks={"S/Foo.ipynb"})
+    # Le pivot src_hash a bien bougé (la mise à jour a opéré).
+    assert rows[0]["src_hash"] == "nouveau"
+    # text_en et hash_en sont préservés (anti-écrasement des traductions T3).
+    assert rows[0]["text_en"] == "old-translation"
+    assert rows[0]["hash_en"] == "h-old"
+    # Et — c'est l'ajout de #20836 — src_hash_en est préservée verbatim, ce qui
+    # permettra à STALE_TRAD de signaler la retraduction requise en aval.
+    assert rows[0]["src_hash_en"] == "ancien"
+
+
+def test_extract_notebook_does_not_set_src_hash_lang(tmp_path):
+    """T1 (extraction initiale) ne pose pas src_hash_<lang> : c'est T3 qui le
+    pose au moment où il dépose la traduction. Une ligne fraîche doit donc
+    avoir src_hash_<lang> vide pour toutes les cibles — la trace s'écrit
+    quand le moteur de traduction tourne, pas quand la source est extraite."""
+    repo = tmp_path
+    nb = _write_notebook(repo / "Foo.ipynb", [_make_cell("c1", "markdown", "# X")])
+    rows = t1.extract_notebook(nb, repo, src_lang="fr")
+    for lang in t2.TARGET_LANGS:
+        assert rows[0][f"src_hash_{lang}"] == "", (
+            f"src_hash_{lang} doit etre vide a l'extraction T1 (T3 le pose)"
+        )

@@ -58,9 +58,9 @@ scripts/genai-auth/
 #### Scripts déplacés vers `utils/`
 | Script Source | Destination | Justification |
 |---------------|-------------|---------------|
-| `comfyui_client_helper.py` | [`utils/comfyui_client_helper.py`](../../../../scripts/genai-auth/utils/comfyui_client_helper.py) | Client HTTP complet pour ComfyUI (1305 lignes) |
-| `diagnostic_utils.py` | [`utils/diagnostic_utils.py`](../../../../scripts/genai-auth/utils/diagnostic_utils.py) | Fonctions de diagnostic réutilisables (426 lignes) |
-| `workflow_utils.py` | [`utils/workflow_utils.py`](../../../../scripts/genai-auth/utils/workflow_utils.py) | Utilitaires de manipulation de workflows (489 lignes) |
+| `comfyui_client_helper.py` | [`utils/comfyui_client_helper.py`](../../../../scripts/genai-auth/utils/comfyui_client_helper.py) | Client HTTP complet pour ComfyUI |
+| `diagnostic_utils.py` | [`utils/diagnostic_utils.py`](../../../../scripts/genai-auth/utils/diagnostic_utils.py) | Fonctions de diagnostic réutilisables |
+| `workflow_utils.py` | [`utils/workflow_utils.py`](../../../../scripts/genai-auth/utils/workflow_utils.py) | Utilitaires de manipulation de workflows |
 | `genai_auth_manager.py` | [`utils/genai_auth_manager.py`](../../../../scripts/genai-auth/utils/genai_auth_manager.py) | Gestionnaire d'authentification multi-services |
 | `docker_qwen_manager.py` | [`utils/docker_qwen_manager.py`](../../../../scripts/genai-auth/utils/docker_qwen_manager.py) | Gestionnaire Docker pour ComfyUI Qwen |
 | `test_comfyui_auth_simple.py` | [`utils/test_comfyui_auth_simple.py`](../../../../scripts/genai-auth/utils/test_comfyui_auth_simple.py) | Test rapide d'authentification (< 5 secondes) |
@@ -137,7 +137,7 @@ scripts/genai-auth/
 | **Scripts déplacés** | 7 | 1 vers `core/`, 6 vers `utils/` |
 | **Scripts archivés** | 5 | Tous vers `scripts-archives/` dans l'espace de suivi Phase 29 |
 | **Scripts supprimés** | 4 | Scripts obsolètes ou doublons |
-| **README.md** | 1 | Mis à jour avec nouvelle structure (277 lignes) |
+| **README.md** | 1 | Mis à jour avec nouvelle structure |
 | **Test de non-régression** | ✅ | Génération d'image fonctionnelle validée |
 
 ---
@@ -201,7 +201,7 @@ scripts-archives/
 | Scripts à CONSERVER déplacés correctement | ✅ | 7 fichiers déplacés selon catégorisation (Section 3 du plan) |
 | Scripts transients archivés dans espace de suivi | ✅ | 5 fichiers vers `scripts-archives/` |
 | Scripts obsolètes supprimés | ✅ | 4 fichiers supprimés (validation plan Section 3) |
-| README.md mis à jour | ✅ | 277 lignes, structure documentée |
+| README.md mis à jour | ✅ | structure documentée |
 | Test de non-régression exécuté | ✅ | Workflow soumis avec succès (HTTP 200) |
 | Aucune opération git | ✅ | Aucun commit/add effectué (respect contrainte) |
 | Rapport de sous-tâche créé | ✅ | Ce document |

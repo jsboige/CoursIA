@@ -36,7 +36,7 @@ sys.path.insert(0, str(SCRIPT_DIR))
 
 from graph_builder import CRYPTO_PANIER_SYMBOLS
 from walk_forward import WalkForwardSplitter
-from diebold_mariano import diebold_mariano_test, bonferroni_dm
+from dm_test import bonferroni_dm, diebold_mariano_test
 from economic_metrics import vol_targeted_sharpe, var_breach_rate, utility_gain
 
 SEEDS = [0, 1, 7, 42]
@@ -422,10 +422,10 @@ def compute_dm_verdict(
     har_errors = har_targets[:n] - har_preds[:n]
 
     # DM test
-    dm = diebold_mariano_test(model_errors, har_errors, h=HORIZON, alternative="two-sided")
+    dm = diebold_mariano_test(model_errors, har_errors, horizon=HORIZON, alternative="two-sided")
 
     # Bonferroni correction
-    dm_bonf = bonferroni_dm(model_errors, har_errors, n_tests=n_total_tests, h=HORIZON)
+    dm_bonf = bonferroni_dm(model_errors, har_errors, n_tests=n_total_tests, horizon=HORIZON)
 
     # Economic metrics
     ug = utility_gain(
@@ -434,19 +434,27 @@ def compute_dm_verdict(
     )
 
     # Verdict logic
-    if dm["dm_stat"] < 0 and dm_bonf["significant_05_bonferroni"]:
+    if dm.dm_statistic < 0 and dm_bonf["significant_05_bonferroni"]:
         verdict = "BEATS_HAR"
-    elif dm["dm_stat"] > 0 and dm_bonf["significant_05_bonferroni"]:
+    elif dm.dm_statistic > 0 and dm_bonf["significant_05_bonferroni"]:
         verdict = "NO_BEATS"
     else:
         verdict = "INCONCLUSIVE"
 
+    # Local interpretation string (canonical DMResult carries none)
+    if dm.dm_statistic < 0 and dm.p_value < 0.05:
+        dm_interp = f"Model significantly better (DM={dm.dm_statistic:.3f}, p={dm.p_value:.4f})"
+    elif dm.dm_statistic > 0 and dm.p_value < 0.05:
+        dm_interp = f"Baseline significantly better (DM={dm.dm_statistic:.3f}, p={dm.p_value:.4f})"
+    else:
+        dm_interp = f"No significant difference (DM={dm.dm_statistic:.3f}, p={dm.p_value:.4f})"
+
     return {
         "dm_verdict": verdict,
-        "dm_stat": dm["dm_stat"],
-        "dm_p": dm["p_value"],
+        "dm_stat": dm.dm_statistic,
+        "dm_p": dm.p_value,
         "dm_p_bonferroni": dm_bonf["p_value_adjusted"],
-        "dm_interpretation": dm["interpretation"],
+        "dm_interpretation": dm_interp,
         "model_mse": model_result.get("mse"),
         "har_mse": har_result.get("mse"),
         "utility_gain_bps": ug["gain_bps"],

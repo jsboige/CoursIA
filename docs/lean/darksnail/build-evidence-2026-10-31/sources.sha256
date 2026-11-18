@@ -1,0 +1,10 @@
+# Octets sources effectivement compiles (sha256 + identifiant de blob git)
+
+- Formalization/OcclusionTriad.lean
+  sha256 : 56c5adb616c1950122adb2b8998d8f56f749ebd288fb17cb026aa07e4b5ed18d
+  blob   : a2d3605daf113206c34e242cb29888b0a1d06b33
+  lignes : 999
+- Formalization/BlockBridge.lean
+  sha256 : 7d593ad97cf9d0d4f4f83c2efefbba53e21e8b26aac821ee1d14fdb0eb814568
+  blob   : 3353d3dc087c559ed3b1d76f672d2f9eedb95b4d
+  lignes : 289

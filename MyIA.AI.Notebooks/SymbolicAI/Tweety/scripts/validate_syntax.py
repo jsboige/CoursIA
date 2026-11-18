@@ -14,9 +14,9 @@ from typing import List, Tuple, Dict
 TWEETY_NOTEBOOKS = [
     "Tweety-01-Setup-Python.ipynb",
     "Tweety-02-Basic-Logics-Python.ipynb",
-    "Tweety-3-Advanced-Logics.ipynb",
-    "Tweety-4-Belief-Revision.ipynb",
-    "Tweety-5-Abstract-Argumentation.ipynb",
+    "Tweety-03-Advanced-Logics-Python.ipynb",
+    "Tweety-04-Belief-Revision-Python.ipynb",
+    "Tweety-05-Abstract-Argumentation-Python.ipynb",
     "Tweety-06-Structured-Argumentation-Python.ipynb",
     "Tweety-7-Advanced-Argumentation.ipynb",
     "Tweety-07a-Extended-Frameworks-Python.ipynb",

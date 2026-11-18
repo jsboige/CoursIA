@@ -273,6 +273,28 @@ class TestCountImplicitSorries:
         out = "warning: myfile.lean:42: uses 'sorry'"
         assert lu.count_implicit_sorries(out) == 1
 
+    def test_v4_33_backtick_wording(self):
+        # Lean v4.33.0 emits the warning with BACKTICKS (measured on a live
+        # lake build, #21298): ``declaration uses `sorry` ``. The historical
+        # quote-only pattern missed it, which is part of how DEMO 65's vain
+        # probe passed P3 with warnings present.
+        out = "warning: Knots/Defs.lean:7:4: declaration uses `sorry`\n"
+        assert lu.count_implicit_sorries(out) == 1
+
+    def test_only_file_filters_replayed_import_warnings(self):
+        # #21298: Lake REPLAYS cached warnings from imported modules when
+        # rebuilding a probe — a clean probe importing a sorry-carrying
+        # module must not inherit its warnings (live-measured: a clean `rfl`
+        # replacement was refused as implicit_sorry before this filter).
+        out = (
+            "warning: Knots/Defs.lean:7:4: declaration uses `sorry`\n"
+            "warning: Knots/Defs.lean:9:4: declaration uses `sorry`\n"
+            "warning: Knots/_SorryVerify.lean:6:4: declaration uses `sorry`\n"
+        )
+        assert lu.count_implicit_sorries(out) == 3
+        assert lu.count_implicit_sorries(out, only_file="_SorryVerify.lean") == 1
+        assert lu.count_implicit_sorries(out, only_file="Other.lean") == 0
+
     def test_unrelated_warning_ignored(self):
         # Sanity: a warning that does NOT mention sorry yields 0.
         out = "info: myfile.lean:42: some unrelated warning\n"

@@ -94,6 +94,35 @@ class TestLinkTargetProtection:
         # le ](...) "title" ) entier est un span ; la cible reste intacte
         assert "Model-Selection.ipynb" in cured
 
+    def test_filename_label_not_accented(self):
+        # #17222 : un libelle qui NOMME le fichier cible reste byte-identique
+        # au fichier. Mesure : la serie PyMC rendait
+        # [PyMC-10-Model-Sélection](PyMC-10-Model-Selection.ipynb).
+        line = "[PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb)"
+        cured, n = rac._cure_line(line)
+        assert cured == line
+        assert n == 0
+        assert "Sélection" not in cured
+
+    def test_filename_label_not_accented_in_puce(self):
+        line = "- Theme connexe : [PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb) (selection bayesienne)."
+        cured, n = rac._cure_line(line)
+        assert "[PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb)" in cured
+        assert "Sélection" not in cured
+
+    def test_partial_reference_label_not_accented(self):
+        # libelle abrege du meme fichier : sous-chaine de la cible
+        line = "Voir [PyMC-10](PyMC-10-Model-Selection.ipynb) pour la selection."
+        cured, n = rac._cure_line(line)
+        assert "[PyMC-10](PyMC-10-Model-Selection.ipynb)" in cured
+
+    def test_prose_label_still_cured(self):
+        # contre-temoin : un libelle de PROSE garde sa cure, la cible reste intacte
+        line = "Voir [les modeles](PyMC-10-Model-Selection.ipynb)."
+        cured, n = rac._cure_line(line)
+        assert "modèles" in cured
+        assert "](PyMC-10-Model-Selection.ipynb)" in cured
+
 
 # ---------------------------------------------------------------------------
 # 3. preservation casse + dictionnaire conservateur
@@ -623,10 +652,13 @@ class Test14613RlFamilyAndReport:
                      "réseau", "équivalent", "repérer", "clés", "création",
                      "récompenses"]:
             assert form in src, form
-        # « evaluation » EXCLU de la table (test_excludes_en_valid_words,
-        # exclusion EN-valide délibérée) : il reste stripped ET remonte dans
-        # le rapport hors-table -- désalignement bruyant, pas muet (#14613).
-        assert "evaluation" in src
+        # « evaluation » reste EXCLU de la table de DETECTION
+        # (test_excludes_en_valid_words : c'est un mot anglais valide), mais
+        # #21277 lui ouvre la cure CONTEXTUELLE : la cellule est francaise,
+        # donc `CONTEXTUAL_PAIRS` le cure. Il ne remonte donc plus au rapport
+        # hors-table pour une cellule FR.
+        assert "d évaluation" in src
+        assert "d evaluation" not in src
 
     def test_ambiguous_rl_forms_still_not_cured(self, tmp_path):
         # #14613 point 3 : entraine/enregistre/recommande/cumule (present vs
@@ -667,3 +699,313 @@ class Test14613RlFamilyAndReport:
         p.write_text(json.dumps(nb), encoding="utf-8")
         res = rac.cure_notebook(p, write=True)
         assert "hors_table" not in res
+
+
+class Test21277ContextualCure:
+    """#21277 -- formes FR hors table qui sont AUSSI des mots anglais valides.
+
+    Ces formes ne peuvent pas entrer dans `detect_accent_stripping.ACCENT_PAIRS`
+    (source de la DETECTION, cf `test_excludes_en_valid_words`) sans produire de
+    faux positifs sur l'anglais. Elles vivent dans
+    `restore_accents_canonical.CONTEXTUAL_PAIRS` et ne sont curees que sur
+    PREUVE de contexte francais.
+    """
+
+    def test_french_cell_cures_cognates(self, tmp_path):
+        nb = _nb([("markdown", "Cette decomposition suit la precedence du plan ; "
+                               "la representation est exacte.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "décomposition" in src
+        assert "précédence" in src
+        assert "représentation" in src
+        assert res["cures"] == 3
+
+    def test_english_cell_keeps_cognates(self, tmp_path):
+        nb = _nb([("markdown", "The representation of the precedence graph and "
+                               "the decomposition is exact.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        for form in ["representation", "precedence", "decomposition"]:
+            assert form in src, form
+        assert res["cures"] == 0
+
+    def test_single_shared_marker_is_not_proof(self, tmp_path):
+        # Piege « de Broglie » / « de Finetti » : deux occurrences du MEME
+        # marqueur ne sont pas deux marqueurs DISTINCTS -- une preuve de
+        # contexte francais exige des mots-outils differents, sinon une cellule
+        # anglaise qui cite deux noms francais serait curee.
+        nb = _nb([("markdown", "The de Broglie and de Finetti representation is exact.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "representation" in src
+        assert res["cures"] == 0
+
+    def test_code_cell_identifiers_untouched(self, tmp_path):
+        nb = _nb([("code", "representation = decompose(precedence)\n")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "representation = decompose(precedence)" in src
+        assert res["cures"] == 0
+
+    def test_markdown_file_french_line_cured(self, tmp_path):
+        # Le chemin `.md` (docs/Slidev) transmet sa preuve de contexte au
+        # coeur : sans cela, une ligne francaise perdait ses cures (regression
+        # mesuree pendant le developpement de #21277).
+        md = tmp_path / "doc.md"
+        md.write_text("Cette decomposition suit la precedence des etapes du plan.\n",
+                      encoding="utf-8")
+        rac.cure_markdown(md, write=True)
+        out = md.read_text(encoding="utf-8")
+        assert "décomposition" in out
+        assert "précédence" in out
+
+    def test_markdown_file_english_line_untouched(self, tmp_path):
+        md = tmp_path / "doc.md"
+        md.write_text("The representation of the precedence graph is exact.\n",
+                      encoding="utf-8")
+        rac.cure_markdown(md, write=True)
+        out = md.read_text(encoding="utf-8")
+        assert "representation of the precedence" in out
+
+
+class Test21277SecondFournee:
+    """#21277, deuxieme fournee : residu mesure sur `SymbolicAI/Planners`.
+
+    Le triage est dans le corps de la PR. Ce qui est verrouille ici :
+      - les formes retenues sont curees en contexte francais ;
+      - elles ne sont PAS curees en contexte anglais (la table de detection
+        reste fermee, la cure contextuelle s'applique seule) ;
+      - les homographes francais sont EXCLUS -- une forme dont la graphie
+        desaccentuee est un mot francais valide ne doit jamais etre curee
+        (« il charge » ne devient pas « il chargé »).
+    """
+
+    def test_contextual_extension_cures_french_cell(self, tmp_path):
+        nb = _nb([("markdown", "Cet etat du probleme montre la complexite de la "
+                               "modelisation et la qualite des predicats ; la "
+                               "duree de la precondition depend du depart.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        for form in ["état", "problème", "complexité", "modélisation",
+                     "qualité", "prédicats", "durée", "précondition", "départ"]:
+            assert form in src, form
+        assert res["cures"] >= 9
+
+    def test_contextual_extension_spares_english_cell(self, tmp_path):
+        # La cellule porte reellement les graphies desaccentuees : c'est le
+        # contexte anglais qui doit les proteger, pas leur absence.
+        nb = _nb([("markdown", "The etat of the probleme shows the complexite of "
+                               "the modelisation, and the qualite of the predicats "
+                               "depends on the duree.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # `probleme` (singulier) est DEJA dans `ACCENT_PAIRS` depuis la table
+        # d'origine : il est cure partout, contexte anglais compris. Ce qui est
+        # verrouille ici, c'est que la fournee n'ajoute aucune forme a ce
+        # regime -- `problemes` (pluriel) reste contextuel.
+        for form in ["etat", "complexite", "qualite", "predicats", "duree",
+                     "modelisation"]:
+            assert form in src, form
+
+    def test_french_homographs_stay_out_of_the_table(self):
+        # (a) du triage : aucune de ces formes n'entre dans l'une ou l'autre
+        # table -- leur graphie desaccentuee EST un mot francais valide, ou la
+        # forme accentuee hesite entre participe et present.
+        traps = ("trouve", "calcule", "charge", "passe", "fixe", "donne",
+                 "ferme", "vise", "assemble", "execute", "explore", "explores",
+                 "instancie", "simplifie", "tranche", "degenere", "pondere",
+                 "invoque", "allume", "ajoutes", "enfile", "aveuglement")
+        for w in traps:
+            assert w not in rac.ACCENT_PAIRS, w
+            assert w not in rac.CONTEXTUAL_PAIRS, w
+
+    def test_homograph_sentence_not_cured(self, tmp_path):
+        # Controle positif du piege : la phrase reste intacte.
+        nb = _nb([("markdown", "Il charge le modele et calcule la tranche, puis "
+                               "il trouve la passe et fixe la donne.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        for form in ["Il charge", "calcule", "tranche", "trouve", "passe", "fixe"]:
+            assert form in src, form
+
+    def test_contextual_uncured_is_not_reported_as_hors_table(self, tmp_path):
+        # Un titre francais sans mot-outil (donc sans preuve FR cellule) garde
+        # sa forme : le rapport doit dire « contexte FR non etabli », PAS
+        # « la table ne sait pas la curer ».
+        # Deux cellules : le titre seul (aucun mot-outil, donc pas de preuve FR)
+        # et une cellule francaise qui fournit le temoin accentue exige par le
+        # detecteur (controle positif interne, cf #14613 point 1).
+        nb = _nb([("markdown", "### 2.3 Problemes Block World"),
+                  ("markdown", "Les problèmes sont poses ici, avec leurs données.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        assert "problemes" in res.get("contextual_uncured", {})
+        assert "problemes" not in res.get("hors_table", {})
+
+
+# ---------------------------------------------------------------------------
+# 7. #21277 (suite) : masque de citation -- une citation n'est curee que sur sa
+#    PROPRE preuve FR ; une citation anglaise dans une cellule francaise traverse
+#    la cure intacte (FP fondeur : Riemann200/13-bernoulli, `element` -> `element`).
+# ---------------------------------------------------------------------------
+class Test21277CitationMask:
+    def test_english_blockquote_in_french_cell_not_cured(self, tmp_path):
+        # Cellule FR (>=2 marqueurs) qui CITE une phrase anglaise en blockquote.
+        # Avant le fix : `element` etait "corrigee" en `element` par heritance du
+        # contexte FR de la cellule. Maintenant : la citation anglaise est retournee
+        # telle quelle, la prose FR avoisinante reste curee.
+        nb = _nb([("markdown",
+                   "Le memoire de 1859 pose un modele celebre :\n"
+                   "> the element of the group is the identity\n"
+                   "Le modele reste la reference.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # la citation anglaise est intacte (element non accentue)
+        assert "the element of the group is the identity" in src
+        assert "élément" not in src
+        # la prose FR avoisinante, elle, est curee (memoire n'est pas dans la
+        # table canonique : seul modele -> modele est attendu ici)
+        assert "modèle" in src
+
+    def test_french_blockquote_still_cured(self, tmp_path):
+        # Controle positif : une citation FRANCAISE en blockquote reste curee.
+        nb = _nb([("markdown",
+                   "La citation est centrale :\n"
+                   "> « le modele de la selection est central »\n"
+                   "Elle reste la reference.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "modèle" in src
+        assert "sélection" in src
+
+    def test_french_blockquote_with_or_kept_unaccented(self, tmp_path):
+        # Temoin FR du compromis conservateur (#25613, rejeu c.2008) : `or`
+        # (le metal) est AUSSI un mot fonctionnel anglais dans
+        # `_EN_QUOTE_MARKER_RE`. Une citation FR qui en porte un est classee
+        # ANGLAISE et retournee telle quelle -- « Un probleme en or » conserve
+        # "probleme" (non accentue). Fige comme comportement ATTENDU, pas un
+        # defaut : on prefere sous-curer ce cas rare a corrompre une citation
+        # EN genuine portant le meme mot.
+        nb = _nb([("markdown",
+                   "Le metal en jeu :\n"
+                   "> Un probleme en or\n"
+                   "La suite est claire.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # la citation FR portant "or" est retournee telle quelle (sous-curee)
+        assert "Un probleme en or" in src
+        assert "problème" not in src
+
+    def test_inline_double_quotes_language_aware(self, tmp_path):
+        # Une ligne FR cite en double-quotes : la citation FR est curee, la
+        # citation anglaise est masquee (element non accentue).
+        nb = _nb([("markdown",
+                   'En francais on note "le modele de base", mais on cite '
+                   '"the element of the group" sans le changer.')])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "modèle" in src
+        assert "the element of the group" in src
+        assert "élément" not in src
+
+    def test_english_blockquote_list_source_not_cured(self, tmp_path):
+        # Meme garde sur la branche LIST nbformat (chunks) : la citation anglaise
+        # en blockquote reste intacte, la prose FR des autres chunks est curee.
+        nb = {"cells": [
+            {"cell_type": "markdown",
+             "source": ["Le memoire pose :\n",
+                         "> the element of the group\n",
+                         "Le modele reste central.\n"],
+             "metadata": {}},
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = "".join(json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"])
+        assert "the element of the group" in src
+        assert "élément" not in src
+        assert "modèle" in src
+
+    def test_english_quote_with_de_name_not_cured(self, tmp_path):
+        # Contre-exemple adjoint #25613 : une citation ANGLAISE portant le token
+        # "de" (nom propre « de Finetti ») ne doit PAS etre prise pour francaise.
+        # Avant le fix : "de" etait dans _FR_MARKER_RE, la citation etait jugee FR
+        # et "element" y etait accentue. Les marqueurs d'une citation excluent
+        # "de"/"en" (collision avec l'anglais) -> la citation reste intacte.
+        nb = _nb([("markdown",
+                   "Le memoire de 1859 cite le resultat :\n"
+                   "> the element defined by de Finetti is central\n"
+                   "Le modele reste la reference.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # la citation anglaise (avec "de Finetti") est intacte
+        assert "the element defined by de Finetti is central" in src
+        assert "élément" not in src
+        # la prose FR avoisinante reste curee
+        assert "modèle" in src
+
+    def test_link_title_in_quotes_not_corrupted(self, tmp_path):
+        # Contre-exemple adjoint #25613 : un lien dont le TITRE est entre guillemets
+        # ne doit pas faire fuiter le placeholder de masquage (\x00MS0\x00) dans la
+        # cible. Avant le fix : la citation etait masquee en premier, puis la cible
+        # de lien masquee autour d'elle -> placeholder imbrique non restaure.
+        # Les guillemets sont masques APRES la cible de lien (masquee en bloc,
+        # titre inclus) -> restauree byte-identique, pas de fuite.
+        nb = _nb([("markdown",
+                   'Voir le modele de base : [la reference]'
+                   '(notes/model.md "The Selection Model") pour le detail.')])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # le placeholder de masquage ne doit JAMAIS fuiter dans la sortie
+        assert "\x00" not in src
+        assert "MS0" not in src
+        # la cible de lien (titre entre guillemets inclus) est integre
+        assert '[la reference](notes/model.md "The Selection Model")' in src
+        # la prose FR avoisinante reste curee
+        assert "modèle" in src
+
+
+class TestNestedMaskRestoration:
+    def test_citation_with_inline_code_from_pymc_15(self):
+        # Extrait réel de PyMC-15-Recommenders, cellule 15.
+        text = 'Le warning dit : « Increase `target_accept` or reparameterize ».'
+        assert rac._cure_line(text, fr_context=True) == (text, 0)
+
+    def test_modal_code_not_corrupted(self):
+        # Extrait réel de Argumentation-05, cellule 15.
+        text = '- `[](phi)` : **necessairement** `phi`'
+        result, _ = rac._cure_line(text, fr_context=True)
+        assert '`[](phi)`' in result
+        assert '\x00MS' not in result
+
+    def test_citation_with_bare_url(self):
+        text = 'La citation dit "the element https://example.org/x is central".'
+        assert rac._cure_line(text, fr_context=True) == (text, 0)

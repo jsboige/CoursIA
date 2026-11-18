@@ -385,6 +385,8 @@ Un processus iteratif en 6 étapes :
 
 </div>
 
+<img src="./images/payoff_put_option.png" style="position:absolute; top:80px; right:30px; width:280px; border:1px solid #ccc;" alt="Payoff d'options : Short Put et Long Put selon le prix du sous-jacent" />
+
 > Ref: *Hands-On AI Trading* Ch1 "Assets and Derivatives" p.15-24 | Notebooks: QC-Py-06 (Options), QC-Py-07 (Futures/Forex)
 
 ---
@@ -693,6 +695,12 @@ imageClass: mid-right visible
 > Notebook: QC-Py-12-Backtesting-Analysis.ipynb
 
 ---
+
+<style scoped>
+/* La 4e section (« Evolution du Marche ») sortait du canvas : bas a 562 px
+   pour 552 au scanner DOM, encre en bas d'export (EPIC #11508, L2). */
+.slidev-layout { font-size: 0.88em; }
+</style>
 
 # Stratégies Plausibles et leurs Pieges (1/2)
 

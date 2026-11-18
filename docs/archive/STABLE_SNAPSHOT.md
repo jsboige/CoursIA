@@ -1,7 +1,7 @@
 # STABLE_SNAPSHOT — Notebook Execution Forensics
 
 > **Historical snapshot (2026-05-11)** — archived point-in-time forensic audit.
-> The **canonical current** snapshot lives at [`/STABLE_SNAPSHOT.md`](../../STABLE_SNAPSHOT.md)
+> The **canonical current** snapshot lives at [`docs/reference/STABLE_SNAPSHOT.md`](../reference/STABLE_SNAPSHOT.md)
 > (regenerated monthly per CLAUDE.md §H.7 P4; latest: 2026-07-17, `d8ea11a2c`, 934 notebooks).
 > This file is preserved as historical record and is **not** kept in sync with HEAD.
 

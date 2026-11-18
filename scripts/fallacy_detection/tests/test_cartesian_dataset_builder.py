@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
+import subprocess
 import sys
 from collections import Counter
 from pathlib import Path
@@ -273,3 +274,69 @@ def test_real_build_matches_committed_manifest():
         committed = (PHASE2 / f"{s}.csv").read_bytes()
         assert committed == B.split_csv_bytes(pairs, s)
         assert hashlib.sha256(committed).hexdigest() == manifest["files"][f"{s}.csv"]["sha256"]
+
+
+@pytest.mark.skipif(not (PHASE2 / "manifest.json").exists(), reason="manifeste absent")
+def test_committed_manifest_declares_builder_licence():
+    # Le bloc licence est emis par build_manifest : le manifeste committe doit
+    # le porter a l'identique, sinon la regeneration le perdrait silencieusement.
+    manifest = json.loads((PHASE2 / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["licence"] == B.DATASET_LICENCE
+    assert manifest["licence"]["dataset"] == "CC-BY-SA-4.0"
+
+
+# --- ancrage cote depot (mesure po-2023 du 2026-10-08 sur #17578) -----------
+#
+# Le manifeste epingle le pin AMONT ; le gitlink du sous-module derive en
+# continu (0ab05d66 -> 65af9c38 -> ... -> 9038690 a la resynchronisation du
+# 2026-11-03). La reproductibilite doit se lire depuis un commit que le depot
+# atteint : le commit de `main` dont l'arbre porte le gitlink epingle, et la
+# copie verbatim in-repo que le constructeur lit effectivement -- pas le
+# sous-module vivant.
+
+@pytest.mark.skipif(not (PHASE2 / "manifest.json").exists(), reason="manifeste absent")
+def test_manifest_names_repo_side_pins():
+    manifest = json.loads((PHASE2 / "manifest.json").read_text(encoding="utf-8"))
+    src = manifest["sources"]
+    assert src["scenarii_copy_repo_path"] == B.SCENARII_COPY_REPO_PATH
+    assert src["build_repo_commit"] == B.BUILD_REPO_COMMIT
+    assert src["build_gitlink_commit"] == B.BUILD_GITLINK_COMMIT
+    # L'ancre effective : la copie verbatim in-repo, au chemin nomme, hache
+    # exactement au blob sha1 du manifeste -- reachable par tout checkout.
+    copy = B._REPO_ROOT / src["scenarii_copy_repo_path"]
+    assert copy.exists(), "copie verbatim absente du depot"
+    assert B.git_blob_sha1(copy) == src["scenarii_blob_sha1"]
+
+
+def test_build_gitlink_matches_repo_commit_tree():
+    """Le gitlink declare est celui de l'arbre au commit du build (ls-tree).
+
+    Requiert l'objet du commit (absent d'un clone shallow) : skip honnete plutot
+    qu'un faux vert.
+    """
+    probe = subprocess.run(
+        ["git", "rev-parse", "--verify", B.BUILD_REPO_COMMIT + "^{commit}"],
+        cwd=B._REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+    if probe.returncode != 0:
+        pytest.skip("commit du build absent du clone (shallow ?)")
+    ls = subprocess.run(
+        ["git", "ls-tree", B.BUILD_REPO_COMMIT, "--", B.BUILD_GITLINK_TREE_PATH],
+        cwd=B._REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+    assert ls.returncode == 0
+    assert B.BUILD_GITLINK_COMMIT in ls.stdout, (
+        "le gitlink du manifeste n'est pas celui de l'arbre au commit du build")
+    # Le chemin historique et le chemin vivant ne se confondent pas : sans cette
+    # borne, une "resynchronisation" de la constante de provenance sur le chemin
+    # courant rendrait un ls-tree VIDE (rc=0) et l'echec ci-dessus ne dirait pas
+    # pourquoi. Ici on verifie que le chemin vivant designe bien le sous-module
+    # dans l'arbre COURANT.
+    live = subprocess.run(
+        ["git", "ls-tree", "HEAD", "--", B.ARGUMENTUM_SUBMODULE_PATH],
+        cwd=B._REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+    assert live.returncode == 0
+    assert live.stdout.startswith("160000"), (
+        "le chemin vivant du sous-module ne designe pas un gitlink dans HEAD : %r"
+        % (live.stdout,))

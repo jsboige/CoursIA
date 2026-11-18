@@ -113,7 +113,7 @@ class TestTaskConstruction:
         assert "--apply" not in cmd
 
     def test_schtasks_create_est_force_donc_idempotent(self, tmp_path):
-        line = ipt.build_schtasks_install(ipt.task_command(tmp_path), "03:17")
+        line = ipt.build_schtasks_install(tmp_path / ipt.LAUNCHER_NAME, "03:17")
         assert line[0] == "schtasks" and "/Create" in line and "/F" in line
         assert "/SC" in line and "DAILY" in line
         assert "/TN" in line and ipt.TASK_NAME in line
@@ -121,13 +121,58 @@ class TestTaskConstruction:
         i = line.index("/ST")
         assert line[i + 1] == "03:17"
 
-    def test_tr_quote_chaque_element_pas_la_ligne_entiere(self):
-        # Regression : /TR "python.exe script.py --run" enregistrait la ligne
-        # ENTIERE comme nom d'executable -> 0x80070002 a chaque tour.
+    def test_tr_porte_le_lanceur_vbs_pas_un_binaire_console(self, tmp_path):
+        # Regression 2026-11-04 (Maintenance#75) : /TR qui lance directement
+        # python.exe fait clignoter une console a chaque tour -- le
+        # planificateur alloue une console neuve au binaire console.
+        launcher = tmp_path / ipt.LAUNCHER_NAME
+        tr = ipt.build_schtasks_install(launcher, "03:17")[-1]
+        assert tr.startswith("wscript.exe //B //Nologo ")
+        assert str(launcher) in tr
+        for console_binary in ("python.exe", "powershell.exe", "pwsh.exe",
+                               "cmd.exe", "bash.exe"):
+            assert console_binary not in tr.lower()
+
+    def test_commande_du_lanceur_quote_chaque_element_pas_la_ligne_entiere(self):
+        # Regression : une ligne "python.exe script.py --run" enregistree comme
+        # NOM d'executable echouait a chaque tour (0x80070002). La commande vit
+        # dans le VBS, ou chaque element reste quote -- et ou chaque guillemet
+        # du litteral VBS est double (VBS le relit comme un guillemet simple).
         cmd = [r"C:\Program Files\Py\python.exe", r"D:\repo\x.py", "--run"]
-        tr = ipt.build_schtasks_install(cmd, "03:17")[-1]
-        assert tr == r'"C:\Program Files\Py\python.exe" D:\repo\x.py --run'
-        assert tr != '"' + " ".join(cmd) + '"'
+        vbs = ipt.launcher_vbs(cmd)
+        assert '""C:\\Program Files\\Py\\python.exe"" D:\\repo\\x.py --run' in vbs
+        assert vbs.count('""C:\\Program Files\\Py\\python.exe""') == 1
+
+    def test_vbs_propage_le_code_retour(self):
+        # Sans `WScript.Quit rc`, la tache rend 0 quoi qu'il arrive : un echec
+        # de l'organe deviendrait un succes muet.
+        vbs = ipt.launcher_vbs([r"C:\Python314\python.exe", r"D:\repo\x.py", "--run"])
+        assert "Option Explicit" in vbs
+        assert "WScript.Quit rc" in vbs
+        assert ", 0, True)" in vbs  # SW_HIDE + attente
+
+    def test_cmd_install_ecrit_le_lanceur_avant_la_tache(self, tmp_path,
+                                                          monkeypatch, capsys):
+        repo = tmp_path / "CoursIA"
+        (repo / "scripts" / "ci").mkdir(parents=True)
+        (repo / "scripts" / "ci" / "prune_merged_worktrees.py").write_text(
+            "# Resolution directe par numero\ndef _normalize(s): return s\n",
+            encoding="utf-8")
+        monkeypatch.setattr(ipt, "LOG_DIR", tmp_path / "prune_task" / "logs")
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(list(cmd))
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(ipt, "_run", fake_run)
+        assert ipt.cmd_install(repo.resolve(), "03:17") == 0
+        launcher = ipt.launcher_path()
+        assert launcher.is_file()
+        assert "WScript.Quit rc" in launcher.read_text(encoding="utf-8")
+        # la tache est creee avec le lanceur, pas avec python.exe
+        tr = calls[-1][calls[-1].index("/TR") + 1]
+        assert tr.startswith("wscript.exe //B //Nologo ")
 
     def test_nom_de_tache_namespaced(self):
         assert "CoursIA" in ipt.TASK_NAME
@@ -150,13 +195,15 @@ class TestTaskConstruction:
 
         assert ipt.main(["--install", "--dry-run", "--repo", str(repo)]) == 0
         assert not ipt.LOG_DIR.exists()
-        command = ipt.build_schtasks_install(ipt.task_command(repo.resolve()), "03:17")
+        command = ipt.build_schtasks_install(ipt.launcher_path(), "03:17")
         output = capsys.readouterr().out
         assert repr(command) in output
         assert subprocess.list2cmdline(command) in output
         tr = command[command.index("/TR") + 1]
-        assert tr.startswith(r'"C:\Program Files\Python\python.exe" ')
-        assert r'"C:\Program Files\Cours IA\install_prune_task.py" --run' in tr
+        assert tr.startswith("wscript.exe //B //Nologo ")
+        # le dry-run affiche le lanceur VBS : c'est lui qui sera ecrit a l'install
+        assert "WScript.Quit rc" in output
+        assert r'""C:\Program Files\Cours IA\install_prune_task.py"" --run' in output
 
     def test_dry_run_uninstall_sans_appeler_schtasks(self, monkeypatch, capsys):
         def refuse_schtasks(*args, **kwargs):
@@ -165,6 +212,21 @@ class TestTaskConstruction:
         assert ipt.main(["--uninstall", "--dry-run"]) == 0
         expected = ["schtasks", "/Delete", "/TN", ipt.TASK_NAME, "/F"]
         assert repr(expected) in capsys.readouterr().out
+
+    def test_uninstall_retire_le_lanceur_avec_la_tache(self, tmp_path,
+                                                      monkeypatch, capsys):
+        # Le lanceur ne sert plus a rien une fois la tache supprimee, et il
+        # pointerait vers une tache absente. Il est regenere par --install.
+        monkeypatch.setattr(ipt, "LOG_DIR", tmp_path / "prune_task" / "logs")
+        launcher = ipt.launcher_path()
+        launcher.parent.mkdir(parents=True, exist_ok=True)
+        launcher.write_text("WScript.Quit rc\r\n", encoding="utf-8")
+        monkeypatch.setattr(
+            ipt, "_run",
+            lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0, stdout="", stderr=""))
+        assert ipt.cmd_uninstall() == 0
+        assert not launcher.exists()
+        assert "lanceur supprime" in capsys.readouterr().out
 
 
 # ---------------------------------------------------------------------------
@@ -237,3 +299,76 @@ class TestJournal:
             (tmp_path / "logs").glob("prune_*.log")).read_text(encoding="utf-8")
         assert "run end rc=0" in content
         assert "[WARN][prune-task]" in content
+
+
+# ---------------------------------------------------------------------------
+# une tache, un lanceur et un journal PAR CLONE (mesure 2026-11-12)
+# ---------------------------------------------------------------------------
+
+class TestUneTacheParClone:
+    """Une machine peut porter plusieurs clones du depot.
+
+    `schtasks /Create /F` ecrase la tache de meme nom, et le lanceur VBS
+    comme le journal horodate vivaient dans UN repertoire partage : une
+    deuxieme installation repointait silencieusement la premiere tache vers
+    l'autre clone. Les options `--task-name` et `--launcher-dir` rendent la
+    portee explicite ; les defauts restent ceux d'hier.
+    """
+
+    def test_nom_de_tache_par_defaut_inchange(self, tmp_path):
+        line = ipt.build_schtasks_install(tmp_path / ipt.LAUNCHER_NAME, "03:17")
+        assert line[line.index("/TN") + 1] == ipt.TASK_NAME
+
+    def test_nom_de_tache_personnalise(self, tmp_path):
+        name = r"CoursIA-2\prune_merged_worktrees"
+        line = ipt.build_schtasks_install(tmp_path / ipt.LAUNCHER_NAME, "03:17",
+                                          name)
+        assert line[line.index("/TN") + 1] == name
+
+    def test_lanceur_propre_a_un_clone(self, tmp_path):
+        base = tmp_path / "prune_task_coursia2"
+        assert ipt.launcher_path(base) == base / ipt.LAUNCHER_NAME
+
+    def test_journal_suit_le_repertoire_du_clone(self, tmp_path):
+        base = tmp_path / "prune_task_coursia2"
+        assert ipt.log_dir_for(base) == base / "logs"
+        log = ipt.log_path_for(log_dir=ipt.log_dir_for(base))
+        assert log.parent == base / "logs"
+        assert log.name.startswith("prune_")
+
+    def test_commande_de_tache_transporte_le_repertoire(self, tmp_path):
+        base = tmp_path / "prune_task_coursia2"
+        cmd = ipt.task_command(tmp_path, base)
+        assert "--launcher-dir" in cmd
+        assert cmd[cmd.index("--launcher-dir") + 1] == str(base)
+
+    def test_commande_sans_repertoire_ne_le_declenche_pas(self, tmp_path):
+        assert "--launcher-dir" not in ipt.task_command(tmp_path)
+
+    def test_install_par_clone_ecrit_le_lanceur_et_nomme_la_tache(
+            self, tmp_path, monkeypatch, capsys):
+        repo = tmp_path / "CoursIA-2"
+        (repo / "scripts" / "ci").mkdir(parents=True)
+        (repo / "scripts" / "ci" / "prune_merged_worktrees.py").write_text(
+            "# Resolution directe par numero\ndef _normalize(s): return s\n",
+            encoding="utf-8")
+        base = tmp_path / "prune_task_coursia2"
+        name = r"CoursIA-2\prune_merged_worktrees"
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(list(cmd))
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(ipt, "_run", fake_run)
+        assert ipt.cmd_install(repo.resolve(), "03:17", task_name=name,
+                               launcher_dir=base) == 0
+        # le lanceur est ecrit dans le repertoire DU CLONE
+        launcher = base / ipt.LAUNCHER_NAME
+        assert launcher.is_file()
+        # ... et il pointe vers le repo du clone, pas vers un autre
+        assert str(repo.resolve()) in launcher.read_text(encoding="utf-8")
+        # la tache porte le nom demande
+        assert calls[-1][calls[-1].index("/TN") + 1] == name
+        # le journal du clone est distinct de celui par defaut
+        assert ipt.log_dir_for(base) != ipt.LOG_DIR

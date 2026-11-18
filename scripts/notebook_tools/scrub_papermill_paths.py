@@ -18,9 +18,10 @@ the basename, using a text-level surgical edit so the rest of the notebook
 (byte-for-byte code, outputs, cell metadata) is preserved.
 
 A second, related defect class is covered by ``--outputs``: machine-local
-absolute paths that leak *inside output text* (stdout/stderr streams and
-text/plain data). These come from non-deterministic environment noise that
-re-execution cannot fix because it regenerates a fresh leak each run:
+absolute paths that leak *inside output text* (stdout/stderr streams,
+text/plain data, and text/html rich-display payloads). These come from
+non-deterministic environment noise that re-execution cannot fix because it
+regenerates a fresh leak each run:
 
   - ipykernel temp paths in matplotlib UserWarnings
     (``C:\\Users\\<user>\\AppData\\Local\\Temp\\ipykernel_<PID>\\<hash>.py:line``)
@@ -263,11 +264,37 @@ def _scrub_output_text(text):
     return text, (text != orig)
 
 
+def _output_text_blobs(out):
+    """Yield the text payloads of one output entry worth inspecting.
+
+    Covers the stream text (``out["text"]``) and the rich-display data
+    payloads (``out["data"]["text/plain"]`` and ``out["data"]["text/html"]``).
+    The html payload matters because .NET Interactive ranges its exception
+    payloads as ``display_data`` with a ``text/html`` body: a machine-local
+    path can live there while every text/plain stays clean, which is exactly
+    the leak the ``--outputs`` mode existed to catch (issue #21735: a
+    committed ``D:\\Dev\\CoursIA-19240-abis\\...`` path passed the scan with
+    0 finding because only text/plain was inspected).
+    """
+    t = out.get("text", "")
+    if isinstance(t, list):
+        t = "".join(t)
+    yield t
+    data = out.get("data", {})
+    if isinstance(data, dict):
+        for key in ("text/plain", "text/html"):
+            blob = data.get(key, "")
+            if isinstance(blob, list):
+                blob = "".join(blob)
+            yield blob
+
+
 def find_output_path_defects(nb_path):
     """Return count of machine-local path leaks found in output text.
 
-    Inspects ``outputs[].text`` (stream) and ``outputs[].data["text/plain"]``
-    of every code cell. Returns the total occurrence count (0 if clean).
+    Inspects ``outputs[].text`` (stream), ``outputs[].data["text/plain"]``
+    and ``outputs[].data["text/html"]`` of every code cell. Returns the
+    total occurrence count (0 if clean).
     """
     nb = _read_notebook(nb_path)
     if nb is None:
@@ -277,18 +304,8 @@ def find_output_path_defects(nb_path):
         if cell.get("cell_type") != "code":
             continue
         for out in cell.get("outputs", []):
-            text = out.get("text", "")
-            if isinstance(text, list):
-                text = "".join(text)
-            _, c = _scrub_output_text(text)
-            if c:
-                count += 1
-            data = out.get("data", {})
-            if isinstance(data, dict):
-                tp = data.get("text/plain", "")
-                if isinstance(tp, list):
-                    tp = "".join(tp)
-                _, c = _scrub_output_text(tp)
+            for blob in _output_text_blobs(out):
+                _, c = _scrub_output_text(blob)
                 if c:
                     count += 1
     return count
@@ -298,11 +315,12 @@ def scrub_output_paths(nb_path, apply=False):
     """Anonymize machine-local path prefixes in output text, in place.
 
     Uses a text-level surgical edit: collect the distinct machine-local
-    *home-root substrings* that appear in any code-cell output (stream text
-    or text/plain data), then replace each one directly on the on-disk JSON
-    with ``~``. Process/temp ids (ipykernel PID, temp file id) are scrubbed
-    the same way. This preserves cell structure, source, and all other bytes
-    (no JSON re-serialization, no float coercion, no metadata churn).
+    *home-root substrings* that appear in any code-cell output (stream text,
+    text/plain or text/html data), then replace each one directly on the
+    on-disk JSON with ``~``. Process/temp ids (ipykernel PID, temp file id)
+    are scrubbed the same way. This preserves cell structure, source, and
+    all other bytes (no JSON re-serialization, no float coercion, no
+    metadata churn).
 
     Returns ``(leaks_found, leaks_fixed)`` as counts. ``leaks_found`` counts
     output blobs that contained a leak; ``leaks_fixed`` counts distinct
@@ -320,18 +338,7 @@ def scrub_output_paths(nb_path, apply=False):
         if cell.get("cell_type") != "code":
             continue
         for out in cell.get("outputs", []):
-            blobs = []
-            t = out.get("text", "")
-            if isinstance(t, list):
-                t = "".join(t)
-            blobs.append(t)
-            data = out.get("data", {})
-            if isinstance(data, dict):
-                tp = data.get("text/plain", "")
-                if isinstance(tp, list):
-                    tp = "".join(tp)
-                blobs.append(tp)
-            for blob in blobs:
+            for blob in _output_text_blobs(out):
                 scrubbed, changed = _scrub_output_text(blob)
                 if not changed:
                     continue

@@ -27,7 +27,7 @@ from ict import voi as voi_mod  # noqa: E402
 
 
 def _parapluie() -> voi_mod.DecisionProblem:
-    """Scenario parapluie (DecPyMC-5 section 2) : 2 etats, 2 actions.
+    """Scenario parapluie (DecPyMC-05 section 2) : 2 etats, 2 actions.
 
     Pluie (P=0.3), Soleil (P=0.7). Utilites :
 
@@ -51,7 +51,7 @@ def _parapluie() -> voi_mod.DecisionProblem:
 
 
 def _forage() -> voi_mod.DecisionProblem:
-    """Scenario forage petrolier (DecInfer-06 + DecPyMC-5 section 3).
+    """Scenario forage petrolier (DecInfer-05 + DecPyMC-05 section 3).
 
     P(petrole) = 0.3, P(pas_petrole) = 0.7.
 
@@ -122,7 +122,7 @@ def test_decision_problem_rejects_negative_prior():
 
 
 def test_evpi_parapluie_canonical():
-    """EVPI parapluie = 3.5 (cf DecPyMC-5 section 2 verbatim).
+    """EVPI parapluie = 3.5 (cf DecPyMC-05 section 2 verbatim).
 
     Plafond theorique : si on observait parfaitement la meteo avant de
     decider, on gagnerait 3.5 utils en moyenne (la perte moyenne du
@@ -154,7 +154,7 @@ def test_evpi_is_zero_when_const_policy_dominates():
 def test_optimal_action_parapluie():
     """Sans info, l'animat prend le parapluie (EU=-3.5 vs EU=-15).
 
-    Verification verbatim DecPyMC-5 section 2.
+    Verification verbatim DecPyMC-05 section 2.
     """
     pb = _parapluie()
     eu, action = voi_mod.optimal_action_without_info(pb)
@@ -214,7 +214,7 @@ def test_evsi_le_evpi_inequality():
 def test_evsi_observation_decision_forage():
     """EVSI sismique > cout d'observation de 50k : l'animat fore apres test.
 
-    Scenario forage DecInfer-06 : EVSI = environ 250k (test informatif), cout
+    Scenario forage DecInfer-05 : EVSI = environ 250k (test informatif), cout
     50k : rentable. Verification semantique du verdict observation_is_worthwhile.
     """
     pb = _forage()

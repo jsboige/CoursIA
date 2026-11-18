@@ -23,7 +23,7 @@ Valider visuellement les deux interfaces en production (ComfyUI + Forge) avec un
 - ✅ Dépendances: Playwright installé
 - ✅ Navigateurs: Chromium installé
 - ✅ Exécution: Tests lancés avec succès
-- ⚠️ Screenshots générés: 2 fichiers (qualité limitée)
+- ⚠️ Screenshots générés (qualité limitée)
 - **Taille totale**: 28.75 KB
 
 **Problèmes détectés**:
@@ -44,7 +44,7 @@ Valider visuellement les deux interfaces en production (ComfyUI + Forge) avec un
 **Résultats**:
 - ✅ ComfyUI testé interactivement
 - ✅ Forge testé (page de login détectée)
-- ✅ Screenshots MCP: 2 fichiers (haute qualité)
+- ✅ Screenshots MCP (haute qualité)
 - ✅ Validations interactives: Console, snapshots, observations directes
 - **Taille totale**: 190.04 KB
 

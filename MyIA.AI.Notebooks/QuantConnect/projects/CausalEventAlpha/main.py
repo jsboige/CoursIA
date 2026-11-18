@@ -294,14 +294,20 @@ class CausalEventAlphaAlgorithm(QCAlgorithm):
         scaler = self.sector_scalers[ticker]
 
         symbol = self.symbols[ticker]
-        history = self.history(symbol, 60, Resolution.Daily)
-        spy_history = self.history(self._spy, 60, Resolution.Daily)
+        # Fenetre double (#20286) : sur une demi-seance, history() rend moins de
+        # barres que demandees et la garde renvoie 0.5 (prediction neutre).
+        # On demande le double puis on re-slice sur la fenetre d'origine (les 60
+        # dernieres barres) : les memes 50 rendements, donc le meme calcul.
+        history = self.history(symbol, 2 * 60, Resolution.Daily)
+        spy_history = self.history(self._spy, 2 * 60, Resolution.Daily)
 
         if history is None or len(history) < 50:
             return 0.5
         if spy_history is None or len(spy_history) < 50:
             return 0.5
 
+        history = history.iloc[-60:]
+        spy_history = spy_history.iloc[-60:]
         returns = history['close'].pct_change().dropna()
         spy_returns = spy_history['close'].pct_change().dropna()
 

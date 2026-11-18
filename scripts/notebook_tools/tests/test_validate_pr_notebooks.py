@@ -458,6 +458,62 @@ class TestValidateNotebookH1:
 
 
 # ---------------------------------------------------------------------------
+# validate_notebook — archive exemption (suffix #6803 + directory #21058)
+# ---------------------------------------------------------------------------
+
+class TestValidateNotebookArchiveExemption:
+    """Error outputs in frozen archive snapshots are advisory, not failures.
+
+    Two opt-in forms: the `*_archive.ipynb` filename suffix (#6803) and any
+    notebook under an exact `_archive/` path segment (#21058 — the directory
+    convention of `_archive-convention.md`, which the suffix alone missed).
+    """
+
+    ERR = {"output_type": "error", "ename": "SyntaxError",
+           "evalue": "unterminated f-string", "traceback": []}
+
+    def _err_cell(self) -> dict:
+        return _code("x = 1", exec_count=1, outputs=[self.ERR])
+
+    def test_error_output_in_archive_dir_is_advisory(self, tmp_path):
+        """Directory form: `_archive/Tweety.ipynb` — the exact case of #21058."""
+        nb = _write_nb(tmp_path / "_archive" / "Tweety.ipynb", [self._err_cell()])
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert any("research archive" in e for e in result["errors"])
+
+    def test_error_output_in_nested_archive_dir_is_advisory(self, tmp_path):
+        """The segment matches at any depth, as the convention emplacements do."""
+        nb = _write_nb(tmp_path / "SymbolicAI" / "_archive" / "Tweety.ipynb",
+                       [self._err_cell()])
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert any("research archive" in e for e in result["errors"])
+
+    def test_error_output_in_archive_suffix_is_advisory(self, tmp_path):
+        """Suffix form (`#6803`) — regression guard for the pre-existing rule."""
+        nb = _write_nb(tmp_path / "exploration_archive.ipynb", [self._err_cell()])
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert any("research archive" in e for e in result["errors"])
+
+    def test_archive_substring_dir_still_fails(self, tmp_path):
+        """Tight scope: `archives/`, `my_archive_v2/` are NOT `_archive` segments."""
+        for dirname in ("archives", "my_archive_v2"):
+            nb = _write_nb(tmp_path / dirname / "foo.ipynb", [self._err_cell()])
+            result = validate_notebook(nb)
+            assert result["passed"] is False, dirname
+            assert not any("research archive" in e for e in result["errors"]), dirname
+
+    def test_h3_still_enforced_in_archive_dir(self, tmp_path):
+        """The exemption relaxes H.1 only — a null execution_count still fails."""
+        nb = _write_nb(tmp_path / "_archive" / "never_run.ipynb",
+                       [_code("x = 1", exec_count=None)])
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+
+
+# ---------------------------------------------------------------------------
 # validate_notebook — structural checks
 # ---------------------------------------------------------------------------
 
@@ -570,7 +626,7 @@ class TestValidateNotebookLeanTextErrors:
     (display_data / execute_result), never as output_type=="error". A whole
     Lean notebook can be red (every cell ❌) while CI stays green. The
     detector anchors on the toolchain-emitted `severity: error` message.
-    Regression guard for #5151 (Sudoku-19-Lean-Propagation: failed import ->
+    Regression guard for #5151 (Sudoku-19-Lean-Propagation-Lean: failed import ->
     48 unknown-identifier + 12 unknown-constant cascade, CI all green)."""
 
     def _lean_err_output(self) -> dict:
@@ -887,7 +943,8 @@ class TestGetChangedNotebooksPerimeter:
     def _git(repo: Path, *args: str) -> str:
         import subprocess
         return subprocess.run(
-            ["git", *args], capture_output=True, text=True, check=True,
+            ["git", *args], capture_output=True, check=True,
+            encoding="utf-8", errors="replace",
             cwd=str(repo),
         ).stdout.strip()
 

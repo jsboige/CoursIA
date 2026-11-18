@@ -927,7 +927,8 @@ function Apply-ContentTruncation {
     
     # Si aucune troncature appliquée, ne pas réécrire le fichier
     if ($truncationsApplied -gt 0) {
-        [System.IO.File]::WriteAllText($OutputPath, $content, [System.Text.Encoding]::UTF8)
+        # UTF8Encoding($false) : [System.Text.Encoding]::UTF8 emet le BOM par defaut (#21896)
+        [System.IO.File]::WriteAllText($OutputPath, $content, (New-Object System.Text.UTF8Encoding($false)))
         $newSize = $content.Length
         $gain = [math]::Round((($originalSize - $newSize) / $originalSize * 100), 2)
         Write-Host "-> Troncatures appliquees: $truncationsApplied" -ForegroundColor Green

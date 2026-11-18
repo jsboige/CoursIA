@@ -5,14 +5,15 @@ Script simple de validation du système ComfyUI Qwen
 
 import requests
 import json
+import os
 import time
 from datetime import datetime
 
 # Configuration
 COMFYUI_URL = "http://localhost:8188"
 USERNAME = "admin"
-PASSWORD = "rZDS3XQa/8!v9L"
-BEARER_TOKEN = "$2b$12$NErya5UooY9bJnscVc/ec.hpVDX.nYM86/88bXIkF/hh2VeKRvU5ka"
+PASSWORD = os.getenv("COMFYUI_PASSWORD")
+BEARER_TOKEN = os.getenv("COMFYUI_BEARER_TOKEN")
 
 def test_web_access():
     """Test accès web"""

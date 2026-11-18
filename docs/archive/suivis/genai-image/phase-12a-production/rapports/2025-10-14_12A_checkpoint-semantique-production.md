@@ -158,7 +158,7 @@ Timestamp,GPU,MemoryUsed_MB,MemoryTotal_MB,MemoryPercent,Temperature_C,Utilizati
 - Procédures maintenance
 - Sécurité et recommandations
 
-**687 lignes** de documentation exhaustive
+**Documentation exhaustive**
 
 ---
 
@@ -266,27 +266,27 @@ Windows 11 Pro (Host)
 
 ### Scripts Production (tous dans `docs/suivis/genai-image/`)
 
-1. **`2025-10-14_12A_start-comfyui-watchdog.ps1`** (137 lignes)
+1. **`2025-10-14_12A_start-comfyui-watchdog.ps1`**
    - Watchdog avec monitoring
    - Auto-restart 5 tentatives
    - Logs horodatés
 
-2. **`2025-10-14_12A_install-scheduled-task.ps1`** (105 lignes)
+2. **`2025-10-14_12A_install-scheduled-task.ps1`**
    - Installation tâche planifiée
    - Validation prérequis
    - Commandes gestion
 
-3. **`2025-10-14_12A_setup-iis-reverse-proxy.ps1`** (189 lignes)
+3. **`2025-10-14_12A_setup-iis-reverse-proxy.ps1`**
    - Configuration IIS complète
    - web.config automatique
    - HTTPS avec certificat
 
-4. **`2025-10-14_12A_monitor-gpu-performance.ps1`** (167 lignes)
+4. **`2025-10-14_12A_monitor-gpu-performance.ps1`**
    - Monitoring temps réel
    - Alertes automatiques
    - Export CSV
 
-5. **`2025-10-14_12A_README-PRODUCTION.md`** (687 lignes)
+5. **`2025-10-14_12A_README-PRODUCTION.md`**
    - Documentation exhaustive
    - Troubleshooting complet
    - Procédures maintenance
@@ -294,8 +294,6 @@ Windows 11 Pro (Host)
 6. **`2025-10-14_12A_checkpoint-semantique-production.md`** (ce fichier)
    - Checkpoint Phase 12A
    - Référence sémantique
-
-**Total:** ~1,290 lignes de code + documentation
 
 ### Logs Générés (dynamiques)
 
@@ -497,7 +495,7 @@ Créer **notebook bridge local/cloud** pour intégration pédagogique
 - 💪 **Performances:** Natives, pas d'overhead
 - 🔧 **Maintenabilité:** Scripts PowerShell simples
 - 📊 **Observabilité:** Logs + monitoring GPU
-- 📚 **Documentation:** 687 lignes de guide opérationnel
+- 📚 **Documentation:** guide opérationnel
 
 ### Statut Final
 
@@ -510,4 +508,3 @@ Prêt pour Phase 12B: Notebook Bridge Pédagogique
 **Checkpoint validé:** 2025-10-14 04:13 UTC  
 **Phase suivante:** 12B - Notebook Bridge Local/Cloud  
 **Durée Phase 12A:** ~2 heures  
-**Ligne<del>s code + doc:</del> ~1,290

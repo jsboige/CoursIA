@@ -37,10 +37,10 @@ désormais la TJC.
 
 ```mermaid
 flowchart LR
-    M["<b>Mathlib (retiré)</b><br/><i>SetTheory.Surreal / PGame /<br/>Game / Nimber</i><br/>8 modules"]
+    M["<b>Mathlib (retiré)</b><br/><i>SetTheory.Surreal / PGame /<br/>Game / Nimber</i><br/>(modules CGT)"]
     D["<b>#28063</b><br/>dépréciation<br/>(août 2025)"]
     R["<b>#35550</b><br/>retrait<br/>(février 2026)"]
-    U["<b>vihdzp/combinatorial-games</b><br/><i>nouveau foyer de la TJC</i><br/>même autrice · Apache-2.0<br/>15+ modules"]
+    U["<b>vihdzp/combinatorial-games</b><br/><i>nouveau foyer de la TJC</i><br/>même autrice · Apache-2.0<br/>(modules amont)"]
     T["<b>conway_cgt_lean</b><br/><i>visite #check · 0 sorry</i><br/>dépendance Lake<br/>(non vendorisée)"]
     M --> D --> R -.->|"remplacé par"| U -->|"expose via #check"| T
 ```
@@ -94,7 +94,7 @@ flowchart TD
 | Jeux | `PGame` (basique) | `IGame` (concret) + `Game` (quotient) |
 | Surréels | Basique/Dyadique/Mul | + Division, séries de Hahn, Anniversaire, Pow |
 | Nimbers | Basique/Corps | + Nat, SimplestExtension |
-| Bibliothèque de jeux | 8 modules | 15+ modules (Impartial, Loopy, Specific…) |
+| Bibliothèque de jeux | modules CGT | modules amont (Impartial, Loopy, Specific…) |
 
 ## Modules
 
@@ -154,7 +154,7 @@ du dépôt amont, dont l'autrice (vihdzp) est la même maintenante. Plutôt que
 vendoriser ou redériver, la visite **cite** l'amont comme dépendance et exhibe ses
 résultats via `#check` + docstrings — une exposition originale au-dessus de
 théorèmes importés. Un tableau comparatif Mathlib-vs-amont documente la couverture
-amont plus riche (15+ modules contre les 8 anciens de Mathlib).
+amont plus riche (modules amont vs modules CGT Mathlib).
 
 ### Où aller ensuite
 

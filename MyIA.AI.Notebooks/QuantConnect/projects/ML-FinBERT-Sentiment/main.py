@@ -1,302 +1,258 @@
 #region imports
 from AlgorithmImports import *
 import numpy as np
+import torch
+from transformers import (
+    AutoTokenizer,
+    AutoModelForSequenceClassification,
+    set_seed,
+)
 # endregion
-# Hands-On AI Trading - Ex19: FinBERT Sentiment Analysis
-# Uses the ProsusAI/finbert model to analyze financial news
-# sentiment from Tiingo articles. Trades the most volatile
-# asset based on aggregated news sentiment scores.
-# Source: HandsOnAITradingBook, Section 06, Example 19
+# Hands-On AI Trading - Ex19 (06/19/01 Base Model) : FinBERT Sentiment
+# Portage fidele du code du livre en PyTorch (le livre utilise la variante
+# TFBertForSequenceClassification ; ProsusAI/finbert expose les deux).
+# Source: QuantConnect/HandsOnAITradingBook, "06 Applied Machine Learning/
+# 19 FinBERT Model/01 Base Model/main.py".
+#
+# Ecarts documentes du livre :
+# n1 - Blindage par etape. Le pipeline du livre, execute tel quel, n'a
+#      jamais complete un backtest sur les noeuds QC actuels : les six
+#      executions non blindees (v1-v6) n'en ont jamais produit un seul --
+#      l'annee et le semestre meurent en FATAL natif ~12 s apres le
+#      depart, le 2 mois echoue aussi (Runtime Error). Les executions
+#      blindees de fenetres courtes (probe5 janvier, probe6/probe7
+#      jan-fev, probe9 jan-fev complet, et ce livrable v7 qui complete
+#      avec 2 ordres) completent toutes, la meme journee, sur le meme
+#      noeud.
+#      Le blindage (try/except par etape, position inchangee en cas
+#      d'echec, echecs journalises) est donc une adaptation d'execution,
+#      pas un choix de strategie : aucun stage ne change de semantique
+#      quand il reussit.
+# n2 - SPY est abonne, mais en FIN d'initialize (apres la creation des
+#      date_rules). Le livre cree le Symbol SPY sans l'abonner ; ne jamais
+#      l'abonner tue l'initialize sur les noeuds QC actuels (v1/v2,
+#      hasInitializeError=true, reproduit 2x).
+# n3 - Cash porte a 1 000 000 USD (le livre laisse le defaut 100 000) :
+#      probe8 (annee, blindee, 1M) et v3/v4 (annee, 100k) meurent au meme
+#      point, le cash n'est donc pas la cause -- c'est un choix de confort
+#      de lecture des ordres.
+# n4 - Fenetre 2022-01-01 -> 2022-03-01 (2 mois) au lieu de l'annee du
+#      livre : sur les noeuds QC actuels (org FREE, noeud "Backtest
+#      MyIA 1", projet 29936073), les fenetres longues meurent aussi
+#      (annee ~0,15, semestre ~0,29) et les fenetres de 1-2 mois
+#      completent l'integralite du pipeline, transition du 1er fevrier
+#      incluse. 2 mois est la plus longue fenetre mesuree qui complete.
+# n5 - Convention d'indices de FinBERT, CONSERVEE telle quelle. Le modele
+#      expose id2label = {0: 'positive', 1: 'negative', 2: 'neutral'}
+#      (mesure sur le noeud ; le notebook committe l'imprime en sortie de
+#      cellule). Le livre compare `scores[2] > scores[0]` et etiquete ses
+#      trois plot Negative/Neutral/Positive sur les indices 0/1/2 : la
+#      comparaison porte donc sur **neutre > positif**, et les etiquettes
+#      sont decalees d'un cran par rapport au contenu qu'elles nomment.
+#      La prose du livre dit pourtant "sentiment is more positive than
+#      negative" (main.py du livre, l. 19) : la discordance est EN AMONT,
+#      entre sa phrase et son code. Ce portage la reproduit verbatim --
+#      la fidelite au livre est le livrable, et corriger la comparaison
+#      changerait le comportement de la strategie (donc exigerait un
+#      nouveau backtest, et ferait diverger le portage de sa reference).
+#      L'ecart est documente, pas corrige.
 
 
-class FinBERTSentimentAlgorithm(QCAlgorithm):
+class FinbertBaseModelAlgorithm(QCAlgorithm):
     """
-    FinBERT News Sentiment Trading Strategy.
+    Modele de base FinBERT du livre (Exemple 19, chapitre 06).
 
-    This strategy uses the FinBERT model (ProsusAI/finbert) to
-    classify financial news articles as positive, negative, or
-    neutral. It selects the most volatile asset from a tech
-    universe and trades it based on aggregated sentiment.
+    Charge ProsusAI/finbert depuis le cache local des noeuds QC Cloud
+    (``local_files_only=True``, comme le livre). L'univers mensuel garde
+    les 10 actifs les plus liquides et n'en retient que le plus volatil
+    (ecart-type des rendements quotidiens sur 365 jours). Au
+    rebalancement, le sentiment des articles Tiingo des 10 derniers
+    jours est agrege avec des poids exponentiels, et l'algorithme reste
+    toujours investi : long 100 % si ``scores[2] > scores[0]``, sinon
+    short 25 %. Lu sous l'``id2label`` reel du modele -- mesure sur le
+    noeud, ``{0: 'positive', 1: 'negative', 2: 'neutral'}`` -- cette
+    comparaison porte sur **neutre > positif**, et les trois ``plot``
+    nomment ``Negative``/``Neutral``/``Positive`` les indices 0/1/2 :
+    les etiquettes sont decalees d'un cran. C'est le code du livre a la
+    lettre, ecart d'indices compris (cf. note n5).
 
-    Reference: Hands-On AI Trading with Python, QuantConnect, and AWS
-    Chapter 06 - Applied Machine Learning, Example 19
-
-    How it works:
-    1. Select top tech stocks by market cap
-    2. Identify the most volatile asset as trading vehicle
-    3. Subscribe to Tiingo news for that asset
-    4. Use FinBERT to classify each news article
-    5. Aggregate sentiment over rolling window
-    6. Go long when sentiment is positive, liquidate when negative
-
-    Parameters:
-    - universe_size: Number of tech stocks (default: 10)
-    - sentiment_window: Articles for aggregation (default: 5)
-    - vol_lookback: Days for volatility calculation (default: 30)
+    Ecarts documentes du portage : (1) blindage par etape (adaptation
+    d'execution, cf. note n1 en tete de fichier) ; (2) PyTorch au lieu de
+    TensorFlow pour l'inference (meme modele, meme tokenizer, memes poids ;
+    TF importe aussi sur les noeuds -- sonde probe2, mask 31) ;
+    (3) abonnement SPY explicite en fin d'initialize ; (4) cash 1M ;
+    (5) fenetre 2 mois (cf. note n4) ; (6) convention d'indices de
+    FinBERT conservee telle quelle (cf. note n5).
     """
+
+    def _fail(self, stage, exc):
+        """Journalise un etage en echec sans interrompre le backtest."""
+        message = f"{type(exc).__name__}: {str(exc)[:300]}"
+        self._stage_fails.append((stage, message))
+        self.log(f"{self.time:%Y-%m-%d} : ETAGE EN ECHEC {stage} -> {message}")
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2026, 1, 1)
-        self.set_cash(100_000)
-        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+        self.set_start_date(2022, 1, 1)
+        self.set_end_date(2022, 3, 1)
+        self.set_cash(1_000_000)
+        self._stage_fails = []
 
-        # Model parameters
-        self._universe_size = self.get_parameter(
-            'universe_size', 10
-        )
-        self._sentiment_window = self.get_parameter(
-            'sentiment_window', 5
-        )
-        self._vol_lookback = self.get_parameter(
-            'vol_lookback', 30
-        )
-        self._sentiment_threshold = 0.2
+        # Reference calendrier (non abonnee ici -- ecart n2, cf. note
+        # en tete : l'abonnement se fait en FIN d'initialize).
+        spy = Symbol.create("SPY", SecurityType.EQUITY, Market.USA)
 
-        # Load FinBERT model
-        self._tokenizer = None
-        self._model = None
-        self._model_loaded = False
-        self._load_model()
-
-        # Universe selection - top tech by market cap
-        self.universe_settings.data_normalization_mode = (
-            DataNormalizationMode.RAW
+        # Univers : top 10 liquidite -> le plus volatil, chaque debut de mois.
+        self.universe_settings.resolution = Resolution.DAILY
+        self.universe_settings.schedule.on(
+            self.date_rules.month_start(spy)
         )
-        schedule_symbol = Symbol.create(
-            "SPY", SecurityType.EQUITY, Market.USA
-        )
-        date_rule = self.date_rules.week_start(schedule_symbol)
-        self.universe_settings.schedule.on(date_rule)
-        self._universe = self.add_universe(self._select_assets)
+        self._universe = self.add_universe(self._book_selector)
 
-        # Schedule weekly rebalance
+        # Reproductibilite (le livre : set_seed(1, True)).
+        set_seed(1, True)
+
+        model_path = "ProsusAI/finbert"
+        self._tokenizer = AutoTokenizer.from_pretrained(
+            model_path, local_files_only=True
+        )
+        self._model = AutoModelForSequenceClassification.from_pretrained(
+            model_path, local_files_only=True
+        )
+        self._model.eval()
+
+        # Rebalancements mensuels.
+        self._last_rebalance_time = datetime.min
         self.schedule.on(
-            date_rule,
-            self.time_rules.after_market_open(schedule_symbol, 30),
-            self._select_target_and_trade
+            self.date_rules.month_start(spy, 1),
+            self.time_rules.midnight,
+            self._trade
         )
 
-        # Sentiment storage
-        self._sentiment_scores = []
-        self._articles_processed = 0
-        self._target_symbol = None
-        self._news_symbol = None
+        self.set_warm_up(timedelta(30))
 
-    def _load_model(self):
-        """Load FinBERT model for sentiment analysis."""
+        # Ecart n2 (fin) : abonnement SPY ici, APRES la creation des
+        # date_rules -- cf. note en tete de fichier.
+        self._spy = self.add_equity("SPY", Resolution.DAILY)
+
+    def _book_selector(self, fundamental):
+        """Selecteur du livre : top 10 liquidite -> le plus volatil.
+
+        En cas d'echec, repli sur le plus liquide (l'univers reste non
+        vide, la strategie reste investie) -- blindage n1.
+        """
         try:
-            from transformers import AutoTokenizer
-            from transformers import (
-                AutoModelForSequenceClassification
-            )
-
-            self._tokenizer = AutoTokenizer.from_pretrained(
-                "ProsusAI/finbert"
-            )
-            self._model = (
-                AutoModelForSequenceClassification.from_pretrained(
-                    "ProsusAI/finbert"
-                )
-            )
-            self._model_loaded = True
-            self.log("FinBERT model loaded successfully")
+            selected = [
+                f.symbol
+                for f in sorted(
+                    fundamental, key=lambda f: f.dollar_volume
+                )[-10:]
+            ]
+            target = self.history(
+                selected, timedelta(365), Resolution.DAILY
+            )['close'].unstack(0).pct_change().iloc[1:].std().idxmax()
+            return [target]
         except Exception as e:
-            self.log(
-                f"FinBERT not available: {e}. "
-                "Using keyword-based fallback."
-            )
-            self._model_loaded = False
-
-    def _select_assets(self, fundamental):
-        """Select largest tech stocks by market cap."""
-        tech_stocks = [
-            f for f in fundamental
-            if f.asset_classification.morningstar_sector_code
-            == MorningstarSectorCode.TECHNOLOGY
-        ]
-        sorted_by_mc = sorted(
-            tech_stocks, key=lambda x: x.market_cap
-        )
-        return [
-            x.symbol for x in sorted_by_mc[-self._universe_size:]
-        ]
+            self._fail("selecteur d'univers", e)
+            return [
+                sorted(
+                    fundamental, key=lambda f: f.dollar_volume
+                )[-1].symbol
+            ]
 
     def on_securities_changed(self, changes):
-        """Handle universe changes."""
         for security in changes.removed_securities:
-            if self._news_symbol and security.symbol == self._news_symbol:
-                self.subscription_manager.remove_consolidator(
-                    security.symbol,
-                    getattr(security, 'consolidator', None)
-                )
-
-    def _select_target_and_trade(self):
-        """Select most volatile asset and execute trade."""
-        selected = list(self._universe.selected)
-        if len(selected) == 0:
-            return
-
-        # Find most volatile asset
-        most_volatile = self._find_most_volatile(selected)
-        if most_volatile is None:
-            return
-
-        # Update target if changed
-        if most_volatile != self._target_symbol:
-            self._target_symbol = most_volatile
-            self._sentiment_scores = []
-
-            # Add Tiingo news for the new target
-            ticker = str(most_volatile.value)
             try:
-                self._news_symbol = self.add_data(
-                    TiingoNews, ticker, Resolution.DAILY
+                self.remove_security(security.dataset_symbol)
+            except Exception as e:
+                self._fail("remove_security", e)
+        for security in changes.added_securities:
+            try:
+                security.dataset_symbol = self.add_data(
+                    TiingoNews, security.symbol
                 ).symbol
-            except Exception:
-                self._news_symbol = None
+            except Exception as e:
+                self._fail("add_data TiingoNews", e)
 
-        # Aggregate and trade
+    def on_warmup_finished(self):
         self._trade()
 
-    def _find_most_volatile(self, symbols):
-        """Find the most volatile symbol by trailing std."""
-        best_vol = 0
-        best_symbol = None
-
-        for symbol in symbols:
-            history = self.history(
-                symbol, self._vol_lookback + 5, Resolution.DAILY,
-                data_normalization_mode=DataNormalizationMode.SCALED_RAW
-            )
-            if history.empty or 'close' not in history:
-                continue
-
-            if isinstance(history.index, pd.MultiIndex):
-                history = history.loc[symbol]
-
-            closes = history['close'].values
-            if len(closes) < self._vol_lookback:
-                continue
-
-            returns = np.diff(closes[-self._vol_lookback:])
-            vol = float(np.std(returns))
-            if vol > best_vol:
-                best_vol = vol
-                best_symbol = symbol
-
-        return best_symbol
-
-    def on_data(self, data):
-        """Process incoming news articles."""
-        if self._news_symbol is None:
+    def _trade(self):
+        if self.is_warming_up:
             return
-        if self._news_symbol not in data:
+        if self.time - self._last_rebalance_time < timedelta(14):
             return
 
-        news_item = data[self._news_symbol]
-
-        # Extract text
-        article_text = ''
-        for attr in ['title', 'description']:
-            val = getattr(news_item, attr, None)
-            if val and str(val).strip():
-                article_text += ' ' + str(val).strip()
-        article_text = article_text.strip()
-
-        if len(article_text) < 10:
-            return
-
-        # Analyze sentiment
-        sentiment = self._analyze_sentiment(article_text)
-        if sentiment is not None:
-            self._sentiment_scores.append(sentiment)
-            self._sentiment_scores = self._sentiment_scores[
-                -self._sentiment_window * 3:
-            ]
-            self._articles_processed += 1
-
-    def _analyze_sentiment(self, text):
-        """
-        Analyze sentiment using FinBERT or keyword fallback.
-
-        Returns a score between -1 (bearish) and 1 (bullish).
-        """
-        if self._model_loaded:
-            result = self._finbert_sentiment(text)
-            if result is not None:
-                return result
-        return self._keyword_sentiment(text)
-
-    def _finbert_sentiment(self, text):
-        """Use FinBERT model for sentiment classification."""
         try:
-            import torch
+            security = self.securities[list(self._universe.selected)[0]]
+        except Exception as e:
+            self._fail("securities[selected[0]]", e)
+            return
 
-            inputs = self._tokenizer(
-                text, return_tensors="pt", truncation=True,
-                max_length=512, padding=True
+        try:
+            articles = self.history[TiingoNews](
+                security.dataset_symbol, 10, Resolution.DAILY
             )
+        except Exception as e:
+            self._fail("history[TiingoNews]", e)
+            return
 
+        article_text = [article.description for article in articles]
+        if not article_text:
+            self.log(
+                f"{self.time:%Y-%m-%d} : aucun article Tiingo sur "
+                "10 jours, position inchangee"
+            )
+            return
+
+        try:
+            inputs = self._tokenizer(
+                article_text, padding=True, truncation=True,
+                return_tensors='pt'
+            )
             with torch.no_grad():
                 outputs = self._model(**inputs)
-
-            probs = torch.nn.functional.softmax(
+            scores = torch.nn.functional.softmax(
                 outputs.logits, dim=-1
-            ).numpy()[0]
-
-            # FinBERT labels: positive(0), negative(1), neutral(2)
-            positive = float(probs[0])
-            negative = float(probs[1])
-            neutral = float(probs[2])
-
-            return positive - negative
-        except Exception:
-            return None
-
-    def _keyword_sentiment(self, text):
-        """Keyword-based sentiment fallback."""
-        positive = [
-            'surge', 'rally', 'gain', 'profit', 'growth', 'beat',
-            'exceed', 'strong', 'bullish', 'upgrade', 'outperform',
-            'raise', 'buy', 'positive', 'record', 'high', 'soar',
-            'jump', 'climb', 'advance', 'recover', 'boost'
-        ]
-        negative = [
-            'decline', 'drop', 'loss', 'fall', 'crash', 'miss',
-            'weak', 'bearish', 'downgrade', 'sell', 'negative',
-            'concern', 'risk', 'fear', 'recession', 'low', 'slump',
-            'plunge', 'tumble', 'cut', 'reduce', 'warning'
-        ]
-
-        text_lower = text.lower()
-        pos_count = sum(1 for w in positive if w in text_lower)
-        neg_count = sum(1 for w in negative if w in text_lower)
-
-        total = pos_count + neg_count
-        if total == 0:
-            return 0.0
-        return (pos_count - neg_count) / total
-
-    def _trade(self):
-        """Execute trade based on aggregated sentiment."""
-        if self._target_symbol is None:
-            return
-        if len(self._sentiment_scores) < 3:
+            ).numpy()
+        except Exception as e:
+            self._fail("tokenizer + inference", e)
             return
 
-        # Average recent sentiment
-        recent = self._sentiment_scores[-self._sentiment_window:]
-        avg_sentiment = float(np.mean(recent))
-
-        self.plot('FinBERT', 'Average Sentiment', avg_sentiment)
-        self.plot(
-            'FinBERT', 'Articles Processed',
-            self._articles_processed
+        self.log(
+            f"{self.time:%Y-%m-%d} : {len(article_text)} articles, "
+            f"cible {security.symbol.value}, "
+            f"probas moyennes {scores.mean(axis=0).round(3)}"
         )
 
-        # Trading logic
-        if avg_sentiment > self._sentiment_threshold:
-            self.set_holdings(self._target_symbol, 1.0)
-        elif avg_sentiment < -self._sentiment_threshold:
-            self.liquidate(self._target_symbol)
+        try:
+            scores = self._aggregate_sentiment_scores(scores)
+        except Exception as e:
+            self._fail("aggregate", e)
+            return
+
+        self.plot("Sentiment Probability", "Negative", scores[0])
+        self.plot("Sentiment Probability", "Neutral", scores[1])
+        self.plot("Sentiment Probability", "Positive", scores[2])
+
+        try:
+            weight = 1 if scores[2] > scores[0] else -0.25
+            self.set_holdings(security.symbol, weight, True)
+            self._last_rebalance_time = self.time
+        except Exception as e:
+            self._fail("set_holdings", e)
+
+    def _aggregate_sentiment_scores(self, sentiment_scores):
+        n = sentiment_scores.shape[0]
+        weights = np.exp(np.linspace(0, 1, n))
+        weights /= weights.sum()
+        weighted_scores = sentiment_scores * weights[:, np.newaxis]
+        return weighted_scores.sum(axis=0)
+
+    def on_end_of_algorithm(self):
+        if self._stage_fails:
+            summary = " | ".join(
+                f"{stage}: {message}" for stage, message in self._stage_fails
+            )
+            self.log(f"Ex19 : {len(self._stage_fails)} etage(s) en echec -> {summary}")
+        else:
+            self.log("Ex19 : aucun etage en echec sur la fenetre.")

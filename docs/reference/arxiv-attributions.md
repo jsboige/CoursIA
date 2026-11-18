@@ -1,5 +1,7 @@
 # Registre des attributions arXiv — convention et maintenance
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Issue #12853 (acceptance 9.4), parent EPIC #11168 (vérification des citations arXiv). Ce document fixe la convention du registre `arxiv_attributions_registry.yaml` et son organe CI.
 
 ## Le problème traité
@@ -33,5 +35,5 @@ Le `paths:` du workflow énumère les notebooks enregistrés. Un ajout d'entrée
 ## Historique
 
 - Passes 1-4 (2026-08) : 6 IDs corrigés sur 16 notebooks (#12824, #12832, #12838 + passe 4 no-op).
-- #12900 (fermée) → registre régénéré mécaniquement #12941 ; le guard a attrapé son propre drift sur #13349 (`rl_6c` cell 27).
+- #12900 (fermée) → registre régénéré mécaniquement #12941 ; le guard a attrapé son propre drift sur #13349 (`RL-06c` cell 27).
 - Workflow + ce document : clôture acceptance 9.3/9.4 de #12853.

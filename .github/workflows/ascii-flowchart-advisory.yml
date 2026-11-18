@@ -5,7 +5,7 @@ name: ASCII-flowchart detector (advisory)
 # rendering is the canonical SOTA replacement (Prong-A complement, scope =
 # flowcharts, sibling of #3801 which targets bar charts).
 #
-# Founding case: SW-12-Python-GraphRAG.ipynb cell ## 2. Architecture d'un
+# Founding case: SW-12-GraphRAG-Python.ipynb cell ## 2. Architecture d'un
 # pipeline GraphRAG (l.208, preserved by PR #11906 byte-identique) :
 #
 #   Textes bruts                   Graphe de connaissances

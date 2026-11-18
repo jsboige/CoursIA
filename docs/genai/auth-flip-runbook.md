@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-03
+
 # Runbook — Flip d'authentification des services exposés (#16 P2)
 
 **Issue** : #16 — Sécurisation des services IA exposés.
@@ -16,11 +18,11 @@ Claudish + Qdrant restent à exécuter.
 seul des 3 dont le compose est **dans CoursIA** (`docker-configurations/services/tts-multi/`)
 → flip exécutable par un worker via le flux canonical `master.env` + `render_envs.py`.
 
-> Référence d'analyse : [service-security-audit.md](service-security-audit.md)
+> Référence d'analyse : [2026-06-14-genai-service-security-audit.md](../transients/2026-06-14-genai-service-security-audit.md)
 > (bindings, blast-radius, mécanisme d'auth disponible). Ce runbook en est la
 > déclinaison opérationnelle, vérifiée contre le code source.
 
----
+***
 
 ## 0. Faits vérifiés contre le code source (SDDD, 2026-06-14)
 
@@ -32,7 +34,7 @@ d'env + redémarrer**, sans développement, **réversible**.
 | `claudish-proxy` :3000 | `D:\Dev\claudish\docker-compose.yml` | `CLAUDISH_PROXY_KEY` (→ champ config `proxyKey`) | oui (vider + restart) |
 | `myia-qdrant` :6333-6334 | `D:\Dev\roo-extensions\docker\docker-compose.yml` | `QDRANT__SERVICE__API_KEY` (native Qdrant, **double `_`**) | oui (idem) |
 
----
+***
 
 ## Phase 1 — Claudish (d'abord, blast plus contenu)
 
@@ -48,7 +50,7 @@ d'env + redémarrer**, sans développement, **réversible**.
 
 ### Pre-flight (à compléter avant le flip)
 
-1. **Énumérer les consommateurs claudish** : qui appelle `:3000` en POST non-anthropic ? (agents Roo/Claude du cluster en proxy LLM). Lister les clients à qui propager la clé.
+1. **Énumérer les consommateurs claudish** : qui appelle `:3000` en POST non-anthropic ? (agents Roo/Claude du cluster en proxy LLM). Lister les clients à qui propager la clé. Pour les **carnets notebooks**, l'énumération est mesurée et tenue dans [claudish-consumer-perimeter.md](claudish-consumer-perimeter.md) — la reprendre de là, ne pas la refaire à la main (c'est cette reprise manuelle qui l'avait fait dériver).
 2. **Générer une clé forte** (≥32 chars aléatoires). Rotation indépendante de Qdrant.
 
 ### Procédure de flip (sur `po-2023`, manuel)
@@ -90,7 +92,7 @@ Vider `CLAUDISH_PROXY_KEY=` dans `D:\Dev\claudish\.env` + `docker compose ... up
 → `proxyKey` vide → middleware non monté → retour à l'état ouvert. Aucune donnée
 perdue.
 
----
+***
 
 ## Phase 2 — Qdrant (après validation Claudish, blast cluster-wide)
 
@@ -148,7 +150,7 @@ Vider `QDRANT__SERVICE__API_KEY=` dans `D:\Dev\roo-extensions\docker\.env` +
 `docker compose ... up -d myia-qdrant` → retour no-auth. Les clés client propagées
 deviennent noop. Aucune collection perdue (Qdrant garde ses données).
 
----
+***
 
 ## Ordre recommandé
 
@@ -161,7 +163,7 @@ deviennent noop. Aucune collection perdue (Qdrant garde ses données).
    priorité de sécurité la plus haute une fois deblocked). Exécutable dès merge
    #4566.
 
----
+***
 
 ## Phase 3 — tts-gateway (deblocked 2026-06-28, compose dans CoursIA)
 
@@ -278,7 +280,7 @@ Vider `TTS_GATEWAY_API_KEY=` dans `master.env` + `render_envs.py` +
 > aussi qu'un consommateur externe non-mis-à-jour casserait immédiatement — d'où la
 > vérification blast-radius ci-dessus (GenAI-only, tous key-aware).
 
----
+***
 
 ## Durcissement futur (P3, basse priorité)
 

@@ -1,0 +1,78 @@
+NOTICE — CoursIA `data/academic/MAFALDA/`
+==============================================================================
+
+Ce répertoire est une copie verbatim de deux fichiers du dépôt amont MAFALDA
+au commit épinglé **0df434477b914a20f55c0592ba05a53fe924c65b** (acquis le
+2026-10-10, tranche C de l'issue #17578, EPIC #10355 — critères c.6073752732).
+
+Dépôt source      : https://github.com/ChadiHelwe/MAFALDA
+Fichiers sources  : `datasets/gold_standard_dataset.jsonl` (200 lignes)
+                    `datasets/user_study_examples_with_labels.jsonl` (20 lignes)
+
+Empreintes (mesurées à l'acquisition, identiques à l'amont au commit épinglé) :
+
+  Fichier                                SHA1 (blob git)                SHA-256
+  gold_standard_dataset.jsonl            815be42647e5c7fde3656d1d...    f714d58e7a21a66d63bc03ead98f376e2d9ab7a35d3f847d92ac1c2e0179004d
+  user_study_examples_with_labels.jsonl  90289f00fa49965ba38df65d...    88928bfb2ffc1e32882f5be404286206451a9feabcb17501a7a0dd52c8827fd3
+
+Les SHA1 de blob complets et les tailles exactes vivent dans `manifest.json`
+à côté de ce NOTICE.
+
+Licence amont — support : le papier, jamais un fichier inexistant
+-----------------------------------------------------------------
+
+Le dépôt amont ne porte AUCUN fichier `LICENSE` et son README ne mentionne
+aucune licence (mesuré par API GitHub le 2026-10-09, lane po-2026,
+c.6073752732 ; re-mesuré le 2026-10-10 par la lane po-2025). La licence des
+données est déclarée par les auteurs dans le papier :
+
+  Helwe, Calamai, Paris, Clavel, Suchanek — « MAFALDA: A Benchmark and
+  Comprehensive Study of Fallacy Detection and Classification », NAACL 2024,
+  arXiv:2311.09761 : « All our code and data are publicly available under a
+  CC-BY-SA license ».
+
+Corroboration mesurée le 2026-10-10 : la fiche arXiv 2311.09761 porte
+elle-même un lien de licence « view license » pointant CC BY-SA 4.0.
+
+Conséquence (ShareAlike, critère 4 de la tranche C)
+---------------------------------------------------
+
+Toute dérivée committée dans CoursIA construite sur ces données (tables
+d'alignement taxonomique, splits, extraits) est distribuée sous la même
+marque **CC-BY-SA**, attribution conservée :
+
+  © Helwe et al. 2024 — CC BY-SA 4.0 (déclaration papier NAACL 2024,
+  arXiv:2311.09761).
+
+Périmètre de la copie (critère 3 : ce qui est pris, ce qui ne l'est pas)
+-----------------------------------------------------------------------
+
+Pris verbatim : les deux fichiers ci-dessus — les seuls fichiers annotés du
+dépôt qui servent l'alignement taxonomique académique ↔ Argumentum.
+
+Non pris :
+  - `datasets/non_annotated_dataset.jsonl` (5,7 Mo, textes sources sans
+    étiquettes — hors besoin de l'alignement) ;
+  - `datasets/users_results/` (résultats de l'étude utilisateur) ;
+  - `datasets/user_study_examples_without_labels.jsonl` (variante non
+    étiquetée d'un fichier pris) ;
+  - `MAFALDA_Annotation_Guidelines.pdf` — déposé au gisement bibliographique
+    GDrive partagé avec le papier (règle bibliography-hygiene), jamais
+    committé.
+
+Copie verbatim
+--------------
+
+Identique octet pour octet à l'amont : LF purs (0 CRLF), UTF-8 sans BOM,
+ASCII pur. La règle `-text` du `.gitattributes` racine (entrée dédiée)
+empêche git de normaliser les fins de ligne : le blob stocké reste égal au
+blob amont, vérifiable par `git ls-files -s` contre les SHA1 ci-dessus.
+
+Resynchronisation
+-----------------
+
+Re-télécharger depuis le dépôt amont au nouveau commit
+(`https://raw.githubusercontent.com/ChadiHelwe/MAFALDA/<commit>/datasets/<fichier>`),
+vérifier les empreintes, puis mettre à jour le commit épinglé dans ce NOTICE
+et dans `manifest.json`. Ne jamais éditer les `.jsonl` à la main : la copie
+cesserait d'être verbatim et l'empreinte ne correspondrait plus.

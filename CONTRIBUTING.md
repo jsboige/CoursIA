@@ -18,6 +18,8 @@ Une Pull Request associée est facultative, mais toujours bienvenue. Une issue b
 
 Vous pouvez aussi résoudre un exercice proposé dans un notebook et soumettre votre correction par Pull Request. Indiquez précisément le notebook et l'exercice concernés, puis fournissez une solution exécutable accompagnée d'une courte explication du raisonnement.
 
+Première fois sur GitHub ? Suivez le [tutoriel pas à pas](docs/TUTORIEL-GITHUB-TP.md) : parcours de base 100 % navigateur (compte, fork, branche, notebook, dépôt, Pull Request), sans ligne de commande — avec une variante locale dans VS Code (extensions Jupyter ou Polyglot Notebooks).
+
 Après validation :
 
 1. la correction devient un **exemple guidé** dans le notebook ;

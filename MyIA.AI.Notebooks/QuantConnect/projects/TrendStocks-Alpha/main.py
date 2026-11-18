@@ -1,7 +1,7 @@
 # region imports
 from AlgorithmImports import *
 from alpha_models import TrendStocksAlpha
-from portfolio_construction import MultiStrategyPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 # endregion
 
 
@@ -29,9 +29,10 @@ class TrendStocksAlphaAlgorithm(QCAlgorithm):
 
         self.set_alpha(TrendStocksAlpha(tickers, ema_fast=20, ema_slow=50, sma_trend=200))
 
-        self.set_portfolio_construction(MultiStrategyPCM(
+        self.set_portfolio_construction(MultiStrategyPouchesPCM(
             alpha_allocations={"TrendStocks": 1.0},
-            rebalance=timedelta(days=7)
+            rebalance=timedelta(days=7),
+            additive=False  # poche unique : _weights_by_source, identique a la copie locale
         ))
 
         self.set_risk_management(NullRiskManagementModel())

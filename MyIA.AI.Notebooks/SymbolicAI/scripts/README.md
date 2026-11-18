@@ -35,7 +35,7 @@ python extract_notebook_content.py
 
 - Scan récursif des notebooks SymbolicAI
 - Extraction du kernel et statistiques de cellules
-- Génération de previews (3 lignes / 200 caractères max par cellule)
+- Génération de previews (limites de lignes et de caractères par cellule définies dans le script)
 - Sortie utilisable pour rédaction/mise à jour de README
 
 ## Maintenance

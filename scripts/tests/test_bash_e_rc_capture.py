@@ -35,10 +35,19 @@ WORKFLOW = (
     / "workflows"
     / "always-on-guards.yml"
 )
+# #22331 -- les trois helpers bloquants de body ont quitte le workflow de
+# contenu pour le script partage `always_on_body_organs.sh` (appele par
+# `always-on-guards-body.yml`). La garde statique porte donc sur les
+# PORTEURS : chaque invocation trouvee est verifiee dans le fichier qui la
+# porte, et une invocation qui disparaitrait des deux est toujours vue.
+BODY_ORGANS_SCRIPT = (
+    Path(__file__).resolve().parents[2] / "scripts" / "ci" / "always_on_body_organs.sh"
+)
+CARRIERS = (WORKFLOW, BODY_ORGANS_SCRIPT)
 
-# The three BLOCKING helpers formerly of variation-tag-guard.yml, now steps
-# of always-on-guards.yml (#13384). Each must pair its invocation with
-# `&& RC=0 || RC=$?`.
+# The three BLOCKING helpers formerly of variation-tag-guard.yml, then steps
+# of always-on-guards.yml (#13384), now calls of the shared body-organs
+# script (#22331). Each must pair its invocation with `&& RC=0 || RC=$?`.
 BLOCKING_HELPERS = [
     "python3 scripts/ci/variation_tag_required.py",
     "python3 scripts/ci/variation_prev_guard.py",
@@ -99,11 +108,15 @@ def test_naive_or_rc_alone_is_unbound_under_set_u():
 
 
 def test_workflow_uses_the_idiom_and_has_no_buggy_pattern():
-    """Static guard on the YAML: the `; RC=$?` pattern is banned and each
-    blocking helper invocation pairs with `&& RC=0 || RC=$?`."""
-    yaml = WORKFLOW.read_text(encoding="utf-8")
-    assert "; RC=$?" not in yaml
+    """Static guard on the CARRIERS: the `; RC=$?` pattern is banned
+    everywhere, and each blocking helper invocation pairs with
+    `&& RC=0 || RC=$?` in the file that carries it (#22331)."""
+    texts = {p.name: p.read_text(encoding="utf-8") for p in CARRIERS}
+    for name, text in texts.items():
+        assert "; RC=$?" not in text, f"motif buggy dans {name}"
     for invocation in BLOCKING_HELPERS:
-        assert invocation in yaml
-        idx = yaml.index(invocation)
-        assert "&& RC=0 || RC=$?" in yaml[idx : idx + 800]
+        carriers = [t for t in texts.values() if invocation in t]
+        assert carriers, f"{invocation} introuvable dans les porteurs"
+        for text in carriers:
+            idx = text.index(invocation)
+            assert "&& RC=0 || RC=$?" in text[idx : idx + 800], invocation

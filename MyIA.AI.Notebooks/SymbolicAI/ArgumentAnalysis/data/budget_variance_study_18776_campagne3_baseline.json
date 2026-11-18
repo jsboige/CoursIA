@@ -1,0 +1,239 @@
+{
+  "issue": 18776,
+  "started_at": "2026-10-26T19:11:03.777042",
+  "model_id": "gpt-4o-mini",
+  "configs": {
+    "baseline": {
+      "runner_kwargs": {},
+      "runs": [
+        {
+          "config": "baseline",
+          "seed": 0,
+          "runner_kwargs": {},
+          "resolved_model_id": "gpt-4o-mini",
+          "started_at": "2026-10-26T19:11:03.786872",
+          "duration_s": 80.9,
+          "phases": [
+            {
+              "name": "informal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "formal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "synthesis",
+              "turns": 3,
+              "status": "completed"
+            }
+          ],
+          "total_turns": 13,
+          "total_arguments": 2,
+          "substantive_arguments": 0,
+          "total_fallacies": 3,
+          "substantive_fallacies": 3,
+          "belief_sets": 2,
+          "total_queries": 4,
+          "meaningful_queries": 0,
+          "has_conclusion": true,
+          "validation_status": "INVALIDATED_FORM",
+          "confidence_score": 0.57,
+          "failed_reason": "ARGUMENTS_FORM_ONLY"
+        },
+        {
+          "config": "baseline",
+          "seed": 1,
+          "runner_kwargs": {},
+          "resolved_model_id": "gpt-4o-mini",
+          "started_at": "2026-10-26T19:12:27.671876",
+          "duration_s": 96.5,
+          "phases": [
+            {
+              "name": "informal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "formal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "synthesis",
+              "turns": 3,
+              "status": "completed"
+            }
+          ],
+          "total_turns": 13,
+          "total_arguments": 19,
+          "substantive_arguments": 19,
+          "total_fallacies": 3,
+          "substantive_fallacies": 3,
+          "belief_sets": 1,
+          "total_queries": 1,
+          "meaningful_queries": 0,
+          "has_conclusion": true,
+          "validation_status": "PARTIAL_VALIDATED",
+          "confidence_score": 0.71,
+          "failed_reason": "QUERIES_NOT_MEANINGFUL"
+        },
+        {
+          "config": "baseline",
+          "seed": 7,
+          "runner_kwargs": {},
+          "resolved_model_id": "gpt-4o-mini",
+          "started_at": "2026-10-26T19:14:04.218090",
+          "duration_s": 82.2,
+          "phases": [
+            {
+              "name": "informal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "formal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "synthesis",
+              "turns": 3,
+              "status": "completed"
+            }
+          ],
+          "total_turns": 13,
+          "total_arguments": 2,
+          "substantive_arguments": 0,
+          "total_fallacies": 3,
+          "substantive_fallacies": 3,
+          "belief_sets": 1,
+          "total_queries": 1,
+          "meaningful_queries": 0,
+          "has_conclusion": true,
+          "validation_status": "INVALIDATED_FORM",
+          "confidence_score": 0.57,
+          "failed_reason": "ARGUMENTS_FORM_ONLY"
+        },
+        {
+          "config": "baseline",
+          "seed": 42,
+          "runner_kwargs": {},
+          "resolved_model_id": "gpt-4o-mini",
+          "started_at": "2026-10-26T19:15:26.440820",
+          "duration_s": 88.6,
+          "phases": [
+            {
+              "name": "informal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "formal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "synthesis",
+              "turns": 3,
+              "status": "completed"
+            }
+          ],
+          "total_turns": 13,
+          "total_arguments": 6,
+          "substantive_arguments": 0,
+          "total_fallacies": 3,
+          "substantive_fallacies": 3,
+          "belief_sets": 8,
+          "total_queries": 0,
+          "meaningful_queries": 0,
+          "has_conclusion": true,
+          "validation_status": "INVALIDATED_FORM",
+          "confidence_score": 0.43,
+          "failed_reason": "ARGUMENTS_FORM_ONLY"
+        },
+        {
+          "config": "baseline",
+          "seed": 99,
+          "runner_kwargs": {},
+          "resolved_model_id": "gpt-4o-mini",
+          "started_at": "2026-10-26T19:16:55.034685",
+          "duration_s": 83.7,
+          "phases": [
+            {
+              "name": "informal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "formal",
+              "turns": 5,
+              "status": "completed"
+            },
+            {
+              "name": "synthesis",
+              "turns": 3,
+              "status": "completed"
+            }
+          ],
+          "total_turns": 13,
+          "total_arguments": 2,
+          "substantive_arguments": 0,
+          "total_fallacies": 4,
+          "substantive_fallacies": 4,
+          "belief_sets": 1,
+          "total_queries": 1,
+          "meaningful_queries": 0,
+          "has_conclusion": true,
+          "validation_status": "INVALIDATED_FORM",
+          "confidence_score": 0.57,
+          "failed_reason": "ARGUMENTS_FORM_ONLY"
+        }
+      ],
+      "summary": {
+        "runs_total": 5,
+        "runs_ok": 5,
+        "runs_error": 0,
+        "verdict_forms_unique": [
+          "INVALIDATED_FORM",
+          "PARTIAL_VALIDATED"
+        ],
+        "verdict_forms_distribution": {
+          "INVALIDATED_FORM": 4,
+          "PARTIAL_VALIDATED": 1
+        },
+        "failed_reasons_distribution": {
+          "ARGUMENTS_FORM_ONLY": 4,
+          "QUERIES_NOT_MEANINGFUL": 1
+        },
+        "substantive_arguments": {
+          "min": 0,
+          "max": 19,
+          "mean": 3.8,
+          "stdev": 7.6
+        },
+        "substantive_fallacies": {
+          "min": 3,
+          "max": 4,
+          "mean": 3.2,
+          "stdev": 0.4
+        },
+        "total_turns": {
+          "min": 13,
+          "max": 13,
+          "mean": 13,
+          "stdev": 0.0
+        },
+        "duration_s": {
+          "min": 80.9,
+          "max": 96.5,
+          "mean": 86.38,
+          "stdev": 5.69
+        }
+      }
+    }
+  },
+  "finished_at": "2026-10-26T19:18:18.739374"
+}

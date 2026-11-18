@@ -1,0 +1,7 @@
+date: '2026-11-10'
+by: myia-po-2025:CoursIA-2
+reason: 'Le C# explique désormais les espaces atteignables et leur parité ; le Python conserve ses expériences et extrapolations propres. Code et sorties C# inchangés.'
+python_sha: bde4cf18da7a94fb26685dce6dbd548d7613c790
+csharp_sha: 5b5b1c5f5223668bee8b5bbf75e0d5be52304f7e
+content_python_sha: 8b5a8e02c59a0c0b13e3c4f84bdfb6decae10bfa467c4ae9e31aa15f7f041226
+content_csharp_sha: 20ba8536a810f46fe5239bf07fc8129a95adecb7517dad456254260b7ca1498e

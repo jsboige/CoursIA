@@ -1,0 +1,15 @@
+date: '2026-10-21'
+by: myia-po-2024:CoursIA-2
+reason: 'PR #21662 (#20327) : le cote Python de la paire a change -- les copies inline de
+  run_tournament / compute_payoff_matrix sont alignees sur le contrat clone() de la classe
+  Strategy (3 sites type(s)() -> s.clone()), l''indice pedagogique de la cellule 17 suit.
+  Audit firsthand du carnet Python au head 330766faf : meme plan, meme socle theorique
+  (IPD, tournoi d''Axelrod, strategies classiques, processus de Moran), sorties issues des
+  cellules re-executees. Le cote C# est inchange (csharp_sha aed25022 identique a l''audit
+  0027) et n''implemente pas ces helpers en parallele : aucune divergence nouvelle, niveau
+  de parite `semantic` preserve. Aucune normalisation outillee n''a ete appliquee apres
+  cet audit.'
+python_sha: 7c21beb53abc24a2387c7608579bedff246a1f41
+csharp_sha: aed250229ab5503d5939eedae397307807c21c9c
+content_python_sha: c9af34a2840f4f0736079fc9545ccc103ef6acd3d22dad02f12d017f1543d58e
+content_csharp_sha: 896d0a9659dd54cff895d1f7632baac528566196de594ed03063f20adc1216fe

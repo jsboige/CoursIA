@@ -34,7 +34,7 @@ from realized_garch import (
 from realized_variance import daily_realized_variance, realized_variance_to_log
 from har_model import HARModel, walk_forward_har
 from intraday_loader import hourly_log_returns, load_bitstamp_btc, load_binance_eth, load_yf_intraday
-from diebold_mariano import diebold_mariano_test
+from dm_test import diebold_mariano_test
 
 SEEDS = [0, 1, 7, 42]
 HORIZONS = [1, 5, 10]
@@ -222,8 +222,8 @@ def run_one_combo(
     har_mse = float(np.mean(har_err_aligned ** 2))
     mse_red_pct = (har_mse - rg_mse) / har_mse * 100.0 if har_mse > 0 else 0.0
 
-    dm = diebold_mariano_test(rg_err_aligned, har_err_aligned, h=horizon)
-    verdict = classify_combo(dm["dm_stat"], dm["p_value"])
+    dm = diebold_mariano_test(rg_err_aligned, har_err_aligned, horizon=horizon)
+    verdict = classify_combo(dm.dm_statistic, dm.p_value)
 
     return {
         "coin": coin,
@@ -234,8 +234,8 @@ def run_one_combo(
         "rg_mse": rg_mse,
         "har_mse": har_mse,
         "mse_red_pct": round(mse_red_pct, 2),
-        "dm_stat": round(dm["dm_stat"], 4),
-        "dm_pvalue": round(dm["p_value"], 6),
+        "dm_stat": round(dm.dm_statistic, 4),
+        "dm_pvalue": round(dm.p_value, 6),
         "verdict": verdict,
     }
 

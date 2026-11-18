@@ -24,6 +24,23 @@ import numpy as np
 from .coalition_games import CoalitionGame
 
 
+def _legacy_rng(seed: Optional[int]) -> np.random.RandomState:
+    """Generateur local, reproductible, sans effet de bord sur l'etat global NumPy.
+
+    L'etat aleatoire global appartient au carnet, pas a la fonction : une fonction qui
+    re-amorce le generateur global re-demarre la sequence de tout ce qui suit, si bien
+    qu'une seconde experience stochastique devient reproductible de maniere surdeterminee
+    (et correlee entre carnets partageant la meme graine). Voir #20308.
+
+    ``RandomState`` plutot que ``default_rng`` : c'est le choix qui preserve le
+    comportement. ``RandomState(seed)`` reproduit *exactement* le flux du generateur
+    global historique (amorcage par graine, puis tirage de permutation), donc les carnets
+    consommateurs qui passent une graine gardent leurs sorties commitees valides.
+    ``default_rng`` (PCG64) produirait d'autres permutations et invaliderait ces sorties.
+    """
+    return np.random.RandomState(seed)
+
+
 def marginal_contribution(
     game: CoalitionGame,
     player: int,
@@ -127,7 +144,8 @@ def shapley_value_monte_carlo(
     Args:
         game: The cooperative game
         n_samples: Number of random permutations to sample
-        seed: Random seed for reproducibility
+        seed: Local random seed for reproducibility; the global NumPy random state is
+            left untouched (#20308)
 
     Returns:
         Array of approximate Shapley values
@@ -138,14 +156,13 @@ def shapley_value_monte_carlo(
     """
     if n_samples <= 0:
         raise ValueError(f"n_samples must be positive, got {n_samples}")
-    if seed is not None:
-        np.random.seed(seed)
+    rng = _legacy_rng(seed)
 
     n = game.n_players
     shapley = np.zeros(n)
 
     for _ in range(n_samples):
-        perm = np.random.permutation(n)
+        perm = rng.permutation(n)
         coalition = set()
         for i in perm:
             mc = game.value(coalition | {i}) - game.value(coalition)
@@ -166,21 +183,20 @@ def shapley_value_with_variance(
     Args:
         game: The cooperative game
         n_samples: Number of samples
-        seed: Random seed
+        seed: Local random seed; the global NumPy random state is left untouched (#20308)
 
     Returns:
         Tuple of (shapley_values, standard_errors)
     """
     if n_samples <= 0:
         raise ValueError(f"n_samples must be positive, got {n_samples}")
-    if seed is not None:
-        np.random.seed(seed)
+    rng = _legacy_rng(seed)
 
     n = game.n_players
     contributions = np.zeros((n_samples, n))
 
     for sample_idx in range(n_samples):
-        perm = np.random.permutation(n)
+        perm = rng.permutation(n)
         coalition = set()
         for i in perm:
             mc = game.value(coalition | {i}) - game.value(coalition)

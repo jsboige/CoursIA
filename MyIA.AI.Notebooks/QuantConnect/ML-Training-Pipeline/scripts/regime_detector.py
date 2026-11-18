@@ -36,6 +36,7 @@ def detect_regimes_price(
     volatility_percentile: float = 75,
     black_swan_drawdown: float = -0.20,
     black_swan_window: int = 30,
+    causal_threshold: bool = True,
 ) -> pd.Series:
     """Classify each date into a market regime using price statistics.
 
@@ -57,6 +58,36 @@ def detect_regimes_price(
         Drawdown threshold for black swan (e.g. -0.20 = -20%).
     black_swan_window : int
         Window for drawdown calculation.
+    causal_threshold : bool, default True
+        When True (default, fix #21054 v2), the volatility threshold at
+        index t is the *expanding* quantile of ``rolling_std``
+        computed from indices ``[0, t)`` only — i.e. the threshold at
+        t is the rolling_std-percentile over the **strict past**, with
+        a ``.shift(1)`` so that the value used to classify t does not
+        depend on rolling_std[t] itself. This is the strict
+        ``known at t-1`` contract required for live and walk-forward
+        use.
+
+        Warmup: ``returns = prices.pct_change()`` is NaN at index 0
+        (no previous price), so the ``rolling(L).std()`` of returns
+        needs ``L`` non-NaN return values, which means ``L + 1``
+        price observations. Its first non-NaN output is at index
+        ``L`` (e.g. ``L=30`` -> first valid at index 30, since
+        ``returns[1..30]`` are 30 non-NaN values and ``rolling(30)``
+        emits at the right edge). ``expanding(min_periods=L)`` then
+        needs ``L`` non-NaN ``rolling_std`` values, so the first
+        non-NaN output of the expanding quantile lands at index
+        ``2L - 1`` (e.g. ``L=30`` -> first valid at index 59). The
+        ``.shift(1)`` adds one more index of latency, so the first
+        usable threshold lands at index ``2L`` (e.g. ``L=30`` ->
+        first usable at index 60). Before that, the threshold is
+        NaN and the volatility regime is unreachable by
+        construction (NaN-comparison yields False).
+
+        When False, the threshold is the *global* non-causal
+        ``rolling_std.quantile(...)`` over the whole series; kept for
+        backtesting/reproducibility against the pre-fix behaviour
+        (#21054) but not for live or walk-forward use.
 
     Returns
     -------
@@ -67,7 +98,25 @@ def detect_regimes_price(
 
     rolling_return = prices.pct_change(lookback_days)
     rolling_std = returns.rolling(lookback_days).std() * np.sqrt(252)
-    vol_threshold = rolling_std.quantile(volatility_percentile / 100)
+    if causal_threshold:
+        # Causal (strict t-1): the threshold at t is the expanding
+        # quantile of rolling_std over [0, t), then .shift(1) so the
+        # value at index t is the quantile of [0, t-1] (true
+        # known-at-t-1 contract). Without the shift, the expanding
+        # quantile at t would include rolling_std[t] itself, which is
+        # a 1-step look-ahead flagged by the adjoint (#21111 v2).
+        # First usable threshold at index 2*lookback_days
+        # (rolling_std first valid at L, expanding needs L non-NaN
+        # so first output at 2L-1, shift pushes to 2L).
+        vol_threshold = (
+            rolling_std.expanding(min_periods=lookback_days)
+            .quantile(volatility_percentile / 100)
+            .shift(1)
+        )
+    else:
+        # Non-causal (legacy, pre-#21054): global quantile, includes
+        # future observations. Reproducibility / tests only.
+        vol_threshold = rolling_std.quantile(volatility_percentile / 100)
 
     rolling_max = prices.rolling(black_swan_window, min_periods=1).max()
     drawdown = (prices - rolling_max) / rolling_max
@@ -110,12 +159,22 @@ def detect_regimes_price(
 
 @dataclass
 class HMMRegimeResult:
-    """Result from HMM regime detection."""
-    labels: np.ndarray          # Integer state labels (0, 1, ..., n_states-1)
+    """Result from HMM regime detection.
+
+    ``labels`` convention depends on the producer: the retrospective
+    :func:`detect_regimes_hmm` returns raw state ids (``0 .. n_states-1``),
+    while the causal :func:`detect_regimes_hmm_causal` returns **canonical
+    slots** (``1 .. n_states``, ``1`` = bull … ``n_states`` = bear) and
+    reserves ``0`` for the rows where no regime could be established yet
+    (warmup). The causal convention is the one the pipeline consumers rely
+    on: ``labels > 0`` selects exactly the rows that carry a regime.
+    """
+    labels: np.ndarray          # Integer labels (see the class docstring)
     regime_names: list[str]     # Human-readable regime names per state
     log_likelihood: float       # Final log-likelihood
     n_states: int               # Number of HMM states
     transition_matrix: np.ndarray  # State transition probabilities
+    decode_mode: str = "viterbi"   # Decoding scheme used ("viterbi" or "filter")
 
 
 class GaussianHMM:
@@ -245,23 +304,45 @@ class GaussianHMM:
         self.log_likelihood_ = ll
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        """Decode most likely state sequence via Viterbi.
+    def predict(self, X: np.ndarray, mode: str = "viterbi") -> np.ndarray:
+        """Decode most likely state sequence.
 
         Parameters
         ----------
         X : np.ndarray, shape (T, D)
             Observation matrix.
+        mode : {"viterbi", "filter"}, default "viterbi"
+            "viterbi": globally most likely path (Viterbi with backtracking
+            from the final observation). RETROSPECTIVE ONLY — the state
+            decoded at t depends on observations strictly after t, so a
+            Viterbi label is NOT known at t and leaks future information
+            into any walk-forward or live signal built on it (#21054).
+            Kept as the default for backward compatibility of historical
+            analyses; do not use for signal generation.
+            "filter": forward-only decoding — the state at t is the argmax
+            over states of the forward probability p(z_t | x_0..t), so it
+            is a function of observations up to t only. This is the causal
+            mode for signal use (Hamilton-style filtered probabilities,
+            argmax instead of sum-product smoothing).
 
         Returns
         -------
         np.ndarray of int, shape (T,)
             Most likely state sequence.
         """
+        if mode not in ("viterbi", "filter"):
+            raise ValueError(f"mode must be 'viterbi' or 'filter', got {mode!r}")
+        log_emit = self._log_emission(X)
+
+        if mode == "filter":
+            # Forward-only: alpha[t, k] = log p(z_t=k, x_0..t) up to a
+            # per-t constant, so argmax_k alpha[t] is the filtered state.
+            alpha = self._forward(log_emit)
+            return np.argmax(alpha, axis=1)
+
         T = len(X)
         K = self.n_states
         log_A = np.log(self.A + 1e-300)
-        log_emit = self._log_emission(X)
 
         viterbi = np.zeros((T, K))
         backptr = np.zeros((T, K), dtype=int)
@@ -280,11 +361,93 @@ class GaussianHMM:
         return states
 
 
+# ---------------------------------------------------------------------------
+# Causal regime detection (#21054) — shared building blocks
+# ---------------------------------------------------------------------------
+
+def _hmm_feature_matrix(close: np.ndarray) -> tuple[np.ndarray, int]:
+    """Feature matrix of the HMM engine, and the index of its first row.
+
+    The four columns are the daily log return, the 20-day rolling
+    volatility, the 60-day momentum and the volatility ratio (20d / 60d).
+
+    The rows are causal *by construction*: the row ``j`` only uses
+    observations up to the close of the day ``start + j + 1`` (the forward
+    return of that day is known at its close). Nothing here looks forward —
+    the look-ahead of the legacy path comes from the **fit** (the Baum-Welch
+    parameters are estimated on the whole window passed in) and from the
+    Viterbi backtracking, not from the features.
+
+    Parameters
+    ----------
+    close : np.ndarray
+        Price series (float).
+
+    Returns
+    -------
+    (X_raw, start) : the feature matrix and the index of its first row in
+    the price series.
+    """
+    ret = np.diff(np.log(close + 1e-10))
+    n = len(ret)
+    vol20 = np.array([ret[max(0, i - 19):i + 1].std() for i in range(n)])
+    vol60 = np.array([ret[max(0, i - 59):i + 1].std() for i in range(n)])
+    mom60 = np.array([(close[i + 1] / close[max(0, i - 58)] - 1) for i in range(n)])
+    vol_ratio = vol20 / (vol60 + 1e-9)
+
+    start = 60
+    X_raw = np.column_stack([ret[start:], vol20[start:], mom60[start:], vol_ratio[start:]])
+    return X_raw, start
+
+
+def _winsorize(
+    X: np.ndarray, bounds: list[tuple[float, float]] | None = None
+) -> tuple[np.ndarray, list[tuple[float, float]]]:
+    """MAD winsorization by column (4 x MAD around the median).
+
+    ``bounds`` lets a caller freeze the clipping bounds on a **training
+    window** and reuse them on a later block: computing the bounds on the
+    whole series would itself be a look-ahead (the median and the MAD of a
+    column depend on the future).
+    """
+    Xc = X.copy()
+    if bounds is None:
+        bounds = []
+        for col in range(Xc.shape[1]):
+            m = np.median(Xc[:, col])
+            mad = np.median(np.abs(Xc[:, col] - m)) * 1.4826
+            bounds.append((m - 4 * mad, m + 4 * mad))
+    for col, (lo, hi) in enumerate(bounds):
+        Xc[:, col] = np.clip(Xc[:, col], lo, hi)
+    return Xc, bounds
+
+
+def _forward_continue(
+    hmm: GaussianHMM, log_emit: np.ndarray, alpha_prev: np.ndarray
+) -> np.ndarray:
+    """Forward recursion continued from an already computed alpha row.
+
+    Same recursion as :meth:`GaussianHMM._forward`, but starting from the
+    filtered state of the previous window instead of ``hmm.pi`` — that is
+    what makes the decoded block a continuation of the training window and
+    not a fresh start.
+    """
+    T, K = log_emit.shape
+    log_A = np.log(hmm.A + 1e-300)
+    alpha = np.zeros((T, K))
+    for t in range(T):
+        prev = alpha_prev if t == 0 else alpha[t - 1]
+        for k in range(K):
+            alpha[t, k] = log_emit[t, k] + np.logaddexp.reduce(prev + log_A[:, k])
+    return alpha
+
+
 def detect_regimes_hmm(
     prices: pd.Series | np.ndarray,
     n_states: int = 3,
     lookback: int = 400,
     min_samples: int = 80,
+    decode_mode: str = "viterbi",
 ) -> HMMRegimeResult:
     """Detect market regimes using Gaussian HMM on price features.
 
@@ -309,10 +472,34 @@ def detect_regimes_hmm(
         Maximum history to use for feature computation.
     min_samples : int
         Minimum samples required for fitting.
+    decode_mode : {"viterbi", "filter"}, default "viterbi"
+        Decoding scheme passed through to ``GaussianHMM.predict``.
+        CAUTION (#21054): ``"viterbi"`` (default, backward compatible) is
+        retrospective — the label at t depends on observations after t
+        via the end-backtracking, so it must not feed a walk-forward or
+        live signal. ``decode_mode="filter"`` removes that
+        backtracking, but it does **not** make the labels known-at-t:
+        the Baum-Welch fit estimates mu/sig/A/pi on the **whole window
+        passed in**, so those parameters see the future and past labels
+        move when the window grows. Probed on the built dataset
+        builder's own check (issue #21054, 2026-11-04): decoding the
+        same 400-day prefix with a 400-point fit vs an 800-point fit,
+        the number of identical labels varies with the (unseeded) fit
+        draw — across 30 re-runs (review re-verification, 2026-11-06)
+        it ranges from 73/400 to 392/400, mean 282. The count is a
+        probe reading, not a bound; the conclusion it supports is that
+        the parameters, not the decode, carry the remaining dependence.
+
+        The known-at-t contract therefore requires the fit to happen
+        **inside each fold** (sliding fit). ``build_dataset_v2`` records
+        this honestly in its manifest as
+        ``regime_hmm_decode_forward_only`` plus a ``lookahead_note``;
+        do not grant a stronger guarantee here than the builder does.
 
     Returns
     -------
-    HMMRegimeResult with labels, regime_names, and metadata.
+    HMMRegimeResult with labels, regime_names, and metadata
+    (``decode_mode`` echoes the scheme used).
     """
     original_prices = pd.Series(prices).reset_index(drop=True)
     original_len = len(original_prices)
@@ -331,25 +518,17 @@ def detect_regimes_hmm(
             log_likelihood=0.0,
             n_states=n_states,
             transition_matrix=np.eye(n_states),
+            decode_mode=decode_mode,
         )
 
-    vol20 = np.array([ret[max(0, i - 19):i + 1].std() for i in range(n)])
-    vol60 = np.array([ret[max(0, i - 59):i + 1].std() for i in range(n)])
-    mom60 = np.array([(close[i + 1] / close[max(0, i - 58)] - 1) for i in range(n)])
-    vol_ratio = vol20 / (vol60 + 1e-9)
-
-    start = 60
-    X_raw = np.column_stack([ret[start:], vol20[start:], mom60[start:], vol_ratio[start:]])
+    X_raw, start = _hmm_feature_matrix(close)
 
     # MAD winsorization
-    for col in range(X_raw.shape[1]):
-        m = np.median(X_raw[:, col])
-        mad = np.median(np.abs(X_raw[:, col] - m)) * 1.4826
-        X_raw[:, col] = np.clip(X_raw[:, col], m - 4 * mad, m + 4 * mad)
+    X_raw, _ = _winsorize(X_raw)
 
     hmm = GaussianHMM(n_states=n_states)
     hmm.fit(X_raw)
-    labels_raw = hmm.predict(X_raw)
+    labels_raw = hmm.predict(X_raw, mode=decode_mode)
 
     # Name states by mean return (column 0)
     state_means = []
@@ -381,6 +560,158 @@ def detect_regimes_hmm(
         log_likelihood=hmm.log_likelihood_,
         n_states=n_states,
         transition_matrix=hmm.A.copy(),
+        decode_mode=decode_mode,
+    )
+
+
+def detect_regimes_hmm_causal(
+    prices: pd.Series | np.ndarray,
+    n_states: int = 3,
+    lookback: int = 400,
+    min_samples: int = 80,
+    refit_every: int = 22,
+    min_train_rows: int = 60,
+) -> HMMRegimeResult:
+    """Causal regime labels: expanding refit + forward-only decode (#21054).
+
+    Contract
+    --------
+    The label returned at price index ``t`` is a function of the
+    observations up to the close of ``t`` **only**:
+
+    * the Gaussian HMM is refitted every ``refit_every`` rows on the
+      **expanding window of rows strictly before the current block** — the
+      parameters of a block never saw an observation of that block;
+    * the block is decoded **forward-only** (filtering), never by a Viterbi
+      backtracking from the end of the series;
+    * the MAD winsorization bounds are computed on the **training window**
+      and reused for the block (never on the whole series);
+    * the regimes are **named on the training window** (mean return of its
+      rows), so the label series stays comparable across folds. This is the
+      discipline of the keeper S3 — ``s3_hmm_regime._causal_regime_probabilities``
+      (expanding fit on ``[0, t)``, refit every ``REFIT_EVERY`` days, regimes
+      named on the training window), whose leaky twin
+      ``s3_hmm_regime._walk_forward_leaky`` is the reference witness of what
+      this function is meant to avoid.
+
+    What this does **not** claim: a regime label is a *model* decision, not
+    an observation. It is stable only up to the next refit, and the first
+    days stay unknown (label 0, the historical warm-up convention).
+
+    This is the path for labels that feed a walk-forward evaluation or a
+    live signal. The legacy :func:`detect_regimes_hmm` stays retrospective
+    by design (its docstring says so) and is kept for the historical
+    analyses that reproduce published numbers.
+
+    Parameters
+    ----------
+    prices : array-like
+        Daily price series.
+    n_states : int
+        Number of HMM states (default 3: bull/neutral/bear).
+    lookback : int
+        Maximum history used for the feature computation.
+    min_samples : int
+        Minimum number of returns required to attempt a detection.
+    refit_every : int
+        Number of rows decoded with one fit before the model is refitted on
+        the expanding window (default 22, the keeper S3 cadence).
+    min_train_rows : int
+        Number of rows of the first training window.
+
+    Returns
+    -------
+    HMMRegimeResult
+        ``labels`` are the **canonical slots** named on the training window:
+        ``1`` = bull, …, ``n_states`` = bear. The value ``0`` is reserved
+        for the rows where no regime can be established (the rows before the
+        first training window, and the feature warmup) — the convention the
+        pipeline consumers use, since ``labels > 0`` selects exactly the
+        rows that carry a regime. ``decode_mode`` echoes
+        ``"causal-expanding"``.
+    """
+    original_prices = pd.Series(prices).reset_index(drop=True)
+    original_len = len(original_prices)
+
+    prices = original_prices.iloc[-lookback:] if original_len > lookback else original_prices
+    offset = original_len - len(prices)
+
+    close = prices.values.astype(float)
+    ret = np.diff(np.log(close + 1e-10))
+    n = len(ret)
+
+    if n < min_samples:
+        return HMMRegimeResult(
+            labels=np.zeros(original_len, dtype=int),
+            regime_names=["unknown"] * n_states,
+            log_likelihood=0.0,
+            n_states=n_states,
+            transition_matrix=np.eye(n_states),
+            decode_mode="causal-expanding",
+        )
+
+    X_raw, start = _hmm_feature_matrix(close)
+    n_rows = len(X_raw)
+
+    row_labels = np.full(n_rows, -1, dtype=int)
+    last_hmm = None
+    last_ll = 0.0
+
+    train_end = max(int(min_train_rows), 1)
+    while train_end < n_rows:
+        block_end = min(train_end + int(refit_every), n_rows)
+        train, block = X_raw[:train_end], X_raw[train_end:block_end]
+
+        train_w, bounds = _winsorize(train)
+        hmm = GaussianHMM(n_states=n_states)
+        hmm.fit(train_w)
+
+        # Filtered state at the end of the training window (causal: the fit
+        # and the forward pass only saw the training rows).
+        log_emit_train = hmm._log_emission(train_w)
+        alpha_train = hmm._forward(log_emit_train)
+
+        # Forward-only decoding of the block, continued from that state.
+        block_w, _ = _winsorize(block, bounds)
+        alpha_block = _forward_continue(hmm, hmm._log_emission(block_w), alpha_train[-1])
+        raw_labels = np.argmax(alpha_block, axis=1)
+
+        # Canonical naming from the TRAINING window: the states are ranked by
+        # their mean return over the training rows, so slot 0 is the bull
+        # slot of that fold whatever the internal state index is.
+        train_labels = np.argmax(alpha_train, axis=1)
+        means = []
+        for k in range(n_states):
+            mask = train_labels == k
+            means.append(train_w[mask, 0].mean() if mask.sum() > 0 else -np.inf)
+        order = np.argsort(means)[::-1]
+        canonical = np.empty(n_states, dtype=int)
+        for rank, state in enumerate(order):
+            canonical[state] = rank
+        row_labels[train_end:block_end] = canonical[raw_labels]
+
+        last_hmm = hmm
+        last_ll = hmm.log_likelihood_
+        train_end = block_end
+
+    if n_states >= 3:
+        state_names = ["bull"] + ["neutral"] * (n_states - 2) + ["bear"]
+    elif n_states == 2:
+        state_names = ["bull", "bear"]
+    else:
+        state_names = ["neutral"] * n_states
+
+    full_labels = np.zeros(original_len, dtype=int)
+    # Canonical slots are 1-based; 0 means "no regime yet" (warmup).
+    full_labels[offset + start + 1:] = np.where(row_labels >= 0, row_labels + 1, 0)
+
+    return HMMRegimeResult(
+        labels=full_labels,
+        regime_names=state_names,
+        log_likelihood=last_ll,
+        n_states=n_states,
+        transition_matrix=last_hmm.A.copy() if last_hmm is not None else np.eye(n_states),
+        decode_mode="causal-expanding",
     )
 
 

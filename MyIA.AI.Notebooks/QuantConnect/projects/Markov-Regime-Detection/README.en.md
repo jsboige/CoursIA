@@ -17,7 +17,7 @@ The project consolidates QuantConnect research article [#19465](https://www.quan
 
 **Mechanism**: the same tool as the main regime (`MarkovRegression`, `k_regimes=2`) is fit on the trailing Fear & Greed history, and SPY exposure is **halved** when the SPY regime asks for risk but the index regime sits in its greedy state (the remainder stays in cash — never TLT, which would blend two regime signals). The greedy state is identified by its **higher fitted mean**, never by a hardcoded regime number, so a regime renumbering across fits cannot silently flip the filter.
 
-**Dataset**: `FearGreedIndex`, exposed by the `AlgorithmImports` wildcard (no explicit import), ticker `"FG"`. Availability probed on QC Cloud 2026-09-11: >= 2500 daily rows delivered through Dec 2025, coverage from July 2014, not gated.
+**Dataset**: `FearGreedIndex`, exposed by the `AlgorithmImports` wildcard (no explicit import), ticker `"FG"`. Availability probed on QC Cloud 2026-09-11: daily history delivered through Dec 2025, coverage from July 2014, not gated.
 
 **Seeds**: the article's seed sweep (30-50) has no object here — the article drew random trades, whereas this strategy is a deterministic monthly rotation whose `MarkovRegression` fit depends on no seed. Robustness is therefore tested by **market sub-periods** instead.
 

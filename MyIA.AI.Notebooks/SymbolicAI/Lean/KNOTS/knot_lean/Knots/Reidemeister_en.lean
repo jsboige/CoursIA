@@ -1,0 +1,1035 @@
+/-
+  Knots.Reidemeister — Reidemeister moves and knot equivalence
+  ============================================================
+
+  The three Reidemeister moves (1927) generate all equivalences between
+  knot diagrams. Two diagrams represent the same knot iff one can be
+  transformed into the other by a finite sequence of R1, R2, R3 moves
+  and planar isotopies.
+
+  Epic #2874, Phase 1.
+
+  Mathlib prerequisites needed:
+  - Planar graph theory (for planar isotopy)
+  - Finite sequences of moves (combinatorial rewrite systems)
+  - The Reidemeister theorem itself is a deep topological result
+-/
+
+import Knots.Basic_en
+import Mathlib.Logic.Embedding.Basic
+
+/-
+  English mirror of `Reidemeister.lean` (FR canonical). Convention EPIC #4980
+  (decision ratified 2026-07-04, cf `code-style.md` §Lean i18n): distinct FR + EN sibling
+  files — no inline bilingual block in a single file (Option B rejected). The module
+  docstring and the theorem docstrings below differ from the FR version; the body
+  signatures, proofs and tactics remain byte-identical between the two files.
+-/
+
+namespace Knots_en
+
+/-! ## 1. The three Reidemeister moves
+
+Each move is a local transformation on a knot diagram that preserves
+the knot type. They are applied in a small disk, leaving the rest unchanged.
+
+**Phase 5 model (concrete constructors with edge-renaming).** Each move is
+stated as a `Prop`-valued existential conjunction carrying:
+  (1) the surgery equation relating `d₁` and `d₂`,
+  (2) well-formedness `wf` on *both* diagrams (`KnotDiagram.wf`), and
+  (3) an explicit edge-renaming `ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges`
+      identifying how the edges of `d₁` map to edges of `d₂`.
+
+The `wf` hypothesis on both sides is the key strengthening over the Phase 3
+symmetric-existential model: it excludes the malformed witnesses (a crossing
+whose PD labels fall outside `[1, numEdges]`) that refuted
+`tricolorable_invariant` — see the certified counter-example diagnosis on
+`tricolorable_invariant` in `Invariant.lean`. The edge-renaming `ρ` is what
+the transfer lemma (PR2) will use to push a coloring across a move.
+
+The moves are stated with `∃` (not as `structure : Prop`) because a
+`Prop`-valued structure cannot project on data fields such as `ρ : Fin _ ↪ Fin _`
+or `c : PDCrossing`. Symmetry (`*.symm`) holds for each move: R3 has a purely
+structural proof (the surgery disjunction is symmetric); R1/R2 symmetry is
+asserted here and discharged by the transfer-lemma machinery in PR2 (the
+inverse move exists because a twist/poke followed by its inverse is the
+identity).
+-/
+
+/-- R1 (Twist/Untwist): add or remove a curl in a strand.
+
+Diagrammatically:
+  |         /\_    |
+  |    ↔   /   \   |
+  |        \___/   |
+
+A curl creates one extra crossing and two extra edges. The move is **bipolar**:
+the surgery is stated as a disjunction — either `d₂` is `d₁` with `c` appended
+(a twist, `d₂.numEdges = d₁.numEdges + 2`) or `d₁` is `d₂` with `c` appended
+(an untwist). The edge-renaming `ρ` points from the smaller diagram's edges to
+the larger diagram's edges, identifying the preserved arcs; under a swap of
+`d₁`/`d₂` this direction is preserved (the smaller diagram is still the
+smaller), which is what makes R1 symmetric by construction.
+
+Well-formedness `wf` on both diagrams forces `c`'s four PD labels to lie in
+`[1, (larger).numEdges]` — excluding the malformed witnesses of the Phase 3
+model that refuted `tricolorable_invariant`. The renaming `ρ` is the data the
+transfer lemma (PR2) pushes a coloring along.
+-/
+def Reidemeister1 (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ c : PDCrossing,
+     ∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
+       (d₂.crossings = d₁.crossings ++ [c] ∧ d₂.numEdges = d₁.numEdges + 2) ∨
+       (d₁.crossings = d₂.crossings ++ [c] ∧ d₁.numEdges = d₂.numEdges + 2))
+
+/-- R1 is symmetric: swapping `d₁`/`d₂` exchanges the two arms of the surgery
+disjunction; the `min`/`max`-directed renaming is invariant under the swap
+(transported along `Nat.min_comm`/`Nat.max_comm`). -/
+theorem Reidemeister1.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister1 d₁ d₂) :
+    Reidemeister1 d₂ d₁ := by
+  obtain ⟨hwf₁, hwf₂, c, ρ, hsurg | hsurg⟩ := h
+  · refine ⟨hwf₂, hwf₁, c, ?_, Or.inr hsurg⟩
+    exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
+           Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
+  · refine ⟨hwf₂, hwf₁, c, ?_, Or.inl hsurg⟩
+    exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
+           Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
+
+/-! ## R1 (ρ-determined refinement) — Phase 5 PR1.5
+
+The Phase 5 PR1 move `Reidemeister1` carries the edge-renaming `ρ` and the
+new crossing `c` as **two independent existentials**: `∃ c, ∃ ρ, surgery`.
+This leaves `ρ` free w.r.t. `c`'s PD labels, so a single R1 "twist" can
+introduce a curl whose two fresh edges `{n+1, n+2}` are completely
+disconnected from the arc being curled — the certified counter-example
+`tricolorable_invariant_fails_under_pr1_model` (`Invariant.lean`) exploits
+exactly this. The transfer lemma (PR2) cannot hold under that model.
+
+`Reidemeister1'` is the **strengthening**: the renaming `ρ` must
+*geometrically determine* the new crossing's labels. A genuine R1 curl on
+arc `a` introduces a crossing where one strand is the arc `a` itself and
+the two fresh edges are the curl's other two strands, giving the new
+crossing the shape `⟨a, a, n+1, n+2⟩`. This ties the fresh edges to
+`color(a)` via the Fox condition, preserving ≥2 colours across the move.
+
+This is an **additive refinement** (does not modify `Reidemeister1`):
+`Reidemeister1'.implies_reidemeister1` proves the conservative embedding.
+The re-modeled equivalence and transfer lemma (PR2) will be built on
+`Reidemeister1'` in a subsequent PR once the construction is validated.
+-/
+
+/-- **R1 (ρ-determined)**: an R1 move where the new crossing's labels are
+    geometrically determined by the arc being curled. In the twist arm, the
+    new crossing has shape `⟨a, a, n+1, n+2⟩`: the strand formerly labelled
+    `a` is the strand being curled, and `{n+1, n+2}` are the two fresh
+    edges of the curl. The arc `a` lives in `[1, numEdges]` of the smaller
+    diagram (1-indexed PD labels, matching `KnotDiagram.wf`).
+
+    **Migration #8696 window 2/9**: the `with`-surgery
+    `d₂ = { d₁ with ... }` is replaced by a conjunction of field equalities
+    `(d₂.crossings = ... ∧ d₂.numEdges = ...)` — uniform pattern with
+    `Reidemeister1` (window 1/9). Benefit: the def **constrains** a given
+    diagram (instead of constructing a hypothetical witness), making the
+    `wf` invariant field portable (cf acceptance #8696 §4). -/
+def Reidemeister1' (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ a : Nat,
+     1 ≤ a ∧ a ≤ min d₁.numEdges d₂.numEdges ∧
+     (∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
+       (d₂.crossings = d₁.crossings ++ [⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩] ∧
+        d₂.numEdges = d₁.numEdges + 2) ∨
+       (d₁.crossings = d₂.crossings ++ [⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩] ∧
+        d₁.numEdges = d₂.numEdges + 2)))
+
+/-- `Reidemeister1'` is a strengthening of `Reidemeister1`: any ρ-determined
+    curl is, in particular, a (free) R1 move with `wf` on both sides. The
+    new crossing `⟨a, a, n+1, n+2⟩` is the witness for the independent
+    existential `∃ c` in `Reidemeister1`.
+
+    **Migration #8696 window 2/9**: post field-equalities migration, the
+    bridge is trivial: each branch of the disjunction is `(h_cross ∧ h_num)`,
+    so passing `hsurg` directly as the field-equality pair to `Or.inl/inr`
+    discharges the goal (the target R1 is also in field-eqs). -/
+theorem Reidemeister1'.implies_reidemeister1 {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1' d₁ d₂) : Reidemeister1 d₁ d₂ := by
+  -- `Reidemeister1'` unfolds as `wf₁ ∧ wf₂ ∧ (∃ a, range ∧ (∃ ρ, ⟨h_cross,h_num⟩ | ⟨h_cross,h_num⟩))`.
+  -- After field-eqs migration, `hsurg` is a 2-conj consumed directly.
+  obtain ⟨hwf₁, hwf₂, a, _hrange₁, _hrange₂, ρ, hsurg | hsurg⟩ := h
+  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₁.numEdges + 1, d₁.numEdges + 2⟩, ρ, Or.inl hsurg⟩
+  · exact ⟨hwf₁, hwf₂, ⟨a, a, d₂.numEdges + 1, d₂.numEdges + 2⟩, ρ, Or.inr hsurg⟩
+
+/-! ## R1 (option C, connected surgery) — Phase 5 PR1.5c
+
+`Reidemeister1'` (PR1.5 #2956) is **vacuous**: its `d₂.wf = true` premise is
+unsatisfiable for non-degenerate twists, because the append-only surgery
+`d₂ = d₁ ++ [⟨a, a, n+1, n+2⟩]` introduces two fresh singleton labels `n+1`,
+`n+2` that violate the `wf` parity condition (each label must appear exactly
+twice). A parity argument shows that ANY append-only R1/R2 surgery with `wf`
+on both sides forces the new crossing to be a **disjoint kink**
+`⟨n+1, n+1, n+2, n+2⟩` — a separate unknot component sharing no edge with
+`d₁`. Only R3 (which preserves `numEdges` and relabels a single crossing) is
+genuinely connected under the append+`wf` model. See the certified
+counter-example `tricolorable_invariant_fails_under_pr1_model` (`Invariant.lean`)
+and the structural diagnosis posted to the coordinator (2026-06-14).
+
+`Reidemeister1Connected` is the **option-C fix**: a NON-append surgery that
+splices into an existing arc `a` of `d₁`. It modifies one endpoint crossing
+`Y = d₁.crossings[i]` (renaming one occurrence of `a` to a fresh label
+`b = d₁.numEdges + 1`) and appends a new crossing
+`C = ⟨a, b, d₁.numEdges + 2, d₁.numEdges + 2⟩`. Parity is preserved:
+- `a`: loses one occurrence (renamed in `Y`) and gains one (in `C.e1`) → 2×;
+- `b = n+1`: one in `Y` (renamed slot) + one in `C.e2` → 2×;
+- `c = n+2`: two in `C` (`e3`, `e4`) → 2×;
+- all other labels unchanged.
+This is ADDITIVE (does not modify `Reidemeister1` / `Reidemeister1'`); it is
+the concrete, `wf`-satisfiable artifact de-risking option C for the
+coordinator's C/X modeling decision (See #2874). It does NOT replace the
+merged moves (#2956) — both coexist so prior results stay valid.
+-/
+
+/-- `Y'` is obtained from `c` by renaming occurrences of `a` to `b`: each field of
+    `Y'` is either unchanged from `c`, or is `b` where `c` had `a`. This is the
+    constraint that makes the tricolorability transfer lemma (PR2) provable: under
+    a coloring extension with `col₂ b = col₁ a` and `col₂ = col₁` on the preserved
+    edges, every strand of `Y'` reads the same colour as the corresponding strand
+    of `c` under `col₁`, so the Fox condition at the modified crossing is preserved.
+
+    Without this constraint (the merged #2980 model) `Y'` is a free existential, so
+    the Fox condition at the modified crossing is decoupled from `d₁`'s coloring —
+    the transfer lemma cannot hold. This strengthening (option C, scoped step (a)) is
+    non-breaking: the #2980 witness `⟨5,2,3,4⟩ = rename(⟨1,2,3,4⟩, 1→5)` still
+    satisfies it (see `reidemeister1Connected_satisfiable`). -/
+def PDCrossing.isRenameOf (Y' c : PDCrossing) (a b : Nat) : Prop :=
+  (Y'.e1 = c.e1 ∨ (Y'.e1 = b ∧ c.e1 = a)) ∧
+  (Y'.e2 = c.e2 ∨ (Y'.e2 = b ∧ c.e2 = a)) ∧
+  (Y'.e3 = c.e3 ∨ (Y'.e3 = b ∧ c.e3 = a)) ∧
+  (Y'.e4 = c.e4 ∨ (Y'.e4 = b ∧ c.e4 = a))
+
+/-- A crossing `c` "has edge `a`" if `a` occurs in one of its four PD slots.
+    Used to state that the arc `a` receiving a connected R1 twist is a PROPER
+    arc — one that is shared between two distinct crossings of `d₁` (not a
+    degenerate monogon-loop confined to a single crossing). The fields are `Nat`
+    with decidable equality, so this Prop is decidable and discharges by
+    `decide` after `unfold`. -/
+def PDCrossing.hasEdge (c : PDCrossing) (a : Nat) : Prop :=
+  c.e1 = a ∨ c.e2 = a ∨ c.e3 = a ∨ c.e4 = a
+
+/-- **Reidemeister1Connected (option C)**: a CONNECTED R1 twist on arc `a`.
+    The surgery modifies endpoint crossing `Y = d₁.crossings[i]` (one slot `a`
+    renamed to `b = d₁.numEdges + 1`, materialised as the supplied `Y'`) and
+    appends `⟨a, b, c, c⟩` with `c = d₁.numEdges + 2`. Unlike `Reidemeister1'`,
+    the `d₂.wf = true` premise is **satisfiable** — see
+    `reidemeister1Connected_satisfiable`. The hypothesis `a ∈ d₁.edges` forces
+    the move to be genuinely connected (arc `a` is a real edge of `d₁`), so the
+    new crossing shares an edge with `d₁` rather than being a disjoint kink.
+
+    The hypothesis `Y'.isRenameOf (d₁.crossings.get i) a (d₁.numEdges + 1)`
+    (strengthened in scoped step (a)) ties `Y'` to the endpoint crossing it
+    replaces — it is that crossing with `a`-occurrences renamed to `b`, nothing
+    else. This is what the PR2 transfer lemma needs to push a tricoloring across
+    the move (the modified crossing's Fox condition is preserved under
+    `col₂ b = col₁ a`).
+
+    **Proper-arc hypothesis (this PR, fix for the backward-transfer defect
+    certified by the brute-force search behind #3002):** arc `a` is shared with
+    another crossing `j ≠ i` of `d₁`. Without this, the def admits a twist on a
+    degenerate monogon-loop arc (`a` appearing twice at the single endpoint
+    crossing `i`), under which the BACKWARD tricolorability transfer is FALSE —
+    a connected kink can CREATE tricolorability from a non-tricolorable
+    double-monogon `d₁`. Requiring `a` to be a proper arc (spanning two distinct
+    crossings) eliminates all such counter-examples (validated by exhaustive
+    brute-force over 2526 well-formed diagrams, 20184 valid twists: 24 backward
+    failures, all monogon-loops, all excluded by this hypothesis). The FORWARD
+    direction (#3000) is unaffected — it is unconditional. -/
+def Reidemeister1Connected (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ (i : Fin d₁.crossings.length) (a : Nat) (Y' : PDCrossing)
+     (ρ : Fin d₁.numEdges ↪ Fin (d₁.numEdges + 2)),
+     1 ≤ a ∧ a ≤ d₁.numEdges ∧
+     a ∈ d₁.edges ∧
+     (∃ (j : Fin d₁.crossings.length), j ≠ i ∧ (d₁.crossings.get j).hasEdge a) ∧
+     Y'.isRenameOf (d₁.crossings.get i) a (d₁.numEdges + 1) ∧
+     d₂.crossings = d₁.crossings.set i.val Y' ++
+       [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] ∧
+     d₂.numEdges = d₁.numEdges + 2)
+
+/-- `Reidemeister1Connected` is NOT vacuous (contrast with `Reidemeister1'`):
+    a concrete connected twist `d₁ → d₂` with `wf = true` on both sides.
+
+    Witness: `d₁ = {[⟨1,2,3,4⟩, ⟨1,2,3,4⟩], 4}` (arc `a = 1` appears at `e1` of
+    both crossings). The twist modifies crossing 1 (`⟨1,2,3,4⟩ → ⟨5,2,3,4⟩`,
+    slot `e1`: `1 → 5 = b`) and appends `C = ⟨1,5,6,6⟩`. The result
+    `d₂ = {[⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], 6}` is well-formed
+    (`wf = true`, verified empirically by `#eval` during de-risking and here by
+    `decide`). This is the headline property distinguishing option C from the
+    vacuous PR1.5 model. -/
+theorem reidemeister1Connected_satisfiable :
+    Reidemeister1Connected
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 } := by
+  refine ⟨by decide, by decide, ⟨1, by decide⟩, 1, ⟨5,2,3,4⟩, ?_, ?_⟩
+  · -- ρ : Fin 4 ↪ Fin 6 (trivial embedding, first 4 → first 4 of 6).
+    exact { toFun := fun j => ⟨j.val, by omega⟩,
+            inj' := fun x y h => by injection h with hv; exact Fin.ext hv }
+  · -- body: 1 ≤ a, a ≤ numEdges, a ∈ d₁.edges, proper-arc (arc 1 shared with
+    --   crossing j=0: ⟨1,2,3,4⟩.e1 = 1), Y' isRenameOf (rename 1→5 at e1), and
+    --   the surgery equation. `decide` (kernel reduction) handles the struct
+    --   projections / flatMap that `omega` cannot see; `rfl` closes the
+    --   definitional surgery equation. The isRenameOf holds: e1 renamed (1→5),
+    --   e2=e3=e4 unchanged. isRenameOf must be unfolded first — as a raw `def`
+    --   it has no `Decidable` instance, but the unfolded `∧∨=` on `Nat` does.
+    --   The proper-arc conjunct: arc a=1 appears at crossing j=⟨0⟩ (e1=1) with
+    --   j=0 ≠ i=1, witnessed explicitly; `hasEdge` unfolded + `decide`.
+    exact ⟨by decide, by decide, by decide,
+           ⟨⟨0, by decide⟩, by decide, by unfold PDCrossing.hasEdge; decide⟩,
+           by unfold PDCrossing.isRenameOf; decide, ⟨rfl, rfl⟩⟩
+
+/-! ### API lemmas for `Reidemeister1Connected` (option C infrastructure for PR2)
+
+These projection-style lemmas expose the surgery's combinatorial shape, which the
+transfer lemma (PR2) consumes when pushing a tricoloring across a connected R1
+twist: the edge count grows by exactly 2 (same magnitude as the disjoint-kink
+append model, but reached by a connected splice), and the crossing count grows
+by exactly 1. They mirror the `trefoil_wf` / `unknot_wf` projection-API style of
+`Basic.lean`.
+-/
+
+/-- A connected R1 twist adds exactly two edges (the kink monogon `c` and the
+    renamed arc endpoint `b`), same magnitude as the disjoint-kink model but via
+    a connected splice. -/
+theorem Reidemeister1Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) : d₂.numEdges = d₁.numEdges + 2 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, _h_cross, h_num⟩ := h
+  exact h_num
+
+/-- A connected R1 twist adds exactly one crossing (the curl `C`); the existing
+    endpoint crossing `Y` is relabelled in place (`List.set` preserves length),
+    not duplicated. -/
+theorem Reidemeister1Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) : d₂.crossings.length = d₁.crossings.length + 1 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, h_cross, _h_num⟩ := h
+  rw [h_cross]; simp [List.length_set, List.length_append]
+
+/-- The arc `a` receiving the twist is a genuine edge of `d₁` (connectivity
+    hypothesis): the new crossing `C = ⟨a, b, c, c⟩` shares edge `a` with `d₁`,
+    which is what distinguishes a connected twist from a disjoint kink
+    `⟨n+1,n+1,n+2,n+2⟩` (which shares no edge with `d₁`). -/
+theorem Reidemeister1Connected.shares_edge {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) : ∃ a : Nat, a ∈ d₁.edges ∧ 1 ≤ a ∧ a ≤ d₁.numEdges := by
+  obtain ⟨_hwf₁, _hwf₂, _i, a, _Y', _ρ, hr1, hr2, hmem, _hproper, _hrename, _hsurg⟩ := h
+  exact ⟨a, hmem, hr1, hr2⟩
+
+/-- The surgery equation on crossings in directly-usable form: `d₂.crossings`
+    is `d₁.crossings` with the endpoint crossing at index `i` rewritten to `Y'`
+    (via `List.set`), then the monogon kink
+    `⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩` appended. The PR2
+    transfer lemma rewrites with this equation to analyse the Fox condition at
+    exactly the two crossings touched by the move (the relabelled `Y'` at
+    index `i`, and the appended kink `C` whose `e3 = e4 = c` self-loop means
+    arc `c` is a closed strand). -/
+theorem Reidemeister1Connected.crossings_eq {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister1Connected d₁ d₂) :
+    ∃ (i : ℕ) (Y' : PDCrossing) (a : Nat),
+      i < d₁.crossings.length ∧
+      d₂.crossings = d₁.crossings.set i Y' ++
+        [⟨a, d₁.numEdges + 1, d₁.numEdges + 2, d₁.numEdges + 2⟩] := by
+  obtain ⟨_hwf₁, _hwf₂, i, a, Y', _ρ, _hr1, _hr2, _hmem, _hproper, _hrename, h_cross, _h_num⟩ := h
+  exact ⟨i.val, Y', a, i.isLt, h_cross⟩
+
+/-- R2 (Poke/Unpoke): add or remove two consecutive crossings of opposite sign.
+
+Two parallel strands can pass through each other:
+  |   |        /\    |   |
+  |   |   ↔   /  \   |   |
+  |   |      /    \  |   |
+  |   |      \    /  |   |
+  |   |       \  /   |   |
+  |   |        \/    |   |
+
+Bipolar like R1: one diagram has four more edges than the other. The renaming
+`ρ : Fin (min) ↪ Fin (max)` points from the smaller diagram to the larger.
+-/
+def Reidemeister2 (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ c₁ c₂ : PDCrossing,
+     ∃ ρ : Fin (min d₁.numEdges d₂.numEdges) ↪ Fin (max d₁.numEdges d₂.numEdges),
+       (d₂.crossings = d₁.crossings ++ [c₁, c₂] ∧ d₂.numEdges = d₁.numEdges + 4) ∨
+       (d₁.crossings = d₂.crossings ++ [c₁, c₂] ∧ d₁.numEdges = d₂.numEdges + 4))
+
+/-- R2 is symmetric: same construction as R1 (transport along `Nat.min_comm`/
+`Nat.max_comm`). -/
+theorem Reidemeister2.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister2 d₁ d₂) :
+    Reidemeister2 d₂ d₁ := by
+  obtain ⟨hwf₁, hwf₂, c₁, c₂, ρ, hsurg | hsurg⟩ := h
+  · refine ⟨hwf₂, hwf₁, c₁, c₂, ?_, Or.inr hsurg⟩
+    exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
+           Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
+  · refine ⟨hwf₂, hwf₁, c₁, c₂, ?_, Or.inl hsurg⟩
+    exact (Nat.min_comm d₂.numEdges d₁.numEdges ▸
+           Nat.max_comm d₂.numEdges d₁.numEdges ▸ ρ)
+
+/-! ## R2 Connected — bigon surgery on a double arc (`Reidemeister2Connected`)
+
+Exhaustive validation (PR #11467, `scripts/lean/knot_r2connected_validation.py`):
+over the 2526 well-formed diagrams with ≤ 2 crossings, 40368 candidate
+surgeries tested on both arms of the tricolorability transfer. The `<a, o, u, o>`
+candidate (v2) fails 100% on the backward arm — the kinks admit the Fox
+all-distinct mode, nothing forces `color(u) = color(a)`, the gadget is always
+tricolorable. The `<a, u, u, o>` fix (v3) — Fox `(a, u, u)` all-equal-only
+(`c₂ = c₃` makes all-distinct impossible) + over-strand continuity `e₂ = e₄` —
+forces `color(u) = color(o) = color(a)` and breaks NEITHER arm (0 failures over
+40368). It is the v3 surgery that is stated here.
+-/
+
+/-- `Y'` is obtained from `c` by renaming the occurrences of `a` to two fresh
+    labels `o₁`, `o₂`: each field of `Y'` is either unchanged from `c`, or
+    equal to `o₁`/`o₂` where `c` had `a`. Two-target version of `isRenameOf`,
+    serving `Reidemeister2Connected`. The `wf` count-balance (each label exactly
+    twice) forces the two occurrences of `a` in `d₁` to be renamed — the
+    appended kinks compensate by supplying the two remaining occurrences of `a`
+    and one of each `o₁`, `o₂`. -/
+def PDCrossing.isDoubleRenameOf (Y' c : PDCrossing) (a o₁ o₂ : Nat) : Prop :=
+  (Y'.e1 = c.e1 ∨ (Y'.e1 = o₁ ∧ c.e1 = a) ∨ (Y'.e1 = o₂ ∧ c.e1 = a)) ∧
+  (Y'.e2 = c.e2 ∨ (Y'.e2 = o₁ ∧ c.e2 = a) ∨ (Y'.e2 = o₂ ∧ c.e2 = a)) ∧
+  (Y'.e3 = c.e3 ∨ (Y'.e3 = o₁ ∧ c.e3 = a) ∨ (Y'.e3 = o₂ ∧ c.e3 = a)) ∧
+  (Y'.e4 = c.e4 ∨ (Y'.e4 = o₁ ∧ c.e4 = a) ∨ (Y'.e4 = o₂ ∧ c.e4 = a))
+
+/-- **Reidemeister2Connected**: a CONNECTED R2 twist on the double arc `a` of
+    the crossing `Y = d₁.crossings[i]` — both occurrences of `a` are renamed
+    there to the fresh labels `o₁ = d₁.numEdges + 2` and `o₂ = d₁.numEdges + 4`
+    (materialized by the supplied `Y'`), and two bigon kinks
+    `⟨a, u₁, u₁, o₁⟩`, `⟨a, u₂, u₂, o₂⟩` (with `u₁ = d₁.numEdges + 1`,
+    `u₂ = d₁.numEdges + 3`) are appended. Unlike `Reidemeister2` (the free
+    append-only form, whose master L350 is FALSE — see
+    `not_tricolorable_invariant_current`, PR #11453), the premise
+    `d₂.wf = true` is **satisfiable** — see `reidemeister2Connected_satisfiable`.
+
+    Parity preserved: `a` loses both occurrences (renamed in `Y'`) and gains
+    two (the kinks' `e1`); `o₁`/`o₂`: one in `Y'` + one in the kink (`e4`);
+    `u₁`/`u₂`: two in their kink (`e2`, `e3`). Every label of
+    `[1, d₁.numEdges + 4]` keeps count 2, hence `wf` is satisfiable.
+
+    The kink SHAPE is the validation of the transfer mechanism: the Fox on
+    `(a, u, u)` — the two equal leading colors make the all-distinct mode
+    impossible — forces `color(u) = color(a)`, and the over-strand continuity
+    `e₂ = e₄` forces `color(o) = color(u)`. Under any valid coloring of `d₂`
+    the fresh labels therefore conform to `color(a)`, which makes the BACKWARD
+    arm (restriction) provable. This is the v3 fix validated by exhaustive
+    search (PR #11467) — the v2 candidate `<a, o, u, o>` fails on the contrary
+    at 100% (40368/40368). -/
+def Reidemeister2Connected (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  (∃ (i : Fin d₁.crossings.length) (a : Nat) (Y' : PDCrossing)
+     (ρ : Fin d₁.numEdges ↪ Fin (d₁.numEdges + 4)),
+     1 ≤ a ∧ a ≤ d₁.numEdges ∧
+     a ∈ d₁.edges ∧
+     Y'.isDoubleRenameOf (d₁.crossings.get i) a (d₁.numEdges + 2) (d₁.numEdges + 4) ∧
+     d₂.crossings = d₁.crossings.set i.val Y' ++
+       [⟨a, d₁.numEdges + 1, d₁.numEdges + 1, d₁.numEdges + 2⟩,
+        ⟨a, d₁.numEdges + 3, d₁.numEdges + 3, d₁.numEdges + 4⟩] ∧
+     d₂.numEdges = d₁.numEdges + 4)
+
+/-- `Reidemeister2Connected` is NOT vacuous: a concrete connected R2 twist
+    `d₁ → d₂` with `wf = true` on both sides.
+
+    Witness: `d₁ = {[⟨1,1,2,3⟩, ⟨2,3,4,4⟩], 4}` (the double arc `a = 1` appears
+    at `e1`, `e2` of crossing 0). The twist modifies crossing 0
+    (`⟨1,1,2,3⟩ → ⟨6,8,2,3⟩`: `e1 : 1 → 6 = o₁`, `e2 : 1 → 8 = o₂`) and appends
+    `C₁ = ⟨1,5,5,6⟩`, `C₂ = ⟨1,7,7,8⟩`. The result
+    `d₂ = {[⟨6,8,2,3⟩, ⟨2,3,4,4⟩, ⟨1,5,5,6⟩, ⟨1,7,7,8⟩], 8}` is well-formed
+    (`wf = true`, checked by `decide`): every label of `[1, 8]` appears exactly
+    twice. -/
+theorem reidemeister2Connected_satisfiable :
+    Reidemeister2Connected
+      { crossings := [⟨1,1,2,3⟩, ⟨2,3,4,4⟩], numEdges := 4 }
+      { crossings := [⟨6,8,2,3⟩, ⟨2,3,4,4⟩, ⟨1,5,5,6⟩, ⟨1,7,7,8⟩], numEdges := 8 } := by
+  refine ⟨by decide, by decide, ⟨0, by decide⟩, 1, ⟨6,8,2,3⟩, ?_, ?_⟩
+  · -- ρ : Fin 4 ↪ Fin 8 (trivial embedding, first 4 → first 4 of 8).
+    exact { toFun := fun j => ⟨j.val, by omega⟩,
+            inj' := fun x y h => by injection h with hv; exact Fin.ext hv }
+  · -- body: 1 ≤ a, a ≤ numEdges, a ∈ d₁.edges, isDoubleRenameOf (rename
+    --   1→6 at e1, 1→8 at e2), and the surgery equation. `decide` (kernel
+    --   reduction) handles the struct projections / flatMap that `omega` cannot
+    --   see; `rfl` closes the definitional surgery equation. isDoubleRenameOf
+    --   must be unfolded first — as a raw `def` it has no `Decidable` instance,
+    --   but the unfolded `∧∨=` on `Nat` does.
+    exact ⟨by decide, by decide, by decide,
+           by unfold PDCrossing.isDoubleRenameOf; decide, ⟨rfl, rfl⟩⟩
+
+/-! ### API lemmas for `Reidemeister2Connected`
+
+Same projection infrastructure as `Reidemeister1Connected`: the edge count grows
+by exactly 4 (the amplitude of the free `Reidemeister2` model, but reached by a
+connected insertion), and the crossing count by exactly 2. They follow the
+projection API style of `trefoil_wf` / `unknot_wf` in `Basic.lean`.
+-/
+
+/-- A connected R2 twist adds exactly four edges (the two bigon kinks and the
+    two renamed arc ends `o₁`, `o₂`). -/
+theorem Reidemeister2Connected.numEdges_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister2Connected d₁ d₂) : d₂.numEdges = d₁.numEdges + 4 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hrename, _h_cross, h_num⟩ := h
+  exact h_num
+
+/-- A connected R2 twist adds exactly two crossings (the bigons `C₁`, `C₂`);
+    the existing end crossing `Y` is relabeled in place (`List.set` preserves
+    length), not duplicated. -/
+theorem Reidemeister2Connected.numCrossings_succ {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister2Connected d₁ d₂) : d₂.crossings.length = d₁.crossings.length + 2 := by
+  obtain ⟨_hwf₁, _hwf₂, _i, _a, _Y', _ρ, _hr1, _hr2, _hmem, _hrename, h_cross, _h_num⟩ := h
+  rw [h_cross]; simp [List.length_set, List.length_append]
+
+/-- R3 (Slide): move a strand over a crossing.
+
+A strand can slide past a crossing without changing the knot:
+  \  |  /      \  |  /
+   \ | /        \ | /
+    \|/    ↔    / | \
+     |          /  |  \
+     |         /   |   \
+
+R3 preserves the number of crossings and edges; it only relabels the edges at
+one crossing. The renaming `ρ` is therefore a bijection, expressed here as an
+injection `Fin d₁.numEdges ↪ Fin d₂.numEdges` (with equal dimensions).
+-/
+def Reidemeister3 (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
+  ∃ i c, ∃ ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges,
+    (d₂.crossings = d₁.crossings.set i c ∨
+     d₁.crossings = d₂.crossings.set i c) ∧
+    d₁.wf = true ∧ d₂.wf = true
+
+/-- R3 is symmetric by construction: the surgery disjunction is symmetric, the
+well-formedness hypotheses swap, and since R3 preserves the edge count
+(`d₁.numEdges = d₂.numEdges`) the edge-renaming is transportable across. -/
+theorem Reidemeister3.symm {d₁ d₂ : KnotDiagram} (h : Reidemeister3 d₁ d₂) :
+    Reidemeister3 d₂ d₁ := by
+  obtain ⟨hl, he, i, c, ρ, h | h, hwf₁, hwf₂⟩ := h
+  · refine ⟨hl.symm, he.symm, i, c, ?_, ?_, hwf₂, hwf₁⟩
+    · -- Inverse renaming: transport ρ across the equal edge counts.
+      exact he ▸ ρ
+    · exact Or.inr h
+  · refine ⟨hl.symm, he.symm, i, c, ?_, ?_, hwf₂, hwf₁⟩
+    · exact he ▸ ρ
+    · exact Or.inl h
+
+/-! ## R3 (slot-determined refinement) — Phase 5 PR1.5d
+
+`Reidemeister3` (Phase 5 PR1) carries the relabeled crossing `c` as a FREE
+existential (`∃ i c, ∃ ρ, surgery`). This leaves `c` unconstrained: the single
+relabeled crossing can take arbitrary PD labels. Unlike the append-only R1'/R2
+models (which are vacuous under `wf`), R3's `numEdges`-preserving surgery keeps
+`d₂.wf` satisfiable — but the free `c` is too loose for the transfer lemma
+(PR2) to push a tricoloring across the move: the Fox condition at the relabeled
+crossing is decoupled from `d₁`'s coloring.
+
+`Reidemeister3Determined` is the **strengthening**: the relabeled crossing `c`
+is constrained to be a **slot-permutation** of the crossing it replaces
+(`c.isSlotPermOf (d₁.crossings.get i)`) — its four PD labels are a permutation
+of the original crossing's four labels. This preserves the global edge
+multiset (hence `wf` on both sides is automatic from `d₁.wf`), and ties the
+relabeled crossing's strand structure to the original: the four strands meeting
+at crossing `i` are the same four strands, assigned to slots in a possibly
+different order (the combinatorial essence of an R3 slide, which rearranges
+strands past a crossing without changing which strands meet there).
+
+This is an **additive refinement** (does not modify `Reidemeister3`):
+`Reidemeister3Determined.implies_reidemeister3` proves the conservative
+embedding. The transfer lemma (PR2) and the question of which slot-permutations
+correspond to genuine R3 slides (vs. arbitrary relabelings) are explicitly
+future work — this is the de-risking scaffold establishing a non-vacuous,
+`wf`-satisfiable, refinement-strong model, parallel to `Reidemeister1Connected`
+for R1 (See #2874).
+-/
+
+/-- `c` "is a slot-permutation of `Y`" iff `c`'s four PD labels are a permutation
+    of `Y`'s four labels (the same multiset of four strands, possibly assigned to
+    different slots). The fields are `Nat` with decidable equality, so this Prop
+    is decidable (`List.Perm` on `List Nat`) and discharges by `decide`. -/
+def PDCrossing.isSlotPermOf (c Y : PDCrossing) : Prop :=
+  List.Perm [c.e1, c.e2, c.e3, c.e4] [Y.e1, Y.e2, Y.e3, Y.e4]
+
+/-- **Reidemeister3Determined**: an R3 slide where the relabeled crossing `c`
+    is a slot-permutation of the original crossing at index `i` (same four
+    strands, possibly reordered). `numEdges` and crossing count are preserved
+    (as in `Reidemeister3`); `wf` holds on both sides. The edge-renaming `ρ`
+    is carried to match `Reidemeister3`'s shape (the refinement provides it
+    directly). Non-vacuous — see `reidemeister3Determined_satisfiable`. -/
+def Reidemeister3Determined (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
+  (∃ (i : Fin d₁.crossings.length) (c : PDCrossing)
+     (ρ : Fin d₁.numEdges ↪ Fin d₂.numEdges),
+     c.isSlotPermOf (d₁.crossings.get i) ∧
+     (d₂.crossings = d₁.crossings.set i.val c ∨
+      d₁.crossings = d₂.crossings.set i.val c) ∧
+     d₁.wf = true ∧ d₂.wf = true)
+
+/-- `Reidemeister3Determined` is a strengthening of `Reidemeister3`: a
+    slot-determined slide is, in particular, a (free-`c`) R3 move. The witness
+    crossing `c` and renaming `ρ` are provided directly. The surgery equation
+    is now a **field equality** `d₂.crossings = d₁.crossings.set i.val c`
+    (consistent with `Reidemeister3` post field-eqs migration, no more
+    `with`-surgery). The `numEdges` witness of R3D is guaranteed by `he` from
+    destructuring. -/
+theorem Reidemeister3Determined.implies_reidemeister3 {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Determined d₁ d₂) : Reidemeister3 d₁ d₂ := by
+  obtain ⟨hl, he, i, c, ρ, _hperm, hsurg | hsurg, hwf₁, hwf₂⟩ := h
+  · -- `hsurg : d₂.crossings = d₁.crossings.set i.val c` is already a field
+    -- equality: we inject it directly into R3 via `Or.inl` (no more
+    -- `congrArg` projection needed — R3D and R3 now share the same
+    -- field-eq signature).
+    exact ⟨hl, he, i.val, c, ρ, Or.inl hsurg, hwf₁, hwf₂⟩
+  · exact ⟨hl, he, i.val, c, ρ, Or.inr hsurg, hwf₁, hwf₂⟩
+
+/-- `Reidemeister3Determined` is NOT vacuous: a concrete slot-determined slide
+    `d₁ → d₂` with `wf = true` on both sides. Witness: `d₁` has two identical
+    crossings `⟨1,2,3,4⟩`; `d₂` relabels crossing 0 to `⟨1,3,2,4⟩` (slots e2/e3
+    swapped — a slot-permutation of `⟨1,2,3,4⟩`). The global label multiset
+    `{1,2,3,4}` is unchanged, so `wf` holds on both sides. -/
+theorem reidemeister3Determined_satisfiable :
+    Reidemeister3Determined
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }
+      { crossings := [⟨1,3,2,4⟩, ⟨1,2,3,4⟩], numEdges := 4 } := by
+  refine ⟨by decide, by decide, ?_⟩
+  refine ⟨⟨0, by decide⟩, ⟨1,3,2,4⟩, ?_, ?_, ?_, ?_, ?_⟩
+  · -- ρ : Fin 4 ↪ Fin 4 (identity; numEdges equal on both sides)
+    exact Function.Embedding.refl (Fin 4)
+  · -- c.isSlotPermOf (d₁.crossings.get ⟨0⟩): [1,3,2,4] ~ [1,2,3,4] (swap middle pair).
+    -- `isSlotPermOf` is a raw `def` (no Decidable instance), so unfold it first to
+    -- the underlying `List.Perm` on `List Nat`, which IS decidable.
+    exact by unfold PDCrossing.isSlotPermOf; decide
+  · -- surgery, left arm: d₂.crossings = d₁.crossings.set 0 ⟨1,3,2,4⟩.
+    -- `d₁.crossings` and `d₂.crossings` are concrete literals
+    -- (`simp only [List.set]` unfolds both and reduces `set 0` on
+    -- `[_, _]` to the defeq goal `[c', b] = [c', b]`). No
+    -- `DecidableEq (List PDCrossing)` instance needed (absent ; `decide`
+    -- would fail with `failed to synthesize Decidable`).
+    exact Or.inl (by simp only [List.set])
+  · -- d₁.wf = true (each of {1,2,3,4} appears exactly twice)
+    exact by decide
+  · -- d₂.wf = true (multiset unchanged by the slot swap)
+    exact by decide
+
+/-! ### R3 connected — the triangular move induced by the Sat-equal bijection
+
+Exhaustive evidence `scripts/lean/knot_r3connected_validation.py` (PR #11486,
+Part C): among 4320 size-preserving bijections of the 9 triangle arcs,
+**exactly 2** transport the Fox solution set of the triangle
+`sigma1*sigma2*sigma1` exactly onto that of `sigma2*sigma1*sigma2` — internal
+correspondence **unique** `g1=(2,5)→(3,8)`, `g2=(3,9)→(7,9)`, `g3=(6,8)→(2,4)`;
+a 4-cycle on the boundary arcs, `a1`/`b1` exchanged between the two
+bijections.
+
+`Reidemeister3Connected` takes the **first** of these bijections (identity on
+`a1`, `b1→b3`) as the definition of the move. Layouts (12 slots, 9 arcs):
+
+    X (sigma1*sigma2*sigma1) : X₁ = ⟨a₂,a₁,g₁,g₂⟩  X₂ = ⟨a₃,g₁,g₃,b₃⟩  X₃ = ⟨g₃,g₂,b₂,b₁⟩
+    Y (sigma2*sigma1*sigma2) : Y₁ = ⟨a₃,a₂,h₁,h₂⟩  Y₂ = ⟨h₁,a₁,h₃,h₄⟩  Y₃ = ⟨h₂,h₄,b₂,b₃⟩
+
+The surgery: each arc `y` of the Y triangle receives the **concrete label**
+carried by the arc `φ⁻¹(y)` of the X triangle (labels reused, not renamed):
+
+    Y₁ = ⟨a₃,b₃,g₃,g₁⟩   Y₂ = ⟨g₃,a₁,b₂,g₂⟩   Y₃ = ⟨g₁,g₂,a₂,b₁⟩
+
+The multiset of the 12 labels is **unchanged** ({a₁,a₂,a₃,b₁,b₂,b₃} single +
+{g₁,g₁,g₂,g₂,g₃,g₃} paired), so `wf` is preserved by the surgery and the
+external context (crossings outside the triangle, which only reference
+boundary arcs) stays intact — the "redistribution" shape validated in Part B
+(194719 concrete surgeries, 0 transfer failure) and C (300 witnesses n=5,
+0 failure).
+
+**Honest negatives** (#11486, documented): (i) the "geometric" version
+(identity on the 6 boundary arcs) does **not** have equal Sat on our manual
+slot derivation — the statement takes the bijection found as the definition
+of the move, without claiming the classic strand slide; (ii) no non-trivial
+partner with identity transport among the 15 possible internal pairings
+(fixed boundary); (iii) the move is **not** an instance of `Reidemeister3`
+(the surgery rewrites three crossings, not a single one) — it is a parallel
+refinement to `Reidemeister3Determined`, and the inverse direction `d₂ → d₁`
+(bijection φ⁻¹, also Sat-equal) is future work.
+-/
+
+/-- **Reidemeister3Connected**: the connected R3 triangular move. Diagram
+    `d₁` carries the X triangle (layout `⟨a₂,a₁,g₁,g₂⟩`,
+    `⟨a₃,g₁,g₃,b₃⟩`, `⟨g₃,g₂,b₂,b₁⟩`) on three consecutive crossings from
+    index `i`, with nine distinct arc labels; `d₂` rewrites these three
+    crossings according to the Y triangle induced by the Sat-equal bijection
+    (concrete labels reused via `φ⁻¹`). Length and `numEdges` unchanged;
+    `wf` of both sides in the premise (as R1C/R2C — multiset preservation of
+    the labels makes it automatic in practice, see
+    `reidemeister3Connected_satisfiable`). -/
+def Reidemeister3Connected (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
+  ∃ (i : Nat) (hi : i + 2 < d₁.crossings.length)
+    (a₁ a₂ a₃ b₁ b₂ b₃ g₁ g₂ g₃ : Nat),
+    List.Nodup [a₂, a₁, a₃, b₃, b₂, b₁, g₁, g₂, g₃] ∧
+    d₁.crossings.get ⟨i, by omega⟩ = ⟨a₂, a₁, g₁, g₂⟩ ∧
+    d₁.crossings.get ⟨i + 1, by omega⟩ = ⟨a₃, g₁, g₃, b₃⟩ ∧
+    d₁.crossings.get ⟨i + 2, by omega⟩ = ⟨g₃, g₂, b₂, b₁⟩ ∧
+    d₂.crossings = ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1)
+      ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩
+
+/-- `Reidemeister3Connected` is NOT vacuous: the concrete X triangle
+    `d₁ = {[⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩] ++ context [⟨1,2,10,10⟩,
+    ⟨3,4,5,6⟩]}` (boundary 1..6 = a₂,a₁,a₃,b₃,b₂,b₁; internals 7,8,9 =
+    g₁,g₂,g₃; the two context crossings close the parity: each boundary
+    label 1..6 appears a second time, 10 carries both remaining
+    endpoints), rewritten as the Y triangle
+    `d₂ = {[⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩] ++ same context}`. Both are
+    well-formed (`decide`: each label 1..10 appears exactly twice).
+    Tricolorability is invariant on this witness (checked by the
+    validation machinery of #11486 — both are non-tricolorable). -/
+theorem reidemeister3Connected_satisfiable :
+    Reidemeister3Connected
+      { crossings := [⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 }
+      { crossings := [⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 } := by
+  refine ⟨by decide, by decide, rfl, rfl,
+          ⟨0, by decide, 2, 1, 3, 6, 5, 4, 7, 8, 9, ?_, ?_, ?_, ?_, ?_⟩⟩
+  · -- Nodup of the 9 labels [a₂,a₁,a₃,b₃,b₂,b₁,g₁,g₂,g₃] = [1,2,3,4,5,6,7,8,9]
+    decide
+  · -- get 0 = ⟨a₂,a₁,g₁,g₂⟩ = ⟨1,2,7,8⟩ (definitional reduction)
+    rfl
+  · -- get 1 = ⟨a₃,g₁,g₃,b₃⟩ = ⟨3,7,9,4⟩
+    rfl
+  · -- get 2 = ⟨g₃,g₂,b₂,b₁⟩ = ⟨9,8,5,6⟩
+    rfl
+  · -- triple List.set on the concrete list: reduces definitionally
+    rfl
+
+/-- The triangular move preserves the number of crossings. -/
+theorem Reidemeister3Connected.numCrossings_eq {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Connected d₁ d₂) :
+    d₂.crossings.length = d₁.crossings.length := by
+  obtain ⟨_, _, hl, _, _⟩ := h
+  exact hl.symm
+
+/-- The triangular move preserves the number of edges. -/
+theorem Reidemeister3Connected.numEdges_eq {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Connected d₁ d₂) :
+    d₂.numEdges = d₁.numEdges := by
+  obtain ⟨_, _, _, he, _⟩ := h
+  exact he.symm
+
+/-! #### Inverse direction — the Y → X move
+
+The bijection φ⁻¹ is also Sat-preserving (validation #11486, Part C:
+the 2 bijections found are mutually inverse at equal Sat). The inverse
+surgery — each arc x of the X triangle receives the concrete label
+carried by the arc φ(x) of the Y triangle — rewrites the Y triangle
+`⟨a₃,b₃,g₃,g₁⟩, ⟨g₃,a₁,b₂,g₂⟩, ⟨g₁,g₂,a₂,b₁⟩` into the X triangle
+`⟨a₂,a₁,g₁,g₂⟩, ⟨a₃,g₁,g₃,b₃⟩, ⟨g₃,g₂,b₂,b₁⟩`. Applied to the result of
+the direct move, it **restores exactly the original labels**: the label
+of slot y after the direct move is that of φ⁻¹(y), and the inverse
+surgery reassigns to slot φ(y) the label of φ⁻¹(φ(y)) = y — the original
+label. This is the content of `reidemeister3Connected_inv`: the direct
+move **determines** its inverse; the relation is reversible, not merely
+witnessed in both directions.
+-/
+
+/-- **Reidemeister3ConnectedInv**: the inverse direction of the connected
+    R3 triangular move. `d₁` carries the Y triangle (layout
+    `⟨a₃,b₃,g₃,g₁⟩`, `⟨g₃,a₁,b₂,g₂⟩`, `⟨g₁,g₂,a₂,b₁⟩`) on three
+    consecutive crossings starting from index `i`, with nine distinct
+    arc labels; `d₂` rewrites those three crossings into the X triangle.
+    Same guardrails as `Reidemeister3Connected` (wf in premise, length
+    and `numEdges` unchanged, multiset of labels preserved by the
+    surgery). -/
+def Reidemeister3ConnectedInv (d₁ d₂ : KnotDiagram) : Prop :=
+  d₁.wf = true ∧ d₂.wf = true ∧
+  d₁.crossings.length = d₂.crossings.length ∧ d₁.numEdges = d₂.numEdges ∧
+  ∃ (i : Nat) (hi : i + 2 < d₁.crossings.length)
+    (a₁ a₂ a₃ b₁ b₂ b₃ g₁ g₂ g₃ : Nat),
+    List.Nodup [a₂, a₁, a₃, b₃, b₂, b₁, g₁, g₂, g₃] ∧
+    d₁.crossings.get ⟨i, by omega⟩ = ⟨a₃, b₃, g₃, g₁⟩ ∧
+    d₁.crossings.get ⟨i + 1, by omega⟩ = ⟨g₃, a₁, b₂, g₂⟩ ∧
+    d₁.crossings.get ⟨i + 2, by omega⟩ = ⟨g₁, g₂, a₂, b₁⟩ ∧
+    d₂.crossings = ((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1)
+      ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩
+
+/-- `Reidemeister3ConnectedInv` is NOT vacuous: the direct-move witness
+    pair, **reversed**. `d₁` carries the concrete Y triangle
+    `[⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩] ++ context [⟨1,2,10,10⟩,
+    ⟨3,4,5,6⟩]`, rewritten into the original X triangle
+    `[⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩] ++ same context` — the inverse
+    surgery restores exactly the starting diagram of the direct
+    witness. -/
+theorem reidemeister3ConnectedInv_satisfiable :
+    Reidemeister3ConnectedInv
+      { crossings := [⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 }
+      { crossings := [⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 } := by
+  refine ⟨by decide, by decide, rfl, rfl,
+          ⟨0, by decide, 2, 1, 3, 6, 5, 4, 7, 8, 9, ?_, ?_, ?_, ?_, ?_⟩⟩
+  · -- Nodup of the 9 labels (same assignment as the direct witness)
+    decide
+  · -- get 0 = ⟨a₃,b₃,g₃,g₁⟩ = ⟨3,4,9,7⟩
+    rfl
+  · -- get 1 = ⟨g₃,a₁,b₂,g₂⟩ = ⟨9,2,5,8⟩
+    rfl
+  · -- get 2 = ⟨g₁,g₂,a₂,b₁⟩ = ⟨7,8,1,6⟩
+    rfl
+  · -- triple List.set: reduces definitionally
+    rfl
+
+/-- **The direct move determines its inverse**: if `d₂` is obtained from
+    `d₁` by the direct triangular move, then the reversed pair
+    satisfies the inverse surgery. The rewrite X → Y → X restores
+    exactly the three original crossings: the `List.set`s at the same
+    indices override last-writer-wins, and the positions outside the
+    triangle are unchanged. No additional hypothesis — the relation is
+    reversible by construction. -/
+theorem reidemeister3Connected_inv {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3Connected d₁ d₂) : Reidemeister3ConnectedInv d₂ d₁ := by
+  obtain ⟨w1, w2, hl, he, i, hi, a₁, a₂, a₃, b₁, b₂, b₃, g₁, g₂, g₃,
+          hnd, g0, g1', g2', surg⟩ := h
+  -- Generic peels: a `List.set` at another index is transparent, at the
+  -- same index it overwrites. `.get` forms, proved by the `getElem_set_*`
+  -- lemmas up to defeq (syntactic `rw` does not match `.get`).
+  have hpeel : ∀ (l : List PDCrossing) (k j : Nat) (v : PDCrossing)
+      (hk : k ≠ j) (hj : j < l.length),
+      (l.set k v).get ⟨j, by simp only [List.length_set]; omega⟩
+        = l.get ⟨j, hj⟩ := by
+    intro l k j v hk hj
+    exact List.getElem_set_ne hk (by simp only [List.length_set]; omega)
+  have hself : ∀ (l : List PDCrossing) (k : Nat) (v : PDCrossing)
+      (hk : k < l.length),
+      (l.set k v).get ⟨k, by simp only [List.length_set]; omega⟩ = v := by
+    intro l k v hk
+    exact List.getElem_set_self (by simp only [List.length_set]; omega)
+  -- Transport of a get along a list equality (avoids `▸`, whose motive
+  -- fails on dependent `Fin` proofs).
+  have hgetmap : ∀ (L M : List PDCrossing) (e : L = M) (j : Nat)
+      (hj : j < L.length),
+      L.get ⟨j, hj⟩ = M.get ⟨j, by rw [← e]; omega⟩ := by
+    intro L M e j hj
+    cases e
+    rfl
+  refine ⟨w2, w1, hl.symm, he.symm,
+          ⟨i, by rw [surg]; simp only [List.length_set]; omega, a₁, a₂, a₃,
+            b₁, b₂, b₃, g₁, g₂, g₃, hnd, ?_, ?_, ?_, ?_⟩⟩
+  · -- get i of the result = Y₁: sets (i+1) and (i+2) transparent, set i writes
+    have hd2 : i < d₂.crossings.length := by omega
+    exact (hgetmap d₂.crossings (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+      (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) surg i hd2).trans
+      ((hpeel ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1)
+        ⟨g₃, a₁, b₂, g₂⟩) (i + 2) i ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+        (by simp only [List.length_set]; omega)).trans
+      ((hpeel (d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩) (i + 1) i
+        ⟨g₃, a₁, b₂, g₂⟩ (by omega)
+        (by simp only [List.length_set]; omega)).trans
+        (hself d₁.crossings i ⟨a₃, b₃, g₃, g₁⟩ (by omega))))
+  · -- get (i+1) of the result = Y₂: set (i+2) transparent, set (i+1) writes
+    have hd2 : i + 1 < d₂.crossings.length := by omega
+    exact (hgetmap d₂.crossings (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+      (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) surg (i + 1)
+        hd2).trans
+      ((hpeel ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1)
+        ⟨g₃, a₁, b₂, g₂⟩) (i + 2) (i + 1) ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+        (by simp only [List.length_set]; omega)).trans
+        (hself (d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩) (i + 1)
+          ⟨g₃, a₁, b₂, g₂⟩ (by simp only [List.length_set]; omega)))
+  · -- get (i+2) of the result = Y₃: written by the outer set
+    have hd2 : i + 2 < d₂.crossings.length := by omega
+    exact (hgetmap d₂.crossings (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+      (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) surg (i + 2)
+        hd2).trans
+      (hself ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1)
+        ⟨g₃, a₁, b₂, g₂⟩) (i + 2) ⟨g₁, g₂, a₂, b₁⟩
+        (by simp only [List.length_set]; omega))
+  · -- inverse surgery: X → Y → X restores the original. The six `set`s
+    -- override last-writer-wins at indices i, i+1, i+2; elsewhere they
+    -- are transparent — `List.ext_get` by position.
+    rw [surg]
+    apply List.ext_get
+    · simp only [List.length_set]
+    · intro n hn1 hn2
+      rcases Nat.lt_trichotomy n i with hlt | heq | hgt
+      · -- n < i: all six sets are transparent at index n
+        have e1 := hpeel (((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+            (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+            i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1) ⟨a₃, g₁, g₃, b₃⟩)
+            (i + 2) n ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e2 := hpeel ((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+            (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+            i ⟨a₂, a₁, g₁, g₂⟩) (i + 1) n ⟨a₃, g₁, g₃, b₃⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e3 := hpeel (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+            (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) i n
+            ⟨a₂, a₁, g₁, g₂⟩ (by omega : i ≠ n)
+            (by simp only [List.length_set]; omega)
+        have e4 := hpeel ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+            (i + 1) ⟨g₃, a₁, b₂, g₂⟩) (i + 2) n ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e5 := hpeel (d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩) (i + 1) n
+            ⟨g₃, a₁, b₂, g₂⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e6 := hpeel d₁.crossings i n ⟨a₃, b₃, g₃, g₁⟩
+            (by omega : i ≠ n) hn1
+        exact (e1.trans (e2.trans (e3.trans (e4.trans (e5.trans e6))))).symm
+      · -- n = i: the inner set X₁ is last written; g0 says d₁ already
+        -- carries X₁ at this index (subst eliminates i)
+        subst heq
+        have e1 := hpeel (((((d₁.crossings.set n ⟨a₃, b₃, g₃, g₁⟩).set
+            (n + 1) ⟨g₃, a₁, b₂, g₂⟩).set (n + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+            n ⟨a₂, a₁, g₁, g₂⟩).set (n + 1) ⟨a₃, g₁, g₃, b₃⟩) (n + 2) n
+            ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e2 := hpeel ((((d₁.crossings.set n ⟨a₃, b₃, g₃, g₁⟩).set
+            (n + 1) ⟨g₃, a₁, b₂, g₂⟩).set (n + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+            n ⟨a₂, a₁, g₁, g₂⟩) (n + 1) n ⟨a₃, g₁, g₃, b₃⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e3 := hself (((d₁.crossings.set n ⟨a₃, b₃, g₃, g₁⟩).set
+            (n + 1) ⟨g₃, a₁, b₂, g₂⟩).set (n + 2) ⟨g₁, g₂, a₂, b₁⟩) n
+            ⟨a₂, a₁, g₁, g₂⟩ (by simp only [List.length_set]; omega)
+        exact g0.trans (e1.trans (e2.trans e3)).symm
+      · -- i < n: three sub-cases
+        rcases Nat.lt_trichotomy n (i + 1) with hlt2 | heq2 | hgt2
+        · -- n < i + 1: impossible (hgt : i < n)
+          exact (by omega : False).elim
+        · -- n = i + 1: X₂ last written, g1' (subst eliminates n)
+          subst heq2
+          have e1 := hpeel (((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+              (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+              i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1) ⟨a₃, g₁, g₃, b₃⟩) (i + 2)
+              (i + 1) ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+              (by simp only [List.length_set]; omega)
+          have e2 := hself ((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+              (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+              i ⟨a₂, a₁, g₁, g₂⟩) (i + 1) ⟨a₃, g₁, g₃, b₃⟩
+              (by simp only [List.length_set]; omega)
+          exact g1'.trans (e1.trans e2).symm
+        · rcases Nat.lt_trichotomy n (i + 2) with hlt3 | heq3 | hgt3
+          · -- n < i + 2: impossible (hgt2 : i + 1 < n)
+            exact (by omega : False).elim
+          · -- n = i + 2: X₃, g2' (subst eliminates n)
+            subst heq3
+            have e1 := hself (((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+                i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1) ⟨a₃, g₁, g₃, b₃⟩) (i + 2)
+                ⟨g₃, g₂, b₂, b₁⟩ (by simp only [List.length_set]; omega)
+            exact g2'.trans e1.symm
+          · -- i + 2 < n: all six sets are transparent
+            have e1 := hpeel (((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+                i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1) ⟨a₃, g₁, g₃, b₃⟩) (i + 2) n
+                ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e2 := hpeel ((((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩).set
+                i ⟨a₂, a₁, g₁, g₂⟩) (i + 1) n ⟨a₃, g₁, g₃, b₃⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e3 := hpeel (((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩).set (i + 2) ⟨g₁, g₂, a₂, b₁⟩) i n
+                ⟨a₂, a₁, g₁, g₂⟩ (by omega : i ≠ n)
+                (by simp only [List.length_set]; omega)
+            have e4 := hpeel ((d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩).set
+                (i + 1) ⟨g₃, a₁, b₂, g₂⟩) (i + 2) n ⟨g₁, g₂, a₂, b₁⟩
+                (by omega) (by simp only [List.length_set]; omega)
+            have e5 := hpeel (d₁.crossings.set i ⟨a₃, b₃, g₃, g₁⟩) (i + 1) n
+                ⟨g₃, a₁, b₂, g₂⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e6 := hpeel d₁.crossings i n ⟨a₃, b₃, g₃, g₁⟩
+                (by omega : i ≠ n) hn1
+            exact (e1.trans (e2.trans (e3.trans (e4.trans (e5.trans e6))))).symm
+
+/-! ## 2. Single Reidemeister step
+
+A single step is one of the three **connected** Reidemeister moves
+(`Reidemeister1Connected`, `Reidemeister2Connected`, `Reidemeister3Connected`),
+each carrying its direction in a `d d' ∨ d' d` disjunction. Re-anchoring
+the `r2`/`r3` constructors onto the connected relations (Stage 2, #2874)
+closes the door on the free moves `Reidemeister2`/`Reidemeister3` whose
+downward transfer is FALSE (walls `r2_append_only_wall`, `r3_determined_wall`).
+-/
+
+inductive ReidemeisterStep (d : KnotDiagram) : KnotDiagram → Prop where
+  | r1 {d'} :
+      (Reidemeister1Connected d d' ∨ Reidemeister1Connected d' d) →
+      ReidemeisterStep d d'
+  | r2 {d'} :
+      (Reidemeister2Connected d d' ∨ Reidemeister2Connected d' d) →
+      ReidemeisterStep d d'
+  | r3 {d'} :
+      (Reidemeister3Connected d d' ∨ Reidemeister3Connected d' d) →
+      ReidemeisterStep d d'
+
+/-! ## 3. Reidemeister equivalence (reflexive transitive closure)
+
+Two diagrams are Reidemeister-equivalent if connected by a finite
+sequence of moves (in either direction).
+-/
+
+/-- Reflexive transitive closure of Reidemeister steps. -/
+inductive ReidemeisterEquiv : KnotDiagram → KnotDiagram → Prop where
+  | refl (d : KnotDiagram) : ReidemeisterEquiv d d
+  | step {d₁ d₂ : KnotDiagram} :
+      ReidemeisterStep d₁ d₂ → ReidemeisterEquiv d₁ d₂
+  | trans {d₁ d₂ d₃ : KnotDiagram} :
+      ReidemeisterEquiv d₁ d₂ → ReidemeisterEquiv d₂ d₃ → ReidemeisterEquiv d₁ d₃
+
+/-- Symmetry: if d₁ →* d₂ then d₂ →* d₁ (each move has an inverse).
+
+Proof: induction on the RTC. Each base move (R1/R2/R3) is symmetric by the
+explicit `*.symm` lemmas above; reflexivity is trivial; transitivity inverts
+the two halves and composes.
+-/
+theorem reidemeister_equiv_symm {d₁ d₂ : KnotDiagram}
+    (h : ReidemeisterEquiv d₁ d₂) : ReidemeisterEquiv d₂ d₁ := by
+  induction h with
+  | refl d => exact ReidemeisterEquiv.refl d
+  | step hstep => exact ReidemeisterEquiv.step (by
+      cases hstep with
+      | r1 h => exact ReidemeisterStep.r1 h.symm
+      | r2 h => exact ReidemeisterStep.r2 h.symm
+      | r3 h => exact ReidemeisterStep.r3 h.symm)
+  | trans _ _ ih₁ ih₂ => exact ReidemeisterEquiv.trans ih₂ ih₁
+
+/-- Equivalence relation. -/
+theorem reidemeister_equiv_equivalence : Equivalence (@ReidemeisterEquiv) where
+  refl := ReidemeisterEquiv.refl
+  symm := reidemeister_equiv_symm
+  trans := ReidemeisterEquiv.trans
+
+/-! ## 4. Knot equivalence
+
+Two knots are equivalent if their diagrams are Reidemeister-equivalent.
+-/
+
+def KnotEquiv (k₁ k₂ : Knot) : Prop :=
+  ReidemeisterEquiv k₁.diagram k₂.diagram
+
+/-! ## 5. Reidemeister's theorem (statement only)
+
+This is the fundamental theorem of knot theory: ambient isotopy of knots
+corresponds exactly to Reidemeister moves on diagrams.
+
+**This is a very deep theorem** whose proof requires:
+- Piecewise-linear (PL) topology of 3-manifolds
+- General position arguments for curves in 3-space
+- Alexander's theorem (every knot has a diagram)
+- Reference: Reidemeister (1927), Alexander (1928)
+- Modern proof: Kauffman (cf. "Knots and Physics")
+-/
+theorem reidemeister_theorem :
+    ∀ (k₁ k₂ : Knot),
+      -- Ambient isotopy of the embeddings S¹ → S³
+      sorry -- ambient_isotopic k₁ k₂
+      ↔
+      -- Reidemeister equivalence of diagrams
+      KnotEquiv k₁ k₂ := by
+  exact sorry
+  -- Reference: Reidemeister (1927)
+  -- Mathlib prerequisites:
+  --   1. PL manifolds (not in Mathlib)
+  --   2. Embeddings S¹ → S³ (not in Mathlib)
+  --   3. Ambient isotopy (not in Mathlib)
+  --   4. General position / transversality (not in Mathlib)
+  -- See Kyle Miller's talk (UCSC 2024): long-term project to build these
+
+end Knots_en

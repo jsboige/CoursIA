@@ -30,8 +30,8 @@ position long/short/cash selon signal.
 - **Note de transparence** : le README lui-même précise "uses
   sklearn Ridge, not a real neural network (LSTM proxy pattern
   from Hands-On AI Trading)". Pas de LSTM effectif dans `main.py`.
-- **quantbook.ipynb** : 2/12 cellules non-exécutées — substance
-  préservée dans `main.py` (172 lignes, `MLDeepLearningAlgorithm`).
+- **quantbook.ipynb** : cellules non-exécutées — substance
+  préservée dans `main.py` (`MLDeepLearningAlgorithm`).
 
 ## Verdict
 
@@ -66,8 +66,8 @@ sandbox Lean/QC) — **pas comme source d'alpha live**.
 
 ## Fichiers
 
-- `main.py` (6.9 KB) — `MLDeepLearningAlgorithm` (172 lignes)
-- `quantbook.ipynb` (196 KB) — exploration QuantBook (2/12 cells unexec)
+- `main.py` (6.9 KB) — `MLDeepLearningAlgorithm`
+- `quantbook.ipynb` (196 KB) — exploration QuantBook (cells unexec)
 - `README.md` — Description + avertissement explicite "LSTM proxy
   pattern"
 

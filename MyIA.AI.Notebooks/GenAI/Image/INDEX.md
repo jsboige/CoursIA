@@ -1,7 +1,7 @@
 # 📑 INDEX COMPLET - GenAI Images Ecosystem CoursIA
 
 > **Guide de navigation complet de l'écosystème GenAI Images**  
-> Production-ready | 20 Notebooks | APIs Externes | Documentation Complète
+> Production-ready | APIs Externes | Documentation Complète
 
 ---
 
@@ -42,7 +42,7 @@ L'écosystème **GenAI Images CoursIA** est une plateforme modulaire complète p
 | Métrique | Valeur |
 |----------|--------|
 | **Notebooks totaux** | 20 |
-| **Tutoriels complets** | 4 (8500+ lignes) |
+| **Tutoriels complets** | 4 |
 | **Exemples sectoriels** | 3 domaines |
 | **APIs configurées** | 3 (OpenAI, OpenRouter, GPT-5) |
 | **Niveaux formation** | 4 (00-04) |
@@ -94,7 +94,7 @@ print(f"✅ Image générée: {response.data[0].url}")
 
 1. **00-1-Environment-Setup** : Configuration complète
 2. **01-1-OpenAI-DALL-E-3** : Premier modèle génération
-3. **01-2-GPT-5-Image-Generation** : Analyse multimodale
+3. **01-2-Generation-Image-API** : Analyse multimodale
 4. **04-1-Educational-Content-Generation** : Application pratique
 
 ---
@@ -118,28 +118,37 @@ MyIA.AI.Notebooks/GenAI/
     │
     ├── 01-Foundation/                # 🟢 Fondamentaux
     │   ├── 01-1-OpenAI-DALL-E-3.ipynb
-    │   ├── 01-2-GPT-5-Image-Generation.ipynb
+    │   ├── 01-2-Generation-Image-API.ipynb
     │   ├── 01-3-Basic-Image-Operations.ipynb
     │   ├── 01-4-Forge-SD-XL-Turbo.ipynb
-    │   ├── 01-5-Qwen-Image-Edit.ipynb
-    │   └── 01-5b-Qwen-Image-Edit-2509.ipynb
+    │   ├── 01-5-Edition-Image-Prompt.ipynb
+    │   ├── 01-5b-Edition-Image-Prompt-Iterations.ipynb
+    │   └── 01-5c-Edition-Image-Prompt-Workflows.ipynb
     │
     ├── 02-Advanced/                  # 🟠 Avancé (Docker)
     │   ├── 02-2-FLUX-1-Advanced-Generation.ipynb
     │   ├── 02-3-Stable-Diffusion-3-5.ipynb
     │   ├── 02-4-Z-Image-Lumina2.ipynb
-    │   └── 02-5-Bonsai-Image-Ternary.ipynb
+    │   ├── 02-5-Bonsai-Image-Ternary.ipynb
+    │   └── 02-6-Few-Step-Generative-Models-IMM-TVM.ipynb
     │
     ├── 03-Orchestration/             # 🔴 Orchestration (Docker)
     │   ├── 03-1-Multi-Model-Comparison.ipynb
     │   ├── 03-2-Workflow-Orchestration.ipynb
-    │   └── 03-3-Performance-Optimization.ipynb
+    │   ├── 03-3-Performance-Optimization.ipynb
+    │   └── 03-4-VLM-Character-Design-Workflow.ipynb
     │
     ├── 04-Applications/              # 🔴 Applications Métier
     │   ├── 04-1-Educational-Content-Generation.ipynb
     │   ├── 04-2-Creative-Workflows.ipynb
     │   ├── 04-3-Production-Integration.ipynb
-    │   └── 04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb
+    │   ├── 04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb
+    │   └── 04-5-MiniMax-Cloud-Image.ipynb
+    │
+    ├── 05-History/                   # 📜 Racines pré-Stable-Diffusion
+    │   ├── 05-0-Generateurs-Symboliques.ipynb
+    │   ├── 05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb
+    │   └── 05-2-CLIPasso-Semantic-Sketching.ipynb
     │
     ├── examples/                     # 🎯 Exemples Sectoriels
     │   ├── science-diagrams.ipynb
@@ -174,10 +183,10 @@ MyIA.AI.Notebooks/GenAI/
 | Notebook | Modèle | Temps | Difficulté | Objectifs Clés |
 |----------|--------|-------|------------|----------------|
 | **01-1-OpenAI-DALL-E-3** | DALL-E 3 | 2h | ⭐ | Génération images haute qualité |
-| **01-2-GPT-5-Image-Generation** | GPT-5 Vision | 2h | ⭐ | Analyse multimodale avancée |
+| **01-2-Generation-Image-API** | GPT-5 Vision | 2h | ⭐ | Analyse multimodale avancée |
 | **01-3-Basic-Image-Operations** | PIL/OpenCV | 1h30 | ⭐ | Manipulation images basique |
 | **01-4-Forge-SD-XL-Turbo** | SD XL Turbo (Forge) | — | ⭐ | Génération locale via Stable Diffusion Forge |
-| **01-5-Qwen-Image-Edit** | Qwen-Image-Edit 2.5 | — | ⭐ | Génération et édition via API ComfyUI |
+| **01-5-Edition-Image-Prompt** | Qwen-Image-Edit 2.5 | — | ⭐ | Génération et édition via API ComfyUI |
 
 **Compétences Acquises** :
 - ✅ Prompt engineering images
@@ -191,11 +200,13 @@ MyIA.AI.Notebooks/GenAI/
 
 | Notebook | Modèle | Temps | Difficulté | Prérequis Docker |
 |----------|--------|-------|------------|------------------|
-| **01-5b-Qwen-Image-Edit-2509** | Qwen 2.5 | 3h | ⭐⭐ | ✅ Requis |
+| **01-5b-Edition-Image-Prompt-Iterations** | Qwen 2.5 | 3h | ⭐⭐ | ✅ Requis |
+| **01-5c-Edition-Image-Prompt-Workflows** | Qwen-Image 2.1 | — | ⭐⭐ | ✅ Requis (instance comfyui-qwen) |
 | **02-2-FLUX-1-Advanced-Generation** | FLUX.1 | 3h | ⭐⭐ | ✅ Requis |
 | **02-3-Stable-Diffusion-3-5** | SD 3.5 | 3h | ⭐⭐ | ✅ Requis |
 | **02-4-Z-Image-Lumina2** | Z-Image (Lumina-2) | — | ⭐⭐ | ✅ Requis (ComfyUI) |
 | **02-5-Bonsai-Image-Ternary** | Bonsai-Image (1.58-bit) | — | ⭐⭐ | ✅ Requis (quantization ternaire) |
+| **02-6-Few-Step-Generative-Models-IMM-TVM** | IMM (CIFAR-10), TVM (ImageNet-256) | — | ⭐⭐ | — (exécution locale, poids officiels) |
 
 **Status** : 🚧 Infrastructure Docker en cours de déploiement (agent parallèle)
 
@@ -214,6 +225,7 @@ MyIA.AI.Notebooks/GenAI/
 | **03-1-Multi-Model-Comparison** | Benchmarking | 2h | ⭐⭐⭐ | Docker, ComfyUI |
 | **03-2-Workflow-Orchestration** | Pipelines | 2h30 | ⭐⭐⭐ | Docker, Async |
 | **03-3-Performance-Optimization** | Scaling | 2h | ⭐⭐⭐ | Docker, Queue |
+| **03-4-VLM-Character-Design-Workflow** | Character design VLM | 50min | ⭐⭐⭐ | ComfyUI, VLM in-graph |
 
 **Status** : 🚧 Infrastructure Docker en cours
 
@@ -233,6 +245,7 @@ MyIA.AI.Notebooks/GenAI/
 | **04-2-Creative-Workflows** | Workflows créatifs | 3h | ⭐⭐⭐ | ✅ Production |
 | **04-3-Production-Integration** | Intégration systèmes | 2h30 | ⭐⭐⭐ | ✅ Production |
 | **04-4-Cross-Stitch-Pattern-Maker-Legacy** | Patron de point de croix | — | ⭐⭐⭐ | ✅ Production (legacy) |
+| **04-5-MiniMax-Cloud-Image** | Images par API cloud Hailuo | — | ⭐⭐⭐ | ✅ Production |
 
 **Status APIs Externes** : ✅ 100% Opérationnel
 
@@ -246,7 +259,7 @@ MyIA.AI.Notebooks/GenAI/
 
 ## 📚 Tutoriels et Guides
 
-### Tutoriels Complets (1000-1600 lignes)
+### Tutoriels Complets
 
 #### 1. **DALL-E 3 Complete Guide** 📘
 **Fichier** : [`tutorials/dalle3-complete-guide.md`](../tutorials/dalle3-complete-guide.md)  
@@ -280,7 +293,7 @@ MyIA.AI.Notebooks/GenAI/
 - Performance et cost management
 
 **Notebooks Associés** :
-- `01-2-GPT-5-Image-Generation.ipynb`
+- `01-2-Generation-Image-API.ipynb`
 - `04-2-Creative-Workflows.ipynb`
 
 ---
@@ -429,7 +442,7 @@ MyIA.AI.Notebooks/GenAI/
 5. Tutorial : `dalle3-complete-guide.md` (30min)
 
 **Semaine 3-4 : Analyse Multimodale**
-6. `01-2-GPT-5-Image-Generation` (2h)
+6. `01-2-Generation-Image-API` (2h)
 7. Tutorial : `gpt5-image-analysis-guide.md` (35min)
 8. `01-3-Basic-Image-Operations` (1h30)
 
@@ -482,7 +495,7 @@ MyIA.AI.Notebooks/GenAI/
 
 **Phase 1 : Docker & Advanced Models (15h)**
 1. `00-2-Docker-Services-Management` (20min)
-2. `01-5b-Qwen-Image-Edit-2509` (3h)
+2. `01-5b-Edition-Image-Prompt-Iterations` (3h)
 3. `02-2-FLUX-1-Advanced-Generation` (3h)
 4. `02-3-Stable-Diffusion-3-5` (3h)
 5. Infrastructure Docker setup (5h40)

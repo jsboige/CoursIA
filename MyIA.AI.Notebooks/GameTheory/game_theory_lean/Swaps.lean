@@ -3,7 +3,7 @@
   ==========================
 
   Chemins de swaps sur les jeux 2×2 ordinaux : compagnon formel du
-  notebook `GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb` (grain #12222).
+  notebook `GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb` (grain #12222).
 
   Le module substantiel vit dans `Swaps/Basic.lean` : type `Table`,
   les six générateurs adjacents (`Etape`), l'application d'un chemin
@@ -15,7 +15,7 @@
 
   `Swaps/Parite.lean` ajoute l'obstruction **non bornée** (§6 de l'EPIC
   #12205). Là où `aucun_chemin_court` réfute 7 chemins par énumération
-  et où le certificat du notebook `GameTheory-24b` réfute tout chemin
+  et où le certificat du notebook `GameTheory-20b` réfute tout chemin
   au-delà d'un budget `k_max`, la parité jointe du nombre d'inversions
   est un invariant transporté le long d'un chemin de longueur
   **quelconque** : `parite_determinee` lit la parité de la longueur sur

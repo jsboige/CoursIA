@@ -1,12 +1,44 @@
 #!/usr/bin/env python3
 r"""
-Lean 4 Jupyter Kernel Wrapper for WSL (v7)
+Lean 4 Jupyter Kernel Wrapper for WSL (v9)
 
 This script converts Windows paths to WSL paths and launches the lean4_jupyter kernel.
 It handles various path formats that VSCode/Jupyter might pass:
 - Standard Windows paths: C:\Users\...
 - Tilde shorthand: ~\AppData\... or ~/AppData/...
 - Mangled paths (backslashes eaten): c:UsersjsboiAppData...
+
+v9 changes (#24913 -- the paired REPL is the one that runs):
+1. The matched REPL is exported as LEAN4_JUPYTER_REPL; lean4_jupyter
+   (fork tag v0.0.2-paired-repl) launches it directly, inside a lake and
+   outside one. `lake env repl` resolved `repl` on a PATH that `lake env`
+   prefixes with ~/.elan/bin: the default REPL ran, of another version on a
+   machine with several REPL builds, and every cell failed under exit 0.
+2. With an older lean4_jupyter that would run a REPL of another version, the
+   kernel REFUSES to start (exit 3) and names both binaries.
+3. The suggested `build-repl` command keeps the tag's leading `v`, the form
+   setup_native_lean4_import.py accepts.
+4. The embedded Lean version keeps its `-rcN` suffix: an rc toolchain embeds
+   `.../doc/reference/4.33.0-rc1/`. Read as `4.33.0`, a correctly built
+   `repl-4.33.0-rc1` was refused and an rc REPL passed for the release.
+
+v8 changes (#18511 -- the kernel no longer follows `stable`, and no longer fails silently):
+1. The toolchain is PINNED from the nearest `lean-toolchain` (the lake's own when
+   the execution directory is inside a lake, else the closest anchor up-tree) and
+   exported as ELAN_TOOLCHAIN. Before, `lake env repl` followed elan's default
+   (`leanprover/lean4:stable`), which drifts (v4.34.1 on 2026-09-30, v4.35.0 on
+   2026-10-21) while the only REPL binary is built for v4.30.0: every cell then
+   rendered a PARSE ERROR and papermill still exited 0.
+2. The REPL binary is matched to the pinned toolchain. A matched binary is
+   `~/.elan/bin/repl-<tag>` (built by scripts/lean/setup_native_lean4_import.py
+   build-repl); the default `~/.elan/bin/repl` is accepted only when the Lean
+   version it embeds (read from the binary itself) IS the pinned version.
+3. A version divergence now REFUSES to start the kernel (exit 3, message naming
+   both versions) instead of rendering error cells under exit 0.
+4. A missing lake is no longer fatal by itself: `lake env` works without a
+   lakefile (measured), so a notebook whose tree pins a `lean-toolchain` runs
+   with the pinned toolchain. The #16181 rule still holds: no fallback to any
+   unrelated project -- only the pin is required.
 
 v7 changes:
 1. Mangled-path regex covers BOTH AppData/Roaming (jupyter kernelspec) AND
@@ -120,6 +152,135 @@ def find_lake_root(start_dir):
     return None
 
 
+def find_toolchain_anchor(start_dir, max_levels=12):
+    """(dossier, toolchain) du `lean-toolchain` le plus proche en remontant.
+
+    Renvoie (None, None) si aucun ancrage n'est trouve : le kernel refuse alors
+    de demarrer plutot que de suivre `stable` (#18511).
+    """
+    d = os.path.abspath(start_dir)
+    for _ in range(max_levels):
+        candidate = os.path.join(d, 'lean-toolchain')
+        if os.path.isfile(candidate):
+            try:
+                with open(candidate, encoding='utf-8') as fh:
+                    toolchain = fh.read().strip()
+            except OSError:
+                toolchain = ''
+            if toolchain:
+                return d, toolchain
+        parent = os.path.dirname(d)
+        if parent == d:
+            break
+        d = parent
+    return None, None
+
+
+# Le binaire REPL embarque l'URL de documentation de la version de Lean qu'il
+# compilee : c'est une MESURE du binaire, pas une annotation declaree.
+# Le suffixe `-rcN` fait partie de la version : une toolchain rc embarque
+# `.../reference/4.33.0-rc1/` (mesure). Sans lui, un `repl-4.33.0-rc1` etait
+# refuse, et un REPL rc passait pour la release (#24913).
+REPL_DOC_URL_RE = re.compile(rb"lean-lang\.org/doc/reference/(\d+\.\d+\.\d+(?:-rc\d+)?)/")
+
+
+def repl_lean_version(repl_path, chunk_size=8 * 1024 * 1024):
+    """Version de Lean pour laquelle le binaire REPL a ete construit.
+
+    Lecture par blocs (le binaire fait ~200 Mo) avec recouvrement, pour ne
+    pas charger le fichier entier en memoire. Renvoie None si la version n'est
+    pas lisible dans le binaire.
+    """
+    try:
+        with open(repl_path, 'rb') as fh:
+            tail = b''
+            while True:
+                block = fh.read(chunk_size)
+                if not block:
+                    break
+                found = REPL_DOC_URL_RE.search(tail + block)
+                if found:
+                    return found.group(1).decode('ascii')
+                tail = block[-64:]
+    except OSError:
+        return None
+    return None
+
+
+def resolve_repl(home, tag, elan_home=None):
+    """Choisit le binaire REPL couple a la toolchain `tag` (ex: 'v4.30.0').
+
+    Renvoie (chemin, version_du_repl). `chemin` est None quand aucune
+    correspondance n'est prouvee : l'appelant doit alors REFUSER de demarrer.
+    Aucun repl de secours : c'est exactement ce repl de secours qui produisait
+    des cellules en erreur de parse sous un exit 0 (#18511).
+    """
+    tag = tag.lstrip('v')
+    # `home` remains the first argument for existing callers and tests; an
+    # explicit ELAN_HOME lets the installer place toolchains outside HOME.
+    elan_bin = os.path.join(elan_home or os.path.join(home, '.elan'), 'bin')
+    # 1. binaire nomme d'apres la toolchain (construit contre elle).
+    matched = os.path.join(elan_bin, 'repl-' + tag)
+    if os.path.isfile(matched):
+        version = repl_lean_version(matched)
+        if version is None or version == tag:
+            return matched, (version or tag)
+        return None, version
+    # 2. repl par defaut : accepte seulement si sa version EMBARQUEE est celle
+    #    de la toolchain epinglee.
+    default = os.path.join(elan_bin, 'repl')
+    if os.path.isfile(default):
+        version = repl_lean_version(default)
+        if version == tag:
+            return default, version
+        return None, version
+    return None, None
+
+
+def _repl_shim_dir(repl_path):
+    """Repertoire temporaire contenant un lien `repl` vers le binaire choisi.
+
+    `lake env repl` resout `repl` par le PATH : sans ce shim, un binaire
+    `repl-<tag>` (nom different) ne serait jamais trouve.
+    """
+    import tempfile
+    shim_dir = os.path.join(tempfile.gettempdir(), 'lean4-repl-shim')
+    os.makedirs(shim_dir, exist_ok=True)
+    shim = os.path.join(shim_dir, 'repl')
+    try:
+        if os.path.islink(shim) or os.path.exists(shim):
+            os.remove(shim)
+        os.symlink(repl_path, shim)
+    except OSError:
+        return None
+    return shim_dir
+
+
+def legacy_launch_target(repl_wrapper_cls, lake_root, default_repl):
+    """Binaire que lancerait un lean4_jupyter qui ignore LEAN4_JUPYTER_REPL.
+
+    Renvoie None quand le lean4_jupyter installe lit la variable : il lance
+    alors le binaire apparie. Sinon, renvoie le binaire qu'il choisirait
+    lui-meme (None si ce choix echoue de lui-meme, visiblement) :
+
+    - dans un lake, celui que rend son ``_repl_for_toolchain`` ;
+    - hors lake, ou quand ce binaire n'existe pas, il lance ``lake env repl``.
+      `lake env` prefixe le PATH par ~/.elan/bin : c'est ~/.elan/bin/repl qui
+      tourne s'il existe, le shim du wrapper sinon (#24913).
+    """
+    if hasattr(repl_wrapper_cls, '_repl_from_caller'):
+        return None
+    chooser = getattr(repl_wrapper_cls, '_repl_for_toolchain', None)
+    if lake_root and chooser is not None:
+        try:
+            chosen = chooser(lake_root)
+        except Exception:
+            return None
+        if chosen and os.path.isfile(chosen):
+            return chosen
+    return default_repl if os.path.isfile(default_repl) else None
+
+
 def main():
     log_file = os.path.expanduser('~/.lean4-wrapper.log')
 
@@ -165,9 +326,12 @@ def main():
     # the REPL and the venv under $HOME): a hardcoded account path broke the
     # kernel for every other WSL user and for native Linux/macOS installs.
     home = os.path.expanduser('~')
+    elan_home = os.environ.get('ELAN_HOME') or os.path.join(home, '.elan')
+    venv_path = os.environ.get('LEAN4_VENV') or os.path.join(home, '.lean4-venv')
+    elan_bin = os.path.join(elan_home, 'bin')
     os.environ['PATH'] = os.pathsep.join([
-        os.path.join(home, '.elan', 'bin'),
-        os.path.join(home, '.lean4-venv', 'bin'),
+        elan_bin,
+        os.path.join(venv_path, 'bin'),
         '/usr/local/bin', '/usr/bin', '/bin',
     ])
 
@@ -176,19 +340,117 @@ def main():
     # live beside several Lake projects. Resolve upward from that real origin.
     inherited_cwd = os.getcwd()
     lake_root = find_lake_root(inherited_cwd)
-    if lake_root is None:
+
+    # --- Toolchain einglee (#18511) -------------------------------------
+    # L'ordre de precedence : le lake gagne (son propre lean-toolchain), sinon
+    # l'ancrage le plus proche en remontant depuis le repertoire d'execution.
+    anchor_dir, toolchain = find_toolchain_anchor(inherited_cwd)
+    if lake_root:
+        lake_toolchain = os.path.join(lake_root, 'lean-toolchain')
+        if os.path.isfile(lake_toolchain):
+            try:
+                with open(lake_toolchain, encoding='utf-8') as fh:
+                    pinned = fh.read().strip()
+            except OSError:
+                pinned = ''
+            if pinned:
+                # Deux affectations separees : le destructuring
+                # `anchor_dir, toolchain = lake_root, pinned` fait un tuple
+                # dont la tete est le porteur `lake_root`, et la garde
+                # `check_lake_direct_invocation.py` (forme 2bis) le lit comme
+                # un argv `[lake_root, ...]`. Ce n'est pas un argv : le
+                # wrapper ne lance jamais `lake` (il execute le binaire REPL
+                # directement, avec LEAN_PATH de la lake). Forme non
+                # ambiguë pour la garde, meme comportement.
+                anchor_dir = lake_root
+                toolchain = pinned
+    if not toolchain:
         message = (
-            "Lean 4 kernel startup failed: no lakefile.lean or lakefile.toml "
-            f"found from execution directory {inherited_cwd}. Open the notebook "
-            "inside a Lake project, or run wsl_papermill.py with "
-            "--cwd <lake-root> for a companion notebook."
+            "Lean 4 kernel startup failed: no lean-toolchain found from execution "
+            f"directory {inherited_cwd}. The kernel pins the Lean toolchain and "
+            "never follows elan's default ('stable'); open the notebook inside a "
+            "tree that pins one, or run wsl_papermill.py with --cwd <lake-root>."
         )
         log(message)
         print(message, file=sys.stderr)
         return 2
 
-    log(f"Lake detected: chdir {inherited_cwd} -> {lake_root}")
-    os.chdir(lake_root)
+    tag = toolchain.split(':')[-1].strip()
+    repl_path, repl_version = resolve_repl(home, tag, elan_home=elan_home)
+    if repl_path is None:
+        message = (
+            "Lean 4 kernel startup failed: REPL/toolchain divergence. The pinned "
+            f"toolchain is {toolchain} (tag {tag}) but the available REPL binary "
+            f"reports Lean {repl_version or 'an unknown version'}. Refusing to "
+            "start: a mismatched REPL renders every cell as a parse error under "
+            "an exit 0. Fix: python scripts/lean/setup_native_lean4_import.py "
+            f"build-repl {tag}"
+        )
+        log(message)
+        print(message, file=sys.stderr)
+        return 3
+    os.environ['ELAN_TOOLCHAIN'] = toolchain
+    # Le binaire apparie est transmis a lean4_jupyter, qui le lance directement
+    # (avec ou sans lake). Sans cette variable, le noyau lance `lake env repl` :
+    # `lake env` prefixe le PATH par ~/.elan/bin, si bien que `repl` y designe
+    # le REPL par defaut et non le binaire apparie -- mesure sous Linux, ou un
+    # REPL 4.33 a tourne sur les .olean d'un arbre ancre en v4.30.0, cellules en
+    # erreur sous exit 0 (#24913). Le fork lit la variable depuis sa version
+    # qui la connait ; les versions anterieures l'ignorent.
+    os.environ['LEAN4_JUPYTER_REPL'] = repl_path
+    log(f"toolchain pinned: {toolchain} ; REPL: {repl_path} (Lean {repl_version})")
+
+    # Shim conserve pour les versions de lean4_jupyter qui ignorent
+    # LEAN4_JUPYTER_REPL : `lake env repl` resout `repl` par le PATH. Il ne
+    # suffit pas quand ~/.elan/bin/repl existe (voir ci-dessus).
+    default_repl = os.path.join(elan_bin, 'repl')
+    shim_dir = _repl_shim_dir(repl_path)
+    if shim_dir is None and os.path.abspath(repl_path) != os.path.abspath(default_repl):
+        message = (
+            "Lean 4 kernel startup failed: cannot expose the matched REPL "
+            f"{repl_path} on PATH (symlink shim unavailable), so 'lake env repl' "
+            "could pick another binary."
+        )
+        log(message)
+        print(message, file=sys.stderr)
+        return 3
+    if shim_dir:
+        os.environ['PATH'] = os.pathsep.join(
+            [shim_dir] + os.environ['PATH'].split(os.pathsep))
+
+    # Un lean4_jupyter anterieur a LEAN4_JUPYTER_REPL choisit lui-meme son
+    # binaire. Quand ce choix n'a pas la version de la toolchain, chaque
+    # cellule rendrait une erreur Lean sous un exit 0 : refuser de demarrer.
+    try:
+        from lean4_jupyter.repl import Lean4ReplWrapper
+    except Exception as exc:
+        log(f"lean4_jupyter.repl import failed before launch: {exc}")
+        Lean4ReplWrapper = None
+    if Lean4ReplWrapper is not None:
+        target = legacy_launch_target(Lean4ReplWrapper, lake_root, default_repl)
+        if target and os.path.realpath(target) != os.path.realpath(repl_path):
+            target_version = repl_lean_version(target)
+            if target_version != tag.lstrip('v'):
+                message = (
+                    "Lean 4 kernel startup failed: the installed lean4_jupyter "
+                    "ignores LEAN4_JUPYTER_REPL and would run "
+                    f"{target} (Lean {target_version or 'unknown'}) instead of the "
+                    f"REPL paired with {toolchain}, {repl_path}. Refusing to start: "
+                    "a mismatched REPL renders every cell as an error under an "
+                    "exit 0. Fix: python scripts/lean/setup_native_lean4_import.py "
+                    "install"
+                )
+                log(message)
+                print(message, file=sys.stderr)
+                return 3
+
+    # Un lake n'est plus indispensable en soi : `lake env` fonctionne sans
+    # lakefile (mesure 2026-10-21). Ce qui est indispensable, c'est l'ancrage
+    # de la toolchain -- et il est resolu ci-dessus (#16181 reste respecte :
+    # aucun repli vers un projet etranger).
+    target_dir = lake_root if lake_root else anchor_dir
+    log(f"chdir {inherited_cwd} -> {target_dir} (lake={lake_root})")
+    os.chdir(target_dir)
     log(f"PATH set (clean): {os.environ['PATH']}")
     log(f"cwd: {os.getcwd()}")
     log(f"About to launch kernel with args: {args}")

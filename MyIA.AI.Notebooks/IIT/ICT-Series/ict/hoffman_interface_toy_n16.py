@@ -4,8 +4,9 @@ Suites directes des case 11 (PR #14535, N=4 null) et case 12 (PR #14544, N=8 dis
 Passe a N=16 ontic states (4 bits), M=2 sensory states, compression 8:1.
 Fibre cardinal 8 = MAP exploite structure intra-fibre largement plus riche qu'en N=8.
 
-Setup : Prakash, Stephens, Hoffman, Singh & Fields (2017) "Fitness Beats Truth in the
-Evolution of Perception", arXiv:1505.04322, section 4 (toy formel).
+Setup : Prakash, Stephens, Hoffman, Singh & Fields (2021) "Fitness Beats Truth in the
+Evolution of Perception", Acta Biotheoretica 69(3):319-341,
+doi:10.1007/s10441-020-09400-0, section 4 (toy formel) du préprint du 30 juillet 2017.
 
 16 paysages (4 herites case 11 + 4 herites case 12 + 8 nouveaux bit3 family).
 """

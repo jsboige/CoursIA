@@ -312,6 +312,16 @@ def main():
 
     targets = get_target_notebooks(args)
     if not targets:
+        # JSON mode is the workflow's crash/completion disambiguator (#14799):
+        # a completing run ALWAYS prints its report, and prose is not a report.
+        # An empty selection must surface as an empty JSON list, never as
+        # prose that kills the downstream parser ("Expecting value: line 1
+        # column 1"). Measured instance (2026-10-10, run 38015702551): an
+        # amputated runner checkout (#20174) left zero notebooks under
+        # MyIA.AI.Notebooks/, so the catalog filter matched nothing.
+        if args.json:
+            print("[]")
+            return 0
         print("No notebooks to check.")
         return 0
 

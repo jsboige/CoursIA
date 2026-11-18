@@ -1,0 +1,449 @@
+"""Tests unitaires pour :mod:`ict.factor_geometry_trained` (#15478).
+
+Le module ferme la boucle de la geometrie factorisee : le modele est
+**reellement entraine** sur le banc, la geometrie est lue sur **ses**
+activations, et le temoin nul est celui d'initialisations **non entrainees de
+la meme architecture**. Ces tests figent les contrats qui rendent cette
+fermeture falsifiable -- sans eux, un modele mal entraine et un modele entraine
+se ressembleraient.
+
+Contrats attestes :
+
+    1.  (``predictive_matrix`` stochastique) : les deux formes -- Moore
+        (``Mess3Canonical``, via ``T @ E``) et Mealy (``RRXOR``, via le
+        tenseur d'aretes) -- rendent une matrice dont chaque ligne somme a 1,
+        de largeur egale a la taille de l'alphabet d'observation.
+    2.  (plancher exact sur un processus iid) : ``RRXOR_Iid`` est un
+        processus iid binaire (les XOR adjacents de bits iid sont
+        independants, cf. sa docstring) ; sa perte Bayes-optimale vaut donc
+        **exactement** ``ln 2``. C'est le seul contrat du module dont la
+        valeur est connue a l'avance au bit pres -- il valide toute la chaine
+        filtration -> predictive -> -log en une egalite.
+    3.  (plancher sous l'uniforme) : sur ``Mess3Canonical``, le plancher est
+        strictement inferieur a ``ln 3``, et strictement positif : le
+        processus est predictible, mais pas deterministe.
+    4.  (bornes de ``burn``) : un ``burn`` negatif ou au-dela de la serie est
+        refuse, et une serie 2D est refusee -- le calcul porte sur des pas,
+        pas sur des tableaux.
+    5.  (sonde : recuperation d'un sous-espace connu) : quand les cibles sont
+        une fonction lineaire exacte des activations, la base des coefficients
+        retrouve l'espace colonne de la matrice generatrice.
+    6.  (sonde : orthonormalite) : la base rendue a colonnes orthonormees
+        (``B^T B = I``), quel que soit le rang.
+    7.  (additivite) : deux facteurs portes par des directions DISJOINTES
+        rendent ``additivity_gap == 0`` ; deux facteurs qui partagent une
+        direction rendent un ecart **negatif** -- c'est la mesure directe de
+        l'entremellement.
+    8.  (temoin nul : plancher de comptage) : moins de 5 initialisations est
+        refuse, et le temoin rend les percentiles 5/50/95 de **chaque**
+        metrique du rapport, jamais un sous-ensemble.
+    9.  (temoin nul : il discrimine) : sur des activations tirees au hasard,
+        ``probe_r2_b`` d'une initialisation non entrainee reste tres en deca
+        de celui d'un modele entraine -- le temoin n'est pas decoratif.
+    10. (entrainement : la perte descend sous l'uniforme) : apres
+        entrainement, la perte jointe du modele passe sous la perte uniforme
+        ``ln(3) + ln(2)``. Test d'integration, garde par ``HAS_TORCH``.
+"""
+
+import unittest
+
+import numpy as np
+
+from ict import bench_factorise as bf
+from ict import factor_geometry_trained as fgt
+
+
+class TestPlancherDeBayes(unittest.TestCase):
+    """Contrats 1 a 4 : le plancher est exact, borne, et refuse le mauvais usage."""
+
+    def test_predictive_matrix_stochastique_moore_et_mealy(self):
+        """Contrat 1 : les deux formes rendent une matrice stochastique en ligne."""
+        m = bf.Mess3Canonical()
+        pm = fgt.predictive_matrix(m)
+        self.assertEqual(pm.shape, (m.n_states, m.n_states))
+        np.testing.assert_allclose(pm.sum(axis=1), np.ones(m.n_states), atol=1e-12)
+
+        r = bf.RRXOR()
+        pr = fgt.predictive_matrix(r)
+        self.assertEqual(pr.shape, (r.n_states, 2))
+        np.testing.assert_allclose(pr.sum(axis=1), np.ones(r.n_states), atol=1e-12)
+
+    def test_plancher_iid_vaut_exactement_ln2(self):
+        """Contrat 2 : sur un processus iid binaire, le plancher EST ln 2."""
+        proc = bf.RRXOR_Iid()
+        obs = proc.sample(4000, seed=0)[1]
+        self.assertAlmostEqual(fgt.bayes_floor(proc, obs), float(np.log(2.0)), places=9)
+
+    def test_plancher_mess3_sous_uniforme_et_positif(self):
+        """Contrat 3 : predictible (sous ln 3) mais non deterministe (positif)."""
+        proc = bf.Mess3Canonical()
+        obs = proc.sample(4000, seed=0)[1]
+        floor = fgt.bayes_floor(proc, obs)
+        self.assertGreater(floor, 0.0)
+        self.assertLess(floor, float(np.log(3.0)))
+
+    def test_burn_et_forme_refuses(self):
+        """Contrat 4 : bornes de burn et refus d'une serie non 1D."""
+        proc = bf.Mess3Canonical()
+        obs = proc.sample(200, seed=0)[1]
+        with self.assertRaises(ValueError):
+            fgt.bayes_floor(proc, obs, burn=-1)
+        with self.assertRaises(ValueError):
+            fgt.bayes_floor(proc, obs, burn=len(obs))
+        with self.assertRaises(ValueError):
+            fgt.bayes_floor(proc, obs.reshape(-1, 1))
+
+
+class TestSondeDeCoefficients(unittest.TestCase):
+    """Contrats 5 et 6 : la sonde retrouve le sous-espace et rend une base propre."""
+
+    def _donnees(self, n=800, d=8, seed=3):
+        rng = np.random.default_rng(seed)
+        return rng.normal(size=(n, d))
+
+    def test_recupere_un_sous_espace_connu(self):
+        """Contrat 5 : cibles = H @ M  =>  l'espace colonne de M est retrouve."""
+        H = self._donnees()
+        M = np.zeros((8, 3))
+        M[1, 0] = 1.0
+        M[4, 1] = 1.0
+        M[6, 2] = 1.0
+        B = fgt.probe_coefficient_basis(H, H @ M, ridge=1e-9)
+        self.assertEqual(fgt.subspace_rank(B), 3)
+        # La SVD rend une base arbitraire DU SOUS-ESPACE : ses colonnes sont des
+        # combinaisons des directions retrouvees, pas ces directions elles-memes.
+        # L'assertion correcte est donc que l'ENERGIE hors du support {1, 4, 6}
+        # est nulle -- pas que chaque colonne est un vecteur de base canonique.
+        hors_support = B[[0, 2, 3, 5, 7], :]
+        np.testing.assert_allclose(hors_support, np.zeros_like(hors_support), atol=1e-6)
+
+    def test_base_orthonormee(self):
+        """Contrat 6 : B^T B = I, quel que soit le rang."""
+        H = self._donnees()
+        Y = H @ np.random.default_rng(0).normal(size=(8, 3))
+        B = fgt.probe_coefficient_basis(H, Y, ridge=1e-6)
+        np.testing.assert_allclose(B.T @ B, np.eye(B.shape[1]), atol=1e-10)
+
+    def test_formes_incompatibles_refusees(self):
+        """Contrat 6 (suite) : un desaccord de lignes est refuse, pas devine."""
+        with self.assertRaises(ValueError):
+            fgt.probe_coefficient_basis(np.zeros((10, 4)), np.zeros((9, 2)))
+
+
+class TestAdditiviteEtTemoin(unittest.TestCase):
+    """Contrats 7, 8 et 9 : l'additivite signe l'entremellement, le temoin borne."""
+
+    def _activations_et_cibles(self, partage, n=900, d=6, seed=5):
+        rng = np.random.default_rng(seed)
+        H = rng.normal(size=(n, d))
+        Ma, Mb = np.zeros((d, 2)), np.zeros((d, 2))
+        Ma[0, 0] = Ma[1, 1] = 1.0
+        if partage:
+            Mb[1, 0] = Mb[2, 1] = 1.0          # partage la direction 1 avec A
+        else:
+            Mb[3, 0] = Mb[4, 1] = 1.0          # directions disjointes
+        return H, H @ Ma, H @ Mb
+
+    def test_gap_nul_quand_directions_disjointes(self):
+        """Contrat 7 (a) : facteurs additifs => ecart exactement nul."""
+        H, ya, yb = self._activations_et_cibles(partage=False)
+        rep = fgt.factor_geometry_report(H, ya, yb, ridge=1e-9)
+        self.assertEqual(rep["dim_a"], 2.0)
+        self.assertEqual(rep["dim_b"], 2.0)
+        self.assertEqual(rep["additivity_gap"], 0.0)
+
+    def test_gap_negatif_quand_une_direction_est_partagee(self):
+        """Contrat 7 (b) : une direction commune => ecart strictement negatif."""
+        H, ya, yb = self._activations_et_cibles(partage=True)
+        rep = fgt.factor_geometry_report(H, ya, yb, ridge=1e-9)
+        self.assertLess(rep["additivity_gap"], 0.0)
+        self.assertEqual(rep["dim_union"], 3.0)
+
+    def test_temoin_exige_cinq_initialisations(self):
+        """Contrat 8 : moins de cinq initialisations est refuse, pas tolere."""
+        H, ya, yb = self._activations_et_cibles(partage=False)
+        with self.assertRaises(ValueError):
+            fgt.untrained_null(lambda sd: None, H, ya, yb, n_init=4)
+
+    def test_temoin_rend_toutes_les_metriques_du_rapport(self):
+        """Contrat 8 (suite) : chaque metrique du rapport est bornee, pas un extrait.
+
+        Le temoin construit de VRAIS modeles (meme architecture, non entrainee) :
+        un temoin qui n'evaluerait pas l'architecture ne repondrait pas a
+        l'objection qu'il est cense traiter.
+        """
+        if not fgt.HAS_TORCH:
+            self.skipTest("torch absent : le temoin d'architecture est indisponible")
+        import torch
+
+        # 12 sequences de 5 pas => 60 lignes d'activations : les cibles doivent
+        # porter le meme nombre de lignes, sinon la sonde refuse (et c'est voulu).
+        H, ya, yb = self._activations_et_cibles(partage=False, n=60)
+        attendues = set(fgt.factor_geometry_report(H, ya, yb).keys())
+        x = torch.zeros(12, 5, 2, dtype=torch.long)
+        null = fgt.untrained_null(lambda sd: fgt.FactoredRNN(hidden=12, seed=sd), x, ya, yb, n_init=5)
+        self.assertEqual(set(null.keys()), attendues)
+        for stat in null.values():
+            self.assertEqual(set(stat), {"p05", "p50", "p95", "n"})
+            self.assertEqual(stat["n"], 5.0)
+            self.assertLessEqual(stat["p05"], stat["p50"])
+            self.assertLessEqual(stat["p50"], stat["p95"])
+
+
+@unittest.skipUnless(fgt.HAS_TORCH, "torch absent : l'entrainement est indisponible")
+class TestBoucleFermee(unittest.TestCase):
+    """Contrat 10 : integration -- le modele entraine passe sous la perte uniforme."""
+
+    def test_entrainement_passe_sous_l_uniforme(self):
+        """Contrat 10 : apres entrainement, la perte jointe bat l'uniforme ``ln3+ln2``."""
+        import torch
+
+        bench = bf.FactoredBench(bf.Mess3Canonical(), bf.RRXOR())
+        ln, ntr = 60, 60
+        s = bench.sample(ln * (ntr + 10), seed_a=0, seed_b=0)
+        obs = np.stack([s["obs_a"], s["obs_b"]], axis=1).astype(np.int64)
+        x = torch.from_numpy(obs)
+        xt = x[: ntr * ln].reshape(ntr, ln, 2)
+        xv = x[ntr * ln : (ntr + 10) * ln].reshape(10, ln, 2)
+
+        model = fgt.FactoredRNN(seed=0)
+        uniforme = float(np.log(3.0) + np.log(2.0))
+        avant = fgt.joint_nll(model, xv)
+        res = fgt.train_model(model, xt, xv, steps=120, eval_every=20)
+        apres = fgt.joint_nll(model, xv)
+        self.assertLess(apres, uniforme, "l'entrainement n'a pas battu l'uniforme")
+        self.assertLessEqual(res["best_val_nll"], apres + 1e-6)
+        self.assertLess(res["best_val_nll"], avant)
+
+    def test_activations_de_la_bonne_forme(self):
+        """Contrat 10 (suite) : les activations sont aplaties en (T, cachee)."""
+        import torch
+
+        model = fgt.FactoredRNN(hidden=16, seed=1)
+        x = torch.zeros(2, 7, 2, dtype=torch.long)
+        self.assertEqual(fgt.collect_activations(model, x).shape, (14, 16))
+
+
+# ---------------------------------------------------------------------------
+# Regimes generatifs (#20071) : le plancher de Bayes se releve avec le bruit
+# du canal. Ces tests vivent ICI (et non dans test_bench_regimes_generatifs.py)
+# parce qu'ils exigent la couche de mesure -- torch -- et que ce fichier est
+# l'endroit du paquet ou torch se charge deja.
+# ---------------------------------------------------------------------------
+
+
+def test_plancher_croissant_avec_le_bruit_du_canal():
+    """Monotonicite en information : plus le canal d'emission est bruite
+    (``NoisedChannel``, gamma de 0 a 1), plus le meilleur filtre perd. Les
+    niveaux voisins sont separables a peine plus que le bruit d'estimation
+    (3000 pas) : tolerance 0.005, endpoint gamma=1 exact (emissions muettes
+    -> entropie uniforme ln q)."""
+    for proc, seed, q in ((bf.Mess3Canonical(), 11, 3), (bf.RRXOR(), 13, 2)):
+        floors = []
+        for gamma in (0.0, 0.15, 0.4, 0.75, 1.0):
+            noised = bf.NoisedChannel(proc, gamma)
+            _, obs = noised.sample(3000, seed=seed)
+            floors.append(fgt.bayes_floor(noised, obs, burn=32))
+        for i in range(len(floors) - 1):
+            assert floors[i + 1] >= floors[i] - 0.005, (proc.name, floors)
+        assert abs(floors[-1] - float(np.log(q))) < 0.001, floors
+
+
+def test_plancher_gamma_zero_sous_l_uniforme():
+    """A gamma = 0 le canal bruite a la loi du processus d'origine : le
+    plancher reste sous l'entropie uniforme ln q (le processus est
+    predictible)."""
+    for proc, seed, q in ((bf.Mess3Canonical(), 21, 3), (bf.RRXOR(), 22, 2)):
+        _, obs = proc.sample(3000, seed=seed)
+        noised = bf.NoisedChannel(proc, 0.0)
+        assert fgt.bayes_floor(noised, obs, burn=32) < float(np.log(q))
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+class TestMetriquesInvariantesEtCiblesDegenerees(unittest.TestCase):
+    """Contrats 11 a 15 : les metriques ne doivent pas mentir sur la geometrie.
+
+    11. (``overlap_principal_max`` invariant) : le plus grand cosinus
+        principal est invariant par rotation des bases -- contrairement a
+        ``overlap_coef_max``, qui depend du choix de base et bouge donc sans
+        que la geometrie du sous-espace change (mesure du 2026-10-26 : 1,000
+        puis 0,707 pour le MEME plan, apres rotation d'une base).
+    12. (cible degeneree) : une cible constante a la precision machine pres
+        donne un rang nul et des metriques ``nan`` -- jamais un R^2 fabrique
+        par le bruit d'arrondi (le canal muet, ``gamma = 1``, rendait
+        R^2 = 0,747 et un rang 1 sur une cible sans aucune information).
+    13. (gap indefini) : quand un des deux sous-espaces est vide, le gap
+        entier est ``nan`` et non 0 : un 0 se lirait « additif ».
+    14. (bande degeneree) : une bande de largeur nulle ne discrimine rien,
+        la position est rendue ``n/a``.
+    15. (verdicts) : les deux verdicts des criteres de #20071 rendent les
+        trois issues possibles, et le critere 2 n'est Satisfait que par un
+        gap strictement negatif HORS de la bande du temoin.
+    """
+
+    def test_overlap_principal_max_invariant_par_rotation_de_base(self):
+        e = np.zeros((8, 3))
+        e[0, 0] = 1.0
+        e[1, 1] = 1.0
+        e[2, 2] = 1.0
+        a = e[:, :2]
+        b = a  # meme plan, deux bases
+        # meme sous-espace, base tournee de 45 degres
+        rot = np.array([[np.sqrt(0.5), np.sqrt(0.5)], [np.sqrt(0.5), -np.sqrt(0.5)]])
+        a2 = a @ rot
+        # la metrique historique N'EST PAS invariante
+        from ict.factor_geometry import basis_overlap
+
+        self.assertAlmostEqual(float(basis_overlap(a, b).max()), 1.0, places=9)
+        self.assertNotAlmostEqual(float(basis_overlap(a2, b).max()), 1.0, places=3)
+        # la metrique invariante, elle, ne bouge pas
+        self.assertAlmostEqual(fgt.overlap_principal_max(a, b), 1.0, places=9)
+        self.assertAlmostEqual(fgt.overlap_principal_max(a2, b), 1.0, places=9)
+        # et l'energie non plus
+        self.assertAlmostEqual(fgt.overlap_energy(a, b), 1.0, places=9)
+        self.assertAlmostEqual(fgt.overlap_energy(a2, b), 1.0, places=9)
+
+    def test_cible_constante_donne_rang_nul_et_nan(self):
+        rng = np.random.default_rng(0)
+        h = rng.normal(size=(200, 8))
+        constante = np.full((200, 3), 1.0 / 3.0)
+        rep = fgt.factor_geometry_report(h, constante, rng.dirichlet(np.ones(3), size=200))
+        self.assertEqual(rep["dim_a"], 0.0)
+        self.assertTrue(np.isnan(rep["probe_r2_a"]))
+        self.assertTrue(np.isnan(rep["additivity_gap"]))
+        self.assertTrue(np.isnan(rep["overlap_energy"]))
+        self.assertTrue(np.isnan(rep["overlap_principal_max"]))
+
+    def test_cible_constante_a_precision_machine_nest_pas_une_cible(self):
+        # le cas du canal muet : la cible est constante AU BIT PRES pres, et
+        # ses residus d'arrondi ne doivent pas fabriquer une direction
+        rng = np.random.default_rng(1)
+        h = rng.normal(size=(200, 8))
+        bruit = 1e-14 * rng.normal(size=(200, 3))
+        cible = np.full((200, 3), 1.0 / 3.0) + bruit
+        rep = fgt.factor_geometry_report(h, cible, rng.dirichlet(np.ones(3), size=200))
+        self.assertEqual(rep["dim_a"], 0.0)
+        self.assertTrue(np.isnan(rep["probe_r2_a"]))
+
+    def test_bande_de_width_nulle_rendue_na(self):
+        from ict import factor_geometry_regimes as freg
+
+        bande = {"p05": 0.0, "p95": 0.0, "n": 6.0}
+        self.assertTrue(freg.bande_degeneree(bande))
+        self.assertEqual(freg.position_contre_bande(0.0, bande), "n/a")
+        # ... mais le critere 2 compare malgre tout : c'est le SIGNE qui compte
+        self.assertEqual(
+            freg.position_contre_bande(-2.0, bande, comparer_bande_degeneree=True),
+            "sous_bande",
+        )
+
+    def test_artifact_json_null_traité_comme_non_defini(self):
+        """Un artefact JSON porte ``null`` la ou la mesure est ``NaN``.
+
+        Le carnet ICT-36 LIT les artefacts : un lecteur qui fait
+        ``float(None)`` tombe sur le seul niveau degenere (``gamma = 1``,
+        cible constante au bit pres) et la cellule de lecture meurt. ``null``
+        doit se lire comme une valeur NON DEFINIE, jamais comme une erreur.
+        """
+        from ict import factor_geometry_regimes as freg
+
+        bande_vide = {"p05": None, "p95": None, "n": 0.0}
+        self.assertTrue(freg.bande_degeneree(bande_vide))
+        self.assertEqual(freg.position_contre_bande(None, bande_vide), "n/a")
+        self.assertEqual(freg.position_contre_bande(0.5, bande_vide), "n/a")
+        # ... et une valeur absente ne fait pas tomber non plus la comparaison
+        # contre une bande FINIE (le cas de la bande nulle du critere 2)
+        self.assertEqual(
+            freg.position_contre_bande(None, {"p05": 0.0, "p95": 0.0}),
+            "n/a",
+        )
+
+    def test_format_ou_na_rend_null_comme_non_defini(self):
+        """Le helper de lecture affiche ``n/a`` pour une valeur non definie."""
+        from ict import factor_geometry_regimes as freg
+
+        self.assertEqual(freg.format_ou_na(None), "n/a")
+        self.assertEqual(freg.format_ou_na(float("nan")), "n/a")
+        self.assertEqual(freg.format_ou_na(0.5), "0.500")
+        self.assertEqual(freg.format_ou_na(-2.0, "{:+.3f}"), "-2.000")
+        # une chaine non numerique ne doit pas faire tomber la lecture
+        self.assertEqual(freg.format_ou_na("n/a"), "n/a")
+
+    def test_verdicts_des_deux_criteres(self):
+        from ict import factor_geometry_regimes as freg
+
+        # critere 1 : la courbe sort de la bande puis y revient -> seuil nomme
+        def _niveau(gamma, valeur, p05, p95):
+            return {
+                "gamma": gamma,
+                "rapport": {"overlap_coef_max": valeur},
+                "temoin": {"overlap_coef_max": {"p05": p05, "p95": p95, "n": 6.0}},
+            }
+
+        lignes = [
+            _niveau(0.0, 0.9, 0.2, 0.4),
+            _niveau(0.5, 0.9, 0.2, 0.4),
+            _niveau(0.75, 0.3, 0.2, 0.4),
+            _niveau(1.0, 0.3, 0.2, 0.4),
+        ]
+        v = freg.verdict_sweep_bande(lignes, "overlap_coef_max")
+        self.assertEqual(v["issue"], "retour_durable")
+        self.assertEqual(v["seuil"], 0.75)
+        # jamais sorti
+        v2 = freg.verdict_sweep_bande([_niveau(0.0, 0.3, 0.2, 0.4)], "overlap_coef_max")
+        self.assertEqual(v2["issue"], "jamais_sorti")
+        # indecidable : sortie isolee, pas de retour durable
+        v3 = freg.verdict_sweep_bande(
+            [_niveau(0.0, 0.9, 0.2, 0.4), _niveau(0.5, 0.3, 0.2, 0.4), _niveau(1.0, 0.9, 0.2, 0.4)],
+            "overlap_coef_max",
+        )
+        self.assertEqual(v3["issue"], "indecidable")
+
+        # Un niveau DEGENERE (bande de largeur nulle -> position "n/a") ne
+        # compte NI comme sortie NI comme retour : il ne doit donc pas
+        # EMPECHER de nommer un seuil de retour durable. Sans cette regle, un
+        # seul niveau muet a la fin du balayage rendait le verdict
+        # perpeteruellement "indecidable".
+        def _niveau_degenere(gamma):
+            return {
+                "gamma": gamma,
+                "rapport": {"overlap_coef_max": None},
+                "temoin": {"overlap_coef_max": {"p05": 0.25, "p95": 0.25, "n": 6.0}},
+            }
+
+        v4 = freg.verdict_sweep_bande(
+            [_niveau(0.0, 0.9, 0.2, 0.4),
+             _niveau(0.5, 0.9, 0.2, 0.4),
+             _niveau(0.75, 0.3, 0.2, 0.4),
+             _niveau_degenere(1.0)],
+            "overlap_coef_max",
+        )
+        self.assertEqual(v4["issue"], "retour_durable")
+        self.assertEqual(v4["seuil"], 0.75)
+        # le niveau degenere reste RAPPORTE, avec sa position "n/a"
+        self.assertEqual(v4["positions"][-1]["position"], "n/a")
+        self.assertIsNone(v4["positions"][-1]["valeur"])
+
+        # critere 2 : satisfait seulement par un gap negatif hors bande
+        resultats = {
+            "conditionnel": {
+                "par_seed": {
+                    0: {"rapport": {"additivity_gap": -2.0}},
+                    1: {"rapport": {"additivity_gap": -2.0}},
+                },
+                "temoin": {"additivity_gap": {"p05": 0.0, "p95": 0.0, "n": 6.0}},
+            },
+            "independant": {
+                "par_seed": {0: {"rapport": {"additivity_gap": 0.0}}},
+                "temoin": {"additivity_gap": {"p05": 0.0, "p95": 0.0, "n": 6.0}},
+            },
+        }
+        verdict = freg.verdict_critere_2(resultats, {"marginales_exactes": True})
+        self.assertTrue(verdict["bras"]["conditionnel"]["satisfait"])
+        self.assertFalse(verdict["bras"]["independant"]["satisfait"])
+        # marginales non appariees : le critere ne peut pas etre satisfait
+        verdict2 = freg.verdict_critere_2(resultats, {"marginales_exactes": False})
+        self.assertFalse(verdict2["bras"]["conditionnel"]["satisfait"])

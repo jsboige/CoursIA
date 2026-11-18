@@ -30,12 +30,30 @@ HEAD = "0123456789abcdef0123456789abcdef01234567"
 
 def _adjoint_body(**overrides: str) -> str:
     fields = {name: "1" for name in sorted(mod.adjoint_gate.REQUIRED_FIELDS)}
+    # Un READY doit etre coherent AVANT le POST (#19312) : le poster rejoue
+    # desormais les controles auto-portants du gate. Le fixture decrit donc ce
+    # que le gate accepterait, sinon les chemins nominaux seraient refuses par
+    # ce controle et non par le sujet du test.
     fields.update(
-        lane=LANE,
-        pr="101",
-        head=HEAD,
-        verdict="READY",
-        checks="latest-wins-green",
+        {
+            "lane": LANE,
+            "pr": "101",
+            "head": HEAD,
+            "verdict": "READY",
+            "checks": "latest-wins-green",
+            # REQUIRED_FIELDS pose "1" partout : ces trois-la ne sont pas des
+            # entiers et le gate les refuse a cette valeur. Le fixture
+            # d'origine les portait tels quels -- c'est exactement le dossier
+            # incoherent que #19312 fait refuser AVANT le POST.
+            "complete": "true",
+            "body": "read",
+            "b0": "clear",
+            "scope": "pass",
+            "domain": "pass",
+            "organ": mod.adjoint_gate.ORGAN_NAME,
+            "organ-command": f"{mod.adjoint_gate.ORGAN_NAME} --derive-verdict 101",
+            "organ-rc": "0",
+        }
     )
     fields.update(overrides)
     return (
@@ -74,20 +92,28 @@ def _closure_body() -> str:
 class GhRouter:
     """gh_json simule : route pr view / api comments et enregistre les appels."""
 
-    def __init__(self, head: str = HEAD, published_body: str | None = None):
+    def __init__(
+        self,
+        head: str = HEAD,
+        published_body: str | None = None,
+        pr_body: str | None = None,
+    ):
         self.head = head
         self.published_body = published_body
+        self.pr_body = pr_body
         self.calls: list[list[str]] = []
 
-    def __call__(self, args: list[str]):
+    def __call__(self, args: list[str], env: dict | None = None):
         self.calls.append(list(args))
+        self.last_env = env
         if args[0] == "pr":
-            return {"headRefOid": self.head}
+            return {"headRefOid": self.head, "body": self.pr_body or ""}
         if args[0] == "api":
             assert args[1].endswith("/comments"), f"unexpected endpoint: {args[1]}"
             assert "--input" in args, "POST must go through --input, never -f body=@"
             payload_path = Path(args[args.index("--input") + 1])
             body = json.loads(payload_path.read_text(encoding="ascii"))["body"]
+            self.last_posted_body = body
             return {
                 "id": 999,
                 "body": self.published_body if self.published_body is not None else body,
@@ -149,6 +175,39 @@ def test_parse_errors_refused(tmp_path, monkeypatch):
     assert rc == mod.EXIT_REFUSED
 
 
+def test_incoherent_domain_refused_before_any_gh_call(tmp_path, monkeypatch, capsys):
+    """#19312 -- un READY avec ``domain: ci`` est refuse par le POSTER.
+
+    Le gate le refusait deja, mais seulement APRES le POST : il demande
+    l'instantane de la PR, donc il ne tourne qu'une fois le dossier publie. Sur
+    #19207, deux dossiers sont partis ainsi et ont du etre supprimes a la main.
+    Ce controle positif exige qu'aucun appel gh ne parte.
+    """
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=1))
+    body = _adjoint_body(domain="ci")
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert router.calls == [], "le refus doit preceder tout appel gh"
+    assert "domain must be 'pass' or 'not-applicable'" in capsys.readouterr().err
+
+
+def test_incoherent_organ_command_refused_before_any_gh_call(tmp_path, monkeypatch, capsys):
+    """Le controle auto-portant est parametre par la cible : une commande
+    d'organe qui nomme une AUTRE PR est refusee, et toujours sans appel gh."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=1))
+    body = _adjoint_body(**{
+        "organ-command": f"{mod.adjoint_gate.ORGAN_NAME} --derive-verdict 999",
+    })
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert router.calls == []
+    assert "--derive-verdict 101" in capsys.readouterr().err
+
+
 def test_stale_head_refused(tmp_path, monkeypatch):
     router = GhRouter(head="f" * 40)
     monkeypatch.setattr(mod, "gh_json", router)
@@ -167,6 +226,136 @@ def test_double_stamp_other_lane_refused(tmp_path, monkeypatch):
     rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, _adjoint_body())), "--lane", LANE])
     assert rc == mod.EXIT_REFUSED
     assert not any(call[0] == "api" for call in router.calls)
+
+
+def test_double_stamp_rc3_with_supersedes_posts_through(tmp_path, monkeypatch, capsys):
+    """#19420 -- gate rc 3 (BLOCKED intact), lane tierce, refutation explicite :
+    le dossier porte ``supersedes`` et ``supersedes-why`` non vide, donc le
+    poster accepte le re-stamp et le gate rejoue."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=3, lane=OTHER_LANE))
+    monkeypatch.setattr(mod, "rerun_gate", lambda family, repo, target: 0)
+    body = _adjoint_body(
+        verdict="BLOCKED",  # le noueau dossier peut etre READY ou BLOCKED ; on
+        # garde BLOCKED pour exercer le chemin rc 3 sans contradiction muette.
+        supersedes="5",
+        **{"supersedes-why": "checks devenus verts a la meme tete, dossier de l'adjoint a l'arret (#19420)"},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == 0  # gate rejoue rend 0 (le gate decide la refutation)
+    assert any(call[0] == "api" for call in router.calls)
+    # Pas de message d'anti-double-stamp dans la sortie
+    assert "anti-double-stamp" not in capsys.readouterr().err
+
+
+def test_double_stamp_rc3_without_supersedes_refused(tmp_path, monkeypatch, capsys):
+    """#19420 -- gate rc 3, lane tierce, dossier SANS refute explicite :
+    le poster refuse comme avant (anti-double-stamp)."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=3, lane=OTHER_LANE))
+    body = _adjoint_body(verdict="BLOCKED")
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert not any(call[0] == "api" for call in router.calls)
+    err = capsys.readouterr().err
+    assert "anti-double-stamp" in err
+    assert "supersedes" in err  # le message d'erreur pointe le champ manquant
+
+
+def test_double_stamp_rc3_with_empty_supersedes_why_refused(tmp_path, monkeypatch, capsys):
+    """#19420 -- supersedes renseigne mais supersedes-why vide : refus (intention
+    muette, le gate mute contradiction #18934 n'a rien a juger)."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=3, lane=OTHER_LANE))
+    body = _adjoint_body(
+        verdict="BLOCKED",
+        supersedes="5",
+        **{"supersedes-why": ""},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "anti-double-stamp" in capsys.readouterr().err
+
+
+def test_double_stamp_rc0_with_supersedes_refused(tmp_path, monkeypatch, capsys):
+    """#19420 -- rc 0 (READY intact) reste refuse meme avec supersedes : un
+    second tampon READY n'ouvre pas une guerre de dossiers. La garde anti-
+    double-stamp reste ferme, distincte du cas rc 3."""
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=0, lane=OTHER_LANE))
+    body = _adjoint_body(
+        supersedes="5",
+        **{"supersedes-why": "checks devenus verts"},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert not any(call[0] == "api" for call in router.calls)
+    err = capsys.readouterr().err
+    assert "anti-double-stamp" in err
+    # Le message est l'ancien (rc 0) -- pas le nouveau (rc 3).
+    assert "a re-stamp is licite only for its own lane" in err
+
+
+SECRETARIAT_LANE = "myia-po-2026:CoursIA-3"
+DEEP_PR_BODY = (
+    "Grain: DEEP/lean -- lane myia-po-2024:CoursIA -- prev: MED/guard #19800\n\n"
+    "## Summary\n\nDossier de domaine."
+)
+MED_PR_BODY = (
+    "Grain: MED/guard -- lane myia-po-2024:CoursIA -- prev: DEEP/lean #19800\n\n"
+    "## Summary\n\nDossier de domaine."
+)
+
+
+def test_rc0_secretariat_deep_with_supersedes_posts_through(tmp_path, monkeypatch, capsys):
+    """#19922, controle positif (rejeu causal du refus #19801) : gate rc 0,
+    dossier intact du SECRETARIAT, PR ``Grain: DEEP``, refute explicite --
+    le re-stamp de la lane qualifiee passe et le POST part."""
+    router = GhRouter(pr_body=DEEP_PR_BODY)
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=0, lane=SECRETARIAT_LANE))
+    monkeypatch.setattr(mod, "rerun_gate", lambda family, repo, target: 0)
+    body = _adjoint_body(
+        supersedes="5",
+        **{"supersedes-why": "dossier de domaine requis pour un DEEP (#19922)"},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == 0
+    assert any(call[0] == "api" for call in router.calls)
+    assert "anti-double-stamp" not in capsys.readouterr().err
+
+
+def test_rc0_secretariat_med_with_supersedes_refused(tmp_path, monkeypatch, capsys):
+    """#19922, controle negatif : la porte est reservee au DEEP -- un re-stamp
+    tiers sur un dossier MED du secretariat reste refuse."""
+    router = GhRouter(pr_body=MED_PR_BODY)
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=0, lane=SECRETARIAT_LANE))
+    body = _adjoint_body(
+        supersedes="5",
+        **{"supersedes-why": "dossier de domaine requis pour un DEEP (#19922)"},
+    )
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, body)), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert not any(call[0] == "api" for call in router.calls)
+    assert "anti-double-stamp" in capsys.readouterr().err
+
+
+def test_rc0_secretariat_deep_without_supersedes_refused(tmp_path, monkeypatch, capsys):
+    """#19922 -- DEEP sur dossier secretariat mais SANS refute explicite :
+    refus conserve (la porte exige supersedes + supersedes-why, comme le
+    rc 3 de #19420)."""
+    router = GhRouter(pr_body=DEEP_PR_BODY)
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=0, lane=SECRETARIAT_LANE))
+    rc = mod.main(["--pr", "101", "--file", str(_write(tmp_path, _adjoint_body())), "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert not any(call[0] == "api" for call in router.calls)
+    assert "anti-double-stamp" in capsys.readouterr().err
 
 
 def test_gate_unknown_refused(tmp_path, monkeypatch):
@@ -225,3 +414,133 @@ def test_payload_trap_detected_post_post(tmp_path, monkeypatch, capsys):
     stderr = capsys.readouterr().err
     assert "PAYLOAD-TRAP" in stderr
     assert "999" in stderr  # l'id du commentaire piege, pour le PATCH de remediation
+
+
+# --- mode emission #19505 : la sequence trois-jetons en une commande -------
+
+
+def test_fill_placeholder_remplace_le_champ():
+    block = "[ADJOINT PREFLIGHT]\ncomplete: REPLACE_WITH_true\nbody: read\n[/ADJOINT PREFLIGHT]\n"
+    filled = mod.fill_placeholder(block, "complete", "true")
+    assert "complete: true" in filled
+    assert "body: read" in filled
+
+
+def test_fill_placeholder_refuse_un_champ_introuvable():
+    block = "[ADJOINT PREFLIGHT]\ncomplete: true\n[/ADJOINT PREFLIGHT]\n"
+    with pytest.raises(ValueError, match="no REPLACE_WITH placeholder"):
+        mod.fill_placeholder(block, "complete", "true")
+
+
+def test_write_env_remplace_gh_token(monkeypatch):
+    monkeypatch.setenv("GH_TOKEN", "read-token")
+    env = mod.write_env("write-token")
+    assert env["GH_TOKEN"] == "write-token"
+
+
+def test_resolve_write_token_retire_gh_token(monkeypatch):
+    monkeypatch.setenv("GH_TOKEN", "read-token")
+    seen: dict[str, object] = {}
+
+    def fake_run(cmd, **kwargs):
+        seen["cmd"] = cmd
+        seen["env"] = kwargs.get("env")
+        class P:
+            returncode = 0
+            stdout = "write-token\n"
+            stderr = ""
+        return P()
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    assert mod.resolve_write_token() == "write-token"
+    assert seen["cmd"][:4] == ["gh", "auth", "token", "--user"]
+    # Le jeton de lecture ambiant ne doit PAS atteindre la resolution.
+    assert "GH_TOKEN" not in seen["env"]
+
+
+def test_emit_mode_refuse_rc_sans_dossier(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (1, "", "boom"))
+    rc = mod.main(["--pr", "101", "--emit", "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "emission rc=1" in capsys.readouterr().err
+
+
+def test_emit_mode_refuse_placeholder_restant(monkeypatch, capsys):
+    emitted = _adjoint_body(complete="REPLACE_WITH_true")
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (0, emitted, ""))
+    monkeypatch.setattr(
+        mod, "gh_json", lambda *a, **k: (_ for _ in ()).throw(AssertionError("gh must not be called"))
+    )
+    rc = mod.main(["--pr", "101", "--emit", "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "REPLACE_WITH" in capsys.readouterr().err
+
+
+def test_set_sans_emit_refuse(monkeypatch, capsys):
+    rc = mod.main(["--pr", "101", "--file", "x.md", "--lane", LANE, "--set", "complete=true"])
+    assert rc == mod.EXIT_REFUSED
+    assert "requires --emit" in capsys.readouterr().err
+
+
+def test_emit_mode_refuse_issue(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (0, _closure_body(), ""))
+    rc = mod.main(["--issue", "55", "--emit", "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "--pr only" in capsys.readouterr().err
+
+
+def test_emit_mode_refuse_auteur_etranger_avant_tout_post(monkeypatch, capsys):
+    emitted = _adjoint_body()
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (3, emitted, ""))
+    monkeypatch.setattr(mod, "resolve_write_token", lambda: "tok")
+    monkeypatch.setattr(
+        mod,
+        "check_post_author",
+        lambda token: (_ for _ in ()).throw(RuntimeError("author guard: the write token serves 'jsboigeEPF', not 'jsboige'")),
+    )
+    # Les lectures (pr view, gate) precedent la garde auteur ; le POST, lui,
+    # ne doit JAMAIS etre atteint.
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=1))
+    rc = mod.main(["--pr", "101", "--emit", "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "author guard" in capsys.readouterr().err
+    assert not any(
+        call[0] == "api" and "--input" in call for call in router.calls
+    ), "no POST may follow the author refusal"
+
+
+def test_emit_mode_nominal_poste_sous_jeton_epingle(monkeypatch, capsys, tmp_path):
+    # Emission : rc 3 (BLOCKED licite) avec deux actes de lecture a remplir.
+    emitted = _adjoint_body(
+        complete="REPLACE_WITH_true",
+        body="REPLACE_WITH_read",
+        verdict="BLOCKED",
+        **{"organ-rc": "3"},
+    )
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (3, emitted, ""))
+    monkeypatch.setattr(mod, "resolve_write_token", lambda: "write-token")
+    monkeypatch.setattr(mod, "check_post_author", lambda token: "jsboige")
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=1))
+    monkeypatch.setattr(mod, "rerun_gate", lambda family, repo, target: 0)
+    rc = mod.main(
+        [
+            "--pr", "101",
+            "--emit",
+            "--lane", LANE,
+            "--set", "complete=true",
+            "--set", "body=read",
+        ]
+    )
+    assert rc == 0
+    # Le POST est parti sous le jeton epingle, pas sous l'env ambiant.
+    post_call_env = router.last_env
+    assert post_call_env is not None and post_call_env["GH_TOKEN"] == "write-token"
+    # Le corps poste porte les champs remplis, sans placeholder.
+    posted = router.last_posted_body
+    assert posted.count("REPLACE_WITH") == 0
+    assert "complete: true" in posted and "body: read" in posted
+    assert "POSTED -- comment 999" in capsys.readouterr().out

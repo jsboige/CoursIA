@@ -17,7 +17,7 @@ compiled module set, compares it to ``target-modules``, and prints the delta.
 Usage (local)::
 
     python scripts/lean/check_target_coverage.py \
-        --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean \
+        --project-path MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean \
         --from-workflow .github/workflows/lean-conway.yml \
         --lib-root Conway \
         --name conway_lean

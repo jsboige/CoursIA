@@ -423,5 +423,126 @@ class TestDecompositionAndMarginal:
         assert np.isclose(marginal_contribution(game, 0, {1}), 0.0)
 
 
+# ----------------------------------------------------------------------------
+# #20308 -- l'etat aleatoire global appartient au carnet, pas a la fonction.
+# ----------------------------------------------------------------------------
+
+def _global_state_fingerprint():
+    """Empreinte de l'etat du generateur global (MT19937 + compteur de position)."""
+    name, keys, pos, has_gauss, cached = np.random.get_state()
+    return (name, keys.copy(), pos, has_gauss, cached)
+
+
+def _legacy_reference_monte_carlo(game, n_samples, seed):
+    """Implementation historique : amorcage du generateur GLOBAL, puis tirages.
+
+    Sert de temoin de non-regression : le correctif doit retirer l'effet de bord
+    sans changer le flux produit, sinon les sorties deja commitees des carnets
+    consommateurs (GameTheory-15 passe seed=42) deviendraient invalides.
+    """
+    np.random.seed(seed)
+    n = game.n_players
+    shapley = np.zeros(n)
+    for _ in range(n_samples):
+        perm = np.random.permutation(n)
+        coalition = set()
+        for i in perm:
+            mc = game.value(coalition | {i}) - game.value(coalition)
+            shapley[i] += mc
+            coalition.add(i)
+    return shapley / n_samples
+
+
+class TestRandomStateIsolation:
+    """Le generateur global n'est ni lu ni ecrit par les estimateurs semes (#20308)."""
+
+    def test_mc_leaves_global_state_untouched(self):
+        """Un appel seme ne deplace pas l'etat global d'un seul tirage."""
+        game = WeightedVotingGame([4, 3, 2, 1], quota=6)
+        np.random.seed(1234)
+        before = _global_state_fingerprint()
+
+        shapley_value_monte_carlo(game, n_samples=500, seed=42)
+
+        after = _global_state_fingerprint()
+        np.testing.assert_array_equal(before[1], after[1])
+        assert before[2] == after[2]
+
+    def test_with_variance_leaves_global_state_untouched(self):
+        """Idem pour la variante qui rend aussi les erreurs standards."""
+        game = WeightedVotingGame([4, 3, 2, 1], quota=6)
+        np.random.seed(4321)
+        before = _global_state_fingerprint()
+
+        shapley_value_with_variance(game, n_samples=500, seed=42)
+
+        after = _global_state_fingerprint()
+        np.testing.assert_array_equal(before[1], after[1])
+        assert before[2] == after[2]
+
+    def test_seeded_call_no_longer_over_determines_what_follows(self):
+        """Le defaut mesure : l'appel seme re-determinait tout ce qui suivait.
+
+        Sous l'ancienne ecriture, la fonction appelait l'amorcage global, donc le
+        tirage SUIVANT ne dependait plus que de la graine passee a la fonction :
+        deux etats globaux de depart differents donnaient le meme tirage. C'est
+        cette surdetermination qui rendait deux experiences d'un meme carnet
+        artificiellement correlees. Le test echoue sur le code d'avant le fix.
+        """
+        game = WeightedVotingGame([4, 3, 2, 1], quota=6)
+
+        np.random.seed(1)
+        shapley_value_monte_carlo(game, n_samples=100, seed=7)
+        after_from_global_1 = np.random.random()
+
+        np.random.seed(2)
+        shapley_value_monte_carlo(game, n_samples=100, seed=7)
+        after_from_global_2 = np.random.random()
+
+        # L'etat global survit a l'appel : le tirage suivant depend de la graine
+        # GLOBALE, pas de celle passee a la fonction.
+        assert after_from_global_1 != after_from_global_2
+
+    def test_mc_reproduces_legacy_stream(self):
+        """Le correctif preserve le flux : sorties des carnets deja commitees valides."""
+        game = WeightedVotingGame([4, 3, 2, 1], quota=6)
+        fixed = shapley_value_monte_carlo(game, n_samples=2000, seed=42)
+        legacy = _legacy_reference_monte_carlo(game, 2000, 42)
+        np.testing.assert_array_equal(fixed, legacy)
+
+    def test_with_variance_reproduces_legacy_stream(self):
+        """Idem pour la variante a variance."""
+        game = WeightedVotingGame([4, 3, 2, 1], quota=6)
+
+        np.random.seed(0)
+        n = game.n_players
+        contributions = np.zeros((2000, n))
+        for sample_idx in range(2000):
+            perm = np.random.permutation(n)
+            coalition = set()
+            for i in perm:
+                mc = game.value(coalition | {i}) - game.value(coalition)
+                contributions[sample_idx, i] = mc
+                coalition.add(i)
+        legacy_vals = contributions.mean(axis=0)
+        legacy_errs = contributions.std(axis=0) / np.sqrt(2000)
+
+        vals, errs = shapley_value_with_variance(game, n_samples=2000, seed=0)
+        np.testing.assert_array_equal(vals, legacy_vals)
+        np.testing.assert_array_equal(errs, legacy_errs)
+
+    def test_unseeded_call_also_isolated(self):
+        """Sans graine, l'appel reste non deterministe mais n'avance plus l'etat global."""
+        game = WeightedVotingGame([4, 3, 2, 1], quota=6)
+        np.random.seed(99)
+        before = _global_state_fingerprint()
+
+        shapley_value_monte_carlo(game, n_samples=200, seed=None)
+
+        after = _global_state_fingerprint()
+        np.testing.assert_array_equal(before[1], after[1])
+        assert before[2] == after[2]
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

@@ -1,0 +1,114 @@
+{
+ "phase": "pilot",
+ "seed": 1000,
+ "seed_result": {
+  "seed": 1000,
+  "arms": {
+   "reactive": {
+    "stabilite": 0.005537421667175379,
+    "correction": 5.777777777777778,
+    "correction_par_perturbation": [
+     5,
+     13,
+     10,
+     0,
+     0,
+     0,
+     0,
+     0,
+     24
+    ],
+    "adaptation": 1.2599210498948732
+   },
+   "schema": {
+    "stabilite": 0.148441655520965,
+    "correction": 8.222222222222221,
+    "correction_par_perturbation": [
+     0,
+     47,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     27
+    ],
+    "adaptation": 1.0,
+    "erreur_pred": 0.08885503862186638,
+    "baseline_persistance": 0.07335857900261863,
+    "baseline_ema_vitesse": 0.07624563182603801,
+    "erreur_rapport": 0.0025644773694771276,
+    "confiance_moyenne": 0.4870090091208298
+   },
+   "schema_shuffled": {
+    "stabilite": 0.12344249017104945,
+    "correction": 26.88888888888889,
+    "correction_par_perturbation": [
+     61,
+     3,
+     65,
+     1,
+     0,
+     5,
+     80,
+     27,
+     0
+    ],
+    "adaptation": 0.00017465640175950945,
+    "erreur_pred": 0.23882355238078684,
+    "baseline_persistance": 0.22329006335439416,
+    "baseline_ema_vitesse": 0.2302020800028911,
+    "erreur_rapport": 0.0024666688775411678,
+    "confiance_moyenne": 0.12684994183288237
+   },
+   "schema_distorted_d0.025": {
+    "stabilite": 0.020936068189052914,
+    "correction": 18.444444444444443,
+    "correction_par_perturbation": [
+     0,
+     70,
+     6,
+     0,
+     10,
+     80,
+     0,
+     0,
+     0
+    ],
+    "adaptation": 1.0,
+    "erreur_pred": 0.09887697971914966,
+    "baseline_persistance": 0.07767708419210452,
+    "baseline_ema_vitesse": 0.0803904023887024,
+    "erreur_rapport": 0.0249983507151777,
+    "confiance_moyenne": 0.4737777849781821
+   },
+   "schema_distorted_d0.050": {
+    "stabilite": 0.07875150464105123,
+    "correction": 11.777777777777779,
+    "correction_par_perturbation": [
+     0,
+     7,
+     13,
+     0,
+     13,
+     16,
+     3,
+     54,
+     0
+    ],
+    "adaptation": 0.00010000000000000009,
+    "erreur_pred": 0.08389832800706658,
+    "baseline_persistance": 0.08419063298068867,
+    "baseline_ema_vitesse": 0.08567469714544346,
+    "erreur_rapport": 0.05027004336543896,
+    "confiance_moyenne": 0.4927593993403558
+   }
+  }
+ },
+ "note": "pilote disjoint, jamais compte dans un verdict",
+ "P5_conditions_reactif": {
+  "stabilite_le_0.03": true,
+  "correction_le_10": true
+ }
+}

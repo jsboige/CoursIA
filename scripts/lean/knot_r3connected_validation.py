@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Validation exhaustive des chirurgies R3 de transfert de tricolorabilite (knot_lean).
 
-Miroir Python fidele des definitions Lean de ``MyIA.AI.Notebooks/SymbolicAI/Lean/knot_lean``
+Miroir Python fidele des definitions Lean de ``MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean``
 (meme socle que ``knot_r2connected_validation.py`` -- PR #11467, non encore mergee ;
 les ~100 lignes de framework communes sont dupliquees ici volontairement : script
 preuve autonome, refactor en module commun post-merge).

@@ -8,7 +8,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## rl4-bandits.png
 
-- **Source** : notebook `rl_4_multi_armed_bandits.ipynb` (cellule 30, output 0, `display_data` `image/png`)
+- **Source** : notebook `RL-04-Bandits-Manchots-Python.ipynb` (cellule 30, output 0, `display_data` `image/png`)
 - **SHA** : `b2288a90b9bcf4cedbc9200e9095a29d7bc34c4f9db1a38ed4aca747ce8492f0` (taille 76 100 octets)
 - **Description visuelle** : Figure matplotlib single panel (989×490, fond blanc quasi-pur) titrée « Convergence vers le meilleur bras ». Axe x « Pas de temps » 0→2000 ; axe y « Fréquence de sélection du meilleur bras (moyenne mobile 50) » 0.0→1.0. **Cinq courbes de stratégies** (légende interne haut-gauche, 5 entrées) : **Random grise** (plate à ~0.1, baseline bruitée), **Greedy rouge** (monte très vite en début d'horizon, sature à 0.8 vers pas 250 et reste plate), **e-greedy (0.1) bleu** (monte progressivement, croissance lente régulière, atteint ~0.7 vers pas 2000), **e-greedy (0.01) vert** (croissance lente, atteint ~0.5 vers pas 2000), **UCB (c=2) violet** (croissance lente mais concurrente à e-greedy 0.01, ~0.5 vers pas 2000). **Random baseline (1/10)** en pointillé gris horizontal à 0.1. Grille légère visible. Stats RGB PIL : moyenne (246.83, 246.89, 247.41), std (35.26, 34.37, 33.38) — **fond blanc quasi-pur** dominant (moyennes >246), std modéré signature des 5 couleurs saturées sur ~30% de la surface (5 courbes entrelacées). Cohérent avec une **comparaison exploration/exploitation bandits multi-bras** single seed.
 - **Alt-text (FR)** : Bandits multi-bras : fréquence de sélection du meilleur bras (moyenne mobile 50) sur 2000 pas, comparant Greedy, epsilon-greedy (0.1 et 0.01), UCB (c=2) et une politique aléatoire, avec la baseline 1/10 en pointillés.
@@ -19,7 +19,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## rl5-mdp-qlearning.png
 
-- **Source** : notebook `rl_5_mdp_dp_qlearning.ipynb` (cellule 22, output 0, `display_data` `image/png`)
+- **Source** : notebook `RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb` (cellule 22, output 0, `display_data` `image/png`)
 - **SHA** : `8fe305f8035d03d93bd50d08efb0cb1d5f0d131b3c05110f67ce1dac54571dc5` (taille 29 800 octets)
 - **Description visuelle** : Figure matplotlib single panel (989×390, fond blanc quasi-pur) titrée « Convergence du Q-Learning sur FrozenLake ». Axe x « Episode » 0→~4500 ; axe y « Recompense moyenne (fenetre=500) » 0.0→0.9. **Une seule courbe bleue pleine** (Single line courbe monotone) : croissance quasi-mono-tone de ~0.03 (ep 0) à ~0.88 (ep 4500), passage ~0.5 vers ep 1500, ralentissement marqué après ep 2500 (saturation asymptotique sous 0.9). Pas de barre d'erreur. Stats RGB PIL : moyenne (248.72, 249.52, 250.08), std (34.70, 30.72, 28.98) — **fond blanc quasi-pur** dominant, std modéré-faible signature d'**une seule courbe bleue** sur ~10% de la surface + axes/labels.
 - **Alt-text (FR)** : Q-Learning tabulaire sur FrozenLake : récompense moyenne lissée (fenêtre 500 épisodes) croissant de 0 à environ 0.9 sur ~4500 épisodes.
@@ -30,7 +30,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## rl10-reward-shaping.png
 
-- **Source** : notebook `rl_10_reward_shaping.ipynb` (cellule 8, output 0, `display_data` `image/png`)
+- **Source** : notebook `RL-10-Reward-Shaping-Curriculum-Python.ipynb` (cellule 8, output 0, `display_data` `image/png`)
 - **SHA** : `5c496a41662d2ca819091d57932c3d465835a22f38356d7669ff8233b95f8d19` (taille 49 400 octets)
 - **Description visuelle** : Figure matplotlib single panel (989×490, fond blanc quasi-pur) titrée « Vitesse d'apprentissage : Reward Shaping vs Curriculum ». Axe x « Episodes » 0→2000 ; axe y « Return (MA-50) » -110→0 (inversé vers le bas). **Quatre courbes** : **Baseline rouge** (démarre à -110 vers ep 50, franchit seuil -30 vers ep 200, sature ~-17 vers ep 1500), **Potential-based vert** (très rapide, démarre ~-15, sature ~-17), **Heuristic orange** (encore plus rapide, démarre ~-15, sature ~-17), **Curriculum bleu** (très rapide, démarre ~-15, sature ~-17 — présente une oscillation marquée ep 1200-1800). **Seuil de convergence** horizontal dashed gris à -30 (pointillé fin). Légende bas-droite (5 entrées : Baseline / Potential-based / Heuristic / Curriculum / Seuil convergence). Stats RGB PIL : moyenne (248.50, 248.35, 248.10), std (33.37, 32.27, 34.67) — **fond blanc quasi-pur** dominant, std modéré signature des 4 couleurs saturées sur ~20% de la surface (4 courbes + 1 référence pointillée).
 - **Alt-text (FR)** : Reward shaping : vitesse d'apprentissage comparée sur quatre variantes — baseline (récompense sparse), potential-based shaping (Ng 1999), shaping heuristique et curriculum learning. Return en moyenne mobile 50 par épisode, seuil de convergence à -30 en pointillés.
@@ -41,7 +41,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## rl11-pomdp.png
 
-- **Source** : notebook `rl_11_pomdp.ipynb` (cellule 15, output 1, `display_data` `image/png`)
+- **Source** : notebook `RL-11-POMDP-Croyances-Python.ipynb` (cellule 15, output 1, `display_data` `image/png`)
 - **SHA** : `7308c9ab835a2595f1f7ab2075bfdeb070792ef8faf81aa19b01b0bca64fc361` (taille 26 600 octets)
 - **Description visuelle** : Figure matplotlib single panel diagramme en barres verticales (989×490) titrée « Tiger Problem : Comparaison des methodes (5 seeds) ». Axe x catégoriel (6 méthodes : Random / Open immediat / Listen x1 / Listen x2 / Q-MDP / Belief Q) ; axe y « Return moyen » 0→-46 (axe inversé vers le bas, graduation 0/-10/-20/-30/-40). **Six barres verticales colorées** avec valeurs exactes annotées sous chaque barre : **Random rouge -46.0** (très mauvaise, hit tigre), **Open immediat orange -6.2**, **Listen x1 vert -7.8**, **Listen x2 vert clair -8.3**, **Q-MDP bleu -11.8** (la barre la plus descendante des politiques informées), **Belief Q violet -8.0**. **Barres d'erreur** noires sur chaque barre (sauf Random où elles sont invisibles à l'échelle). Stats RGB PIL : moyenne (235.64, 226.93, 224.32), std (55.25, 61.94, 68.77) — **std le plus élevé des 6 RL PNG** signature des **6 barres verticales saturées** occupant ~25% de la surface avec couleurs RVB distinctes (rouge/orange/vert/vert-clair/bleu/violet) + fond blanc (rappel : axes Y inversés). Cohérent avec un **comparatif 6 méthodes Tiger Problem POMDP** avec intervalles de confiance.
 - **Alt-text (FR)** : POMDP Tiger Problem : diagramme en barres comparant la récompense moyenne de six méthodes sur 5 seeds, avec barres d'erreur — Random (-46.0), Open immédiat (-6.2), Listen x1 (-7.8), Listen x2 (-8.3), Q-MDP (-11.8), Belief Q (-8.0).
@@ -52,7 +52,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## rl12-distributional.png
 
-- **Source** : notebook `rl_12_distributional_rl.ipynb` (cellule 16, output 0, `display_data` `image/png`)
+- **Source** : notebook `RL-12-Distributional-RL-C51-Python.ipynb` (cellule 16, output 0, `display_data` `image/png`)
 - **SHA** : `d347b982b76dd3c2c47648708692cd02fcef042fc280a424d049eb6f91fd986b` (taille 71 800 octets)
 - **Description visuelle** : Figure matplotlib single panel (889×390, fond blanc quasi-pur) titrée « C51 sur CartPole-v1 : courbe d'apprentissage ». Axe x « episode » 0→~300 ; axe y « retour (pas equilibres) » 0→~320. **Trois séries temporelles** : **retour par episode bleu clair** (oscille violemment 0→320, signal bruyant de la stochasticité épisodique d'un agent en cours d'apprentissage), **moyenne glissante (20) rouge pleine** (monte de ~25 (ep 50) à ~60 (ep 200) puis à ~155 (ep 280), redescend légèrement à ~120 vers ep 300), **baseline aleatoire (~20)** en pointillé horizontal noir. Légende haut-gauche (3 entrées : retour par episode / moyenne glissante (20) / baseline aleatoire (~20)). Stats RGB PIL : moyenne (246.43, 245.86, 246.96), std (33.86, 37.78, 35.84) — **fond blanc quasi-pur** dominant, std modéré signature des 2 courbes (bleu clair bruyante + rouge glissante) sur ~50% de la surface (single panel large).
 - **Alt-text (FR)** : C51 sur CartPole-v1 : courbe d'apprentissage — retour par épisode (bleu clair), moyenne glissante sur 20 épisodes (rouge, culminant vers ~160), baseline aléatoire (~20) en pointillés, sur environ 300 épisodes.
@@ -63,7 +63,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## rl13-curiosity.png
 
-- **Source** : notebook `rl_13_curiosity_exploration.ipynb` (**cellule 12, output 0** *(corrigé c.489 — MANIFEST v1 citait `out=1` mais cell[12] ne porte qu'un seul output)*, `display_data` `image/png`)
+- **Source** : notebook `RL-13-Curiosite-RND-Python.ipynb` (**cellule 12, output 0** *(corrigé c.489 — MANIFEST v1 citait `out=1` mais cell[12] ne porte qu'un seul output)*, `display_data` `image/png`)
 - **SHA** : `e424ad14e4c3971beddf8676a88102539f37f17bbbf5b355c12d411e6ca35073` (taille 52 300 octets)
 - **Description visuelle** : Figure matplotlib 2 panneaux côte à côte (1188×409, fond blanc quasi-pur) sur la chaîne-piège N=16 états. **Gauche « Récompense extrinsèque par épisode (lissée) »** : axe x « épisode » 0→~500, axe y « récompense » 0.0→1.0. Deux courbes : **epsilon-greedy rouge** (plate à ~0.10 sur tout l'horizon, ne débloque jamais), **RND (curiosité) vert** (oscille bruyamment ~0.05-0.10 de ep 0 à ep 80, monte progressivement à partir de ep ~80-100, atteint 1.0 vers ep 200, oscille entre 0.9 et 1.0 ensuite). **Lignes horizontales pointillées** : **piège (petite récompense)** grise à 0.10, **grande récompense** noire à 1.0. **Droite « Distribution des visites d'états »** : axe x « état (0 = départ, N-1 = grande récompense) » 0→16, axe y « fréquence de visite » 0.0→~0.65. Histogramme groupé : **epsilon-greedy rouge** (barre massive à l'état 0 à ~63%, décroît rapidement vers 0 ensuite), **RND vert** (réparti sur tous les états 0-16, fréquence ~5-10% par état). Légende interne droite du panneau droit (2 entrées : epsilon-greedy / RND). Stats RGB PIL : moyenne (244.46, 244.20, 242.49), std (41.66, 41.35, 45.79) — **fond blanc quasi-pur** dominant, std modéré-élevé signature des courbes rouge/vert + histogramme 32 barres colorées sur ~30% de la surface (côte à côte double panneau).
 - **Alt-text (FR)** : RND (Random Network Distillation) sur chaîne MDP-piège : à gauche, récompense extrinsèque lissée par épisode — epsilon-greedy bloqué sur le piège (~0.10), RND atteint la grande récompense (~0.96) vers l'épisode 200 ; à droite, histogramme des visites d'états — epsilon-greedy concentré sur l'état 0 (~63%), RND réparti sur toute la chaîne (états 0 à 16).

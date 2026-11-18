@@ -1,0 +1,69 @@
+{
+  "source": {
+    "series": "vram_smoke_seed0.jsonl",
+    "meta": "vram_smoke_seed0.meta.json",
+    "artifact": "qwen35_seed0_smoke.json",
+    "phase_marks": "journal horodate du run (harnais probe_15099_dapo_grpo.py)"
+  },
+  "declared_interval_s": 1.0,
+  "observed_interval_s": {
+    "min": 0.968,
+    "median": 1.0,
+    "max": 1.062,
+    "mean": 1.0
+  },
+  "n_samples": 1365,
+  "span_s": 1364.078,
+  "started_at": "2026-10-20T19:18:50.353+00:00",
+  "stopped_at": "2026-10-20T19:41:34.440+00:00",
+  "stop_reason": "stop-file",
+  "gpu": {
+    "index": 0,
+    "name": "NVIDIA GeForce RTX 3070 Ti Laptop GPU",
+    "memory_total_MiB": "8192 MiB",
+    "nvidia_smi_version": "NVIDIA-SMI version  : 610.62"
+  },
+  "mem_MiB": {
+    "peak": 7803,
+    "mean": 6112.6,
+    "median": 7757,
+    "min": 374,
+    "max_at": "2026-10-20T19:32:52.450+00:00"
+  },
+  "peak_util_pct": 100,
+  "peak_temp_C": 69,
+  "high_window": {
+    "threshold_MiB": 7000,
+    "n_samples": 830,
+    "first_elapsed_s": 533.0,
+    "last_elapsed_s": 1362.078,
+    "span_s": 829.078,
+    "first_t": "2026-10-20T19:27:43.384+00:00",
+    "last_t": "2026-10-20T19:41:32.460+00:00"
+  },
+  "phase_marks": {
+    "pre_eval_end": "2026-10-20T19:25:57.703+00:00",
+    "train_end": "2026-10-20T19:37:43.608+00:00",
+    "post_eval_end": "2026-10-20T19:41:31.438+00:00",
+    "run_end": "2026-10-20T19:41:32.012+00:00"
+  },
+  "harness": {
+    "wallclock_s": 1355.8,
+    "train_runtime_s": 705.5112,
+    "n_log_history": 4,
+    "pre_eval": {
+      "n_gens": 32.0,
+      "reward_mean": 0.1875,
+      "length_mean": 377.78125
+    },
+    "post_eval": {
+      "n_gens": 32.0,
+      "reward_mean": 0.25,
+      "length_mean": 276.09375
+    }
+  },
+  "train_plus_posteval_window_s": 933.7,
+  "train_window_s": 705.9,
+  "post_eval_window_s": 227.8,
+  "high_window_over_train_runtime": 1.175
+}

@@ -1,0 +1,87 @@
+name: docs-transients-guard
+
+# Lane transiente docs/transients/ + interdiction d'entree de rapports dates
+# neufs sous docs/archive/ (#14623, tranche 2).
+#
+# Doctrine : l'archive est un stock a resorber, pas une destination. La
+# destination d'un rapport date (audit, compte rendu, instantané) est
+# docs/transients/ -- nom <YYYY-MM-DD>-<slug>.md + en-tete gele
+# "> RAPPORT - <date> - perimetre - fige". Deplacer un document EXISTANT vers
+# l'archive reste permis (reclasse, rename) ; c'est la creation qui est
+# signalee. Convention complete : docs/transients/README.md.
+#
+# Trois sens verifies en un appel : dans la lane (nom date + en-tete gele
+# concordants), hors de la lane (aucun en-tete de rapport en tete de document
+# dans l'arbre perenne), entree d'archive (base...HEAD, creations seulement).
+# L'echec du check-run EST le signalement, visible sans ouvrir les logs --
+# meme modele que prose-counts-guard (#17636).
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**/*.md'
+      - 'scripts/check_docs_transients_lane.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-transients-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  transients:
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
+    # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La
+    # garde same-repo ci-dessous saute les PRs de fork (pr_gate.py compte
+    # `skipped` comme OK) : aucun code de fork n'atteint le runner.
+    # 2026-10-27 (mesure ai-01) : migration vers `ubuntu-latest` par Q35 etape 2
+    # (#17397) -- `scripts/ci/audit_self_hosted_needs.py` certifie ce workflow
+    # comme n'ayant besoin de RIEN qui n'existe que sur le parc local, et le parc
+    # local etait sature PAR SES CHECKOUTS (mesure 00:45Z : 11 des 12 slots
+    # occupes dans `actions/checkout`, 614 runs en file). La garde anti-fork
+    # ci-dessous est CONSERVEE : aucun code de fork ne change de surface.
+    # 2026-10-27 (#22461, phase A) : forme hybride de debordement -- PR
+    # meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Shallow (fetch-depth: 2) + fetch explicite de la base depth=1,
+          # comme prose-counts-guard (#11835) : le diff base...HEAD tient
+          # sans cloner l'historique complet du depot.
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Lane transiente et entree d'archive
+        run: |
+          # Base = HEAD^1 : sur evenement pull_request, checkout@v4 pose le
+          # merge ref refs/pull/N/merge -- HEAD est le commit de merge, dont
+          # le premier parent EST le cote base. Un fetch depth=1 de
+          # origin/<base_ref> ne suffit pas : quand <base_ref> a bouge entre
+          # la construction du merge ref et ce fetch, les bornes shallow des
+          # deux fetchs n'ont aucun ancetre commun et le diff three-dot meurt
+          # -- mesure run 110043387149 : "fatal: origin/main...HEAD: no merge
+          # base" -> GIT_DIFF_FAILED. HEAD^1 est present par construction
+          # (fetch-depth: 2) et merge-base se resout en parent direct ; le
+          # diff rend exactement les fichiers du plateau GitHub (verifie sur
+          # repro de la topologie : 6 fichiers, identiques a gh pr view).
+          # --distillation : quatrieme sens, MESURE et non blocage. Le contrat
+          # de la lane est « un transit, pas un stock » : un rapport est
+          # distille quand un document perenne le cite. Afficher le stock a
+          # chaque PR docs/** le rend visible sans faire rougir la CI pour un
+          # residu anterieur (3 rapports au 2026-10-28) -- un gate bruyant
+          # apprend aux reviewers a l'ignorer. Une lane qui veut imposer le
+          # sens sur SA PR passe --strict-distillation.
+          python scripts/check_docs_transients_lane.py --base "HEAD^1" --distillation

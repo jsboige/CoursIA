@@ -1,0 +1,9 @@
+[technique #1] final_agent: specialiste_technique | events: 3
+[technique #2] final_agent: specialiste_technique | events: 3
+[formation #1] final_agent: specialiste_formation | events: 3
+[formation #2] final_agent: specialiste_formation | events: 3
+[chaine C4] mains: analyseur -> synthetiseur | events: 2
+ROUTING DETERMINISM: OK
+PLAN ORDER (C4): OK
+LLM CALLS: 10/12 (ex-post, snapshots d'usage C6)
+PILOT OK adk=2.8.0 orchestration=transfer_to_agent+AdkOrchestrator

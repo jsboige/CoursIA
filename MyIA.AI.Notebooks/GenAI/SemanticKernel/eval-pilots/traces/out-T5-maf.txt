@@ -1,0 +1,9 @@
+MAF 1.9.0 (agent-framework-core)
+MAF run1: tours=5 agents=['redacteur', 'critique', 'redacteur', 'critique', 'arbitre']
+MAF run2: tours=5 agents=['redacteur', 'critique', 'redacteur', 'critique', 'arbitre']
+FORME STABLE: OK
+MULTI-AGENTS: OK
+ORDRE FIXE: OK
+BOUCLE BORNEE: OK
+LLM CALLS: 10/40
+PILOT OK maf workflow roles=3

@@ -6,7 +6,7 @@
 
 ## 1. Source primaire et archivage
 
-**Source** : Thomas Metzinger, « Minimal phenomenal experience: Meditation, tonic alertness, and the phenomenology of "pure" consciousness », *Philosophy and the Mind Sciences* 1(I)7 (2020), DOI [10.33766/jphims.1128](https://doi.org/10.33766/jphims.1128). Open access (CC-BY).
+**Source** : Thomas Metzinger, « Minimal phenomenal experience: Meditation, tonic alertness, and the phenomenology of "pure" consciousness », *Philosophy and the Mind Sciences* 1(I)7 (2020), DOI [10.33735/phimisci.2020.i.46](https://doi.org/10.33735/phimisci.2020.i.46). Open access (CC-BY).
 
 **Archivage gisement** ([bibliography-hygiene](../../.claude/rules/bibliography-hygiene.md)) : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Consciousness\2020 - Metzinger - Minimal Phenomenal Experience (PhiMiSci 1(I)7, OA).pdf` — 323 887 octets, identité vérifiée sur la première page (auteur, titre, revue, DOI), recherche par auteur ET titre avant dépôt, une seule copie au rayon `Consciousness`.
 

@@ -42,9 +42,11 @@ from scan_d1_d3_d4_d5 import (  # noqa: E402
     SIGNATURE_CHANGE_THRESHOLD,
     MIN_NUMBER_VALUE,
     MAX_NUMBER_VALUE,
+    REEXEC_MARKERS,
     _is_non_substantial,
     _has_restore_verb,
     _has_rename_verb,
+    _documents_reexecution,
     _extract_numbers_from_text,
     extract_output_numbers,
     extract_prose_numbers,
@@ -411,6 +413,32 @@ class TestCommitClassification:
     def test_no_rename_verb(self):
         assert _has_rename_verb("feat(ict): new detector") is False
 
+    def test_documents_reexecution_english(self):
+        # Cas fondateur (FP mesure 2026-10-11, tranche 10-quater) : commit
+        # chore qui documente sa propre re-execution apres bump de DLL.
+        assert (
+            _documents_reexecution(
+                "chore(smt,#14169): reexecute Z3-Linq2Z3 meal-planner 06/08/09 after .deploy DLL bump"
+            )
+            is True
+        )
+        assert _documents_reexecution("chore(nb): re-execute outputs on new kernel") is True
+        assert _documents_reexecution("reexecution after dependency refresh") is True
+
+    def test_documents_reexecution_french_accents(self):
+        assert _documents_reexecution("chore(nb): réexécution des sorties") is True
+        assert _documents_reexecution("re-exécution complète du carnet") is True
+
+    def test_no_reexecution_marker(self):
+        assert _documents_reexecution("feat(ict): new detector") is False
+        assert _documents_reexecution("docs(readme): typo fix") is False
+        # "restore" n'est PAS une re-execution (famille D3, pas D5-EXEC).
+        assert _documents_reexecution("restore: rollback outputs") is False
+
+    def test_reexec_markers_nonempty_substrings(self):
+        # Garde de cohérence : chaque marqueur est un substring non vide.
+        assert all(len(m) >= 6 for m in REEXEC_MARKERS)
+
 
 # ============================================================================ #
 #  Detecteurs D3, D4, D5 (avec revisions simulees)
@@ -541,6 +569,78 @@ class TestDetectD5:
             _rev("bbb", "docs: empty", [], non_substantial=True),
         ]
         assert detect_d5(revs) == []
+
+    def test_reexec_documented_jump_is_d5_exec_not_d5(self):
+        # FP fondateur (tranche 10-quater, 2026-10-11) : un commit chore qui
+        # documente SA PROPRE re-execution rend le saut de mediane ATTENDU --
+        # la premisse "non-substantiel ne touche pas aux outputs" est voide
+        # par le commit lui-meme. Le finding reste visible (D5-EXEC) mais
+        # n'est plus categorise D5 pathologique.
+        revs = [
+            _rev("aaa", "feat(smt): meal planner", [95.0, 95.0, 95.0]),
+            _rev(
+                "bbb",
+                "chore(smt,#14169): reexecute Z3-Linq2Z3 meal-planner 06/08/09 after .deploy DLL bump",
+                [10.0, 10.0, 10.0],
+                non_substantial=True,
+            ),
+        ]
+        findings = detect_d5(revs)
+        assert len(findings) == 1  # jamais supprime silencieusement
+        assert findings[0].category == "D5-EXEC"
+        assert findings[0].sha == "bbb"
+        assert "saut attendu" in findings[0].detail
+
+    def test_plain_docs_jump_still_d5(self):
+        # Controle positif : le MEME saut sous un commit docs SANS marqueur
+        # de re-execution reste un vrai D5 pathologique.
+        revs = [
+            _rev("aaa", "feat(smt): meal planner", [95.0, 95.0, 95.0]),
+            _rev(
+                "bbb",
+                "docs(smt): update README table",
+                [10.0, 10.0, 10.0],
+                non_substantial=True,
+            ),
+        ]
+        findings = detect_d5(revs)
+        assert len(findings) == 1
+        assert findings[0].category == "D5"
+
+    def test_d5_exec_verdict_not_pathological(self):
+        # Un verdict D5-EXEC+ seul ne signale PAS une degeneration : la lane
+        # d'audit n'a pas a re-verifier manuellement un saut que le commit
+        # documente lui-meme.
+        nb = NotebookForensic(
+            path="nb.ipynb",
+            total_revisions=2,
+            verdict="D5-EXEC+",
+            findings=[
+                ForensicFinding(
+                    category="D5-EXEC",
+                    sha="bbb123",
+                    subject="chore: reexecute after DLL bump",
+                    detail="Saut mediane 95 -> 10 (relatif 89.5%) ... saut attendu",
+                )
+            ],
+            notes="1 finding(s) sur categorie(s) D5-EXEC",
+        )
+        assert nb.is_pathological is False
+
+    def test_d5_exec_alongside_real_d5_is_mixed_pathological(self):
+        # Fail-closed : un vrai D5 sur une autre revision melange les
+        # categories -> verdict MIXED -> pathologique.
+        nb = NotebookForensic(
+            path="nb.ipynb",
+            total_revisions=3,
+            verdict="MIXED",
+            findings=[
+                ForensicFinding(category="D5-EXEC", sha="aaa", subject="chore: reexec", detail=""),
+                ForensicFinding(category="D5", sha="ccc", subject="docs: typo", detail=""),
+            ],
+            notes="2 finding(s)",
+        )
+        assert nb.is_pathological is True
 
 
 # ============================================================================ #

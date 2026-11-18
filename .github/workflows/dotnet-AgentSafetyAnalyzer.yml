@@ -3,7 +3,7 @@ name: dotnet-AgentSafetyAnalyzer
 # Tranche 2 de #14696 (orphelins .sln) : la paire Vibe-Coding/analyzers —
 # CoursIA.AgentSafetyAnalyzer (netstandard2.0, analyzer Roslyn) + son projet
 # de tests xunit (net8.0) — exclue du glob parent par #14695, absente de
-# MyIA.CoursIA.sln, donc sans CI avant cette PR.
+# dotnet/MyIA.CoursIA.sln, donc sans CI avant cette PR.
 #
 # Bornes mesurees firsthand (worktree origin/main c04ec58df, 2026-09-05,
 # DOTNET_ROLL_FORWARD=Major faute de runtime 8 local — le comptage
@@ -15,7 +15,7 @@ name: dotnet-AgentSafetyAnalyzer
 # Deux jobs STATIQUES (pas de matrix runs-on dynamique — garde #13363,
 # meme forme que dotnet-ArgumentAnalysis.yml / dotnet-Shared.Tests.yml).
 # setup-dotnet 8.0.x : les tests ciblent net8.0 (distinct du trio
-# Argument_Analysis en 9.0.x).
+# ArgumentAnalysis en 9.0.x).
 
 on:
   push:
@@ -23,21 +23,20 @@ on:
     paths:
       - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**'
       - '.github/workflows/dotnet-AgentSafetyAnalyzer.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   pull_request:
-    branches: [main]
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**'
       - '.github/workflows/dotnet-AgentSafetyAnalyzer.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: dotnet-agentsafetyanalyzer-${{ github.ref }}
+  group: dotnet-agentsafetyanalyzer-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -46,11 +45,28 @@ env:
 jobs:
   dotnet-agentsafetyanalyzer-linux:
     name: AgentSafetyAnalyzer dotnet (ubuntu-latest, floor 26)
-    runs-on: ubuntu-latest
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
+    # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
+    # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
+    # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
+    # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v4
+
+      # Le pool auto-heberge tourne en uid 1001, sans sudo ni dpkg :
+      # `setup-dotnet` y echoue sur son repertoire d'installation par
+      # defaut ("mkdir: cannot create directory '/usr/share/dotnet':
+      # Permission denied" -- job 122655198139, 2026-10-28). Meme cause,
+      # meme remede que le workflow Windows self-hosted deja en service
+      # (run 37396937471) : l'installation est dirigee vers le tool-cache
+      # du runner, inscriptible par le compte et persistant entre jobs.
+      # La branche hebergee reste intacte (elle ecrit dans /usr/share/dotnet).
+      - name: Route dotnet installs to the runner tool cache
+        if: github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true'
+        run: echo "DOTNET_INSTALL_DIR=$RUNNER_TOOL_CACHE/dotnet" >> "$GITHUB_ENV"
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -83,6 +99,7 @@ jobs:
 
   dotnet-agentsafetyanalyzer-windows:
     name: AgentSafetyAnalyzer dotnet (windows-latest, floor 26)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: windows-latest
     timeout-minutes: 15
 

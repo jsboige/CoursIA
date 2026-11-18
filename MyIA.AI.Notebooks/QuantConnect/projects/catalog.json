@@ -1246,5 +1246,18 @@
     "hasResearch": false,
     "hasReadme": true,
     "classification": "untested"
+  },
+  {
+    "name": "ShortTermReversalFutures-QC",
+    "sharpe": -0.474,
+    "cagr": -3.57,
+    "maxDD": 44.9,
+    "period": "2016-2026",
+    "description": "Reversal court terme 8 futures CME (ROC hebdo volume/OI/rendement), verification article 15366 sous frais IBKR",
+    "language": "Python",
+    "hasMain": true,
+    "hasResearch": false,
+    "hasReadme": true,
+    "classification": "exploratoire"
   }
 ]

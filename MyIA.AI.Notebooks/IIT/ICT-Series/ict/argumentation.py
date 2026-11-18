@@ -4,7 +4,7 @@ La serie ICT vit de matrices de transition. Ce module livre le **grounding**
 de la Phase A de l'issue #7289 : un graphe de transition (une TPM) sur des
 **etats de croyance** derivé d'une source reelle, l'argumentation abstraite de
 Dung (1995) telle qu'outillée dans la serie Tweety
-(``SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb``).
+(``SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb``).
 
 **Cadre.** Un Argumentation Framework (AF) de Dung est un couple
 ``(arguments, attaques)`` : un argument ``a`` *attaque* un argument ``b``. Une
@@ -531,7 +531,7 @@ def tweety_bird() -> DungAF:
       - ``2`` : Tweety est un oiseau (soutien indirect -- ici represente comme
         attaquant la negation, simplification).
 
-    Forme canonique de la litterature (cf. ``Tweety-5-Abstract-Argumentation``
+    Forme canonique de la litterature (cf. ``Tweety-05-Abstract-Argumentation-Python``
     dans la serie SymbolicAI) : conflit direct ``0 <-> 1`` (deux conclusions
     opposees), avec un sous-ensemble qui resolve le conflit. Ici on encode le
     conflit nucleaire : ``0`` et ``1`` s'attaquent mutuellement ; ``1`` est
@@ -564,7 +564,7 @@ def _phase_a_report() -> str:
     """Construit le verdict Phase A : TPM derivee d'AF canoniques reels.
 
     Source reelle : les AF canoniques documentes dans la serie Tweety
-    (``SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb``) -- Nixon
+    (``SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb``) -- Nixon
     diamond (Pollock 1987), Tweety bird (Tweety-fly example), chaine lineaire
     d'attaques. Pour chacun : arrivee sequentielle -> trajectoire de labelings
     -> TPM ligne-stochastique -> fleche du temps du discours (sigma).
@@ -573,7 +573,7 @@ def _phase_a_report() -> str:
     lines.append("ICT-7289 PHASE A — Verdict de grounding (substrat argumentation)")
     lines.append("=" * 72)
     lines.append("Source reelle : AF canoniques de la serie Tweety "
-                 "(SymbolicAI/Tweety/Tweety-5-Abstract-Argumentation.ipynb).")
+                 "(SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb).")
     lines.append("")
     verdict_pass = True
     cases = [

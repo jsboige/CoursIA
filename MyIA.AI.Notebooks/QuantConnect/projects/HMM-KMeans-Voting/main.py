@@ -1,5 +1,6 @@
 # region imports
 from AlgorithmImports import *
+from datetime import datetime
 import numpy as np
 # endregion
 
@@ -183,8 +184,19 @@ class HMMKMeansVoting(QCAlgorithm):
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2024, 1, 1)
+        # Protocole #23012 : `mode` choisit la strategie (defaut, decision
+        # inchangee), une reference detenue (spy, 6040) ou un diagnostic
+        # (fixed : allocation `neutral` detenue ; nocrisis : sans disjoncteur).
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "fixed", "nocrisis"):
+            raise ValueError(
+                f"unknown mode parameter: {self._mode} "
+                "(strategy | spy | 6040 | fixed | nocrisis)"
+            )
+        start = self.get_parameter("start_date", "2015-01-01")
+        end = self.get_parameter("end_date", "2024-01-01")
+        self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
+        self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))
         self.set_cash(100_000)
         self.set_brokerage_model(
             BrokerageName.INTERACTIVE_BROKERS_BROKERAGE,
@@ -197,6 +209,9 @@ class HMMKMeansVoting(QCAlgorithm):
         self.ief = self.add_equity("IEF", Resolution.DAILY).symbol
         self.gld = self.add_equity("GLD", Resolution.DAILY).symbol
         self.djp = self.add_equity("DJP", Resolution.DAILY).symbol
+        # BND n'est pas dans l'univers du code : seul le mode 6040 l'abonne.
+        self.bnd = (self.add_equity("BND", Resolution.DAILY).symbol
+                    if self._mode == "6040" else None)
 
         self.set_warm_up(300, Resolution.DAILY)
 
@@ -217,6 +232,52 @@ class HMMKMeansVoting(QCAlgorithm):
             self.time_rules.after_market_open(self.spy, 60),
             self._daily_crisis_check
         )
+
+        # Compteurs du protocole #23012, publies en statistiques d'execution :
+        # ils ne lisent que l'etat et ne passent aucun ordre.
+        self._crisis_triggers = 0
+        self._regime_counts = {"bull": 0, "neutral": 0, "bear": 0}
+        self._first_decision = None
+
+        if self._mode in ("spy", "6040", "fixed"):
+            self.schedule.on(
+                self.date_rules.month_start(self.spy),
+                self.time_rules.after_market_open(self.spy, 1),
+                self._rebalance_reference
+            )
+        # Trace `shadow` (#18923) : valeur du portefeuille a l'ouverture de
+        # chaque seance de SPY, hors prechauffage, dans e0..e4.
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day(self.spy),
+            self.time_rules.after_market_open(self.spy, 0),
+            self._trace
+        )
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            targets = {self.spy: 1.0}
+        elif self._mode == "6040":
+            targets = {self.spy: 0.6, self.bnd: 0.4}
+        else:
+            targets = dict(zip(
+                (self.spy, self.tlt, self.ief, self.gld, self.djp),
+                ALLOC["neutral"]
+            ))
+        for sym, w in targets.items():
+            if w > 0:
+                self.set_holdings(sym, w)
+            elif self.portfolio[sym].invested:
+                self.liquidate(sym)
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}",
+                  self.portfolio.total_portfolio_value)
+        self._closes += 1
 
     def _get_features(self, lookback=400):
         bars = self.history(self.spy, lookback + 10, Resolution.DAILY)
@@ -305,10 +366,15 @@ class HMMKMeansVoting(QCAlgorithm):
         if self.hmm is None or self.kmeans is None:
             return None
 
-        bars = self.history(self.spy, 30, Resolution.DAILY)
+        # Fenetre double (#20286) : sur une demi-seance, history() rend moins de
+        # barres que demandees et le regime n'est pas detecte (retour None).
+        # On demande le double puis on re-slice sur les 30 dernieres barres :
+        # la matrice de features est donc inchangee hors demi-seance.
+        bars = self.history(self.spy, 2 * 30, Resolution.DAILY)
         if bars is None or bars.empty or len(bars) < 25:
             return None
 
+        bars = bars.iloc[-30:]
         close = bars["close"].values.astype(float)
         ret = np.diff(np.log(close + 1e-10))
         n = len(ret)
@@ -347,29 +413,41 @@ class HMMKMeansVoting(QCAlgorithm):
         return final
 
     def _daily_crisis_check(self):
-        if self.is_warming_up:
+        if self.is_warming_up or self._mode != "strategy":
             return
 
-        bars = self.history(self.spy, 7, Resolution.DAILY)
+        # Fenetre double (#20286) : meme mecanisme que _detect_regime ; la vol5
+        # porte sur les 5 dernieres differences, donc sur 6 barres. Ce controle
+        # est quotidien : il est donc expose a chaque demi-seance.
+        bars = self.history(self.spy, 2 * 7, Resolution.DAILY)
         if bars is None or bars.empty or len(bars) < 6:
             return
 
+        bars = bars.iloc[-7:]
         close = bars["close"].values.astype(float)
         vol5 = np.diff(np.log(close + 1e-10))[-5:].std() * np.sqrt(252)
 
         if vol5 > CRISIS_VOL_THRESHOLD and not self._crisis_active:
             self._crisis_active = True
+            self._crisis_triggers += 1
             self.regime = "bear"
             spy_w, tlt_w, ief_w, gld_w, djp_w = ALLOC["bear"]
             self.debug(
                 f"{self.time.date()} | CRISIS vol5={vol5:.1%} -> bear forced"
             )
-            self.liquidate()
-            self.set_holdings(self.spy, spy_w)
-            self.set_holdings(self.tlt, tlt_w)
-            self.set_holdings(self.ief, ief_w)
-            self.set_holdings(self.gld, gld_w)
-            self.set_holdings(self.djp, djp_w)
+            # Un seul appel a cibles multiples (#23014) : en donnees
+            # journalieres, liquidate() puis set_holdings partent ensemble a
+            # la cloture, et set_holdings ignorait la vente en attente.
+            # set_holdings ignore aussi les ordres d'un reequilibrage mensuel
+            # passe le meme jour, encore en attente : on les annule d'abord.
+            self.transactions.cancel_open_orders()
+            self.set_holdings([
+                PortfolioTarget(self.spy, spy_w),
+                PortfolioTarget(self.tlt, tlt_w),
+                PortfolioTarget(self.ief, ief_w),
+                PortfolioTarget(self.gld, gld_w),
+                PortfolioTarget(self.djp, djp_w),
+            ], liquidate_existing_holdings=True)
 
         elif vol5 <= CRISIS_VOL_THRESHOLD and self._crisis_active:
             self._crisis_active = False
@@ -381,6 +459,8 @@ class HMMKMeansVoting(QCAlgorithm):
     def _monthly_rebalance(self):
         if self.is_warming_up or self._crisis_active:
             return
+        if self._mode not in ("strategy", "nocrisis"):
+            return
 
         if not self._train_models():
             self.debug("Models unavailable - allocation unchanged")
@@ -391,6 +471,9 @@ class HMMKMeansVoting(QCAlgorithm):
             return
 
         self.regime = regime
+        self._regime_counts[regime] += 1
+        if self._first_decision is None:
+            self._first_decision = f"{self.time.date()} {regime}"
         spy_w, tlt_w, ief_w, gld_w, djp_w = ALLOC[regime]
 
         self.debug(
@@ -399,15 +482,30 @@ class HMMKMeansVoting(QCAlgorithm):
             f"GLD={gld_w:.0%} DJP={djp_w:.0%}"
         )
 
-        self.liquidate()
-        self.set_holdings(self.spy, spy_w)
-        self.set_holdings(self.tlt, tlt_w)
-        self.set_holdings(self.ief, ief_w)
-        self.set_holdings(self.gld, gld_w)
-        self.set_holdings(self.djp, djp_w)
+        # Meme correctif (#23014) : les ordres se calculent sur la position
+        # finale, et non sur la position encore detenue ; les ordres encore
+        # en attente sont annules avant.
+        self.transactions.cancel_open_orders()
+        self.set_holdings([
+            PortfolioTarget(self.spy, spy_w),
+            PortfolioTarget(self.tlt, tlt_w),
+            PortfolioTarget(self.ief, ief_w),
+            PortfolioTarget(self.gld, gld_w),
+            PortfolioTarget(self.djp, djp_w),
+        ], liquidate_existing_holdings=True)
 
     def on_data(self, data: Slice):
         if self.is_warming_up:
             return
         if not self.portfolio.invested:
             self._monthly_rebalance()
+
+    def on_end_of_algorithm(self):
+        self.set_runtime_statistic("crisis_triggers", str(self._crisis_triggers))
+        for name, n in self._regime_counts.items():
+            self.set_runtime_statistic(f"regime_{name}", str(n))
+        self.set_runtime_statistic("first_decision", str(self._first_decision))
+        last = self.securities[self.djp].get_last_data()
+        self.set_runtime_statistic(
+            "djp_last", str(last.end_time.date()) if last else "none"
+        )

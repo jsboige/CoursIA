@@ -33,7 +33,7 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 | SymbolicAI — Planning | `planners/planners.csv` | 1006 | `SymbolicAI/Planners/` |
 | SymbolicAI — SMT/Z3-API | `smt/z3-api.csv` | 541 | `SymbolicAI/SMT/Z3-API/` |
 | SymbolicAI — SMT/Z3.Linq | `smt/z3-linq2z3.csv` | 525 | `SymbolicAI/SMT/Z3-Linq2Z3/` |
-| SymbolicAI — Argument | `symbolicai/argument_analysis.csv` | 421 | `SymbolicAI/Argument_Analysis/` |
+| SymbolicAI — Argument | `symbolicai/argumentanalysis.csv` | 421 | `SymbolicAI/ArgumentAnalysis/` |
 | SymbolicAI — Lean | `symbolicai-lean/symbolicai-lean.csv` | 1178 | `SymbolicAI/Lean/` |
 | SymbolicLearning | `symboliclearning/symboliclearning.csv` | 738 | `SymbolicAI/SymbolicLearning/` |
 | SmartContracts | `smartcontracts/smartcontracts.csv` | 965 | `SymbolicAI/SmartContracts/` |
@@ -52,6 +52,9 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 | RL | `rl/rl.csv` | 513 | `RL/` |
 | Sudoku | `sudoku/sudoku.csv` | 1337 | `Sudoku/` |
 | GameTheory | `gametheory/gametheory.csv` | 1897 | `GameTheory/` |
+| Complexity | `complexity/complexity.csv` | 242 | `Complexity/` |
+| Compression | `compression/compression.csv` | 31 | `Compression/` |
+| NLP | `nlp/nlp.csv` | 229 | `NLP/` |
 | GenAI — Audio | `genai/audio.csv` | 1128 | `GenAI/Audio/` |
 | GenAI — CaseStudies | `genai/casestudies.csv` | 113 | `GenAI/CaseStudies/` |
 | GenAI — FineTuning | `genai/finetuning.csv` | 161 | `GenAI/FineTuning/` |

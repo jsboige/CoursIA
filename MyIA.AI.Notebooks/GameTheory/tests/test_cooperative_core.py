@@ -24,6 +24,12 @@ seulement l'absence de crash :
   - **Geometrie 2D** : pour 2 joueurs, le Core est un intervalle
     [v({0}), v(N)-v({1})] sur la droite d'efficacite, non-vide ssi
     v({0})+v({1}) <= v(N).
+  - **Geometrie 3D (sommets exacts)** : pour 3 joueurs, le Core est le
+    polygone intersection des contraintes de coalition dans le plan
+    d'efficacite ; core_vertices_3d en rend les sommets par intersection des
+    contraintes actives. Aucune hypothese de non-negativite : les jeux a
+    valeurs negatives ont des sommets a coordonnees negatives, hors du
+    domaine du helper d'echantillonnage sample_core_3d (#20307).
   - **Coherence des objectifs LP** ('any'/'center'/'equal') : ils rendent
     tous un point faisable du Core (non-vide) ou None (vide), de maniere
     deterministe et compatible avec is_in_core.
@@ -32,6 +38,7 @@ Run with: pytest tests/test_cooperative_core.py -v
 """
 
 import sys
+from itertools import permutations
 from pathlib import Path
 
 import numpy as np
@@ -52,6 +59,7 @@ from cooperative_games.core import (  # noqa: E402
     compute_core,
     core_vertices_2d,
     core_vertices_3d,
+    sample_core_3d,
     bondareva_shapley_condition,
 )
 
@@ -331,33 +339,153 @@ class TestCoreVertices2D:
             core_vertices_2d(game)
 
 
+def _triangle_core():
+    """Jeu dont le Core est le TRIANGLE de sommets (1/2,1/2,0), (1/2,0,1/2),
+    (0,1/2,1/2) : v(singleton)=0, v(paire)=1/2, v(N)=1."""
+    def v(S):
+        s = frozenset(S)
+        if len(s) == 3:
+            return 1.0
+        return 0.5 if len(s) == 2 else 0.0
+    return CoalitionGame(3, v)
+
+
+def _negative_core():
+    """Contre-exemple du constat #20307 : v(N)=1 et v(S)=-1 pour toute
+    coalition propre non vide. Le Core est le polygone
+    -1 <= x_i <= 2 et -1 <= x_i+x_j <= 2 : ses 6 sommets portent tous une
+    coordonnee negative, HORS du domaine non negatif de la grille."""
+    def v(S):
+        s = frozenset(S)
+        if len(s) == 3:
+            return 1.0
+        return -1.0 if s else 0.0
+    return CoalitionGame(3, v)
+
+
 # ----------------------------------------------------------------------------
-# core_vertices_3d : echantillonnage du Core sur le 2-simplexe.
+# core_vertices_3d : sommets EXACTS du Core a 3 joueurs (#20307).
 # ----------------------------------------------------------------------------
 
 class TestCoreVertices3D:
-    """core_vertices_3d : echantillonne la frontiere du Core pour 3 joueurs."""
+    """core_vertices_3d : intersections des contraintes actives, pas un nuage.
+    Le contrat est celui du nom : k sommets distincts, chacun dans le Core."""
+
+    def test_triangle_core_has_exactly_three_vertices(self):
+        """Controle positif : un Core triangulaire rend exactement ses 3
+        sommets, aux positions exactes."""
+        game = _triangle_core()
+        verts = core_vertices_3d(game)
+        assert verts is not None
+        assert len(verts) == 3
+        assert sorted(map(tuple, np.round(verts, 12))) == sorted([
+            (0.5, 0.5, 0.0), (0.5, 0.0, 0.5), (0.0, 0.5, 0.5),
+        ])
+
+    def test_negative_coordinates_are_found(self):
+        """Controle negatif : le contre-exemple du constat rend ses 6 sommets,
+        tous porteurs d'une coordonnee NEGATIVE que la grille ne peut atteindre."""
+        game = _negative_core()
+        verts = core_vertices_3d(game)
+        assert verts is not None
+        assert sorted(map(tuple, np.round(verts, 9))) == sorted([
+            (-1.0, 2.0, 0.0), (2.0, -1.0, 0.0),
+            (-1.0, 0.0, 2.0), (0.0, -1.0, 2.0),
+            (2.0, 0.0, -1.0), (0.0, 2.0, -1.0),
+        ])
+        assert all((v < 0).any() for v in verts)
+
+    def test_negative_core_is_out_of_reach_for_the_grid(self):
+        """Ce que le correctif adresse : le helper d'echantillonnage non negatif
+        ne rend AUCUN de ces sommets -- il ne peut pas les voir."""
+        game = _negative_core()
+        cloud = sample_core_3d(game, n_points=40)
+        assert cloud is not None
+        for vertex in core_vertices_3d(game):
+            assert np.min(np.linalg.norm(cloud - vertex, axis=1)) > 1e-6
+
+    def test_convex_game_vertex_set_is_exact(self):
+        """v(S)=|S|^2 : le Core est l'hexagone des 6 permutations de (1,3,5)
+        -- ni plus (aucun point interieur), ni moins."""
+        game = _convex_square(3)
+        verts = core_vertices_3d(game)
+        assert verts is not None
+        assert sorted(map(tuple, np.round(verts, 9))) == sorted(
+            [tuple(float(c) for c in p) for p in permutations((1.0, 3.0, 5.0))]
+        )
+        # Par symetrie du jeu, le centre de gravite des sommets est la valeur
+        # de Shapley (partage egal de v(N)=9).
+        assert np.mean(verts, axis=0) == pytest.approx([3.0, 3.0, 3.0])
+
+    def test_dictator_core_is_a_single_vertex(self):
+        """Core reduit a un point : UN sommet, pas un doublon par paire de
+        contraintes actives -- le dedoublonnage fait partie du contrat."""
+        game = _dictator_unanimity()
+        verts = core_vertices_3d(game)
+        assert verts is not None
+        assert verts.shape == (1, 3)
+        assert verts[0] == pytest.approx([1.0, 0.0, 0.0])
+
+    def test_every_vertex_satisfies_both_core_contracts(self):
+        """Chaque sommet verifie l'efficacite (somme = v(N)) ET la rationalite
+        de coalition (is_in_core), sur les quatre jeux de reference."""
+        for game in (_convex_square(3), _triangle_core(), _negative_core(),
+                     _dictator_unanimity()):
+            verts = core_vertices_3d(game)
+            assert verts is not None
+            for v in verts:
+                assert v.sum() == pytest.approx(game.grand_coalition_value())
+                ok, blocking = is_in_core(game, v)
+                assert ok, f"vertex {v} rejected by coalition {blocking}"
+
+    def test_empty_core_returns_none(self):
+        """Jeu majority 3 joueurs (Core vide) => None."""
+        game = majority_game(3)
+        assert core_vertices_3d(game) is None
+
+    def test_wrong_player_count_raises(self):
+        game = _two_player_nonempty()
+        with pytest.raises(ValueError):
+            core_vertices_3d(game)
+
+
+# ----------------------------------------------------------------------------
+# sample_core_3d : nuage de points du Core sur le 2-simplexe (visualisation).
+# ----------------------------------------------------------------------------
+
+class TestSampleCore3D:
+    """sample_core_3d : le helper de VISUALISATION -- un nuage, pas des sommets."""
 
     def test_convex_game_returns_in_core_points(self):
         """Jeu convexe (Core non-vide) : rend un nuage de points, TOUS dans
         le Core (verifies par is_in_core)."""
         game = _convex_square(3)
-        points = core_vertices_3d(game, n_points=20)
+        points = sample_core_3d(game, n_points=20)
         assert points is not None
         assert len(points) >= 1
         for alloc in points:
             ok, _ = is_in_core(game, alloc)
             assert ok, f"sampled point {alloc} not in core"
 
+    def test_returns_a_cloud_not_a_vertex_set(self):
+        """Le nuage est strictement plus gros que l'ensemble des sommets et ne
+        les contient pas : deux contrats distincts, deux fonctions distinctes."""
+        game = _convex_square(3)
+        cloud = sample_core_3d(game, n_points=20)
+        verts = core_vertices_3d(game)
+        assert len(cloud) > len(verts)
+        for vertex in verts:
+            assert np.min(np.linalg.norm(cloud - vertex, axis=1)) > 1e-6
+
     def test_empty_core_returns_none(self):
         """Jeu majority 3 joueurs (Core vide) => None."""
         game = majority_game(3)
-        assert core_vertices_3d(game, n_points=20) is None
+        assert sample_core_3d(game, n_points=20) is None
 
     def test_wrong_player_count_raises(self):
         game = _two_player_nonempty()
         with pytest.raises(ValueError):
-            core_vertices_3d(game)
+            sample_core_3d(game)
 
 
 # ----------------------------------------------------------------------------

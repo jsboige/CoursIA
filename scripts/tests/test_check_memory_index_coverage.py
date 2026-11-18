@@ -83,11 +83,7 @@ def test_broken_link_detected(tmp_path: Path) -> None:
 
 def test_real_memory_dir() -> None:
     """Vérifie que l'organe fonctionne contre le MEMORY.md de la machine."""
-    import os
-
-    real_dir = Path(
-        r"C:\Users\Jesse\.claude\projects\d--dev-CoursIA-2\memory"
-    )
+    real_dir = Path.home() / ".claude" / "projects" / "d--dev-CoursIA-2" / "memory"
     if not real_dir.exists():
         return  # CI sans le bon chemin
     out = subprocess.run(
@@ -100,3 +96,337 @@ def test_real_memory_dir() -> None:
     # MEMORY.md reel : on accepte OK ou FAIL (c.874 travaille a couverture 100%)
     assert report["verdict"] in ("OK", "FAIL")
     assert report["total_files"] > 100  # au moins 100 fichiers de Tells
+
+
+NL = chr(10)  # newline literal, heredoc-proof
+
+
+def _run_args(tmp_path: Path, mem_text: str, extra_args: list) -> dict:
+    """Comme _run mais avec des args CLI supplementaires."""
+    (tmp_path / "MEMORY.md").write_text(mem_text, encoding="utf-8")
+    (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
+    (tmp_path / "beta.md").write_text("# beta", encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    out = subprocess.run(
+        [sys.executable, str(SCRIPT), "--memory-dir", str(tmp_path), "--json", *extra_args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert out.returncode in (0, 1), f"unexpected rc={out.returncode}: stderr={out.stderr}"
+    return json.loads(out.stdout)
+
+
+def test_default_ceiling_oversize(tmp_path: Path) -> None:
+    """MEMORY.md > 24 400 o au defaut #4204 => FAIL_OVERSIZE, rc=1."""
+    line = "- [alpha](alpha.md)" + NL
+    filler = "# Memoire" + NL + NL + (line * 1300)
+    (tmp_path / "MEMORY.md").write_text(filler, encoding="utf-8")
+    (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
+    out = subprocess.run(
+        [sys.executable, str(SCRIPT), "--memory-dir", str(tmp_path), "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    report = json.loads(out.stdout)
+    assert report["verdict"] == "FAIL_OVERSIZE"
+    assert report["max_bytes"] == 24400
+    assert out.returncode == 1
+
+
+def test_alert_band_warns_without_failing(tmp_path: Path) -> None:
+    """21 960 < taille <= 24 400 => size_alert vrai, verdict reste OK."""
+    head = (
+        "# Memoire" + NL + NL
+        + "- [alpha](alpha.md)" + NL
+        + "- [beta](beta.md)" + NL
+        + "- [gamma](gamma.md)" + NL + NL
+    )
+    pad = "x" * (22500 - len(head))
+    report = _run_args(tmp_path, head + pad, [])
+    assert report["size_bytes"] > 21960
+    assert report["size_bytes"] <= 24400
+    assert report["size_alert"] is True
+    assert report["verdict"] == "OK"
+
+
+def test_no_max_bytes_binary_only(tmp_path: Path) -> None:
+    """--no-max-bytes : pas de plafond, verdict binaire seul (pre-#4204)."""
+    head = (
+        "# Memoire" + NL + NL
+        + "- [alpha](alpha.md)" + NL
+        + "- [beta](beta.md)" + NL
+        + "- [gamma](gamma.md)" + NL + NL
+    )
+    pad = "x" * (25000 - len(head))  # > 24 400 o
+    report = _run_args(tmp_path, head + pad, ["--no-max-bytes"])
+    assert report["max_bytes"] is None
+    assert report["alert_bytes"] is None
+    assert report["size_alert"] is False
+    assert report["verdict"] == "OK"
+
+
+# --- Couverture par grappes (#17885 Q10 : « complétude et consolidation en
+#     grappes ») — l'index compacté pointe une grappe, la grappe liste les
+#     fiches. Une fiche listée dans une grappe joignable n'est pas orpheline.
+
+
+def _run_custom(tmp_path: Path, mem_text: str, extra_args: list | None = None) -> dict:
+    """Comme _run mais SANS créer alpha/beta/gamma : le dossier est celui du test."""
+    (tmp_path / "MEMORY.md").write_text(mem_text, encoding="utf-8")
+    out = subprocess.run(
+        [sys.executable, str(SCRIPT), "--memory-dir", str(tmp_path), "--json", *(extra_args or [])],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert out.returncode in (0, 1), f"unexpected rc={out.returncode}: stderr={out.stderr}"
+    return json.loads(out.stdout)
+
+
+def test_wikilink_couvre_la_fiche(tmp_path: Path) -> None:
+    """[[alpha]] est un lien : alpha.md est couvert, pas orphelin."""
+    (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[alpha]] c.1" + NL)
+    assert report["verdict"] == "OK"
+    assert report["orphan_count"] == 0
+    assert report["direct_referenced_files"] == 1
+    assert report["referenced_files"] == 1
+
+
+def test_wikilink_mort_est_un_lien_casse(tmp_path: Path) -> None:
+    """[[delta]] sans delta.md => lien mort, verdict FAIL."""
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[delta]] c.1" + NL)
+    assert report["verdict"] == "FAIL"
+    assert report["broken_link_count"] == 1
+    assert "liens_morts_index" in report["fail_reasons"]
+
+
+def test_fiche_listee_dans_une_grappe_joignable_est_couverte(tmp_path: Path) -> None:
+    """MEMORY.md pointe la grappe, la grappe liste gamma => gamma couvert."""
+    (tmp_path / "annexes").mkdir()
+    (tmp_path / "annexes" / "digest.md").write_text(
+        "# digest" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8"
+    )
+    (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(
+        tmp_path,
+        "# Memoire" + NL + NL
+        + "- [alpha](alpha.md)" + NL
+        + "- [grappe](annexes/digest.md)" + NL,
+    )
+    assert report["verdict"] == "OK"
+    assert report["orphan_count"] == 0
+    assert report["direct_referenced_files"] == 1
+    assert report["via_cluster_referenced_files"] == 1
+    assert report["cluster_files_present"] == 1
+    assert report["cluster_files_reachable"] == 1
+
+
+def test_grappe_non_joignable_laisse_la_fiche_orpheline(tmp_path: Path) -> None:
+    """Une grappe que l'index ne pointe pas ne couvre rien : gamma orphelin."""
+    (tmp_path / "annexes").mkdir()
+    (tmp_path / "annexes" / "digest.md").write_text(
+        "# digest" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8"
+    )
+    (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [alpha](alpha.md)" + NL)
+    assert report["verdict"] == "FAIL"
+    assert report["orphan_count"] == 1
+    assert report["orphan_files"] == ["gamma.md"]
+    assert report["cluster_files_reachable"] == 0
+    assert report["cluster_files_unreachable"] == ["digest.md"]
+
+
+def test_un_seul_saut_de_grappe(tmp_path: Path) -> None:
+    """depth 1 : une grappe qui pointe une autre grappe ne couvre pas ses fiches."""
+    (tmp_path / "annexes").mkdir()
+    (tmp_path / "annexes" / "digest.md").write_text(
+        "# digest" + NL + NL + "- [suite](sous.md)" + NL, encoding="utf-8"
+    )
+    (tmp_path / "annexes" / "sous.md").write_text(
+        "# sous" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8"
+    )
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [grappe](annexes/digest.md)" + NL)
+    assert report["orphan_count"] == 1  # gamma : deux sauts, hors profondeur 1
+    assert report["verdict"] == "FAIL"
+
+
+def test_profondeur_deux_sauts_couvre_la_fiche(tmp_path: Path) -> None:
+    """--cluster-depth 2 : le second saut est resolu."""
+    (tmp_path / "annexes").mkdir()
+    (tmp_path / "annexes" / "digest.md").write_text(
+        "# digest" + NL + NL + "- [suite](sous.md)" + NL, encoding="utf-8"
+    )
+    (tmp_path / "annexes" / "sous.md").write_text(
+        "# sous" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8"
+    )
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(
+        tmp_path,
+        "# Memoire" + NL + NL + "- [grappe](annexes/digest.md)" + NL,
+        ["--cluster-depth", "2"],
+    )
+    assert report["orphan_count"] == 0
+    assert report["verdict"] == "OK"
+
+
+def test_lien_mort_dans_une_grappe_bloque_avec_sa_raison(tmp_path: Path) -> None:
+    """Un lien mort dans une grappe est un lien mort : raison distincte."""
+    (tmp_path / "annexes").mkdir()
+    (tmp_path / "annexes" / "digest.md").write_text(
+        "# digest" + NL + NL + "- [[delta]] c.3" + NL, encoding="utf-8"
+    )
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [grappe](annexes/digest.md)" + NL)
+    assert report["verdict"] == "FAIL"
+    assert report["broken_link_count"] == 0  # l'index, lui, n'a pas de lien mort
+    assert report["cluster_broken_link_count"] == 1
+    assert "liens_morts_grappes" in report["fail_reasons"]
+
+
+def test_un_chemin_en_backticks_inconnu_est_ignore(tmp_path: Path) -> None:
+    """`docs/reference/x.md` (fichier du dépôt, hors memory/) n'est pas un lien mort."""
+    (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
+    report = _run_custom(
+        tmp_path,
+        "# Memoire" + NL + NL + "- [alpha](alpha.md)" + NL + "- voir `docs/reference/x.md`" + NL,
+    )
+    assert report["broken_link_count"] == 0
+    assert report["cluster_broken_link_count"] == 0
+    assert report["verdict"] == "OK"
+
+
+def test_strict_direct_refuse_la_couverture_par_grappe(tmp_path: Path) -> None:
+    """--strict-direct : une fiche listee dans une grappe n'est PAS couverte.
+
+    Le critere d'origine est preserve dans un mode explicite : la PR ne
+    relache rien, elle mesure les deux formes.
+    """
+    (tmp_path / "annexes").mkdir()
+    (tmp_path / "annexes" / "digest.md").write_text(
+        "# digest" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8"
+    )
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(
+        tmp_path,
+        "# Memoire" + NL + NL + "- [grappe](annexes/digest.md)" + NL,
+        ["--strict-direct"],
+    )
+    assert report["strict_direct"] is True
+    assert report["orphan_count"] == 1
+    assert report["referenced_files"] == 0
+    assert report["cluster_referenced_files"] == 1  # la grappe couvre, mais pas en strict
+    assert report["verdict"] == "FAIL"
+
+
+def test_strict_direct_et_les_evenus_listent_le_meme_etat(tmp_path: Path) -> None:
+    """Un index plat (une ligne par fiche) est OK dans les deux modes."""
+    (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
+    (tmp_path / "beta.md").write_text("# beta", encoding="utf-8")
+    mem = "# Memoire" + NL + NL + "- [[alpha]] c.1" + NL + "- [[beta]] c.2" + NL
+    lenient = _run_custom(tmp_path, mem)
+    strict = _run_custom(tmp_path, mem, ["--strict-direct"])
+    assert lenient["verdict"] == "OK" and strict["verdict"] == "OK"
+    assert lenient["referenced_files"] == strict["referenced_files"] == 2
+
+
+# --- Hub à la racine (forme « index de hubs ») — réserve du coordinateur du
+#     2026-11-02 sur PR #24096 : une mémoire consolidée par des fiches-hub de
+#     la racine était mesurée comme un index d'orphelins (578 « orphelins » pour
+#     27 réels sur la mémoire d'ai-01). Une fiche-racine citée par MEMORY.md
+#     ouvre une grappe ; le décompte direct / via hub / via grappe reste séparé.
+
+
+def test_hub_racine_ouvre_une_grappe(tmp_path: Path) -> None:
+    """MEMORY.md pointe un hub racine, le hub liste gamma => gamma couvert."""
+    (tmp_path / "lesson-index.md").write_text(
+        "# hub" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8"
+    )
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(
+        tmp_path,
+        "# Memoire" + NL + NL + "- [lesson-index](lesson-index.md)" + NL,
+    )
+    assert report["verdict"] == "OK"
+    assert report["orphan_count"] == 0
+    assert report["direct_referenced_files"] == 1      # le hub lui-même
+    assert report["via_hub_referenced_files"] == 1     # gamma, atteint par le hub
+    assert report["via_cluster_referenced_files"] == 0
+    assert report["referenced_files"] == 2
+
+
+def test_les_fiches_atteintes_par_un_hub_ne_sont_pas_des_directes(tmp_path: Path) -> None:
+    """Le décompte direct reste le direct : une fiche atteinte par un hub n'est
+    jamais comptée comme citée par MEMORY.md."""
+    (tmp_path / "hub.md").write_text("# hub" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL)
+    assert report["direct_referenced_files"] == 1
+    assert report["via_hub_referenced_files"] == 1
+    assert report["cluster_referenced_files"] == 2
+
+
+def test_strict_direct_ignore_le_hub(tmp_path: Path) -> None:
+    """--strict-direct : un hub ne couvre rien (le direct seul compte)."""
+    (tmp_path / "hub.md").write_text("# hub" + NL + NL + "- [[gamma]] c.3" + NL, encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(
+        tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL, ["--strict-direct"]
+    )
+    assert report["strict_direct"] is True
+    assert report["referenced_files"] == 1     # le hub seul
+    assert report["orphan_count"] == 1         # gamma n'est pas couvert en strict
+    assert report["verdict"] == "FAIL"
+
+
+def test_lien_non_resolu_dans_un_hub_est_advisory(tmp_path: Path) -> None:
+    """Un hub cite une règle du dépôt hors memory/ : c'est listé, pas bloquant."""
+    (tmp_path / "hub.md").write_text(
+        "# hub" + NL + NL + "- [[verify-before-claiming]] c.3" + NL, encoding="utf-8"
+    )
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL)
+    assert report["hub_broken_link_count"] == 1
+    assert report["hub_broken_link_advisory"] is True
+    assert "liens_morts_hubs" not in report["fail_reasons"]
+    # gamma n'est pas listé par le hub : reste orphelin (le hub ne couvre que
+    # ce qu'il cite), mais le lien non résolu n'est pas la raison du verdict.
+    assert report["orphan_count"] == 1
+    assert report["fail_reasons"] == ["orphelins"]
+
+
+def test_l_index_cite_par_un_hub_ne_compte_pas_comme_couvert(tmp_path: Path) -> None:
+    """Un hub qui cite [[MEMORY]] ne rend pas l'index « couvert » : le compte
+    d'orphelins reste exact (mesuré : 27 orphans réels, pas 28)."""
+    (tmp_path / "hub.md").write_text("# hub" + NL + NL + "- [[MEMORY]] c.3" + NL, encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL)
+    assert report["total_files"] == 2          # hub.md + gamma.md (MEMORY.md exclu)
+    assert report["referenced_files"] == 1     # le hub seul
+    assert report["orphan_count"] == 1         # gamma
+
+
+def test_une_reference_externe_est_hors_perimetre(tmp_path: Path) -> None:
+    """Un hub cite un document du dépôt (hors memory/) : ni fiche, ni grappe,
+    ni lien mort -- et le document n'est pas parcouru."""
+    externe = tmp_path.parent / (tmp_path.name + "-externe.md")
+    externe.write_text("# doc du repo" + NL + NL + "- [[gamma]] c.9" + NL, encoding="utf-8")
+    try:
+        (tmp_path / "hub.md").write_text(
+            "# hub" + NL + NL + "- [doc](../" + externe.name + ")" + NL, encoding="utf-8"
+        )
+        (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+        report = _run_custom(tmp_path, "# Memoire" + NL + NL + "- [[hub]] c.1" + NL)
+        assert report["external_references"] == 1
+        assert report["cluster_files_present"] == 0
+        assert report["cluster_files_reachable"] == 0
+        assert report["broken_link_count"] == 0
+        assert report["hub_broken_link_count"] == 0
+        # gamma n'est atteint que par le document EXTERNE : hors périmètre.
+        assert report["referenced_files"] == 1
+        assert report["orphan_count"] == 1
+        assert report["fail_reasons"] == ["orphelins"]
+    finally:
+        externe.unlink()

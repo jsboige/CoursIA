@@ -260,13 +260,11 @@ while ($true) {
    - Création automatique du site IIS
    - Configuration bindings HTTP/HTTPS
    - Vérifications intégrées
-   - 56 lignes
 
 2. **`docs/suivis/genai-image/2025-10-15_13_test-playwright-ui.ps1`**
    - Installation environnement Playwright
    - Création script de test JavaScript
    - Configuration npm
-   - 145 lignes
 
 ### Documentation
 
@@ -274,7 +272,6 @@ while ($true) {
    - Guide complet étape par étape
    - Commandes manuelles alternatives
    - Dépannage détaillé
-   - 559 lignes
 
 4. **Ce rapport: `docs/suivis/genai-image/2025-10-15_13_rapport-final-iis-ssl-comfyui.md`**
    - Synthèse de l'état actuel

@@ -1,6 +1,6 @@
 # Scripts GameTheory
 
-Ce répertoire contient les scripts de configuration et de validation des kernels utilisés par la série GameTheory : kernel Python WSL pour les notebooks OpenSpiel/CFR (`GameTheory-13`, `GameTheory-17`), et kernel Lean 4 (WSL) pour les notebooks Lean natifs (`-2b`, `-8b`, `-15b`, `SocialChoice/01b-Lean-SocialChoice-Formal`).
+Ce répertoire contient les scripts de configuration et de validation des kernels utilisés par la série GameTheory : kernel Python WSL pour les notebooks OpenSpiel/CFR (`GameTheory-13`, `GameTheory-17`), et kernel Lean 4 (WSL) pour les notebooks Lean natifs (`-2b`, `-8b`, `-15b`, `SocialChoice/ChoixSocial-01b-Lean-SocialChoice-Formal-Lean`).
 
 ## Scripts disponibles
 
@@ -8,8 +8,9 @@ Ce répertoire contient les scripts de configuration et de validation des kernel
 
 | Script | Description | Usage |
 |--------|-------------|-------|
-| `setup_lean4_native.sh` | Installe elan, Lean 4, REPL et lean4_jupyter nativement | `bash scripts/setup_lean4_native.sh` |
-| `setup_lean4_native.sh --check` | Vérifie l'installation sans modifier | `bash scripts/setup_lean4_native.sh --check` |
+| `setup_wsl_lean4.sh` | Installation canonique Lean, toolchain épinglée, REPL et kernel Lean `lean4-wsl` sous Linux/macOS natif ou WSL | `bash scripts/setup_wsl_lean4.sh` |
+| `setup_lean4_native.sh` | Façade de compatibilité vers l'installation canonique native | `bash scripts/setup_lean4_native.sh` |
+| `setup_lean4_native.sh --check` | Vérifie sans modifier l'installation, dont `language=lean4` et le wrapper du kernelspec `lean4-wsl` | `bash scripts/setup_lean4_native.sh --check` |
 
 ### Configuration Lean 4 — WSL (Windows)
 
@@ -46,15 +47,20 @@ pip install -r MyIA.AI.Notebooks/GameTheory/requirements.txt
 ### Étape 1a-native : Configuration Lean 4 native (macOS / Linux)
 
 ```bash
-# Directement sur macOS ou Linux (pas de WSL necessaire)
+# Script canonique, directement sur macOS ou Linux (pas de WSL necessaire)
 cd MyIA.AI.Notebooks/GameTheory/scripts
+bash setup_wsl_lean4.sh
+
+# Alias historique, équivalent à la commande ci-dessus
 bash setup_lean4_native.sh
 
 # Verification
 bash setup_lean4_native.sh --check
 ```
 
-Puis redémarrez VSCode et sélectionnez le kernel **"Lean 4 (Native)"**.
+Puis redémarrez VSCode et sélectionnez le kernel **"Lean 4"** (`lean4-wsl`). Ce kernelspec démarre le wrapper Lean du dépôt ; `setup_lean4_native.sh` ne crée pas de kernel IPython nommé `lean4`.
+
+Les scripts acceptent `ELAN_HOME`, `LEAN4_VENV`, `LEAN4_REPL_DIR` et `LEAN4_WRAPPER_PATH` pour placer leurs artefacts ailleurs sans modifier `HOME`; le kernelspec transmet `ELAN_HOME` et `LEAN4_VENV` au wrapper. Limite mesurée : le fork `lean4_jupyter` installé par ce script conserve des chemins `~/.elan` codés en dur dans son lanceur. Avec un `ELAN_HOME` distinct, `kernel_info` répond mais `#eval 2 + 2` échoue sur une sortie REPL vide (`JSONDecodeError`), alors que le REPL appelé directement rend `4`. Ces préfixes personnalisés ne constituent donc pas une validation d'exécution complète tant que ce lanceur n'est pas corrigé séparément.
 
 ### Étape 1a-wsl : Configuration WSL OpenSpiel (GT-13, GT-17) — Windows uniquement
 
@@ -115,7 +121,7 @@ Les notebooks Lean natifs sont suffixés `-b` (kernel Lean 4) ; les notebooks Py
 | `GameTheory-15b-Lean-CooperativeGames-Lean` | **Lean 4 (WSL)** | Formalisation Shapley (Lean 4) |
 | `GameTheory-15c-CooperativeGames-Python` | Python (Windows) | Miroir Python du calcul Shapley |
 | `GameTheory-17-MultiAgent-RL-Python` | Python (WSL) | OpenSpiel multi-agent RL (idem GT-13, WSL requis) |
-| `SocialChoice/01b-Lean-SocialChoice-Formal` | **Lean 4 (WSL)** | Arrow, Sen, électeur médian |
+| `SocialChoice/ChoixSocial-01b-Lean-SocialChoice-Formal-Lean` | **Lean 4 (WSL)** | Arrow, Sen, électeur médian |
 
 ## Troubleshooting
 
