@@ -55,10 +55,11 @@ The organ runs in TWO modes (review of #22527, squash-merge convention):
 
   coverage    (both modes) a monotone ratchet over the whole perennial set: the
               number of documents carrying the header must not drop below
-              ``--baseline`` (default 25 = wave 1 ``docs/notebook-metadata/``
-              9 + wave 3 ``docs/genai/`` 16). Coverage may only grow; it is
-              deliberately NOT required to be 100% on day one, so the lane is
-              adopted wave by wave and the floor is raised as waves land.
+              ``--baseline`` (default = ``DEFAULT_BASELINE``, the coverage
+              measured on the tree -- 113 at the 2026-11-16, after wave 5).
+              Coverage may only grow; it is deliberately NOT required to be
+              100% on day one, so the lane is adopted wave by wave and the
+              floor is raised as waves land.
 
 Header matching tolerates the dash variant (em dash, en dash, hyphen) and the
 accent variants (derni[èe]re / r[ée]vision) a writer may produce; what it enforces
@@ -91,13 +92,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 TRANSIENTS_REL = Path("docs") / "transients"
 ARCHIVE_REL = Path("docs") / "archive"
 
-# Default coverage floor = wave 1 (docs/notebook-metadata/, 9 documents)
-# + wave 2 (docs/qc/, 8 documents, hors qc-strategies-status chaud par PRs)
-# + wave 3 (docs/genai/, 16 documents)
-# + wave 4 (docs/reference/, 70 documents, hors scripts-reference chaud par
-# #25433, STABLE_SNAPSHOT et quant-prose-census dates-par-signature).
+# Default coverage floor = the perennial documents marked by the waves that
+# landed, counted as MEASURED on the tree (`--json` -> `perenne_covered`):
+#   wave 1  docs/notebook-metadata/    9
+#   wave 2  docs/qc/                   8
+#   wave 3  docs/genai/               16
+#   wave 4  docs/reference/           72
+#   wave 5  docs/ci/ 3 + docs/translation/ 2 + docs/coordination/ 3 = 8
+# The count is the measurement, not a claim about which PR marked what: a
+# wave's PR is one contribution among several (the permanent index #25274 and
+# #25439 also carry headers). The nit ai-01 of the 2026-11-11 asked for the
+# comment to stop carrying a stale count -- it is now the measured one.
 # Raise it as perenne waves land; it is a monotone floor, never a target.
-DEFAULT_BASELINE = 102
+DEFAULT_BASELINE = 113
 
 # "> REFERENCE — vivante — dernière révision 2026-10-31"
 # (marker, then "vivante", then "derniere revision" with its trailing date --

@@ -1,0 +1,11 @@
+- name: Dynamics-05 Agents Bornes
+  family: GameTheory/Dynamics
+  python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Deux interprètes natifs et totaux inspectent code public
+    et budget ; les énoncés Lean servent de références et ne sont pas exécutés.
+  known_differences:
+  - Les trois exercices sont distribués et gardés dans les deux langages ; les références
+    aux codes et paiements suivent les idiomes C# et Python.

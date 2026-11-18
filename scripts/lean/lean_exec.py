@@ -2031,7 +2031,7 @@ def run_command(
         if kind == "ok":
             queue_remove(queue_file)
             if enqueued_at is not None:
-                result["queue_wait_s"] = round(time.time() - enqueued_at, 2)
+                result["queue_wait_s"] = round(time.monotonic() - enqueued_at, 2)
             queue_file = None
             break
         if kind in ("internal", "spawn", "backend"):
@@ -2057,7 +2057,7 @@ def run_command(
                     reason=f"queue full: {qreason}",
                 )
                 return _emit(result, as_json)
-            enqueued_at = time.time()
+            enqueued_at = time.monotonic()
         if time.monotonic() >= wait_deadline:
             queue_remove(queue_file)
             queue_file = None
