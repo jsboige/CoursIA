@@ -130,9 +130,71 @@ limite de l'estimation empirique de l'instrument.
 * Le plafond `sqrt(n)` est une propriete de l'estimateur : **plus de paires
   l'elargissent**. Une lecture de puissance sur 100 paires donnerait un
   plafond de 10 et une fenetre de detection plus large. C'est la voie
-  d'amelioration de l'instrument que la mesure designe.
+  d'amelioration de l'instrument que la mesure designe — et c'est
+  l'objet de la section 8, qui la chiffre.
 
-## 7. Reproduction
+## 8. Combien de paires pour 80 % de puissance ?
+
+La section 3 exprime `delta` en **unites de dispersion nulle de la
+statistique**, une unite qui **depend du nombre de paires** (elle vaut
+`||diffs_f||_2 / n`). A effet identique, la puissance ne change donc pas
+quand on change `n` : la question « combien de paires faut-il ? » n'a pas
+de reponse dans cette unite. Il faut une unite **independante de `n`**.
+
+C'est la **taille d'effet par paire** `d` : chaque paire decale la feature
+de `d` fois son **bruit par paire** (`per_pair_rms` = `||diffs_f||_2 /
+sqrt(n)`). Le z observe se deplace alors de `d * sqrt(n)` : le gain d'une
+paire vaut `sqrt(n)`, pas `n` — la loi classique de la puissance.
+
+Sur les traces reelles : 5 642 features actives sur 32 768 (17,2 %), bruit
+par paire median **0,0111** (p25 0,0058 · p75 0,0216 · max 0,343).
+
+Les paires sont **tirees avec remise** (bootstrap) depuis les 30 paires
+reelles pour atteindre `n` : la zone d'edition d'une paire est calculee
+independamment des autres, donc reechantillonner les paires est legitime
+(hypothese : les paires minimales sont approximativement exchangeables).
+
+**P(la regle s'ecole)** selon `n` et `d` (8 bootstraps x 100 replicats,
+`seed=42`, `k = 3` features plantees) :
+
+| `n` \ `d` | 0,20 | 0,30 | 0,40 | 0,50 |
+| ---: | ---: | ---: | ---: | ---: |
+| 30 (actuel) | 0,001 | 0,003 | 0,041 | **0,079** |
+| 60 | 0,030 | 0,090 | 0,284 | 0,477 |
+| 90 | 0,129 | 0,226 | 0,531 | **0,964** |
+| 120 | 0,185 | 0,404 | **0,819** | 0,999 |
+| 180 | 0,343 | **0,812** | 0,995 | 1,000 |
+| 240 | 0,496 | 0,931 | 1,000 | 1,000 |
+
+**Le nombre de paires qu'il faut pour 80 % de puissance** :
+
+| `d` (effet par paire) | `n` pour 80 % de puissance | decontenance vs 30 paires |
+| ---: | ---: | ---: |
+| 0,50 | ~90 paires | x3 |
+| 0,40 | ~120 paires | x4 |
+| 0,30 | ~180 paires | x6 |
+| 0,20 | > 240 paires (49,6 % a 240) | > x8 |
+
+**Ce que cela dit.**
+
+1. **A 30 paires, la regle est sous-equipee meme pour un effet net.** Un
+   effet par paire de 0,5 (chaque paire decale la feature de la moitie de
+   son bruit propre) ne fait s'ecoler la regle que dans **7,9 %** des cas.
+   Le zero d'ICT-35d n'interdit donc pas un effet « net » : il l'interdit
+   *a 30 paires*.
+2. **Le cout des paires est en `sqrt(n)`, pas en `n`** : passer de 30 a 90
+   paires triple l'instrumentation pour un effet detectable de 0,5 par
+   paire. Le cout material dominant n'est pas le calcul (numpy seul, 3,5 s
+   pour 1 000 replicats) mais la **collecte** de paires minimales
+   interpretees.
+3. **Le gain est mesure en paires, pas en fichiers.** Le meme calcul sur un
+   nombre de paires accru rendrait la lecture « null global sur le maximum »
+   (#27208) plus concluante elle aussi : c'est la meme geometrie.
+4. **La limite declaree de la section 3 est levee, pas subvertie** : la
+   section 3 concluait « plus de paires elargissent le plafond » ; cette
+   section chiffre l'elargissement et son cout.
+
+## 9. Reproduction
 
 ```bash
 cd MyIA.AI.Notebooks/IIT/ICT-Series
@@ -152,3 +214,11 @@ power_curve(d, [0, 1, 2, 2.5, 3, 3.5, 4, 4.5, 5], n_planted=3,
 
 Duree : 3,5 s pour 1000 replicats x 10 valeurs de `delta` sur 32 768
 features (numpy seul, aucune resource GPU).
+
+La section 8 (puissance en fonction du nombre de paires) se relit par :
+
+```python
+from ict.humor_power import power_vs_pairs
+power_vs_pairs(d, [30, 60, 90, 120, 180, 240], [0.2, 0.3, 0.4, 0.5],
+               n_bootstraps=8, n_replicates=100, seed=42)
+```

@@ -25,7 +25,9 @@ import pytest
 from ict.humor_power import (
     null_norms,
     observed_z,
+    per_pair_rms,
     power_curve,
+    power_vs_pairs,
     z_ceiling,
 )
 
@@ -141,6 +143,70 @@ def test_power_curve_rejects_impossible_plant() -> None:
     diffs = _synthetic_diffs(n_features=4)
     with pytest.raises(ValueError):
         power_curve(diffs, [0.0], n_planted=9, n_replicates=10)
+
+
+# --------------------------------------------------------------------------- #
+# Puissance en fonction du nombre de paires
+# --------------------------------------------------------------------------- #
+
+
+def test_per_pair_rms_is_n_independent_scale() -> None:
+    # L'echelle par paire est ||diffs_f||_2 / sqrt(n) : elle vaut la
+    # dispersion du bruit d'une seule paire, donc elle ne depend pas du
+    # nombre de paires une fois normalisee.
+    diffs = _synthetic_diffs(n_pairs=20, n_features=30)
+    rms = per_pair_rms(diffs)
+    assert rms.shape == (30,)
+    assert np.all(rms > 0)
+    # Coherence : rms * sqrt(n) == ||diffs_f||_2
+    assert np.allclose(rms * np.sqrt(20), null_norms(diffs))
+
+
+def test_power_vs_pairs_reports_z_shift_scaling() -> None:
+    # Le deplacement du z vaut d * sqrt(n) : le gain d'une paire vaut
+    # sqrt(n), pas n. C'est la loi de la puissance, verifiee ici sur la
+    # sortie de l'organe (pas seulement sur le papier).
+    diffs = _synthetic_diffs(n_pairs=20, n_features=60)
+    res = power_vs_pairs(diffs, [10, 20], [0.5], n_bootstraps=2, n_replicates=30, seed=3)
+    shifts = {row["n_pairs"]: row["z_shift"] for row in res["rows"]}
+    assert shifts[10] == pytest.approx(0.5 * np.sqrt(10))
+    assert shifts[20] == pytest.approx(0.5 * np.sqrt(20))
+    assert shifts[20] / shifts[10] == pytest.approx(np.sqrt(2))
+
+
+def test_power_vs_pairs_null_effect_never_fires_the_rule() -> None:
+    # d = 0 : aucune feature plantee ne bouge, la regle ne s'ecole pas.
+    diffs = _synthetic_diffs(n_pairs=16, n_features=80)
+    res = power_vs_pairs(diffs, [16], [0.0], n_bootstraps=3, n_replicates=60, seed=11)
+    row = res["rows"][0]
+    assert row["p_rule"] == 0.0
+    assert row["p_any"] < 0.15
+
+
+def test_power_vs_pairs_grows_with_more_pairs() -> None:
+    # A effet par paire constant, plus de paires = plus de puissance :
+    # c'est la question a laquelle la fonction repond.
+    diffs = _synthetic_diffs(n_pairs=30, n_features=200)
+    res = power_vs_pairs(
+        diffs, [10, 20, 30], [0.6], n_bootstraps=4, n_replicates=60, seed=13
+    )
+    p_by_n = {row["n_pairs"]: row["p_rule"] for row in res["rows"]}
+    assert p_by_n[30] >= p_by_n[20] >= p_by_n[10]
+
+
+def test_power_vs_pairs_rejects_too_few_pairs() -> None:
+    diffs = _synthetic_diffs(n_pairs=10, n_features=20)
+    with pytest.raises(ValueError):
+        power_vs_pairs(diffs, [1], [0.5], n_bootstraps=1, n_replicates=5)
+
+
+def test_power_vs_pairs_reports_its_contract() -> None:
+    diffs = _synthetic_diffs(n_pairs=12, n_features=40)
+    res = power_vs_pairs(diffs, [6, 12], [0.2, 0.4], n_bootstraps=1, n_replicates=20, seed=2)
+    assert res["threshold"] == 3.0
+    assert res["min_same_side"] == 3
+    assert res["source_pairs"] == 12
+    assert len(res["rows"]) == 4
 
 
 # --------------------------------------------------------------------------- #

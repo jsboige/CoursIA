@@ -9,6 +9,14 @@ s'ecole. Les deux lectures se lisent ensemble : sans la seconde, « zero
 feature au-dela du seuil » se lit comme une absence de signal, alors que la
 courbe dit quel seuil serait meme detectable.
 
+La troisieme lecture (``power_vs_pairs``) responde a la question que les
+deux premieres laissent ouverte : **combien de paires faut-il** ? L'effet de
+``power_curve`` est exprime en unites de dispersion nulle de la
+*statistique* -- une unite qui depend du nombre de paires, donc qui ne
+permet pas de comparer deux ``n``. ``power_vs_pairs`` exprime l'effet en
+**unites de bruit par paire** (independantes de ``n``) et fait varier ``n``
+par reechantillonnage : le gain d'une paire y vaut ``sqrt(n)``, pas ``n``.
+
 **Les cinq questions de l'organ-first** (regle ``organ-first-implementation``) :
 
 1. *Quelle serie possede la semantique ?* La serie ICT (carnets ICT-35b/35c/35d)
@@ -68,7 +76,9 @@ from .humor_pairs import _common_prefix_len, _zone_vec
 __all__ = [
     "null_norms",
     "observed_z",
+    "per_pair_rms",
     "power_curve",
+    "power_vs_pairs",
     "z_ceiling",
     "zone_diffs",
 ]
@@ -231,4 +241,120 @@ def power_curve(
         "n_planted": int(n_planted),
         "seed": int(seed),
         "z_ceiling": z_ceiling(n_pairs),
+    }
+
+
+def per_pair_rms(diffs: np.ndarray) -> np.ndarray:
+    """Ecart-type par paire estime par feature : ``||diffs_f||_2 / sqrt(n)``.
+
+    C'est l'echelle de bruit **par paire** (RMS sur les paires) d'une feature.
+    Elle sert a exprimer un effet dans une unite **independante du nombre de
+    paires** : un effet de taille ``d`` signifie « chaque paire decale la
+    feature de ``d`` fois son bruit par paire ».
+    """
+    diffs = np.asarray(diffs, dtype=np.float64)
+    n_pairs = diffs.shape[0]
+    return null_norms(diffs) / np.sqrt(float(n_pairs))
+
+
+def power_vs_pairs(
+    diffs: np.ndarray,
+    n_values: Sequence[int],
+    effect_sizes: Sequence[float],
+    *,
+    n_planted: int = DEFAULT_MIN_SAME_SIDE,
+    n_bootstraps: int = 20,
+    n_replicates: int = 100,
+    seed: int = 42,
+    threshold: float = DEFAULT_THRESHOLD,
+    min_same_side: int = DEFAULT_MIN_SAME_SIDE,
+) -> dict[str, Any]:
+    """Puissance de la regle en fonction du **nombre de paires**.
+
+    Question posee par ``power_curve`` : l'effet etait exprime en unites de
+    dispersion nulle de la *statistique*. Cette unite **depend du nombre de
+    paires** (elle vaut ``||diffs_f||_2 / n``) : a effet identique, la
+    puissance ne change donc pas quand on change ``n`` -- ce qui rend la
+    question « combien de paires faut-il ? » sans reponse. Il faut une unite
+    **independante de ``n``**.
+
+    C'est la **taille d'effet par paire** ``d`` : chaque paire decale la
+    feature de ``d`` fois son bruit par paire (``per_pair_rms``). Le z
+    observe se deplace alors de ``d * sqrt(n)`` -- la loi classique de la
+    puissance : le gain d'une paire vaut ``sqrt(n)``, pas ``n``.
+
+    Les paires sont **tirees avec remise** (bootstrap) pour atteindre ``n`` :
+    la zone d'edition d'une paire est calculee independamment des autres,
+    donc reechantillonner les paires est legitime ; l'hypothese implicite
+    est que les paires minimales sont des tirages approximativement
+    exchangeables de la population des paires.
+
+    Les tirages nuls sont calcules par produit matriciel (signes x diffs) :
+    un replicat coute ``O(n * d_sae)`` mais le BLAS fait le travail, ce qui
+    rend le balayage ``n x d`` praticable sans GPU.
+
+    Retourne une ligne par couple ``(n, d)`` : ``p_rule`` (la regle
+    s'ecole), ``p_any`` (au moins une feature au-dela du seuil) et
+    ``n_over_mean``.
+    """
+    diffs = np.asarray(diffs, dtype=np.float64)
+    n_pairs = diffs.shape[0]
+    rng = np.random.default_rng(seed)
+    rows: list[dict[str, Any]] = []
+
+    for n in n_values:
+        n = int(n)
+        if n < 2:
+            raise ValueError(f"n={n} : il faut au moins deux paires")
+        counts: dict[float, dict[str, float]] = {
+            float(d): {"rule": 0, "any": 0, "n_over": 0} for d in effect_sizes
+        }
+        n_draws = 0
+        for _ in range(n_bootstraps):
+            idx = rng.integers(0, n_pairs, size=n)
+            sample = diffs[idx]
+            norms = null_norms(sample)
+            eligible = np.flatnonzero(norms > 0)
+            if eligible.size < n_planted:
+                continue
+            safe = np.where(norms > 0, norms, np.inf)
+            signs = rng.choice(
+                np.array([-1.0, 1.0]), size=(n_replicates, n)
+            )
+            z_null = (signs @ sample) / safe          # (n_replicates, d_sae)
+            for r in range(n_replicates):
+                planted = rng.choice(eligible, size=n_planted, replace=False)
+                for d in effect_sizes:
+                    z = z_null[r].copy()
+                    z[planted] += float(d) * np.sqrt(float(n))
+                    over = np.abs(z) > threshold
+                    n_over = int(over.sum())
+                    pos = int((z[over] > 0).sum())
+                    c = counts[float(d)]
+                    c["rule"] += int(max(pos, n_over - pos) >= min_same_side)
+                    c["any"] += int(n_over >= 1)
+                    c["n_over"] += n_over
+            n_draws += n_replicates
+        for d in effect_sizes:
+            c = counts[float(d)]
+            denom = max(n_draws, 1)
+            rows.append(
+                {
+                    "n_pairs": n,
+                    "effect_size": float(d),
+                    "p_rule": c["rule"] / denom,
+                    "p_any": c["any"] / denom,
+                    "n_over_mean": c["n_over"] / denom,
+                    "z_shift": float(d) * np.sqrt(float(n)),
+                }
+            )
+    return {
+        "rows": rows,
+        "n_bootstraps": int(n_bootstraps),
+        "n_replicates": int(n_replicates),
+        "n_planted": int(n_planted),
+        "threshold": float(threshold),
+        "min_same_side": int(min_same_side),
+        "seed": int(seed),
+        "source_pairs": int(n_pairs),
     }
