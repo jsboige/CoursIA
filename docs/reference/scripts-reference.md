@@ -14,6 +14,23 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 | `extract_notebook_skeleton.py` | Extraire le squelette (structure cellules) d'un notebook |
 | `notebook_lint.py` | Lint structurel notebooks (+ `test_notebook_lint.py`) |
 
+### Conformite differentielle Rust
+| Script | Usage |
+|--------|-------|
+| `check_rust_conformance.py` | Compare les sorties numeriques d'un carnet **Rust** a celles de ses jumeaux Python et C#, a une tolerance declaree par cellule. Registre : `scripts/notebook_tools/rust_conformance.d/` (un YAML par triplet + `_schema.yaml`). Pli 3 de l'Epic Origami #26510 |
+
+```bash
+python scripts/notebook_tools/check_rust_conformance.py                      # tout le registre
+python scripts/notebook_tools/check_rust_conformance.py --entry sudoku-02-dancinglinks
+python scripts/notebook_tools/check_rust_conformance.py --json
+```
+
+La correspondance entre les cotes est **ecrite dans le registre** (cellule + motif
+d'extraction par cote) : les trois cotes n'ont pas la meme structure de cellules, une
+correspondance automatique comparerait des grandeurs differentes. Un cote explicitement
+`absent:` est signale sans faire echouer le controle ; un cote declare dont l'extraction
+echoue est un finding (fail-CLOSED).
+
 ### Exécution
 | Script | Usage |
 |--------|-------|
