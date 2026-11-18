@@ -6,8 +6,10 @@ Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scrip
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
 le 2026-11-14 pour tenir le plafond de lignes), `scripts/coordination/tapis_service.py` (la forme du service :
 commande, procédure de conteneur, lecture de secours, sortie texte), `scripts/coordination/tapis_origami.py`
-(parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179)
-et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
+(parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179),
+`scripts/coordination/tapis_leger.py` (la voie légère du tirage, #27225), `scripts/coordination/gh_issues.py`
+(la lecture ciblée des issues nommées, #27225) et `scripts/coordination/gh_bulk.py` (seul module qui lance
+`gh` ou `git`).
 Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
 ## La commande
@@ -15,7 +17,12 @@ Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #2
 ```bash
 python scripts/coordination/tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json]
        [--jours 45] [--cache-s 300] [--graine S] [--lecture <dossier>]
+       [--voie {leger,lourd}]
 ```
+
+**La voie par défaut est légère** (classement sur métadonnées, qualification du grain servi sur son **fil
+complet**) depuis #27225 ; `--voie lourd` garde l'ancienne lecture du pool entier, et le rejeu `--lecture`
+y reste. Voir « La bascule » plus bas.
 
 Trois lectures groupées, quel que soit le nombre de candidats : les issues ouvertes (GraphQL, pages de 50,
 12 derniers commentaires par issue), les PRs ouvertes (REST, pages de 100) et **un** `git log origin/main`
@@ -249,5 +256,63 @@ quelques-unes, ce sont deux lectures qui ne servent à rien.
 
 Chaque grain servi porte son **état et l'action à faire** (`qualifier` : lire l'issue, vérifier le claim
 vivant, le gel, le contenu déjà livré), jamais une exclusion silencieuse. La bascule du tirage par défaut
-reste la tranche suivante : elle suppose que la prise en charge qualifie le grain, ce qui est un changement
-de protocole autant que de code.
+est la tranche suivante (#27225) : elle suppose que la prise en charge qualifie le grain, ce qui est un
+changement de protocole autant que de code.
+
+## La bascule — le tirage par défaut est léger (#27225)
+
+Depuis #27225, `tapis_rapide.py` tire par défaut sur la **voie légère** : le classement porte sur les
+**métadonnées seules**, et le grain servi est **qualifié sur son fil complet**. La voie lourde reste
+accessible (`--voie lourd`) et le rejeu `--lecture` y reste — c'est la seule voie qui sait relire un
+dossier de lecture.
+
+```bash
+python scripts/coordination/tapis_rapide.py --lane <machine:workspace> [--voie {leger,lourd}]
+```
+
+| | voie lourde (`--voie lourd`) | voie légère (défaut) |
+| --- | --- | --- |
+| classement | lecture du pool entier (corps + 12 commentaires + PRs) | **métadonnées seules** (`gh_selection`), pagination complète, budget global de 60 s |
+| qualification | intégrée au classement | **à la prise en charge**, sur le grain servi seulement : le corps (une lecture ciblée) puis **le fil complet** |
+| règles d'écart | neuf, appliquées au classement | **les mêmes neuf**, rejouées sur le grain qualifié (`tapis_rapide.etats` inchangé) |
+| re-décision de fil (#27179) | passe au moment du service | **supersédée** : la qualification lit déjà le fil complet |
+| parcage Origami | mesure sur le pool | mesure sur les **grains qualifiés** : un EPIC non délié qui n'a pas été qualifié ne pouvait pas être servi de toute façon |
+
+**Le fil complet, jamais la fenêtre.** C'est la condition de la bascule : la lecture groupée ne voit que les
+**12 derniers** commentaires (`comments(last:12)`), et le marqueur qui écarte un grain peut être plus vieux
+que la fenêtre — constat de #27179, qui a produit l'organe `tapis_reverif`. La qualification lit donc
+**tous** les commentaires par l'organe REST déjà livré (`gh_snapshot`, pagination REST), jamais la fenêtre.
+Un fil illisible **n bloque pas** le tirage : le grain est absent de la liste qualifiée (fail-OPEN) et le
+tirage continue sur les autres candidats.
+
+**Ce qui est qualifié, et dans quel ordre.** Le classement propose `3 × grains` candidats au moins, la
+qualification en écarte quelques-uns (claim, gel, contenu livré), et la file servie conserve **l'ordre de
+la rotation**. Le nombre de candidats qualifiés suit le nombre de grains demandés (au moins 12) : la
+ceinture du coordinateur (`--grains 60`) doit rendre 60 grains, et chaque qualification coûte un appel
+REST.
+
+**Les vagues.** Les neuf écarts peuvent écarter **tous** les premiers candidats : mesuré le 2026-11-18,
+les 9 premiers l'étaient tous (`RELACHEE`, `PLAFOND`, `LIVREE`, `COUVERTE` — lus sur le fil complet).
+Servir 0 grain alors que le pool en contient serait un échec de méthode, pas un pool vide : la
+qualification ouvre donc la **vague suivante** (12 candidats) tant que la file n'est pas pleine, dans la
+limite de 4 vagues. Mesure du même jour, tirage réel : 48 candidats qualifiés, 47 écartés, **1 grain
+servi** (`#17397`), 50 appels et 59 s — la lecture du pool entier en 23 s, mais elle écartait sur une
+fenêtre de 12 commentaires. Le rapport porte la qualification en clair : `qualification.proposes`,
+`qualification.candidats`, `qualification.qualifies`, `qualification.rejets`,
+`qualification.fils_illisibles` et `qualification.fil: "complet"`.
+
+**Les organes du chemin de tirage sont dans la garde de fraîcheur.** `main_freshness.ORGANES` porte
+désormais le chemin complet du tirage (sélection, lecture ciblée, snapshot, rotation, avantages,
+qualification légère, re-vérif, parcage) : un tirage refuse (sortie `4`) si l'un d'eux diffère
+d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa première livraison.
+
+### Les modules
+
+| Module | Rôle |
+| --- | --- |
+| `scripts/coordination/tapis_leger.py` | la voie légère : classement sur métadonnées, vagues de qualification, rapport |
+| `scripts/coordination/tapis_qualification.py` | la **qualification** d'un grain servi : le corps, le fil complet, les vagues |
+| `scripts/coordination/gh_issues.py` | la lecture **ciblée** des issues nommées, aux champs demandés — une porte pour tous les lecteurs ciblés (`gh_selection.qualifier`, `tapis_qualification.lire_corps`) |
+| `scripts/coordination/gh_selection.py` | le classement sur métadonnées (pagination complète, budget global) |
+| `scripts/coordination/tapis_universel.py` | la rotation universelle sur les métadonnées |
+| `scripts/coordination/gh_snapshot.py` | le **fil complet** (REST paginé) — l'organe de la qualification |

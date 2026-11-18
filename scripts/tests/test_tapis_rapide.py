@@ -414,7 +414,7 @@ def _panne(argv, timeout):
 
 def test_cli_lecture_en_panne_code_3_sans_tapis_lourd(capsys):
     """Sans secours, rien n'est servi -- et rien ne renvoie au tapis lourd (#26926)."""
-    assert tr.main(["--lane", LANE, "--cache-s", "0"], run=_panne, maintenant=NOW) == 3
+    assert tr.main(["--lane", LANE, "--cache-s", "0", "--voie", "lourd"], run=_panne, maintenant=NOW) == 3
     err = capsys.readouterr().err
     assert "Lecture incomplete (issues" in err
     assert "pick_idle_grain" not in err and "Ne tirez pas le tapis lourd" in err
@@ -439,13 +439,13 @@ def test_cli_lecture_en_panne_tire_sur_le_cache_de_secours(tmp_path, monkeypatch
     _cache(tmp_path, 3 * 3600, lec)
     monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: (_ for _ in ()).throw(
         gh_bulk.LectureIncomplete("issues", 1, "HTTP 502")))
-    assert tr.main(["--lane", LANE], run=_panne, maintenant=NOW) == 0
+    assert tr.main(["--lane", LANE, "--voie", "lourd"], run=_panne, maintenant=NOW) == 0
     capture = capsysbinary.readouterr()
     out, err = capture.out.decode("utf-8"), capture.err.decode("utf-8")
     assert "#7 Grain du cache" in out and "lecture reseau en echec (issues" in out
     assert "lecture de secours" in err and "pick_idle_grain" not in out + err
     _cache(tmp_path, 13 * 3600, lec)
-    assert tr.main(["--lane", LANE], run=_panne, maintenant=NOW) == 3
+    assert tr.main(["--lane", LANE, "--voie", "lourd"], run=_panne, maintenant=NOW) == 3
 
 
 def test_conteneur_servi_apres_les_grains_avec_sa_procedure_paths():
@@ -487,7 +487,8 @@ def test_cli_mesure_origami_en_panne_sort_0_et_la_cause(monkeypatch, capsysbinar
         {}, {"active": True, "measured": False, "parked": [],
             "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
 
-    code = tr.main(["--lane", LANE, "--cache-s", "0"], run=lambda argv, timeout: "",
+    code = tr.main(["--lane", LANE, "--cache-s", "0", "--voie", "lourd"],
+                    run=lambda argv, timeout: "",
                     maintenant=NOW)
     capture = capsysbinary.readouterr()
     out, err = capture.out.decode("utf-8"), capture.err.decode("utf-8")
@@ -505,7 +506,7 @@ def test_cli_json_porte_la_mesure_non_faite(monkeypatch, capsysbinary):
         {}, {"active": True, "measured": False, "parked": [],
             "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
 
-    code = tr.main(["--lane", LANE, "--cache-s", "0", "--json"],
+    code = tr.main(["--lane", LANE, "--cache-s", "0", "--json", "--voie", "lourd"],
                     run=lambda argv, timeout: "", maintenant=NOW)
     sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
     assert code == 0
@@ -608,7 +609,12 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # la sixieme (les deux priorites legeres du mandat du 18/11) ; tapis_universel.py
 # la septieme (la rotation universelle, #27223) ; tapis_reverif.py la huitieme
 # (re-decision des grains servis au fil tronque sur leur fil complet, #27179,
-# 18/11).
+# 18/11) ; gh_issues.py la neuvieme (la lecture ciblee des issues nommees,
+# une porte pour tous les lecteurs cibles, #27225, 18/11) ; tapis_leger.py la
+# dixieme (la voie LEGERE du tirage : classement sur metadonnees, qualification
+# sur fil complet, #27225, 18/11) ; tapis_qualification.py la onzieme (la
+# qualification d'un grain servi : corps, fil complet, vagues -- extraite de
+# tapis_leger.py pour tenir le plafond, #27225, 18/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -618,7 +624,10 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("gh_selection.py", 140),
                                               ("tapis_avantages.py", 80),
                                               ("tapis_universel.py", 160),
-                                              ("tapis_reverif.py", 120)])
+                                              ("tapis_reverif.py", 120),
+                                              ("gh_issues.py", 80),
+                                              ("tapis_leger.py", 220),
+                                              ("tapis_qualification.py", 140)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
