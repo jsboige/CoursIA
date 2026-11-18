@@ -70,6 +70,7 @@ Ces notebooks appliquent Semantic Kernel à des cas d'usage concrets. Ils font p
 | [fort-boyard-python](fort-boyard-python.ipynb) | Python | Contrepartie Python du duel Fort Boyard (TerminationStrategy personnalisee) | 3 |
 | [Semantic-fleet-Radix-PromptMatcher](Semantic-fleet-Radix-PromptMatcher.ipynb) | C# (.NET) | **Routage MultiConnector par préfixe** : matcher radix-tree de l'organe réel du sous-module `semantic-fleet` (plus long préfixe) vs scan O(n), incluant le branchement drop-in du délégué `PromptMatcher` | 3 |
 | [Semantic-fleet-MultiConnector-Routing](Semantic-fleet-MultiConnector-Routing.ipynb) | C# (.NET) | **Routage MultiConnector entre modèles réels** : l'organe `Connectors.AI.MultiConnector` route chaque prompt (par préfixe de signature) vers trois fournisseurs réels — OpenAI direct et deux modèles via OpenRouter — avec arbitre pondéré coût/latence, repli du connecteur principal et échec bloquant sur préfixe inconnu | 3 |
+| [Semantic-fleet-Claudish-Routing](Semantic-fleet-Claudish-Routing.ipynb) | C# (.NET) | **Routage multi-modèles via la passerelle claudish** : découverte des alias servis, fabrique native `ClaudishConnectorConfiguration`, appels réels vers trois alias, sélection effective de `MultiTextCompletion`, rôle de `VettingLevel` et lecture du comparateur coût/latence | 3 |
 
 ## Templates
 
