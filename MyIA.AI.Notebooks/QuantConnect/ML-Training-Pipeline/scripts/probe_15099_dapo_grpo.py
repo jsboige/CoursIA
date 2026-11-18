@@ -76,10 +76,12 @@ MODELS: dict[str, dict[str, str]] = {
         # mask_truncated_completions annule la perte (smoke 08/10 :
         # loss/grad/entropy = 0).
         "eos_token": "<|im_end|>",
+        "tier": "0.8-2B",
     },
     "qwen35": {
         "path_glob": "models--Qwen--Qwen3.5-0.8B/snapshots/*",
         "label": "Qwen3.5-0.8B",
+        "tier": "0.8-2B",
     },
     # Etage >= 8-9B demande par #15293 (review user de #15249 : le casting
     # 0.8B/2B est errone pour un exercice de raisonnement mathematique).
@@ -89,6 +91,7 @@ MODELS: dict[str, dict[str, str]] = {
     "qwen3_8b": {
         "path_glob": "models--Qwen--Qwen3-8B/snapshots/*",
         "label": "Qwen3-8B",
+        "tier": "8-14B",
     },
     # Second backbone de l'etage >= 8-9B (#15293), sur le GPU 2 d'ai-01.
     # Le glob suit le depot HF `Qwen/Qwen3-14B` (instruct, non-Base) : c'est
@@ -97,8 +100,13 @@ MODELS: dict[str, dict[str, str]] = {
     "qwen3_14b": {
         "path_glob": "models--Qwen--Qwen3-14B/snapshots/*",
         "label": "Qwen3-14B",
+        "tier": "8-14B",
     },
 }
+
+# Etages de taille compares par #15293 ("tableau comparatif 0.8B/2B vs 8-9B").
+# L'ordre est significatif : le plus petit d'abord.
+TIERS: tuple[str, ...] = ("0.8-2B", "8-14B")
 
 
 def hf_hub_dir() -> Path:
@@ -869,6 +877,103 @@ def mode_selftest() -> int:
         wire_skipped = True
         print(f"selftest: cablage du callback NON teste ({exc}) -- transformers absent")
 
+    # Tableau comparatif par ETAGE de taille (#15293) : la fonction est PURE,
+    # elle se teste sans GPU -- c'est ce qui permet de valider le critere
+    # "tableau comparatif 0.8B/2B vs 8-9B" avant d'avoir les runs 8-14B.
+    tier_fails = []
+    tier_total = 0
+
+    def _pm(model_key: str, deltas: list[float]) -> dict[str, Any]:
+        n = len(deltas)
+        mean = sum(deltas) / n
+        std = (sum((d - mean) ** 2 for d in deltas) / n) ** 0.5
+        return {"label": MODELS[model_key]["label"], "n_seeds": n,
+                "pre_mean": 0.1, "post_mean": 0.1 + mean,
+                "delta_mean": mean, "delta_std": std, "deltas": list(deltas)}
+
+    # (a) etage haut nettement meilleur, 2 graines de chaque cote -> BEATS
+    per_model = {"minicpm5": _pm("minicpm5", [0.01, 0.02]),
+                 "qwen35": _pm("qwen35", [0.00, 0.01]),
+                 "qwen3_8b": _pm("qwen3_8b", [0.20, 0.22]),
+                 "qwen3_14b": _pm("qwen3_14b", [0.21, 0.19])}
+    tbl = build_tier_table(per_model, {k: True for k in per_model})
+    tier_total += 1
+    if not (tbl["cross_tier"]["comparable"] and tbl["cross_tier"]["beats"]
+            and tbl["cross_tier"]["delta_intervals_disjoint"]):
+        tier_fails.append("cas_a")
+        print("FAIL: etage haut nettement meilleur non detecte :", tbl["cross_tier"])
+    tier_total += 1
+    if tbl["tiers"]["8-14B"]["n_seeds"] != 4 or tbl["tiers"]["0.8-2B"]["n_seeds"] != 4:
+        tier_fails.append("cas_a_nseeds")
+        print("FAIL: agregation par etage :", {k: v["n_seeds"] for k, v in tbl["tiers"].items()})
+
+    # (b) un seul cote en 1 graine -> NON comparable (le verdict reste null)
+    tbl_b = build_tier_table({"minicpm5": _pm("minicpm5", [0.01, 0.02]),
+                               "qwen3_8b": _pm("qwen3_8b", [0.20])},
+                              {"minicpm5": True, "qwen3_8b": True})
+    tier_total += 1
+    if tbl_b["cross_tier"]["comparable"] is not False:
+        tier_fails.append("cas_b")
+        print("FAIL: etage a 1 graine declare comparable :", tbl_b["cross_tier"])
+
+    # (c) intervalles chevauchants -> disjoint False, BEATS False
+    tbl_c = build_tier_table({"minicpm5": _pm("minicpm5", [0.01, 0.03]),
+                               "qwen3_8b": _pm("qwen3_8b", [0.02, 0.03])},
+                              {"minicpm5": True, "qwen3_8b": True})
+    tier_total += 1
+    if tbl_c["cross_tier"]["delta_intervals_disjoint"] or tbl_c["cross_tier"]["beats"]:
+        tier_fails.append("cas_c")
+        print("FAIL: intervalles chevauchants declares disjoints :", tbl_c["cross_tier"])
+
+    # (c bis) intervalles QUI SE TOUCHENT (0.02 vs 0.02) : des intervalles
+    # fermes qui se touchent ne sont pas disjoints. Sans epsilon, le bruit
+    # flottant (0.020000000000000004 > 0.02) les declarait disjoints.
+    tbl_c2 = build_tier_table({"minicpm5": _pm("minicpm5", [0.01, 0.02]),
+                                "qwen3_8b": _pm("qwen3_8b", [0.02, 0.03])},
+                               {"minicpm5": True, "qwen3_8b": True})
+    tier_total += 1
+    if tbl_c2["cross_tier"]["delta_intervals_disjoint"]:
+        tier_fails.append("cas_c_bis")
+        print("FAIL: intervalles qui se touchent declares disjoints :",
+              tbl_c2["cross_tier"])
+
+    # (d) une courbe degeneree (pas saine) suffit a bloquer le BEATS
+    tbl_d = build_tier_table(per_model, {**{k: True for k in per_model},
+                                          "qwen3_14b": False})
+    tier_total += 1
+    if tbl_d["cross_tier"]["beats"]:
+        tier_fails.append("cas_d")
+        print("FAIL: BEATS alors qu'une courbe n'est pas saine :", tbl_d["cross_tier"])
+
+    # (e) le rango de taille est le bon pour chaque modele
+    tier_total += 1
+    for key, want in (("minicpm5", "0.8-2B"), ("qwen35", "0.8-2B"),
+                      ("qwen3_8b", "8-14B"), ("qwen3_14b", "8-14B")):
+        if MODELS[key].get("tier") != want:
+            tier_fails.append(f"tier_{key}")
+            print(f"FAIL: tier de {key} = {MODELS[key].get('tier')} (attendu {want})")
+
+    # (f) le tableau markdown porte une ligne par modele
+    tier_total += 1
+    md = render_comparative_table({"per_model": per_model, "tiers": tbl})
+    for label in ("MiniCPM5-2B", "Qwen3-8B", "Qwen3-14B"):
+        if label not in md:
+            tier_fails.append(f"md_{label}")
+            print(f"FAIL: {label} absent du tableau markdown")
+
+    # (g) classification d'un run : graine / smoke / partiel / aborted
+    tier_total += 1
+    for name, run, want in (
+        ("qwen3_8b_seed42.json", {"max_steps": MAX_STEPS}, "seed"),
+        ("qwen3_14b_seed0_smoke.json", {"max_steps": 3}, "smoke"),
+        ("qwen3_8b_seed1.json", {"max_steps": 40}, "partiel"),
+        ("qwen3_8b_seed7.json", {"aborted": True, "max_steps": MAX_STEPS}, "aborted"),
+    ):
+        got = classify_run(name, run)
+        if got != want:
+            tier_fails.append(f"class_{name}")
+            print(f"FAIL: classify_run({name}) -> {got} (attendu {want})")
+
     total_ok = n_match + n_xlam + n_guard + (2 - len(hub_fails))
     total = len(cases) + len(xlam_cases) + len(guard_cases) + 2
     if not wire_skipped:
@@ -876,12 +981,16 @@ def mode_selftest() -> int:
         # "(câblage 3/3)" se contredisent et obligent a une addition mentale.
         total_ok += wire_total - len(wire_fails)
         total += wire_total
+    total_ok += tier_total - len(tier_fails)
+    total += tier_total
     wire_line = ("câblage NON teste" if wire_skipped
                  else f"câblage {wire_total - len(wire_fails)}/{wire_total}")
     print(f"selftest: {total_ok}/{total} pass (dapo {n_match}/{len(cases)}, "
           f"xlam {n_xlam}/{len(xlam_cases)}, garde {n_guard}/{len(guard_cases)}, "
-          f"cache-hf {2 - len(hub_fails)}/2, {wire_line})")
-    return 1 if (fails or xlam_fails or guard_fails or hub_fails or wire_fails) else 0
+          f"cache-hf {2 - len(hub_fails)}/2, {wire_line}, "
+          f"etages {tier_total - len(tier_fails)}/{tier_total})")
+    return 1 if (fails or xlam_fails or guard_fails or hub_fails or wire_fails
+                 or tier_fails) else 0
 
 
 def mode_baseline(model_key: str, dataset_key: str) -> dict[str, Any]:
@@ -1022,6 +1131,140 @@ def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
     return result
 
 
+def build_tier_table(per_model: dict[str, dict[str, Any]],
+                     healthy: dict[str, bool]) -> dict[str, Any]:
+    """Tableau comparatif par etage de taille (#15293).
+
+    FONCTION PURE : elle ne lit ni disque ni GPU, donc elle se teste dans
+    `selftest` sans attendre un run de plusieurs heures de GPU.
+
+    per_model : {model_key: {"delta_mean", "delta_std", "deltas", "n_seeds", ...}}
+    healthy   : {model_key: bool} -- "courbes saines" (post > pre sur chaque
+                graine, pas d'effondrement de longueur), verdict de l'analyse
+                de courbes.
+
+    Le critere de l'issue est un COMPARATIF d'etages (0.8B/2B vs 8-9B), pas
+    une comparaison de paires de modeles : la table par etage est donc
+    calculee par-dessus `per_model`, et le verdict inter-etage suit la meme
+    regle que la regle par paires (intervalles +-1 std disjoints + courbes
+    saines), sans la reecrire.
+    """
+    tiers: dict[str, Any] = {}
+    for tier in TIERS:
+        keys = [k for k in sorted(per_model)
+                if MODELS.get(k, {}).get("tier") == tier]
+        if not keys:
+            continue
+        pooled: list[float] = []
+        for k in keys:
+            pooled.extend(per_model[k].get("deltas", []))
+        n = len(pooled)
+        mean = (sum(pooled) / n) if n else 0.0
+        std = ((sum((d - mean) ** 2 for d in pooled) / n) ** 0.5) if n else 0.0
+        tiers[tier] = {
+            "models": keys,
+            "n_models": len(keys),
+            "n_seeds": n,
+            "delta_mean": mean,
+            "delta_std": std,
+            "per_model_delta_mean": {k: per_model[k]["delta_mean"] for k in keys},
+            "courbes_saines": {k: bool(healthy.get(k, False)) for k in keys},
+            "toutes_courbes_saines": all(bool(healthy.get(k, False)) for k in keys),
+        }
+    cross: dict[str, Any] = {
+        "comparable": False,
+        "regle": ("comparaison inter-etage : deux etages, >= 2 graines chacun, "
+                  "delta moyen de l'etage haut > etage bas avec intervalles "
+                  "+-1 std disjoints, et courbes saines des deux cotes"),
+    }
+    if len(tiers) == 2:
+        bas, haut = TIERS
+        tb, th = tiers[bas], tiers[haut]
+        # Disjointness of CLOSED intervals: two intervals that only touch are
+        # NOT disjoint. The strict `>` alone is decided by float noise
+        # (0.025-0.005 = 0.020000000000000004 > 0.015+0.005 = 0.02 -> True),
+        # so the separation is compared with a relative epsilon. The legacy
+        # per-pair rule (identical formula, no epsilon) is left untouched on
+        # purpose: the historical verdict must not move.
+        hi = th["delta_mean"] - th["delta_std"]
+        lo = tb["delta_mean"] + tb["delta_std"]
+        eps = 1e-9 * max(1.0, abs(hi), abs(lo))
+        disjoint = hi > lo + eps
+        seeds_ok = tb["n_seeds"] >= 2 and th["n_seeds"] >= 2
+        cross = {
+            "comparable": bool(seeds_ok),
+            "tier_bas": bas,
+            "tier_haut": haut,
+            "n_seeds": {bas: tb["n_seeds"], haut: th["n_seeds"]},
+            "delta_intervals_disjoint": bool(disjoint),
+            "beats": bool(th["toutes_courbes_saines"]
+                          and tb["toutes_courbes_saines"] and disjoint),
+            "regle": cross["regle"],
+        }
+    return {"tiers": tiers, "cross_tier": cross}
+
+
+def render_comparative_table(summary: dict[str, Any]) -> str:
+    """Rend le tableau comparatif en markdown (critere "tableau comparatif"
+    de #15293) : une ligne par modele, puis le verdict inter-etage."""
+    lines = ["| Modele | Etage | Graines | eval pre | eval post | delta | +- 1 std | courbes saines |",
+             "|---|---|---:|---:|---:|---:|---:|---|"]
+    tiers = summary.get("tiers", {}).get("tiers", {})
+    for tier in TIERS:
+        t = tiers.get(tier)
+        if not t:
+            continue
+        for k in t["models"]:
+            pm = summary["per_model"][k]
+            lines.append(
+                f"| {pm['label']} | {tier} | {pm['n_seeds']} | "
+                f"{pm['pre_mean']:.4f} | {pm['post_mean']:.4f} | "
+                f"{pm['delta_mean']:+.4f} | {pm['delta_std']:.4f} | "
+                f"{'oui' if t['courbes_saines'].get(k) else 'non'} |")
+        lines.append(f"| **moyenne etage {tier}** | {tier} | {t['n_seeds']} | | | "
+                     f"{t['delta_mean']:+.4f} | {t['delta_std']:.4f} | "
+                     f"{'oui' if t['toutes_courbes_saines'] else 'non'} |")
+    cross = summary.get("tiers", {}).get("cross_tier", {})
+    lines.append("")
+    lines.append(f"Verdict inter-etage ({cross.get('tier_bas', '?')} vs "
+                 f"{cross.get('tier_haut', '?')}) : "
+                 f"comparable={cross.get('comparable')} · "
+                 f"intervalles disjoints={cross.get('delta_intervals_disjoint')} · "
+                 f"BEATS={cross.get('beats')}.")
+    lines.append("")
+    lines.append(f"Regle : {cross.get('regle', '')}")
+    return "\n".join(lines) + "\n"
+
+
+def classify_run(name: str, run: dict[str, Any]) -> str:
+    """Classe un run pour l'agregation du `summarize`.
+
+    FONCTION PURE (testable sans GPU).
+
+    - "aborted"  : arret par la garde d'entree (aucun gradient porte) ;
+    - "smoke"    : boucle de validation courte (`_smoke`), budget de pas
+                   different -> son post-eval n'est pas comparable ;
+    - "partiel"  : run interrompu avant le budget complet ;
+    - "seed"     : une graine du protocole, la seule comparable.
+
+    Pourquoi la distinction compte : un smoke de 3 pas a un delta de 0 PAR
+    CONSTRUCTION (post-eval apres 3 pas d'entrainement), et le compter comme
+    une graine dilue le delta de son bras -- et, par etage, le verdict
+    entier. Un smoke se compte, il ne se melange pas.
+    """
+    if run.get("aborted") is True:
+        return "aborted"
+    if "_smoke" in name:
+        return "smoke"
+    try:
+        steps = int(run.get("max_steps", MAX_STEPS))
+    except (TypeError, ValueError):
+        steps = MAX_STEPS
+    if steps < MAX_STEPS:
+        return "partiel"
+    return "seed"
+
+
 def mode_summarize(dataset_key: str = "dapo") -> int:
     import matplotlib
 
@@ -1038,22 +1281,27 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
     if not runs:
         print("aucun run trouve dans", results_dir)
         return 1
-    loaded = [json.loads(p.read_text(encoding="utf-8")) for p in runs]
+    loaded = [(p.name, json.loads(p.read_text(encoding="utf-8"))) for p in runs]
     # Un run arrete par la garde d'entree n'a pas de post-eval : il porte ZERO
     # signal (aucun gradient n'a passe sur les premiers pas) et n'a donc rien
     # a dire sur l'eval. L'inclure dans les deltas fausserait la moyenne --
     # on le liste a part, et on ne calcule que sur les runs scores.
     # Un run sans post-eval mais SANS le drapeau `aborted` (run interrompu pour
     # une autre raison) reste distingue : il n'a pas ete arrete par la garde.
-    aborted_runs = [r for r in loaded if r.get("aborted") is True]
-    incomplete_runs = [r for r in loaded
+    aborted_runs = [r for _n, r in loaded if r.get("aborted") is True]
+    incomplete_runs = [r for _n, r in loaded
                        if r.get("post_eval") is None and r.get("aborted") is not True]
-    scored = [r for r in loaded if r.get("post_eval") is not None]
+    # Smoke et runs partiels : ils se COMPTENT (liste dediee) mais ne se
+    # MELANGENT pas aux graines -- voir `classify_run`.
+    smoke_runs = [r for n, r in loaded if classify_run(n, r) == "smoke"]
+    partial_runs = [r for n, r in loaded if classify_run(n, r) == "partiel"]
+    scored = [r for n, r in loaded
+              if classify_run(n, r) == "seed" and r.get("post_eval") is not None]
     by_model: dict[str, list[dict[str, Any]]] = {}
     for r in scored:
         by_model.setdefault(r["model_key"], []).append(r)
 
-    summary: dict[str, Any] = {"runs": [r["model_key"] + f"_seed{r['seed']}" for r in loaded],
+    summary: dict[str, Any] = {"runs": [r["model_key"] + f"_seed{r['seed']}" for _n, r in loaded],
                                "aborted_runs": [
                                    {"model_key": r["model_key"], "seed": r["seed"],
                                     "reason": (r.get("no_signal_guard") or {}).get("reason", ""),
@@ -1063,6 +1311,14 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
                                "runs_sans_post_eval": [
                                    {"model_key": r["model_key"], "seed": r["seed"]}
                                    for r in incomplete_runs],
+                               "runs_smoke": [
+                                   {"model_key": r["model_key"], "seed": r["seed"],
+                                    "max_steps": r.get("max_steps")}
+                                   for r in smoke_runs],
+                               "runs_partiels": [
+                                   {"model_key": r["model_key"], "seed": r["seed"],
+                                    "max_steps": r.get("max_steps")}
+                                   for r in partial_runs],
                                "per_model": {}, "verdict": None}
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
     # Le trainer nomme la serie d'apres la fn de reward : dapo/gsm8k loggent
@@ -1099,25 +1355,30 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
     axes[1].set_xlabel("step")
     axes[0].legend(fontsize=7)
 
+    def curves_healthy(model_key: str) -> bool:
+        rl = [r for r in scored if r["model_key"] == model_key]
+        improved = all(r["post_eval"]["reward_mean"] > r["pre_eval"]["reward_mean"] for r in rl)
+        def seg(vals):
+            n = len(vals)
+            return (sum(vals[: n // 4]) / max(1, n // 4), sum(vals[-n // 4:]) / max(1, n // 4))
+        no_collapse = True
+        for r in rl:
+            ln = [e["completions/mean_length"] for e in r["log_history"]
+                  if "completions/mean_length" in e]
+            if ln:
+                a, b = seg(ln)
+                if b < 0.8 * a:  # effondrement de longueur > 20 %
+                    no_collapse = False
+        return improved and no_collapse
+
+    health = {k: curves_healthy(k) for k in summary["per_model"]}
+
+    # Tableau comparatif par ETAGE de taille (#15293) : le critere de l'issue
+    # est un comparatif "0.8B/2B vs 8-9B", pas une liste de paires de modeles.
+    # La table est pure (aucun GPU) -> elle se teste dans `selftest`.
+    summary["tiers"] = build_tier_table(summary["per_model"], health)
+
     if len(summary["per_model"]) >= 2:
-        def curves_healthy(model_key: str) -> bool:
-            rl = [r for r in scored if r["model_key"] == model_key]
-            improved = all(r["post_eval"]["reward_mean"] > r["pre_eval"]["reward_mean"] for r in rl)
-            def seg(vals):
-                n = len(vals)
-                return (sum(vals[: n // 4]) / max(1, n // 4), sum(vals[-n // 4:]) / max(1, n // 4))
-            no_collapse = True
-            for r in rl:
-                ln = [e["completions/mean_length"] for e in r["log_history"]
-                      if "completions/mean_length" in e]
-                if ln:
-                    a, b = seg(ln)
-                    if b < 0.8 * a:  # effondrement de longueur > 20 %
-                        no_collapse = False
-            return improved and no_collapse
-
-        health = {k: curves_healthy(k) for k in summary["per_model"]}
-
         # La comparaison est desormais N-aire : #15293 demande de rejouer le
         # harnais au-dela de 2B et de dire si le classement tient a cette
         # echelle. Une paire codee en dur interdisait de lire l'etage >= 8-9B.
@@ -1154,8 +1415,12 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
     fig.savefig(png, dpi=130)
     summary_json = results_dir / "summary.json"
     summary_json.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    # Le tableau comparatif en markdown est un livrable de l'issue (#15293) :
+    # il est ecrit a cote du JSON, pas calcule a la main.
+    table_md = results_dir / "tableau_comparatif.md"
+    table_md.write_text(render_comparative_table(summary), encoding="utf-8")
     print(json.dumps({k: v for k, v in summary.items() if k != "runs"}, indent=2)[:1500])
-    print(f"courbes -> {png} | summary -> {summary_json}")
+    print(f"courbes -> {png} | summary -> {summary_json} | tableau -> {table_md}")
     return 0
 
 
