@@ -32,6 +32,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 12 | **Strate 7 : ICT-46 / ICT-46b** (extension #11690) | deux carnets — l'organe exécutable de la strate 7 et son banc unique en travers du dépôt | **LU** (strand 12, 2026-11-17) |
 | 13 | **Trio Argumentation non numéroté** (extension #11690) | trois carnets — TruthMaintenance, QBFAcceptance, Capstone ; la strate 6 bouclée au ledger (BeliefTrajectories au strand 5) | **LU** (strand 13, 2026-11-18) |
 | 14 | **Axe douleur : ICT-47 / ICT-47b** (extension #11690) | deux carnets — la question pain-axis au contrat Gate 24 complet, et son pendant instrumental (quantification transparente, barrière d'échelle documentée avec preuve) | **LU** (strand 14, 2026-11-18) |
+| 15 | **Non numérotés résiduels : DehaeneF2 / Greffe5 / MUH-FibreTegmark** (extension #11690) | trois carnets — le self-model de Dehaene F2 au test de dissociation ABC pré-enregistré, l'attribution causale des greffes (verdict tri-état, garde-fou IV), et le témoin de lecture Tegmark (cinq gestes du texte sur bancs finis, grade C) | **LU** (strand 15, 2026-11-18) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -288,6 +289,28 @@ Les 13 carnets non couverts, recalculés :
 - **Non numérotés (3)** : `ICT-Dissociation-DehaeneF2-SelfReport`, `ICT-Greffe5-AttributionCausale`, `ICT-MUH-FibreTegmark`
 
 Le plus gros bloc restant devient la **paire ICT-48** — deux carnets portant le même numéro, dont l'ambiguïté de chaînage est documentée au finding transverse 2 du strand 14 — puis les trois non numérotés résiduels ; les orphelins (`17c`, `32-34`, `36f`, `40b`, `43`) restent un carnet chacun.
+
+### Recompte du 2026-11-18 (après le strand 15)
+
+Même méthode, rejouée une fois le strand 15 posé (non numérotés résiduels : `ICT-Dissociation-DehaeneF2-SelfReport`, `ICT-Greffe5-AttributionCausale`, `ICT-MUH-FibreTegmark`).
+
+| Mesure | 2026-11-18 (s14) | 2026-11-18 (s15) |
+|---|---|---|
+| Carnets ICT sur `main` | 101 | **101** |
+| Sections de carnet au ledger | 88 | **91** |
+| Non couverts | 13 | **10** |
+| Taux de couverture | 87 % | **90 %** |
+
+Zéro fantôme, toujours : les 91 entrées du ledger correspondent toutes à un carnet présent au `ls-tree` (normalisation `-Python`). Le dénominateur n'a pas bougé ; le solde est `13 − 3 = 10`, et `88 + 3 = 91`.
+
+Les 10 carnets non couverts, recalculés :
+
+- **ICT-17c** TorchLens-Inspection (descendu dans `ICT-17-EpsilonMachine/`), **ICT-20** FeatureCatastrophes
+- **ICT-32** StratificationCausaleLife, **ICT-33** SoupCollisions, **ICT-34** BancRecollementLectures
+- **ICT-36f** FLens-SpecParam (arrivé le 16/11), **ICT-40b** AnalogCognitionWaves, **ICT-43** Calibration-MultiEchelle
+- **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
+
+La **priorité « six non numérotés » est épuisée** (trio Argumentation au strand 13, trois résiduels au strand 15). Le plus gros bloc restant redevient la **paire ICT-48**, désormais sous **occupation vive mesurée au tirage du strand 15** : `#26757` (po-2027) déplace Onset9B-Aggregate vers `PostTraining/` (PT_20/PT_21), `#27095` (po-2024:CoursIA-2) touche WolframClasses-ThermoSignature — la paire se couvrira **à la résolution de ces PRs**, quand le dénominateur aura tranché (si le déplacement merge, la paire sort du périmètre `ICT-Series`). Les orphelins (`17c`, `32-34`, `36f`, `40b`, `43`) restent un carnet chacun.
 
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
@@ -1494,3 +1517,44 @@ Le strand 13 fermait la strate 6 ; celui-ci prend le plus gros bloc restant du r
 3. **Le contrôle de reproduction avant l'instrument — candidat transversal.** 47b ne compare int8/NF4 à la référence publiée qu'après avoir **re-mesuré bf16 ailleurs** (0,003/0,010) : sans cette jambe, un écart d'instrument serait indiscernable d'un écart de harnais. Même geste que l'exécution différentielle des strands 12-13 (fidélité prouvée avant l'usage) — la série gagne à en faire un standard écrit pour toute mesure multi-machine.
 
 4. **Les barrières machine se documentent avec preuve, elles ne se recopient pas.** Le tableau SIGSEGV reproductible de 47b, avec ses deux hypothèses écartées par la mesure, est la forme honnête d'un « ne charge pas » : la barrière est po-2023-spécifique et le carnet le dit lui-même. Toute lane qui voudrait le point 14B-dans-la-famille doit apporter **sa propre machine** — pas hériter du verdict.
+
+## Strand 15 — Non numérotés résiduels : DehaeneF2 / Greffe5 / MUH-FibreTegmark (extension #11690)
+
+Troisième et dernier volet de la priorité « six non numérotés » (trio Argumentation au strand 13, ces trois carnets au strand 15). Tous trois exécutés par papermill — DehaeneF2 le 2026-10-30 (31,7 s), Greffe5 le 2026-11-04 (3,0 s), MUH-FibreTegmark le 2026-10-26 (6,6 s) — zéro erreur, stubs C.1 conformes. Lecture seule, convention des strands : aucun `.ipynb` modifié.
+
+### `ICT-Dissociation-DehaeneF2-SelfReport.ipynb` (28) — 19 md / 9 code, 9/9 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | [#19343](https://github.com/jsboige/CoursIA/issues/19343) T3 Dehaene F2, volet **direct** (le volet proxy livré par #19345) : le self-model survit-il au vidage du store étendu ? F2 (GNW) prédit `score_A >> score_B` ; falsification pré-enregistrée `|A−B| < 2σ_B` sur les graines {0, 1, 7, 42} (#19225), n_shuffles 50 (#19335), substrat synthétique numpy-only. |
+| **Contenu réel** | 9 sections, famille dissociations (case 3). Trois régimes : A store plein / B **lésion** (store vidé du monde ET du modèle, la lettre de l'issue) / C self-model ablaté (contrôle de dégénérescence, 0 exact par construction). Score **symétrique apparié** (différence de différences — les biais de cadre s'annulent). Appariement spectral exact des deux agents (écart 8,9e-16, identités distinctes ‖ΔA‖ = 0,297) ; vérification de manipulation : canal G·h porte 0,426 de la variance (vider n'est pas cosmétique), cycle d'ignition 0,136. |
+| **Résultat** | A +0,384 ± 0,308 vs B +0,095 ± 0,037 : delta **+0,289** contre seuil pré-enregistré 2σ_B = 0,073, **4 graines sur 4** dans le sens prédit, p < 0,02 partout, C = 0,000 partout. **Verdict `F2_CONFIRMED_EXTENDED_REQUIRED`.** Réserves mesurées : B ne tombe pas à zéro (persistance proprioceptive), σ_A = 8× σ_B (le verdict tient au seuil pré-enregistré, pas à 2σ_A), modèle jouet (volet traces réelles GPU-only). Deux faux départs de protocole documentés (contrôle C à −0,99 → confond d'amplitude ; appariement spectral absent), tous deux attrapés par le contrôle C. |
+| **Critique** | Les deux lectures de la persistance B (redondance vs deux composantes) restent ouvertes, avec les mesures discriminantes proposées en exercices 1-2 ; la dette théorique est tenue « question ouverte », volontairement pas issue-ifiée avant que l'exercice 1 tranche. |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### `ICT-Greffe5-AttributionCausale.ipynb` (25) — 15 md / 10 code, 10/10 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | [#13903](https://github.com/jsboige/CoursIA/issues/13903) (Epic #4588) : la question causale que Greffe 2 ne posait pas — `+raft` est-il la cause de l'élargissement ou un artefact de mesure ? Consomme `ict.causal_attribution` (greffe 1, PR #13916) ; la relaxation STRIPS est consommée, jamais re-dérivée. |
+| **Contenu réel** | 3 estimateurs (naïf / backdoor, Pearl 2009 ch. 3.3 / IV, Angrist-Krueger 2001) et verdict tri-état AGREEMENT / DÉSACCORD / NON_IDENTIFIABLE (analogue ICT-12e). Design 2×2 orthogonal : 4 vocabulaires (A_t, +discard, +teleport, les deux) × 30 graines = 120 observations, 30 par cellule, Cov(X,Z) = 0 par construction. Grillage 3×3, X = teleport (analogue +raft), Z = discard, Y = \|F_B\|. |
+| **Résultat** | \|F\| moyen 6,23 → 9,23 avec teleport (+48 %) ; taux de but **plat à 0,233** sur les quatre vocabulaires (7/30 graines — dissociation plus d'états / même taux de but). Balayage budget : discard inerte à B = 2 (delta +0,000, 0/30) mais actif à B = 3 (+0,233) et B = 4 (+0,933) — l'inertie est une propriété du **budget**, pas du discard. ATE naïf = backdoor = **+3,0000** (AGREEMENT tol 0,10 — le design orthogonal garantit que le backdoor ne corrige rien : il n'y a rien à corriger) ; IV **NON_IDENTIFIABLE** (\|Cov(X,Z)\| = 0 < 5/√n = 0,456) — la méthode refuse de fabriquer un nombre, résultat légitime. |
+| **Critique** | Le caractère instrumental est assumé : statut « sans verdict à ce jour » (la matrice des dissociations ne porte aucune ligne pour ce carnet) ; l'exercice 3 (adaptateurs cross-engine `ict.bridges`) est gated post-merge #13921 et le dit dans sa propre sortie. |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### `ICT-MUH-FibreTegmark.ipynb` (30) — 19 md / 11 code, 11/11 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | [#16759](https://github.com/jsboige/CoursIA/issues/16759) (arc C de #16741) : le texte où Tegmark cite Schmidhuber (p. 12 « an entire ensemble is often much simpler than one of its members », double référence [13, 17] aux p. 18 et 20), pris au sérieux sur bancs finis. **Témoin de lecture grade C documentaire, PAS une fibre** (critère #16759 : une fibre s'acquiert par un organe, pas par une citation ; la voie organe = #16753, Annexe A en Lean, ouverte). |
+| **Contenu réel** | 7 sections, cinq gestes du texte chacun sur son banc : bird/frog/consensus (Markov 4 états, NLL 0,6245 → 0,5201 vs plancher H = 0,5032, model_bits KT qui monte en parallèle) ; baggage (3 labellisations : brut 99-131 octets, canonique 85 partout, écart nul) ; ensemble-plus-simple-qu'un-membre (cycles p = 3..7 : gain 39,3 % → 82,8 %, index ceil(log₂N) 1 → 10 bits, comparaison conditionnelle à p) ; anti-anything-goes (256 règles élémentaires via l'**organe** `ict/wolfram_step.py` : 64 miroir 25 %, 16 totalistiques 6,25 %, description 8 → 6 → 4 bits) ; jumeaux premiers Éq. 8-9 (précision de décidabilité : T est Σ₁, semi-décidé, mais décidable **non constructivement** dans les deux branches ; P vérifié à 10⁵ : 1224 jumeaux, 314 divisions max sous la borne 316,2 ; Goldbach 4999 instances, universel non couvert). Conclusion en table 4 colonnes dont « ce que le banc NE prouve PAS ». |
+| **Résultat** | Pas de verdict — c'est le protocole même du témoin de lecture : chaque section porte son « ce que le banc ne dit pas », le statut grade C est déclaré trois fois (tête, §1.2, conclusion). Consomme trois organes (`ict.compression`, `ict.mdl`, `ict.wolfram_step`) sans ré-derivation, note organ-first explicite dans la cellule Wolfram. |
+| **Critique** | Rien à signaler — la discipline anti-analogie est le sujet du carnet ; l'écart résiduel du banc bird/frog (~0,017 bit) est rapporté non-attribué avec ses deux causes candidates (lissage +1/2, réalisation finie de l'échantillon test). |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### Findings transverses du strand 15 (pour l'arbitrage user)
+
+1. **L'instrument qui dit non est le standard non écrit de la série.** Les trois carnets le déclinent : contrôle C de dégénérescence qui invalide deux faux départs (DehaeneF2), garde-fou IV qui rend NON_IDENTIFIABLE plutôt que de fabriquer un nombre (Greffe5), colonne systématique « ce que le banc NE prouve PAS » (MUH). À distinguer du finding 3 du strand 14 (contrôle de reproduction **avant** l'usage) : ici c'est le **refus de conclure**, là-bas la preuve de fidélité.
+2. **Le bloc Statut épistémique en tête de carnet discrimine trois régimes** : verdict pré-enregistré (DehaeneF2), « sans verdict à ce jour » parce que la matrice des dissociations n'a pas de ligne pour lui (Greffe5), « témoin de lecture grade C » jamais candidat verdict (MUH). La typographie est tenue sur les trois — un lecteur peut trier les carnets de la série sur ce seul bloc.
+3. **La nuance mesurée, non masquée, reste la règle** : persistance du régime B et σ_A = 8× σ_B rapportés par DehaeneF2 alors même que le verdict principal est positif ; taux de but plat documenté par Greffe5 comme la *raison* du choix d'outcome ; écart résiduel non attribué par MUH. Le standard « le dire fait partie du résultat » (strand 14) se confirme sur trois carnets d'intentions très différentes.
+4. **La paire ICT-48 est sous occupation vive — sa couverture attend la résolution des PRs.** Mesuré au tirage de ce strand : #26757 (po-2027) **déplace** Onset9B-Aggregate vers `PostTraining/`, #27095 (po-2024:CoursIA-2) touche WolframClasses-ThermoSignature. Si le déplacement merge, le dénominateur du recompte passe à 100 et la paire sort du périmètre — la lire avant serait documenter un périmètre que la revue est en train de redéfinir.
