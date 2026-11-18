@@ -218,6 +218,11 @@ def measure_humor_differential(
 # nul, et les features actives ne sont ni independantes ni normales. Le seul
 # yardstick honnete est donc le maximum que le null atteint lui-meme, mesure
 # sur la meme construction et le meme tirage de signes.
+#
+# Ce yardstick est un taux de depassement SOUS H0 (P_H0(max |z| > seuil)).
+# Ce n'est pas une puissance : la puissance d'un seuil est une probabilite de
+# rejection sous une alternative explicitee, que ce module ne calcule pas et
+# ne pretend pas estimer.
 
 
 def _null_max_stats(
@@ -264,10 +269,18 @@ def summarize_global_max_null(
       d'un zero sous le null <= 0.05) : l'absence est alors notable.
     * ``ABSENCE_NON_INFORMATIVE`` -- les donnees ne produisent aucune feature
       au-dela du seuil, et le null en produit *souvent* zero : le zero observe
-      est l'issue typique du null, il ne distingue rien. C'est une propriete
-      de l'instrument (sa puissance au seuil), pas une propriete des donnees.
+      est l'issue typique du null, il ne distingue rien. Ce verdict qualifie
+      l'observation (elle ne departage pas le null) ; il n'etablit pas la
+      sensibilite de l'instrument, qui exigerait une alternative explicitee.
     * ``CONFORME_AU_NULL`` -- les donnees produisent des features au-dela du
       seuil a un rythme comparable a celui du null.
+
+    Les quantites de ``null_features_over_seuil`` sont des **taux de
+    depassement sous l'hypothèse nulle** : ``frac_draws_with_one`` vaut
+    ``P_H0(max |z| > seuil)``, c'est-a-dire la frequence a laquelle le null
+    lui-meme atteint le seuil. Ce n'est pas une puissance : une puissance se
+    mesure sous une alternative explicitee (effet specifie, plusieurs
+    repetitions).
     """
     max_absz = np.asarray(max_absz, dtype=np.float64)
     over_null = np.asarray(over_null, dtype=np.int64)

@@ -258,3 +258,47 @@ def test_global_max_null_detects_the_shift_beyond_the_null_range(
     # Le meme shift reste invisible a la jambe delta_pair (verdict pre-registre
     # INCONCLUSIVE) : c'est bien la lecture sur le maximum qui tranche.
     assert res["verdict_measure"] == "INCONCLUSIVE"
+
+
+def test_le_taux_de_depassement_decrit_le_null_et_non_une_puissance(
+    tmp_path: Path,
+) -> None:
+    """``frac_draws_with_one`` vaut P_H0(max|z| > seuil), PAS une puissance.
+
+    Le cas shift fournit le contre-exemple qui le demontre : le null n'atteint
+    jamais le seuil (taux = 0) alors que les DONNEES produisent plusieurs
+    features au-dela. Un chiffre de puissance n'aurait pas pu decrire les deux
+    a la fois : il parle du null, jamais de la capacite a rejeter une
+    alternative qu'il n'explicite pas.
+    """
+    tr = tmp_path / "syn_shift_puissance.npz"
+    _write_synthetic_traces(tr, shift=True)
+    res = measure_global_max_null(tr, _syn_pairs(), n_draws=256, seed=42)
+    assert res["null_features_over_seuil"]["frac_draws_with_one"] == 0.0
+    assert res["n_features_over_seuil_observe"] >= 3
+    # Le complement est exact : le taux et son complement se lisent sur le null.
+    assert res["null_features_over_seuil"]["frac_draws_with_one"] + res[
+        "p_zero_under_null"
+    ] == 1.0
+    # Aucune grandeur de puissance n'est exposee par l'API : le module ne
+    # pretends pas estimer une sensibilite qu'il ne mesure pas.
+    assert not any(
+        "puissance" in cle or "power" in cle for cle in res
+    ), sorted(res)
+
+
+def test_sur_pure_bruit_le_taux_decrit_le_null_et_son_complement(
+    tmp_path: Path,
+) -> None:
+    tr = tmp_path / "syn_noise_taux.npz"
+    _write_synthetic_traces(tr, shift=False)
+    res = measure_global_max_null(tr, _syn_pairs(), n_draws=256, seed=42)
+    taux = res["null_features_over_seuil"]["frac_draws_with_one"]
+    # Sur ce dictionnaire le null atteint parfois le seuil : c'est cette
+    # reference qui rend un compte observe interpretable.
+    assert 0.0 <= taux <= 1.0
+    assert res["p_zero_under_null"] == pytest.approx(1.0 - taux)
+    assert res["n_features_over_seuil_observe"] == 0
+    # Le verdict qualifie l'observation ; il ne conclut rien sur une
+    # sensibilite de l'instrument.
+    assert res["verdict"] == "ABSENCE_NON_INFORMATIVE"
