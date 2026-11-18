@@ -205,6 +205,83 @@ def test_une_cellule_sans_sortie_est_un_finding(tmp_path):
     assert any("sans sortie" in f for f in failures)
 
 
+# --- la selection : fail-CLOSED (temoins CLI) --------------------------------
+
+
+def test_un_entry_inexistant_est_refuse(capsys):
+    """NEGATIF CLI : une selection explicite qui ne correspond a aucun triplet
+    est REFUSEE (rc=2), jamais un vert muet.
+
+    Sans ce refus, une coquille dans le nom d'une entree (un tiret a la place
+    du vide, ici) donnerait une « conformite » sans qu'aucune comparaison ait
+    eu lieu.
+    """
+    rc = crc.main(["--entry", "sudoku-02-dancing-links", "--json",
+                   "--registry", str(REGISTRY), "--repo-root", str(ROOT)])
+    assert rc == 2, "une selection sans correspondance ne doit pas rendre 0"
+    capture = capsys.readouterr()
+    rapport = json.loads(capture.out)
+    assert "error" in rapport, "le rapport doit nommer l'erreur"
+    assert "introuvable" in rapport["error"]
+    assert "introuvable" in capture.err, "le diagnostic doit etre lisible"
+
+
+def test_un_entry_valide_est_controle(capsys):
+    """CONTROLE POSITIF CLI : la meme selection, avec le bon nom, controle le
+    triplet et rend 0 -- le refus de la selection ne doit pas etre un refus
+    general."""
+    rc = crc.main(["--entry", "sudoku-02-dancinglinks", "--json",
+                   "--registry", str(REGISTRY), "--repo-root", str(ROOT)])
+    assert rc == 0, "le pilote declare doit rester conforme"
+    capture = capsys.readouterr()
+    rapport = json.loads(capture.out)
+    assert len(rapport["entries"]) == 1
+    assert rapport["entries"][0]["name"] == "Sudoku-02 DancingLinks"
+
+
+def test_un_registre_vide_est_refuse(tmp_path):
+    """Un registre sans aucune entree ne controle rien : il rend 2, pas 0."""
+    vide = tmp_path / "registre-vide"
+    vide.mkdir()
+    rc, rapport = crc.run(vide, tmp_path)
+    assert rc == 2, "un registre vide ne peut pas rendre un vert"
+    assert "vide" in rapport["error"]
+
+
+def test_le_cote_non_reference_illisible_est_un_finding(tmp_path):
+    """fail-CLOSED sur le cote NON de reference : la reference Python est
+    lisible, seule l'extraction Rust echoue.
+
+    L'organe doit signaler la divergence -- il ne peut pas comparer deux fois
+    la reference et declarer conforme. C'est le mutant que le temoin
+    d'echec d'extraction ne pinait pas : les deux cotes echouaient, donc le
+    non-reference n'etait jamais exerce isolement.
+    """
+    root = tmp_path / "repo"
+    _mini_notebook(root / "a.ipynb", "valeur : 42\n")
+    _mini_notebook(root / "b.ipynb", "rien a voir\n")
+    registry = _write_registry(tmp_path / "registry", [{
+        "name": "factice", "python": "a.ipynb", "rust": "b.ipynb",
+        "measures": [{
+            "id": "rust_illisible",
+            "reference": "python",
+            "sides": {
+                "python": {"cell": 0, "pattern": r"valeur : (\d+)",
+                           "transform": "int"},
+                "rust": {"cell": 0, "pattern": r"valeur : (\d+)",
+                         "transform": "int"},
+            },
+        }]}])
+    rc, report = crc.run(registry, root)
+    assert rc == 1, "une extraction Rust illisible doit etre un finding"
+    mesure = report["entries"][0]["measures"][0]
+    assert mesure["status"] == "DIVERGENCE"
+    assert mesure["values"]["python"] == 42, "la reference est lisible"
+    assert "rust" not in mesure["values"], "le cote illisible ne doit pas avoir de valeur"
+    assert any(f.startswith("rust:") for f in mesure["failures"]), \
+        f"la failure doit nommer le cote Rust : {mesure['failures']}"
+
+
 # --- la tolerance, unite -----------------------------------------------------
 
 

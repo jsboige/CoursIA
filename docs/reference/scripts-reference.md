@@ -31,6 +31,11 @@ correspondance automatique comparerait des grandeurs differentes. Un cote explic
 `absent:` est signale sans faire echouer le controle ; un cote declare dont l'extraction
 echoue est un finding (fail-CLOSED).
 
+**Couts de sortie** : `0` conforme · `1` divergence ou finding · `2` instrument en panne
+(registre illisible, **selection `--entry` sans correspondance**, registre vide). Un controle
+qui ne mesure rien ne rend jamais un vert : une coquille dans le nom d'une entree rend `2`,
+pas `0`.
+
 ### Exécution
 | Script | Usage |
 |--------|-------|

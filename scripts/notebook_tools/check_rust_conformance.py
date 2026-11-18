@@ -47,7 +47,9 @@ Usage
 
 Sortie : `0` si toutes les grandeurs declarees sont conformes, `1` si au moins
 une diverge (ou si une extraction declaree echoue), `2` si l'instrument lui-meme
-est en panne (registre illisible, notebook absent).
+est en panne (registre illisible, notebook absent) **ou si la selection
+demarree n'a rien controle** (`--entry` sans correspondance, registre vide) :
+un controle qui ne mesure rien ne rend jamais un vert.
 """
 from __future__ import annotations
 
@@ -263,14 +265,34 @@ def check_entry(entry: dict, repo_root: Path) -> dict:
 
 def run(registry_dir: Path, repo_root: Path,
         only: str | None = None) -> tuple[int, dict]:
-    """Controle complet du registre. Retourne (rc, rapport)."""
+    """Controle complet du registre. Retourne (rc, rapport).
+
+    **fail-CLOSED sur la selection.** Un `--entry` qui ne correspond a aucun
+    triplet n'est PAS une conformite : c'est une demande non satisfaite. Une
+    coquille dans le nom d'une entree (ou un renommage) donnerait sinon un
+    vert muet -- l'organe aurait « controle » zero triplet et l'afficherait
+    conforme. Meme principe pour un registre vide : un controle qui ne mesure
+    rien ne peut pas rendre un vert.
+    """
     if not registry_dir.is_dir():
         print(f"registre introuvable : {registry_dir}", file=sys.stderr)
         return 2, {"entries": []}
     entries = load_registry(registry_dir)
     if only:
-        entries = [e for e in entries
-                   if only in (e.get("name") or "") or only in e.get("_source", "")]
+        selection = [e for e in entries
+                     if only in (e.get("name") or "") or only in e.get("_source", "")]
+        if not selection:
+            print(f"entree introuvable : --entry {only!r} ne correspond a aucun "
+                  f"triplet du registre ({len(entries)} entree(s) declaree(s))",
+                  file=sys.stderr)
+            return 2, {"entries": [], "conformes": 0, "divergences": 0,
+                       "error": f"entree introuvable : {only}"}
+        entries = selection
+    if not entries:
+        print(f"registre vide : aucune entree declaree dans {registry_dir}",
+              file=sys.stderr)
+        return 2, {"entries": [], "conformes": 0, "divergences": 0,
+                   "error": "registre vide"}
     results = [check_entry(entry, repo_root) for entry in entries]
     n_div = sum(1 for r in results if r["status"] != "OK")
     return (1 if n_div else 0), {"entries": results,
