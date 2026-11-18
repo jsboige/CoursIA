@@ -28,6 +28,14 @@ Une même case vide change de rôle selon la méthode. Pour le retour arrière, 
 | Grille candidate et conflits | Modifier une configuration pour améliorer son score. | Zéro conflit, conservation des indices et taux de réussite sur plusieurs essais. |
 | Distributions ou prédictions | Proposer des valeurs à partir d'un modèle probabiliste ou de données. | Validité de la grille entière, au-delà de la confiance ou de la précision par case. |
 
+## Objectifs d'apprentissage
+
+À l'issue de la série, vous saurez (le carnet qui enseigne chaque objectif est indiqué dans la table de la série ci-dessous) :
+
+**Techniques** — implémenter un solveur exact par retour arrière et l'accélérer par des structures dédiées (Dancing Links) ; déclarer les règles du Sudoku à des solveurs de contraintes (Choco, OR-Tools, Z3) et à des encodages logiques (BDD, automates symboliques) ; piloter des métaheuristiques (algorithme génétique, recuit simulé, essaims particulaires) sur une grille candidate ; instrumenter des approches prédictives — réseau de neurones, modèle de langage, programmation probabiliste — et mesurer ce qu'une prédiction par case vaut pour résoudre une grille entière.
+
+**Méthodologiques** — choisir une représentation (affectations partielles, domaines et contraintes, configuration et conflits, distributions) en connaissance de ce qu'elle rend possible et de ce qu'elle exige de contrôler ; définir le critère de réussite d'une méthode avant de la comparer — validité de la grille entière, taux de réussite sur plusieurs essais, temps de résolution — puis comparer statistiquement des solveurs sur un corpus de grilles plutôt que sur une instance isolée ; distinguer une solution vérifiée d'une sortie plausible, jusqu'à la vérification formelle en Lean.
+
 ## Comment lire ce README — Découverte
 
 Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue parcours, approfondissements et recherche.
