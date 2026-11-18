@@ -143,7 +143,9 @@ class RiskGate:
         """Roll the daily accounting window by hand.
 
         Dated marks roll it on their own (see :meth:`update_equity`); this stays
-        for callers that mark without a date.
+        for callers that mark without a date. Do not mix both modes: this call
+        leaves the last dated mark unchanged, so a subsequent dated mark can
+        roll the window back to that mark's equity.
         """
         self.day_start_equity = equity
 
