@@ -113,7 +113,7 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
 
 ## Livraison
 
-- PR par lot, une série par PR, 15 fichiers max, attestations comprises
+- PR par lot, une série par PR, dans la limite de taille d'une PR du dépôt (attestations comprises)
 - Enregistrer le triplet dans `scripts/notebook_tools/twin_pairs.d/` (côté `rust:`) avec audit réel,
   jamais une réattestation aveugle ; déclarer la tolérance dans `scripts/notebook_tools/rust_conformance.d/`
 - Citer les durées des blocs committés dans le body de PR, jamais une durée murale locale
