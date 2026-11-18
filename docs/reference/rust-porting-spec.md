@@ -29,12 +29,12 @@ La forme de référence est donc **celle des specs C# en production**, lue sur `
 |---|---|---|---|---|
 | 1 | En-tête | `Grain:`, `Parent :`, `Voir` | le lot d'origine (`#27129`…) et la page de spec | l'Epic #26510, ses plis et lots |
 | 2 | Objet | source, cible, noyau, périmètre | noyau canonique `rust` (evcxr), suffixe `-Rust`, `rust-wsl` **jamais commité** | [kernels-runtime.md](kernels-runtime.md#rust-notebooks-rust-via-evcxr) |
-| 3 | Plan des cellules | tableau index / verbatim / équivalent | l'équivalent est **Rust** ; chaque cellule est **autonome** (les fonctions ne persistent pas d'une cellule à l suivante) | idem, § « Deux pièges de persistance mesurés » |
+| 3 | Plan des cellules | tableau index / verbatim / équivalent | l'équivalent est **Rust** ; chaque cellule est **autonome** (les fonctions ne persistent pas d'une cellule à l suivante) | kernels-runtime.md, § « Deux pièges de persistance mesurés » |
 | 4 | Exercices | ≥ 3 exercices, stubs C.1 | les stubs Rust ne lèvent pas d'erreur ; la valeur neutre est explicite | CLAUDE.md §C.1 |
 | 5 | Attendus testables | valeurs et verdicts | **une tolérance par cellule numérique** (absolue ou relative) | registre `scripts/notebook_tools/rust_conformance.d/` (point 2 du pli) |
 | 6 | Crates cibles | paquet, version, précédent | crate, version **épinglée**, licence, feature, verdict natif/pont/brut ; `:dep` en **tête** de carnet | carte d'écosystème + crates.io/docs.rs au jour de la spec |
 | 7 | Écueils de traduction | (absent de la spec C# : même écosystème) | emprunts et durées de vie, absence de surcharge d'opérateurs, aléatoire **graine par graine**, `ndarray` ≠ `numpy`, cellule autonome | retour d'expérience cité par l'Epic (#26510) |
-| 8 | Temps attendus | (porté par `metadata.papermill.duration`) | le carnet Rust **n'a pas** de traducteur papermill : les durées viennent du bloc committé, jamais d'une mesure murale ; cible **300 s** (cache cargo chaud), marge ×15 | [kernels-runtime.md](kernels-runtime.md#timings--timeouts) |
+| 8 | Temps attendus | (porté par `metadata.papermill.duration`) | le carnet Rust **n'a pas** de traducteur papermill : les durées viennent du bloc committé, jamais d'une mesure murale ; timeout : **15 ×** le temps attendu en cache cargo chaud, **300 s au plus** (cette marge couvre aussi le premier run, cache froid) | [kernels-runtime.md](kernels-runtime.md#timings--timeouts) |
 | 9 | Interdits + Livraison | interdits, forme de PR | s'ajoutent : pas de `:dep` ailleurs qu'en tête, pas de pont Python (`pyo3`) sans verdict écrit, pas de sortie fabriquée, CI = **validation structurelle seule**, exécution réelle locale obligatoire | pli 0 (décisions écrites) |
 
 ## 3. Le gabarit — à copier dans le corps d'une issue de spec
@@ -99,7 +99,7 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
 ## Temps attendus
 
 - Bloc source : <durée mesurée dans `metadata.papermill.duration` du bloc committé>
-- Cible : <durée attendue> — timeout d'exécution **300 s** (cache cargo chaud, marge ×15)
+- Cible : <durée attendue> — timeout d'exécution : **15 ×** la durée attendue en cache cargo chaud, **300 s au plus** (cette marge couvre aussi le premier run, cache froid)
 - Le carnet Rust n'a pas de traducteur papermill : aucune valeur de passage n'est injectée
 
 ## Interdits
