@@ -287,10 +287,11 @@ def test_open_pr_numbers_ne_boucle_pas_sur_une_page_pleine(monkeypatch):
 # Collecteur de check-runs, lecture des labels, et rc de sortie (c3271)
 # --------------------------------------------------------------------------
 
-def test_le_collecteur_de_check_runs_signale_une_couverture_incomplete(monkeypatch):
+def test_le_collecteur_de_check_runs_refuse_une_couverture_incomplete(monkeypatch):
     """Au-dela de `per_page` check-runs, la liste est tronquee : la jambe
     `PR gate` peut manquer, et « pas de check-run trouve » n'est **pas** une
-    absence. La couverture est signalee (point 2 du coordinateur)."""
+    absence. La lecture tronquee est un **refus** (c3272) : plus de verdict
+    « incomplete », plus de couple `(run, complete)` a mal lire."""
     import replay_dwell_floors
 
     def faux_gh_json(path):
@@ -299,10 +300,9 @@ def test_le_collecteur_de_check_runs_signale_une_couverture_incomplete(monkeypat
                                for i in range(100)]}
 
     monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
-    run, complete = replay_dwell_floors.gate_check_run(
-        "jsboige/CoursIA", "deadbeef", per_page=100, max_pages=2)
-    assert complete is False
-    assert run is not None  # la jambe a ete vue, mais la lecture est partielle
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.gate_check_run(
+            "jsboige/CoursIA", "deadbeef", per_page=100, max_pages=2)
 
 
 def test_le_collecteur_de_check_runs_signale_la_couverture_complete(monkeypatch):
@@ -322,8 +322,8 @@ def test_le_collecteur_de_check_runs_signale_la_couverture_complete(monkeypatch)
                                 "started_at": "2026-11-18T20:01:00Z"}]}
 
     monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
-    run, complete = replay_dwell_floors.gate_check_run("jsboige/CoursIA", "deadbeef")
-    assert complete is True
+    run = replay_dwell_floors.gate_check_run("jsboige/CoursIA", "deadbeef")
+    assert run is not None
     assert run["id"] == 1
     assert len(appels) == 2
 
@@ -381,3 +381,191 @@ def test_le_rejeu_prend_le_repo_en_argument(monkeypatch):
     assert rc == 0
     assert "--repo" in argv_vus["cmd"]
     assert argv_vus["cmd"][argv_vus["cmd"].index("--repo") + 1] == "jsboige/CoursIA"
+
+
+# --------------------------------------------------------------------------
+# Lecture STRICTE : une reponse cassee est un refus, pas une valeur par
+# defaut (c3272 -- demande du coordinateur sur #27273)
+# --------------------------------------------------------------------------
+
+def test_des_labels_absents_sont_un_refus_pas_une_liste_vide(monkeypatch):
+    """CONTROLE NEGATIF : `labels` absent ne vaut PAS `[]`.
+
+    L'ancien comportement transformait un champ absent en liste vide, et
+    `inspect_pr` ecrivait alors `labels_lus = True` : une reponse **cassee**
+    se lisait « pas de derogation », c'est-a-dire un **fait** affirme sur une
+    lecture qui n'avait pas eu lieu.
+    """
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return {"head": {"sha": "abc123"}, "draft": False}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+
+
+def test_des_labels_mal_formes_sont_un_refus(monkeypatch):
+    """`labels` qui n'est pas une liste, ou un element sans `name` : refus."""
+    import replay_dwell_floors
+
+    def faux_labels_non_liste(path):
+        return {"head": {"sha": "abc123"}, "labels": {"name": "bug"}, "draft": False}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_labels_non_liste)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+
+    def faux_labels_sans_nom(path):
+        return {"head": {"sha": "abc123"}, "labels": [{"id": 7}], "draft": False}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_labels_sans_nom)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+
+
+def test_un_draft_absent_est_un_refus_pas_False(monkeypatch):
+    """CONTROLE NEGATIF : `draft` absent ne vaut PAS `False`.
+
+    Un `draft` absent se lisait « PR mergeable » -- une **absence** due a une
+    lecture cassee, lue comme un fait.
+    """
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return {"head": {"sha": "abc123"}, "labels": []}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+
+
+def test_un_draft_non_booleen_est_un_refus(monkeypatch):
+    """Un `draft` qui n'est pas un booleen est une lecture cassee."""
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return {"head": {"sha": "abc123"}, "labels": [], "draft": "false"}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+
+
+def test_une_tete_absente_est_un_refus(monkeypatch):
+    """Sans `head.sha`, l'organe n'a pas de tete : pas de lecture."""
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return {"labels": [], "draft": False}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+
+
+def test_labels_lus_n_est_annonce_qu_apres_une_lecture_reelle(monkeypatch):
+    """`labels_lus` vaut `True` quand les labels ont ete lus -- et la lecture
+    refuse des lors qu'ils n'ont pas pu l'etre."""
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return {"head": {"sha": "abc123"}, "labels": [{"name": "bug"}], "draft": False}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    info = replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+    assert info["labels_lus"] is True
+    assert info["labels"] == ["bug"]
+    assert info["draft"] is False
+
+
+def test_des_check_runs_de_forme_invalide_sont_un_refus(monkeypatch):
+    """CONTROLE NEGATIF : `check_runs` absent ou non-liste.
+
+    L'ancien comportement lisait une forme invalide comme une liste VIDE,
+    donc comme « aucune check-run `PR gate` sur cette tete » -- une absence
+    deduite d'une lecture cassee.
+    """
+    import replay_dwell_floors
+
+    def faux_absent(path):
+        return {"total_count": 0}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_absent)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.gate_check_run("jsboige/CoursIA", "deadbeef")
+
+    def faux_pas_liste(path):
+        return {"check_runs": {"name": "PR gate"}}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_pas_liste)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.gate_check_run("jsboige/CoursIA", "deadbeef")
+
+
+def test_le_plafond_de_pagination_des_prs_ouvertes_est_un_refus(monkeypatch):
+    """Un inventaire tronque ne se lit pas « toutes les PRs ouvertes »."""
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return [{"number": n} for n in range(1, 101)]
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.open_pr_numbers("jsboige/CoursIA", per_page=100,
+                                             max_pages=2)
+
+
+def test_une_liste_de_prs_de_forme_invalide_est_un_refus(monkeypatch):
+    """Une liste de PRs qui n'est pas une liste (ou un element sans `number`)
+    est une lecture cassee : pas d'inventaire."""
+    import replay_dwell_floors
+
+    def faux_pas_liste(path):
+        return {"message": "Not Found"}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_pas_liste)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.open_pr_numbers("jsboige/CoursIA")
+
+    def faux_element_mal_forme(path):
+        return [{"number": 1}, "deux"]
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_element_mal_forme)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.open_pr_numbers("jsboige/CoursIA")
+
+
+def test_un_refus_de_lecture_ne_produit_aucun_verdict(monkeypatch):
+    """Le refus remonte jusqu'a la sortie : action `incomplet`, rc 2.
+
+    Un verdict sur une lecture cassee serait un **fait** affirme sur une
+    absence : l'organe distingue l'echec de geste (rc 1) de l'inventaire
+    incomplet (rc 2).
+    """
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return {"head": {"sha": "abc123"}, "labels": [], "draft": False}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    monkeypatch.setattr(sys, "argv",
+                        ["replay_dwell_floors.py", "--pr", "27273", "--json"])
+    rc = replay_dwell_floors.main()
+    assert rc == 2
+
+
+def test_le_refus_de_l_organe_est_distinct_de_l_echec_de_geste(monkeypatch):
+    """Lecture cassee -> rc 2 ; echec de geste -> rc 1. Deux causes, deux
+    codes : un consommateur ne peut pas les confondre."""
+    import replay_dwell_floors
+
+    monkeypatch.setattr(replay_dwell_floors, "inspect_pr", lambda *a, **k: {
+        "pr": 1, "action": "rejouer", "motif": "plancher brut passe",
+        "run_id": "42", "job_id": "43", "draft": False})
+    monkeypatch.setattr(replay_dwell_floors, "gh_rerun",
+                        lambda *a, **k: (1, "refuse"))
+    monkeypatch.setattr(sys, "argv",
+                        ["replay_dwell_floors.py", "--pr", "1", "--apply", "--json"])
+    assert replay_dwell_floors.main() == 1

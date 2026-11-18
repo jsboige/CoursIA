@@ -33,6 +33,19 @@ Ce que fait l'organe, donc :
 Orthogonalement : le minuteur se laisse lever par le label
 `merge-dwell-waived` (urgence `main` rouge) -- l'organe n'y touche pas.
 
+Lecture STRICTE (c3272)
+-----------------------
+Une reponse **absente**, **mal formee** ou **tronquee** est un **refus**,
+jamais une valeur par defaut. Concretement :
+  - `labels` absent, non-liste, ou element sans `name` -> refus ;
+  - `draft` absent, ou non booleen -> refus ;
+  - `check_runs` absent, non-liste, ou element non objet -> refus ;
+  - plafond de pagination atteint (liste tronquee) -> refus.
+Un refus ne produit **aucun verdict** : l'entree sort en action `incomplet`
+et l'organe sort en rc 2. C'est la distinction qui compte : « je n'ai pas
+reussi a lire » n'est pas « la jambe n'existe pas » -- l'absence de
+check-run se deduit d'une lecture **complete**, jamais d'une lecture cassee.
+
 Usage
 -----
     python scripts/ci/replay_dwell_floors.py --pr 27262 27263      # lecture
@@ -66,6 +79,25 @@ from merge_dwell import (  # noqa: E402
 
 REPO_DEFAULT = "jsboige/CoursIA"
 GATE_NAME = "PR gate"
+
+
+class LectureIncomplete(RuntimeError):
+    """La lecture n'a pas produit une information exploitable.
+
+    Distincte de l'echec d'appel (reseau, `gh` absent) : ici la reponse est
+    arrivee mais elle est **mal formee**, **tronquee**, ou **absente** sur un
+    champ dont l'organe a besoin pour decider. Une telle lecture ne doit
+    **jamais** produire de verdict : elle est un refus, pas une donnee.
+
+    Pourquoi (c3272, point du coordinateur) : `pr_info` transformait des
+    `labels` absents ou mal formes en `[]`, et un `draft` absent en `False` ;
+    `inspect_pr` ecrivait alors `labels_lus = True`. Une reponse lue de
+    travers se distingue d'une reponse lue : l'absent devenait un **fait**
+    (« pas de derogation », « pas un brouillon »). De meme, une liste de
+    `check_runs` de forme invalide devenait une liste vide -- et une liste
+    vide se lit « aucune check-run `PR gate` », c'est-a-dire une **absence**,
+    alors que la lecture etait **cassee**.
+    """
 
 
 # --------------------------------------------------------------------------
@@ -204,7 +236,8 @@ def gh_json(path: str) -> object:
         raise RuntimeError("gh api {} : JSON illisible".format(path)) from exc
 
 
-def open_pr_numbers(repo: str, per_page: int = 100) -> list[int]:
+def open_pr_numbers(repo: str, per_page: int = 100,
+                    max_pages: int = 100) -> list[int]:
     """Toutes les PR ouvertes du depot -- **toutes les pages**.
 
     CORRECTION c3271 : la version precedente lisait UNE seule page
@@ -215,6 +248,11 @@ def open_pr_numbers(repo: str, per_page: int = 100) -> list[int]:
     depot ». Une promesse que l'organe ne tient pas est un defaut de
     l'organe : on pagine jusqu'a epuisement, et on expose le nombre de pages
     lues dans la sortie JSON pour que l'ecart soit verifiable.
+
+    CORRECTION c3272 : le plafond de pages ne tronque plus **silencieusement** :
+    une liste tronquee se lirait comme un inventaire complet. Le plafond
+    atteint est un **refus** (`LectureIncomplete`), comme une reponse qui
+    n'est pas une liste.
     """
     numbers: list[int] = []
     page = 1
@@ -222,20 +260,37 @@ def open_pr_numbers(repo: str, per_page: int = 100) -> list[int]:
         payload = gh_json(
             "repos/{}/pulls?state=open&per_page={}&page={}".format(
                 repo, per_page, page))
-        if not isinstance(payload, list) or not payload:
+        if not isinstance(payload, list):
+            raise LectureIncomplete(
+                "liste des PRs ouvertes illisible (page {}) -- forme "
+                "inattendue".format(page))
+        if not payload:
             break
-        numbers.extend(int(p["number"]) for p in payload)
+        for p in payload:
+            if not isinstance(p, dict) or "number" not in p:
+                raise LectureIncomplete(
+                    "liste des PRs ouvertes mal formee (page {})".format(page))
+            numbers.append(int(p["number"]))
         if len(payload) < per_page:
             break
         page += 1
-        if page > 100:  # garde-fou : ne pas boucler sur une API qui
-            break       # renverrait toujours la meme page pleine
+        if page > max_pages:  # garde-fou : ne pas boucler sur une API qui
+            # renverrait toujours la meme page pleine. Une troncature est un
+            # **refus**, pas un inventaire.
+            raise LectureIncomplete(
+                "plafond de pagination atteint ({} pages) -- inventaire "
+                "tronque, aucune conclusion tiree".format(max_pages))
     return numbers
 
 
 def pr_head_sha(repo: str, number: int) -> str:
     payload = gh_json("repos/{}/pulls/{}".format(repo, number))
-    return str(payload["head"]["sha"])  # type: ignore[index]
+    head = payload.get("head") if isinstance(payload, dict) else None
+    sha = head.get("sha") if isinstance(head, dict) else None
+    if not sha:
+        raise LectureIncomplete(
+            "PR {} : tete absente de la reponse".format(number))
+    return str(sha)
 
 
 def pr_info(repo: str, number: int) -> dict:
@@ -245,56 +300,103 @@ def pr_info(repo: str, number: int) -> dict:
     tete : une derogation ne peut etre annoncee respectee que si ses labels
     ont ete **lus** (point 7 du coordinateur, c3271), et un brouillon doit
     etre identifiable pour etre mis a part (point 3 du message de 22:46Z).
+
+    LECTURE STRICTE (c3272) : un champ **absent** ou **mal forme** est un
+    refus (`LectureIncomplete`), jamais une valeur par defaut. L'ancien
+    comportement transformait des `labels` absents ou mal formes en `[]`, et
+    un `draft` absent en `False` : une reponse **cassee** se lisait « pas de
+    derogation, pas un brouillon », c'est-a-dire deux **faits** affirmes sur
+    une lecture qui n'avait pas eu lieu. `labels_lus` ne vaut `True` que si
+    les labels ont ete **reellement lus**.
     """
     payload = gh_json("repos/{}/pulls/{}".format(repo, number))
     if not isinstance(payload, dict):
-        raise RuntimeError("PR {} : charge utile illisible".format(number))
+        raise LectureIncomplete("PR {} : charge utile illisible".format(number))
     head = payload.get("head")
-    head = head if isinstance(head, dict) else {}
-    labels = payload.get("labels")
-    labels = labels if isinstance(labels, list) else []
+    if not isinstance(head, dict) or not head.get("sha"):
+        raise LectureIncomplete(
+            "PR {} : tete absente de la reponse".format(number))
+    if "labels" not in payload:
+        raise LectureIncomplete(
+            "PR {} : champ `labels` absent de la reponse".format(number))
+    labels = payload["labels"]
+    if not isinstance(labels, list):
+        raise LectureIncomplete(
+            "PR {} : `labels` n'est pas une liste".format(number))
+    noms: list[str] = []
+    for l in labels:
+        if not isinstance(l, dict) or "name" not in l:
+            raise LectureIncomplete(
+                "PR {} : `labels` mal forme (element sans `name`)".format(number))
+        noms.append(str(l["name"]))
+    if "draft" not in payload:
+        raise LectureIncomplete(
+            "PR {} : champ `draft` absent de la reponse".format(number))
+    draft = payload["draft"]
+    if not isinstance(draft, bool):
+        raise LectureIncomplete(
+            "PR {} : `draft` n'est pas un booleen".format(number))
     return {
-        "sha": str(head.get("sha") or ""),
-        "labels": [str(l.get("name") or "") for l in labels
-                   if isinstance(l, dict)],
-        "draft": bool(payload.get("draft")),
+        "sha": str(head["sha"]),
+        "labels": noms,
+        "labels_lus": True,
+        "draft": draft,
     }
 
 
 def gate_check_run(repo: str, sha: str, per_page: int = 100,
-                  max_pages: int = 20) -> tuple[dict | None, bool]:
-    """`(la check-run `PR gate` la plus recente, couverture complete ?)`.
+                  max_pages: int = 20) -> dict | None:
+    """La check-run `PR gate` la plus recente, ou ``None`` s'il n'y en a pas.
 
     CORRECTION c3271 (point 2 du coordinateur) : la lecture ne se limitait pas
     a la premiere page. Au-dela de 100 check-runs sur une tete, la liste est
     **tronquee** et la jambe `PR gate` peut ne pas y etre : decider sur une
     lecture partielle reviendrait a decider sur une absence, et « pas de
-    check-run trouve » n'est **pas** une absence. La couverture est donc
-    signalee, et l'appelant **refuse de decider** sur une lecture incomplete.
+    check-run trouve » n'est **pas** une absence.
+
+    CORRECTION c3272 : ce refus est desormais explicite.
+      - une `check_runs` de forme invalide (absente, ou pas une liste) est
+        une **lecture cassee** -- elle ne se lit plus « aucune check-run » ;
+      - le **plafond de pagination** atteint est une liste tronquee.
+    Les deux lèvent `LectureIncomplete` : aucun verdict n'est tire.
     """
     runs: list[dict] = []
-    complete = True
     page = 1
     while True:
         payload = gh_json(
             "repos/{}/commits/{}/check-runs?per_page={}&page={}".format(
                 repo, sha, per_page, page))
         if not isinstance(payload, dict):
-            raise RuntimeError("check-runs illisibles pour {}".format(sha))
-        chunk = payload.get("check_runs")
-        chunk = chunk if isinstance(chunk, list) else []
-        runs.extend(r for r in chunk if isinstance(r, dict))
+            raise LectureIncomplete(
+                "check-runs illisibles pour {}".format(sha))
+        if "check_runs" not in payload:
+            raise LectureIncomplete(
+                "check-runs de forme invalide pour {} : champ `check_runs` "
+                "absent".format(sha))
+        chunk = payload["check_runs"]
+        if not isinstance(chunk, list):
+            raise LectureIncomplete(
+                "check-runs de forme invalide pour {} : `check_runs` n'est "
+                "pas une liste".format(sha))
+        for r in chunk:
+            if not isinstance(r, dict):
+                raise LectureIncomplete(
+                    "check-runs de forme invalide pour {} : element non "
+                    "objet".format(sha))
+            runs.append(r)
         if len(chunk) < per_page:
             break
         page += 1
         if page > max_pages:
-            complete = False
-            break
+            raise LectureIncomplete(
+                "plafond de pagination des check-runs atteint ({} pages) pour "
+                "{} -- lecture tronquee, aucune decision prise".format(
+                    max_pages, sha))
     gates = [r for r in runs if r.get("name") == GATE_NAME]
     if not gates:
-        return None, complete
+        return None
     gates.sort(key=lambda r: (r.get("started_at") or "", r.get("id") or 0))
-    return gates[-1], complete
+    return gates[-1]
 
 
 def job_ref(details_url: str) -> tuple[str, str] | None:
@@ -332,13 +434,13 @@ def inspect_pr(repo: str, number: int, now: datetime,
     sha = info["sha"]
     entry["head_sha"] = sha
     entry["draft"] = info["draft"]
-    entry["labels_lus"] = True
-    gate, couverture = gate_check_run(repo, sha)
-    if not couverture:
-        entry["action"] = "incomplet"
-        entry["motif"] = ("couverture des check-runs INCOMPLETE -- lecture "
-                          "partielle, aucune decision prise")
-        return entry
+    # `labels_lus` ne vaut True que si les labels ont ete REELLEMENT lus :
+    # `pr_info` refuse (Lever) une reponse dont les labels sont absents ou
+    # mal formes (c3272).
+    entry["labels_lus"] = bool(info.get("labels_lus"))
+    # Une lecture cassee ou tronquee leve `LectureIncomplete` : elle se
+    # propage jusqu'a `main`, qui refuse de decider (action `incomplet`).
+    gate = gate_check_run(repo, sha)
     if gate is None:
         entry["motif"] = "aucune check-run `{}` sur cette tete".format(GATE_NAME)
         return entry
@@ -391,7 +493,20 @@ def main() -> int:
     args = ap.parse_args()
 
     if args.all:
-        numbers = open_pr_numbers(args.repo)
+        try:
+            numbers = open_pr_numbers(args.repo)
+        except LectureIncomplete as exc:
+            # Inventaire tronque : aucune conclusion tiree (c3272).
+            if args.json:
+                print(json.dumps({"repos": args.repo, "apply": args.apply,
+                                  "rc": 2, "echecs": 0, "incomplets": 1,
+                                  "brouillons": 0, "compteurs": {},
+                                  "prs": [{"pr": 0, "action": "incomplet",
+                                           "motif": str(exc)}]},
+                                 ensure_ascii=False, indent=2))
+            else:
+                print("inventaire incomplet : {}".format(exc))
+            return 2
     else:
         numbers = list(args.pr or [])
     if not numbers:
@@ -404,11 +519,17 @@ def main() -> int:
     for number in numbers:
         try:
             entry = inspect_pr(args.repo, number, now, args.dwell_min)
+        except LectureIncomplete as exc:
+            # Lecture cassee ou tronquee : REFUS de decider (c3272). Ce n'est
+            # pas un echec de geste (rc 1) : c'est un inventaire incomplet
+            # (rc 2), et la distinction se lit dans le rc de sortie.
+            entry = {"pr": number, "action": "incomplet",
+                     "motif": "lecture incomplete -- {}".format(exc),
+                     "draft": False, "labels_lus": False}
+            incomplets += 1
         except RuntimeError as exc:
             entry = {"pr": number, "action": "erreur", "motif": "erreur: {}".format(exc)}
             echecs += 1
-        if entry.get("action") == "incomplet":
-            incomplets += 1
         if args.apply and entry.get("action") == "rejouer":
             run_id, job_id = entry.get("run_id"), entry.get("job_id")
             if not run_id or not job_id:
