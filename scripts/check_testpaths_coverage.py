@@ -381,13 +381,14 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # (conda projet-is) : ils ne sont pas recomputables par l'organe. Le
 # compteur `items` est l'invariant mecanique qui les englobe.
 #
-# Rebaseline du 2026-11-17 (#27121, PR #27122) : items 1097 -> 1103. Les six
-# items neufs sont les tests de la fenetre journaliere du RiskGate, ajoutes a
-# deux fichiers deja exclus (`paper_harness/tests`, plan « quotidien »). Aucun
-# marqueur ni fichier nouveau : l'exclusion existante couvre le correctif
-# qu'ils testent. Depuis la racine du depot, la collecte de ce dossier echoue
-# encore (3 erreurs d'import) : lever l'exclusion reste un geste a part.
-CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 66, "items": 1103}
+# #27201 et #27121 / #27122 : population mesuree apres fusion des controles
+# de finitude et de fenetre datee : 26 marqueurs, 67 fichiers, 1110 items.
+# collectible_item_count compte les fonctions/classes, pas les cas parametres
+# de pytest : les 145 cas executes dans le harness sont une mesure distincte.
+# Le plafond precedent de 1134 confondait ces deux unites ; il est resserre.
+# Toujours hors CI racine : ce relevement ne pretend pas ajouter une
+# couverture CI. La suite complete se rejoue depuis le dossier du projet.
+CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 67, "items": 1110}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
