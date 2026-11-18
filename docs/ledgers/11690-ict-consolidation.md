@@ -34,6 +34,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 14 | **Axe douleur : ICT-47 / ICT-47b** (extension #11690) | deux carnets — la question pain-axis au contrat Gate 24 complet, et son pendant instrumental (quantification transparente, barrière d'échelle documentée avec preuve) | **LU** (strand 14, 2026-11-18) |
 | 15 | **Non numérotés résiduels : DehaeneF2 / Greffe5 / MUH-FibreTegmark** (extension #11690) | trois carnets — le self-model de Dehaene F2 au test de dissociation ABC pré-enregistré, l'attribution causale des greffes (verdict tri-état, garde-fou IV), et le témoin de lecture Tegmark (cinq gestes du texte sur bancs finis, grade C) | **LU** (strand 15, 2026-11-18) |
 | 16 | **Orphelins 1/8 : ICT-17c TorchLens** (extension #11690) | un carnet — l'instrument d'inspection générique (`tl.trace` : graphe, activations, interventions causales sans hooks), la trajectoire de grokking où la lisibilité MMIID précède le saut de test, et la moisson multi-couches branchée sur l'organe `ict/probes.py` | **LU** (strand 16, 2026-11-18) |
+| 17 | **Orphelins 2/8 : ICT-20 FeatureCatastrophes** (extension #11690) | un carnet — la calibration de méthode avant ICT-21 : EWS/CUSUM/hystérésis sur transitions anodines contrôlées (contrôle négatif où le verdict honnête est `no_signal`), et le témoin réel lens-agreement SAE/J-Lens rendu `chance` avec ses limites de puissance quantifiées | **LU** (strand 17, 2026-11-18) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -315,20 +316,19 @@ La **priorité « six non numérotés » est épuisée** (trio Argumentation au 
 
 ### Recompte du 2026-11-18 (après le strand 16)
 
-Même méthode, rejouée une fois le strand 16 posé (orphelins 1/8 : `ICT-17c-TorchLens-InspectionRepresentations`).
+Même méthode, rejouée une fois le strand 17 posé (orphelins 2/8 : `ICT-20-FeatureCatastrophes`).
 
-| Mesure | 2026-11-18 (s15) | 2026-11-18 (s16) |
+| Mesure | 2026-11-18 (s16) | 2026-11-18 (s17) |
 |---|---|---|
 | Carnets ICT sur `main` | 101 | **101** |
-| Sections de carnet au ledger | 91 | **92** |
-| Non couverts | 10 | **9** |
-| Taux de couverture | 90 % | **91 %** |
+| Sections de carnet au ledger | 92 | **93** |
+| Non couverts | 9 | **8** |
+| Taux de couverture | 91 % | **92 %** |
 
-Zéro fantôme, toujours : `91 + 1 = 92`, solde `10 − 1 = 9`.
+Zéro fantôme, toujours : `92 + 1 = 93`, solde `9 − 1 = 8`.
 
-Les 9 carnets non couverts, recalculés :
+Les 8 carnets non couverts, recalculés :
 
-- **ICT-20** FeatureCatastrophes
 - **ICT-32** StratificationCausaleLife, **ICT-33** SoupCollisions, **ICT-34** BancRecollementLectures
 - **ICT-36f** FLens-SpecParam (arrivé le 16/11), **ICT-40b** AnalogCognitionWaves, **ICT-43** Calibration-MultiEchelle
 - **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
@@ -1601,3 +1601,24 @@ Premier strand de la série des orphelins (carnets non couverts restants après 
 1. **L'organe natif consommé, jamais réimplémenté.** La moisson TorchLens rend les matrices par couche ; la lecture (MM/LR/MMIID) vient de `ict/probes.py`, l'organe de #13564/#16897 — le carnet démontre le geste complémentaire (inspection générique avant les mesures spécialisées) sans dupliquer une seule sonde. C'est le pattern organ-first en acte sur un carnet d'outillage.
 2. **Les pièges d'API documentés avec preuve d'exécution sont un livrable en soi** : 3 pièges v3.x (adresses, `Op.out`, `ctx`/`model=`/`inputs=`) qui coûteraient chacun une heure — la version épinglée 3.0.3 et le fichier `requirements-torchlens.txt` verrouillent le savoir-faire contre la dérive des docstrings 2.x en ligne.
 3. **La dissymétrie des sondes est enseignée comme méthode** : MM ~0,70 vs MMIID 1,00 sur les mêmes activations — le carnet nomme le régime (« directions à faible variance ») et prévient la mauvaise lecture du tableau avant/après. Même famille que le finding 1 du strand 15 : l'instrument qui voit peu n'est pas une absence d'information.
+
+## Strand 17 — Orphelins 2/8 : ICT-20 FeatureCatastrophes (extension #11690)
+
+Deuxième strand de la série des orphelins. Lecture de contenu et d'outputs committés, sans re-exécution (aucune cellule source modifiée — arbitrage fondateur : lecture seule). Exécution papermill de référence : 2026-11-03, 8,5 s, zéro exception, toutes les cellules code exécutées. GPU-free par conception (numpy seul, kernel python3).
+
+### `ICT-20-FeatureCatastrophes-Python.ipynb` (39) — 27 md / 12 code, 12/12 exécutées
+
+| Axe | Relevé |
+|---|---|
+| **Intention** | Calibration de méthode **avant** ICT-21 (PersonaCatastrophe, #5104) : lire plis/hystérésis/EWS dans l'espace des features d'un LLM sur une transition chargée sans avoir montré à quoi ressemble un pli sur une transition anodine serait « de la complaisance — on lirait le bruit avant d'avoir calibré l'instrument ». Le carnet fixe le **fond de non-retour de l'instrument** sur des transitions AR(1) contrôlées à vérité terrain connue, et les verdicts qu'ICT-21 devra reproduire ou reconnaître silencieux. Strate 5 calibration, statut épistémique « soutenu dans le protocole courant » avec renvoi à la matrice de dissociations. |
+| **Contenu réel** | Trois questions gates (régime, EWS ou pas, hystérésis résiduelle) servies par quatre expériences : EWS sur saut d'AR1 (phi 0,5→0,95), EWS sur saut de moyenne seul (contrôle négatif), CUSUM Gate 14 sur cinq graines, hystérésis sur boucle aller-retour. Trois exercices stubs C.1 conformes (fenêtre EWS, transition graduelle, boucle asymétrique — chacun avec étapes et indices). Puis un **témoin borné sur traces réelles** (lens-agreement SAE/J-Lens, substrat Qwen3.5-9B couche 16 pré-extrait, numpy only) consommant les organes `ict.lens_agreement`, `ict.workspace` et les chargeurs `sae_traces`/`jlens_traces` avec leur garde-fou anti-mélange — la sémantique vient des organes, le carnet n'en réimplémente aucune. |
+| **Résultat** | Exp1 : `critical_slowing` (tau_var +0,595 / tau_ar1 +0,612, p≈0) — la concordance des deux tau porte le verdict. Exp2 : `no_signal` malgré des p-values minuscules — le contrôle négatif tient et la prose désamorce le piège (le classifieur juge l'ampleur, pas la significativité). Gate 14 : cinq détections sur cinq, délai médian +33, quatre dans la fenêtre ±50 — et le cas seed 47 (alarme à t=9 pour une transition à t=200) exposé comme faux positif pur, « verdict honnête, pas maquillé en PASSED ». Gate bonus : résidus de signes mixtes, moyenne sous le seuil, mais la prose borne sa propre conclusion (« écarte une hystérésis forte, ne la borne pas finement »). **Témoin réel : verdict `chance`** (z moyen −0,007, seize prompts non décidables sur vingt, zéro colocalisé) — « aucune preuve d'accord, et non une preuve de dissociation » ; le témoin négatif par permutation seedée (J-Lens control) rend `dissociated` : la permutation ne fabrique pas d'accord. Verdict SOTA RECOVERABLE-MACHINE explicite pour l'extension aux traces GPU (ICT-18 #5101, HOLD GPU/vLLM). |
+| **Critique** | Rien de fond. Les limites de puissance du témoin sont **quantifiées** au lieu d'être cachées (prompts non décidables au seuil q=0,9 ; clairsemé du J-Lens face au SAE ; levier de puissance nommé : abaisser q, multiplier les prompts, densifier les traces). La question de compréhension sur le délai négatif demande explicitement pourquoi il ne se lit pas comme une performance — la discipline est enseignée, pas seulement pratiquée. |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### Findings transverses du strand 17 (pour l'arbitrage user)
+
+1. **Le négatif à deux étages** : le témoin lens-agreement rapporte `chance` sur les variantes trained **et** un contrôle par permutation seedée qui n'est pas plus accordé — le design ferme le faux positif dans les deux directions : le null de rotation préserve le compte et l'espacement des ignitions (il ne peut pas faire disparaître un vrai signal), et la permutation ne peut pas en fabriquer un. Ce double étage est un candidat standard écrit pour tout témoin sur traces réelles.
+2. **« Significativité n'est pas le signal », enseigné en acte** : le contrôle négatif montre des p-values minuscules avec des tau plats, et la prose nomme le piège — un seuil calé sur la p-value transformerait chaque dérive bénigne en alerte. Même famille que le garde-fou du null croisé du strand 14 (croissance désamorcée par la comparaison au null) : la garde statistique y est le sujet pédagogique, pas un appendice.
+3. **Précision et délai se lisent ensemble, jamais l'un sans l'autre** : l'alarme précoce (délai −191) est exposée, interprétée comme faux positif pur, puis resservie en question de compréhension — le carnet refuse de présenter son taux de détection sans son échec. Le « À retenir » le formule en règle ; la série gagne à le citer comme précédent pour tout gate de détection.
+4. **La calibration comme prérequis épistémique, la thèse fondatrice du carnet** : mesurer l'instrument sur des transitions dont on **sait** qu'elles sont anodines avant de l'appliquer à des transitions chargées — l'inverse exact du promethean bias. Le carnet se donne comme précédent citable : toute nouvelle venue d'instrument sur traces réelles devrait passer par ce fond de non-retour (même geste que le contrôle de reproduction du strand 14, côté détecteur).
