@@ -36,6 +36,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 16 | **Orphelins 1/8 : ICT-17c TorchLens** (extension #11690) | un carnet — l'instrument d'inspection générique (`tl.trace` : graphe, activations, interventions causales sans hooks), la trajectoire de grokking où la lisibilité MMIID précède le saut de test, et la moisson multi-couches branchée sur l'organe `ict/probes.py` | **LU** (strand 16, 2026-11-18) |
 | 17 | **Orphelins 2/8 : ICT-20 FeatureCatastrophes** (extension #11690) | un carnet — la calibration de méthode avant ICT-21 : EWS/CUSUM/hystérésis sur transitions anodines contrôlées (contrôle négatif où le verdict honnête est `no_signal`), et le témoin réel lens-agreement SAE/J-Lens rendu `chance` avec ses limites de puissance quantifiées | **LU** (strand 17, 2026-11-18) |
 | 18 | **Orphelins 3-4/8 : ICT-32 StratificationCausaleLife + ICT-34 BancRecollementLectures** (extension #11690) | deux carnets — l'apportionment de Hoel sur le GOL certifié (saturation par trajectoire vs dégénérescence par ensemble, le glouton re-dérivant seul la partition par destin) et le recollement disciplinaire d'ICT-15k transposé aux lectures (compatibilité écrite **et** mesurée, témoin de De Finetti qui fait payer, R3 oraculaire bornant la perte). `ICT-33` reporté : la PR #26864 (ouverte) réécrit le carnet | **LU** (strand 18, 2026-11-18) |
+| 19 | **Orphelins 5-6/8 : ICT-36f FLens-SpecParam + ICT-43 Calibration-MultiEchelle** (extension #11690) | deux carnets — l'instrument spectral du papier LSD monté et sanity-checké à vérité exacte (H1 conditionnel au moyennage, H2 où l'aire linéaire renverse le verdict, question pré-enregistrée tranchée : l'exposant apériodique, premier compteur croissant de la série) et la Phase 0 d'inventaire des SAE du Hub (tailles réelles mesurées contre l'annonce de l'issue, écarts rendus comme résultats qui redessinent le plan d'expérience). `ICT-40b` reporté : la PR #26584 (ouverte) retire l'activité de développement du carnet | **LU** (strand 19, 2026-11-18) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -317,24 +318,24 @@ La **priorité « six non numérotés » est épuisée** (trio Argumentation au 
 
 ### Recompte du 2026-11-18 (après le strand 16)
 
-Même méthode, rejouée une fois le strand 18 posé (orphelins 3-4/8 : `ICT-32-StratificationCausaleLife` + `ICT-34-BancRecollementLectures` ; `ICT-33` reporté sous occupation — la PR #26864, ouverte, réécrit le carnet).
+Même méthode, rejouée une fois le strand 19 posé (orphelins 5-6/8 : `ICT-36f-FLens-SpecParam` + `ICT-43-Calibration-MultiEchelle` ; `ICT-40b` reporté sous occupation — la PR #26584, ouverte, retire l'activité de développement du carnet ; `ICT-33` reporté au strand 18 — PR #26864).
 
-| Mesure | 2026-11-18 (s16) | 2026-11-18 (s17) | 2026-11-18 (s18) |
+| Mesure | 2026-11-18 (s17) | 2026-11-18 (s18) | 2026-11-18 (s19) |
 |---|---|---|---|
 | Carnets ICT sur `main` | 101 | 101 | **101** |
-| Sections de carnet au ledger | 92 | 93 | **95** |
-| Non couverts | 9 | 8 | **6** |
-| Taux de couverture | 91 % | 92 % | **94 %** |
+| Sections de carnet au ledger | 93 | 95 | **97** |
+| Non couverts | 8 | 6 | **4** |
+| Taux de couverture | 92 % | 94 % | **96 %** |
 
-Zéro fantôme, toujours : `93 + 2 = 95`, solde `8 − 2 = 6`.
+Zéro fantôme, toujours : `95 + 2 = 97`, solde `6 − 2 = 4`.
 
-Les 6 carnets non couverts, recalculés :
+Les 4 carnets non couverts, recalculés :
 
 - **ICT-33** SoupCollisions (reporté : PR #26864 ouverte le réécrit — lecture à sa résolution)
-- **ICT-36f** FLens-SpecParam (arrivé le 16/11), **ICT-40b** AnalogCognitionWaves, **ICT-43** Calibration-MultiEchelle
+- **ICT-40b** AnalogCognitionWaves (reporté : PR #26584 ouverte retire son activité de développement — lecture à sa résolution)
 - **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
 
-La série des orphelins couvre 4/8 (`17c`, `20`, `32`, `34`) ; `ICT-33` rejoint la paire ICT-48 en attente de résolution de PRs ouvertes (`#26864` réécrit le carnet ; `#26757` Move / `#27095` pour la paire) — restent ouverts sans occupation : `36f`, `40b`, `43`.
+La série des orphelins couvre 6/8 (`17c`, `20`, `32`, `34`, `36f`, `43`) ; `ICT-33` et `ICT-40b` rejoignent la paire ICT-48 en attente de résolution de PRs ouvertes (`#26864` et `#26584` réécrivent les carnets ; `#26757` Move / `#27095` pour la paire) — la série des orphelins est close : tout carnet encore non couvert l'est **sous occupation mesurée**.
 
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
@@ -1653,4 +1654,35 @@ Troisième strand de la série des orphelins, en duo : `ICT-33` (SoupCollisions)
 1. **Le témoin négatif comme instrument de falsification des macros** : dans les deux carnets, la partition/lecture « naturelle » (population ; majorité des lectures) est mesurée **à côté** de la macro causale — et s'effondre (0.165 ; −15). Une observable macro ne doit son statut ni à son intuitivité ni à son consensus : la batterie ICT gagne un patron récurrent (strand 15 : l'instrument qui dit non ; strand 18 : la macro qui perd).
 2. **« Conditionnellement à la partition », dit deux fois, dans deux langages** : ICT-32 borne l'émergence mesurée comme *conditionnelle au choix du regroupement* (le glouton discovering seul n'élève pas le choix en propriété) ; ICT-34 borne R3 comme une *borne oraculaire*, pas une méthode. Le même geste épistémique — séparer ce qui est mesuré de ce qui est choisi — traverse un carnet géométrique et un carnet décisionnel.
 3. **La certification Lean irrigue au-delà de ses preuves** : `hashlife_correct` garantit le calcul de trajectoire qu'ICT-32 mesure, et ICT-34 cite explicitement ce que le certificat garantissait au quadtree — le mot « certifié » du titre de #5726 n'est pas décoratif, il est consommé par les carnets en aval.
-4. **Une occupation vive peut reporter une lecture** : ICT-33 (reporté au strand 18) rejoint la paire ICT-48 — la règle « ne pas lire un carnet qu'une PR ouverte réécrit » protège le ledger d'une section périmée dès le merge. Le recompte le porte en non couvert **avec motif**, pas comme un oubli.
+4. **Une occupation vive peut reporter une lecture** : ICT-33 (reporté au strand 18) rejoint la paire ICT-48 — la règle « ne pas lire un carnet qu'une PR ouverte réécrit » protège le ledger d'une section périmée dès son merge. Le recompte le porte en non couvert **avec motif**, pas comme un oubli.
+
+## Strand 19 — Orphelins 5-6/8 : ICT-36f FLens-SpecParam + ICT-43 Calibration-MultiEchelle (extension #11690)
+
+Cinquième strand de la série des orphelins, en duo : `ICT-40b` (AnalogCognitionWaves) est **reporté** — la PR #26584 (ai-01:vllm, ouverte, retire l'activité de développement du carnet) le réécrit, la lecture serait périmée dès son merge. Lecture de contenu et d'outputs committés, sans re-exécution (arbitrage fondateur : lecture seule). Exécutions de référence : ICT-36f papermill 2026-11-16 (21,7 s, kernel `ict-py313`, règles F — installé localement), ICT-43 kernel `python3` (sans métadonnées papermill) ; toutes les cellules code exécutées, zéro erreur, dans les deux carnets. GPU-free par conception (numpy + réseau Hub pour le seul ICT-43).
+
+### `ICT-36f-FLens-SpecParam-Python.ipynb` (31) — 21 md / 10 code, 10/10 exécutées
+
+| Axe | Relevé |
+|---|---|
+| **Intention** | Monter l'instrument spectral du papier LSD (Subramani et al. 2026, bioRxiv 10.64898/2026.01.28.702361) — la paramétrisation FOOOF (apériodique 1/f + pics gaussiens, 1–120 Hz, au plus 5 pics, réglages de l'article) — le **sanity-checker** sur des spectres simulés à vérité exacte, vérifier que l'instrument récupère les deux gestes du papier (H1 : décalages de pics ; H2 : suppression « genuine »), et trancher la question que la série porte depuis 36c : la pente apériodique est-elle un compteur croissant du nombre de facteurs latents k ? Strate F-Lens, statut épistémique « sans verdict à ce jour » (aucune ligne en matrice de dissociations). |
+| **Contenu réel** | §2 sanity : le fit FOOOF retrouve la vérité terrain de son propre modèle génératif (exposants 2,019/1,510 contre 2,00/1,50 écrits, fréquences centrales à ≤ 0,06 Hz) — pics surnuméraires tolérés et surveillés. §3 H1 en deux régimes de bruit (spectre moyenné = protocole du papier vs epoch unique ×3). §4 H2 : deux métriques côte à côte, aire linéaire de bande (naïve) contre amplitude de pic PW en échelle log. §5 terrain GHMM d'ICT-36c redéfini fidèlement (numpy seul, **aucun organe `ict/` importé** — l'instrument est le package `fooof` lui-même, l'outil du papier), question **pré-enregistrée écrite avant la mesure** avec prédiction falsifiable. §6 figure deux panneaux. Trois exercices C.1 conformes (écart d'aire gamma, seuil de résolution en largeur de pic, pont HFD × exposant en Spearman). |
+| **Résultat** | **Sanity : OUI** (écarts ≤ 0,019 / ≤ 0,06 Hz). **H1 récupéré au régime moyenné** (alpha +1,98 ± 0,02 Hz, beta +5,25 ± 0,75 Hz contre +2,0/+5,0 vrais) mais **l'epoch unique s'effondre** (beta +2,45 ± 8,23 Hz, une seed à −7,8 Hz : signe opposé sur un shift qui existe) — le moyennage est une **condition de la mesure**, pas un confort statistique (pendant spectral du plancher de bruit 36e). **H2 : la métrique naïve renverse le verdict** — l'aire linéaire rend gamma +327,9 % sur une bande que le simulateur n'a pas touchée et alpha +52,8 % alors que le pic baisse (l'aire reste proportionnelle au niveau apériodique sous le pic) ; la PW log mesure fidèle (−48,4 % / −33,2 % contre −50 % / −37 % écrits). **Question k : prédiction confirmée** — l'exposant apériodique croît avec k, du spectre plat du bruit pur à +4,7 σ entre k1 et k5, pente +0,063 par facteur : **premier compteur croissant de la série** après quatre instruments décroissants (PR, NC@95, HFD, LZC en 36c) — avec la nuance écrite dans le carnet : mesuré à SNR par canal croissant avec k dans ce montage, pas à SNR contrôlé. Pont : l'aplatissement spectral rapporté sous LSD se lirait comme *moins* de structure factorielle persistante (cohérent avec la dé-corrélation temporelle 36d, pas avec un recrutement de facteurs). |
+| **Critique** | Rien de fond. Les verdicts H1/H2 sont rendus **sur le simulateur** et le carnet le dit (aucune donnée neurale touchée ; les données MEG des participants ne sont pas publiques — question au registre utilisateur) ; le warning de dépréciation de `fooof` 1.1 est détourné vers un enregistreur pour ne publier aucun chemin absolu dans la sortie ; la migration vers `specparam` est explicitement reportée à un grain à part (le papier utilise FOOOF) ; l'échelle de fréquence abstraite du GHMM borne la lecture (la pente vs k compte, pas la valeur absolue de l'exposant). |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### `ICT-43-Calibration-MultiEchelle-Python.ipynb` (17) — 10 md / 7 code, 7/7 exécutées
+
+| Axe | Relevé |
+|---|---|
+| **Intention** | Phase 0 de l'Épique #8236 (SAE + J-lens multi-échelle : catastrophes sous perturbations appariées) : l'inventaire mesuré des SAE Qwen réellement disponibles sur le Hub, **avant toute expérience** — rendre la comparaison cross-échelle valide en contrôlant ce qui doit l'être. Le body de l'issue annonçait des tailles ; rien n'est supposé en amont, les écarts mesurés contre l'annonce sont un **résultat** qui redessine le plan d'expérience. |
+| **Contenu réel** | Balayage du Hub par helper `urllib` dédié (User-Agent explicite, token HF lu dans l'env et jamais affiché) : énumération des dépôts SAE de l'organisation Qwen, `config.json` + couches couvertes extraites par regex des fichiers du dépôt. Puis lecture des `d_model` des modèles de base — les deux formes de config (omni avec `text_config` imbriqué, plane) mesurées sans rien supposer. Appariement en régime L0_100 : facteur d'expansion `d_sae / d_model` et couche d'ancrage `round(0.5 · n_layers)`. Trois exercices C.1 conformes (URL d'artefact vérifiée par HEAD, grille homogène en expansion, coût de téléchargement de la Phase 1) et questions de compréhension avec réponses en repli. |
+| **Résultat** | **Les tailles réelles ne sont pas celles de l'annonce** : pas de 0.7B ni de 4B ; les dépôts couvrent un ensemble différent mais comparable, dense + MoE, sur deux générations Qwen3/Qwen3.5. Écarts mesurés rendus comme résultats : deux régimes de sparsité (L0_50 / L0_100) par dépôt que l'issue ne mentionnait pas (le choix devient un paramètre à documenter) ; le 27B n'existe qu'en version instruct (mismatch base/instruct à déclarer) ; les deux A3B en L0_100 n'existent qu'en W128K — expansion 64× contre 16× pour les denses, pattern croisé identique sur les deux tailles (structure de publication du Hub, pas un retrait ciblé). Point positif inattendu : **chaque dépôt couvre toutes les couches** du modèle — l'appariement de profondeur n'est pas contraint par la disponibilité, et l'ancre mi-réseau tombe sur un entier pour chaque taille. |
+| **Critique** | Rien de fond — cinq limites écrites : la fidélité de reconstruction (MSE, variance expliquée) n'est **pas** mesurée ici (Phase 0c, GPU, garde-fous #8236) ; le 27B instruct ; l'hétérogénéité d'expansion (comparaison stricte en 16×, régime A3B séparé) ; les Qwen3.5 hybrides (attention linéaire 3:1, a priori de config non mesuré dans ce carnet) ; l'inventaire est **daté** — toute re-exécution re-mesure, et l'absence du dépôt W32K-L0_100 du 30B-A3B est documentée pour ce qu'elle est (jamais publié ou retiré). |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### Findings transverses du strand 19 (pour l'arbitrage user)
+
+1. **La métrique naïve fabrique l'effet qu'elle prétend mesurer** : l'aire linéaire de bande rend une augmentation massive sur une bande intacte et inverse le signe d'une suppression réelle — la « suppression genuine » n'existe qu'en amplitude de pic (échelle log), découplée du niveau apériodique par construction. Même famille que le finding 1 du strand 18 (la macro intuitive s'effondre) : ici c'est la **métrique** intuitive qui inverse le verdict, là-bas l'observable intuitive.
+2. **Une prédiction pré-enregistrée, confirmée et bornée dans le même geste** : la question k était écrite avant la mesure, avec sa prédiction falsifiable et son mécanisme ; la confirmation (premier compteur croissant de la série) vient **avec** sa condition de validité (SNR par canal croissant avec k dans ce montage) — le carnet interdit au lecteur de sur-étendre le résultat. Le pré-enregistrement, déjà standard des strates 15-17, prouve ici son utilisation la plus forte : il protège aussi le verdict positif.
+3. **L'inventaire de terrain est un résultat, pas un incident** : ICT-43 transforme « l'issue s'est trompée de tailles » en un résultat qui redessine le plan d'expérience — quelles tailles sont réellement comparables, à quelle expansion, avec quel mismatch base/instruct. C'est le pendant infrastructure du contrôle négatif : mesurer ce qui existe **avant** de comparer, exactement comme ICT-20 calibrait l'instrument avant la transition chargée (finding 4 du strand 17).
+4. **Le protocole comme condition de la mesure** : H1 n'est récupérable qu'au régime moyenné du papier — l'epoch unique rend le décalage beta de signe instable. Le moyennage sur des centaines d'epochs n'est pas un confort statistique mais ce qui rend la mesure **possible** ; le carnet le démontre en faisant varier le bruit, pas en l'affirmant.
