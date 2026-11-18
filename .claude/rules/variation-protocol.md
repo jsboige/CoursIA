@@ -57,7 +57,7 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 | `lean` (ex #12252) | `MED/notebook-lean` | **CONTENU** | grain de contenu **au-delà** du plancher |
 | `guard` (ex #11997) | `MED/guard` | **META** | ne tient **pas** le plancher, comme toute PR META |
 
-**Prescriptions** : le genre hérité est déclaré **directement**, sans annotation spéciale (le REPAIR se lit dans le titre `fix(` et le diff) ; une annotation ajoute du bruit. **Tier** : litmus habituel — un REPAIR à ré-exécution complète + diagnostic de ratchet est `MED` ; un REPAIR d'une ligne de body reste `LIGHT` et consomme le budget G-VAR-2. Un REPAIR d'une PR **META** reste **META** : il ne tient jamais le plancher à lui seul ([détail §13](../../docs/reference/variation-protocol-detail.md).
+**Prescriptions** : le genre hérité est déclaré **directement**, sans annotation spéciale (le REPAIR se lit dans le titre `fix(` et le diff) ; une annotation ajoute du bruit. **Tier** : litmus habituel — un REPAIR à ré-exécution complète + diagnostic de ratchet est `MED` ; un REPAIR d'une ligne de body reste `LIGHT` et consomme le budget G-VAR-2. Un REPAIR d'une PR **META** reste **META** : il ne tient jamais le plancher à lui seul ([détail §13](../../docs/reference/variation-protocol-detail.md)).
 
 ## 2. Les trois gates durs
 
