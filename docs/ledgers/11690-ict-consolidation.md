@@ -33,6 +33,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 13 | **Trio Argumentation non numéroté** (extension #11690) | trois carnets — TruthMaintenance, QBFAcceptance, Capstone ; la strate 6 bouclée au ledger (BeliefTrajectories au strand 5) | **LU** (strand 13, 2026-11-18) |
 | 14 | **Axe douleur : ICT-47 / ICT-47b** (extension #11690) | deux carnets — la question pain-axis au contrat Gate 24 complet, et son pendant instrumental (quantification transparente, barrière d'échelle documentée avec preuve) | **LU** (strand 14, 2026-11-18) |
 | 15 | **Non numérotés résiduels : DehaeneF2 / Greffe5 / MUH-FibreTegmark** (extension #11690) | trois carnets — le self-model de Dehaene F2 au test de dissociation ABC pré-enregistré, l'attribution causale des greffes (verdict tri-état, garde-fou IV), et le témoin de lecture Tegmark (cinq gestes du texte sur bancs finis, grade C) | **LU** (strand 15, 2026-11-18) |
+| 16 | **Orphelins 1/8 : ICT-17c TorchLens** (extension #11690) | un carnet — l'instrument d'inspection générique (`tl.trace` : graphe, activations, interventions causales sans hooks), la trajectoire de grokking où la lisibilité MMIID précède le saut de test, et la moisson multi-couches branchée sur l'organe `ict/probes.py` | **LU** (strand 16, 2026-11-18) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -311,6 +312,28 @@ Les 10 carnets non couverts, recalculés :
 - **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
 
 La **priorité « six non numérotés » est épuisée** (trio Argumentation au strand 13, trois résiduels au strand 15). Le plus gros bloc restant redevient la **paire ICT-48**, désormais sous **occupation vive mesurée au tirage du strand 15** : `#26757` (po-2027) déplace Onset9B-Aggregate vers `PostTraining/` (PT_20/PT_21), `#27095` (po-2024:CoursIA-2) touche WolframClasses-ThermoSignature — la paire se couvrira **à la résolution de ces PRs**, quand le dénominateur aura tranché (si le déplacement merge, la paire sort du périmètre `ICT-Series`). Les orphelins (`17c`, `32-34`, `36f`, `40b`, `43`) restent un carnet chacun.
+
+### Recompte du 2026-11-18 (après le strand 16)
+
+Même méthode, rejouée une fois le strand 16 posé (orphelins 1/8 : `ICT-17c-TorchLens-InspectionRepresentations`).
+
+| Mesure | 2026-11-18 (s15) | 2026-11-18 (s16) |
+|---|---|---|
+| Carnets ICT sur `main` | 101 | **101** |
+| Sections de carnet au ledger | 91 | **92** |
+| Non couverts | 10 | **9** |
+| Taux de couverture | 90 % | **91 %** |
+
+Zéro fantôme, toujours : `91 + 1 = 92`, solde `10 − 1 = 9`.
+
+Les 9 carnets non couverts, recalculés :
+
+- **ICT-20** FeatureCatastrophes
+- **ICT-32** StratificationCausaleLife, **ICT-33** SoupCollisions, **ICT-34** BancRecollementLectures
+- **ICT-36f** FLens-SpecParam (arrivé le 16/11), **ICT-40b** AnalogCognitionWaves, **ICT-43** Calibration-MultiEchelle
+- **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
+
+La série des orphelins est ouverte (1/8 couvert au strand 16) ; la **paire ICT-48 reste sous occupation vive** (`#26757` Move / `#27095`) — inchangé depuis le strand 15, couverture à la résolution.
 
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
@@ -1558,3 +1581,23 @@ Troisième et dernier volet de la priorité « six non numérotés » (trio Argu
 2. **Le bloc Statut épistémique en tête de carnet discrimine trois régimes** : verdict pré-enregistré (DehaeneF2), « sans verdict à ce jour » parce que la matrice des dissociations n'a pas de ligne pour lui (Greffe5), « témoin de lecture grade C » jamais candidat verdict (MUH). La typographie est tenue sur les trois — un lecteur peut trier les carnets de la série sur ce seul bloc.
 3. **La nuance mesurée, non masquée, reste la règle** : persistance du régime B et σ_A = 8× σ_B rapportés par DehaeneF2 alors même que le verdict principal est positif ; taux de but plat documenté par Greffe5 comme la *raison* du choix d'outcome ; écart résiduel non attribué par MUH. Le standard « le dire fait partie du résultat » (strand 14) se confirme sur trois carnets d'intentions très différentes.
 4. **La paire ICT-48 est sous occupation vive — sa couverture attend la résolution des PRs.** Mesuré au tirage de ce strand : #26757 (po-2027) **déplace** Onset9B-Aggregate vers `PostTraining/`, #27095 (po-2024:CoursIA-2) touche WolframClasses-ThermoSignature. Si le déplacement merge, le dénominateur du recompte passe à 100 et la paire sort du périmètre — la lire avant serait documenter un périmètre que la revue est en train de redéfinir.
+
+## Strand 16 — Orphelins 1/8 : ICT-17c TorchLens (extension #11690)
+
+Premier strand de la série des orphelins (carnets non couverts restants après l'épuisement de la priorité « six non numérotés »). Lecture de contenu et d'outputs committés, sans re-exécution (aucune cellule source modifiée — arbitrage fondateur : lecture seule). Exécution papermill de référence : 2026-11-13, 69,9 s, `cuda`, zéro exception, 15/15 cellules code exécutées.
+
+### `ICT-17c-TorchLens-InspectionRepresentations.ipynb` (30) — 15 md / 15 code, 15/15 exécutées
+
+| Axe | Relevé |
+|---|---|
+| **Intention** | #25465 (issue porteuse), strand outillage — See #4588, #16742. TorchLens (Taylor & Kriegeskorte 2023, SciRep 13:14375, `torchlens==3.0.3` épinglée) comme **premier instrument pédagogique d'inspection** : graphe, activations, interventions causales sans hooks manuels. Contrainte de sécurité posée en tête : `tl.trace` uniquement, **jamais `tl.load()`** (bundle = pickle = exécution de code arbitraire) — règle proscrite pour toute la série. |
+| **Contenu réel** | §0 placement dans la famille d'inspection : table des contrats des 6 scripts maison (`extract_dense_traces`, `extract_sae_traces`, `extract_sae_fidelity`, `causal_hooks`, `run_case5bis_live`, `measure_scale_budget`) — **tous intacts**, TorchLens occupe le créneau générique. §1 geste de base sur un `Sequential` minuscule + **3 pièges d'API v3.x** documentés avec preuve (adresses = nommage du module, tenseur dans `Op.out` — `model_graph_structure` a disparu, `do()` exige `ctx` + `model=`/`inputs=`) ; graphe rendu (36 533 octets). §2 grammaire causale : **ablation** ReLU → sortie constante (3 lignes identiques = biais seul → nécessité) ; **patching croisé** → sortie bit-à-bit égale à `out(B)` (`allclose` 1e-6 → suffisance). §3 trajectoire grokking : `a*b mod 23` (529 paires, 423/106), ToyMLP 2×256, AdamW `weight_decay=1.0` (Power et al. 2022), 7 checkpoints resserrés, 2 graines, 46 s. §4 moisson multi-couches `fc1`/`fc2`/`head` branchée sur l'**organe** `ict/probes.py` (MM/LR/MMIID). 3 exercices stubs C.1 conformes (`print` + `result = None` + TODO/indices). |
+| **Résultat** | Le résultat pivot : **la lisibilité linéaire précède le grokking** — la sonde MMIID lit la bissection `(a*b mod 23) < 11` dans `fc2` à **0,98-0,99 dès le step 100** (train 0,54, test au hasard 0,085), des milliers de pas avant le saut de test (0,08 → 1,00, fenêtre 1500-3200). La mass-mean reste ~0,70 (montée finale 0,88 graine 0 seulement) : l'information vit dans des **directions à faible variance** — la dissociation savoir/répondre en deux courbes. §4 : la lisibilité monte `fc1`→`fc2` (MM 0,76→0,88 ; MMIID 0,82→1,00) mais **plafonne aux logits** (`head` MMIID 0,97 < 1,00) — l'information est max là où elle est devenue linéaire, pas en sortie. |
+| **Critique** | Statut épistémique en tête assumé (« reproduit dans le modèle », observation d'instrument **pas** résultat de phase, non-établi = claims mécanistiques de Nanda et al.) ; 2 graines assumées pour l'instrument (le multi-graines rigoureux vit en 17b) ; le §4 dit explicitement la mauvaise lecture à éviter (« sondes @100 proches du hasard » serait faux — MMIID y lit 0,98) ; pont vers la série 2.9-ML nommé sans la modifier. |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### Findings transverses du strand 16 (pour l'arbitrage user)
+
+1. **L'organe natif consommé, jamais réimplémenté.** La moisson TorchLens rend les matrices par couche ; la lecture (MM/LR/MMIID) vient de `ict/probes.py`, l'organe de #13564/#16897 — le carnet démontre le geste complémentaire (inspection générique avant les mesures spécialisées) sans dupliquer une seule sonde. C'est le pattern organ-first en acte sur un carnet d'outillage.
+2. **Les pièges d'API documentés avec preuve d'exécution sont un livrable en soi** : 3 pièges v3.x (adresses, `Op.out`, `ctx`/`model=`/`inputs=`) qui coûteraient chacun une heure — la version épinglée 3.0.3 et le fichier `requirements-torchlens.txt` verrouillent le savoir-faire contre la dérive des docstrings 2.x en ligne.
+3. **La dissymétrie des sondes est enseignée comme méthode** : MM ~0,70 vs MMIID 1,00 sur les mêmes activations — le carnet nomme le régime (« directions à faible variance ») et prévient la mauvaise lecture du tableau avant/après. Même famille que le finding 1 du strand 15 : l'instrument qui voit peu n'est pas une absence d'information.
