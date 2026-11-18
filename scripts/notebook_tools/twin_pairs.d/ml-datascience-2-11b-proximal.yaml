@@ -1,0 +1,10 @@
+- name: ML DataScience 2.11b proximal
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11b-Proximal-Operators-From-Scratch.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11b-Proximal-Operators-From-Scratch-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: ISTA et FISTA sont calculés en C# avec MathNet ; NumPy fournit le même tirage et les vraies références scikit-learn et CVXPY CLARABEL sont appelées via Python.NET.
+  known_differences:
+    - Les figures sont des SVG statiques ; les valeurs non positives sont omises du tracé logarithmique.
+    - Python.NET nécessite un CPython configuré avec NumPy, scikit-learn et CVXPY ; les temps dépendent de l'environnement.

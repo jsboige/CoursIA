@@ -257,12 +257,17 @@ def test_le_fichier_de_token_vit_hors_du_repertoire_de_stockage() -> None:
         f"stockage : {correspondance.group(1)}")
 
 
-def _faux_docker_conforme(tmp_path) -> Path:
+def _faux_docker_conforme(tmp_path, restart: str = "unless-stopped") -> Path:
     """Un faux `docker` qui repond comme un slot CONFORME a la spec.
 
-    Le `--check` lit l'etat vivant par cinq `docker inspect` distincts
-    (c caps, env, image, cgroup-parent, montages). Ce faux binaire repond
-    a chacun, avec des montages NOMMES conformes a la specification.
+    Le `--check` lit l'etat vivant par six `docker inspect` distincts
+    (c caps, env, image, cgroup-parent, montages, politique de
+    redemarrage). Ce faux binaire repond a chacun, avec des montages
+    NOMMES conformes a la specification.
+
+    `restart` est la politique de redemarrage VIVANTE que le faux daemon
+    annonce : c'est le levier du controle negatif sur la derive de
+    redemarrage (un slot `no` ne revient pas tout seul apres un reboot).
     """
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
@@ -283,6 +288,9 @@ def _faux_docker_conforme(tmp_path) -> Path:
         "    ;;\n"
         "  *CgroupParent*)\n"
         "    printf 'coursia-ci.slice\\n'\n"
+        "    ;;\n"
+        "  *RestartPolicy*)\n"
+        f"    printf '{restart}\\n'\n"
         "    ;;\n"
         "  *Mounts*)\n"
         "    printf 'volume|coursia-runner-toolcache|/var/lib/docker/volumes/"
@@ -347,6 +355,9 @@ def test_le_check_refuse_un_slot_de_montage_derive(tmp_path, prefix_jetable):
         "  *CgroupParent*)\n"
         "    printf 'coursia-ci.slice\\n'\n"
         "    ;;\n"
+        "  *RestartPolicy*)\n"
+        "    printf 'unless-stopped\\n'\n"
+        "    ;;\n"
         "  *Mounts*)\n"
         "    printf 'volume|coursia-runner-toolcache|/var/lib/docker/volumes/"
         "tc/_data|/opt/hostedtoolcache\\n'\n"
@@ -372,6 +383,67 @@ def test_le_check_refuse_un_slot_de_montage_derive(tmp_path, prefix_jetable):
         "des montages hors specification doivent etre signales comme une "
         f"derive :\n{proc.stdout}")
     assert "DERIVE" in proc.stdout, proc.stdout
+
+
+def test_le_dry_run_pose_la_politique_de_redemarrage(prefix_jetable):
+    """Le slot cree doit SURVIVIR a un redemarrage de la machine.
+
+    Le script ne posait AUCUNE politique : `docker run` sans `--restart`
+    donne `no`, la valeur par defaut du daemon — le slot que le script
+    creait tournait donc avec `HostConfig.RestartPolicy.Name = "no"`. Il
+    etait conforme sur tous les autres points (caps, labels, image,
+    cgroup-parent, montages), et rien ne le relancait apres un reboot : le
+    job CPU de `main` restait en file jusqu'a l'intervention d'un operateur.
+    (Le slot VIVANT porte `unless-stopped`, pose hors du script : il a ete
+    cree le 2026-11-14, quand le script ne la posait pas.)
+
+    Le `--dry-run` est la commande exacte du `--apply` (une seule source de
+    verite) : c'est donc la que la politique doit etre lisible.
+    """
+    proc = _run("--dry-run", env={"COURSIA_MAIN_PREFIX": prefix_jetable})
+    assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+    assert "--restart unless-stopped" in proc.stdout, (
+        "la commande de creation doit poser une politique de redemarrage : "
+        f"\n{proc.stdout}")
+
+
+def test_le_check_refuse_un_slot_sans_politique_de_redemarrage(
+        tmp_path, prefix_jetable):
+    """CONTROLE NEGATIF : un slot `no` est une derive, meme s'il est
+    conforme sur tous les autres points.
+
+    C'est la derive la plus discrete de toutes : le conteneur TOURNE, ses
+    caps sont conformes, ses labels sont conformes, ses montages sont
+    conformes -- et il ne revient pas tout seul apres un redemarrage de la
+    machine. Le `--check` doit donc la voir.
+    """
+    bin_dir = _faux_docker_conforme(tmp_path, restart="no")
+    proc = _run("--check", env={
+        "PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}",
+        "COURSIA_MAIN_PREFIX": prefix_jetable,
+    })
+    assert proc.returncode != 0, (
+        "un slot sans politique de redemarrage doit etre signale comme une "
+        f"derive :\n{proc.stdout}")
+    assert "DERIVE" in proc.stdout, proc.stdout
+    assert "redemarrage" in proc.stdout, (
+        f"la derive doit nommer la politique mesuree :\n{proc.stdout}")
+
+
+def test_le_check_accepte_une_politique_always(tmp_path, prefix_jetable):
+    """`always` repond elle aussi a la question du slot : elle est acceptee.
+
+    Le `--check` ne doit pas confondre "la politique n'est pas celle que
+    je pose par defaut" avec "le slot ne revient pas tout seul" : les deux
+    politiques acceptables sont acceptees.
+    """
+    bin_dir = _faux_docker_conforme(tmp_path, restart="always")
+    proc = _run("--check", env={
+        "PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}",
+        "COURSIA_MAIN_PREFIX": prefix_jetable,
+    })
+    assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+    assert "OK" in proc.stdout, proc.stdout
 
 
 def test_le_token_ne_passe_pas_dans_l_argv(prefix_jetable):
