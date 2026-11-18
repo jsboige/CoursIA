@@ -32,6 +32,7 @@ import json
 import math
 import random
 import re
+import statistics
 import sys
 import os
 import time
@@ -974,6 +975,84 @@ def mode_selftest() -> int:
             tier_fails.append(f"class_{name}")
             print(f"FAIL: classify_run({name}) -> {got} (attendu {want})")
 
+    # (h) axe de saturation : l'organe est consomme, pas reecrit. Les fixtures
+    # sont construites pour tomber sur les trois verdicts de l'organe
+    # (SIGNAL_NUL / SIGNAL_PARTIEL / SIGNAL_UTILE).
+    def _sat_run(model_key: str, seed: int, *, longueur: float,
+                 grads: list[float]) -> dict[str, Any]:
+        return {
+            "model_key": model_key, "model": MODELS[model_key]["label"],
+            "seed": seed, "max_completion_length": 384,
+            "log_history": [
+                {"completions/mean_length": longueur,
+                 "completions/clipped_ratio": 1.0 if longueur >= 384 else 0.0,
+                 "grad_norm": g, "loss": 0.5, "frac_reward_zero_std": 0.0,
+                 "reward": 0.2}
+                for g in grads],
+        }
+
+    run_sature = _sat_run("qwen3_8b", 0, longueur=384.0, grads=[0.0] * 10)
+    run_utile = _sat_run("qwen3_8b", 1, longueur=100.0, grads=[0.5] * 10)
+    run_partiel = _sat_run("qwen3_8b", 2, longueur=100.0,
+                           grads=[0.5, 0.5] + [0.0] * 8)
+    axis = build_saturation_axis([run_sature, run_utile, run_partiel])
+    tier_total += 1
+    if not axis.get("disponible"):
+        tier_fails.append("sat_disponible")
+        print("FAIL: l'axe de saturation n'est pas disponible :", axis)
+    else:
+        bras = axis["par_bras"].get("qwen3_8b", {})
+        # Le bras suit la graine MEDIANE (regle de l'organe) : trois graines
+        # dont les verdicts sont SIGNAL_NUL / SIGNAL_PARTIEL / SIGNAL_UTILE ->
+        # mediane = SIGNAL_PARTIEL.
+        tier_total += 1
+        if bras.get("verdict") != "SIGNAL_PARTIEL":
+            tier_fails.append("sat_verdict_median")
+            print("FAIL: verdict de bras (mediane) =", bras.get("verdict"),
+                  "(attendu SIGNAL_PARTIEL)")
+        # fraction des steps saturees : MEDIANE des graines (regle de l'organe)
+        # -> sur 1,00 / 0,00 / 0,00 la mediane vaut 0,00 (la moyenne vaudrait
+        # 0,33 : c'est exactement la divergence que l'axe evite).
+        tier_total += 1
+        frac = bras.get("frac_steps_satures")
+        if frac is None or abs(frac - 0.0) > 1e-6:
+            tier_fails.append("sat_frac_median")
+            print("FAIL: frac_steps_satures =", frac, "(attendu 0,0, mediane)")
+        # un bras dont toutes les graines saturent -> SIGNAL_NUL
+        tier_total += 1
+        if build_saturation_axis([run_sature, run_sature])["par_bras"]["qwen3_8b"]["verdict"] != "SIGNAL_NUL":
+            tier_fails.append("sat_verdict_nul")
+            print("FAIL: un bras 100 % sature n'est pas classe SIGNAL_NUL")
+        # l'axe du harness CONCORDE avec la sortie de l'organe lui-meme
+        # (`mesurer_fichiers`) : c'est le controle qui interdit au tableau
+        # d'afficher un chiffre que l'organe ne produit pas.
+        tier_total += 1
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            chemins = []
+            for art in (run_sature, run_utile, run_partiel):
+                chemin = Path(tmp) / f"{art['model_key']}_seed{art['seed']}.json"
+                chemin.write_text(json.dumps(art), encoding="utf-8")
+                chemins.append(chemin)
+            sat_mod = _saturation_module()
+            if sat_mod is not None:
+                organe = sat_mod.mesurer_fichiers(chemins)
+                axe_ref = build_saturation_axis([run_sature, run_utile, run_partiel],
+                                                organe_bras=organe.get("bras"))
+                if not axe_ref.get("tous_concordants"):
+                    tier_fails.append("sat_concordance")
+                    print("FAIL: l'axe du harness diverge de l'organe :", axe_ref["par_bras"])
+            else:
+                tier_fails.append("sat_organe_absent")
+                print("FAIL: l'organe de saturation est introuvable")
+
+        # le tableau markdown porte l'axe de saturation
+        tier_total += 1
+        md_sat = render_comparative_table({"per_model": per_model, "tiers": tbl})
+        if "verdict saturation" not in md_sat:
+            tier_fails.append("md_saturation")
+            print("FAIL: le tableau markdown ne porte pas la colonne de saturation")
+
     total_ok = n_match + n_xlam + n_guard + (2 - len(hub_fails))
     total = len(cases) + len(xlam_cases) + len(guard_cases) + 2
     if not wire_skipped:
@@ -1131,6 +1210,116 @@ def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
     return result
 
 
+def _saturation_module() -> Any:
+    """L'organe de saturation, ou None s'il est introuvable.
+
+    ORGANE-FIRST : la mesure de la saturation du budget et ses seuils
+    appartiennent a `scripts/analyse_dapo_saturation.py`. On l'**appelle**,
+    on ne le reecrit pas : une copie divergerait en silence et le tableau
+    comparatif afficherait des seuils que personne ne pourrait refaire.
+    """
+    try:
+        import analyse_dapo_saturation  # noqa: PLC0415  (import tardif volontaire)
+        return analyse_dapo_saturation
+    except Exception:
+        dossier = str(Path(__file__).resolve().parent)
+        if dossier not in sys.path:
+            sys.path.insert(0, dossier)
+        try:
+            import analyse_dapo_saturation  # noqa: PLC0415
+            return analyse_dapo_saturation
+        except Exception:
+            return None
+
+
+def build_saturation_axis(runs: list[dict[str, Any]],
+                          organe_bras: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Axe « saturation » du tableau comparatif (#15293, critere 2).
+
+    Les trois axes demandes par l'issue sont « trainabilite, reponse au
+    reward, saturation » : les deux premiers sortent de l'eval (pre/post),
+    le troisieme sort de l'**organe** `analyse_dapo_saturation.py`, qui
+    mesure la fraction de steps saturees (completions tronquees au budget) et
+    le verdict par bras.
+
+    Regle de l'organe, reprise telle quelle : les seuils s'appliquent au
+    **BRAS** (le `model_key`), pas au lot de fichiers passe en argument. Le
+    verdict est donc reporte par bras et **jamais fusionne entre etages**.
+
+    L'agregat d'un bras est la **MEDIANE** de ses graines (regle de l'organe :
+    « le bras suit la graine mediane »), pas la moyenne : pour le bras 8B,
+    0,64 / 0,65 / 0,83 -> mediane 0,65, moyenne 0,71. Une moyenne afficherait
+    un chiffre que l'organe ne produit pas -- d'ou la comparaison explicite
+    avec `organe_bras` (la sortie de l'organe lui-meme), et le drapeau
+    `concordant` qui dit si les deux concordent.
+
+    FONCTION PURE du point de vue des tests : elle ne lit ni disque ni GPU.
+    """
+    sat = _saturation_module()
+    if sat is None:
+        return {"disponible": False,
+                "raison": "organe analyse_dapo_saturation introuvable"}
+    par_bras: dict[str, list[dict[str, Any]]] = {}
+    for run in runs:
+        rapport = sat.mesurer(run)
+        cle = rapport.get("model_key") or "?"
+        par_bras.setdefault(cle, []).append(rapport)
+    axes: dict[str, Any] = {}
+    for model_key, graines in par_bras.items():
+        graines = sorted(graines, key=lambda g: (g.get("graine") is None, g.get("graine")))
+        frac = [g.get("frac_steps_satures") for g in graines
+                if isinstance(g.get("frac_steps_satures"), (int, float))]
+        sans_grad = [g.get("frac_steps_sans_gradient") for g in graines
+                     if isinstance(g.get("frac_steps_sans_gradient"), (int, float))]
+        vivantes = [g.get("steps_avec_gradient") for g in graines
+                    if isinstance(g.get("steps_avec_gradient"), (int, float))]
+        axes[model_key] = {
+            "verdict": sat.verdict_bras(graines),
+            "n_seeds": len(graines),
+            "graines_ids": [g.get("graine") for g in graines],
+            "frac_steps_satures": round(statistics.median(frac), 4) if frac else None,
+            "frac_steps_sans_gradient": (round(statistics.median(sans_grad), 4)
+                                         if sans_grad else None),
+            # MEDIANE comme l'organe (sans arrondi : sur deux graines elle
+            # vaut 1,5 -- un entier l'aurait transforme en 1 et aurait fait
+            # diverger l'axe de la sortie de l'organe).
+            "steps_avec_gradient": statistics.median(vivantes) if vivantes else None,
+            "graines": [
+                {"graine": g.get("graine"), "verdict": g.get("verdict"),
+                 "frac_steps_satures": g.get("frac_steps_satures"),
+                 "frac_steps_sans_gradient": g.get("frac_steps_sans_gradient"),
+                 "steps_avec_gradient": g.get("steps_avec_gradient")}
+                for g in graines],
+        }
+        if organe_bras and model_key in organe_bras:
+            reference = organe_bras[model_key]
+            axes[model_key]["organe"] = {
+                cle: reference.get(cle) for cle in
+                ("verdict", "frac_steps_satures", "frac_steps_sans_gradient",
+                 "steps_avec_gradient")}
+            axes[model_key]["concordant"] = bool(
+                reference.get("verdict") == axes[model_key]["verdict"]
+                and reference.get("frac_steps_satures") == axes[model_key]["frac_steps_satures"]
+                and reference.get("steps_avec_gradient") == axes[model_key]["steps_avec_gradient"])
+    return {"disponible": True, "par_bras": axes,
+            "source": "scripts/analyse_dapo_saturation.py",
+            "tous_concordants": all(a.get("concordant") for a in axes.values())
+            if axes else None}
+
+
+def _mean_optional(values: list[Any]) -> float | None:
+    """Moyenne des valeurs numeriques non nulles ; None si aucune.
+
+    Distincte d'une moyenne sur 0 : « on ne sait pas » et « zero » ne sont
+    pas le meme chiffre, et un tableau qui affiche 0,0000 la ou la mesure
+    n'existe pas invente une mesure.
+    """
+    nums = [float(v) for v in values if isinstance(v, (int, float))]
+    if not nums:
+        return None
+    return sum(nums) / len(nums)
+
+
 def build_tier_table(per_model: dict[str, dict[str, Any]],
                      healthy: dict[str, bool]) -> dict[str, Any]:
     """Tableau comparatif par etage de taille (#15293).
@@ -1170,6 +1359,16 @@ def build_tier_table(per_model: dict[str, dict[str, Any]],
             "per_model_delta_mean": {k: per_model[k]["delta_mean"] for k in keys},
             "courbes_saines": {k: bool(healthy.get(k, False)) for k in keys},
             "toutes_courbes_saines": all(bool(healthy.get(k, False)) for k in keys),
+            "saturation": {
+                # Le VERDICT de saturation est par BRAS (regle de l'organe) :
+                # il est reporte, jamais fusionne. Seule la fraction des
+                # branches est moyennee sur l'etage -- et cette moyenne est
+                # nommee comme telle (elle n'est pas un chiffre de l'organe).
+                "par_bras": {k: (per_model[k].get("saturation") or {}) for k in keys},
+                "frac_satures_moyenne_bras": _mean_optional([
+                    ((per_model[k].get("saturation") or {}).get("frac_steps_satures"))
+                    for k in keys]),
+            },
         }
     cross: dict[str, Any] = {
         "comparable": False,
@@ -1206,24 +1405,38 @@ def build_tier_table(per_model: dict[str, dict[str, Any]],
 
 def render_comparative_table(summary: dict[str, Any]) -> str:
     """Rend le tableau comparatif en markdown (critere "tableau comparatif"
-    de #15293) : une ligne par modele, puis le verdict inter-etage."""
-    lines = ["| Modele | Etage | Graines | eval pre | eval post | delta | +- 1 std | courbes saines |",
-             "|---|---|---:|---:|---:|---:|---:|---|"]
+    de #15293) : une ligne par modele, puis le verdict inter-etage.
+
+    Les trois axes demandes par l'issue sont dans le tableau : trainabilite
+    (delta eval), reponse au reward (meme delta, courbes saines) et
+    saturation (fraction de steps saturees + verdict PAR BRAS, donne par
+    l'organe `analyse_dapo_saturation.py`).
+    """
+    lines = ["| Modele | Etage | Graines | eval pre | eval post | delta | +- 1 std | courbes saines | steps satures | verdict saturation |",
+             "|---|---|---:|---:|---:|---:|---:|---|---:|---|"]
     tiers = summary.get("tiers", {}).get("tiers", {})
     for tier in TIERS:
         t = tiers.get(tier)
         if not t:
             continue
+        sat_bras = (t.get("saturation") or {}).get("par_bras", {})
         for k in t["models"]:
             pm = summary["per_model"][k]
+            sat = sat_bras.get(k) or {}
+            frac = sat.get("frac_steps_satures")
             lines.append(
                 f"| {pm['label']} | {tier} | {pm['n_seeds']} | "
                 f"{pm['pre_mean']:.4f} | {pm['post_mean']:.4f} | "
                 f"{pm['delta_mean']:+.4f} | {pm['delta_std']:.4f} | "
-                f"{'oui' if t['courbes_saines'].get(k) else 'non'} |")
+                f"{'oui' if t['courbes_saines'].get(k) else 'non'} | "
+                f"{'n.d.' if frac is None else format(frac, '.2f')} | "
+                f"{sat.get('verdict', 'n.d.')} |")
+        frac_tier = (t.get("saturation") or {}).get("frac_satures_moyenne_bras")
         lines.append(f"| **moyenne etage {tier}** | {tier} | {t['n_seeds']} | | | "
                      f"{t['delta_mean']:+.4f} | {t['delta_std']:.4f} | "
-                     f"{'oui' if t['toutes_courbes_saines'] else 'non'} |")
+                     f"{'oui' if t['toutes_courbes_saines'] else 'non'} | "
+                     f"{'n.d.' if frac_tier is None else format(frac_tier, '.2f')} | "
+                     f"moyenne sur les bras |")
     cross = summary.get("tiers", {}).get("cross_tier", {})
     lines.append("")
     lines.append(f"Verdict inter-etage ({cross.get('tier_bas', '?')} vs "
@@ -1233,6 +1446,14 @@ def render_comparative_table(summary: dict[str, Any]) -> str:
                  f"BEATS={cross.get('beats')}.")
     lines.append("")
     lines.append(f"Regle : {cross.get('regle', '')}")
+    lines.append("")
+    lines.append("Saturation : `steps satures` est la fraction **mediane** (par "
+                 "bras) de steps tronquees au budget de completion, mesuree par "
+                 "l'organe `scripts/analyse_dapo_saturation.py` ; le verdict est "
+                 "**par bras** (le seuil s'applique au bras, pas au lot de "
+                 "graines) et n'est donc pas fusionne entre etages. La ligne "
+                 "d'etage est une moyenne de branches, pas un chiffre de "
+                 "l'organe.")
     return "\n".join(lines) + "\n"
 
 
@@ -1354,6 +1575,26 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
     axes[1].set_title("Longueur moyenne des completions")
     axes[1].set_xlabel("step")
     axes[0].legend(fontsize=7)
+
+    # Axe « saturation » (3e axe du critere 2 de #15293) : il est MESURE par
+    # l'organe `scripts/analyse_dapo_saturation.py`, qui possede les seuils et
+    # la regle « le verdict est par bras ». On consomme l'organe, on ne le
+    # reecrit pas -- ni ses seuils, ni son verdict.
+    saturation = build_saturation_axis(scored)
+    # La sortie de l'organe est relue et COMPAREE : si l'agregat du harness et
+    # celui de l'organe divergent, le tableau le dit (`concordant: false`)
+    # au lieu d'afficher un chiffre que personne ne peut refaire.
+    sat_mod = _saturation_module()
+    if sat_mod is not None:
+        noms_scores = {n for n, r in loaded
+                       if classify_run(n, r) == "seed" and r.get("post_eval") is not None}
+        organe = sat_mod.mesurer_fichiers([p for p in runs if p.name in noms_scores])
+        saturation = build_saturation_axis(scored, organe_bras=organe.get("bras"))
+    summary["saturation"] = saturation
+    if saturation.get("disponible"):
+        for model_key, axis in saturation["par_bras"].items():
+            if model_key in summary["per_model"]:
+                summary["per_model"][model_key]["saturation"] = axis
 
     def curves_healthy(model_key: str) -> bool:
         rl = [r for r in scored if r["model_key"] == model_key]

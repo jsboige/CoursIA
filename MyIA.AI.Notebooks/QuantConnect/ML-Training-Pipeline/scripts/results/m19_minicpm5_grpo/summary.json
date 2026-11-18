@@ -30,7 +30,41 @@
       "deltas": [
         0.01875,
         0.025
-      ]
+      ],
+      "saturation": {
+        "verdict": "SIGNAL_PARTIEL",
+        "n_seeds": 2,
+        "graines_ids": [
+          0,
+          1
+        ],
+        "frac_steps_satures": 0.92,
+        "frac_steps_sans_gradient": 0.985,
+        "steps_avec_gradient": 1.5,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.9,
+            "frac_steps_sans_gradient": 0.98,
+            "steps_avec_gradient": 2
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.94,
+            "frac_steps_sans_gradient": 0.99,
+            "steps_avec_gradient": 1
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_PARTIEL",
+          "frac_steps_satures": 0.92,
+          "frac_steps_sans_gradient": 0.985,
+          "steps_avec_gradient": 1.5
+        },
+        "concordant": true
+      }
     },
     "qwen35": {
       "label": "Qwen3.5-0.8B",
@@ -42,7 +76,41 @@
       "deltas": [
         0.0,
         0.0125
-      ]
+      ],
+      "saturation": {
+        "verdict": "SIGNAL_NUL",
+        "n_seeds": 2,
+        "graines_ids": [
+          0,
+          1
+        ],
+        "frac_steps_satures": 0.97,
+        "frac_steps_sans_gradient": 0.995,
+        "steps_avec_gradient": 0.5,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_NUL",
+            "frac_steps_satures": 0.95,
+            "frac_steps_sans_gradient": 1.0,
+            "steps_avec_gradient": 0
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_NUL",
+            "frac_steps_satures": 0.99,
+            "frac_steps_sans_gradient": 0.99,
+            "steps_avec_gradient": 1
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_NUL",
+          "frac_steps_satures": 0.97,
+          "frac_steps_sans_gradient": 0.995,
+          "steps_avec_gradient": 0.5
+        },
+        "concordant": true
+      }
     },
     "qwen3_8b": {
       "label": "Qwen3-8B",
@@ -55,7 +123,49 @@
         0.0625,
         0.08124999999999999,
         0.012500000000000004
-      ]
+      ],
+      "saturation": {
+        "verdict": "SIGNAL_PARTIEL",
+        "n_seeds": 3,
+        "graines_ids": [
+          0,
+          1,
+          7
+        ],
+        "frac_steps_satures": 0.65,
+        "frac_steps_sans_gradient": 0.79,
+        "steps_avec_gradient": 21,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.64,
+            "frac_steps_sans_gradient": 0.76,
+            "steps_avec_gradient": 24
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.65,
+            "frac_steps_sans_gradient": 0.79,
+            "steps_avec_gradient": 21
+          },
+          {
+            "graine": 7,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.83,
+            "frac_steps_sans_gradient": 0.88,
+            "steps_avec_gradient": 12
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_PARTIEL",
+          "frac_steps_satures": 0.65,
+          "frac_steps_sans_gradient": 0.79,
+          "steps_avec_gradient": 21
+        },
+        "concordant": true
+      }
     }
   },
   "verdict": {
@@ -64,6 +174,123 @@
     "delta_intervals_disjoint": true,
     "beats": true,
     "rule": "BEATS si courbes MiniCPM5 saines (post>pre par seed, pas d'effondrement de longueur) ET delta eval moyen > qwen avec intervalles \u00b11std disjoints (\u22652 seeds par mod\u00e8le)"
+  },
+  "saturation": {
+    "disponible": true,
+    "par_bras": {
+      "minicpm5": {
+        "verdict": "SIGNAL_PARTIEL",
+        "n_seeds": 2,
+        "graines_ids": [
+          0,
+          1
+        ],
+        "frac_steps_satures": 0.92,
+        "frac_steps_sans_gradient": 0.985,
+        "steps_avec_gradient": 1.5,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.9,
+            "frac_steps_sans_gradient": 0.98,
+            "steps_avec_gradient": 2
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.94,
+            "frac_steps_sans_gradient": 0.99,
+            "steps_avec_gradient": 1
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_PARTIEL",
+          "frac_steps_satures": 0.92,
+          "frac_steps_sans_gradient": 0.985,
+          "steps_avec_gradient": 1.5
+        },
+        "concordant": true
+      },
+      "qwen35": {
+        "verdict": "SIGNAL_NUL",
+        "n_seeds": 2,
+        "graines_ids": [
+          0,
+          1
+        ],
+        "frac_steps_satures": 0.97,
+        "frac_steps_sans_gradient": 0.995,
+        "steps_avec_gradient": 0.5,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_NUL",
+            "frac_steps_satures": 0.95,
+            "frac_steps_sans_gradient": 1.0,
+            "steps_avec_gradient": 0
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_NUL",
+            "frac_steps_satures": 0.99,
+            "frac_steps_sans_gradient": 0.99,
+            "steps_avec_gradient": 1
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_NUL",
+          "frac_steps_satures": 0.97,
+          "frac_steps_sans_gradient": 0.995,
+          "steps_avec_gradient": 0.5
+        },
+        "concordant": true
+      },
+      "qwen3_8b": {
+        "verdict": "SIGNAL_PARTIEL",
+        "n_seeds": 3,
+        "graines_ids": [
+          0,
+          1,
+          7
+        ],
+        "frac_steps_satures": 0.65,
+        "frac_steps_sans_gradient": 0.79,
+        "steps_avec_gradient": 21,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.64,
+            "frac_steps_sans_gradient": 0.76,
+            "steps_avec_gradient": 24
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.65,
+            "frac_steps_sans_gradient": 0.79,
+            "steps_avec_gradient": 21
+          },
+          {
+            "graine": 7,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.83,
+            "frac_steps_sans_gradient": 0.88,
+            "steps_avec_gradient": 12
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_PARTIEL",
+          "frac_steps_satures": 0.65,
+          "frac_steps_sans_gradient": 0.79,
+          "steps_avec_gradient": 21
+        },
+        "concordant": true
+      }
+    },
+    "source": "scripts/analyse_dapo_saturation.py",
+    "tous_concordants": true
   },
   "tiers": {
     "tiers": {
@@ -84,7 +311,80 @@
           "minicpm5": true,
           "qwen35": false
         },
-        "toutes_courbes_saines": false
+        "toutes_courbes_saines": false,
+        "saturation": {
+          "par_bras": {
+            "minicpm5": {
+              "verdict": "SIGNAL_PARTIEL",
+              "n_seeds": 2,
+              "graines_ids": [
+                0,
+                1
+              ],
+              "frac_steps_satures": 0.92,
+              "frac_steps_sans_gradient": 0.985,
+              "steps_avec_gradient": 1.5,
+              "graines": [
+                {
+                  "graine": 0,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.9,
+                  "frac_steps_sans_gradient": 0.98,
+                  "steps_avec_gradient": 2
+                },
+                {
+                  "graine": 1,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.94,
+                  "frac_steps_sans_gradient": 0.99,
+                  "steps_avec_gradient": 1
+                }
+              ],
+              "organe": {
+                "verdict": "SIGNAL_PARTIEL",
+                "frac_steps_satures": 0.92,
+                "frac_steps_sans_gradient": 0.985,
+                "steps_avec_gradient": 1.5
+              },
+              "concordant": true
+            },
+            "qwen35": {
+              "verdict": "SIGNAL_NUL",
+              "n_seeds": 2,
+              "graines_ids": [
+                0,
+                1
+              ],
+              "frac_steps_satures": 0.97,
+              "frac_steps_sans_gradient": 0.995,
+              "steps_avec_gradient": 0.5,
+              "graines": [
+                {
+                  "graine": 0,
+                  "verdict": "SIGNAL_NUL",
+                  "frac_steps_satures": 0.95,
+                  "frac_steps_sans_gradient": 1.0,
+                  "steps_avec_gradient": 0
+                },
+                {
+                  "graine": 1,
+                  "verdict": "SIGNAL_NUL",
+                  "frac_steps_satures": 0.99,
+                  "frac_steps_sans_gradient": 0.99,
+                  "steps_avec_gradient": 1
+                }
+              ],
+              "organe": {
+                "verdict": "SIGNAL_NUL",
+                "frac_steps_satures": 0.97,
+                "frac_steps_sans_gradient": 0.995,
+                "steps_avec_gradient": 0.5
+              },
+              "concordant": true
+            }
+          },
+          "frac_satures_moyenne_bras": 0.9450000000000001
+        }
       },
       "8-14B": {
         "models": [
@@ -100,7 +400,54 @@
         "courbes_saines": {
           "qwen3_8b": true
         },
-        "toutes_courbes_saines": true
+        "toutes_courbes_saines": true,
+        "saturation": {
+          "par_bras": {
+            "qwen3_8b": {
+              "verdict": "SIGNAL_PARTIEL",
+              "n_seeds": 3,
+              "graines_ids": [
+                0,
+                1,
+                7
+              ],
+              "frac_steps_satures": 0.65,
+              "frac_steps_sans_gradient": 0.79,
+              "steps_avec_gradient": 21,
+              "graines": [
+                {
+                  "graine": 0,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.64,
+                  "frac_steps_sans_gradient": 0.76,
+                  "steps_avec_gradient": 24
+                },
+                {
+                  "graine": 1,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.65,
+                  "frac_steps_sans_gradient": 0.79,
+                  "steps_avec_gradient": 21
+                },
+                {
+                  "graine": 7,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.83,
+                  "frac_steps_sans_gradient": 0.88,
+                  "steps_avec_gradient": 12
+                }
+              ],
+              "organe": {
+                "verdict": "SIGNAL_PARTIEL",
+                "frac_steps_satures": 0.65,
+                "frac_steps_sans_gradient": 0.79,
+                "steps_avec_gradient": 21
+              },
+              "concordant": true
+            }
+          },
+          "frac_satures_moyenne_bras": 0.65
+        }
       }
     },
     "cross_tier": {
