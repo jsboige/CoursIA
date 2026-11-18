@@ -379,24 +379,46 @@ def test_la_qualification_rejoue_les_memes_regles_que_la_voie_lourde():
     assert etats2[0].motif == etats_[0].motif
 
 
-# --- la bascule : le tirage par defaut est leger -------------------------------
+# --- la bascule : le tirage par defaut reste LOURD dans cette PR --------------
 
 def test_le_tirage_par_defaut_est_leger(monkeypatch, capsysbinary):
-    """Sans `--voie`, le tirage passe par la voie LEGERE.
+    """La voie LEGERE, demandee explicitement.
 
-    Le test le prouve par l'absence : la lecture lourde du pool entier
-    (`gh_bulk.lire_tout`) ne doit jamais etre appelee.
+    PR A de la separation (#27242) : la **bascule** du tirage par defaut
+    n'est pas dans cette PR -- elle arrive avec la PR B, qui portera les deux
+    temoins. Le defaut reste donc `lourd`, et la voie legere se demande par
+    `--voie leger`. Le test le prouve par l'absence : la lecture lourde du
+    pool entier (`gh_bulk.lire_tout`) ne doit jamais etre appelee.
     """
     def run_interdite(*a, **k):
         raise AssertionError("la voie lourde ne doit pas lire le pool entier")
 
     monkeypatch.setattr(gh_bulk, "lire_tout", run_interdite)
-    code = tapis_rapide.main(["--lane", LANE, "--json"], run=_run_faux(),
-                              maintenant=NOW)
+    code = tapis_rapide.main(["--lane", LANE, "--json", "--voie", "leger"],
+                              run=_run_faux(), maintenant=NOW)
     sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
     assert code == 0
     assert sortie["voie"] == "leger"
     assert sortie["qualification"]["organe"].endswith("tapis_prise_en_charge.py")
+
+
+def test_le_tirage_par_defaut_ne_bascule_pas_ici(monkeypatch, capsysbinary):
+    """CONTROLE NEGATIF de la bascule : sans `--voie`, le tirage par defaut
+    reste sur la voie LOURDE. C'est ce qui distingue cette PR (A) de celle
+    qui portera la bascule (B) : le code de la voie legere existe et est
+    teste, mais il n'est pas le defaut tant que les deux temoins n'ont pas
+    ete joues."""
+    voie_vue = {}
+
+    def run_faux(argv, timeout):
+        voie_vue["argv"] = list(argv)
+        return _run_faux()(argv, timeout)
+
+    code = tapis_rapide.main(["--lane", LANE, "--json"], run=run_faux,
+                              maintenant=NOW)
+    sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
+    assert code == 0
+    assert sortie.get("voie") != "leger"
 
 
 def test_un_rejeu_reste_sur_la_voie_lourde(monkeypatch, tmp_path, capsysbinary):
@@ -434,7 +456,8 @@ def test_la_lecture_incomplete_du_pool_ne_sert_rien(monkeypatch, capsysbinary):
     def run_panne(argv, timeout):
         raise subprocess.TimeoutExpired(argv, timeout)
 
-    code = tapis_rapide.main(["--lane", LANE], run=run_panne, maintenant=NOW)
+    code = tapis_rapide.main(["--lane", LANE, "--voie", "leger"], run=run_panne,
+                              maintenant=NOW)
     capture = capsysbinary.readouterr()
     assert code == 3
     assert "Lecture incomplete" in capture.err.decode("utf-8")
