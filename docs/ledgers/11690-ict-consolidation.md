@@ -1626,7 +1626,7 @@ Deuxième strand de la série des orphelins. Lecture de contenu et d'outputs com
 
 ## Strand 18 — Orphelins 3-4/8 : ICT-32 StratificationCausaleLife + ICT-34 BancRecollementLectures (extension #11690)
 
-Troisième strand de la série des orphelins, en duo : `ICT-33` (SoupCollisions) est **reporté** — la PR #26864 (po-2024, ouverte, capstone #20298 G1) réécrit le carnet, la lecture serait périmée dès son merge. Lecture de contenu et d'outputs committés, sans re-exécution (arbitrage fondateur : lecture seule). Exécutions de référence : ICT-32 kernel python3, 12/12 cellules code exécutées, zéro erreur (sans métadonnées papermill) ; ICT-34 papermill 2026-08-23 (3,8 s), 9/9 exécutées, zéro erreur. GPU-free par conception (numpy seul).
+Troisième strand de la série des orphelins, en duo : `ICT-33` (SoupCollisions) est **reporté** — la PR #26864 (po-2024, ouverte, capstone #20298 G1) réécrit le carnet, la lecture serait périmée dès son merge. Lecture de contenu et d'outputs committés, sans re-exécution (arbitrage fondateur : lecture seule). Exécutions de référence : ICT-32 kernel python3, toutes les cellules code exécutées, zéro erreur (sans métadonnées papermill) ; ICT-34 papermill 2026-08-23 (3,8 s), toutes les cellules code exécutées, zéro erreur. GPU-free par conception (numpy seul).
 
 ### `ICT-32-StratificationCausaleLife-Python.ipynb` (33) — 21 md / 12 code, 12/12 exécutées
 
