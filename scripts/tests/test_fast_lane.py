@@ -1607,6 +1607,62 @@ def test_tranche5_guards_are_absorbed_single_testpaths_guard():
         )
 
 
+def test_le_registre_passe_l_inventaire_et_la_baseline_du_ratchet():
+    """#26773 : le ratchet de dette n'existe que si l'argv porte ses deux drapeaux.
+
+    Le garde est absorbe : son argv vient de ce registre, pas du workflow
+    source. Deux pannes y sont muettes, et aucune n'est visible depuis le
+    script :
+
+    - sans `--inventory`, le script retombe sur ses quatre sens historiques
+      (`testpaths` declares) et ne calcule plus aucun sens d'inventaire : le
+      ratchet de dette cesse de mesurer quoi que ce soit, en vert ;
+    - sans `--baseline`, l'inventaire juge contre une dette vide, donc toute
+      la dette enregistree redevient du NOUVEAU et chaque PR rougit pour des
+      findings que `main` porte deja.
+
+    La seconde panne est bruyante, la premiere ne l'est pas : c'est elle que
+    cette epingle existe pour rendre visible.
+
+    Les deux chemins de declenchement T4 (`**/tests/**`, `**/test_*.py`) sont
+    epingles ici pour la meme raison : sans eux le ratchet reste juste mais
+    ne tourne plus sur les PR qui le concernent, et rien d'autre ne le dit --
+    la liste de `paths` du test d'absorption ne les couvre pas.
+    """
+    guard = TRANCHE5[0]
+    assert "--inventory" in guard.argv, (
+        f"`{guard.name}` sans --inventory : les sens d'inventaire ne sont "
+        f"plus calcules et le ratchet de dette devient muet (argv={guard.argv})"
+    )
+    assert "--baseline" in guard.argv, (
+        f"`{guard.name}` sans --baseline : la dette connue redevient du "
+        f"NOUVEAU et chaque PR rougit sur les findings deja enregistres"
+    )
+    i = guard.argv.index("--baseline")
+    baseline_rel = guard.argv[i + 1]
+    assert baseline_rel == "scripts/tests/baseline_testpaths_inventory.json", (
+        f"le ratchet doit lire la baseline de dette enregistree, obtenu "
+        f"`{baseline_rel}`"
+    )
+    # Le chemin est relatif : le script le resout depuis la racine du depot.
+    # Un renommage de la baseline sans mise a jour du registre laisserait un
+    # argv qui pointe un fichier absent — rouge a chaque execution, jamais un
+    # vert silencieux (load_inventory_baseline est fail-closed).
+    assert (REPO_ROOT / baseline_rel).is_file(), (
+        f"la baseline citee par l'argv du registre est absente du depot : "
+        f"{REPO_ROOT / baseline_rel}"
+    )
+    # Les deux chemins de declenchement ajoutes par T4: sans eux le ratchet
+    # ne tourne plus sur les PR qui touchent un dossier de tests ou un module
+    # de test hors `scripts/**` et `tests/**`, ou vit l'essentiel de la dette.
+    for motif in ("**/tests/**", "**/test_*.py", baseline_rel):
+        assert motif in guard.paths, (
+            f"`{motif}` doit figurer dans les paths du garde, sinon une PR "
+            f"qui touche ce que le ratchet mesure ne le declenche pas "
+            f"(paths={guard.paths})"
+        )
+
+
 def test_absorbed_workflows_of_tranche5_no_longer_trigger_on_pull_request():
     """Meme contrat que les tranches 1/2/4 : un garde absorbe voit son workflow
     d'origine retirer de `pull_request` (sinon double execution). Le fichier

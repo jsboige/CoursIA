@@ -431,3 +431,118 @@ def test_le_lake_ajoute_rend_le_motif_dedie_au_dry_run(monkeypatch):
     assert result["ok"] is False
     assert "combinators" in result["reason"]
     assert "echec de build" not in result["reason"]
+
+
+# --- 4. le pivot prechauffe HORS clone (#26889) -----------------------------
+#
+# Le plan de prechauffage travaille dans un worktree detache : le cache chaud
+# atterrit HORS du clone principal (contrainte #26630 : ne pas lancer git dans
+# le depot englobant depuis le clone de travail). Mais le resolveur ne
+# prenait ses candidats QUE dans le clone (`cache_pivot_candidates` ->
+# `REPO_ROOT / project-path`) : un prechauffage fait comme le plan le
+# prescrit etait INVISIBLE, et le lake rendait `no-warm-cache-for-toolchain`
+# apres un prechauffage pourtant fait.
+#
+# Le correctif donne au plan et au resolveur la MEME racine.
+
+
+def _worktree_prechauffe(root: Path, lake_name: str, project_path: str,
+                         toolchain: str, *, warm: bool = True) -> Path:
+    """Un worktree detache (un depot) qui porte UN lake prechauffe.
+
+    Le worktree porte le manifeste des lakes (`scripts/lean/ci_lakes.json`) :
+    c'est lui qui dit quels lakes le pivot contient.
+    """
+    worktree = root / lake_name
+    lake = worktree / project_path
+    lake.mkdir(parents=True, exist_ok=True)
+    (lake / "lean-toolchain").write_text(toolchain, encoding="utf-8")
+    if warm:
+        packages_dir = lake / ".lake" / "packages"
+        packages_dir.mkdir(parents=True, exist_ok=True)
+        for pkg in ("batteries", "mathlib"):
+            (packages_dir / pkg / ".git").mkdir(parents=True)
+        # Mathlib se COMPILE : sans son `.lake/build`, le paquet est present
+        # mais incomplet -- c'est precisement lui qu'il faut recompiler.
+        (packages_dir / "mathlib" / ".lake" / "build").mkdir(parents=True)
+    _manifest_de_paquets(lake, ["batteries", "mathlib"])
+
+    manifest_path = worktree / "scripts" / "lean" / "ci_lakes.json"
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(
+        json.dumps({"lakes": [{"lake": lake_name, "project-path": project_path}]}),
+        encoding="utf-8",
+    )
+    return lake
+
+
+def test_le_resolveur_voit_un_pivot_prechauffe_hors_clone(monkeypatch, tmp_path):
+    """POSITIF : un pivot prechauffe hors clone EST retenu.
+
+    C'est le coherence que le plan et le resolveur doivent avoir : le plan
+    ecrit dans la racine des pivots, le resolveur la parcourt.
+    """
+    pivot_root = tmp_path / "pivots"
+    pivot = _worktree_prechauffe(
+        pivot_root, "formal_logic", "lakes/formal_logic_lean", V4331
+    )
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    _manifest_de_paquets(lake, ["batteries", "mathlib"])
+
+    monkeypatch.setenv(alb.PIVOT_ROOT_ENV, str(pivot_root))
+    candidats = alb.cache_pivot_candidates(
+        {"lakes": [{"lake": "formal_logic", "project-path": "lakes/formal_logic"}]}
+    )
+
+    assert pivot in candidats, (
+        "un pivot prechauffe hors clone doit etre candidat : "
+        f"{candidats}")
+    verdict = alb.resolve_cache_pivot(lake, candidats)
+    assert verdict["ok"] is True, verdict
+    assert Path(verdict["pivot"]) == pivot
+
+
+def test_un_worktree_sans_packages_chaudes_n_est_pas_candidat(monkeypatch, tmp_path):
+    """NEGATIF : un worktree de la racine des pivots dont le lake n'a pas
+    ete prechauffe n'est PAS candidat -- sinon le motif de rejet
+    bruiterait de worktrees vides."""
+    pivot_root = tmp_path / "pivots"
+    _worktree_prechauffe(
+        pivot_root, "formal_logic", "lakes/formal_logic_lean", V4331, warm=False
+    )
+
+    monkeypatch.setenv(alb.PIVOT_ROOT_ENV, str(pivot_root))
+
+    assert alb.prewarmed_pivot_candidates() == []
+
+
+def test_la_racine_des_pivots_est_hors_du_clone(monkeypatch):
+    """La racine des pivots est HORS du clone principal : c'est la condition
+    du prechauffage (#26630) -- un cache chaud ecrit dans le clone de travail
+    le pollue et concurrence les autres gestes de la machine."""
+    monkeypatch.delenv(alb.PIVOT_ROOT_ENV, raising=False)
+
+    racine = alb.pivot_root()
+
+    assert alb.REPO_ROOT not in racine.parents
+    assert racine != alb.REPO_ROOT
+
+
+def test_le_plan_de_prechauffage_cible_la_racine_des_pivots(monkeypatch, tmp_path):
+    """Le plan et le resolveur ciblent le MEME lieu.
+
+    Un prechauffage fait dans un worktree sans adresse produirait un cache
+    chaud invisible du resolveur : c'est exactement l'incoherence corrigee.
+    """
+    pivot_root = tmp_path / "pivots"
+    monkeypatch.setenv(alb.PIVOT_ROOT_ENV, str(pivot_root))
+    lake = {"lake": "formal_logic", "project-path": "lakes/formal_logic_lean"}
+
+    plan = alb.prewarm_plan(lake, head="a" * 40, timeout=900.0)
+
+    assert plan["pivot_root"] == str(pivot_root)
+    assert plan["prepare"] == ["mkdir", "-p", str(pivot_root)]
+    assert plan["worktree"][-1] == "a" * 40
+    assert str(pivot_root) in plan["worktree"][-2]
+    cwd = plan["cache_get"][plan["cache_get"].index("--cwd") + 1]
+    assert cwd == str(pivot_root / "formal_logic" / "lakes/formal_logic_lean")

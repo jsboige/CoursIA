@@ -603,6 +603,61 @@ def changed_notebooks(base, head="HEAD", cwd=None):
     return sorted(paths)
 
 
+def _parse_rename_status(out):
+    """{chemin a la tete: chemin a la base} depuis une sortie ``--name-status``.
+
+    Extrait du corps de ``renamed_notebooks`` (#26914) : les tests pytest de
+    l'organe frere ``check_uncommented_code`` doublent son self-test et
+    verifient le parseur SEUL, sur des sorties fabriquees -- pas via un stub
+    de git. Seules les lignes ``R<score>\\t<ancien>\\t<nouveau>`` comptent :
+    A/M/D sont ignorees, et une paire D+A (similarite sous ``-M``) n'est pas
+    un renommage -- c'est le sur-signalement assume, jamais un blanchiment.
+
+    ``None`` (git muet) rend une table vide ; les antislashs Windows sont
+    normalises pour rester comparables aux chemins ``--name-only``.
+    """
+    renames: dict[str, str] = {}
+    if out is None:
+        return renames
+    for line in out.splitlines():
+        parts = [p for p in line.split("\t") if p]
+        if len(parts) == 3 and parts[0].startswith("R"):
+            renames[parts[2].strip().replace(BS, "/")] = (
+                parts[1].strip().replace(BS, "/"))
+    return renames
+
+
+def renamed_notebooks(base, head="HEAD", cwd=None, git_fn=None):
+    """{chemin a la tete: chemin a la base} pour les carnets RENOMMES.
+
+    Lecture git partagee par les organes freres en mode diff : un carnet
+    renomme est absent de la base a son chemin de tete, et la base lue a
+    ce chemin rend ``None`` -- le carnet passe pour neuf. Mesure fondatrice
+    #26381 (pur renommage CamelCase) : 44 renommages, dont 32 R100, lus
+    comme 44 ajouts -- 8 carnets signales chez check_uncommented_code sur
+    du code preexistant, 44 lignes « added » chez les cliquets.
+
+    ``-M`` force la detection de renommage sans dependre de ``diff.renames`` ;
+    ``--diff-filter=R`` seul : une COPIE garde sa source vivante a la tete,
+    c'est un vrai ajout, pas un renommage. Sortie ``--name-status`` :
+    ``R100\\t<ancien>\\t<nouveau>`` ; un R090 (renomme + edite) mappe pareil
+    -- c'est la base qu'on cherche, pas la qualite du rapprochement.
+
+    ``git_fn`` (interne) laisse un module frere deleguer l'appel avec SON
+    propre ``git`` module-level : un stub ``monkeypatch.setattr`` cible le
+    module appelant, pas celui qui definit la commande (#26914).
+
+    Un renommage dont la CIBLE est hors perimetre (``_output``, archive,
+    recherche) sort de la table : ``changed_notebooks`` ne la rendra pas non
+    plus -- les deux tables partagent le meme filtre ``EXCLUDE_MARKERS``.
+    """
+    out = (git_fn or git)("diff", "-M", "--name-status", "--diff-filter=R",
+                          base, head, "--", "*.ipynb", cwd=cwd)
+    renames = _parse_rename_status(out)
+    return {new: old for new, old in renames.items()
+            if not any(m in "/" + new for m in EXCLUDE_MARKERS)}
+
+
 def all_notebooks(cwd=None):
     """Every tracked deliverable notebook (advisory sweep)."""
     out = git("ls-files", "*.ipynb", cwd=cwd)
@@ -979,11 +1034,18 @@ def _sample_location(loc):
     return "cell[" + str(loc) + "]"
 
 
-def compare(base_ref, head_ref, paths, cwd=None):
-    """Per-notebook growth of each class between base_ref and head_ref."""
+def compare(base_ref, head_ref, paths, cwd=None, renames=None):
+    """Per-notebook growth of each class between base_ref and head_ref.
+
+    ``renames`` ({chemin tete: chemin base}, cf. ``renamed_notebooks``) fait
+    lire la base a l'ANCIEN chemin d'un carnet renomme : sans lui, le chemin
+    de la tete est absent de la base et le carnet part en ``added`` -- les 44
+    renommages de #26381 y comptaient comme des ajouts de branche.
+    """
     rows = []
     for path in paths:
-        base_nb = read_notebook_at(base_ref, path, cwd=cwd)
+        base_nb = read_notebook_at(base_ref, (renames or {}).get(path, path),
+                                   cwd=cwd)
         head_nb = read_notebook_at(head_ref, path, cwd=cwd)
         if head_nb is None:
             continue
@@ -1688,7 +1750,7 @@ def main(argv=None):
 
     base = resolve_base(args.base)
     paths = changed_notebooks(base)
-    rows = compare(base, None, paths)
+    rows = compare(base, None, paths, renames=renamed_notebooks(base))
     bad = [r for r in rows if r["regressed"]]
 
     if args.as_json:

@@ -1013,6 +1013,23 @@ class ScanMainCollisionTests(unittest.TestCase):
         self.assertFalse(csr._same_item_scan(a, b),
                          "deux sujets differents ne sont PAS un jumeau")
 
+    def test_same_item_scan_matches_renamed_app14_pair(self):
+        # #12933 : apres renommage du jumeau C# en -Adversarial-CSharp,
+        # le stem (suffixe -CSharp strippe) devient identique au Python :
+        # la paire est reconnue jumeau, pas collision de slot.
+        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb"
+        b = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb"
+        self.assertTrue(csr._same_item_scan(a, b),
+                        "la paire renommee doit etre reconnue comme jumeau")
+
+    def test_same_item_scan_matches_renamed_app12_pair(self):
+        # #12933 : App-12c -> App-12b-ConnectFour-CSharp, meme slot 12b
+        # que le jumeau Python : paire reconnue, pas collision.
+        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour.ipynb"
+        b = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb"
+        self.assertTrue(csr._same_item_scan(a, b),
+                        "la paire renommee doit etre reconnue comme jumeau")
+
     def test_scan_main_finds_known_collision_ict48(self):
         # ICT-48 est la collision documentee de la tranche 1. Si le
         # balayage la manque, la garde regresse.
