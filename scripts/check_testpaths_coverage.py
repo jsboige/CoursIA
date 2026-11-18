@@ -380,7 +380,10 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # Les 611 « tests verts » du triage sont un SOUS-ensemble mesure en local
 # (conda projet-is) : ils ne sont pas recomputables par l'organe. Le
 # compteur `items` est l'invariant mecanique qui les englobe.
-CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 66, "items": 1097}
+# #27201 : 37 cas parametres dans un nouveau fichier du harness paper,
+# toujours hors CI racine ; suite locale complete : 133 tests verts.
+# Ce relevement ne pretend pas ajouter une couverture CI.
+CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 67, "items": 1134}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
