@@ -301,8 +301,9 @@ vieux que la fenêtre — constat de #27179, qui a produit l'organe `tapis_rever
 donc **tous** les commentaires par l'organe REST déjà livré (`gh_snapshot`, pagination REST), jamais la
 fenêtre — et **seulement** pour les candidats que la fenêtre retient : un candidat dont la fenêtre *est*
 le fil complet (moins de 12 commentaires) n'appelle aucun appel supplémentaire. Elle dit, pour chaque
-grain, ce que la fenêtre a décidé : « fenêtre = fil complet (N commentaires) » ou « fil complet relu
-(N commentaires, fenêtre de M) : aucun marqueur décisif hors fenêtre ».
+grain, ce que la fenêtre a décidé : « fenêtre = fil complet (N commentaires) » ou « fenêtre de M
+commentaires sur N : aucun marqueur décisif hors fenêtre » (la relecture elle-même est déjà notée par
+l'organe de re-vérification : « fil complet relu (N commentaires) »).
 
 **La qualification est fail-CLOSED.** Une décision qui n'a pas pu être prise **refuse** le grain, avec son
 code et son motif — `FIL_ILLISIBLE` (fil illisible), `MUR_EPUISE` (mur de lectures REST atteint),

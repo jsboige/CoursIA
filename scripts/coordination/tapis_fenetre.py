@@ -93,8 +93,11 @@ def noter(e, it: dict | None) -> None:
     if total <= lus:
         e.notes.append(f"fenetre = fil complet ({lus} commentaire(s))")
     else:
-        e.notes.append(f"fil complet relu ({total} commentaires, fenetre de "
-                       f"{lus}) : aucun marqueur decisif hors fenetre")
+        # La relecture elle-meme est deja notee par l'organe de re-verification
+        # (« fil complet relu (N commentaires) ») : on ne la repete pas, on dit
+        # ce que la FENETRE avait laisse hors champ.
+        e.notes.append(f"fenetre de {lus} commentaires sur {total} : "
+                       f"aucun marqueur decisif hors fenetre")
 
 
 def fil_complet(numero: int, repo: str = gh_bulk.DEPOT_GH) -> list[dict]:
