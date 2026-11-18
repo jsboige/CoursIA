@@ -161,6 +161,51 @@ def stats(values: list[float]) -> dict[str, Any]:
     }
 
 
+def build_report(
+    measurements: list[Measurement],
+    *,
+    repo: str,
+    workflow: str,
+    branch: str,
+    job: str,
+    split: str,
+) -> dict[str, Any]:
+    """Assemble le rapport : groupes avant/apres, repartition par conclusion, mesures."""
+    before = [m.duration_s for m in measurements if m.group == "before"]
+    after = [m.duration_s for m in measurements if m.group == "after"]
+    by_conclusion: dict[str, dict[str, Any]] = {}
+    for m in measurements:
+        key = f"{m.group}:{m.conclusion or 'unknown'}"
+        by_conclusion.setdefault(key, {"durations_s": []})["durations_s"].append(m.duration_s)
+    return {
+        "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "repo": repo,
+        "workflow": workflow,
+        "branch": branch,
+        "job": job,
+        "split": split,
+        "runs_excluded_cancelled": True,
+        "before": stats(before),
+        "after": stats(after),
+        "by_conclusion": {
+            key: stats(values["durations_s"]) for key, values in sorted(by_conclusion.items())
+        },
+        "measurements": [
+            {
+                "run_id": m.run_id,
+                "head_sha": m.head_sha,
+                "created_at": m.created_at,
+                "conclusion": m.conclusion,
+                "started_at": m.started_at,
+                "completed_at": m.completed_at,
+                "duration_s": m.duration_s,
+                "group": m.group,
+            }
+            for m in measurements
+        ],
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default=DEFAULT_REPO)
@@ -180,40 +225,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"API Actions inaccessible : {exc}", file=sys.stderr)
         return 2
 
-    before = [m.duration_s for m in measurements if m.group == "before"]
-    after = [m.duration_s for m in measurements if m.group == "after"]
-    by_conclusion: dict[str, dict[str, Any]] = {}
-    for group, subset in (("before", before), ("after", after)):
-        for m in measurements:
-            if m.group != group:
-                continue
-            key = f"{group}:{m.conclusion or 'unknown'}"
-            by_conclusion.setdefault(key, {"durations_s": []})["durations_s"].append(m.duration_s)
-    report = {
-        "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "repo": args.repo,
-        "workflow": args.workflow,
-        "branch": args.branch,
-        "job": args.job,
-        "split": args.split,
-        "runs_excluded_cancelled": True,
-        "before": stats(before),
-        "after": stats(after),
-        "by_conclusion": {key: stats(values) for key, values in sorted(by_conclusion.items())},
-        "measurements": [
-            {
-                "run_id": m.run_id,
-                "head_sha": m.head_sha,
-                "created_at": m.created_at,
-                "conclusion": m.conclusion,
-                "started_at": m.started_at,
-                "completed_at": m.completed_at,
-                "duration_s": m.duration_s,
-                "group": m.group,
-            }
-            for m in measurements
-        ],
-    }
+    report = build_report(
+        measurements,
+        repo=args.repo,
+        workflow=args.workflow,
+        branch=args.branch,
+        job=args.job,
+        split=args.split,
+    )
 
     payload = json.dumps(report, indent=2, ensure_ascii=False)
     if args.out:

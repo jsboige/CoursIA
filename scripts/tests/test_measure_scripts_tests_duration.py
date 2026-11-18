@@ -170,3 +170,44 @@ def test_parse_accepte_le_suffixe_z():
     assert measure._parse("2026-11-18T04:25:19Z") == datetime(
         2026, 11, 18, 4, 25, 19, tzinfo=timezone.utc
     )
+
+
+def test_le_rapport_repartit_les_durees_par_conclusion():
+    """Le rapport expose une entree par couple groupe/conclusion (mutant : le calcul
+    des statistiques y etait applique au dictionnaire, pas a la liste)."""
+    fake = FakeActions(
+        runs=[
+            _run(1, "2026-11-18T04:16:50Z"),
+            _run(2, "2026-11-18T04:16:50Z"),
+            _run(3, "2026-11-18T04:30:00Z"),
+        ],
+        jobs={
+            1: [_job("Scripts Tests (CPU)", "2026-11-18T04:16:53Z", "2026-11-18T04:32:17Z")],
+            2: [
+                _job(
+                    "Scripts Tests (CPU)",
+                    "2026-11-18T04:16:53Z",
+                    "2026-11-18T04:43:24Z",
+                    conclusion="failure",
+                )
+            ],
+            3: [_job("Scripts Tests (CPU)", "2026-11-18T04:32:20Z", "2026-11-18T04:47:03Z")],
+        },
+    )
+    got = measure.collect(fake, "scripts-tests.yml", "main", "Scripts Tests (CPU)", 50,
+                          datetime(2026, 11, 18, 4, 25, 19, tzinfo=timezone.utc))
+    report = measure.build_report(
+        got,
+        repo="jsboige/CoursIA",
+        workflow="scripts-tests.yml",
+        branch="main",
+        job="Scripts Tests (CPU)",
+        split="2026-11-18T04:25:19Z",
+    )
+    assert report["before"]["n"] == 2
+    assert report["after"]["n"] == 1
+    assert report["after"]["median_s"] == 883.0
+    assert report["by_conclusion"]["before:success"]["n"] == 1
+    assert report["by_conclusion"]["before:failure"]["n"] == 1
+    assert report["by_conclusion"]["after:success"]["median_s"] == 883.0
+    assert len(report["measurements"]) == 3
