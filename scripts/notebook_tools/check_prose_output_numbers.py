@@ -86,6 +86,14 @@ _BACKTICK_RE = re.compile(r"`[^`\n]*`")
 # initial). Le texte du lien ET sa cible sont exemptes, plus les URLs nues.
 _LINK_RE = re.compile(r"!?\[[^\]]*\]\([^)]*\)")
 _URL_RE = re.compile(r"https?://\S+")
+# DOI en texte nu (identifiant bibliographique, pas une mesure) : mesure sur
+# QC-Py-08 cellule 71 -- l'extracteur y lisait 10.3905, 4.060, 10.1111,
+# -6261.1952 et 10.1086 comme des valeurs, fragments des tokens
+# « DOI 10.3905/jpm.2010.36.4.060 », « DOI 10.1111/j.1540-6261.1952.tb01525.x »,
+# « DOI 10.1086/294846 » hors de tout lien. Le token ENTIER (prefixe 10.xxxx +
+# suffixe) est exempt, comme une URL ; une mesure a 3+ decimales SANS slash
+# apres le prefixe reste verifiee.
+_DOI_RE = re.compile(r"\b10\.\d{4,9}/\S+")
 # Valeur DECLAREE citee (litterature/theorie), pas mesuree : l'auteur dit lui-meme
 # que le nombre n'est pas le sien (« la prediction 4,267 ... est citee », seuil
 # 3-SAT de Complexity-02b/02c, mesure dans le census initial). L'exemption porte
@@ -303,6 +311,7 @@ def analyze_notebook(nb: dict, rel_path: str) -> NotebookResult:
         exempt_spans = [m.span() for m in _BACKTICK_RE.finditer(cell_norm)]
         exempt_spans += [m.span() for m in _LINK_RE.finditer(cell_norm)]
         exempt_spans += [m.span() for m in _URL_RE.finditer(cell_norm)]
+        exempt_spans += [m.span() for m in _DOI_RE.finditer(cell_norm)]
         derived_values = {
             _to_decimal(m.group(1))
             for m in _FRACTION_DERIVATION_RE.finditer(cell_text)
@@ -601,11 +610,24 @@ def self_test() -> int:
     if citations(r) != ["0.0742"]:
         failures.append(f"spans normalises : {citations(r)}")
 
+    # 13. DOI en texte nu : le token entier est un identifiant, pas une mesure
+    # (QC-Py-08 cellule 71, fountee 2 plan Q162 d). Les fragments 10.1111 et
+    # 6261.1952 du token sont exemptes ; la mesure voisine 0.3189, absente des
+    # sorties, reste signalee.
+    r = analyze_notebook(
+        nb(["## A retenir : cf. Markowitz (1952), DOI 10.1111/j.1540-6261.1952.tb01525.x, "
+            "Sharpe mesure 0.3189"],
+           ["sharpe: 0.3201"]),
+        "t.ipynb",
+    )
+    if citations(r) != ["0.3189"]:
+        failures.append(f"doi nu non exemptes : {citations(r)}")
+
     if failures:
         for f in failures:
             print(f"SELFTEST FAIL: {f}")
         return 1
-    print("selftest: OK (12 fixtures)")
+    print("selftest: OK (13 fixtures)")
     return 0
 
 
