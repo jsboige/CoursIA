@@ -217,6 +217,29 @@ Les 20 carnets non couverts, recalculés :
 
 Le plus gros bloc restant est désormais **les six non numérotés**, puis la famille axe douleur 46/47 (4) et la constellation résiduelle 40b. La moitié du résiduel (10 carnets sur 20) est le fait de strates récentes ou déplacées — `17c`, `36f`, `40b` — dont aucune n'existait ou n'était à sa place aux strands précédents.
 
+### Recompte du 2026-11-17 (après le strand 12)
+
+Même méthode, rejouée une fois le strand 12 posé (strate 7 : `ICT-46` et `ICT-46b`).
+
+| Mesure | 2026-11-17 (s11) | 2026-11-17 (s12) |
+|---|---|---|
+| Carnets ICT sur `main` | 101 | **101** |
+| Sections de carnet au ledger | 81 | **83** |
+| Non couverts | 20 | **18** |
+| Taux de couverture | 80 % | **82 %** |
+
+Zéro fantôme, toujours : les 83 entrées correspondent toutes à un carnet présent au `ls-tree`. Le dénominateur n'a pas bougé depuis le recompte précédent ; le solde est `20 − 2 = 18`, et `81 + 2 = 83`. Le strand s'est ouvert sur un [OVERRIDE] du coordinateur (c.6959538611) : l'issue était en LOCKED v2 par un claim sans intersection de chemins (#26611) et un claim implicite hors périmètre (#27043, ICT-28) — levé sur les chemins du strand après `check_lane_claim` rc=0.
+
+Les 18 carnets non couverts, recalculés :
+
+- **ICT-17c** TorchLens-Inspection (descendu dans `ICT-17-EpsilonMachine/`), **ICT-20** FeatureCatastrophes
+- **ICT-32** StratificationCausaleLife, **ICT-33** SoupCollisions, **ICT-34** BancRecollementLectures
+- **ICT-36f** FLens-SpecParam (arrivé le 16/11), **ICT-40b** AnalogCognitionWaves, **ICT-43** Calibration-MultiEchelle
+- **ICT-47** PainAxisDistillation, **ICT-47b** PainAxisInstrument, **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
+- **Non numérotés (6)** : `ICT-Argumentation-Capstone`, `ICT-Argumentation-QBFAcceptance`, `ICT-Argumentation-TruthMaintenance`, `ICT-Dissociation-DehaeneF2-SelfReport`, `ICT-Greffe5-AttributionCausale`, `ICT-MUH-FibreTegmark`
+
+Le plus gros bloc restant reste **les six non numérotés**, puis l'axe douleur 47/47b et la paire ICT-48 (quatre carnets en deux familles contiguës). La strate 7 est couverte à 2/2 sur ses carnets numérotés ; son résiduel documenté — SmartContracts, routé RECOVERABLE-MACHINE dans ICT-46b — est une classe à poser sur la machine qui porte l'environnement, pas un carnet manquant.
+
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
 Séance de relecture tenue avec le mainteneur le 2026-10-11 ; décisions consignées par la lane `myia-ai-01:CoursIA` ([#11690 c.6103450933](https://github.com/jsboige/CoursIA/issues/11690#issuecomment-6103450933)). Le mainteneur a accepté les recommandations du dossier de séance et posé un cadre élargi pour la suite (#20298–#20301, #17545, #5081). Conformément à la réserve 2 (péremption), chaque correction décidée invalide la ligne correspondante au moment de son exécution.
@@ -1306,3 +1329,39 @@ Indices cités : position de la cellule dans l'ordre du carnet, **à partir de 1
 4. **Le chaînage descendant de la constellation est complet, l'ascendant est incomplet.** 38 → 39 → 40a → 40b par « Pour aller plus loin » ; en retour, 39 pointe ← 37 (le programme d'opérations FLens) sans citer 38, et 38 comme 40a n'ont **pas de ligne de navigation d'entrée** du tout. Le rattachement programmatique de 39 à 37 est défendable ; l'absence de nav sur 38 et 40a est un simple trou de forme. Geste : trois demi-lignes de navigation.
 
 5. **Nommage à porter intact : il n'existe pas de ICT-40 nu.** Les fichiers sont `ICT-38-SLens-SelfLocation-Python.ipynb`, `ICT-39-CompositionRegards-Python.ipynb`, `ICT-40a-TriangulationCausale-Python.ipynb` (et 40b en suffixe). Un recompte qui reconstruirait les noms par préfixe échouerait sur la paire 40a/40b, comme sur `36e` (strand 9) et `35d` (strand 10) — la mesure par `git ls-tree` reste la seule voie qui ne se trompe pas.
+
+## Strand 12 — Strate 7 : ICT-46 / ICT-46b (extension #11690)
+
+Deux carnets, la tête de la strate 7 (cadres libres / freebits de second ordre, cadrage D1 `docs/ict/strate7-cadres-libres.md`). `ICT-46` pose l'**organe exécutable** de la strate — le contraste entre l'incertitude sur une *valeur* dans un espace fixé (freebit d'Aaronson, ordre 1) et l'incertitude sur l'*espace lui-même* (ordre 2), six proxys et leurs témoins négatifs ; `ICT-46b` en fait le **banc unique** du palier #23778 (note de conception #23830) : la même grille appliquée *en travers* du dépôt sur cinq mécanismes qui changent l'espace des actions, chacun mesuré depuis l'organe natif de sa série ou sa copie pédagogique déclarée.
+
+Les deux sont exécutés et datés : **toutes les cellules de code exécutées, zéro erreur**, `metadata.papermill` présents — 46 le 2026-10-14 (23:45:50 → 23:45:56 : six secondes), 46b le 2026-11-14 (22:01:19 → 22:01:41 : vingt-deux secondes). Les trois exercices de 46 sont des stubs conformes C.1 ; `detect_solution_leaks.py --scan` rend 0 HIGH, 0 MEDIUM, 0 LOW sur les deux carnets.
+
+### `ICT-46-Strate7-FreeCoordinates-Python.ipynb` (46) — 26 md / 11 code, 11/11 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Premier barreau de la strate 7 : donner à la strate son **organe exécutable** — faire tourner le contraste entre l'incertitude sur une *valeur* dans un espace fixé (freebit d'Aaronson, ordre 1) et l'incertitude sur l'*espace lui-même* (ordre 2). |
+| **Contenu réel** | 9 sections : banc de jeu évolutif $G_t$ et deux types de coups ; l'étage Aaronson (prédicteur d'espace fixé vs surprise hors espace) ; le coup ontologique (« personne morale ») ; les proxys $C_t$ / $P(R)$ / institutionnalisation-$I(R)$ ; deux lectures graduées ; mécanismes concurrents (deux règles d'admission) ; extensions composées ; encart gap Mathlib ; 3 exercices (stubs C.1 conformes, exécutés « à compléter »). |
+| **Résultat** | Contraste fondateur **mesuré** : perte sur support connu 0,938 bits vs surprise structurelle « signer » 1,585 bits $=\log_2(\|A\|+1)$ — « l'écart n'est pas de volume, il est de NATURE ». $O_t{=}1$, $\Delta A_t{=}2$ pour la personne morale (vs poésie : $O_t{=}1$, $\Delta A_t{=}0$, verbiage détecté). $C_t$ : 1 / 1 / **2** (l'hypothèque non équivalente crée un vrai choix). $P(R)$ : personne morale 2,753 bits, décoratif brut 1,819, **décoratif marginalisé 0,029**. Institutionnalisation 41,67 % vs 0,00 % (jargon privé meurt avec son inventeur) ; $I(R) = 50\times$. Concurrence des règles : quorum **refuse** le jargon privé, ancienneté l'**admet** — candidatures litigieuses exhibées. |
+| **Critique** | Aucune finding majeure. Le carnet pose lui-même son grade (« première version de l'organe ») et nomme ce qu'il **ne démontre pas** (la physique des freebits, la thèse de performativité de la coordonnée) — la section « À retenir » porte le caveat, le grade honest est assumé dans la prose du carnet. |
+| **Verdict + action** | **SOLIDE**. Les six proxys sont mesurés de bout en bout avec leurs témoins négatifs (poésie, jargon, décoratif marginalisé) ; les extensions (concurrence, composition) rendent le litige exécutable. Pas d'action d'arbitrage. |
+
+### `ICT-46b-BancUnique-Strate7-Python.ipynb` (46b) — 32 md / 12 code, 12/12 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Tête du palier strate 7 (#23778, note de conception #23830) : le **banc unique** — les six proxys d'ICT-46 appliqués *en travers* du dépôt comme lentille sur cinq mécanismes qui changent l'espace des actions, chacun **mesuré depuis l'organe natif de sa série** (volet A importé) ou sa copie pédagogique **déclarée** (volet B, règle organ-first satisfaite par construction). |
+| **Contenu réel** | 7 sections : deux volets une grille ; rappel des six proxys ; volet A (organes importés : `dowhy_organs`, `search_helpers`, rdflib/owlrl 7.6.0) ; volet B (copie déclarée) ; le cas central SocialChoice avec **témoin négatif** ; le sixième mécanisme SmartContracts **RECOVERABLE-MACHINE** ; revue contradictoire à trois modes de faux verdict. `bancher_mecanisme` classe chaque coup : latent / nouveau / décoratif. |
+| **Résultat** | Cinq mécanismes, une seule grille : **Search** (graphe $\Delta$=1, $P_{R,\text{marg}}$ 3,650) et **SemanticWeb ×2** (SW-14 : clôture 158→169, **$\Delta$=11 classes**, inst 0,875, $P_{R,\text{marg}}$ 7,144 ; SW-15 : grounded `['RA4']`→`['RA3','RA5']`) → **nouveau** ; SW-15 est le contre-exemple mesuré contre l'intuition (« la lecture rapide prévoyait latent »). **SocialChoice manipulation** (comité honnête `('a',)` → manipulé `('c',)` via faux bulletin, $P_R = P_{R,\text{marg}}$ 4,4659) → **latent**. **SocialChoice relabeling** ($\Delta A_t$ brut 3 mais $\Delta A_{t,\text{marg}}$ 0 ; $P_R$ brut 11,20 bits vs marg **0,000942**) → **décoratif**, témoin PROPRE. SmartContracts : classe **non posée**, routée RECOVERABLE-MACHINE. |
+| **Critique** | (1) Le résiduel SmartContracts est **ouvert** et assumé dans le carnet (« sa classe sera posée sur la machine qui porte l'environnement ») — à suivre : le strand ne le compte pas comme couvert pour la classification, il documente son absence. (2) La revue contradictoire (§7) mesure trois modes de faux verdict (carte oubliée → faux « nouveau » ; carte de noms sur copie → faux « décoratif » en zone sourde ; carte exacte sur jumeau institutionnel → rabat « nouveau » vers ornemental) — les gardes `verifier_equivalence` / `jumeaux_comportementaux` sont exécutées, pas seulement citées (le contre-exemple tourne : verdict « nouveau », dA_t marg 3, jumeaux exhibés). |
+| **Verdict + action** | **SOLIDE**. La règle du carnet — « un verdict de la grille ne se cite jamais sans ses gardes » — est appliquée dans ses propres cellules. Action d'arbitrage (mineure, pour ai-01) : le résiduel SmartContracts RECOVERABLE-MACHINE mérite une issue de suivi nommée si la série veut clore la strate 7 sans dette. |
+
+### Findings transverses du strand 12 (pour l'arbitrage user)
+
+1. **La strate s'auto-instrumentalise, et c'est sa trajectoire la plus nette depuis la constellation 38 → 40a.** Le contraste ordre 1 / ordre 2 que 46 mesure avec ses témoins (poésie détectée comme verbiage, jargon privé non institutionnalisé, décoratif marginalisé à 0,029 bit) devient tel quel la grille de 46b : l'organe posé par le premier carnet est l'instrument du second. La grille traverse le dépôt en citant ses sources — organes importés pour Search et SemanticWeb, copie pédagogique déclarée pour le volet B — et rend un contre-exemple mesuré là où la lecture rapide prévoyait « latent » (SW-15).
+
+2. **Le résiduel SmartContracts est documenté, pas masqué.** 46b ne pose pas la classe du sixième mécanisme, la route RECOVERABLE-MACHINE et l'assume dans sa propre cellule ; le strand ne le compte pas comme couvert pour la classification. Action d'arbitrage mineure pour le mainteneur : une issue de suivi nommée si la série veut clore la strate 7 sans dette — la classe se posera sur la machine qui porte l'environnement SmartContracts.
+
+3. **La revue contradictoire de 46b mesure trois modes de faux verdict.** Carte oubliée → faux « nouveau » ; carte de noms sur copie → faux « décoratif » en zone sourde ; carte exacte sur jumeau institutionnel → rabat « nouveau » vers ornemental. Les gardes `verifier_equivalence` et `jumeaux_comportementaux` sont **exécutées** avec leur contre-exemple (verdict « nouveau », dA_t marginal 3, jumeaux exhibés), pas seulement citées : la règle du carnet — « un verdict de la grille ne se cite jamais sans ses gardes » — est appliquée dans ses propres cellules.
+
+4. **Nommage à porter intact : la strate 7 se compte par suffixe.** Les fichiers sont `ICT-46-Strate7-FreeCoordinates-Python.ipynb` et `ICT-46b-BancUnique-Strate7-Python.ipynb` — la paire 46/46b rejoint 40a/40b et 35b/c/d sur la liste des familles à préfixe partagé ; la mesure par `git ls-tree` reste la seule voie qui ne se trompe pas.
