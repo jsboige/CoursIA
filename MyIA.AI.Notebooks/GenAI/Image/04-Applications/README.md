@@ -6,6 +6,14 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 **Dans le cadre du fil rouge contenu visuel éducatif** : ce niveau met en oeuvre les workflows complets. [04-1](04-1-Educational-Content-Generation.ipynb) automatise la création de visuels pédagogiques (brief texte vers images). [04-2](04-2-Creative-Workflows.ipynb) gère les workflows créatifs. [04-3](04-3-Production-Integration.ipynb) intègre le pipeline en production.
 
+## Comment lire ce README
+
+- Vous voulez **voir un pipeline complet du brief au visuel** : [04-1](04-1-Educational-Content-Generation.ipynb) est le cas d'usage canonique (texte → GPT-5 brief → gpt-image-1 → post-processing), puis [04-2](04-2-Creative-Workflows.ipynb) en variante créative multi-étapes.
+- Vous voulez **passer en production** : [04-3](04-3-Production-Integration.ipynb) ajoute batch, file d'attente, QC et monitoring (~10 GB de VRAM, services mixtes).
+- Vous cherchez **un usage spécialisé** : [04-4](04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) (conversion en patrons de point de croix, legacy), [04-5](04-5-MiniMax-Cloud-Image.ipynb) (API cloud Hailuo quand la licence des poids exclut l'auto-hébergement en UE) et [04-6](04-6-AesCode-Visual-Documents.ipynb) (posters et dashboards HTML/CSS générés par un VLM local, avec vérification mécanique du contenu) se lisent indépendamment.
+
+Cette navigation par niveaux suit le principe des séries à plusieurs vitesses décrit dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
 ## Vue d'overview
 
 | Statistique | Valeur |
@@ -16,14 +24,14 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 ## Notebooks
 
-| # | Notebook | Contenu | Service | VRAM |
-|---|----------|---------|---------|------ |
-| 1 | [04-1-Educational-Content-Generation](04-1-Educational-Content-Generation.ipynb) | Contenu éducatif | OpenAI API, OpenRouter | 0 |
-| 2 | [04-2-Creative-Workflows](04-2-Creative-Workflows.ipynb) | Workflows créatifs | OpenAI API, OpenRouter | 0 |
-| 3 | [04-3-Production-Integration](04-3-Production-Integration.ipynb) | Intégration production | Mixed | ~10GB |
-| 4 | [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) | Forge (SDXL, API REST) | Variable |
-| 5 | [04-5-MiniMax-Cloud-Image](04-5-MiniMax-Cloud-Image.ipynb) | Images par API cloud | MiniMax Hailuo | 0 |
-| 6 | [04-6-AesCode-Visual-Documents](04-6-AesCode-Visual-Documents.ipynb) | Documents visuels générés comme code | vLLM local (AesCode-8B) | ~6 Go (INT4) / ~17 Go (bf16) |
+| # | Notebook | Contenu | Service | VRAM | Ce qu'on y apprend |
+|---|----------|---------|---------|------ |--------------------|
+| 1 | [04-1-Educational-Content-Generation](04-1-Educational-Content-Generation.ipynb) | Contenu éducatif | OpenAI API, OpenRouter | 0 | Automatiser un support pédagogique : brief texte par GPT-5, images par gpt-image-1, post-processing |
+| 2 | [04-2-Creative-Workflows](04-2-Creative-Workflows.ipynb) | Workflows créatifs | OpenAI API, OpenRouter | 0 | Monter un workflow créatif multi-étapes (génération, édition, validation) |
+| 3 | [04-3-Production-Integration](04-3-Production-Integration.ipynb) | Intégration production | Mixed | ~10GB | Intégrer la génération dans un pipeline de production (batch, file, QC, monitoring) |
+| 4 | [04-4-Cross-Stitch-Pattern-Maker-Legacy](04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) | Point de croix (legacy) | Forge (SDXL, API REST) | Variable | Convertir une image en patron de point de croix (img2img + algorithmes de conversion) |
+| 5 | [04-5-MiniMax-Cloud-Image](04-5-MiniMax-Cloud-Image.ipynb) | Images par API cloud | MiniMax Hailuo | 0 | Générer par API cloud (texte vers image, image vers image) quand l'auto-hébergement UE est exclu |
+| 6 | [04-6-AesCode-Visual-Documents](04-6-AesCode-Visual-Documents.ipynb) | Documents visuels générés comme code | vLLM local (AesCode-8B) | ~6 Go (INT4) / ~17 Go (bf16) | Produire des documents visuels HTML/CSS éditables par un VLM local, avec checklist de conformité mécanique |
 
 ## Prérequis
 
@@ -92,6 +100,12 @@ Brief → gpt-image-1 (génération) → Édition → Validation → Livraison
 ```
 Batch → Queue → Processing → QC → Output → Analytics
 ```
+
+## Approfondissements
+
+- **La voie cloud quand la licence ferme la voie locale** : [04-5](04-5-MiniMax-Cloud-Image.ipynb) documente l'arbitrage (API Hailuo, artefacts PNG + `metadata.json` commités) et se lit en regard de la voie locale des carnets [02-Advanced](../02-Advanced/README.md).
+- **Le VLM qui écrit du code plutôt que des pixels** : [04-6](04-6-AesCode-Visual-Documents.ipynb) remplace la génération d'image par la génération de HTML/CSS éditable, avec une checklist de conformité qui vérifie le contenu produit — le contre-modèle des carnets de diffusion du niveau.
+- **Le legacy assumé** : [04-4](04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb) est conservé pour l'usage (conversion de patrons), pas comme modèle de pipeline ; les pipelines actuels passent par 04-1 à 04-3.
 
 ## Ressources
 

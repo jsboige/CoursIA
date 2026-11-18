@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 """Tests du tirage d'echantillon d'evaluation humaine (#20222, critere 1).
 
-Couvre : determinisme graine, bornes de stratification, regle d'unite
-(texte x noeud, dedup), exclusions par conception, exclusion NOT_FOUND,
-integrite de la table de rollup contre le CSV d'alignement.
+Depuis l'unification des populations : le tirage lit ``aligned_corpus.jsonl``
+(l'artefait de reference produit par ``build_aligned_eval_corpus.py``) au lieu
+de reconstruire le join. Le test cle epingle ``population ==
+len(aligned_corpus.jsonl)`` -- sans lui, la derive deux-populations (257
+contre 257 attendues vs 225 reelles, regles d'exclusion divergentes) revient
+au prochain ajout de regle cote builder.
+
+Couvre : epingle de population, determinisme graine, bornes de stratification,
+unicite (texte x noeud, heritee du builder), absence de texte verbatim dans
+les sorties (licence CC-BY-SA sous NOTICE), exclusions amont atteintes, lookup
+verdict par identifiant d'artefact (exact + pont, insensible a la casse).
 """
 from __future__ import annotations
 
@@ -17,7 +25,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT = REPO_ROOT / "scripts/fallacy_detection/draw_evaluation_sample.py"
-ALIGNMENT_CSV = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic/logic_mafalda_to_argumentum.csv"
+CORPUS = REPO_ROOT / "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic/aligned/aligned_corpus.jsonl"
 
 
 def _load_module():
@@ -35,39 +43,55 @@ def mod():
 
 @pytest.fixture(scope="module")
 def population(mod):
-    pairs, _unjoinable, _unaligned = mod.build_pairs(mod.load_alignment())
-    return pairs
+    return mod.load_pairs(mod.ALIGNED_CORPUS, mod.load_alignment())
 
 
-def test_rollup_joinable_complet(mod):
-    """Apres la correction case-insensitive + 'ad hominem', aucun libelle du
-    corpus ne reste hors la table (les exclusions par conception mises a part).
-    """
-    _, unjoinable, _ = mod.build_pairs(mod.load_alignment())
-    inattendus = {l for l in unjoinable if l not in mod.PAPER_L2_SANS_INVENTAIRE}
-    assert not inattendus, f"libelles non joinables hors papier-L2 : {inattendus}"
+def test_population_egale_corpus_aligne(mod, population):
+    """L'EPOINGLE : la population du tirage EST le corpus aligne commis --
+    une ligne d'artefait, une paire. Si ce compte diverge, une seconde
+    implementation du join est nee quelque part."""
+    n_lignes = sum(1 for _ in CORPUS.open(encoding="utf-8"))
+    assert len(population) == n_lignes
 
 
-def test_rollup_vers_csv(population, mod):
-    """Chaque cible d'inventaire de la table de rollup existe dans le CSV
-    d'alignement (aucune cle morte)."""
-    import csv
-    with open(ALIGNMENT_CSV, encoding="utf-8") as f:
-        labels = {r["academic_label"] for r in csv.DictReader(f)}
-    for _corpus, (inv, _src) in mod.CORPUS_TO_INVENTORY.items():
-        assert inv in labels, f"{inv!r} absent du CSV d'alignement"
+def test_aucun_texte_dans_les_sorties(mod, population, tmp_path):
+    """Le texte verbatim (CC-BY-SA, sous NOTICE) ne sort JAMAIS du tirage :
+    les paires ne portent que des references, l'echantillon non plus."""
+    assert all("text" not in p for p in population)
+    sample = tmp_path / "s.jsonl"
+    manifest = tmp_path / "m.json"
+    assert mod.main(["--seed", "42", "--out-sample", str(sample),
+                     "--out-manifest", str(manifest)]) == 0
+    # Un fragment distinctif du premier enregistrement du corpus ne doit se
+    # retrouver nulle part dans l'echantillon.
+    first_text = json.loads(CORPUS.open(encoding="utf-8").readline())["text"]
+    fragment = first_text[:40]
+    contenu = sample.read_text(encoding="utf-8")
+    assert fragment not in contenu
+    for line in contenu.splitlines():
+        assert "text" not in json.loads(line)
 
 
-def test_unite_texte_noeud(population):
-    """Une paire par (texte, noeud) : pas de doublon."""
-    seen = [(p["source_file"], p["line_index"], p["node"]) for p in population]
+def test_unite_texte_noeud_artefact():
+    """Une paire par (TEXTE, noeud) -- la dedup est garantie a l'emission par
+    le builder, au niveau du span. Témoin : (texte, noeud) unique dans
+    l'artefact. NB (ligne gold, noeud) peut legitimement se repeter : deux
+    spans d'un meme enregistrement peuvent porter le meme libelle (fragments
+    distincts, memes noeud et ligne) -- 10 cas mesures sur les 225 paires."""
+    seen = []
+    for line in CORPUS.open(encoding="utf-8"):
+        rec = json.loads(line)
+        seen.append((rec["text"], rec["node"]))
     assert len(seen) == len(set(seen))
 
 
-def test_exclusions_par_conception(population, mod):
-    """'nothing' et 'to clean' ne produisent jamais de paire."""
-    assert "nothing" in mod.EXCLUDED_LABELS and "to clean" in mod.EXCLUDED_LABELS
-    assert all(p["corpus_label"] not in mod.EXCLUDED_LABELS for p in population)
+def test_exclusions_amont():
+    """Les exclusions par conception du builder atteignent l'artefait : aucun
+    libelle exclu ('nothing', 'to clean', L2 sans inventaire) n'y figure."""
+    exclus = {"nothing", "to clean", "appeal to worse problems", "false dilemma"}
+    labels = {json.loads(l)["source_label"].lower()
+              for l in CORPUS.open(encoding="utf-8")}
+    assert not (labels & exclus)
 
 
 def test_tirage_deterministe(mod, tmp_path):
@@ -113,24 +137,31 @@ def test_tirage_synthetic_bornes_serreess(mod):
     assert len(picked) == 4  # toute la population, plancher inatteignable
 
 
-def test_exclusion_insensible_casse(mod, tmp_path, monkeypatch):
-    """Un libelle exclu ecrit avec une casse differente ('Nothing') est exclu
-    par conception lui aussi -- pas route vers le rapport non-joinable."""
-    (tmp_path / "synthetic.jsonl").write_text(
-        json.dumps({"labels": [[0, 1, "Nothing"], [2, 3, "straw man"]],
-                    "text": "t"}) + "\n",
+def test_lookup_verdict_insensible_casse_et_ponts(mod, tmp_path):
+    """Le verdict est retrouve dans la table par l'identifiant que l'artefact
+    porte : source_label pour 'exact' (casse quelconque), cible du pont pour
+    'bridge:<L2>'. Aucune reimplementation des regles du builder."""
+    corpus = tmp_path / "aligned_corpus.jsonl"
+    corpus.write_text(
+        json.dumps({"text": "t1", "node": "FamA/NodeA", "source_label": "Straw Man",
+                    "match": "exact", "gold_line": 1}) + "\n" +
+        json.dumps({"text": "t2", "node": "FamB/NodeB", "source_label": "ad populum",
+                    "match": "bridge:Appeal to popularity", "gold_line": 2}) + "\n",
         encoding="utf-8",
     )
-    monkeypatch.setattr(mod, "CORPUS_FILES", ["synthetic.jsonl"])
-    monkeypatch.setattr(mod, "DATA_ACademic", tmp_path)
-    align = {"Straw man": {"academic_label": "Straw man",
-                           "best_name": "StrawManNode", "best_famille": "Fam",
-                           "verdict": "DIRECT"}}
-    pairs, unjoinable, _unaligned = mod.build_pairs(align)
-    assert [p["corpus_label"] for p in pairs] == ["straw man"]
-    # 'Nothing' exclue par conception : elle ne doit PAS se retrouver dans
-    # les non-joinables (c'est le symptome du test de casse avant correctif).
-    assert "nothing" not in unjoinable
+    align = {
+        "Straw man": {"academic_label": "Straw man", "best_name": "NodeA",
+                      "best_famille": "FamA", "verdict": "DIRECT"},
+        "Appeal to popularity": {"academic_label": "Appeal to popularity",
+                                 "best_name": "NodeB", "best_famille": "FamB",
+                                 "verdict": "PARTIAL"},
+    }
+    pairs = mod.load_pairs(corpus, align)
+    assert [(p["node"], p["family"], p["verdict"]) for p in pairs] == [
+        ("NodeA", "FamA", "DIRECT"),   # 'Straw Man' -> 'Straw man', casse pliee
+        ("NodeB", "FamB", "PARTIAL"),  # pont declare -> cle = cible du pont
+    ]
+    assert pairs[1]["inventory_label"] == "Appeal to popularity"
 
 
 def test_completion_au_prorata_des_restes(mod):

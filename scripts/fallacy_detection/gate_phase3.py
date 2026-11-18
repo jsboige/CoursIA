@@ -38,6 +38,17 @@ La marge est publiee en points ET en ecarts-types de la reference lexicale
 (``margin_vs_lexical_sigma``) : un BEATS a +0.1 sigma est un verdict fragile,
 et le dire fait partie du verdict.
 
+Le plancher du hasard est publie a cote du verdict (``chance_floor``). Sur les
+14 etiquettes de la reference, le hasard uniforme vaut 1/14 = 0.0714, tres
+au-dessus du majoritaire (0.0034) : un candidat peut donc « battre le
+majoritaire » sans rien valoir. Le gate ne tranche pas ce cas -- c'est l'objet de
+l'arbitrage de seuil de #25419 -- mais il rend ``candidate_below_chance``
+visible, pour qu'un ``BEATS_MAJORITY_ONLY`` a 0.0409 ne se lise pas comme un
+progres. Mesure de reference : le run FT de #20359 (0.0409) rend
+``BEATS_MAJORITY_ONLY`` par ce gate alors que son verdict publie est NO BEATS,
+parce que le NO BEATS etait rendu contre le hasard (0.0628), absent de la
+reference commitee.
+
 Limites dites :
 
 - ``ft_floor --limit`` (mesure partielle) n'est pas consigne au rapport : le
@@ -106,6 +117,22 @@ def load_reference(path: Path) -> dict:
     return reference
 
 
+def chance_floor(reference: dict) -> dict | None:
+    """Plancher du hasard uniforme : 1 / nombre d'etiquettes, quand il est connu.
+
+    Il ne remplace aucun verdict : il est publie a cote pour que le lecteur voie
+    qu'un ``BEATS_MAJORITY_ONLY`` peut vivre sous le hasard. Une reference sans
+    ``labels_total`` lisible rend ``None`` -- on n'invente pas un denominateur.
+    """
+    try:
+        labels = reference["baselines"]["majority_grouped"]["labels_total"]
+    except (KeyError, TypeError):
+        return None
+    if not isinstance(labels, int) or isinstance(labels, bool) or labels <= 0:
+        return None
+    return {"macro_f1": round(1.0 / labels, 4), "labels_total": labels}
+
+
 def candidate_measure(report: dict) -> tuple[str, dict] | None:
     """Rend (cle, mesure) du rapport candidat, None si le contrat n'est pas tenu."""
     for key in CANDIDATE_KEYS:
@@ -130,6 +157,7 @@ def gate(reference: dict, report: dict, reference_path: Path = DEFAULT_REFERENCE
     majority = reference["baselines"]["majority_grouped"]["macro_f1_mean"]
     lexical = reference["baselines"]["lexical_centroid_grouped"]["macro_f1_mean"]
     lexical_std = reference["baselines"]["lexical_centroid_grouped"]["macro_f1_std"]
+    chance = chance_floor(reference)
 
     if report.get("level") != reference["level"]:
         return _refused(report, "REFUSED_LEVEL",
@@ -191,6 +219,10 @@ def gate(reference: dict, report: dict, reference_path: Path = DEFAULT_REFERENCE
             "vs_lexical_points": round(macro - lexical, 4),
             "margin_vs_lexical_sigma": round((macro - lexical) / lexical_std, 2),
         },
+        "chance_floor": (None if chance is None else {
+            **chance,
+            "candidate_below_chance": macro < chance["macro_f1"],
+        }),
     }
 
 
@@ -207,6 +239,7 @@ def _refused(report: dict, verdict: str, reason: str, *, source: str | None = No
                       "folds": report.get("folds")},
         "reference": None,
         "margins": None,
+        "chance_floor": None,
     }
 
 
@@ -248,6 +281,11 @@ def main(argv: list[str] | None = None) -> int:
               f"{verdict['reference']['majority_macro_f1']:.4f} ; marge "
               f"{margins['vs_lexical_points']:+.4f} points "
               f"({margins['margin_vs_lexical_sigma']:+.2f} sigma de la reference)")
+        floor = verdict.get("chance_floor")
+        if floor and floor.get("candidate_below_chance"):
+            print(f"  sous le hasard uniforme : 1/{floor['labels_total']} = "
+                  f"{floor['macro_f1']:.4f} sur {floor['labels_total']} etiquettes "
+                  "-- ce verdict ne mesure aucun progres")
     return 0
 
 
