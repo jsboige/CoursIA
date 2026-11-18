@@ -586,11 +586,12 @@ jobs:
             || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
             || echo max)
           if [ "$mem_max" -gt 0 ] 2>/dev/null; then
-            # #27163 : 3/4 de la memoire pour les workers, 1/4 reserve au
-            # master xdist. L'ancienne formule (1 worker/Gio) donnait 4 workers
-            # dans un cgroup 4 Gio sans marge pour le master : un worker OOMait
-            # a 99 % sur la pleine suite (3 rouges consecutifs, sentinelle
-            # main-red #27163). 4 Gio -> 3 workers, 1 Gio libre pour le master.
+            # #27163 : 3/4 de la memoire du cgroup calibre le nombre de workers
+            # (budget indicatif de concurrence — PAS une reservation memoire :
+            # aucune cote par worker, rien de garanti au master xdist). L'ancienne
+            # formule (1 worker/Gio) donnait 4 workers dans un cgroup 4 Gio sans
+            # marge : un worker OOMait a 99 % sur la pleine suite (3 rouges
+            # consecutifs, sentinelle main-red #27163). 4 Gio -> 3 workers.
             xdist_n=$(( mem_max * 3 / 4 / 1073741824 ))
             [ "$xdist_n" -gt 4 ] && xdist_n=4
             [ "$xdist_n" -lt 1 ] && xdist_n=1
