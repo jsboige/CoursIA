@@ -135,12 +135,78 @@ def test_le_minuteur_reconnu_passe_meme_si_la_jambe_echoue():
 
 def test_horloge_en_arriere_ou_future_ne_passe_pas():
     """Une tete datee dans le futur (decalage de machine) ne doit pas etre
-    lue comme un plancher ecoule : fail-CLOSED."""
+    lue comme un plancher ecoule : fail-CLOSED.
+
+    Le deccalage se lit desormais dans le message de l'**emetteur** (`head_at`),
+    puisque c'est lui qui porte le plancher : c'est la date que l'emetteur a
+    ecrite qui doit etre dans le futur, pas une date recomputee.
+    """
     future = HEAD_AT + timedelta(days=1)
-    action, motif = decide(conclusion="failure", title=_pending_title(),
+    _ok, _rem, message = merge_dwell.evaluate(
+        committed_at=future, now=HEAD_AT + timedelta(hours=3), dwell_min=120.0)
+    action, motif = decide(conclusion="failure", title=message,
                            committed_at=future, now=HEAD_AT + timedelta(hours=3))
     assert action == "attendre"
-    assert "pas encore passe" in motif
+    assert "fail-CLOSED" in motif
+
+
+def test_le_plancher_vient_de_l_emetteur_pas_de_la_date_de_tete():
+    """Controle NEGATIF de l'update-branch sans conflit (c3271).
+
+    Apres un `update-branch` **sans conflit**, la tete est un commit de fusion
+    dont la date est **plus recente**, mais le contenu du cote PR n'a pas
+    change : le rafraichissement est *prouve* content-free, donc l'emetteur ne
+    rearme pas le plancher (`head_at` reste l'ancienne date). Un organe qui
+    recalculait le plancher depuis la date de tete disait « attendre » la ou
+    l'emetteur disait deja « plancher ecoule ».
+
+    Ici la date de tete est de **2 h** plus recente que le `head_at` du
+    message : si l'organe recalculait, il dirait « attendre » (plancher
+    22:57:52Z > maintenant 21:57:52Z). Il doit dire « rejouer ».
+    """
+    tete_plus_recente = HEAD_AT + timedelta(hours=2)
+    action, motif = decide(conclusion="failure", title=_pending_title(),
+                           committed_at=tete_plus_recente,
+                           now=HEAD_AT + timedelta(hours=3))
+    assert action == "rejouer"
+    assert "2026-11-18T20:57:52Z" in motif
+
+
+def test_le_dwell_de_l_emetteur_prime_sur_le_dwell_par_defaut():
+    """Le `dwell_min` du message est celui que l'emetteur a applique : il
+    prime sur le defaut du module (l'emetteur peut en choisir un autre)."""
+    _ok, _rem, message = merge_dwell.evaluate(
+        committed_at=HEAD_AT, now=HEAD_AT + timedelta(minutes=10), dwell_min=60.0)
+    action, motif = decide(conclusion="failure", title=message,
+                           committed_at=HEAD_AT, now=HEAD_AT + timedelta(minutes=90),
+                           dwell_min=120.0)
+    assert action == "rejouer"
+    assert "2026-11-18T19:57:52Z" in motif
+
+
+def test_un_brouillon_n_est_jamais_rejoue():
+    """Une PR en brouillon n'est pas mergeable : sa jambe n'est jamais rejouee,
+    et elle est separee de l'inventaire des PRs mergeables."""
+    action, motif = decide(conclusion="failure", title=_pending_title(),
+                           committed_at=HEAD_AT, now=HEAD_AT + timedelta(hours=3),
+                           draft=True)
+    assert action == "ignorer"
+    assert "brouillon" in motif
+
+
+def test_une_derogation_n_est_annoncee_que_si_les_labels_ont_ete_lus():
+    """Sans lecture des labels, aucune derogation n'est annoncee : le verdict
+    reste celui du minuteur (point 7 du coordinateur, c3271)."""
+    action, motif = decide(conclusion="failure", title=_pending_title(),
+                           committed_at=HEAD_AT, now=HEAD_AT + timedelta(hours=3),
+                           waived=False)
+    assert action == "rejouer"
+    assert "derogation" not in motif
+    action2, motif2 = decide(conclusion="failure", title=_pending_title(),
+                             committed_at=HEAD_AT, now=HEAD_AT + timedelta(hours=3),
+                             waived=True)
+    assert action2 == "ignorer"
+    assert "derogation" in motif2
 
 
 def test_dwell_desactive_rejoue_tout():
@@ -215,3 +281,103 @@ def test_open_pr_numbers_ne_boucle_pas_sur_une_page_pleine(monkeypatch):
     nums = replay_dwell_floors.open_pr_numbers("jsboige/CoursIA")
     assert len(nums) == 100
     assert len(appels) == 2
+
+
+# --------------------------------------------------------------------------
+# Collecteur de check-runs, lecture des labels, et rc de sortie (c3271)
+# --------------------------------------------------------------------------
+
+def test_le_collecteur_de_check_runs_signale_une_couverture_incomplete(monkeypatch):
+    """Au-dela de `per_page` check-runs, la liste est tronquee : la jambe
+    `PR gate` peut manquer, et « pas de check-run trouve » n'est **pas** une
+    absence. La couverture est signalee (point 2 du coordinateur)."""
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        # une page pleine a chaque fois -> le plafond de pages est atteint
+        return {"check_runs": [{"name": "PR gate", "id": i, "started_at": "2026-11-18T20:00:00Z"}
+                               for i in range(100)]}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    run, complete = replay_dwell_floors.gate_check_run(
+        "jsboige/CoursIA", "deadbeef", per_page=100, max_pages=2)
+    assert complete is False
+    assert run is not None  # la jambe a ete vue, mais la lecture est partielle
+
+
+def test_le_collecteur_de_check_runs_signale_la_couverture_complete(monkeypatch):
+    """Une page finale courte signe la fin de la liste : la couverture est
+    complete et la lecture est fiable."""
+    import replay_dwell_floors
+
+    appels = []
+
+    def faux_gh_json(path):
+        appels.append(path)
+        page = int(path.split("&page=")[1])
+        if page == 1:
+            return {"check_runs": [{"name": "PR gate", "id": 1,
+                                    "started_at": "2026-11-18T20:00:00Z"}] * 100}
+        return {"check_runs": [{"name": "Autre", "id": 2,
+                                "started_at": "2026-11-18T20:01:00Z"}]}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    run, complete = replay_dwell_floors.gate_check_run("jsboige/CoursIA", "deadbeef")
+    assert complete is True
+    assert run["id"] == 1
+    assert len(appels) == 2
+
+
+def test_pr_info_lit_les_labels_et_le_statut_de_brouillon(monkeypatch):
+    """Les labels et le `draft` viennent de la meme charge utile que la tete :
+    une derogation n'est annoncee respectee que si les labels ont ete lus."""
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return {"head": {"sha": "abc123"},
+                "labels": [{"name": "merge-dwell-waived"}, {"name": "bug"}],
+                "draft": True}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    info = replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+    assert info["sha"] == "abc123"
+    assert info["draft"] is True
+    assert "merge-dwell-waived" in info["labels"]
+
+
+def test_un_rejeu_refuse_sort_en_rc_non_nul(monkeypatch):
+    """Un geste rate doit etre visible par le consommateur : l'organe sortait
+    0 meme apres un refus (point 4 du coordinateur, c3271)."""
+    import replay_dwell_floors
+
+    monkeypatch.setattr(replay_dwell_floors, "inspect_pr", lambda *a, **k: {
+        "pr": 1, "action": "rejouer", "motif": "plancher brut passe",
+        "run_id": "42", "job_id": "43", "draft": False})
+    monkeypatch.setattr(replay_dwell_floors, "gh_rerun",
+                        lambda *a, **k: (1, "refuse"))
+    monkeypatch.setattr(sys, "argv",
+                        ["replay_dwell_floors.py", "--pr", "1", "--apply", "--json"])
+    rc = replay_dwell_floors.main()
+    assert rc == 1
+
+
+def test_le_rejeu_prend_le_repo_en_argument(monkeypatch):
+    """`gh run rerun` sans `--repo` agit sur le depot du repertoire courant
+    de l'appelant (point 3 du coordinateur, c3271)."""
+    import replay_dwell_floors
+
+    argv_vus = {}
+
+    def faux_run(cmd, *args, **kwargs):
+        argv_vus["cmd"] = cmd
+        class R:
+            returncode = 0
+            stdout = ""
+            stderr = ""
+        return R()
+
+    monkeypatch.setattr(replay_dwell_floors.subprocess, "run", faux_run)
+    rc, _out = replay_dwell_floors.gh_rerun("42", "43", "jsboige/CoursIA")
+    assert rc == 0
+    assert "--repo" in argv_vus["cmd"]
+    assert argv_vus["cmd"][argv_vus["cmd"].index("--repo") + 1] == "jsboige/CoursIA"

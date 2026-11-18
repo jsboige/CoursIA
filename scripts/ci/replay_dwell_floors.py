@@ -92,6 +92,32 @@ def is_dwell_timer(title: str) -> bool:
     return parse_pending_message(title or "") is not None
 
 
+def emitter_floor(title: str) -> tuple[datetime, datetime, float] | None:
+    """`(plancher brut, head_at, dwell_min)` lus dans le message de l'emetteur.
+
+    Le plancher n'est plus **recalcule** par l'organe : il est **lu** dans le
+    message que l'emetteur a produit pour la tete exacte. `head_at` est la
+    date de `last_authoritative_committed_at()` -- le dernier commit qui
+    **modifie le cote PR** -- et `dwell_min` est le dwell que l'emetteur a
+    reellement applique (il peut differer du defaut du module).
+
+    Pourquoi (c3271, exige du coordinateur) : l'organe recalculait le
+    plancher depuis la date de **tete**. Apres un `update-branch` **sans
+    conflit**, la date de tete est plus recente que `head_at` -- le
+    rafraichissement de base est *prouve* content-free, il ne rearme donc pas
+    le plancher -- et le plancher de l'organe etait **plus tardif** que celui
+    de l'emetteur : l'organe disait « attendre » la ou le gate disait deja
+    « plancher ecoule ». Un plancher **lu** ne peut pas diverger de celui qui
+    l'a produit.
+    """
+    parsed = parse_pending_message(title or "")
+    if not parsed:
+        return None
+    head_at = parse_iso8601(parsed["head_at"])
+    dwell_min = float(parsed["dwell_min"])
+    return head_at + timedelta(minutes=dwell_min), head_at, dwell_min
+
+
 def decide(
     *,
     conclusion: str,
@@ -101,13 +127,15 @@ def decide(
     dwell_min: float = DEFAULT_DWELL_MIN,
     waived: bool = False,
     status: str = "completed",
+    draft: bool = False,
 ) -> tuple[str, str]:
     """Decide quoi faire d'une jambe `PR gate`. Fonction PURE.
 
     Renvoie `(action, motif)` avec `action` dans :
       - ``"rejouer"``  : le plancher brut est passe, la jambe est un minuteur ;
       - ``"attendre"`` : plancher brut pas encore passe, ou jambe EN COURS ;
-      - ``"ignorer"``  : rien a faire (legende verte, derogation, rouge reel).
+      - ``"ignorer"``  : rien a faire (legende verte, derogation, brouillon,
+        rouge reel).
 
     Un rouge **reel** (echec qui n'est pas le minuteur) n'est jamais rejoue :
     rejouer un test rouge rend le MEME rouge, et le cache des legs la rendrait
@@ -120,16 +148,33 @@ def decide(
     mauvaise famille, et un consommateur qui s'arrete sur ce verdict abandonnait
     la PR. Une jambe qui n'a pas fini n'est **ni verte ni rouge** -- elle est en
     cours, et le seul geste possible est d'attendre.
+
+    Le plancher est celui de l'**emetteur** (`emitter_floor`), pas un recalcul
+    depuis `committed_at` : voir la note de `emitter_floor`. `committed_at` et
+    `dwell_min` ne servent plus qu'a l'affichage et a la compatibilite de
+    l'appel ; le verdict, lui, sort du message.
+
+    Une `head_at` **dans le futur** (decalage d'horloge entre l'hote qui a
+    produit le message et celui qui le lit) ne vaut pas un plancher ecoule :
+    fail-CLOSED.
     """
+    if draft:
+        return "ignorer", ("PR en brouillon -- exclue par conception "
+                           "(comme le balayeur `pr-gate-stale-sweep.yml`), "
+                           "jamais rejouee")
     if conclusion == "success":
         return "ignorer", "jambe verte"
     if waived:
         return "ignorer", "derogation par label `{}`".format(WAIVER_LABEL)
     if status and status != "completed":
         return "attendre", "jambe en cours (statut `{}`)".format(status)
-    if not is_dwell_timer(title):
+    plancher = emitter_floor(title)
+    if plancher is None:
         return "ignorer", "echec qui n'est pas le minuteur DWELL (rouge reel)"
-    floor = dwell_floor(committed_at, dwell_min)
+    floor, head_at, _dwell_reel = plancher
+    if head_at > now:
+        return "attendre", ("tete datee dans le futur ({}) -- fail-CLOSED".format(
+            head_at.strftime("%Y-%m-%dT%H:%M:%SZ")))
     if now < floor:
         return "attendre", "plancher brut pas encore passe ({})".format(
             floor.strftime("%Y-%m-%dT%H:%M:%SZ"))
@@ -193,14 +238,63 @@ def pr_head_sha(repo: str, number: int) -> str:
     return str(payload["head"]["sha"])  # type: ignore[index]
 
 
-def gate_check_run(repo: str, sha: str) -> dict | None:
-    """La check-run `PR gate` de cette tete (la plus recente par nom)."""
-    payload = gh_json("repos/{}/commits/{}/check-runs?per_page=100".format(repo, sha))
-    runs = [r for r in payload.get("check_runs", []) if r.get("name") == GATE_NAME]
-    if not runs:
-        return None
-    runs.sort(key=lambda r: (r.get("started_at") or "", r.get("id") or 0))
-    return runs[-1]
+def pr_info(repo: str, number: int) -> dict:
+    """Ce qu'il faut de la PR pour decider : tete, labels, etat brouillon.
+
+    Les `labels` et le `draft` sont lus dans la **meme** charge utile que la
+    tete : une derogation ne peut etre annoncee respectee que si ses labels
+    ont ete **lus** (point 7 du coordinateur, c3271), et un brouillon doit
+    etre identifiable pour etre mis a part (point 3 du message de 22:46Z).
+    """
+    payload = gh_json("repos/{}/pulls/{}".format(repo, number))
+    if not isinstance(payload, dict):
+        raise RuntimeError("PR {} : charge utile illisible".format(number))
+    head = payload.get("head")
+    head = head if isinstance(head, dict) else {}
+    labels = payload.get("labels")
+    labels = labels if isinstance(labels, list) else []
+    return {
+        "sha": str(head.get("sha") or ""),
+        "labels": [str(l.get("name") or "") for l in labels
+                   if isinstance(l, dict)],
+        "draft": bool(payload.get("draft")),
+    }
+
+
+def gate_check_run(repo: str, sha: str, per_page: int = 100,
+                  max_pages: int = 20) -> tuple[dict | None, bool]:
+    """`(la check-run `PR gate` la plus recente, couverture complete ?)`.
+
+    CORRECTION c3271 (point 2 du coordinateur) : la lecture ne se limitait pas
+    a la premiere page. Au-dela de 100 check-runs sur une tete, la liste est
+    **tronquee** et la jambe `PR gate` peut ne pas y etre : decider sur une
+    lecture partielle reviendrait a decider sur une absence, et « pas de
+    check-run trouve » n'est **pas** une absence. La couverture est donc
+    signalee, et l'appelant **refuse de decider** sur une lecture incomplete.
+    """
+    runs: list[dict] = []
+    complete = True
+    page = 1
+    while True:
+        payload = gh_json(
+            "repos/{}/commits/{}/check-runs?per_page={}&page={}".format(
+                repo, sha, per_page, page))
+        if not isinstance(payload, dict):
+            raise RuntimeError("check-runs illisibles pour {}".format(sha))
+        chunk = payload.get("check_runs")
+        chunk = chunk if isinstance(chunk, list) else []
+        runs.extend(r for r in chunk if isinstance(r, dict))
+        if len(chunk) < per_page:
+            break
+        page += 1
+        if page > max_pages:
+            complete = False
+            break
+    gates = [r for r in runs if r.get("name") == GATE_NAME]
+    if not gates:
+        return None, complete
+    gates.sort(key=lambda r: (r.get("started_at") or "", r.get("id") or 0))
+    return gates[-1], complete
 
 
 def job_ref(details_url: str) -> tuple[str, str] | None:
@@ -211,9 +305,15 @@ def job_ref(details_url: str) -> tuple[str, str] | None:
     return match.group(1), match.group(2)
 
 
-def gh_rerun(run_id: str, job_id: str) -> tuple[int, str]:
+def gh_rerun(run_id: str, job_id: str, repo: str = REPO_DEFAULT) -> tuple[int, str]:
+    """Rejoue une jambe. `--repo` est **explicite** (c3271, point 3).
+
+    Sans `--repo`, `gh run rerun` agit sur le depot du **repertoire courant**
+    de l'appelant : l'organe pouvait rejouer un run d'un autre depot -- ou
+    echouer sur un depot sans ce run -- alors qu'il mesure un repo donne.
+    """
     completed = subprocess.run(
-        ["gh", "run", "rerun", run_id, "--job", job_id],
+        ["gh", "run", "rerun", run_id, "--job", job_id, "--repo", repo],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
         check=False,
     )
@@ -228,9 +328,17 @@ def inspect_pr(repo: str, number: int, now: datetime,
                 dwell_min: float = DEFAULT_DWELL_MIN) -> dict:
     """Etat d'une PR pour le minuteur DWELL (lecture seule)."""
     entry: dict = {"pr": number, "action": "ignorer", "motif": ""}
-    sha = pr_head_sha(repo, number)
+    info = pr_info(repo, number)
+    sha = info["sha"]
     entry["head_sha"] = sha
-    gate = gate_check_run(repo, sha)
+    entry["draft"] = info["draft"]
+    entry["labels_lus"] = True
+    gate, couverture = gate_check_run(repo, sha)
+    if not couverture:
+        entry["action"] = "incomplet"
+        entry["motif"] = ("couverture des check-runs INCOMPLETE -- lecture "
+                          "partielle, aucune decision prise")
+        return entry
     if gate is None:
         entry["motif"] = "aucune check-run `{}` sur cette tete".format(GATE_NAME)
         return entry
@@ -242,10 +350,24 @@ def inspect_pr(repo: str, number: int, now: datetime,
     entry["gate_title"] = title[:200]
     committed_at = head_committed_at(repo, sha)
     entry["committed_at"] = committed_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-    entry["floor"] = dwell_floor(committed_at, dwell_min).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # Plancher de l'EMETTEUR (lu dans le message), et non recalcule : les deux
+    # peuvent diverger apres un `update-branch` sans conflit.
+    plancher = emitter_floor(title)
+    if plancher is not None:
+        floor, head_at, dwell_reel = plancher
+        entry["head_at_emetteur"] = head_at.strftime("%Y-%m-%dT%H:%M:%SZ")
+        entry["dwell_min_emetteur"] = dwell_reel
+        entry["floor"] = floor.strftime("%Y-%m-%dT%H:%M:%SZ")
+    else:
+        entry["floor"] = dwell_floor(committed_at, dwell_min).strftime(
+            "%Y-%m-%dT%H:%M:%SZ")
+    # Derogation : annoncee seulement si les labels ont ete LUS (ils viennent
+    # de la meme charge utile que la tete).
+    waived = WAIVER_LABEL in info["labels"]
+    entry["derogation"] = waived
     action, motif = decide(conclusion=conclusion, title=title,
                            committed_at=committed_at, now=now, dwell_min=dwell_min,
-                           status=status)
+                           status=status, waived=waived, draft=info["draft"])
     entry["action"] = action
     entry["motif"] = motif
     ref = job_ref(gate.get("details_url") or "")
@@ -277,35 +399,53 @@ def main() -> int:
 
     now = datetime.now(timezone.utc)
     entries: list[dict] = []
+    echecs = 0            # geste rate (rejeu refuse) ou PR illisible
+    incomplets = 0        # lecture incomplete -> aucune decision possible
     for number in numbers:
         try:
             entry = inspect_pr(args.repo, number, now, args.dwell_min)
         except RuntimeError as exc:
-            entry = {"pr": number, "action": "ignorer", "motif": "erreur: {}".format(exc)}
+            entry = {"pr": number, "action": "erreur", "motif": "erreur: {}".format(exc)}
+            echecs += 1
+        if entry.get("action") == "incomplet":
+            incomplets += 1
         if args.apply and entry.get("action") == "rejouer":
             run_id, job_id = entry.get("run_id"), entry.get("job_id")
             if not run_id or not job_id:
-                entry["motif"] = "run/job introuvables : {}".format(entry.get("gate_title", "")[:80])
+                entry["motif"] = "run/job introuvables : {}".format(
+                    entry.get("gate_title", "")[:80])
+                entry["rerun_rc"] = 1
+                echecs += 1
             else:
-                rc, out = gh_rerun(run_id, job_id)
+                rc, out = gh_rerun(run_id, job_id, args.repo)
                 entry["rerun_rc"] = rc
                 entry["rerun_sortie"] = out[:200]
                 if rc != 0:
                     entry["motif"] = "rejeu refuse : {}".format(out[:160])
+                    echecs += 1
         entries.append(entry)
 
     counts: dict[str, int] = {}
     for entry in entries:
         counts[entry["action"]] = counts.get(entry["action"], 0) + 1
+    brouillons = sum(1 for e in entries if e.get("draft"))
+    # Un rejeu refuse doit etre **visible** par le consommateur : l'organe
+    # sortait 0 meme apres un echec du geste (c3271, point 4). Ici :
+    #   0 = lecture seule, ou tous les gestes tentes ont reussi ;
+    #   1 = au moins un geste rate (rejeu refuse) ;
+    #   2 = inventaire incomplet (PR illisible ou couverture tronquee).
+    rc_final = 1 if echecs else (2 if incomplets else 0)
     if args.json:
         print(json.dumps({"repos": args.repo, "apply": args.apply,
+                          "rc": rc_final, "echecs": echecs,
+                          "incomplets": incomplets, "brouillons": brouillons,
                           "compteurs": counts, "prs": entries},
                          ensure_ascii=False, indent=2))
     else:
         for entry in entries:
             print("#{} [{}] {}".format(entry["pr"], entry["action"], entry["motif"]))
-        print("compteurs: {}".format(counts))
-    return 0
+        print("compteurs: {} (brouillons: {})".format(counts, brouillons))
+    return rc_final
 
 
 if __name__ == "__main__":
