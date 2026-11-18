@@ -1428,6 +1428,13 @@ HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
 HYBRID_RUNS_ON_LABELS = WAITER_LABELS  # kept for backward compat (single set)
 HYBRID_RUNS_ON_LABEL_SETS = (WAITER_LABELS, LINUX_RUNNER_LABELS)
 HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
+# #27184 (18/11) : le repli heberge audite accepte AUSSI l'image pinniee
+# ``ubuntu-24.04``. Le rollout d'Ubuntu 26.04 sur ``ubuntu-latest`` a retire
+# Python 3.9 de l'image ; les workflows qui l'installent (ict-tests.yml,
+# slow-lane.yml) pinnent leur repli/scale heberge sur 24.04. Les DEUX
+# litteraux restent heberges GitHub (GITHUB_HOSTED_LABELS) : aucun routage
+# nouveau vers le parc local, la chaine d'audit garde son sens.
+HYBRID_RUNS_ON_FALLBACKS = ("ubuntu-latest", "ubuntu-24.04")
 # Variable de depot de la seconde garde (phase A du debordement, #22461) :
 # nom et valeur ENUMERES -- cf. bloc de commentaire ci-dessus.
 CI_OVERFLOW_LOCAL_VAR = "CI_OVERFLOW_LOCAL"
@@ -1542,7 +1549,7 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, Any] | None:
     allowed_label_sets = HYBRID_RUNS_ON_GUARD_LABEL_SETS.get(guard)
     if allowed_label_sets is None:
         return None
-    if match.group("fallback") != HYBRID_RUNS_ON_FALLBACK:
+    if match.group("fallback") not in HYBRID_RUNS_ON_FALLBACKS:
         return None
     try:
         labels = {str(item) for item in json.loads(match.group("labels"))}
@@ -1687,8 +1694,12 @@ def _chain_runs_on(runs_on: Any) -> dict[str, Any] | None:
             # Un repli au milieu de la chaine n'est pas une forme auditee.
             return None
         stripped = part.strip()
-        if stripped in (f"'{HYBRID_RUNS_ON_FALLBACK}'", f'"{HYBRID_RUNS_ON_FALLBACK}"'):
-            fallback = HYBRID_RUNS_ON_FALLBACK
+        if stripped in {
+            f"'{label}'" for label in HYBRID_RUNS_ON_FALLBACKS
+        } | {
+            f'"{label}"' for label in HYBRID_RUNS_ON_FALLBACKS
+        }:
+            fallback = stripped.strip("'\"")
             continue
         fallback_match = _CHAIN_FALLBACK_LABELS_PATTERN.match(part)
         if fallback_match is None:
@@ -1999,20 +2010,20 @@ def _guard_violation_message(condition: str) -> str:
 
 
 def _is_naked_hosted_runner(runs_on: Any) -> bool:
-    """Vrai si ``runs-on`` ne nomme QUE le label heberge par defaut.
+    """Vrai si ``runs-on`` ne nomme QU'un label heberge du ratchet.
 
-    ``ubuntu-latest`` seul (scalaire) ou une liste a un seul element
-    ``[ubuntu-latest]``. Une expression (forme hybride), un label self-hosted
-    ou une liste multi-labels ne sont PAS « nus » : ils sont deja routes, ou
-    le sont par construction.
+    ``ubuntu-latest`` ou l'image pinniee ``ubuntu-24.04`` (#27184), seuls
+    (scalaire) ou en liste a un seul element. Une expression (forme hybride),
+    un label self-hosted ou une liste multi-labels ne sont PAS « nus » : ils
+    sont deja routes, ou le sont par construction.
     """
     if isinstance(runs_on, str):
-        return runs_on.strip().lower() == HYBRID_RUNS_ON_FALLBACK
+        return runs_on.strip().lower() in HYBRID_RUNS_ON_FALLBACKS
     if isinstance(runs_on, list):
         return (
             len(runs_on) == 1
             and isinstance(runs_on[0], str)
-            and runs_on[0].strip().lower() == HYBRID_RUNS_ON_FALLBACK
+            and runs_on[0].strip().lower() in HYBRID_RUNS_ON_FALLBACKS
         )
     return False
 

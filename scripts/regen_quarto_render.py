@@ -85,7 +85,6 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/Sudoku/",                # tranche 2 #10923 (37)
     "MyIA.AI.Notebooks/GameTheory/",            # tranche 2 #10923 (56)
     "MyIA.AI.Notebooks/Probas/",                # tranche 2 #10923 (58)
-    "MyIA.AI.Notebooks/Symmetry/",              # serie Symmetry #25324 (groupes de frieze, art generatif)
     "MyIA.AI.Notebooks/CaseStudies/",            # tranche 15 #10923 (6)
     "MyIA.AI.Notebooks/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
     "MyIA.AI.Notebooks/NLP/",                    # tranche 19 #18423 (5, TAL/TALN)
