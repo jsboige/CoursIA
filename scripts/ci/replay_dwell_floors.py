@@ -159,9 +159,33 @@ def gh_json(path: str) -> object:
         raise RuntimeError("gh api {} : JSON illisible".format(path)) from exc
 
 
-def open_pr_numbers(repo: str) -> list[int]:
-    payload = gh_json("repos/{}/pulls?state=open&per_page=100".format(repo))
-    return [int(p["number"]) for p in payload]  # type: ignore[index]
+def open_pr_numbers(repo: str, per_page: int = 100) -> list[int]:
+    """Toutes les PR ouvertes du depot -- **toutes les pages**.
+
+    CORRECTION c3271 : la version precedente lisait UNE seule page
+    (`per_page=100`, sans pagination). Le depot comptait 194 PRs ouvertes le
+    2026-11-18 : `--all` n'examinait que les 100 premieres (les plus
+    recentes, l'ordre par defaut de l'API), soit **la moitie du parc** -- et
+    l'organe annoncait dans son aide « examine toutes les PR ouvertes du
+    depot ». Une promesse que l'organe ne tient pas est un defaut de
+    l'organe : on pagine jusqu'a epuisement, et on expose le nombre de pages
+    lues dans la sortie JSON pour que l'ecart soit verifiable.
+    """
+    numbers: list[int] = []
+    page = 1
+    while True:
+        payload = gh_json(
+            "repos/{}/pulls?state=open&per_page={}&page={}".format(
+                repo, per_page, page))
+        if not isinstance(payload, list) or not payload:
+            break
+        numbers.extend(int(p["number"]) for p in payload)
+        if len(payload) < per_page:
+            break
+        page += 1
+        if page > 100:  # garde-fou : ne pas boucler sur une API qui
+            break       # renverrait toujours la meme page pleine
+    return numbers
 
 
 def pr_head_sha(repo: str, number: int) -> str:

@@ -164,3 +164,54 @@ def test_job_ref_none_si_url_inconnue():
 @pytest.mark.parametrize("dwell_min", [60.0, 120.0, 240.0])
 def test_le_plancher_suit_le_dwell(dwell_min):
     assert dwell_floor(HEAD_AT, dwell_min) == HEAD_AT + timedelta(minutes=dwell_min)
+
+
+# --------------------------------------------------------------------------
+# Pagination de la liste des PR ouvertes (correction c3271)
+# --------------------------------------------------------------------------
+
+def test_open_pr_numbers_pagine_jusqu_a_epuisement(monkeypatch):
+    """`--all` doit voir TOUTES les PRs ouvertes, pas la premiere page.
+
+    Mesure du 2026-11-18 : le depot comptait 194 PRs ouvertes ; la lecture
+    d'une seule page (`per_page=100`, sans pagination) n'en voyait que 100
+    -- les plus recentes -- alors que l'aide de l'organe annoncait « examine
+    toutes les PR ouvertes du depot ». La promesse non tenue est le defaut.
+    """
+    import replay_dwell_floors
+
+    pages = {
+        1: [{"number": n} for n in range(1, 101)],
+        2: [{"number": n} for n in range(101, 195)],
+    }
+    appels = []
+
+    def faux_gh_json(path):
+        appels.append(path)
+        return pages.get(int(path.split("&page=")[1]), [])
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    nums = replay_dwell_floors.open_pr_numbers("jsboige/CoursIA")
+    assert len(nums) == 194
+    assert nums[0] == 1 and nums[-1] == 194
+    assert len(appels) == 2
+
+
+def test_open_pr_numbers_ne_boucle_pas_sur_une_page_pleine(monkeypatch):
+    """Une page exactement pleine force une page de plus : la page vide qui
+    suit doit arreter la lecture (et non la faire boucler)."""
+    import replay_dwell_floors
+
+    appels = []
+
+    def faux_gh_json(path):
+        appels.append(path)
+        page = int(path.split("&page=")[1])
+        if page == 1:
+            return [{"number": n} for n in range(1, 101)]
+        return []
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    nums = replay_dwell_floors.open_pr_numbers("jsboige/CoursIA")
+    assert len(nums) == 100
+    assert len(appels) == 2
