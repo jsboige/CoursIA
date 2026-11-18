@@ -422,3 +422,147 @@ def test_resolve_filtrage_par_cle(tmp_path, monkeypatch):
     assert len(all_files) == 5
     coursia = tbf.resolve_dashboard_files(None, key="CoursIA")
     assert [p.name for p in coursia] == ["workspace-CoursIA-2.md", "workspace-CoursIA-3.md"]
+
+
+# ---------------------------------------------------------------------------
+# Suite du 2026-11-15 — les quatre defauts mesures apres le premier usage reel
+# de l'organe (#26624). Chaque fixture reproduit une forme REELLE du miroir.
+# ---------------------------------------------------------------------------
+
+FIXTURE_D_MARQUEUR_GRAS = """### [2026-11-14T22:55:00.000Z] myia-po-2028|CoursIA-3
+[tags: DONE]
+
+[DONE][SECRETARY] c3110 — 00:05→00:30 local
+
+**Les 5 rubriques** : (1) inbox 0 · (2) main · (3) quota · (4) pool · (5) urne.
+
+**[FREINS]** — top-3 du cycle, en minutes mesurées
+- quota GraphQL épuisé — 12 min — reset horaire — infra GitHub.
+- famine runners sur #26590 — 8 min — capacité — infra.
+
+---
+"""
+
+FIXTURE_E_TROIS_ECRITURES_MEME_OBJET = """### [2026-11-14T23:00:00.000Z] myia-po-2028|CoursIA-3
+[tags: DONE]
+
+[DONE][SECRETARY] c3111 — 00:40→01:00 local
+
+[FREINS]
+- Famine runners sur #26581 — 17 min — capacité — infra.
+- Analyze (python) #26581 QUEUED — 35 min — capacité hosted — infra.
+- runners hosted satures #26581 (gate en attente) — 60 min — capacité — infra.
+
+---
+"""
+
+FIXTURE_F_CROSSPOST = """### [2026-11-14T23:20:00.000Z] myia-po-2028|CoursIA-3
+[tags: DONE]
+
+[DONE][SECRETARY] c3112 — 01:40→02:00 local
+
+[FREINS]
+- quota REST épuisé — 9 min — reset horaire — infra.
+
+---
+"""
+
+
+def test_marqueur_en_gras_et_suffixe_reconnu():
+    """Defaut 3 : `**[FREINS]** — top-3 ...` ouvre le bloc. Sans cette tolerance,
+    trois chiffres reels existaient et comptaient 0."""
+    report = _report([FIXTURE_D_MARQUEUR_GRAS])
+    assert report["fenetre"]["entrees_done"] == 1
+    assert report["total_min_mesurees"] == 20
+    assert report["fautifs"] == []
+
+
+def test_marqueur_nu_toujours_reconnu():
+    """Non-regression : la forme nue `[FREINS]` reste le cas nominal."""
+    report = _report([FIXTURE_E_TROIS_ECRITURES_MEME_OBJET])
+    assert report["total_min_mesurees"] == 112
+
+
+def test_puce_freins_entre_crochets_n_ouvre_pas_de_bloc():
+    """Une puce `- [FREINS] ...` n'est PAS le marqueur : sinon la premiere puce
+    serait avalee comme en-tete de son propre bloc."""
+    text = """### [2026-11-14T23:30:00.000Z] myia-po-2028|CoursIA-3
+[tags: DONE]
+
+[DONE][SECRETARY] c3113
+
+[FREINS]
+- [FREINS] forme puce — 4 min — rien — n/a.
+
+---
+"""
+    report = _report([text])
+    assert report["total_min_mesurees"] == 4
+
+
+def test_cumul_par_objet_regroupe_trois_ecritures():
+    """Defaut 1 : trois ecritures d'une meme famine restent trois lignes dans le
+    cumul par cause (texte libre) mais UN seul objet cite, a 112 min."""
+    report = _report([FIXTURE_E_TROIS_ECRITURES_MEME_OBJET])
+    assert len(report["cumul_par_cause"]) == 3  # le texte libre ne regroupe pas
+    objets = {b["objet"]: b for b in report["cumul_par_objet"]}
+    assert objets["#26581"]["minutes"] == 112
+    assert objets["#26581"]["occurrences"] == 3
+    assert len(objets["#26581"]["causes"]) == 3
+
+
+def test_objet_impute_au_premier_et_somme_bornee_par_le_total():
+    """Une puce citant DEUX objets est imputee au premier : la somme par objet ne
+    depasse jamais le total mesure (pas de double comptage)."""
+    text = """### [2026-11-14T23:40:00.000Z] myia-po-2028|CoursIA-3
+[tags: DONE]
+
+[DONE][SECRETARY] c3114
+
+[FREINS]
+- blocage croise #26581 et #26582 — 30 min — arbitrage — ai-01.
+
+---
+"""
+    report = _report([text])
+    objets = {b["objet"]: b["minutes"] for b in report["cumul_par_objet"]}
+    assert objets == {"#26581": 30}
+    assert sum(objets.values()) <= report["total_min_mesurees"]
+
+
+def test_crosspost_compte_une_fois():
+    """Defaut 2 : le meme [DONE] present sur deux dashboards (meme en-tete, meme
+    lane, meme corps) compte une seule fois — sinon ses minutes doublent."""
+    report = _report([FIXTURE_F_CROSSPOST, FIXTURE_F_CROSSPOST])
+    assert report["fenetre"]["entrees_done"] == 1
+    assert report["fenetre"]["doublons_ecartes"] == 1
+    assert report["total_min_mesurees"] == 9
+
+
+def test_deux_cycles_distincts_ne_sont_pas_dedoubles():
+    """Deux [DONE] reels de la meme lane, a des heures differentes, restent deux."""
+    second = FIXTURE_F_CROSSPOST.replace("2026-11-14T23:20:00.000Z", "2026-11-14T23:50:00.000Z").replace("c3112", "c3113")
+    report = _report([FIXTURE_F_CROSSPOST, second])
+    assert report["fenetre"]["entrees_done"] == 2
+    assert report["fenetre"]["doublons_ecartes"] == 0
+    assert report["total_min_mesurees"] == 18
+
+
+def test_markdown_section_par_objet():
+    """La vue par objet est postable telle quelle et porte ses trois ecritures."""
+    md = tbf.render_markdown(_report([FIXTURE_E_TROIS_ECRITURES_MEME_OBJET]))
+    assert "### Cumul par objet cité" in md
+    assert "| #26581 | 112 | 3 | 0 |" in md
+
+
+def test_markdown_mentionne_les_doublons_ecartes():
+    md = tbf.render_markdown(_report([FIXTURE_F_CROSSPOST, FIXTURE_F_CROSSPOST]))
+    assert "1 doublon(s) cross-post écarté(s)" in md
+
+
+def test_force_utf8_stdio_no_op_sous_capture(capsys):
+    """Defaut 4 : l'appel ne casse pas un flux de capture (pytest) et laisse
+    passer un caractere non-ASCII — c'est le cas nominal sous Windows."""
+    tbf._force_utf8_stdio()
+    print("é → —")
+    assert "é" in capsys.readouterr().out

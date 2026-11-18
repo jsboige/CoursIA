@@ -25,9 +25,13 @@ origin main`, puis `git rev-list --count main..origin/main`) et refuse :
 * si la mesure est impossible (fetch hs, ref illisible) -- une mesure ratee
   ne se publie jamais comme un vert.
 
-Le clone qui n'est pas sur `main` se mesure quand meme : la reference mesuree
-est `refs/heads/main` quand elle existe (un worktree partage les refs du
-depot), sinon `HEAD`, et le verdict nomme la reference lue.
+Le clone qui n'est pas sur `main` se mesure quand meme : les references
+candidates sont `refs/heads/main` quand elle existe (un worktree partage les
+refs du depot) puis `HEAD`, l'ecart retenu est le plus petit des deux, et le
+verdict nomme la reference qui l'a donne. Un worktree cree depuis un
+`origin/main` frais passe donc, meme si le `main` partage du clone principal
+est en retard : le tirage ne lit qu'`origin/main`, et ce qu'il execute est
+deja verifie par la divergence des organes.
 
 `--allow-stale` passe outre, explicitement : le depassement est dit dans la
 sortie JSON (`outre_passe: true`). C'est la voie de la lane qui developpe
@@ -114,17 +118,30 @@ def mesurer(depot: str | Path, organes: tuple[str, ...] = ORGANES,
     if rc == 0:
         m["branche"] = out or "(detache)"
 
-    # Reference mesuree : le main LOCAL (un worktree partage les refs du
-    # depot, la branche courante n'y change rien) ; HEAD si main n'existe pas.
+    # References candidates : le main LOCAL (un worktree partage les refs du
+    # depot, la branche courante n'y change rien) PUIS le HEAD qui execute.
+    # Le tirage ne lit qu'origin/main ; ce qu'il execute est couvert par
+    # ORGANE_DIVERGENT. Un worktree cree depuis un origin/main frais est donc
+    # a jour meme quand le main partage du clone principal est en retard :
+    # retenir le plus petit ecart, et nommer la reference qui l'a donne
+    # (mesure du 15/11 : une lane refusee a 381 commits depuis un worktree
+    # frais, sans pouvoir toucher le checkout partage).
     rc, out, _ = run([*git, "rev-parse", "--verify", "-q", "refs/heads/main"], 30)
-    ref = "refs/heads/main" if rc == 0 and out else "HEAD"
-    m["ref_mesure"] = ref
-    rc, out, err = run([*git, "rev-list", "--count", f"{ref}..origin/main"], 60)
-    if rc != 0 or not out.strip().isdigit():
-        m["cause"] = (f"rev-list --count {ref}..origin/main illisible "
-                      f"(rc={rc}, {_premiere_ligne(err) or out[:80]})")
-        return m
-    m["ecart"] = int(out.strip())
+    candidates = (["refs/heads/main"] if rc == 0 and out else []) + ["HEAD"]
+    meilleur: tuple[int, str] | None = None
+    for ref in candidates:
+        rc, out, err = run([*git, "rev-list", "--count", f"{ref}..origin/main"], 60)
+        if rc != 0 or not out.strip().isdigit():
+            m["ref_mesure"] = ref
+            m["cause"] = (f"rev-list --count {ref}..origin/main illisible "
+                          f"(rc={rc}, {_premiere_ligne(err) or out[:80]})")
+            return m
+        ecart = int(out.strip())
+        if meilleur is None or ecart < meilleur[0]:
+            meilleur = (ecart, ref)
+        if ecart == 0:
+            break
+    m["ecart"], m["ref_mesure"] = meilleur
 
     rc, out, err = run([*git, "diff", "--name-only", "origin/main", "--", *organes], 60)
     if rc != 0:
@@ -182,8 +199,8 @@ def garder_et_dire(depot: str | Path, allow_stale: bool = False) -> dict:
 
     Le refus va sur ses deux canaux -- chaque raison sur stderr avec son
     remede, le verdict complet en JSON sur stdout -- et l'appelant (le point
-    d'entree du tapis) rend le code 4, distinct du 3 « lecture incomplete »
-    qui pointe le repli picker : ici le repli serait le contournement. Un
+    d'entree du tapis) rend le code 4, distinct du 3 « lecture incomplete » ;
+    aucun des deux ne renvoie au tapis lourd (#26926). Un
     outrepasse `--allow-stale` se dit sur stderr : il ne se prend pas en
     silence. Le tapis attache ensuite le verdict au rapport JSON (`fraicheur`).
     """
