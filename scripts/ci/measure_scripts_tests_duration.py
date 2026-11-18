@@ -182,6 +182,13 @@ def main(argv: list[str] | None = None) -> int:
 
     before = [m.duration_s for m in measurements if m.group == "before"]
     after = [m.duration_s for m in measurements if m.group == "after"]
+    by_conclusion: dict[str, dict[str, Any]] = {}
+    for group, subset in (("before", before), ("after", after)):
+        for m in measurements:
+            if m.group != group:
+                continue
+            key = f"{group}:{m.conclusion or 'unknown'}"
+            by_conclusion.setdefault(key, {"durations_s": []})["durations_s"].append(m.duration_s)
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "repo": args.repo,
@@ -192,6 +199,7 @@ def main(argv: list[str] | None = None) -> int:
         "runs_excluded_cancelled": True,
         "before": stats(before),
         "after": stats(after),
+        "by_conclusion": {key: stats(values) for key, values in sorted(by_conclusion.items())},
         "measurements": [
             {
                 "run_id": m.run_id,
