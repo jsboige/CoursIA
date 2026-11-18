@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-17
+> REFERENCE — vivante — dernière révision 2026-11-18
 
 # Décision Fish Audio S2 Pro — voie API vs voie locale (issue #19694)
 
@@ -27,24 +27,24 @@ La voie locale est **viable sur la 3080 Ti 16 Go** (pic VRAM ~9,7 GiB) et **bat 
 
 ### Voie API (état courant)
 
-Le pipeline audiobook consomme actuellement l'API Fish (`tts-fishaudio:8197`). Sur les **turns dramatiques** (interactivité, registre expressif), la voie API est mesurée à **WER 0,000** — une fidélité supérieure à la voie locale sur ce sous-ensemble.
+Le pipeline audiobook consomme actuellement l'API Fish (`tts-fishaudio:8197`). Sur les **turns dramatiques** (interactivité, registre expressif), la voie API est mesurée à **WER 0,000** — une mesure de fidélité sur ce sous-ensemble, sans mesure tête-à-tête contre la voie locale sur les mêmes turns.
 
-> **Limite de comparabilité** : le WER local (6,4 %) est mesuré sur la **narration batch**, le WER API (0,000) sur les **turns dramatiques** — ce sont deux sous-ensembles distincts, pas une mesure tête-à-tête sur le même corpus. Le contraste exploitable est donc *local = narration suffisante* / *API = expressivité supérieure*, pas *local < API globalement*.
+> **Limite de comparabilité** : le WER local (6,4 %) est mesuré sur la **narration batch**, le WER API (0,000) sur les **turns dramatiques** — ce sont deux sous-ensembles distincts, pas une mesure tête-à-tête sur le même corpus. Aucun classement de qualité entre les deux voies n'est donc mesuré ici : le WER n'évalue que la fidélité de transcription, pas l'expressivité, et il n'est pas relevé sur le même corpus de part et d'autre. L'attribution du chemin expressif à l'API est un **choix de conception** du routage (les turns dramatiques / interactifs y sont envoyés aujourd'hui), pas un résultat mesuré.
 
 ## Les trois options
 
 | Option | Qualité narration | Qualité dramatique | Coût / dépendance | VRAM |
 |---|---|---|---|---|
-| **Garder l'API** | dépend du quota API | la plus haute (0,000) | dépendance service + quota | 0 (local) |
-| **Basculer 100 % local** | bonne (WER 6,4 %) | inférieure à l'API | aucune dépendance, coût nul | ~9,7 GiB |
-| **Hybride** (recommandation) | bonne, en local | haute, en API | dépendance limitée au chemin expressif | ~9,7 GiB (chemin local) |
+| **Garder l'API** | dépend du quota API | WER 0,000 (dramatique, non comparé) | dépendance service + quota | 0 (local) |
+| **Basculer 100 % local** | WER 6,4 % (narration) | non mesurée sur les turns dramatiques | aucune dépendance, coût nul | ~9,7 GiB |
+| **Hybride** (recommandation) | WER 6,4 %, en local | WER 0,000, en API (non comparé) | dépendance limitée au chemin expressif | ~9,7 GiB (chemin local) |
 
 ## Recommandation argumentée
 
-La recommandation portée par le fil est l'**hybride** : **narration batch en local** (`audio.cpp` + S2 Pro Q8_0) + **chemin expressif/interactif en API**.
+La recommandation portée par le fil est l'**hybride**, **à la condition** que le routage expressif vers l'API soit retenu (prémisse de conception, non une qualité mesurée) : **narration batch en local** (`audio.cpp` + S2 Pro Q8_0) + **chemin expressif/interactif en API**.
 
 - La narration, qui est le gros du volume d'un audiobook, passe en local : qualité au-dessus de la baseline (WER 6,4 % < 9,7 %), **zéro coût par appel**, **zéro dépendance de quota** sur le chemin majoritaire.
-- Le chemin expressif (turns dramatiques, interactivité) reste en API, là où sa fidélité supérieure (WER 0,000) a de la valeur.
+- Le chemin expressif (turns dramatiques, interactivité) reste en API, qui y est aujourd'hui mesurée à WER 0,000 ; ce routage expressif vers l'API est la **prémisse** du choix hybride, pas une qualité mesurée contre la voie locale.
 - L'hybride n'importe la dépendance externe que sur le sous-ensemble expressif, et n'occupe le GPU (~9,7 GiB sur 16 Go) que pour le batch.
 
 Ce document pose l'évidence et la recommandation ; **il n'engage pas la décision**.
