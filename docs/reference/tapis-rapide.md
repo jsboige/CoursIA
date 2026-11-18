@@ -188,17 +188,23 @@ L'ordre des servables :
 | --- | --- | --- |
 | `FENETRE_J` | 7 | le tour sur lequel se compte le niveau |
 | `SEANCE_H` | 24 | deux marqueurs d'une lane plus proches que cela font une visite |
-| `AGE_CONSOLIDATION_J` | 60 | au-delà, une issue de consolidation a droit à plusieurs visites par tour |
-| `VISITES_CONSOLIDATION` | 3 | son niveau vaut `visites // 3` |
+| `BANDS_AGE_J` | (180, 120, 60, 30, 10) j | bonus d'âge : 0,1 visite par tranche franchie, plafonné à 0,5 |
+| `BONUS_CONSOLIDATION` | 0,4 visite | priorité de consolidation, à tout âge (label ou racine de famille) |
+| `BONUS_TOTAL_MAX` | 0,9 visite | borne du bonus total : une issue à 0 visite passe devant une issue à 1 visite |
 | `MARATHONS` | #26070, #26510 | racines des marathons de parité C# et Rust, hors équilibrage |
 | `TETE` | 24 | la tête de chaque niveau est décalée par lane |
 | `PART_CONTENEURS` | 0,25 | part au plus des conteneurs dans la liste (2 sur 8) ; ils la complètent s'il manque des grains |
 
-**Les deux exceptions du mandat.** Une issue de consolidation (label `consolidation`, ou fille d'une racine
-labellisée) ouverte depuis plus de 60 jours a pour niveau `visites // 3`. Les marathons (familles #26070 et
-#26510, titres commençant par « Marathon ») passent après tout le pool équilibré : c'est le harnais sk-agent
-qui les servira. Le rapport JSON dit pour chaque grain son nombre de visites du tour et au total, et nomme
-l'exception qui s'applique (champ `priorite`).
+**Les deux priorités légères du 18/11.** `coordination/tapis_avantages.py` porte deux contributions petites
+et distinctes, comptées en dixièmes de visite : le niveau reste ainsi un multiple de 0,1, et les issues se
+regroupent par niveau — c'est ce qui fait tourner la tête d'une lane à l'autre. La division par 3 des
+consolidations anciennes (`visites // 3`) disparaît : elle était plus forte qu'une priorité légère. Les
+marathons (familles #26070 et #26510, titres commençant par « Marathon ») passent après tout le pool équilibré :
+c'est le harnais sk-agent qui les servira. Le rapport JSON dit pour chaque grain son nombre de visites du tour
+et au total, et nomme les contributions qui s'appliquent (champ `priorite`).
+
+L'âge est compté en **jours pleins** : une bande franchie à cheval sur une tranche de quatre heures
+changerait la liste d'une lane à l'autre, et les tranches ne franchissent pas minuit.
 
 **La tête de chaque niveau est décalée par lane** (`sha256(graine|niveau)`, la graine portant la lane, la
 date et la tranche de quatre heures). Deux lanes qui tirent au même moment ne reçoivent donc pas la même
@@ -224,3 +230,24 @@ conteneur demande une lecture et un `--paths`.
 - Le **bandit de fermeture par zone** : la variété vient du tour de rôle par famille dans un niveau et du décalage par lane.
 - Les **plafonds par EPIC côté tirage pondéré** : le tour de rôle borne déjà la part d'une famille à un grain par tour. Le plafond hebdomadaire #22500 lui **est** repris, sous la forme de l'écart `PLAFOND` ci-dessus, pour ne pas servir ce que le gate de claim refuse ; il ne pèse que les conteneurs, jamais les filles existantes (#26414).
 - La **file de réparation** : une réparation due passe par une issue ordinaire, servie comme les autres.
+
+## La rotation universelle — la voie légère (#27223)
+
+Le tirage ci-dessus classe le pool entier, mais il applique **neuf règles d'écart avant la rotation** et lit
+le **corps, les commentaires et les PRs** de chaque issue ouverte. Pour classer 440 issues afin d'en servir
+quelques-unes, ce sont deux lectures qui ne servent à rien.
+
+`coordination/tapis_universel.py` fait la rotation **sur les métadonnées seules** :
+
+| | lecture lourde (tirage actuel) | lecture de sélection (#27223) |
+| --- | --- | --- |
+| charge utile | corps + 12 commentaires + PRs | numéro, titre, dates, labels |
+| mesure sur 440 issues | **23,4 s**, 5,7 Mo | **6,7 s à froid**, 7,8 s à chaud, 107 ko |
+| pagination | complète | complète, avec un **budget global** de durée (60 s) posé comme une **échéance monotone commune** (pages et rejeu la partagent, temps restant recalculé avant chaque appel) : au-delà, `LectureIncomplete` — jamais de liste partielle |
+| exclusions | neuf, avant la rotation | **aucune** : les vérifications (claim, gel, contenu livré) se font **à la prise en charge** |
+| visites | marqueurs du fil + commits | **commits seulement** : le travail réellement effectué — une apparition dans une liste n'est pas une visite |
+
+Chaque grain servi porte son **état et l'action à faire** (`qualifier` : lire l'issue, vérifier le claim
+vivant, le gel, le contenu déjà livré), jamais une exclusion silencieuse. La bascule du tirage par défaut
+reste la tranche suivante : elle suppose que la prise en charge qualifie le grain, ce qui est un changement
+de protocole autant que de code.
