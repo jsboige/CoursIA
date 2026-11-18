@@ -35,6 +35,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 15 | **Non numérotés résiduels : DehaeneF2 / Greffe5 / MUH-FibreTegmark** (extension #11690) | trois carnets — le self-model de Dehaene F2 au test de dissociation ABC pré-enregistré, l'attribution causale des greffes (verdict tri-état, garde-fou IV), et le témoin de lecture Tegmark (cinq gestes du texte sur bancs finis, grade C) | **LU** (strand 15, 2026-11-18) |
 | 16 | **Orphelins 1/8 : ICT-17c TorchLens** (extension #11690) | un carnet — l'instrument d'inspection générique (`tl.trace` : graphe, activations, interventions causales sans hooks), la trajectoire de grokking où la lisibilité MMIID précède le saut de test, et la moisson multi-couches branchée sur l'organe `ict/probes.py` | **LU** (strand 16, 2026-11-18) |
 | 17 | **Orphelins 2/8 : ICT-20 FeatureCatastrophes** (extension #11690) | un carnet — la calibration de méthode avant ICT-21 : EWS/CUSUM/hystérésis sur transitions anodines contrôlées (contrôle négatif où le verdict honnête est `no_signal`), et le témoin réel lens-agreement SAE/J-Lens rendu `chance` avec ses limites de puissance quantifiées | **LU** (strand 17, 2026-11-18) |
+| 18 | **Orphelins 3-4/8 : ICT-32 StratificationCausaleLife + ICT-34 BancRecollementLectures** (extension #11690) | deux carnets — l'apportionment de Hoel sur le GOL certifié (saturation par trajectoire vs dégénérescence par ensemble, le glouton re-dérivant seul la partition par destin) et le recollement disciplinaire d'ICT-15k transposé aux lectures (compatibilité écrite **et** mesurée, témoin de De Finetti qui fait payer, R3 oraculaire bornant la perte). `ICT-33` reporté : la PR #26864 (ouverte) réécrit le carnet | **LU** (strand 18, 2026-11-18) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -316,24 +317,24 @@ La **priorité « six non numérotés » est épuisée** (trio Argumentation au 
 
 ### Recompte du 2026-11-18 (après le strand 16)
 
-Même méthode, rejouée une fois le strand 17 posé (orphelins 2/8 : `ICT-20-FeatureCatastrophes`).
+Même méthode, rejouée une fois le strand 18 posé (orphelins 3-4/8 : `ICT-32-StratificationCausaleLife` + `ICT-34-BancRecollementLectures` ; `ICT-33` reporté sous occupation — la PR #26864, ouverte, réécrit le carnet).
 
-| Mesure | 2026-11-18 (s16) | 2026-11-18 (s17) |
-|---|---|---|
-| Carnets ICT sur `main` | 101 | **101** |
-| Sections de carnet au ledger | 92 | **93** |
-| Non couverts | 9 | **8** |
-| Taux de couverture | 91 % | **92 %** |
+| Mesure | 2026-11-18 (s16) | 2026-11-18 (s17) | 2026-11-18 (s18) |
+|---|---|---|---|
+| Carnets ICT sur `main` | 101 | 101 | **101** |
+| Sections de carnet au ledger | 92 | 93 | **95** |
+| Non couverts | 9 | 8 | **6** |
+| Taux de couverture | 91 % | 92 % | **94 %** |
 
-Zéro fantôme, toujours : `92 + 1 = 93`, solde `9 − 1 = 8`.
+Zéro fantôme, toujours : `93 + 2 = 95`, solde `8 − 2 = 6`.
 
-Les 8 carnets non couverts, recalculés :
+Les 6 carnets non couverts, recalculés :
 
-- **ICT-32** StratificationCausaleLife, **ICT-33** SoupCollisions, **ICT-34** BancRecollementLectures
+- **ICT-33** SoupCollisions (reporté : PR #26864 ouverte le réécrit — lecture à sa résolution)
 - **ICT-36f** FLens-SpecParam (arrivé le 16/11), **ICT-40b** AnalogCognitionWaves, **ICT-43** Calibration-MultiEchelle
 - **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
 
-La série des orphelins est ouverte (1/8 couvert au strand 16) ; la **paire ICT-48 reste sous occupation vive** (`#26757` Move / `#27095`) — inchangé depuis le strand 15, couverture à la résolution.
+La série des orphelins couvre 4/8 (`17c`, `20`, `32`, `34`) ; `ICT-33` rejoint la paire ICT-48 en attente de résolution de PRs ouvertes (`#26864` réécrit le carnet ; `#26757` Move / `#27095` pour la paire) — restent ouverts sans occupation : `36f`, `40b`, `43`.
 
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
@@ -1622,3 +1623,34 @@ Deuxième strand de la série des orphelins. Lecture de contenu et d'outputs com
 2. **« Significativité n'est pas le signal », enseigné en acte** : le contrôle négatif montre des p-values minuscules avec des tau plats, et la prose nomme le piège — un seuil calé sur la p-value transformerait chaque dérive bénigne en alerte. Même famille que le garde-fou du null croisé du strand 14 (croissance désamorcée par la comparaison au null) : la garde statistique y est le sujet pédagogique, pas un appendice.
 3. **Précision et délai se lisent ensemble, jamais l'un sans l'autre** : l'alarme précoce (délai −191) est exposée, interprétée comme faux positif pur, puis resservie en question de compréhension — le carnet refuse de présenter son taux de détection sans son échec. Le « À retenir » le formule en règle ; la série gagne à le citer comme précédent pour tout gate de détection.
 4. **La calibration comme prérequis épistémique, la thèse fondatrice du carnet** : mesurer l'instrument sur des transitions dont on **sait** qu'elles sont anodines avant de l'appliquer à des transitions chargées — l'inverse exact du promethean bias. Le carnet se donne comme précédent citable : toute nouvelle venue d'instrument sur traces réelles devrait passer par ce fond de non-retour (même geste que le contrôle de reproduction du strand 14, côté détecteur).
+
+## Strand 18 — Orphelins 3-4/8 : ICT-32 StratificationCausaleLife + ICT-34 BancRecollementLectures (extension #11690)
+
+Troisième strand de la série des orphelins, en duo : `ICT-33` (SoupCollisions) est **reporté** — la PR #26864 (po-2024, ouverte, capstone #20298 G1) réécrit le carnet, la lecture serait périmée dès son merge. Lecture de contenu et d'outputs committés, sans re-exécution (arbitrage fondateur : lecture seule). Exécutions de référence : ICT-32 kernel python3, 12/12 cellules code exécutées, zéro erreur (sans métadonnées papermill) ; ICT-34 papermill 2026-08-23 (3,8 s), 9/9 exécutées, zéro erreur. GPU-free par conception (numpy seul).
+
+### `ICT-32-StratificationCausaleLife-Python.ipynb` (33) — 21 md / 12 code, 12/12 exécutées
+
+| Axe | Relevé |
+|---|---|
+| **Intention** | L'apportionment de *Causal Emergence 2.0* (Hoel, arXiv:2503.13395) appliqué au Jeu de la Vie **certifié** (phase-zero + théorème Lean `hashlife_correct` clos sans `sorry`) — le livrable que le titre de #5726 annonce. Phase narrative, statut épistémique « sans verdict à ce jour » (renvoi matrice de dissociations). |
+| **Contenu réel** | Deux régimes mesurés en miroir : **par la trajectoire le substrat est saturé** (cycle glider 64 états : det 1.000 / deg 0.000 / EI = log2(64) = 6 bits exactement, EC = 0 structurel — le glouton s'arrête en une passe ; quotient par translation de 4 phases **causalement étanche** : eff 1.000 conservée, EI amputé d'exactement log2(16) sans perdre une cause) ; **par l'ensemble des graines la règle jette l'information** (tore 2×2 : 11 collisions sur 16, deg 0.672, eff 0.328 ; tore 3×3 : 384 collisions sur 512, eff 0.3435). Deux partitions dessinées : **destin** (fibres du successeur) restaure eff à 1.000 / 0.998 (EI 1.31→2.32 / 3.09→6.98 bits) ; **population**, témoin négatif, s'effondre à 0.165 — une observable macro n'est pas une macro causale. Trois exercices C.1 conformes (points fixes, témoin au 3×3, EC concentré vs distribué). |
+| **Résultat** | **Le glouton re-dérive seul la partition par destin** : chemin monotone 16 → 5 états, eff 0.328 → 1.000 en onze fusions d'ampleur croissante (0.023 → 0.129), échelle terminale = le nombre d'avenirs distincts. EC 6.70 : la stratification se **construit** le long de l'échelle, pas un palier unique. Nuance épistémique écrite dans le carnet : l'émergence est mesurée *conditionnellement à la partition* — le regroupement par destin est un choix, pas une propriété mesurée du substrat. Confrontation Hoel vs Pearl consignée ailleurs (verdict « ne tient pas » sur ce substrat déterministe, `docs/research/c1111-hoel-pearl-ict32-verdict.md`). |
+| **Critique** | Rien de fond. Le coût glouton O(n⁴) est documenté et assumé (non exécuté sur 3×3, tractable pour le profil et les partitions dessinées) ; le contraste tri/Life (stratification par la trajectoire vs par l'ensemble) relie ICT-06 à ce carnet ; l'aveugle de chaque instrument est nommé. |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### `ICT-34-BancRecollementLectures-Python.ipynb` (26) — 17 md / 9 code, 9/9 exécutées
+
+| Axe | Relevé |
+|---|---|
+| **Intention** | Transposer à un recouvrement **disciplinaire** (quatre lectures spécialistes d'un corpus) le banc géométrique d'ICT-15k — la dette du §2 de #12206 : écrire la condition de compatibilité **et** exhiber le témoin, sinon « le mot obstruction n'a pas gagné ses galons ». Prototype, statut épistémique « sans verdict à ce jour ». |
+| **Contenu réel** | Corpus 60 objets, quatre lectures (A profonde, B/C surface, D causale) aux domaines de compétence **mesurés** par seuils de détection, pas choisis — le bord défini avant les sections. Matrice de compatibilité : contradictions concentrées sur le cluster d'artefact z=2 (33/54) et quasi absentes ailleurs (2/198, 0/60). Trois règles de collage : R1 majorité brute, R2 pondérée par la précision globale, R3 « glu qui voit la fibre » (oraculaire, borne). Table de paiement R=3/C=2/O=1. Trois exercices C.1 conformes (autre seed, D compétente partout, glue estimant la fiabilité locale). |
+| **Résultat** | **R1 (63) et R2 (71) sont dominées par la lecture A seule (97)** — la fusion naïve est une charge (−34 unités vs A seule), décomposée par cluster : inoffensive sur z=0/z=1, perdante sur z=2 (−15/−7) où les vues de surface sur-votent la vue profonde. Huit **témoins** concrets (e=37,40,41,42,44,45,46,47) où la décision bascule selon la lecture écoutée et paie (−2 par action à tort) — le Dutch Book de De Finetti transposé, Loi I satisfaite. R3 (87) récupère l'essentiel : la perte vient de la règle de collage, pas d'un substrat intraitable — et rester sous A seule est rendu comme résultat honnête. Sensibilité : l'obstruction survit aux variations de marge D et d'inversion B (0.5 → perte −1, toujours ≤ 0). |
+| **Critique** | Rien de fond — les limites sont **assumées par écrit** : `z` connu du prototype pas du decideur, R3 est une borne pas un algorithme, « la non-trivialité réelle du recollement se cache » dans la reconstruction de la fibre (exercice 3, laissé ouvert). La limite assumée est la passerelle vers le pas suivant, pas une échappatoire. |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### Findings transverses du strand 18 (pour l'arbitrage user)
+
+1. **Le témoin négatif comme instrument de falsification des macros** : dans les deux carnets, la partition/lecture « naturelle » (population ; majorité des lectures) est mesurée **à côté** de la macro causale — et s'effondre (0.165 ; −15). Une observable macro ne doit son statut ni à son intuitivité ni à son consensus : la batterie ICT gagne un patron récurrent (strand 15 : l'instrument qui dit non ; strand 18 : la macro qui perd).
+2. **« Conditionnellement à la partition », dit deux fois, dans deux langages** : ICT-32 borne l'émergence mesurée comme *conditionnelle au choix du regroupement* (le glouton discovering seul n'élève pas le choix en propriété) ; ICT-34 borne R3 comme une *borne oraculaire*, pas une méthode. Le même geste épistémique — séparer ce qui est mesuré de ce qui est choisi — traverse un carnet géométrique et un carnet décisionnel.
+3. **La certification Lean irrigue au-delà de ses preuves** : `hashlife_correct` garantit le calcul de trajectoire qu'ICT-32 mesure, et ICT-34 cite explicitement ce que le certificat garantissait au quadtree — le mot « certifié » du titre de #5726 n'est pas décoratif, il est consommé par les carnets en aval.
+4. **Une occupation vive peut reporter une lecture** : ICT-33 (reporté au strand 18) rejoint la paire ICT-48 — la règle « ne pas lire un carnet qu'une PR ouverte réécrit » protège le ledger d'une section périmée dès le merge. Le recompte le porte en non couvert **avec motif**, pas comme un oubli.
