@@ -318,10 +318,15 @@ def auto_accord_subset(drawn: Sequence[dict]) -> dict:
 # --------------------------------------------------------------------------
 
 def sha256_file(path: Path) -> str:
+    # Empreinte des octets LF : le depot stocke ces fichiers texte en LF
+    # (core.autocrlf normalise a l'ajout), mais un checkout Windows les
+    # materialise en CRLF. Hacher le contenu normalise LF rend l'empreinte
+    # citée dans le md vérifiable depuis n'importe quel clone, quel que soit
+    # le stockage de travail du siège.
     h = hashlib.sha256()
     with open(path, "rb") as f:
         for chunk in iter(lambda: f.read(65536), b""):
-            h.update(chunk)
+            h.update(chunk.replace(b"\r\n", b"\n"))
     return h.hexdigest()
 
 
@@ -451,8 +456,11 @@ def write_report(out_dir: Path, judges_meta: Sequence[dict],
             [families[pid] for pid in pair_ids])
         report["judges"].append({**meta, **summary})
     json_path = out_dir / "judge_family_agreement.json"
+    # newline="\n" : octets disque == octets du blob git (LF canonique du
+    # depot), pour que l'empreinte citee dans le md survive au commit sous
+    # core.autocrlf=true (Windows ecrit CRLF par defaut via write_text).
     json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n",
-                         encoding="utf-8")
+                         encoding="utf-8", newline="\n")
     md_path = out_dir / "judge_family_agreement.md"
     md_path.write_text(render_markdown(report, json_path), encoding="utf-8")
     return json_path, md_path
