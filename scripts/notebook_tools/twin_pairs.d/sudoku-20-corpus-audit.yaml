@@ -8,3 +8,4 @@
   known_differences:
     - "Le C# porte explicitement le noyau ; les compteurs de recherche dependent de l'ordre des cases, chiffres et propagation."
     - "La figure C# est un SVG statique a deux panneaux, le Python utilise Matplotlib."
+    - "Le Python porte le lien de navigation vers le carnet 21 (Python-only, sans jumeau C#) ; le C# ne le porte pas (pas de carnet 21 C#)."
