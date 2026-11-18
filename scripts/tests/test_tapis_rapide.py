@@ -588,7 +588,8 @@ def _violations(source: str) -> list[str]:
 
 def test_tapis_rapide_ne_lance_aucun_processus():
     for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "tapis_hors_flotte.py",
-                "gh_cache.py", "gh_cache_fichier.py", "tapis_service.py"):
+                "gh_cache.py", "gh_cache_fichier.py", "tapis_service.py",
+                "tapis_reverif.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -605,7 +606,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # texte, #26926, 16/11) ; gh_selection.py la cinquieme (le chemin de selection
 # leger : metadonnees seules, budget global, #27223, 18/11) ; tapis_avantages.py
 # la sixieme (les deux priorites legeres du mandat du 18/11) ; tapis_universel.py
-# la septieme (la rotation universelle, #27223).
+# la septieme (la rotation universelle, #27223) ; tapis_reverif.py la huitieme
+# (re-decision des grains servis au fil tronque sur leur fil complet, #27179,
+# 18/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -614,7 +617,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_service.py", 140),
                                               ("gh_selection.py", 140),
                                               ("tapis_avantages.py", 80),
-                                              ("tapis_universel.py", 160)])
+                                              ("tapis_universel.py", 160),
+                                              ("tapis_reverif.py", 120)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
