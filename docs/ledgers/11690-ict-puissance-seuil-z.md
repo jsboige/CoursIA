@@ -172,8 +172,18 @@ independamment des autres, donc reechantillonner les paires est legitime
 | ---: | ---: | ---: |
 | 0,50 | ~90 paires | x3 |
 | 0,40 | ~120 paires | x4 |
-| 0,30 | ~180 paires | x6 |
-| 0,20 | > 240 paires (49,6 % a 240) | > x8 |
+| 0,30 | **~210 paires** (grille fine, section 9) | x7 |
+| 0,20 | > 240 paires (47 % a 240) | > x8 |
+
+> **Correction (section 9).** La grille grossiere de cette section (n =
+> 30, 60, 90, 120, 180, 240 ; 8 bootstraps x 100 replicats) plaçait `d = 0,3`
+> a **~180 paires** (P(regle) = 0,812 a `n = 180`). La grille fine (pas de 15
+> paires) a double budget (16 bootstraps x 200 replicats, soit 3 200
+> tirages par point, erreur type ~0,4 point) donne **P(regle) = 0,787** a
+> `n = 180` et **0,878** a `n = 210` : le seuil de 80 % est donc atteint a
+> **~210 paires**, pas 180. L'ecart de la premiere lecture (2,5 points)
+> est de l'ordre de l'erreur de Monte-Carlo de son dispositif ; la valeur
+> publiee est desormais celle de la grille fine.
 
 **Ce que cela dit.**
 
@@ -194,7 +204,73 @@ independamment des autres, donc reechantillonner les paires est legitime
    section 3 concluait « plus de paires elargissent le plafond » ; cette
    section chiffre l'elargissement et son cout.
 
-## 9. Reproduction
+## 9. La puissance est-elle la meme sur toutes les jambes ?
+
+Les sections 3 et 8 mesurent **une** jambe (couche 12/24, bras *trained*).
+La question que le protocole d'ICT-35 pose -- 18 jambes : 3 couches x 3 types
+x *trained/control* -- est plus large : **la regle est-elle sous-equipee
+partout, ou sur une jambe particulierement ?**
+
+L'echelle par paire (`per_pair_rms` = `||diffs_f||_2 / sqrt(n)`) est une
+echelle **relative a la jambe** : chaque feature est normalisee par son
+propre bruit. Deux jambes dont les bruits different d'un facteur cinq sont
+donc directement comparables dans l'unite `d` -- ce qui n'etait pas vrai
+dans l'unite de la section 3 (dispersion nulle de la statistique, qui
+depend de `n` **et** de l'echelle des activations).
+
+Les **six** traces humour disponibles dans le depot sont mesurees
+(3 couches x 2 bras ; les 3 « types » du protocole n'ont pas de trace
+humour commitee) : `power_by_trace`, meme graine `seed=42`, 16 bootstraps
+x 200 replicats par point (3 200 tirages, erreur type ~0,4 point), grille
+`n` = 30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240.
+
+| Jambe (couche, bras) | features actives | bruit par paire median (p25 · p75 · max) | **n pour 80 %** a `d=0,5` / `0,4` / `0,3` | P(regle) a `n=30`, `d=0,5` |
+| --- | ---: | --- | --- | ---: |
+| couche 4, control | 4 678 | 0,00742 (0,00435 · 0,01449 · 0,2326) | **90 / 120 / 210** | 0,103 |
+| couche 4, trained | 5 776 | 0,00629 (0,00341 · 0,01353 · 0,2349) | **90 / 120 / 210** | 0,089 |
+| couche 12, control | 3 154 | 0,01123 (0,00657 · 0,02225 · 0,2426) | **90 / 120 / 210** | 0,102 |
+| couche 12, trained | 5 642 | 0,01111 (0,00579 · 0,02156 · 0,3435) | **90 / 120 / 210** | 0,083 |
+| couche 19, control | 3 538 | 0,03333 (0,01915 · 0,06603 · 0,7523) | **90 / 120 / 210** | 0,099 |
+| couche 19, trained | 5 195 | 0,03368 (0,01794 · 0,07253 · 1,1613) | **90 / 120 / 210** | 0,098 |
+
+### Ce que la mesure dit
+
+1. **La sous-puissance est une propriete du protocole, pas d'une jambe.**
+   Les six jambes franchissent le seuil de 80 % de puissance aux **memes**
+   nombres de paires : 90 a `d=0,5`, 120 a `d=0,4`, 210 a `d=0,3`, jamais
+   a `d=0,2` (47 % a 240 paires). Aucune jambe n'est « la jambe faible ».
+2. **L'heterogeneite des traces est reelle mais sans effet sur la
+   puissance.** Le bruit par paire median varie d'un facteur **5,4** (de
+   0,00629 a la couche 4 *trained* a 0,03368 a la couche 19 *trained*) et
+   le nombre de features actives de 1,8 (3 154 a 5 776) -- mais a `(n, d)`
+   fixe, l'ecart entre jambes est de l'ordre du **point de pourcentage**,
+   soit l'erreur de Monte-Carlo du dispositif : a `n = 90`, `d = 0,5`,
+   P(regle) va de 0,951 a 0,958. C'est exactement ce que l'unite `d`
+   relativise par construction : elle compare des **effets relatifs au
+   bruit de chaque jambe**.
+3. **Consequence pour ICT-35d.** Le verdict `AUCUNE_FEATURE_STABLE` ne
+   s'explique par une jambe degradee : avec 30 paires, la regle
+   s'ecole dans **8 a 10 %** des cas a `d=0,5` sur *toutes* les jambes.
+   Le protocole manque d'environ **x3** les paires pour un effet net, et
+   d'environ **x7** pour un effet de 0,3 par paire -- quel que soit le
+   point du reseau ou l'on se place.
+4. **Ce que cela ne dit pas.** La mesure porte sur six traces sur dix-huit
+   jambes : les douze autres (les « 3 types » du protocole) n'ont pas de
+   trace humour commitee. Rien ici ne les couvre.
+
+### Limites de cette lecture
+
+* L'effet `d` reste exprime **par rapport au bruit par paire de la jambe** ;
+  une jambe qui aurait un bruit de fond plus **heterogene** d'une paire a
+  l'autre n'est pas couverte par le modele additif.
+* Le « `n` pour 80 % de puissance » est le **plus petit `n` mesure** qui
+  franchit 0,80 : la resolution de la grille est de 15 paires, donc la
+  valeur est donnee a +/- une maille.
+* L'erreur de Monte-Carlo du dispositif est ~0,4 point (3 200 tirages par
+  point) : les ecarts de quelques points entre jambes ne sont pas
+  significatifs, et ne sont pas interpretes comme tels.
+
+## 10. Reproduction
 
 ```bash
 cd MyIA.AI.Notebooks/IIT/ICT-Series
@@ -222,3 +298,19 @@ from ict.humor_power import power_vs_pairs
 power_vs_pairs(d, [30, 60, 90, 120, 180, 240], [0.2, 0.3, 0.4, 0.5],
                n_bootstraps=8, n_replicates=100, seed=42)
 ```
+
+La section 9 (puissance jambe par-jambe) se relit par :
+
+```python
+from pathlib import Path
+from ict.humor_power import n_for_power, power_by_trace
+res = power_by_trace(
+    sorted(Path("traces").glob("humor35b_*.npz")), build_pairs(load_corpus_dur()),
+    [30, 45, 60, 75, 90, 105, 120, 150, 180, 210, 240], [0.2, 0.3, 0.4, 0.5],
+    n_bootstraps=16, n_replicates=200, seed=42)
+for leg in res["legs"]:
+    print(leg["trace"], leg["n_active_features"],
+          {d: n_for_power(leg["rows"], d) for d in (0.2, 0.3, 0.4, 0.5)})
+```
+
+Duree : ~4 min pour les six jambes (numpy seul, aucune resource GPU).

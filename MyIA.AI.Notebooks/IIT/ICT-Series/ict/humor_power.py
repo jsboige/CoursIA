@@ -17,6 +17,14 @@ permet pas de comparer deux ``n``. ``power_vs_pairs`` exprime l'effet en
 **unites de bruit par paire** (independantes de ``n``) et fait varier ``n``
 par reechantillonnage : le gain d'une paire y vaut ``sqrt(n)``, pas ``n``.
 
+La quatrieme lecture (``power_by_trace``) etend la troisieme a **l'echelle
+du protocole** : la puissance est-elle la meme sur toutes les jambes
+(couches, bras) disponibles ? L'echelle par paire est une echelle
+**relative a la jambe** (chaque feature est normalisee par son propre
+bruit) : deux jambes dont les bruits different d'un facteur cinq sont
+directement comparables dans l'unite ``d``, ce qui n'etait pas vrai dans
+l'unite de la premiere lecture.
+
 **Les cinq questions de l'organ-first** (regle ``organ-first-implementation``) :
 
 1. *Quelle serie possede la semantique ?* La serie ICT (carnets ICT-35b/35c/35d)
@@ -74,9 +82,11 @@ import numpy as np
 from .humor_pairs import _common_prefix_len, _zone_vec
 
 __all__ = [
+    "n_for_power",
     "null_norms",
     "observed_z",
     "per_pair_rms",
+    "power_by_trace",
     "power_curve",
     "power_vs_pairs",
     "z_ceiling",
@@ -357,4 +367,107 @@ def power_vs_pairs(
         "min_same_side": int(min_same_side),
         "seed": int(seed),
         "source_pairs": int(n_pairs),
+    }
+
+
+def n_for_power(
+    rows: Sequence[dict[str, Any]],
+    effect_size: float,
+    target: float = 0.8,
+) -> int | None:
+    """Plus petit nombre de paires pour lequel ``P(regle) >= target``.
+
+    ``rows`` est la liste produite par :func:`power_vs_pairs` ou
+    :func:`power_by_trace` (meme format). La reponse est ``None`` quand
+    meme la plus grande valeur de ``n`` balayee n'atteint pas la cible :
+    c'est une reponse, pas une absence de reponse -- elle dit que le
+    budget de paires mesure ne suffit pas.
+    """
+    candidates = [
+        int(row["n_pairs"])
+        for row in rows
+        if abs(float(row["effect_size"]) - float(effect_size)) <= 1e-12
+        and float(row["p_rule"]) >= float(target)
+    ]
+    return min(candidates) if candidates else None
+
+
+def power_by_trace(
+    trace_paths: Sequence[str | Path],
+    pairs: list[dict[str, str]],
+    n_values: Sequence[int],
+    effect_sizes: Sequence[float],
+    *,
+    n_planted: int = DEFAULT_MIN_SAME_SIDE,
+    n_bootstraps: int = 8,
+    n_replicates: int = 100,
+    seed: int = 42,
+    threshold: float = DEFAULT_THRESHOLD,
+    min_same_side: int = DEFAULT_MIN_SAME_SIDE,
+) -> dict[str, Any]:
+    """Puissance de la regle **jambe par jambe** (une trace = une jambe).
+
+    La question que la troisieme lecture laisse ouverte : la puissance
+    mesuree est-elle la meme sur toutes les jambes du protocole ? En
+    effet, l'echelle par paire est une echelle **relative a la jambe**
+    (chaque feature est normalisee par son propre bruit) : deux jambes
+    dont les bruits different d'un facteur cinq sont directement
+    comparables dans l'unite ``d``, ce qui n'etait pas vrai dans l'unite
+    de la premiere lecture.
+
+    Chaque jambe est decrite par :
+    * le nombre de **features actives** (norme non nulle) ;
+    * son **bruit par paire** median (l'echelle dans laquelle ``d`` est
+      exprime) ;
+    * le **plafond** ``sqrt(n)`` du z ;
+    * les lignes de puissance (``n``, ``d``) produites par
+      :func:`power_vs_pairs`.
+
+    Le parametre ``d`` est le meme pour toutes les jambes : une jambe
+    bruyante n'est donc pas handicapee, c'est la **regle de detection**
+    qui est sous-equipee partout ou elle l'est sur une jambe.
+    """
+    legs: list[dict[str, Any]] = []
+    for path in trace_paths:
+        trace_path = Path(path)
+        diffs = zone_diffs(trace_path, pairs)
+        rms = per_pair_rms(diffs)
+        active = rms[rms > 0]
+        res = power_vs_pairs(
+            diffs,
+            n_values,
+            effect_sizes,
+            n_planted=n_planted,
+            n_bootstraps=n_bootstraps,
+            n_replicates=n_replicates,
+            seed=seed,
+            threshold=threshold,
+            min_same_side=min_same_side,
+        )
+        legs.append(
+            {
+                "trace": trace_path.name,
+                "n_source_pairs": int(diffs.shape[0]),
+                "n_active_features": int(active.size),
+                "per_pair_rms_median": float(np.median(active)) if active.size else 0.0,
+                "per_pair_rms_p25": (
+                    float(np.percentile(active, 25)) if active.size else 0.0
+                ),
+                "per_pair_rms_p75": (
+                    float(np.percentile(active, 75)) if active.size else 0.0
+                ),
+                "per_pair_rms_max": float(active.max()) if active.size else 0.0,
+                "z_ceiling": z_ceiling(int(diffs.shape[0])),
+                "rows": res["rows"],
+            }
+        )
+    return {
+        "legs": legs,
+        "n_bootstraps": int(n_bootstraps),
+        "n_replicates": int(n_replicates),
+        "n_planted": int(n_planted),
+        "threshold": float(threshold),
+        "min_same_side": int(min_same_side),
+        "seed": int(seed),
+        "source_pairs": len(pairs),
     }

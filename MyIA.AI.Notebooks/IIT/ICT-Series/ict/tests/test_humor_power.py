@@ -13,7 +13,11 @@ cote`` s'ecole ? Les tests verifient trois choses :
    « Lecture 5 bis ») ;
 3. la **monotonie et le plafond** de la courbe : la puissance croît avec
    l'effet, la regle exige bien trois features du meme cote, et le z d'une
-   feature reste borne par ``sqrt(n)``.
+   feature reste borne par ``sqrt(n)`` ;
+4. la **quatrieme lecture** (``power_by_trace``) : la puissance est-elle la
+   meme sur toutes les jambes du protocole ? L'echelle par paire est
+   relative a la jambe, donc les jambes bruyantes et les jambes calmes
+   sont directement comparables dans l'unite ``d``.
 """
 from __future__ import annotations
 
@@ -23,9 +27,11 @@ import numpy as np
 import pytest
 
 from ict.humor_power import (
+    n_for_power,
     null_norms,
     observed_z,
     per_pair_rms,
+    power_by_trace,
     power_curve,
     power_vs_pairs,
     z_ceiling,
@@ -207,6 +213,81 @@ def test_power_vs_pairs_reports_its_contract() -> None:
     assert res["min_same_side"] == 3
     assert res["source_pairs"] == 12
     assert len(res["rows"]) == 4
+
+
+# --------------------------------------------------------------------------- #
+# Puissance jambe par jambe (quatrieme lecture)
+# --------------------------------------------------------------------------- #
+
+
+def test_n_for_power_returns_smallest_satisfying_n() -> None:
+    # La reponse est le plus petit n mesure qui atteint la cible, pas le
+    # plus grand ni une interpolation.
+    rows = [
+        {"n_pairs": 30, "effect_size": 0.5, "p_rule": 0.10},
+        {"n_pairs": 60, "effect_size": 0.5, "p_rule": 0.55},
+        {"n_pairs": 90, "effect_size": 0.5, "p_rule": 0.95},
+        {"n_pairs": 30, "effect_size": 0.3, "p_rule": 0.02},
+    ]
+    assert n_for_power(rows, 0.5) == 90
+    assert n_for_power(rows, 0.3) is None
+
+
+def test_n_for_power_is_none_when_target_unreachable() -> None:
+    # Aucune valeur balayee n'atteint la cible : la reponse est None
+    # (« meme le plus grand n mesure ne suffit pas »), pas un n fantaisiste.
+    rows = [{"n_pairs": n, "effect_size": 0.2, "p_rule": 0.1} for n in (30, 60)]
+    assert n_for_power(rows, 0.2, target=0.8) is None
+
+
+def test_power_by_trace_contract_on_real_traces() -> None:
+    # La quatrieme lecture : la puissance est-elle la meme sur toutes les
+    # jambes ? Le contrat doit exposer, par jambe, l'echelle de bruit
+    # (relative a la jambe) et les lignes de puissance.
+    traces = sorted(_ICT_SERIES.glob("traces/humor35b_*.npz"))
+    if not traces:
+        pytest.skip("traces humor35b absentes du depot")
+    from ict.humor_pairs import build_pairs, load_corpus_dur
+
+    res = power_by_trace(
+        traces[:2],
+        build_pairs(load_corpus_dur()),
+        [30, 90],
+        [0.5],
+        n_bootstraps=2,
+        n_replicates=20,
+        seed=42,
+    )
+    assert len(res["legs"]) == 2
+    assert res["threshold"] == 3.0
+    assert res["min_same_side"] == 3
+    for leg in res["legs"]:
+        assert leg["n_active_features"] > 0
+        assert leg["per_pair_rms_median"] > 0
+        assert leg["z_ceiling"] == pytest.approx(np.sqrt(30))
+        assert len(leg["rows"]) == 2
+
+
+def test_power_by_trace_null_effect_never_fires_the_rule() -> None:
+    # Temoin negatif de la quatrieme lecture : sous effet nul, la regle ne
+    # s'ecole sur aucune jambe.
+    traces = sorted(_ICT_SERIES.glob("traces/humor35b_*.npz"))
+    if not traces:
+        pytest.skip("traces humor35b absentes du depot")
+    from ict.humor_pairs import build_pairs, load_corpus_dur
+
+    res = power_by_trace(
+        traces[:1],
+        build_pairs(load_corpus_dur()),
+        [30],
+        [0.0],
+        n_bootstraps=2,
+        n_replicates=20,
+        seed=42,
+    )
+    row = res["legs"][0]["rows"][0]
+    assert row["p_rule"] == 0.0
+    assert row["p_any"] < 0.15
 
 
 # --------------------------------------------------------------------------- #
