@@ -71,12 +71,17 @@ def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
 
 
 def rotation_universelle(etats_: list[Etat], lane: str, maintenant: datetime,
-                          grains: int, graine: str | None = None) -> list[Etat]:
+                          grains: int, graine: str | None = None,
+                          rotation: bool = True) -> list[Etat]:
     """La rotation de TOUTES les issues ouvertes, sans ecarter.
 
     L'ordre est celui de `tapis_equilibre` : niveau croissant (visites du
-    tour moins les priorites legeres), puis le decalage de tete par lane."""
-    return ordonner(etats_, lane, maintenant, grains, graine)
+    tour moins les priorites legeres), puis le decalage de tete par lane.
+
+    `rotation=False` rend l'ordre **fair** (le decalage de tete par lane
+    n'est pas applique) : la voie legere s'en sert, parce que sa FENETRE
+    doit pouvoir etre un bloc contigu du pool classe."""
+    return ordonner(etats_, lane, maintenant, grains, graine, rotation=rotation)
 
 
 def action_de(e: Etat, lane: str) -> str:

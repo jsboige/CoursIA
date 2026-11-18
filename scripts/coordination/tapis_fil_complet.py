@@ -17,8 +17,12 @@ candidats coute 1 appel REST par candidat (48 appels, 59 s) ; relire d'abord
 la fenetre en un lot GraphQL (1 appel pour 50 candidats) et ne relire le fil
 complet que des candidats **retenus** coute 1 appel REST par candidat retenu.
 
-Un fil illisible laisse le candidat servi (fail-OPEN : le tapis propose, il ne
-fait pas autorite) ; le mur global arrete la lecture et le dit.
+**fail-CLOSED.** Un candidat dont la decision n'a pas pu etre prise n'est PAS
+servi : le fil illisible (FIL_ILLISIBLE), le mur de lectures atteint
+(MUR_EPUISE) et l'echeance depassee (ECHEANCE) REFUSENT la prise en charge,
+chacun avec son code et son motif. Le temps d'action engage un grain dont le
+fil a ete lu et la decision prise -- le tapis propose, il ne fait pas
+autorite, et un grain non qualifie ne s'engage pas.
 """
 from __future__ import annotations
 
@@ -29,22 +33,14 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, gh_snapshot, tapis_rapide, tapis_reverif
+from coordination import gh_bulk, tapis_fenetre, tapis_rapide, tapis_reverif
 
 #: Borne des lectures REST du fil complet (les candidats retenus).
 APPELS_MAX = 16
 
-
-def _fil(numero: int, repo: str = gh_bulk.DEPOT_GH) -> list[dict]:
-    """Le fil complet de l'issue, dans la forme des marqueurs.
-
-    L'organe `gh_snapshot` pagine en REST : c'est le **fil complet**, pas la
-    fenetre des 12 derniers commentaires de la lecture groupee.
-    """
-    return [{"created_at": c.get("createdAt") or "",
-             "author": (c.get("author") or {}).get("login") or "",
-             "body": c.get("body") or ""}
-            for c in gh_snapshot.fetch_issue_comments(repo, numero)]
+#: Les refus de LECTURE : le grain n'est pas servi, il est refuse.
+#: distincts des ecarts de REGLE (les neuf), qui sont une decision.
+CODES_REFUS = ("FIL_ILLISIBLE", "MUR_EPUISE", "ECHEANCE")
 
 
 def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: int,
@@ -55,6 +51,11 @@ def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: in
     Rend `(confirmes, rejetes, echecs, appels)`. Un candidat dont la fenetre
     EST le fil complet (moins de 12 commentaires) est confirme sans appel :
     il n'y a rien a lever.
+
+    **fail-CLOSED** : un candidat dont le fil n'a pas pu etre lu -- illisible,
+    hors budget de lectures, ou hors echeance -- n'est PAS confirme : il est
+    refuse, avec son code et son motif, et le refus est affiche. Un grain
+    dont la decision n'a pas etre prise ne s'engage pas.
     """
     ouvertes, parents, _, ctx = tapis_rapide._contexte(lecture, lane,
                                                        maintenant, jours)
@@ -65,14 +66,24 @@ def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: in
         if (it.get("comments_total") or 0) <= lus:
             confirmes.append(e)
             continue
-        if appels >= appels_max or (echeance is not None and horloge() > echeance):
-            confirmes.append(e)
+        if appels >= appels_max:
+            rejetes.append({"numero": e.numero, "code": "MUR_EPUISE",
+                            "motif": (f"mur de lectures atteint ({appels_max} "
+                                      "fil(s) complet(s) lus) : le fil de ce "
+                                      "grain n'a pas ete lu")})
+            continue
+        if echeance is not None and horloge() > echeance:
+            rejetes.append({"numero": e.numero, "code": "ECHEANCE",
+                            "motif": "echeance de la qualification depassee : "
+                                     "le fil de ce grain n'a pas ete lu"})
             continue
         try:
-            fil = _fil(e.numero)
-        except Exception:  # noqa: BLE001 - un fil illisible ne bloque pas le tirage
+            fil = tapis_fenetre.fil_complet(e.numero)
+        except Exception:  # noqa: BLE001 - un fil illisible REFUSE le grain
             echecs.append(e.numero)
-            confirmes.append(e)
+            rejetes.append({"numero": e.numero, "code": "FIL_ILLISIBLE",
+                            "motif": "fil complet illisible : la decision n'a "
+                                     "pas pu etre prise"})
             continue
         appels += 1
         code = tapis_reverif._redecrire(e, ouvertes, parents, ctx, fil,

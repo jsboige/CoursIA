@@ -14,6 +14,24 @@ La qualification lit :
 - et rejoue les **neuf regles d'ecart** de `tapis_rapide.etats` : la voie legere
   ne redecide pas, elle alimente la meme decision.
 
+**fail-CLOSED.** Une decision qui n'a pas pu etre prise REFUSE le grain : un
+fil illisible, un mur de lectures atteint, une echeance depassee -- le grain
+porte alors son code de refus (`FIL_ILLISIBLE`, `MUR_EPUISE`, `ECHEANCE`) et
+son motif, il n'est pas servi. Un grain non qualifie ne s'engage pas.
+
+Ce que rend `qualifier` :
+
+- `servis` : les grains servables, dans l'ordre donne ;
+- `ecartees` : `{numero: {code, motif, fenetre_suffit}}` -- les exclusions
+  **affichees**, jamais retirees en silence ; un code de lecture y figure
+  aussi : le grain est REFUSE, pas decide ;
+- `echecs` : les numeros illisibles (corps ou fil) ;
+- `arrete` : le mur global a ete atteint ;
+- `appels` : le nombre d'appels de la qualification ;
+- `chrono` : `{secondes, premier_servable_s}` -- le temps jusqu'au **premier
+  grain servable**, distinct de la latence du classement (celle du tirage,
+  dans son propre rapport).
+
 Usage (prise en charge d'un grain) :
 
     python scripts/coordination/tapis_qualification.py --issue 17397
@@ -30,7 +48,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, gh_selection, tapis_fil_complet, tapis_rapide
+from coordination import gh_bulk, gh_selection, tapis_fenetre
+from coordination import tapis_fil_complet, tapis_rapide
 from coordination.tapis_marqueurs import _iso
 
 #: Candidats par lot de lecture (une requete GraphQL pour le lot).
@@ -63,17 +82,14 @@ def _fenetre(candidats: list[int], run, issues: dict[int, dict],
 def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
               prs: list[dict], citations: dict, run,
               echeance: float | None = None, lot: int = LOT,
-              horloge=time.monotonic) -> tuple[list, dict, list[int], bool, int]:
+              horloge=time.monotonic, debut: float | None = None
+              ) -> tuple[list, dict, list[int], bool, int, dict]:
     """Qualifie les candidats PRIS EN CHARGE, dans l'ordre donne.
 
-    Rend `(servis, ecartees, echecs, arrete, appels)` :
-
-    - `servis` : les grains servables, dans l'ordre donne ;
-    - `ecartees` : `{numero: {code, motif}}` -- les exclusions **affichees**,
-      jamais retirees en silence ;
-    - `echecs` : les numeros illisibles (corps ou fil) ;
-    - `arrete` : le mur global a ete atteint ;
-    - `appels` : le nombre d'appels de la qualification.
+    Rend `(servis, ecartees, echecs, arrete, appels, chrono)` -- le detail de
+    chaque cle est dans le module : les exclusions portent leur code et leur
+    motif, et `chrono` separe le temps jusqu'au **premier grain servable** de
+    la latence du classement, qui est celle du tirage.
     """
     issues: dict[int, dict] = {}
     confirmes: dict[int, object] = {}
@@ -82,6 +98,7 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
     exclus: set[int] = set()
     arrete = False
     appels = 0
+    premier: float | None = None
     i = 0
     while i < len(candidats):
         if echeance is not None and horloge() > echeance:
@@ -95,7 +112,9 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
         for e in etats:
             if e.ecart and e.numero not in ecartees:
                 ecartees[e.numero] = {"numero": e.numero, "code": e.ecart,
-                                      "motif": e.motif}
+                                      "motif": e.motif,
+                                      "fenetre_suffit": tapis_fenetre.suffit(
+                                          issues.get(e.numero))}
         retenus = [e for e in etats if e.ecart is None and e.numero not in exclus
                    and e.numero not in confirmes]
         if not retenus:
@@ -105,9 +124,14 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
         appels += n
         echecs.extend(rates)
         for e in conf:
+            tapis_fenetre.noter(e, issues.get(e.numero))
             confirmes[e.numero] = e
+            if premier is None and debut is not None:
+                premier = horloge() - debut
         for r in rejet:
             exclus.add(r["numero"])
-            ecartees[r["numero"]] = r
+            ecartees[r["numero"]] = {**r, "fenetre_suffit": False}
     servis = [confirmes[n] for n in candidats if n in confirmes]
-    return servis, ecartees, echecs, arrete, appels
+    chrono = {"secondes": round(horloge() - debut, 1) if debut is not None else None,
+              "premier_servable_s": round(premier, 1) if premier is not None else None}
+    return servis, ecartees, echecs, arrete, appels, chrono

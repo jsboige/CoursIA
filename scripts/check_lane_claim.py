@@ -5655,6 +5655,56 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     return verdict
 
 
+#: Les regles de la qualification **decidables sur l'issue seule** (corps,
+#: labels, fil complet) : le consommateur les rejoue avant tout claim. Les
+#: regles qui dependent du POOL (MERGEE, COUVERTE, PLAFOND) restent au
+#: tirage et a la qualification (`scripts/coordination/tapis_prise_en_charge.py`,
+#: qui lit les citations de merge et les PRs ouvertes) ; RECLAMEE et LIVREE
+#: sont deja decidees ici, en plus fin (override, scopes disjoints, etat de
+#: la PR qui porte le DELIVERED -- mesuré : 14 tests de la grammaire
+#: DELIVERED s'appuient sur ce comportement).
+CODES_QUALIFICATION = ("HORSFLOTTE", "LABEL", "GEL", "RELACHEE")
+
+
+def _qualification_grain(payload: dict, my_lane: str,
+                         now: datetime | None = None) -> tuple[str, str] | None:
+    """La qualification du grain, cote CONSOMMATEUR : le code d'ecart decide
+    sur le FIL COMPLET deja lu, ou None.
+
+    Le **meme organe** que le tirage (`tapis_rapide.etats`) : la voie legere
+    ne redecide pas, elle alimente la meme decision -- et le consommateur non
+    plus. Aucun appel reseau : la lecture du fil complet a deja ete faite
+    (`gh issue view --json comments` ou REST pagine), la decision se prend
+    dessus.
+
+    C'est ce qui rend la qualification **incontournable** avant l'action : un
+    grain ecarte par la qualification ne peut etre ni reclame ni edite.
+    """
+    from coordination import gh_bulk, tapis_rapide  # import tardif : pas de cycle
+    numero = payload.get("number")
+    if numero is None:
+        return None
+    commentaires = [{"created_at": c.get("createdAt") or "",
+                     "author": (c.get("author") or {}).get("login") or "",
+                     "body": c.get("body") or ""}
+                    for c in (payload.get("comments") or [])]
+    labels = [(lb.get("name") or "") if isinstance(lb, dict) else str(lb)
+              for lb in (payload.get("labels") or [])]
+    moment = now or datetime.now(timezone.utc)
+    it = {"number": int(numero), "title": payload.get("title") or "",
+          "body": payload.get("body") or "",
+          "created_at": payload.get("createdAt") or "",
+          "labels": labels, "comments_total": len(commentaires),
+          "comments": commentaires}
+    lec = gh_bulk.Lecture(issues=[it], prs=[], citations={},
+                           lu_a=moment.isoformat(), secondes=0.0, appels=0)
+    etats = tapis_rapide.etats(lec, my_lane, moment, 45)
+    e = etats[0] if etats else None
+    if e is not None and e.ecart and e.ecart in CODES_QUALIFICATION:
+        return e.ecart, e.motif
+    return None
+
+
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                now: datetime | None = None,
                my_paths: list[str] | None = None,
@@ -5721,6 +5771,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             `my_lane` (#25443) pour exclure du plafond le propre marqueur de
             la lane qui interroge.
     """
+    # La QUALIFICATION, cote CONSOMMATEUR : un grain ecarte par la
+    # qualification n'est ni reclame ni edite. La decision vient du meme
+    # organe que le tirage (`tapis_rapide.etats`), applique au FIL COMPLET
+    # que cette lecture a deja rendu -- pas d'appel reseau supplementaire.
+    code_motif = _qualification_grain(payload, my_lane, now)
+    if code_motif:
+        code, motif = code_motif
+        print(f"[QUALIFICATION] {code} : {motif} -- grain non qualifie : "
+              f"ni reclame, ni edite (la qualification est prealable a "
+              f"l'action).", file=sys.stderr)
+        return 1
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
     # repo, in which case the empty-scope witness degrades to its pre-#10958

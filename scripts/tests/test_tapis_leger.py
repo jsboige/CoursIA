@@ -16,14 +16,15 @@ import json
 import re
 import subprocess
 import sys
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import gh_bulk, gh_issues, gh_selection, tapis_leger, tapis_rapide
+from coordination import gh_bulk, gh_issues, gh_selection, tapis_fenetre
+from coordination import tapis_leger, tapis_rapide
 from coordination import tapis_qualification as tq
 from coordination import tapis_universel as tu
 
@@ -136,6 +137,45 @@ def test_un_conteneur_ne_passe_jamais_devant_un_grain(monkeypatch):
             "un conteneur ne passe jamais devant un grain"
 
 
+# --- la fenetre qui avance sur le pool -----------------------------------------
+
+def test_la_fenetre_avance_sur_le_pool():
+    """La fenetre servie avance d'un bloc par tranche de 4 h.
+
+    Sans elle, la tete du classement reste figee et la liste `3 x grains`
+    ecrase les issues jamais visitees : mesure du 18/11 (pool de 441
+    issues), **38 issues couvertes sur 12 tours**, dont 114 jamais visitees
+    hors de portee. Ici la propriete est verifiere hors ligne :
+
+    - un tour complet du pool tient en `ceil(pool / taille)` tranches ;
+    - les blocs sont DISJOINTS : toute issue est proposee une fois avant
+      qu'une autre le soit deux fois ;
+    - les issues jamais visitees sont donc atteintes.
+    """
+    pool, taille = 120, 24
+    metas = [{"number": 1000 + k, "title": f"Grain {k}",
+              "created_at": "2026-11-01T00:00:00Z", "labels": []}
+             for k in range(pool)]
+    base = datetime(2026, 11, 18, 0, 0, tzinfo=UTC)
+    blocs: list[set[int]] = []
+    for t in range(12):
+        maintenant = base + timedelta(hours=4 * t)
+        etats_ = tu.etats_leger(metas, {}, maintenant)
+        grains_, conteneurs = tapis_leger._ordre(etats_, LANE, maintenant, f"g{t}")
+        file, fenetre = tapis_fenetre.bloc(grains_, conteneurs, 8, taille,
+                                           LANE, maintenant)
+        assert len(file) == taille
+        blocs.append({e.numero for e in file})
+    union = set().union(*blocs)
+    assert union == {m["number"] for m in metas}, "le pool entier doit etre couvert"
+    tour = -(-pool // taille)  # ceil(pool / taille) : les blocs d'un tour complet
+    for i, a in enumerate(blocs[:tour]):
+        for b in blocs[i + 1:tour]:
+            assert not (a & b), "les blocs d'un tour doivent etre disjoints"
+    assert len(set().union(*blocs[:tour])) == pool
+    assert blocs[0] != blocs[1], "la fenetre doit avancer"
+
+
 # --- la qualification de la prise en charge -----------------------------------
 
 def test_la_requete_de_qualification_est_bien_formee():
@@ -166,7 +206,7 @@ def test_la_qualification_lit_le_fil_complet(monkeypatch):
                  "author": {"login": "jsboige"},
                  "body": f"[CLAIMED] lane myia-po-2025:CoursIA-2 -- commentaire {k}"} for k in range(40)]
 
-    monkeypatch.setattr(tq.tapis_fil_complet.gh_snapshot, "fetch_issue_comments", faux_fil)
+    monkeypatch.setattr(tq.tapis_fenetre.gh_snapshot, "fetch_issue_comments", faux_fil)
     # La fenetre annonce 40 commentaires, la lecture ciblee n'en rend que 12 :
     # le fil complet est donc requis, et c'est lui qui tranche.
     def run_tronque(argv, timeout):
@@ -182,7 +222,7 @@ def test_la_qualification_lit_le_fil_complet(monkeypatch):
             return json.dumps({"data": {"repository": alias}})
         return _run_faux()(argv, timeout)
 
-    servis, ecartees, echecs, arrete, appels = tq.qualifier(
+    servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
         [7], LANE, NOW, 45, [], {}, run_tronque)
     assert not echecs
     assert vus == [7], "le fil complet doit etre relu"
@@ -190,16 +230,116 @@ def test_la_qualification_lit_le_fil_complet(monkeypatch):
     assert ecartees[7]["code"] == "RECLAMEE"
 
 
-def test_un_fil_illisible_ne_bloque_pas_la_qualification(monkeypatch):
-    """Un fil illisible ne bloque pas : le grain reste servi (fail-OPEN)."""
+def test_un_fil_illisible_refuse_la_qualification(monkeypatch):
+    """Un fil illisible REFUSE le grain (fail-CLOSED) : la decision n'a pas
+    pu etre prise, donc le grain n'est pas servi -- il porte son code.
+
+    Le temps d'action engage un grain dont le fil a ete lu ; un grain dont
+    la lecture a echoue n'est pas servi en catimini.
+    """
     def faux_fil(repo, number):
         raise RuntimeError("fil indisponible")
 
-    monkeypatch.setattr(tq.tapis_fil_complet.gh_snapshot, "fetch_issue_comments", faux_fil)
-    servis, ecartees, echecs, arrete, appels = tq.qualifier(
-        [7], LANE, NOW, 45, [], {}, _run_faux())
-    assert not ecartees and not echecs
-    assert len(servis) == 1
+    monkeypatch.setattr(tq.tapis_fenetre.gh_snapshot, "fetch_issue_comments", faux_fil)
+
+    def run_tronque(argv, timeout):
+        requete = " ".join(argv)
+        if "issue(number:" in requete:
+            alias: dict[str, dict] = {}
+            for k, n in re.findall(r"i(\d+):\s*issue\(number:(\d+)\)", requete):
+                alias[f"i{k}"] = {"number": int(n), "title": f"Grain {n}", "body": "",
+                                  "createdAt": "2026-11-01T00:00:00Z",
+                                  "updatedAt": "2026-11-01T00:00:00Z",
+                                  "labels": {"nodes": []},
+                                  "comments": {"totalCount": 13, "nodes": []}}
+            return json.dumps({"data": {"repository": alias}})
+        return _run_faux()(argv, timeout)
+
+    servis, ecartees, echecs,arrete, appels, chrono = tq.qualifier(
+        [7], LANE, NOW, 45, [], {}, run_tronque)
+    assert not servis, "un fil illisible ne se sert pas en catimini"
+    assert ecartees[7]["code"] == "FIL_ILLISIBLE"
+    assert ecartees[7]["motif"]
+    assert 7 in echecs
+
+
+def test_le_marqueur_decisif_hors_fenetre_ecarte_le_grain(monkeypatch):
+    """Frontiere 12/13 : le marqueur decisif est HORS de la fenetre, et il
+    pese quand meme.
+
+    La fenetre de la lecture groupee porte les 12 derniers commentaires ;
+    l'issue en porte 13. Le marqueur qui ecarte le grain est le PREMIER
+    commentaire -- hors fenetre. Le fil complet (pagine) doit le trouver :
+    c'est la condition de la bascule.
+    """
+    vus: list[int] = []
+    bruit = [{"createdAt": "2026-11-16T00:00:00Z", "author": {"login": "jsboige"},
+              "body": f"bruit {k}"} for k in range(12)]
+    decisif = {"createdAt": "2026-11-17T00:00:00Z", "author": {"login": "jsboige"},
+               "body": "[CLAIMED] lane myia-po-2025:CoursIA-2 -- paths: a/**"}
+
+    def faux_fil(repo, number):
+        vus.append(number)
+        return [decisif] + bruit  # 13 commentaires : le decisif est le premier
+
+    monkeypatch.setattr(tq.tapis_fenetre.gh_snapshot, "fetch_issue_comments", faux_fil)
+
+    def run_fenetre(argv, timeout):
+        requete = " ".join(argv)
+        if "issue(number:" in requete:
+            alias: dict[str, dict] = {}
+            for k, n in re.findall(r"i(\d+):\s*issue\(number:(\d+)\)", requete):
+                alias[f"i{k}"] = {"number": int(n), "title": f"Grain {n}", "body": "",
+                                  "createdAt": "2026-11-01T00:00:00Z",
+                                  "updatedAt": "2026-11-01T00:00:00Z",
+                                  "labels": {"nodes": []},
+                                  "comments": {"totalCount": 13, "nodes": bruit}}
+            return json.dumps({"data": {"repository": alias}})
+        return _run_faux()(argv, timeout)
+
+    servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
+        [7], LANE, NOW, 45, [], {}, run_fenetre)
+    assert vus == [7], "le fil complet doit etre relu (13 > 12)"
+    assert not servis
+    assert ecartees[7]["code"] == "RECLAMEE"
+    assert ecartees[7]["fenetre_suffit"] is False
+
+
+def test_l_echeance_refuse_la_prise_en_charge(monkeypatch):
+    """L'echeance depassee REFUSE la prise en charge : le grain n'est pas
+    servi en catimini, il porte son code de refus."""
+    def faux_fil(repo, number):
+        raise AssertionError("le fil ne doit pas etre lu apres l'echeance")
+
+    monkeypatch.setattr(tq.tapis_fenetre.gh_snapshot, "fetch_issue_comments", faux_fil)
+    lec = gh_bulk.Lecture(issues=[{
+        "number": 7, "title": "Grain 7", "body": "", "created_at": "2026-11-01T00:00:00Z",
+        "updated_at": "2026-11-01T00:00:00Z", "labels": [], "comments_total": 40,
+        "comments": []}], prs=[], citations={}, lu_a="2026-11-18T08:00:00Z")
+    etats = tapis_rapide.etats(lec, LANE, NOW)
+    confirmes, rejetes, echecs, appels = tq.tapis_fil_complet.confirmer(
+        etats, lec, LANE, NOW, 45, echeance=0.0, horloge=lambda: 10.0)
+    assert not confirmes
+    assert rejetes[0]["code"] == "ECHEANCE"
+    assert rejetes[0]["motif"]
+
+
+def test_le_mur_de_lectures_refuse_la_prise_en_charge(monkeypatch):
+    """Le mur de lectures REST atteint REFUSE aussi : un grain dont le fil
+    n'a pas etre lu n'est pas servi."""
+    def faux_fil(repo, number):
+        raise AssertionError("le fil ne doit pas etre lu apres le mur")
+
+    monkeypatch.setattr(tq.tapis_fenetre.gh_snapshot, "fetch_issue_comments", faux_fil)
+    lec = gh_bulk.Lecture(issues=[{
+        "number": 7, "title": "Grain 7", "body": "", "created_at": "2026-11-01T00:00:00Z",
+        "updated_at": "2026-11-01T00:00:00Z", "labels": [], "comments_total": 40,
+        "comments": []}], prs=[], citations={}, lu_a="2026-11-18T08:00:00Z")
+    etats = tapis_rapide.etats(lec, LANE, NOW)
+    confirmes, rejetes, echecs, appels = tq.tapis_fil_complet.confirmer(
+        etats, lec, LANE, NOW, 45, appels_max=0)
+    assert not confirmes
+    assert rejetes[0]["code"] == "MUR_EPUISE"
 
 
 def test_les_ecarts_sont_affiches_avec_leur_code_et_leur_motif():

@@ -12,7 +12,9 @@ Usage :
     python scripts/coordination/tapis_prise_en_charge.py --issues 17397 27241
 
 Sortie : un rapport JSON (`servis`, `ecartees` avec code et motif, appels,
-secondes). Une exclusion n'est jamais silencieuse.
+secondes). Une exclusion n'est jamais silencieuse. Deux latences y sont
+separees : celle du CLASSEMENT (le tirage, `lecture.secondes` de son rapport)
+et celle de l'ACTION (`chrono.premier_servable_s`, ici).
 """
 from __future__ import annotations
 
@@ -22,7 +24,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, gh_selection, tapis_qualification as tq
+from coordination import gh_bulk, gh_selection, tapis_fil_complet
+from coordination import tapis_qualification as tq
 from coordination.tapis_marqueurs import _iso
 
 
@@ -52,15 +55,22 @@ def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,
     debut = time.monotonic()
     citations = gh_bulk.lire_citations_mergees(depot, args.jours, run)
     prs = gh_bulk.lire_prs_ouvertes(run)
-    servis, ecartees, echecs, arrete, appels = tq.qualifier(
+    servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
         candidats, args.lane, maintenant, args.jours, prs, citations, run,
-        debut + args.budget_s)
+        debut + args.budget_s, debut=debut)
     rapport = {
         "lane": args.lane, "maintenant": _iso(maintenant),
         "qualifies": len(candidats), "servis": len(servis),
         "rejets": len(ecartees), "illisibles": echecs,
         "appels": appels, "secondes": round(time.monotonic() - debut, 1),
         "budget_epuise": arrete,
+        "chrono": chrono,
+        "classement": {"organe": "scripts/coordination/tapis_rapide.py",
+                       "latence": "lecture.secondes du rapport de tirage "
+                                  "(distincte du temps d'action ci-dessus)"},
+        "refus": [{"numero": r["numero"], "code": r["code"], "motif": r["motif"]}
+                  for r in ecartees.values()
+                  if r.get("code") in tapis_fil_complet.CODES_REFUS],
         "grains": [{"numero": e.numero, "titre": e.titre,
                     "visites": e.visites, "consolidation": e.consolidation,
                     "conteneur": e.conteneur, "notes": e.notes}

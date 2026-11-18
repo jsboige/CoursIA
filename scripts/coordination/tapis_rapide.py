@@ -311,14 +311,14 @@ def graine_defaut(lane: str, maintenant: datetime) -> str:
 
 
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
-             graine: str | None = None) -> list[Etat]:
+             graine: str | None = None, rotation: bool = True) -> list[Etat]:
     """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`) :
     le niveau le moins visite d'abord, la plus ancienne issue d'abord."""
     graine = graine or graine_defaut(lane, maintenant)
     servables = [e for e in etats_ if e.ecart is None]
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
     tour = tapis_equilibre.ordre(etats_, [e for e in servables if not e.mon_claim],
-                                 graine, maintenant)
+                                 graine, maintenant, rotation=rotation)
     quota, pris = max(1, int(grains * PART_CONTENEURS)), set()
     for e in tour:  # un conteneur ne passe que dans son quota
         if len(file) < grains and (not e.conteneur or quota > 0):

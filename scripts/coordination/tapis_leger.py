@@ -41,7 +41,8 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_origami, tapis_rapide, tapis_service, tapis_universel
+from coordination import tapis_fenetre, tapis_origami, tapis_rapide
+from coordination import tapis_service, tapis_universel
 from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 
 #: Le classement propose ce multiple de grains : la qualification ecarte
@@ -49,21 +50,27 @@ from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 CANDIDATS_MULT = 3
 
 
-def _ordre(etats_: list, lane: str, maintenant: datetime, graine: str) -> list:
+def _ordre(etats_: list, lane: str, maintenant: datetime,
+          graine: str) -> tuple[list, list]:
     """L'ordre de TOUTES les issues ouvertes : les grains d'abord, les
-    conteneurs ensuite (un conteneur ne passe jamais devant un grain)."""
+    conteneurs ensuite (un conteneur ne passe jamais devant un grain).
+
+    L'ordre est **fair** (`rotation=False`) : le decalage de tete par lane
+    est applique a la FENETTRE, pas au pool -- sinon la fenetre ne peut pas
+    etre un bloc contigu du pool classe (`tapis_fenetre.bloc`).
+    """
     grains_ = [e for e in etats_ if not e.conteneur]
     conteneurs = [e for e in etats_ if e.conteneur]
     return (tapis_universel.rotation_universelle(
-        grains_, lane, maintenant, len(grains_), graine)
-        + tapis_universel.rotation_universelle(
-            conteneurs, lane, maintenant, len(conteneurs), graine))
-
+        grains_, lane, maintenant, len(grains_), graine, rotation=False),
+            tapis_universel.rotation_universelle(
+                conteneurs, lane, maintenant, len(conteneurs), graine,
+                rotation=False))
 
 def _rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
              duree: float, secondes: float, budget_s: float, etats_: list,
              file: list, prs: list[dict], origami: dict,
-             phases: dict | None = None) -> dict:
+             phases: dict | None = None, fenetre: dict | None = None) -> dict:
     """Le rapport du tirage leger : l'etat de chaque grain et l'action a faire."""
     vos = sorted((pr for pr in prs if lane_de_pr(pr) == lane),
                  key=lambda pr: pr.get("created_at") or "")
@@ -72,6 +79,7 @@ def _rapport(lane: str, graine: str, maintenant: datetime, metas: list[dict],
                                       lecture={})
     rapport.update({
         "graine": graine, "voie": "leger", "pool": len(metas),
+        "fenetre": fenetre or {},
         "lecture": {"issues": len(metas), "secondes": round(secondes, 1),
                     "selection_s": duree, "budget_s": budget_s,
                     "phases": phases or {}, "budget_epuise": False},
@@ -104,7 +112,10 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     prs = gh_bulk.lire_prs_ouvertes(run)
     t3 = time.monotonic()
     etats_ = tapis_universel.etats_leger(metas, citations, maintenant)
-    file = _ordre(etats_, lane, maintenant, graine)[:max(grains * CANDIDATS_MULT, grains)]
+    grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
+    file, fenetre = tapis_fenetre.bloc(grains_, conteneurs, grains,
+                                       max(grains * CANDIDATS_MULT, grains),
+                                       lane, maintenant)
     secondes = time.monotonic() - debut
     phases = {"selection_s": duree, "citations_s": round(t2 - t1, 1),
               "prs_s": round(t3 - t2, 1)}
@@ -116,7 +127,7 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     except Exception:  # noqa: BLE001 - un garde ne doit pas casser le tirage
         origami = {"measured": False, "reason": "mesure Origami en echec"}
     rapport = _rapport(lane, graine, maintenant, metas, duree, secondes,
-                       budget_s, etats_, file, prs, origami, phases)
+                       budget_s, etats_, file, prs, origami, phases, fenetre)
     return rapport, 0
 
 
@@ -133,6 +144,12 @@ def texte(r: dict) -> str:
                   f"(selection {lu['selection_s']} s, citations {lu['phases'].get('citations_s')} s, "
                   f"PRs {lu['phases'].get('prs_s')} s, budget {lu['budget_s']} s) ; "
                   f"file de {len(r['grains'])} grain(s)")
+    fen = r.get("fenetre") or {}
+    if fen.get("blocs", 1) > 1:
+        lignes.append(f"Fenetre : bloc {fen['bloc']}/{fen['blocs']} du pool classe "
+                      f"(taille {fen['taille']}) -- la fenetre avance d'un bloc par "
+                      f"tranche de 4 h : le pool entier est couvert en "
+                      f"{fen['blocs']} tranches.")
     lignes.append(f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits :")
     lignes += [f"  #{p['numero']}  {p['age_j']} j  {p['titre'][:90]}"
                for p in r["vos_prs"]]

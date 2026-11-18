@@ -617,7 +617,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # tapis_leger.py pour tenir le plafond, #27225, 18/11) ; tapis_fil_complet.py
 # la douzieme (le fil COMPLET des seuls candidats retenus : lever le doute de
 # la fenetre, #27225, 18/11) ; tapis_prise_en_charge.py la treizieme (le CLI
-# de la prise en charge, extrait pour tenir le plafond, #27225, 18/11).
+# de la prise en charge, extrait pour tenir le plafond, #27225, 18/11) ;
+# tapis_fenetre.py la quatorzieme (la FENETRE du pool classe et celle du
+# fil : le bloc qui avance et le cas de la fenetre de 12, #27225, 18/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -632,7 +634,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_leger.py", 220),
                                               ("tapis_qualification.py", 140),
                                               ("tapis_fil_complet.py", 100),
-                                              ("tapis_prise_en_charge.py", 90)])
+                                              ("tapis_prise_en_charge.py", 90),
+                                              ("tapis_fenetre.py", 120)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
