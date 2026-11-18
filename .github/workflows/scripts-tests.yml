@@ -536,9 +536,11 @@ jobs:
         # monkeypatches pour list_closed_unmerged_prs).
         #
         # Nombre de workers xdist borne par le plafond memoire du conteneur
-        # (1 worker par Gio entier de `memory.max`, entre 1 et 4). Les slots a
-        # 4 Gio (ai-01-wsl-*, po-2024-linux-docker-1) gardent `-n 4` a
-        # l'identique. Les slots `po-2024-linux-persist-*`, plafonnes plus bas,
+        # (3/4 de `memory.max` pour les workers, 1/4 reserve au master xdist,
+        # entre 1 et 4). Les slots a 4 Gio (ai-01-wsl-*,
+        # po-2024-linux-docker-1) passent de `-n 4` a `-n 3` : le master
+        # n'entrait pas dans la formule 1 worker/Gio. Les slots
+        # `po-2024-linux-persist-*`, plafonnes plus bas,
         # tuaient leurs workers par OOM du cgroup (`dmesg` : CONSTRAINT_MEMCG,
         # 2026-10-20 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : ils ont ete
         # retires de `coursia-linux`, et sept slots sont restes inactifs devant
