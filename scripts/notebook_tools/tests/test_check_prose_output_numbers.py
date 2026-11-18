@@ -174,6 +174,44 @@ def test_quoted_literature_value_exempt():
     assert _values(nb) == []
 
 
+def test_quoted_keyword_does_not_exempt_whole_line():
+    """Sonde Hermes #27233 (faux négatif 1) : un mot-clé bibliographique
+    n'exempte QUE le nombre qu'il gouverne, pas la ligne entière.
+
+    « l'article rapporte 0.0742, notre run rend 0.0859 et 0.0742 reste notre
+    lecture » : 0.0742 (gouverné par « l'article rapporte ») est exempt, 0.0859
+    matche la sortie committée, mais la REPRISE de 0.0742 comme « notre
+    lecture » doit être vérifiée — l'ancien ``search(line)`` rendait
+    citations_checked=0 et le défaut fondateur invisible.
+    """
+    nb = _nb(
+        ["## Lecture : l'article rapporte 0.0742, notre run rend 0.0859 "
+         "et 0.0742 reste notre lecture"],
+        ["suivi du donneur : 0.0859"],
+    )
+    result = analyze_notebook(nb, "t.ipynb")
+    assert _values(nb) == ["0.0742"]
+    assert result.citations_checked == 2
+
+
+def test_nbsp_thousands_do_not_shift_link_exemption():
+    """Sonde Hermes #27233 (faux négatif 2) : spans d'exemption et positions
+    des nombres sur la MÊME chaîne normalisée.
+
+    « total 1[NBSP]000 et 2[NBSP]500 unités, [ref](…) 0.0742 tire » : la
+    normalisation retire 2 caractères côté nombres, l'ancien calcul des spans
+    sur le texte brut faisait glisser 0.0742 dans le span du lien (exempté à
+    tort, citations_checked=0).
+    """
+    nbsp = " "
+    nb = _nb(
+        ["## Bilan : total 1" + nbsp + "000 et 2" + nbsp + "500 unités, "
+         "[ref](https://arxiv.org/abs/2202.05822) 0.0742 tire"],
+        ["suivi : 0.0859"],
+    )
+    assert _values(nb) == ["0.0742"]
+
+
 def test_citation_more_precise_than_print_is_refused():
     """« 1.99923 » vs print « 1.9992 » (Complexity-03e) : REFUSE, a dessein.
 

@@ -88,12 +88,16 @@ _LINK_RE = re.compile(r"!?\[[^\]]*\]\([^)]*\)")
 _URL_RE = re.compile(r"https?://\S+")
 # Valeur DECLAREE citee (litterature/theorie), pas mesuree : l'auteur dit lui-meme
 # que le nombre n'est pas le sien (« la prediction 4,267 ... est citee », seuil
-# 3-SAT de Complexity-02b/02c, mesure dans le census initial).
+# 3-SAT de Complexity-02b/02c, mesure dans le census initial). L'exemption porte
+# sur le nombre GOUVERNE par le mot-cle (fenetre _QUOTED_WINDOW), jamais sur la
+# ligne entiere (sonde Hermes #27233, faux negatif 1 : « l'article rapporte
+# 0.0742, notre run rend 0.0859 » ne doit exempter que 0.0742).
 _QUOTED_VALUE_RE = re.compile(
     r"\b(cit[eé]e?s?|papier|article|litt[eé]rature|literature|"
     r"th[eé]or[eè]me|theorem|conjecture|pr[eé]diction|prediction)\b",
     re.IGNORECASE,
 )
+_QUOTED_WINDOW = 40
 _MIN_DECIMALS = 3
 _YEAR_MIN, YEAR_MAX = 1900, 2100
 
@@ -259,31 +263,61 @@ def lecture_cells(nb: dict) -> set[int]:
     return in_scope
 
 
+def _quoted_governed_spans(line_norm: str) -> list[tuple[int, int]]:
+    """Spans des nombres GOUVERNES par un mot-cle bibliographique.
+
+    Premier nombre apres le mot-cle, dernier nombre avant, dans une fenetre
+    bornee et sans nombre intermediaire : « l'article rapporte 0.0742, notre
+    run rend 0.0859 » n'exempte que 0.0742 — les mesures du run restent
+    verifiees (sonde Hermes #27233, faux negatif 1 ; l'ancien `search(line)`
+    exemptait la ligne entiere et rendait le defaut fondateur invisible).
+    """
+    spans: list[tuple[int, int]] = []
+    nums = list(_NUM_RE.finditer(line_norm))
+    for kw in _QUOTED_VALUE_RE.finditer(line_norm):
+        for n in nums:
+            if n.start() >= kw.end() and n.start() - kw.end() <= _QUOTED_WINDOW:
+                spans.append(n.span())
+                break
+        for n in reversed(nums):
+            if n.end() <= kw.start() and kw.start() - n.end() <= _QUOTED_WINDOW:
+                spans.append(n.span())
+                break
+    return spans
+
+
 def analyze_notebook(nb: dict, rel_path: str) -> NotebookResult:
     result = NotebookResult(file=rel_path)
     pool = output_numbers(nb)
     for i in lecture_cells(nb):
         cell = nb["cells"][i]
         src = cell.get("source", [])
-        # Exemptions calculees sur la cellule entiere (backticks, fractions).
+        # Exemptions calculees sur la cellule entiere, en coordonnees de la
+        # MEME chaine normalisee que les positions cote nombres : calculer les
+        # spans sur le texte brut faisait glisser les positions des nombres
+        # (les separateurs de milliers NBSP sont retires cote nombres, pas cote
+        # spans) et exempter a tort une mesure voisine d'un lien (sonde Hermes
+        # #27233, faux negatif 2).
         cell_text = "".join(src)
-        exempt_spans = [m.span() for m in _BACKTICK_RE.finditer(cell_text)]
-        exempt_spans += [m.span() for m in _LINK_RE.finditer(cell_text)]
-        exempt_spans += [m.span() for m in _URL_RE.finditer(cell_text)]
+        cell_norm = _normalize_digits(cell_text)
+        exempt_spans = [m.span() for m in _BACKTICK_RE.finditer(cell_norm)]
+        exempt_spans += [m.span() for m in _LINK_RE.finditer(cell_norm)]
+        exempt_spans += [m.span() for m in _URL_RE.finditer(cell_norm)]
         derived_values = {
             _to_decimal(m.group(1))
             for m in _FRACTION_DERIVATION_RE.finditer(cell_text)
         }
         derived_values.discard(None)
-        # Position de chaque ligne dans le texte concatene (les spans sont en
-        # coordonnees du texte concatene, pas de la ligne).
+        # Position de chaque ligne dans le texte concatene NORMALISE (les
+        # spans sont en coordonnees de cell_norm, pas de la ligne brute).
         offset = 0
         for line_no, line in enumerate(src):
-            line_start, line_end = offset, offset + len(line)
-            offset = line_end
             line_norm = _normalize_digits(line)
-            # Trouver les occurrences de chaque token de la ligne dans le texte
-            # concatene (position approximative suffisante pour l'exemption).
+            line_start, line_end = offset, offset + len(line_norm)
+            offset = line_end
+            # Exemption « valeur citee » bornee au nombre gouverne par le
+            # mot-cle, pas a la ligne entiere (sonde Hermes #27233, FN 1).
+            quoted_spans = _quoted_governed_spans(line_norm)
             for m in _NUM_RE.finditer(line_norm):
                 raw = m.group(0)
                 decimals = _decimals_of(raw)
@@ -297,7 +331,7 @@ def analyze_notebook(nb: dict, rel_path: str) -> NotebookResult:
                 abs_pos = line_start + m.start()
                 if any(s <= abs_pos < e for s, e in exempt_spans):
                     continue
-                if _QUOTED_VALUE_RE.search(line):
+                if any(s <= m.start() < e for s, e in quoted_spans):
                     continue
                 result.citations_checked += 1
                 if not citation_matches(NumToken(val, decimals, raw), pool):
@@ -539,11 +573,39 @@ def self_test() -> int:
     if citations(r):
         failures.append(f"annees/compteurs : {citations(r)}")
 
+    # 11. Exemption « valeur citee » bornee au nombre gouverne (sonde Hermes
+    # #27233, faux negatif 1) : le mot-cle bibliographique n'exempte PAS la
+    # ligne entiere — seule la valeur qu'il gouverne est exemptee, la
+    # reprise de 0.0742 comme « notre lecture » reste verifiee.
+    r = analyze_notebook(
+        nb(["## Lecture : l'article rapporte 0.0742, notre run rend 0.0859 "
+            "et 0.0742 reste notre lecture"],
+           ["suivi du donneur : 0.0859"]),
+        "t.ipynb",
+    )
+    if sorted(citations(r)) != ["0.0742"] or r.citations_checked != 2:
+        failures.append(
+            f"exemption citee bornee : {citations(r)} / checked={r.citations_checked}"
+        )
+
+    # 12. Spans et positions sur la MEME chaine normalisee (sonde Hermes
+    # #27233, faux negatif 2) : les separateurs de milliers NBSP ne font
+    # plus glisser la position de 0.0742 dans le span du lien.
+    nbsp = " "
+    r = analyze_notebook(
+        nb(["## Bilan : total 1" + nbsp + "000 et 2" + nbsp + "500 unites, "
+            "[ref](https://arxiv.org/abs/2202.05822) 0.0742 tire"],
+           ["suivi : 0.0859"]),
+        "t.ipynb",
+    )
+    if citations(r) != ["0.0742"]:
+        failures.append(f"spans normalises : {citations(r)}")
+
     if failures:
         for f in failures:
             print(f"SELFTEST FAIL: {f}")
         return 1
-    print("selftest: OK (10 fixtures)")
+    print("selftest: OK (12 fixtures)")
     return 0
 
 
