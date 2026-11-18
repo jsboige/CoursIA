@@ -28,36 +28,38 @@ Le parcours principal progresse par blocs : les **fondations** de l'écosystème
 
 La séquence 01 à 28 se lit dans l'ordre : chaque palier suppose le précédent. Le livre de référence couvre les mêmes notions au fil des chapitres.
 
-| # | Carnet | Ce qu'on y apprend | Pour approfondir |
-|---|--------|--------------------|------------------|
-| 01 | [QC-Py-01-Setup](Python/QC-Py-01-Setup.ipynb) | Compte QC, premier backtest cloud, architecture LEAN | |
-| 02 | [QC-Py-02-Platform-Fundamentals](Python/QC-Py-02-Platform-Fundamentals.ipynb) | Cycle de vie `QCAlgorithm`, `Initialize`/`OnData`, croisement de moyennes mobiles | |
-| 03 | [QC-Py-03-Data-Management](Python/QC-Py-03-Data-Management.ipynb) | History API, normalisation des données, consolidators, multi-timeframe | |
-| 04 | [QC-Py-04-Research-Workflow](Python/QC-Py-04-Research-Workflow.ipynb) | QuantBook, intégration pandas, transition notebook vers algorithme | |
-| 05 | [QC-Py-05-Universe-Selection](Python/QC-Py-05-Universe-Selection.ipynb) | Sélection dynamique d'univers, coarse/fine, rebalancement | [05b — F-Score de Piotroski](Python/QC-Py-05b-FScore-Piotroski.ipynb) |
-| 06 | [QC-Py-06-Options-Trading](Python/QC-Py-06-Options-Trading.ipynb) | Chaînes d'options, grecques, covered calls, protective puts | [06b — valorisation from scratch](Python/QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) |
-| 07 | [QC-Py-07-Futures-Forex](Python/QC-Py-07-Futures-Forex.ipynb) | Contrats à terme, rollover, paires Forex, levier | |
-| 08 | [QC-Py-08-Multi-Asset-Strategies](Python/QC-Py-08-Multi-Asset-Strategies.ipynb) | Portefeuille Equity + Options + Futures, corrélations | |
-| 09 | [QC-Py-09-Order-Types](Python/QC-Py-09-Order-Types.ipynb) | Market, Limit, Stop, Stop-Limit, ordres combinés | |
-| 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | Position sizing (Kelly, fixed fractional), stop-loss, take-profit | |
-| 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | Indicateurs intégrés, indicateurs custom, génération de signaux | |
-| 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | Métriques de performance (Sharpe, Sortino, max drawdown), courbe d'équité | [12b — validité statistique d'un backtest](Python/QC-Py-12b-Backtest-Validity.ipynb) |
-| 13 | [QC-Py-13-Alpha-Models](Python/QC-Py-13-Alpha-Models.ipynb) | Algorithm Framework, modèles Alpha, insights | |
-| 14 | [QC-Py-14-Portfolio-Construction-Execution](Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) | Modèles de construction de portefeuille, d'exécution, de risque | [14b — liquidité et coûts d'exécution](Python/QC-Py-14b-Liquidity-Execution-Costs.ipynb) |
-| 15 | [QC-Py-15-Parameter-Optimization](Python/QC-Py-15-Parameter-Optimization.ipynb) | Grilles de paramètres, cibles d'optimisation, prévention de l'overfitting | |
-| 16 | [QC-Py-16-Alternative-Data](Python/QC-Py-16-Alternative-Data.ipynb) | NewsAPI, fundamentals, sources de données custom | |
-| 17 | [QC-Py-17-Sentiment-Analysis](Python/QC-Py-17-Sentiment-Analysis.ipynb) | Scoring de sentiment (TextBlob, VADER), agrégation de news | |
-| 18 | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | Extraction de features, labellisation, train/test split, importance | |
-| 19 | [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb) | Random Forest, XGBoost, prédiction de direction, walk-forward | |
-| 20 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) | Régression linéaire, SVR, prédiction de cible de prix | |
-| 21 | [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | Markowitz augmenté ML, estimation de covariance par ML | |
-| 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | LSTM pour séries temporelles, TensorFlow/Keras, design CPU-first | |
-| 23 | [QC-Py-23-State-Space-Models](Python/QC-Py-23-State-Space-Models.ipynb) | State Space Models (S4, Mamba) pour séries temporelles | [23b — PatchTST et iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) |
-| 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | Autoencodeurs pour détection d'anomalies et changement de régime | |
-| 25 | [QC-Py-25-Reinforcement-Learning](Python/QC-Py-25-Reinforcement-Learning.ipynb) | Agents PPO/DQN, Stable-Baselines3, environnement Gym custom | |
-| 26 | [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb) | APIs OpenAI/Anthropic, prompt engineering, signaux LLM + indicateurs | |
-| 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | Paper trading, passage en live, monitoring, déploiement | |
-| 28 | [QC-Py-28-Market-Regime-Detection](Python/QC-Py-28-Market-Regime-Detection.ipynb) | HMM, détection de régime, allocation adaptative | |
+| # | Carnet | Durée | Ce qu'on y apprend | Pour approfondir |
+|---|--------|------|--------------------|------------------|
+| 01 | [QC-Py-01-Setup](Python/QC-Py-01-Setup.ipynb) | 45 min | Compte QC, premier backtest cloud, architecture LEAN | |
+| 02 | [QC-Py-02-Platform-Fundamentals](Python/QC-Py-02-Platform-Fundamentals.ipynb) | 60 min | Cycle de vie `QCAlgorithm`, `Initialize`/`OnData`, croisement de moyennes mobiles | |
+| 03 | [QC-Py-03-Data-Management](Python/QC-Py-03-Data-Management.ipynb) | 75 min | History API, normalisation des données, consolidators, multi-timeframe | |
+| 04 | [QC-Py-04-Research-Workflow](Python/QC-Py-04-Research-Workflow.ipynb) | 75 min | QuantBook, intégration pandas, transition notebook vers algorithme | |
+| 05 | [QC-Py-05-Universe-Selection](Python/QC-Py-05-Universe-Selection.ipynb) | 75 min | Sélection dynamique d'univers, coarse/fine, rebalancement | [05b — F-Score de Piotroski](Python/QC-Py-05b-FScore-Piotroski.ipynb) |
+| 06 | [QC-Py-06-Options-Trading](Python/QC-Py-06-Options-Trading.ipynb) | 75 min | Chaînes d'options, grecques, covered calls, protective puts | [06b — valorisation from scratch](Python/QC-Py-06b-Derivatives-Valuation-From-Scratch.ipynb) |
+| 07 | [QC-Py-07-Futures-Forex](Python/QC-Py-07-Futures-Forex.ipynb) | 75 min | Contrats à terme, rollover, paires Forex, levier | |
+| 08 | [QC-Py-08-Multi-Asset-Strategies](Python/QC-Py-08-Multi-Asset-Strategies.ipynb) | 75 min | Portefeuille Equity + Options + Futures, corrélations | |
+| 09 | [QC-Py-09-Order-Types](Python/QC-Py-09-Order-Types.ipynb) | 75 min | Market, Limit, Stop, Stop-Limit, ordres combinés | |
+| 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | 90 min | Position sizing (Kelly, fixed fractional), stop-loss, take-profit | |
+| 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | 75 min | Indicateurs intégrés, indicateurs custom, génération de signaux | |
+| 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | 75 min | Métriques de performance (Sharpe, Sortino, max drawdown), courbe d'équité | [12b — validité statistique d'un backtest](Python/QC-Py-12b-Backtest-Validity.ipynb) |
+| 13 | [QC-Py-13-Alpha-Models](Python/QC-Py-13-Alpha-Models.ipynb) | 75 min | Algorithm Framework, modèles Alpha, insights | |
+| 14 | [QC-Py-14-Portfolio-Construction-Execution](Python/QC-Py-14-Portfolio-Construction-Execution.ipynb) | 90 min | Modèles de construction de portefeuille, d'exécution, de risque | [14b — liquidité et coûts d'exécution](Python/QC-Py-14b-Liquidity-Execution-Costs.ipynb) |
+| 15 | [QC-Py-15-Parameter-Optimization](Python/QC-Py-15-Parameter-Optimization.ipynb) | 75 min | Grilles de paramètres, cibles d'optimisation, prévention de l'overfitting | |
+| 16 | [QC-Py-16-Alternative-Data](Python/QC-Py-16-Alternative-Data.ipynb) | 75 min | NewsAPI, fundamentals, sources de données custom | |
+| 17 | [QC-Py-17-Sentiment-Analysis](Python/QC-Py-17-Sentiment-Analysis.ipynb) | 75 min | Scoring de sentiment (TextBlob, VADER), agrégation de news | |
+| 18 | [QC-Py-18-ML-Features-Engineering](Python/QC-Py-18-ML-Features-Engineering.ipynb) | 90 min | Extraction de features, labellisation, train/test split, importance | |
+| 19 | [QC-Py-19-ML-Supervised-Classification](Python/QC-Py-19-ML-Supervised-Classification.ipynb) | 75 min | Random Forest, XGBoost, prédiction de direction, walk-forward | |
+| 20 | [QC-Py-20-ML-Regression-Prediction](Python/QC-Py-20-ML-Regression-Prediction.ipynb) | 75 min | Régression linéaire, SVR, prédiction de cible de prix | |
+| 21 | [QC-Py-21-Portfolio-Optimization-ML](Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | 90 min | Markowitz augmenté ML, estimation de covariance par ML | |
+| 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | 90 min | LSTM pour séries temporelles, TensorFlow/Keras, design CPU-first | |
+| 23 | [QC-Py-23-State-Space-Models](Python/QC-Py-23-State-Space-Models.ipynb) | 90 min | State Space Models (S4, Mamba) pour séries temporelles | [23b — PatchTST et iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) |
+| 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | 75 min | Autoencodeurs pour détection d'anomalies et changement de régime | |
+| 25 | [QC-Py-25-Reinforcement-Learning](Python/QC-Py-25-Reinforcement-Learning.ipynb) | 90 min | Agents PPO/DQN, Stable-Baselines3, environnement Gym custom | |
+| 26 | [QC-Py-26-LLM-Trading-Signals](Python/QC-Py-26-LLM-Trading-Signals.ipynb) | 90 min | APIs OpenAI/Anthropic, prompt engineering, signaux LLM + indicateurs | |
+| 27 | [QC-Py-27-Production-Deployment](Python/QC-Py-27-Production-Deployment.ipynb) | 75 min | Paper trading, passage en live, monitoring, déploiement | |
+| 28 | [QC-Py-28-Market-Regime-Detection](Python/QC-Py-28-Market-Regime-Detection.ipynb) | 75 min | HMM, détection de régime, allocation adaptative | |
+
+Temps de lecture du parcours principal : 36 h 15 au total — fondations 4 h 15, univers et classes d'actifs 5 h, trading avancé et gestion du risque 5 h 15, Algorithm Framework 4 h, données alternatives et préparation ML 4 h, machine learning classique 4 h, deep learning 4 h 15, IA avancée et production 5 h 30. Les compléments de la section [Approfondissements](#approfondissements) s'ajoutent selon la voie choisie.
 
 ### L'Algorithm Framework (paliers 13 à 15)
 
