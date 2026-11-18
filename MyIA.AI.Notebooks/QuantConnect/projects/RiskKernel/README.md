@@ -55,7 +55,7 @@ Deux contraintes :
 
 `reopen_stopped()` est une variante diagnostique : branchée sur un calendrier hebdomadaire (paramètre `reentry=week` de `Cloud-VolTargeting`), elle fait revenir les lignes stoppées sur les cibles du dernier rééquilibrage sans attendre le suivant.
 
-`statistics()` rend six statistiques d'exécution : `Noyau`, `Stops`, `Coupures`, `Ordres invalides`, `Exposition max`, `Seances a plat`.
+`statistics()` rend six statistiques d'exécution : `Noyau`, `Stops`, `Coupures`, `Ordres invalides`, `Exposition max`, `Seances a plat`. Toutes les valeurs sont des chaînes (`str`), directement utilisables par `set_runtime_statistic`. Pour un calcul ou un tracé numérique, convertir explicitement la valeur concernée ; `Seances a plat` est un rapport textuel sous la forme `nombre/total`.
 
 ## Des copies identiques, vérifiées par une garde
 
