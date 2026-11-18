@@ -14,10 +14,11 @@ seules issues nommees.
 Deux garanties :
 
 - la **pagination est complete** : une liste partielle n'est jamais servie ;
-- le **budget global** est une borne de duree : son depassement leve
-  `LectureIncomplete`, et l'appelant doit le dire (jamais de liste a moitie).
+- le **budget global** est une **echeance monotone unique** : pages et rejeu la
+  partagent, le temps restant est recalcule avant chaque appel, et le
+  depassement leve `LectureIncomplete` (jamais de liste a moitie).
 
-`run` est injecte comme dans `gh_bulk` : aucun test ne touche le reseau.
+`run` et l'horloge sont injectes : aucun test ne touche le reseau.
 """
 from __future__ import annotations
 
@@ -48,14 +49,18 @@ def metadonnee(node: dict) -> dict:
             "labels": [lab["name"] for lab in (node.get("labels") or {}).get("nodes") or []]}
 
 
-def _page(run: Run, depot: str, after: str | None, page: int, budget: float) -> dict:
+def _page(run: Run, depot: str, after: str | None, page: int, echeance: float,
+          horloge=time.monotonic) -> dict:
     """Une page de metadonnees ; rejeu a la taille suivante sur panne transitoire.
 
-    Chaque appel recoit le temps restant : le budget global borne la DUREE de
-    toute la lecture, pas celle d'un appel."""
+    Le budget global est une **echeance monotone unique**, partagee par les
+    pages et les trois tailles de rejeu : le temps restant est recalcule avant
+    chaque appel, et l'echeance est verifiee apres la reponse (une lecture qui
+    depasse sa borne est incomplete)."""
     owner, name = depot.split("/")
     for taille in TAILLES_PAGE:
-        if budget <= 1:
+        reste = echeance - horloge()
+        if reste <= 1:
             raise LectureIncomplete("metadonnees_issues", page,
                                     "budget global de lecture epuise")
         argv = ["gh", "api", "graphql", "-f", f"query={QUERY_METADONNEES}",
@@ -63,33 +68,38 @@ def _page(run: Run, depot: str, after: str | None, page: int, budget: float) -> 
         if after:
             argv += ["-f", f"after={after}"]
         texte = gh_bulk._appel(run, argv, "metadonnees_issues", page,
-                               timeout=max(1, int(min(TIMEOUT_S, budget))))
+                               timeout=max(1, int(min(TIMEOUT_S, reste))))
         if texte is None:
             continue
         try:
-            return json.loads(texte)["data"]["repository"]["issues"]
+            issues = json.loads(texte)["data"]["repository"]["issues"]
         except (ValueError, KeyError, TypeError) as exc:
             raise LectureIncomplete("metadonnees_issues", page,
                                     f"reponse illisible : {exc}") from exc
+        if horloge() > echeance:
+            raise LectureIncomplete("metadonnees_issues", page,
+                                    "budget global de lecture depasse apres la reponse")
+        return issues
     raise LectureIncomplete("metadonnees_issues", page,
                             f"502/504 ou timeout aux tailles {TAILLES_PAGE}")
 
 
 def lire_metadonnees_issues(run: Run = gh_bulk.run_defaut, depot: str = gh_bulk.DEPOT_GH,
-                            budget_s: float = MUR_GLOBAL_S) -> tuple[list[dict], float]:
+                            budget_s: float = MUR_GLOBAL_S, horloge=time.monotonic
+                            ) -> tuple[list[dict], float]:
     """Toutes les issues ouvertes, metadonnees seules, pagination complete.
 
-    Rend la liste et la duree de la lecture (secondes) : la mesure froide et
-    la mesure chaude se comparent sur ce meme chiffre."""
+    L'echeance est posee une fois pour toute la lecture (monotone) : pages et
+    rejeu la partagent. Rend la liste et la duree de la lecture (secondes)."""
     issues: list[dict] = []
     apres, page = None, 1
-    debut = time.monotonic()
+    debut = horloge()
+    echeance = debut + budget_s
     while True:
-        reste = budget_s - (time.monotonic() - debut)
-        data = _page(run, depot, apres, page, reste)
+        data = _page(run, depot, apres, page, echeance, horloge)
         issues.extend(metadonnee(node) for node in data["nodes"])
         if not data["pageInfo"]["hasNextPage"]:
-            return issues, round(time.monotonic() - debut, 1)
+            return issues, round(horloge() - debut, 1)
         apres, page = data["pageInfo"]["endCursor"], page + 1
 
 

@@ -221,7 +221,7 @@ quelques-unes, ce sont deux lectures qui ne servent à rien.
 | --- | --- | --- |
 | charge utile | corps + 12 commentaires + PRs | numéro, titre, dates, labels |
 | mesure sur 440 issues | **23,4 s**, 5,7 Mo | **6,7 s à froid**, 7,8 s à chaud, 107 ko |
-| pagination | complète | complète, avec un **budget global** de durée (60 s) : au-delà, `LectureIncomplete` — jamais de liste partielle |
+| pagination | complète | complète, avec un **budget global** de durée (60 s) posé comme une **échéance monotone commune** (pages et rejeu la partagent, temps restant recalculé avant chaque appel) : au-delà, `LectureIncomplete` — jamais de liste partielle |
 | exclusions | neuf, avant la rotation | **aucune** : les vérifications (claim, gel, contenu livré) se font **à la prise en charge** |
 | visites | marqueurs du fil + commits | **commits seulement** : le travail réellement effectué — une apparition dans une liste n'est pas une visite |
 

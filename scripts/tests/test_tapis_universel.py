@@ -80,6 +80,72 @@ def test_le_budget_global_erreur_explicite():
     assert "budget global" in exc.value.cause
 
 
+class _Horloge:
+    """Une horloge simulee : elle n'avance que quand on le lui demande."""
+
+    def __init__(self, pas: float = 0.0) -> None:
+        self.t = 0.0
+        self.pas = pas
+
+    def __call__(self) -> float:
+        return self.t
+
+    def avancer(self, pas: float | None = None) -> None:
+        self.t += self.pas if pas is None else pas
+
+
+def test_le_rejeu_ne_redonne_pas_un_budget_neuf():
+    """L'echeance est COMMUNE aux trois tailles de rejeu.
+
+    Defect epingle : le budget etait calcule une fois par page, puis reutilise
+    tel quel aux trois tailles — trois timeouts de 60 s pour un budget global
+    de 60 s, soit 180 s de lecture possible. Ici, chaque appel recoit le temps
+    RESTANT, recalcule : 60 s puis 30 s, et le troisieme rejeu est refuse
+    (echeance atteinte) au lieu de recevoir un budget neuf.
+    """
+    horloge = _Horloge(pas=30.0)
+    timeouts: list[int] = []
+
+    def run(argv, timeout):
+        timeouts.append(timeout)
+        horloge.avancer()
+        if len(timeouts) < 3:
+            raise subprocess.TimeoutExpired(argv, timeout)
+        return _page([_noeud(1)], False)
+
+    with pytest.raises(gh_bulk.LectureIncomplete) as exc:
+        gh_selection.lire_metadonnees_issues(run, budget_s=60.0, horloge=horloge)
+    assert "budget global" in exc.value.cause
+    assert timeouts == [60, 30], \
+        f"le temps restant doit etre recalcule avant chaque rejeu : {timeouts}"
+
+
+def test_une_reponse_arrivee_apres_l_echeance_est_incomplete():
+    """Le controle se fait APRES la reponse finale : une lecture qui depasse
+    sa borne est incomplete meme si la reponse est arrivee."""
+    horloge = _Horloge()
+
+    def run(argv, timeout):
+        horloge.avancer(pas=70.0)  # l'appel depasse le budget de 60 s
+        return _page([_noeud(1)], False)
+
+    with pytest.raises(gh_bulk.LectureIncomplete) as exc:
+        gh_selection.lire_metadonnees_issues(run, budget_s=60.0, horloge=horloge)
+    assert "budget global" in exc.value.cause
+    assert "depass" in exc.value.cause
+
+
+def test_une_lecture_dans_la_borne_reste_conforme():
+    """CONTROLE POSITIF : l'echeance ne doit rien casser quand la lecture
+    tient dans le budget — deux pages, temps simule nul."""
+    horloge = _Horloge()
+    run, _appels = _run_double_page(n1=3, n2=2)
+    metas, duree = gh_selection.lire_metadonnees_issues(run, budget_s=60.0,
+                                                         horloge=horloge)
+    assert [m["number"] for m in metas] == [100, 101, 102, 200, 201]
+    assert duree == 0.0
+
+
 def test_la_qualification_ne_lit_que_les_issues_nommees():
     """La lecture lourde ne porte que sur le grain pris en charge."""
     def run(argv, timeout):
