@@ -24,6 +24,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check_lane_claim as clc  # noqa: E402
 import grain_tag  # noqa: E402
 
+@pytest.fixture
+def sans_activite(monkeypatch):
+    """Un claim perime declenche la recherche d'activite de la lane (#22408),
+    qui enumere les PRs ouvertes. Sans ce stub, ces tests appelaient le vrai
+    `gh` : 45 s en local, et un worker xdist bloque jusqu'au watchdog en CI.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [])
+
+
 
 # --- helpers -----------------------------------------------------------------
 
@@ -1119,7 +1128,7 @@ def test_parse_iso_utc_tolerates_fractional_and_offset():
     assert clc._parse_iso_utc("garbage") is None
 
 
-def test_stale_threshold_unblocks_old_claim(capsys):
+def test_stale_threshold_unblocks_old_claim(sans_activite, capsys):
     # Other lane claimed 48h ago; threshold 24h -> CLEAR with stale warning.
     p = payload(comment(
         "[CLAIMED] lane myia-po-2025:CoursIA -- working here",
@@ -1339,7 +1348,7 @@ def test_open_pr_enumeration_runtime_error_keeps_the_old_verdict(
     assert "illisible" in captured.err
 
 
-def test_implicit_occupation_is_not_measured_when_a_claim_blocks(capsys):
+def test_implicit_occupation_is_not_measured_when_a_claim_blocks(sans_activite, capsys):
     """#22408 item 3 : `[]` ne doit plus se lire « mesure, personne ».
 
     A l'instant du rapport #21881, le registre portait un claim actif : la
@@ -1366,7 +1375,7 @@ def test_implicit_occupation_is_measured_on_a_free_grain(monkeypatch, capsys):
     assert '"implicit_occupation_measured": true' in captured.out
 
 
-def test_stale_threshold_fresh_claim_returns_exit_2_not_scoped(capsys):
+def test_stale_threshold_fresh_claim_returns_exit_2_not_scoped(sans_activite, capsys):
     # Other lane claimed 2h ago; threshold 24h -> NOT_SCOPED at exit 2 (#12322).
     # Pre-#12322 this returned `exit 1` + `BLOCKED`, conflating a non-scoped
     # caller with a real conflict. The new verdict reflects the action the
@@ -1382,7 +1391,7 @@ def test_stale_threshold_fresh_claim_returns_exit_2_not_scoped(capsys):
     assert "NOT_SCOPED" in captured.err
 
 
-def test_stale_threshold_stale_plus_fresh_blocks_on_fresh(capsys):
+def test_stale_threshold_stale_plus_fresh_blocks_on_fresh(sans_activite, capsys):
     # Two other lanes: one stale (48h), one fresh (1h). The fresh one
     # triggers the NOT_SCOPED verdict (#12322 exit 2) since the caller
     # has no scope of their own.
@@ -1402,7 +1411,7 @@ def test_stale_threshold_stale_plus_fresh_blocks_on_fresh(capsys):
     assert "myia-po-2023:CoursIA" in captured.out
 
 
-def test_stale_threshold_boundary_is_stale(capsys):
+def test_stale_threshold_boundary_is_stale(sans_activite, capsys):
     # Exactly 24h old, threshold 24h: >= means STALE (boundary goes to stale).
     p = payload(comment(
         "[CLAIMED] lane myia-po-2025:CoursIA -- exactly at boundary",
@@ -1429,7 +1438,7 @@ def test_no_stale_flag_blocks_old_claim_unchanged(capsys):
     assert "NOT_SCOPED" in captured.err
 
 
-def test_stale_threshold_unparseable_not_treated_stale(capsys):
+def test_stale_threshold_unparseable_not_treated_stale(sans_activite, capsys):
     # A claim whose createdAt is unparseable cannot be dated -> NOT stale
     # (conservative: we cannot prove an age, so we do not lift the block).
     # #12322 -- caller has no scope, so the verdict is exit 2 NOT_SCOPED
@@ -1443,7 +1452,7 @@ def test_stale_threshold_unparseable_not_treated_stale(capsys):
     assert rc == 2
 
 
-def test_stale_claims_null_when_detection_disabled(capsys):
+def test_stale_claims_null_when_detection_disabled(sans_activite, capsys):
     # #12751 -- detection OFF (no --stale-threshold): `stale_claims` must be
     # `null` (not measured), NOT `[]` (measured, nothing stale). Previously
     # both rendered `[]`, so the fleet ran with detection off and a 415h
@@ -1464,7 +1473,7 @@ def test_stale_claims_null_when_detection_disabled(capsys):
     assert "STALE_DETECTION disabled" in captured.err
 
 
-def test_stale_claims_empty_when_detection_enabled_clean(capsys):
+def test_stale_claims_empty_when_detection_enabled_clean(sans_activite, capsys):
     # Detection ON, no claim old enough -> `stale_claims` is `[]` (measured,
     # clean) and `stale_detection` is "active" -- the disambiguated state vs
     # `null`/`"disabled"` (not measured).
@@ -1484,7 +1493,7 @@ def test_stale_claims_empty_when_detection_enabled_clean(capsys):
     assert out["stale_detection"] == "active"
 
 
-def test_default_48_flags_17day_claim_stale(capsys):
+def test_default_48_flags_17day_claim_stale(sans_activite, capsys):
     # #12751 acceptance: at the default 48h threshold, a 17-day-old OTHER-lane
     # claim is flagged STALE and removed from blocking_lanes (the zombie-lock
     # fix -- a 415h claim was read as "alive" because `stale_claims` was `[]`).
@@ -1507,7 +1516,7 @@ def test_default_48_flags_17day_claim_stale(capsys):
     assert rc == 0
 
 
-def test_default_48_does_not_flag_2h_claim(capsys):
+def test_default_48_does_not_flag_2h_claim(sans_activite, capsys):
     # #12751 acceptance: a fresh (2h) claim is NOT stale at the default 48h
     # (positive polarity -- only genuinely-old claims age out).
     p = payload(comment(
@@ -1802,7 +1811,9 @@ def test_le_repli_de_la_collision_pointe_sur_le_pool(monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "BLOCKED: OPEN PR(s) of other lanes touch" in err
     assert "pick another grain from the GLOBAL POOL" in err
-    assert "pick_idle_grain.py --belt" in err
+    # Le pool se tire au tapis rapide, jamais au tapis lourd (#26926).
+    assert "scripts/coordination/tapis_rapide.py --lane" in err
+    assert "pick_idle_grain.py --belt" not in err
     # Le repli ne nomme PLUS l'issue livree comme destination.
     assert "pick another grain (#16570)" not in err
 

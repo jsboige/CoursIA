@@ -1,8 +1,8 @@
 """Lectures groupees de GitHub et de git pour le tapis rapide (#22983).
 
-Seul module de la voie legere qui lance un processus ; `run(argv, timeout)` est
-injecte, les tests en passent un faux. Le cache et le verrou sont dans
-`coordination.gh_cache` (#22630).
+Modules de la voie legere qui lancent un processus : celui-ci et
+`coordination.gh_selection` (selection leger) ; `run(argv, timeout)` est
+injecte. Le cache et le verrou sont dans `coordination.gh_cache` (#22630).
 """
 from __future__ import annotations
 
@@ -75,10 +75,11 @@ def run_defaut(argv: list[str], timeout: int) -> str:
                           timeout=timeout, check=True).stdout
 
 
-def _appel(run: Run, argv: list[str], lecture: str, page: object) -> str | None:
+def _appel(run: Run, argv: list[str], lecture: str, page: object,
+           timeout: int | None = None) -> str | None:
     """Un appel ; None sur une panne transitoire (502/504, timeout)."""
     try:
-        return run(argv, TIMEOUT_S)
+        return run(argv, TIMEOUT_S if timeout is None else timeout)
     except subprocess.TimeoutExpired:
         return None
     except subprocess.CalledProcessError as exc:
@@ -106,7 +107,7 @@ def _page_issues(run: Run, depot: str, after: str | None, page: int) -> dict:
     raise LectureIncomplete("issues", page, f"502/504 ou timeout aux tailles {TAILLES_PAGE}")
 
 
-def _issue(node: dict) -> dict:
+def issue(node: dict) -> dict:
     """Une issue GraphQL a plat, aux champs de `issues.json`."""
     com = node.get("comments") or {}
     return {"number": node["number"], "title": node.get("title") or "",
@@ -120,12 +121,12 @@ def _issue(node: dict) -> dict:
 
 
 def lire_issues_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict]:
-    """Toutes les issues ouvertes (12 derniers commentaires), jamais une liste partielle."""
+    """Toutes les issues ouvertes (12 derniers commentaires), jamais partielle."""
     issues: list[dict] = []
     after, page = None, 1
     while True:
         data = _page_issues(run, depot, after, page)
-        issues.extend(_issue(node) for node in data["nodes"])
+        issues.extend(issue(node) for node in data["nodes"])
         if not data["pageInfo"]["hasNextPage"]:
             return issues
         after, page = data["pageInfo"]["endCursor"], page + 1
@@ -154,7 +155,6 @@ def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict
 def lire_citations_mergees(depot: str | Path, jours: int = 45,
                            run: Run = run_defaut) -> dict[int, list[dict]]:
     """Par numero cite, les commits `{sha, date, sujet, ferme}` d'`origin/main` sur `jours` jours.
-
     Un seul `git log`, sans fetch : le body de la PR devient le message du squash."""
     argv = ["git", "-C", str(depot), "log", "origin/main", f"--since={jours}.days",
             "--format=%x1e%H%x1f%ct%x1f%s%x1f%b"]
