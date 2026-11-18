@@ -248,12 +248,12 @@ def _prs_par_issue(prs: list[dict]) -> dict[int, list[dict]]:
     return index
 
 
-def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
-          jours: int = 45) -> list[Etat]:
-    """Un `Etat` par issue ouverte, decide sur la seule lecture."""
+def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
+              jours: int = 45):
+    """Issues ouvertes, parents, naissances et contexte de decision -- partages
+    par `etats` et la re-decision sur fil complet (#27179)."""
     ouvertes = {it["number"]: it for it in lecture.issues}
     parents = {n: parent_de(it) for n, it in ouvertes.items()}
-    nommes = {p for p in parents.values() if p is not None}
     # Naissances des filles ouvertes par conteneur : une visite du parent (#22500).
     filles: dict[int, list[tuple[int, str | None]]] = {}
     for n, p in parents.items():
@@ -262,6 +262,14 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
            "limite": maintenant - timedelta(days=jours), "filles": filles,
            "prs_par_issue": _prs_par_issue(lecture.prs)}
+    return ouvertes, parents, filles, ctx
+
+
+def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
+          jours: int = 45) -> list[Etat]:
+    """Un `Etat` par issue ouverte, decide sur la seule lecture."""
+    ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours)
+    nommes = {p for p in parents.values() if p is not None}
     resultat = []
     for n, it in ouvertes.items():
         ancetres, famille = _ancetres(n, parents)
@@ -359,8 +367,43 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
+def _ecarts_de_fond(tous: list, file: list, args, lecture, run, maintenant,
+                    graine: str, lire_fils) -> tuple[list, dict | None]:
+    """Les deux ecarteurs de FOND, dans l'ordre qui les rend cumulatifs.
+
+    1. la **re-decision** (#27179) : un grain servi au fil tronque se re-decide
+       sur son fil complet ; hors ligne ou cache, la fenetre reste la fenetre ;
+    2. l'**ecart de saturation** (#26973) : les conteneurs dont tous les
+       enfants sont fermes sortent de la file, et le tirage est refait pour
+       les remplacer par un grain reel. La mesure porte sur les seuls
+       conteneurs de la file, et elle est fail-OPEN : une panne n'ecarte rien.
+       Un rejeu `--lecture` est hors ligne : rien n'est mesure, rien n'est
+       ecarte.
+
+    **ORDRE** : la re-decision passe AVANT la saturation. Les deux marquent le
+    meme objet (`e.ecart`) et la saturation est la seule des deux a ne JAMAIS
+    effacer une marque etrangere : la re-decision, elle, RECALCULE `e.ecart`
+    depuis le fil complet -- appliquee apres, elle pourrait rendre servable un
+    conteneur qui vient d'etre mesure sature. Dans cet ordre les deux
+    exclusions subsistent : `ordonner` ne garde que les items dont
+    `e.ecart is None`.
+    """
+    reverif = None
+    if not args.lecture and not lecture.depuis_cache:
+        from coordination import tapis_reverif
+        file, reverif = tapis_reverif.passer(
+            tous, file, args.grains, args.lane, maintenant, args.jours, graine,
+            lecture, lire_fils)
+    if not args.lecture:
+        file = tapis_sature.ecarter_satures(
+            tous, file,
+            lambda n: gh_recherche.chercher_enfants(run, gh_bulk.DEPOT_GH, n),
+            lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
+    return file, reverif
+
+
 def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None) -> int:
+         maintenant: datetime | None = None, lire_fils: object = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
     # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
@@ -400,18 +443,12 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
-    # Les conteneurs SATURES (tous leurs enfants fermes) sortent de la file,
-    # et le tirage est refait pour les remplacer par un grain reel (#26973).
-    # La mesure porte sur les seuls conteneurs de la file, et elle est
-    # fail-OPEN : une panne n'ecarte rien. Un rejeu `--lecture` est hors
-    # ligne : rien n'est mesure, rien n'est ecarte.
-    if not args.lecture:
-        file = tapis_sature.ecarter_satures(
-            tous, file,
-            lambda n: gh_recherche.chercher_enfants(run, gh_bulk.DEPOT_GH, n),
-            lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
+    file, reverif = _ecarts_de_fond(tous, file, args, lecture, run, maintenant,
+                                     graine, lire_fils)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
+    if reverif is not None:
+        r["reverif_fils"] = reverif
     if fraicheur is not None:
         r["fraicheur"] = fraicheur  # le depassement --allow-stale se LIT dans le JSON
     source = f"dossier {args.lecture}" if args.lecture else "GitHub + origin/main local"
