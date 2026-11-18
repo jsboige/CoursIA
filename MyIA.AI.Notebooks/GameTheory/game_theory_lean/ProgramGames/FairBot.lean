@@ -85,9 +85,11 @@ FairBot comme « certifié ». Ce module procède autrement, en quatre temps :
     d'incomplétude), et la version instanciable vit en L3
     (`FormalLogic.FairBotLoeb`, #17537) sous lemme diagonal + HBL ;
   - `cupodAction` / `CupodDuel` : le zoo s'étend au dual CUPOD (coopère sauf
-    preuve de défection, Critch) — self-play (D, D) **sous hypothèses
-    nommées**, asymétrie DUPOC/CUPOD citée (2ᵉ incomplétude), théorème
-    borné cité (organ-first : ColombanD/TorchLean le démontrent) ;
+    preuve de défection, Critch) — self-play (D, D) sous hypothèses nommées
+    **en lecture de vraie prouvabilité** (dans l'interface, la dégénérescence
+    T4 le rend inconditionnel : `cupod_cupod_mutual_defect_degenerate`),
+    asymétrie DUPOC/CUPOD citée (2ᵉ incomplétude — vacuité T4 mesurée),
+    théorème borné cité (organ-first : ColombanD/TorchLean le démontrent) ;
   - `PrudentBotDuel` : le PrudentBot payorien `P ↔ □(□P → Q) ∧ □(□¬P → ¬Q)`,
     pont direct vers le lemme de Payor du carnet `Dynamics-04c` (série
     Dynamics, issue #26985 tranche T-2).
@@ -399,53 +401,96 @@ structure CupodDuel (box : Prop → Prop) where
   colClause : colDefects ↔ box rowDefects
 
 /-- Dans un duel CUPOD-CUPOD, toute défection est elle-même prouvable :
-`A → □B → □□B → □A`. La réciproque (`□A → A`) n'est PAS dérivable dans
-l'interface — premier symptôme de l'asymétrie DUPOC/CUPOD, qui tient tout
-entière dans la direction de la réflexion. -/
+`A → □B → □□B → □A`. NOTE T4 (#26945) : ce théorème ne témoigne PAS
+d'une non-dérivabilité — dans cette interface dégénérée, sa réciproque
+`□A → A` est AUSSI dérivable (tout l'est : voir
+`cupod_row_defects_unconditional` et `every_instance_boxes_everything`).
+L'asymétrie DUPOC/CUPOD — qui tient dans la direction de la réflexion —
+est une observation sur la VRAIE prouvabilité (Critch), à instancier en
+L3 (`FormalLogic.FairBotLoeb`). -/
 theorem cupod_defect_provable (d : CupodDuel box) :
     d.rowDefects → box d.rowDefects :=
   fun hA => box_mono d.rowClause.2 (posIntros (d.rowClause.1 hA))
 
 /-- Sans preuve de défection adverse, pas de défection : la clause de
-CUPOD, dite aussi sa « bienveillance ». -/
+CUPOD, dite aussi sa « bienveillance ». NOTE T4 : l'hypothèse
+`¬ box d.colDefects` est insatisfaisable dans l'interface
+(`no_unprovable_proposition`) — l'énoncé y est vrai de vacuité. -/
 theorem cupod_cooperates_of_no_proof (d : CupodDuel box)
     (h : ¬ box d.colDefects) : ¬ d.rowDefects :=
   fun hA => h (d.rowClause.1 hA)
+
+/-- **Témoin T4 — dégénérescence du zoo.** Dans l'interface, la défection
+du camp ligne est dérivable SANS hypothèse : `rowClause.2` consomme
+`every_instance_boxes_everything`. Toutes les lectures « sous hypothèses »
+de cette section y sont donc triviairement inconditionnelles — l'interface
+ne discrimine pas le zoo, seule la vraie prouvabilité (L3) le peut. -/
+theorem cupod_row_defects_unconditional (d : CupodDuel box) :
+    d.rowDefects :=
+  d.rowClause.2 every_instance_boxes_everything
 
 /-- Self-play CUPOD × CUPOD = (D, D) **sous les hypothèses nommées** que
 chaque recherche aboutit : `hrow`, la recherche du camp ligne trouve une
 preuve de la défection adverse ; `hcol`, celle du camp colonne. L'action
 du camp ligne est `cupodAction box d.colDefects` — elle lit l'adversaire.
 
-Sans ces hypothèses, le résultat n'est PAS dérivable dans cette interface :
-CUPOD coopérerait avec lui-même s'il n'existait pas de preuve qu'il dévie,
-or — sous cohérence — un système ne prouve pas l'absence de preuve
-(2ᵉ théorème de Gödel). C'est la contre-intuition que signale Critch :
-« CUPOD seems the nicer robot, yet it defects against itself. »
+NOTE T4 (#26945) : dans cette interface dégénérée, les deux hypothèses
+sont fournies GRATUITEMENT par `every_instance_boxes_everything` — le
+corollaire `cupod_cupod_mutual_defect_degenerate` ci-dessous établit le
+(D, D) sans aucune hypothèse. La lecture « sous hypothèses nommées »
+décrit la VRAIE prouvabilité : là, un système cohérent ne prouve pas
+l'absence de preuve (2ᵉ théorème de Gödel), et c'est la contre-intuition
+que signale Critch : « CUPOD seems the nicer robot, yet it defects
+against itself. »
 
 Le théorème **borné** (Critch, « Cooperative and uncooperative institution
 designs », 2022) établit `outcome(CUPOD(k), CUPOD(k)) = (D, D)` pour tout
-k assez grand, sans hypothèse. Il est **cité, pas prouvé** ici :
-organ-first, sa démonstration paramétrique appartient au corpus
-ColombanD/TorchLean (week-08) que cette série cite sans le porter. -/
+k assez grand, sans hypothèse — en vraie prouvabilité. Il est **cité, pas
+prouvé** ici : organ-first, sa démonstration paramétrique appartient au
+corpus ColombanD/TorchLean (week-08) que cette série cite sans le porter. -/
 theorem cupod_cupod_mutual_defect (d : CupodDuel box)
     (hrow : box d.colDefects) (hcol : box d.rowDefects) :
     (cupodAction box d.colDefects, cupodAction box d.rowDefects)
       = (defect, defect) := by
   rw [cupod_defects_with_proof hrow, cupod_defects_with_proof hcol]
 
+/-- **Corollaire T4** : dans l'interface, le self-play CUPOD × CUPOD est
+INCONDITIONNEL — les hypothèses `hrow`/`hcol` de la version ci-dessus
+sont des instances de `every_instance_boxes_everything`. Ce corollaire
+réconcilie le zoo avec la dégénérescence mesurée par #26945 : ce que
+l'interface prouve « sous hypothèses » y est toujours gratuit ; le zoo
+discriminant (celui de Critch) vit en L3. -/
+theorem cupod_cupod_mutual_defect_degenerate (d : CupodDuel box) :
+    (cupodAction box d.colDefects, cupodAction box d.rowDefects)
+      = (defect, defect) :=
+  cupod_cupod_mutual_defect d every_instance_boxes_everything
+      every_instance_boxes_everything
+
 /-- Asymétrie DUPOC × CUPOD (Critch, ibid.) : si le DUPOC ne trouve pas de
 preuve que le CUPOD coopère, il dévie ; si le CUPOD ne trouve pas de
 preuve que le DUPOD dévie, il coopère. Issue : (D, C). Chez Critch, ces
 hypothèses ne sont pas décoratives — impossible de prouver *dans le
 système* que CUPOD coopère (il faudrait prouver l'absence d'une preuve de
-défection), donc DUPOC dévie ; symétriquement CUPOD coopère. -/
+défection), donc DUPOC dévie ; symétriquement CUPOD coopère. NOTE T4
+(#26945) : dans CETTE interface, les deux hypothèses négatives sont
+insatisfaisables (`no_unprovable_proposition`) — l'énoncé y est vrai de
+vacuité, mesuré par `dupoc_cupod_asymmetry_vacuous` ; l'observation de
+Critch décrit la vraie prouvabilité (L3). -/
 theorem dupoc_cupod_asymmetry {coopCol defCol : Prop}
     (hnoCoop : ¬ box coopCol) (hnoDef : ¬ box defCol) :
     (fairBotAction box coopCol, cupodAction box defCol)
       = (defect, cooperate) := by
   rw [fairBot_defects_without_proof hnoCoop,
       cupod_cooperates_without_proof hnoDef]
+
+/-- **Témoin T4 — vacuité de l'asymétrie dans l'interface.** Les
+hypothèses négatives de `dupoc_cupod_asymmetry` ne peuvent pas être
+satisfaites : rien n'est non-prouvable ici
+(`no_unprovable_proposition`). L'issue (D, C) de Critch n'est donc pas
+mécanisable à ce niveau — elle vit en L3. -/
+theorem dupoc_cupod_asymmetry_vacuous {coopCol defCol : Prop} :
+    ¬ (¬ box coopCol ∧ ¬ box defCol) :=
+  fun h => h.1 every_instance_boxes_everything
 
 /-! ## PrudentBot payorien : deux simulations au lieu d'une -/
 
@@ -461,8 +506,11 @@ même fil ; Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire,
 Yudkowsky, *Robust Cooperation in the Prisoner's Dilemma*, LORI-V 2014)
 teste l'adversaire contre DefectBot sous un niveau de stabilité : il est
 **cité**, non mécanisé ici. L'auto-jeu PrudentBot × PrudentBot n'est pas
-établi dans cette interface — la source le laisse « non-obvious », et
-cette section ne prétend pas trancher. -/
+traité ici — la source le laisse « non-obvious », et cette section ne
+prétend pas trancher. NOTE T4 : dans l'interface dégénérée, la question y
+serait de toute façon triviale (les deux clauses de chaque camp sont des
+box, donc bootées gratuitement) ; c'est en vraie prouvabilité — L3 —
+qu'elle se pose. -/
 structure PrudentBotDuel (box : Prop → Prop) where
   rowCooperates : Prop
   colCooperates : Prop
