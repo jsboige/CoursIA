@@ -618,6 +618,23 @@ jobs:
             SUITES=$(python -c "import json; print(' '.join(json.load(open('scripts_scope.json'))['suites']))") || SUITES=""
           fi
           echo "portee: $SCOPE_MODE${SUITES:+ -- suites: $SUITES}"
+          # #27215 : la pleine suite (28986 items) voit gw2 OOMe a 99 % du
+          # parcours (run 44264380171, memory.events oom_kill 6) malgre la
+          # borne #27163 (4 -> 3). Mesure locale : test_workdir_heal_sparse =
+          # 24 tests passants en 22.61 s. NB : tracemalloc (0,0 Mo) ne mesure
+          # que l'allocateur Python du processus parent -- ni le RSS des
+          # subprocess git, ni la pression cgroup/page cache : il ne suffit
+          # pas a innocenter le test tue. Le fait etabli est l'OOM AGGREGE du
+          # cgroup (3 workers + master) ; la repartition precise par source
+          # (caches git, __pycache__, donnees) n'est pas mesuree. Plafonner a
+          # 2 workers sur la pleine suite est une MITIGATION destinee a
+          # reduire la charge simultanee ; son efficacite reste a verifier sur
+          # un run complet. Les runs restreints (suite reduite, charge bornee)
+          # conservent la formule #27163.
+          if [ "$SCOPE_MODE" = "full" ] && [ "$xdist_n" -gt 2 ]; then
+            xdist_n=2
+            echo "xdist workers: plafonne a 2 sur la pleine suite (#27215)"
+          fi
           if [ "$SCOPE_MODE" = "restricted" ]; then
             python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest $SUITES -n "$xdist_n" --dist loadscope --tb=short -q
           else
