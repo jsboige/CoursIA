@@ -30,7 +30,7 @@ Une même case vide change de rôle selon la méthode. Pour le retour arrière, 
 
 ## Objectifs d'apprentissage
 
-À l'issue de la série, vous saurez :
+À l'issue de la série, vous saurez (le carnet qui enseigne chaque objectif est indiqué dans la table de la série ci-dessous) :
 
 **Techniques** — implémenter un solveur exact par retour arrière et l'accélérer par des structures dédiées (Dancing Links) ; déclarer les règles du Sudoku à des solveurs de contraintes (Choco, OR-Tools, Z3) et à des encodages logiques (BDD, automates symboliques) ; piloter des métaheuristiques (algorithme génétique, recuit simulé, essaims particulaires) sur une grille candidate ; instrumenter des approches prédictives — réseau de neurones, modèle de langage, programmation probabiliste — et mesurer ce qu'une prédiction par case vaut pour résoudre une grille entière.
 
