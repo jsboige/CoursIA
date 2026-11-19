@@ -30,6 +30,15 @@ Ce que fait l'organe, donc :
   4. rejoue la jambe (`gh run rerun <run_id> --job <job_id>`) si et seulement
      si le plancher brut est passe.
 
+Perimetre et fraicheur (demande du coordinateur, 19/11)
+------------------------------------------------------
+  5. la PR doit etre **ouverte** (`state=open`) : une PR fermee est hors
+     perimetre, meme si son minuteur est un vestige ;
+  6. juste avant le geste, l'etat est **relu** (tete, `state`, controle
+     `PR gate` selectionne) : si la premiere lecture a vieilli, le geste est
+     **refuse** -- fail-CLOSED, une relecture impossible n'est jamais « rien
+     n'a change ».
+
 Orthogonalement : le minuteur se laisse lever par le label
 `merge-dwell-waived` (urgence `main` rouge) -- l'organe n'y touche pas.
 
@@ -160,6 +169,7 @@ def decide(
     waived: bool = False,
     status: str = "completed",
     draft: bool = False,
+    state: str = "open",
 ) -> tuple[str, str]:
     """Decide quoi faire d'une jambe `PR gate`. Fonction PURE.
 
@@ -193,6 +203,11 @@ def decide(
     `dwell_min` ne servent plus qu'a l'affichage et a la compatibilite de
     l'appel ; le verdict, lui, sort du message.
 
+    PERIMETRE (reserve du coordinateur du 19/11 01:32Z) : le rejeu ne porte
+    que sur une PR **ouverte**. Une PR fermee est hors perimetre : son
+    minuteur peut etre un vestige d'une PR qu'on ne rejouera plus, et
+    `--all` peut rencontrer une fermeture **apres** son inventaire.
+
     Une `head_at` **dans le futur** (decalage d'horloge entre l'hote qui a
     produit le message et celui qui le lit) ne vaut pas un plancher ecoule :
     fail-CLOSED.
@@ -201,6 +216,15 @@ def decide(
         return "ignorer", ("PR en brouillon -- exclue par conception "
                            "(comme le balayeur `pr-gate-stale-sweep.yml`), "
                            "jamais rejouee")
+    if state != "open":
+        # Exigence du coordinateur (reserve du 19/11 01:32Z, #27273) : une PR
+        # **fermee** est hors perimetre du rejeu. `pr_info` ne lisait pas
+        # `state` : un ancien minuteur pouvait etre relance sur une PR
+        # fermee, et `--all` pouvait rencontrer une fermeture apres son
+        # inventaire. Fermer une PR ne rend pas sa jambe rejouable : la
+        # decision porte sur l'etat **du PR**, pas sur celui du minuteur.
+        return "ignorer", ("PR fermee (state=`{}`) -- hors perimetre du "
+                           "rejeu".format(state or "absent"))
     if conclusion == "success":
         return "ignorer", "jambe verte"
     if waived:
@@ -311,7 +335,7 @@ def pr_head_sha(repo: str, number: int) -> str:
 
 
 def pr_info(repo: str, number: int) -> dict:
-    """Ce qu'il faut de la PR pour decider : tete, labels, etat brouillon.
+    """Ce qu'il faut de la PR pour decider : tete, labels, brouillon, etat.
 
     Les `labels` et le `draft` sont lus dans la **meme** charge utile que la
     tete : une derogation ne peut etre annoncee respectee que si ses labels
@@ -325,6 +349,10 @@ def pr_info(repo: str, number: int) -> dict:
     derogation, pas un brouillon », c'est-a-dire deux **faits** affirmes sur
     une lecture qui n'avait pas eu lieu. `labels_lus` ne vaut `True` que si
     les labels ont ete **reellement lus**.
+
+    Meme exigence pour `state` (reserve du coordinateur du 19/11 01:32Z) : un
+    `state` absent est une **lecture incomplete** (refus), jamais « ouverte ».
+    C'est le meme piege : une reponse cassee ne vaut pas un etat par defaut.
     """
     payload = gh_json("repos/{}/pulls/{}".format(repo, number))
     if not isinstance(payload, dict):
@@ -353,11 +381,19 @@ def pr_info(repo: str, number: int) -> dict:
     if not isinstance(draft, bool):
         raise LectureIncomplete(
             "PR {} : `draft` n'est pas un booleen".format(number))
+    if "state" not in payload:
+        raise LectureIncomplete(
+            "PR {} : champ `state` absent de la reponse".format(number))
+    state = payload["state"]
+    if not isinstance(state, str) or not state:
+        raise LectureIncomplete(
+            "PR {} : `state` n'est pas une chaine".format(number))
     return {
         "sha": str(head["sha"]),
         "labels": noms,
         "labels_lus": True,
         "draft": draft,
+        "state": state,
     }
 
 
@@ -439,6 +475,73 @@ def gh_rerun(run_id: str, job_id: str, repo: str = REPO_DEFAULT) -> tuple[int, s
     return completed.returncode, (completed.stderr or completed.stdout or "").strip()
 
 
+def verifie_fraicheur(inventaire: dict, frais: dict | None) -> tuple[bool, str]:
+    """Le geste ne part que si l'etat **relu au moment du geste** est celui
+    de l'inventaire. Fonction PURE.
+
+    Exigence du coordinateur (reserve du 19/11 01:32Z, #27273) : « verifier
+    aussi la tete, le statut de la PR et le controle selectionne avant le
+    geste si la premiere lecture a vieilli ».
+
+    Pourquoi c'est un garde, pas une precaution : `--all` liste les PRs puis
+    agit. Entre la liste et le geste, une PR peut etre **poussee** (nouvelle
+    tete : le minuteur porte sur l'ancienne, son plancher a change), **fermee**
+    (plus rien a rejouer), ou sa jambe `PR gate` peut etre **rejouee par un
+    tiers** (le controle selection n'est plus celui qu'on a lu). Dans les
+    trois cas, le rejeu partirait sur une **decision perimee** : c'est le
+    geste qu'on ne veut pas faire, et il est irreversible (un run part).
+
+    Fail-CLOSED : une relecture impossible (pas de `frais`) **refuse** le
+    geste ; elle ne vaut jamais « rien n'a change ».
+    """
+    if not frais:
+        return False, ("relecture impossible avant le geste -- geste refuse "
+                       "(fail-CLOSED)")
+    sha_inv = inventaire.get("head_sha") or ""
+    sha_frais = frais.get("sha") or ""
+    if sha_frais != sha_inv:
+        return False, ("tete changee depuis l'inventaire (`{}` -> `{}`) -- "
+                       "geste refuse".format(sha_inv[:9], sha_frais[:9]))
+    state = frais.get("state") or ""
+    if state != "open":
+        return False, ("PR fermee depuis l'inventaire (state=`{}`) -- geste "
+                       "refuse".format(state or "absent"))
+    gate_inv = inventaire.get("gate_id")
+    gate_frais = frais.get("gate_id")
+    if gate_inv is not None and gate_frais is not None and gate_inv != gate_frais:
+        return False, ("controle `{}` change depuis l'inventaire -- geste "
+                       "refuse".format(GATE_NAME))
+    status = frais.get("status") or ""
+    if status != "completed":
+        return False, ("jambe terminee ? statut `{}` -- geste refuse".format(
+            status or "absent"))
+    conclusion = frais.get("conclusion") or ""
+    if conclusion != "failure":
+        return False, ("jambe plus en echec (conclusion `{}`) -- geste "
+                       "refuse".format(conclusion or "absente"))
+    return True, "etat relu identique -- geste autorise"
+
+
+def relit_etat(repo: str, number: int) -> dict:
+    """Relit la PR et son controle `PR gate` **au moment du geste**.
+
+    Renvoie `{}` si la lecture est cassee : l'appelant treat alors comme un
+    refus (fail-CLOSED), jamais comme un etat favorable.
+    """
+    try:
+        info = pr_info(repo, number)
+        gate = gate_check_run(repo, info["sha"]) or {}
+    except (LectureIncomplete, RuntimeError):
+        return {}
+    return {
+        "sha": info["sha"],
+        "state": info["state"],
+        "gate_id": gate.get("id"),
+        "status": gate.get("status") or "",
+        "conclusion": gate.get("conclusion") or "",
+    }
+
+
 # --------------------------------------------------------------------------
 # Collecte
 # --------------------------------------------------------------------------
@@ -451,6 +554,7 @@ def inspect_pr(repo: str, number: int, now: datetime,
     sha = info["sha"]
     entry["head_sha"] = sha
     entry["draft"] = info["draft"]
+    entry["state"] = info["state"]
     # `labels_lus` ne vaut True que si les labels ont ete REELLEMENT lus :
     # `pr_info` refuse (Lever) une reponse dont les labels sont absents ou
     # mal formes (c3272).
@@ -467,6 +571,7 @@ def inspect_pr(repo: str, number: int, now: datetime,
     entry["conclusion"] = conclusion
     entry["status"] = status
     entry["gate_title"] = title[:200]
+    entry["gate_id"] = gate.get("id")
     committed_at = head_committed_at(repo, sha)
     entry["committed_at"] = committed_at.strftime("%Y-%m-%dT%H:%M:%SZ")
     # Plancher de l'EMETTEUR (lu dans le message), et non recalcule : les deux
@@ -486,7 +591,8 @@ def inspect_pr(repo: str, number: int, now: datetime,
     entry["derogation"] = waived
     action, motif = decide(conclusion=conclusion, title=title,
                            committed_at=committed_at, now=now, dwell_min=dwell_min,
-                           status=status, waived=waived, draft=info["draft"])
+                           status=status, waived=waived, draft=info["draft"],
+                           state=info["state"])
     entry["action"] = action
     entry["motif"] = motif
     ref = job_ref(gate.get("details_url") or "")
@@ -555,12 +661,19 @@ def main() -> int:
                 entry["rerun_rc"] = 1
                 echecs += 1
             else:
-                rc, out = gh_rerun(run_id, job_id, args.repo)
-                entry["rerun_rc"] = rc
-                entry["rerun_sortie"] = out[:200]
-                if rc != 0:
-                    entry["motif"] = "rejeu refuse : {}".format(out[:160])
+                frais = relit_etat(args.repo, number)
+                ok, motif_fraicheur = verifie_fraicheur(entry, frais)
+                if not ok:
+                    entry["motif"] = motif_fraicheur
+                    entry["rerun_rc"] = 1
                     echecs += 1
+                else:
+                    rc, out = gh_rerun(run_id, job_id, args.repo)
+                    entry["rerun_rc"] = rc
+                    entry["rerun_sortie"] = out[:200]
+                    if rc != 0:
+                        entry["motif"] = "rejeu refuse : {}".format(out[:160])
+                        echecs += 1
         entries.append(entry)
 
     counts: dict[str, int] = {}

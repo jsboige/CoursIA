@@ -360,7 +360,7 @@ def test_pr_info_lit_les_labels_et_le_statut_de_brouillon(monkeypatch):
     def faux_gh_json(path):
         return {"head": {"sha": "abc123"},
                 "labels": [{"name": "merge-dwell-waived"}, {"name": "bug"}],
-                "draft": True}
+                "draft": True, "state": "open"}
 
     monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
     info = replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
@@ -495,7 +495,8 @@ def test_labels_lus_n_est_annonce_qu_apres_une_lecture_reelle(monkeypatch):
     import replay_dwell_floors
 
     def faux_gh_json(path):
-        return {"head": {"sha": "abc123"}, "labels": [{"name": "bug"}], "draft": False}
+        return {"head": {"sha": "abc123"}, "labels": [{"name": "bug"}], "draft": False,
+                "state": "open"}
 
     monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
     info = replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
@@ -571,7 +572,7 @@ def test_un_refus_de_lecture_ne_produit_aucun_verdict(monkeypatch):
     import replay_dwell_floors
 
     def faux_gh_json(path):
-        return {"head": {"sha": "abc123"}, "labels": [], "draft": False}
+        return {"head": {"sha": "abc123"}, "labels": [], "draft": False, "state": "open"}
 
     monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
     monkeypatch.setattr(sys, "argv",
@@ -593,3 +594,163 @@ def test_le_refus_de_l_organe_est_distinct_de_l_echec_de_geste(monkeypatch):
     monkeypatch.setattr(sys, "argv",
                         ["replay_dwell_floors.py", "--pr", "1", "--apply", "--json"])
     assert replay_dwell_floors.main() == 1
+
+
+# --------------------------------------------------------------------------
+# PERIMETRE et FRAICHEUR (reserve du coordinateur du 19/11 01:32Z, #27273)
+# --------------------------------------------------------------------------
+
+def test_une_pr_fermee_n_est_jamais_rejouee():
+    """CONTROLE NEGATIF : une PR fermee est hors perimetre du rejeu.
+
+    `pr_info` ne lisait pas `state` : `--pr N --apply` pouvait relancer un
+    ancien minuteur sur une PR **fermee**, et `--all` pouvait rencontrer une
+    fermeture apres son inventaire. Fermer une PR ne rend pas sa jambe
+    rejouable : la decision porte sur l'etat de la PR, pas sur celui du
+    minuteur.
+    """
+    action, motif = decide(conclusion="failure", title=_pending_title(),
+                           committed_at=HEAD_AT,
+                           now=HEAD_AT + timedelta(minutes=200),
+                           state="closed")
+    assert action == "ignorer"
+    assert "fermee" in motif
+
+
+def test_une_pr_ouverte_est_rejouable():
+    """Témoin positif : la meme jambe, sur une PR ouverte, se rejoue."""
+    action, _motif = decide(conclusion="failure", title=_pending_title(),
+                            committed_at=HEAD_AT,
+                            now=HEAD_AT + timedelta(minutes=200),
+                            state="open")
+    assert action == "rejouer"
+
+
+def test_un_state_absent_est_un_refus_pas_ouverte(monkeypatch):
+    """CONTROLE NEGATIF : `state` absent ne vaut PAS « ouverte ».
+
+    Meme piege que `labels` et `draft` : une reponse cassee ne se lit pas
+    « ouverte » -- elle se refuse.
+    """
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return {"head": {"sha": "abc123"}, "labels": [], "draft": False}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+
+
+def test_un_state_non_chaine_est_un_refus(monkeypatch):
+    """Un `state` qui n'est pas une chaine est une lecture cassee."""
+    import replay_dwell_floors
+
+    def faux_gh_json(path):
+        return {"head": {"sha": "abc123"}, "labels": [], "draft": False,
+                "state": 42}
+
+    monkeypatch.setattr(replay_dwell_floors, "gh_json", faux_gh_json)
+    with pytest.raises(replay_dwell_floors.LectureIncomplete):
+        replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
+
+
+def test_le_geste_est_refuse_si_la_tete_a_change():
+    """La tete a bouge entre l'inventaire et le geste : le minuteur lu
+    n'est plus celui de la tete courante."""
+    import replay_dwell_floors
+
+    inv = {"head_sha": "abc123", "gate_id": 1}
+    frais = {"sha": "def456", "state": "open", "gate_id": 1,
+             "status": "completed", "conclusion": "failure"}
+    ok, motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
+    assert ok is False
+    assert "tete changee" in motif
+
+
+def test_le_geste_est_refuse_si_la_pr_a_ete_fermee_entre_temps():
+    import replay_dwell_floors
+
+    inv = {"head_sha": "abc123", "gate_id": 1}
+    frais = {"sha": "abc123", "state": "closed", "gate_id": 1,
+             "status": "completed", "conclusion": "failure"}
+    ok, motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
+    assert ok is False
+    assert "fermee" in motif
+
+
+def test_le_geste_est_refuse_si_le_controle_selectionne_a_change():
+    """La jambe `PR gate` selectionnee n'est plus celle lue : un tiers a
+    rejoue, ou une nouvelle tete a produit une autre jambe."""
+    import replay_dwell_floors
+
+    inv = {"head_sha": "abc123", "gate_id": 1}
+    frais = {"sha": "abc123", "state": "open", "gate_id": 2,
+             "status": "completed", "conclusion": "failure"}
+    ok, motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
+    assert ok is False
+    assert "change" in motif
+
+
+def test_le_geste_est_refuse_si_la_jambe_n_est_plus_terminee_en_echec():
+    """La jambe relue n'est plus terminee, ou plus en echec : plus rien a
+    rejouer."""
+    import replay_dwell_floors
+
+    inv = {"head_sha": "abc123", "gate_id": 1}
+    for status, conclusion in (("in_progress", "failure"),
+                                ("completed", "success"),
+                                ("completed", "cancelled")):
+        frais = {"sha": "abc123", "state": "open", "gate_id": 1,
+                 "status": status, "conclusion": conclusion}
+        ok, _motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
+        assert ok is False
+
+
+def test_un_rejeu_autorise_passe_quand_etat_relu_est_identique():
+    """Témoin positif : etat relu identique -> le geste est autorise."""
+    import replay_dwell_floors
+
+    inv = {"head_sha": "abc123", "gate_id": 1}
+    frais = {"sha": "abc123", "state": "open", "gate_id": 1,
+             "status": "completed", "conclusion": "failure"}
+    ok, _motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
+    assert ok is True
+
+
+def test_le_geste_ne_part_pas_quand_la_relecture_est_impossible():
+    """Fail-CLOSED : une relecture impossible n'est jamais « rien n'a
+    change »."""
+    import replay_dwell_floors
+
+    inv = {"head_sha": "abc123", "gate_id": 1}
+    ok, _motif = replay_dwell_floors.verifie_fraicheur(inv, {})
+    assert ok is False
+
+
+def test_un_rejeu_refuse_par_fraicheur_ne_appelle_pas_gh(monkeypatch):
+    """Le geste refuse par la relecture **ne part pas** : `gh run rerun`
+    n'est pas appele, et la commande sort en rc 1 (geste rate)."""
+    import replay_dwell_floors
+
+    appele = {"gh": False}
+
+    monkeypatch.setattr(replay_dwell_floors, "inspect_pr", lambda *a, **k: {
+        "pr": 1, "action": "rejouer", "motif": "plancher brut passe",
+        "run_id": "42", "job_id": "43", "draft": False, "state": "open",
+        "head_sha": "abc123", "gate_id": 1})
+
+    def faux_relit(repo, number):
+        return {"sha": "autre", "state": "open", "gate_id": 1,
+                "status": "completed", "conclusion": "failure"}
+
+    def faux_gh_rerun(*a, **k):
+        appele["gh"] = True
+        return 0, ""
+
+    monkeypatch.setattr(replay_dwell_floors, "relit_etat", faux_relit)
+    monkeypatch.setattr(replay_dwell_floors, "gh_rerun", faux_gh_rerun)
+    monkeypatch.setattr(sys, "argv",
+                        ["replay_dwell_floors.py", "--pr", "1", "--apply", "--json"])
+    assert replay_dwell_floors.main() == 1
+    assert appele["gh"] is False
