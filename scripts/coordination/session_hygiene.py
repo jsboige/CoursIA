@@ -547,29 +547,55 @@ def _pid_windows(pid: int) -> tuple[bool, float | None]:
     on ne declare jamais mort un processus qu'on n'a pas pu interroger.
     L'heure de creation defait la reutilisation de numero : le PID est rendu
     a un autre processus, l'heure de creation ne le suit pas.
+
+    Vivance par l'etat signale du handle (``WaitForSingleObject`` 0 ms) :
+    ``GetExitCodeProcess`` seul est ambigu -- STILL_ACTIVE (259) est aussi un
+    code de sortie legitime, et un processus termine qui a choisi 259 serait
+    classe vivant. WAIT_OBJECT_0 = handle signale = termine ; WAIT_TIMEOUT =
+    vivant ; toute autre valeur (dont WAIT_FAILED) reste un vivant
+    conservateur.
     """
     import ctypes
     import ctypes.wintypes as wt
 
     process_query_limited_information = 0x1000
+    synchronize = 0x00100000
+    wait_object_0 = 0x0
+    wait_timeout = 0x102
     k32 = ctypes.WinDLL("kernel32", use_last_error=True)
-    handle = k32.OpenProcess(process_query_limited_information, False, pid)
+    # Signatures explicites : sans restype, ctypes echange un int 32 bits et
+    # tronque un HANDLE natif 64 bits -- la cause racine du faux
+    # session-double (#27363) etait un handle invalide, non une absence de
+    # processus.
+    k32.OpenProcess.restype = wt.HANDLE
+    k32.OpenProcess.argtypes = (wt.DWORD, wt.BOOL, wt.DWORD)
+    k32.WaitForSingleObject.restype = wt.DWORD
+    k32.WaitForSingleObject.argtypes = (wt.HANDLE, wt.DWORD)
+    k32.GetProcessTimes.restype = wt.BOOL
+    k32.GetProcessTimes.argtypes = (wt.HANDLE, ctypes.POINTER(wt.FILETIME),
+                                    ctypes.POINTER(wt.FILETIME),
+                                    ctypes.POINTER(wt.FILETIME),
+                                    ctypes.POINTER(wt.FILETIME))
+    k32.CloseHandle.restype = wt.BOOL
+    k32.CloseHandle.argtypes = (wt.HANDLE,)
+
+    handle = k32.OpenProcess(process_query_limited_information | synchronize, False, pid)
     if not handle:
         # 5 = acces refuse (il vit, eleve) ; 87 = parametre invalide (absent).
         return (ctypes.get_last_error() == 5, None)
     try:
         # Un objet processus reste ouvrable apres sa terminaison tant qu'un
         # handle le reference. OpenProcess/GetProcessTimes seuls ne mesurent
-        # donc PAS la vivance ; seul STILL_ACTIVE distingue un processus vivant.
-        exit_code = wt.DWORD()
-        if not k32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+        # donc PAS la vivance ; seul l'etat signale du handle la mesure.
+        etat = k32.WaitForSingleObject(handle, 0)
+        if etat not in (wait_object_0, wait_timeout):
             return (True, None)  # sonde incomplete : jamais une preuve de mort
         creation, exit_t, kern, user = (wt.FILETIME() for _ in range(4))
         if not k32.GetProcessTimes(handle, ctypes.byref(creation), ctypes.byref(exit_t),
                                    ctypes.byref(kern), ctypes.byref(user)):
             return (True, None)
         ticks = (creation.dwHighDateTime << 32) | creation.dwLowDateTime
-        return (exit_code.value == 259, (ticks - 116444736000000000) / 1e7)
+        return (etat == wait_timeout, (ticks - 116444736000000000) / 1e7)
     finally:
         k32.CloseHandle(handle)
 

@@ -193,7 +193,7 @@ def test_pid_windows_termine_mais_handle_conserve_n_est_pas_vivant():
         k32.CloseHandle(handle)
 
 
-def test_echec_get_exit_code_process_reste_vivant(monkeypatch):
+def test_echec_wait_for_single_object_reste_vivant(monkeypatch):
     """Une mesure d'etat impossible est fail-closed, jamais un PID declare mort."""
     if os.name != "nt":
         pytest.skip("le faux kernel32 simule la surface Windows")
@@ -203,13 +203,23 @@ def test_echec_get_exit_code_process_reste_vivant(monkeypatch):
     try:
         original = ctypes.WinDLL
 
+        class _WaitEnEchec:
+            """WaitForSingleObject qui echoue : WAIT_FAILED, en acceptant la
+            configuration restype/argtypes que la sonde pose avant l'appel."""
+
+            restype = None
+            argtypes = None
+
+            def __call__(self, *args, **kwargs):
+                return 0xFFFFFFFF  # WAIT_FAILED
+
         class KernelSansEtat:
             def __init__(self, *args, **kwargs):
                 self._k32 = original("kernel32", use_last_error=True)
 
             def __getattr__(self, nom):
-                if nom == "GetExitCodeProcess":
-                    return lambda handle, code: 0
+                if nom == "WaitForSingleObject":
+                    return _WaitEnEchec()
                 return getattr(self._k32, nom)
 
         monkeypatch.setattr(ctypes, "WinDLL", KernelSansEtat)
@@ -217,6 +227,56 @@ def test_echec_get_exit_code_process_reste_vivant(monkeypatch):
     finally:
         enfant.terminate()
         enfant.wait(timeout=30)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="semantique des handles de processus Windows")
+def test_pid_windows_vivant_reste_vivant():
+    """Temoins exige par la review : un processus reellement vivant est vivant.
+
+    La sonde passe par WaitForSingleObject (WAIT_TIMEOUT attendu) et rend
+    aussi la date de creation, utile au verrou pour defaire la reutilisation
+    de numero.
+    """
+    enfant = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(60)"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        vivant, creation = session_hygiene._pid_windows(enfant.pid)
+        assert vivant, "un processus qui dort est vivant"
+        assert isinstance(creation, float), "la date de creation reste utile au verrou"
+    finally:
+        enfant.terminate()
+        enfant.wait(timeout=30)
+
+
+@pytest.mark.skipif(os.name != "nt", reason="semantique des handles de processus Windows")
+def test_pid_windows_sortie_259_termine_est_mort():
+    """Temoins exige par la review : sortie 259 legitime != STILL_ACTIVE.
+
+    GetExitCodeProcess seul est ambigu (259 = STILL_ACTIVE est aussi un code
+    de sortie choisi) ; l'etat signale du handle leve l'ambiguite : le
+    processus termine qui a choisi 259 est MORT. Le handle conserve assure
+    que le verdict vient de WaitForSingleObject, pas d'un OpenProcess
+    refuse en erreur 87 (PID absent).
+    """
+    import ctypes.wintypes as wt
+
+    enfant = subprocess.Popen(
+        [sys.executable, "-c", "import sys; sys.exit(259)"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [wt.DWORD, wt.BOOL, wt.DWORD]
+    k32.OpenProcess.restype = wt.HANDLE
+    k32.CloseHandle.argtypes = [wt.HANDLE]
+    handle = k32.OpenProcess(0x1000, False, enfant.pid)
+    assert handle, f"OpenProcess a echoue : {ctypes.get_last_error()}"
+    try:
+        assert enfant.wait(timeout=30) == 259
+        vivant, creation = session_hygiene._pid_windows(enfant.pid)
+        assert not vivant, "un processus termine avec le code 259 n'est pas vivant"
+        assert isinstance(creation, float), "la date reste utile au diagnostic"
+    finally:
+        k32.CloseHandle(handle)
 
 
 # --- cas reel de la review 5908186749 : ancetre de session vs PID de script ---
