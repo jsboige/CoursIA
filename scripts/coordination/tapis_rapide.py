@@ -26,7 +26,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import frozen_campaigns, gh_bulk, tapis_equilibre, tapis_origami, tapis_service
+from coordination import (frozen_campaigns, gh_bulk, tapis_cle, tapis_equilibre,
+                         tapis_origami, tapis_service)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -76,6 +77,8 @@ class Etat:
     derniere_visite: str | None = None
     visites: int = 0  # seances du tour (FENETRE_J jours), l'unite de l'equilibrage
     visites_total: int = 0  # seances sur toute la lecture
+    cle_service: str | None = None  # date de la derniere PR qui COUVRE le grain
+    cle_origine: str = ""  # d'ou vient cette date (PR #n, commit, creation)
     ecart: str | None = None
     motif: str = ""
     notes: list[str] = field(default_factory=list)
@@ -290,6 +293,8 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
         if e.ecart is None and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
         resultat.append(e)
+    tapis_cle.appliquer(resultat, tapis_cle.des_prs_canoniques(lecture.prs),
+                         lecture.citations)
     return resultat
 
 

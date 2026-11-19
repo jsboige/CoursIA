@@ -16,6 +16,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk
+from coordination import tapis_equilibre
 from coordination import tapis_rapide as tr
 from coordination import tapis_hors_flotte as thf
 
@@ -341,14 +342,17 @@ def test_une_seule_famille_garde_ses_invariants():
         issue(4, body="Part of #1", comments=[com(100, f"[CLAIMED] lane {AUTRE} -- paths: a")]),
         issue(5, body="Part of #1", comments=[com(300, f"[CLAIMED] lane {AUTRE} -- paths: b")]),
     ])
-    file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
+    etats_ = tr.etats(lec, LANE, NOW)
+    file = tr.ordonner(etats_, LANE, NOW, 8)
     ordre = [e.numero for e in file]
-    # parmi les grains, les jamais visites devant les visites (niveau 0, puis 1)
-    assert set(ordre[:2]) == {2, 3}
-    # les deux grains visites une fois forment le niveau 1, decale par lane
-    # comme le niveau 0 (tapis_equilibre) ; le conteneur, meme jamais visite,
-    # en dernier : il demande une lecture et un --paths (#26926)
-    assert set(ordre[2:4]) == {4, 5} and ordre[4] == 1
+    # les grains de la famille d'abord ; le conteneur, meme jamais visite, en
+    # dernier : il demande une lecture et un --paths (#26926)
+    assert set(ordre[:4]) == {2, 3, 4, 5} and ordre[4] == 1
+    # l'ordre des grains est celui de la CLE (creation, sans PR qui couvre) :
+    # #2 et #3 avant #4 et #5 -- les visites ne classent plus (mandat du 19/11)
+    grains_ = [e for e in etats_ if not e.conteneur]
+    fair = tapis_equilibre.ordre(etats_, grains_, "g", NOW, rotation=False)
+    assert [e.numero for e in fair] == [2, 3, 4, 5]
 
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
@@ -680,7 +684,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_public.py", 40),
                                               ("tapis_tete.py", 30),
                                               ("tapis_citations.py", 40),
-                                              ("belt_equite.py", 110)])
+                                              ("belt_equite.py", 110),
+                                              ("tapis_cle.py", 150)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

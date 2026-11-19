@@ -29,7 +29,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import (tapis_ancre, tapis_citations, tapis_origami,
+from coordination import (tapis_ancre, tapis_citations, tapis_cle, tapis_origami,
                          tapis_public, tapis_rapide, tapis_rotation)
 from coordination import tapis_service, tapis_universel
 from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
@@ -101,8 +101,7 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
     t2 = time.monotonic()
     prs = gh_bulk.lire_prs_ouvertes(run)
     t3 = time.monotonic()
-    etats_ = tapis_universel.etats_leger(
-        metas, citations, maintenant, tapis_citations.des_prs_ouvertes(prs))
+    etats_ = tapis_universel.etats_leger(metas, citations, maintenant, prs)
     grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
     return {"metas": metas, "citations": citations, "prs": prs, "etats": etats_,
             "grains": grains_, "conteneurs": conteneurs,

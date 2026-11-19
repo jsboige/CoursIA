@@ -56,9 +56,8 @@ def test_le_classement_leger_voit_le_travail_en_cours():
 
 def test_deux_prs_ouvertes_font_deux_visites():
     metas = [_meta(1, "Ancienne issue"), _meta(2, "Issue travaillee")]
-    cites = tapis_citations.des_prs_ouvertes([_pr(901, "See #2"),
-                                               _pr(902, "Part of #2")])
-    etats = tu.etats_leger(metas, {}, NOW, cites)
+    prs = [_pr(901, "See #2"), _pr(902, "Part of #2")]
+    etats = tu.etats_leger(metas, {}, NOW, prs)
     par_num = {e.numero: e for e in etats}
     assert par_num[1].visites == 0
     assert par_num[2].visites == 2, "deux PRs ouvertes = deux visites"
@@ -67,10 +66,8 @@ def test_deux_prs_ouvertes_font_deux_visites():
 def test_l_issue_en_cours_recule_derriere_une_issue_jamais_servie():
     """L'issue travaillee sort de la tete : une issue jamais servie passe devant."""
     metas = [_meta(1, "Ancienne issue"), _meta(2, "Issue travaillee")]
-    cites = tapis_citations.des_prs_ouvertes([_pr(901, "See #2"),
-                                               _pr(902, "Part of #2"),
-                                               _pr(903, "See #2")])
-    etats = tu.etats_leger(metas, {}, NOW, cites)
+    prs = [_pr(901, "See #2"), _pr(902, "Part of #2"), _pr(903, "See #2")]
+    etats = tu.etats_leger(metas, {}, NOW, prs)
     file = tu.rotation_universelle(etats, LANE, NOW, 2, "g")
     assert [e.numero for e in file] == [1, 2], "l'issue en cours recule"
 
@@ -79,9 +76,8 @@ def test_une_pr_abandonnee_ne_tient_pas_une_issue_en_tete():
     """La date retenue est la derniere ACTIVITE : une PR vieille de trois mois
     ne compte pas dans la fenetre du tour."""
     metas = [_meta(1, "Ancienne issue"), _meta(2, "Issue travaillee")]
-    cites = tapis_citations.des_prs_ouvertes(
-        [_pr(901, "See #2", "2026-08-01T09:00:00Z")])
-    etats = tu.etats_leger(metas, {}, NOW, cites)
+    prs = [_pr(901, "See #2", "2026-08-01T09:00:00Z")]
+    etats = tu.etats_leger(metas, {}, NOW, prs)
     par_num = {e.numero: e for e in etats}
     assert par_num[2].visites == 0, "hors fenetre du tour"
     assert par_num[2].visites_total == 1, "mais elle reste comptee au total"

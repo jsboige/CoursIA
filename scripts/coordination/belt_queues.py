@@ -119,6 +119,8 @@ def normaliser_grains_tapis(belt: dict) -> list[dict]:
             "derniere_visite": g.get("derniere_visite"),
             "visites": g.get("visites"),
             "visites_total": g.get("visites_total"),
+            "cle_service": g.get("cle_service"),
+            "cle_origine": g.get("cle_origine"),
             "consolidation": bool(g.get("consolidation")),
             "conteneur": bool(g.get("conteneur")),
             "klass": g.get("klass"),
@@ -171,14 +173,22 @@ def needs_of(pick: dict) -> list[str]:
 
 
 def visit_age_days(pick: dict, now: datetime) -> float | None:
-    """Jours depuis la derniere visite au sens du tapis : merge citant l'issue ou claim attribue.
+    """Jours depuis la derniere visite au sens du tapis : la CLE DE SERVICE.
+
+    La cle de service (`coordination.tapis_cle`) est la date de la derniere PR
+    qui **couvre** le grain ; a defaut, la creation du grain. C'est la meme
+    cle que le tirage et la reprise (mandat du 19/11) : le dispatch mesure le
+    meme temps que celui qui classe.
 
     Le champ ``idle`` du picker mesure l'activite quelconque (``updated_at``) : un commentaire
     de bot le remet a zero sans que personne ait servi l'issue. Ce n'est pas la cle du tapis.
     """
-    stamps = [s for s in (pick.get("last_delivery_stamp"), pick.get("last_claim_stamp"),
-                          pick.get("derniere_visite")) if s]
-    ref = max(stamps) if stamps else pick.get("created_at")
+    if pick.get("cle_service"):
+        ref = pick["cle_service"]
+    else:
+        stamps = [s for s in (pick.get("last_delivery_stamp"), pick.get("last_claim_stamp"),
+                              pick.get("derniere_visite")) if s]
+        ref = max(stamps) if stamps else pick.get("created_at")
     if not ref:
         return None
     return round((now - datetime.fromisoformat(ref.replace("Z", "+00:00"))).total_seconds() / 86400.0, 1)

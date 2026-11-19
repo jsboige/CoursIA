@@ -15,6 +15,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+from coordination import tapis_cle
 from coordination.gh_lecture import (  # noqa: F401  -- adresse unique
     Lecture, LectureIncomplete, issue)
 
@@ -135,8 +136,10 @@ def lire_citations_mergees(depot: str | Path, jours: int = 45,
         fermes = {int(n) for n in _FERME_RE.findall(message)}
         fermes |= {int(n) for n in _CITATION_RE.findall(portee.group(1))} if portee else set()
         for num in sorted({int(n) for n in _CITATION_RE.findall(message)}):
-            citations.setdefault(num, []).append({"sha": parts[0], "date": date,
-                                                  "sujet": parts[2], "ferme": num in fermes})
+            citations.setdefault(num, []).append(
+                {"sha": parts[0], "date": date, "sujet": parts[2],
+                 "ferme": num in fermes,
+                 "canonique": tapis_cle.est_canonique(message, num)})
     return citations
 
 

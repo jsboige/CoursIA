@@ -65,3 +65,15 @@ def bonus_dixiemes(age_j: float, consolidation: bool) -> tuple[int, list[str]]:
     if b_conso:
         motifs.append(f"priorite de consolidation : -{b_conso / 10:.1f} visite")
     return min(BONUS_TOTAL_MAX, band + b_conso), motifs
+
+
+def bonus(e, conso: set[int], maintenant: datetime) -> tuple[float, list[str]]:
+    """Le bonus leger du mandat du 18/11 : l'age, puis la consolidation.
+
+    Il **ne classe plus** (mandat du 19/11 : une voix par issue, la cle de
+    service) : il reste une MESURE, lue par l'organe qui la consomme.
+    """
+    dix, motifs = bonus_dixiemes(
+        age_jours(e.cree_le, maintenant),
+        est_consolidation(e.consolidation, e.famille, conso))
+    return dix / 10, motifs

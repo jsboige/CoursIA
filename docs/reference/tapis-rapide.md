@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-18
+> REFERENCE — vivante — dernière révision 2026-11-19
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -9,7 +9,8 @@ commande, procédure de conteneur, lecture de secours, sortie texte), `scripts/c
 (parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179),
 `scripts/coordination/tapis_leger.py` (la voie légère du tirage, #27225), `scripts/coordination/tapis_fenetre.py`
 (la fenêtre du pool classé et celle du fil, #27225), `scripts/coordination/gh_issues.py`
-(la lecture ciblée des issues nommées, #27225) et `scripts/coordination/gh_bulk.py` (seul module qui lance
+(la lecture ciblée des issues nommées, #27225), `scripts/coordination/tapis_cle.py` (la clé de service, 19/11)
+et `scripts/coordination/gh_bulk.py` (seul module qui lance
 `gh` ou `git`).
 Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
@@ -165,6 +166,11 @@ ligne ».
 
 ## L'ordre : l'équilibrage des visites
 
+> **L'ordre** est remplacé au 2026-11-19 par la **clé de service** (section suivante) : le niveau, le bonus
+> d'âge et le bonus de consolidation ne classent plus. Ce qui reste de cette section — la **mesure** des
+> visites (une séance, une livraison ouvre une séance neuve, les PRs ouvertes comptent le travail en cours)
+> — est valide et reste lu par le rapport et par l'organe d'équité du dispatch.
+
 Mandat user du 2026-11-16 : « Toute issue doit être visitée au moins une fois avant qu'une autre le soit
 deux fois, à l'exception de quelques issues anciennes de consolidation qui peuvent recevoir plusieurs visites,
 et des marathon csharp et Rust qui recevront le fruit du travail du nouveau harnais. Les issues récentes en
@@ -261,6 +267,55 @@ visités et 300 graines, où les huit grains servis viennent toujours des 24 plu
 
 Les grains restent servis avant les conteneurs (#26926), même quand le conteneur est à un niveau plus bas : un
 conteneur demande une lecture et un `--paths`.
+
+## L'ordre : la clé de service (19/11)
+
+Mandat du coordinateur (DM `20261119-picker-date-pr-parent`, 19/11) : « Remplacer poids/bonus/séances par
+une voix par issue, ordre de la dernière PR dont le diff couvre le grain, départage uniforme à égalité ;
+sans PR, vieillissement depuis la création (pas d'ancienneté héritée). Une PR enfant remet aussi le hub en
+queue, pas les frères ; pas de nouveau service sur correction de PR existante. » Puis, en précision : « Pas
+de bonus Epic ni de séance 24 h pour ordonner. Même clé en tirage, reprise et dispatch. »
+
+Le module `scripts/coordination/tapis_cle.py` porte la clé ; `tapis_equilibre.ordre()` classe par elle.
+
+**Une voix par issue.** La clé est **une date** par grain, et le départage a égalité est **uniforme** (le
+numéro). Ne classent plus : le nombre de visites, le bonus d'âge, le bonus de consolidation, la séance de
+24 h. Les visites restent une **mesure** (rapport, équité du dispatch).
+
+**La clé est la dernière PR qui COUVRE le grain.** La couverture se lit dans le **corps** de la PR, en
+forme **canonique** : `See #N`, `Part of #N`, `Closes #N`, `Fix(portee,#N)`, le mot-clé a moins de
+30 caractères du numéro. Une PR qui **mentionne** l'issue en prose (`Sur #27338, ...`) ne la couvre pas :
+c'est la distinction qui manquait, et elle sépare la PR qui *parle* d'un grain de la PR qui le *sert*.
+
+**La date d'une PR est sa création.** Pousser une correction dans une PR ouverte ne la recrée pas : le
+grain ne revient donc pas en tête.
+
+**Le hub suit son enfant.** La clé d'un grain remonte à ses **ancêtres** (le hub), et **seulement** à eux :
+les **frères** gardent leur propre clé. Un pli **neuf** n'hérite pas de l'âge du hub : sans PR, sa clé est
+sa propre **création**.
+
+**La densité d'un hub est une mesure, jamais un bonus.** `tapis_cle.densites()` se lit au moment de la
+visite du hub ; elle ne classe rien et ne déclenche **aucune** création de ticket. Un pli encore sur son
+parent ne figure pas au tirage comme pli : il reste un pli.
+
+**Même clé partout.** La clé est posée par `tapis_cle.appliquer()` sur les états, et elle est lue par :
+
+| chemin | organe | usage |
+| --- | --- | --- |
+| tirage léger | `tapis_universel.etats_leger()` puis `tapis_equilibre.ordre()` | l'ordre du pool classé |
+| tirage lourd | `tapis_rapide.etats()` puis `tapis_equilibre.ordre()` | le même ordre, sur le fil complet |
+| reprise / fenêtre | `tapis_public.lot_public()` | le bloc servi est une tranche de cet ordre |
+| dispatch | `belt_queues.visit_age_days()` | l'âge de référence d'un grain dispatché |
+
+**Mesure sur le siège affecté** (19/11, `tapis_leger.py --lane myia-ai-01:CoursIA-2`) : pool de 466
+grains, dont **89 sans PR couvrante** (clé = création) et **48 jamais servis** ; l'umbrella **#27338**,
+couvert par une PR créée le 19/11, sort au **rang 436 sur 466** — il ne peut plus être servi sept fois
+dans la journée pendant que des issues anciennes n'attendent aucune PR. Les **29** grains dont la clé est
+du 19/11 occupent la queue.
+
+Ce que la clé ne fait pas : la fenêtre sert un **bloc** de l'ordre classe, et les **reprises** (les grains
+déjà servis, que la tranche rend au service) gardent leur propre ordre — la clé ordonne le pool, elle
+n'efface pas la memoire de la fenêtre.
 
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 

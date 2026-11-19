@@ -10,17 +10,14 @@ Ce module fait la rotation **sur les metadonnees seules** :
 
 - la lecture est **legere** (`coordination.gh_selection`) : numero, titre,
   date, labels -- et le signal du **travail reel** (les commits de
-  `origin/main` qui citent l'issue). Une apparition dans une liste n'est pas
-  une visite ;
-- la rotation porte sur **toutes** les issues ouvertes, sans ecarter : ce
-  sont les verifications (claim, gel, contenu livre) qui se font **a la prise
-  en charge**, par le lecteur existant, sur le grain servi ;
-- chaque grain servi porte son **etat et l'action a faire**, jamais une
-  exclusion silencieuse.
+  `origin/main` et les PRs ouvertes qui couvrent l'issue). Une apparition
+  dans une liste n'est pas une visite ;
+- la rotation porte sur **toutes** les issues ouvertes, sans ecarter : les
+  verifications (claim, gel, contenu livre) se font **a la prise en charge** ;
+- chaque grain servi porte son **etat et l'action a faire**.
 
-La bascule du tirage par defaut est la tranche suivante : elle suppose que la
-prise en charge qualifie le grain (le lecteur lourd cible), ce qui est un
-changement de protocole autant que de code.
+L'ordre est la **cle de service** (`coordination.tapis_cle`) : la date de la
+derniere PR qui couvre le grain, posee sur les metadonnees seules.
 """
 from __future__ import annotations
 
@@ -30,7 +27,8 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coordination import gh_bulk, gh_selection, tapis_equilibre, tapis_marqueurs
+from coordination import (gh_bulk, gh_selection, tapis_citations, tapis_cle,
+                         tapis_equilibre, tapis_marqueurs)
 from coordination import tapis_citations, tapis_rapide
 from coordination.tapis_rapide import Etat, graine_defaut, ordonner
 
@@ -49,14 +47,18 @@ def _parent_de_titre(titre: str) -> int | None:
 
 
 def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
-                maintenant: datetime,
-                citations_ouvertes: dict[int, list[dict]] | None = None) -> list[Etat]:
+                maintenant: datetime, prs: list[dict] | None = None) -> list[Etat]:
     """Un etat par issue ouverte, sur les metadonnees seules.
 
     Les visites comptent le **travail reel** : les commits qui citent l'issue,
     et les PRs **ouvertes** qui la citent (le travail en cours compte aussi).
     Les marqueurs de visite vivent dans les commentaires -- ils sont lus a la
-    prise en charge, pas au classement."""
+    prise en charge, pas au classement.
+
+    La **cle de service** (`tapis_cle`) est posee en meme temps : c'est elle
+    qui ordonne le tirage, des les metadonnees seules."""
+    prs = list(prs or [])
+    cites_ouvertes = tapis_citations.des_prs_ouvertes(prs)
     etats = []
     for it in metas:
         n = int(it["number"])
@@ -66,10 +68,11 @@ def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
         e = Etat(n, titre, labels, it.get("created_at") or "",
                  parent, parent or n, tapis_rapide._conteneur_de(titre, labels),
                  any(lab.strip().lower() == "consolidation" for lab in labels))
-        cites = citations.get(n, []) + (citations_ouvertes or {}).get(n, [])
+        cites = citations.get(n, []) + cites_ouvertes.get(n, [])
         e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
             [], cites, maintenant)
         etats.append(e)
+    tapis_cle.appliquer(etats, tapis_cle.des_prs_canoniques(prs), citations)
     return etats
 
 
@@ -142,8 +145,7 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
         print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
               file=sys.stderr)
         return 3
-    etats_ = etats_leger(metas, citations, maintenant,
-                          tapis_citations.des_prs_ouvertes(prs))
+    etats_ = etats_leger(metas, citations, maintenant, prs)
     file = rotation_universelle(etats_, args.lane, maintenant, args.grains,
                                 graine_defaut(args.lane, maintenant))
     r = rapport(etats_, file, args.lane, maintenant,
