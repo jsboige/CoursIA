@@ -73,6 +73,10 @@ from pathlib import Path
 #: paquet `coordination`.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+#: La grammaire des marqueurs du harnais -- **appelee**, pas reecrite
+#: (revue du 19/11 : la copie locale derivait de la vraie).
+from coordination import tapis_marqueurs  # noqa: E402
+
 DEPO = "jsboige/CoursIA"
 
 #: Un reste annonce. Le mot seul ne suffit pas : il est **conjonctionne** a un
@@ -92,10 +96,14 @@ ACTION = re.compile(
 #: Une cible concrete : un numero ou un script.
 CIBLE = re.compile(r"(#\d+)|([\w./-]{3,}\.py\b)|(scripts/)")
 
-#: Les marqueurs de claim du harnais.
-CLAIM = re.compile(r"\[CLAIMED(?:-AMEND)?\]")
-LEVE = re.compile(r"\[(DELIVERED|RELEASED)\]")
-LANE = re.compile(r"lane\s+([\w:.-]+)")
+#: Les marqueurs de claim du harnais : **une seule grammaire**, celle de
+#: `coordination.tapis_marqueurs` (appelee, jamais reecrite). La version
+#: locale du module ne connaissait que `(DELIVERED|RELEASED)` comme levee et
+#: ignorait la decoration toleree par `check_lane_claim.py` : un claim leve
+#: par `[CANCELLED]`, `[ABANDONED]` ou `[DONE]` y restait compte **vivant**,
+#: et l'issue partait en `refusee` a tort (revue du 19/11).
+CLAIM = tapis_marqueurs.OUVRE
+LEVE = tapis_marqueurs.FERME
 
 
 def phrases(texte: str) -> list[str]:
@@ -108,12 +116,22 @@ def _iso(texte: str) -> datetime:
     return datetime.fromisoformat((texte or "").replace("Z", "+00:00"))
 
 
-def preuves_reste(texte: str) -> list[str]:
-    """Les phrases qui annoncent un reste, dans l'ordre du texte.
+def preuves_reste_fenetre(texte: str) -> list[tuple[str, list[str]]]:
+    """Les phrases qui annoncent un reste, avec leur **fenetre +- 1 phrase**.
 
     Conjonction obligatoire : un marqueur de reste **et** un mot de contexte.
+    La fenetre accompagne la phrase parce que la cible concrete peut etre
+    ecrite dans la phrase voisine : sur #27223 l'action nommee et la cible
+    (`#27225`) sont dans deux phrases distinctes du meme etat mesure.
     """
-    return [p for p in phrases(texte) if REQUI.search(p) and CONTEXTE.search(p)]
+    ps = phrases(texte)
+    return [(p, ps[max(0, i - 1): i + 2]) for i, p in enumerate(ps)
+            if REQUI.search(p) and CONTEXTE.search(p)]
+
+
+def preuves_reste(texte: str) -> list[str]:
+    """Les phrases qui annoncent un reste, dans l'ordre du texte."""
+    return [p for p, _ in preuves_reste_fenetre(texte)]
 
 
 def preuve_reste(texte: str) -> str | None:
@@ -122,25 +140,50 @@ def preuve_reste(texte: str) -> str | None:
     return trouves[0] if trouves else None
 
 
-def preuve_action(phrase: str, corps: str) -> str | None:
-    """Une action nommee ET une cible concrete, ou ``None``."""
+def preuve_action(phrase: str, voisins: list[str] | None = None) -> str | None:
+    """Une action nommee ET une cible concrete **dans la phrase +- voisine**.
+
+    Revue du 19/11 (NanoClaw sur #27297) : la cible pouvait venir de
+    N'IMPORTE OU dans le **corps** de l'issue -- une phrase d'action sans
+    cible suffisait des que le corps contenait un `#N` ou `scripts/` dans
+    une phrase sans rapport, et l'issue partait en `servable` a tort.
+
+    La cible est desormais **dans la phrase qui porte l'action, ou dans sa
+    voisine immediate** (`voisins`) : l'action et la cible sont parfois
+    ecrites dans deux phrases distinctes d'un meme etat mesure (temoin
+    #27223). Le mot d'action, lui, reste dans la phrase : une phrase voisine
+    qui nomme une action ne rend pas la phrase actionnable.
+    """
     if not ACTION.search(phrase):
         return None
-    if CIBLE.search(phrase) or CIBLE.search(corps or ""):
+    if CIBLE.search(phrase):
         return phrase
+    for v in voisins or []:
+        if CIBLE.search(v):
+            return phrase
     return None
 
 
-def claim_vivant(cas: dict, apres_merge: list[dict]) -> str | None:
-    """La lane d'un claim **vivant** (pose, jamais leve) apres le merge."""
+def claim_vivant(apres_merge: list[dict]) -> str | None:
+    """La lane d'un claim **vivant** (pose, jamais leve) apres le merge.
+
+    La grammaire est celle du harnais (`coordination.tapis_marqueurs`) :
+    un claim ferme par `[RELEASED]`, `[DELIVERED]`, `[CANCELLED]`,
+    `[ABANDONED]` ou `[DONE]` n'est plus vivant, et la decoration toleree
+    par `check_lane_claim.py` (puces, gras, indentation) est acceptee. La
+    copie locale du module ne connaissait que `(DELIVERED|RELEASED)` : un
+    claim leve par `[CANCELLED]` y restait compte vivant -> `refusee`
+    fausse (revue du 19/11).
+    """
     vivant: str | None = None
-    for c in apres_merge:
-        corps = c.get("body") or ""
-        if LEVE.search(corps):
+    for e in tapis_marqueurs.evenements(apres_merge):
+        if e.marque == "OVERRIDE":
             vivant = None
-        elif CLAIM.search(corps):
-            m = LANE.search(corps)
-            vivant = m.group(1) if m else "lane inconnue"
+        elif e.marque in CLAIM:
+            vivant = e.lane or "lane inconnue"
+        elif e.marque in LEVE:
+            if vivant is None or e.lane is None or e.lane == vivant:
+                vivant = None
     return vivant
 
 
@@ -157,11 +200,17 @@ def _marqueurs() -> tuple:
 
 
 def classer(cas: dict) -> dict:
-    """Verdict d'un cas (issue + PR MERGEE + fil complet). Pure."""
+    """Verdict d'un cas (issue + PR MERGEE + fil complet). Pure.
+
+    **Precedence assumee** (revue du 19/11, point « a trancher ») : une
+    phrase de reste **posterieure** au merge prime le marqueur de
+    **cloture**. Consequence : ``livre`` n'est atteignable que si aucune
+    phrase de reste ne subsiste dans le fil apres le merge -- le fil recent
+    parle plus fort que la PR MERGEE. Le choix est **documente**, pas subi.
+    """
     numero = cas.get("number")
     titre = cas.get("title") or ""
     labels = [str(l).upper() for l in (cas.get("labels") or [])]
-    corps = cas.get("body") or ""
 
     # 1 -- refus structurels.
     if "EPIC" in titre.upper() or "EPIC" in labels:
@@ -178,7 +227,7 @@ def classer(cas: dict) -> dict:
              if (c.get("created_at") or "") > merge_at]
 
     # 2 -- claim vivant d'une autre lane : l'ecart est structurel.
-    lane = claim_vivant(cas, apres)
+    lane = claim_vivant(apres)
     if lane:
         return _v(numero, "refusee", "claim vivant de la lane {}".format(lane))
 
@@ -193,14 +242,21 @@ def classer(cas: dict) -> dict:
     # retenue doit etre celle qui **nome le travail restant** (mesure : le
     # fil de #27223 porte d'abord « critere de cloture NON couvert » -- un
     # constat -- puis « restent dues la bascule du tapis par defaut ... » --
-    # l'action ; c'est la seconde qui rend l'issue servable).
-    candidats: list[str] = []
+    # l'action ; c'est la seconde qui rend l'issue servable). Chaque phrase
+    # est accompagnee de sa fenetre +- 1 phrase : la cible peut legitimement
+    # se trouver dans la phrase voisine (revue du 19/11).
+    candidats: list[tuple[str, list[str]]] = []
     for c in apres:
-        candidats.extend(preuves_reste(c.get("body") or ""))
-    reste = next((p for p in candidats if preuve_action(p, corps)), None)
+        candidats.extend(preuves_reste_fenetre(c.get("body") or ""))
+    reste = None
+    fenetre = None
+    for p, v in candidats:
+        if preuve_action(p, v):
+            reste, fenetre = p, v
+            break
     if reste is None and candidats:
-        reste = candidats[0]
-    action = preuve_action(reste, corps) if reste else None
+        reste, fenetre = candidats[0]
+    action = preuve_action(reste, fenetre) if reste else None
 
     # 5 -- PR en vol citant l'issue : vivante, mais pas servable.
     en_vol = [p for p in (cas.get("prs_ouverts") or [])]

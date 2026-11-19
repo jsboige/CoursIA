@@ -184,3 +184,114 @@ def test_le_banc_est_deterministe(corpus):
     a = rejouer(corpus)
     b = rejouer(corpus)
     assert [v["verdict"] for v in a["cas"]] == [v["verdict"] for v in b["cas"]]
+
+
+# --- revue du 19/11 (NanoClaw sur #27297) : trois verrous de correction ---
+
+def test_un_claim_leve_par_cancelled_n_est_plus_vivant():
+    """Un claim ferme par `[CANCELLED]` ne vit plus.
+
+    AVANT la correction, la copie locale de la grammaire ne connaissait que
+    `(DELIVERED|RELEASED)` : le claim restait compte **vivant** et l'issue
+    partait en `refusee` a tort. La grammaire du harnais est **appelee**
+    (`coordination.tapis_marqueurs`), plus reecrite.
+    """
+    cas = {
+        "number": 999997,
+        "title": "cas de controle",
+        "labels": [],
+        "body": "",
+        "merged_refs": [{"pr": 1, "merged_at": "2026-11-18T12:00:00Z",
+                         "body": "See #999997", "title": "x"}],
+        "prs_ouverts": [],
+        "comments": [
+            {"created_at": "2026-11-18T13:00:00Z", "author": "jsboige",
+             "body": "[CLAIMED] lane myia-po-2027:CoursIA-2 -- un grain"},
+            {"created_at": "2026-11-18T14:00:00Z", "author": "jsboige",
+             "body": "[CANCELLED] lane myia-po-2027:CoursIA-2 -- grain abandonne"},
+        ],
+    }
+    verdict = classer(cas)
+    assert "claim vivant" not in verdict["motif"], verdict
+    assert verdict["verdict"] == "a_clore", verdict
+
+
+def test_un_claim_leve_par_un_marqueur_decore_est_egalement_ferme():
+    """La decoration toleree par `check_lane_claim.py` est acceptee ici aussi.
+
+    La decoration **reelle** de la grammaire du harnais (`tapis_marqueurs`)
+    est une liste de puces/guillemets ou un `**`/`__` autour du marqueur --
+    **pas** des chevrons graves autour du marqueur, que la grammaire ne
+    reconnait pas (fail-CLOSED : un claim que personne ne lit reste vivant).
+    """
+    cas = {
+        "number": 999994,
+        "title": "cas de controle",
+        "labels": [],
+        "body": "",
+        "merged_refs": [{"pr": 1, "merged_at": "2026-11-18T12:00:00Z",
+                         "body": "See #999994", "title": "x"}],
+        "prs_ouverts": [],
+        "comments": [
+            {"created_at": "2026-11-18T13:00:00Z", "author": "jsboige",
+             "body": "[CLAIMED] lane myia-po-2027:CoursIA-2 -- un grain"},
+            {"created_at": "2026-11-18T14:00:00Z", "author": "jsboige",
+             "body": "**[CANCELLED]** lane myia-po-2027:CoursIA-2 -- abandonne"},
+        ],
+    }
+    verdict = classer(cas)
+    assert "claim vivant" not in verdict["motif"], verdict
+
+
+def test_une_cible_dans_la_phrase_voisine_rend_le_reste_servable():
+    """La cible peut etre ecrite dans la phrase voisine de l'action.
+
+    Temoin reel (#27223) : l'action nommee (« restent dues la bascule du
+    tapis ... ») et la cible (`#27225`) sont dans deux phrases distinctes du
+    meme etat mesure. Une cible **lointaine** ne vaut pas.
+    """
+    cas = {
+        "number": 999996,
+        "title": "cas de controle",
+        "labels": [],
+        "body": "",
+        "merged_refs": [{"pr": 1, "merged_at": "2026-11-18T12:00:00Z",
+                         "body": "See #999996", "title": "x"}],
+        "prs_ouverts": [],
+        "comments": [
+            {"created_at": "2026-11-18T13:00:00Z", "author": "jsboige",
+             "body": "#27225 a livre l'organe de rotation.\n\n"
+                     "Restent dues la bascule du tapis par defaut "
+                     "et la qualification du fil complet."},
+        ],
+    }
+    verdict = classer(cas)
+    assert verdict["verdict"] == "servable", verdict
+
+
+def test_une_cible_lointaine_dans_le_fil_ne_rend_pas_le_reste_servable():
+    """CONTROLE NEGATIF : une cible a deux phrases de distance ne vaut pas.
+
+    C'est la borne que la correction dessine : la cible est dans la phrase
+    ou sa voisine **immediate**, pas « n'importe ou dans le corps » (le
+    defaut que la revue du 19/11 a signale).
+    """
+    cas = {
+        "number": 999995,
+        "title": "cas de controle",
+        "labels": [],
+        "body": "",
+        "merged_refs": [{"pr": 1, "merged_at": "2026-11-18T12:00:00Z",
+                         "body": "See #999995", "title": "x"}],
+        "prs_ouverts": [],
+        "comments": [
+            {"created_at": "2026-11-18T13:00:00Z", "author": "jsboige",
+             "body": "#27225 a livre l'organe de rotation.\n\n"
+                     "Un constat sans action.\n\n"
+                     "Restent dues la bascule du tapis par defaut "
+                     "et la qualification du fil complet."},
+        ],
+    }
+    verdict = classer(cas)
+    assert verdict["verdict"] == "requalifiee", verdict
+    assert "sans action concrete" in verdict["motif"], verdict
