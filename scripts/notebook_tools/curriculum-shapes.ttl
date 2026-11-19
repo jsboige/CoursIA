@@ -28,3 +28,13 @@ cursus:SubseriesShape a sh:NodeShape ;
     sh:property [ sh:path cursus:partOfSeries ; sh:maxCount 1 ; sh:class cursus:Series ] ;
     sh:property [ sh:path cursus:partOfSubseries ; sh:maxCount 1 ; sh:class cursus:Subseries ] ;
     sh:or ( [ sh:path cursus:partOfSeries ] [ sh:path cursus:partOfSubseries ] ) .
+
+cursus:InterfaceShape a sh:NodeShape ;
+    sh:targetClass cursus:Interface ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ] ;
+    sh:property [ sh:path <http://purl.org/dc/terms/identifier> ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path cursus:interfaceClass ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ;
+        sh:in ( "bridge" "cli" "mcp" ) ] ;
+    sh:property [ sh:path cursus:invocation ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path <http://purl.org/dc/terms/description> ; sh:maxCount 1 ; sh:datatype rdf:langString ] ;
+    sh:property [ sh:path cursus:exitSemantics ; sh:maxCount 1 ; sh:datatype xsd:string ] .

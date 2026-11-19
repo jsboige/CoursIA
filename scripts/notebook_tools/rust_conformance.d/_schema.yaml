@@ -1,0 +1,57 @@
+# Registre de conformite differentielle des carnets Rust (Pli 3, Epic Origami #26510).
+#
+# Un fichier YAML par TRIPLET (Python + C# + Rust) ; le lecteur
+# (`scripts/notebook_tools/check_rust_conformance.py`) ignore les fichiers
+# dont le nom commence par `_` (ce schema).
+#
+# Pourquoi un registre : les trois cotes n'ont pas la meme structure de
+# cellules. Le Rust est un portage vers la crate `dlx`, le Python est une
+# implementation from-scratch (Knuth Algorithm X), le C# delega a `DlxLib`.
+# Les cellules ne se correspondent ni par index ni par ordre : une
+# correspondance automatique comparerait des grandeurs differentes en
+# pretendant qu'elles sont les memes. Ici la correspondance est ECRITE, par un
+# humain, et l'organe echoue si une extraction declaree ne donne pas de valeur
+# (fail-CLOSED).
+#
+# Champs d'une entree :
+#
+#   name      : nom du triplet (libelle lisible).
+#   family    : famille de serie (pour le tri et les rapports).
+#   python    : chemin du jumeau Python, relatif a la racine du depot
+#               (FACULTATIF : une serie peut n'avoir qu'un jumeau Python).
+#   csharp    : chemin du jumeau C#, relatif a la racine du depot (FACULTATIF).
+#   rust      : chemin du carnet Rust, relatif a la racine du depot
+#               (OBLIGATOIRE : c'est l'objet de l'organe ; son absence est une
+#               anomalie du triplet).
+#   measures  : liste des grandeurs comparees.
+#
+# Champs d'une grandeur (`measures[]`) :
+#
+#   id               : identifiant stable de la grandeur (cle de rapport).
+#   description      : ce que la grandeur mesure, en une phrase.
+#   tolerance        : ecart maximal admis entre les cotes (0 = egalite
+#                      stricte). Applique aux grandeurs NUMERIQUES ; une
+#                      grandeur non numerique se compare a l'egalite stricte.
+#   reference        : cote de reference (par defaut : le premier cote declare).
+#   case_insensitive : `true` pour comparer les chaines sans distinguer la
+#                      casse (les cotes n'ecrivent pas `true` de la meme facon).
+#   sides            : par cote (`python`, `csharp`, `rust`) :
+#                        cell      : index de la cellule de code (0-based, dans
+#                                    l'ordre du fichier .ipynb).
+#                        pattern   : regex dont le PREMIER GROUPE CAPTURE est la
+#                                    region a comparer (le groupe 0 si la
+#                                    regex n'a pas de groupe).
+#                        transform : `digits` (ne garder que les chiffres),
+#                                    `float`, `int` ou `text` (brut, sans
+#                                    espaces de bord).
+#                      OU
+#                        absent    : motif de l'absence du cote. Un cote
+#                                    explicitement absent est signale dans le
+#                                    rapport mais n'echoue pas : l'absence est
+#                                    un fait DECLARE, pas une mesure manquante.
+#                                    Un cote declare SANS `absent` et dont
+#                                    l'extraction echoue est un FINDING.
+#
+# Le registre etait l'outil du pli cote LECTURE. La partie « parite a trois
+# cotes » du registre `twin_pairs.d/` (attestation de SHA par cote) est un
+# autre organe, non couvert ici.
