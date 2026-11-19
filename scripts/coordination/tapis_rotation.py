@@ -9,12 +9,11 @@ bouge pas, le tour se ferme.
 
 Le bloc est CONTIGU de cet ordre, decale par lane : deux lanes ne balayent pas
 le meme bloc. Une tranche de 4 h fait avancer le bloc d'un cran, et un tour
-complet tient en `ceil(pool / taille)` tranches -- le delai max de
-requalification est publie avec le bloc.
+complet tient en `ceil(pool / taille)` tranches -- le delai max est publie.
 
 **Chaque numero du pool sort avec un verdict** (#27242) : le bloc publie les
 numeros qu'il **visite** et ceux qu'il ne visite pas (`non_visites`). L'ANCRE
-(dernier numero qualifie) choisit QUOI servir, la **PRIORITE** l'ordre rendu.
+(dernier numero qualifie) choisit QUOI servir, la **PRIORITE** l'ordre.
 """
 from __future__ import annotations
 
@@ -48,24 +47,24 @@ def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
     """Le bloc servi : la rotation par numero, dans la fenetre de la lane.
 
     Les GRAINS et les CONTENEURS ont chacun leur tranche et leur bloc : un
-    conteneur ne passe jamais devant un grain (#26926), et son quota tient
-    dans la file comme dans la voie lourde.
+    conteneur ne passe jamais devant un grain (#26926).
 
     `bloc_suivant` decale le bloc de N blocs : c'est la VAGUE suivante de la
-    prise en charge. `ancres` porte le dernier numero qualifie par classe :
-    c'est l'ancre PERSISTANTE (`tapis_ancre`), celle qui survit a une
-    cloture ou a une arrivee.
+    prise en charge. `ancres` porte l'ancre PERSISTANTE (`tapis_ancre`) : le
+    bloc commence au premier numero superieur a l'ancre de chaque classe.
     """
     quota = max(1, int(n_grains * PART_CONTENEURS)) if conteneurs else 0
     part = max(taille - quota, 1)
     n_g, n_c = len(grains), len(conteneurs)
     compteur = _compteur(maintenant) + bloc_suivant
     ancres = ancres or {}
-    b_g, ancre_g = tapis_ancre.membres(
-        grains, ancres.get("grains"), part, bloc_suivant,
+    ancre_g = tapis_ancre.ancre_de(ancres, "grains")
+    ancre_c = tapis_ancre.ancre_de(ancres, "conteneurs")
+    b_g, prop_g = tapis_ancre.membres(
+        grains, ancre_g, part, bloc_suivant,
         _decalage(lane, "grains", n_g) + compteur * part)
-    b_c, ancre_c = tapis_ancre.membres(
-        conteneurs, ancres.get("conteneurs"), quota, bloc_suivant,
+    b_c, prop_c = tapis_ancre.membres(
+        conteneurs, ancre_c, quota, bloc_suivant,
         _decalage(lane, "conteneurs", n_c) + compteur * quota)
     pool = {g.numero for g in grains} | {g.numero for g in conteneurs}
     visites = {g.numero for g in b_g} | {g.numero for g in b_c}
@@ -77,4 +76,5 @@ def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
         "blocs": blocs, "pool": n_g, "tranche": compteur,
         "ordre": "numero", "delai_max_h": HEURES_TRANCHE * blocs,
         "ancres": {"grains": ancre_g, "conteneurs": ancre_c},
+        "ancres_proposees": {"grains": prop_g, "conteneurs": prop_c},
         "visites": sorted(visites), "non_visites": sorted(pool - visites)}

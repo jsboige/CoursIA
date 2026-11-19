@@ -1,22 +1,16 @@
 #!/usr/bin/env python3
-"""L'ANCRE de la rotation : le dernier numero qualifie, persistant.
+"""L'ANCRE de la rotation : l'etat PERSISTANT du dernier numero qualifie.
 
-Une rotation qui avance d'un cran **par position** saute des numeros quand le
-pool change : une cloture decale l'index, et la tranche suivante recommence
-ailleurs. Temoin mesure le 19/11 (peer ai-01:CoursIA) : pool 1..8, blocs de
-2, offset 0 -> bloc {1,2} ; on cloture #1 -> blocs {4,5}, {6,7}, {8,2} : **#3
-est encore ouverte et n'a jamais ete visitee** apres les quatre tranches
-annoncees.
+Une rotation qui avance par POSITION saute des numeros des que le pool
+change (une cloture, une arrivee) -- temoin mesure le 19/11 (peer
+ai-01:CoursIA) : #3 ouverte, jamais visitee apres quatre tranches. L'ancre
+porte le **numero** du dernier grain qualifie.
 
-L'ancre porte le **numero** du dernier grain qualifie, pas sa position : le
-prochain bloc commence au premier numero strictement superieur. Une cloture
-(ou une arrivee) ne deplace plus le curseur, et le tour se ferme sur le pool
-reel. L'ancre est **persistee** par lane (et par classe : grains,
-conteneurs) : sans elle, chaque tranche repart de zero et le tour ne se ferme
-jamais.
+**L'ancre n'avance que sur un verdict TERMINAL** (peer, 19/11) : le tirage
+PROPOSE (`proposer`), la qualification DECIDE (`avancer`). Un tirage sans
+action, ou un lot dont une lecture a echoue, ne la deplace pas.
 
-Le module tient aussi l'**ordre de service** : la rotation choisit QUELS
-numeros sont servis, l'ordre de PRIORITE decide de l'ordre dans le bloc.
+L'arithmetique de la selection vit dans `coordination.tapis_tranche`.
 """
 from __future__ import annotations
 
@@ -24,7 +18,10 @@ import json
 import os
 from pathlib import Path
 
+from coordination.tapis_tranche import membres, position, tranche  # noqa: F401
+
 ENV_ETAT = "COURSIA_TAPIS_ANCRE_DIR"
+CLASSES = ("grains", "conteneurs")
 
 
 def chemin_etat(lane: str) -> Path:
@@ -34,81 +31,98 @@ def chemin_etat(lane: str) -> Path:
     return racine / "CoursIA" / "tapis_ancre" / f"{lane.replace(':', '-')}.json"
 
 
-def lire(lane: str) -> dict:
-    """Les ancres de la lane : `{"grains": numero|None, "conteneurs": ...}`.
+def _vide() -> dict:
+    return {c: {"ancre": None, "attente": {}} for c in CLASSES}
 
-    Un fichier absent ou illisible ne vaut PAS zero : il vaut inconnu, et un
-    inconnu ne s'acquitte pas (fail-CLOSED).
-    """
-    vide = {"grains": None, "conteneurs": None}
+
+def ancre_de(etat: dict | None, classe: str) -> int | None:
+    """Le numero d'ancre d'une classe dans l'etat lu (None si inconnue)."""
+    if not isinstance(etat, dict):
+        return None
+    bloc = etat.get(classe)
+    if isinstance(bloc, int):
+        return bloc
+    if isinstance(bloc, dict):
+        ancre = bloc.get("ancre")
+        return ancre if isinstance(ancre, int) else None
+    return None
+
+
+def lire(lane: str) -> dict:
+    """L'etat de l'ancre ; absent ou illisible = inconnu (fail-CLOSED)."""
+    vide = _vide()
     try:
         brut = json.loads(chemin_etat(lane).read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return vide
     if not isinstance(brut, dict):
         return vide
-    return {c: (brut.get(c) if isinstance(brut.get(c), int) else None)
-            for c in ("grains", "conteneurs")}
+    for c in CLASSES:
+        bloc = brut.get(c)
+        if not isinstance(bloc, dict):
+            continue
+        ancre = bloc.get("ancre")
+        vide[c]["ancre"] = ancre if isinstance(ancre, int) else None
+        att = bloc.get("attente")
+        if isinstance(att, dict):
+            vide[c]["attente"] = {int(k): bool(v) for k, v in att.items()
+                                  if str(k).lstrip("-").isdigit()}
+    return vide
 
 
-def ecrire(lane: str, ancres: dict) -> Path:
-    """Persiste les ancres de la lane (une ecriture atomique)."""
+def ecrire(lane: str, etat: dict) -> Path:
+    """Persiste l'etat de l'ancre (une ecriture atomique)."""
     chemin = chemin_etat(lane)
     chemin.parent.mkdir(parents=True, exist_ok=True)
-    corps = json.dumps({c: ancres.get(c) for c in ("grains", "conteneurs")},
-                       ensure_ascii=False, indent=1) + "\n"
+    corps = {c: {"ancre": etat.get(c, {}).get("ancre"),
+                  "attente": {str(n): b for n, b in
+                              etat.get(c, {}).get("attente", {}).items()}}
+             for c in CLASSES}
     tmp = chemin.with_suffix(".tmp")
-    tmp.write_text(corps, encoding="utf-8")
+    tmp.write_text(json.dumps(corps, ensure_ascii=False, indent=1) + "\n",
+                   encoding="utf-8")
     tmp.replace(chemin)
     return chemin
 
 
-def position(nums: list[int], ancre: int | None) -> int:
-    """L'index du premier numero strictement superieur a l'ancre (cyclique).
+def proposer(lane: str, classe: str, numeros: list[int]) -> dict:
+    """Enregistre les numeros PROPOSES par le tirage, sans bouger l'ancre.
 
-    Ancre absente -> 0 (le tour commence par le plus petit numero). Ancre
-    superieure a tous les numeros -> 0 : le tour a boucle, on recommence.
+    Le tirage **selectionne** ; il ne qualifie pas. Un tirage sans action
+    laisse donc l'ancre en place -- sinon un numero pourrait etre declare
+    visite sans avoir jamais ete qualifie.
     """
-    if not nums or ancre is None:
-        return 0
-    for i, n in enumerate(nums):
-        if n > ancre:
-            return i
-    return 0
+    etat = lire(lane)
+    att = etat[classe]["attente"]
+    for n in numeros:
+        att.setdefault(n, False)
+    etat[classe]["attente"] = att
+    ecrire(lane, etat)
+    return etat
 
 
-def tranche(nums: list[int], ancre: int | None, part: int,
-            avance: int = 0) -> list[int]:
-    """La tranche d'apres l'ancre : `part` numeros, cyclique.
+def avancer(lane: str, terminaux: set[int]) -> dict:
+    """Fait avancer l'ancre sur les verdicts TERMINAUX connus.
 
-    `avance` decale de N tranches (la VAGUE suivante). La liste `nums` est
-    supposee TRIEE par numero : c'est l'ordre de couverture du tour.
+    L'ancre ne passe jamais un numero dont le verdict n'est pas connu : elle
+    s'arrete au premier numero en attente. Un lot partiel (une lecture en
+    echec) la laisse donc en place.
     """
-    if not nums or part <= 0:
-        return []
-    n = len(nums)
-    depart = (position(nums, ancre) + avance * part) % n
-    return [nums[(depart + i) % n] for i in range(min(part, n))]
-
-
-def membres(ordre: list, ancre: int | None, part: int, avance: int = 0,
-             depart_alea: int = 0) -> tuple[list, int | None]:
-    """Les membres du bloc, ORDONNES par priorite (l'ordre d'entree).
-
-    La SELECTION est la tranche d'apres l'ancre ; l'ORDRE rendu est celui de
-    l'entree : la rotation choisit QUOI servir, la priorite decide de
-    l'ordre. Sans ancre, le depart vient de `depart_alea` (le decalage de la
-    lane) et l'ancre qui en sort devient l'ancre du tour suivant.
-    """
-    nums = sorted(g.numero for g in ordre)
-    if not nums:
-        return [], None
-    if ancre is None:
-        depart = depart_alea % len(nums)
-        tranche_ = [nums[(depart + i) % len(nums)]
-                    for i in range(min(part, len(nums)))]
-    else:
-        tranche_ = tranche(nums, ancre, part, avance)
-    choisis = set(tranche_)
-    return ([g for g in ordre if g.numero in choisis],
-            tranche_[-1] if tranche_ else None)
+    etat = lire(lane)
+    for c in CLASSES:
+        att = etat[c]["attente"]
+        for n in terminaux:
+            if n in att:
+                att[n] = True
+        ancre = etat[c]["ancre"]
+        for n in sorted(att):
+            if ancre is not None and n <= ancre:
+                continue
+            if not att[n]:
+                break
+            ancre = n
+        etat[c]["ancre"] = ancre
+        etat[c]["attente"] = {n: b for n, b in att.items()
+                              if ancre is None or n > ancre}
+    ecrire(lane, etat)
+    return etat

@@ -23,8 +23,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import gh_bulk, gh_issues, gh_selection, tapis_fenetre
-from coordination import tapis_rotation
+from coordination import gh_bulk, gh_issues, gh_selection, tapis_ancre
+from coordination import tapis_fenetre, tapis_rotation, tapis_verdict
 from coordination import tapis_leger, tapis_rapide
 from coordination import tapis_qualification as tq
 from coordination import tapis_universel as tu
@@ -615,3 +615,55 @@ def test_la_prise_en_charge_ne_lit_plus_les_citations(monkeypatch):
     monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
     rapport = tpe.main(["--issue", "7", "--lane", LANE], run=_run_faux([]))
     assert rapport == 0
+
+
+# --- L'ANCRE : elle n'avance que sur un verdict TERMINAL (peer, 19/11) ------
+
+def test_un_tirage_seul_ne_fait_pas_avancer_l_ancre(tmp_path, monkeypatch):
+    """Le tirage PROPOSE ; il ne qualifie pas. Un tirage sans action laisse
+    l'ancre en place.
+
+    Avancer l'ancre a la PROPOSITION ferait declarer visite un numero que
+    personne n'a decide : le tour se fermerait sur une couverture qui n'a pas
+    eu lieu (peer, 19/11)."""
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    rapport, code = tapis_leger.tirage(LANE, 4, NOW, 45, "g", Path("."),
+                                       _run_faux(nb=6))
+    assert code == 0
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] is None,         "un tirage sans action ne fait pas avancer l'ancre"
+    assert etat["grains"]["attente"], "les numeros tires restent EN ATTENTE"
+    assert all(not v for v in etat["grains"]["attente"].values()),         "un numero propose n'est pas un numero qualifie"
+
+
+def test_un_lot_partiel_ne_fait_pas_avancer_l_ancre(tmp_path, monkeypatch):
+    """Un numero ILLISIBLE n'est pas un verdict : l'ancre ne le passe pas.
+
+    Le lot lit #7 et #9 ; le #8 est ABSENT de la reponse. L'echec de lecture
+    n'est pas une decision : l'ancre s'arrete a #7, et le #8 sera re-servi
+    au tour suivant (peer, 19/11)."""
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+
+    def faux_qualifier(run, depot, numeros=None):
+        return {7: _issue(7), 8: None, 9: _issue(9)}
+
+    monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
+    tapis_ancre.proposer(LANE, "grains", [7, 8, 9])
+    servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
+        [7, 8, 9], LANE, NOW, 45, [], _run_faux([]))
+    assert [e.numero for e in servis] == [7, 9], "les numeros lus sont qualifies"
+    assert ecartees[8]["code"] == "ABSENT", "le numero absent sort avec son code"
+    assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 7,         "l'ancre s'arrete au dernier verdict CONTINU"
+    # Le #8 est decide au tour suivant : l'ancre ferme enfin le prefixe.
+    tapis_verdict.avancer(LANE, {}, {8: {"numero": 8, "code": "GEL"}})
+    assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 9
+
+
+def test_un_refus_de_lecture_n_est_pas_un_verdict():
+    """Les codes de REFUS ne sont pas terminaux : ils refusent la lecture."""
+    refus = {"numero": 8, "code": "FIL_ILLISIBLE"}
+    assert 8 not in tapis_verdict.terminaux({}, {8: refus})
+    assert 8 not in tapis_verdict.terminaux({}, {8: {"numero": 8,
+                                                       "code": "ABSENT"}})
+    assert 8 in tapis_verdict.terminaux({}, {8: {"numero": 8, "code": "GEL"}})
+    assert 9 in tapis_verdict.terminaux({9: object()}, {})

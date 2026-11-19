@@ -28,15 +28,12 @@ ou partiel laisse l'issue dans la rotation. Le correctif s'applique au temps
 d'action, quand `preuve` est fourni : le classement reste sur le marqueur, la
 bascule reste a arbitrer.
 
-**fail-CLOSED.** Une decision qui n'a pas pu etre prise REFUSE le grain : un
-fil illisible, un mur de lectures atteint, une echeance depassee -- le grain
-porte alors son code de refus (`FIL_ILLISIBLE`, `MUR_EPUISE`, `ECHEANCE`) et
+**fail-CLOSED.** Une decision qui n'a pas pu etre prise REFUSE le grain : le
+grain porte son code de refus (`FIL_ILLISIBLE`, `MUR_EPUISE`, `ECHEANCE`) et
 son motif, il n'est pas servi. Un grain non qualifie ne s'engage pas.
 
-**Chaque numero demande recoit un verdict.** La lecture du lot elle-meme est
-dans `coordination.tapis_lot` (extrait le 19/11 pour tenir le plafond) : un
-numero lu, un numero illisible, un numero absent de la reponse -- aucun ne
-disparait du tirage sans que le motif soit dit.
+**Chaque numero demande recoit un verdict** (`coordination.tapis_lot`) : lu,
+illisible, ou absent de la reponse -- aucun ne disparait sans motif.
 
 Ce que rend `qualifier` :
 
@@ -68,10 +65,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import tapis_diff, tapis_fenetre, tapis_lot, tapis_preuves
-from coordination import tapis_fil_complet, tapis_rapide
+from coordination import tapis_fil_complet, tapis_rapide, tapis_verdict
 
 #: Candidats par lot de lecture (une requete GraphQL pour le lot).
 LOT = 50
+
+#: Les codes de REFUS ne sont pas des verdicts TERMINAUX : le grain n'a pas
+#: ete decide, il n'a pas etre lu. L'ancre de rotation ne passe pas un
+#: numero dont la lecture a echoue (peer, 19/11) : la coverage ne sacrifie
+#: pas la qualite.
+CODES_NON_TERMINAUX = tuple(tapis_fil_complet.CODES_REFUS) + (tapis_lot.ABSENT,)
 
 
 def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
@@ -81,9 +84,8 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
               ) -> tuple[list, dict, list[int], bool, int, dict]:
     """Qualifie les candidats PRIS EN CHARGE, dans l'ordre donne.
 
-    Rend `(servis, ecartees, echecs, arrete, appels, chrono)` ; le detail de
-    chaque cle est dans la doc du module. `preuve` rend le diff d'une PR
-    (`coordination.tapis_diff`) : sans lui, LIVREE reste pose sur le marqueur.
+    Rend `(servis, ecartees, echecs, arrete, appels, chrono)`. `preuve` rend
+    le diff d'une PR : sans lui, LIVREE reste pose sur le marqueur.
     """
     issues: dict[int, dict] = {}
     confirmes: dict[int, object] = {}
@@ -133,4 +135,5 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
     servis = [confirmes[n] for n in candidats if n in confirmes]
     chrono = {"secondes": round(horloge() - debut, 1) if debut is not None else None,
               "premier_servable_s": round(premier, 1) if premier is not None else None}
+    tapis_verdict.avancer(lane, confirmes, ecartees)
     return servis, ecartees, echecs, arrete, appels, chrono
