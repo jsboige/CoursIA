@@ -102,8 +102,9 @@ def texte(r: dict, source: str) -> str:
                f"{lu['familles']} familles ; lecture {lu['secondes']} s, {lu['appels']} "
                f"appels, cache {'oui' if lu['depuis_cache'] else 'non'} ; origin/main "
                f"local : dernier commit {age}{fetch}"),
-              (f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- portez d'abord au merge "
-               "celles de plus de 24 h :")]
+              (f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits "
+               "(reserves, rouge propre, conflit) ; une PR verte qui n'attend que la "
+               "review ne se touche pas :")]
     lignes += [f"  #{p['numero']}  {p['age_j']} j  {_court(p['titre'], 90)}"
                for p in r["vos_prs"]]
     lignes.append(f"\nGrains ({len(r['grains'])}) -- les grains d'abord, les conteneurs "
@@ -115,6 +116,14 @@ def texte(r: dict, source: str) -> str:
     comptes = ", ".join(f"{code} {len(v)}" for code, v in r["ecartees"].items())
     total = sum(len(v) for v in r["ecartees"].values())
     lignes.append(f"\nEcartees sans sonde : {comptes} (total {total})")
+    rev = r.get("reverif_fils")
+    if rev:
+        jetes = ", ".join(f"{j['code']} #{j['numero']}" for j in rev["jetes"]) or "aucun"
+        echecs = (f", {len(rev['echecs'])} fil(s) illisible(s) -- verdict sur fenetre"
+                  if rev["echecs"] else "")
+        borne = " ; borne d'appels atteinte" if rev["borne"] else ""
+        lignes.append(f"Fils tronques re-decides sur fil complet : {rev['appels']} relu(s)"
+                      f" en {rev['secondes']} s, jetes : {jetes}{echecs}{borne}")
     orig = r.get("origami_parking") or {}
     if orig.get("measured"):
         parcs = orig.get("parked") or []

@@ -382,16 +382,21 @@ REGISTRE: tuple[Entree, ...] = (
             # l'instrument AVANT l'apprentissage de l'index d'accretion des
             # series a prefixe. Reference vivante jusqu'au huitieme
             # rebasage (meme PR, review ai-01 point 2). Le sha de branche
-            # (8434d7f3a8f) ne survivra pas au squash : le point declare
-            # l'identite derivee a la fin du jour du squash de #26349 --
-            # remplacee par la comparaison par SOURCE tant que la reference
-            # n'est pas resolue.
+            # 8434d7f3a8f (blob b7fd82ef de l'instrument) est mort au
+            # squash de #26349 (27e3e88afb7) : il n'est ancetre de rien sur
+            # main, et le test d'identite a la date rougissait main. Le
+            # septieme rebasage ne touchait pas la classification : la
+            # mesure vaut 27 sur l'origin/main nu du jour (eac923be842),
+            # dont l'instrument est le blob 8d3dd65 de 400799b0f43. Le
+            # point declare donc cette identite, resoluble sur main, comme
+            # le 3e rebasage (735ada5ba) et le point de #23655 ci-dessus.
             Reference(27.0, "2026-11-13",
-                      "PR #26349, re-mesure du 2026-11-13 sur "
-                      "l'arbre 8434d7f3a8f",
+                      "PR #26349, re-mesure du 2026-11-13 ; meme valeur "
+                      "27 sur origin/main nu eac923be842, instrument de "
+                      "main 400799b0f43",
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
-                                  "@8434d7f3a8f14ca64e10c5666c206f8f1af9799a")),
+                                  "@400799b0f4362e2c87982cd5631f6a745d0b3ab4")),
             # Mesure du 2026-11-13 (sixieme rebasage, #5081, sur main) :
             # 25 -- l'instrument reconnait le prefixe `coursia-py313`, la
             # grandeur change (26 -> 25), la comparaison transverse est
