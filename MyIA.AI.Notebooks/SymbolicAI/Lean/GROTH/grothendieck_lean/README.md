@@ -248,6 +248,34 @@ formalisation d'EGA/SGA.
 - **The Mathlib Community.** *Mathlib4, Category Theory and Sites*. [mathlib4 docs](https://leanprover-community.github.io/mathlib4_docs/) — La bibliothèque que cette visite indexe (Partie 4) ; voir de Moura & Ullrich, « The Lean 4 Theorem Prover » (2021).
 - **nLab.** [ncatlab.org](https://ncatlab.org) — Entrées *Grothendieck topology*, *sieve*, *site*, *sheaf*, *sheafification*.
 
+## État de l'art — le dépôt Stacks d'AxiomMath
+
+Ce lac n'est pas la seule formalisation Lean du langage grothendieckien. Le dépôt
+[AxiomMath/Stacks](https://github.com/AxiomMath/Stacks) (public, **Apache-2.0**, branche `main`,
+fichier `lean-toolchain` : `leanprover/lean4:` suivi de la version `v4.35.0`, relevé le 2026-11-19 ;
+découvert via #26786) le développe à
+une autre échelle, en deux couches `StacksCore` et `StacksFrontier`, et porte notamment une
+formalisation dédiée de la résolution de Godement : la recherche code `Godement repo:AxiomMath/Stacks`
+renvoie **46 fichiers** (mesure API du 2026-11-19 ; l'arbre `git/trees/main?recursive=1` étant
+tronqué, `truncated: true`, ce décompte provient de la recherche, pas de l'énumération des chemins).
+
+| Ce que ce lac prouve | Où AxiomMath/Stacks le traite |
+|---|---|
+| `Grothendieck/GodementComplex.lean` — `godementCanonicalComplex` (le complexe canonique), `isZero_stalk_homology_godementCanonicalComplex` (annulation tigée degré par degré), `isFlasque_godementCanonicalComplex`, `shortExact_stalk_godementMapHom` | `StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/Basic.lean`, `Stalk.lean`, `StalkHomotopy.lean` ; `StacksFrontier/AlgebraicGeometry/Cohomology/GodementBoundedBelowResolution.lean` |
+| … dont la même ancre que la nôtre, sous une forme plus forte | `Stalk.lean` prouve `singleConstantHomotopyEquiv : A[0] ≃ constantComplex A` (une **équivalence d'homotopie** par homotopie contractante, tag [Stacks 0FKS](https://stacks.math.columbia.edu/tag/0FKS)), là où notre `isZero_stalk_homology_godementCanonicalComplex` établit l'annulation tigée degré par degré |
+
+**Ce qu'on en tire, honnêtement.** L'équivalence d'homotopie ci-dessus subsume l'annulation tigée :
+une reconstruction degré par degré de cette annulation serait la réimplémentation d'un cas
+particulier de leur comparaison. La suite de l'issue #2159 s'appuie donc sur ce travail (citation,
+alignement des énoncés quand les API diffèrent, présentation) plutôt qu'elle ne le refait.
+
+**Contrainte réelle, non résolue ici** : les deux lacs sont séparés — la version de Mathlib de
+§Build & état chez nous, la toolchain relevée ci-dessus et l'arborescence `StacksCore`/`StacksFrontier`
+chez eux. L'import
+direct n'est pas mécanique ; ajouter `StacksFrontier` en dépendance de ce lake est une décision de
+structure qui revient au coordinateur et au mainteneur, pas à une lane. Cette section fait
+l'appui par **citation et présentation** ; elle ne modifie aucune dépendance.
+
 ## Voir aussi
 
 - Epic #1646 (hommage à Grothendieck) — Issue #2159 (profondeur de formalisation : Phase 1 shippée, Phase 2 = #10357, Phase 5 = Parties 35-44, Parties 64-77 par la suite)

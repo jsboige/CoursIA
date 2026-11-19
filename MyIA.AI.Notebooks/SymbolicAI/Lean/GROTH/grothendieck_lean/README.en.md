@@ -239,6 +239,34 @@ The language toured here — Grothendieck topologies, sites, sheaves, and scheme
 - **The Mathlib Community.** *Mathlib4, Category Theory and Sites*. [mathlib4 docs](https://leanprover-community.github.io/mathlib4_docs/) — The library this tour indexes (Part 4); see de Moura & Ullrich, "The Lean 4 Theorem Prover" (2021).
 - **nLab.** [ncatlab.org](https://ncatlab.org) — Entries on Grothendieck topology, sieve, site, sheaf, and sheafification.
 
+## State of the art — AxiomMath's Stacks repository
+
+This lake is not the only Lean formalization of the Grothendieckian language. The
+[AxiomMath/Stacks](https://github.com/AxiomMath/Stacks) repository (public, **Apache-2.0**, `main`
+branch, its `lean-toolchain` file: `leanprover/lean4:` followed by version `v4.35.0`, recorded on
+2026-11-19; found via #26786) develops it on
+a different scale, in two layers `StacksCore` and `StacksFrontier`, and carries in particular a
+dedicated formalization of the Godement resolution: code search `Godement repo:AxiomMath/Stacks`
+returns **46 files** (API measurement of 2026-11-19; since `git/trees/main?recursive=1` is
+truncated, `truncated: true`, that count comes from search, not from path enumeration).
+
+| What this lake proves | Where AxiomMath/Stacks treats it |
+|---|---|
+| `Grothendieck/GodementComplex.lean` — `godementCanonicalComplex` (the canonical complex), `isZero_stalk_homology_godementCanonicalComplex` (degree-wise stalk vanishing), `isFlasque_godementCanonicalComplex`, `shortExact_stalk_godementMapHom` | `StacksFrontier/Topology/Sheaves/Cohomology/GodementResolution/Basic.lean`, `Stalk.lean`, `StalkHomotopy.lean`; `StacksFrontier/AlgebraicGeometry/Cohomology/GodementBoundedBelowResolution.lean` |
+| … including the same anchor as ours, in a stronger form | `Stalk.lean` proves `singleConstantHomotopyEquiv : A[0] ≃ constantComplex A` (a **homotopy equivalence** via a contracting homotopy, [Stacks tag 0FKS](https://stacks.math.columbia.edu/tag/0FKS)), whereas our `isZero_stalk_homology_godementCanonicalComplex` establishes degree-wise stalk vanishing |
+
+**What we take from it, honestly.** The homotopy equivalence above subsumes the stalk vanishing:
+a degree-by-degree reconstruction of that vanishing would reimplement a special case of their
+comparison. The sequel of issue #2159 therefore builds on that work (citation, alignment of
+statements where the APIs differ, presentation) rather than redoing it.
+
+**Real constraint, not resolved here**: the two lakes are separate — the Mathlib version of
+§Build & status here, the toolchain recorded above and the `StacksCore`/`StacksFrontier` layout on
+their side. Direct
+import is not mechanical; adding `StacksFrontier` as a dependency of this lake is a structural
+decision for the coordinator and the maintainer, not for a lane. This section builds on the work by
+**citation and presentation**; it changes no dependency.
+
 ## See also
 
 - Epic #1646 (hommage à Grothendieck) — Issue #2159 (profondeur de formalisation : Phase 1 livrée, Phase 2 = #10357, Phase 5 = Parties 35-44, puis Parties 64-77)
