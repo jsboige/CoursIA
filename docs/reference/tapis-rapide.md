@@ -176,6 +176,20 @@ lane à moins de 24 h d'intervalle (`SEANCE_H`) font une seule visite. Les commi
 citent l'issue forment des séances sans lane. Le compte retenu est le plus grand des deux : un claim puis le
 merge de sa PR comptent une fois.
 
+**Une livraison ouvre une séance neuve** (19/11, famine de l'umbrella #27338). Sans cela, une lane qui
+enchaîne plusieurs grains du même umbrella le jour même n'y compte qu'**une** visite — et l'issue reste en
+tête de classement, servie sept fois dans la journée pendant que des issues anciennes n'attendaient
+aucune PR. La séance se ferme sur la livraison (ou la release) ; la suite ouvre une séance neuve. Mesure
+sur l'issue réelle : avant correction, 2 visites sur 8 livraisons ; après, 8.
+
+**Les PRs ouvertes comptent le travail en cours** (19/11, même famine). Le classement léger ne voyait que
+les commits **mergés** : une issue sur laquelle huit PRs sont ouvertes — pas encore mergées — restait à
+`visites = 0`, donc en tête de rotation. `scripts/coordination/tapis_citations.py` extrait les citations des
+PRs ouvertes avec la même règle que les commits mergés (une mention `#N` dans le corps, auto-référence
+exclue) ; chacune compte **une** visite, à la date de la dernière activité de la PR : une PR abandonnée
+depuis trois mois ne tient pas une issue en tête. C'est le classement **léger** qui est concerné ; la voie
+rapide lit les marqueurs du fil, qui portent la même information.
+
 **Le niveau compte les visites du tour, pas celles de toute la vie de l'issue.** Le tour vaut
 `FENETRE_J` = 7 jours. Mesure du 16/11 sur la lecture de 13:27Z : environ 47 séances par jour pour 395
 issues ouvertes, soit un tour complet de la flotte en 4 à 8 jours. Un compte sur la vie entière aurait l'effet
@@ -361,6 +375,7 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
 | `scripts/coordination/tapis_public.py` | le **lot public** : la proposition comprise (la tranche, les ancres) — la voie que les tests rejouent |
 | `scripts/coordination/tapis_tete.py` | la **tête** du lot : le numéro suivant le curseur, ahead de la priorité (famine du 19/11) |
+| `scripts/coordination/tapis_citations.py` | les **citations des PRs ouvertes** : le travail en cours compte comme une visite (famine du 19/11) |
 | `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
