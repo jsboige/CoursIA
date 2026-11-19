@@ -12,7 +12,10 @@ Couvre la resolution pure (aucun `lake`, aucun reseau, aucune machine) :
 - agregateur **strict** : un fichier qui porte une commande n'en est pas un (#26966) ;
 - repli explicite **et nomme** quand un fichier `.lean` touche n'est pas un
   module du lac (#26812 : le repli doit dire QUEL fichier, pas « rien ») ;
-- repli explicite quand un fichier **non `.lean`** du lake est touche (#26966).
+- repli explicite quand un fichier **non `.lean`** du lake est touche (#26966) ;
+- **document** vs **entree de build** : un `README` du lac est prouve
+  documentaire et ne force pas le repli ; un `lake-manifest.json` reste
+  une entree de build et le force.
 
 Fixtures synthetiques sous ``tmp_path``. Zero dependance externe.
 """
@@ -27,6 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from attest_build_targets import (  # noqa: E402
     dependents_of,
     enumerate_modules,
+    est_documentaire,
     import_graph,
     is_aggregator,
     module_name_of,
@@ -330,6 +334,80 @@ def test_un_fichier_non_lean_hors_du_lake_ne_touche_pas_la_resolution(tmp_path):
     )
     assert verdict["ok"], verdict["reason"]
     assert verdict["non_lean_touched"] == []
+
+
+# ---------------------------------------------------------------------------
+# documentation vs entree de build (#26976)
+# ---------------------------------------------------------------------------
+
+def test_un_readme_du_lac_est_prouve_documentaire_et_ne_force_pas_le_repli(tmp_path):
+    """Un `README.md` DANS le lac ne change pas la compilation.
+
+    Le repli sur le lac entier etait declenche par TOUT fichier non
+    `.lean` du lake. Un document n'est pas une entree de build : il force
+    le repli sans raison, et le repli coute une heure de compilation.
+
+    T witness : le `README.md` du lac, avec un module touche a cote.
+    """
+    lake = _make_lake(tmp_path)
+    _write(lake / "README.md", "# Demo\n\nUn lac de demonstration.\n")
+    verdict = resolve_targets(
+        lake,
+        ["demo/README.md", "demo/Demo/Alpha.lean"],
+        lake_prefix="demo/",
+    )
+    assert verdict["ok"], verdict["reason"]
+    assert verdict["documentaire_touched"] == ["demo/README.md"]
+    assert verdict["non_lean_touched"] == []
+    assert "Demo.Alpha" in verdict["targets"]
+
+
+def test_un_manifeste_du_lac_reste_une_entree_de_build(tmp_path):
+    """Le temoin jumeau : `lake-manifest.json` n'est PAS un document.
+
+    Meme extension « de configuration », meme emplacement : c'est une entree
+    de build. La preuve est le NOM, pas l'extension : un `.json` de manifeste
+    change les dependances du lac, donc force le repli.
+    """
+    lake = _make_lake(tmp_path)
+    _write(lake / "lake-manifest.json", '{"version": "1.0.0"}\n')
+    verdict = resolve_targets(
+        lake,
+        ["demo/lake-manifest.json", "demo/Demo/Alpha.lean"],
+        lake_prefix="demo/",
+    )
+    assert not verdict["ok"]
+    assert "lake-manifest.json" in verdict["reason"]
+    assert verdict["non_lean_touched"] == ["demo/lake-manifest.json"]
+    assert verdict["documentaire_touched"] == []
+
+
+def test_un_lean_toolchain_reste_une_entree_de_build(tmp_path):
+    """Un `lean-toolchain` n'a pas d'extension : ce n'est pas un document."""
+    lake = _make_lake(tmp_path)
+    verdict = resolve_targets(
+        lake,
+        ["demo/lean-toolchain", "demo/Demo/Alpha.lean"],
+        lake_prefix="demo/",
+    )
+    assert not verdict["ok"]
+    assert verdict["non_lean_touched"] == ["demo/lean-toolchain"]
+
+
+def test_la_preuve_documentaire_est_stricte():
+    """Ce qui est documentaire, ce qui ne l'est pas.
+
+    La liste est close : un nom de document connu **et** une extension de
+    document. Tout le reste est une entree de build (fail-CLOSED : le repli
+    est sur, donc sur).
+    """
+    for rel in ("README.md", "readme.markdown", "README.en.md",
+                "LICENSE", "LICENSE-Apache-2.0", "CHANGELOG.md",
+                "Demo/README.md", "contributing.rst"):
+        assert est_documentaire(rel), rel
+    for rel in ("lean-toolchain", "lake-manifest.json", "lakefile.toml",
+                "Notes.md", "Toolchain.md", "Demo/Notes.md", "Main.lean"):
+        assert not est_documentaire(rel), rel
 
 
 # ---------------------------------------------------------------------------

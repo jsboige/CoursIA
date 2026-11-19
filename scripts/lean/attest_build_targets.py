@@ -96,6 +96,32 @@ AGGREGATOR_LINE_RE = re.compile(
 #: `srcDir := "..."` (Lean) ou `srcDir = "..."` (TOML).
 SRCDIR_RE = re.compile(r"srcDir[ \t]*(?::=|=)[ \t]*\"([^\"]+)\"")
 
+#: Les NOMS de document d'un lake : un `README`, un `LICENSE`, un
+#: `CHANGELOG`... Un fichier de ce nom ne change pas la compilation : c'est
+#: une entree **prouvee documentaire**.
+DOC_NOMS = ("readme", "notice", "licence", "license", "copying", "changelog",
+            "contributing", "authors", "contributors", "code_of_conduct",
+            "security", "governance", "citation")
+
+#: Un nom de document, suivi au plus d'un suffixe : `README.md`,
+#: `README.en.md`, `LICENSE-APACHE-2.0`...
+DOC_RE = re.compile(
+    r"^(?:" + "|".join(DOC_NOMS) + r")(?:[-_.].*)?$", re.IGNORECASE)
+
+
+def est_documentaire(rel: str) -> bool:
+    """Vrai si le fichier est un document PROUVE : il ne change pas la
+    compilation du lac.
+
+    La preuve est **stricte et fermee** : le nom du fichier est un nom de
+    document connu (`README`, `LICENSE`, `CHANGELOG`...), suivi au plus
+    d'un suffixe. Tout autre fichier non-`.lean` reste une entree de
+    BUILD : il force le repli sur le lac entier, comme `lakefile.toml`,
+    `lake-manifest.json` ou `lean-toolchain`.
+    """
+    nom = rel.replace("\\", "/").rsplit("/", 1)[-1]
+    return bool(DOC_RE.match(nom))
+
 
 def _read(path: Path) -> str:
     try:
@@ -357,8 +383,12 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
       ``unresolved`` -- les fichiers `.lean` touches qui ne sont pas des
       modules de ce lake (le repli est alors obligatoire) ;
       ``non_lean_touched`` -- les fichiers **non `.lean`** du lake touches
-      (le repli est alors obligatoire : ces fichiers changent la
-      compilation du lac) ;
+      qui sont des **entrees de build** (le repli est alors obligatoire :
+      ces fichiers changent la compilation du lac) ;
+      ``documentaire_touched`` -- les fichiers **non `.lean`** du lake
+      touches qui sont **prouves documentaires** (un `README`, un
+      `LICENSE`) : ils ne changent pas la compilation, ils ne forcent
+      donc **pas** le repli ;
       ``module_count`` -- le nombre de modules du lake.
     """
     verdict = {
@@ -370,6 +400,7 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
         "skipped_aggregators": [],
         "unresolved": [],
         "non_lean_touched": [],
+        "documentaire_touched": [],
         "module_count": 0,
     }
     modules = enumerate_modules(lake_root)
@@ -385,10 +416,12 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
     roots: set[str] = set()
     unresolved: list[str] = []
     non_lean: list[str] = []
+    documentaire: list[str] = []
     for path in changed_paths:
         normalized = path.replace("\\", "/")
         if not normalized.startswith(lake_prefix):
             continue
+        rel_to_lake = normalized[len(lake_prefix):]
         if not normalized.endswith(".lean"):
             # Un fichier **non `.lean`** du lake est touche : `lakefile.lean`
             # (options du build, globs, `moreLeanArgs`), `lakefile.toml`,
@@ -397,15 +430,24 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
             # n'attesterait alors que les modules cites, pendant que le
             # changement peut en casser d'autres (#26966) : le repli sur le
             # lac entier est obligatoire, et sa raison est nommee.
-            non_lean.append(normalized)
+            #
+            # Exception **prouvee** : un DOCUMENT du lac (`README.md`,
+            # `LICENSE-Apache-2.0`, `CHANGELOG.md`...). Un document ne
+            # change pas la compilation : il ne doit pas forcer le repli.
+            # La preuve est stricte (nom de document connu + extension de
+            # document) ; tout le reste reste une entree de build.
+            if est_documentaire(rel_to_lake):
+                documentaire.append(normalized)
+            else:
+                non_lean.append(normalized)
             continue
-        rel_to_lake = normalized[len(lake_prefix):]
         module = module_name_of(rel_to_lake)
         if module is None or module not in modules:
             unresolved.append(normalized)
             continue
         roots.add(module)
 
+    verdict["documentaire_touched"] = sorted(documentaire)
     if non_lean:
         verdict["reason"] = (
             "fichier non-.lean touche dans le lake ({}) : un build cible "
