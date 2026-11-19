@@ -506,9 +506,37 @@ def verifie_fraicheur(inventaire: dict, frais: dict | None) -> tuple[bool, str]:
     if state != "open":
         return False, ("PR fermee depuis l'inventaire (state=`{}`) -- geste "
                        "refuse".format(state or "absent"))
+    # Le BROUILLON et la DEROGATION sont **relus**, et refuses s'ils sont
+    # atteints : `decide` les exclut par construction (un brouillon n'est pas
+    # mergeable ; une dispense n'est pas soumise au minuteur). La relecture
+    # les relit parce qu'une PR peut les ATTEINDRE entre l'inventaire et le
+    # geste -- et le geste, lui, est irreversible.
+    # Fail-CLOSED : un etat relu qui ne porte pas ces champs ne prouve rien.
+    for cle, phrase in (("draft", "PR devenue brouillon"),
+                        ("derogation", "PR devenue dispensee (label)")):
+        if cle not in frais:
+            return False, ("etat relu sans le champ `{}` -- geste refuse "
+                           "(fail-CLOSED)".format(cle))
+        if cle not in inventaire:
+            return False, ("inventaire sans le champ `{}` -- geste refuse "
+                           "(fail-CLOSED)".format(cle))
+        if frais[cle]:
+            return False, ("{} depuis l'inventaire -- geste refuse (le rejeu "
+                           "ne porte ni sur un brouillon ni sur une "
+                           "dispense)".format(phrase))
+        if bool(inventaire[cle]) != bool(frais[cle]):
+            return False, ("etat `{}` change depuis l'inventaire -- geste "
+                           "refuse".format(cle))
     gate_inv = inventaire.get("gate_id")
     gate_frais = frais.get("gate_id")
-    if gate_inv is not None and gate_frais is not None and gate_inv != gate_frais:
+    if not gate_inv or not gate_frais:
+        # Un identifiant de controle **absent d'un seul cote** ne prouve pas
+        # que le controle relu est celui de l'inventaire : c'est un identifiant
+        # non prouve, pas une egalite. Fail-CLOSED.
+        return False, ("identifiant de controle `{}` absent d'un des deux "
+                       "cotes (inventaire={}, relecture={}) -- geste refuse "
+                       "(fail-CLOSED)".format(GATE_NAME, gate_inv, gate_frais))
+    if gate_inv != gate_frais:
         return False, ("controle `{}` change depuis l'inventaire -- geste "
                        "refuse".format(GATE_NAME))
     status = frais.get("status") or ""
@@ -527,6 +555,11 @@ def relit_etat(repo: str, number: int) -> dict:
 
     Renvoie `{}` si la lecture est cassee : l'appelant treat alors comme un
     refus (fail-CLOSED), jamais comme un etat favorable.
+
+    Le `draft` et la derogation sont **relus et rendus** : sans eux, la
+    relecture ne prouverait pas que la PR est encore rejouable (une PR peut
+    devenir brouillon, ou gagner le label de derogation, entre l'inventaire
+    et le geste).
     """
     try:
         info = pr_info(repo, number)
@@ -539,6 +572,12 @@ def relit_etat(repo: str, number: int) -> dict:
         "gate_id": gate.get("id"),
         "status": gate.get("status") or "",
         "conclusion": gate.get("conclusion") or "",
+        # Le BROUILLON et la DEROGATION sont RELUS, pas jetes : sans eux, la
+        # relecture ne prouve pas que la PR est encore rejouable (une PR peut
+        # devenir brouillon entre l'inventaire et le geste).
+        "draft": info["draft"],
+        "derogation": WAIVER_LABEL in info["labels"],
+        "labels_lus": True,
     }
 
 

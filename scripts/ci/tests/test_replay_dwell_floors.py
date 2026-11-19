@@ -655,14 +655,30 @@ def test_un_state_non_chaine_est_un_refus(monkeypatch):
         replay_dwell_floors.pr_info("jsboige/CoursIA", 27273)
 
 
+def _inv(**extra):
+    """Un inventaire minimal : l'etat de depart du rejeu."""
+    base = {"head_sha": "abc123", "gate_id": 1, "draft": False,
+            "derogation": False}
+    base.update(extra)
+    return base
+
+
+def _frais(**extra):
+    """Un etat relu minimal, identique a l'inventaire."""
+    base = {"sha": "abc123", "state": "open", "gate_id": 1,
+            "status": "completed", "conclusion": "failure",
+            "draft": False, "derogation": False}
+    base.update(extra)
+    return base
+
+
 def test_le_geste_est_refuse_si_la_tete_a_change():
     """La tete a bouge entre l'inventaire et le geste : le minuteur lu
     n'est plus celui de la tete courante."""
     import replay_dwell_floors
 
-    inv = {"head_sha": "abc123", "gate_id": 1}
-    frais = {"sha": "def456", "state": "open", "gate_id": 1,
-             "status": "completed", "conclusion": "failure"}
+    inv = _inv()
+    frais = _frais(sha="def456")
     ok, motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
     assert ok is False
     assert "tete changee" in motif
@@ -671,9 +687,8 @@ def test_le_geste_est_refuse_si_la_tete_a_change():
 def test_le_geste_est_refuse_si_la_pr_a_ete_fermee_entre_temps():
     import replay_dwell_floors
 
-    inv = {"head_sha": "abc123", "gate_id": 1}
-    frais = {"sha": "abc123", "state": "closed", "gate_id": 1,
-             "status": "completed", "conclusion": "failure"}
+    inv = _inv()
+    frais = _frais(state="closed")
     ok, motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
     assert ok is False
     assert "fermee" in motif
@@ -684,9 +699,8 @@ def test_le_geste_est_refuse_si_le_controle_selectionne_a_change():
     rejoue, ou une nouvelle tete a produit une autre jambe."""
     import replay_dwell_floors
 
-    inv = {"head_sha": "abc123", "gate_id": 1}
-    frais = {"sha": "abc123", "state": "open", "gate_id": 2,
-             "status": "completed", "conclusion": "failure"}
+    inv = _inv()
+    frais = _frais(gate_id=2)
     ok, motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
     assert ok is False
     assert "change" in motif
@@ -697,12 +711,11 @@ def test_le_geste_est_refuse_si_la_jambe_n_est_plus_terminee_en_echec():
     rejouer."""
     import replay_dwell_floors
 
-    inv = {"head_sha": "abc123", "gate_id": 1}
+    inv = _inv()
     for status, conclusion in (("in_progress", "failure"),
                                 ("completed", "success"),
                                 ("completed", "cancelled")):
-        frais = {"sha": "abc123", "state": "open", "gate_id": 1,
-                 "status": status, "conclusion": conclusion}
+        frais = _frais(status=status, conclusion=conclusion)
         ok, _motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
         assert ok is False
 
@@ -711,9 +724,8 @@ def test_un_rejeu_autorise_passe_quand_etat_relu_est_identique():
     """Témoin positif : etat relu identique -> le geste est autorise."""
     import replay_dwell_floors
 
-    inv = {"head_sha": "abc123", "gate_id": 1}
-    frais = {"sha": "abc123", "state": "open", "gate_id": 1,
-             "status": "completed", "conclusion": "failure"}
+    inv = _inv()
+    frais = _frais()
     ok, _motif = replay_dwell_floors.verifie_fraicheur(inv, frais)
     assert ok is True
 
@@ -723,7 +735,7 @@ def test_le_geste_ne_part_pas_quand_la_relecture_est_impossible():
     change »."""
     import replay_dwell_floors
 
-    inv = {"head_sha": "abc123", "gate_id": 1}
+    inv = _inv()
     ok, _motif = replay_dwell_floors.verifie_fraicheur(inv, {})
     assert ok is False
 
@@ -738,11 +750,12 @@ def test_un_rejeu_refuse_par_fraicheur_ne_appelle_pas_gh(monkeypatch):
     monkeypatch.setattr(replay_dwell_floors, "inspect_pr", lambda *a, **k: {
         "pr": 1, "action": "rejouer", "motif": "plancher brut passe",
         "run_id": "42", "job_id": "43", "draft": False, "state": "open",
-        "head_sha": "abc123", "gate_id": 1})
+        "head_sha": "abc123", "gate_id": 1, "derogation": False})
 
     def faux_relit(repo, number):
         return {"sha": "autre", "state": "open", "gate_id": 1,
-                "status": "completed", "conclusion": "failure"}
+                "status": "completed", "conclusion": "failure",
+                "draft": False, "derogation": False}
 
     def faux_gh_rerun(*a, **k):
         appele["gh"] = True
