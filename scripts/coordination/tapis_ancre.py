@@ -29,7 +29,7 @@ persistance dans `coordination.tapis_etat`.
 """
 from __future__ import annotations
 
-from coordination import tapis_etat, tapis_non_tente, tapis_retry
+from coordination import tapis_avance, tapis_etat, tapis_retry
 from coordination.tapis_etat import (ancre_de, inconnus_de, lire,  # noqa: F401
                                     phase_de, tour_de)
 from coordination.tapis_tranche import membres, position, tranche  # noqa: F401
@@ -93,11 +93,11 @@ def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None,
     grain PROPOSE mais jamais qualifie (NON TENTE) ne le bloque pas non
     plus : il est parke, et le curseur continue (`tapis_non_tente`).
 
-    `lot` est le lot EFFECTIVEMENT qualifie. La tranche **primaire** ne
-    passe le curseur que si le lot la TOUCHE : une qualification porte sur
-    un numero qui n'appartient pas a la tranche ne fait pas avancer
-    l'ancre des primaires pendantes (review du 19/11). Sans lot, l'avance
-    n'est pas bornee.
+    `lot` est le lot EFFECTIVEMENT qualifie. Le curseur ne passe que sur
+    les numeros que le LOT a pris en charge : une qualification porte sur
+    un numero qui n'appartient pas a la tranche ne fait pas avancer l'ancre
+    des primaires pendantes (review du 19/11). Sans lot, l'avance n'est pas
+    bornee. Le balayage lui-meme vit dans `coordination.tapis_avance`.
 
     Un numero **inconnu** (lecture impossible) ne fige pas le curseur : il
     est PARKE, il revient au tour suivant, et la couverture des autres
@@ -120,18 +120,9 @@ def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None,
         # REPRISE revient au service SANS prendre la place de la primaire.
         primaire = etat[c].get("primaire") or []
         cible = sorted(primaire) or sorted(att)
-        en_charge = couvert is None or bool(couvert & set(cible))
-        for n in cible:
-            if ancre is not None and n <= ancre:
-                continue
-            if n in inc:
-                ancre = n
-                continue
-            if not en_charge:
-                break
-            if not att.get(n):
-                tapis_non_tente.parquer_non_tente(inc, n)
-            ancre = n
+        # L'avance est BORNEE au lot : le curseur ne passe que sur les
+        # numeros que le lot a reellement pris en charge (revue du 19/11).
+        ancre = tapis_avance.avancer(cible, ancre, couvert, att, inc)
         etat[c]["ancre"] = ancre
         etat[c]["attente"] = {n: b for n, b in att.items()
                               if ancre is None or n > ancre}
