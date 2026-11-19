@@ -2,8 +2,8 @@
  "pairs": [
   {
    "kind": "notebook",
-   "fr": "MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb",
-   "en": "MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb",
+   "fr": "MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb",
+   "en": "MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb",
    "sha1_fr": "52989898dd10c09e72cb570c1f29c968c7e304f4",
    "sha1_en": "c0e2cac587ef6a151908c21c239453668355b386",
    "sources_sha1_fr": "2ea39a7239fc9ab9af344009200a66ec5de66192",
@@ -11,22 +11,22 @@
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/Compression/Compression_lean/PrefixCodes.lean",
-   "en": "MyIA.AI.Notebooks/Compression/Compression_lean/PrefixCodes_en.lean",
+   "fr": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/PrefixCodes.lean",
+   "en": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/PrefixCodes_en.lean",
    "sha1_fr": "36a945b00622747b4ab95a08ff794d1d2439b608",
    "sha1_en": "2ca1923add04b74f31188c7d2b47b310796e00cf"
   },
   {
    "kind": "readme",
-   "fr": "MyIA.AI.Notebooks/Compression/Compression_lean/README.md",
-   "en": "MyIA.AI.Notebooks/Compression/Compression_lean/README.en.md",
+   "fr": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/README.md",
+   "en": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/README.en.md",
    "sha1_fr": "56f0f5a37ad48a222b320d23c74bb21fca96b359",
    "sha1_en": "03a7496332f2b4630b4e68454e9e58913f2823c0"
   },
   {
    "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/Compression/Compression_lean/SymbolCodec.lean",
-   "en": "MyIA.AI.Notebooks/Compression/Compression_lean/SymbolCodec_en.lean",
+   "fr": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/SymbolCodec.lean",
+   "en": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/SymbolCodec_en.lean",
    "sha1_fr": "d7571f3b5082ddf236204a17ea537c6812c19c34",
    "sha1_en": "3e5f535dd39dd7bdc8158e69f877f9fbddf11660"
   },

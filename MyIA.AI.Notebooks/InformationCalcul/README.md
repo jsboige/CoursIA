@@ -20,8 +20,8 @@ L'IA du dépôt ne se réduit pas à l'apprentissage automatique. Une grande par
 
 | Sous-série | Ce qu'elle apporte aux séries d'IA | État |
 |---|---|---|
-| [Complexity](../Complexity/README.md) | Les bornes du calcul : ce qu'une machine peut décider, optimiser, simuler — machines de Turing, hiérarchie des complexités, le P/NP de l'IA | sur `main` — déplacement vers le hub à venir |
-| [Compression](../Compression/README.md) | L'entropie et le codage : Huffman, les arborescences, ce que l'on peut contracter sans perte — la frontière information/pression | sur `main` — déplacement vers le hub à venir |
+| [Complexity](Complexity/README.md) | Les bornes du calcul : ce qu'une machine peut décider, optimiser, simuler — machines de Turing, hiérarchie des complexités, le P/NP de l'IA | dans le hub |
+| [Compression](Compression/README.md) | L'entropie et le codage : Huffman, les arborescences, ce que l'on peut contracter sans perte — la frontière information/pression | dans le hub |
 | **InformationTheory** | Mesurer l'information : entropie, information mutuelle, distance de Hamming, codes correcteurs — et le **codage de canal** (théorie des codes) en branche | en construction (carnets en PR) |
 | **SignalProcessing** | Le signal en domaine fréquentiel : la FFT et la représentation qui sous-tend le traitement des représentations, pont vers le neuronal | en construction (carnets en PR) |
 | **Cryptography** | Protéger l'information : hachage, chiffrement symétrique, HMAC, canal adversarial, post-quantique, preuves à divulgation nulle — la confiance informationnelle, pont vers [SmartContracts](../SymbolicAI/SmartContracts/README.md) | en construction (carnets en PR) |
