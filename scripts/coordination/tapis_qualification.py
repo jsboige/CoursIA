@@ -135,5 +135,5 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
     servis = [confirmes[n] for n in candidats if n in confirmes]
     chrono = {"secondes": round(horloge() - debut, 1) if debut is not None else None,
               "premier_servable_s": round(premier, 1) if premier is not None else None}
-    tapis_verdict.avancer(lane, confirmes, ecartees)
+    tapis_verdict.avancer(lane, confirmes, ecartees, set(candidats))
     return servis, ecartees, echecs, arrete, appels, chrono
