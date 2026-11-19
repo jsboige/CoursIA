@@ -109,6 +109,7 @@ from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
 from grain_tag import extract_lane, lane_marker_residues
+from claim_cap_advice import cap_action_line, open_daughters
 
 # #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
 # `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
@@ -2429,6 +2430,83 @@ query($cursor: String) {
 """
 
 
+def _run_bounded(cmd, *, timeout, env=None):
+    """Lance `gh` (ou `git`) borne pour de VRAI : fichiers, pas de pipe.
+
+    Sur Windows, `subprocess.run(capture_output=True, timeout=T)` peut ne
+    JAMAIS rendre la main. A l'expiration il tue l'enfant, puis appelle
+    `communicate()` une seconde fois pour recuperer la sortie -- sans
+    `timeout` (Lib/subprocess.py, `run()`, branche `_mswindows`). Ce second
+    appel joint les threads lecteurs avec `join(None)`, soit une attente
+    infinie, et il suffit qu'un descendant ait herite du handle du pipe pour
+    que ces threads ne finissent jamais.
+
+    Mesure du 2026-11-15 sur ce siege (pile `faulthandler`, tapis `--belt` a
+    `--belt-time-budget 240` sous `timeout 400`) : le thread principal passe
+    de `_gh_graphql` a `communicate` puis `join` a l'etat bloque, et le run
+    est tue par sa borne externe sans avoir servi un grain (#21436). Le
+    `timeout=60` de l'appel avait pourtant ete respecte une premiere fois --
+    c'est sa reprise sur erreur qui le defait.
+
+    On redirige donc la sortie vers des FICHIERS temporaires : `_communicate`
+    n'a alors aucun thread lecteur a joindre, et l'echeance redevient une
+    borne reelle. `subprocess.run` reste la surface d'appel (les tests le
+    simulent ; le correctif porte sur le transport, pas sur le seam).
+
+    Rend un `CompletedProcess` de meme forme que `subprocess.run`, et propage
+    `subprocess.TimeoutExpired` comme lui -- les appelants continuent de
+    convertir ce timeout en `OpenPrsIncompleteError` ou `RuntimeError`.
+
+    Ce transport est le meme que `pick_idle_grain._run_bounded` (ecrit le
+    2026-10-24 pour la meme classe) : le picker l'avait recu, le lecteur non.
+    """
+    out_file = tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                      errors="replace")
+    err_file = tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                      errors="replace")
+    try:
+        try:
+            # `encoding=`/`errors=` sont INERTES sur un descripteur de
+            # fichier (Popen n'enveloppe que les PIPE) : le decodage reel est
+            # fait par les fichiers ci-dessus, eux aussi epingles UTF-8. On
+            # les repete quand meme, parce que c'est le contrat que le test
+            # #12811 lit, et qu'il redeviendrait vrai si le transport
+            # repassait un jour par un PIPE. Sans ce pin, `text=True` decode
+            # avec le locale de l'OS (cp1252 sous Windows) et la garde meurt.
+            proc = subprocess.run(cmd, stdout=out_file, stderr=err_file,
+                                  stdin=subprocess.DEVNULL, env=env,
+                                  shell=False, timeout=timeout,
+                                  encoding="utf-8", errors="replace")
+        except subprocess.TimeoutExpired:
+            # Pas de nettoyage d'arbre ici : `taskkill /T` exigerait le pid
+            # que `run` ne rend pas sur expiration, et un `gh` orphelin
+            # s'arrete seul. Ce qui compte est que l'APPELANT ne soit plus
+            # retenu -- c'est ce que la redirection fichier garantit.
+            raise
+        rc = proc.returncode
+        out_file.seek(0)
+        err_file.seek(0)
+        out = out_file.read()
+        err = err_file.read()
+        # Seam de simulation : un `subprocess.run` simule ne connait pas les
+        # descripteurs qu'on lui passe et rend son texte dans `.stdout` au
+        # lieu de l'ecrire. Le fichier reste VIDE dans ce cas -- jamais en
+        # production, ou `run` n'alimente pas `.stdout` quand `stdout=` est
+        # redirige.
+        if not out:
+            fallback = getattr(proc, "stdout", None)
+            if isinstance(fallback, str):
+                out = fallback
+        if not err:
+            fallback_err = getattr(proc, "stderr", None)
+            if isinstance(fallback_err, str):
+                err = fallback_err
+        return subprocess.CompletedProcess(cmd, rc, out, err)
+    finally:
+        out_file.close()
+        err_file.close()
+
+
 def _gh_repo_name_with_owner() -> str:
     """`owner/name` du depot courant (meme resolution que `gh pr list`).
 
@@ -2437,11 +2515,12 @@ def _gh_repo_name_with_owner() -> str:
     est validee par motif : la chaine part dans une requete GraphQL.
     """
     try:
-        proc = subprocess.run(
+        # #21436 -- `_run_bounded` et non `subprocess.run` : sur Windows, ce
+        # dernier perd sa borne a la premiere expiration (join infini sur les
+        # threads lecteurs). Voir la docstring du transport.
+        proc = _run_bounded(
             ["gh", "repo", "view", "--json", "nameWithOwner",
              "-q", ".nameWithOwner"],
-            capture_output=True, text=True, shell=False,
-            encoding="utf-8", errors="replace",
             timeout=_GH_OPEN_PRS_TIMEOUT_S,
         )
     except subprocess.TimeoutExpired as exc:
@@ -2474,11 +2553,9 @@ def _gh_graphql(query: str, variables: dict[str, str] | None = None) -> dict:
         # un `@` initial, mais la forme brute evite la question.
         cmd += ["-f", f"{key}={value}"]
     try:
-        proc = subprocess.run(
-            cmd, capture_output=True, text=True, shell=False,
-            encoding="utf-8", errors="replace",
-            timeout=_GH_OPEN_PRS_TIMEOUT_S,
-        )
+        # #21436 -- transport borne : la pile du tapis bloquait ICI, dans la
+        # reprise sur expiration de `subprocess.run` (Windows).
+        proc = _run_bounded(cmd, timeout=_GH_OPEN_PRS_TIMEOUT_S)
     except subprocess.TimeoutExpired as exc:
         raise OpenPrsIncompleteError(
             "delai de l'appel GraphQL depasse",
@@ -2530,13 +2607,12 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
     chemins supplementaires, pas des fichiers de la PR.
     """
     try:
-        proc = subprocess.run(
+        # #21436 -- meme classe que `_gh_graphql` : transport borne.
+        proc = _run_bounded(
             [
                 "gh", "api", "--paginate",
                 f"repos/{owner}/{name}/pulls/{number}/files?per_page=100",
             ],
-            capture_output=True, text=True, shell=False,
-            encoding="utf-8", errors="replace",
             timeout=_GH_OPEN_PRS_TIMEOUT_S,
         )
     except subprocess.TimeoutExpired as exc:
@@ -5573,6 +5649,8 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         if cause:
             verdict.update(cause=cause, epic=target["number"])
             break
+    if verdict.get("cause") and pool:  # #27012 : filles reelles de l'EPIC
+        verdict["daughters"] = open_daughters(pool, verdict.get("epic"), picker.parent_refs)
     verdict["error"] = "; ".join(errors) or None
     return verdict
 
@@ -6739,11 +6817,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"de lane y a ete pose, il y a moins de 7 jours (#22500 point 3). "
             f"Le plafond exempte les EPICs de classe `consolidation`, et "
             f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
-            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC {where} "
-            f"(#26414 : une fille existante se sert librement, seul le claim "
-            f"pose sur l'EPIC est plafonne), ou prendre un autre grain du "
-            f"pool. Re-scoper avec `--paths` ne leve pas ce plafond ; "
-            f"`--force` reste reserve a l'arbitrage coordinateur.",
+            f"{cap_action_line(where, epic_cap_verdict.get('daughters') or [])}",
             file=sys.stderr,
         )
         return 1
@@ -6803,7 +6877,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         lines.append(
             "\nCoordinate with the owner(s), re-scope to paths no OPEN PR "
             "touches, or pick another grain from the GLOBAL POOL "
-            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "(`python scripts/coordination/tapis_rapide.py --lane "
             "<machine:workspace>`)."
         )
         # Le renvoi porte sur le POOL, jamais sur un numero d'issue.
@@ -7559,6 +7633,30 @@ def _glob_parent_dir(glob: str) -> str:
     return prefix.rsplit("/", 1)[0]
 
 
+def _glob_carries_prose(glob: str) -> bool:
+    """True when a scope element carries PROSE instead of a path pattern.
+
+    #27162 -- the claim grammar splits the `paths:` clause on its annotation
+    separators (` -- `, ` — `, ` (...)`). A glob that STILL carries whitespace
+    after that split is a FRAGMENT of a mis-split clause, not a path: the
+    measured case is a coordinator claim that glued its rationale to the glob
+    (`MyIA.AI.Notebooks/Sudoku/** ; claim pose au dispatch par le
+    coordinateur`).
+
+    Such a scope matches zero tracked file. The #21431 creation relaxation
+    then read it as "a file to be created in an existing directory" -- the
+    parent directory of the polluted glob DOES exist, so the tracked tree
+    could not decide the disjointness question, the scope was compared BY
+    PATTERN, the pattern missed the caller's path, and the lane was dropped
+    from the blockers: a fail-open (measured case #27139).
+
+    The creation relaxation therefore REFUSES a scope that carries prose: a
+    creation scope names a path, and a path with a rationale glued to it is a
+    broken claim -- which keeps the #10958 epic-wide lift (fail-CLOSED).
+    """
+    return any(ch.isspace() for ch in glob) or ";" in glob
+
+
 def _scope_is_creation(scope: list[str] | None,
                        tracked: list[str] | None) -> bool:
     """True when every glob of `scope` names a file to be CREATED.
@@ -7581,6 +7679,12 @@ def _scope_is_creation(scope: list[str] | None,
           something else. This is the discriminator the issue leaves to
           the implementation, and it is the one that keeps every existing
           fail-safe test green.
+      (d) it does not carry PROSE (#27162) -- a glob with a rationale glued
+          to it is a broken claim, not a file to be created. Without this
+          condition the polluted glob of the measured case reads as a
+          creation scope (its parent directory exists), is compared BY
+          PATTERN, misses the caller's path and is dropped: the fail-open
+          of #27139.
     """
     if not scope or tracked is None:
         return False
@@ -7590,6 +7694,8 @@ def _scope_is_creation(scope: list[str] | None,
             return False          # (a) the file already exists
         if _unparseable_scope_in([glob], tracked):
             return False          # (b) prose residue -- a typo
+        if _glob_carries_prose(glob):
+            return False          # (d) prose glued to the glob -- a typo
         parent = _glob_parent_dir(glob)
         if parent and parent not in dirs:
             return False          # (c) the directory does not exist -- a typo
@@ -7903,7 +8009,7 @@ def _run_check_paths(
         msg.append(
             "\nDo not start -- coordinate with the owner(s), or pick "
             "another grain from the GLOBAL POOL "
-            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "(`python scripts/coordination/tapis_rapide.py --lane "
             "<machine:workspace>`) that does not intersect the open PR(s)."
         )
         print("\n".join(msg), file=sys.stderr)

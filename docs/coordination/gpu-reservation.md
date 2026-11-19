@@ -1,5 +1,7 @@
 # GPU Reservation Ledger — protocole de la flotte
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 > **Tenancier** : `myia-ai-01:CoursIA-2` (mandat user 2026-09-18, mandat régisseur GPU 2026-10-05).
 > **Code source** : `scripts/coordination/debt_ledger.py` (kind `gpu-reservation`, fonction `_summarize_gpu_reservation`).
 > **Référence (autorité)** : le dépôt git **privé** `jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger` — décision du mainteneur du 2026-10-27 (arbitrage rendu sur [#22456](https://github.com/jsboige/CoursIA/issues/22456)) : l'état vivant des réservations GPU de la flotte y est versionné, et le dashboard n'en est plus qu'une copie.
