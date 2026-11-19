@@ -4387,6 +4387,78 @@ theorem hashlife_correct_margin_of_static_frame (c : MacroCell) (k : Nat)
   hashlife_correct_margin_of_hcap c k h_central
     (fun t _ => hcap_of_static_frame _ (canonical_sortDedup _) hwin t)
 
+/-! ## Tranche 27 — décharge par boîte statique du cadre apériodique
+
+Cette tranche décharge le `hwin` de la classe apériodique confinée par la voie
+idiomatique du dépôt — le miroir apériodique de `hwin_of_orbit_box`, la décharge
+par boîte de la voie mod : il suffit d'exhiber une **boîte statique**
+`[a₁, a₂) × [b₁, b₂)` qui contient toute la trajectoire de `g` (`hbox`) et que le
+cadre de reconstruction de chaque état `evolve r g` contient dans son demi-cadre
+médian (`hframe`) — le prédicat `hwin` n'est plus un axiome, c'est une conséquence
+du témoin de boîte (`hwin_of_static_box`). L'apériodicité supprime le repli
+périodique (`evolve_add` seul, sans `evolve_mod_period`) ; la cible est le
+**demi-cadre médian** `[o + 2^(lvl-1), o + 3·2^(lvl-1))` de la classe apériodique,
+pas le cadre complet. Le corollaire `hashlife_correct_margin_of_static_box`,
+branché sur ce lemme, clôt la correction Hashlife de n'importe quelle grille
+apériodique confinée dans une boîte statique. Les unions de trajectoires
+apériodiques 3-séparées (maillons 8 et 9) attendent le maillon 11, qui dérivera le
+cadre de l'union des cadres des parties grâce à la 3-séparation. -/
+
+theorem hwin_of_static_box (g : Grid) (hg : Canonical g)
+    (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ s : Nat, ∀ p ∈ evolve s g,
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r : Nat,
+      (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int)) :
+    ∀ r i : Nat, ∀ p ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r g)).2.level - 1) : Int) := by
+  intro r i p hp
+  rw [← evolve_add] at hp
+  obtain ⟨q1, q2, q3, q4⟩ := hbox (i + r) p hp
+  obtain ⟨f1, f2, f3, f4⟩ := hframe r
+  exact ⟨by omega, by omega, by omega, by omega⟩
+
+/-- **L3 clos par boîte statique — correction Hashlife d'une grille apériodique
+    confinée (corollaire de `hwin_of_static_box`).** Le `hwin` de la classe
+    apériodique confinée n'est plus un axiome : il est déchargé par une boîte
+    statique `hbox` contenant la trajectoire de la grille rendue à l'origine et
+    contenue dans le demi-cadre médian du cadre de chaque état (`hframe`), via
+    `hwin_of_static_box`. Corollaire d'assemblage de
+    `hashlife_correct_margin_of_static_frame` (maillon 3) par le lemme de la
+    tranche. -/
+theorem hashlife_correct_margin_of_static_box (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k)
+    (hcan : Canonical (c.toGrid (0, 0)))
+    (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ s : Nat, ∀ p ∈ evolve s (c.toGrid (0, 0)),
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r : Nat,
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int) ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int) ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + 3 * (2 ^ ((gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level - 1) : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_static_frame c k h_central
+    (hwin_of_static_box (c.toGrid (0, 0)) hcan a₁ a₂ b₁ b₂ hbox hframe)
+
 /-! ### Tranche 23 — restitution publique du mur SW (`wall_sw_agreement`)
 
 Dernier des quatre murs restitue, en miroir du mur NE (permutation des coordonnees).

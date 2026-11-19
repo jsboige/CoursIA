@@ -65,6 +65,40 @@ def _load_module():
 ctp = _load_module()
 
 
+# Borne la copie du registre (sentinelle main-red #27163, 3 rouges consecutifs
+# meme signature #16288). La fixture d'origine copiarait le registre COMPLET --
+# 264 paires + 4224 audits file-per-audit (4489 fichiers) -- et `load_registry`
+# les charge tous en memoire. `test_..._succeeds_on_existing_pair` fait deux
+# `load_registry` + un sous-processus qui en fait un troisierme : sous xdist
+# `-n 4` sur un cgroup 4 Gio, ce pic (~0.57 Gio mesure) OOM le worker a 99 % et
+# bloque TOUS les merges de la flotte. La croissance du registre (17 fichiers
+# entre le dernier vert cdf792ad et le 1er rouge 7280568f/#26896) a franchi le
+# seuil. Le test n'a besoin que de la cible + quelques soeurs pour son invariant
+# "seule la cible changee, les autres byte-identiques" : une borne fixe rend le
+# pic constant, independant de la croissance du registre.
+_BOUNDED_PAIRS = 8
+
+
+def _bounded_registry_copy(src: Path, dst: Path, max_pairs: int) -> None:
+    """Copie `_schema.yaml` + jusqu'a `max_pairs` paires (fichier d'intention
+    `<slug>.yaml` + sous-repertoire `<slug>/` de audits file-per-audit).
+
+    Deterministe : premieres paires par tri alphabetique. La cible du test est
+    `all_pairs[0]` (le nom "Search-1 StateSpace" n'est plus dans le registre)
+    = premiere paire = toujours presente dans la borne.
+    """
+    dst.mkdir(parents=True)
+    schema = src / "_schema.yaml"
+    if schema.is_file():
+        shutil.copy2(schema, dst / "_schema.yaml")
+    pair_files = sorted(f for f in src.glob("*.yaml") if not f.name.startswith("_"))
+    for pf in pair_files[:max_pairs]:
+        shutil.copy2(pf, dst / pf.name)
+        audit_dir = src / pf.stem
+        if audit_dir.is_dir():
+            shutil.copytree(audit_dir, dst / pf.stem)
+
+
 @pytest.fixture
 def registry_copy(tmp_path):
     """Copie PRIVEE du registre, passee au script via `--registry`.
@@ -93,7 +127,7 @@ def registry_copy(tmp_path):
             "rendrait la suite verte sans rien garder (regression #8586)."
         )
     copy = tmp_path / REGISTRY_DIR.name
-    shutil.copytree(REGISTRY_DIR, copy)
+    _bounded_registry_copy(REGISTRY_DIR, copy, _BOUNDED_PAIRS)
     return copy
 
 
