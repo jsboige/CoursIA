@@ -20,7 +20,7 @@ Faits mesurés (source #17315, sauf mention) :
 | Organe | Coût par appel | Surface |
 |---|---|---|
 | Gate de prévalidation (`check_adjoint_prevalidation.py`) | **3+ opérations** (`_pr_metadata` ×2 + `reviewThreads` paginé) | GraphQL → REST partiellement migré par #19966 ; `reviewThreads` reste GraphQL sans équivalent REST |
-| Organe B.0 (`check_unaddressed_nits.py`) | reviews + comments + **threads inline paginés** (3e surface) | `reviewThreads` GraphQL sans équivalent REST (`check_unaddressed_nits.py:4093`) |
+| Organe B.0 (`check_unaddressed_nits.py`) | reviews + comments + **threads inline paginés** (3e surface) | `reviewThreads` GraphQL sans équivalent REST (`scripts/check_unaddressed_nits.py:5141`) |
 | Tapis rapide (`tapis_rapide.py`) | **13 appels** par tirage | REST (mesuré 17/11 16:22Z, affiché par l'organe) |
 | Folds légers (`check_run_state.py`) | 1–2 appels par PR | REST |
 
