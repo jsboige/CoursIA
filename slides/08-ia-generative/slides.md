@@ -576,6 +576,20 @@ flowchart LR
 
 ---
 
+# Le règlement de l’atelier Atlas
+
+> L’atelier ouvre les mardis et jeudis de 14 h à 18 h. Le prêt d’un capteur dure sept jours. Une prolongation doit être demandée avant l’échéance.
+
+1. Puis-je venir jeudi à 17 h ?
+2. Combien coûte la prolongation ?
+3. Puisque l’atelier ouvre le samedi, à quelle heure ferme-t-il ?
+
+**En binôme :** écrivez la réponse attendue *avant* de consulter le modèle.
+
+<!-- Correction : oui avec citation ; tarif non précisé ; rejeter la prémisse du samedi. Variante hors ligne : distribuer les deux réponses précédentes. -->
+
+---
+
 # Ce que prédit le modèle
 
 « La prolongation est… » → gratuite ? possible ? soumise à autorisation ?
@@ -585,6 +599,20 @@ Le modèle produit une distribution sur les prochains **tokens**, pas un vote su
 **Expérience de pensée :** à température basse, une même erreur devient-elle plus rare, ou seulement plus reproductible ?
 
 <!-- Faire compléter la phrase par trois personnes. Une réponse stable n’est pas une preuve. Relier à la section température du chapitre VIII. -->
+
+---
+
+# Du texte récupéré à la réponse justifiée
+
+**Question → recherche → passage → génération → contrôle de citation**
+
+| Observation | Où chercher la panne ? |
+|---|---|
+| La bonne version ne figure pas parmi les passages | Recherche ou index |
+| La bonne version est présente, mais la réponse dit « gratuit » | Génération ou consigne |
+| La réponse est juste mais la citation parle des horaires | Vérification de la preuve |
+
+<!-- Enlever le passage pertinent, puis le réintroduire sans changer le prompt. Demander quel échec peut être réparé par un meilleur moteur de recherche. -->
 
 ---
 
@@ -610,6 +638,20 @@ Proposez deux tests distincts : un test automatique de structure et un test de f
 4. Échangez vos tests avec un autre binôme. Ajoutez son contre-exemple sans retoucher la méthode.
 
 <!-- Prévoir 35 minutes. Sans API : un binôme joue le système, l’autre contrôle les preuves. Ce jeu illustre le protocole, pas la performance d’un modèle. -->
+
+---
+
+# Quatre réussites sur cinq : qu’a-t-on mesuré ?
+
+Exemple fictif : trois questions répondables et deux sans réponse. Le système répond juste à deux des trois et s’abstient correctement sur les deux autres.
+
+- Exactitude globale : **4/5**.
+- Questions répondables résolues : **2/3**.
+- Abstentions justifiées sur questions impossibles : **2/2**.
+
+Un système qui s’abstient toujours obtient **2/5**. Quel score masquerait le coût de ses refus ?
+
+<!-- Faire calculer avant de commenter. Comparer les dénominateurs. Cinq cas illustrent une mesure, ils ne permettent pas de généraliser. -->
 
 ---
 
