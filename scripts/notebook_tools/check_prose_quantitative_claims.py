@@ -1005,6 +1005,229 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "span, et l'exemption exige une containment STRICTE."
         ),
     ),
+    # --- Tranche GenAI/Image MANIFESTs (#17636 volet 3, lane myia-po-2023:CoursIA) ---
+    # Stock Image : 23 compteurs sur 4 MANIFEST.md d'assets/readme. Tous vivent
+    # dans les recits d'audit vision dates (c.482/c.750/c.913/c.928/c.977,
+    # doctrine #5780) ou dans les entrees par figure qu'ils ont figees : les
+    # decomptes decrivent une passe passee verifiee par vision, pas l'etat
+    # courant de la serie. Aucun retrait de prose : supprimer ces bilans
+    # falsifierait le journal d'audit. Un cas est un faux positif de
+    # composition (« DALL-E 3 cellule 14 ») : nom de modele + pointeur.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"les 6 fichiers restent sur disque\. \*\*0 notebook "
+            r"ré-exécuté\*\* \(C\.3"
+        ),
+        raison=(
+            "Bilan de l'audit vision c.482 (2026-07-14) : les 6 fichiers "
+            "audites un par un, 0 notebook re-execute (C.3 strict). Recit "
+            "d'une passe passee, chaque chiffre nomme un fait de ce jour-la."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"des 6 fichiers \(lecture directe"),
+        raison=(
+            "Re-visions c.750 (2026-07-22) et c.913 (2026-07-24) : les "
+            "6 fichiers relus par vision MiniMax M3. Denombrement figure "
+            "d'une passe d'audit datee."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"permutation swappée entre 3 fichiers|des 3 fichiers "
+            r"swappés correspond"
+        ),
+        raison=(
+            "Recits c.750/c.913 : les 3 fichiers dont c.750 a (a tort) "
+            "claime la permutation, refutee par vision firsthand. Fait "
+            "d'audit passe, fige par sa date."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"\*\*0 notebook ré-exécuté\*\* \(C\.3 strict respecté\)"
+        ),
+        raison=(
+            "Formule de cloture des blocs d'audit dates (c.482/c.750/"
+            "c.913) : le « 0 » atteste le respect de C.3 pendant une "
+            "passe passee. Le gras fait partie du span car COUNT_RE "
+            "capture l'asterisk initial."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"\*\*0 fichier PNG/WebP renommé\*\*"),
+        raison=(
+            "Constat c.913 (2026-07-24) : aucun fichier figure renomme "
+            "pendant l'audit. Fait passe figure."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"les 2 fichiers en byte-identique depuis le même buffer"
+        ),
+        raison=(
+            "Recit c.977 (2026-07-31) : les 2 jumeaux regeneres en "
+            "byte-identique depuis un unique buffer, SHA cite sur la "
+            "ligne. Fait passe figure."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"sur les 2 fichiers \(modèle correctement attribué\)"),
+        raison=(
+            "Meme recit c.977, deuxieme mention des 2 jumeaux : "
+            "attribution du modele verifiee sur les deux. Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"vision M3 firsthand des 6 fichiers sur disque"),
+        raison=(
+            "Recit c.913 (2026-07-24) : les 6 fichiers confirmes sur "
+            "disque par vision directe. Denombrement d'audit date."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"comparatif de ratios d'aspect\*\* 4 cellules "
+            r"\(1:1/16:9/9:16/4:3\)"
+        ),
+        raison=(
+            "Les « 4 cellules » sont les quatre cadrans de la grille de "
+            "ratios d'aspect de la figure decrite (1:1/16:9/9:16/4:3) -- "
+            "propriete de l'image figee par son SHA, pas un compte de "
+            "cellules de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"les 6 fichiers restent sur disque\. \*\*0 notebook "
+            r"ré-exécuté\*\* \(C\.3"
+        ),
+        raison=(
+            "Bilan d'audit vision date de la serie 02-Advanced : 6 "
+            "fichiers passes en revue, 0 notebook re-execute. Recit "
+            "passe, meme classe que l'entree 01-Foundation."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"Toutes les 4 cellules montrent"),
+        raison=(
+            "Les 4 cadrans de la grille de ratios montrent la meme scene "
+            "reduite -- description de la figure, pas un compte de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"mosaïque 4 cellules sous le titre"),
+        raison=(
+            "Contenu reel verifie de la figure : mosaique a 4 cadrans "
+            "de ratios d'aspect. Propriete de l'image figee."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/02-Advanced/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"0 PNG régénéré, 0 notebook ré-exécuté \(C\.3 strict\)"),
+        raison=(
+            "Cloture d'un bloc d'audit date : double zero attestant un "
+            "choix editorial byte-safe pendant une passe passee."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration/"
+            "assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"\*\*0 notebook ré-exécuté\*\* \(C\.3 strict respecté\)"
+        ),
+        raison=(
+            "Meme formule de cloture d'audit datee pour la serie "
+            "03-Orchestration. Fait passe figure."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"DALL-E 3 cellule 14 output 3"),
+        raison=(
+            "Faux positif de composition : « DALL-E 3 » est un nom de "
+            "modele et « cellule 14 output 3 » un pointeur de provenance "
+            "du notebook source -- le span « 3 cellule » n'est pas une "
+            "mesure de carnet."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(
+            r"les 2 fichiers en byte-identique depuis le même buffer"
+        ),
+        raison=(
+            "Recit c.977 (2026-07-31) sur le jumeau racine : les 2 "
+            "fichiers regeneres byte-identiques, SHA cite. Fait passe."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/Image/assets/readme/MANIFEST.md"
+        ),
+        motif=re.compile(r"sur les 2 fichiers \(modèle correctement attribué\)"),
+        raison=(
+            "Meme recit c.977, attribution du modele sur les 2 jumeaux. "
+            "Fait passe figure."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------
