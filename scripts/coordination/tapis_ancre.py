@@ -85,24 +85,26 @@ def proposer(lane: str, classe: str, primaires: list[int],
     return etat
 
 
-def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None) -> dict:
+def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None,
+            lot: set[int] | None = None) -> dict:
     """Fait avancer le curseur sur les verdicts TERMINAUX connus.
 
     Le curseur ne passe jamais un numero **refuse** sans le parker ; un
     grain PROPOSE mais jamais qualifie (NON TENTE) ne le bloque pas non
-    plus -- il est parke, et le curseur continue (`tapis_non_tente`).
+    plus : il est parke, et le curseur continue (`tapis_non_tente`).
+
+    `lot` est le lot EFFECTIVEMENT qualifie. La tranche **primaire** ne
+    passe le curseur que si le lot la TOUCHE : une qualification porte sur
+    un numero qui n'appartient pas a la tranche ne fait pas avancer
+    l'ancre des primaires pendantes (review du 19/11). Sans lot, l'avance
+    n'est pas bornee.
 
     Un numero **inconnu** (lecture impossible) ne fige pas le curseur : il
-    est PARKE, il ne sera donc ni acquitte ni perdu -- il revient au tour
-    suivant. La couverture des autres numeros n'est jamais retiree par
-    l'echec d'une lecture.
-
-    Le balayage ne porte que sur la tranche **courante** (`attente`) : les
-    inconnus des tours anterieurs sont dans la file de reprise, ils ne
-    doivent pas faire sauter le curseur par-dessus des numeros qui n'ont
-    pas ete servis (19/11).
+    est PARKE, il revient au tour suivant, et la couverture des autres
+    numeros n'est jamais retiree par l'echec d'une lecture.
     """
     etat = lire(lane)
+    couvert = set(lot) if lot is not None else None
     for c in CLASSES:
         att = etat[c]["attente"]
         inc = etat[c]["inconnus"]
@@ -115,23 +117,20 @@ def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None) -> dic
                 tapis_retry.parquer(inc, n, info)
         ancre = etat[c]["ancre"]
         # Le balayage porte sur la tranche **PRIMAIRE** du tour courant : la
-        # REPRISE (les illisibles parkes) revient au service SANS prendre la
-        # place de la primaire -- balayer les deux ensemble faisait monter le
-        # curseur jusqu'au dernier numero repris, et la couverture du pool
-        # s'arretait (mesure du 19/11 : #3 et #4 jamais servis).
+        # REPRISE revient au service SANS prendre la place de la primaire.
         primaire = etat[c].get("primaire") or []
         cible = sorted(primaire) or sorted(att)
+        en_charge = couvert is None or bool(couvert & set(cible))
         for n in cible:
             if ancre is not None and n <= ancre:
                 continue
             if n in inc:
                 ancre = n
                 continue
+            if not en_charge:
+                break
             if not att.get(n):
-                # NON TENTE : propose, jamais qualifie (cf. `tapis_non_tente`).
                 tapis_non_tente.parquer_non_tente(inc, n)
-                ancre = n
-                continue
             ancre = n
         etat[c]["ancre"] = ancre
         etat[c]["attente"] = {n: b for n, b in att.items()

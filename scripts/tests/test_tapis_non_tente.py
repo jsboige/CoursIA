@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import tapis_ancre, tapis_composition, tapis_etat  # noqa: E402
 from coordination import tapis_non_tente  # noqa: E402
-from coordination import tapis_vagues  # noqa: E402
+from coordination import tapis_vagues, tapis_verdict  # noqa: E402
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -154,7 +154,10 @@ def test_la_voie_vagues_passe_la_preuve_du_diff(monkeypatch):
         return ([], {}, [], False, 0, {})
 
     def _bloc(*args, **kwargs):
-        return (_grains([1, 2]), {"bloc": 1, "blocs": 1})
+        return (_grains([1, 2]), {"bloc": 1, "blocs": 1,
+                                  "primaires": {"grains": [1, 2],
+                                                "conteneurs": []},
+                                  "reprises": {"grains": [], "conteneurs": []}})
 
     monkeypatch.setattr(tapis_vagues.tq, "qualifier", _qualifier)
     monkeypatch.setattr(tapis_vagues.tapis_rotation, "bloc", _bloc)
@@ -289,3 +292,27 @@ def test_l_etat_porte_le_commit_du_code(tmp_path, monkeypatch):
         "comparer deux etats de semantiques differentes n'a pas de sens")
     assert etat["grains"]["phase"] >= 1, (
         "la phase compte les propositions : elle commande l'alternance")
+
+
+def test_une_qualification_hors_tranche_ne_fait_pas_avancer_le_curseur(
+        tmp_path, monkeypatch):
+    """TEMOIN (review du peer, 19/11) : l'avance est BORNEE au lot.
+
+    Une qualification nominative du seul 999 faisait avancer les ancres des
+    primaires pendantes [1, 2] et [100, 101] : le curseur annoncait une
+    couverture que personne n'avait mesuree. Les primaires restent en
+    attente ; seule une qualification qui les TOUCHE les fait avancer.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    tapis_ancre.proposer(LANE, "grains", [1, 2])
+    tapis_ancre.proposer(LANE, "conteneurs", [100, 101])
+    tapis_verdict.avancer(LANE, {999: object()}, {}, {999})
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] is None, "les primaires pendantes ne bougent pas"
+    assert etat["conteneurs"]["ancre"] is None
+    assert 1 in etat["grains"]["attente"] and 2 in etat["grains"]["attente"]
+    assert 100 in etat["conteneurs"]["attente"]
+    # Le CONTRE-TEMOIN : un lot qui TOUCHE la tranche fait avancer le curseur.
+    tapis_verdict.avancer(LANE, {1: object()}, {}, {1})
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] == 2, "la tranche en charge avance le curseur"
