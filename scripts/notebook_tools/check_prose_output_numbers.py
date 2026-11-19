@@ -32,7 +32,8 @@ Perimetre (v1, calibre sur ICT-35 + ICT-38 pre/post #27206) :
 - Correspondance numerique (pas sous-chaine) : Decimal en egalite exacte, OU
   arrondi/troncature d'un nombre de sortie PLUS precis a la precision de la
   citation (« 0.0859 » correspond a une sortie « 0.0859375 » ; « 1,000 » a
-  « 1.0000 »). Les sorties lues : stream + text/plain de toutes les cellules code.
+  « 1.0000 »). Les sorties lues : stream + text/plain + text/markdown de toutes
+  les cellules code.
 
 Modes :
 - positionnel ``base``      : ratchet PR -- carnets .ipynb changes sous
@@ -157,7 +158,15 @@ def extract_numbers(text: str) -> list[NumToken]:
 
 
 def output_numbers(nb: dict) -> list[NumToken]:
-    """Nombres de toutes les sorties (stream + text/plain) des cellules code."""
+    """Nombres de toutes les sorties (stream + text/plain + text/markdown) des cellules code.
+
+    ``text/markdown`` est lu depuis #27231 fournée 5 : les carnets de la série
+    App-* (Search) rendent leurs mesures via ``display(Markdown(...))``, dont le
+    ``text/plain`` est l'objet-repr ``<IPython.core.display.Markdown object>``
+    (aucun nombre). Sans ce mime, 25 citations ancrées du stock étaient
+    rapportées findings (App-18 : 25/29). Précédents multipart : check_equivalence,
+    regression_scan, scan_enrich_quality lisent déjà ce mime.
+    """
     pool: list[NumToken] = []
     for cell in nb.get("cells", []):
         if cell.get("cell_type") != "code":
@@ -170,11 +179,12 @@ def output_numbers(nb: dict) -> list[NumToken]:
             elif isinstance(text, list):
                 chunks.extend(t for t in text if isinstance(t, str))
             data = out.get("data") or {}
-            plain = data.get("text/plain")
-            if isinstance(plain, str):
-                chunks.append(plain)
-            elif isinstance(plain, list):
-                chunks.extend(t for t in plain if isinstance(t, str))
+            for mime in ("text/plain", "text/markdown"):
+                payload = data.get(mime)
+                if isinstance(payload, str):
+                    chunks.append(payload)
+                elif isinstance(payload, list):
+                    chunks.extend(t for t in payload if isinstance(t, str))
             for chunk in chunks:
                 pool.extend(extract_numbers(chunk))
     return pool
