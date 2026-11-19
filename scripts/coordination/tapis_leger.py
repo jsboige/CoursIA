@@ -13,8 +13,7 @@ tirage separe deux temps qui etaient confondus :
   des neuf regles d'ecart, AVANT l'action.
 
 Les neuf regles ne sont pas decidables sur des metadonnees : les decider pour
-TOUT le pool coutait 22 s -- plus cher que le chemin lourd (21,9 s pour 441
-issues) ; a l'action, 1 a 2 appels par grain pris en charge.
+TOUT le pool coutait 22 s ; a l'action, 1 a 2 appels par grain pris en charge.
 
 Mesures (pool de 441 issues, 18/11) : le **leger** rend 24 grains en
 **17,9 s** ; le **lourd** (corps + 12 commentaires) en rend 11 en 33,5 s.
@@ -125,17 +124,20 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
                                          grains, max(grains * CANDIDATS_MULT, grains),
                                          lane, maintenant, ancres=ancres)
-    tapis_ancre.proposer(lane, "grains", [e.numero for e in file if not e.conteneur])
-    tapis_ancre.proposer(lane, "conteneurs", [e.numero for e in file if e.conteneur])
+    tapis_ancre.proposer(lane, "grains", fenetre["primaires"]["grains"],
+                          fenetre["reprises"]["grains"])
+    tapis_ancre.proposer(lane, "conteneurs",
+                          fenetre["primaires"]["conteneurs"],
+                          fenetre["reprises"]["conteneurs"])
     secondes = time.monotonic() - debut
     phases = classe["phases"]
-    try:
-        _, origami = tapis_origami.mesurer(
-            gh_bulk.Lecture(issues=[], prs=classe["prs"], citations=classe["citations"],
-                            lu_a=_iso(maintenant), secondes=round(secondes, 1),
-                            appels=0), reseau=True)
-    except Exception:  # noqa: BLE001 - un garde ne doit pas casser le tirage
-        origami = {"measured": False, "reason": "mesure Origami en echec"}
+    # `tapis_origami.mesurer` est TOTAL : il rend un etat d'echec, jamais une
+    # exception -- le garde de l'appelant ne doublait que le garde interne.
+    _, origami = tapis_origami.mesurer(
+        gh_bulk.Lecture(issues=[], prs=classe["prs"],
+                        citations=classe["citations"],
+                        lu_a=_iso(maintenant), secondes=round(secondes, 1),
+                        appels=0), reseau=True)
     rapport = _rapport(lane, graine, maintenant, classe["metas"],
                        phases["selection_s"], secondes, budget_s, classe["etats"],
                        file, classe["prs"], origami, phases, fenetre)
@@ -215,6 +217,4 @@ def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,
 
 
 if __name__ == "__main__":
-    import sys
-
     sys.exit(main())

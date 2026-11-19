@@ -62,8 +62,11 @@ def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: in
     confirmes, rejetes, echecs, appels = [], [], [], 0
     for e in retenus:
         it = ouvertes.get(e.numero) or {}
-        lus = len(it.get("comments") or [])
-        if (it.get("comments_total") or 0) <= lus:
+        # La fenetre EST-elle le fil complet ? C'est l'organe canonique qui
+        # repond (`tapis_fenetre.suffit`) : un `comments_total` INCONNU ne
+        # vaut pas 0 (19/11, DM du coordinateur) -- il vaut « la fenetre
+        # n'est pas prouvee complete », donc le fil complet se lit.
+        if tapis_fenetre.suffit(it):
             confirmes.append(e)
             continue
         if appels >= appels_max:

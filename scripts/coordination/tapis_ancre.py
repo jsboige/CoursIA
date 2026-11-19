@@ -20,6 +20,11 @@ bloquent pas le curseur et reviennent au tour suivant.
 selection revient en deca du curseur (le pool a ete couvert), le curseur
 recommence au plus petit numero et le compteur `tour` s'incremente.
 
+**La tranche PRIMAIRE et la REPRISE sont deux choses distinctes** (19/11,
+DM du coordinateur) : les confondre figeait la rotation. La primaire porte
+le curseur (son rebouclage ouvre un tour de plus) ; la reprise -- les
+illisibles parkes -- revient au service SANS prendre sa place.
+
 L'arithmetique de la selection vit dans `coordination.tapis_tranche`, la
 persistance dans `coordination.tapis_etat`.
 """
@@ -52,24 +57,29 @@ def boucle(proposes: list[int], ancre: int | None) -> bool:
     return all(n <= ancre for n in proposes)
 
 
-def proposer(lane: str, classe: str, numeros: list[int]) -> dict:
+def proposer(lane: str, classe: str, primaires: list[int],
+             reprises: list[int] | None = None) -> dict:
     """Enregistre les numeros PROPOSES par le tirage, sans bouger l'ancre.
 
+    `primaires` est la tranche **primaire** (celle que le curseur sert) ;
+    `reprises` sont les illisibles parkes qui reviennent au service. Le
+    rebouclage est deduit de la primaire SEULE : la mesure du 19/11 a
+    montre qu'une primaire entierement illisible etait filtree AVANT le
+    rebouclage, si bien que le tour ne s'ouvrait plus et que la meme
+    tranche revenait indefiniment (#3, #4, #5, #6 n'etaient plus servis).
+
     Le tirage **selectionne** ; il ne qualifie pas : un tirage sans action
-    laisse le curseur en place. Un tirage qui reboucle ouvre un **tour de
-    plus** : le curseur repart au plus petit numero, et les numeros
-    re-proposes quittent le parc des inconnus -- ils sont re-essayes.
+    laisse le curseur en place.
     """
     etat = lire(lane)
-    inc = etat[classe]["inconnus"]
-    nouveaux = [n for n in numeros if n not in inc]
-    if nouveaux and boucle(nouveaux, etat[classe]["ancre"]):
+    if boucle(list(primaires), etat[classe]["ancre"]):
         etat[classe]["tour"] = etat[classe].get("tour", 0) + 1
         etat[classe]["ancre"] = 0
         etat[classe]["attente"] = {}
     att = etat[classe]["attente"]
-    for n in numeros:
+    for n in list(primaires) + list(reprises or []):
         att.setdefault(n, False)
+    etat[classe]["primaire"] = sorted(set(primaires))
     ecrire(lane, etat)
     return etat
 
@@ -85,6 +95,11 @@ def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None) -> dic
     est PARKE, il ne sera donc ni acquitte ni perdu -- il revient au tour
     suivant. La couverture des autres numeros n'est jamais retiree par
     l'echec d'une lecture.
+
+    Le balayage ne porte que sur la tranche **courante** (`attente`) : les
+    inconnus des tours anterieurs sont dans la file de reprise, ils ne
+    doivent pas faire sauter le curseur par-dessus des numeros qui n'ont
+    pas ete servis (19/11).
     """
     etat = lire(lane)
     for c in CLASSES:
@@ -96,16 +111,22 @@ def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None) -> dic
             inc.pop(n, None)
         for n, info in (inconnus or {}).items():
             if n in att:
-                att.pop(n)
                 tapis_retry.parquer(inc, n, info)
         ancre = etat[c]["ancre"]
-        for n in sorted(set(att) | set(inc)):
+        # Le balayage porte sur la tranche **PRIMAIRE** du tour courant : la
+        # REPRISE (les illisibles parkes) revient au service SANS prendre la
+        # place de la primaire -- balayer les deux ensemble faisait monter le
+        # curseur jusqu'au dernier numero repris, et la couverture du pool
+        # s'arretait (mesure du 19/11 : #3 et #4 jamais servis).
+        primaire = etat[c].get("primaire") or []
+        cible = sorted(primaire) or sorted(att)
+        for n in cible:
             if ancre is not None and n <= ancre:
                 continue
             if n in inc:
                 ancre = n
                 continue
-            if not att[n]:
+            if not att.get(n):
                 break
             ancre = n
         etat[c]["ancre"] = ancre

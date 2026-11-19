@@ -656,6 +656,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_retry.py", 50),
                                               ("tapis_tranche.py", 70),
                                               ("tapis_verdict.py", 50),
+                                              ("tapis_composition.py", 60),
+                                              ("tapis_position.py", 40),
                                               ("tapis_diff.py", 200),
                                               ("tapis_perimetre.py", 110),
                                               ("tapis_preuve.py", 110)])

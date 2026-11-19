@@ -28,7 +28,8 @@ def chemin_etat(lane: str) -> Path:
 
 def vide() -> dict:
     """Un etat neuf : aucun curseur, aucun tour, rien en attente."""
-    return {c: {"ancre": None, "tour": 0, "attente": {}, "inconnus": {}}
+    return {c: {"ancre": None, "tour": 0, "attente": {}, "inconnus": {},
+                "primaire": []}
             for c in CLASSES}
 
 
@@ -60,6 +61,10 @@ def lire(lane: str) -> dict:
         etat[c]["attente"] = {n: bool(b) for n, b
                               in _entiers(bloc.get("attente"), "attente").items()}
         etat[c]["inconnus"] = _entiers(bloc.get("inconnus"), "inconnus")
+        primaire = bloc.get("primaire")
+        etat[c]["primaire"] = sorted(
+            n for n in primaire if isinstance(n, int)) if isinstance(
+                primaire, list) else []
     return etat
 
 
@@ -100,7 +105,8 @@ def ecrire(lane: str, etat: dict) -> Path:
                   "tour": etat.get(c, {}).get("tour", 0),
                   "attente": {str(n): b for n, b in
                               etat.get(c, {}).get("attente", {}).items()},
-                  "inconnus": etat.get(c, {}).get("inconnus", {})}
+                  "inconnus": etat.get(c, {}).get("inconnus", {}),
+                  "primaire": list(etat.get(c, {}).get("primaire") or [])}
              for c in CLASSES}
     tmp = chemin.with_suffix(".tmp")
     tmp.write_text(json.dumps(corps, ensure_ascii=False, indent=1) + "\n",

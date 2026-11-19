@@ -201,9 +201,10 @@ def test_la_priorite_est_visible_a_la_sortie_du_bloc():
 def test_une_ancre_inconnue_ne_s_acquitte_pas(tmp_path, monkeypatch):
     """Un fichier d'ancre illisible ne vaut pas zero : il vaut inconnu."""
     monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
-    inconnu = {"grains": {"ancre": None, "tour": 0, "attente": {}, "inconnus": {}},
+    inconnu = {"grains": {"ancre": None, "tour": 0, "attente": {},
+                          "inconnus": {}, "primaire": []},
                "conteneurs": {"ancre": None, "tour": 0, "attente": {},
-                              "inconnus": {}}}
+                              "inconnus": {}, "primaire": []}}
     assert tapis_ancre.lire("myia-ai-01:CoursIA-2") == inconnu
     chemin = tapis_etat.chemin_etat("myia-ai-01:CoursIA-2")
     chemin.parent.mkdir(parents=True, exist_ok=True)

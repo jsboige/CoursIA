@@ -40,18 +40,22 @@ def tranche(nums: list[int], ancre: int | None, part: int,
 
 
 def membres(ordre: list, ancre: int | None, part: int, avance: int = 0,
-             depart_alea: int = 0) -> tuple[list, int | None]:
+             depart_alea: int = 0) -> tuple[list, list[int]]:
     """Les membres du bloc, ORDONNES par priorite (l'ordre d'entree).
 
     La SELECTION est la tranche d'apres l'ancre ; l'ORDRE rendu est celui de
     l'entree : la rotation choisit QUOI servir, la priorite decide de
     l'ordre. Sans ancre, le depart vient de `depart_alea` (le decalage de la
-    lane) ; le second rendu est le dernier numero de la tranche, l'ancre
-    CANDIDATE -- elle ne devient l'ancre qu'a un verdict terminal.
+    lane).
+
+    Le second rendu est la **tranche primaire** (les numeros servis, dans
+    l'ordre des numeros) : c'est elle qui porte le curseur, et elle doit
+    donc etre distinguee de la REPRISE (les illisibles parkes, qui
+    reviennent au service sans prendre sa place -- 19/11).
     """
     nums = sorted(g.numero for g in ordre)
     if not nums:
-        return [], None
+        return [], []
     if ancre is None:
         depart = depart_alea % len(nums)
         tranche_ = [nums[(depart + i) % len(nums)]
@@ -59,5 +63,4 @@ def membres(ordre: list, ancre: int | None, part: int, avance: int = 0,
     else:
         tranche_ = tranche(nums, ancre, part, avance)
     choisis = set(tranche_)
-    return ([g for g in ordre if g.numero in choisis],
-            tranche_[-1] if tranche_ else None)
+    return ([g for g in ordre if g.numero in choisis], tranche_)
