@@ -547,6 +547,13 @@ def _pid_windows(pid: int) -> tuple[bool, float | None]:
     on ne declare jamais mort un processus qu'on n'a pas pu interroger.
     L'heure de creation defait la reutilisation de numero : le PID est rendu
     a un autre processus, l'heure de creation ne le suit pas.
+
+    Un processus TERMINE mais encore reference (handle ouvert chez un parent)
+    reussit OpenProcess et GetProcessTimes : seul son code de sortie le tranche
+    (#27380 -- incident 19/11 : le claude.exe d'avant la MAJ vscode, exit 0,
+    tenait la lane en ROUGE session-double 6 h apres sa mort). Tout code de
+    sortie autre que STILL_ACTIVE (259) = mort. Ambiguite residuelle : un
+    processus qui se terminerait avec le code 259 resterait vu vivant.
     """
     import ctypes
     import ctypes.wintypes as wt
@@ -558,6 +565,11 @@ def _pid_windows(pid: int) -> tuple[bool, float | None]:
         # 5 = acces refuse (il vit, eleve) ; 87 = parametre invalide (absent).
         return (ctypes.get_last_error() == 5, None)
     try:
+        still_active = 259
+        code = wt.DWORD(0)
+        if (k32.GetExitCodeProcess(handle, ctypes.byref(code))
+                and code.value != still_active):
+            return (False, None)
         creation, exit_t, kern, user = (wt.FILETIME() for _ in range(4))
         if not k32.GetProcessTimes(handle, ctypes.byref(creation), ctypes.byref(exit_t),
                                    ctypes.byref(kern), ctypes.byref(user)):
