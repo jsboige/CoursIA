@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`argumentanalysis.csv`](argumentanalysis.csv) | `SymbolicAI/ArgumentAnalysis/` | 16 (20 au total, 4 `_agent.ipynb` auto-générés exclus) | 395 (cf. en-tête) |
+| [`argumentanalysis.csv`](argumentanalysis.csv) | `SymbolicAI/ArgumentAnalysis/` | 16 au seed 2026-07-05 (20 au total à l'époque, 4 `_agent.ipynb` auto-générés exclus — le compte courant vit dans le CSV) | 395 au seed 2026-07-05 (cf. en-tête — compte courant mesurable dans le CSV) |
 
 ## Régénération
 

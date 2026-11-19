@@ -6,9 +6,9 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`search-applications.csv`](search-applications.csv) | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/` | 51 (dossier plat, déplacement #19253) | 2117 (markdown + code, 20 colonnes) |
+| [`search-applications.csv`](search-applications.csv) | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/` | 51 au 2026-11-11 (dossier plat, déplacement #19253 — le compte courant vit dans le CSV) | 2117 au 2026-11-11 (markdown + code, 20 colonnes — compte courant mesurable dans le CSV) |
 
-La série couvre les trois familles de cas pratiques du cours de recherche (thématiques, le dossier étant plat) :
+La série couvre les trois familles de cas pratiques du cours de recherche (thématiques, le dossier étant plat ; comptes de famille au seed 2026-07-16) :
 
 - **CSP** (26 notebooks) — modélisation et résolution de problèmes de satisfaction de contraintes : N-Queens, graph coloring, nurse/job-shop/sports/timetabling, Picross, Wordle, Minesweeper, Crossword, WFC, MiniZinc, Sudoku benchmark.
 - **Hybrid** (10 notebooks) — métaheuristiques et approches mixtes : edge detection, portfolio, TSP, VRP logistics, hyperparameter tuning.
