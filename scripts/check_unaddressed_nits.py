@@ -3930,6 +3930,14 @@ def _project_gh_payload(args: list[str], payload: object) -> object:
             key: payload[key] for key in ("truncated", "tree") if key in payload
         } | {"tree": project_rows(payload.get("tree"), ("path", "sha", "type"))}
 
+    if endpoint.startswith(prefix + "git/blobs/"):
+        # #22757 : `_resolve_absent_sha_symbols.fetch` ne lit que `content`
+        # (base64 decode en dessous) -- sha/node_id/url sont du transport
+        # mort pour l'organe.
+        if not isinstance(payload, dict):
+            return payload
+        return {"content": payload["content"]} if "content" in payload else {}
+
     if "/pulls/" in endpoint and endpoint.endswith("/reviews"):
         return project_rows(payload, ("id", "user"), {"user": ("login",)})
 
@@ -4730,7 +4738,14 @@ def _attach_absent_sha_context(data: dict) -> None:
                                  if v.get("files")}
     head_oid = _pr_head_oid(data)
     head_tree = ""
-    if head_oid:
+    # #22757 (tranche appels) : l'arbre de tete n'est lu que derriere les
+    # gates SHA d'`analyse` (#15556/#15973 -- comparaison d'arbres et carte
+    # chemin->blob), toutes inertes quand AUCUN SHA cite n'a ete resolu.
+    # Le fetch `commits/<head_oid>` etait pourtant inconditionnel : sur une
+    # PR sans SHA absent, il ne servait aucune decision. Conditionne a
+    # `state` non vide, le verdict est identique (les gates lisaient "" de
+    # toute facon dans ce cas) et le funnel economise un appel par PR.
+    if head_oid and state:
         try:
             commit = gh_json(["api", f"repos/{REPO}/commits/{head_oid}"])
             head_tree = ((commit.get("commit") or {}).get("tree")
@@ -5193,14 +5208,190 @@ def review_threads(pr: int) -> list[dict]:
     return out
 
 
-def improper_dismissals(pr: int) -> set[str]:
+# #22757 (tranche appels) -- bundle des surfaces typees + threads en UNE
+# requete GraphQL. Le funnel mesurait 7-11 appels gh par PR evaluee (dont 3
+# GraphQL : typed-surfaces, reviewThreads, plus le couple REST
+# reviews+timeline de improper_dismissals) ; deux des trois GraphQL
+# interrogeaient le MEME pullRequest avec les memes curseurs de pagination.
+# Le bundle les fusionne : auteur type + comments + reviews (+ databaseId)
+# + reviewThreads dans une seule pagination multi-curseurs.
+#
+# Contrats preserves PAR SURFACE (aucun verdict B.0 ne change) :
+# - `typed` : exactement la forme de `_typed_author_surfaces` (cles
+#   author/comments/reviews, champs identiques, SANS databaseId) ; payload
+#   inattendu, curseur fige ou plafond 50 pages -> dict vide (fail-closed,
+#   repli sur les surfaces CLI de `pr view`).
+# - `threads` : exactement la forme de `review_threads` ; tolérances
+#   identiques (nodes non-list tolere, curseur fige -> break partiel).
+# - `author_of` : {databaseId: login} -- le join NUMERIQUE de
+#   `improper_dismissals` (le node-id GraphQL `PRR_...` n'y est PAS
+#   comparable, d'ou databaseId), qui remplace l'appel REST
+#   `pulls/{n}/reviews` du chemin gate.
+#
+# Couplage des pannes, assume et documente : une SEULE requete sert les
+# surfaces ; si elle leve, `review_threads` propageait deja (PR illisible,
+# fail-closed) -- desormais la panne emporte AUSSI le repli CLI de typed
+# (la PR est rendue absente par l'appelant au lieu d'etre analysee sur les
+# surfaces non typees). La divergence ne va QUE vers plus de blocage
+# (jamais un verdict permissif fabrique), et le cas anterieur -- le
+# GraphQL typed seul en panne -- est un cas de reseau partiel.
+_BUNDLE_QUERY = """
+query($owner:String!,$repo:String!,$n:Int!,$cAfter:String,$rAfter:String,$tAfter:String){
+  repository(owner:$owner,name:$repo){
+    pullRequest(number:$n){
+      author{__typename login}
+      comments(first:100,after:$cAfter){
+        pageInfo{hasNextPage endCursor}
+        nodes{author{__typename login} body createdAt}}
+      reviews(first:100,after:$rAfter){
+        pageInfo{hasNextPage endCursor}
+        nodes{author{__typename login} body submittedAt state databaseId}}
+      reviewThreads(first:100,after:$tAfter){
+        pageInfo{hasNextPage endCursor}
+        nodes{
+          isResolved isOutdated path line
+          comments(first:1){nodes{author{login __typename} body createdAt}}
+        }}
+    }
+  }
+}"""
+
+
+def _pr_review_bundle(pr: int) -> dict:
+    """Surfaces typees + threads + join des dismissals en UNE requete.
+
+    Rend ``{"typed": dict, "threads": list, "author_of": dict}``. Les trois
+    valeurs suivent les contrats documentes ci-dessus (l'echec d'une
+    CONNEXION ne tue pas les autres : chaque surface retombe sur son
+    fail-closed propre) ; l'echec de l'APPEL propage, comme
+    ``review_threads`` le faisait deja.
+    """
+    owner, name = REPO.split("/")
+    comments: list[dict] = []
+    reviews: list[dict] = []
+    threads: list[dict] = []
+    pr_author: dict = {}
+    author_of: dict[int, str] = {}
+    c_after: str | None = None
+    r_after: str | None = None
+    t_after: str | None = None
+    typed_failed = False
+    for _ in range(50):
+        args = [
+            "api", "graphql", "-f", f"query={_BUNDLE_QUERY}",
+            "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
+        ]
+        if c_after:
+            args += ["-F", f"cAfter={c_after}"]
+        if r_after:
+            args += ["-F", f"rAfter={r_after}"]
+        if t_after:
+            args += ["-F", f"tAfter={t_after}"]
+        data = gh_json(args)
+        try:
+            node = data["data"]["repository"]["pullRequest"]
+            c_conn = node["comments"]
+            r_conn = node["reviews"]
+            t_conn = node["reviewThreads"]
+        except Exception:
+            typed_failed = True
+            break
+        if not pr_author and isinstance(node.get("author"), dict):
+            pr_author = node["author"]
+        c_nodes = c_conn.get("nodes")
+        r_nodes = r_conn.get("nodes")
+        t_nodes = t_conn.get("nodes")
+        if not isinstance(c_nodes, list) or not isinstance(r_nodes, list):
+            typed_failed = True
+            break
+        comments.extend(n for n in c_nodes if isinstance(n, dict))
+        reviews.extend(n for n in r_nodes if isinstance(n, dict))
+        # Threads : tolerance heritee de `review_threads` -- un `nodes`
+        # non-list ne tue ni la boucle ni les autres surfaces.
+        if isinstance(t_nodes, list):
+            threads.extend(n for n in t_nodes if isinstance(n, dict))
+        for r in r_nodes if isinstance(r_nodes, list) else []:
+            if isinstance(r, dict) and isinstance(r.get("databaseId"), int):
+                login = _author_login(r)
+                if login:
+                    author_of[r["databaseId"]] = login
+        c_info = c_conn.get("pageInfo") or {}
+        r_info = r_conn.get("pageInfo") or {}
+        t_info = t_conn.get("pageInfo") or {}
+        c_more = bool(c_info.get("hasNextPage"))
+        r_more = bool(r_info.get("hasNextPage"))
+        t_more = bool(t_info.get("hasNextPage"))
+        if not c_more and not r_more and not t_more:
+            break
+        next_c = c_info.get("endCursor") or c_after
+        next_r = r_info.get("endCursor") or r_after
+        next_t = t_info.get("endCursor") or t_after
+        # Curseur fige : fail-closed par surface, comme les deux fonctions
+        # d'origine (typed -> vide ; threads -> arret partiel documente).
+        if (c_more and next_c == c_after) or (r_more and next_r == r_after):
+            typed_failed = True
+            break
+        if t_more and next_t == t_after:
+            print(f"  [!] PR #{pr}: curseur de pagination fige sur "
+                  "reviewThreads -- threads suivants non analyses.",
+                  file=sys.stderr)
+            break
+        c_after, r_after, t_after = next_c, next_r, next_t
+    else:
+        print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
+              "une surface typee (comments/reviews) -- surface non remplacee, "
+              "fail-closed.", file=sys.stderr)
+        typed_failed = True
+
+    typed: dict[str, object] = {}
+    if not typed_failed:
+        if pr_author:
+            typed["author"] = pr_author
+        if comments:
+            typed["comments"] = [
+                {"author": c.get("author") or {}, "body": c.get("body") or "",
+                 "createdAt": c.get("createdAt")}
+                for c in comments
+            ]
+        if reviews:
+            typed["reviews"] = [
+                {"author": r.get("author") or {}, "body": r.get("body") or "",
+                 "submittedAt": r.get("submittedAt"),
+                 "state": r.get("state")}
+                for r in reviews
+            ]
+    out_threads = []
+    for t in threads:
+        first = (t.get("comments") or {}).get("nodes") or [{}]
+        c = first[0]
+        out_threads.append({
+            "resolved": bool(t.get("isResolved")),
+            "outdated": bool(t.get("isOutdated")),
+            "path": t.get("path"),
+            "line": t.get("line"),
+            "author": _author_login(c) or "?",
+            "body": c.get("body", ""),
+            "createdAt": c.get("createdAt"),
+        })
+    return {"typed": typed, "threads": out_threads, "author_of": author_of}
+
+
+def improper_dismissals(pr: int, author_of: dict | None = None) -> set[str]:
     """Auteurs de review dont la reserve a ete dismissee par QUELQU'UN D'AUTRE.
 
     `gh pr view --json reviews` ne dit ni qui a dismisse ni quand : il ne rend
     que l'etat final `DISMISSED`. L'acteur vit dans la timeline REST
-    (`review_dismissed`), l'auteur de la review dans les reviews REST — les deux
+    (`review_dismissed`), l'auteur de la review dans les reviews — les deux
     se joignent par l'`id` NUMERIQUE (le champ `id` de `gh pr view` est un
     node-id GraphQL, `PRR_kwDO...`, non comparable au `review_id` entier).
+
+    #22757 (tranche appels) : le join `id -> auteur` peut venir du bundle
+    `_pr_review_bundle` (`databaseId` GraphQL) via le parametre `author_of`
+    — le chemin gate economise alors l'appel REST `pulls/{n}/reviews`.
+    Fourni ou non, la jointure reste NUMERIQUE et la timeline REST reste
+    le seul Historique lu (les `dismissedReviews` GraphQL ne rendent que
+    l'etat courant, pas l'historique des dismissals : les verdicts
+    divergeraient sur une review dismissee puis resoumise).
 
     Retourne des LOGINS d'auteurs de review, pas des ids : la reserve est
     reappariee par auteur dans `analyse`. Sur-approximation assumee quand un
@@ -5211,7 +5402,15 @@ def improper_dismissals(pr: int) -> set[str]:
     ou l'enforcement n'a plus lieu. Le gate pre-merge est le point de controle.
     """
     try:
-        reviews = gh_json(["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
+        if author_of is None:
+            reviews = gh_json(
+                ["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
+            if not isinstance(reviews, list):
+                return set()
+            author_of = {
+                r.get("id"): _author_login(r, "user")
+                for r in reviews if isinstance(r, dict)
+            }
         events = gh_json(["api", f"repos/{REPO}/issues/{pr}/timeline", "--paginate"])
     except subprocess.TimeoutExpired:
         # #19643 (residu) : un ensemble vide lirait la reserve d'un tiers comme
@@ -5219,12 +5418,8 @@ def improper_dismissals(pr: int) -> set[str]:
         raise
     except Exception:
         return set()  # timeline illisible : on retombe sur l'ancien comportement
-    if not isinstance(reviews, list) or not isinstance(events, list):
+    if not isinstance(events, list):
         return set()
-    author_of = {
-        r.get("id"): _author_login(r, "user")
-        for r in reviews if isinstance(r, dict)
-    }
     improper: set[str] = set()
     for e in events:
         if not isinstance(e, dict) or e.get("event") != "review_dismissed":
@@ -6573,13 +6768,18 @@ def analyse_pr(pr: int) -> dict:
         # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
         # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
         # remplace quand il repond.
-        data.update(_typed_author_surfaces(pr))
+        # #22757 (tranche appels) : le bundle sert typed + threads + le join
+        # des dismissals en UNE requete GraphQL (-2 appels par PR evaluee,
+        # contrats par surface inchanges, cf `_pr_review_bundle`).
+        bundle = _pr_review_bundle(pr)
+        data.update(bundle["typed"])
         # #13639 + #15556 : resolution serveur du contexte SHA (messages,
         # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
         _attach_absent_sha_context(data)
-        return analyse(data, review_threads(pr), datetime.now(timezone.utc),
+        return analyse(data, bundle["threads"], datetime.now(timezone.utc),
                        issue_info=gh_issue_info,
-                       dismissed_improperly=improper_dismissals(pr))
+                       dismissed_improperly=improper_dismissals(
+                           pr, author_of=bundle["author_of"]))
     except NitsBudgetExhausted:
         # #21882 (Option C) : budget de passe depasse. La PR est rendue ABSENTE
         # (non evaluee, #18829) : `blocked` faux, aucun point. Le picker la lit
@@ -6611,15 +6811,19 @@ def gate(pr: int, as_json: bool) -> int:
     # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
     # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
     # remplace quand il repond.
-    data.update(_typed_author_surfaces(pr))
+    # #22757 (tranche appels) : bundle unique typed + threads + join
+    # dismissals, cf `_pr_review_bundle` et `analyse_pr`.
+    bundle = _pr_review_bundle(pr)
+    data.update(bundle["typed"])
     # #13639 + #15556 : resolution serveur du contexte SHA (messages,
     # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
     _attach_absent_sha_context(data)
     merged = ts(data.get("mergedAt"))
     cutoff = merged or datetime.now(timezone.utc)
-    result = analyse(data, review_threads(pr), cutoff,
+    result = analyse(data, bundle["threads"], cutoff,
                      issue_info=gh_issue_info,
-                     dismissed_improperly=improper_dismissals(pr))
+                     dismissed_improperly=improper_dismissals(
+                         pr, author_of=bundle["author_of"]))
     if as_json:
         print(json.dumps(result, indent=1, ensure_ascii=False))
     elif not result["blocked"]:

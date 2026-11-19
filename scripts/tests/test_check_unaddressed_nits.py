@@ -6736,7 +6736,8 @@ def test_analyse_pr_assemble_comme_gate(monkeypatch):
                         lambda data, cap=5: {"abc123": {"message": "corps du message",
                                                          "tree": None}})
     monkeypatch.setattr(mod, "review_threads", lambda pr: [])
-    monkeypatch.setattr(mod, "improper_dismissals", lambda pr: [])
+    # #22757 : analyse_pr joint le join dismissals via le parametre bundle.
+    monkeypatch.setattr(mod, "improper_dismissals", lambda pr, author_of=None: [])
 
     def fake_issue_info(n):
         return None

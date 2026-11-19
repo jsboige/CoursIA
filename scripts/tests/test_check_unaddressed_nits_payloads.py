@@ -219,3 +219,146 @@ def test_projection_issue_unique_conserve_le_contrat_issueinfo():
     assert mod._project_gh_payload(
         ["api", "repos/jsboige/CoursIA/issues/19742/timeline"], timeline) == [
             {"event": "cross-referenced"}]
+
+
+def test_projection_blob_garde_le_content():
+    # #22757 : seul `content` (base64) est decode par fetch ; le reste est
+    # du transport mort pour l'organe.
+    blob = {"sha": "b" * 40, "node_id": "B__x", "size": 512,
+            "content": "ZGVmIGZvbygpOgogICAgcGFzcw==",
+            "url": "https://example.invalid/blob"}
+    projected = mod._project_gh_payload(
+        ["api", "repos/jsboige/CoursIA/git/blobs/" + "b" * 40], blob)
+    assert projected == {"content": blob["content"]}
+    import base64
+    assert base64.b64decode(projected["content"]).decode() == "def foo():\n    pass"
+
+
+# --- #22757 (tranche appels) : bundle des surfaces typees + threads ---------
+
+def _bundle_page(next_page=False, cursor=None):
+    return {
+        "data": {"repository": {"pullRequest": {
+            "author": {"__typename": "User", "login": "jsboige"},
+            "comments": {
+                "pageInfo": {"hasNextPage": next_page, "endCursor": cursor},
+                "nodes": [{"author": {"__typename": "User", "login": "jsboige"},
+                           "body": "nit: splitter", "createdAt": "2026-11-19T10:00:00Z"}]},
+            "reviews": {
+                "pageInfo": {"hasNextPage": next_page, "endCursor": cursor},
+                "nodes": [{"author": {"__typename": "User", "login": "reviewer"},
+                           "body": "reserve", "submittedAt": "2026-11-19T11:00:00Z",
+                           "state": "COMMENTED", "databaseId": 77}]},
+            "reviewThreads": {
+                "pageInfo": {"hasNextPage": next_page, "endCursor": cursor},
+                "nodes": [{"isResolved": False, "isOutdated": False,
+                           "path": "x.py", "line": 3,
+                           "comments": {"nodes": [
+                               {"author": {"login": "reviewer", "__typename": "User"},
+                                "body": "inline nit", "createdAt": "2026-11-19T11:30:00Z"}]}}]},
+        }}}
+    }
+
+
+def test_bundle_rend_les_formes_des_deux_fonctions_originales(monkeypatch):
+    """Témoin anti-divergence : le bundle produit EXACTEMENT les formes de
+    `_typed_author_surfaces` et de `review_threads` sur le même PR."""
+    seen: list[list[str]] = []
+
+    def fake_gh_json(args):
+        seen.append(args)
+        return _bundle_page()
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    bundle = mod._pr_review_bundle(41)
+    # typed : forme de _typed_author_surfaces (SANS databaseId)
+    assert bundle["typed"]["author"] == {"__typename": "User", "login": "jsboige"}
+    assert bundle["typed"]["comments"] == [
+        {"author": {"__typename": "User", "login": "jsboige"},
+         "body": "nit: splitter", "createdAt": "2026-11-19T10:00:00Z"}]
+    assert bundle["typed"]["reviews"] == [
+        {"author": {"__typename": "User", "login": "reviewer"},
+         "body": "reserve", "submittedAt": "2026-11-19T11:00:00Z",
+         "state": "COMMENTED"}]
+    # threads : forme de review_threads
+    assert bundle["threads"] == [{
+        "resolved": False, "outdated": False, "path": "x.py", "line": 3,
+        "author": "reviewer", "body": "inline nit",
+        "createdAt": "2026-11-19T11:30:00Z"}]
+    # join numerique des dismissals
+    assert bundle["author_of"] == {77: "reviewer"}
+    # UNE seule requete GraphQL (la fusion des deux surfaces)
+    graphql_calls = [a for a in seen if a[:2] == ["api", "graphql"]]
+    assert len(graphql_calls) == 1
+
+
+def test_bundle_fail_closed_par_surface(monkeypatch):
+    """Payload inattendu -> typed vide (repli CLI), threads tolérants."""
+    broken = {"data": {"repository": {"pullRequest": {
+        "comments": {"pageInfo": {}, "nodes": "pas une liste"},
+        "reviews": {"pageInfo": {}, "nodes": []},
+        "reviewThreads": {"pageInfo": {}, "nodes": []},
+    }}}}
+
+    def fake_gh_json(args):
+        return broken
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    bundle = mod._pr_review_bundle(41)
+    assert bundle["typed"] == {}
+    assert bundle["threads"] == []
+
+
+def test_bundle_propage_l_echec_d_appel(monkeypatch):
+    """L'échec de l'appel GraphQL propage (contrat de review_threads)."""
+    def fake_gh_json(args):
+        raise mod.subprocess.CalledProcessError(1, ["gh", *args])
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    try:
+        mod._pr_review_bundle(41)
+    except mod.subprocess.CalledProcessError:
+        pass
+    else:
+        raise AssertionError("l'echec d'appel doit propager")
+
+
+def test_improper_dismissals_author_of_epargne_lappel_reviews(monkeypatch):
+    """author_of fourni -> seul l'appel timeline part (le REST reviews
+    disparait du chemin gate, #22757)."""
+    calls: list[str] = []
+
+    def fake_gh_json(args):
+        calls.append(args[1])
+        return [{"event": "review_dismissed",
+                 "actor": {"login": "someoneelse"},
+                 "dismissed_review": {"review_id": 77}}]
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    improper = mod.improper_dismissals(41, author_of={77: "reviewer"})
+    assert improper == {"reviewer"}  # actor != emitter -> improper
+    assert calls == ["repos/jsboige/CoursIA/issues/41/timeline"]
+
+
+def test_head_tree_inerte_sans_sha_resolu(monkeypatch):
+    """#22757 : sans SHA absent resolu, `commits/<head_oid>` ne part pas --
+    `analyse` ne lit `_head_tree` que derriere ses gates SHA."""
+    data = {
+        "headRefOid": "a" * 40,
+        "commits": [{"oid": "a" * 40}],
+        "comments": [{"author": {"login": "jsboige"}, "body": "sans sha cite",
+                      "createdAt": "2026-11-19T10:00:00Z"}],
+        "reviews": [],
+    }
+    calls: list[str] = []
+
+    def fake_gh_json(args):
+        calls.append(args[1] if len(args) > 1 else str(args))
+        raise AssertionError(
+            "aucun appel gh n'est attendu sans SHA cite absent: " + str(args))
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    mod._attach_absent_sha_context(data)
+    assert data["_head_tree"] == ""
+    assert data["_absent_sha_messages"] == {}
+    assert calls == []
