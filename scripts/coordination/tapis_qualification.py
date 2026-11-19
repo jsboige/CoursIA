@@ -21,6 +21,13 @@ n'ont ete **prouves** par personne et qui ne peuvent donc pas retirer un grain
 de la file. Ils restent dit, en notes (`coordination.tapis_preuves`), et la
 lecture ne relit plus les citations de `origin/main`.
 
+**Un marqueur n'est pas une preuve** (revue du 19/11, `5967171401`) : un
+`[DELIVERED]` DESIGNE la PR a verifier. La preuve, c'est le **diff** de cette
+PR couvrant le perimetre declare (`coordination.tapis_diff`) ; un diff absent
+ou partiel laisse l'issue dans la rotation. Le correctif s'applique au temps
+d'action, quand `preuve` est fourni : le classement reste sur le marqueur, la
+bascule reste a arbitrer.
+
 **fail-CLOSED.** Une decision qui n'a pas pu etre prise REFUSE le grain : un
 fil illisible, un mur de lectures atteint, une echeance depassee -- le grain
 porte alors son code de refus (`FIL_ILLISIBLE`, `MUR_EPUISE`, `ECHEANCE`) et
@@ -60,7 +67,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import tapis_fenetre, tapis_lot, tapis_preuves
+from coordination import tapis_diff, tapis_fenetre, tapis_lot, tapis_preuves
 from coordination import tapis_fil_complet, tapis_rapide
 
 #: Candidats par lot de lecture (une requete GraphQL pour le lot).
@@ -70,14 +77,13 @@ LOT = 50
 def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
               prs: list[dict], run,
               echeance: float | None = None, lot: int = LOT,
-              horloge=time.monotonic, debut: float | None = None
+              horloge=time.monotonic, debut: float | None = None, preuve=None
               ) -> tuple[list, dict, list[int], bool, int, dict]:
     """Qualifie les candidats PRIS EN CHARGE, dans l'ordre donne.
 
-    Rend `(servis, ecartees, echecs, arrete, appels, chrono)` -- le detail de
-    chaque cle est dans le module : les exclusions portent leur code et leur
-    motif, et `chrono` separe le temps jusqu'au **premier grain servable** de
-    la latence du classement, qui est celle du tirage.
+    Rend `(servis, ecartees, echecs, arrete, appels, chrono)` ; le detail de
+    chaque cle est dans la doc du module. `preuve` rend le diff d'une PR
+    (`coordination.tapis_diff`) : sans lui, LIVREE reste pose sur le marqueur.
     """
     issues: dict[int, dict] = {}
     confirmes: dict[int, object] = {}
@@ -101,6 +107,7 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
         lec = tapis_lot.lec(list(issues.values()), maintenant, appels)
         etats = tapis_preuves.etats_de_tranche(lec, notes_urne, prs_par_issue,
                                                lane, maintenant, jours)
+        tapis_diff.appliquer(etats, lec, preuve)
         for e in etats:
             if e.ecart and e.numero not in ecartees:
                 ecartees[e.numero] = {"numero": e.numero, "code": e.ecart,
@@ -112,7 +119,7 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
         if not retenus:
             continue
         conf, rejet, rates, n = tapis_fil_complet.confirmer(
-            retenus, lec, lane, maintenant, jours, echeance, horloge)
+            retenus, lec, lane, maintenant, jours, echeance, horloge, preuve=preuve)
         appels += n
         echecs.extend(rates)
         for e in conf:

@@ -3,7 +3,7 @@
 
 Dans la REQUALIFICATION d'un grain pris en charge, la decision se lit sur le
 **fil** : un GRAIN (un marqueur nominatif qui nomme une lane) prouve une
-prise en charge ; un `[DELIVERED]` sans `paths:` prouve une livraison.
+prise en charge ; un `[DELIVERED]` ne prouve PAS une livraison : il DESIGNE la PR a verifier. La preuve, c'est le diff de cette PR couvrant le perimetre declare (`coordination.tapis_diff`).
 
 Trois signaux ne prouvent **rien** de la livraison (revue du 19/11, #27242) :
 

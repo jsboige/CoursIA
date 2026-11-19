@@ -24,7 +24,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, gh_selection, tapis_fil_complet
+from coordination import gh_bulk, gh_selection, tapis_diff, tapis_fil_complet
 from coordination import tapis_qualification as tq
 from coordination.tapis_marqueurs import _iso
 
@@ -55,7 +55,7 @@ def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,
     prs = gh_bulk.lire_prs_ouvertes(run)
     servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
         candidats, args.lane, maintenant, args.jours, prs, run,
-        debut + args.budget_s, debut=debut)
+        debut + args.budget_s, debut=debut, preuve=tapis_diff.preuve_gh(run))
     rapport = {
         "lane": args.lane, "maintenant": _iso(maintenant),
         "qualifies": len(candidats), "servis": len(servis),

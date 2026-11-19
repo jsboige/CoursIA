@@ -33,7 +33,7 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, tapis_fenetre, tapis_rapide, tapis_reverif
+from coordination import gh_bulk, tapis_diff, tapis_fenetre, tapis_rapide, tapis_reverif
 
 #: Borne des lectures REST du fil complet (les candidats retenus).
 APPELS_MAX = 16
@@ -45,7 +45,7 @@ CODES_REFUS = ("FIL_ILLISIBLE", "MUR_EPUISE", "ECHEANCE")
 
 def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: int,
               echeance: float | None = None, horloge=time.monotonic,
-              appels_max: int = APPELS_MAX) -> tuple[list, list, list[int], int]:
+              appels_max: int = APPELS_MAX, preuve=None) -> tuple[list, list, list[int], int]:
     """Re-decide sur le fil complet les candidats RETENUS par la fenetre.
 
     Rend `(confirmes, rejetes, echecs, appels)`. Un candidat dont la fenetre
@@ -88,6 +88,8 @@ def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: in
         appels += 1
         code = tapis_reverif._redecrire(e, ouvertes, parents, ctx, fil,
                                          tapis_rapide)
+        if preuve is not None:
+            code = tapis_diff.decider(e, fil, code, preuve)
         if code is None:
             confirmes.append(e)
         else:

@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""La PREUVE de livraison par le DIFF : un marqueur DESIGNE une PR a verifier.
+
+Un marqueur de fil (`[DELIVERED] ... PR #N -- paths: ...`) n'est **pas** une
+preuve de livraison : il **designe** la PR a verifier. La preuve, c'est le
+**diff** de cette PR, demontre couvrant le **perimetre** declare par la clause
+`paths:` (revue du 19/11, revue 5967171401).
+
+Trois verdicts :
+
+- `couvre` : le diff couvre tout le perimetre declare -> l'issue est livree ;
+- `tranche` : le diff ne couvre qu'une partie -> l'issue **reste dans la
+  rotation** (une tranche livree ne livre pas l'issue) ;
+- `a_verifier` : diff absent ou illisible, PR non designee, perimetre non
+  declare -> l'issue **reste dans la rotation**.
+
+**fail-CLOSED vers l'exclusion** : une preuve absente ne vaut jamais
+exclusion ; elle vaut le maintien dans la rotation.
+
+Aucune lecture n'est reecrite : la clause `paths:`, la PR designee et le
+matcher de chemins sont ceux de `scripts/check_lane_claim.py`, l'organe qui
+fait autorite sur les claims.
+
+Usage :
+    python scripts/coordination/tapis_diff.py --marqueur "[DELIVERED] ..." \
+        [--diff a.py,b.py]
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import check_lane_claim
+from coordination import gh_bulk
+from coordination.tapis_marqueurs import evenements
+
+#: Les trois verdicts de la preuve par le diff.
+COUVRE = "couvre"
+TRANCHE = "tranche"
+A_VERIFIER = "a_verifier"
+
+NOTE_INFO = ("[INFO] candidate-delivered : une route vers l'urne de cloture, "
+             "pas une preuve -- c'est le diff de la PR qui decide")
+
+
+def perimetre(ligne: str) -> list[str]:
+    """La clause `paths:` du marqueur -- le perimetre DECLARE de la livraison."""
+    return check_lane_claim._extract_paths_clause(ligne) or []
+
+
+def pr_designee(ligne: str) -> int | None:
+    """La PR designee par le marqueur (`[DELIVERED] ... PR #N`)."""
+    return check_lane_claim._extract_delivered_pr_ref(ligne)
+
+
+def couverts(diff: list[str], paths: list[str]) -> tuple[list[str], list[str]]:
+    """(couverts, manquants) : les globs que le diff atteint, ceux qu'il manque."""
+    atteints, manquants = [], []
+    for g in paths:
+        if any(check_lane_claim._full_path_matches(f, g) for f in diff):
+            atteints.append(g)
+        else:
+            manquants.append(g)
+    return atteints, manquants
+
+
+def verdict(ligne: str, diff: list[str] | None) -> tuple[str, str]:
+    """(verdict, detail) -- sans preuve, l'issue reste dans la rotation."""
+    pr = pr_designee(ligne)
+    per = perimetre(ligne)
+    if pr is None:
+        return A_VERIFIER, "marqueur sans PR designee : rien a verifier"
+    if not per:
+        return A_VERIFIER, f"PR #{pr} : perimetre non declare (pas de clause `paths:`)"
+    if diff is None:
+        return A_VERIFIER, f"PR #{pr} : diff absent ou illisible"
+    atteints, manquants = couverts(diff, per)
+    if not manquants:
+        return COUVRE, f"PR #{pr} : le diff couvre le perimetre ({len(atteints)})"
+    return TRANCHE, f"PR #{pr} : diff partiel -- manque {', '.join(manquants)}"
+
+
+def diff_pr(depot: str, numero: int, run) -> list[str] | None:
+    """Les fichiers modifies par la PR ; None si la lecture echoue (fail-CLOSED)."""
+    argv = ["gh", "api", f"repos/{depot}/pulls/{numero}/files?per_page=100"]
+    try:
+        texte = gh_bulk._appel(run, argv, "diff_pr", numero)
+        donnees = json.loads(texte or "[]")
+        return [f.get("filename") for f in donnees if f.get("filename")]
+    except Exception:  # noqa: BLE001 - une preuve absente ne vaut jamais exclusion
+        return None
+
+
+def preuve_gh(run, depot: str = gh_bulk.DEPOT_GH):
+    """Le callable de preuve : le diff de la PR, lu sur GitHub."""
+    def preuve(numero: int | None) -> list[str] | None:
+        return diff_pr(depot, numero, run) if numero else None
+    return preuve
+
+
+def _dernier_delivered(evts) -> object | None:
+    livres = [e for e in evts if e.marque == "DELIVERED"]
+    return livres[-1] if livres else None
+
+
+def decider(e, comments: list[dict], code: str | None, preuve) -> str | None:
+    """L'ecart LIVREE, decide par le DIFF de la PR designee.
+
+    Le code d'un autre ecart (GEL, RECLAMEE...) n'est pas touche : seul
+    LIVREE releve de la preuve. Un marqueur de livraison **designe** une PR ;
+    l'ecart n'est pose que si le diff couvre le perimetre declare, et il est
+    retire sinon -- l'issue reste alors dans la rotation.
+    """
+    if code not in (None, "LIVREE"):
+        return code
+    ev = _dernier_delivered(evenements(comments))
+    if ev is None:
+        if code == "LIVREE":
+            e.ecart, e.motif = None, ""
+            e.notes.append(NOTE_INFO)
+        return None
+    ligne = f"[{ev.marque}] {ev.reste}"
+    num, per = pr_designee(ligne), perimetre(ligne)
+    if not per:
+        if code == "LIVREE":
+            e.ecart, e.motif = None, ""
+            e.notes.append(f"PR #{num} : perimetre non declare -- "
+                           "l'issue reste dans la rotation")
+        return None
+    etat, detail = verdict(ligne, preuve(num) if num else None)
+    if etat == COUVRE:
+        e.motif = detail
+        return "LIVREE"
+    if code == "LIVREE":
+        e.ecart, e.motif = None, ""
+    e.notes.append(f"{detail} -- l'issue reste dans la rotation")
+    return None
+
+
+def appliquer(etats, lec, preuve) -> None:
+    """Applique la preuve par le diff aux etats d'une tranche.
+
+    `lec` porte les issues lues (fenetre) ; `preuve` est l'appelable qui rend
+    les fichiers modifies d'une PR, ou None si la lecture echoue. Sans
+    `preuve`, rien n'est change : le classement reste sur le marqueur.
+    """
+    if preuve is None:
+        return
+    issues = {it["number"]: it for it in lec.issues}
+    for e in etats:
+        it = issues.get(e.numero) or {}
+        e.ecart = decider(e, it.get("comments") or [], e.ecart, preuve)
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Verifie un marqueur contre un diff : la preuve, en ligne de commande."""
+    p = argparse.ArgumentParser(description="Verifie la couverture du diff d'une PR.")
+    p.add_argument("--marqueur", required=True, help="la ligne du marqueur")
+    p.add_argument("--diff", default="", help="fichiers modifies, separes par des virgules")
+    args = p.parse_args(argv)
+    diff = [f for f in args.diff.split(",") if f] or None
+    code, detail = verdict(args.marqueur, diff)
+    print(f"{code} : {detail}")
+    return 0 if code == COUVRE else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
