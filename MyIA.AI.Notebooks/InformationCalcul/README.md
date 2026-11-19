@@ -14,7 +14,7 @@ Le modèle est celui de [SymbolicAI](../SymbolicAI/README.md) : un dossier-hub q
 
 L'IA du dépôt ne se réduit pas à l'apprentissage automatique. Une grande partie de ses fondations — mesurer l'information, la coder, la compresser, la protéger, borner le calcul — vit dans des disciplines que l'on range ici. Le critère de ce hub est **le premier niveau de l'arborescence** : une série sœur se range dans un hub, elle ne s'ajoute pas à la racine. Aucune série ni sous-série nouvelle ne naît sans GO écrit du mainteneur.
 
-**Physique reste hors du hub**, au premier niveau : elle est déjà un hub de six sous-séries à elle seule. Ce README renvoie explicitement vers ses sous-séries [Information quantique](../Physique/README.md) et [Constructeur](../Physique/README.md), qui font le pont entre les deux mondes.
+**Physique reste hors du hub**, au premier niveau : elle est déjà un hub de six sous-séries à elle seule. Ce README renvoie explicitement vers ses sous-séries [Information quantique](../Physique/InformationQuantique/README.md) et [Constructeur](../Physique/Constructeur/README.md), qui font le pont entre les deux mondes.
 
 ## Les sous-séries
 
@@ -44,8 +44,8 @@ Un lecteur qui suit une seule sous-série en couvre une facette ; c'est en les c
 
 Physique reste au premier niveau, mais deux de ses sous-séries font explicitement le pont avec ce hub :
 
-- **Information quantique** — l'information quantique est l'extension, vers le quantique, de la théorie de l'information classique traitée ici : [Physique → Information quantique](../Physique/README.md) ;
-- **Constructeur** — la construction de systèmes calculatoires, du déterministe au physique : [Physique → Constructeur](../Physique/README.md).
+- **Information quantique** — l'information quantique est l'extension, vers le quantique, de la théorie de l'information classique traitée ici : [Physique → Information quantique](../Physique/InformationQuantique/README.md) ;
+- **Constructeur** — la construction de systèmes calculatoires, du déterministe au physique : [Physique → Constructeur](../Physique/Constructeur/README.md).
 
 ## Ce que ce hub ne fait pas
 
