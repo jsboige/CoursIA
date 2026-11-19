@@ -169,6 +169,16 @@ def texte(r: dict) -> str:
                       f"(taille {fen['taille']}) -- la fenetre avance d'un bloc par "
                       f"tranche de 4 h : le pool entier est couvert en "
                       f"{fen['blocs']} tranches.")
+    non_visites = fen.get("non_visites") or []
+    if non_visites:
+        apercu = ", ".join(f"#{n}" for n in non_visites[:12])
+        suite = " ..." if len(non_visites) > 12 else ""
+        lignes.append(f"Fenetre : {len(non_visites)} numero(s) du pool non visite(s) "
+                      f"a cette tranche -- delai max de requalification "
+                      f"{fen.get('delai_max_h')} h : {apercu}{suite}.")
+    elif fen.get("delai_max_h"):
+        lignes.append(f"Fenetre : pool entier visite -- delai max de "
+                      f"requalification {fen['delai_max_h']} h.")
     lignes.append(f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits :")
     lignes += [f"  #{p['numero']}  {p['age_j']} j  {p['titre'][:90]}"
                for p in r["vos_prs"]]

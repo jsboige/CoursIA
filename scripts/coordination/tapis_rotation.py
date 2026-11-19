@@ -14,6 +14,12 @@ et un tour complet tient en `ceil(pool / taille)` tranches. Le delai maximal
 de requalification d'une issue est donc borne par la duree du tour -- et il
 est publie avec le bloc.
 
+**Chaque numero du pool sort avec un verdict** (revue du 19/11, #27242) : le
+bloc publie les numeros qu'il **visite** et ceux qu'il ne visite pas
+(`non_visites`). C'est la mesure de la derniere qualification **par numero**,
+bloques et reserves compris : un numero servi une fois, ecarte une fois,
+compte une fois.
+
 Ce module est extrait de `tapis_fenetre.py` (19/11) : les deux fenetres du
 tapis -- celle du POOL (ici) et celle du FIL (la) -- sont des modules
 separes, et le plafond de lignes se paie en **extrait**, pas en relevant le
@@ -69,8 +75,11 @@ def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
     b_c = [conteneurs[(d_c + i) % n_c] for i in range(min(quota, n_c))]
     blocs_g = (n_g + part - 1) // part if n_g else 1
     blocs_c = (n_c + quota - 1) // quota if n_c else 1
+    pool = {g.numero for g in grains} | {g.numero for g in conteneurs}
+    visites = {g.numero for g in b_g} | {g.numero for g in b_c}
     return b_g + b_c, {
         "taille": taille, "grains": len(b_g), "conteneurs": len(b_c),
         "bloc": (d_g // part) + 1 if n_g else 0,
         "blocs": blocs_g, "pool": n_g, "tranche": compteur,
-        "ordre": "numero", "delai_max_h": HEURES_TRANCHE * max(blocs_g, blocs_c)}
+        "ordre": "numero", "delai_max_h": HEURES_TRANCHE * max(blocs_g, blocs_c),
+        "visites": sorted(visites), "non_visites": sorted(pool - visites)}
