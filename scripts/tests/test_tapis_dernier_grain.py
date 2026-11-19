@@ -109,6 +109,37 @@ def test_le_classement_place_l_absence_etablie_devant_l_absence_non_measurable()
     assert tdg.RANG[tdg.JAMAIS] < tdg.RANG[tdg.PASSAGE]
 
 
+def test_le_passage_passe_devant_l_absence_non_measurable():
+    """JAUNE de la revue 19/11 (Hermes, #27320) : l'ordre **documente**
+    n'etait pas verrouille.
+
+    Le test ci-dessus n'assertait que `JAMAIS < NON_MESURABLE` et
+    `NON_MESURABLE < GRAIN` : **inverser les deux etats du milieu le laissait
+    passer** (mutant `RANG = {JAMAIS: 0, NON_MESURABLE: 1, PASSAGE: 2,
+    GRAIN: 3}` -> 78/78 verts). Le releve fige ne peut pas l'exercer
+    (`non_measurable` = 0 dans la mesure actuelle).
+
+    Ce test trie des etats **fabricques** : il verrouille le comportement du
+    classement (la position du PASSAGE entre les deux etats du milieu), pas
+    la constante `RANG` -- et il echoue sous ce mutant.
+    """
+    from coordination.tapis_rapide import Etat
+
+    def etat_(numero: int, etat_grain: str) -> Etat:
+        return Etat(numero, "t", [], NOW.strftime("%Y-%m-%dT%H:%M:%SZ"), None,
+                    numero, False, False, etat_grain=etat_grain)
+
+    issues = [etat_(1, tdg.JAMAIS), etat_(2, tdg.PASSAGE),
+              etat_(3, tdg.NON_MESURABLE), etat_(4, tdg.GRAIN)]
+    cles = [tdg.cle_tri(e) for e in issues]
+    assert cles == sorted(cles), (
+        "l'ordre documente est JAMAIS, puis PASSAGE, puis NON MESURABLE, "
+        "puis GRAIN")
+    assert tdg.RANG[tdg.JAMAIS] < tdg.RANG[tdg.PASSAGE]
+    assert tdg.RANG[tdg.PASSAGE] < tdg.RANG[tdg.NON_MESURABLE]
+    assert tdg.RANG[tdg.NON_MESURABLE] < tdg.RANG[tdg.GRAIN]
+
+
 # ----------------------------------------------------- le releve groupe (7 j)
 
 @pytest.fixture(scope="module")
