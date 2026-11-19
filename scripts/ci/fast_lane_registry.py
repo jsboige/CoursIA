@@ -790,6 +790,36 @@ PILOT: list[Guard] = [
         blocking=False,
         needs_base=True,
     ),
+    # Integrite du ledger des renommages (#27015) : `docs/reference/
+    # rename-ledger.tsv` est un TSV append-only ecrit par N lanes (chaque
+    # renommage ajoute une ligne en fin de fichier -- deux PRs convergentes
+    # conflictent sur la fin, frein signale a ai-01 le 2026-11-16). Le
+    # `.gitattributes` declare `merge=union` dessus : le merge LOCAL concatene
+    # sans juger, donc la garde est la moitie porteuse (GO ai-01). Elle echoue
+    # sur les deux signatures d'un artefact d'union -- cle `ancien` dupliquee
+    # (deux lanes ayant renomme le meme carnet), cycle a dates repetees
+    # (aller-retour colle). Un cycle a dates toutes distinctes est une HISTOIRE
+    # legitime (iterations de structure de dossier : 4 cycles ICT a dates
+    # croissantes vivent sur main, dd06ce25ffe -- mesurees avant d'ecrire la
+    # regle) et passe en NOTE. Invariant de fichier entier, pas un delta :
+    # needs_base=False.
+    Guard(
+        name="rename-ledger integrity (union merge guard)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "docs/reference/rename-ledger.tsv",
+            "scripts/notebook_tools/check_rename_ledger.py",
+            "scripts/notebook_tools/tests/test_check_rename_ledger.py",
+            # L'ecrivain du ledger : changer son format change la grammaire
+            # que la garde valide.
+            "scripts/notebook_tools/rename_notebooks.py",
+            ".gitattributes",
+        ],
+        argv=["python", "scripts/notebook_tools/check_rename_ledger.py"],
+        blocking=True,
+        needs_base=False,
+        shadow_reason=PILOT_SHADOW_NATIF,
+    ),
 ]
 
 
@@ -1328,6 +1358,14 @@ TRANCHE5: list[Guard] = [
         paths=[
             "pytest.ini",
             "scripts/check_testpaths_coverage.py",
+            # T4 (#25366) : le ratchet d'inventaire doit voir toute PR
+            # touchant un dossier de tests ou un module de test, où
+            # qu'il vive — scripts-tests.yml ne regarde que scripts/**
+            # et tests/**, or la dette mesurée vit surtout sous
+            # MyIA.AI.Notebooks/ (16 des 30 doublons : ICT-Series).
+            "scripts/tests/baseline_testpaths_inventory.json",
+            "**/tests/**",
+            "**/test_*.py",
             ".github/workflows/scripts-tests.yml",
             ".github/workflows/ml-tests.yml",
             ".github/workflows/secret-scan.yml",
@@ -1341,7 +1379,11 @@ TRANCHE5: list[Guard] = [
             ".github/workflows/sudoku-tests.yml",
             ".github/workflows/testpaths-coverage-guard.yml",
         ],
-        argv=["python", "scripts/check_testpaths_coverage.py", "--verbose"],
+        argv=[
+            "python", "scripts/check_testpaths_coverage.py",
+            "--verbose", "--inventory",
+            "--baseline", "scripts/tests/baseline_testpaths_inventory.json",
+        ],
         blocking=True,
         absorbed=True,
     ),
@@ -4602,6 +4644,59 @@ TRANCHE48: list[Guard] = [
 ]
 
 # ---------------------------------------------------------------------------
+# TRANCHE 51 -- banniere NuGet Interactive dans les sorties des carnets
+# (#26932).
+#
+# Garde NATIF : aucun workflow d'origine. L'organe
+# `scripts/notebook_tools/strip_machine_paths.py` reconnait la banniere
+# .NET Interactive `Loading extensions from `<chemin absolu>/...`` que le
+# kernel REINJECTE a chaque execution -- une fuite de type A (le chemin du
+# cache NuGet de la machine). Tant que seul le hook pre-commit
+# `strip-dotnet-nuget-ext` la voyait, une lane sans hook laissait la classe
+# entrer sur `main` sans temoin : aucune jambe CI ne la regardait.
+#
+# Le garde est BLOQUANT et porte sur les carnets TOUCHES par la PR
+# (`iterate_paths` = les `.ipynb` modifies) : l'organe sort rc=1 des qu'un
+# carnet touche porte la banniere. Un carnet qui la porte deja sur la base
+# et la garde apres le PR est donc rouge : c'est voulu -- la classe ne se
+# propage plus, et le remede est une commande deterministe
+# (`strip_machine_paths.py --apply`).
+#
+# `warn_rc=(2,)` : rc=2 de l'organe, c'est le chemin absent ou illisible (le
+# carnet supprime par la PR) -- il ne doit pas rougir une PR pour un fichier
+# que la PR elle-meme a retire.
+#
+# La jambe repo-wide (`--scan-all --check`) n'est pas encore cablee : elle
+# exige que `main` soit propre, donc que tous les carnets de la classe
+# aient ete traites -- deux sont encore occupes par des PR ouvertes d'autres
+# lanes (#26635, #26349, #25262).
+#
+# Cette tranche est ecrite AVANT la 49 (et non a la fin du fichier) : les
+# tranches ajoutees recemment se suivent au meme endroit, et deux PRs qui
+# ajoutent chacune une tranche se marchent dessus. Ici les hunks sont
+# eloignes, donc les deux PRs fusionnent sans conflit.
+# ---------------------------------------------------------------------------
+TRANCHE51: list[Guard] = [
+    Guard(
+        name="No machine-path leak (NuGet banner) in changed notebooks",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/strip_machine_paths.py",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/strip_machine_paths.py",
+            "--scan", "{changed_paths}", "--check",
+        ],
+        blocking=True,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # TRANCHE 49 -- SVG emis seulement en text/html (#26783).
 #
 # Garde NATIF : aucun workflow d'origine. L'organe
@@ -4663,5 +4758,167 @@ TRANCHE49: list[Guard] = [
         needs_base=True,
         diff_bounded=True,
         absorbed=True,
+    ),
+    # #26979 : le SVG IMPRIME EN TEXTE (sortie `stream`) au lieu d'etre
+    # rendu. Meme famille que le garde du dessus -- un ratchet base-vs-PR
+    # natif de la voie rapide, advisory d'abord, self-test en pre-argv.
+    # On ajoute le garde AU TRANCHE 49 plutot que dans une tranche 52
+    # neuve : les tranches s'ajoutent toutes au meme endroit du registre et
+    # de l'agregat du moteur, et deux PRs qui en ajoutent chacune une se
+    # marchent dessus au merge (lecon mesuree le 16/11/2026). Ici, l'ajout
+    # est a plus de vingt lignes du point d'insertion des autres tranches :
+    # les fusions sortiront propres.
+    Guard(
+        name="Rich output as text ratchet (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_rich_output_as_text.py",
+            "scripts/notebook_tools/tests/test_check_rich_output_as_text.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_rich_output_as_text.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_rich_output_as_text.py",
+            "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE50 -- enrich-quality base-vs-PR : le geste d'AVANT-PUSH (#26973).
+#
+# Mesure #25692 : trois liens relatifs casses par une profondeur de chemin de
+# trop, decouverts SEULEMENT par la CI -- la logique du gate
+# `enrich-quality-gate.yml` vivait dans le YAML du workflow, donc aucun
+# auteur ne pouvait la rejouer avant de pousser. L'organe
+# `scripts/notebook_tools/enrich_quality_delta.py` sort cette logique du YAML
+# (en REUSANT `enrich_quality_ci.py` et `filter_pr_introduced_notebooks.py`),
+# et ce garde la fait tourner dans la voie rapide comme en local.
+#
+# Caractere ADVISORY, et c'est un choix mesure :
+#   - le workflow d'origine reste l'autorite BLOQUANTE du gate -- ce garde
+#     observe, il ne double pas un blocage ;
+#   - la voie rapide, dans le job « Always-on guards », ne passe pas le body
+#     de la PR a ses gardes (`ctx["pr_body_file"]` n'est peuple que par le
+#     job `--effects`) : sans le canal `ENRICH_QUALITY_PR_BODY`, les marqueurs
+#     `enrich-quality: reecriture assumee` (#17744) seraient ignores, et une
+#     reecriture ANNONCEE serait comptee comme une regression -- un faux
+#     positif. Un garde bloquant qui peut rougir a tort n'est pas un garde ;
+#   - l'absorption (le workflow d'origine cesse de declencher, ce garde
+#     devient l'unique emetteur bloquant) est une tranche ulterieure : elle
+#     exige de prouver l'egalite des deux canaux de body, pas seulement
+#     l'egalite des verdicts.
+#
+# En LOCAL, le meme organe est le geste d'avant-push : il rend 1 sur une
+# regression, ce que la voie rapide en ombre ne fait pas (un garde advisory
+# ne peut pas rougir le job).
+# ---------------------------------------------------------------------------
+TRANCHE50: list[Guard] = [
+    Guard(
+        name="Enrich-quality regression (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/enrich_quality_delta.py",
+            "scripts/notebook_tools/enrich_quality_ci.py",
+            "scripts/notebook_tools/scan_enrich_quality.py",
+            "scripts/ci/filter_pr_introduced_notebooks.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/enrich_quality_delta.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/enrich_quality_delta.py",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=False,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# RISK_KERNEL_GUARDS (#24698, garde bloquant) -- copies du noyau de risque. Le noyau
+# (plafond, stop ATR, coupe-circuit) vit dans projects/RiskKernel/risk_kernel.py ;
+# QuantConnect n'important que les fichiers du projet, chaque strategie qui
+# l'utilise en porte une copie identique. La garde rougit sur une copie qui
+# derive (COPY_DRIFT) ou un projet qui importe le noyau sans copie (COPY_MISSING,
+# sinon echec a Initialize() sur QC Cloud). Meme forme que TRANCHE41.
+# ---------------------------------------------------------------------------
+RISK_KERNEL_GUARDS: list[Guard] = [
+    Guard(
+        name="risk-kernel-copies-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/QuantConnect/projects/**/*.py",
+            "scripts/quantconnect/check_risk_kernel_copies.py",
+            "scripts/quantconnect/tests/test_check_risk_kernel_copies.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/quantconnect/check_risk_kernel_copies.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE52 -- prose<->sorties : nombres de mesure cites vs sorties commitees
+# (#27231, reserve 1 de la review NanoClaw sur PR #27206).
+#
+# Cas fondateur mesure : la prose de lecture d'ICT-38 citait les valeurs d'un
+# run antérieur NON COMMITE (0.0742 / 0.1953) pendant que la sortie commitee
+# rendait d'autres mesures (0.0859 / 0.2109) -- invisible a toutes les gardes
+# existantes : le contenu existe, la sortie existe, seule la CORRESPONDANCE
+# entre les deux manque (check_prose_quantitative_claims vise les COMPTEURS
+# d'artefacts, check_output_collapse la PERTE de volume).
+#
+# Caractere ADVISORY, voie WARN tracee par #8053/#15901 : un detecteur neuf
+# commence advisory, la promotion suit la fournee de remediation (plan Q162 d
+# dans le body de la PR porteuse). Calibration mesuree :
+#   - 0 finding sur ICT-35 (reference FP-zero, 25 citations verifiees) ;
+#   - 0 finding sur ICT-38 au head de #27206 (post-fix, 19 citations) ;
+#   - 8 findings sur ICT-38 pre-fix (origin/main) : le defaut fondateur tire.
+# Ratchet ligne : seules les lignes de prose NOUVELLES (absentes de la base)
+# sont re-litigees -- le stock pre-existant releve du sweep --all, jamais du
+# rouge d'une PR.
+# ---------------------------------------------------------------------------
+TRANCHE52: list[Guard] = [
+    Guard(
+        name="Prose-numbers vs outputs ratchet (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_prose_output_numbers.py",
+            "scripts/notebook_tools/tests/test_check_prose_output_numbers.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_prose_output_numbers.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_prose_output_numbers.py",
+            "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=False,
     ),
 ]

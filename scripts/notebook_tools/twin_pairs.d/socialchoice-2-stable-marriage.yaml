@@ -1,7 +1,7 @@
 - name: "SocialChoice-2 Stable-Marriage"
   family: GameTheory/SocialChoice
-  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/02-Stable-Marriage-Gale-Shapley.ipynb
-  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/02-Stable-Marriage-Gale-Shapley-Csharp.ipynb
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Paire from-scratch/from-scratch sans lib-vs-lib (configuration SocialChoice-1) : l'algorithme de Gale-Shapley EST l'objet pedagogique, implante idiomatiquement des deux cotes (dict/list Python vs Dictionary/List + LINQ C#, BCL pure 0 NuGet), aucun moteur externe contourne -- il n'existe pas de lib stable-marriage canonique dans stdlib Python ni dans la BCL .NET. Le pont formel est le lake game_theory_lean/StableMarriage/ (gsGaleShapley GSState.lean:137, gale_shapley_stable GaleShapley.lean:104, gale_shapley_man_optimal GaleShapley.lean:130, gale_shapley_woman_pessimal GaleShapley.lean:147 -- 0 sorry), cite des deux cotes avec renvois de lignes identiques ; NI le Python NI le C# ne reimplantent de preuve. parity_level: semantic (meme contenu mathematique, API idiomatique differente)."
