@@ -2,16 +2,14 @@
 """La rotation UNIVERSELLE du tapis : toutes les issues, donnees legeres.
 
 Le tirage actuel (`coordination/tapis_rapide.py`) classe le pool entier, mais
-applique **neuf regles d'ecart avant la rotation** et lit le **corps, les
-commentaires et les PRs** de chaque issue ouverte. Pour classer 439 issues
-afin d'en servir quelques-unes, ce sont deux lectures qui ne servent a rien.
+applique **neuf regles d'ecart** et lit le **corps, les commentaires et les
+PRs** de chaque issue ouverte : deux lectures qui ne servent a rien.
 
 Ce module fait la rotation **sur les metadonnees seules** :
 
 - la lecture est **legere** (`coordination.gh_selection`) : numero, titre,
-  date, labels -- et le signal du **travail reel** (les commits de
-  `origin/main` et les PRs ouvertes qui couvrent l'issue). Une apparition
-  dans une liste n'est pas une visite ;
+  date, labels -- et le **travail reel** (les commits de `origin/main` et les
+  PRs ouvertes qui couvrent l'issue). Une apparition n'est pas une visite ;
 - la rotation porte sur **toutes** les issues ouvertes, sans ecarter : les
   verifications (claim, gel, contenu livre) se font **a la prise en charge** ;
 - chaque grain servi porte son **etat et l'action a faire**.
@@ -26,7 +24,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from coordination import (gh_bulk, gh_selection, tapis_citations, tapis_cle,
-                         tapis_equilibre, tapis_marqueurs)
+                         tapis_equilibre, tapis_marqueurs, tapis_releve)
 from coordination import tapis_citations, tapis_rapide
 from coordination.tapis_rapide import Etat, graine_defaut, ordonner
 
@@ -107,6 +105,7 @@ def rapport(etats_: list[Etat], file: list[Etat], lane: str, maintenant: datetim
     """Le rapport du tirage universel : les grains, leur etat, l'action, la mesure."""
     conso = tapis_equilibre.familles_consolidation(etats_)
     dens = tapis_cle.densites(etats_)
+    releves = tapis_releve.lire()[tapis_releve.RELEVE]
     return {
         "lane": lane, "maintenant": tapis_marqueurs._iso(maintenant),
         "lecture": lecture, "pool": len(etats_),
@@ -115,6 +114,7 @@ def rapport(etats_: list[Etat], file: list[Etat], lane: str, maintenant: datetim
                     "consolidation": e.consolidation,
                     "priorite": tapis_equilibre.raisons(e, conso, maintenant,
                                                         dens.get(e.numero)),
+                    "releve": tapis_releve.etat(releves, e.numero),
                     "action": action_de(e, lane)} for e in file],
     }
 

@@ -19,7 +19,8 @@ Trois regles, et rien d'autre :
    See/Part of seuls ne prouvent un service. Utiliser les liens comme
    **candidats** et confirmer le perimetre par le **diff**. » La preuve est
    donc l'organe du depot (`tapis_diff.verdict`), decide a la qualification :
-   la cle classe sur le candidat, le verdict decide.
+   la cle classe sur le candidat, le verdict decide. Une livraison **confirmee
+   par son diff** (`coordination.tapis_releve`) prime sur le candidat.
 3. **Le hub suit son enfant** : la PR d'un enfant (E) remonte la cle du **hub**
    (H) -- et **seulement** lui : les **freres** (F) gardent leur propre cle.
    Un pli **neuf** n'herite pas de l'age du hub : sans PR, la cle est la
@@ -30,53 +31,20 @@ existante ne la recree pas -- elle ne remet donc pas le grain en tete.
 
 La DENSITE d'un hub (le nombre d'enfants reels) est une **mesure**, pas un
 bonus : elle se lit, elle ne classe pas.
+
+La detection des liens canoniques vit dans `coordination.tapis_canon`
+(extrait le 19/11 pour tenir le plafond de lignes) ; la lecture qui date le
+releve et la livraison confirmee, dans `coordination.tapis_releve`.
 """
 from __future__ import annotations
 
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination.tapis_citations import _CITE_RE
+from coordination.tapis_canon import des_prs_canoniques, est_canonique
 from coordination.tapis_marqueurs import _dt, _iso
-
-#: Les formes qui declarent un travail SUR l'issue. Le mot-clé doit etre a
-#: moins de 30 caracteres du numero : `Fix(secrets,#11044)` et `Part of #27338`
-#: qualifies ; `Sur #27338` (une mention) ne l'est pas.
-_MOTS_CANON = (r"closes|closed|close|fixes|fixed|fix|resolves|resolved|resolve"
-                r"|see|part\s+of|part-of")
-CANON_RE = re.compile(rf"(?i)\b(?:{_MOTS_CANON})[^#\n]{{0,30}}?#(\d+)\b")
-
-
-def est_canonique(texte: str | None, numero: int) -> bool:
-    """Le texte declare-t-il un travail SUR l'issue `numero` ?
-
-    La forme canonique est celle du depot (`See #N`, `Part of #N`,
-    `Closes #N`, `Fix(scope,#N)`) : c'est elle qui distingue une PR qui
-    **sert** l'issue d'une PR qui la **mentionne**.
-    """
-    return any(int(n) == int(numero) for n in CANON_RE.findall(texte or ""))
-
-
-def des_prs_canoniques(prs: list[dict]) -> dict[int, list[dict]]:
-    """Les issues COUVERTES par les PRs ouvertes, en forme canonique.
-
-    La date retenue est la **creation** de la PR : une correction poussee
-    dans une PR existante ne la recree pas, et ne remet donc pas le grain en
-    tete. L'auto-reference est exclue, comme dans la voie large.
-    """
-    cites: dict[int, list[dict]] = {}
-    for pr in prs:
-        numero = int(pr.get("number") or 0)
-        corps = pr.get("body") or ""
-        trouves = {int(x) for x in _CITE_RE.findall(corps)} - {numero}
-        for n in sorted(x for x in trouves if est_canonique(corps, x)):
-            cites.setdefault(n, []).append(
-                {"sha": "pr" + str(numero), "date": pr.get("created_at") or "",
-                 "sujet": pr.get("title") or "", "ferme": False,
-                 "ouvert": True, "canonique": True, "pr": numero})
-    return cites
+from coordination.tapis_releve import service_connue
 
 
 def _note(service: dict[int, tuple[str, str]], numero: int, date: str | None,
@@ -104,6 +72,12 @@ def appliquer(etats_, cites_ouvertes: dict[int, list[dict]] | None = None,
               cites_merges: dict[int, list[dict]] | None = None) -> None:
     """Pose `cle_service` et `cle_origine` sur chaque etat.
 
+    La cle est d'abord le **candidat** (une citation canonique dans le corps
+    d'une PR), puis la **confirmation par le diff** (`tapis_releve`) : une
+    livraison dont le diff couvre le perimetre declare prime sur le candidat,
+    car c'est elle qui est **pertinente** (arbitrage du 19/11). Sans
+    confirmation, le candidat reste : la cle candidate, sinon la creation.
+
     Les citations retenues sont les **canoniques** seules : une PR qui
     mentionne l'issue en prose ne la couvre pas. La date d'une PR est sa
     **creation** -- une correction d'une PR existante n'est pas un service
@@ -125,14 +99,23 @@ def appliquer(etats_, cites_ouvertes: dict[int, list[dict]] | None = None,
     par = {e.numero: e.parent for e in etats_}
     numeros = sorted((e.numero for e in etats_),
                       key=lambda n: -len(_chaine(par, n)))
-    for numero in numeros:
-        s = service.get(numero)
-        if not s:
-            continue
-        for ancetre in _chaine(par, numero):
-            _note(service, ancetre, s[0], s[1] + " (enfant)")
+
+    def _propager(source):
+        propage = dict(source)
+        for numero in numeros:
+            s = propage.get(numero)
+            if not s:
+                continue
+            for ancetre in _chaine(par, numero):
+                _note(propage, ancetre, s[0], s[1] + " (enfant)")
+        return propage
+
+    candidats = _propager(service)
+    confirmes = _propager(service_connue())
+    final = dict(candidats)
+    final.update(confirmes)
     for e in etats_:
-        s = service.get(e.numero)
+        s = final.get(e.numero)
         e.cle_service = s[0] if s else None
         e.cle_origine = s[1] if s else ""
 

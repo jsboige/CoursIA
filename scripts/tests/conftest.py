@@ -160,6 +160,18 @@ def _gh_etag_desactive(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _tapis_releve_isole(monkeypatch, tmp_path):
+    """Le store du releve est ISOLE : un test ne lit ni n'ecrit l'etat reel.
+
+    Sans ce filet, un test qui qualifierait un grain ecrirait dans le store
+    de la machine, et la cle confirmee d'un issue reel confirmerait le
+    classement d'un autre test : l'etat d'un tirage n'a rien de versionnable.
+    """
+    monkeypatch.setenv("COURSIA_TAPIS_RELEVE_DIR", str(tmp_path / "releve"))
+    yield
+
+
+@pytest.fixture(autouse=True)
 def _tapis_lourd_en_diagnostic(monkeypatch):
     """#26926 : les tests exercent le tapis lourd comme outil de diagnostic.
 

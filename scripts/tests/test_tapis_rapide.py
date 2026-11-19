@@ -644,7 +644,11 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # plafond, 19/11) ; tapis_etat_commit.py la vingt-quatrieme (le COMMIT qui a
 # ecrit l'etat : l'etat est lie au code qui l'a produit, 19/11) ;
 # tapis_entrelace.py la vingt-cinquieme (le LOT entrelace : primaire et
-# reprise alternes, la reprise passe devant un tour sur deux, 19/11).
+# reprise alternes, la reprise passe devant un tour sur deux, 19/11) ;
+# tapis_canon.py la vingt-sixieme (la FORME CANONIQUE : quelle PR couvre un
+# grain, extraite de tapis_cle.py pour tenir le plafond, 19/11) ;
+# tapis_releve.py la vingt-septieme (le RELEVE persistant par issue : la
+# lecture datee, et la livraison confirmee par le diff, 19/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -685,7 +689,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_tete.py", 30),
                                               ("tapis_citations.py", 40),
                                               ("belt_equite.py", 110),
-                                              ("tapis_cle.py", 150)])
+                                              ("tapis_cle.py", 150),
+                                              ("tapis_canon.py", 70),
+                                              ("tapis_releve.py", 225)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
