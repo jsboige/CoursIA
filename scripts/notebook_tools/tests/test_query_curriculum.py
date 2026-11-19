@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from generate_curriculum_rdf import VOCAB, build_graph
 from query_curriculum import (
     find_notebook,
+    list_interfaces,
     list_notebooks,
     main,
     notebooks_by_resource,
@@ -235,3 +236,44 @@ def test_multiple_subseries_parents_are_rejected(relation, tmp_path, capsys):
     graph.serialize(graph_path, format="turtle")
     assert main(["--graph", str(graph_path), "show", path]) == 2
     assert "plusieurs" in capsys.readouterr().err
+
+
+def _interfaces_graph():
+    from generate_curriculum_rdf import build_interfaces_graph
+
+    return build_interfaces_graph([
+        {"class": "cli", "name": "count_code_sorry",
+         "path": "scripts/lean/count_code_sorry.py",
+         "contract": {"usage": "python scripts/lean/count_code_sorry.py --json"}},
+        {"class": "mcp", "name": "sk08", "path": "a/b/",
+         "contract": {"usage": "dotnet run"}},
+        {"class": "bridge", "name": "amd_lean_bridge",
+         "path": "MyIA.AI.Notebooks/GameTheory/amd_lean_bridge.py",
+         "contract": {"usage": "module Python"}},
+    ])
+
+
+def test_list_interfaces_filters_by_class():
+    graph = _interfaces_graph()
+    assert len(list_interfaces(graph)) == 3
+    cli_only = list_interfaces(graph, interface_class="cli")
+    assert len(cli_only) == 1
+    assert "count_code_sorry" in cli_only[0]
+    assert "scripts/lean/count_code_sorry.py" in cli_only[0]
+    assert "cli" in cli_only[0]
+    mcp_only = list_interfaces(graph, interface_class="mcp")
+    assert len(mcp_only) == 1
+    assert "sk08" in mcp_only[0]
+
+
+def test_cli_lists_interfaces_with_class_filter(tmp_path, capsys):
+    graph = _interfaces_graph()
+    graph_path = tmp_path / "ifaces.ttl"
+    graph.serialize(graph_path, format="turtle")
+    assert main(["--graph", str(graph_path), "interfaces", "--class", "cli"]) == 0
+    out = capsys.readouterr().out
+    assert "count_code_sorry" in out
+    assert "scripts/lean/count_code_sorry.py" in out
+    # le filtre classe exclut les mcp et bridges du meme export
+    assert "sk08" not in out
+    assert "amd_lean_bridge" not in out
