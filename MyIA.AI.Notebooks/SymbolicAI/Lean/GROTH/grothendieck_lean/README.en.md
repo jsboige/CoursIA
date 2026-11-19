@@ -247,8 +247,9 @@ branch, its `lean-toolchain` file: `leanprover/lean4:` followed by version `v4.3
 2026-11-19; found via #26786) develops it on
 a different scale, in two layers `StacksCore` and `StacksFrontier`, and carries in particular a
 dedicated formalization of the Godement resolution: code search `Godement repo:AxiomMath/Stacks`
-returns **46 files** (API measurement of 2026-11-19; since `git/trees/main?recursive=1` is
-truncated, `truncated: true`, that count comes from search, not from path enumeration).
+confirms that this work covers a substantial set of files. Since reading the tree
+`git/trees/main?recursive=1` is truncated (`truncated: true`), this qualitative confirmation
+relies on the search and the paths cited below, not on an exhaustive path enumeration.
 
 | What this lake proves | Where AxiomMath/Stacks treats it |
 |---|---|

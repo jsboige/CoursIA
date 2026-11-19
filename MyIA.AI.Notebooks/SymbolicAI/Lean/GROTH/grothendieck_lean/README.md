@@ -256,8 +256,9 @@ fichier `lean-toolchain` : `leanprover/lean4:` suivi de la version `v4.35.0`, re
 découvert via #26786) le développe à
 une autre échelle, en deux couches `StacksCore` et `StacksFrontier`, et porte notamment une
 formalisation dédiée de la résolution de Godement : la recherche code `Godement repo:AxiomMath/Stacks`
-renvoie **46 fichiers** (mesure API du 2026-11-19 ; l'arbre `git/trees/main?recursive=1` étant
-tronqué, `truncated: true`, ce décompte provient de la recherche, pas de l'énumération des chemins).
+confirme que ce travail couvre un ensemble substantiel de fichiers. La lecture de l'arbre
+`git/trees/main?recursive=1` étant tronquée (`truncated: true`), cette confirmation qualitative
+s'appuie sur la recherche et les chemins cités ci-dessous, pas sur une énumération exhaustive.
 
 | Ce que ce lac prouve | Où AxiomMath/Stacks le traite |
 |---|---|
