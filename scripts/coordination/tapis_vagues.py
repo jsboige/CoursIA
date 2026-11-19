@@ -38,7 +38,7 @@ VAGUES_MAX = 4
 
 
 def vagues(grains_ordre: list, conteneurs: list, lane: str, maintenant: datetime,
-           jours: int, prs: list[dict], citations: dict, run, grains: int,
+           jours: int, prs: list[dict], run, grains: int,
            max_vagues: int = VAGUES_MAX, taille: int | None = None,
            echeance: float | None = None, debut: float | None = None,
            horloge=time.monotonic) -> tuple[list, dict, dict]:
@@ -46,6 +46,9 @@ def vagues(grains_ordre: list, conteneurs: list, lane: str, maintenant: datetime
 
     Rend `(servis, ecartees, rapport)` : les exclusions portent leur code et
     leur motif, et le rapport dit, vague par vague, ce que la vague a decide.
+
+    Les **citations** ne sont pas passees : la requalification decide sur le
+    fil (revue du 19/11, #27242).
     """
     taille = taille or max(grains * 3, grains)
     servis: list = []
@@ -58,7 +61,7 @@ def vagues(grains_ordre: list, conteneurs: list, lane: str, maintenant: datetime
         if not nums:
             break
         s, ec, echecs, arrete, appels, chrono = tq.qualifier(
-            nums, lane, maintenant, jours, prs, citations, run, echeance,
+            nums, lane, maintenant, jours, prs, run, echeance,
             debut=debut)
         for e in s:
             if e.numero not in {x.numero for x in servis}:
@@ -106,7 +109,7 @@ def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,
         return 3
     servis, ecartees, rapport_vagues = vagues(
         classe["grains"], classe["conteneurs"], args.lane, maintenant,
-        args.jours, classe["prs"], classe["citations"], run, args.grains,
+        args.jours, classe["prs"], run, args.grains,
         args.vagues, echeance=debut + args.budget_s, debut=debut)
     rapport = {
         "lane": args.lane, "maintenant": _iso(maintenant), "voie": "vagues",

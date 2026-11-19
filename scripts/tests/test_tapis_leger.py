@@ -228,7 +228,7 @@ def test_la_requete_de_qualification_est_bien_formee():
     `Expected one of SCHEMA, SCALAR, TYPE...`.
     """
     appels: list[list[str]] = []
-    tq.qualifier([7, 8], LANE, NOW, 45, [], {}, _run_faux(appels))
+    tq.qualifier([7, 8], LANE, NOW, 45, [],_run_faux(appels))
     requete = " ".join(appels[0])
     assert requete.count("{") == requete.count("}")
     assert requete.count("issue(number:") == 2
@@ -289,7 +289,7 @@ def test_la_qualification_lit_le_fil_complet(monkeypatch):
         return _run_faux()(argv, timeout)
 
     servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
-        [7], LANE, NOW, 45, [], {}, run_tronque)
+        [7], LANE, NOW, 45, [],run_tronque)
     assert not echecs
     assert vus == [7], "le fil complet doit etre relu"
     assert len(servis) == 0, "un claim vivant d'une autre lane ecarte le grain"
@@ -322,7 +322,7 @@ def test_un_fil_illisible_refuse_la_qualification(monkeypatch):
         return _run_faux()(argv, timeout)
 
     servis, ecartees, echecs,arrete, appels, chrono = tq.qualifier(
-        [7], LANE, NOW, 45, [], {}, run_tronque)
+        [7], LANE, NOW, 45, [],run_tronque)
     assert not servis, "un fil illisible ne se sert pas en catimini"
     assert ecartees[7]["code"] == "FIL_ILLISIBLE"
     assert ecartees[7]["motif"]
@@ -364,7 +364,7 @@ def test_le_marqueur_decisif_hors_fenetre_ecarte_le_grain(monkeypatch):
         return _run_faux()(argv, timeout)
 
     servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
-        [7], LANE, NOW, 45, [], {}, run_fenetre)
+        [7], LANE, NOW, 45, [],run_fenetre)
     assert vus == [7], "le fil complet doit etre relu (13 > 12)"
     assert not servis
     assert ecartees[7]["code"] == "RECLAMEE"
@@ -548,3 +548,70 @@ def test_la_lecture_ciblee_refuse_un_alias_absent_de_la_reponse():
     with pytest.raises(gh_bulk.LectureIncomplete) as exc:
         gh_issues.lire_champs(run_tronque, gh_bulk.DEPOT_GH, [7], "number", "corps")
     assert exc.value.lecture == "corps"
+
+
+# --- la requalification separe la trace du travail (revue du 19/11) -----------
+
+def _issue(n: int, labels=(), commentaires: int = 0) -> dict:
+    return {"number": n, "title": f"Grain {n}", "body": "",
+            "created_at": "2026-11-01T00:00:00Z",
+            "comments": [], "comments_total": commentaires,
+            "labels": list(labels)}
+
+
+def test_le_label_d_urne_ne_prouve_pas_la_livraison(monkeypatch):
+    """Un label `candidate-delivered` est une ROUTE, pas une preuve.
+
+    Il dit que l'issue est dans l'urne de cloture du coordinateur et de
+    l'adjoint ; il ne dit pas que la tranche est livree. Retirer le grain sur
+    cette seule foi, ce serait heriter d'une exclusion que personne n'a
+    prouvee : la lane qui le rencontre verifie la preuve sur l'artefact, puis
+    rend la main (#15069)."""
+    def faux_qualifier(run, depot, numeros=None):
+        return {7: _issue(7, labels=["candidate-delivered"])}
+
+    monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
+    servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
+        [7], LANE, NOW, 45, [], _run_faux([]))
+    assert [e.numero for e in servis] == [7], "le label ne retire pas le grain"
+    assert any("urne" in n for n in servis[0].notes), "l'urne reste dite"
+    assert 7 not in ecartees, "le label n'est pas une exclusion"
+
+
+def test_une_pr_ouverte_qui_cite_est_un_signal_pas_un_verdict(monkeypatch):
+    """Une PR ouverte qui cite l'issue est une couverture, pas une livraison.
+
+    Le verdict `COUVERTE` retirait le grain sur cette seule foi. Dans la
+    requalification, la couverture reste DITE -- en note -- et le grain reste
+    servable."""
+    def faux_qualifier(run, depot, numeros=None):
+        return {7: _issue(7)}
+
+    monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
+    prs = [{"number": 99, "title": "Fix(coordination): un ajustement #7",
+            "body": "Grain: LIGHT/guard -- lane myia-po-2025:CoursIA-2\n\nRefs #7"}]
+    servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
+        [7], LANE, NOW, 45, prs, _run_faux([]))
+    assert [e.numero for e in servis] == [7], "une couverture ne retire pas le grain"
+    assert any("#99" in n for n in servis[0].notes), "la couverture reste dite"
+
+
+def test_la_prise_en_charge_ne_lit_plus_les_citations(monkeypatch):
+    """La requalification decide sur le FIL : elle ne relit plus `origin/main`.
+
+    Les citations de commit sont une activite *autour* de l'issue ; elles ne
+    prouvent aucune livraison, et leur lecture coutait un `git log` a chaque
+    prise en charge (revue du 19/11, #27242)."""
+    from coordination import tapis_prise_en_charge as tpe
+
+    def interdiction(*args, **kwargs):
+        raise AssertionError("les citations ne doivent pas etre lues")
+
+    def faux_qualifier(run, depot, numeros=None):
+        return {7: _issue(7)}
+
+    monkeypatch.setattr(tpe.gh_bulk, "lire_citations_mergees", interdiction)
+    monkeypatch.setattr(tpe.gh_bulk, "lire_prs_ouvertes", lambda run: [])
+    monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
+    rapport = tpe.main(["--issue", "7", "--lane", LANE], run=_run_faux([]))
+    assert rapport == 0

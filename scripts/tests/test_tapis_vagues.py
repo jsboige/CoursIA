@@ -78,7 +78,7 @@ def _vagues(accepte: set[int], monkeypatch, max_vagues: int = 4,
     simule = _simule(accepte, arrete)
     monkeypatch.setattr(tapis_vagues.tq, "qualifier", simule)
     servis, ecartees, rapport = tapis_vagues.vagues(
-        _ordre(pool), [], LANE, MAINTENANT, 45, [], {}, None, grains,
+        _ordre(pool), [], LANE, MAINTENANT, 45, [], None, grains,
         max_vagues, taille=TAILLE, echeance=None, debut=0.0)
     return servis, ecartees, rapport, simule
 

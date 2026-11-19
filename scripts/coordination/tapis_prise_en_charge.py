@@ -50,13 +50,11 @@ def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,
     if not candidats:
         print("Aucun issue a qualifier (--issue N).", file=sys.stderr)
         return 2
-    depot = Path(__file__).resolve().parents[2]
     maintenant = maintenant or datetime.now(UTC)
     debut = time.monotonic()
-    citations = gh_bulk.lire_citations_mergees(depot, args.jours, run)
     prs = gh_bulk.lire_prs_ouvertes(run)
     servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
-        candidats, args.lane, maintenant, args.jours, prs, citations, run,
+        candidats, args.lane, maintenant, args.jours, prs, run,
         debut + args.budget_s, debut=debut)
     rapport = {
         "lane": args.lane, "maintenant": _iso(maintenant),

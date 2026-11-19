@@ -24,11 +24,17 @@ from coordination.tapis_marqueurs import _iso
 ABSENT = "ABSENT"
 
 
-def lec(issues: list[dict], prs: list[dict], citations: dict,
-        maintenant: datetime, appels: int = 0) -> gh_bulk.Lecture:
+def lec(issues: list[dict], maintenant: datetime,
+        appels: int = 0) -> gh_bulk.Lecture:
     """La lecture des seuls candidats qualifies : c'est elle qui est rejouee
-    par `tapis_rapide.etats` (les neuf regles d'ecart)."""
-    return gh_bulk.Lecture(issues=issues, prs=prs, citations=citations,
+    par `tapis_rapide.etats` (les neuf regles d'ecart).
+
+    **Ni PRs ni citations** n'y figurent : la requalification decide sur le
+    FIL (un grain prouve une prise en charge), et une citation ou une PR
+    ouverte ne prouve aucune livraison (revue du 19/11, #27242). Elles sont
+    rendues a la lane en NOTES (`coordination.tapis_preuves`).
+    """
+    return gh_bulk.Lecture(issues=issues, prs=[], citations={},
                            lu_a=_iso(maintenant), secondes=0.0, appels=appels)
 
 

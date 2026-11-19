@@ -14,6 +14,13 @@ La qualification lit :
 - et rejoue les **neuf regles d'ecart** de `tapis_rapide.etats` : la voie legere
   ne redecide pas, elle alimente la meme decision.
 
+**La requalification ne confond pas la trace et le travail** (revue du 19/11,
+#27242) : elle decide sur le **fil**. Une citation de commit, une PR ouverte
+qui cite l'issue, un label `candidate-delivered` : trois signaux qui
+n'ont ete **prouves** par personne et qui ne peuvent donc pas retirer un grain
+de la file. Ils restent dit, en notes (`coordination.tapis_preuves`), et la
+lecture ne relit plus les citations de `origin/main`.
+
 **fail-CLOSED.** Une decision qui n'a pas pu etre prise REFUSE le grain : un
 fil illisible, un mur de lectures atteint, une echeance depassee -- le grain
 porte alors son code de refus (`FIL_ILLISIBLE`, `MUR_EPUISE`, `ECHEANCE`) et
@@ -53,7 +60,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import tapis_fenetre, tapis_lot
+from coordination import tapis_fenetre, tapis_lot, tapis_preuves
 from coordination import tapis_fil_complet, tapis_rapide
 
 #: Candidats par lot de lecture (une requete GraphQL pour le lot).
@@ -61,7 +68,7 @@ LOT = 50
 
 
 def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
-              prs: list[dict], citations: dict, run,
+              prs: list[dict], run,
               echeance: float | None = None, lot: int = LOT,
               horloge=time.monotonic, debut: float | None = None
               ) -> tuple[list, dict, list[int], bool, int, dict]:
@@ -77,6 +84,8 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
     ecartees: dict[int, dict] = {}
     echecs: list[int] = []
     exclus: set[int] = set()
+    notes_urne: dict[int, str] = {}
+    prs_par_issue = tapis_rapide._prs_par_issue(prs)
     arrete = False
     appels = 0
     premier: float | None = None
@@ -88,8 +97,10 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
         tranche = candidats[i:i + lot]
         i += lot
         appels += tapis_lot.fenetre(tranche, run, issues, echecs, ecartees)
-        lec = tapis_lot.lec(list(issues.values()), prs, citations, maintenant, appels)
-        etats = tapis_rapide.etats(lec, lane, maintenant, jours)
+        notes_urne.update(tapis_preuves.urne_en_note(issues))
+        lec = tapis_lot.lec(list(issues.values()), maintenant, appels)
+        etats = tapis_preuves.etats_de_tranche(lec, notes_urne, prs_par_issue,
+                                               lane, maintenant, jours)
         for e in etats:
             if e.ecart and e.numero not in ecartees:
                 ecartees[e.numero] = {"numero": e.numero, "code": e.ecart,

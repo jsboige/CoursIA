@@ -643,6 +643,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_fenetre.py", 70),
                                               ("tapis_vagues.py", 140),
                                               ("tapis_lot.py", 80),
+                                              ("tapis_preuves.py", 80),
                                               ("tapis_rotation.py", 80)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
