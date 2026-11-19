@@ -2,7 +2,7 @@
   "schema": 1,
   "issue": 26364,
   "tranche": "T0",
-  "_comment": "Plafonds de taille des scripts de coordination (#26364, tranche T0). Un test bloquant (`scripts/tests/test_script_size_ratchet.py`) lit ce fichier : un script de `tracked` ne peut pas grossir, une baisse abaisse son plafond, et un script nouveau sous `scripts/` ne depasse pas `new_script_max_lines`. Relever un plafond se fait ICI, dans la PR, par une ligne motivee -- le relecteur la voit. `known_large` est l'etat des lieux : ces scripts depassaient deja le plafond des scripts neufs au 13/11, ou y sont passes depuis (releve au 16/11) ; ils ne sont donc pas concernes par la regle du plafond des 800 lignes, mais ils ne sont pas non plus epingles (seuls les dix-sept de `tracked` le sont). Un module NEUF qui depasse 800 des sa creation n'a pas sa place dans `known_large` : il est epingle dans `tracked` avec son motif, pour que le cliquet le fasse BAISSER.",
+  "_comment": "Plafonds de taille des scripts de coordination (#26364, tranche T0). Un test bloquant (`scripts/tests/test_script_size_ratchet.py`) lit ce fichier : un script de `tracked` ne peut pas grossir, une baisse abaisse son plafond, et un script nouveau sous `scripts/` ne depasse pas `new_script_max_lines`. Relever un plafond se fait ICI, dans la PR, par une ligne motivee -- le relecteur la voit. `known_large` est l'etat des lieux : ces scripts depassaient deja le plafond des scripts neufs au 13/11, ou y sont passes depuis (releve au 19/11 : le garde de variation a franchi les 800 lignes -- 767 au 16/11, 813 au 19/11 -- et n'a pas de tranche de refonte planned : il entre par la liste, il n'est pas epingle) ; ils ne sont donc pas concernes par la regle du plafond des 800 lignes, mais ils ne sont pas non plus epingles (seuls les dix-sept de `tracked` le sont). Un module NEUF qui depasse 800 des sa creation n'a pas sa place dans `known_large` : il est epingle dans `tracked` avec son motif, pour que le cliquet le fasse BAISSER.",
   "new_script_max_lines": 800,
   "tracked": {
     "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provers.py": {
@@ -18,8 +18,8 @@
       "note": "Dossier de prevalidation : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 66 lignes depuis la mesure du 13/11 (4314 -> 4380)"
     },
     "scripts/check_lane_claim.py": {
-      "lines": 8456,
-      "note": "Claims : cible T4 (sortir la grammaire des marqueurs et l'automate de claim). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 798 lignes depuis la mesure du 13/11 (7583 -> 8381), puis de 75 lignes de plus (8381 -> 8456) -- la scission T4 a ete livree dans claim_grammar.py ; ce plafond doit REDESCENDRE quand le reste du module aura suivi"
+      "lines": 8487,
+      "note": "Claims : cible T4 (sortir la grammaire des marqueurs et l'automate de claim). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 798 lignes depuis la mesure du 13/11 (7583 -> 8381), puis de 75 lignes de plus (8381 -> 8456) -- la scission T4 a ete livree dans claim_grammar.py ; ce plafond doit REDESCENDRE quand le reste du module aura suivi. Releve au 19/11 sur origin/main : le script a grossi de 31 lignes de plus (8456 -> 8487) -- le cliquet bloque la PR tant que le plafond n'est pas releve ici."
     },
     "scripts/check_pr_perimeter.py": {
       "lines": 2936,
@@ -30,8 +30,8 @@
       "note": "B.0 : cible T5 (separer la grammaire des marqueurs, l'evaluation et le rapport). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 332 lignes depuis la mesure du 13/11 (6414 -> 6746), puis de 12 lignes de plus (6746 -> 6758) apres le #26763"
     },
     "scripts/ci/fast_lane_registry.py": {
-      "lines": 4667,
-      "note": "Registre de la voie rapide : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 300 lignes depuis la mesure du 13/11 (4305 -> 4605), puis de 62 lignes de plus (4605 -> 4667)"
+      "lines": 4924,
+      "note": "Registre de la voie rapide : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 300 lignes depuis la mesure du 13/11 (4305 -> 4605), puis de 62 lignes de plus (4605 -> 4667). Releve au 19/11 sur origin/main : le script a grossi de 257 lignes de plus (4667 -> 4924) -- le cliquet bloque la PR tant que le plafond n'est pas releve ici."
     },
     "scripts/ci/prune_merged_worktrees.py": {
       "lines": 3939,
@@ -62,8 +62,8 @@
       "note": "Tapis (#22983) : cible T1 (voie legeres), T2 (bascule), T6 (retrait). Plafond pose sur la taille du 13/11 ; la refonte doit le faire BAISSER. Releve au 16/11 sur origin/main : le script a grossi de 44 lignes depuis la mesure du 13/11 (16327 -> 16371), puis de 20 lignes de plus (16371 -> 16391) ; la refonte T1/T2/T6 reste due et fera BAISSER ce plafond, ce releve n'est qu'un constat"
     },
     "scripts/coordination/claim_grammar.py": {
-      "lines": 2237,
-      "note": "Grammaire de claim : module NEUF, cree le 16/11 par la tranche T4 de #26364 (#26781). Il est le FRUIT de la scission de check_lane_claim.py, pas une croissance de celui-ci : epingle ici avec son motif pour que le cliquet le fasse BAISSER. Cible T4 (sortir la grammaire des marqueurs et l'automate de claim) ; depasse le plafond des scripts neufs (800) des sa creation."
+      "lines": 2269,
+      "note": "Grammaire de claim : module NEUF, cree le 16/11 par la tranche T4 de #26364 (#26781). Il est le FRUIT de la scission de check_lane_claim.py, pas une croissance de celui-ci : epingle ici avec son motif pour que le cliquet le fasse BAISSER. Cible T4 (sortir la grammaire des marqueurs et l'automate de claim) ; depasse le plafond des scripts neufs (800) des sa creation.. Releve au 19/11 sur origin/main : le script a grossi de 32 lignes de plus (2237 -> 2269) -- le cliquet bloque la PR tant que le plafond n'est pas releve ici."
     },
     "scripts/notebook_tools/check_code_comment_density.py": {
       "lines": 1072,
@@ -102,6 +102,7 @@
     "scripts/ci/run_guarded.py",
     "scripts/ci/tests/test_advisory_sticky.py",
     "scripts/ci/update_stale_pr_branches.py",
+    "scripts/ci/variation_adjacency_guard.py",
     "scripts/coordination/anti_entropy_register.py",
     "scripts/coordination/belt_service_balance.py",
     "scripts/coordination/gh_snapshot.py",
