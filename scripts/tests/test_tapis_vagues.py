@@ -55,7 +55,7 @@ def _simule(accepte: set[int], arrete: bool = False):
     vus: list[list[int]] = []
 
     def _q(candidats, lane, maintenant, jours, prs, citations, run,
-           echeance=None, lot=50, horloge=None, debut=None):
+           echeance=None, lot=50, horloge=None, debut=None, preuve=None):
         vus.append(list(candidats))
         servis = [_Grain(n) for n in candidats if n in accepte]
         ecartes = {n: {"numero": n, "code": "LABEL", "motif": "simule"}

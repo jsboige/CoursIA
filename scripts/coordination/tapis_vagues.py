@@ -29,6 +29,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_rotation
+from coordination import tapis_diff
 from coordination import tapis_qualification as tq
 from coordination import tapis_rapide
 from coordination.tapis_marqueurs import _iso
@@ -60,9 +61,10 @@ def vagues(grains_ordre: list, conteneurs: list, lane: str, maintenant: datetime
         nums = [e.numero for e in bloc]
         if not nums:
             break
+        # La preuve par le diff, comme sur la voie nominative (19/11).
         s, ec, echecs, arrete, appels, chrono = tq.qualifier(
-            nums, lane, maintenant, jours, prs, run, echeance,
-            debut=debut)
+            nums, lane, maintenant, jours, prs, run, echeance, debut=debut,
+            preuve=tapis_diff.preuve_gh(run))
         for e in s:
             if e.numero not in {x.numero for x in servis}:
                 servis.append(e)
