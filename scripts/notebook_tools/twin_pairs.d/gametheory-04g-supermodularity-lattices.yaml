@@ -1,0 +1,9 @@
+- name: "GameTheory-04g Supermodularity Lattices"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-04g-Supermodularite-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04g-Supermodularite-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets énumèrent les profils finis et exécutent Gale-Shapley ; C# implémente ces calculs avec le BCL, sans remplacer de solveur externe requis."
+  known_differences:
+    - "Python utilise NumPy et Matplotlib ; C# utilise les types .NET et des SVG natifs. Les quatre exercices sont distribués et gardés dans les deux versions."

@@ -219,6 +219,28 @@ def changed_notebooks(base: str, head: str = "HEAD", cwd=None) -> list[str]:
     return sorted(paths)
 
 
+def renamed_notebooks(base: str, head: str = "HEAD", cwd=None) -> dict:
+    """{chemin tete: chemin base} pour les carnets RENOMMES.
+
+    Organe autonome (imports stdlib seulement) : copie locale de la lecture
+    partagee de check_output_failure_text.renamed_notebooks -- meme contrat,
+    mesure fondatrice #26381. Sans cette resolution, le chemin de tete est
+    absent de la base et un pur renommage de carnet porteur de SVG compte
+    toutes ses occurrences comme des ajouts.
+    """
+    out = git("diff", "-M", "--name-status", "--diff-filter=R", base, head,
+              "--", "*.ipynb", cwd=cwd)
+    renames: dict[str, str] = {}
+    if out is None:
+        return renames
+    for line in out.splitlines():
+        parts = [p for p in line.split("\t") if p]
+        if len(parts) == 3 and parts[0].startswith("R"):
+            renames[parts[2].strip().replace(BS, "/")] = (
+                parts[1].strip().replace(BS, "/"))
+    return renames
+
+
 def read_notebook_at(ref: str | None, path: str, cwd=None):
     """Notebook JSON a un ref git (None = arbre de travail), None si absent."""
     if ref is None:
@@ -239,14 +261,17 @@ def ratchet(base: str, cwd=None) -> dict:
     """Ajouts seuls : occurrences a HEAD absentes de la base, par notebook.
 
     Cle d'occurrence : (cell_id, svg_sha1). Un carnet NOUVEAU n'a pas de base :
-    toutes ses occurrences sont des ajouts. Le stock inchange n'est pas juge
-    (contrat #26783 : « le stock de main n'est pas juge »).
+    toutes ses occurrences sont des ajouts. Un carnet RENOMME, lui, a une base
+    -- a son ancien chemin (``renamed_notebooks``), sans quoi le renommage
+    compte comme ajouts. Le stock inchange n'est pas juge (contrat #26783 :
+    « le stock de main n'est pas juge »).
     """
     base = resolve_base(base, cwd=cwd)
     paths = changed_notebooks(base, cwd=cwd)
+    renames = renamed_notebooks(base, cwd=cwd)
     rows, total = [], 0
     for path in paths:
-        base_nb = read_notebook_at(base, path, cwd=cwd)
+        base_nb = read_notebook_at(base, renames.get(path, path), cwd=cwd)
         head_nb = read_notebook_at(None, path, cwd=cwd)
         if head_nb is None:
             continue

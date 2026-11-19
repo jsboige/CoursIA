@@ -109,6 +109,10 @@ Le fil relaxation / arrondi / convexité, cinq accrétions de Search-9 :
 
 - **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (23/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 23 vs 75 expansions). Suppose Search-3.
 
+### Paysage SDP factorisé en deux langages
+
+[Search-09b en Python](Search-09b-SpuriousMinima.ipynb) et [son compagnon C#](Search-09b-SpuriousMinima-CSharp.ipynb) comparent coupes exhaustives et relaxation SDP numérique, puis recensent des départs de l'ascension factorisée. Le C# pilote les calculs et appelle CVXPY/CLARABEL et NumPy via Python.NET. Les perturbations échantillonnées ne certifient pas un maximum local.
+
 ## Progression
 
 Les trois premiers notebooks forment le socle commun — on y apprend à poser un problème, puis à l'explorer systématiquement — et tout le reste s'y greffe. Au-delà, le parcours n'est pas linéaire : cinq branches indépendantes s'ouvrent, à prendre dans l'ordre de vos curiosités :
@@ -239,6 +243,10 @@ Le véritable enseignement, au-delà du catalogue d'algorithmes, est un **réfle
 ### Le fil rouge
 
 La recherche en IA propose un changement de regard sur la résolution de problèmes : ne plus voir chaque algorithme comme une recette à appliquer, mais comprendre qu'ils sont tous des **négociations d'un même compromis fondamental** — entre la garantie de trouver l'optimal et le coût pour l'atteindre, entre explorer l'inconnu et exploiter l'acquis, entre la complétude et la mémoire disponible. BFS garantit l'optimal mais explose en mémoire ; DFS file droit mais peut se perdre ; A* négocie les deux via une heuristique dont l'honnêteté (l'admissibilité) conditionne la justesse du résultat ; le recuit simulé accepte de remonter la pente pour s'échapper d'un optimum local ; MCTS remplace l'expertise par la statistique. Comprendre la recherche, c'est comprendre qu'il n'existe pas de « bon » algorithme dans l'absolu, mais une famille de stratégies dont le choix dépend du compromis qu'on est prêt à accepter — et que ce compromis, loin d'être une limitation, est précisément ce qui rend la recherche applicable à tout problème formalisable en espace d'états.
+
+## Discrépance combinatoire en Python et C#
+
+[Search-09c en Python](Search-09c-CombinatorialDiscrepancy.ipynb) et [son jumeau C#](Search-09c-CombinatorialDiscrepancy-CSharp.ipynb) comparent hasard, arrondi de Beck–Fiala et optimum CP-SAT. Le C# utilise MathNet pour la SVD et le moteur CP-SAT natif ; les tirages et les directions numériques peuvent différer. La garantie de l'arrondi concerne les matrices d'incidence, tandis que l'expérience Komlós sur des vecteurs réels est distincte.
 
 ## B&B et borne LP : versions Python et C#
 

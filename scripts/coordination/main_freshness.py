@@ -199,8 +199,8 @@ def garder_et_dire(depot: str | Path, allow_stale: bool = False) -> dict:
 
     Le refus va sur ses deux canaux -- chaque raison sur stderr avec son
     remede, le verdict complet en JSON sur stdout -- et l'appelant (le point
-    d'entree du tapis) rend le code 4, distinct du 3 « lecture incomplete »
-    qui pointe le repli picker : ici le repli serait le contournement. Un
+    d'entree du tapis) rend le code 4, distinct du 3 « lecture incomplete » ;
+    aucun des deux ne renvoie au tapis lourd (#26926). Un
     outrepasse `--allow-stale` se dit sur stderr : il ne se prend pas en
     silence. Le tapis attache ensuite le verdict au rapport JSON (`fraicheur`).
     """
