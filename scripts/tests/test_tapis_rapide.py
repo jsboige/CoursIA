@@ -630,7 +630,10 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # tapis_fenetre.py la quatorzieme (la FENETRE du pool classe et celle du
 # fil : le bloc qui avance et le cas de la fenetre de 12, #27225, 18/11) ;
 # tapis_vagues.py la quinzieme (les VAGUES de la prise en charge : la file
-# se remplit, 4 vagues au plus, #27225, 18/11).
+# se remplit, 4 vagues au plus, #27225, 18/11) ; tapis_dernier_grain.py la
+# seizeieme (le DERNIER GRAIN d'une issue -- grain, passage, absence etablie
+# ou non mesurable -- et la regle des SEANCES, extraite de tapis_equilibre.py
+# pour que le module du classement tienne son plafond, #27242, 19/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -647,7 +650,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_fil_complet.py", 100),
                                               ("tapis_prise_en_charge.py", 90),
                                               ("tapis_fenetre.py", 120),
-                                              ("tapis_vagues.py", 140)])
+                                              ("tapis_vagues.py", 140),
+                                              ("tapis_dernier_grain.py", 260)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

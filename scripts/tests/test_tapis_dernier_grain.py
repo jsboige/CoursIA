@@ -167,17 +167,17 @@ def test_les_45_issues_a_mention_git_seule_sont_des_candidats(releve):
 
 # ------------------------------------------------- le compteur et le classement
 
-def test_le_compteur_ignore_les_citations_en_mode_grain(monkeypatch):
+def test_le_compteur_grain_ignore_les_citations():
     """Le compteur du classement ne compte plus une citation comme une
-    visite ; le mode historique (defaut) reste disponible."""
+    visite ; le compte **historique** reste disponible pour la voie legere,
+    qui ne lit pas le fil et ne peut pas distinguer un grain d'un passage."""
     from coordination.tapis_marqueurs import Evt
     evts: list[Evt] = []
     citations = [_citation(NOW - timedelta(days=1))]
+    _d, total_grain, _v = tdg.compter_grains(evts, NOW - timedelta(days=7))
+    assert total_grain == 0, "en mode grain, une citation n'est pas une visite"
     _d, total_historique, _v = tapis_equilibre.compter(evts, citations, NOW)
     assert total_historique == 1, "le mode historique compte les citations"
-    _d, total_grain, _v = tapis_equilibre.compter(
-        evts, citations, NOW, grains_seulement=True)
-    assert total_grain == 0, "en mode grain, une citation n'est pas une visite"
 
 
 def test_une_issue_servie_passe_en_derniere_du_classement():
@@ -190,8 +190,24 @@ def test_une_issue_servie_passe_en_derniere_du_classement():
                   False, False, etat_grain=tdg.NON_MESURABLE)
     servie = Etat(3, "t", [], NOW.strftime("%Y-%m-%dT%H:%M:%SZ"), None, 3,
                   False, False, etat_grain=tdg.GRAIN)
-    cles = [tapis_equilibre._cle_tri(e) for e in (jamais, mesure, servie)]
+    cles = [tdg.cle_tri(e) for e in (jamais, mesure, servie)]
     assert cles == sorted(cles), "l'ordre doit etre jamais, non mesurable, servie"
+
+
+def test_la_voie_legere_garde_l_ordre_historique():
+    """CONTROLE NEGATIF du couplage : sans etat de grain (la voie legere ne
+    lit pas le fil), l'ordre historique est conserve -- une citation y
+    compte encore comme une visite."""
+    from coordination.tapis_rapide import Etat
+
+    jamais = Etat(1, "t", [], NOW.strftime("%Y-%m-%dT%H:%M:%SZ"), None, 1,
+                  False, False, visites_total=0)
+    visite = Etat(2, "t", [], NOW.strftime("%Y-%m-%dT%H:%M:%SZ"), None, 2,
+                  False, False, visites_total=1)
+    assert tdg.cle_tri(jamais) < tdg.cle_tri(visite), "l'issue jamais visitee passe d'abord"
+    # la meme cle historique : unvisited d'abord, puis l'anciennete
+    assert tdg.cle_tri(jamais)[0] is False
+    assert tdg.cle_tri(visite)[0] is True
 
 
 def test_les_exceptions_de_rotation_sont_conservees():
@@ -235,5 +251,8 @@ def test_le_rejeu_remonte_un_ancien_grain_sans_servir_un_grain_occupe():
     assert e2.ecart == "RECLAMEE"
     assert e3.ecart == "LIVREE"
     # l'ordre du classement : le grain ancien remonte, le recent passe en dernier
-    servables = [e for e in tr.etats(lec, LANE, NOW_TAPIS) if e.ecart is None]
+    etats_ = tr.etats(lec, LANE, NOW_TAPIS)
+    servables = [e for e in etats_ if e.ecart is None]
     assert [e.numero for e in servables] == [1, 4]
+    tour = tr.ordonner(etats_, LANE, NOW_TAPIS, 10)
+    assert [e.numero for e in tour][:2] == [1, 4], "le grain ancien passe en tete"

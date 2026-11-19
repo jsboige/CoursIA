@@ -281,6 +281,7 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours)
     nommes = {p for p in parents.values() if p is not None}
     resultat = []
+    depuis = maintenant - timedelta(days=tapis_equilibre.FENETRE_J)
     for n, it in ouvertes.items():
         ancetres, famille = _ancetres(n, parents)
         labels = list(it.get("labels") or [])
@@ -296,10 +297,9 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
         # ete lu en entier se lit comme une issue jamais servie.
         e.etat_grain = tapis_dernier_grain.depuis_evenements(
             evts, lecture.citations.get(n, []), numero=n,
-            fil_complet=(total <= lus),
-            depuis=maintenant - timedelta(days=tapis_equilibre.FENETRE_J)).etat
-        e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
-            evts, lecture.citations.get(n, []), maintenant, grains_seulement=True)
+            fil_complet=(total <= lus), depuis=depuis).etat
+        e.derniere_visite, e.visites_total, e.visites = tapis_dernier_grain.compter_grains(
+            evts, depuis)
         _decider(e, it, evts, ancetres, ctx)
         if e.ecart is None and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")

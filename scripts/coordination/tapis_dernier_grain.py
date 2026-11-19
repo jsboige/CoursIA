@@ -51,7 +51,7 @@ import json
 import sys
 from collections import Counter
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -70,6 +70,39 @@ NON_MESURABLE = "non_measurable"
 #: servie ; l'etat non mesurable passe **apres** l'absence etablie (on
 #: ne sert pas en premier ce dont on ignore l'etat), mais **avant** un grain.
 RANG = {JAMAIS: 0, PASSAGE: 1, NON_MESURABLE: 2, GRAIN: 3}
+
+#: Une prise en charge fait une **SEANCE** : deux marqueurs de la meme lane a
+#: moins de `SEANCE_H` heures d'intervalle n'en font qu'une. La regle vit
+#: ici : c'est ce module qui dit ce qu'est une visite.
+SEANCE_H = 24
+
+
+def seances(instants: list[datetime], depuis: datetime | None = None) -> int:
+    """Le nombre de seances : un ecart de plus de SEANCE_H en ouvre une neuve."""
+    n, avant = 0, None
+    for t in sorted(t for t in instants if depuis is None or t >= depuis):
+        if avant is None or t - avant > timedelta(hours=SEANCE_H):
+            n += 1
+        avant = t
+    return n
+
+
+def cle_tri(e) -> tuple:
+    """La cle de tri du classement : l'etat de grain, puis l'anciennete.
+
+    L'etat passe avant l'anciennete : une absence ETABLIE (aucune lane n'a
+    jamais pris l'issue) passe devant un PASSAGE (une activite Git sans
+    prise en charge), qui passe devant une absence NON MESURABLE (fil
+    partiel : on ne sert pas en premier ce dont on ignore l'etat). Une issue
+    servie passe en dernier.
+
+    `etat_grain is None` : la voie legere ne lit pas le fil, elle ne peut pas
+    distinguer un grain d'un passage -- l'ordre historique est conserve.
+    """
+    etat = getattr(e, "etat_grain", None)
+    if etat is None:
+        return (e.visites_total > 0, e.cree_le, e.derniere_visite or "", e.numero)
+    return (RANG.get(etat, len(RANG)), e.cree_le, e.derniere_visite or "", e.numero)
 
 
 @dataclass(frozen=True)
@@ -106,6 +139,24 @@ def _marqueurs_grain(evts: list[Evt]) -> list[datetime]:
 def _passages(citations: list[dict]) -> list[datetime]:
     """Les instants des citations Git (les passages)."""
     return [d for c in citations if (d := _dt(c.get("date")))]
+
+
+def compter_grains(evts: list[Evt],
+                    depuis: datetime) -> tuple[str | None, int, int]:
+    """Les visites GRAIN : seances de prises en charge **nominatives**.
+
+    Une citation Git n'est pas une visite : elle n'entre pas dans le compte,
+    et elle ne rajeunit pas la derniere visite. `depuis` est le debut du tour
+    -- c'est la fenetre qui decide, pas la date du dernier grain.
+    """
+    par_lane: dict[str, list[datetime]] = {}
+    for ev in evts:
+        if ev.marque in VISITE and ev.lane:
+            par_lane.setdefault(ev.lane, []).append(ev.quand)
+    tous = [t for ts in par_lane.values() for t in ts]
+    return ((_iso(max(tous)) if tous else None),
+            sum(seances(ts) for ts in par_lane.values()),
+            sum(seances(ts, depuis) for ts in par_lane.values()))
 
 
 def depuis_evenements(evts: list[Evt], citations: list[dict], *,
