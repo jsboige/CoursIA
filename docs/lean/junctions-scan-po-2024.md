@@ -1,4 +1,95 @@
-# Junctions Mathlib — scan po-2024 (V2, worktree principal) : 22 jonctions vivantes vers un store VIDE
+# Junctions Mathlib — scan po-2024 (V3, arbre principal D:\Dev) : store restauré, 24 lacs chauds, 0 jonction pendante
+
+**Date** : 2026-11-19
+**Lane** : `myia-po-2024:CoursIA`
+**Issue parente** : #4362 — couverture flotte (« Restent hors couverture… po-2024, po-2026. Chacune devrait un jour passer le meme Scan lecture seule (~2 min) pour fermer la carte », c62)
+**Mode** : `Scan` (lecture seule, aucune modification) + organe dédié `check_mathlib_cache.py`
+**Commandes exécutées** :
+
+- `pwsh scripts/lean/setup_shared_mathlib.ps1 -Mode Scan` depuis `D:\Dev\CoursIA` (arbre **principal**, post-migration du 2026-09-17), exit 0
+- `python scripts/lean/check_mathlib_cache.py`, exit 0
+
+## Résumé V3
+
+Le V2 (2026-09-13, conservé intégralement ci-dessous) mesurait **22 jonctions vivantes vers un store VIDE** et **11 lacs en dérive de toolchain**. Entretemps : migration du dépôt `C:\dev` → `D:\Dev` (2026-09-17), puis **mission #13962 exécutée par cette lane le 2026-11-17** (GO ai-01, DM 21:01Z) — `Apply` en 2 passes, **27/27 junctionnés**, `lake build Sensitivity.Fourier` SUCCESS 1671 jobs via la jonction (preuve c.6928398769 sur #13962). Le V3 mesure l'état **après** :
+
+| Métrique | V2 (2026-09-13, `C:\dev`) | V3 (2026-11-19, `D:\Dev`) |
+|---|---:|---:|
+| Projets Lake portant `mathlib` (manifest scanné) | 28 | **36** |
+| Lacs `JUNCTIONED` (tous groupes) | 22 | **26** (+1 junction doc `build-evidence-2026-10-31`) |
+| Oleans Mathlib **atteignables** (organe dédié) | **0 / 22** (tous froids) | **24 lacs ok à 8 322 oleans** |
+| Jonctions **pendantes** | non mesuré (store vide ⇒ tout froid) | **0** |
+| Lacs froids (checkout physique, 0 olean) | 22 | **4** (`discrepancy`, `formal_logic`, `conway`, `mimo`) |
+| Groupes (scan) | 8 (2 + 6) | **10** (1 mutualisable + 9 isolés) |
+| Économie « potentielle » | 0 GB | **0 GB** (déjà mutualisé — métrique terminale, cf V2 §4) |
+
+**Verdict** : l'état « inversé » du V2 est **résorbé**. Le store `D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6` est **peuplé et chaud** (8 322 oleans par membre), les 26 jonctions du groupe mutualisable pointent dessus, et l'organe ne rapporte **aucune jonction pendante** (contrairement à po-2025 au 2026-10-08 : 14 pendantes). La carte de couverture #4362 peut porter po-2024 comme **couvert(e) et sain(e)**.
+
+## Résiduels mesurés (aucun geste dans ce scan — lecture seule)
+
+| Résiduel | Mesure | Lecture |
+|---|---|---|
+| `GOL/conway_lean` | checkout **physique 0,98 GB, froid** (0 olean) | checkout reconstruit hors jonction pour les builds de #25262 (jamais purgé) — candidat purge **après** merge #25262, un `lake build` réel d'abord (prescription de l'organe) |
+| `formal_logic_lean` | checkout **physique 1,06 GB, froid** (groupe isolé `v4.33.1-0df444a3`) | physique car isolé ; les builds R4 de #25236 (po-2023) l'utilisent — ne pas toucher tant que #25236 est ouverte |
+| `discrepancy_lean`, `mimo_lean` | checkouts **physiques 0 GB** (coquilles vides) | répertoires vides hérités du V2 (poses manuelles d'opérateur) — purge triviale, non urgente |
+| `Compression_lean` | « pas de checkout local » dans le groupe mutualisable | jamais checkouté sur cette machine ; jonctionnable à la première demande de build |
+| `torchlean_lean` | groupe isolé `v4.35.0-56a00585`, « pas de checkout local » | confirme **mesuré** la ligne d'arbitrage de la carte (c55/c61 : groupe isolé sans place déclarée) — décision coordinateur, 0 checkout donc 0 urgence disque |
+
+## Sortie verbatim du Scan V3 (extraits)
+
+```text
+=== Projets Lake avec dependance mathlib (36) ===
+
+--- Groupe leanprover_lean4_v4.33.0-db584cd6 [MUTUALISABLE -- revision partagee par 3 groupes] ---
+  ... 26 lignes JUNCTIONED (assignment, game_theory, minimax, learning_theory, percolation,
+      decision_theory, kelly, search, sudoku, galois, GROTH/formal_groups, grothendieck,
+      geometry, hecke, riemann200, serre100, calibration, combinators, mathlib_examples,
+      sensitivity, planning, erc20, argumentation, build-evidence-2026-10-31, ...)
+  MyIA.AI.Notebooks/Compression/Compression_lean    pas de checkout local
+  MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean checkout physique (0.98 GB)
+
+--- 9 groupes [isole] : stable_marriage (v4.25.0), kls_lean (v4.32.1),
+    social_choice_lean_peters (v4.32.1), conway_cgt_lean (v4.33.0-rc1),
+    discrepancy_lean (physique 0 GB), mimo_lean (physique 0 GB),
+    formal_logic_lean (physique 1.06 GB, v4.33.1), differential_lean (v4.33.1),
+    torchlean_lean (v4.35.0) -- pas de checkout local sauf mentions
+
+=== Economie totale potentielle (groupes en l'etat) : 0 GB ===
+```
+
+## Sortie verbatim de l'organe cache V3 (extraits)
+
+```text
+Store partage : D:\Dev\CoursIA\.mathlib-cache
+  toolchain leanprover_lean4_v4.31.0-rc1-d568c8c0
+  toolchain leanprover_lean4_v4.32.1-520045ab
+  toolchain leanprover_lean4_v4.33.0-db584cd6
+
+  ok   assignment_lean    8322 olean  junction
+  ...  (24 lignes `ok ... 8322 olean junction`)
+  cold discrepancy_lean      0 olean  reel
+  cold formal_logic_lean     0 olean  reel
+  cold conway_lean           0 olean  reel
+  cold mimo_lean             0 olean  reel
+
+Lakes: 42 | mathlib ok: 24 | froid: 4 | partiel: 0 | non installe: 9 | jonctions pendantes: 0 | illisibles: 0 | caches physiques distincts: 5
+```
+
+## Ligne po-2024 pour la carte multi-machine
+
+| Mesure | V2 (2026-09-13) | V3 (ce rapport) |
+|---|---:|---:|
+| Checkouts Mathlib réels | 0 vus + 2 réels hors découverte | **4 physiques** (conway 0,98 GB · formal_logic 1,06 GB · discrepancy 0 · mimo 0) |
+| Jonctions actives | 22 (vers store vide) | **26 chaudes + 1 doc junction** |
+| Oleans atteignables | 0 | **8 322 × 24 lacs** |
+| Groupes mutualisables | 2 (13 + 9) | **1 (28 membres déclarés, 26 junctionnés)** |
+| Économie jonction-cluster | 0 GB | 0 GB — **déjà réalisée** |
+
+---
+
+## Rapport V2 (2026-09-13 — conservé intégralement)
+
+### Junctions Mathlib — scan po-2024 (V2, worktree principal) : 22 jonctions vivantes vers un store VIDE
 
 **Date** : 2026-09-13
 **Lane** : `myia-po-2024:CoursIA`
