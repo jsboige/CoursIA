@@ -50,12 +50,34 @@ alerte nominative a la lane porteuse d'un conflit).
 2. **RooSync** : inbox DM en premier (`deep: true`), puis dashboard
    `workspace-CoursIA-2` en `section: "all"`, puis `machine-myia-ai-01`.
 3. **Choix** : (P0) reparer les PRs de la lane qui bloquent, (P1) missions
-   coordonnees recues, (P2) travail en cours, (P3) tapis
-   (`scripts/coordination/tapis_leger.py --lane myia-ai-01:CoursIA-2`).
+   coordonnees recues, (P2) travail en cours, (P3) tapis -- **point d'entree
+   stable** :
+   `python scripts/coordination/tapis_rapide.py --lane myia-ai-01:CoursIA-2`.
+   La voie legere (`tapis_leger.py`) n'existe sur `main` qu'apres le merge de
+   #27242 ; quand elle y est, elle prend le relais du tirage. En attendant,
+   le point d'entree stable rend le meme service -- le cycle ne depend d'aucun
+   etat de branche.
 4. **Livrer** : commit + PR **avant** le rapport ; `[DELIVERED]` ou
    `[RELEASED]` sur chaque issue de la file ; jamais de merge.
 5. **Fin** : `[DONE]` sur le dashboard workspace avec l'ID du cron, et MAJ de
    `MEMORY.md` si une lecon durable est acquise.
+
+## Chargement du skill apres le retour du clone sur `main`
+
+- Le skill est un **fichier** du depot (`.claude/skills/coordinate-sibling/`) :
+  le harnais le lit **au demarrage de la session**. Un clone qui n'est pas sur
+  la branche qui le porte ne le voit pas ; un clone qui y revient le voit a la
+  **session suivante**, jamais dans la session en cours.
+- Le retour sur `main` a lieu quand la PR qui porte le skill est **mergee** ;
+  rien d'autre n'est requis (pas de variable d'environnement, pas de
+  registre, pas d'outillage a installer).
+- **Aucun second cron** : le cron de la lane (30 min, decalee) porte deja
+  `/coordinate-sibling` -- il ne change ni de cadence ni de declencheur. Au
+  re-armement, on **supprime** l'ancien cron puis on en recree **un seul** (un
+  cron liste apres un reboot ne prouve pas qu'il tire).
+- Si la commande n'est pas encore chargee, le cycle **ne s'arrete pas** : la
+  lane continue son travail, et l'absence de la commande se dit dans le
+  rapport de cycle.
 
 ## Regie du ledger GPU (perimetre propre)
 
