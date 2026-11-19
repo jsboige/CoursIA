@@ -1,0 +1,10 @@
+- name: ML DataScience 2.7b SMO
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7b-SMO-From-Scratch.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7b-SMO-From-Scratch-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: La SMO, son noyau RBF et ses diagnostics sont calculés en C# ; le tirage NumPy et le vrai sklearn SVC utilisant LIBSVM sont appelés via Python.NET.
+  known_differences:
+    - Les trajectoires flottantes et nombres d'examens diffèrent entre les langages ; objectifs et violations sont comparés aux tolérances.
+    - Les deux figures de frontières sont des SVG statiques ; Python.NET nécessite CPython, NumPy et scikit-learn configurés.

@@ -2122,6 +2122,30 @@ def _glob_parent_dir(glob: str) -> str:
     return prefix.rsplit("/", 1)[0]
 
 
+def _glob_carries_prose(glob: str) -> bool:
+    """True when a scope element carries PROSE instead of a path pattern.
+
+    #27162 -- the claim grammar splits the `paths:` clause on its annotation
+    separators (` -- `, ` — `, ` (...)`). A glob that STILL carries whitespace
+    after that split is a FRAGMENT of a mis-split clause, not a path: the
+    measured case is a coordinator claim that glued its rationale to the glob
+    (`MyIA.AI.Notebooks/Sudoku/** ; claim pose au dispatch par le
+    coordinateur`).
+
+    Such a scope matches zero tracked file. The #21431 creation relaxation
+    then read it as "a file to be created in an existing directory" -- the
+    parent directory of the polluted glob DOES exist, so the tracked tree
+    could not decide the disjointness question, the scope was compared BY
+    PATTERN, the pattern missed the caller's path, and the lane was dropped
+    from the blockers: a fail-open (measured case #27139).
+
+    The creation relaxation therefore REFUSES a scope that carries prose: a
+    creation scope names a path, and a path with a rationale glued to it is a
+    broken claim -- which keeps the #10958 epic-wide lift (fail-CLOSED).
+    """
+    return any(ch.isspace() for ch in glob) or ";" in glob
+
+
 def _scope_is_creation(scope: list[str] | None,
                        tracked: list[str] | None) -> bool:
     """True when every glob of `scope` names a file to be CREATED.
@@ -2144,6 +2168,12 @@ def _scope_is_creation(scope: list[str] | None,
           something else. This is the discriminator the issue leaves to
           the implementation, and it is the one that keeps every existing
           fail-safe test green.
+      (d) it does not carry PROSE (#27162) -- a glob with a rationale glued
+          to it is a broken claim, not a file to be created. Without this
+          condition the polluted glob of the measured case reads as a
+          creation scope (its parent directory exists), is compared BY
+          PATTERN, misses the caller's path and is dropped: the fail-open
+          of #27139.
     """
     if not scope or tracked is None:
         return False
@@ -2153,6 +2183,8 @@ def _scope_is_creation(scope: list[str] | None,
             return False          # (a) the file already exists
         if _unparseable_scope_in([glob], tracked):
             return False          # (b) prose residue -- a typo
+        if _glob_carries_prose(glob):
+            return False          # (d) prose glued to the glob -- a typo
         parent = _glob_parent_dir(glob)
         if parent and parent not in dirs:
             return False          # (c) the directory does not exist -- a typo
