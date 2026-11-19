@@ -5235,18 +5235,34 @@ def review_threads(pr: int) -> list[dict]:
 # surfaces non typees). La divergence ne va QUE vers plus de blocage
 # (jamais un verdict permissif fabrique), et le cas anterieur -- le
 # GraphQL typed seul en panne -- est un cas de reseau partiel.
+#
+# Relecture ai-01 (review 5967281532, 2026-11-19) -- pagination ASYMETRIQUE
+# et surfaces partielles : les connexions terminees ne sont plus demandees
+# (`@include(if:)` -- une surface finie ne peut ni se re-accumuler ni se
+# faire re-servir sa premiere page), chaque surface possede son propre etat
+# complet/partiel (la panne d'une surface n'interrompt plus la pagination
+# des autres), et TOUTE surface incomplete est RELUE via son chemin
+# existant -- jamais son prefixe n'est rendu comme un resultat complet :
+#   typed   <- `_typed_author_surfaces` (fail-closed {} -> repli surfaces
+#              CLI completes de `pr view`)
+#   reviews <- `_reviews_author_of_rest` (REST pagine, jointure complete
+#              par construction -- sinon un dismissal par un tiers de la
+#              page suivante restait non attribue)
+#   threads <- `review_threads` (tolerances historiques ; structure
+#              invalide -> KeyError propage = PR illisible, refus explicite)
 _BUNDLE_QUERY = """
-query($owner:String!,$repo:String!,$n:Int!,$cAfter:String,$rAfter:String,$tAfter:String){
+query($owner:String!,$repo:String!,$n:Int!,$cAfter:String,$rAfter:String,$tAfter:String,
+      $cInc:Boolean!,$rInc:Boolean!,$tInc:Boolean!){
   repository(owner:$owner,name:$repo){
     pullRequest(number:$n){
       author{__typename login}
-      comments(first:100,after:$cAfter){
+      comments(first:100,after:$cAfter) @include(if:$cInc){
         pageInfo{hasNextPage endCursor}
         nodes{author{__typename login} body createdAt}}
-      reviews(first:100,after:$rAfter){
+      reviews(first:100,after:$rAfter) @include(if:$rInc){
         pageInfo{hasNextPage endCursor}
         nodes{author{__typename login} body submittedAt state databaseId}}
-      reviewThreads(first:100,after:$tAfter){
+      reviewThreads(first:100,after:$tAfter) @include(if:$tInc){
         pageInfo{hasNextPage endCursor}
         nodes{
           isResolved isOutdated path line
@@ -5257,14 +5273,29 @@ query($owner:String!,$repo:String!,$n:Int!,$cAfter:String,$rAfter:String,$tAfter
 }"""
 
 
+def _reviews_author_of_rest(pr: int) -> dict:
+    """Join ``id numerique -> login`` des reviews, par le REST historique.
+
+    Chemin existant du gate avant le bundle (#22757) : ``pulls/{n}/reviews``
+    pagine sert le join de `improper_dismissals` quand le bundle ne peut pas
+    le fournir (surface reviews incomplete). L'appelant garde ses propres
+    tolerances -- la fonction laisse remonter ce que ``gh_json`` leve.
+    """
+    reviews = gh_json(["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
+    if not isinstance(reviews, list):
+        reviews = []
+    return {r.get("id"): _author_login(r, "user")
+            for r in reviews if isinstance(r, dict)}
+
+
 def _pr_review_bundle(pr: int) -> dict:
     """Surfaces typees + threads + join des dismissals en UNE requete.
 
     Rend ``{"typed": dict, "threads": list, "author_of": dict}``. Les trois
-    valeurs suivent les contrats documentes ci-dessus (l'echec d'une
-    CONNEXION ne tue pas les autres : chaque surface retombe sur son
-    fail-closed propre) ; l'echec de l'APPEL propage, comme
-    ``review_threads`` le faisait deja.
+    valeurs suivent les contrats documentes ci-dessus : chaque surface est
+    rendue COMPLETE ou relue via son chemin existant -- un prefixe n'est
+    jamais presente comme un resultat complet ; l'echec de l'APPEL propage,
+    comme ``review_threads`` le faisait deja.
     """
     owner, name = REPO.split("/")
     comments: list[dict] = []
@@ -5275,76 +5306,100 @@ def _pr_review_bundle(pr: int) -> dict:
     c_after: str | None = None
     r_after: str | None = None
     t_after: str | None = None
-    typed_failed = False
+    c_done = r_done = t_done = False   # connexion terminee : plus demandee
+    c_bad = r_bad = t_bad = False       # incomplete : a relire via l'existant
     for _ in range(50):
+        if c_done or c_bad:
+            c_done = True  # une surface incomplete n'est pas re-demandee
+        if r_done or r_bad:
+            r_done = True
+        if t_done or t_bad:
+            t_done = True
+        if c_done and r_done and t_done:
+            break
         args = [
             "api", "graphql", "-f", f"query={_BUNDLE_QUERY}",
             "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
+            "-F", f"cInc={str(not c_done).lower()}",
+            "-F", f"rInc={str(not r_done).lower()}",
+            "-F", f"tInc={str(not t_done).lower()}",
         ]
-        if c_after:
+        if c_after and not c_done:
             args += ["-F", f"cAfter={c_after}"]
-        if r_after:
+        if r_after and not r_done:
             args += ["-F", f"rAfter={r_after}"]
-        if t_after:
+        if t_after and not t_done:
             args += ["-F", f"tAfter={t_after}"]
         data = gh_json(args)
         try:
             node = data["data"]["repository"]["pullRequest"]
-            c_conn = node["comments"]
-            r_conn = node["reviews"]
-            t_conn = node["reviewThreads"]
         except Exception:
-            typed_failed = True
+            # Structure globale invalide : les trois surfaces sont incompletes.
+            c_bad = r_bad = t_bad = True
             break
         if not pr_author and isinstance(node.get("author"), dict):
             pr_author = node["author"]
-        c_nodes = c_conn.get("nodes")
-        r_nodes = r_conn.get("nodes")
-        t_nodes = t_conn.get("nodes")
-        if not isinstance(c_nodes, list) or not isinstance(r_nodes, list):
-            typed_failed = True
-            break
-        comments.extend(n for n in c_nodes if isinstance(n, dict))
-        reviews.extend(n for n in r_nodes if isinstance(n, dict))
-        # Threads : tolerance heritee de `review_threads` -- un `nodes`
-        # non-list ne tue ni la boucle ni les autres surfaces.
-        if isinstance(t_nodes, list):
-            threads.extend(n for n in t_nodes if isinstance(n, dict))
-        for r in r_nodes if isinstance(r_nodes, list) else []:
-            if isinstance(r, dict) and isinstance(r.get("databaseId"), int):
-                login = _author_login(r)
-                if login:
-                    author_of[r["databaseId"]] = login
-        c_info = c_conn.get("pageInfo") or {}
-        r_info = r_conn.get("pageInfo") or {}
-        t_info = t_conn.get("pageInfo") or {}
-        c_more = bool(c_info.get("hasNextPage"))
-        r_more = bool(r_info.get("hasNextPage"))
-        t_more = bool(t_info.get("hasNextPage"))
-        if not c_more and not r_more and not t_more:
-            break
-        next_c = c_info.get("endCursor") or c_after
-        next_r = r_info.get("endCursor") or r_after
-        next_t = t_info.get("endCursor") or t_after
-        # Curseur fige : fail-closed par surface, comme les deux fonctions
-        # d'origine (typed -> vide ; threads -> arret partiel documente).
-        if (c_more and next_c == c_after) or (r_more and next_r == r_after):
-            typed_failed = True
-            break
-        if t_more and next_t == t_after:
-            print(f"  [!] PR #{pr}: curseur de pagination fige sur "
-                  "reviewThreads -- threads suivants non analyses.",
-                  file=sys.stderr)
-            break
-        c_after, r_after, t_after = next_c, next_r, next_t
+        if not c_done and "comments" in node:
+            conn = node["comments"]
+            nodes = conn.get("nodes") if isinstance(conn, dict) else None
+            if not isinstance(nodes, list):
+                c_bad = c_done = True
+            else:
+                comments.extend(n for n in nodes if isinstance(n, dict))
+                info = (conn.get("pageInfo") or {}) if isinstance(conn, dict) else {}
+                if not info.get("hasNextPage"):
+                    c_done = True
+                else:
+                    nxt = info.get("endCursor") or c_after
+                    if nxt == c_after:
+                        c_bad = c_done = True  # curseur fige
+                    else:
+                        c_after = nxt
+        if not r_done and "reviews" in node:
+            conn = node["reviews"]
+            nodes = conn.get("nodes") if isinstance(conn, dict) else None
+            if not isinstance(nodes, list):
+                r_bad = r_done = True
+            else:
+                reviews.extend(n for n in nodes if isinstance(n, dict))
+                for r in nodes:
+                    if isinstance(r, dict) and isinstance(r.get("databaseId"), int):
+                        login = _author_login(r)
+                        if login:
+                            author_of[r["databaseId"]] = login
+                info = (conn.get("pageInfo") or {}) if isinstance(conn, dict) else {}
+                if not info.get("hasNextPage"):
+                    r_done = True
+                else:
+                    nxt = info.get("endCursor") or r_after
+                    if nxt == r_after:
+                        r_bad = r_done = True  # curseur fige
+                    else:
+                        r_after = nxt
+        if not t_done and "reviewThreads" in node:
+            conn = node["reviewThreads"]
+            nodes = conn.get("nodes") if isinstance(conn, dict) else None
+            if not isinstance(nodes, list):
+                t_bad = t_done = True
+            else:
+                threads.extend(n for n in nodes if isinstance(n, dict))
+                info = (conn.get("pageInfo") or {}) if isinstance(conn, dict) else {}
+                if not info.get("hasNextPage"):
+                    t_done = True
+                else:
+                    nxt = info.get("endCursor") or t_after
+                    if nxt == t_after:
+                        t_bad = t_done = True  # curseur fige
+                    else:
+                        t_after = nxt
     else:
-        print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
-              "une surface typee (comments/reviews) -- surface non remplacee, "
-              "fail-closed.", file=sys.stderr)
-        typed_failed = True
+        # Plafond : toute surface non terminee est incomplete, pas un resultat.
+        c_bad = c_bad or not c_done
+        r_bad = r_bad or not r_done
+        t_bad = t_bad or not t_done
 
     typed: dict[str, object] = {}
-    if not typed_failed:
+    if not (c_bad or r_bad):
         if pr_author:
             typed["author"] = pr_author
         if comments:
@@ -5360,6 +5415,32 @@ def _pr_review_bundle(pr: int) -> dict:
                  "state": r.get("state")}
                 for r in reviews
             ]
+    else:
+        # Surface incomplete -> chemin existant (fail-closed {} -> repli CLI).
+        print(f"  [!] PR #{pr}: surface typee incomplete au bundle -- "
+              "relecture via _typed_author_surfaces.", file=sys.stderr)
+        typed = _typed_author_surfaces(pr)
+
+    if r_bad:
+        # Jointure incomplete -> REST historique complet (un dismissal par un
+        # tiers de la page suivante doit rester attribue, jamais silencieusement
+        # absent du join).
+        print(f"  [!] PR #{pr}: surface reviews incomplete au bundle -- "
+              "relecture du join via pulls/{{n}}/reviews.", file=sys.stderr)
+        try:
+            author_of = _reviews_author_of_rest(pr)
+        except subprocess.TimeoutExpired:
+            raise
+        except Exception:
+            author_of = {}
+
+    if t_bad:
+        # Threads incomplets -> chemin existant ; sa structure invalide
+        # propage (refus explicite), ses tolerances historiques sinon.
+        print(f"  [!] PR #{pr}: surface threads incomplete au bundle -- "
+              "relecture via review_threads.", file=sys.stderr)
+        threads = review_threads(pr)
+
     out_threads = []
     for t in threads:
         first = (t.get("comments") or {}).get("nodes") or [{}]
@@ -5403,14 +5484,11 @@ def improper_dismissals(pr: int, author_of: dict | None = None) -> set[str]:
     """
     try:
         if author_of is None:
-            reviews = gh_json(
-                ["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
-            if not isinstance(reviews, list):
+            author_of = _reviews_author_of_rest(pr)
+            if not author_of:
+                # reviews illisibles : on retombe sur l'ancien comportement
+                # (pas de join -> pas d'improper detecte), timeline non lue.
                 return set()
-            author_of = {
-                r.get("id"): _author_login(r, "user")
-                for r in reviews if isinstance(r, dict)
-            }
         events = gh_json(["api", f"repos/{REPO}/issues/{pr}/timeline", "--paginate"])
     except subprocess.TimeoutExpired:
         # #19643 (residu) : un ensemble vide lirait la reserve d'un tiers comme

@@ -293,20 +293,171 @@ def test_bundle_rend_les_formes_des_deux_fonctions_originales(monkeypatch):
 
 
 def test_bundle_fail_closed_par_surface(monkeypatch):
-    """Payload inattendu -> typed vide (repli CLI), threads tolérants."""
+    """Payload inattendu -> typed vide (repli CLI), threads tolérants.
+
+    Review 5967281532 point 2 : le vide n'est PAS une preuve de fermeture
+    sûre -- les témoins suivants couvrent relire-complète et refus explicite.
+    Ici : comments.nodes non-list -> surface incomplète -> relecture
+    `_typed_author_surfaces`, qui rend {} sur le même payload malformé
+    (fail-closed, repli surfaces CLI complètes de pr view).
+    """
     broken = {"data": {"repository": {"pullRequest": {
         "comments": {"pageInfo": {}, "nodes": "pas une liste"},
         "reviews": {"pageInfo": {}, "nodes": []},
         "reviewThreads": {"pageInfo": {}, "nodes": []},
     }}}}
+    calls: list[str] = []
 
     def fake_gh_json(args):
+        calls.append(" ".join(str(a) for a in args[:2]))
         return broken
 
     monkeypatch.setattr(mod, "gh_json", fake_gh_json)
     bundle = mod._pr_review_bundle(41)
     assert bundle["typed"] == {}
     assert bundle["threads"] == []
+    # la relecture typed est bien passee (1 bundle + 1 _typed_author_surfaces)
+    graphql_calls = [c for c in calls if "api graphql" in c]
+    assert len(graphql_calls) == 2
+
+
+def test_bundle_asymetrie_pas_de_redemande_ni_reaccumulation(monkeypatch):
+    """Review 5967281532 point 1 : comments sur 2 pages, threads sur 1 --
+    la connexion threads TERMINEE n'est plus demandee ni re-accumulee, et
+    les listes restent EGALES aux lectures separees sur longueurs
+    asymetriques."""
+    pages_bundle = [
+        # page 1 : comments continue, reviews et threads termines
+        {"data": {"repository": {"pullRequest": {
+            "author": {"__typename": "User", "login": "jsboige"},
+            "comments": {"pageInfo": {"hasNextPage": True, "endCursor": "c1"},
+                         "nodes": [{"author": {"__typename": "User", "login": "jsboige"},
+                                    "body": "nit page 1", "createdAt": "d1"}]},
+            "reviews": {"pageInfo": {"hasNextPage": False, "endCursor": "r1"},
+                        "nodes": [{"author": {"__typename": "User", "login": "reviewer"},
+                                   "body": "reserve", "submittedAt": "d2",
+                                   "state": "COMMENTED", "databaseId": 77}]},
+            "reviewThreads": {"pageInfo": {"hasNextPage": False, "endCursor": "t1"},
+                              "nodes": [{"isResolved": False, "isOutdated": False,
+                                         "path": "x.py", "line": 3,
+                                         "comments": {"nodes": [
+                                             {"author": {"login": "reviewer", "__typename": "User"},
+                                              "body": "inline nit", "createdAt": "d3"}]}}]},
+        }}}},
+        # page 2 : comments termine ; SI threads etait redemande, le mock
+        # re-servirait le meme thread (curseur t1) -- la re-accumulation
+        # doublerait la liste.
+        {"data": {"repository": {"pullRequest": {
+            "comments": {"pageInfo": {"hasNextPage": False, "endCursor": "c2"},
+                         "nodes": [{"author": {"__typename": "User", "login": "jsboige"},
+                                    "body": "nit page 2", "createdAt": "d4"}]},
+        }}}},
+    ]
+    seen: list[dict] = []
+
+    def fake_gh_json(args):
+        if args[:2] == ["api", "graphql"]:
+            query = args[3]
+            if "$cInc" in query:
+                seen.append({"cInc": _flag(args, "cInc"), "rInc": _flag(args, "rInc"),
+                             "tInc": _flag(args, "tInc")})
+                return pages_bundle[min(len(seen) - 1, len(pages_bundle) - 1)]
+            # lecture separee _typed_author_surfaces : meme scenario,
+            # servie par le jeu _sep_pages (connexions toujours presentes)
+            idx = getattr(fake_gh_json, "_sep", 0)
+            setattr(fake_gh_json, "_sep", idx + 1)
+            return getattr(fake_gh_json, "_sep_pages", pages_bundle)[idx]
+        return {}
+
+    def _flag(args, name):
+        for i, a in enumerate(args):
+            if a == f"-F" and i + 1 < len(args) and args[i + 1].startswith(f"{name}="):
+                return args[i + 1].split("=", 1)[1]
+        return None
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    bundle = mod._pr_review_bundle(41)
+    # exactement 2 appels bundle, et le 2e n'inclut NI reviews NI threads
+    assert len(seen) == 2
+    assert seen[0] == {"cInc": "true", "rInc": "true", "tInc": "true"}
+    assert seen[1] == {"cInc": "true", "rInc": "false", "tInc": "false"}
+    # pas de re-accumulation : chaque surface apparait UNE fois
+    assert [c["body"] for c in bundle["typed"]["comments"]] == [
+        "nit page 1", "nit page 2"]
+    assert len(bundle["threads"]) == 1
+    assert bundle["author_of"] == {77: "reviewer"}
+    # egalite avec la lecture separee sur le meme scenario asymetrique :
+    # la query separee lit TOUJOURS les deux connexions -- la page 2
+    # separee porte reviews vide+termine (pas de duplication).
+    pages_sep = [
+        pages_bundle[0],
+        {"data": {"repository": {"pullRequest": {
+            "comments": pages_bundle[1]["data"]["repository"]["pullRequest"]["comments"],
+            "reviews": {"pageInfo": {"hasNextPage": False, "endCursor": "r1"},
+                        "nodes": []},
+        }}}},
+    ]
+    fake_gh_json._sep_pages = pages_sep
+    fake_gh_json._sep = 0
+    separate = mod._typed_author_surfaces(41)
+    assert separate["comments"] == bundle["typed"]["comments"]
+    assert separate["reviews"] == bundle["typed"]["reviews"]
+
+
+def test_bundle_reviews_incomplet_relit_le_join_et_conserve_la_reserve(monkeypatch):
+    """Review 5967281532 point 2 : curseur reviews FIGE apres la page 1 ->
+    le join ne doit JAMAIS rester un prefixe valide. La relecture REST
+    complete le join (databaseId 88 de la page 2), le dismissal par un
+    tiers reste attribue -- reserve conservee."""
+    page1 = {"data": {"repository": {"pullRequest": {
+        "author": {"__typename": "User", "login": "jsboige"},
+        "comments": {"pageInfo": {"hasNextPage": False, "endCursor": "c1"},
+                     "nodes": []},
+        "reviews": {"pageInfo": {"hasNextPage": True, "endCursor": None},
+                    "nodes": [{"author": {"__typename": "User", "login": "reviewer"},
+                               "body": "reserve p1", "submittedAt": "d1",
+                               "state": "CHANGES_REQUESTED", "databaseId": 77}]},
+        "reviewThreads": {"pageInfo": {"hasNextPage": False, "endCursor": "t1"},
+                          "nodes": []},
+    }}}}
+
+    def fake_gh_json(args):
+        if args[:2] == ["api", "graphql"]:
+            return page1  # curseur fige : endCursor None == r_after None
+        if len(args) > 1 and args[1] == "repos/jsboige/CoursIA/pulls/41/reviews":
+            return [{"id": 77, "user": {"login": "reviewer"}},
+                    {"id": 88, "user": {"login": "tiers"}}]
+        if len(args) > 1 and args[1] == "repos/jsboige/CoursIA/issues/41/timeline":
+            return [{"event": "review_dismissed",
+                     "actor": {"login": "quelquunautre"},
+                     "dismissed_review": {"review_id": 88}}]
+        return {}
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    bundle = mod._pr_review_bundle(41)
+    # le join relu est COMPLET : 88 (page 2) est present, pas seulement 77
+    assert bundle["author_of"] == {77: "reviewer", 88: "tiers"}
+    # la reserve est conservee : le dismissal de 88 par un tiers est improper
+    improper = mod.improper_dismissals(41, author_of=bundle["author_of"])
+    assert improper == {"tiers"}
+    # la panne reviews n'a pas coupe les autres surfaces : threads complet
+    assert bundle["threads"] == []
+
+
+def test_bundle_structure_invalide_refus_explicite(monkeypatch):
+    """Review 5967281532 point 2 (refus explicite) : structure GraphQL
+    globalement invalide -> la relecture `review_threads` leve sur les
+    memes donnees -> le bundle PROPAGE (PR illisible), jamais un prefixe
+    analyse comme complet."""
+    broken = {"data": {}}
+
+    def fake_gh_json(args):
+        return broken
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    import pytest
+    with pytest.raises(KeyError):
+        mod._pr_review_bundle(41)
 
 
 def test_bundle_propage_l_echec_d_appel(monkeypatch):
