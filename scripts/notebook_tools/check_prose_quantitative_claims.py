@@ -255,6 +255,17 @@ class ArtifactExemption(NamedTuple):
 
 ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
+        path="translations/README.md",
+        motif=re.compile(r"24 470 cellules au 2026-08-06"),
+        raison=(
+            "Mesure HISTORIQUE datee, conservée par arbitrage #17636 volet 2 "
+            "(option a, coord 19/11) : total d'epoque produit par l'audit c.1252 "
+            "au 2026-08-06, pas un etat courant -- les comptes courants vivent "
+            "dans les CSV, la prose y renvoie. Le motif est etroit (nombre ET "
+            "date) : une reecriture re-signale l'occurrence."
+        ),
+    ),
+    ArtifactExemption(
         path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
         motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
         raison=(
