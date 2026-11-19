@@ -13,9 +13,9 @@
   Ce fichier distille l'ORDRE d'Axler, pas son texte : les définitions
   d'Axler sont portées par les organes natifs de Mathlib, que la marche
   déclare et cite, jamais redéfinies. Aucune ligne n'est recopiée des
-  compagnons sans licence (rkirov/linear-algebra-done-right-lean,
-  blanketism/Axler-Solutions), consultés seulement pour comparer les
-  progressions.
+  compagnons (rkirov/linear-algebra-done-right-lean, Apache-2.0 déclaré
+  dans son README amont ; blanketism/Axler-Solutions, sans licence
+  déclarée), consultés seulement pour comparer les progressions.
 
   Correspondance Axler → Mathlib :
   - 𝔽 = ℝ ou ℂ (Axler 1.6) → `K` corps quelconque ; les énoncés d'Axler qui

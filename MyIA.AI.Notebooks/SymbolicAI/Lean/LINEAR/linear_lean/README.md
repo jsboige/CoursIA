@@ -12,9 +12,9 @@ de 400 issues ouvertes n'est pas repassé (veto notebooks du 2026-11-03).
   gisement partagé : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Pedagogie-Proves\`
   (règle `bibliography-hygiene` : chaque énoncé est écrit depuis la copie
   archivée, jamais de mémoire).
-- **Aucune ligne recopiée** des compagnons sans licence
-  (`rkirov/linear-algebra-done-right-lean`, `blanketism/Axler-Solutions`) :
-  consultés uniquement pour comparer les progressions, jamais vendues.
+- **Aucune ligne recopiée** des compagnons (`rkirov/linear-algebra-done-right-lean`,
+  Apache-2.0 déclaré dans son README amont ; `blanketism/Axler-Solutions`, sans
+  licence déclarée) : consultés uniquement pour comparer les progressions, jamais vendues.
 - Le lake distille **l'ordre** d'Axler (déterminants rejetés au chapitre 9),
   pas son texte : les définitions sont portées par les organes natifs de
   Mathlib, déclarées et citées.
