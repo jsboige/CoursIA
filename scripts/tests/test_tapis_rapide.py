@@ -625,7 +625,10 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # (la lecture d'un LOT de candidats : un VERDICT par numero demande, 19/11) ;
 # tapis_rotation.py la dix-septieme (la ROTATION par numero d'issue : le bloc
 # servi et le tour qui se ferme, 19/11) ; tapis_diff.py la dix-huitieme (la
-# PREUVE par le diff : un marqueur DESIGNE une PR a verifier, 19/11).
+# PREUVE par le diff : un marqueur DESIGNE une PR a verifier, 19/11) ;
+# tapis_perimetre.py la dix-neuvieme (le PERIMETRE : ce qu'un glob certifie,
+# l'attribution de l'issue et la livraison complete -- extrait de tapis_diff.py
+# pour tenir le plafond, 19/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -646,7 +649,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_lot.py", 80),
                                               ("tapis_preuves.py", 80),
                                               ("tapis_rotation.py", 80),
-                                              ("tapis_diff.py", 200)])
+                                              ("tapis_diff.py", 200),
+                                              ("tapis_perimetre.py", 110)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

@@ -17,13 +17,18 @@ Trois verdicts :
 **fail-CLOSED vers l'exclusion** : une preuve absente ne vaut jamais
 exclusion ; elle vaut le maintien dans la rotation.
 
+Le **perimetre** lui-meme -- ce qu'un glob certifie, la separation entre
+visite, attribution et livraison complete -- vit dans
+`coordination.tapis_perimetre` (extrait de ce module pour tenir le plafond
+de lignes, 19/11).
+
 Aucune lecture n'est reecrite : la clause `paths:`, la PR designee et le
 matcher de chemins sont ceux de `scripts/check_lane_claim.py`, l'organe qui
 fait autorite sur les claims.
 
 Usage :
     python scripts/coordination/tapis_diff.py --marqueur "[DELIVERED] ..." \
-        [--diff a.py,b.py]
+        [--diff a.py,b.py] [--attribution c.py]
 """
 from __future__ import annotations
 
@@ -36,6 +41,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check_lane_claim
 from coordination import gh_bulk
 from coordination.tapis_marqueurs import evenements
+from coordination.tapis_perimetre import attribution, couvert_par, couverture
 
 #: Les trois verdicts de la preuve par le diff.
 COUVRE = "couvre"
@@ -56,19 +62,15 @@ def pr_designee(ligne: str) -> int | None:
     return check_lane_claim._extract_delivered_pr_ref(ligne)
 
 
-def couverts(diff: list[str], paths: list[str]) -> tuple[list[str], list[str]]:
-    """(couverts, manquants) : les globs que le diff atteint, ceux qu'il manque."""
-    atteints, manquants = [], []
-    for g in paths:
-        if any(check_lane_claim._full_path_matches(f, g) for f in diff):
-            atteints.append(g)
-        else:
-            manquants.append(g)
-    return atteints, manquants
+def verdict(ligne: str, diff: list[str] | None,
+            attribution: list[str] | None = None) -> tuple[str, str]:
+    """(verdict, detail) -- sans preuve, l'issue reste dans la rotation.
 
-
-def verdict(ligne: str, diff: list[str] | None) -> tuple[str, str]:
-    """(verdict, detail) -- sans preuve, l'issue reste dans la rotation."""
+    `attribution` est le perimetre porte par l'issue elle-meme (marqueurs
+    d'attribution) : quand il existe, la livraison doit le couvrir -- une
+    livraison complete mais **plus etroite que l'issue** ne livre pas
+    l'issue.
+    """
     pr = pr_designee(ligne)
     per = perimetre(ligne)
     if pr is None:
@@ -77,10 +79,19 @@ def verdict(ligne: str, diff: list[str] | None) -> tuple[str, str]:
         return A_VERIFIER, f"PR #{pr} : perimetre non declare (pas de clause `paths:`)"
     if diff is None:
         return A_VERIFIER, f"PR #{pr} : diff absent ou illisible"
-    atteints, manquants = couverts(diff, per)
-    if not manquants:
-        return COUVRE, f"PR #{pr} : le diff couvre le perimetre ({len(atteints)})"
-    return TRANCHE, f"PR #{pr} : diff partiel -- manque {', '.join(manquants)}"
+    couverts, partiels, manquants = couverture(diff, per)
+    if manquants:
+        return TRANCHE, f"PR #{pr} : diff partiel -- manque {', '.join(manquants)}"
+    if partiels:
+        return TRANCHE, (f"PR #{pr} : perimetre declare en glob ({', '.join(partiels)}) "
+                        "-- un glob ne certifie pas la completude : la preuve reste "
+                        "une preuve de tranche, l'issue reste dans la rotation")
+    if attribution:
+        etroits = [a for a in attribution if not couvert_par(a, per)]
+        if etroits:
+            return TRANCHE, (f"PR #{pr} : livraison complete mais perimetre plus etroit "
+                             f"que l'issue -- manque {', '.join(etroits)}")
+    return COUVRE, f"PR #{pr} : le diff couvre le perimetre ({len(couverts)})"
 
 
 def diff_pr(depot: str, numero: int, run) -> list[str] | None:
@@ -116,7 +127,8 @@ def decider(e, comments: list[dict], code: str | None, preuve) -> str | None:
     """
     if code not in (None, "LIVREE"):
         return code
-    ev = _dernier_delivered(evenements(comments))
+    evts = evenements(comments)
+    ev = _dernier_delivered(evts)
     if ev is None:
         if code == "LIVREE":
             e.ecart, e.motif = None, ""
@@ -130,7 +142,7 @@ def decider(e, comments: list[dict], code: str | None, preuve) -> str | None:
             e.notes.append(f"PR #{num} : perimetre non declare -- "
                            "l'issue reste dans la rotation")
         return None
-    etat, detail = verdict(ligne, preuve(num) if num else None)
+    etat, detail = verdict(ligne, preuve(num) if num else None, attribution(evts))
     if etat == COUVRE:
         e.motif = detail
         return "LIVREE"
@@ -160,9 +172,13 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description="Verifie la couverture du diff d'une PR.")
     p.add_argument("--marqueur", required=True, help="la ligne du marqueur")
     p.add_argument("--diff", default="", help="fichiers modifies, separes par des virgules")
+    p.add_argument("--attribution", default="",
+                   help="perimetre attribue a l'issue (marqueurs d'attribution), "
+                        "separe par des virgules")
     args = p.parse_args(argv)
     diff = [f for f in args.diff.split(",") if f] or None
-    code, detail = verdict(args.marqueur, diff)
+    attr = [f.strip() for f in args.attribution.split(",") if f.strip()] or None
+    code, detail = verdict(args.marqueur, diff, attr)
     print(f"{code} : {detail}")
     return 0 if code == COUVRE else 1
 
