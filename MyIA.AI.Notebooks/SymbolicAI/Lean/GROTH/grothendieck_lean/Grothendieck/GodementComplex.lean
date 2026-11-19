@@ -993,8 +993,11 @@ d'étages — est **prouvée à tout degré, sans aucune hypothèse** : cran `0`
 `cancel_epi` sur `cokernel.π` (`godementCokernelMap_comp`), et rang `1`
 (forme `μ`) par la même mécanique sur les flèches de conoyaux des unités
 (`godementCokernelMap_comp_rank_one`), **sans passer par le serpent** — le
-serpent reste l'organe de la seule cible **hard**, dont le `sorry` est
-désormais l'unique du module ; `sorry-baseline` du lake : 0 → 1 dans cette PR.
+serpent reste l'organe de la seule cible **hard**, dont l'énoncé est retiré
+du code compilé (arbitrage ai-01 du 2026-11-19, #25661 : l'acceptance des
+mères #25599/#25605 exige 0 → 0) et reste documenté en commentaire pour
+ressuscitation verbatim ; le module est à `sorry` nul et la
+`sorry-baseline` du lake reste 0.
 -/
 
 /-- **Le degré 0 de la nullité des flèches d'étages** (Partie 100, cran
@@ -1139,7 +1142,7 @@ theorem godementCanonicalMap_comp_zero {S : ShortComplex (X.Presheaf AddCommGrpC
         godementCokernelMap_comp m (ih (m + 1) (Nat.lt_succ_self (m + 1))),
         godementMapHom_zero]
 
-/-- **Cible prover : hard — la SES des étages à tout degré, par récursion**
+/- **Cible prover : hard — la SES des étages à tout degré, par récursion**
 (P99 rang `n + 1`). Pour une SES `S` de préfaisceaux dont le terme droit est
 **séparé** (`hsep : Mono (toGodement S.X₃)` : tue le connecteur à
 l'amorçage, `ker μ_{X₃} = 0` sur les verticales `μ = toGodement`) et dont la
@@ -1152,16 +1155,25 @@ théorème d'exactitude degreewise du foncteur « complexe canonique de
 Godement » [God58, Chap. II §4.1]. Ce qui a été tenté : architecture
 consignée (instance `SnakeInput` sur les SES d'étages `n`/`n+1` — dix champs,
 `h₀`/`h₃` par `kernel.isLimit`/`cokernel.isColimit` — puis annulation de
-`S.δ` par remontée le long de `im d^{n-1}` et lecture de `L₃_exact`) ;
-aucune exécution encore, c'est la pose de l'énoncé. -/
-theorem shortExact_godementCanonicalObj {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
-    (hS : S.ShortExact) (hsep : Mono (toGodement S.X₃))
-    (hres : ∀ m : ℕ, (ShortComplex.mk (godementCanonicalD S.X₃ m)
-        (godementCanonicalD S.X₃ (m + 1)) (godementCanonicalD_comp_zero S.X₃ m)).Exact)
-    (n : ℕ) :
-    (ShortComplex.mk (godementCanonicalMap S.X₁ S.X₂ S.f n)
-      (godementCanonicalMap S.X₂ S.X₃ S.g n)
-      (godementCanonicalMap_comp_zero n)).ShortExact := by
-  sorry
+`S.δ` par remontée le long de `im d^{n-1}` et lecture de `L₃_exact`).
+
+**Énoncé retiré du code compilé** (arbitrage ai-01 du 2026-11-19 sur #25661) :
+l'acceptance des issues mères #25599/#25605 exige `distinct_code_sorry` 0 → 0 ;
+tant que la preuve n'est pas livrée, l'énoncé reste documenté ici, hors
+compilation, et la garde bloquante (`axiom-fail-on-sorry`) reste armée —
+`sorry-baseline` du lake inchangée à 0. À ressusciter verbatim lorsque la
+preuve sera prête (organe : lemme du serpent, instance `SnakeInput` des SES
+d'étages, `δ` annulé par `hsep`/`hres`) :
+
+    theorem shortExact_godementCanonicalObj {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+        (hS : S.ShortExact) (hsep : Mono (toGodement S.X₃))
+        (hres : ∀ m : ℕ, (ShortComplex.mk (godementCanonicalD S.X₃ m)
+            (godementCanonicalD S.X₃ (m + 1)) (godementCanonicalD_comp_zero S.X₃ m)).Exact)
+        (n : ℕ) :
+        (ShortComplex.mk (godementCanonicalMap S.X₁ S.X₂ S.f n)
+          (godementCanonicalMap S.X₂ S.X₃ S.g n)
+          (godementCanonicalMap_comp_zero n)).ShortExact := by
+      -- preuve attendue : serpent (SnakeInput des SES d'étages), cran n+1 par
+      -- SES des conoyaux puis itération du rang 0. -/
 
 end Grothendieck

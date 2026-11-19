@@ -254,7 +254,10 @@ variable {X : TopCat.{u}}
 -- by `godementDChainMap_succ_right` (an `rfl`). Posed as a maquette with
 -- documented prover targets (`godementCanonicalMap_comp_zero`, easy — PROVED
 -- in the follow-up tranche below; `shortExact_godementCanonicalObj`, hard —
--- the only remaining `sorry` of the module).
+-- statement withdrawn from compiled code per the 2026-11-19 coordinator
+-- arbitration on #25661 (mothers #25599/#25605 require 0 → 0), kept as a
+-- documented comment for verbatim resurrection; the module holds zero
+-- remaining proof holes and the lake's sorry baseline stays 0).
 --
 -- **Follow-up tranche**: the degree-0 case of the easy target is PROVED
 -- (`godementCanonicalMap_comp_zero_zero` — `C⁰` of a null composite via
