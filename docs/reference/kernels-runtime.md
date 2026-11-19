@@ -607,7 +607,7 @@ Le carnet `GenAI/Audio/02-Advanced/02-11-SVS-Singing-Voice-RVC.ipynb` (conversio
 **Direct execution** (recommande pour scripts long-running) :
 
 ```powershell
-& "%USERPROFILE%\miniconda3\envs\coursia-ml-training\python.exe" train_moe.py --symbol SPY --regime-method hmm --n-folds 5 --seed 42
+& "$env:USERPROFILE\miniconda3\envs\coursia-ml-training\python.exe" train_moe.py --symbol SPY --regime-method hmm --n-folds 5 --seed 42
 ```
 
 **Activation interactive** :
@@ -620,7 +620,7 @@ python train_moe.py ...
 **Background avec log** :
 
 ```bash
-nohup "%USERPROFILE%/miniconda3/envs/coursia-ml-training/python.exe" train_moe.py ... > run.log 2>&1 &
+nohup "$USERPROFILE/miniconda3/envs/coursia-ml-training/python.exe" train_moe.py ... > run.log 2>&1 &
 ```
 
 ### Pourquoi un env Conda dédié ?
