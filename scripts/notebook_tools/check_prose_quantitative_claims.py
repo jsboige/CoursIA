@@ -1228,6 +1228,35 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "Fait passe figure."
         ),
     ),
+    # Rapport de scan V3 (EPIC #4362, PR #27414) : les deux compteurs sont
+    # des lignes VERBATIM des sorties d'instruments, citees en blocs de code
+    # dans le rapport -- meme classe que l'entree « 8 690 fichiers deja en
+    # cache » du rapport darksnail ci-dessus : resultat d'un run de lecture
+    # seule date, pas un etat qui derive avec le depot.
+    ArtifactExemption(
+        path="docs/lean/junctions-scan-po-2024.md",
+        motif=re.compile(
+            r"\.\.\. 26 lignes JUNCTIONED \(assignment, game_theory"
+        ),
+        raison=(
+            "Ligne verbatim du scan `setup_shared_mathlib.ps1 -Mode Scan` "
+            "(2026-11-19) : elision de l'outil nommant les lacs JUNCTIONED du "
+            "groupe mutualisable. Resultat d'un run de lecture seule (EPIC "
+            "#4362), pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/lean/junctions-scan-po-2024.md",
+        motif=re.compile(
+            r"\(24 lignes `ok \.\.\. 8322 olean junction`\)"
+        ),
+        raison=(
+            "Ligne verbatim de `check_mathlib_cache.py` (2026-11-19) : "
+            "elision de l'outil comptant les lacs ok branches sur le store "
+            "partage. Resultat du meme run de scan, fige par la date du "
+            "rapport."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------
