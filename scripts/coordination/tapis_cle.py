@@ -12,11 +12,14 @@ Trois regles, et rien d'autre :
 
 1. **Une voix par issue** : la cle est UNE date par grain. Ni bonus d'age, ni
    bonus de consolidation, ni nombre de visites n'ordonnent le tirage.
-2. **La cle est la derniere PR qui COUVRE le grain** : la couverture se lit
-   dans le **corps** de la PR, en forme **canonique** (`See #N`, `Part of #N`,
+2. **La cle est la derniere PR candidate sur le grain** : le lien se lit dans
+   le **corps** de la PR, en forme **canonique** (`See #N`, `Part of #N`,
    `Closes #N`, `Fix(...#N)`...). Une PR qui **mentionne** l'issue en prose ne
-   la couvre pas -- c'est la distinction qui manquait : la PR #27368, qui
-   *parle* de #27338 sans le servir, ne le sert pas.
+   la candidats pas. Arbitrage du 19/11 17:14Z : « ni une mention libre ni
+   See/Part of seuls ne prouvent un service. Utiliser les liens comme
+   **candidats** et confirmer le perimetre par le **diff**. » La preuve est
+   donc l'organe du depot (`tapis_diff.verdict`), decide a la qualification :
+   la cle classe sur le candidat, le verdict decide.
 3. **Le hub suit son enfant** : la PR d'un enfant (E) remonte la cle du **hub**
    (H) -- et **seulement** lui : les **freres** (F) gardent leur propre cle.
    Un pli **neuf** n'herite pas de l'age du hub : sans PR, la cle est la

@@ -24,7 +24,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import tapis_cle, tapis_equilibre, tapis_universel
+from coordination import (tapis_cle, tapis_diff, tapis_equilibre,
+                         tapis_preuve, tapis_universel)
 
 MAINTENANT = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
 PR_DATE = "2026-11-19T08:00:00Z"
@@ -181,3 +182,43 @@ def test_la_densite_est_annoncee_et_ne_classe_pas():
         vide, set(), MAINTENANT, dens.get(300)))
     # elle ne classe pas : a creation egale, le departage reste uniforme
     assert _ordre(etats_).index(200) < _ordre(etats_).index(300)
+
+
+def test_le_temoin_negatif_ne_prouve_pas_un_service():
+    """Arbitrage du 19/11 17:14Z : un lien est un CANDIDAT, c'est le DIFF qui
+    fait foi. La PR picker qui cite #27338 touche `scripts/coordination/**`
+    alors que l'attribution de l'issue porte les carnets : elle ne le sert
+    pas. Les huit PR sur les carnets, elles, couvrent l'attribution.
+
+    L'organe est celui du depot -- `tapis_diff.verdict` (le marqueur DESIGNE
+    la PR a verifier, le diff decide) et `tapis_preuve.Preuve` (les fichiers
+    modifies ET l'etat de la PR). Aucun organe nouveau : la reponse se lit
+    la, elle ne se reinvente pas."""
+    attribution = ["MyIA.AI.Notebooks/Quantum/QFT/limites.ipynb"]
+    ligne_picker = ("[DELIVERED] lane myia-ai-01:CoursIA-2 -- PR #27368 -- "
+                     "paths: scripts/coordination/tapis_cle.py")
+    preuve_picker = tapis_preuve.Preuve(
+        ("scripts/coordination/tapis_cle.py",), "MERGED", True)
+    verdict, _ = tapis_diff.verdict(ligne_picker, preuve_picker, attribution)
+    assert verdict == tapis_diff.TRANCHE, \
+        "le diff du picker ne couvre pas l'attribution de l'issue"
+
+    ligne_carnets = ("[DELIVERED] lane myia-ai-01:CoursIA-2 -- PR #27371 -- "
+                     "paths: MyIA.AI.Notebooks/Quantum/QFT/limites.ipynb")
+    preuve_carnets = tapis_preuve.Preuve(
+        ("MyIA.AI.Notebooks/Quantum/QFT/limites.ipynb",), "MERGED", True)
+    verdict, _ = tapis_diff.verdict(ligne_carnets, preuve_carnets, attribution)
+    assert verdict == tapis_diff.COUVRE, \
+        "le diff des PR sur les carnets couvre l'attribution"
+
+
+def test_un_lien_seul_ne_prouve_pas_un_service():
+    """Ni une mention libre ni `See #N` seul ne sont une preuve : sans
+    perimetre declare, sans attribution, le verdict reste une TRANCHE --
+    l'issue ne sort pas de la rotation."""
+    ligne = "[DELIVERED] lane myia-ai-01:CoursIA-2 -- PR #27368"
+    preuve = tapis_preuve.Preuve(("scripts/coordination/tapis_cle.py",),
+                                 "MERGED", True)
+    for attribution in (None, []):
+        verdict, _ = tapis_diff.verdict(ligne, preuve, attribution)
+        assert verdict != tapis_diff.COUVRE, attribution
