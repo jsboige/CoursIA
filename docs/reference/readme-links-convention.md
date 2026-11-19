@@ -12,7 +12,7 @@
 | `X.html` vers un rendu non committé | **Violation `HTML_404`** (404 sur github.com) — garde bloquante, aucune nouvelle violation admise |
 | `.ipynb` hors render-list (« source brute » légitime : garde `---` ou hors sous-arbre) | Population documentée (~7 liens, cf #18911) — à ne pas convertir |
 
-L'énumération des violations est portée par `scripts/regen_quarto_render.py --check-readme-links` (classes `HTML_404` / `BROKEN`) ; la garde CI consomme cette sortie. L'ancienne classe `STALE_LINK` (« un `.ipynb` dont le rendu sibling existe devrait être lié en `.html` », #13025/#18970) est **retirée** — elle a produit la vague de conversion inversée depuis.
+L'énumération des violations est portée par `scripts/ci/regen_quarto_render.py --check-readme-links` (classes `HTML_404` / `BROKEN`) ; la garde CI consomme cette sortie. L'ancienne classe `STALE_LINK` (« un `.ipynb` dont le rendu sibling existe devrait être lié en `.html` », #13025/#18970) est **retirée** — elle a produit la vague de conversion inversée depuis.
 
 ## Historique — la règle a changé deux fois, et pourquoi
 

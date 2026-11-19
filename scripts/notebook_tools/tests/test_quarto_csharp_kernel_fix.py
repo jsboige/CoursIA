@@ -19,7 +19,7 @@ from pathlib import Path
 import pytest
 
 # Make the script importable both as module (for in-process tests) and as CLI (for subprocess tests)
-SCRIPT_DIR = Path(__file__).resolve().parents[2]  # scripts/
+SCRIPT_DIR = Path(__file__).resolve().parents[2] / "ci"  # scripts/ci/ (relogé #13737 V3)
 sys.path.insert(0, str(SCRIPT_DIR))
 
 
@@ -146,7 +146,7 @@ def test_cli_path_single_file_roundtrip(tmp_path):
          "--root", str(tmp_path),
          "--path", str(nb),
          "--manifest", str(manifest)],
-        check=False, capture_output=True, text=True,
+        check=False, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert rc.returncode == 0, rc.stderr
     patched = nb.read_bytes()
@@ -158,7 +158,7 @@ def test_cli_path_single_file_roundtrip(tmp_path):
          "--root", str(tmp_path),
          "--path", str(nb),
          "--manifest", str(manifest)],
-        check=False, capture_output=True, text=True,
+        check=False, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert rc.returncode == 0, rc.stderr
     final = nb.read_bytes()

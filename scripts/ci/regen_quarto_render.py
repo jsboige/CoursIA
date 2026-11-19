@@ -21,8 +21,8 @@ firsthand on the pilot: a directory-scoped ``_quarto.yml`` is NOT applied to
 .ipynb documents in Quarto 1.7.32, only the root project block is).
 
 Usage:
-    python scripts/regen_quarto_render.py            # rewrite _quarto.yml in place
-    python scripts/regen_quarto_render.py --check    # exit 1 if drift (CI guard)
+    python scripts/ci/regen_quarto_render.py            # rewrite _quarto.yml in place
+    python scripts/ci/regen_quarto_render.py --check    # exit 1 if drift (CI guard)
 """
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ import sys
 import urllib.parse
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 QUARTO_YML = REPO_ROOT / "_quarto.yml"
 
 # Files always rendered first (landing pages). Order matters for build log only.
@@ -545,7 +545,7 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
         _emit_entry(lines, emitted, entry)
     # READMEs (explicit list — globs do not expand in Quarto 1.7, see header)
     lines.append("    # README.md rendus en HTML (Axe C #4211). Liste explicite")
-    lines.append("    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7")
+    lines.append("    # (regeneree par scripts/ci/regen_quarto_render.py) car Quarto 1.7")
     lines.append("    # n'etend pas le glob **/README.md sur les sous-repertoires.")
     # Aucun compteur n'est ecrit ici (ni pour les READMEs, ni pour les docs/*.md,
     # ni pour les notebooks) : un total dans un fichier genere se perime a chaque
@@ -881,7 +881,7 @@ def main() -> int:
                         f"::error::    ... and {len(removed) - 20} more"
                     )
             lines.append(
-                "::error::Run: python scripts/regen_quarto_render.py "
+                "::error::Run: python scripts/ci/regen_quarto_render.py "
                 "(regen re-ecrit le bloc). Sur conflit de merge, garder la "
                 "version de main et re-regen (la liste est un artefact genere, "
                 "cf. issue #19895)."
