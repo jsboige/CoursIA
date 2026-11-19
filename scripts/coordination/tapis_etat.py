@@ -63,6 +63,35 @@ def lire(lane: str) -> dict:
     return etat
 
 
+def ancre_de(etat: dict | None, classe: str) -> int | None:
+    """Le numero de curseur d'une classe dans l'etat lu (None si inconnue)."""
+    if not isinstance(etat, dict):
+        return None
+    bloc = etat.get(classe)
+    if isinstance(bloc, int):
+        return bloc
+    if isinstance(bloc, dict):
+        ancre = bloc.get("ancre")
+        return ancre if isinstance(ancre, int) else None
+    return None
+
+
+def tour_de(etat: dict | None, classe: str) -> int:
+    """Le numero de tour d'une classe (0 si inconnu)."""
+    bloc = (etat or {}).get(classe)
+    if isinstance(bloc, dict) and isinstance(bloc.get("tour"), int):
+        return bloc["tour"]
+    return 0
+
+
+def inconnus_de(etat: dict | None, classe: str) -> dict:
+    """Les numeros PARKES d'une classe (lecture impossible, non decides)."""
+    bloc = (etat or {}).get(classe)
+    if isinstance(bloc, dict) and isinstance(bloc.get("inconnus"), dict):
+        return bloc["inconnus"]
+    return {}
+
+
 def ecrire(lane: str, etat: dict) -> Path:
     """Persiste l'etat (une ecriture atomique)."""
     chemin = chemin_etat(lane)

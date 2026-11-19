@@ -3,13 +3,11 @@
 
 Le classement change a chaque tour : une rotation qui suit la POSITION fait
 passer des issues a travers le bloc, et le tour ne se ferme pas -- mesure du
-19/11 : **380 issues sur 440** atteintes en un tour, un tour complet en
-demandait 440. La rotation suit donc le **NUMERO** : l'ordre des numeros ne
-bouge pas, le tour se ferme.
+19/11 : **380 issues sur 440** atteintes en un tour. La rotation suit donc le
+**NUMERO** : l'ordre des numeros ne bouge pas, le tour se ferme.
 
 Le bloc est CONTIGU de cet ordre, decale par lane : deux lanes ne balayent pas
-le meme bloc. Une tranche de 4 h fait avancer le bloc d'un cran, et un tour
-complet tient en `ceil(pool / taille)` tranches -- le delai max est publie.
+le meme bloc. Une tranche de 4 h fait avancer le bloc d'un cran (delai max publie).
 
 **Chaque numero du pool sort avec un verdict** (#27242) : le bloc publie les
 numeros qu'il **visite** et ceux qu'il ne visite pas (`non_visites`). L'ANCRE
@@ -20,7 +18,7 @@ from __future__ import annotations
 import hashlib
 from datetime import datetime
 
-from coordination import tapis_ancre
+from coordination import tapis_ancre, tapis_retry
 from coordination.tapis_rapide import PART_CONTENEURS
 
 #: La fenetre avance d'un bloc par tranche de 4 h.
@@ -67,6 +65,8 @@ def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
         conteneurs, ancre_c, quota, bloc_suivant,
         _decalage(lane, "conteneurs", n_c) + compteur * quota)
     pool = {g.numero for g in grains} | {g.numero for g in conteneurs}
+    b_g = b_g + tapis_retry.membres_reprise(
+        grains, b_g, tapis_ancre.inconnus_de(ancres, "grains"), part)
     visites = {g.numero for g in b_g} | {g.numero for g in b_c}
     blocs = max((n_g + part - 1) // part if n_g else 1,
                 (n_c + quota - 1) // quota if n_c else 1)

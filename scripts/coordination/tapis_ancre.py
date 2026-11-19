@@ -25,41 +25,12 @@ persistance dans `coordination.tapis_etat`.
 """
 from __future__ import annotations
 
-from coordination import tapis_etat
-from coordination.tapis_etat import lire  # noqa: F401
+from coordination import tapis_etat, tapis_retry
+from coordination.tapis_etat import ancre_de, inconnus_de, lire, tour_de  # noqa: F401
 from coordination.tapis_tranche import membres, position, tranche  # noqa: F401
 
 ENV_ETAT = tapis_etat.ENV_ETAT
 CLASSES = tapis_etat.CLASSES
-
-
-def ancre_de(etat: dict | None, classe: str) -> int | None:
-    """Le numero de curseur d'une classe dans l'etat lu (None si inconnue)."""
-    if not isinstance(etat, dict):
-        return None
-    bloc = etat.get(classe)
-    if isinstance(bloc, int):
-        return bloc
-    if isinstance(bloc, dict):
-        ancre = bloc.get("ancre")
-        return ancre if isinstance(ancre, int) else None
-    return None
-
-
-def tour_de(etat: dict | None, classe: str) -> int:
-    """Le numero de tour d'une classe (0 si inconnu)."""
-    bloc = (etat or {}).get(classe)
-    if isinstance(bloc, dict) and isinstance(bloc.get("tour"), int):
-        return bloc["tour"]
-    return 0
-
-
-def inconnus_de(etat: dict | None, classe: str) -> dict:
-    """Les numeros PARKES d'une classe (lecture impossible, non decides)."""
-    bloc = (etat or {}).get(classe)
-    if isinstance(bloc, dict) and isinstance(bloc.get("inconnus"), dict):
-        return bloc["inconnus"]
-    return {}
 
 
 def ecrire(lane: str, etat: dict) -> object:
@@ -90,15 +61,15 @@ def proposer(lane: str, classe: str, numeros: list[int]) -> dict:
     re-proposes quittent le parc des inconnus -- ils sont re-essayes.
     """
     etat = lire(lane)
-    if boucle(numeros, etat[classe]["ancre"]):
+    inc = etat[classe]["inconnus"]
+    nouveaux = [n for n in numeros if n not in inc]
+    if nouveaux and boucle(nouveaux, etat[classe]["ancre"]):
         etat[classe]["tour"] = etat[classe].get("tour", 0) + 1
         etat[classe]["ancre"] = 0
         etat[classe]["attente"] = {}
     att = etat[classe]["attente"]
-    inc = etat[classe]["inconnus"]
     for n in numeros:
         att.setdefault(n, False)
-        inc.pop(n, None)
     ecrire(lane, etat)
     return etat
 
@@ -124,11 +95,15 @@ def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None) -> dic
                 att[n] = True
             inc.pop(n, None)
         for n, info in (inconnus or {}).items():
-            att.pop(n, None)
-            inc[n] = info
+            if n in att:
+                att.pop(n)
+                tapis_retry.parquer(inc, n, info)
         ancre = etat[c]["ancre"]
-        for n in sorted(att):
+        for n in sorted(set(att) | set(inc)):
             if ancre is not None and n <= ancre:
+                continue
+            if n in inc:
+                ancre = n
                 continue
             if not att[n]:
                 break
