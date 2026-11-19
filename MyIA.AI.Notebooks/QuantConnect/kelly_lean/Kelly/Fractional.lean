@@ -16,7 +16,7 @@ jamais la fraction optimale complète :
 La qualification « à edge non nul » (`f* ≠ 0`) est nécessaire : sur un pari
 à edge nul (`f* = 0`, par exemple b = 1, p = q = 1/2), `c·f* = 0 = f*` pour
 tout `c`, et l'égalité vaut pour chaque `c` — c'est exactement l'hypothèse
-qu'exige `growth_fractional_lt` ci-dessous.
+qu'exige `growth_fractional_lt` ci-dessous (témoin `growth_fractional_zero_edge`).
 
 C'est la **justification formelle du *demi-Kelly*** (c = 1/2) et, plus
 généralement, de toutes les stratégies de *position sizing* qui réduisent la
@@ -103,10 +103,40 @@ theorem growth_fractional_le (β : Bet) (c : ℝ) (hc0 : 0 ≤ c) (hc1 : c ≤ 1
 
 /-- **Égalité en c = 1** : la fraction `1·f*` redonne `f*`, donc même
     croissance. C'est la borne supérieure de `growth_fractional_le` (atteinte
-    en `c = 1`). -/
+    en `c = 1` — et, sur un pari à edge nul, pour tout `c` : cf.
+    `growth_fractional_zero_edge`). -/
 theorem growth_fractional_eq_one (β : Bet) :
     growth β (1 * kellyFrac β) = growth β (kellyFrac β) := by
   simp
+
+/-- **Témoin du cas edge nul** : quand `f* = 0` (critère `kellyFrac_eq_zero_iff`,
+    par exemple `b = 1`, `p = q = 1/2`), on a `c·f* = 0 = f*` pour tout `c`,
+    donc `growth(c·f*) = growth(f*)` **même pour `c ≠ 1`**. L'hypothèse
+    `f* ≠ 0` de `growth_fractional_lt` est donc nécessaire : sans elle,
+    l'égalité n'est pas réservée à `c = 1`. -/
+theorem growth_fractional_zero_edge (β : Bet) (hfz : kellyFrac β = 0) (c : ℝ) :
+    growth β (c * kellyFrac β) = growth β (kellyFrac β) := by
+  rw [hfz, mul_zero]
+
+-- Instance concrète du contre-exemple (review #19534) : b = 1, p = 1/2
+-- (donc q = 1/2), edge nul : kellyFrac = (1·1/2 − 1/2)/1 = 0, et l'égalité
+-- de croissance vaut pour tout c.
+private noncomputable def fairBet : Bet where
+  p := 1 / 2
+  hp_pos := by norm_num
+  hp_lt_one := by norm_num
+  b := 1
+  hb_pos := by norm_num
+
+example : kellyFrac fairBet = 0 := by
+  rw [kellyFrac_eq_zero_iff]
+  unfold q fairBet
+  norm_num
+
+example (c : ℝ) :
+    growth fairBet (c * kellyFrac fairBet) = growth fairBet (kellyFrac fairBet) :=
+  growth_fractional_zero_edge fairBet
+    (by rw [kellyFrac_eq_zero_iff]; unfold q fairBet; norm_num) c
 
 /-- **Inégalité stricte pour c < 1 et pari à edge non nul** : si `c ∈ [0, 1)`
     et `f* ≠ 0` (le pari a un avantage), alors `growth(c·f*) < growth(f*)`.

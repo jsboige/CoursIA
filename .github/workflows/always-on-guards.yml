@@ -936,6 +936,15 @@ jobs:
           # (le detecteur lit PLAN_LOSS_PR_BODY nativement, priorite
           # --pr-body > env, meme politique que MD_CONTENT_LOSS_PR_BODY).
           PLAN_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
+          # #26973 (TRANCHE50) : meme canal in-memory pour les marqueurs
+          # `enrich-quality: reecriture assumee -- <notebook> : <raison>`
+          # (#17744). Sans lui, la jambe advisory de la voie rapide
+          # (`enrich_quality_delta.py`) comparerait la tete a la base sans
+          # savoir qu'une reecriture est ANNONCEE : une signature
+          # MD_REWRITE/MD_SURVIVAL_LOW d'une reecriture assumee y serait
+          # comptee comme une regression. Le canal est donc declare ici,
+          # comme pour les quatre autres gardes qui lisent un body.
+          ENRICH_QUALITY_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           # #23146 : les canaux ci-dessus portent la PHOTOGRAPHIE du
           # payload, figee a l'evenement declencheur. Une PR dont le body est
@@ -963,7 +972,9 @@ jobs:
           COLLAPSE_PR_BODY="${PR_BODY:-$COLLAPSE_PR_BODY}"
           LEAN_CLIQUET_PR_BODY="${PR_BODY:-$LEAN_CLIQUET_PR_BODY}"
           PLAN_LOSS_PR_BODY="${PR_BODY:-$PLAN_LOSS_PR_BODY}"
+          ENRICH_QUALITY_PR_BODY="${PR_BODY:-$ENRICH_QUALITY_PR_BODY}"
           export MD_CONTENT_LOSS_PR_BODY COLLAPSE_PR_BODY LEAN_CLIQUET_PR_BODY PLAN_LOSS_PR_BODY
+          export ENRICH_QUALITY_PR_BODY
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
 

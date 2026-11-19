@@ -1,5 +1,7 @@
 # Double-clé de resynchronisation (`translation-override`) — voie normale d'une lane
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 > **Statut** : référence opérationnelle. Ce document transpose dans le dépôt l'arbitrage
 > ai-01 du dispatch `c2760` (commentaire sur #20232, 2026-11-03), qui ne vivait jusqu'ici
 > que dans un fil d'issue. Les organes cités sont lus à la source et les chiffres de la
