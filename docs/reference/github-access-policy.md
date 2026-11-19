@@ -7,7 +7,7 @@
 
 | Identité | Nature | Usage réel mesuré |
 |---|---|---|
-| `jsboige` | compte partagé | **toute l'écriture courante** sur CoursIA (PR, commentaires, reviews, push) — toutes les lanes, toutes les machines |
+| `jsboige` | compte partagé | **toute l'écriture courante des workers** (PR, commentaires, push) — toutes les lanes, toutes les machines ; **exception mesurée** : reviews et fusions du coordinateur sous son identité propre `myia-ai-01`, et levées de réserves de bot par l'adjoint via l'App `coursia-lane-po-2025[bot]` (Q185) |
 | comptes par machine (ex. `myia-po-2023`) | comptes distribués aux sièges | lecture/navigation locale ; écriture sur les dépôts où le siège a une identité propre ; recommandation registre en cours = rester sur `jsboige` pour CoursIA (option (a), plus courte) |
 | GitHub Apps du dépôt | apps (dependabot, clusterManager-Myia, lane-bots tel `coursia-lane-po-2025[bot]`) | CI/workflows, bots reviewers, levées de réserves de bot (Q185) |
 
@@ -33,7 +33,7 @@ Piège d'instrument (rappel #17315) : `gh api rate_limit` rendait 5000/5000 **au
 | Usage | Aujourd'hui | **Cible recommandée** | Raison de quota |
 |---|---|---|---|
 | Lecture / navigation (tapis, folds, `gh issue view`) | compte du siège | **compte du siège** — inchangé | coût unitaire 1 appel REST ; 13 appels/tirage très en dessous du plafond ; aucune écriture → aucun risque d'attribution |
-| Écriture courante (PR, commentaires, reviews, push) | `jsboige` partagé | **`jsboige` partagé** — inchangé (arbitrage (a) du registre) | les gardes d'auteur (B.0, dossiers, mémoire `gh-auth-race-pin-token`) épingle `jsboige` ; une bascule fabrique des mésattributions (un artefact écrit sous un compte que les gardes n'attendent pas = dossier refusé sans cause visible) ; le quota d'écriture n'est **pas** le goulot mesuré |
+| Écriture courante (PR, commentaires, reviews, push) | **état observé** : `jsboige` partagé pour l'écriture des workers ; le coordinateur review et fusionne sous `myia-ai-01` | **`jsboige` partagé** — inchangé (arbitrage (a) du registre) ; l'exception coordinateur reste : reviews et fusions sous identité propre | les gardes d'auteur (B.0, dossiers, mémoire `gh-auth-race-pin-token`) épingle `jsboige` ; une bascule fabrique des mésattributions (un artefact écrit sous un compte que les gardes n'attendent pas = dossier refusé sans cause visible) ; le quota d'écriture n'est **pas** le goulot mesuré |
 | **Passes de masse** (sweeps de PRs, census, audits 100+ issues) | `jsboige` partagé | **GitHub App lecture-seule dédiée** | la seule classe d'usage **mesurée** ayant tué le gate flotte-entière (110 `rc=2`) ; une App = quota installation **séparé** + permissions bornées lecture ; un second compte humain ajouterait une identité d'écriture à gouverner pour un usage qui n'écrit pas |
 | CI / workflows | Apps bots existantes | **inchangé** | quotas par App déjà séparés ; rien à gagner à y toucher |
 | Gates (B.0, prévalidation) | `jsboige` | **`jsboige` + plafond organisationnel** | le goulot mesuré = péremption (469/24), pas l'identité ; #19966 a réduit le coût unitaire, le dossier-à-la-demande a supprimé la production en masse ; changer d'identité ici déplacerait le problème sans le réduire |
@@ -43,9 +43,11 @@ Piège d'instrument (rappel #17315) : `gh api rate_limit` rendait 5000/5000 **au
 
 | Identité | Qui révoque | Temps mesurable | Portée de la révocation |
 |---|---|---|---|
-| Compte du siège (token local) | mainteneur, sur le siège | **minutes** (retrait du token local) | 1 siège |
+| Compte du siège (token local) | mainteneur, sur le siège | **minutes** (retrait du token local — confinement du siège, **pas** une révocation : voir ci-dessous) | 1 siège |
 | GitHub App (passe de masse) | owner du dépôt, Settings > Developer settings | **minutes** | l'usage entier de l'App, sans toucher aucun siège |
 | `jsboige` partagé | mainteneur, GitHub | **heures** (rotation + re-provision des N sièges, gel des merges pendant l'opération) | **toute la flotte** — dernier recours uniquement |
+
+**Retrait local ≠ révocation ≠ vérification.** Sortir le jeton du poste est un **confinement** : ce siège cesse de le servir, mais le jeton **reste valide chez GitHub** — toute copie déjà exfiltrée resterait utilisable. La **révocation côté émetteur** (rotation ou suppression du jeton sur GitHub) est la seule qui invalide toutes les copies ; pour un compte de siège, elle se fait **en sus** du retrait local, sans toucher les autres sièges. La **vérification** qu'un retrait est effectif passe par un appel authentifié qui doit **échouer** (§2 : l'appel qui passe fait foi) — sans jamais publier de valeur de jeton pour la vérifier.
 
 **Corollaire de coût de révocation :** les pouvoirs étendus (admin du dépôt, accès aux secrets, force-push) ne vivent **jamais** sur le compte partagé — une révocation flotte-entière est le scénario le plus cher, il ne doit exister que pour l'identité la moins dangereuse (écriture courante sous protection de branche, déjà `allow_force_pushes: false`).
 
@@ -69,7 +71,7 @@ Sous login partagé, l'attribution ne peut pas venir du compte GitHub : elle vie
 | P0 | **ce document** | — | rien : la politique est écrite, les arbitrages sont posés |
 | P1 | App lecture-seule (passe de masse) | GO §6.1 | les sweeps basculent sur un quota installation séparé ; `jsboige` ne paie plus les fan-out |
 | P2 | trailer `Lane:` | GO §6.2 | hook commit-msg + une ligne au §E du CLAUDE.md (PR gouvernance) |
-| — | **Ce qui reste sur `jsboige`** : toute l'écriture courante et les gates par PR | — | inchangé — mesuré non-goulot après #19966 et le dossier-à-la-demande |
+| — | **Ce qui reste sur `jsboige`** : toute l'écriture courante des workers et les gates par PR (le coordinateur review et fusionne sous `myia-ai-01`, §1) | — | inchangé — mesuré non-goulot après #19966 et le dossier-à-la-demande |
 
 Aucun secret ne transite par ce document ni par ses issues filles : toute identité de service vit dans le trousseau partagé (`MyIA-Keys`) ou dans une App, jamais dans un fichier versionné ([secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md)).
 
