@@ -630,7 +630,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # l'attribution de l'issue et la livraison complete -- extrait de tapis_diff.py
 # pour tenir le plafond, 19/11) ; tapis_preuve.py la vingtieme (la PREUVE
 # elle-meme : le diff ET l'etat de la PR -- extrait de tapis_diff.py pour
-# tenir le plafond, 19/11).
+# tenir le plafond, 19/11) ; gh_lecture.py la vingt-et-unieme (la LECTURE :
+# son conteneur, son echec et la mise a plat d'une issue -- extrait de
+# gh_bulk.py pour tenir le plafond, 19/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -658,6 +660,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_verdict.py", 50),
                                               ("tapis_composition.py", 60),
                                               ("tapis_position.py", 40),
+                                              ("gh_lecture.py", 70),
                                               ("tapis_diff.py", 200),
                                               ("tapis_perimetre.py", 110),
                                               ("tapis_preuve.py", 110)])

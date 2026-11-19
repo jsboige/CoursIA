@@ -228,6 +228,28 @@ def test_un_total_de_commentaires_inconnu_ne_vaut_pas_zero():
     assert tapis_fenetre.suffit({"comments_total": 9, "comments": [1]}) is False
 
 
+def test_le_producteur_ne_fabrique_pas_un_zero():
+    """Le producteur ne masque plus l'absence par un zero.
+
+    `gh_bulk.issue` mettait `comments_total: 0` quand la lecture ne donnait
+    pas le total : le fail-CLOSED etait donc arme en aval mais coupe a la
+    source. Desormais l'absence reste une absence, et c'est
+    `tapis_fenetre.total_connus` qui en fait un INCONNU.
+    """
+    sans_total = gh_bulk.issue({"number": 7, "title": "grain", "body": "",
+                                "createdAt": "", "updatedAt": "",
+                                "labels": {"nodes": []}})
+    assert sans_total["comments_total"] is None, \
+        "l'absence reste une absence, pas un zero"
+    assert tapis_fenetre.total_connus(sans_total) is None
+    avec_total = gh_bulk.issue({"number": 8, "title": "grain", "body": "",
+                                "createdAt": "", "updatedAt": "",
+                                "labels": {"nodes": []},
+                                "comments": {"totalCount": 4, "nodes": []}})
+    assert avec_total["comments_total"] == 4
+    assert tapis_fenetre.total_connus(avec_total) == 4
+
+
 def test_le_fil_complet_se_lit_quand_le_total_est_inconnu(monkeypatch):
     """Le fil complet se lit, et son echec REFUSE le grain (fail-CLOSED).
 
