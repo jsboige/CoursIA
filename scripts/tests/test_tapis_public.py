@@ -18,7 +18,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import tapis_ancre, tapis_public, tapis_verdict
+from coordination import (tapis_ancre, tapis_citations, tapis_equilibre,
+                         tapis_leger, tapis_public, tapis_universel,
+                         tapis_verdict)
 
 LANE = "test:famine"
 MAINTENANT = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
@@ -66,3 +68,92 @@ def test_le_lot_public_donne_un_creneau_a_chaque_classe(monkeypatch, tmp_path):
         "un grain n'a pas ete lu"
     assert {n for n in lus if n > 100} == {101, 102}, \
         "un conteneur n'a pas de creneau de lecture"
+
+
+# --- L'EQUITE DU DISPATCH : une racine deja servie ne repasse pas devant ----
+# (mission du coordinateur du 19/11, cas reel #27338)
+
+def _meta(n: int, titre: str, cree: str = "2026-02-01T00:00:00Z") -> dict:
+    return {"number": n, "title": titre, "labels": [], "created_at": cree}
+
+
+def test_le_lot_ordinaire_ne_ressert_pas_une_racine_deja_servie(monkeypatch, tmp_path):
+    """Le cas reel #27338 : huit PRs ouvertes, douze issues anciennes a zero.
+
+    L'umbrella #27338 a ete servie huit fois dans la journee (huit PRs
+    distinctes sur huit carnets). Le lot **ordinaire** ne doit pas la
+    resservir avant que les issues a premiere visite aient ete servies :
+    c'est le mandement d'equite du 16/11, et le cas que le user a signale.
+
+    Le compteur est celui de la voie reelle : les huit PRs ouvertes qui la
+    citent sont comptees par `tapis_citations` -- pas un score prepare.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    anciennes = [11698, 11703, 14528, 14529, 14769, 14926, 15002, 15293,
+                 17845, 19280, 4362, 4427]
+    metas = [_meta(n, "Ancienne issue") for n in anciennes]
+    metas.append(_meta(27338, "Umbrella des passages", cree="2026-11-19T05:41:02Z"))
+    prs = [{"number": 900 + k, "title": "PR", "body": "Part of #27338",
+            "created_at": "2026-11-19T06:00:00Z",
+            "updated_at": "2026-11-19T12:00:00Z"} for k in range(8)]
+    cites = tapis_citations.des_prs_ouvertes(prs)
+    etats = tapis_universel.etats_leger(metas, {}, MAINTENANT, cites)
+    par_num = {e.numero: e for e in etats}
+    assert par_num[27338].visites == 8, "les huit PRs ouvertes ne sont pas vues"
+    assert all(par_num[n].visites == 0 for n in anciennes)
+    grains_, conteneurs = tapis_leger._ordre(etats, "test:famine", MAINTENANT, "g")
+    lot, _ = tapis_public.lot_public("test:famine", grains_, conteneurs,
+                                      len(metas), len(metas), MAINTENANT)
+    nums = [g.numero for g in lot]
+    assert set(nums[:len(anciennes)]) == set(anciennes), \
+        "une premiere visite a ete sautee"
+    assert nums.index(27338) == len(anciennes), \
+        "la racine deja servie repasse devant les premieres visites"
+
+
+def test_la_racine_servie_plusieurs_fois_passe_derriere_une_issue_servie_une_fois(
+        monkeypatch, tmp_path):
+    """Le témoin DISCRIMINANT de la famine #27338.
+
+    Le temoin d'ordre precedent ne discriminait pas le correctif : a niveau
+    egal, l'ordre de creation mettait deja les anciennes devant. Ce qui change
+    avec le correctif, c'est le **niveau** : la racine servie huit fois passe
+    de 0 a 8 visites, donc derriere une issue qui a deja recu **une** visite.
+
+    Mesure (pool de 14, MAINTENANT = 19/11 12:00) :
+
+    - sans les PRs ouvertes : 27338 a 0 visite (niveau 0), l'issue a une
+      visite a un niveau de 0,5 -> **la racine passe devant** ;
+    - avec : 27338 a 8 visites (niveau 8) -> **la racine passe derriere**.
+
+    C'est l'inversion du mandat du 16/11 (« toute issue doit etre visitee au
+    moins une fois avant qu'une autre le soit deux fois ») : elle etait
+    invisible parce que le compteur ne voyait pas le travail en cours.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    anciennes = [11698, 11703, 14528, 14529, 14769, 14926, 15002, 15293,
+                 17845, 19280, 4362, 4427]
+    metas = [_meta(n, "Ancienne issue") for n in anciennes]
+    metas.append(_meta(27338, "Umbrella des passages", cree="2026-11-19T05:41:02Z"))
+    metas.append(_meta(27399, "Issue deja servie une fois"))
+    cite_merges = {27399: [{"sha": "abc1234", "date": "2026-11-18T09:00:00Z",
+                             "sujet": "Fix(...): #27399", "ferme": True}]}
+    prs = [{"number": 900 + k, "title": "PR", "body": "Part of #27338",
+            "created_at": "2026-11-19T06:00:00Z",
+            "updated_at": "2026-11-19T12:00:00Z"} for k in range(8)]
+
+    def _rangs(cites_ouvertes):
+        etats = tapis_universel.etats_leger(metas, cite_merges, MAINTENANT,
+                                             cites_ouvertes)
+        ordre = tapis_equilibre.ordre(etats, etats, "g", MAINTENANT,
+                                       rotation=False)
+        nums = [e.numero for e in ordre]
+        return nums.index(27338), nums.index(27399)
+
+    avant_racine, avant_servie = _rangs({})
+    assert avant_racine < avant_servie, \
+        "le temoin ne reproduit plus l'inversion : il ne prouve plus rien"
+
+    apres_racine, apres_servie = _rangs(tapis_citations.des_prs_ouvertes(prs))
+    assert apres_servie < apres_racine, \
+        "la racine servie huit fois repasse devant une issue servie une fois"
