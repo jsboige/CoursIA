@@ -25,6 +25,7 @@ la ou ils s'appuyaient auparavant sur `os.getpid()` comme porteur.
 """
 from __future__ import annotations
 
+import ctypes
 import importlib.util
 import json
 import os
@@ -163,6 +164,59 @@ def test_creation_inconnue_le_pid_vivant_reste_rouge(tmp_path):
     checks = session_hygiene.check_lane_lock(
         tmp_path, LANE, pid=100, etat_pid=_etat_par_pid({500: (True, None)}))
     assert checks[0].level == session_hygiene.RED
+
+
+@pytest.mark.skipif(os.name != "nt", reason="semantique des handles de processus Windows")
+def test_pid_windows_termine_mais_handle_conserve_n_est_pas_vivant():
+    """Incident #27363 : OpenProcess reussit encore apres la fin du processus.
+
+    Le handle volontairement conserve reproduit le cas du verrou stale : CIM ne
+    voit plus le PID, mais GetProcessTimes reussit et rend sa date de creation.
+    """
+    import ctypes.wintypes as wt
+
+    enfant = subprocess.Popen(
+        [sys.executable, "-c", "pass"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.argtypes = [wt.DWORD, wt.BOOL, wt.DWORD]
+    k32.OpenProcess.restype = wt.HANDLE
+    k32.CloseHandle.argtypes = [wt.HANDLE]
+    handle = k32.OpenProcess(0x1000, False, enfant.pid)
+    assert handle, f"OpenProcess a echoue : {ctypes.get_last_error()}"
+    try:
+        assert enfant.wait(timeout=30) == 0
+        vivant, creation = session_hygiene._pid_windows(enfant.pid)
+        assert not vivant, "un processus termine reste ouvrable, il n'est pas vivant"
+        assert isinstance(creation, float), "la date reste utile au diagnostic"
+    finally:
+        k32.CloseHandle(handle)
+
+
+def test_echec_get_exit_code_process_reste_vivant(monkeypatch):
+    """Une mesure d'etat impossible est fail-closed, jamais un PID declare mort."""
+    if os.name != "nt":
+        pytest.skip("le faux kernel32 simule la surface Windows")
+    enfant = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(60)"],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        original = ctypes.WinDLL
+
+        class KernelSansEtat:
+            def __init__(self, *args, **kwargs):
+                self._k32 = original("kernel32", use_last_error=True)
+
+            def __getattr__(self, nom):
+                if nom == "GetExitCodeProcess":
+                    return lambda handle, code: 0
+                return getattr(self._k32, nom)
+
+        monkeypatch.setattr(ctypes, "WinDLL", KernelSansEtat)
+        assert session_hygiene._pid_windows(enfant.pid) == (True, None)
+    finally:
+        enfant.terminate()
+        enfant.wait(timeout=30)
 
 
 # --- cas reel de la review 5908186749 : ancetre de session vs PID de script ---

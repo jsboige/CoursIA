@@ -558,12 +558,18 @@ def _pid_windows(pid: int) -> tuple[bool, float | None]:
         # 5 = acces refuse (il vit, eleve) ; 87 = parametre invalide (absent).
         return (ctypes.get_last_error() == 5, None)
     try:
+        # Un objet processus reste ouvrable apres sa terminaison tant qu'un
+        # handle le reference. OpenProcess/GetProcessTimes seuls ne mesurent
+        # donc PAS la vivance ; seul STILL_ACTIVE distingue un processus vivant.
+        exit_code = wt.DWORD()
+        if not k32.GetExitCodeProcess(handle, ctypes.byref(exit_code)):
+            return (True, None)  # sonde incomplete : jamais une preuve de mort
         creation, exit_t, kern, user = (wt.FILETIME() for _ in range(4))
         if not k32.GetProcessTimes(handle, ctypes.byref(creation), ctypes.byref(exit_t),
                                    ctypes.byref(kern), ctypes.byref(user)):
             return (True, None)
         ticks = (creation.dwHighDateTime << 32) | creation.dwLowDateTime
-        return (True, (ticks - 116444736000000000) / 1e7)
+        return (exit_code.value == 259, (ticks - 116444736000000000) / 1e7)
     finally:
         k32.CloseHandle(handle)
 
