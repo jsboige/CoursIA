@@ -95,8 +95,18 @@ alerte nominative a la lane porteuse d'un conflit).
 ## Qualification picker / CI / harnais
 
 - Le **produit n'est pas le verificateur** : une correction se prouve par un
-  temoin qui **echoue avant** et **passe apres** (le temoin du peer sur la
-  rotation est dans `scripts/tests/test_tapis_rotation.py`).
+  temoin qui **echoue avant** et **passe apres**. Le temoin du peer sur la
+  rotation est `scripts/tests/test_tapis_rotation.py`, livre par la PR
+  **#27242** (branche `feature/tapis-bascule-legere`) -- il **n'est pas encore
+  sur `main`** (verifie : `main` ne porte que `test_tapis_equilibre.py`,
+  `test_tapis_origami.py`, `test_tapis_rapide.py`, `test_tapis_reverif.py`).
+  Tant que la PR n'est pas mergee, le temoin se relit depuis la branche :
+  `git fetch origin feature/tapis-bascule-legere` puis
+  `git show origin/feature/tapis-bascule-legere:scripts/tests/test_tapis_rotation.py`,
+  et son rejeu complet est
+  `python -m pytest scripts/tests/test_tapis_rotation.py -q` une fois la PR
+  mergee. Un renvoi a un chemin absent de `main` sans cette mention n'est pas
+  un temoin rejouable.
 - Un defaut d'organe ne se corrige pas dans le perimetre d'un autre
   workspace : on **signale**, on ne touche pas.
 - Une **attente** (CI, review, DWELL, merge, reponse d'une autre lane)
