@@ -1,35 +1,27 @@
 #!/usr/bin/env python3
 """La ROTATION du pool : le bloc servi, et la rotation par NUMERO.
 
-Le classement des issues change a chaque tour (les visites s'accumulent) :
-une rotation qui suit la POSITION dans le classement fait passer des issues
-a travers le bloc, et le tour ne se ferme pas -- mesure du 19/11 : **380
-issues sur 440** atteintes en un tour, un tour complet en demandait 440. La
-rotation suit donc le **NUMERO** d'issue : l'ordre des numeros ne bouge pas,
-le tour se ferme.
+Le classement change a chaque tour : une rotation qui suit la POSITION fait
+passer des issues a travers le bloc, et le tour ne se ferme pas -- mesure du
+19/11 : **380 issues sur 440** atteintes en un tour, un tour complet en
+demandait 440. La rotation suit donc le **NUMERO** : l'ordre des numeros ne
+bouge pas, le tour se ferme.
 
-Le bloc reste un bloc CONTIGU de cet ordre, decale par lane : deux lanes ne
-balayent pas le meme bloc. Une tranche de 4 h fait avancer le bloc d'un cran,
-et un tour complet tient en `ceil(pool / taille)` tranches. Le delai maximal
-de requalification d'une issue est donc borne par la duree du tour -- et il
-est publie avec le bloc.
+Le bloc est CONTIGU de cet ordre, decale par lane : deux lanes ne balayent pas
+le meme bloc. Une tranche de 4 h fait avancer le bloc d'un cran, et un tour
+complet tient en `ceil(pool / taille)` tranches -- le delai max de
+requalification est publie avec le bloc.
 
-**Chaque numero du pool sort avec un verdict** (revue du 19/11, #27242) : le
-bloc publie les numeros qu'il **visite** et ceux qu'il ne visite pas
-(`non_visites`). C'est la mesure de la derniere qualification **par numero**,
-bloques et reserves compris : un numero servi une fois, ecarte une fois,
-compte une fois.
-
-Ce module est extrait de `tapis_fenetre.py` (19/11) : les deux fenetres du
-tapis -- celle du POOL (ici) et celle du FIL (la) -- sont des modules
-separes, et le plafond de lignes se paie en **extrait**, pas en relevant le
-plafond.
+**Chaque numero du pool sort avec un verdict** (#27242) : le bloc publie les
+numeros qu'il **visite** et ceux qu'il ne visite pas (`non_visites`). L'ANCRE
+(dernier numero qualifie) choisit QUOI servir, la **PRIORITE** l'ordre rendu.
 """
 from __future__ import annotations
 
 import hashlib
 from datetime import datetime
 
+from coordination import tapis_ancre
 from coordination.tapis_rapide import PART_CONTENEURS
 
 #: La fenetre avance d'un bloc par tranche de 4 h.
@@ -51,7 +43,8 @@ def _decalage(lane: str, cle: str, n: int) -> int:
 
 
 def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
-         maintenant: datetime, bloc_suivant: int = 0) -> tuple[list, dict]:
+         maintenant: datetime, bloc_suivant: int = 0,
+         ancres: dict | None = None) -> tuple[list, dict]:
     """Le bloc servi : la rotation par numero, dans la fenetre de la lane.
 
     Les GRAINS et les CONTENEURS ont chacun leur tranche et leur bloc : un
@@ -59,27 +52,29 @@ def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
     dans la file comme dans la voie lourde.
 
     `bloc_suivant` decale le bloc de N blocs : c'est la VAGUE suivante de la
-    prise en charge -- le bloc suivant dans le meme ordre (par numero).
+    prise en charge. `ancres` porte le dernier numero qualifie par classe :
+    c'est l'ancre PERSISTANTE (`tapis_ancre`), celle qui survit a une
+    cloture ou a une arrivee.
     """
     quota = max(1, int(n_grains * PART_CONTENEURS)) if conteneurs else 0
     part = max(taille - quota, 1)
     n_g, n_c = len(grains), len(conteneurs)
     compteur = _compteur(maintenant) + bloc_suivant
-    # La rotation avance par NUMERO : le classement change d'un tour a
-    # l'autre, l'ordre des numeros non. C'est ce qui fait fermer le tour.
-    grains = sorted(grains, key=lambda g: g.numero)
-    conteneurs = sorted(conteneurs, key=lambda g: g.numero)
-    d_g = (_decalage(lane, "grains", n_g) + compteur * part) % n_g if n_g else 0
-    d_c = (_decalage(lane, "conteneurs", n_c) + compteur * quota) % n_c if n_c else 0
-    b_g = [grains[(d_g + i) % n_g] for i in range(min(part, n_g))]
-    b_c = [conteneurs[(d_c + i) % n_c] for i in range(min(quota, n_c))]
-    blocs_g = (n_g + part - 1) // part if n_g else 1
-    blocs_c = (n_c + quota - 1) // quota if n_c else 1
+    ancres = ancres or {}
+    b_g, ancre_g = tapis_ancre.membres(
+        grains, ancres.get("grains"), part, bloc_suivant,
+        _decalage(lane, "grains", n_g) + compteur * part)
+    b_c, ancre_c = tapis_ancre.membres(
+        conteneurs, ancres.get("conteneurs"), quota, bloc_suivant,
+        _decalage(lane, "conteneurs", n_c) + compteur * quota)
     pool = {g.numero for g in grains} | {g.numero for g in conteneurs}
     visites = {g.numero for g in b_g} | {g.numero for g in b_c}
+    blocs = max((n_g + part - 1) // part if n_g else 1,
+                (n_c + quota - 1) // quota if n_c else 1)
     return b_g + b_c, {
         "taille": taille, "grains": len(b_g), "conteneurs": len(b_c),
-        "bloc": (d_g // part) + 1 if n_g else 0,
-        "blocs": blocs_g, "pool": n_g, "tranche": compteur,
-        "ordre": "numero", "delai_max_h": HEURES_TRANCHE * max(blocs_g, blocs_c),
+        "bloc": (_decalage(lane, "grains", n_g) // part) + 1 if n_g else 0,
+        "blocs": blocs, "pool": n_g, "tranche": compteur,
+        "ordre": "numero", "delai_max_h": HEURES_TRANCHE * blocs,
+        "ancres": {"grains": ancre_g, "conteneurs": ancre_c},
         "visites": sorted(visites), "non_visites": sorted(pool - visites)}

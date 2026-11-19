@@ -26,7 +26,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import tapis_leger, tapis_rotation  # noqa: E402
+from coordination import tapis_ancre, tapis_leger, tapis_rotation  # noqa: E402
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -128,3 +128,86 @@ def test_le_bloc_vide_ne_publie_aucun_numero_non_visite():
     _, rapport = tapis_rotation.bloc([], [], 0, 2, LANE, MAINTENANT)
     assert rapport["visites"] == []
     assert rapport["non_visites"] == []
+
+
+# --- L'ANCRE : le tour se ferme meme quand le pool change (19/11) ----------
+
+def test_une_cloture_ne_saute_pas_de_numero():
+    """Le temoin du peer (19/11) : pool 1..8, blocs de 2, offset 0.
+
+    Une rotation qui avance par POSITION sert {1,2}, puis -- #1 cloture --
+    {4,5}, {6,7}, {8,2} : **#3 reste ouverte et n'a jamais ete visitee**.
+    L'ANCRE (le dernier numero qualifie) ferme le tour : #3 est servie.
+    """
+    grains = _grains([(n, 0) for n in range(1, 9)])
+    _, r0 = tapis_rotation.bloc(grains, [], 8, 2, LANE, MAINTENANT,
+                                ancres={"grains": 0})
+    assert r0["visites"] == [1, 2], "l'ancre 0 demarre au plus petit numero"
+    ancre = r0["ancres"]["grains"]
+    assert ancre == 2, "l'ancre est le dernier numero visite"
+
+    restants = _grains([(n, 0) for n in range(2, 9)])  # #1 est cloturee
+    vus = set(r0["visites"])
+    for _ in range(4):
+        _, r = tapis_rotation.bloc(restants, [], 7, 2, LANE, MAINTENANT,
+                                   ancres={"grains": ancre})
+        vus |= set(r["visites"])
+        ancre = r["ancres"]["grains"]
+    assert 3 in vus, "#3 est encore ouverte : elle doit etre servie"
+
+
+def test_le_tour_se_ferme_avec_l_ancre_meme_apres_une_cloture():
+    """Un tour complet : chaque numero encore ouvert est servi UNE fois."""
+    grains = _grains([(n, 0) for n in range(1, 9)])
+    _, r = tapis_rotation.bloc(grains, [], 8, 2, LANE, MAINTENANT,
+                                ancres={"grains": 0})
+    ancre = r["ancres"]["grains"]
+    vus = list(r["visites"])
+    for _ in range(3):
+        _, r = tapis_rotation.bloc(grains, [], 8, 2, LANE, MAINTENANT,
+                                   ancres={"grains": ancre})
+        vus += r["visites"]
+        ancre = r["ancres"]["grains"]
+    assert sorted(vus) == list(range(1, 9)), "chaque numero est servi"
+    assert len(vus) == len(set(vus)), "une seule fois"
+
+
+def test_une_arrivee_est_servie_sans_sauter_le_tour():
+    """Un numero qui arrive entre deux tranches n'ecarte pas le suivant."""
+    grains = _grains([(n, 0) for n in range(1, 5)])
+    _, r = tapis_rotation.bloc(grains, [], 4, 2, LANE, MAINTENANT,
+                                ancres={"grains": 0})
+    ancre = r["ancres"]["grains"]
+    avec_arrivee = _grains([(n, 0) for n in range(1, 6)])  # #5 est arrive
+    _, r2 = tapis_rotation.bloc(avec_arrivee, [], 5, 2, LANE, MAINTENANT,
+                                ancres={"grains": ancre})
+    assert r2["visites"] == [3, 4], "la tranche continue apres l'ancre"
+    assert r2["ancres"]["grains"] == 4
+
+
+def test_la_priorite_est_visible_a_la_sortie_du_bloc():
+    """La rotation choisit QUOI servir ; l'ordre de PRIORITE reste visible.
+
+    Le classement d'entree (la priorite) est 3, 1, 4, 2 : le bloc doit
+    rendre ces numeros DANS cet ordre, pas dans l'ordre des numeros.
+    """
+    grains = _grains([(3, 9), (1, 8), (4, 7), (2, 6)])
+    bloc, _ = tapis_rotation.bloc(grains, [], 4, 4, LANE, MAINTENANT,
+                                   ancres={"grains": 0})
+    assert [g.numero for g in bloc] == [3, 1, 4, 2], \
+        "la priorite d'entree est l'ordre rendu"
+
+
+def test_une_ancre_inconnue_ne_s_acquitte_pas(tmp_path, monkeypatch):
+    """Un fichier d'ancre illisible ne vaut pas zero : il vaut inconnu."""
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    assert tapis_ancre.lire("myia-ai-01:CoursIA-2") == {
+        "grains": None, "conteneurs": None}
+    chemin = tapis_ancre.chemin_etat("myia-ai-01:CoursIA-2")
+    chemin.parent.mkdir(parents=True, exist_ok=True)
+    chemin.write_text("{pas du json", encoding="utf-8")
+    assert tapis_ancre.lire("myia-ai-01:CoursIA-2") == {
+        "grains": None, "conteneurs": None}
+    assert tapis_ancre.position([1, 2, 3], None) == 0
+    assert tapis_ancre.position([1, 2, 3], 2) == 2
+    assert tapis_ancre.position([1, 2, 3], 9) == 0, "le tour a boucle"

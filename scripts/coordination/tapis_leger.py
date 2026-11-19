@@ -1,47 +1,37 @@
 #!/usr/bin/env python3
 """La voie LEGERE du tirage : la rotation universelle, seule.
 
-Ce module est la **bascule** du tirage par defaut (#27225, suite de #27223).
-
-Le tirage separe deux temps qui etaient confondus :
+Ce module est la **bascule** du tirage par defaut (#27225, suite de #27223) : le
+tirage separe deux temps qui etaient confondus :
 
 - la **rotation universelle** (`coordination.tapis_universel`) classe TOUTES
   les issues ouvertes sur leurs **metadonnees seules** et tourne la tete de
   niveau. Elle n'ecarte rien : un conteneur ne passe jamais devant un grain
-  (#26926), et chaque grain servi porte son **etat** et l'**action** a faire ;
+  (#26926), et chaque grain servi porte son **etat** et l'**action** ;
 - la **qualification** (`coordination.tapis_qualification`) ne porte que sur
-  le grain que la lane engage a **prendre** : son corps, son **fil complet**,
-  et la re-decision des neuf regles d'ecart. Elle s'execute AVANT l'action,
-  sur un grain a la fois.
+  le grain pris en charge : son corps, son **fil complet**, et la re-decision
+  des neuf regles d'ecart, AVANT l'action.
 
-Pourquoi la qualification n'est plus dans le tirage : les neuf regles ne sont
-pas decidables sur des metadonnees (un gel, une livraison, un claim se lisent
-dans le corps ou le fil). Les decider pour TOUT le pool coutait 22 s de
-lecture -- plus cher que le chemin lourd lui-meme (21,9 s pour 441 issues).
-Decider au moment de l'action coute 1 a 2 appels par grain pris en charge.
+Les neuf regles ne sont pas decidables sur des metadonnees : les decider pour
+TOUT le pool coutait 22 s -- plus cher que le chemin lourd (21,9 s pour 441
+issues) ; a l'action, 1 a 2 appels par grain pris en charge.
 
-Mesures (pool de 441 issues, 18/11, meme machine, meme lane) :
+Mesures (pool de 441 issues, 18/11) : le **leger** (metadonnees seules +
+citations + PRs) rend 24 grains en **17,9 s** ; le **lourd** (corps + 12
+commentaires) en rend 11 en 33,5 s.
 
-| Chemin | Lecture | Duree | Ce qu'il sert |
-|---|---|---|---|
-| lourd | corps + 12 commentaires de tout le pool (5,2 Mo) | 33,5 s | 11 grains, exclusions appliquees |
-| **leger** | **metadonnees seules** (8,6 s a chaud, 15,4 s a froid) + citations (1,6 s) + PRs (4,7 s) | **17,9 s** | une file de 24, exclusions a decider a l'action |
-
-Le **mur global** (`--budget-s`, 60 s par defaut) couvre la lecture de
-selection ; son depassement leve `LectureIncomplete` et l'appelant le dit
-(code de sortie 3) -- jamais une liste a moitie.
+Le **mur global** (`--budget-s`, 60 s) leve `LectureIncomplete` (code 3) au depassement -- jamais une liste a moitie.
 """
 from __future__ import annotations
 
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_origami, tapis_rapide, tapis_rotation
+from coordination import tapis_ancre, tapis_origami, tapis_rapide, tapis_rotation
 from coordination import tapis_service, tapis_universel
 from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 
@@ -132,9 +122,11 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     """
     debut = time.monotonic()
     classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
+    ancres = tapis_ancre.lire(lane)
     file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
                                          grains, max(grains * CANDIDATS_MULT, grains),
-                                         lane, maintenant)
+                                         lane, maintenant, ancres=ancres)
+    tapis_ancre.ecrire(lane, fenetre["ancres"])
     secondes = time.monotonic() - debut
     phases = classe["phases"]
     try:
@@ -196,7 +188,6 @@ def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,
     """Point d'entree du tirage leger (`tapis_leger.py --lane ...`)."""
     import argparse
     import json
-    import sys
     from pathlib import Path
 
     p = argparse.ArgumentParser(

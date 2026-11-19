@@ -651,6 +651,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_lot.py", 80),
                                               ("tapis_preuves.py", 80),
                                               ("tapis_rotation.py", 80),
+                                              ("tapis_ancre.py", 120),
                                               ("tapis_diff.py", 200),
                                               ("tapis_perimetre.py", 110),
                                               ("tapis_preuve.py", 110)])

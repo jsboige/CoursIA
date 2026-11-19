@@ -2,12 +2,10 @@
 """La FENETRE du FIL : ce que la lecture presente, et ce qu'elle laisse hors champ.
 
 La lecture groupee ne voit que les 12 derniers commentaires ; la qualification
-dit si cette fenetre EST le fil complet, et le dit sur le grain servi --
-y compris le cas ou la fenetre ne contenait aucun marqueur decisif.
-
-La fenetre du POOL (le bloc servi, et la rotation par numero) est dans
-`coordination.tapis_rotation` : deux fenetres, deux modules (extrait du
-19/11).
+dit si cette fenetre EST le fil complet, et le dit sur le grain servi -- y
+compris le cas ou la fenetre ne contenait aucun marqueur decisif. La fenetre
+du POOL (le bloc servi, et la rotation par numero) est dans
+`coordination.tapis_rotation` : deux fenetres, deux modules (extrait du 19/11).
 """
 from __future__ import annotations
 
@@ -18,32 +16,43 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_snapshot
 
 
+def total_connus(it: dict | None) -> int | None:
+    """Le nombre de commentaires de l'issue, ou None s'il est INCONNU.
+
+    Fail-CLOSED (reserve Hermes, #27242) : un `comments_total` absent ou non
+    entier ne vaut PAS 0 -- il vaut inconnu, et un inconnu ne s'acquitte pas."""
+    if not it:
+        return None
+    total = it.get("comments_total")
+    return total if isinstance(total, int) else None
+
+
 def suffit(it: dict | None) -> bool:
     """La fenetre des 12 derniers commentaires est-elle le fil complet ?
 
-    Vrai quand l'issue porte moins de 12 commentaires : la lecture groupee
-    a alors deja tout lu, et le fil complet n'est pas relu.
+    Vrai quand l'issue porte moins de 12 commentaires : la lecture groupee a
+    alors deja tout lu. Faux quand le total est INCONNU : une fenetre dont on
+    ignore la taille ne peut pas etre declaree « le fil complet ».
     """
-    if not it:
-        return True
-    return (it.get("comments_total") or 0) <= len(it.get("comments") or [])
+    total = total_connus(it)
+    if total is None:
+        return False
+    return total <= len(it.get("comments") or [])
 
 
 def noter(e, it: dict | None) -> None:
-    """Publie ce que la fenetre a decide, et ce qu'elle a laisse hors champ.
-
-    Trois cas nommes : la fenetre EST le fil complet ; le fil complet a ete
-    relu et aucun marqueur decisif n'y etait ; l'ecart porte son code et son
-    motif.
-    """
+    """Publie ce que la fenetre a decide, et ce qu'elle a laisse hors champ."""
     it = it or {}
-    lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
-    if total <= lus:
+    lus = len(it.get("comments") or [])
+    total = total_connus(it)
+    if total is None:
+        e.notes.append(f"total des commentaires inconnu ({lus} lu(s)) : "
+                       "la fenetre n'est pas declaree fil complet")
+    elif total <= lus:
         e.notes.append(f"fenetre = fil complet ({lus} commentaire(s))")
     else:
-        # La relecture elle-meme est deja notee par l'organe de re-verification
-        # (« fil complet relu (N commentaires) ») : on ne la repete pas, on dit
-        # ce que la FENETRE avait laisse hors champ.
+        # La relecture elle-meme est notee ailleurs : on dit ce que la
+        # FENETRE avait laisse hors champ.
         e.notes.append(f"fenetre de {lus} commentaires sur {total} : "
                        "aucun marqueur decisif hors fenetre")
 
