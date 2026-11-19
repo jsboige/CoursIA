@@ -201,10 +201,15 @@ def test_la_priorite_est_visible_a_la_sortie_du_bloc():
 def test_une_ancre_inconnue_ne_s_acquitte_pas(tmp_path, monkeypatch):
     """Un fichier d'ancre illisible ne vaut pas zero : il vaut inconnu."""
     monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    # La PHASE (le compteur des propositions) et le COMMIT (le code qui a
+    # ecrit l'etat) font partie de l'etat : l'un commande l'alternance du
+    # lot, l'autre dit a quelle semantique l'etat appartient (19/11).
     inconnu = {"grains": {"ancre": None, "tour": 0, "attente": {},
-                          "inconnus": {}, "primaire": []},
+                          "inconnus": {}, "primaire": [], "phase": 0,
+                          "commit": None},
                "conteneurs": {"ancre": None, "tour": 0, "attente": {},
-                              "inconnus": {}, "primaire": []}}
+                              "inconnus": {}, "primaire": [], "phase": 0,
+                              "commit": None}}
     assert tapis_ancre.lire("myia-ai-01:CoursIA-2") == inconnu
     chemin = tapis_etat.chemin_etat("myia-ai-01:CoursIA-2")
     chemin.parent.mkdir(parents=True, exist_ok=True)

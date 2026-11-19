@@ -20,10 +20,9 @@ bloquent pas le curseur et reviennent au tour suivant.
 selection revient en deca du curseur (le pool a ete couvert), le curseur
 recommence au plus petit numero et le compteur `tour` s'incremente.
 
-**La tranche PRIMAIRE et la REPRISE sont deux choses distinctes** (19/11,
-DM du coordinateur) : les confondre figeait la rotation. La primaire porte
-le curseur (son rebouclage ouvre un tour de plus) ; la reprise -- les
-illisibles parkes -- revient au service SANS prendre sa place.
+**La tranche PRIMAIRE et la REPRISE sont deux choses distinctes** (19/11, DM
+du coordinateur) : les confondre figeait la rotation. La primaire porte le
+curseur ; la reprise des illisibles parkes revient au service SANS la place.
 
 L'arithmetique de la selection vit dans `coordination.tapis_tranche`, la
 persistance dans `coordination.tapis_etat`.
@@ -31,7 +30,8 @@ persistance dans `coordination.tapis_etat`.
 from __future__ import annotations
 
 from coordination import tapis_etat, tapis_non_tente, tapis_retry
-from coordination.tapis_etat import ancre_de, inconnus_de, lire, tour_de  # noqa: F401
+from coordination.tapis_etat import (ancre_de, inconnus_de, lire,  # noqa: F401
+                                    phase_de, tour_de)
 from coordination.tapis_tranche import membres, position, tranche  # noqa: F401
 
 ENV_ETAT = tapis_etat.ENV_ETAT
@@ -80,6 +80,7 @@ def proposer(lane: str, classe: str, primaires: list[int],
     for n in list(primaires) + list(reprises or []):
         att.setdefault(n, False)
     etat[classe]["primaire"] = sorted(set(primaires))
+    etat[classe]["phase"] = etat[classe].get("phase", 0) + 1
     ecrire(lane, etat)
     return etat
 

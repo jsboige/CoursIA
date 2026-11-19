@@ -55,7 +55,10 @@ def bloc(grains: list, conteneurs: list, n_grains: int, taille: int, lane: str,
         tapis_ancre.inconnus_de(ancres, "conteneurs"),
         tapis_position.decalage(lane, "grains", n_g) + compteur * part,
         tapis_position.decalage(lane, "conteneurs", n_c) + compteur * quota,
-        bloc_suivant)
+        bloc_suivant,
+        # La PHASE alterne le sens de l'entrelacement : la reprise passe
+        # devant la primaire un tour sur deux (mesure du 19/11).
+        reprise_d_abord=tapis_ancre.phase_de(ancres, "grains") % 2 == 1)
     pool = {g.numero for g in grains} | {g.numero for g in conteneurs}
     visites = {g.numero for g in b_g} | {g.numero for g in b_c}
     blocs = max((n_g + part - 1) // part if n_g else 1,
