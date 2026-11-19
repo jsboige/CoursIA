@@ -75,6 +75,8 @@ Store partage : D:\Dev\CoursIA\.mathlib-cache
 Lakes: 42 | mathlib ok: 24 | froid: 4 | partiel: 0 | non installe: 9 | jonctions pendantes: 0 | illisibles: 0 | caches physiques distincts: 5
 ```
 
+**Les 5 lacs non classés de la ligne `Lakes` (42 − 37)** sont des lacs **sans dépendance Mathlib**, que l'organe compte dans le total mais n'affiche pas un à un (statut `no_mathlib_dep`, exclu du détail — source de l'organe, ligne du saut d'affichage) : `asymmetric_information_lean`, `lean_game_defs`, `lean_game_defs_ext` (GameTheory) et `differential_lean`, `torchlean_lean` (SymbolicAI/Lean). Recensement rejoué en lecture seule pour les nommer (mêmes règles de découverte que l'organe, arbre principal).
+
 ## Ligne po-2024 pour la carte multi-machine
 
 | Mesure | V2 (2026-09-13) | V3 (ce rapport) |
