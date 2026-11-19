@@ -190,6 +190,21 @@ exclue) ; chacune compte **une** visite, à la date de la dernière activité de
 depuis trois mois ne tient pas une issue en tête. C'est le classement **léger** qui est concerné ; la voie
 rapide lit les marqueurs du fil, qui portent la même information.
 
+**La mesure qui prouve l'inversion** (19/11, même famine). Le témoin d'**ordre** ne discriminait pas le
+correctif : à niveau égal, l'ordre de création mettait déjà les anciennes devant. Ce qui change, c'est le
+**niveau**. Pool de 14 issues (12 anciennes à zéro visite, une issue à une visite, l'umbrella #27338 à huit
+livraisons) :
+
+| | visites de #27338 | niveau de #27338 | niveau de l'issue à 1 visite | rang de #27338 |
+| --- | --- | --- | --- | --- |
+| avant (les PRs ouvertes ne comptent pas) | 0 | 0 | 0,5 | **devant** elle |
+| après | 8 | 8 | 0,5 | **derrière** elle |
+
+Avant correction, une racine servie huit fois passait **devant** une issue qui avait déjà reçu sa visite : le
+contre-sens exact du mandat du 16/11 (« toute issue doit être visitée au moins une fois avant qu'une autre le
+soit deux fois »). Le témoin `scripts/tests/test_tapis_public.py` rejoue les deux colonnes : il échoue si la
+correction disparaît, et il échoue aussi si l'inversion ne se reproduit plus.
+
 **Le niveau compte les visites du tour, pas celles de toute la vie de l'issue.** Le tour vaut
 `FENETRE_J` = 7 jours. Mesure du 16/11 sur la lecture de 13:27Z : environ 47 séances par jour pour 395
 issues ouvertes, soit un tour complet de la flotte en 4 à 8 jours. Un compte sur la vie entière aurait l'effet
@@ -376,6 +391,7 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/tapis_public.py` | le **lot public** : la proposition comprise (la tranche, les ancres) — la voie que les tests rejouent |
 | `scripts/coordination/tapis_tete.py` | la **tête** du lot : le numéro suivant le curseur, ahead de la priorité (famine du 19/11) |
 | `scripts/coordination/tapis_citations.py` | les **citations des PRs ouvertes** : le travail en cours compte comme une visite (famine du 19/11) |
+| `scripts/coordination/belt_equite.py` | l'**équité du dispatch** : les grains déjà servis qu'une file place devant les issues jamais servies (famine du 19/11) |
 | `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
@@ -439,5 +455,4 @@ la PR qui porte le `[DELIVERED]` — 14 tests de cette grammaire s'appuient sur 
 
 Le cas que la voie légère ne peut plus voir est précisément `RELACHEE` : elle classe sur métadonnées
 seules, elle ne voit donc plus les marqueurs du fil. La porte consumer les rejoue sur le fil complet.
-
 
