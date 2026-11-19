@@ -181,6 +181,13 @@ def decide(
     la PR. Une jambe qui n'a pas fini n'est **ni verte ni rouge** -- elle est en
     cours, et le seul geste possible est d'attendre.
 
+    Lecture stricte (relire du coordinateur, 19/11 00:05Z) : le rejeu exige
+    une jambe **explicitement terminee ET en echec**. Un `status` absent
+    n'est pas « terminee » (la reponse est incomplete : fail-CLOSED), et une
+    conclusion qui n'est pas `failure` n'est pas un echec (annulee, ignoree,
+    neutre : rien a rejouer). Mesure du 19/11 : les jambes `PR gate` porteuses
+    du minuteur sont `completed` + `failure` (#27273, #27297, #27319).
+
     Le plancher est celui de l'**emetteur** (`emitter_floor`), pas un recalcul
     depuis `committed_at` : voir la note de `emitter_floor`. `committed_at` et
     `dwell_min` ne servent plus qu'a l'affichage et a la compatibilite de
@@ -198,8 +205,18 @@ def decide(
         return "ignorer", "jambe verte"
     if waived:
         return "ignorer", "derogation par label `{}`".format(WAIVER_LABEL)
-    if status and status != "completed":
-        return "attendre", "jambe en cours (statut `{}`)".format(status)
+    if status != "completed":
+        # Un `status` ABSENT n'est pas « terminee » : c'est une reponse
+        # incomplete. Fail-CLOSED : on attend, on ne rejoue pas sur une
+        # lecture qui n'a pas tout dit (relire du coordinateur, 19/11).
+        return "attendre", ("jambe en cours ou reponse incomplete (statut `{}`)".format(
+            status or "absent"))
+    if conclusion != "failure":
+        # Une jambe terminee mais conclue autrement (annulee, ignoree, neutre)
+        # n'est pas un echec : il n'y a rien a rejouer. Le rejeu exige une
+        # jambe **explicitement** terminee ET en echec.
+        return "ignorer", ("conclusion `{}` -- ni verte ni en echec : rien a rejouer".format(
+            conclusion or "absente"))
     plancher = emitter_floor(title)
     if plancher is None:
         return "ignorer", "echec qui n'est pas le minuteur DWELL (rouge reel)"

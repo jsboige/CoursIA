@@ -133,6 +133,30 @@ def test_le_minuteur_reconnu_passe_meme_si_la_jambe_echoue():
     assert "2026-11-18T20:57:52Z" in motif
 
 
+def test_un_statut_absent_ne_rejoue_jamais():
+    """Un `status` ABSENT n'est pas « terminee » : la reponse est incomplete.
+
+    Fail-CLOSED : le minuteur etait lisible, le plancher etait ecoule, et
+    l'organe pouvait rejouer sur une reponse qui n'avait pas tout dit
+    (relire du coordinateur, 19/11 00:05Z)."""
+    action, motif = decide(conclusion="failure", title=_pending_title(),
+                           committed_at=HEAD_AT, now=HEAD_AT + timedelta(hours=3),
+                           status="")
+    assert action == "attendre"
+    assert "absent" in motif
+
+
+def test_une_conclusion_autre_qu_un_echec_ne_rejoue_jamais():
+    """Une jambe terminee mais conclue autrement (annulee, ignoree, neutre) :
+    ce n'est pas un echec, il n'y a rien a rejouer."""
+    for conclusion in ("cancelled", "skipped", "neutral", ""):
+        action, motif = decide(conclusion=conclusion, title=_pending_title(),
+                               committed_at=HEAD_AT, now=HEAD_AT + timedelta(hours=3),
+                               status="completed")
+        assert action == "ignorer", conclusion
+        assert "rien a rejouer" in motif
+
+
 def test_horloge_en_arriere_ou_future_ne_passe_pas():
     """Une tete datee dans le futur (decalage de machine) ne doit pas etre
     lue comme un plancher ecoule : fail-CLOSED.
