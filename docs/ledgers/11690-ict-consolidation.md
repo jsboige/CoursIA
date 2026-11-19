@@ -29,6 +29,8 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 9 | **Familles FLens ICT-36 / ICT-37** (extension #11690) | six carnets — 36, 36b, 36c, 36d, 36e, 37 — les deux modes de la F-Lens ; le ledger en nommait cinq, la mesure en trouve six | **LU** (strand 9, 2026-11-09) |
 | 10 | **Famille ICT-35 (humour)** (extension #11690) | quatre carnets — 35, 35b, 35c, 35d — de l'étage 0 lexical au profil de profondeur SAE ; le plus gros bloc restant du recompte du 2026-11-09 | **LU** (strand 10, 2026-11-15) |
 | 11 | **Constellation ICT-38 / ICT-39 / ICT-40a** (extension #11690) | trois carnets chaînés — S-Lens self-location, composition de regards (lentilles), triangulation causale multi-instrument ; ICT-40b écarté : PR ouverte #26584 (ai-01:vllm) | **LU** (strand 11, 2026-11-17) |
+| 12 | **Strate 7 : ICT-46 / ICT-46b** (extension #11690) | deux carnets — l'organe exécutable de la strate 7 et son banc unique en travers du dépôt | **LU** (strand 12, 2026-11-17) |
+| 13 | **Trio Argumentation non numéroté** (extension #11690) | trois carnets — TruthMaintenance, QBFAcceptance, Capstone ; la strate 6 bouclée au ledger (BeliefTrajectories au strand 5) | **LU** (strand 13, 2026-11-18) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -239,6 +241,29 @@ Les 18 carnets non couverts, recalculés :
 - **Non numérotés (6)** : `ICT-Argumentation-Capstone`, `ICT-Argumentation-QBFAcceptance`, `ICT-Argumentation-TruthMaintenance`, `ICT-Dissociation-DehaeneF2-SelfReport`, `ICT-Greffe5-AttributionCausale`, `ICT-MUH-FibreTegmark`
 
 Le plus gros bloc restant reste **les six non numérotés**, puis l'axe douleur 47/47b et la paire ICT-48 (quatre carnets en deux familles contiguës). La strate 7 est couverte à 2/2 sur ses carnets numérotés ; son résiduel documenté — SmartContracts, routé RECOVERABLE-MACHINE dans ICT-46b — est une classe à poser sur la machine qui porte l'environnement, pas un carnet manquant.
+
+### Recompte du 2026-11-18 (après le strand 13)
+
+Même méthode, rejouée une fois le strand 13 posé (trio Argumentation non numéroté : TruthMaintenance, QBFAcceptance, Capstone — BeliefTrajectories est couvert depuis le strand 5).
+
+| Mesure | 2026-11-17 (s12) | 2026-11-18 (s13) |
+|---|---|---|
+| Carnets ICT sur `main` | 101 | **101** |
+| Sections de carnet au ledger | 83 | **86** |
+| Non couverts | 18 | **15** |
+| Taux de couverture | 82 % | **85 %** |
+
+Zéro fantôme, toujours : les 86 entrées du ledger correspondent toutes à un carnet présent au `ls-tree` (normalisation `-Python`). Le dénominateur n'a pas bougé à la tête `c390263a47` ; le solde est `18 − 3 = 15`, et `83 + 3 = 86`. La rangée manquante du strand 12 dans la table des strands ci-dessus est posée par le strand 13 (rattrapage : la PR du strand 12 (#27160) n'avait pas ajouté son rang).
+
+Les 15 carnets non couverts, recalculés :
+
+- **ICT-17c** TorchLens-Inspection (descendu dans `ICT-17-EpsilonMachine/`), **ICT-20** FeatureCatastrophes
+- **ICT-32** StratificationCausaleLife, **ICT-33** SoupCollisions, **ICT-34** BancRecollementLectures
+- **ICT-36f** FLens-SpecParam (arrivé le 16/11), **ICT-40b** AnalogCognitionWaves, **ICT-43** Calibration-MultiEchelle
+- **ICT-47** PainAxisDistillation, **ICT-47b** PainAxisInstrument, **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
+- **Non numérotés (3)** : `ICT-Dissociation-DehaeneF2-SelfReport`, `ICT-Greffe5-AttributionCausale`, `ICT-MUH-FibreTegmark`
+
+Le plus gros bloc restant devient l'**axe douleur 47/47b + la paire ICT-48** (quatre carnets en deux familles contiguës), puis les trois non numérotés résiduels ; les orphelins récents (`17c`, `36f`, `40b`) restent un carnet chacun. La strate 6 est désormais couverte 4/4 — trajectoire (strand 5), révision, acceptabilité, capstone.
 
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
@@ -1365,3 +1390,49 @@ Les deux sont exécutés et datés : **toutes les cellules de code exécutées, 
 3. **La revue contradictoire de 46b mesure trois modes de faux verdict.** Carte oubliée → faux « nouveau » ; carte de noms sur copie → faux « décoratif » en zone sourde ; carte exacte sur jumeau institutionnel → rabat « nouveau » vers ornemental. Les gardes `verifier_equivalence` et `jumeaux_comportementaux` sont **exécutées** avec leur contre-exemple (verdict « nouveau », dA_t marginal 3, jumeaux exhibés), pas seulement citées : la règle du carnet — « un verdict de la grille ne se cite jamais sans ses gardes » — est appliquée dans ses propres cellules.
 
 4. **Nommage à porter intact : la strate 7 se compte par suffixe.** Les fichiers sont `ICT-46-Strate7-FreeCoordinates-Python.ipynb` et `ICT-46b-BancUnique-Strate7-Python.ipynb` — la paire 46/46b rejoint 40a/40b et 35b/c/d sur la liste des familles à préfixe partagé ; la mesure par `git ls-tree` reste la seule voie qui ne se trompe pas.
+
+## Strand 13 — Trio Argumentation : TruthMaintenance / QBFAcceptance / Capstone (extension #11690)
+
+Trois carnets, le versant non numéroté de la strate 6 (argumentation). La strate se referme au ledger : `BeliefTrajectories` est couvert depuis le strand 5 (tranche 3) ; ce strand lit les trois qui ferment l'arc — la **révision** (JTMS/ATMS, distillation EPITA `1.4.1-JTMS`, #17319), l'**acceptabilité** comme QBF (distillation Triple Distillation volet ICT, #17339), et le **capstone** du palier 20 qui consume les trois graines sur un corpus réel codé argument par argument.
+
+Les trois sont exécutés et datés : **toutes les cellules de code exécutées, zéro erreur**, `metadata.papermill` présents — TruthMaintenance le 2026-09-21 (23:00:11 → 23:00:17 : six secondes), QBFAcceptance le 2026-11-07 (17:06:42 → 17:06:44 : deux secondes), Capstone le 2026-11-04 (20:03:51 → 20:03:58 : sept secondes). Les trois exercices de chaque carnet sont des stubs conformes C.1, exécutés « à compléter » sans erreur volontaire.
+
+### `ICT-Argumentation-TruthMaintenance-Python.ipynb` (TruthMaintenance) — 13 md / 10 code, 10/10 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Distiller les **mécanismes de révision** eux-mêmes — là où BeliefTrajectories (Phase B, #7742) suivait la trajectoire de croyances sous sémantique grounded, ce carnet distille comment un système de croyances maintient sa cohérence quand une prémisse tombe : JTMS (un état courant révisé par événement), ATMS (tous les environnements d'hypothèses d'un coup), pont vers l'AF de Dung de l'organe `ict.argumentation` (Phase A, #7336). |
+| **Contenu réel** | 5 sections + 3 exercices. **Copie pédagogique déclarée** du projet EPITA `1.4.1-JTMS` (fichiers `jtms.py`/`atms.py` identifiés par la seule tête `487210fb`, mesurée firsthand le 2026-09-22) ; port dans l'organe `ict/truth_maintenance.py`, **fidélité prouvée par exécution différentielle** : 5 corpus/cas produisent des tables byte-identiques à la source. Divergences déclarées (SCC par fermeture d'accessibilité sans `networkx`, tables sans `pyvis`) ; les **quirks mesurés de la source sont conservés et enseignés**, pas corrigés. |
+| **Résultat** | Quirk **negation-as-failure** mesuré : avec `A` posé, table `{A: True, B: True, C: True, D: None}` (la clause `out:[C]` bloque D) ; `A` retiré, table `{A: None, B: True, C: None, D: True}` — **B survit** via `out:[A]` et **D remonte** : retirer une information *crée* une validité (signature de la révision non monotone). Boucles de justification → `None` **+ marqueur `non_monotonic`** (refus de mesurer, pas un zéro ; gate 3). ATMS : `x` sous `{p}`, `y` vidé par le nogood `{p,q}`, `z` sous `{p}` (asymétrie mesurée du blocage `out` ; gate 5) ; **purge rétroactive** (gate 5b) ; quirk du **nogood non persistant** — après purge `is_consistent({p,q})` répond `True`, « perte documentée » (gate 5c). Pont Dung↔TMS à **témoin négatif exécuté** : le TMS soutient *exactement* les rejets dont l'attaquant est `in` au grounded (1 rejet sur Tweety), ni un de plus ni un de moins. |
+| **Critique** | Aucune finding majeure. L'honnêteté de distillation est le cœur du carnet : chaque quirk de la source est nommé, daté de sa tête, et enseigné tel quel (« perte documentée, pas silencieusement corrigée ») ; le refus de mesurer les boucles et la clause `out` lue comme negation-as-failure sont explicités ligne à ligne par `explain_belief`. |
+| **Verdict + action** | **SOLIDE**. Les trois objets (JTMS, ATMS, pont) sont mesurés avec leurs témoins, la fidélité au port est figée par l'exécution différentielle et rejouée par les gates 1-6 des tests de l'organe à chaque CI. Pas d'action d'arbitrage. |
+
+### `ICT-Argumentation-QBFAcceptance-Python.ipynb` (QBFAcceptance) — 20 md / 13 code, 13/13 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Troisième carnet de la strate 6 : l'acceptabilité **crédule** et **sceptique** relue comme problème QBF (PSPACE-complet, Papadimitriou 1994) — « le quantificateur n'est pas une notation, c'est un coût ». Distillation Triple Distillation volet ICT (#17339, Epic #4588). |
+| **Contenu réel** | **Copie pédagogique déclarée** : `ict/qbf.py` = port du module EPITA `argumentation_analysis/agents/core/logic/qbf_native.py` (tête `a5ac1a5d`), fidélité par exécution différentielle 16/16 + 21 gates à littéraux figés (`ict/tests/test_qbf.py`). **Étend l'organe** `ict.argumentation` d'une fonction `preferred_extensions` (« la série demande, l'organe calcule »). Énumération naïve $2^n$ assumée et affichée (`search_space` = le prix payé) ; parseur à précédences `! > & > | > =>` **sans parenthèses** (limite héritée assumée, épinglée par test) ; 3 exercices stubs C.1. |
+| **Résultat** | Alternation non commutative mesurée : `exists x. forall y. (x==y)` → False, `forall y. exists x.` → True ; blocs ∃∀∃ valides (le répondant intérieur). Crédule = ∃ matérialisé : Nixon 3 arguments acceptés **avec témoins singletons**, chaîne défensive `['a','d']` (coalition), cycle impair refusé — la parité rejoint l'encart König/biparti. Borne n≤15 = **refus de mesurer** (`accepted=None`, motif affiché). Sceptique = ∀ sur les extensions préférées **via l'organe** : Nixon préférées `['a','c']`, `['b','c']` → a refusé, c accepté ; Tweety `{a,c}` seul monde → a sceptiquement accepté. Théorème Dung (grounded ⊆ chaque préférée) **rejoué en témoin négatif sur 4 instances** à chaque exécution. |
+| **Critique** | Deux typos markdown uniquement (« Ce carnat est », cellule 0 ; « aucne extension préférée ») — cosmétiques, à prendre en fournée markdown. Rien de fond : chaque limite (parseur, naïveté, borne) est déclarée dans le carnet même et épinglée par un test. |
+| **Verdict + action** | **SOLIDE**. Le pont QBF↔AF est démontré dans les deux sens avec témoins, et l'extension `preferred_extensions` enrichit l'organe natif au lieu de le contourner. Action mineure : les deux typos dans la fournée markdown du trio (finding transverse 2). |
+
+### `ICT-Argumentation-Capstone-Python.ipynb` (Capstone) — 21 md / 15 code, 15/15 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Tête du palier 20 : tenir les cinq maillons de la strate 6 sur le même texte — un corpus réel codé argument par argument, les mêmes trajectoires soumises à plusieurs lectures concurrentes, des témoins négatifs qui peuvent rougir, et le triplet (σ, K, ordre) rendu par un seul appel d'organe. Consomme les trois graines (BT, TM, QBF) sans les dupliquer. |
+| **Contenu réel** | 7 sections. **Organ-first, 5 questions répondues dans le carnet** : importe `ict.argumentation`, `ict.triplet.assembler_triplet` (#23851), `ict.tpm_estimation`, `ict.mdl` ; 2 copies pédagogiques déclarées (constructeurs de régimes délibératif/populiste, quatre lectures). Corpus 4 tiers avec table de licences ; Chaplin jamais vendoré (fetch runtime, `SOURCE_INDISPONIBLE` sinon). 3 exercices stubs C.1. |
+| **Résultat** | (S2) σ **ordre unique invariant** : 5 graphes opposés rendent le même σ = 4,642·10⁻⁹ — le test de non-dégénérescence **échoue pour tous** sur un ordre unique (« le triplet mesure la longueur du texte »). (S3) σ **agrégé** exactement invariant (2,818·10⁻⁷) sur 9 graphes × 300 ordres — cause nommée : tirage uniforme des permutations ; « l'encodage le plus grossier porte le signal, pas le plus fin ». (S4) K non dégénéré à taille égale, ordre **stable populiste < délibératif < fable** aux deux blocs (n=7 : 1711/1804/2034 ; n=9 : 2549/3105/3511) — la prédiction de la note de conception est **demi-fausse** (c'est la fable la moins compressible) ; à n=9, délibératif et populiste font 22 états distincts chacun mais diffèrent de 556 bits. (S5) témoin nul apparié **NON RESOLU** refusé proprement (σ = 0,0 et 8,3·10⁻²⁵ sous plancher relatif 10⁻¹² — le carnet refuse le z = +∞ trompeur). (S6) **témoin 4 ROUGE** sur les deux specimens : collage 0,667/0,857 < GRAPH 1,000 — défaut de prémisse nommé (GRAPH coïncide avec grounded par construction sur AF peu profonds), STRUCT/RDF redondantes, **LEX s'inverse** (0,857 → 0,333, pire que le hasard). (S7) témoins corpus : Hynkel → `REFUS:CANAUX_CONTRADICTOIRES` (couverture 0,000 vs 0,556), Chaplin → `MESURABLE` (96 énoncés codables, couverture 0,311). |
+| **Critique** | Le capstone **réfute sa propre note de conception** (« σ porte la thèse, K la nuance » renversé par la mesure) et nomme trois chantiers ouverts : échantillonnage d'ordres non uniforme, encodage gardant l'identité des arguments lisible par la TPM, corpus annoté pour le témoin 4. Le ROUGE du témoin 4 est un résultat, pas un échec — mais il laisse la lecture GRAPH non discriminante sur les AF peu profonds. |
+| **Verdict + action** | **SOLIDE**. Le capstone fait ce qu'un capstone doit : consume les graines, mesure, et rend un verdict qui contredit sa propre prémisse en le démontrant. Actions d'arbitrage : décider si les trois chantiers ouverts deviennent des issues (le carnet les liste, le strand ne les ouvre pas — hors périmètre lecture). |
+
+### Findings transverses du strand 13 (pour l'arbitrage user)
+
+1. **La strate 6 est couverte 4/4 et forme un arc pédagogique fermé.** Trajectoire (BeliefTrajectories, strand 5) → révision (TruthMaintenance) → acceptabilité (QBFAcceptance) → capstone qui consume les trois. Les quatre sont exécutés, datés, zéro erreur, et la règle organ-first y est portée dans les trois sens : deux ports déclarés avec fidélité prouvée par exécution différentielle (`truth_maintenance`, `qbf`), une **extension** d'organe (`preferred_extensions`), une consommation sans duplication (le capstone appelle `assembler_triplet` au lieu de le refaire). C'est la strate la plus propre du ledger sur ce plan.
+
+2. **Chaînage de navigation croisé dans le trio — une fournée markdown ferme le tout.** Les en-têtes ordonnent la lecture BT → TM → QBF → Capstone (TM pointe `>>` QBF, QBF pointe `>>` Capstone), mais trois liens contredisent cet ordre : le Capstone pointe `<<` vers TruthMaintenance **en sautant QBFAcceptance** ; le pied « Suivant » de TruthMaintenance pointe vers le Capstone **en sautant QBFAcceptance** ; le pied « Suivant » de QBFAcceptance pointe vers TruthMaintenance — **en arrière** — et l'appelle « troisième carnet de la strate avant le capstone », contredisant la prose des cellules 0 qui place QBF troisième. Avec les deux typos de QBFAcceptance (« carnat », « aucne »), le tout fait une fournée markdown d'un seul tenant sur le trio.
+
+3. **Les quirks conservés et enseignés sont la marque de la strate.** Negation-as-failure (un état inconnu satisfait la clause `out`), nogood non persistant (« perte documentée »), parseur QBF sans parenthèses (limite épinglée par test), borne n≤15 comme refus de mesurer. Chaque carnet nomme ce qu'il ne démontre pas ; le capstone va jusqu'à renverser sa propre note de conception par la mesure — l'honnêteté n'y est jamais une impression, elle est figée par témoins exécutables.
+
+4. **La leçon méthodologique du capstone déborde la strate.** L'invariance exacte de l'agrégat (S3) coexiste avec la perte du signal fin (S2) : un σ invariant sur permutations uniformes ne prouve pas que l'identité des arguments survit à l'encodage. La recommandation du carnet — échantillonnage non uniforme, encodage lisible par la TPM — vaut pour toute la série ICT quand elle mesure des agrégats sur des permutations ; c'est un candidat transversal pour l'arbitrage, pas seulement un chantier du palier 20.

@@ -214,6 +214,22 @@ La grammaire de composition est-elle agnostique à la représentation ? MGS-1 à
 
 Cadrage honnête (G.9) : ni swap ni insertion n'a de privilège géographique sur ce TSP (ce sont des distances sur les étiquettes d'indice, pas sur les coordonnées des villes) — les deux sont des baselines, et le centroïde naïf à deux parents borne symétriquement les deux métriques (limite déjà documentée en Config 3) ; un embedding appris équivariant par permutation ferait mieux que les deux.
 
+#### Service web TSP (pli 0 v2, #27218)
+
+Le carnet MGS-07 expose aussi son optimisation comme un **service web** `POST /search/tsp`. Le cœur d'exécution est un port Python ([`mgs_tsp_core.py`](mgs_tsp_core.py)) du **même** algorithme (GA panmictique + modèle insulaire sur permutations, fitness = distance euclidienne du tour cyclique, opérateurs OX1/RSM/élite), de parité **seedée interne** : deux exécutions avec les mêmes entrées produisent le même tour et la même distance.
+
+**Serveur retenu : FastAPI** [`mgs_tsp_service.py`](mgs_tsp_service.py) — codes HTTP 200/422/502 :
+
+  ```bash
+  pip install -r requirements-mgs-tsp.txt
+  uvicorn mgs_tsp_service:app --host 127.0.0.1 --port 8000
+  # POST http://127.0.0.1:8000/search/tsp
+  ```
+
+L'acceptance #27218 (point 3) autorise Kernel Gateway notebook-http **ou FastAPI**. Le choix FastAPI s'impose ici : ce carnet tourne sous kernel **C#**, et Kernel Gateway notebook-http ne peut pas le servir (`# POST` est une directive préprocesseur invalide en C#, et la requête est injectée en syntaxe Python `REQUEST = ...`). Le détail mesuré est dans la note d'implémentation du carnet. La **cellule d'endpoint du carnet** (`// POST /search/tsp`) invoque le même cœur Python via [`mgs_tsp_gateway_driver.py`](mgs_tsp_gateway_driver.py) (sous-processus stdin/stdout) et court-circuite en exécution de cours (C.1) : un seul carnet porte cours + TP + service (veto Q168 respecté, pas de jumeau Python).
+
+Le contrat : entrée `{"cities": [{"name","x","y"}, ...], "algorithm": "ga"|"islands", "params": {"population","generations","seed", ...}}`, sortie `{"status":"ok","data":{"best_tour":[...],"distance":...,"history":[...]}}` (`best_tour` = noms de villes dans l'ordre de visite, `history` = longueur du meilleur tour par génération). `{"status":"invalid",...}` (< 4 villes, paramètres hors bornes, algorithme inconnu, noms dupliqués) ou `{"status":"error",...}` (échec inattendu) ; aucune exception ne fuit. Tests : `test_mgs_tsp_core.py` (22 tests — validation, cas dégénérés, parité seedée, optimum connu du carré unité = 4.0, transport loopback), câblés dans `.github/workflows/search-mgs-tsp-tests.yml`.
+
 ### 7b — Projection N-D des paysages
 
 MGS-6 a présenté les dix fonctions canoniques en 2-D. Mais une **vraie métaheuristique** optimise dans des dimensions bien supérieures (Rastrigin est intéressant à $n=30$, Schwefel a un optimum trompeur en $n \geq 10$). Ce notebook pont active la **surcharge N-D** de `KnownFunctionLandscape.RenderHeatmap` — la même rampe de couleurs, la même `SkiaLandscapeRenderer`, mais sur une dimension arbitraire : pour chaque pixel du canvas 2-D, `nbSamples` tirages uniformes des coordonnées cachées $x_2 \dots x_{N-1}$ et on garde le **MAX** (l'opérateur verbatim du contrôleur Gtk# original de jsboige). La projection rend lisibles des phénomènes invisibles en 2-D : la **Sphere** 5-D garde $(0,0)$ comme candidat d'optimum mais le MAX sur les coordonnées cachées fait émerger d'autres pixels ; **Rastrigin** en $n=2/5/10/30$ montre la densité de minima locaux croître avec la dimension (la heatmap rougit) ; **Schwefel** en $n=5/30$ fait émerger le *vrai* optimum global, loin du centre, dès qu'on autorise les coordonnées cachées à varier. C'est le pont entre la visualisation 2-D de MGS-6/MGS-8 et la réalité haute-dimension où vit l'optimisation — et le terrain où la projection N-D (capacité distinctive du renderer fork) est *nécessaire*, pas optionnelle.
