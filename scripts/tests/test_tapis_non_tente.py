@@ -167,3 +167,125 @@ def test_la_voie_vagues_passe_la_preuve_du_diff(monkeypatch):
         "la voie vagues doit passer la preuve par le diff : sans elle, "
         "l'ecart LIVREE repose sur le seul marqueur du fil")
     assert callable(preuve)
+
+
+# --- LA GARANTIE DE VISITE : un parke finit par etre relu (19/11) ----------
+
+def _tour_complet(lane: str, grains: list, taille: int, budget: int):
+    """Un tour reel : le bloc, la proposition, la qualification du budget.
+
+    Rend `(lot, qualifies)` : le lot rendu par la rotation, et les numeros
+    que la lane qualifie (les `budget` premiers du lot -- c'est ainsi
+    qu'une lane qui n'a qu'un candidat par tour se comporte).
+    """
+    from coordination import tapis_rotation  # noqa: PLC0415 - import local
+
+    ancres = tapis_ancre.lire(lane)
+    bloc, fenetre = tapis_rotation.bloc(grains, [], len(grains), taille, lane,
+                                         MAINTENANT, ancres=ancres)
+    tapis_ancre.proposer(lane, "grains", fenetre["primaires"]["grains"],
+                          fenetre["reprises"]["grains"])
+    nums = [g.numero for g in bloc]
+    qualifies = nums[:budget]
+    tapis_ancre.avancer(lane, terminaux=set(qualifies))
+    return nums, qualifies
+
+
+def test_le_lot_alterne_la_primaire_et_la_reprise(tmp_path, monkeypatch):
+    """Le lot ne laisse pas les reprises en queue : une tranche bornee les voit.
+
+    C'est le defaut mesure par le peer (19/11) : les numeros 2, 4 et 6,
+    parkes derriere la primaire, n'etaient JAMAIS lus quand la lane ne
+    qualifiait qu'un candidat par tour.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    nums = [1, 2, 3, 4, 5, 6]
+
+    _tour(lane := LANE, nums)
+    tapis_ancre.avancer(lane, terminaux={1, 2})
+    _tour(lane, nums)
+    etat = tapis_ancre.avancer(lane, terminaux={4})
+
+    grains = _grains(nums)
+    bloc, _c, _p, reprises = tapis_composition.compose(
+        grains, [], 2, 0, etat["grains"]["ancre"], None,
+        etat["grains"]["inconnus"], {}, 0, 0)
+    nums_lot = [g.numero for g in bloc]
+    reprises_lot = [n for n in nums_lot if n in reprises["grains"]]
+    assert reprises_lot, "la reprise doit figurer dans le lot"
+    assert nums_lot.index(reprises_lot[0]) <= 1, (
+        "une reprise en queue du lot n'est jamais lue quand la lane ne "
+        f"qualifie qu'un candidat par tour : lot={nums_lot}")
+
+
+def test_la_phase_alterne_le_sens_du_lot(tmp_path, monkeypatch):
+    """Un tour sur deux, la reprise passe DEVANT la primaire.
+
+    C'est le prix de la garantie de visite : avec un budget de lecture d'un
+    seul candidat, il faut que la reprise passe devant un tour sur deux.
+    """
+    from coordination import tapis_rotation  # noqa: PLC0415 - import local
+
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    nums = [1, 2, 3, 4, 5, 6]
+    grains = _grains(nums)
+
+    _tour(lane := LANE, nums)
+    tapis_ancre.avancer(lane, terminaux={1, 2})
+    _tour(lane, nums)
+    tapis_ancre.avancer(lane, terminaux={4})
+
+    premiers, reprises_lot = [], []
+    for _ in range(2):
+        ancres = tapis_ancre.lire(lane)
+        bloc, fenetre = tapis_rotation.bloc(grains, [], len(grains), 2, lane,
+                                             MAINTENANT, ancres=ancres)
+        premiers.append([g.numero for g in bloc][0])
+        reprises_lot.append(set(fenetre["reprises"]["grains"]))
+        tapis_ancre.proposer(lane, "grains", fenetre["primaires"]["grains"],
+                              fenetre["reprises"]["grains"])
+
+    assert premiers[0] != premiers[1], (
+        "le sens du lot doit alterner : sinon la reprise n'est jamais "
+        f"relue, lot={premiers}")
+    assert premiers[0] in reprises_lot[0] or premiers[1] in reprises_lot[1], (
+        "un des deux tours doit passer la reprise devant la primaire "
+        f"(premiers={premiers}, reprises={reprises_lot})")
+
+
+def test_chaque_parque_est_relu_enfin(tmp_path, monkeypatch):
+    """LA GARANTIE DE VISITE : sur 12 tours, chaque numero est servi.
+
+    Le scenario du peer (19/11) : pool 1..6, taille 2, un seul candidat
+    qualifie par tour. Avant l'entrelacement, les numeros 2, 4 et 6
+    restaient parques derriere la primaire et n'etaient JAMAIS servis.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    nums = [1, 2, 3, 4, 5, 6]
+    grains = _grains(nums)
+
+    servis: list[int] = []
+    for _ in range(12):
+        _lot, qualifies = _tour_complet(LANE, grains, 2, 1)
+        servis.extend(qualifies)
+
+    manquants = sorted(set(nums) - set(servis))
+    assert not manquants, (
+        f"des numeros parkes n'ont jamais ete relus : {manquants} "
+        f"(servis : {sorted(set(servis))})")
+
+
+def test_l_etat_porte_le_commit_du_code(tmp_path, monkeypatch):
+    """L'etat est lie au code qui l'a ecrit : deux etats ne sont comparables
+    que s'ils viennent du meme commit."""
+    from coordination import tapis_etat_commit  # noqa: PLC0415 - import local
+
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    _tour(lane := LANE, [1, 2])
+    etat = tapis_ancre.lire(lane)
+    attendu = tapis_etat_commit.commit()
+    assert etat["grains"]["commit"] == attendu, (
+        "l'etat doit porter le commit du code qui l'a ecrit : sans lui, "
+        "comparer deux etats de semantiques differentes n'a pas de sens")
+    assert etat["grains"]["phase"] >= 1, (
+        "la phase compte les propositions : elle commande l'alternance")
