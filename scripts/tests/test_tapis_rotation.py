@@ -26,7 +26,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import tapis_ancre, tapis_leger, tapis_rotation  # noqa: E402
+from coordination import tapis_ancre, tapis_etat, tapis_leger, tapis_rotation  # noqa: E402
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -201,10 +201,11 @@ def test_la_priorite_est_visible_a_la_sortie_du_bloc():
 def test_une_ancre_inconnue_ne_s_acquitte_pas(tmp_path, monkeypatch):
     """Un fichier d'ancre illisible ne vaut pas zero : il vaut inconnu."""
     monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
-    inconnu = {"grains": {"ancre": None, "attente": {}},
-               "conteneurs": {"ancre": None, "attente": {}}}
+    inconnu = {"grains": {"ancre": None, "tour": 0, "attente": {}, "inconnus": {}},
+               "conteneurs": {"ancre": None, "tour": 0, "attente": {},
+                              "inconnus": {}}}
     assert tapis_ancre.lire("myia-ai-01:CoursIA-2") == inconnu
-    chemin = tapis_ancre.chemin_etat("myia-ai-01:CoursIA-2")
+    chemin = tapis_etat.chemin_etat("myia-ai-01:CoursIA-2")
     chemin.parent.mkdir(parents=True, exist_ok=True)
     chemin.write_text("{pas du json", encoding="utf-8")
     assert tapis_ancre.lire("myia-ai-01:CoursIA-2") == inconnu

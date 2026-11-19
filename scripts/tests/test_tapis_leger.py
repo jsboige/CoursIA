@@ -636,12 +636,13 @@ def test_un_tirage_seul_ne_fait_pas_avancer_l_ancre(tmp_path, monkeypatch):
     assert all(not v for v in etat["grains"]["attente"].values()),         "un numero propose n'est pas un numero qualifie"
 
 
-def test_un_lot_partiel_ne_fait_pas_avancer_l_ancre(tmp_path, monkeypatch):
-    """Un numero ILLISIBLE n'est pas un verdict : l'ancre ne le passe pas.
+def test_un_lot_partiel_ne_fige_pas_la_couverture(tmp_path, monkeypatch):
+    """Un numero ILLISIBLE n'est pas un verdict : il est PARKE.
 
     Le lot lit #7 et #9 ; le #8 est ABSENT de la reponse. L'echec de lecture
-    n'est pas une decision : l'ancre s'arrete a #7, et le #8 sera re-servi
-    au tour suivant (peer, 19/11)."""
+    n'est pas une decision : le #8 n'est donc pas acquitte, mais il ne FIGE
+    pas le curseur -- la couverture continue sur #9, et le #8 est re-servi au
+    tour suivant (contre-exemple du 19/11)."""
     monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
 
     def faux_qualifier(run, depot, numeros=None):
@@ -653,10 +654,13 @@ def test_un_lot_partiel_ne_fait_pas_avancer_l_ancre(tmp_path, monkeypatch):
         [7, 8, 9], LANE, NOW, 45, [], _run_faux([]))
     assert [e.numero for e in servis] == [7, 9], "les numeros lus sont qualifies"
     assert ecartees[8]["code"] == "ABSENT", "le numero absent sort avec son code"
-    assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 7,         "l'ancre s'arrete au dernier verdict CONTINU"
-    # Le #8 est decide au tour suivant : l'ancre ferme enfin le prefixe.
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] == 9, "la couverture continue malgre la lecture en echec"
+    assert 8 in etat["grains"]["inconnus"], "le #8 est PARKE, pas perdu"
+    assert etat["grains"]["inconnus"][8]["code"] == "ABSENT", "il porte son code"
+    # Le #8 est decide plus tard : il quitte le parc des inconnus.
     tapis_verdict.avancer(LANE, {}, {8: {"numero": 8, "code": "GEL"}})
-    assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 9
+    assert 8 not in tapis_ancre.lire(LANE)["grains"]["inconnus"]
 
 
 def test_un_refus_de_lecture_n_est_pas_un_verdict():
@@ -667,3 +671,73 @@ def test_un_refus_de_lecture_n_est_pas_un_verdict():
                                                        "code": "ABSENT"}})
     assert 8 in tapis_verdict.terminaux({}, {8: {"numero": 8, "code": "GEL"}})
     assert 9 in tapis_verdict.terminaux({9: object()}, {})
+    assert 8 in tapis_verdict.inconnus({8: refus}), "le refus est PARKÉ"
+    assert 8 not in tapis_verdict.inconnus({8: {"numero": 8, "code": "GEL"}})
+
+
+# --- LE TOUR QUI BOUCLE (contre-exemple execute du peer, 19/11) --------------
+
+def _tour(nums: list[int], taille: int) -> list[list[int]]:
+    """Un tour complet : selection (tirage) puis qualification (verdict)."""
+    vus: list[list[int]] = []
+    for _ in range(len(nums) // taille):
+        ancre = tapis_ancre.lire(LANE)["grains"]["ancre"]
+        tranche = tapis_ancre.tranche(nums, ancre, taille, 0)
+        tapis_ancre.proposer(LANE, "grains", tranche)
+        tapis_ancre.avancer(LANE, set(tranche))
+        vus.append(tranche)
+    return vus
+
+
+def test_le_tour_qui_boucle_est_un_tour_de_plus(tmp_path, monkeypatch):
+    """Le contre-exemple du peer (19/11) : pool 1..6, taille 2.
+
+    Apres le tour complet, le curseur etait FIGE au plus grand numero et la
+    tranche [1, 2] revenait a chaque vague. Un tour qui boucle est un tour
+    de PLUS : le second tour couvre le pool, et le compteur de tour avance.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    nums = list(range(1, 7))
+    assert _tour(nums, 2) == [[1, 2], [3, 4], [5, 6]]
+    assert _tour(nums, 2) == [[1, 2], [3, 4], [5, 6]], \
+        "le second tour couvre le pool au lieu de resservir [1, 2]"
+    assert tapis_ancre.tour_de(tapis_ancre.lire(LANE), "grains") == 1, \
+        "un tour de plus est compte"
+
+
+def test_une_tranche_peut_chevaucher_la_fin_du_pool():
+    """La tranche est cyclique : elle passe le dernier numero et revient."""
+    nums = list(range(1, 7))
+    assert tapis_ancre.tranche(nums, 4, 5, 0) == [5, 6, 1, 2, 3], \
+        "la tranche chevauche la fin du pool"
+
+
+def test_un_pending_de_tete_qui_se_ferme_laisse_passer_le_curseur(tmp_path, monkeypatch):
+    """Le pending de tete attend sa decision ; quand elle tombe, le curseur
+    passe -- et les numeros derriere lui aussi."""
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    tapis_ancre.proposer(LANE, "grains", [5, 6, 7])
+    assert tapis_ancre.lire(LANE)["grains"]["ancre"] is None, \
+        "rien n'est decide : le curseur bouge pas"
+    tapis_verdict.avancer(LANE, {5: object()}, {})
+    assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 5, \
+        "le pending de tete qui se ferme libere le curseur"
+    tapis_verdict.avancer(LANE, {6: object(), 7: object()}, {})
+    assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 7, \
+        "les numeros derriere sont couverts"
+
+
+def test_un_pending_de_tete_illisible_ne_gele_pas_les_autres(tmp_path, monkeypatch):
+    """Le pending de tete qui reste ILLISIBLE ne fige pas les autres.
+
+    Le #5 ne sera jamais decide ; il est PARKE. Mais la couverture continue :
+    #6 et #7 sont servis, et le #5 revient au tour suivant.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    tapis_ancre.proposer(LANE, "grains", [5, 6, 7])
+    tapis_verdict.avancer(LANE, {6: object(), 7: object()},
+                           {5: {"numero": 5, "code": "FIL_ILLISIBLE"}})
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] == 7, "la couverture des autres n'est pas retiree"
+    assert 5 in etat["grains"]["inconnus"], "le #5 est PARKE, il revient"
+    assert 5 not in etat["grains"]["attente"], "un PARKÉ n'est plus en attente"
