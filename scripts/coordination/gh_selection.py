@@ -103,7 +103,7 @@ def lire_metadonnees_issues(run: Run = gh_bulk.run_defaut, depot: str = gh_bulk.
 
 
 def qualifier(run: Run = gh_bulk.run_defaut, depot: str = gh_bulk.DEPOT_GH,
-              numeros: list[int] | None = None) -> dict[int, dict]:
+              numeros: list[int] | None = None) -> dict[int, dict | None]:
     """Le lecteur existant, CIBLE : corps et commentaires des issues nommees.
 
     C'est la qualification d'un grain pris en charge : la lecture lourde ne

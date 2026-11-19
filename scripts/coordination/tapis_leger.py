@@ -41,7 +41,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_fenetre, tapis_origami, tapis_rapide
+from coordination import tapis_origami, tapis_rapide, tapis_rotation
 from coordination import tapis_service, tapis_universel
 from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 
@@ -57,7 +57,7 @@ def _ordre(etats_: list, lane: str, maintenant: datetime,
 
     L'ordre est **fair** (`rotation=False`) : le decalage de tete par lane
     est applique a la FENETTRE, pas au pool -- sinon la fenetre ne peut pas
-    etre un bloc contigu du pool classe (`tapis_fenetre.bloc`).
+    etre un bloc contigu du pool classe (`tapis_rotation.bloc`).
     """
     grains_ = [e for e in etats_ if not e.conteneur]
     conteneurs = [e for e in etats_ if e.conteneur]
@@ -132,9 +132,9 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     """
     debut = time.monotonic()
     classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
-    file, fenetre = tapis_fenetre.bloc(classe["grains"], classe["conteneurs"],
-                                       grains, max(grains * CANDIDATS_MULT, grains),
-                                       lane, maintenant)
+    file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
+                                         grains, max(grains * CANDIDATS_MULT, grains),
+                                         lane, maintenant)
     secondes = time.monotonic() - debut
     phases = classe["phases"]
     try:

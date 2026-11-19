@@ -25,7 +25,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import tapis_fenetre, tapis_vagues  # noqa: E402
+from coordination import tapis_rotation, tapis_vagues  # noqa: E402
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -85,8 +85,8 @@ def _vagues(accepte: set[int], monkeypatch, max_vagues: int = 4,
 
 def test_la_vague_suivante_ouvre_la_file(monkeypatch):
     """La vague 0 entierement ecartee ouvre la vague 1 : la file se remplit."""
-    bloc1, _ = tapis_fenetre.bloc(_ordre(48), [], GRAINS, TAILLE, LANE,
-                                   MAINTENANT, bloc_suivant=1)
+    bloc1, _ = tapis_rotation.bloc(_ordre(48), [], GRAINS, TAILLE, LANE,
+                                     MAINTENANT, bloc_suivant=1)
     accepte = {bloc1[0].numero}
     services, ecartees, rapport, _ = _vagues(accepte, monkeypatch, grains=1)
     assert rapport["vagues"][0]["servis"] == 0

@@ -25,11 +25,17 @@ TAILLE_LOT = 50
 
 def lire_champs(run: Run = gh_bulk.run_defaut, depot: str = gh_bulk.DEPOT_GH,
                 numeros: list[int] | None = None, champs: str = "",
-                lecture: str = "issues") -> dict[int, dict]:
+                lecture: str = "issues") -> dict[int, dict | None]:
     """Les issues nommees, a plat, aux champs demandes.
 
-    Rend `{numero: issue}`. Une issue absente de la reponse est absente du
-    resultat : elle n'est pas devinee.
+    Rend `{numero: issue}`. **Chaque numero demande sort avec une entree** :
+    l'issue lue, ou `None` quand son alias est revenu nul -- l'issue
+    n'existe pas, ou n'est pas visible. Un numero sans entree etait un trou :
+    il disparaissait du tirage sans que personne sache pourquoi (revue du
+    19/11). Rien n'est devine : `None` est un verdict, pas une lecture.
+
+    Un alias **absent de la reponse** n'est pas une absence : la reponse est
+    incomplete, et le lot entier est refuse (fail-CLOSED).
     """
     if not numeros:
         return {}
@@ -50,8 +56,14 @@ def lire_champs(run: Run = gh_bulk.run_defaut, depot: str = gh_bulk.DEPOT_GH,
         except (ValueError, KeyError, TypeError) as exc:
             raise LectureIncomplete(lecture, tranche[0],
                                     f"reponse illisible : {exc}") from exc
+        if not isinstance(data, dict):
+            raise LectureIncomplete(lecture, tranche[0], "depot illisible")
         for k, n in enumerate(tranche):
-            node = data.get(f"i{k}")
-            if node:
-                lues[n] = gh_bulk.issue(node)
+            cle = f"i{k}"
+            if cle not in data:
+                # L'alias n'a pas ete traite : la reponse est incomplette.
+                # Ce n'est PAS une issue absente : le lot est refuse.
+                raise LectureIncomplete(lecture, n, "alias absent de la reponse")
+            node = data[cle]
+            lues[n] = gh_bulk.issue(node) if node else None
     return lues

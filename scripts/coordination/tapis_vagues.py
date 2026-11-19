@@ -28,7 +28,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, gh_selection, tapis_fenetre
+from coordination import gh_bulk, gh_selection, tapis_rotation
 from coordination import tapis_qualification as tq
 from coordination import tapis_rapide
 from coordination.tapis_marqueurs import _iso
@@ -52,8 +52,8 @@ def vagues(grains_ordre: list, conteneurs: list, lane: str, maintenant: datetime
     ecartees: dict[int, dict] = {}
     detail: list[dict] = []
     for k in range(max_vagnes := max_vagues):
-        bloc, fen = tapis_fenetre.bloc(grains_ordre, conteneurs, grains, taille,
-                                       lane, maintenant, bloc_suivant=k)
+        bloc, fen = tapis_rotation.bloc(grains_ordre, conteneurs, grains, taille,
+                                         lane, maintenant, bloc_suivant=k)
         nums = [e.numero for e in bloc]
         if not nums:
             break

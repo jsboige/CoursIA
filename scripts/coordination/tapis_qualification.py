@@ -19,6 +19,11 @@ fil illisible, un mur de lectures atteint, une echeance depassee -- le grain
 porte alors son code de refus (`FIL_ILLISIBLE`, `MUR_EPUISE`, `ECHEANCE`) et
 son motif, il n'est pas servi. Un grain non qualifie ne s'engage pas.
 
+**Chaque numero demande recoit un verdict.** La lecture du lot elle-meme est
+dans `coordination.tapis_lot` (extrait le 19/11 pour tenir le plafond) : un
+numero lu, un numero illisible, un numero absent de la reponse -- aucun ne
+disparait du tirage sans que le motif soit dit.
+
 Ce que rend `qualifier` :
 
 - `servis` : les grains servables, dans l'ordre donne ;
@@ -48,35 +53,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, gh_selection, tapis_fenetre
+from coordination import tapis_fenetre, tapis_lot
 from coordination import tapis_fil_complet, tapis_rapide
-from coordination.tapis_marqueurs import _iso
 
 #: Candidats par lot de lecture (une requete GraphQL pour le lot).
 LOT = 50
-
-
-def _lec(issues: list[dict], prs: list[dict], citations: dict,
-         maintenant: datetime, appels: int = 0) -> gh_bulk.Lecture:
-    """La lecture des seuls candidats qualifies : c'est elle qui est rejouee
-    par `tapis_rapide.etats` (les neuf regles d'ecart)."""
-    return gh_bulk.Lecture(issues=issues, prs=prs, citations=citations,
-                           lu_a=_iso(maintenant), secondes=0.0, appels=appels)
-
-
-def _fenetre(candidats: list[int], run, issues: dict[int, dict],
-             echecs: list[int]) -> int:
-    """Lit le corps et la fenetre des candidats (un lot GraphQL), et les ajoute
-    au contexte. Rend le nombre de lots lus."""
-    if not candidats:
-        return 0
-    try:
-        lus = gh_selection.qualifier(run, gh_bulk.DEPOT_GH, candidats)
-    except gh_bulk.LectureIncomplete:
-        echecs.extend(candidats)
-        return 0
-    issues.update(lus)
-    return 1
 
 
 def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
@@ -106,8 +87,8 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
             break
         tranche = candidats[i:i + lot]
         i += lot
-        appels += _fenetre(tranche, run, issues, echecs)
-        lec = _lec(list(issues.values()), prs, citations, maintenant, appels)
+        appels += tapis_lot.fenetre(tranche, run, issues, echecs, ecartees)
+        lec = tapis_lot.lec(list(issues.values()), prs, citations, maintenant, appels)
         etats = tapis_rapide.etats(lec, lane, maintenant, jours)
         for e in etats:
             if e.ecart and e.numero not in ecartees:

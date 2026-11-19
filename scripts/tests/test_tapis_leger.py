@@ -24,6 +24,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk, gh_issues, gh_selection, tapis_fenetre
+from coordination import tapis_rotation
 from coordination import tapis_leger, tapis_rapide
 from coordination import tapis_qualification as tq
 from coordination import tapis_universel as tu
@@ -162,8 +163,8 @@ def test_la_fenetre_avance_sur_le_pool():
         maintenant = base + timedelta(hours=4 * t)
         etats_ = tu.etats_leger(metas, {}, maintenant)
         grains_, conteneurs = tapis_leger._ordre(etats_, LANE, maintenant, f"g{t}")
-        file, fenetre = tapis_fenetre.bloc(grains_, conteneurs, 8, taille,
-                                           LANE, maintenant)
+        file, fenetre = tapis_rotation.bloc(grains_, conteneurs, 8, taille,
+                                             LANE, maintenant)
         assert len(file) == taille
         blocs.append({e.numero for e in file})
     union = set().union(*blocs)
@@ -174,6 +175,47 @@ def test_la_fenetre_avance_sur_le_pool():
             assert not (a & b), "les blocs d'un tour doivent etre disjoints"
     assert len(set().union(*blocs[:tour])) == pool
     assert blocs[0] != blocs[1], "la fenetre doit avancer"
+
+
+def test_le_tour_avance_par_numero_meme_si_le_classement_change():
+    """Le classement BOUGE d'un tour a l'autre (les visites s'accumulent) :
+    le tour doit pourtant couvrir le pool entier.
+
+    C'est la rotation par NUMERO qui le garantit -- une rotation qui suit la
+    POSITION dans le classement fait passer des issues a travers le bloc.
+    Mesure du 19/11 : **380 issues sur 440** atteintes en un tour, un tour
+    complet en demandait 440.
+    """
+    pool, taille = 60, 12
+    metas = [{"number": 1000 + k, "title": f"Grain {k}",
+              "created_at": "2026-11-01T00:00:00Z", "labels": []}
+             for k in range(pool)]
+    base = datetime(2026, 11, 18, 0, 0, tzinfo=UTC)
+    blocs: list[set[int]] = []
+    for t in range(5):
+        maintenant = base + timedelta(hours=4 * t)
+        etats_ = tu.etats_leger(metas, {}, maintenant)
+        grains_, conteneurs = tapis_leger._ordre(etats_, LANE, maintenant, f"g{t}")
+        # Le classement change : les grains deja servis DESCENDENT.
+        vus = set().union(*blocs) if blocs else set()
+        grains_ = sorted(grains_, key=lambda g: (g.numero in vus, g.numero))
+        file, fenetre = tapis_rotation.bloc(grains_, conteneurs, 8, taille,
+                                             LANE, maintenant)
+        blocs.append({e.numero for e in file})
+    tour = -(-pool // taille)
+    assert set().union(*blocs[:tour]) == {m["number"] for m in metas}, (
+        "le tour par numero doit couvrir le pool entier")
+
+
+def test_le_tour_publie_son_delai_maximal():
+    """Le delai maximal de requalification est borne par la duree du tour,
+    et il est publie avec le bloc : il ne se deduit pas du tableau de bord."""
+    pool, taille = 60, 12
+    grains = [type("G", (), {"numero": 1000 + k})() for k in range(pool)]
+    _, fen = tapis_rotation.bloc(grains, [], 8, taille, LANE,
+                                  datetime(2026, 11, 18, 0, 0, tzinfo=UTC))
+    assert fen["ordre"] == "numero"
+    assert fen["delai_max_h"] == 4 * 5, "5 blocs de 4 h : le tour dure 20 h"
 
 
 # --- la qualification de la prise en charge -----------------------------------
@@ -190,6 +232,30 @@ def test_la_requete_de_qualification_est_bien_formee():
     requete = " ".join(appels[0])
     assert requete.count("{") == requete.count("}")
     assert requete.count("issue(number:") == 2
+
+
+def test_un_lot_partiel_donne_un_verdict_a_chaque_numero(monkeypatch):
+    """Un numero demande ne disparait jamais sans verdict.
+
+    Le lot revient avec une issue absente (son alias etait nul) : le numero
+    absent sort en `ecartees` avec son code et son motif -- il ne disparait
+    pas du tirage en silence (revue du 19/11)."""
+    def faux_qualifier(run, depot, numeros=None):
+        return {7: {"number": 7, "title": "Grain 7", "body": "",
+                    "created_at": "2026-11-01T00:00:00Z",
+                    "comments": [], "comments_total": 0, "labels": []},
+                8: None}
+
+    monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
+    issues: dict = {}
+    echecs: list = []
+    ecartees: dict = {}
+    assert tq.tapis_lot.fenetre([7, 8], None, issues, echecs, ecartees) == 1
+    assert 7 in issues, "le numero lu est rendu"
+    assert 8 not in issues, "le numero absent n'est pas lu"
+    assert ecartees[8]["code"] == "ABSENT"
+    assert ecartees[8]["motif"]
+    assert 8 not in echecs, "un numero absent n'est pas un echec de lecture"
 
 
 def test_la_qualification_lit_le_fil_complet(monkeypatch):
@@ -461,10 +527,24 @@ def test_la_lecture_ciblee_leve_sur_une_reponse_illisible():
     assert exc.value.lecture == "corps"
 
 
-def test_la_lecture_ciblee_ne_devine_pas_une_issue_absente():
-    """Une issue absente de la reponse est absente du resultat."""
+def test_la_lecture_ciblee_nomme_une_issue_absente():
+    """Une issue ABSENTE de la reponse sort avec un verdict : `None`.
+
+    Avant, le numero disparaisait du resultat sans que personne sache
+    pourquoi -- il disparaisait aussi du classement (revue du 19/11)."""
     def run_absente(argv, timeout):
-        return json.dumps({"data": {"repository": {}}})
+        return json.dumps({"data": {"repository": {"i0": None}}})
 
     assert gh_issues.lire_champs(run_absente, gh_bulk.DEPOT_GH, [7], "number",
-                                  "corps") == {}
+                                  "corps") == {7: None}
+
+
+def test_la_lecture_ciblee_refuse_un_alias_absent_de_la_reponse():
+    """Un alias ABSENT de la reponse n'est pas une absence : la reponse est
+    incomplete, et le lot est refuse (fail-CLOSED)."""
+    def run_tronque(argv, timeout):
+        return json.dumps({"data": {"repository": {}}})
+
+    with pytest.raises(gh_bulk.LectureIncomplete) as exc:
+        gh_issues.lire_champs(run_tronque, gh_bulk.DEPOT_GH, [7], "number", "corps")
+    assert exc.value.lecture == "corps"
