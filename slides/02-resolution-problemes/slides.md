@@ -116,7 +116,7 @@ fonction Agent-Simple-Resolution-Probleme(percept) retourne une action
 
 # Exemple: Itineraire
 
-<img src="./images/img_003.png" style="position:absolute; top:60px; right:20px; width:420px;" alt="Carte de Roumanie" />
+<img src="./images/img_003.png" style="position:absolute; top:60px; right:20px; width:520px;" alt="Carte de Roumanie" />
 
 - En vacances en Roumanie; actuellement à Arad.
 - Le vol part demain de Bucharest
@@ -180,7 +180,7 @@ Un **problème** est défini par les éléments suivants :
 
 # Exemple Abstraction: Assemblage robotique
 
-<img src="./images/img_004.png" style="position:absolute; top:140px; right:30px; width:360px;" alt="Bras robotique" />
+<img src="./images/img_004.png" style="position:absolute; top:140px; right:30px; width:630px;" alt="Bras robotique" />
 
 - **États** : Coordonnées réelles des joints du robot et des objets
 - **Test de but** : Objet assemblé
@@ -192,7 +192,7 @@ Un **problème** est défini par les éléments suivants :
 
 # Problème jouet: Le taquin
 
-<img src="./images/img_005.png" style="position:absolute; top:60px; right:30px; width:350px;" alt="Le taquin 8-puzzle" />
+<img src="./images/img_005.png" style="position:absolute; top:60px; right:30px; width:580px;" alt="Le taquin 8-puzzle" />
 
 - **États** : Position des 8 pièces + case vide
 - **Test de but** : Etat == &#123; 0, 1, 2, 3, 4, 5, 6, 7, 8 &#125;
@@ -388,7 +388,7 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 
 # Propriétés de l'exploration en largeur
 
-<img src="./images/img_013.png" style="position:absolute; top:130px; right:20px; width:420px;" alt="Tableau complexité BFS" />
+<img src="./images/img_013.png" style="position:absolute; top:130px; right:20px; width:720px;" alt="Tableau complexité BFS" />
 
 - **Complet** ? Oui (si b est fini)
 - **Complexité en temps** ? O(b^(d+1))
@@ -417,7 +417,7 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 
 # Exploration en profondeur d'abord (DFS)
 
-<img src="./images/img_014.png" style="position:absolute; top:130px; right:20px; width:400px;" alt="Expansion DFS" />
+<img src="./images/img_014.png" style="position:absolute; top:130px; right:20px; width:720px;" alt="Expansion DFS" />
 
 - Développé les noeuds les **plus profonds** en premier
   - Frontiere = **Pile** (LIFO)
@@ -505,7 +505,7 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 # Exploration Bidirectionnelle
 
-<img src="./images/img_017.png" style="position:absolute; top:120px; right:20px; width:340px;" alt="Recherche bidirectionnelle" />
+<img src="./images/img_017.png" style="position:absolute; top:120px; right:20px; width:580px;" alt="Recherche bidirectionnelle" />
 
 ## Quand on connait l'état but
 
@@ -548,13 +548,12 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 | Espace | O(b^(d+1)) | O(b^(1+C*/epsilon)) | O(b^m) | O(b^l) | O(b^d) | O(b^(d/2)) |
 | Optimal? | Oui (coût=1) | Oui | Non | Non | Oui (coût=1) | Oui |
 
-<img src="./images/img_018.png" alt="Diagramme de regions de l'espace d'exploration : resume compare des strategies non informees" style="display:block; margin:4px auto 0; max-height:60px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
 # Les missionnaires et cannibales
 
-<img src="./images/img_019.png" style="position:absolute; top:120px; right:20px; width:340px;" alt="Missionnaires et cannibales" />
+<img src="./images/img_019.png" style="position:absolute; top:120px; right:20px; width:690px;" alt="Missionnaires et cannibales" />
 
 - Les missionnaires et cannibales doivent traverser la riviere
 - Pas plus de 2 personnes sur la barque
@@ -592,7 +591,7 @@ layout: section
 
 # Exploration A*
 
-<img src="./images/img_022.png" style="position:absolute; top:110px; right:30px; width:160px;" alt="Triangle consistance A*" />
+<img src="./images/img_022.png" style="position:absolute; top:110px; right:30px; width:425px;" alt="Triangle consistance A*" />
 
 ## Idee
 
@@ -618,7 +617,7 @@ layout: section
 
 # Caractéristiques de A*
 
-<img src="./images/img_023.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Contours A* sur carte Roumanie" />
+<img src="./images/img_023.png" style="position:absolute; top:120px; right:20px; width:480px;" alt="Contours A* sur carte Roumanie" />
 
 ## Optimalite de A*
 
@@ -1106,7 +1105,7 @@ layout: section
 
 # Arbre de jeu
 
-<img src="./images/img_037.png" style="position:absolute; top:130px; right:10px; width:480px;" alt="Arbre de jeu morpion" />
+<img src="./images/img_037.png" style="position:absolute; top:130px; right:10px; width:720px;" alt="Arbre de jeu morpion" />
 
 ## Ex : Morpion
 
@@ -1121,7 +1120,7 @@ layout: section
 
 # Minimax
 
-<img src="./images/img_038.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Arbre Minimax" />
+<img src="./images/img_038.png" style="position:absolute; top:120px; right:20px; width:470px;" alt="Arbre Minimax" />
 
 ## Décisions optimales
 
@@ -1147,7 +1146,7 @@ Minimax(s) = { Utilite(s) si Test-Terminal(s)
 
 # Algorithme Minimax
 
-<img src="./images/img_039.png" style="position:absolute; top:120px; right:20px; width:380px;" alt="Pseudocode Minimax: DECISION-MINIMAX, VALEUR-MAX, VALEUR-MIN" />
+<img src="./images/img_039.png" style="position:absolute; top:120px; right:20px; width:545px;" alt="Pseudocode Minimax: DECISION-MINIMAX, VALEUR-MAX, VALEUR-MIN" />
 
 <div class="dense-list">
 
@@ -1612,7 +1611,7 @@ layout: section
 
 # Graphe de contraintes
 
-<img src="./images/img_048.png" style="position:absolute; top:120px; right:20px; width:280px;" alt="Graphe contraintes Australie" />
+<img src="./images/img_048.png" style="position:absolute; top:120px; right:20px; width:400px;" alt="Graphe contraintes Australie" />
 
 ## CSP Binaire: chaque contrainte relie 2 variables
 
