@@ -70,7 +70,8 @@ import sys
 try:
     import gh_etag
 except ImportError:  # meme shim que les organes voisins (tests hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    # #13737 tranche 2 : gh_etag est reloge dans scripts/ci/.
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_etag
 
 RED = {"failure", "timed_out"}
