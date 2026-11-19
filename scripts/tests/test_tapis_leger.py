@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk, gh_issues, gh_selection, tapis_ancre
 from coordination import tapis_fenetre, tapis_rotation, tapis_verdict
-from coordination import tapis_leger, tapis_rapide
+from coordination import tapis_leger, tapis_non_tente, tapis_rapide
 from coordination import tapis_qualification as tq
 from coordination import tapis_universel as tu
 
@@ -714,14 +714,25 @@ def test_une_tranche_peut_chevaucher_la_fin_du_pool():
 
 def test_un_pending_de_tete_qui_se_ferme_laisse_passer_le_curseur(tmp_path, monkeypatch):
     """Le pending de tete attend sa decision ; quand elle tombe, le curseur
-    passe -- et les numeros derriere lui aussi."""
+    passe -- et les numeros derriere lui aussi.
+
+    Un grain PROPOSE mais jamais qualifie est **NON TENTE** : il ne fige
+    pas le curseur (sinon la meme tranche revient et les numeros suivants
+    du pool ne sont jamais servis -- mesure du 19/11 : pool 1..6, ancre 2,
+    tranche [3, 4], seul 4 qualifie -> 5 et 6 jamais proposes). Il est
+    parque sous son code et revient au service par la reprise.
+    """
     monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
     tapis_ancre.proposer(LANE, "grains", [5, 6, 7])
     assert tapis_ancre.lire(LANE)["grains"]["ancre"] is None, \
         "rien n'est decide : le curseur bouge pas"
     tapis_verdict.avancer(LANE, {5: object()}, {})
-    assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 5, \
-        "le pending de tete qui se ferme libere le curseur"
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] == 7, \
+        "le pending de tete qui se ferme libere le curseur, et les grains " \
+        "non qualifies ne le figent pas"
+    assert etat["grains"]["inconnus"][6]["code"] == tapis_non_tente.NON_TENTE, \
+        "le grain non qualifie est parke sous SON code"
     tapis_verdict.avancer(LANE, {6: object(), 7: object()}, {})
     assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 7, \
         "les numeros derriere sont couverts"

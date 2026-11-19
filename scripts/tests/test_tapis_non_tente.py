@@ -1,0 +1,169 @@
+"""Le grain NON TENTE : ni verdict, ni refus -- et pour autant un trou.
+
+Ce que ces tests prouvent :
+
+- une qualification **PARTIELLE** (un grain propose, jamais qualifie) ne
+  **fige** pas le curseur : la tranche suivante n'est pas la meme, et les
+  numeros suivants du pool sont servis (contre-exemple mesure le 19/11 :
+  pool 1..6, ancre 2, tranche [3, 4], seul 4 qualifie -> la tranche [3, 4]
+  revenait a l'identique sur quatre cycles, 5 et 6 n'etaient JAMAIS
+  proposes) ;
+- le grain non tente est **parque sous son propre code** (`NON_TENTE`),
+  distinct de `FIL_ILLISIBLE` (la lecture impossible) et de tout verdict
+  terminal ;
+- il **revient au service** par la file de reprise : il n'est ni acquitte
+  ni perdu ;
+- la voie des **vagues** passe la preuve par le diff, comme la voie
+  nominative : sans elle, l'ecart `LIVREE` reposerait sur le seul
+  marqueur du fil.
+
+Aucun test ne touche le reseau : l'etat est ecrit dans un repertoire
+temporaire, et la preuve de la voie vagues est un stub.
+"""
+from __future__ import annotations
+
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from coordination import tapis_ancre, tapis_composition, tapis_etat  # noqa: E402
+from coordination import tapis_non_tente  # noqa: E402
+from coordination import tapis_vagues  # noqa: E402
+
+pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
+
+MAINTENANT = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
+LANE = "test:non-tente"
+
+
+class _Grain:
+    """Un grain minimal : la rotation ne lit que son numero."""
+
+    def __init__(self, numero: int):
+        self.numero = numero
+        self.titre = f"issue {numero}"
+        self.visites = 0
+        self.conteneur = False
+        self.notes: list[str] = []
+
+
+def _grains(numeros: list[int]) -> list[_Grain]:
+    return [_Grain(n) for n in numeros]
+
+
+def _tour(lane: str, nums: list[int], taille: int = 2):
+    """Propose la tranche d'apres l'ancre, et rend cette tranche.
+
+    Un numero propose mais non confirme est **non tente** : il n'apparait
+    ni dans les confirmes ni dans les ecartees.
+    """
+    from coordination import tapis_tranche  # noqa: PLC0415 - import local
+
+    etat = tapis_ancre.lire(lane)
+    tranche = tapis_tranche.tranche(nums, etat["grains"]["ancre"], taille)
+    tapis_ancre.proposer(lane, "grains", tranche)
+    return tranche
+
+
+def test_le_curseur_ne_fige_pas_sur_un_grain_non_tente(tmp_path, monkeypatch):
+    """Le contre-exemple du peer : la tranche ne doit pas revenir a l'identique."""
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    nums = [1, 2, 3, 4, 5, 6]
+
+    # Tour 1 : [1, 2] qualifie en entier -> l'ancre passe a 2.
+    _tour(LANE, nums)
+    tapis_ancre.avancer(LANE, terminaux={1, 2})
+    assert tapis_ancre.lire(LANE)["grains"]["ancre"] == 2
+
+    # Tour 2 : la tranche [3, 4] est proposee, seul 4 est qualifie.
+    _tour(LANE, nums)
+    etat = tapis_ancre.avancer(LANE, terminaux={4})
+    assert etat["grains"]["ancre"] == 4, (
+        "le curseur ne doit pas s'arreter sur un grain propose mais non "
+        "qualifie : sinon la meme tranche revient et le pool ne progresse pas")
+
+    # Tour 3 : la tranche suivante est [5, 6] -- pas [3, 4] a nouveau.
+    from coordination import tapis_tranche  # noqa: PLC0415 - import local
+
+    suivante = tapis_tranche.tranche(nums, etat["grains"]["ancre"], 2)
+    assert suivante == [5, 6], f"tranche attendue [5, 6], obtenue {suivante}"
+
+
+def test_le_grain_non_tente_est_parque_sous_son_code(tmp_path, monkeypatch):
+    """`NON_TENTE` est distinct de `FIL_ILLISIBLE` et d'un verdict terminal."""
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    nums = [1, 2, 3, 4, 5, 6]
+
+    _tour(LANE, nums)
+    tapis_ancre.avancer(LANE, terminaux={1, 2})
+    _tour(LANE, nums)
+    etat = tapis_ancre.avancer(LANE, terminaux={4})
+
+    inc = etat["grains"]["inconnus"]
+    assert 3 in inc, "le grain non tente doit etre parke, pas perdu"
+    assert inc[3]["code"] == tapis_non_tente.NON_TENTE
+    assert inc[3]["code"] != "FIL_ILLISIBLE", (
+        "un grain non tente n'est pas un fil illisible : rien n'a ete lu")
+    assert 4 not in inc, "un grain qualifie n'est pas parke"
+
+
+def test_le_grain_non_tente_revient_au_service(tmp_path, monkeypatch):
+    """Le grain non tente n'est ni acquitte ni perdu : il revient par la reprise."""
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    nums = [1, 2, 3, 4, 5, 6]
+
+    _tour(LANE, nums)
+    tapis_ancre.avancer(LANE, terminaux={1, 2})
+    _tour(LANE, nums)
+    etat = tapis_ancre.avancer(LANE, terminaux={4})
+
+    grains = _grains(nums)
+    bloc, _conteneurs, _primaires, reprises = tapis_composition.compose(
+        grains, [], 2, 0, etat["grains"]["ancre"], None,
+        etat["grains"]["inconnus"], {}, 0, 0)
+    assert 3 in reprises["grains"], (
+        "le grain non tente doit revenir au service : il n'est ni acquitte "
+        "ni perdu")
+    assert 3 in [g.numero for g in bloc]
+
+
+def test_un_fil_illisible_garde_son_code(tmp_path, monkeypatch):
+    """Le refus de lecture reste distinct : il porte SON code."""
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    nums = [1, 2, 3, 4]
+
+    _tour(LANE, nums)
+    etat = tapis_ancre.avancer(
+        LANE, terminaux={1},
+        inconnus={2: {"code": "FIL_ILLISIBLE", "motif": "fil illisible"}})
+    inc = etat["grains"]["inconnus"]
+    assert inc[2]["code"] == "FIL_ILLISIBLE"
+    assert inc[2]["code"] != tapis_non_tente.NON_TENTE
+
+
+def test_la_voie_vagues_passe_la_preuve_du_diff(monkeypatch):
+    """La voie vagues qualifie avec la preuve, comme la voie nominative."""
+    capture: dict = {}
+
+    def _qualifier(*args, **kwargs):
+        capture.update(kwargs)
+        return ([], {}, [], False, 0, {})
+
+    def _bloc(*args, **kwargs):
+        return (_grains([1, 2]), {"bloc": 1, "blocs": 1})
+
+    monkeypatch.setattr(tapis_vagues.tq, "qualifier", _qualifier)
+    monkeypatch.setattr(tapis_vagues.tapis_rotation, "bloc", _bloc)
+
+    tapis_vagues.vagues(_grains([1, 2]), [], LANE, MAINTENANT, 45, [], None,
+                        8, max_vagues=1, taille=2)
+
+    preuve = capture.get("preuve")
+    assert preuve is not None, (
+        "la voie vagues doit passer la preuve par le diff : sans elle, "
+        "l'ecart LIVREE repose sur le seul marqueur du fil")
+    assert callable(preuve)

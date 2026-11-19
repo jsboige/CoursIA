@@ -30,7 +30,7 @@ persistance dans `coordination.tapis_etat`.
 """
 from __future__ import annotations
 
-from coordination import tapis_etat, tapis_retry
+from coordination import tapis_etat, tapis_non_tente, tapis_retry
 from coordination.tapis_etat import ancre_de, inconnus_de, lire, tour_de  # noqa: F401
 from coordination.tapis_tranche import membres, position, tranche  # noqa: F401
 
@@ -87,9 +87,9 @@ def proposer(lane: str, classe: str, primaires: list[int],
 def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None) -> dict:
     """Fait avancer le curseur sur les verdicts TERMINAUX connus.
 
-    Le curseur ne passe jamais un numero dont le verdict n'est pas connu :
-    il s'arrete au premier numero en attente. Un lot PARTIEL (une lecture
-    en echec) le laisse donc en place.
+    Le curseur ne passe jamais un numero **refuse** sans le parker ; un
+    grain PROPOSE mais jamais qualifie (NON TENTE) ne le bloque pas non
+    plus -- il est parke, et le curseur continue (`tapis_non_tente`).
 
     Un numero **inconnu** (lecture impossible) ne fige pas le curseur : il
     est PARKE, il ne sera donc ni acquitte ni perdu -- il revient au tour
@@ -127,7 +127,10 @@ def avancer(lane: str, terminaux: set[int], inconnus: dict | None = None) -> dic
                 ancre = n
                 continue
             if not att.get(n):
-                break
+                # NON TENTE : propose, jamais qualifie (cf. `tapis_non_tente`).
+                tapis_non_tente.parquer_non_tente(inc, n)
+                ancre = n
+                continue
             ancre = n
         etat[c]["ancre"] = ancre
         etat[c]["attente"] = {n: b for n, b in att.items()

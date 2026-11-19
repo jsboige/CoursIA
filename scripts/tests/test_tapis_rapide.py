@@ -632,7 +632,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # elle-meme : le diff ET l'etat de la PR -- extrait de tapis_diff.py pour
 # tenir le plafond, 19/11) ; gh_lecture.py la vingt-et-unieme (la LECTURE :
 # son conteneur, son echec et la mise a plat d'une issue -- extrait de
-# gh_bulk.py pour tenir le plafond, 19/11).
+# gh_bulk.py pour tenir le plafond, 19/11) ; tapis_non_tente.py la
+# vingt-deuxieme (le grain NON TENTE : propose, jamais qualifie -- ni verdict
+# terminal, ni refus de lecture ; il ne fige pas le curseur, 19/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -654,6 +656,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_preuves.py", 80),
                                               ("tapis_rotation.py", 80),
                                               ("tapis_ancre.py", 140),
+                                              ("tapis_non_tente.py", 60),
                                               ("tapis_etat.py", 115),
                                               ("tapis_retry.py", 50),
                                               ("tapis_tranche.py", 70),
