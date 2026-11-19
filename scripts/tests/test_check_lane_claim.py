@@ -24,6 +24,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import check_lane_claim as clc  # noqa: E402
 import grain_tag  # noqa: E402
 
+@pytest.fixture
+def sans_activite(monkeypatch):
+    """Un claim perime declenche la recherche d'activite de la lane (#22408),
+    qui enumere les PRs ouvertes. Sans ce stub, ces tests appelaient le vrai
+    `gh` : 45 s en local, et un worker xdist bloque jusqu'au watchdog en CI.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [])
+
+
 
 # --- helpers -----------------------------------------------------------------
 
@@ -1119,7 +1128,7 @@ def test_parse_iso_utc_tolerates_fractional_and_offset():
     assert clc._parse_iso_utc("garbage") is None
 
 
-def test_stale_threshold_unblocks_old_claim(capsys):
+def test_stale_threshold_unblocks_old_claim(sans_activite, capsys):
     # Other lane claimed 48h ago; threshold 24h -> CLEAR with stale warning.
     p = payload(comment(
         "[CLAIMED] lane myia-po-2025:CoursIA -- working here",
@@ -1339,7 +1348,7 @@ def test_open_pr_enumeration_runtime_error_keeps_the_old_verdict(
     assert "illisible" in captured.err
 
 
-def test_implicit_occupation_is_not_measured_when_a_claim_blocks(capsys):
+def test_implicit_occupation_is_not_measured_when_a_claim_blocks(sans_activite, capsys):
     """#22408 item 3 : `[]` ne doit plus se lire « mesure, personne ».
 
     A l'instant du rapport #21881, le registre portait un claim actif : la
@@ -1366,7 +1375,7 @@ def test_implicit_occupation_is_measured_on_a_free_grain(monkeypatch, capsys):
     assert '"implicit_occupation_measured": true' in captured.out
 
 
-def test_stale_threshold_fresh_claim_returns_exit_2_not_scoped(capsys):
+def test_stale_threshold_fresh_claim_returns_exit_2_not_scoped(sans_activite, capsys):
     # Other lane claimed 2h ago; threshold 24h -> NOT_SCOPED at exit 2 (#12322).
     # Pre-#12322 this returned `exit 1` + `BLOCKED`, conflating a non-scoped
     # caller with a real conflict. The new verdict reflects the action the
@@ -1382,7 +1391,7 @@ def test_stale_threshold_fresh_claim_returns_exit_2_not_scoped(capsys):
     assert "NOT_SCOPED" in captured.err
 
 
-def test_stale_threshold_stale_plus_fresh_blocks_on_fresh(capsys):
+def test_stale_threshold_stale_plus_fresh_blocks_on_fresh(sans_activite, capsys):
     # Two other lanes: one stale (48h), one fresh (1h). The fresh one
     # triggers the NOT_SCOPED verdict (#12322 exit 2) since the caller
     # has no scope of their own.
@@ -1402,7 +1411,7 @@ def test_stale_threshold_stale_plus_fresh_blocks_on_fresh(capsys):
     assert "myia-po-2023:CoursIA" in captured.out
 
 
-def test_stale_threshold_boundary_is_stale(capsys):
+def test_stale_threshold_boundary_is_stale(sans_activite, capsys):
     # Exactly 24h old, threshold 24h: >= means STALE (boundary goes to stale).
     p = payload(comment(
         "[CLAIMED] lane myia-po-2025:CoursIA -- exactly at boundary",
@@ -1429,7 +1438,7 @@ def test_no_stale_flag_blocks_old_claim_unchanged(capsys):
     assert "NOT_SCOPED" in captured.err
 
 
-def test_stale_threshold_unparseable_not_treated_stale(capsys):
+def test_stale_threshold_unparseable_not_treated_stale(sans_activite, capsys):
     # A claim whose createdAt is unparseable cannot be dated -> NOT stale
     # (conservative: we cannot prove an age, so we do not lift the block).
     # #12322 -- caller has no scope, so the verdict is exit 2 NOT_SCOPED
@@ -1443,7 +1452,7 @@ def test_stale_threshold_unparseable_not_treated_stale(capsys):
     assert rc == 2
 
 
-def test_stale_claims_null_when_detection_disabled(capsys):
+def test_stale_claims_null_when_detection_disabled(sans_activite, capsys):
     # #12751 -- detection OFF (no --stale-threshold): `stale_claims` must be
     # `null` (not measured), NOT `[]` (measured, nothing stale). Previously
     # both rendered `[]`, so the fleet ran with detection off and a 415h
@@ -1464,7 +1473,7 @@ def test_stale_claims_null_when_detection_disabled(capsys):
     assert "STALE_DETECTION disabled" in captured.err
 
 
-def test_stale_claims_empty_when_detection_enabled_clean(capsys):
+def test_stale_claims_empty_when_detection_enabled_clean(sans_activite, capsys):
     # Detection ON, no claim old enough -> `stale_claims` is `[]` (measured,
     # clean) and `stale_detection` is "active" -- the disambiguated state vs
     # `null`/`"disabled"` (not measured).
@@ -1484,7 +1493,7 @@ def test_stale_claims_empty_when_detection_enabled_clean(capsys):
     assert out["stale_detection"] == "active"
 
 
-def test_default_48_flags_17day_claim_stale(capsys):
+def test_default_48_flags_17day_claim_stale(sans_activite, capsys):
     # #12751 acceptance: at the default 48h threshold, a 17-day-old OTHER-lane
     # claim is flagged STALE and removed from blocking_lanes (the zombie-lock
     # fix -- a 415h claim was read as "alive" because `stale_claims` was `[]`).
@@ -1507,7 +1516,7 @@ def test_default_48_flags_17day_claim_stale(capsys):
     assert rc == 0
 
 
-def test_default_48_does_not_flag_2h_claim(capsys):
+def test_default_48_does_not_flag_2h_claim(sans_activite, capsys):
     # #12751 acceptance: a fresh (2h) claim is NOT stale at the default 48h
     # (positive polarity -- only genuinely-old claims age out).
     p = payload(comment(
@@ -1802,7 +1811,9 @@ def test_le_repli_de_la_collision_pointe_sur_le_pool(monkeypatch, capsys):
     err = capsys.readouterr().err
     assert "BLOCKED: OPEN PR(s) of other lanes touch" in err
     assert "pick another grain from the GLOBAL POOL" in err
-    assert "pick_idle_grain.py --belt" in err
+    # Le pool se tire au tapis rapide, jamais au tapis lourd (#26926).
+    assert "scripts/coordination/tapis_rapide.py --lane" in err
+    assert "pick_idle_grain.py --belt" not in err
     # Le repli ne nomme PLUS l'issue livree comme destination.
     assert "pick another grain (#16570)" not in err
 
@@ -7856,14 +7867,19 @@ def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
     assert "CLEAR" in captured.out
 
 
-def test_implicit_not_run_when_caller_owns_the_grain(monkeypatch, capsys):
-    # Non-regression review 5429946072 (lettre #14300 : « sans qu'aucun
-    # [CLAIMED] n'ait ete pose ») : la jambe ne tourne que si le registre
-    # ne porte AUCUN claim actif -- ni d'une autre lane, ni de l'APPELANT.
-    # Une lane qui a pose son marqueur et croise une PR tierce sur l'issue
-    # reste OWNED_BY_ME (exit 0), jamais IMPLICIT (exit 3) : sinon le
-    # message « poser le marqueur » ne leverait rien et le picker retirait
-    # a la lane son propre grain.
+def test_implicit_undatable_pr_does_not_flip_the_caller_verdict(monkeypatch, capsys):
+    # #26751 -- la jambe IMPLICIT tourne DESORMAIS pour la lane appelante
+    # (elle ne tournait que si `mine is None`). L'invariant de la review
+    # 5429946072 est preserve par le FILTRE CHRONOLOGIQUE : une PR
+    # ANTERIEURE au claim signale que le claim a recouvre une livraison
+    # (verdict IMPLICIT), une PR POSTERIEURE reste subsumee par le claim
+    # (verdict CLEAR) -- les deux cas sont pintest dans
+    # scripts/tests/test_check_lane_claim_implicit.py.
+    #
+    # Ici la PR n'a pas de date de creation : l'ORDRE ne peut pas etre
+    # etabli, donc la jambe ne fabrique pas de verdict (fail-open + WARN,
+    # meme posture que sur un `gh` mort). Le verdict de la lane reste
+    # CLEAR -- c'est le comportement d'avant #26751, preserve.
     monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
     p = payload(comment("[CLAIMED] lane myia-po-2024:CoursIA -- supervise",
                         "2026-09-02T10:00:00Z"),
@@ -7873,6 +7889,7 @@ def test_implicit_not_run_when_caller_owns_the_grain(monkeypatch, capsys):
     assert rc == 0
     captured = capsys.readouterr()
     assert "IMPLICIT" not in captured.out
+    assert "WARN" in captured.err
     brace = captured.out.find("{")
     data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
     assert data["my_active_claim"] is True
@@ -7890,10 +7907,12 @@ def test_implicit_skips_own_lane_pr(monkeypatch, capsys):
     assert "IMPLICIT" not in capsys.readouterr().out
 
 
-def test_implicit_not_run_on_posting_path(monkeypatch, capsys):
-    # `--claim` appelle _run_check SANS la jambe (check_open_pr_paths=False,
-    # #16570) : poster le marqueur EST le geste de deconfliction, il ne doit
-    # jamais etre refuse par la jambe qu'il vient lever.
+def test_implicit_leg_is_opt_in_at_the_run_check_level(monkeypatch, capsys):
+    # La jambe reste OPT-IN au niveau de `_run_check` : c'est l'appelant qui
+    # decide. #26751 a change le CHOIX de l'appelant sur le chemin
+    # d'ECRITURE (`--claim` passe maintenant `check_open_pr_paths=True`, et
+    # un rc=3 refuse de poster), pas le comportement de la fonction quand
+    # le drapeau est absent. Ce test garde le contrat de la fonction.
     monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
     p = payload(number=14259)
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
@@ -8407,7 +8426,12 @@ def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
     `test_open_prs_legacy_bare_list_cache_is_not_trusted`).
     """
     cached_prs = [{"number": 1, "title": "cached", "body": "",
-                   "headRefName": "x", "files": [], "renames": []}]
+                   "headRefName": "x", "files": [], "renames": [],
+                   # #26751 -- la date de creation serveur de la PR : sans
+                   # elle, le cache est traite comme absent (le filtre
+                   # chronologique de la jambe IMPLICIT ne doit pas fonder un
+                   # verdict fabrique).
+                   "created_at": "2026-11-15T00:00:00Z"}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
         "format": clc._OPEN_PRS_CACHE_FORMAT,
@@ -8799,6 +8823,48 @@ def test_open_prs_cache_without_renames_index_is_not_trusted(monkeypatch,
     assert written["prs"] == fresh
 
 
+def test_open_prs_cache_without_created_at_is_not_trusted(monkeypatch,
+                                                           tmp_path):
+    """#26751 -- un cache sans la date de creation n'est PAS une preuve.
+
+    Sans elle, la jambe IMPLICIT ne peut pas dire si une PR est ANTERIEURE
+    au claim de la lane appelante : le filtre par date deviendrait un
+    verdict fabrique. Le cache est donc traite comme absent (le lecteur
+    rend `None`), et le fetch complet qui suit le REECRIT au format
+    courant.
+    """
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps({
+        "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": True, "count": 1,
+        "prs": [{"number": 1, "title": "ancien-cache", "headRefName": "b",
+                 "body": "", "files": [], "renames": []}],
+    }), encoding="utf-8")
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+    assert clc._read_open_prs_cache() is None
+
+
+def test_open_prs_cache_accepte_les_deux_graphies_de_date(monkeypatch,
+                                                           tmp_path):
+    """Le jumeau du cas precedent : les DEUX graphies sont acceptees.
+
+    `created_at` vient du fetch GraphQL de l'organe, `createdAt` du
+    `gh pr list` du picker -- meme chose, deux ecrivains.
+    """
+    for key in ("created_at", "createdAt"):
+        cache = tmp_path / f"open_prs_{key}.json"
+        cache.write_text(json.dumps({
+            "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": True,
+            "count": 1,
+            "prs": [{"number": 1, "title": "cache-courant", "headRefName": "b",
+                     "body": "", "files": [], "renames": [],
+                     key: "2026-11-14T10:00:00Z"}],
+        }), encoding="utf-8")
+        monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+        prs = clc._read_open_prs_cache()
+        assert prs is not None and prs[0]["number"] == 1
+
+
+
 def test_open_prs_complete_raises_on_refetch_count_mismatch(monkeypatch,
                                                             _isolated_open_prs):
     """#21742 -- si le refetch REST rend MOINS de chemins que le `totalCount`
@@ -8920,7 +8986,11 @@ def test_open_prs_v2_complete_cache_is_trusted(monkeypatch, tmp_path,
     servi sans aucun appel `gh` (c'est l'economie de session de #19643,
     conservee)."""
     cached = [{"number": 5, "title": "cached-v2", "headRefName": "b",
-               "body": "", "files": [], "renames": []}]
+               "body": "", "files": [], "renames": [],
+               # #26751 -- date de creation serveur : un cache qui ne la
+               # porte pas est traite comme absent (le fetch complet la
+               # reecrit).
+               "created_at": "2026-11-15T00:00:00Z"}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
         "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": True,

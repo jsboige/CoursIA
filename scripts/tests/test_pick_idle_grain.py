@@ -5858,6 +5858,11 @@ def test_cache_v2_complete_is_read_by_the_reader_without_network(
         # cache ecrit par une version anterieure, qui n'indexait pas les
         # anciens chemins de renommage.
         "renames": [],
+        # #26751 -- la date de creation est une preuve pour la jambe
+        # IMPLICIT : sans elle, le lecteur traite le cache comme absent.
+        # Les DEUX graphies sont acceptees (`created_at` du fetch GraphQL
+        # de l'organe, `createdAt` du `gh pr list` du picker).
+        "created_at": "2026-11-14T10:00:00Z",
     }]
     monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
     path = pig._build_open_prs_cache_for_belt("myia-ai-01:CoursIA-2")
