@@ -64,18 +64,22 @@ def couverture(diff: list[str], paths: list[str]) -> tuple[list[str], list[str],
     return couverts, partiels, manquants
 
 
-def attribution(evts) -> list[str]:
+def attribution(evts) -> list[str] | None:
     """Le perimetre **attribue** de l'issue : les clauses `paths:` des
     marqueurs d'attribution (`[CLAIMED]`, `[CLAIMED-AMEND]`), la derniere
     par lane (un amend remplace le perimetre precedent).
 
-    Vide si l'issue ne porte aucun marqueur d'attribution : l'attribution
-    est alors **inconnue**, pas « vide et donc satisfaite ».
+    Trois etats, qui ne se confondent pas : `None` (aucun marqueur --
+    perimetre **inconnu**), `[]` (marqueur sans `paths:` -- perimetre
+    **global**, l'issue entiere), une liste non vide (perimetre
+    **explicite**, que la livraison doit couvrir).
     """
     par_lane: dict[str, object] = {}
     for e in evts:
         if e.marque in OUVRE and e.lane:
             par_lane[e.lane] = e
+    if not par_lane:
+        return None
     per: list[str] = []
     for e in par_lane.values():
         clause = check_lane_claim._extract_paths_clause(f"[{e.marque}] {e.reste}") or []
