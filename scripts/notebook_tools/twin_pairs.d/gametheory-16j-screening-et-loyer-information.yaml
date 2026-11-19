@@ -1,0 +1,9 @@
+- name: "GameTheory-16j Screening et Loyer Information"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Calcul analytique pédagogique sans solveur : NumPy et BCL .NET appliquent les mêmes formules, contrats et sensibilités."
+  known_differences:
+    - "Conventions numériques et formats de sortie propres aux langages."

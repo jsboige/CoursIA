@@ -535,14 +535,17 @@ jobs:
         # local, spawns python, psutil en importorskip ; timeline/comments
         # monkeypatches pour list_closed_unmerged_prs).
         #
-        # Nombre de workers xdist borne par le plafond memoire du conteneur
-        # (1 worker par Gio entier de `memory.max`, entre 1 et 4). Les slots a
-        # 4 Gio (ai-01-wsl-*, po-2024-linux-docker-1) gardent `-n 4` a
-        # l'identique. Les slots `po-2024-linux-persist-*`, plafonnes plus bas,
-        # tuaient leurs workers par OOM du cgroup (`dmesg` : CONSTRAINT_MEMCG,
-        # 2026-10-20 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : ils ont ete
-        # retires de `coursia-linux`, et sept slots sont restes inactifs devant
-        # une file de 800 runs. Borner `-n` leur rend les jobs.
+        # Nombre de workers xdist choisi a partir d'un BUDGET INDICATIF sur
+        # `memory.max` (3/4 de `memory.max` / Gio, borne 1..4) : 4 Gio -> 3
+        # workers, 8 Gio -> 4. Ce budget calibre le nombre de workers ; ce
+        # n'est PAS une reservation memoire : aucune cote par worker, rien de
+        # reserve au master xdist. Les slots a 4 Gio (ai-01-wsl-*,
+        # po-2024-linux-docker-1) passent de `-n 4` a `-n 3`. Les slots
+        # `po-2024-linux-persist-*`, plafonnes plus bas, tuaient leurs
+        # workers par OOM du cgroup (`dmesg` : CONSTRAINT_MEMCG, 2026-10-20
+        # 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : retires de
+        # `coursia-linux`, sept slots restaient inactifs devant une file de
+        # 800 runs. Borner `-n` leur rend les jobs.
         #
         # #22735 -- huit suites de `scripts/**/tests/` etaient vertes en local et
         # jouees par AUCUN workflow : datasets, genai-stack, hashlife, i18n,
@@ -583,7 +586,13 @@ jobs:
             || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
             || echo max)
           if [ "$mem_max" -gt 0 ] 2>/dev/null; then
-            xdist_n=$(( mem_max / 1073741824 ))
+            # #27163 : 3/4 de la memoire du cgroup calibre le nombre de workers
+            # (budget indicatif de concurrence — PAS une reservation memoire :
+            # aucune cote par worker, rien de garanti au master xdist). L'ancienne
+            # formule (1 worker/Gio) donnait 4 workers dans un cgroup 4 Gio sans
+            # marge : un worker OOMait a 99 % sur la pleine suite (3 rouges
+            # consecutifs, sentinelle main-red #27163). 4 Gio -> 3 workers.
+            xdist_n=$(( mem_max * 3 / 4 / 1073741824 ))
             [ "$xdist_n" -gt 4 ] && xdist_n=4
             [ "$xdist_n" -lt 1 ] && xdist_n=1
           else
@@ -609,6 +618,23 @@ jobs:
             SUITES=$(python -c "import json; print(' '.join(json.load(open('scripts_scope.json'))['suites']))") || SUITES=""
           fi
           echo "portee: $SCOPE_MODE${SUITES:+ -- suites: $SUITES}"
+          # #27215 : la pleine suite (28986 items) voit gw2 OOMe a 99 % du
+          # parcours (run 44264380171, memory.events oom_kill 6) malgre la
+          # borne #27163 (4 -> 3). Mesure locale : test_workdir_heal_sparse =
+          # 24 tests passants en 22.61 s. NB : tracemalloc (0,0 Mo) ne mesure
+          # que l'allocateur Python du processus parent -- ni le RSS des
+          # subprocess git, ni la pression cgroup/page cache : il ne suffit
+          # pas a innocenter le test tue. Le fait etabli est l'OOM AGGREGE du
+          # cgroup (3 workers + master) ; la repartition precise par source
+          # (caches git, __pycache__, donnees) n'est pas mesuree. Plafonner a
+          # 2 workers sur la pleine suite est une MITIGATION destinee a
+          # reduire la charge simultanee ; son efficacite reste a verifier sur
+          # un run complet. Les runs restreints (suite reduite, charge bornee)
+          # conservent la formule #27163.
+          if [ "$SCOPE_MODE" = "full" ] && [ "$xdist_n" -gt 2 ]; then
+            xdist_n=2
+            echo "xdist workers: plafonne a 2 sur la pleine suite (#27215)"
+          fi
           if [ "$SCOPE_MODE" = "restricted" ]; then
             python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest $SUITES -n "$xdist_n" --dist loadscope --tb=short -q
           else
@@ -850,7 +876,7 @@ jobs:
           python scripts/ci/check_absorbed_path_parity.py --base origin/main
 
   qc-mcp-lite-tests:
-    name: qc-mcp-lite suite (58)
+    name: qc-mcp-lite suite (113)
     # #22735 : `scripts/qc-mcp-lite/tests` (58 tests, verts en local) etait
     # verte mais jouee par AUCUN workflow -- le defaut qu'elle refute
     # (rate limiting, extraction de stats, auth) redev Invisible. Premier

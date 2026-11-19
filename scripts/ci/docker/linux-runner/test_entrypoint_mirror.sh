@@ -178,7 +178,7 @@ echo "Test 4 : purge du clone -- le boot suivant re-seme (le retour au froid est
   else
     ko "T4 pas de re-semis : le slot resterait froid integralement"
   fi
-  if echo "$out" | grep -q "seme depuis le miroir"; then
+  if grep -q "seme depuis le miroir" <<<"$out"; then
     ok "T4 le semis est journalise"
   else
     ko "T4 semis silencieux -- impossible a distinguer d'un no-op"
@@ -279,7 +279,7 @@ echo "Test 7 : miroir disparu apres semis -- le boot suivant retire l'alternates
   else
     ko "T7d git log encore casse apres retrait"
   fi
-  if echo "$out" | grep -q "alternates pendant retire"; then
+  if grep -q "alternates pendant retire" <<<"$out"; then
     ok "T7e le retrait est journalise"
   else
     ko "T7e retrait silencieux -- l'operateur ne saurait pas ce qui a change"
