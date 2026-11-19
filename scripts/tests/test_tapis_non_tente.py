@@ -312,7 +312,63 @@ def test_une_qualification_hors_tranche_ne_fait_pas_avancer_le_curseur(
     assert etat["conteneurs"]["ancre"] is None
     assert 1 in etat["grains"]["attente"] and 2 in etat["grains"]["attente"]
     assert 100 in etat["conteneurs"]["attente"]
-    # Le CONTRE-TEMOIN : un lot qui TOUCHE la tranche fait avancer le curseur.
+    # Le CONTRE-TEMOIN : un lot qui TOUCHE la tranche fait avancer le curseur,
+    # mais jusqu'au dernier numero pris en charge -- et PAS au-dela.
     tapis_verdict.avancer(LANE, {1: object()}, {}, {1})
     etat = tapis_ancre.lire(LANE)
-    assert etat["grains"]["ancre"] == 2, "la tranche en charge avance le curseur"
+    assert etat["grains"]["ancre"] == 1, (
+        "la tranche en charge avance le curseur jusqu'au dernier numero "
+        f"pris en charge (ancre={etat['grains']['ancre']})")
+
+
+def test_le_lot_proprietaire_borne_le_curseur(tmp_path, monkeypatch):
+    """TEMOIN (revue du peer, 19/11) : le LOT fait la loi, pas le chevauchement.
+
+    Primaire pendante [1, 2], appel nominatif lot={1} : le chevauchement
+    rendait la tranche "en charge", puis 2 etait **parque** et le curseur
+    sautait a 2 -- une couverture que personne n'avait mesuree. Le lot
+    PROPRIETAIRE commande : le curseur s'arrete a 1, et 2 reste en attente
+    (ni decide, ni refuse, ni parke).
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    tapis_ancre.proposer(LANE, "grains", [1, 2])
+    tapis_verdict.avancer(LANE, {1: object()}, {}, {1})
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] == 1, (
+        "le curseur s'arrete au dernier numero que le lot a pris en charge "
+        f"(ancre={etat['grains']['ancre']})")
+    assert 2 not in etat["grains"]["inconnus"], (
+        "un numero que le lot ne prend pas en charge n'est pas parke : "
+        "rien n'a ete decide sur lui")
+    assert 2 in etat["grains"]["attente"], "il reste en attente"
+
+
+def test_une_primaire_parquee_etrangere_ne_fait_pas_avancer_le_curseur(
+        tmp_path, monkeypatch):
+    """TEMOIN (revue du peer, 19/11) : la reprise ne porte pas le curseur.
+
+    Une primaire deja **parquee** (refus de lecture), etrangere a la tranche
+    du tour, ne doit pas faire avancer le curseur : avant, la branche "n in
+    inc" precedait le test de charge, et le curseur sautait sur un numero
+    que personne n'avait servi.
+    """
+    monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    # Tour 1 : la primaire [10, 11] est proposee.
+    tapis_ancre.proposer(LANE, "grains", [10, 11])
+    # Tour 2 : une autre tranche est proposee ; le lot prend 10 en charge
+    # et la lecture echoue : 10 est parque, sous SON code de refus.
+    tapis_ancre.proposer(LANE, "grains", [20])
+    tapis_verdict.avancer(LANE, {}, {10: {"numero": 10, "code": "FIL_ILLISIBLE",
+                                           "motif": "fil illisible"}}, {10})
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] is None, "le refus ne fait pas avancer"
+    assert etat["grains"]["inconnus"][10]["code"] == "FIL_ILLISIBLE"
+    # Tour 3 : la primaire [10, 11] revient, et le lot ne la touche pas.
+    tapis_ancre.proposer(LANE, "grains", [10, 11])
+    tapis_verdict.avancer(LANE, {999: object()}, {}, {999})
+    etat = tapis_ancre.lire(LANE)
+    assert etat["grains"]["ancre"] is None, (
+        "une primaire etrangere deja parquee ne fait pas avancer le curseur "
+        f"(ancre={etat['grains']['ancre']})")
+    assert etat["grains"]["inconnus"][10]["code"] == "FIL_ILLISIBLE", (
+        "son code de refus est preserve")
