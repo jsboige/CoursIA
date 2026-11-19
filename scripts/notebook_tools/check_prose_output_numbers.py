@@ -32,7 +32,7 @@ Perimetre (v1, calibre sur ICT-35 + ICT-38 pre/post #27206) :
 - Correspondance numerique (pas sous-chaine) : Decimal en egalite exacte, OU
   arrondi/troncature d'un nombre de sortie PLUS precis a la precision de la
   citation (« 0.0859 » correspond a une sortie « 0.0859375 » ; « 1,000 » a
-  « 1.0000 »). Les sorties lues : stream + text/plain de toutes les cellules code.
+  « 1.0000 »). Les sorties lues : stream + text/plain + text/html de toutes les cellules code.
 
 Modes :
 - positionnel ``base``      : ratchet PR -- carnets .ipynb changes sous
@@ -156,8 +156,12 @@ def extract_numbers(text: str) -> list[NumToken]:
 # --- Cote sorties commitees --------------------------------------------------
 
 
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+_HTML_ENTITY_RE = re.compile(r"&[a-zA-Z#0-9]+;")
+
+
 def output_numbers(nb: dict) -> list[NumToken]:
-    """Nombres de toutes les sorties (stream + text/plain) des cellules code."""
+    """Nombres de toutes les sorties (stream + text/plain + text/html) des cellules code."""
     pool: list[NumToken] = []
     for cell in nb.get("cells", []):
         if cell.get("cell_type") != "code":
@@ -175,6 +179,19 @@ def output_numbers(nb: dict) -> list[NumToken]:
                 chunks.append(plain)
             elif isinstance(plain, list):
                 chunks.extend(t for t in plain if isinstance(t, str))
+            html = data.get("text/html")
+            if isinstance(html, str):
+                html_chunks = [html]
+            elif isinstance(html, list):
+                html_chunks = [t for t in html if isinstance(t, str)]
+            else:
+                html_chunks = []
+            for chunk in html_chunks:
+                # Tables riches .NET Interactive : les valeurs vivent dans le
+                # texte des balises (<pre>1.3080861318665928</pre>), pas dans
+                # le balisage -- on lit le texte hors balises.
+                text_only = _HTML_ENTITY_RE.sub(" ", _HTML_TAG_RE.sub(" ", chunk))
+                pool.extend(extract_numbers(text_only))
             for chunk in chunks:
                 pool.extend(extract_numbers(chunk))
     return pool
@@ -601,11 +618,49 @@ def self_test() -> int:
     if citations(r) != ["0.0742"]:
         failures.append(f"spans normalises : {citations(r)}")
 
+    # 13. Sorties HTML riches (.NET Interactive) : la valeur ancre vit dans
+    # data.text/html (<pre>0.8785</pre>) -- le pool doit la lire (ML-04 C#,
+    # sonde #27233 : 0,878 / 0,894 faux positifs tant que le HTML etait muet).
+    def nb_html(md_cells: list[str], html: str) -> dict:
+        return {
+            "cells": [
+                *[{"cell_type": "markdown", "source": [c]} for c in md_cells],
+                {"cell_type": "code", "source": ["x = 1"], "outputs": [
+                    {"output_type": "display_data",
+                     "data": {"text/html": [html]}},
+                ]},
+            ]
+        }
+
+    r = analyze_notebook(
+        nb_html(
+            ["### Lecture : R2 de 0,878 a 0,894 d'un fold a l'autre"],
+            '<table><tr><td>RSquared</td><td><div class="dni-plaintext">'
+            "<pre>0.8785</pre></div></td></tr><tr><td>RSquared</td>"
+            '<td><div class="dni-plaintext"><pre>0.8944</pre></div></td></tr></table>',
+        ),
+        "t.ipynb",
+    )
+    if citations(r):
+        failures.append(f"HTML muet : {citations(r)}")
+
+    # 14. Controle : une valeur absente du HTML reste un finding.
+    r = analyze_notebook(
+        nb_html(
+            ["### Lecture : R2 de 0,912 sur ce fold"],
+            '<table><tr><td>RSquared</td><td><div class="dni-plaintext">'
+            "<pre>0.8785</pre></div></td></tr></table>",
+        ),
+        "t.ipynb",
+    )
+    if citations(r) != ["0,912"]:
+        failures.append(f"controle HTML : {citations(r)}")
+
     if failures:
         for f in failures:
             print(f"SELFTEST FAIL: {f}")
         return 1
-    print("selftest: OK (12 fixtures)")
+    print("selftest: OK (14 fixtures)")
     return 0
 
 
