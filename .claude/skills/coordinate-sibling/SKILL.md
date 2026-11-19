@@ -108,3 +108,15 @@ alerte nominative a la lane porteuse d'un conflit).
 Trois a cinq lignes : ce qui est **livre** (PR, numero), ce qui est
 **residuel** (attente nommee), ce qui a ete **remonte** au coordinateur.
 Les rapports vivent sur le **dashboard**, jamais dans un fichier du depot.
+
+Une **ligne d'auto-mesure worker** complete le rapport, sur le meme cycle :
+
+- **temps actif / temps d'attente** : la part qui a produit, et celle qui a
+  attendu une reponse externe (CI, review, DWELL, merge, une autre lane) ;
+- **PRs ouvertes / PRs corrigees** par la lane ;
+- **friction** : ce qui a bloque, avec le nom de l'organe ou de l'attente.
+
+Les **objectifs chiffres de preparation des fusions et de cloture**
+appartiennent a l'adjoint et au secretaire : la lane soeur garde la **mesure
+worker** et le **releve des frictions communes** (une friction vue par la
+lane est **montee**, elle n'est pas resolue dans son perimetre).
