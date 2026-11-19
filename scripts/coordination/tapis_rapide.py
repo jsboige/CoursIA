@@ -357,7 +357,9 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
         "vos_prs": [{"numero": pr["number"], "titre": pr.get("title") or "",
                      "age_j": _age(maintenant, pr.get("created_at"), 86400)} for pr in vos],
         "grains": [tapis_service.grain_servi(
-            i, e, lane, tapis_equilibre.raisons(e, conso, maintenant), prs_par) for i, e in enumerate(file, 1)],
+            i, e, lane, tapis_equilibre.raisons(e, conso, maintenant,
+                                                tapis_cle.densites(etats_).get(e.numero)),
+            prs_par) for i, e in enumerate(file, 1)],
         "ecartees": ecartees,
     }
 

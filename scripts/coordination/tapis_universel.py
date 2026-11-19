@@ -15,9 +15,7 @@ Ce module fait la rotation **sur les metadonnees seules** :
 - la rotation porte sur **toutes** les issues ouvertes, sans ecarter : les
   verifications (claim, gel, contenu livre) se font **a la prise en charge** ;
 - chaque grain servi porte son **etat et l'action a faire**.
-
-L'ordre est la **cle de service** (`coordination.tapis_cle`) : la date de la
-derniere PR qui couvre le grain, posee sur les metadonnees seules.
+L'ordre est la **cle de service** (`coordination.tapis_cle`) : la date de la derniere PR qui couvre le grain.
 """
 from __future__ import annotations
 
@@ -108,13 +106,15 @@ def rapport(etats_: list[Etat], file: list[Etat], lane: str, maintenant: datetim
             lecture: dict) -> dict:
     """Le rapport du tirage universel : les grains, leur etat, l'action, la mesure."""
     conso = tapis_equilibre.familles_consolidation(etats_)
+    dens = tapis_cle.densites(etats_)
     return {
         "lane": lane, "maintenant": tapis_marqueurs._iso(maintenant),
         "lecture": lecture, "pool": len(etats_),
         "grains": [{"numero": e.numero, "titre": e.titre,
                     "visites": e.visites, "visites_total": e.visites_total,
                     "consolidation": e.consolidation,
-                    "priorite": tapis_equilibre.raisons(e, conso, maintenant),
+                    "priorite": tapis_equilibre.raisons(e, conso, maintenant,
+                                                        dens.get(e.numero)),
                     "action": action_de(e, lane)} for e in file],
     }
 

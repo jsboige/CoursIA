@@ -161,3 +161,23 @@ def test_module_pur_et_borne():
         for noeud in ast.walk(arbre):
             if isinstance(noeud, ast.FunctionDef):
                 assert noeud.end_lineno - noeud.lineno + 1 <= 60, noeud.name
+
+
+def test_la_densite_est_annoncee_et_ne_classe_pas():
+    """La densite se LIT au moment de la visite du hub (le rapport l'annonce) ;
+    elle ne classe rien et ne declenche aucune creation de ticket."""
+    metas = [_meta(200, "[EPIC] Hub", "2024-01-01T00:00:00Z"),
+             _meta(201, "[#200] Enfant", "2024-03-01T00:00:00Z"),
+             _meta(202, "[#200] Frere", "2024-02-01T00:00:00Z"),
+             _meta(300, "[EPIC] Hub vide", "2024-01-01T00:00:00Z")]
+    etats_ = _etats(metas)
+    dens = tapis_cle.densites(etats_)
+    assert dens == {200: 2}
+    hub = next(e for e in etats_ if e.numero == 200)
+    vide = next(e for e in etats_ if e.numero == 300)
+    assert "densite : 2 enfant(s) reel(s)" in tapis_equilibre.raisons(
+        hub, set(), MAINTENANT, dens.get(200))
+    assert "densite" not in " ".join(tapis_equilibre.raisons(
+        vide, set(), MAINTENANT, dens.get(300)))
+    # elle ne classe pas : a creation egale, le departage reste uniforme
+    assert _ordre(etats_).index(200) < _ordre(etats_).index(300)

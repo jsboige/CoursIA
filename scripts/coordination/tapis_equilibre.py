@@ -21,15 +21,12 @@ sans cela, sept livraisons d'une meme journee sur un umbrella n'y comptent
 qu'une visite. Ces visites **informent** le rapport et l'organe d'equite du
 dispatch (`coordination.belt_equite`) ; elles n'ordonnent plus.
 
+
 L'equite du 16/11 tient dans la cle : une issue jamais servie porte la date de
-sa **creation**, une issue servie porte la date de son dernier travail -- donc
-une issue qui n'a jamais recu de visite passe devant une issue qui en a deja
-recu une, sauf si elle est plus recente qu'elle.
+sa **creation**, une issue servie porte la date de son dernier travail.
 
 Une exception reste : les marathons de parite C# (#26070) et Rust (#26510) sortent
 de l'equilibrage : c'est le harnais sk-agent qui les servira.
-
-Doc : docs/reference/tapis-rapide.md.
 """
 from __future__ import annotations
 
@@ -99,12 +96,17 @@ def niveau(e, conso: set[int], maintenant: datetime) -> float:
     return e.visites - tapis_avantages.bonus(e, conso, maintenant)[0]
 
 
-def raisons(e, conso: set[int], maintenant: datetime) -> list[str]:
+def raisons(e, conso: set[int], maintenant: datetime,
+            densite: int | None = None) -> list[str]:
     """Ce que le rapport dit du rang d'un grain.
 
     Depuis le 19/11, le rang ne se lit plus dans un **niveau** (visites moins
     bonus) : il se lit dans la **cle de service**. Le nombre de visites
     reste informe ; le bonus n'est plus une priorite et n'est donc plus annonce.
+
+    La **densite** (nombre d'enfants REELS d'un hub) est annoncee quand elle
+    existe : elle se LIT au moment de la visite du hub -- elle ne classe
+    rien, et ne declenche aucune creation de ticket.
     """
     if est_marathon(e):
         return ["marathon : hors equilibrage (harnais sk-agent)"]
@@ -113,6 +115,8 @@ def raisons(e, conso: set[int], maintenant: datetime) -> list[str]:
         r.append(f"cle de service : {e.cle_service} ({e.cle_origine})")
     else:
         r.append(f"cle de service : aucune PR -- creation {e.cree_le}")
+    if densite:
+        r.append(f"densite : {densite} enfant(s) reel(s)")
     return r
 
 
