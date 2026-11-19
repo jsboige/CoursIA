@@ -576,6 +576,55 @@ flowchart LR
 
 ---
 
+# Ce que prédit le modèle
+
+« La prolongation est… » → gratuite ? possible ? soumise à autorisation ?
+
+Le modèle produit une distribution sur les prochains **tokens**, pas un vote sur les faits. Un mot fréquent peut être le mauvais mot pour ce règlement.
+
+**Expérience de pensée :** à température basse, une même erreur devient-elle plus rare, ou seulement plus reproductible ?
+
+<!-- Faire compléter la phrase par trois personnes. Une réponse stable n’est pas une preuve. Relier à la section température du chapitre VIII. -->
+
+---
+
+# Un JSON valide peut mentir
+
+```json
+{"reponse":"0 €","citation":"avant l’échéance","statut":"prouvé"}
+```
+
+Le JSON est lisible. La citation existe. **Justifie-t-elle le tarif ?**
+
+Proposez deux tests distincts : un test automatique de structure et un test de fidélité au texte. Que reste-t-il impossible à décider avec une simple recherche de chaîne ?
+
+<!-- Un parseur valide les champs ; une recherche confirme seulement la présence de la citation. Corrigé : statut inconnu, pas de valeur de tarif. Pause avant le travail en binômes. -->
+
+---
+
+# TP court · ne changez qu’une variable
+
+1. Fixez quatre questions : fait explicite, information absente, prémisse fausse, paraphrase.
+2. Comparez A : question seule ; B : question + règlement ; C : B + citation ou abstention.
+3. Gardez le même modèle et les mêmes questions. Consignez **toutes** les sorties, même décevantes.
+4. Échangez vos tests avec un autre binôme. Ajoutez son contre-exemple sans retoucher la méthode.
+
+<!-- Prévoir 35 minutes. Sans API : un binôme joue le système, l’autre contrôle les preuves. Ce jeu illustre le protocole, pas la performance d’un modèle. -->
+
+---
+
+# Quand deux règlements se contredisent
+
+**Version de septembre** : sept jours. **Version de novembre** : dix jours à partir du 1er novembre.
+
+« J’ai emprunté un capteur le 28 octobre. Combien de temps puis-je le garder ? »
+
+Fixez d’abord la règle d’application. Si le texte ne précise pas le régime transitoire, quelle clarification faut-il demander ? Construisez un cas où la version la plus récente seule ne suffit pas.
+
+<!-- Ne pas imposer la date d’emprunt comme règle de droit. Demander un cas non ambigu, puis un cas indécidable ; comparer recherche par pertinence et filtrage par date. -->
+
+---
+
 # Techniques : mémoire persistante
 
 <v-clicks at="1">
