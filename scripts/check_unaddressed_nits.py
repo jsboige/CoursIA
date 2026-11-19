@@ -5142,7 +5142,18 @@ def classify(author: str, body: str) -> str | None:
     return None
 
 
-def review_threads(pr: int) -> list[dict]:
+class ThreadsIncomplete(RuntimeError):
+    """Pagination des threads inline interrompue : préfixe, pas un résultat.
+
+    Levée par ``review_threads(strict=True)`` quand la lecture ne s'est pas
+    terminée proprement (``hasNextPage`` absent ou non booléen, curseur figé,
+    plafond de 50 pages) : le préfixe collecté n'est JAMAIS un résultat
+    complet, l'appelant doit refuser de conclure — jamais rendre un verdict
+    B.0 sur le préfixe (relecture ai-01 2026-11-19 sur #22757).
+    """
+
+
+def review_threads(pr: int, strict: bool = False) -> list[dict]:
     """Threads inline (3e surface, absente de `gh pr view --json`).
 
     #17437 (relecture ai-01 2026-11-13, point non bloquant) : la connexion
@@ -5151,6 +5162,12 @@ def review_threads(pr: int) -> list[dict]:
     les suivants invisibles — un thread inline non resolu posterieur a la
     100e position sortait de l'analyse. Meme plafond dur (50 pages = 5000
     threads) ; un curseur fige arrete la boucle au lieu de boucler.
+
+    #22757 (relecture ai-01 2026-11-19) : ``strict=True`` est le mode du
+    REPLI du bundle — chaque interruption anormale (``hasNextPage`` absent
+    ou non booléen, curseur figé, plafond) lève ``ThreadsIncomplete`` au
+    lieu de rendre le préfixe collecté. Le comportement historique
+    (avertissement + préfixe rendu) est préservé pour les appels existants.
     """
     query = """
     query($owner:String!,$repo:String!,$n:Int!,$tAfter:String){
@@ -5180,16 +5197,34 @@ def review_threads(pr: int) -> list[dict]:
         nodes.extend(n for n in (conn.get("nodes") or [])
                      if isinstance(n, dict))
         info = conn.get("pageInfo") or {}
-        if not info.get("hasNextPage"):
+        has_next = info.get("hasNextPage")
+        if not isinstance(has_next, bool):
+            # pageInfo sans booléen hasNextPage : la connexion n'est PAS
+            # prouvée terminée (relecture ai-01 2026-11-19 sur #22757) —
+            # toléré en historique, refusé en strict.
+            if strict:
+                raise ThreadsIncomplete(
+                    f"PR #{pr}: pageInfo sans booléen hasNextPage sur "
+                    "reviewThreads — préfixe non concluable.")
+            break
+        if not has_next:
             break
         nxt = info.get("endCursor")
         if not nxt or nxt == after:
+            if strict:
+                raise ThreadsIncomplete(
+                    f"PR #{pr}: curseur de pagination figé sur "
+                    "reviewThreads — préfixe non concluable.")
             print(f"  [!] PR #{pr}: curseur de pagination fige sur "
                   "reviewThreads — threads suivants non analyses.",
                   file=sys.stderr)
             break
         after = nxt
     else:
+        if strict:
+            raise ThreadsIncomplete(
+                f"PR #{pr}: plafond de pagination atteint (50 pages) sur "
+                "reviewThreads — préfixe non concluable.")
         print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
               "reviewThreads — threads suivants non analyses.", file=sys.stderr)
     out = []
@@ -5221,8 +5256,10 @@ def review_threads(pr: int) -> list[dict]:
 #   author/comments/reviews, champs identiques, SANS databaseId) ; payload
 #   inattendu, curseur fige ou plafond 50 pages -> dict vide (fail-closed,
 #   repli sur les surfaces CLI de `pr view`).
-# - `threads` : exactement la forme de `review_threads` ; tolérances
-#   identiques (nodes non-list tolere, curseur fige -> break partiel).
+# - `threads` : exactement la forme de `review_threads` ; depuis la
+#   relecture ai-01 du 2026-11-19, le repli est STRICT (structure invalide
+#   -> KeyError propage, pagination interrompue -> ThreadsIncomplete
+#   propage = PR illisible, refus explicite -- jamais un prefixe juge).
 # - `author_of` : {databaseId: login} -- le join NUMERIQUE de
 #   `improper_dismissals` (le node-id GraphQL `PRR_...` n'y est PAS
 #   comparable, d'ou databaseId), qui remplace l'appel REST
@@ -5347,14 +5384,19 @@ def _pr_review_bundle(pr: int) -> dict:
             else:
                 comments.extend(n for n in nodes if isinstance(n, dict))
                 info = (conn.get("pageInfo") or {}) if isinstance(conn, dict) else {}
-                if not info.get("hasNextPage"):
+                if info.get("hasNextPage") is False:
                     c_done = True
-                else:
+                elif info.get("hasNextPage") is True:
                     nxt = info.get("endCursor") or c_after
                     if nxt == c_after:
                         c_bad = c_done = True  # curseur fige
                     else:
                         c_after = nxt
+                else:
+                    # hasNextPage absent/non booléen : la connexion n'est PAS
+                    # prouvée terminée (relecture ai-01 2026-11-19) — la
+                    # surface est incomplète, relue via son chemin existant.
+                    c_bad = c_done = True
         if not r_done and "reviews" in node:
             conn = node["reviews"]
             nodes = conn.get("nodes") if isinstance(conn, dict) else None
@@ -5368,14 +5410,17 @@ def _pr_review_bundle(pr: int) -> dict:
                         if login:
                             author_of[r["databaseId"]] = login
                 info = (conn.get("pageInfo") or {}) if isinstance(conn, dict) else {}
-                if not info.get("hasNextPage"):
+                if info.get("hasNextPage") is False:
                     r_done = True
-                else:
+                elif info.get("hasNextPage") is True:
                     nxt = info.get("endCursor") or r_after
                     if nxt == r_after:
                         r_bad = r_done = True  # curseur fige
                     else:
                         r_after = nxt
+                else:
+                    # hasNextPage absent/non booléen : incomplète (cf comments).
+                    r_bad = r_done = True
         if not t_done and "reviewThreads" in node:
             conn = node["reviewThreads"]
             nodes = conn.get("nodes") if isinstance(conn, dict) else None
@@ -5384,14 +5429,17 @@ def _pr_review_bundle(pr: int) -> dict:
             else:
                 threads.extend(n for n in nodes if isinstance(n, dict))
                 info = (conn.get("pageInfo") or {}) if isinstance(conn, dict) else {}
-                if not info.get("hasNextPage"):
+                if info.get("hasNextPage") is False:
                     t_done = True
-                else:
+                elif info.get("hasNextPage") is True:
                     nxt = info.get("endCursor") or t_after
                     if nxt == t_after:
                         t_bad = t_done = True  # curseur fige
                     else:
                         t_after = nxt
+                else:
+                    # hasNextPage absent/non booléen : incomplète (cf comments).
+                    t_bad = t_done = True
     else:
         # Plafond : toute surface non terminee est incomplete, pas un resultat.
         c_bad = c_bad or not c_done
@@ -5434,26 +5482,35 @@ def _pr_review_bundle(pr: int) -> dict:
         except Exception:
             author_of = {}
 
+    out_threads: list[dict]
     if t_bad:
-        # Threads incomplets -> chemin existant ; sa structure invalide
-        # propage (refus explicite), ses tolerances historiques sinon.
+        # Threads incomplets -> chemin existant. Relecture ai-01 du
+        # 2026-11-19 : `review_threads` rend des enregistrements DEJA
+        # normalises (resolved/outdated/author/body/createdAt) — les faire
+        # repasser par le convertisseur des noeuds GraphQL bruts corrompait
+        # le verdict (resolved->False, auteur->"?", corps perdu : un thread
+        # RESOLU ressortait INLINE-UNRESOLVED). On rend le resultat du
+        # repli TEL QUEL. strict=True : un repli encore incomplet
+        # (hasNextPage absent, curseur fige, plafond) PROPAGE au lieu de
+        # rendre un prefixe — refus de conclure, jamais un verdict B.0 sur
+        # le prefixe.
         print(f"  [!] PR #{pr}: surface threads incomplete au bundle -- "
               "relecture via review_threads.", file=sys.stderr)
-        threads = review_threads(pr)
-
-    out_threads = []
-    for t in threads:
-        first = (t.get("comments") or {}).get("nodes") or [{}]
-        c = first[0]
-        out_threads.append({
-            "resolved": bool(t.get("isResolved")),
-            "outdated": bool(t.get("isOutdated")),
-            "path": t.get("path"),
-            "line": t.get("line"),
-            "author": _author_login(c) or "?",
-            "body": c.get("body", ""),
-            "createdAt": c.get("createdAt"),
-        })
+        out_threads = review_threads(pr, strict=True)
+    else:
+        out_threads = []
+        for t in threads:
+            first = (t.get("comments") or {}).get("nodes") or [{}]
+            c = first[0]
+            out_threads.append({
+                "resolved": bool(t.get("isResolved")),
+                "outdated": bool(t.get("isOutdated")),
+                "path": t.get("path"),
+                "line": t.get("line"),
+                "author": _author_login(c) or "?",
+                "body": c.get("body", ""),
+                "createdAt": c.get("createdAt"),
+            })
     return {"typed": typed, "threads": out_threads, "author_of": author_of}
 
 

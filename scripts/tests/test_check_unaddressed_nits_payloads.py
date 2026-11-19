@@ -293,18 +293,24 @@ def test_bundle_rend_les_formes_des_deux_fonctions_originales(monkeypatch):
 
 
 def test_bundle_fail_closed_par_surface(monkeypatch):
-    """Payload inattendu -> typed vide (repli CLI), threads tolérants.
+    """Payload inattendu -> typed vide (repli CLI).
 
     Review 5967281532 point 2 : le vide n'est PAS une preuve de fermeture
     sûre -- les témoins suivants couvrent relire-complète et refus explicite.
     Ici : comments.nodes non-list -> surface incomplète -> relecture
     `_typed_author_surfaces`, qui rend {} sur le même payload malformé
     (fail-closed, repli surfaces CLI complètes de pr view).
+
+    Relecture du 2026-11-19 : threads et reviews portent désormais un
+    `hasNextPage: False` explicite — une `pageInfo` sans booléen n'est plus
+    acceptée comme une fin de connexion (le témoin de CE changement vit
+    dans `test_bundle_pageinfo_sans_hasnextpage_rend_la_surface_incomplete`
+    et `test_bundle_repli_incomplet_refuse_de_conclure`).
     """
     broken = {"data": {"repository": {"pullRequest": {
         "comments": {"pageInfo": {}, "nodes": "pas une liste"},
-        "reviews": {"pageInfo": {}, "nodes": []},
-        "reviewThreads": {"pageInfo": {}, "nodes": []},
+        "reviews": {"pageInfo": {"hasNextPage": False}, "nodes": []},
+        "reviewThreads": {"pageInfo": {"hasNextPage": False}, "nodes": []},
     }}}}
     calls: list[str] = []
 
@@ -472,6 +478,124 @@ def test_bundle_propage_l_echec_d_appel(monkeypatch):
         pass
     else:
         raise AssertionError("l'echec d'appel doit propager")
+
+
+def test_bundle_repli_threads_preserve_les_enregistrements_normalises(monkeypatch):
+    """Relecture ai-01 du 2026-11-19 : `review_threads` rend des
+    enregistrements DÉJÀ normalisés (resolved/outdated/author/body/
+    createdAt) — le bundle ne doit PAS les repasser dans le convertisseur
+    des nœuds GraphQL bruts. Témoin exigé par la review : un thread RÉSOLU
+    et un thread OUVERT traversent le repli à l'identique. Sans correctif,
+    le thread résolu ressortait resolved=False, auteur « ? », corps vide —
+    et bloquait la PR comme INLINE-UNRESOLVED."""
+    broken_threads = {"data": {"repository": {"pullRequest": {
+        "author": {"__typename": "User", "login": "jsboige"},
+        "comments": {"pageInfo": {"hasNextPage": False, "endCursor": "c1"},
+                     "nodes": []},
+        "reviews": {"pageInfo": {"hasNextPage": False, "endCursor": "r1"},
+                    "nodes": []},
+        "reviewThreads": {"pageInfo": {}, "nodes": "pas une liste"},
+    }}}}
+    normalized = [
+        {"resolved": True, "outdated": False, "path": "a.py", "line": 1,
+         "author": "reviewer", "body": "leve par le fix cite",
+         "createdAt": "2026-11-19T12:00:00Z"},
+        {"resolved": False, "outdated": False, "path": "b.py", "line": 2,
+         "author": "tiers", "body": "reste a faire",
+         "createdAt": "2026-11-19T12:30:00Z"},
+    ]
+    seen: dict = {}
+
+    def fake_review_threads(pr, strict=False):
+        seen["strict"] = strict
+        return [dict(t) for t in normalized]
+
+    monkeypatch.setattr(mod, "gh_json", lambda args: broken_threads)
+    monkeypatch.setattr(mod, "review_threads", fake_review_threads)
+    bundle = mod._pr_review_bundle(41)
+    # le repli est appele en mode STRICT : un repli incomplet doit refuser
+    assert seen["strict"] is True
+    # le resultat du repli est rendu TEL QUEL — resolu reste resolu,
+    # auteur et corps conserves ; l'ouvert reste ouvert.
+    assert bundle["threads"] == normalized
+    assert bundle["threads"][0]["resolved"] is True
+    assert bundle["threads"][0]["author"] == "reviewer"
+    assert bundle["threads"][0]["body"] == "leve par le fix cite"
+    assert bundle["threads"][1]["resolved"] is False
+    # la panne threads n'a pas coupe les surfaces saines : typed du bundle
+    assert bundle["typed"]["author"] == {"__typename": "User",
+                                         "login": "jsboige"}
+
+
+def _raw_thread(is_resolved: bool, path: str, body: str) -> dict:
+    return {"isResolved": is_resolved, "isOutdated": False,
+            "path": path, "line": 1,
+            "comments": {"nodes": [
+                {"author": {"login": "tiers", "__typename": "User"},
+                 "body": body, "createdAt": "2026-11-19T12:00:00Z"}]}}
+
+
+def test_bundle_pageinfo_sans_hasnextpage_rend_la_surface_incomplete(monkeypatch):
+    """Relecture ai-01 du 2026-11-19 : une connexion avec `nodes` valide
+    mais `pageInfo` sans booléen `hasNextPage` n'est PAS acceptée comme
+    complète — la surface threads est relue via son chemin existant. Témoin
+    : le préfixe contient un thread A (« prefix.py ») que le résultat final
+    ne contient PAS ; le rendu vient tout entier de la relecture (leve.py +
+    ouvert.py)."""
+    bundle_page = {"data": {"repository": {"pullRequest": {
+        "author": {"__typename": "User", "login": "jsboige"},
+        "comments": {"pageInfo": {"hasNextPage": False, "endCursor": "c1"},
+                     "nodes": []},
+        "reviews": {"pageInfo": {"hasNextPage": False, "endCursor": "r1"},
+                    "nodes": []},
+        "reviewThreads": {"pageInfo": {"endCursor": "t1"},  # PAS de booléen
+                          "nodes": [_raw_thread(True, "prefix.py", "prefix")]},
+    }}}}
+    relue = {"data": {"repository": {"pullRequest": {"reviewThreads": {
+        "pageInfo": {"hasNextPage": False, "endCursor": "t9"},
+        "nodes": [_raw_thread(True, "leve.py", "leve"),
+                  _raw_thread(False, "ouvert.py", "ouvert")]}}}}}
+
+    def fake_gh_json(args):
+        if args[:2] == ["api", "graphql"]:
+            # bundle = query multi-curseurs ($cInc) ; relecture = query
+            # review_threads seule (pas de $cInc).
+            return bundle_page if "$cInc" in args[3] else relue
+        return {}
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    bundle = mod._pr_review_bundle(41)
+    assert [t["path"] for t in bundle["threads"]] == ["leve.py", "ouvert.py"]
+    assert "prefix.py" not in [t["path"] for t in bundle["threads"]]
+    assert bundle["threads"][0]["resolved"] is True
+    assert bundle["threads"][1]["resolved"] is False
+
+
+def test_bundle_repli_incomplet_refuse_de_conclure(monkeypatch):
+    """Relecture ai-01 du 2026-11-19 : le repli LUI-MÊME encore incomplet
+    (curseur figé sur la relecture review_threads) PROPAGE — jamais un
+    verdict B.0 rendu sur le préfixe."""
+    broken_threads = {"data": {"repository": {"pullRequest": {
+        "author": {"__typename": "User", "login": "jsboige"},
+        "comments": {"pageInfo": {"hasNextPage": False, "endCursor": "c1"},
+                     "nodes": []},
+        "reviews": {"pageInfo": {"hasNextPage": False, "endCursor": "r1"},
+                    "nodes": []},
+        "reviewThreads": {"pageInfo": {}, "nodes": "pas une liste"},
+    }}}}
+    frozen = {"data": {"repository": {"pullRequest": {"reviewThreads": {
+        "pageInfo": {"hasNextPage": True, "endCursor": "t1"},
+        "nodes": [_raw_thread(False, "x.py", "prefixe non concluable")]}}}}}
+
+    def fake_gh_json(args):
+        if args[:2] == ["api", "graphql"]:
+            return broken_threads if "$cInc" in args[3] else frozen
+        return {}
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    import pytest
+    with pytest.raises(mod.ThreadsIncomplete):
+        mod._pr_review_bundle(41)
 
 
 def test_improper_dismissals_author_of_epargne_lappel_reviews(monkeypatch):
