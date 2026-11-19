@@ -330,6 +330,21 @@ complet, scripts/coordination/tapis_prise_en_charge.py) puis la servir`.
 **Un conteneur ne passe jamais devant un grain** (#26926) : la détection se fait sur les métadonnées
 (titre `[EPIC]`, labels `epic`/`umbrella`), donc elle ne peut pas attendre la lecture du corps.
 
+**Chaque classe a un créneau de lecture** (arbitrage du 19/11) : dans le **lot public de la rotation**
+(`tapis_public.lot_public`, la voie `tapis_leger`), les deux classes sont entrelacées — le conteneur
+tient un créneau à lui, un tour sur deux. Ce qu'il ne peut pas faire, c'est **déplacer un grain** : son
+quota de créneaux (25 % du lot) est inchangé, et la part des grains n'en dépend pas. La règle #26926
+est donc **étroitié** dans le lot de *lecture*, pas abandonnée : l'**ordre de service** de la sortie du
+tapis (les grains d'abord) reste inchangé.
+
+**La tête du lot est le numéro suivant le curseur** (famine du 19/11) : la priorité d'entrée gardait la
+même tête à chaque tranche — le plus prioritaire du bloc — et le curseur sautait alors par blocs
+entiers ; les grains du milieu du bloc n'étaient plus jamais servis (mesure du peer : **4 numéros lus
+sur 80** en 400 tours). Le curseur n'avance en outre que sur les numéros **lus** (le lot
+propriétaire) : un numéro proposé mais non qualifié reste *en attente*, et la tranche suivante le sert
+en tête. Les deux témoins de la famine sont rejoués sur le lot public dans
+`scripts/tests/test_tapis_public.py`.
+
 **Le mur global** (`--budget-s`, 60 s par défaut) couvre la lecture de sélection ; son dépassement lève
 `LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une liste à moitié. La qualification
 a son propre mur : dépassée, elle rend ce qu'elle a et le dit (`budget_epuise`).
@@ -344,6 +359,8 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | Module | Rôle |
 | --- | --- |
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
+| `scripts/coordination/tapis_public.py` | le **lot public** : la proposition comprise (la tranche, les ancres) — la voie que les tests rejouent |
+| `scripts/coordination/tapis_tete.py` | la **tête** du lot : le numéro suivant le curseur, ahead de la priorité (famine du 19/11) |
 | `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |

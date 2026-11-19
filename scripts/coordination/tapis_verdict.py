@@ -38,10 +38,13 @@ def avancer(lane: str, confirmes: dict, ecartees: dict,
 
     `lot` est le lot EFFECTIVEMENT qualifie : le curseur ne passe pas une
     tranche que ce lot n'a pas prise en charge (review du 19/11). Sans lot,
-    l'avance n'est pas bornee. Sans lane, rien n'est ecrit.
+    l'avance est bornee aux numeros **LUS** (famine du 19/11 : le curseur
+    passait au max de la tranche alors qu'un seul grain etait lu) : un lu
+    et refuse est couvert, un jamais lu est parque. Sans lane, rien.
     """
     if not lane:
         return {}
-    return tapis_ancre.avancer(lane, terminaux(confirmes, ecartees),
-                               inconnus(ecartees),
-                               set(lot) if lot is not None else None)
+    term = terminaux(confirmes, ecartees)
+    lus = set(confirmes) | set(ecartees)
+    return tapis_ancre.avancer(lane, term, inconnus(ecartees),
+                               set(lot) if lot is not None else lus)
