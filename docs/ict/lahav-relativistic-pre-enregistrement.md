@@ -85,4 +85,4 @@ Le troisième mouvement de la lentille grothendieckienne (changement de représe
 
 ***
 
-**Statut : SCELLÉ — 2026-11-20, en attente du banc.**
+**Statut : TESTÉ (SUPPORTED) — exécution 2026-11-20 (po-2028), scellé v1 sans amendement. P1 1.000 (5/5) · P2 0.000 (5/5, croisés ≤ 0.373 ≪ τ) · P3 0.895–0.940 (5/5) · null a 0.845–0.945 (3/3) · null b 5/5 · porte dormante (marge 1.0) · dispatch 6/6 × 5. Banc et mesures committés en commits fils.**
