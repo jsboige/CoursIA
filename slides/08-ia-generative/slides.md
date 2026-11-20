@@ -893,7 +893,7 @@ flowchart TD
 
 </v-clicks>
 
-<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb">03-3-Realtime-Voice-API.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb">02-5-LTX2-Audiovisual.ipynb</a> · dépréciations : <a href="https://platform.openai.com/docs/deprecations">OpenAI Deprecations</a> (retraits du 12 mai 2026).</p>
+<p v-click="5" class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb">03-3-Realtime-Voice-API.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb">02-5-Video-Audio-Conjoint.ipynb</a> · dépréciations : <a href="https://platform.openai.com/docs/deprecations">OpenAI Deprecations</a> (retraits du 12 mai 2026).</p>
 
 ---
 

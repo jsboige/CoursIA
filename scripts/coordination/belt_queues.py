@@ -56,6 +56,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# #13737 tranche 2 : gh_identity est reloge dans scripts/ci/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import check_lane_claim as clc  # noqa: E402
 import grain_tag as gt  # noqa: E402

@@ -543,7 +543,7 @@ PILOT: list[Guard] = [
     # injectee dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
     # violation passe (exit 0) sur le meme depot.
     #
-    # `scripts/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
+    # `scripts/ci/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
     # `swap_paths` : la phase base doit mesurer le MEME predicat que la
     # phase head sur le contenu de base. Restaurer le script de la base
     # ferait mesurer la classe retiree (STALE_LINK) et le comparator
@@ -564,7 +564,7 @@ PILOT: list[Guard] = [
             "MyIA.AI.Notebooks/**/README.md",
             "MyIA.AI.Notebooks/**/*.ipynb",
             "_quarto.yml",
-            "scripts/regen_quarto_render.py",
+            "scripts/ci/regen_quarto_render.py",
             "scripts/notebook_tools/dump_readme_link_violations.py",
             "scripts/notebook_tools/diff_readme_link_violations.py",
             "scripts/notebook_tools/fix_ipynb_links.py",
@@ -4151,7 +4151,7 @@ TRANCHE42: list[Guard] = [
         ],
         pre_argv=[
             "python", "-m", "unittest",
-            "scripts.tests.test_check_cell_source_parses", "-v",
+            "scripts.tests.test_notebook_tools_check_cell_source_parses", "-v",
         ],
         argv=[
             "python", "scripts/notebook_tools/check_cell_source_parses.py",

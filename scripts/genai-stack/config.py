@@ -273,7 +273,7 @@ NOTEBOOK_SERVICE_MAP = {
         "01-4-Video-Enhancement.ipynb",
     ],
     "video_diffusion_light": [
-        "02-2-LTX-Video-Lightweight.ipynb",
+        "02-2-Generation-Video-Legere.ipynb",
         "02-3-Wan-Video-Generation.ipynb",
         "02-4-SVD-Image-to-Video.ipynb",
     ],

@@ -9813,9 +9813,9 @@ Felicitations ! Vous avez termine les notebooks sur la Decision Theory.
 - Ng, Harada, Russell (1999) : Policy Invariance Under Reward Transformations
 - Kaelbling, Littman, Cassandra (1998) : Planning and Acting in Partially Observable Stochastic Domains
 - Sutton & Barto (2018) : Reinforcement Learning: An Introduction",,,,,,,,2ccbc3fd24d59c33,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-065982ec,markdown,fr,77cd533a1fc36490,"# DecInfer-10-Thompson-Sampling : Bandits bayesiens par Infer.NET
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-065982ec,markdown,fr,31972aa0b02e0f2b,"# DecInfer-08-Thompson-Sampling : Bandits bayesiens par Infer.NET
 
-**Serie** : Programmation Probabiliste avec Infer.NET (10/10)
+**Serie** : Programmation Probabiliste avec Infer.NET (8/11)
 **Duree estimee** : 60 minutes
 **Prerequis** : [Infer-07-Skills-IRT](../../Infer/Infer-07-Skills-IRT.ipynb) (posterior Beta), [DecInfer-07-Sequential](DecInfer-07-Sequential.ipynb) (bandits, epsilon-greedy, UCB1)
 
@@ -9833,10 +9833,11 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.i
 
 | Précédent | Suivant |
 |-----------|---------|
-| [DecInfer-07-Sequential](DecInfer-07-Sequential.ipynb) | [Infer-05-Causal-Inference](../../Infer/Infer-05-Causal-Inference.ipynb) |
+| [DecInfer-07-Sequential](DecInfer-07-Sequential.ipynb) | [DecInfer-09-Theories-Decision-Predicteur](DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) |
 
-> **Pont inter-series** : le traitement des bandits en [DecInfer-07](DecInfer-07-Sequential.ipynb) section 8 implemente epsilon-greedy, UCB1 et un exercice de Thompson **manuel** (comptage des succes/echecs, formule conjuguee codee a la main). Ce notebook en est le versant **moteur** : Infer.NET calcule le posterior Beta de chaque bras par inference variationnelle, et Thompson echantillonne depuis ce posterior.",,,,,,,,77cd533a1fc36490,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-e1a1df7a,markdown,fr,9847845497ccf0d3,"## 1. Exploration vs exploitation — pourquoi Thompson ?
+> **Pont inter-series** : le traitement des bandits en [DecInfer-07](DecInfer-07-Sequential.ipynb) section 8 implemente epsilon-greedy, UCB1 et un exercice de Thompson **manuel** (comptage des succes/echecs, formule conjuguee codee a la main). Ce notebook en est le versant **moteur** : Infer.NET calcule le posterior Beta de chaque bras par inference variationnelle, et Thompson echantillonne depuis ce posterior.
+> **Sortie de serie** : [DecInfer-09-Theories-Decision-Predicteur](DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) poursuit vers les theories de la decision face a un predicteur (EDT, CDT, UDT) ; la suite en causalite reste [Infer-05-Causal-Inference](../../Infer/Infer-05-Causal-Inference.ipynb).",,,,,,,,31972aa0b02e0f2b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-e1a1df7a,markdown,fr,9847845497ccf0d3,"## 1. Exploration vs exploitation — pourquoi Thompson ?
 
 Un **bandit multi-bras** (Robbins, 1952) : K bras, chacun d'une recompense Bernoulli de moyenne inconnue theta_k. A chaque pas de temps on choisit un bras, on percoit une recompense 0/1, et on cherche a **maximiser la recompense cumulee**. Le dilemme :
 
@@ -9856,10 +9857,10 @@ Trois familles de politiques :
 ### La valeur ajoutee Infer.NET (non-doublon avec DecInfer-07)
 
 Pour un bras Bernoulli de prior Beta(a, b), le posterior après s succes et f echecs est **conjugue** : Beta(a+s, b+f). On pourrait le coder a la main (c'est l'exercice DecInfer-07 section 8). **Ce notebook ne le fait pas** : on declare le modèle `theta ~ Beta ; reward ~ Bernoulli(theta)` et on laisse **Infer.NET inferer le posterior**. Pour ce cas conjugue le moteur recouvre exactement la forme analytique — mais la même approche se generalise a des modèles **non conjugues** ou la formule fermee n'existe pas, la ou seul un moteur d'inference (EP, VMP) sait faire.",,,,,,,,9847845497ccf0d3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-cf83f140,markdown,fr,d3d13145f0bc76db,"## 2. Configuration d'Infer.NET
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-cf83f140,markdown,fr,d3d13145f0bc76db,"## 2. Configuration d'Infer.NET
 
 Chargement du moteur d'inference probabiliste (même `#r ""nuget""` que toute la serie).",,,,,,,,d3d13145f0bc76db,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-eb337d48,code,fr,9661672f1a9cccc5,"#r ""nuget: Microsoft.ML.Probabilistic""
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-eb337d48,code,fr,9661672f1a9cccc5,"#r ""nuget: Microsoft.ML.Probabilistic""
 #r ""nuget: Microsoft.ML.Probabilistic.Compiler""
 using Microsoft.ML.Probabilistic;
 using Microsoft.ML.Probabilistic.Distributions;
@@ -9867,11 +9868,11 @@ using Microsoft.ML.Probabilistic.Models;
 using Microsoft.ML.Probabilistic.Algorithms;
 using Microsoft.ML.Probabilistic.Compiler;
 Console.WriteLine(""Infer.NET charge."");",,,,,,,,9661672f1a9cccc5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-45c5e1c5,markdown,fr,83b8a5792b144855,Chargement du helper de visualisation des graphes de facteurs (Graphviz).,,,,,,,,83b8a5792b144855,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-b0f29d4f,code,fr,712878d44cb85a79,"#load ""../../Infer/FactorGraphHelper.cs""
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-45c5e1c5,markdown,fr,83b8a5792b144855,Chargement du helper de visualisation des graphes de facteurs (Graphviz).,,,,,,,,83b8a5792b144855,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-b0f29d4f,code,fr,712878d44cb85a79,"#load ""../../Infer/FactorGraphHelper.cs""
 Console.WriteLine(""FactorGraphHelper charge."");
 Console.WriteLine($""Graphviz disponible : {FactorGraphHelper.IsGraphvizAvailable()}"");",,,,,,,,712878d44cb85a79,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-8be332b6,markdown,fr,c212231d60c8a33c,"## 3. Le modèle Beta-Bernoulli d'un bras
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-8be332b6,markdown,fr,c212231d60c8a33c,"## 3. Le modèle Beta-Bernoulli d'un bras
 
 Soit un bras de probabilite de succes inconnue `theta`. Modèle :
 
@@ -9879,7 +9880,7 @@ Soit un bras de probabilite de succes inconnue `theta`. Modèle :
 - **Vraisemblance** : `reward_i ~ Bernoulli(theta)` pour chaque tirage observe.
 
 Après avoir observe `s` succes et `f` echecs, on demande au moteur d'inference le posterior sur `theta`. Verifions qu'Infer.NET recouvre la forme conjuguee `Beta(1+s, 1+f)` (le moteur fait le calcul, nous declarons seulement le modèle).",,,,,,,,c212231d60c8a33c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-0629643f,code,fr,55ec0c25f73c29dc,"// Modele Beta-Bernoulli d un bras : theta ~ Beta(1,1), rewards ~ Bernoulli(theta)
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-0629643f,code,fr,55ec0c25f73c29dc,"// Modele Beta-Bernoulli d un bras : theta ~ Beta(1,1), rewards ~ Bernoulli(theta)
 // On observe s succes + f echecs, le moteur infere le posterior.
 int succ = 7, fail = 3;
 var theta1 = Variable.Beta(1.0, 1.0).Named(""theta1"");
@@ -9898,10 +9899,10 @@ Console.WriteLine($""Apres {succ} succes / {fail} echecs :"");
 Console.WriteLine($""  Posterior Infer.NET = Beta({post1.TrueCount:F1}, {post1.FalseCount:F1}) ; mean = {post1.GetMean():F3}"");
 Console.WriteLine($""  Formule conjuguee   = Beta({1+succ}, {1+fail}) ; mean = {theoMean:F3}"");
 Console.WriteLine($""  => Le moteur recouvre la forme analytique (cas conjugue favorable)."");",,,,,,,,55ec0c25f73c29dc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-2a769548,markdown,fr,9a890f1ae66e287d,"### 3.1 Graphe de facteurs du bras (Prong-A)
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-2a769548,markdown,fr,9a890f1ae66e287d,"### 3.1 Graphe de facteurs du bras (Prong-A)
 
 Le même modèle, rendu en graphe de facteurs par Graphviz via le `FactorGraphHelper` (pattern de la serie, cf [DecInfer-02](DecInfer-02-Utility-Money.ipynb), [DecInfer-03](DecInfer-03-Multi-Attribute.ipynb)). Le noeud `theta` (Beta) alimente les facteurs Bernoulli des observations.",,,,,,,,9a890f1ae66e287d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-702b3d96,code,fr,646b98874f61aaee,"// Rendu SVG reel du graphe de facteurs du Beta-Bernoulli (Graphviz)
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-702b3d96,code,fr,646b98874f61aaee,"// Rendu SVG reel du graphe de facteurs du Beta-Bernoulli (Graphviz)
 var thetaFG = Variable.Beta(1.0, 1.0).Named(""theta"");
 Range rFG = new Range(6).Named(""tirages"");
 var trialFG = Variable.Array<bool>(rFG).Named(""recompenses"");
@@ -9913,10 +9914,10 @@ engFG.ShowFactorGraph = true;
 var _fg = engFG.Infer<Beta>(thetaFG);
 Console.WriteLine(""Modele Beta-Bernoulli : theta (Beta) -> 6 facteurs Bernoulli (un par tirage observe)."");
 FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs(""text/html"");",,,,,,,,646b98874f61aaee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-50c9bbca,markdown,fr,a78595ec6489a6db,"### 3.2 Convergence du posterior
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-50c9bbca,markdown,fr,a78595ec6489a6db,"### 3.2 Convergence du posterior
 
 A mesure que les observations s'accumulent, le posterior se concentre autour de la vraie moyenne. Le moteur recalcule le posterior a chaque lot d'observations.",,,,,,,,a78595ec6489a6db,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-5884b7f3,code,fr,83c69717162e5a67,"// Convergence : on observe des lots croissants, le moteur recalcule le posterior a chaque fois.
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-5884b7f3,code,fr,83c69717162e5a67,"// Convergence : on observe des lots croissants, le moteur recalcule le posterior a chaque fois.
 double vraiTheta = 0.7;  // vraie moyenne inconnue du bras
 var rngConv = new System.Random(42);
 Console.WriteLine($""Vraie moyenne du bras = {vraiTheta:F2} (inconnue de l algorithme)"");
@@ -9941,7 +9942,7 @@ foreach (int N in new[] { 5, 20, 50, 200 }) {
     Console.WriteLine($""  {N,9} | {mean:F3}          | [{lo:F3}, {hi:F3}]"");
 }
 Console.WriteLine(""  => Le posterior se resserre autour de la vraie moyenne quand N croit."");",,,,,,,,83c69717162e5a67,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-di10-interp-a,markdown,fr,3805727c90729906,"### Lecture du résultat : le posterior se resserre au rythme des données
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-di10-interp-a,markdown,fr,3805727c90729906,"### Lecture du résultat : le posterior se resserre au rythme des données
 
 À N=5 tirages, le posterior est encore optimiste — moyenne 0,857 pour une vraie moyenne de 0,70 — et son intervalle à 95 % monte jusqu'à 1,000 : cinq observations favorables n'ont encore rien exclu. À N=200, la moyenne descend à 0,663 et l'intervalle [0,598, 0,728] contient la vraie valeur 0,70 : le moteur a digéré les données contradictoires.
 
@@ -9950,12 +9951,12 @@ Deux points à retenir pour la suite :
 - **la largeur de l'intervalle passe de 0,385 (N=5) à 0,130 (N=200)** : multiplier les données par 40 ne divise l'incertitude que par ~3 — les premières observations achètent beaucoup plus d'information que les suivantes, et le coût d'apprentissage marginal décroît vite ;
 - **l'incertitude reste quantifiée à chaque instant**. Thompson Sampling (section 5) ne tirera pas parti du seul point estimé 0,663 mais de la *distribution* entière : c'est parce que l'intervalle est explicite que l'algorithme saura *où* il manque d'information.
 ",,,,,,,,3805727c90729906,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-15063fa1,markdown,fr,b32b8f8793e71049,"## 4. Reutiliser le moteur compile (problematique runtime)
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-15063fa1,markdown,fr,b32b8f8793e71049,"## 4. Reutiliser le moteur compile (problematique runtime)
 
 Un bandit reel rejoue des centaines de fois, et le posterior de chaque bras evolue a chaque recompense. Si l'on reconstruisait le modèle a chaque pas, Infer.NET **recompilerait** a chaque fois (plusieurs centaines de ms par compilation, cf. mesure §4.1 cellule suivante). La solution : un modèle a **taille fixe** `MAX` ou un **masque** `mask[i]` dit quelles cases de `obs[i]` sont de vraies observations. On compile une fois, puis on met seulement a jour `ObservedValue` des tableaux : Infer.NET **reutilise** le code compile (sub-milliseconde par re-inference sur modele pre-compile, cf. mesure §4.1 -- soit plusieurs ordres de grandeur de moins qu'une compilation).
 
 On encapsule ce pattern dans une classe `BayesArm` : un bras dont Infer.NET calcule le posterior.",,,,,,,,b32b8f8793e71049,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-775a0d0a,code,fr,afa1e9935301d1e2,"// Helper BayesArm : un bras de bandit dont Infer.NET calcule le posterior Beta.
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-775a0d0a,code,fr,afa1e9935301d1e2,"// Helper BayesArm : un bras de bandit dont Infer.NET calcule le posterior Beta.
 // Modele a taille MAX fixe + masque (reutilise la compilation du moteur).
 public class BayesArm {
     private Variable<double> theta;
@@ -10001,10 +10002,10 @@ public class BayesArm {
     public double Mean()    => engine.Infer<Beta>(theta).GetMean();
 }
 Console.WriteLine(""Classe BayesArm definie (modele masque, moteur reutilise)."");",,,,,,,,afa1e9935301d1e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,c3757d65,markdown,fr,062dd900ee5787d1,"### 4.1 Mesure du gain de runtime : compilation vs re-inference
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,c3757d65,markdown,fr,062dd900ee5787d1,"### 4.1 Mesure du gain de runtime : compilation vs re-inference
 
 La classe `BayesArm` est concue pour compiler le moteur **une fois** (warmup dans le constructeur), puis reutiliser ce code compile a chaque `Observe`/`Posterior`. Mesurons concretement les deux regimes pour confirmer l'ordre de grandeur annonce : la **compilation** est l'operation couteuse (~centaines de ms), la **re-inference** sur un modele pre-compile est sub-milliseconde.",,,,,,,,062dd900ee5787d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,46507dc2,code,fr,f0db843e33682ab4,"// Mesure runtime : compilation (1 fois) vs re-inference (compile reutilise).
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,46507dc2,code,fr,f0db843e33682ab4,"// Mesure runtime : compilation (1 fois) vs re-inference (compile reutilise).
 var swMes = System.Diagnostics.Stopwatch.StartNew();
 var armMes = new BayesArm(maxN: 220);   // constructeur = warmup compilation du moteur
 swMes.Stop();
@@ -10023,13 +10024,13 @@ double tReinfer = swMes.Elapsed.TotalMilliseconds / NMes;
 Console.WriteLine($""Compilation (1 fois, warmup BayesArm)        : {tCompile:F1} ms"");
 Console.WriteLine($""Re-inference (ObservedValue, compile reutilise) : {tReinfer:F3} ms en moyenne sur {NMes} appels"");
 Console.WriteLine($""Ratio compilation / re-inference              : {tCompile/tReinfer:F0}x"");",,,,,,,,f0db843e33682ab4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-di10-interp-b,markdown,fr,d3745e5d17f3d2c3,"### Lecture du résultat : pourquoi le moteur compilé change tout
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-di10-interp-b,markdown,fr,d3745e5d17f3d2c3,"### Lecture du résultat : pourquoi le moteur compilé change tout
 
 > **Note méthodologique — séparation structurel / machine-dep** : le **rapport** entre le coût d'une compilation et celui d'une re-inférence sur modèle déjà compilé est un **invariant structurel** d'Infer.NET (plusieurs ordres de grandeur : de l'ordre de **10⁴×** dans la mesure du §4.1 ci-dessus). En revanche, les **durées absolues** (compilation en centaines de ms, re-inférence en centièmes de ms) sont **machine-dépendantes** par construction (CPU, JIT, GC, version Infer.NET) et **ne survivent pas** à une ré-exécution sur une autre machine — c'est précisément la pathologie que l'umbrella #9434/#8052/#9377 demande de **drainer** plutôt que de re-épingler. La cellule de calcul §4.1 (juste au-dessus) reste intacte et exécutable localement : l'étudiant peut y observer ses propres timings sur sa machine et **vérifier** que le rapport (structurel) garde son ordre de grandeur même quand les valeurs absolues changent. Le rapport lui-même fluctue d'une exécution à l'autre, puisque ses deux termes sont des durées : un seuil exact comme « >10000× » ne se lirait donc pas de façon stable, seul l'ordre de grandeur le fait.
 
 Infer.NET suit le modèle « compiler une fois, inférer souvent » : la première inférence génère du code spécialisé pour le graphe de facteurs, les suivantes se contentent d'observer de nouvelles données et de relancer l'inférence sur ce code déjà compilé. C'est la **différence structurelle** entre un moteur probabiliste compilé et un échantillonneur générique qui repartirait de zéro à chaque question.
 ",,,,,,,,d3745e5d17f3d2c3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-5ce3ed6d,markdown,fr,e1df8e87922173c9,"## 5. Thompson Sampling multi-bras
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-5ce3ed6d,markdown,fr,e1df8e87922173c9,"## 5. Thompson Sampling multi-bras
 
 Trois bras de vraies moyennes `theta* = [0,2 ; 0,5 ; 0,8]` (inconnues de l'algorithme). A chaque pas de temps :
 
@@ -10037,7 +10038,7 @@ Trois bras de vraies moyennes `theta* = [0,2 ; 0,5 ; 0,8]` (inconnues de l'algor
 2. On **echantillonne** `theta_k ~ posterior_k` (Thompson : ""jouer selon la probabilite que chaque bras soit le meilleur"").
 3. On joue le bras d'echantillon maximum.
 4. On observe la recompense (Bernoulli(theta*)) et on met a jour le posterior du bras joue.",,,,,,,,e1df8e87922173c9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-6acb9561,code,fr,492cd06f7b95d661,"// Thompson Sampling multi-bras : K=3 bras, T=200 pas.
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-6acb9561,code,fr,492cd06f7b95d661,"// Thompson Sampling multi-bras : K=3 bras, T=200 pas.
 // theta* inconnu ; Infer.NET calcule chaque posterior ; on echantillonne puis on joue argmax.
 int K = 3;
 int T = 200;
@@ -10073,7 +10074,7 @@ Console.WriteLine(""  ----------------------------------------------------------
 Console.WriteLine($""Tirages par bras : [{tiragesParBras[0]}, {tiragesParBras[1]}, {tiragesParBras[2]}]"");
 Console.WriteLine($""Recompense totale = {totalRecompense}/{T} (optimal ~ {T*0.8:F0})"");
 Console.WriteLine($""=> Thompson converge vers le bras 3 (le meilleur, theta*=0.8)."");",,,,,,,,492cd06f7b95d661,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-di10-interp-c,markdown,fr,b0acd5f5b1e0a3ae,"### Lecture du résultat : la trace d'un run de Thompson
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-di10-interp-c,markdown,fr,b0acd5f5b1e0a3ae,"### Lecture du résultat : la trace d'un run de Thompson
 
 La sortie raconte l'algorithme pas à pas (les moyennes affichées sont celles des posteriors **après** la mise à jour du pas) :
 
@@ -10085,7 +10086,7 @@ La sortie raconte l'algorithme pas à pas (les moyennes affichées sont celles d
 
 Bilan du run : **150 récompenses sur 200**, contre ~160 pour l'oracle qui connaîtrait les vraies moyennes — un regret de run d'environ 10. Toute la compétition exploration/exploitation tient dans cet écart.
 ",,,,,,,,b0acd5f5b1e0a3ae,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-6229c611,markdown,fr,d0f0950830da89d1,"## 6. Comparaison du regret cumule (Prong-B)
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-6229c611,markdown,fr,d0f0950830da89d1,"## 6. Comparaison du regret cumule (Prong-B)
 
 Le **regret** mesure ce qu'on perd par rapport a jouer le bras optimal des le debut : `regret(t) = theta*_max - theta*(bras joue)`. On cumule sur T pas. On compare trois politiques, moyennées sur `N_runs` repetitions (graines différentes) :
 
@@ -10094,7 +10095,7 @@ Le **regret** mesure ce qu'on perd par rapport a jouer le bras optimal des le de
 - **Thompson** (via Infer.NET) : exploration bayesienne par echantillonnage posterior.
 
 **Hypothese (Prong-B)** : Thompson exploite l'incertitude posterior — il explore **la ou l'information manque**, pas au hasard — d'ou un regret cumule **inferieur** a epsilon-greedy.",,,,,,,,d0f0950830da89d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-f341dab0,code,fr,04a1631e53c5a64e,"// Comparaison regret cumule : epsilon-greedy vs UCB1 vs Thompson (Infer.NET), moyennes sur N_runs.
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-f341dab0,code,fr,04a1631e53c5a64e,"// Comparaison regret cumule : epsilon-greedy vs UCB1 vs Thompson (Infer.NET), moyennes sur N_runs.
 // eps-greedy et UCB1 sont des calculs purs (pas de moteur) ; Thompson appelle Infer.NET.
 // Compteurs SEPARES par politique (chaque politique apprend de ses propres tirages).
 int N_runs = 15;
@@ -10155,7 +10156,7 @@ Console.WriteLine($""  Thompson (Infer.NET)       : {regretFinal[2]:F1}"");
 Console.WriteLine();
 Console.WriteLine($""=> Thompson ({regretFinal[2]:F1}) <= epsilon-greedy ({regretFinal[0]:F1}) : l exploration bayesienne"");
 Console.WriteLine($""   ciblee par le posterior exploite l incertitude la ou l information manque (Prong-B)."");",,,,,,,,04a1631e53c5a64e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-di10-interp-d,markdown,fr,bc6eb6bfb49eb27c,"### Lecture du résultat : Thompson domine les deux baselines
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-di10-interp-d,markdown,fr,bc6eb6bfb49eb27c,"### Lecture du résultat : Thompson domine les deux baselines
 
 Sur 15 runs de T=200 pas, le regret cumulé moyen s'établit à **6,1 pour Thompson**, contre **17,5 pour epsilon-greedy** et **19,3 pour UCB1** — Thompson fait environ trois fois mieux que les deux baselines sur ce terrain.
 
@@ -10167,7 +10168,7 @@ Le *pourquoi* se lit dans la mécanique de chaque politique :
 
 Réserve honnête : 15 runs, c'est une moyenne courte (l'écart-type n'est pas affiché) — cette cellule est une *illustration pédagogique* du mécanisme, pas un benchmark statistique ; la section théorique ci-dessous donne le cadre du regret logarithmique.
 ",,,,,,,,bc6eb6bfb49eb27c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-ts-regret-bound-8081,markdown,fr,384b18676488a461,"### 6.1 Cadre theorique - pourquoi le regret de Thompson est-il logarithmique ?
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-ts-regret-bound-8081,markdown,fr,384b18676488a461,"### 6.1 Cadre theorique - pourquoi le regret de Thompson est-il logarithmique ?
 
 La cellule precedente montre **empiriquement** que Thompson cumule moins de regret qu'epsilon-greedy, et se compare a UCB1. Ce n'est pas un effet du hasard : la theorie garantit que Thompson Sampling atteint le **meilleur regret asymptotique possible** pour un bandit stochastique.
 
@@ -10198,10 +10199,10 @@ ou `KL` est la divergence de Kullback-Leibler entre les lois des bras (Kaufmann,
 - Agrawal, S. & Goyal, N. (2012). *Analysis of Thompson Sampling for the multi-armed bandit problem*. COLT 2012.
 - Kaufmann, E., Korda, N. & Munos, R. (2012). *Thompson Sampling: an asymptotically optimal finite-time analysis*. ALT 2012.
 - Agrawal, S. & Goyal, N. (2013). *Further optimal regret bounds for Thompson Sampling*. AISTATS 2013.",,,,,,,,384b18676488a461,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-5da4782f,markdown,fr,876da4e75c22c98c,"## 7. Extension — best-arm identification
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-5da4782f,markdown,fr,876da4e75c22c98c,"## 7. Extension — best-arm identification
 
 Le regret mesure la **performance** (cumul de recompenses). Une autre question : **identifier** le meilleur bras avec une garantie probabiliste. Thompson fournit naturellement `P(bras i est le meilleur)` : on echantillonne plusieurs fois les posteriors simultanement et on compte la frequence a laquelle chaque bras gagne. Quand cette probabilite depasse un seuil (ex. 0,95), on peut declarer le gagnant.",,,,,,,,876da4e75c22c98c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-211f6ecf,code,fr,aed1545be16dcd8f,"// Best-arm identification : estimer P(bras i est le meilleur) par echantillonnage posterior.
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-211f6ecf,code,fr,aed1545be16dcd8f,"// Best-arm identification : estimer P(bras i est le meilleur) par echantillonnage posterior.
 // On reutilise les posteriors des 3 bras apres un echantillonnage Thompson court.
 int KB = 3; int TB = 60; int MAXNB = 70;
 double[] vraiB = { 0.2, 0.5, 0.8 };
@@ -10232,7 +10233,7 @@ for (int k=0;k<KB;k++) {
 int best = Array.IndexOf(gagnants, gagnants.Max());
 Console.WriteLine($""=> Bras declare meilleur : bras {best+1} (theta*={vraiB[best]})."");
 Console.WriteLine($""   Si P > 0.95, on peut arreter : identification du meilleur bras avec confiance."");",,,,,,,,aed1545be16dcd8f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-di10-interp-e,markdown,fr,1d6c4ad4446c568e,"### Lecture du résultat : une autre question, le même moteur
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-di10-interp-e,markdown,fr,1d6c4ad4446c568e,"### Lecture du résultat : une autre question, le même moteur
 
 Après seulement 60 tirages Thompson, l'échantillonnage des posteriors donne **P(bras 3 meilleur) = 0,986**, contre 0,011 pour le bras 1 et 0,003 pour le bras 2 — la règle d'arrêt « P > 0,95 » est déjà franchie. Les posteriors racontent la même histoire en creux : Beta(42,0, 10,0) pour le bras 3 — 50 tirages, un posterior concentré, riche en données — contre Beta(1,0, 3,0) pour le bras 1, visité deux fois seulement, où le prior uniforme Beta(1,1) se devine encore dans les petits compteurs.
 
@@ -10240,12 +10241,12 @@ Un détail mérite l'attention : le bras 1, de moyenne posterior 0,25, reçoit u
 
 La nuance conceptuelle mérite d'être soulignée : **minimiser le regret** (jouer bien maintenant) et **identifier le meilleur bras** (savoir avec confiance) sont deux objectifs distincts. Le premier tolère de continuer à jouer un bras presque optimal ; le second exige d'accumuler assez de preuves pour pouvoir arrêter. Thompson Sampling sert les deux avec la même machinerie bayésienne — seule change la question posée aux échantillons : « quel bras jouer ce pas ? » ou « quel bras est le meilleur, et à quel niveau de confiance ? ».
 ",,,,,,,,1d6c4ad4446c568e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-71669703,markdown,fr,cc93457181ca2074,"## 8. Limites honnetes
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-71669703,markdown,fr,cc93457181ca2074,"## 8. Limites honnetes
 
 - **Cas conjugue favorable** : pour un bandit Bernoulli, le posterior Beta est analytique. L'apport d'Infer.NET n'est pas la (le moteur recouvre la formule fermee) mais dans la **generalisation** a des modèles non conjugues (ex. bras Gaussiennes de variance inconnue, effets contextuels) ou seule l'inference approchee (EP/VMP) sait calculer le posterior.
 - **Cout d'inference** : chaque pas de Thompson requiert `K` inferences posteriors. Grace au modèle masque reutilise (sub-milliseconde/call, cf. mesure §4.1), cela reste negligeable pour `K` petit et `T` modere. Pour un grand `K` (centaines de bras) ou un modèle lourd, l'overhead devient un facteur — c'est la ou un posterior conjugue code a la main (cf DecInfer-07 section 8) garde sa place.
 - **Non-stationnarite** : si les vraies `theta*` changent au cours du temps, le posterior Beta s'accumule indefiniment et devient trop confident. Il faut alors introduire un **facteur d'oubli** (sliding window, discount) — voir exercice 2.",,,,,,,,cc93457181ca2074,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-c1d6e31d,markdown,fr,48edc774bfe8ba68,"## 9. Exercices
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-c1d6e31d,markdown,fr,48edc774bfe8ba68,"## 9. Exercices
 
 Trois exercices pour aller plus loin. Chaque stub s'execute sans erreur ; completez le code entre les `// TODO`.
 
@@ -10254,7 +10255,7 @@ Trois exercices pour aller plus loin. Chaque stub s'execute sans erreur ; comple
 | 1 | Ajouter un 4e bras et observer la convergence | Thompson sur K=4 |
 | 2 | Bandit non-stationnaire (facteur d'oubli) | Adaptation au changement |
 | 3 | Prior informatif Beta(50, 50) | Impact du prior sur l'exploration |",,,,,,,,48edc774bfe8ba68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-84e0024e,markdown,fr,7890b0c8ad0b500d,"### Exercice 1 — Ajouter un 4e bras et observer la convergence
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-84e0024e,markdown,fr,7890b0c8ad0b500d,"### Exercice 1 — Ajouter un 4e bras et observer la convergence
 
 Thompson Sampling se generalise de 3 a **K** bras. Ajoutez un 4e bras de vraie
 moyenne 0,65 et relancez la boucle de sélection. Observez comment le choix bascule
@@ -10266,14 +10267,14 @@ de bras en bras puis se stabilise sur le meilleur des 4.
 - Etendez `vraiTheta` a 4 valeurs (par ex. `[0.3, 0.5, 0.7, 0.65]`).
 - Mettez `K = 4` et construisez 4 `BayesArm`, comme en section 5.
 - Reportez les tirages par bras et la recompense totale cumulee.",,,,,,,,7890b0c8ad0b500d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-eb45673d,code,fr,024d6b3a00d3e756,"// Exercice 1 : Ajouter un 4e bras de vraie moyenne 0.65 et relancer Thompson.
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-eb45673d,code,fr,024d6b3a00d3e756,"// Exercice 1 : Ajouter un 4e bras de vraie moyenne 0.65 et relancer Thompson.
 // Observez comment la selection bascule puis se stabilise sur le meilleur des 4.
 // Indice : etendez vraiTheta a 4 valeurs, K=4, bouclez comme en section 5.
 // Etape 1 : definir les 4 vraies moyennes
 // Etape 2 : construire 4 BayesArm et boucler T pas
 // Etape 3 : reporter les tirages par bras et la recompense totale
 Console.WriteLine(""Exercice 1 a completer : Thompson sur 4 bras (K=4)."");",,,,,,,,024d6b3a00d3e756,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-b2a05fe7,markdown,fr,c2e4e042bc770211,"### Exercice 2 — Bandit non-stationnaire (facteur d'oubli)
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-b2a05fe7,markdown,fr,c2e4e042bc770211,"### Exercice 2 — Bandit non-stationnaire (facteur d'oubli)
 
 Jusqu'ici les vraies moyennes sont fixes. En pratique elles peuvent **changer** : ici
 la meilleure bascule a `t = 100`. Implantez un **facteur d'oubli** : a chaque pas, ne
@@ -10287,14 +10288,14 @@ changement de regime.
   méthode `Forget(double gamma)`.
 - Definissez `theta*(t)` qui change a mi-parcours (ex. le bras 1 devient meilleur après `t=100`).
 - Comparez le regret avec et sans oubli sur la sequence non-stationnaire.",,,,,,,,c2e4e042bc770211,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-1a9f9028,code,fr,c06923b2926047f8,"// Exercice 2 : Bandit non-stationnaire — la meilleure bascule a t=100.
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-1a9f9028,code,fr,c06923b2926047f8,"// Exercice 2 : Bandit non-stationnaire — la meilleure bascule a t=100.
 // Implantez un facteur d oubli : a chaque pas, ne gardez qu une fraction des observations passees.
 // Indice : modifiez BayesArm.Observe pour decaler/oublier, ou ajoutez une methode Forget(double gamma).
 // Etape 1 : definir theta*(t) qui change a mi-parcours (ex. bras 1 devient meilleur apres t=100)
 // Etape 2 : ajouter l oubli au posterior (reset partiel ou discount)
 // Etape 3 : comparer le regret avec et sans oubli sur la sequence non-stationnaire
 Console.WriteLine(""Exercice 2 a completer : bandit non-stationnaire avec facteur d oubli."");",,,,,,,,c06923b2926047f8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-02023ecc,markdown,fr,e103d89a3f8fb941,"### Exercice 3 — Prior informatif Beta(50, 50) vs uniforme
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-02023ecc,markdown,fr,e103d89a3f8fb941,"### Exercice 3 — Prior informatif Beta(50, 50) vs uniforme
 
 Un prior `Beta(50, 50)` exprime une forte conviction que theta vaut environ 0,5 ; un
 prior `Beta(1, 1)` est uniforme (sans information a priori). Comparez le regret des
@@ -10307,14 +10308,14 @@ deux : un prior informatif reduit-il l'exploration prematuree ?
 - Créez deux jeux de bras — l'un avec `Beta(1,1)`, l'autre avec `Beta(50,50)` — et
   mesurez le regret de chacun.
 - Interpretez : dans quels cas un prior informatif aide-t-il, et quand nuit-il ?",,,,,,,,e103d89a3f8fb941,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-c31e1ca9,code,fr,144e3540b0c2bff3,"// Exercice 3 : Prior informatif Beta(50, 50) (confiant que theta~0.5) vs Beta(1,1) (uniforme).
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-c31e1ca9,code,fr,144e3540b0c2bff3,"// Exercice 3 : Prior informatif Beta(50, 50) (confiant que theta~0.5) vs Beta(1,1) (uniforme).
 // Comparez le regret : un prior informatif reduit-il l exploration prematuree ?
 // Indice : BayesArm accepte priorA/priorB ; creez deux jeux de bras et mesurez le regret de chacun.
 // Etape 1 : lancer Thompson avec prior Beta(1,1) (uniforme)
 // Etape 2 : lancer Thompson avec prior Beta(50,50) (informatif)
 // Etape 3 : comparer les regrets et interpreter (quand un prior informatif aide/nuit)
 Console.WriteLine(""Exercice 3 a completer : impact du prior informatif Beta(50,50) sur Thompson."");",,,,,,,,144e3540b0c2bff3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb,cell-4b9a1107,markdown,fr,12f607aac4eea4ac,"## 10. Synthese
+MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb,cell-4b9a1107,markdown,fr,12f607aac4eea4ac,"## 10. Synthese
 
 | Politique | Exploration | Calcul du posterior | Origine |
 |-----------|-------------|---------------------|---------|
