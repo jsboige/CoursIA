@@ -130,11 +130,18 @@ jobs:
         # scripts/ci/regen_quarto_render.py) sont neutralises en texte brut :
         # une annotation rouge sur un run vert serait le rouge residuel que
         # la revue 5475880717 retire.
+        # Chemin du scanner resolu sur l'arbre checkoute : GitHub lit ce
+        # workflow au merge commit, mais le checkout est la tete de la PR.
+        # Une tete anterieure au relogement de #27355 (21e7399705) porte
+        # encore `scripts/regen_quarto_render.py` ; sans repli, le job rendait
+        # rc=2 « scanner en panne » sur 12 PRs (mesure du secretaire, 20/11).
         run: |
           set -euo pipefail
           : > /tmp/scan_status.txt
+          SCANNER=scripts/ci/regen_quarto_render.py
+          [ -f "${SCANNER}" ] || SCANNER=scripts/regen_quarto_render.py
           set +e
-          python3 scripts/ci/regen_quarto_render.py --check 2>&1 | sed 's/^::error::/[quarto-drift] /'
+          python3 "${SCANNER}" --check 2>&1 | sed 's/^::error::/[quarto-drift] /'
           PY_RC=${PIPESTATUS[0]}
           set -e
           echo "python_rc=${PY_RC}" >> /tmp/scan_status.txt

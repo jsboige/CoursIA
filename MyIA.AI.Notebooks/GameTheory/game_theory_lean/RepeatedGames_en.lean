@@ -13,9 +13,11 @@
   satisfies δ ≥ (T−R)/(T−P).
 
   This equivalence formalizes grim trigger's algebraic incentive condition.
-  The module also proves that the punishment state is absorbing. It does not
-  yet formalize the histories and strategy profiles required for a
-  subgame-perfect Nash equilibrium.
+  The module also proves that the punishment state is absorbing. The
+  histories, strategy profiles and subgame-perfect equilibrium — including
+  the one-shot deviation principle — are formalized in
+  `RepeatedGames.Perfect`: `grim_isSPE_iff` there establishes that the grim
+  trigger profile is a subgame-perfect equilibrium iff δ ≥ (T−R)/(T−P).
 
   ## Structure
 
@@ -26,7 +28,11 @@
     target).
   - `RepeatedGames.GrimTrigger_en` — grim transition (punishment is absorbing)
     and the discounted-stream incentive condition `grim_trigger_sustains_iff`.
-    Complete strategy/SPNE semantics remain outside this module.
+  - `RepeatedGames.Perfect_en` — histories, behavioural strategies and
+    subgame-perfect equilibrium: one-shot deviation principle
+    (`oneShotDeviationPrinciple`, hypotheses (H1) bounded stage payoffs,
+    (H2) δ < 1), then `grim_isSPE_iff` (grim trigger is an SPE iff
+    δ ≥ (T−R)/(T−P)).
   - `RepeatedGames.Folk_en` (STRETCH) — discounted Folk theorem (Fudenberg–
     Maskin 1986), `sorry` accepted within the companion's stretch scope.
 
@@ -57,4 +63,5 @@
 import RepeatedGames.Stage_en
 import RepeatedGames.Discounting_en
 import RepeatedGames.GrimTrigger_en
+import RepeatedGames.Perfect_en
 import RepeatedGames.Folk_en
