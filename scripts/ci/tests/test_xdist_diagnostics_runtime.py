@@ -46,7 +46,8 @@ def _run(tmp_path, source, startup_delay=0):
         [sys.executable, str(WATCHDOG), "--idle-limit", "2", "--",
          str(relay), str(test), "-n", "1", "-q",
          "--max-worker-restart=0"],
-        capture_output=True, text=True, env=env, timeout=30,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        env=env, timeout=30,
     )
     assert not list(temp.glob("coursia-xdist-*"))
     return result
@@ -90,7 +91,8 @@ def test_signal_cleans(tmp_path):
     proc = subprocess.Popen(
         [sys.executable, str(WATCHDOG), "--idle-limit", "20", "--", pytest,
          str(test), "-n", "1", "-q"], stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT, text=True, env=env,
+        stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
+        env=env,
     )
     deadline = time.monotonic() + 15
     while time.monotonic() < deadline:
@@ -123,10 +125,14 @@ def test_user_plugin_name_is_not_masked(tmp_path):
     env = dict(os.environ, TMPDIR=str(temp), PYTHONPATH=str(plugin_dir),
                PYTEST_PLUGINS="xdist_diagnostics", USER_PLUGIN_MARKER=str(marker))
     pytest = str(Path(sys.executable).with_name("pytest"))
+    # Ce test verifie le chargement du plugin utilisateur, pas le chien de garde.
+    # Sans le relais de `_run`, le demarrage du worker xdist reste muet ; sur un
+    # runner charge il a depasse 10 s (#27625). La limite de silence couvre donc
+    # largement le demarrage, et le timeout externe borne toujours un vrai blocage.
     result = subprocess.run(
-        [sys.executable, str(WATCHDOG), "--idle-limit", "10", "--", pytest,
+        [sys.executable, str(WATCHDOG), "--idle-limit", "60", "--", pytest,
          str(test), "-n", "1", "-q"], capture_output=True, text=True,
-        env=env, timeout=30,
+        encoding="utf-8", errors="replace", env=env, timeout=120,
     )
     assert result.returncode == 0, result.stdout + result.stderr
     assert marker.read_text() == "loaded"
