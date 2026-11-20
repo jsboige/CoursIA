@@ -19,18 +19,15 @@ ancienne.
 Les priorites LEGERES du mandat du 2026-11-18 (age, consolidation) sont dans
 `coordination/tapis_avantages.py` ; leur somme reste sous une visite, donc
 l'equite du 16/11 tient : une issue a 0 visite passe devant une issue a
-1 visite. La division par 3 des consolidations anciennes, plus forte qu'une
-priorite legere, disparait.
+1 visite.
 
-Une exception reste : les marathons de parite C# (#26070, titres « Marathon »)
-et Rust (#26510) sortent de l'equilibrage et passent apres le pool equilibre :
-c'est le harnais sk-agent qui les servira.
+Une exception reste : les marathons de parite C# (#26070) et Rust (#26510) sortent
+de l'equilibrage : c'est le harnais sk-agent qui les servira.
 
-Une visite est une SEANCE : les marqueurs VISITE (CLAIMED, CLAIMED-AMEND,
-DELIVERED) d'une meme lane a moins de `SEANCE_H` heures d'intervalle n'en font
-qu'une. Les commits de `origin/main` qui citent l'issue forment des seances
-sans lane ; le compte retenu est le plus grand des deux. Fonctions pures, sans
-reseau. Doc : docs/reference/tapis-rapide.md.
+Une visite est une SEANCE (`coordination.tapis_seance`) ; **une livraison en
+ouvre une neuve** (19/11) : sans cela, sept livraisons d'une meme journee sur
+un umbrella n'y comptent qu'une visite, et l'issue reste en tete (#27338).
+Doc : docs/reference/tapis-rapide.md.
 """
 from __future__ import annotations
 
@@ -39,39 +36,42 @@ import math
 import re
 from datetime import datetime, timedelta
 
-from coordination import tapis_avantages
-from coordination.tapis_marqueurs import VISITE, Evt, _dt, _iso
+from coordination import tapis_avantages, tapis_seance
+from coordination.tapis_marqueurs import FERME, VISITE, Evt, _dt, _iso
 
 FENETRE_J = 7  # le tour : un tour de flotte complet mesure en 4 a 8 jours (16/11)
-SEANCE_H = 24
+SEANCE_H = tapis_seance.SEANCE_H
 MARATHONS = frozenset({26070, 26510})  # racines : parite C# (Marathon II), parite Rust
 TETE = 24  # tete de niveau decalee par lane, pour que deux lanes divergent
 _MARATHON_RE = re.compile(r"^\s*\[?\s*marathon\b", re.IGNORECASE)
 
 
-def _seances(instants: list[datetime], depuis: datetime | None = None) -> int:
-    """Le nombre de seances : un ecart de plus de SEANCE_H en ouvre une neuve."""
-    n, avant = 0, None
-    for t in sorted(t for t in instants if depuis is None or t >= depuis):
-        if avant is None or t - avant > timedelta(hours=SEANCE_H):
-            n += 1
-        avant = t
-    return n
-
-
 def compter(evts: list[Evt], citations: list[dict],
             maintenant: datetime) -> tuple[str | None, int, int]:
-    """La derniere visite (ISO), les visites au total, celles du tour."""
-    par_lane: dict[str, list[datetime]] = {}
+    """La derniere visite (ISO), les visites au total, celles du tour.
+
+    Les citations des PRs **ouvertes** (marquees `ouvert`) comptent UNE
+    visite chacune : elles ne sont pas encore mergees, elles ne se fondent
+    donc pas dans les seances de commits.
+    """
+    par_lane: dict[str, list[Evt]] = {}
+    visites: list[datetime] = []
     for ev in evts:
         if ev.marque in VISITE:
-            par_lane.setdefault(ev.lane or "?", []).append(ev.quand)
-    commits = [d for c in citations if (d := _dt(c.get("date")))]
-    tous = [t for ts in par_lane.values() for t in ts] + commits
+            visites.append(ev.quand)
+            par_lane.setdefault(ev.lane or "?", []).append(ev)
+        elif ev.marque in FERME:
+            par_lane.setdefault(ev.lane or "?", []).append(ev)
+    cites = list(citations)
+    en_cours = [d for c in cites if c.get("ouvert") and (d := _dt(c.get("date")))]
+    commits = [d for c in cites if not c.get("ouvert") and (d := _dt(c.get("date")))]
+    tous = visites + commits + en_cours
 
     def compte(depuis: datetime | None) -> int:
-        marques = sum(_seances(ts, depuis) for ts in par_lane.values())
-        return max(marques, _seances(commits, depuis))
+        marques = sum(tapis_seance.par_lane(evs, depuis) for evs in par_lane.values())
+        fen = [d for d in en_cours if depuis is None or d >= depuis]
+        return (max(marques, tapis_seance.par_instants(commits, depuis))
+                + len(fen))
 
     return ((_iso(max(tous)) if tous else None), compte(None),
             compte(maintenant - timedelta(days=FENETRE_J)))

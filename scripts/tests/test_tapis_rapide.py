@@ -618,7 +618,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("gh_selection.py", 140),
                                               ("tapis_avantages.py", 80),
                                               ("tapis_universel.py", 160),
-                                              ("tapis_reverif.py", 120)])
+                                              ("tapis_reverif.py", 120),
+                                              ("tapis_citations.py", 40),
+                                              ("belt_equite.py", 110)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

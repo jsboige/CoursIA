@@ -314,3 +314,88 @@ def test_record_stamps_and_keeps_order_and_arc():
 def test_record_refuses_an_issue_given_to_two_lanes():
     with pytest.raises(ValueError):
         bq.record({"lanes": {A: {"queue": [5]}, B: {"queue": [5]}}}, None, NOW)
+
+
+# --- L'EQUITE DU DISPATCH (mission du coordinateur du 19/11, cas #27338) -----
+#
+# La REPARTITION est un jugement (le coordinateur compose ses files), mais
+# l'organe MESURE : il nomme les grains deja servis qu'une file place devant
+# des issues jamais servies. Deux exceptions, nommees : le mandat explicite de
+# la lane, et la correction en cours (le grain deja dans sa file).
+
+def _belt(*specs):
+    """Le tirage rapide : numero, visites, derniere visite (None = jamais)."""
+    return {"grains": [{"numero": n, "titre": f"grain {n}", "visites": v,
+                        "visites_total": v, "derniere_visite": d}
+                       for n, v, d in specs]}
+
+
+def test_le_dispatch_signale_une_racine_deja_servie():
+    belt = _belt((27338, 8, "2026-11-19T12:00:00Z"),
+                 *((n, 0, None) for n in range(1, 13)))
+    assign = {"lanes": {A: {"arc": "x", "queue": [27338]}}}
+    eq = bq.equite_dispatch(assign, belt)
+    assert eq["mesure"] == "visites"
+    assert eq["jamais_servies"] == 12
+    assert [f["number"] for f in eq["signales"]] == [27338]
+    assert eq["signales"][0]["exempt"] is False
+
+
+def test_un_mandat_explicite_exempte_la_measure():
+    belt = _belt((27338, 8, "2026-11-19T12:00:00Z"),
+                 *((n, 0, None) for n in range(1, 13)))
+    assign = {"lanes": {A: {"arc": "x", "queue": [27338], "mandate": "campagne NPS"}}}
+    eq = bq.equite_dispatch(assign, belt)
+    assert eq["signales"][0]["exempt"] is True
+    assert eq["signales"][0]["raison"] == "campagne NPS"
+
+
+def test_une_correction_en_cours_n_est_pas_penalisee():
+    """Le grain deja dans la file de la lane : elle finit son travail."""
+    belt = _belt((27338, 8, "2026-11-19T12:00:00Z"),
+                 *((n, 0, None) for n in range(1, 13)))
+    previous = {"lanes": {A: {"queue": [{"number": 27338}]}}}
+    assign = {"lanes": {A: {"arc": "x", "queue": [27338]}}}
+    eq = bq.equite_dispatch(assign, belt, previous)
+    assert eq["signales"][0]["exempt"] is True
+    assert "correction en cours" in eq["signales"][0]["raison"]
+
+
+def test_sans_le_compte_de_visites_la_mesure_est_non_mesuree():
+    """Le tapis lourd n'expose pas les visites : la mesure est NON MESUREE,
+    pas une absence de violation."""
+    belt = {"picks": [{"number": 1, "title": "t"}]}
+    eq = bq.equite_dispatch({"lanes": {A: {"queue": [1]}}}, belt)
+    assert eq["mesure"] == "non mesuree"
+    assert eq["signales"] == []
+
+
+def test_record_rend_la_mesure_d_equite():
+    belt = _belt((27338, 8, "2026-11-19T12:00:00Z"),
+                 *((n, 0, None) for n in range(1, 13)))
+    assign = {"lanes": {A: {"arc": "x", "queue": [27338]}}}
+    out = bq.record(assign, belt, NOW)
+    assert out["equite"]["signales"][0]["number"] == 27338
+
+
+def test_le_board_nomme_les_issues_jamais_servies():
+    """Le tableau de decision montre l'equite du pool : les jamais servies
+    d'abord. C'est ce que le coordinateur compose en lisant les files."""
+    belt = _belt((27338, 8, "2026-11-19T12:00:00Z"),
+                 *((n, 0, None) for n in range(1, 13)))
+    res = bq.board(belt, [A], None, NOW)
+    eq = res["equite_pool"]
+    assert eq["mesure"] == "visites"
+    assert len(eq["jamais"]) == 12
+    assert eq["servies"][0]["number"] == 27338
+    text = bq.render_board(res)
+    assert "12 issue(s) jamais servie(s)" in text
+    assert "#27338 (8x)" in text
+
+
+def test_le_board_dit_que_l_equite_n_est_pas_mesuree():
+    """Le tapis lourd n'expose pas les visites : le tableau le DIT, il ne
+    laisse pas croire qu'aucune issue n'a jamais ete servie."""
+    res = bq.board({"picks": [_pick(1)]}, [A], None, NOW)
+    assert res["equite_pool"]["mesure"] == "non mesuree"
+    assert "NON MESUREE" in bq.render_board(res)
