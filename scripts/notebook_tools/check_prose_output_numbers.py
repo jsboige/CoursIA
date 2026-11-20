@@ -32,7 +32,8 @@ Perimetre (v1, calibre sur ICT-35 + ICT-38 pre/post #27206) :
 - Correspondance numerique (pas sous-chaine) : Decimal en egalite exacte, OU
   arrondi/troncature d'un nombre de sortie PLUS precis a la precision de la
   citation (« 0.0859 » correspond a une sortie « 0.0859375 » ; « 1,000 » a
-  « 1.0000 »). Les sorties lues : stream + text/plain de toutes les cellules code.
+  « 1.0000 »). Les sorties lues : stream + text/plain + text/markdown de toutes
+  les cellules code.
 
 Modes :
 - positionnel ``base``      : ratchet PR -- carnets .ipynb changes sous
@@ -157,7 +158,15 @@ def extract_numbers(text: str) -> list[NumToken]:
 
 
 def output_numbers(nb: dict) -> list[NumToken]:
-    """Nombres de toutes les sorties (stream + text/plain) des cellules code."""
+    """Nombres de toutes les sorties (stream + text/plain + text/markdown) des cellules code.
+
+    ``text/markdown`` est lu depuis #27231 fournée 5 : les carnets de la série
+    App-* (Search) rendent leurs mesures via ``display(Markdown(...))``, dont le
+    ``text/plain`` est l'objet-repr ``<IPython.core.display.Markdown object>``
+    (aucun nombre). Sans ce mime, 25 citations ancrées du stock étaient
+    rapportées findings (App-18 : 25/29). Précédents multipart : check_equivalence,
+    regression_scan, scan_enrich_quality lisent déjà ce mime.
+    """
     pool: list[NumToken] = []
     for cell in nb.get("cells", []):
         if cell.get("cell_type") != "code":
@@ -170,11 +179,12 @@ def output_numbers(nb: dict) -> list[NumToken]:
             elif isinstance(text, list):
                 chunks.extend(t for t in text if isinstance(t, str))
             data = out.get("data") or {}
-            plain = data.get("text/plain")
-            if isinstance(plain, str):
-                chunks.append(plain)
-            elif isinstance(plain, list):
-                chunks.extend(t for t in plain if isinstance(t, str))
+            for mime in ("text/plain", "text/markdown"):
+                payload = data.get(mime)
+                if isinstance(payload, str):
+                    chunks.append(payload)
+                elif isinstance(payload, list):
+                    chunks.extend(t for t in payload if isinstance(t, str))
             for chunk in chunks:
                 pool.extend(extract_numbers(chunk))
     return pool
@@ -187,7 +197,7 @@ def _quantized(val: Decimal, prec: int, rounding: str) -> Decimal:
     return val.quantize(Decimal(1).scaleb(-prec), rounding=rounding)
 
 
-def citation_matches(cit: NumToken, pool: list[NumToken]) -> bool:
+def citation_matches(cit: NumToken, pool: list[NumToken], *, magnitude: bool = False) -> bool:
     """Egalite exacte, ou arrondi/troncature d'une sortie PLUS PRECISE.
 
     « 0.0859 » correspond a une sortie 0.0859375 (print formate), « 1,000 » a
@@ -196,17 +206,25 @@ def citation_matches(cit: NumToken, pool: list[NumToken]) -> bool:
     correspondance par extension de prefixe MASQUE le defaut -- la citation
     perimee 0.1953 matchait par prefixe une sortie 0.195 d'une AUTRE quantite.
     Ce residu reste un bruit du sweep report-only, jamais un masquage.
+
+    ``magnitude=True`` (prose « ±0.002 ») : la citation est une AMPLITUDE, la
+    sortie porte souvent la valeur SIGNEE (« +-0.002 pres », extrait -0.002) --
+    la correspondance se joue alors sur |x| (2.11-Regularisation, 4 faux
+    positifs du sweep #27233 : la sortie committee dit elle-meme « suit LASSO
+    a +-0.002 pres »). Egalite de magnitude EXACTE, jamais floue.
     """
     for out in pool:
-        if out.value == cit.value:
-            return True
-        if out.decimals > cit.decimals:
-            for rounding in (ROUND_HALF_EVEN, ROUND_DOWN):
-                try:
-                    if _quantized(out.value, cit.decimals, rounding) == cit.value:
-                        return True
-                except InvalidOperation:
-                    continue
+        candidates = (out.value, -out.value) if magnitude else (out.value,)
+        for v in candidates:
+            if v == cit.value:
+                return True
+            if out.decimals > cit.decimals:
+                for rounding in (ROUND_HALF_EVEN, ROUND_DOWN):
+                    try:
+                        if _quantized(v, cit.decimals, rounding) == cit.value:
+                            return True
+                    except InvalidOperation:
+                        continue
     return False
 
 
@@ -334,7 +352,12 @@ def analyze_notebook(nb: dict, rel_path: str) -> NotebookResult:
                 if any(s <= m.start() < e for s, e in quoted_spans):
                     continue
                 result.citations_checked += 1
-                if not citation_matches(NumToken(val, decimals, raw), pool):
+                # « ±0.002 pres » : amplitude -- la sortie porte la valeur
+                # signee, la correspondance se joue sur |x| (cf docstring).
+                is_pm = line_norm[: m.start()].rstrip().endswith("±")
+                if not citation_matches(
+                    NumToken(val, decimals, raw), pool, magnitude=is_pm
+                ):
                     result.findings.append(
                         Finding(
                             file=rel_path,
@@ -601,11 +624,30 @@ def self_test() -> int:
     if citations(r) != ["0.0742"]:
         failures.append(f"spans normalises : {citations(r)}")
 
+    # 13. Semantique ± : « ±0.002 pres » correspond a la sortie signee
+    # « +-0.002 pres » (2.11-Regularisation, sweep #27233).
+    r = analyze_notebook(
+        nb(["### Lecture : ElasticNet suit LASSO a ±0.002 pres"],
+           ["elasticnet suit lasso a +-0.002 pres"]),
+        "t.ipynb",
+    )
+    if citations(r):
+        failures.append(f"semantique ± : {citations(r)}")
+
+    # 14. Controle : magnitude FAUSSE reste un finding (« ±0.003 » vs -0.002).
+    r = analyze_notebook(
+        nb(["### Lecture : ElasticNet suit LASSO a ±0.003 pres"],
+           ["elasticnet suit lasso a +-0.002 pres"]),
+        "t.ipynb",
+    )
+    if citations(r) != ["0.003"]:
+        failures.append(f"controle ± fausse magnitude : {citations(r)}")
+
     if failures:
         for f in failures:
             print(f"SELFTEST FAIL: {f}")
         return 1
-    print("selftest: OK (12 fixtures)")
+    print("selftest: OK (14 fixtures)")
     return 0
 
 
