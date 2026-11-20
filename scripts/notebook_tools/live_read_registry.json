@@ -39,6 +39,12 @@
       "note": "Lecture directe du module _SmokeTest.lean"
     },
     {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
+      "cell_id": "fa100002",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Panel.lean",
+      "note": "Lecture directe du module Panel.lean (terrains du panel prover, EPIC #1453) ; declaree par la reponse Hermes (#27484) -- la cellule 18 lit le fichier en direct"
+    },
+    {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",
       "cell_id": "life-lean-stats",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life.lean",
