@@ -59,7 +59,7 @@ Les densités se superposent à gauche. Ce graphique ne suffit pas pour écarter
 
 ### Autour de 12 : partager les observations sans confondre les groupes
 
-Écrire `θ = μ + σ z` avec `z` gaussien standard permet de faire varier l'écart d'un groupe sur une échelle indépendante de `σ`. Cette paramétrisation non centrée aide lorsque les données renseignent peu chaque groupe. [L'instrumentation OpenTelemetry](PyMC-Observabilite-OTel.ipynb) reprend le modèle hiérarchique pour séparer compilation et échantillonnage ; la durée d'une exécution ne mesure pas la qualité des tirages.
+Écrire `θ = μ + σ z` avec `z` gaussien standard permet de faire varier l'écart d'un groupe sur une échelle indépendante de `σ`. Cette paramétrisation non centrée évite le « funnel de Neal », l'entonnoir que révèlent les divergences du modèle centré quand `σ` devient petit ; elle aide lorsque les données renseignent peu chaque groupe. [L'instrumentation OpenTelemetry](PyMC-Observabilite-OTel.ipynb) reprend le modèle hiérarchique pour séparer compilation et échantillonnage ; la durée d'une exécution ne mesure pas la qualité des tirages.
 
 ### Lire les figures — licence avancée
 
@@ -92,7 +92,7 @@ python -m pip install -r MyIA.AI.Notebooks/Probas/requirements.txt
 python -c "import pymc, arviz; print(pymc.__version__, arviz.__version__)"
 ```
 
-Choisissez le noyau Python de cet environnement. Les carnets utilisent PyMC 6 et ArviZ 1. Si l'import échoue seulement dans Jupyter, comparez `sys.executable` dans le carnet et dans le terminal. [Documentation PyMC](https://www.pymc.io/projects/docs/en/stable/) · [Diagnostics ArviZ](https://python.arviz.org/).
+Choisissez le noyau Python de cet environnement. Les carnets utilisent PyMC 6 et ArviZ 1. Si l'import échoue seulement dans Jupyter, comparez `sys.executable` dans le carnet et dans le terminal. [Documentation PyMC](https://www.pymc.io/projects/docs/en/stable/) · [Diagnostics ArviZ](https://python.arviz.org/). Pour un cours suivi, [Statistical Rethinking](https://xcelab.net/rm/statistical-rethinking/) (McElreath) est le manuel de référence de l'inférence bayésienne appliquée ; [Bayesian Methods for Hackers](https://github.com/CamDavidsonPilon/Probabilistic-Programming-and-Bayesian-Methods-for-Hackers) aborde les mêmes modèles par le code.
 
 ## Pour aller plus loin — recherche
 
@@ -113,7 +113,7 @@ Gibbs est aussi disponible côté C# ; ADVI, côté Python, est une approximatio
 
 - **Module introuvable** : installer les dépendances avec le Python du noyau. Dans un environnement activé, `python -m ipykernel install --user --name pymc-env` enregistre un noyau sélectionnable dans Jupyter.
 - **Évaluation initiale impossible** : vérifier les dimensions et le support de la vraisemblance (par exemple, des durées négatives ne conviennent pas à une loi Gamma). Examiner aussi les valeurs initiales des paramètres et les prédictions a priori.
-- **Divergences** : consulter les traces et `az.summary`, puis comparer la géométrie centrée et non centrée. Ajuster `target_accept` peut affiner le pas ; ne pas remplacer ce diagnostic par une augmentation aveugle du nombre de tirages.
+- **Divergences** : consulter les traces et `az.summary`, puis comparer la géométrie centrée et non centrée. Les carnets visent `r_hat < 1.01` et `ess_bulk > 400` (02b, 15, 18) ; `r_hat > 1.05` signale un échantillonnage non convergé (10). Relever `target_accept` de sa valeur par défaut, 0,8, à 0,95 réduit le pas et peut faire disparaître des divergences ; ne pas remplacer ce diagnostic par une augmentation aveugle du nombre de tirages.
 - **Première séance Python** : pièce, pelouse puis classification (01, 04, 09). Pour la comparaison entre langages, garder le même numéro. Pour la décision, suivre plutôt [la piste Python](../DecisionTheory/DecPyMC/README.md) ; la souscription et la ruine continuent en [actuariat](../DecisionTheory/Actuariat/README.md).
 
 Les [exemples PyMC](https://www.pymc.io/projects/examples/en/latest/) complètent la documentation de l'API. Pour replacer les applications, comparer les [modèles de prédiction](../../ML/README.md) et les [stratégies de marché](../../QuantConnect/README.md). La [provenance des illustrations](assets/readme/MANIFEST.md) permet de retrouver les figures sans confondre l'image conservée avec une nouvelle exécution.

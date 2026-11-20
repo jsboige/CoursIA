@@ -25,7 +25,7 @@ Vous pouvez [choisir sa vitesse de lecture](https://github.com/jsboige/CoursIA#c
 
 ## Quel stack choisir ? — découverte
 
-Avec [Infer.NET](Infer/README.md), vous déclarez des variables en C# ; le moteur propage des messages entre facteurs. Avec [PyMC](PyMC/README.md), vous écrivez une loi a priori et une vraisemblance en Python, puis examinez des tirages de la loi postérieure. Il ne s'agit pas d'opposer « exact » à « approché » : EP et VMP sont en général des approximations déterministes ; NUTS est un échantillonneur pour paramètres continus. Infer.NET propose aussi Gibbs et PyMC propose l'inférence variationnelle. Pour comparer les moteurs, gardez le modèle fixe : comparez une prédiction ou un intervalle, pas les seules syntaxes.
+Avec [Infer.NET](Infer/README.md), vous déclarez des variables en C# ; le moteur compile le modèle en code C#, puis propage des messages entre facteurs : c'est le choix naturel pour une inférence embarquée ou en temps réel. Avec [PyMC](PyMC/README.md), vous écrivez une loi a priori et une vraisemblance en Python, puis examinez des tirages de la loi postérieure. Il ne s'agit pas d'opposer « exact » à « approché » : EP et VMP sont en général des approximations déterministes ; NUTS est un échantillonneur pour paramètres continus. Infer.NET propose aussi Gibbs et PyMC propose l'inférence variationnelle. Pour comparer les moteurs, gardez le modèle fixe : comparez une prédiction ou un intervalle, pas les seules syntaxes.
 
 ## Qu’est-ce que la programmation probabiliste ? — découverte
 
@@ -133,7 +133,7 @@ Sur le mélange du cycliste, VMP attribue à la première composante une moyenne
 
 ![Utilité de la richesse : racine carrée, logarithme et droite neutre au risque](assets/readme/probas-utility-functions.png)
 
-Dans [Utilité et argent](DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb), un même gain de richesse apporte de moins en moins d'utilité sur les courbes racine et logarithme ; sur la droite, il apporte toujours le même supplément. C'est cette courbure, non la hauteur relative des courbes, qui explique la préférence pour un gain certain plutôt qu'une loterie de même espérance.
+Dans [Utilité et argent](DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb), un même gain de richesse apporte de moins en moins d'utilité sur les courbes racine et logarithme ; sur la droite, il apporte toujours le même supplément. C'est cette courbure, non la hauteur relative des courbes, qui explique la préférence pour un gain certain plutôt qu'une loterie de même espérance. Les coefficients d'Arrow-Pratt (Pratt, 1964 ; Arrow, 1965), calculés dans le même carnet, la mesurent.
 
 ### Projet de synthèse : inférer le seuil de percolation — master et recherche
 
@@ -167,7 +167,7 @@ Pour Python, utiliser un environnement 3.12 ou plus récent et, depuis la racine
 | C# absent de Jupyter | Relancer l’enregistrement du noyau depuis le terminal où le SDK est disponible, puis redémarrer Jupyter et vérifier `jupyter kernelspec list`. |
 | Le modèle C# se déclare mais ne compile pas | Reprendre dans Infer-01 le réglage `CompilerChoice.Roslyn` du moteur : la compilation dynamique du modèle est une étape distincte de l’exécution d’une cellule C#. |
 | Pas de dessin du graphe | Vérifier `dot -V` dans l’environnement de Jupyter. Installer Graphviz et rendre `dot` accessible sur le `PATH` ; conserver le `.gv` pour distinguer une panne de rendu d’une erreur de modèle. |
-| PyMC ne s’installe pas sous Windows | Vérifier d’abord la version du Python actif. Si l’erreur porte sur la compilation native, utiliser un environnement conda avec ses dépendances binaires ou installer la chaîne C++ requise. |
+| PyMC ne s’installe pas sous Windows | Vérifier d’abord la version du Python actif. Si l’erreur porte sur la compilation native, créer un environnement conda et lancer `conda install -c conda-forge pymc`, qui apporte les dépendances binaires. Sinon, installer la chaîne C++ : les « Build Tools » de Visual Studio suffisent, sans l’environnement complet. |
 | NUTS est lent ou divergent | Examiner support, priors, traces, ESS et divergences ; comparer une paramétrisation non centrée avant de modifier `target_accept`. Voir [le diagnostic PyMC](PyMC/PyMC-02b-Debugging-Python.ipynb). |
 | Un import ou une commande Lean échoue dans un dossier mixte | Choisir le noyau du **carnet**, pas celui du dossier : `.net-csharp` pour Infer, `python3` pour PyMC, Python ou C# pour Fondations, noyau Lean pour les compagnons formels. Causalité précise ses exceptions au [guide local](Causalite/README.md). |
 
@@ -189,12 +189,12 @@ Une simulation vérifie un cas ; une preuve établit une proposition pour toutes
 | Question voisine | Où poursuivre | Distinction à conserver |
 |---|---|---|
 | Quand l’erreur empirique renseigne-t-elle sur la généralisation ? | [Théorie PAC](../ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) et [compagnon Lean](../ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | Une borne uniforme n’est pas la performance mesurée sur un échantillon. |
-| Quelle fraction risquer avec une utilité logarithmique ? | [Compagnon de Kelly](../QuantConnect/kelly_lean/Kelly_companion-Python.ipynb) | Comparer croissance logarithmique et gain monétaire espéré. |
-| Peut-on agréger des préférences individuelles ? | [Choix social](../GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) | Les axiomes d’un choix collectif ne sont pas ceux de la représentation d’une loterie individuelle. |
+| Quelle fraction risquer avec une utilité logarithmique ? | [Compagnon de Kelly](../QuantConnect/kelly_lean/Kelly_companion-Python.ipynb) | Pour un pari de cote `b` gagné avec probabilité `p`, la fraction `f* = (b·p − q)/b` maximise la croissance logarithmique : aucune autre mise admissible ne croît plus vite. Comparer cette croissance au gain monétaire espéré. |
+| Peut-on agréger des préférences individuelles ? | [Choix social](../GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) | Arrow : unanimité (Pareto faible) et indépendance des options non pertinentes (IIA) ne laissent que la dictature ; le carnet teste ces axiomes sur les règles de vote usuelles. Les axiomes d’un choix collectif ne sont pas ceux de la représentation d’une loterie individuelle. |
 | Quand un algorithme garantit-il son résultat ? | [Recherche heuristique](../Search/search_lean/README.md) et [sémantiques d’argumentation](../SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb) | Optimalité d’un chemin sous hypothèses sur l’heuristique et acceptabilité dans un cadre formel sont d’autres formes de garantie, pas des conséquences de l’inférence bayésienne. |
 
 ### Lectures et activités — tous niveaux
 
-Pour les graphes et leurs algorithmes, voir *Probabilistic Graphical Models* ; pour les modèles gaussiens et les mélanges, *Pattern Recognition and Machine Learning*. [Model-Based Machine Learning](https://mbmlbook.com/) et la [table d’attribution](../../docs/reference/mbml-source-attribution.md) relient les scénarios aux modèles. Pour pratiquer sans code, essayer [la météo markovienne](../GenAI/activites/Activites-Vulgarisation.md#6-probabilités--chaîne-de-markov-de-la-météo) puis [les préférences rationnelles](../GenAI/activites/Activites-Vulgarisation.md#7-axiomes-de-préférences-rationnelles-et-irrationalité-humaine). Pour revenir à la prédiction appliquée, poursuivre par le [TP de prévision des ventes](../ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb).
+Pour les graphes et leurs algorithmes, voir *Probabilistic Graphical Models* ; pour les modèles gaussiens et les mélanges, *Pattern Recognition and Machine Learning* ; pour le moteur C#, Minka et al. (2018), *Infer.NET 2.4*, cité dès le premier carnet Python. [Model-Based Machine Learning](https://mbmlbook.com/) et la [table d’attribution](../../docs/reference/mbml-source-attribution.md) relient les scénarios aux modèles. Pour pratiquer sans code, essayer [la météo markovienne](../GenAI/activites/Activites-Vulgarisation.md#6-probabilités--chaîne-de-markov-de-la-météo) puis [les préférences rationnelles](../GenAI/activites/Activites-Vulgarisation.md#7-axiomes-de-préférences-rationnelles-et-irrationalité-humaine). Pour revenir à la prédiction appliquée, poursuivre par le [TP de prévision des ventes](../ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb).
 
 [Licence du dépôt](../../LICENSE)
