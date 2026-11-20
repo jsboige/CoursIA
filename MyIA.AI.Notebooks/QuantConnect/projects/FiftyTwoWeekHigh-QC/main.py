@@ -49,15 +49,19 @@ class FiftyTwoWeekHighAlgorithm(QCAlgorithm):
         self._rebal_month = month
         scores = []
         for sym in UNIVERSE:
-            # 365 daily closes as a DataFrame. The explicit Resolution.Daily
-            # is load-bearing: without it the int argument is read as *seconds*
-            # (a handful of Minute bars) and the result is a DataFrame whose
-            # `len()` is the row count, so `len(df) < 120` is always true and
-            # the strategy silently never trades.
-            hist = self.history(sym, 365, Resolution.Daily)
-            if len(hist) < 120:
+            # 365 daily closes, read straight off the TradeBar series. Two
+            # Lean-image gotchas are both load-bearing: (1) the explicit
+            # Resolution.Daily, else the int 365 is read as *seconds* (a
+            # handful of Minute bars) and the warmup guard below silently
+            # disables the strategy; (2) a SINGLE Symbol plus a Resolution
+            # returns an IEnumerable[TradeBar] here, and the list-DataFrame
+            # overload indexes its columns through a PandasMapper that does
+            # not accept a bare symbol key (df["AAPL"] -> KeyError). So we
+            # iterate the bars and take .Close directly -- no DataFrame
+            # column indexing at all.
+            closes = [tb.Close for tb in self.history(sym, 365, Resolution.Daily)]
+            if len(closes) < 120:
                 continue
-            closes = list(hist["close"])
             high52 = max(closes)
             if high52 <= 0:
                 continue

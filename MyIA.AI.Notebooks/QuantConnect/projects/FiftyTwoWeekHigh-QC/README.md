@@ -22,22 +22,34 @@ Projet QC Cloud : un `main.py` sans dépendance hors de Lean. Les constantes fix
 
 ## Verdict contre SPY détenu (#19821, brique 3)
 
-La brique 3 de la ligue mesure une **nouvelle** stratégie contre les références détenues de la ligue (SPY détenu, et le 60/40) avec un test de différence (Diebold-Mariano, correction de Holm). Cette mesure est la **première passe** du candidat : un **seul** backtest, de 2015-01-01 à 2026-11-18, qui compare la stratégie à **SPY détenu** (benchmark du backtest). Le 60/40 et le test de différence ne sont pas encore au programme : ils feront l'objet d'un backtest de référence complémentaire, et le verdict de cette passe se lit donc sur la comparaison à SPY seul.
+La brique 3 de la ligue mesure une **nouvelle** stratégie contre les références détenues de la ligue (SPY détenu, et le 60/40) avec un test de différence (Diebold-Mariano, correction de Holm). Cette passe est la **première** du candidat : un backtest de 2015-01-01 à 2026-11-18 comparé à **SPY détenu** (benchmark du backtest). Le 60/40 et le test de différence (DM/Holm) font l'objet d'un backtest de référence complémentaire.
 
 Propriétés du code :
 
 - le benchmark `SPY` est porté par `set_benchmark`, la référence de cette passe ;
 - la décision se prend une fois par mois, au changement de mois ;
-- la fenêtre couvre un cycle complet (bull 2015-2018, crash 2020, bear 2022) — elle n'est pas découpée en in/out-of-sample, ce que cette passe ne permet pas de trancher.
+- **règle déterministe** : univers fixe (30 large-caps), classement par proximité au plus-haut 52 semaines, top 10 à poids égal, rééquilibrage au changement de mois — aucun aléa (pas de Monte-Carlo, pas de graine) ; un re-run reproduit la trajectoire à l'identique ;
+- **coûts de transaction** : aucun modèle de courtage custom n'est posé, le modèle par défaut de Lean (commission par action + slippage) s'applique à chaque `liquidate()`/`set_holdings()` — les frais sont donc dans les chiffres (−$3 097 sur la fenêtre).
 
-Le backtest `5646b9f074efd97387fc8d4a76de5cf8` (QC Cloud, projet 39684781) rend :
+Le backtest `0f2141c98fd1982fe144ea792f016279` (QC Cloud, projet 39684781) rend, sur la fenêtre complète :
 
 | | Sharpe QC | CAGR | Pire baisse |
 |---|---|---|---|
-| stratégie | 0.791 | 18.613 % | 25.0 % |
+| stratégie | 0.628 | 14.884 % | 25.8 % |
 | SPY détenu (benchmark) | 0.515 | 13.014 % | 33.7 % |
 
-**Verdict de la passe** : **BEATS** — la stratégie domine SPY détenu sur les trois métriques de la passe (Sharpe 0.791 vs 0.515, CAGR 18.613 % vs 13.014 %, pire baisse 25.0 % vs 33.7 %). Le 60/40 et le test de différence (Diebold-Mariano / Holm) restent au backtest de référence complémentaire.
+**Fenêtre out-of-sample 2020-2026** — dérivée des courbes du même backtest (la règle étant sans mémoire de mois en mois, la sous-fenêtre est une mesure OOS fidèle) :
+
+| | CAGR | Pire baisse |
+|---|---|---|
+| stratégie | 14.73 % | 25.8 % |
+| SPY détenu | 14.42 % | 31.9 % |
+
+L'avantage se **resserre** en OOS : l'écart CAGR passe de +1.87 pp (fenêtre complète) à **+0.31 pp**, le drawdown reste nettement plus bas (25.8 % vs 31.9 %), et le Sharpe dérivé est en parité. La prime momentum sur SPY est **réelle sur le cycle complet** mais **mince dans le régime 2020-2026** — où SPY est lui-même très chargé des mêmes mega-caps que la stratégie retient.
+
+**Biais large-cap (limitation connue)** : l'univers est une liste fixe de 30 mega-caps **survivantes** (AAPL, MSFT, NVDA, …). Le « BEATS » est donc en partie un artefact de la sélection d'univers survivant — ce n'est pas la mesure d'un univers fondamental ex-ante. C'est la forme robuste du candidat tant que le service d'univers grossier/fin de l'image Lean n'est pas dispo.
+
+**Verdict de la passe** : **BEATS** sur la fenêtre complète 2015-2026 (Sharpe 0.628 vs 0.515, CAGR 14.884 % vs 13.014 %, pire baisse 25.8 % vs 33.7 %, frais de transaction inclus), **l'avantage étant documenté comme plus mince en OOS 2020-2026** et le biais d'univers large-cap survivant déclaré. Le 60/40 et le test de différence (DM/Holm) restent au backtest de référence complémentaire.
 
 ## Files
 
