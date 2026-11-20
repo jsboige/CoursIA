@@ -9,10 +9,14 @@ aucun n'a ete ajuste apres la mesure. Ce fichier ne fait que les appliquer.
   **Gate 21 (moitie rewardspy)**.
 - Pre-enregistrement : [`ict25a-2b-pre-enregistrement.md`](ict25a-2b-pre-enregistrement.md),
   scelle avant le premier appel CUDA de la campagne 2B.
-- Artefacts : `runs/ict25a_N_2B.json`, `runs/ict25a_Np_2B.json`.
+- Artefacts : `runs/ict25a_N_2B.json`, `runs/ict25a_Np_2B.json`, et ceux du
+  controle intra-famille 0,8B : `runs/ict25a_N_0.8B.json`,
+  `runs/ict25a_Np_0.8B.json`.
 - Audits : `runs/ict25a_{N,Np}_2B.rewardspy_audit.json` (fenetres `both`),
   `runs/ict25a_{N,Np}_2B.rewardspy_audit_head.json` (fenetre `head` seule, pour
-  une comparaison homogene graine par graine).
+  une comparaison homogene graine par graine), et leurs homologues 0,8B :
+  `runs/ict25a_{N,Np}_0.8B.rewardspy_audit.json` et
+  `runs/ict25a_{N,Np}_0.8B.rewardspy_audit_head.json`.
 
 ## 1. Ce qui a ete execute
 
@@ -29,6 +33,12 @@ aucun n'a ete ajuste apres la mesure. Ce fichier ne fait que les appliquer.
 Le bras `N` a produit son artefact le 2026-11-20 a 11:58 (heure locale), le bras
 `Np` a 16:26. Les deux artefacts sont complets : les quatre graines y sont
 presentes, chacune avec ses 240 enregistrements.
+
+Le **controle intra-famille 0,8B** (`Qwen/Qwen3.5-0.8B`, meme famille que la
+cible, scelle dans la section 2 du pre-enregistrement) a ete execute sur le meme
+protocole — memes graines 0/1/7/42, 120 pas, cap 80 — et sur le meme device
+(GPU 2 de `myia-ai-01`). Ses deux artefacts sont complets eux aussi ; sa lecture
+est en section 4.
 
 ## 2. Mesures par bras
 
@@ -125,7 +135,8 @@ persiste.
    differents pour `N` et `Np` (A4) ; elle n'est pas franchie.
 3. Le passage 1,5B -> 2B reste un **transfert d'echelle** (famille + taille), et
    non un effet de taille : c'est exactement ce que le controle intra-famille
-   0,8B (`Qwen/Qwen3.5-0.8B`, meme famille) est cense separer.
+   0,8B (`Qwen/Qwen3.5-0.8B`, meme famille) est cense separer. Il est execute et
+   livre par cette campagne ; sa mesure est lue au paragraphe suivant.
 
 **Ce qui n'est pas livre par cette campagne** : la moitie « panel persona » de
 la Gate 21. Elle suppose un rechargement **bf16** avec adapters fusionnes pour
@@ -134,11 +145,33 @@ le perimetre de la campagne. **Verdict : `RECOVERABLE-MACHINE`** — l'instrumen
 existe, il demande un environnement de lecture bf16 qui n'a pas ete monte sur ce
 device pour cette campagne ; il n'a pas ete declare `INTRINSIC`.
 
-**Ce qui reste ouvert :** le controle intra-famille 0,8B, scelle dans la section
-2 du pre-enregistrement et listed parmi les livrables de sa section 6, reste a
-executer. A4 interdit d'ouvrir une porte GPU **nouvelle** sur la base de cette
-campagne ; le controle 0,8B n'en est pas une : il est scelle d'avance et il
-repond a la question de famille que le sceau pose.
+**Le controle intra-famille 0,8B est livre.** Scelle dans la section 2 du
+pre-enregistrement et annonce parmi les livrables de sa section 6, il a ete
+execute sur le meme protocole que la campagne 2B ; ses artefacts sont
+`runs/ict25a_N_0.8B.json` et `runs/ict25a_Np_0.8B.json`, et la lecture est
+rendue dans le carnet (section 5.9) **depuis** ces artefacts, jamais recrite a
+la main.
+
+**Ce qu'il montre :** a 0,8B, la separation massive entre les bras n'est pas la.
+Les deux bras restent bas en exactitude mathematique (`N_0.8B` : [0,233 ; 0,308] ;
+`Np_0.8B` : [0,167 ; 0,208]) et le `hack` du bras `Np` **retombe** (0,042 a
+0,067), plus bas que celui du bras `N` (0,058 a 0,150) : a cette echelle, le bras
+informe ne prend pas le raccourci. Le contraste intra-famille mesure n'est donc
+pas celui de 2B.
+
+**Ce que cela dit de l'ecart 1,5B -> 2B :** la separation lue a 2B ne se
+reproduit pas au membre le plus petit de la meme famille. Le changement de famille
+du passage 1,5B -> 2B n'est donc pas, a lui seul, une explication suffisante ;
+l'echelle, a l'interieur de la famille, joue aussi. Cela ne referme pas la lecture
+du sceau — un 0,8B peut se trouver sous le seuil de l'instrument (le carnet dit
+« pas (encore) ») — ; ce qui est livre ici est la mesure, pas un arbitrage
+supplementaire sur l'ecart 1,5B -> 2B, qui reste celui d'un transfert d'echelle.
+
+**Ce qui reste ouvert :** plus rien de ce chef. La seule moitie non livree est le
+« panel persona » de la Gate 21 (verdict `RECOVERABLE-MACHINE` ci-dessus). A4
+n'ouvrait aucune porte GPU **nouvelle** ; le controle 0,8B n'en etait pas une :
+il etait scelle d'avance, il est execute, et il n'ouvre donc aucune porte de
+plus.
 
 ## 5. Reproduction
 
@@ -151,12 +184,28 @@ python MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25a_scaleup_grpo.py \
   --model Qwen/Qwen3.5-2B-Base --arm Np --seeds 0,1,7,42 --steps 120 --think-close \
   --out runs/ict25a_Np_2B.json
 
+# controle intra-famille (meme famille que la cible, plus petit)
+python MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25a_scaleup_grpo.py \
+  --model Qwen/Qwen3.5-0.8B --arm N  --seeds 0,1,7,42 --steps 120 --think-close \
+  --out runs/ict25a_N_0.8B.json
+python MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25a_scaleup_grpo.py \
+  --model Qwen/Qwen3.5-0.8B --arm Np --seeds 0,1,7,42 --steps 120 --think-close \
+  --out runs/ict25a_Np_0.8B.json
+
 # audits rewardspy (Gate 21)
 python MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25a_rewardspy_audit.py \
   --artifact runs/ict25a_N_2B.json --window both --json
 python MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25a_rewardspy_audit.py \
   --artifact runs/ict25a_Np_2B.json --window both --json
+python MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25a_rewardspy_audit.py \
+  --artifact runs/ict25a_N_0.8B.json --window both --json
+python MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25a_rewardspy_audit.py \
+  --artifact runs/ict25a_Np_0.8B.json --window both --json
 ```
+
+Les fenetres `head` (comparaison homogene graine par graine) s'obtiennent avec le
+meme script et `--window head` ; leurs sorties sont commitees sous
+`runs/ict25a_{N,Np}_{2B,0.8B}.rewardspy_audit_head.json`.
 
 L'audit exige le moteur `rewardspy` (paquet hors PyPI, installe depuis son
 depot git) ; il echoue proprement, avec la marche a suivre, quand il est
