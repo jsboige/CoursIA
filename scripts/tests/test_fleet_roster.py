@@ -2,7 +2,7 @@
 
 Le roster de reference vit dans ``scripts/secrets/agent_keyring.py``
 (``FLEET_ROSTER``, le meme que ROO_FLEET_ROSTER propage le 2026-10-20).
-``scripts/gh_identity.py`` (``HOST_ACCOUNTS``) et ``agent_keyring``
+``scripts/ci/gh_identity.py`` (``HOST_ACCOUNTS``) et ``agent_keyring``
 (``FLEET_MACHINES``) le partagent : une liste elargie sans l'autre derougit
 ici, au lieu de se decouvrir a la premiere observation refusee
 (``GhIdentityError`` sur un hostname absent, ou absence d'empreinte de
@@ -28,7 +28,9 @@ def _load(name: str, path: Path):
     return mod
 
 
-gh_identity = _load("gh_identity_roster_under_test", _SCRIPTS / "gh_identity.py")
+gh_identity = _load(
+    "gh_identity_roster_under_test", _SCRIPTS / "ci" / "gh_identity.py"
+)
 agent_keyring = _load(
     "agent_keyring_roster_under_test", _SCRIPTS / "secrets" / "agent_keyring.py"
 )

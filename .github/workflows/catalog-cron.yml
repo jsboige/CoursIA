@@ -171,7 +171,7 @@ jobs:
           # ai-01, review 5469480925): a per-PR guard cannot guarantee
           # freshness, it reads the PR head tree and never sees the merge, so
           # it was made advisory instead of mandatory.
-          python scripts/regen_quarto_render.py
+          python scripts/ci/regen_quarto_render.py
           # Translation golden set (#22216, review 2026-10-26): FR/EN pair
           # index -- same defect class as the catalogue, drift enters through
           # any merge that adds or removes a pair. The per-PR guard is

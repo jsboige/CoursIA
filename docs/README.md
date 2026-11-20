@@ -97,6 +97,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/sota-verdicts-detail.md](reference/sota-verdicts-detail.md) | SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication |
 | [reference/submodule-maintenance-detail.md](reference/submodule-maintenance-detail.md) | Sous-modules — détail : état vérifié, incidents et mesures datées |
 | [reference/variation-protocol-detail.md](reference/variation-protocol-detail.md) | Protocole de variation — détail, justifications mesurées, incidents fondateurs |
+| [reference/github-access-policy.md](reference/github-access-policy.md) | Politique d'accès GitHub — arbre des usages, quotas et révocation (#27124, proposition) |
 
 ### Outils & méthodologie (docs/reference/)
 
@@ -139,6 +140,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/3d-socle-reproductibilite.md](genai/3d-socle-reproductibilite.md) | Reproductibilité des socles 3D (NeRF, splats) — mesure sur deux postes : écart 0,07 dB et reproduction exacte |
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
 | [genai/tts-fishaudio-int4.md](genai/tts-fishaudio-int4.md) | La route int4 réelle de tts-fishaudio — quantification amont weight-only, quatre correctifs, mesures VRAM/qualité (#23415) |
+| [genai/audio-fish-decision.md](genai/audio-fish-decision.md) | Décision Fish Audio S2 Pro — evidence mesurée et recommandation hybride (critère 5, #19694) |
 | [genai/audio-embed-pattern.md](genai/audio-embed-pattern.md) | Pattern d'embed audio GenAI + leçons de réparation |
 | [genai/auth-flip-runbook.md](genai/auth-flip-runbook.md) | Runbook — flip d'authentification des services exposés (#16 P2) |
 | [genai/open-webui-orchestration.md](genai/open-webui-orchestration.md) | Orchestration et tâches planifiées avec Open WebUI v0.9.0 |
@@ -156,6 +158,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
 | [genai/parametres-par-modele.md](genai/parametres-par-modele.md) | Paramètres servis par modèle — table mesurée par appels réels et garde de cohérence (#20682) |
 | [genai/vibe-coding-workspace-map.md](genai/vibe-coding-workspace-map.md) | Vibe-Coding — Carte des workspaces GenAI |
+| [genai/pt16-sleep-dreaming-pre-enregistrement.md](genai/pt16-sleep-dreaming-pre-enregistrement.md) | Pré-enregistrement PT-16 Sleep/Dreaming — 4 stades (wake/consolidation/dreaming + témoins randomisés) sous SAE officiel Qwen3-1.7B×W32K, gates G1–G5 tri-état (#27376) |
 | [genai/3d-enveloppe-vram-8go.md](genai/3d-enveloppe-vram-8go.md) | Enveloppe GPU de la famille NeRF sur l'étage pionnier 8 Go — pic VRAM et débit mesurés |
 
 ## QuantConnect (docs/qc/)
@@ -172,6 +175,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [qc/qc-strategy-analyzer-memory.md](qc/qc-strategy-analyzer-memory.md) | Mémoire de l'agent `qc-strategy-analyzer` — relocalisée depuis `.claude/agent-memory/` (EPIC #9535, item 7) |
 | [qc/qc-strategy-improver-memory.md](qc/qc-strategy-improver-memory.md) | Mémoire de l'agent `qc-strategy-improver` (38 Ko, la plus fournie des trois) — relocalisée depuis `.claude/agent-memory/` (EPIC #9535, item 7) |
 | [qc/19863-fine-fundamental-vidage-diagnostic.md](qc/19863-fine-fundamental-vidage-diagnostic.md) | Diagnostic vidage silencieux `FineFundamentalUniverseSelectionModel` (projet QC Cloud 37468246, portage article 9031) — hypothèses réfutées, cause mesurée (chaînage ctor absent), fix livré, vérif plein bloc 6,1 ans (4 860 ordres, +12,6 % cum, MaxDD 30,2 %, verdict `INCONCLUSIVE` conteneur 24 mois) — livré c.1174 (#19867), issue #19863 prête à examiner (fermeture coord/adjoint) |
+| [qc/qc-ligue-substrats.md](qc/qc-ligue-substrats.md) | Recensement durable des substrats de recherche de la ligue QC (`research/` + `ML-Training-Pipeline/`) — inventaire carnet/origine, statut de conservation, principe de séparation substrat / doctrine (tranche D4 de #26318) |
 
 ## Lean (docs/lean/)
 
@@ -265,12 +269,14 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/strange-loop-scalefree-pre-enregistrement.md](ict/strange-loop-scalefree-pre-enregistrement.md) | Case 8c — métrique de ré-adaptation sans échelle |
 | [ict/bach-self-model-pre-enregistrement.md](ict/bach-self-model-pre-enregistrement.md) | Case 8d — self-model causal vs cache descriptif (H_b), ré-attribution option (c) Bach 2009 ; dette IIT-05 #12215 DOCUMENTÉE et OUVERTE (livre non archivé en GDrive) |
 | [ict/inoculation-rl-experimental-conditions.md](ict/inoculation-rl-experimental-conditions.md) | Distillation des conditions expérimentales de l'*Inoculation Prompting* (Anthropic, arXiv 2511.18397) confrontée au protocole ICT-25 — source canonique citée et vérifiée en HTML |
+| [ict/ict25-panel-persona-pre-enregistrement.md](ict/ict25-panel-persona-pre-enregistrement.md) | Panel persona ICT-25 — issues disqualifiantes D1-D4 écrites avant mesure, **contrôle de l'instrument EWS exécuté d'abord** (verdict : non informatif tel qu'implémenté), prérequis du gate 20 mesuré sur les artefacts committés (N-signal 0,228-0,266 vs I 0,159-0,178), et run pré-enregistré. Issue #26945 T1 |
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
 | [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
 | [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
 | [ict/stv-valence-symmetry-v2-pre-enregistrement.md](ict/stv-valence-symmetry-v2-pre-enregistrement.md) | Case 17bis — seconde opérationnalisation STV scellée avant le banc : observable d'entropie des classes de ratio du lock (correctif de l'aveuglement `CV` mesuré au case 17), drive découplé de la structure de verrouillage |
 | [ict/vervaeke-insight-pre-enregistrement.md](ict/vervaeke-insight-pre-enregistrement.md) | Réalisation de pertinence (Jaeger, Riedl, Djedovic, Vervaeke, Walsh 2024, *Front Psychol* 15:1362658) — protocole scellé avant codage du module : engagement adverse, heuristiques antagonistes, re-commitment ; opérationnalisation déclarée grade C, thèse de non-formalisabilité de l'article non testée |
 | [ict/solms-affect-pre-enregistrement.md](ict/solms-affect-pre-enregistrement.md) | Réalisation de pertinence — Solms & Friston 2018 (*Front Psychol* 9:2714) : l'affect comme forme élémentaire de la conscience, mécanisme homéostatique formalisé en énergie libre, localisation subcorticale ; dissociation level (affectif, subcortical) vs contents (corticaux) — protocole scellé avant écriture du banc, 5 prédictions (H1 subcortical vs null H0 readout cortical) |
+| [ict/ict23-anticipation-pre-enregistrement.md](ict/ict23-anticipation-pre-enregistrement.md) | Tranche T2 #26945 — le banc ICT-23 anticipe-t-il la transition ? rampe vers le pli de la fronce (Wissel 1984, Scheffer et al. 2009), deux nuls préservant le spectre, hystérésis au retour ; scellage avant toute ligne de code (ordre git vérifiable), bornage « ne teste pas un LLM » |
 
 ## Curriculum (docs/curriculum/)
 
@@ -357,6 +363,7 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 | [research/percolation-04-sharpness-results.md](research/percolation-04-sharpness-results.md) | Résultats du palier 04 sharpness (#19494, c.1108) — queue supérieure `Ψ(n) = P(|C_o| ≥ n)` sur tores finis supercritiques. Verdict **honnête** : la décroissance exponentielle n'est pas visible dans la fenêtre de seuils accessible à `L ≤ 512` ; trois causes identifiées, plan #19494 clos par ce palier. |
 | [research/cooperation-llm-16h-protocole.md](research/cooperation-llm-16h-protocole.md) | Mémo de gel du protocole `GameTheory-16h` (coopération LLM sur IPD, #20884, carnet livré par #21021) — ce qui est figé avant le premier appel d'agent (payoffs, 4 hétérogénéités, seeds `{0,1,7,42,99}`, seuils H0/H1, modèle nul, contrôle négatif), les chiffres tels que les sorties du carnet les portent, et **ce qu'ils ne disent pas** (proxy scripté ⇒ les 1,0000 sont un point fixe trivial). c.2344 |
 | [research/pan2-world-model-analyse.md](research/pan2-world-model-analyse.md) | Distillation sourcée de la **technique** PAN 2 (IFM/MBZUAI, arXiv 2507.05169 *Critique of World Model*) : thèse « le modèle du monde est un simulateur de possibilités actionnables », les 5 dimensions de design, l'architecture **GLP** (bottleneck génératif + backbone LLM + prédicteur de next-embedding par diffusion) et son instanciation PAN (encodeur / monde / décodeur, factorisation $p_{PAN}=p_h\,p_f\,p_g$ — le décodeur $g$ absent de JEPA ferme la boucle), faits firsthand de la model card (29 B MMDiT, vLLM). Outil rejouable [`scripts/genai/pan2/world_model_formalism.py`](../scripts/genai/pan2/world_model_formalism.py) (CPU, `--check` 7/7). #25846. Le « carnet sur la technique » est planifié (issue #26151, lane myia-po-2027:CoursIA-2). |
+| [research/qui-peut-changer-le-jeu-note-de-conception.md](research/qui-peut-changer-le-jeu-note-de-conception.md) | Note de conception « Qui peut changer le jeu, et qui en paie le prix ? » (#27437) : quatre rôles séparés (auteur de la règle, décideur, bénéficiaire, porteur du coût), carte d'emprunt dans les séries GameTheory/Métajeux/Dynamics/SocialChoice, et trois expériences falsifiables. Deux calculs de référence importables la fixent : [oracle_paquets.py](../MyIA.AI.Notebooks/GameTheory/examples/oracle_paquets.py) (vote à la carte contre vote sur paquets) et [oracle_derivation.py](../MyIA.AI.Notebooks/GameTheory/examples/oracle_derivation.py) (retouche du classement de l'autre sur les 576 jeux 2×2 ordinaux, lectures R/I, seuils de dérivation). #27437. |
 
 ## Captures de rendu (docs/captures/)
 
