@@ -67,8 +67,9 @@ theorem grimPunishment_absorbing (prevFoe : PDAction) :
 Cette équivalence compare les deux flux actualisés associés au chemin
 coopératif et à une déviation suivie de la punition grim. Elle établit la
 condition d'incitation algébrique utilisée par le principe de déviation en un
-coup ; elle ne quantifie pas encore sur les historiques ou les profils de
-stratégies nécessaires à un énoncé formel de SPNE.
+coup ; la quantification sur les historiques et les profils de stratégies,
+et l'énoncé formel de SPNE qui en découle (`grim_isSPE_iff`), vivent dans
+`RepeatedGames.Perfect`.
 
 Par `coop_ge_deviate_iff`, le résultat se réduit au seuil explicite sur `δ`. -/
 theorem grim_trigger_sustains_iff (g : PrisonersDilemma) {δ : ℝ}

@@ -543,7 +543,7 @@ PILOT: list[Guard] = [
     # injectee dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
     # violation passe (exit 0) sur le meme depot.
     #
-    # `scripts/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
+    # `scripts/ci/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
     # `swap_paths` : la phase base doit mesurer le MEME predicat que la
     # phase head sur le contenu de base. Restaurer le script de la base
     # ferait mesurer la classe retiree (STALE_LINK) et le comparator
@@ -564,7 +564,7 @@ PILOT: list[Guard] = [
             "MyIA.AI.Notebooks/**/README.md",
             "MyIA.AI.Notebooks/**/*.ipynb",
             "_quarto.yml",
-            "scripts/regen_quarto_render.py",
+            "scripts/ci/regen_quarto_render.py",
             "scripts/notebook_tools/dump_readme_link_violations.py",
             "scripts/notebook_tools/diff_readme_link_violations.py",
             "scripts/notebook_tools/fix_ipynb_links.py",
@@ -4151,7 +4151,7 @@ TRANCHE42: list[Guard] = [
         ],
         pre_argv=[
             "python", "-m", "unittest",
-            "scripts.tests.test_check_cell_source_parses", "-v",
+            "scripts.tests.test_notebook_tools_check_cell_source_parses", "-v",
         ],
         argv=[
             "python", "scripts/notebook_tools/check_cell_source_parses.py",
@@ -4841,6 +4841,80 @@ TRANCHE50: list[Guard] = [
         argv=[
             "python", "scripts/notebook_tools/enrich_quality_delta.py",
             "--base-ref", "{base_ref}",
+        ],
+        blocking=False,
+        needs_base=True,
+        diff_bounded=True,
+        absorbed=False,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# RISK_KERNEL_GUARDS (#24698, garde bloquant) -- copies du noyau de risque. Le noyau
+# (plafond, stop ATR, coupe-circuit) vit dans projects/RiskKernel/risk_kernel.py ;
+# QuantConnect n'important que les fichiers du projet, chaque strategie qui
+# l'utilise en porte une copie identique. La garde rougit sur une copie qui
+# derive (COPY_DRIFT) ou un projet qui importe le noyau sans copie (COPY_MISSING,
+# sinon echec a Initialize() sur QC Cloud). Meme forme que TRANCHE41.
+# ---------------------------------------------------------------------------
+RISK_KERNEL_GUARDS: list[Guard] = [
+    Guard(
+        name="risk-kernel-copies-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/QuantConnect/projects/**/*.py",
+            "scripts/quantconnect/check_risk_kernel_copies.py",
+            "scripts/quantconnect/tests/test_check_risk_kernel_copies.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/quantconnect/check_risk_kernel_copies.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE52 -- prose<->sorties : nombres de mesure cites vs sorties commitees
+# (#27231, reserve 1 de la review NanoClaw sur PR #27206).
+#
+# Cas fondateur mesure : la prose de lecture d'ICT-38 citait les valeurs d'un
+# run antérieur NON COMMITE (0.0742 / 0.1953) pendant que la sortie commitee
+# rendait d'autres mesures (0.0859 / 0.2109) -- invisible a toutes les gardes
+# existantes : le contenu existe, la sortie existe, seule la CORRESPONDANCE
+# entre les deux manque (check_prose_quantitative_claims vise les COMPTEURS
+# d'artefacts, check_output_collapse la PERTE de volume).
+#
+# Caractere ADVISORY, voie WARN tracee par #8053/#15901 : un detecteur neuf
+# commence advisory, la promotion suit la fournee de remediation (plan Q162 d
+# dans le body de la PR porteuse). Calibration mesuree :
+#   - 0 finding sur ICT-35 (reference FP-zero, 25 citations verifiees) ;
+#   - 0 finding sur ICT-38 au head de #27206 (post-fix, 19 citations) ;
+#   - 8 findings sur ICT-38 pre-fix (origin/main) : le defaut fondateur tire.
+# Ratchet ligne : seules les lignes de prose NOUVELLES (absentes de la base)
+# sont re-litigees -- le stock pre-existant releve du sweep --all, jamais du
+# rouge d'une PR.
+# ---------------------------------------------------------------------------
+TRANCHE52: list[Guard] = [
+    Guard(
+        name="Prose-numbers vs outputs ratchet (base vs PR, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_prose_output_numbers.py",
+            "scripts/notebook_tools/tests/test_check_prose_output_numbers.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_prose_output_numbers.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_prose_output_numbers.py",
+            "{base_ref}",
         ],
         blocking=False,
         needs_base=True,
