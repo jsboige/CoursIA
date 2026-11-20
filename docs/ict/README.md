@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — Index de la documentation de cadrage et de synthèse
 
 > **Portée.** Index thématique des 12 documents de cadrage, de synthèse et de détail de la série ICT (Integrated / Integrated-Coordination Theory de la strate 7). Tous sont au **grade C-documentaire** : positionnement, consolidation, cartographie — *aucun ne revendique un résultat démontré* ; ils nomment, articulent ou cartographient ce que les notebooks ICT expérimentent.

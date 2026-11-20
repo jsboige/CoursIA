@@ -1,5 +1,7 @@
 # Transport git du ledger `gpu-reservation`
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 Ce document décrit une capacité technique : le transport des observations du ledger, sa cible paramétrable et les garde-fous qui l'entourent. Le [protocole de réservation GPU](gpu-reservation.md) décrit le registre, son utilisation et les gestes manuels ; il n'est pas repris ici.
 
 ## Publication sur une branche dédiée
