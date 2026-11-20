@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — trois régimes de lecture d'une trajectoire : invariants, dissociations, obstructions
 
 > **Statut.** Document de synthèse transversal, grade **C-documentaire** (consolidation, pas de nouveau dispatch). Consolidé depuis le cadrage stratégique du 2026-07-19 et la série ICT ([Epic #4588](https://github.com/jsboige/CoursIA/issues/4588)).
