@@ -1,0 +1,12 @@
+- name: "SocialChoice-5 Gibbard-Satterthwaite"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire from-scratch/from-scratch sans lib-vs-lib (configuration SocialChoice-2) : le temoin de manipulation -- recherche exhaustive des bulletins derivants, decomptes Borda/pluralite, enumeration des profils par retour arriere -- EST l'objet pedagogique, implante idiomatiquement des deux cotes (stdlib Python vs BCL/LINQ C#, 0 NuGet), aucun moteur externe contourne : il n'existe pas de librairie canonique de recherche de manipulation Gibbard-Satterthwaite ni dans la stdlib Python ni dans la BCL .NET. Parite numerique complete verifiee ligne a ligne par la review du 2026-11-20 a la tete 39f8435dd4 : les douze lignes des deux tableaux recalculees independemment et exactes, sept cellules de code executees 1..7 sans erreur, stubs en 'return null; // TODO etudiant'. parity_level: semantic (meme contenu mathematique, API idiomatique differente)."
+
+  known_differences:
+    - "Figures : le jumeau C# rend ses 2 figures en SVG display_data (image/svg+xml), le jumeau Python en PNG matplotlib -- contenu equivalent, format de sortie different."
+    - "Le jumeau C# ajoute une boucle de verification supplementaire portant sur les trois votants (re-verification explicite V1/V2/V3) absente du Python."
+    - "Formulation : le C# ecrit 'La comparaison donne donc, pour V3, Pluralite manipulable et Borda non manipulable sur ce profil precis' ou le Python ecrit la meme phrase sans la precision ', pour V3,' -- meme resultat, precision du votant ajoutee cote C#."
