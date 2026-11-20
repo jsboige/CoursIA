@@ -107,7 +107,7 @@ Backtests QC, journal des ordres rejoué ; fenêtre 2015-2024 du code, puis fen�
 - main_framework.py - Variante Algorithm Framework, à téléverser comme `main.py` du projet de `config_framework.json`
 - alpha_model.py - Modèle alpha de la variante Framework
 - config_framework.json - Projet QC de la variante Framework
-- tests/test_alpha_model.py - Tests CPU de l'alpha, sans Lean ni réseau : `python -m pytest tests/test_alpha_model.py -q`
+- tests/test_adaptive_asset_allocation_alpha_model.py - Tests CPU de l'alpha, sans Lean ni réseau : `python -m pytest tests/test_adaptive_asset_allocation_alpha_model.py -q`
 - quantbook.ipynb - QuantBook de recherche : sweeps de paramètres, benchmarks, verdict
 
 ## Références

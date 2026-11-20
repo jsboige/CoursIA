@@ -232,8 +232,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 13 | [DecInfer-06-Expert-Systems : Decisions Robustes et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb) | BETA | Oui |
 | 14 | [DecInfer-07-Sequential : MDPs, Bandits et POMDPs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb) | BETA | Oui |
 | 15 | [DecInfer-07b-Preuves formelles — Indice de Gittins](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) | BETA | Oui |
-| 16 | [DecInfer-10-Thompson-Sampling : Bandits bayesiens par…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | BETA | Oui |
-| 17 | [DecInfer 11 — Théories de la décision face à un…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) | BETA | Oui |
+| 16 | [DecInfer-08-Thompson-Sampling : Bandits bayesiens par…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb) | BETA | Oui |
+| 17 | [DecInfer 09 — Théories de la décision face à un…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) | BETA | Oui |
 | 18 | [DecPyMC-01-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-01-Utility-Foundations.ipynb) | BETA | Oui |
 | 19 | [DecPyMC-02-Utility-Money : Utilite de l'Argent et…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-02-Utility-Money.ipynb) | BETA | Oui |
 | 20 | [DecPyMC-03-Multi-Attribute : Utilite Multi-Attributs](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-03-Multi-Attribute.ipynb) | BETA | Oui |
