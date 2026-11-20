@@ -1030,29 +1030,71 @@ class ScanMainCollisionTests(unittest.TestCase):
         self.assertTrue(csr._same_item_scan(a, b),
                         "la paire renommee doit etre reconnue comme jumeau")
 
+    # Les deux collisions documentees se rejouent sur un arbre FIGE, pas
+    # sur `origin/main` : une collision connue est faite pour etre reparee,
+    # et un test qui exige qu'elle reste sur `main` rougit le jour ou elle
+    # l'est (#27434 : ICT-48 reparee par #26757, `main` rouge, tous les
+    # merges retenus). Le contrat teste reste le meme : sur un arbre de
+    # cette forme, le balayage DOIT remonter la collision.
+    _ICT_DIR = "MyIA.AI.Notebooks/IIT/ICT-Series"
+    _SL_DIR = "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
+    _FROZEN_TREE = "\n".join([
+        # Etat de `main` avant #26757 : deux sujets au slot ICT-48.
+        _ICT_DIR + "/ICT-47-PainAxisDistillation-Python.ipynb",
+        _ICT_DIR + "/ICT-48-Onset9B-Aggregate-Python.ipynb",
+        _ICT_DIR + "/ICT-48-WolframClasses-ThermoSignature-Python.ipynb",
+        # SL-12b : deux sujets, plus la sortie papermill de l'un d'eux.
+        _SL_DIR + "/SL-12b-PavlovDLS-Reproduction-output.ipynb",
+        _SL_DIR + "/SL-12b-PavlovDLS-Reproduction.ipynb",
+        _SL_DIR + "/SL-12b-SpectralLogicSynthesis.ipynb",
+        # Un jumeau de noyau : meme item, jamais une collision.
+        "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb",
+        "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb",
+    ]) + "\n"
+
+    def _scan_frozen_tree(self):
+        seen = []
+
+        def fake_git(args):
+            seen.append(list(args))
+            return self._FROZEN_TREE
+
+        with mock.patch.object(csr, "_git", fake_git):
+            collisions = csr.scan_main_collisions("frozen-tree")
+        self.assertEqual(seen, [["ls-tree", "-r", "--name-only", "frozen-tree"]])
+        return collisions
+
     def test_scan_main_finds_known_collision_ict48(self):
         # ICT-48 est la collision documentee de la tranche 1. Si le
         # balayage la manque, la garde regresse.
-        try:
-            collisions = csr.scan_main_collisions("origin/main")
-        except RuntimeError:
-            self.skipTest("origin/main indisponible")
+        collisions = self._scan_frozen_tree()
         ict48 = [c for c in collisions
                  if c["slot"] == "ICT-48"
                  and c["dir"].endswith("IIT/ICT-Series")]
         self.assertEqual(len(ict48), 1, "ICT-48 doit remonter comme collision documentee")
-        self.assertGreaterEqual(len(ict48[0]["paths"]), 2)
+        self.assertEqual(ict48[0]["paths"], [
+            self._ICT_DIR + "/ICT-48-Onset9B-Aggregate-Python.ipynb",
+            self._ICT_DIR + "/ICT-48-WolframClasses-ThermoSignature-Python.ipynb",
+        ])
 
     def test_scan_main_finds_known_collision_sl12b(self):
-        # SL-12b : PavlovDLS-Reproduction vs SpectralLogicSynthesis.
-        try:
-            collisions = csr.scan_main_collisions("origin/main")
-        except RuntimeError:
-            self.skipTest("origin/main indisponible")
+        # SL-12b : PavlovDLS-Reproduction vs SpectralLogicSynthesis. La
+        # sortie papermill du premier n'est pas un occupant du slot.
+        collisions = self._scan_frozen_tree()
         sl12b = [c for c in collisions
                  if c["slot"] == "SL-12b"
                  and c["dir"].endswith("SymbolicAI/SymbolicLearning")]
         self.assertEqual(len(sl12b), 1, "SL-12b doit remonter comme collision documentee")
+        self.assertEqual(sl12b[0]["paths"], [
+            self._SL_DIR + "/SL-12b-PavlovDLS-Reproduction.ipynb",
+            self._SL_DIR + "/SL-12b-SpectralLogicSynthesis.ipynb",
+        ])
+
+    def test_scan_frozen_tree_reports_only_real_collisions(self):
+        # Le jumeau de noyau (SW-10 CSharp / Python) et le carnet seul a
+        # son slot (ICT-47) ne remontent pas : deux constats, pas plus.
+        collisions = self._scan_frozen_tree()
+        self.assertEqual(sorted(c["slot"] for c in collisions), ["ICT-48", "SL-12b"])
 
     def test_scan_main_filters_papermill_outputs(self):
         # Aucune collision ne peut etre uniquement des sorties papermill
