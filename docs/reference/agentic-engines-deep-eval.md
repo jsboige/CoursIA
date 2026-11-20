@@ -10,9 +10,9 @@
 
 | Tranche | Point du protocole | État |
 |---|---|---|
-| T1 (cette PR) | pt 2 — SK, mode événementiel (Process Framework) exécuté | livré |
-| T2 (cette PR) | pt 2 — SK, couche agents : handoff exécuté (service LLM réel, temp 0) | livré |
-| T3 (cette PR) | pt 2 — ADK : handoff natif C5 + désignation C4 exécutés via l'organe Track2 (service LLM réel, temp 0) | livré |
+| T1 (PR #26420, recousure #27619) | pt 2 — SK, mode événementiel (Process Framework) exécuté | livré |
+| T2 (PR #26420, recousure #27619) | pt 2 — SK, couche agents : handoff exécuté (service LLM réel, temp 0) | livré |
+| T3 (PR #26420, recousure #27619) | pt 2 — ADK : handoff natif C5 + désignation C4 exécutés via l'organe Track2 (service LLM réel, temp 0) | livré |
 | T4 | pt 2 — SK, modes restants (séquentiel, concurrent, group chat, Magentic) exécutés (service LLM réel, temp 0) | livré |
 | T5 | pt 3 — MAF, graphe typé (`WorkflowBuilder`) exécuté (service LLM réel, temp 0), borne de boucle falsifiée | livré |
 | T6 | pt 4 — couverture C# mesurée par les assemblages (SK 1.81.0, MAF 1.24.0, ADK absent), contrôles positif et négatif | livré |
