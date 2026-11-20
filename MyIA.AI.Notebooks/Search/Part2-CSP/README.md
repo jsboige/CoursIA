@@ -204,7 +204,7 @@ La partie illustre ce pont dans le code, à deux endroits. L'étape 6 décrit la
 | 5 | id., ch. 15 *Operations Research Methods in Constraint Programming* (J.N. Hooker, p. 525) : couplage entre programmation par contraintes et recherche opérationnelle. |
 | 7 | id., ch. 9 *Soft Constraints* (Meseguer, Rossi, Schiex, p. 279) : CSP à semi-anneaux, classiques, flous et pondérés. |
 | 8 | id., ch. 19 *Temporal CSPs* (Manolis Koubarakis, p. 663) : formalisation des CSP temporels. |
-| 9 | Yokoo, M. et al. (1992) — « Distributed constraint satisfaction for formalizing distributed problem solving », *ICDCS* ; Yokoo, M. (1995) — « Asynchronous weak-commitment search for solving large-scale distributed constraint satisfaction problems », *ICMAS*. Origines d'ABT et d'AWC. |
+| 9 | Picard, G. (2018) — *Distributed Constraint Processing: An Introduction* (support de cours, MINES Saint-Étienne). Série homonyme en ligne : [lecture-DCSP-2025](https://www.gauthier-picard.info/files/lecture-DCSP-2025.pdf). Passage du CSP centralisé aux approches multi-agents : ABT et ses extensions, puis recherche locale distribuée. |
 | Toute la partie | id., ch. 1 *Introduction* (Rossi, van Beek, Walsh, p. 3) : carte thématique de l'ouvrage, proche du découpage de la partie. |
 | Toute la partie | Bardin, S., Bjørner, N. & Cadar, C. (2019) — *Bringing CP, SAT and SMT together: Next Challenges in Constraint Solving* (Dagstuhl Seminar 19062), Dagstuhl Reports 9(2):27. Le pont CP ↔ SAT ↔ SMT. |
 
