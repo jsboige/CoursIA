@@ -43,7 +43,7 @@ Le pipeline audiobook consomme actuellement le service Fish **auto-hébergé sur
 
 La recommandation portée par le fil est l'**hybride**, **à la condition** que le routage expressif vers le service Fish soit retenu (prémisse de conception, non une qualité mesurée) : **narration batch en local** (`audio.cpp` + S2 Pro Q8_0) + **chemin expressif/interactif sur le service Fish**.
 
-- La narration, qui est le gros du volume d'un audiobook, passe en local : qualité au-dessus de la baseline (WER 6,4 % < 9,7 %), **zéro coût par appel** et **zéro dépendance externe** sur le chemin majoritaire (le coût est le **GPU** local, ~9,7 GiB).
+- La narration, qui est le gros du volume d'un audiobook, passe en local : qualité au-dessus de la baseline (WER 6,4 % < 9,7 %) et **zéro dépendance externe** sur le chemin majoritaire. L'absence de **facturation par appel** n'est pas un coût nul : le coût réel du chemin local est le **GPU** (~9,7 GiB VRAM) plus l'électricité et l'exploitation.
 - Le chemin expressif (turns dramatiques, interactivité) passe sur le service Fish, qui y est aujourd'hui mesuré à WER 0,000 ; ce routage expressif vers le service Fish est la **prémisse** du choix hybride, pas une qualité mesurée contre la voie locale.
 - L'hybride n'occupe le GPU sur le batch (narration, ~9,7 GiB sur 16 Go) **et** sur le chemin expressif (service Fish auto-hébergé) ; il n'y a **aucune dépendance externe** — les deux chemins tournent sur la flotte.
 
