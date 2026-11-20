@@ -4,12 +4,26 @@ subtitle: "Série pédagogique niveau 1 — BFS, DFS, A*, métaheuristiques, CSP
 description: "Série Search du dépôt CoursIA — algorithmes de recherche uninformed/informed, métaheuristiques, CSP, planification. Point d'entrée idéal pour débutants en IA."
 listing:
   - id: foundations
-    contents: "Part1-Foundations/Search-*.ipynb"
+    contents:
+      - "Part1-Foundations/Search-*.ipynb"
+      - "!Part1-Foundations/Search-*-CSharp.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 12
+  - id: foundations-csharp
+    contents: "Part1-Foundations/Search-*-CSharp.ipynb"
     type: grid
     sort: "filename"
     page-size: 12
   - id: csp
-    contents: "Part2-CSP/CSP-*.ipynb"
+    contents:
+      - "Part2-CSP/CSP-*.ipynb"
+      - "!Part2-CSP/CSP-*-CSharp.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 12
+  - id: csp-csharp
+    contents: "Part2-CSP/CSP-*-CSharp.ipynb"
     type: grid
     sort: "filename"
     page-size: 12
@@ -45,9 +59,23 @@ La série Search comporte **19+ notebooks** répartis en **3 parties** compléme
 ::: {#foundations}
 :::
 
+### Jumeaux C# / .NET — Foundations
+
+Les mêmes algorithmes, implémentés en C# .NET 9 (Infer.NET, QuikGraph) — dual-track de chaque carnet ci-dessus.
+
+::: {#foundations-csharp}
+:::
+
 ## CSP — Satisfaction de contraintes
 
 ::: {#csp}
+:::
+
+### Jumeaux C# / .NET — CSP
+
+Les mêmes problèmes de contraintes en C# .NET (Choco-solver, Z3) — dual-track de chaque carnet ci-dessus.
+
+::: {#csp-csharp}
 :::
 
 ## Advanced — Recherche avancée
