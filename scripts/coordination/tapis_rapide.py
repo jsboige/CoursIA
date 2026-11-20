@@ -33,6 +33,7 @@ from coordination.tapis_marqueurs import (
     claims_ouverts, evenements, lane_de_pr)
 from coordination.tapis_hors_flotte import ecart_hors_flotte
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
+from coordination.tapis_visites import evenements_info
 
 # Part au plus des conteneurs (EPIC, parapluie) dans la liste : la lane recoit des grains,
 # pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains,
@@ -279,7 +280,11 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
         e = Etat(n, it.get("title") or "", labels, it.get("created_at") or "", parents[n],
                  famille, n in nommes or _conteneur_propre(it),
                  any(lab.strip().lower() == LABEL_CONSOLIDATION for lab in labels))
-        evts = evenements(it.get("comments") or [])
+        comments = it.get("comments") or []
+        # Les formes `[INFO] Visite` comptent comme visite : l'union des deux
+        # familles d'evenements, triee par date.
+        evts = sorted(evenements(comments) + evenements_info(comments),
+                      key=lambda e: e.quand)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
         # Raccord du classement (c3274) : une prise en charge nominative est
         # une visite, une citation Git n'en est pas une. L'etat de grain

@@ -14,7 +14,7 @@ from datetime import UTC, datetime
 
 OUVRE = frozenset({"CLAIMED", "CLAIMED-AMEND"})
 FERME = frozenset({"RELEASED", "DELIVERED", "CANCELLED", "ABANDONED", "DONE"})
-VISITE = frozenset({"CLAIMED", "CLAIMED-AMEND", "DELIVERED"})
+VISITE = frozenset({"CLAIMED", "CLAIMED-AMEND", "DELIVERED", "VISITE-INFO"})
 ROUVRE = frozenset({"NOT-DELIVERED", "RELEASED", "CLAIMED", "CLAIMED-AMEND"})
 
 # Un marqueur est en tete de N'IMPORTE QUELLE ligne (souvent apres `Grain:`),
