@@ -393,11 +393,11 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | [Video Enhancement - Real-ESRGAN et Interpolation de…](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) | ALPHA | Non |
 | 6 | [AnimateDiff - Introduction a la Generation…](../../MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | BETA | Non |
 | 7 | [HunyuanVideo](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb) | BETA | Non |
-| 8 | [LTX-Video - Generation Video Rapide et Legere](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb) | BETA | Non |
+| 8 | [LTX-Video - Generation Video Rapide et Legere](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb) | BETA | Non |
 | 9 | [Wan 2.1/2.2 - Generation Video Multilingue](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb) | BETA | Non |
 | 10 | [SVD - Stable Video Diffusion (Image-to-Video)](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb) | BETA | Non |
-| 11 | [LTX-2 - Generation Audiovisuelle Conjointe (Video +…](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb) | BETA | Non |
-| 12 | [MiniMax H3 (Hailuo 3.0) — Architecture, capacités… et…](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) | BETA | Non |
+| 11 | [LTX-2 - Generation Audiovisuelle Conjointe (Video +…](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb) | BETA | Non |
+| 12 | [MiniMax H3 (Hailuo 3.0) — Architecture, capacités… et…](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb) | BETA | Non |
 | 13 | [CogVideoX - Generation Video depuis Texte (Open…](../../MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb) | BETA | Non |
 | 14 | [Comparaison Multi-Modèles de Generation Video](../../MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb) | BETA | Non |
 | 15 | [Orchestration de Pipelines Video](../../MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb) | ALPHA | Non |
@@ -406,5 +406,5 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 18 | [Workflows Video Creatifs](../../MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb) | BETA | Non |
 | 19 | [Sora API - Generation Video Cloud](../../MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-3-Sora-API-Cloud-Video.ipynb) | BETA | Non |
 | 20 | [Pipeline Video de Production](../../MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb) | BETA | Non |
-| 21 | [MiniMax H3 (Hailuo) — Génération vidéo par le service…](../../MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb) | BETA | Non |
-| 22 | [MiniMax video-01 (v1) — Service cloud generation video…](../../MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) | BETA | Non |
+| 21 | [MiniMax H3 (Hailuo) — Génération vidéo par le service…](../../MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb) | BETA | Non |
+| 22 | [MiniMax video-01 (v1) — Service cloud generation video…](../../MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb) | BETA | Non |
