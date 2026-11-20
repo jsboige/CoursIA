@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 16
-breakdown: SocialChoice=16
-maturity: BETA=14, ALPHA=2
+pedagogical_count: 17
+breakdown: SocialChoice=17
+maturity: BETA=15, ALPHA=2
 -->
 
 [↑ GameTheory](../README.md) · [Entrée : 01 — le théorème d'Arrow](ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb)

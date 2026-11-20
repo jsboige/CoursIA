@@ -15,6 +15,7 @@ Ces projets servent donc d'**exemples-capstones** : chacun est autonome (son pro
 | [matching-cv/](matching-cv/) | Application web Flask qui compare trois algorithmes d'appariement CV ↔ fiche de poste : mots-clés (baseline), similarité sémantique par embeddings, et appariement stable de Gale-Shapley. | GameTheory, GenAI, ML |
 | [socle-metadata-driven/](socle-metadata-driven/) | Notebook .NET (C#) démontrant le socle transverse [`MyIA.AI.Shared`](../../dotnet/MyIA.AI.Shared/) : découverte par décoration, sérialisation JSON/XML, et prédicat métier low-code (Flee). | socle partagé (.NET) |
 | [qcm/](qcm/) | Banque de questions QCM convertie des banques Moodle historiques (chapitres IA 1-5 + apprentissage profond), consommée par le dispositif d'auto-évaluation des notebooks. Ce n'est pas un projet-capstone mais l'actif de données transverse qu'ils partagent. | Search, SymbolicAI, Probas, ML |
+| [AgentSystems/](AgentSystems/) | Méthode d'orchestration d'agents **composables** : la boucle percevoir→représenter→inférer→décider→vérifier→exécuter→observer comme *squelette réutilisable*, l'inférence (déterministe **ou** LLM) comme *point de composition*, la perception active par valeur d'information. | Search, SymbolicAI, GenAI, ML, Compression |
 
 ## Focus — `matching-cv` : trois lectures d'un même problème
 
