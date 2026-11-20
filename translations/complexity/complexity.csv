@@ -1341,7 +1341,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporell
 > **Écho dans le dépôt.** Ce notebook a été la **pierre inaugurale de la série `Complexity/`** — le
 > geste fondateur de Hartmanis et Stearns (compter les pas d'une machine comme on compte des
 > mètres) manquait au corpus, alors que les séries voisines l'effleurent :
-> [SL-10 — Apprentissage actif d'automates](../SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Python.ipynb)
+> [SL-10 — Apprentissage actif d'automates](../SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb)
 > (automates, sans le théorème qui en fonde la hiérarchie),
 > [App-13 — TSP métaheuristiques](../Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb)
 > (Stearns a produit la première analyse de pire cas des heuristiques du voyageur de commerce),
