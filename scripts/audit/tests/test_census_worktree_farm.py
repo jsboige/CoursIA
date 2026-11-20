@@ -10,7 +10,7 @@ Ce que ces tests tiennent :
 5. le census compte les worktrees de la ferme et laisse `unattributed` quand
    l'attribution est indisponible (`--no-gh`).
 
-Run : python -m pytest scripts/tests/test_census_worktree_farm.py
+Run : python -m pytest scripts/audit/tests/test_census_worktree_farm.py
 """
 from __future__ import annotations
 
@@ -50,6 +50,14 @@ def test_lane_from_body_ne_confond_pas_les_deux_lanes():
     body = ("Grain: MED/guard — lane myia-po-2025:CoursIA-2 — prev: MED/guard #1\n"
             "\nSuite a la demande de myia-ai-01:CoursIA (coordinateur).")
     assert lane_from_body(body) == "myia-po-2025:CoursIA-2"
+
+
+def test_lane_from_body_est_ancree_sur_la_premiere_ligne():
+    """La lecture est ancree sur la premiere ligne non vide : une citation de
+    lane en tete de corps, avant le tag, ne donne rien."""
+    body = ("Sur la demande de myia-ai-01:CoursIA (coordinateur).\n"
+            "Grain: MED/guard — lane myia-po-2025:CoursIA-2 — prev: MED/guard #1\n")
+    assert lane_from_body(body) is None
 
 
 def test_parse_worktree_list_rend_chemin_branche_et_detachement():
