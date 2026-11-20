@@ -64,7 +64,9 @@ from pathlib import Path
 #
 # Le parseur local qui vivait ici ne connaissait que `one` et `submodules` :
 # sur 36 lakes du manifeste, il en oubliait 21 -- dont `knot` (1 module
-# enumere sur 49) et `gametheory` (7 sur 70). Consequence mesuree : toute
+# enumere sur 49) et `gametheory` (7 sur 70). Parmi ces 21 lakes, 6
+# tombaient a zero module : l'enumeration y perdait tous les modules, pas
+# seulement une partie. Consequence mesuree : toute
 # PR touchant ces lakes retombait sur le build du lac ENTIER, et le verdict
 #annonçait « aucun module Lean touche » (#26812). Un doublon d'organe
 # etait la cause ; la reparation est de reutiliser l'organe, pas d'en ecrire
