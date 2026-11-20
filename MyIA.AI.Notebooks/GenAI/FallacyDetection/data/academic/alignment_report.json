@@ -31,5 +31,5 @@
   "argumentum_family_count": 7,
   "argumentum_total_leaves": 1407,
   "argumentum_csv": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv",
-  "argumentum_csv_sha256": "0601683319e1df7041daaf1ea1a0b9b2fc172fdb0bab4bcc486dbc46ef76979a"
+  "argumentum_csv_sha256": "cb02d4c64e16967a9c78328e9f8a5725532d5609a55f3bdced56ba4b7562adf8"
 }

@@ -68,7 +68,7 @@ TRIAGE_30 = [
     # Tranche C — Image + Video (4)
     "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb",
     "MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-3-Production-Integration.ipynb",
-    "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb",
+    "MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb",
     "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb",
     # Tranche D — hors serie media (7)
     "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb",

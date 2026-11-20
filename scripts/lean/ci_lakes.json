@@ -2,90 +2,6 @@
   "_comment": "Manifeste des lakes pilotes de la matrice lean-ci (#13751 sous-item workflows). Source unique de verite pour le dispatcher lean-ci-matrix.yml : chemins de declenchement + parametres par lake. Le sorry-baseline est le MEME contrat bidirectionnel que lean-build.yml (echoue au-dessus ET en-dessous) : decharger un sorry = decrementer ici dans la meme PR. Un lake migre ici seulement apres suppression de son dispatcher lean-<lake>.yml (jamais les deux declencheurs a la fois). Garde anti-drift : scripts/ci/check_lake_matrix_paths.py verifie que chaque chemin du manifeste figure dans le on.paths du dispatcher.",
   "lakes": [
     {
-      "lake": "sudoku",
-      "project-path": "MyIA.AI.Notebooks/Sudoku/sudoku_lean",
-      "display-name": "sudoku_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean",
-        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "kelly",
-      "project-path": "MyIA.AI.Notebooks/QuantConnect/kelly_lean",
-      "display-name": "kelly_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean",
-        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "minimax",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/minimax_lean",
-      "display-name": "minimax_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/GameTheory/minimax_lean/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/GameTheory/minimax_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "search",
-      "project-path": "MyIA.AI.Notebooks/Search/search_lean",
-      "display-name": "search_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/Search/search_lean/**.lean",
-        "MyIA.AI.Notebooks/Search/search_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/Search/search_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "assignment",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/assignment_lean",
-      "display-name": "assignment_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "discrepancy",
-      "project-path": "MyIA.AI.Notebooks/Search/discrepancy_lean",
-      "display-name": "discrepancy_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean",
-        "MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
       "lake": "argumentation",
       "project-path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean",
       "display-name": "argumentation_lean",
@@ -100,86 +16,16 @@
       "axiom-include-i18n-siblings": "true"
     },
     {
-      "lake": "calibration",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean",
-      "display-name": "calibration_lean",
+      "lake": "assignment",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/assignment_lean",
+      "display-name": "assignment_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "conwaycgt",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean",
-      "display-name": "conway_cgt_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "paths": [
-        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lake-manifest.json"
-      ],
-      "axiom-include-i18n-siblings": "false"
-    },
-    {
-      "lake": "erc20",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean",
-      "display-name": "erc20_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "finiteness",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean",
-      "display-name": "finiteness_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "gamedefs",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/lean_game_defs",
-      "display-name": "lean_game_defs",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/GameTheory/lean_game_defs/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lakefile.toml",
-        "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "gamedefsext",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext",
-      "display-name": "lean_game_defs_ext",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml",
-        "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain"
+        "MyIA.AI.Notebooks/GameTheory/assignment_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/assignment_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/assignment_lean/lean-toolchain"
       ],
       "axiom-include-i18n-siblings": "true"
     },
@@ -199,200 +45,16 @@
       "axiom-include-i18n-siblings": "true"
     },
     {
-      "lake": "learningtheory",
-      "project-path": "MyIA.AI.Notebooks/ML/learning_theory_lean",
-      "display-name": "learning_theory_lean",
+      "lake": "calibration",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean",
+      "display-name": "calibration_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/ML/learning_theory_lean/**.lean",
-        "MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/ML/learning_theory_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "decisiontheory",
-      "project-path": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean",
-      "display-name": "decision_theory_lean",
-      "sorry-baseline": "2",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "axiom-fail-on-sorry": "false",
-      "paths": [
-        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/**.lean",
-        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "gametheory",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/game_theory_lean",
-      "display-name": "game_theory_lean",
-      "sorry-baseline": "4",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "Abstraction,Abstraction.Basic,ProgramGames,ProgramGames.Basic,ProgramGames.Basic_en,ProgramGames.Bounded,ProgramGames.Bounded_en,CongestionGames,CongestionGames.PoA,CooperativeGames,CooperativeGames.Basic,CooperativeGames.Basic_en,CooperativeGames.ConeKernel,CooperativeGames.ConeKernel_en,CooperativeGames.GroupShapley,CooperativeGames.Shapley,CooperativeGames.Shapley_en,ProgramGames.FairBot,ProgramGames.FairBot_en,RepeatedGames,RepeatedGames.Discounting,RepeatedGames.Discounting_en,RepeatedGames.GrimTrigger,RepeatedGames.GrimTrigger_en,RepeatedGames.Stage,RepeatedGames.Stage_en,RepeatedGames_en,StableMarriage,StableMarriage.Definitions,StableMarriage.Definitions_en,StableMarriage.GSState,StableMarriage.GSState_en,StableMarriage.GaleShapley,StableMarriage.GaleShapley_en,StableMarriage.Lattice,StableMarriage.Lattice_en,StableMarriage.Lemmas,StableMarriage.Lemmas_en,StableMarriage_en,Swaps,Swaps.Basic,Swaps.Parite,StackelbergBilevel,LegalLoophole,LegalLoophole.Toy",
-      "axiom-fail-on-sorry": "true",
-      "paths": [
-        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain",
-        "scripts/lean/check_certified_sorry.py",
-        "scripts/lean/count_code_sorry.py",
-        "scripts/tests/test_check_certified_sorry.py"
-      ],
-      "axiom-include-i18n-siblings": "false"
-    },
-    {
-      "lake": "socialchoicecore",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean",
-      "display-name": "social_choice_core_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "SocialChoice,SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.Groves,SocialChoice.Groves_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,SocialChoice._SmokeTest",
-      "axiom-fail-on-sorry": "true",
-      "certified-subdir": "SocialChoice",
-      "paths": [
-        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lake-manifest.json",
-        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/CERTIFIED.txt",
-        "scripts/lean/check_certified_sorry.py",
-        "scripts/lean/count_code_sorry.py",
-        "scripts/tests/test_check_certified_sorry.py"
-      ],
-      "axiom-include-i18n-siblings": "false"
-    },
-    {
-      "lake": "mathlibexamples",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples",
-      "display-name": "mathlib_examples",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "socialchoicepeters",
-      "project-path": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters",
-      "display-name": "social_choice_lean_peters",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/**.lean",
-        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.lean",
-        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "tegmarkmuh",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean",
-      "display-name": "tegmark_muh_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "false"
-    },
-    {
-      "lake": "iit",
-      "project-path": "MyIA.AI.Notebooks/IIT/iit_lean",
-      "display-name": "iit_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/IIT/iit_lean/**.lean",
-        "MyIA.AI.Notebooks/IIT/iit_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/IIT/iit_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "serre100",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean",
-      "display-name": "serre100_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "percolation",
-      "project-path": "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean",
-      "display-name": "percolation_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean",
-        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "geometry",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean",
-      "display-name": "geometry_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "false"
-    },
-    {
-      "lake": "hecke",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean",
-      "display-name": "hecke_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lean-toolchain"
-      ],
-      "axiom-include-i18n-siblings": "true"
-    },
-    {
-      "lake": "formal_groups",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean",
-      "display-name": "formal_groups_lean",
-      "sorry-baseline": "0",
-      "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
-      "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/lean-toolchain"
       ],
       "axiom-include-i18n-siblings": "true"
     },
@@ -427,31 +89,129 @@
       "axiom-include-i18n-siblings": "true"
     },
     {
-      "lake": "sensitivity",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean",
-      "display-name": "sensitivity_lean",
-      "sorry-baseline": "0",
+      "lake": "conway",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
+      "display-name": "conway_lean",
+      "sorry-baseline": "1",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
+      "axiom-allow-axioms": "@scripts/lean/allow_axioms_conway.txt",
+      "axiom-fail-on-sorry": "false",
+      "axiom-include-i18n-siblings": "true",
+      "axiom-blocking-target-modules": "Conway.KochenSpecker,Conway.FreeWillTheorem",
+      "axiom-blocking-allow-axioms": "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound",
+      "axiom-blocking-fail-on-sorry": "true",
+      "build-threads": "1",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain"
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+        "scripts/lean/allow_axioms_conway.txt"
+      ]
+    },
+    {
+      "lake": "conwaycgt",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean",
+      "display-name": "conway_cgt_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lake-manifest.json"
+      ],
+      "axiom-include-i18n-siblings": "false"
+    },
+    {
+      "lake": "decisiontheory",
+      "project-path": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean",
+      "display-name": "decision_theory_lean",
+      "sorry-baseline": "1",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-fail-on-sorry": "false",
+      "paths": [
+        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/**.lean",
+        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/lean-toolchain"
       ],
       "axiom-include-i18n-siblings": "true"
     },
     {
-      "lake": "riemann200",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean",
-      "display-name": "riemann200_lean",
+      "lake": "discrepancy",
+      "project-path": "MyIA.AI.Notebooks/Search/discrepancy_lean",
+      "display-name": "discrepancy_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lake-manifest.json"
+        "MyIA.AI.Notebooks/Search/discrepancy_lean/**.lean",
+        "MyIA.AI.Notebooks/Search/discrepancy_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Search/discrepancy_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "erc20",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean",
+      "display-name": "erc20_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "finiteness",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean",
+      "display-name": "finiteness_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "formal_groups",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean",
+      "display-name": "formal_groups_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "formal_logic",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean",
+      "display-name": "formal_logic_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "FormalLogic.Bridge,FormalLogic.FolBridge,FormalLogic.GLBridge,FormalLogic.ModalBridge,FormalLogic.FairBotLoeb,FormalLogic.ModalZoo",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
       ],
       "axiom-include-i18n-siblings": "false"
     },
@@ -473,49 +233,63 @@
       "axiom-include-i18n-siblings": "true"
     },
     {
-      "lake": "planning",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean",
-      "display-name": "planning_lean",
+      "lake": "gamedefs",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/lean_game_defs",
+      "display-name": "lean_game_defs",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json"
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lean-toolchain"
       ],
       "axiom-include-i18n-siblings": "true"
     },
     {
-      "lake": "mimo",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean",
-      "display-name": "mimo_lean",
+      "lake": "gamedefsext",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext",
+      "display-name": "lean_game_defs_ext",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
-      "axiom-include-i18n-siblings": "true",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json"
-      ]
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lakefile.toml",
+        "MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
     },
     {
-      "lake": "formal_logic",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean",
-      "display-name": "formal_logic_lean",
+      "lake": "gametheory",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/game_theory_lean",
+      "display-name": "game_theory_lean",
+      "sorry-baseline": "4",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "Abstraction,Abstraction.Basic,ProgramGames,ProgramGames.Basic,ProgramGames.Basic_en,ProgramGames.Bounded,ProgramGames.Bounded_en,CongestionGames,CongestionGames.PoA,CooperativeGames,CooperativeGames.Basic,CooperativeGames.Basic_en,CooperativeGames.ConeKernel,CooperativeGames.ConeKernel_en,CooperativeGames.GroupShapley,CooperativeGames.Shapley,CooperativeGames.Shapley_en,ProgramGames.FairBot,ProgramGames.FairBot_en,RepeatedGames,RepeatedGames.Discounting,RepeatedGames.Discounting_en,RepeatedGames.GrimTrigger,RepeatedGames.GrimTrigger_en,RepeatedGames.Stage,RepeatedGames.Stage_en,RepeatedGames_en,StableMarriage,StableMarriage.Definitions,StableMarriage.Definitions_en,StableMarriage.GSState,StableMarriage.GSState_en,StableMarriage.GaleShapley,StableMarriage.GaleShapley_en,StableMarriage.Lattice,StableMarriage.Lattice_en,StableMarriage.Lemmas,StableMarriage.Lemmas_en,StableMarriage_en,Swaps,Swaps.Basic,Swaps.Parite,StackelbergBilevel,LegalLoophole,LegalLoophole.Toy,RepeatedGames.Perfect,RepeatedGames.Perfect_en",
+      "axiom-fail-on-sorry": "true",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain",
+        "scripts/lean/check_certified_sorry.py",
+        "scripts/lean/count_code_sorry.py",
+        "scripts/tests/test_check_certified_sorry.py"
+      ],
+      "axiom-include-i18n-siblings": "false",
+      "certified-subdir": null
+    },
+    {
+      "lake": "geometry",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean",
+      "display-name": "geometry_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
-      "axiom-target-modules": "FormalLogic.Bridge,FormalLogic.FolBridge,FormalLogic.GLBridge,FormalLogic.ModalBridge,FormalLogic.FairBotLoeb,FormalLogic.ModalZoo",
+      "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/lake-manifest.json",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/lean-toolchain"
       ],
       "axiom-include-i18n-siblings": "false"
     },
@@ -533,6 +307,48 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lake-manifest.json",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "hecke",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean",
+      "display-name": "hecke_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/hecke_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "iit",
+      "project-path": "MyIA.AI.Notebooks/IIT/iit_lean",
+      "display-name": "iit_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/IIT/iit_lean/**.lean",
+        "MyIA.AI.Notebooks/IIT/iit_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/IIT/iit_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "kelly",
+      "project-path": "MyIA.AI.Notebooks/QuantConnect/kelly_lean",
+      "display-name": "kelly_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/**.lean",
+        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/QuantConnect/kelly_lean/lean-toolchain"
       ],
       "axiom-include-i18n-siblings": "true"
     },
@@ -555,27 +371,212 @@
       ]
     },
     {
-      "lake": "conway",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
-      "display-name": "conway_lean",
-      "sorry-baseline": "1",
+      "lake": "learningtheory",
+      "project-path": "MyIA.AI.Notebooks/ML/learning_theory_lean",
+      "display-name": "learning_theory_lean",
+      "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
-      "axiom-allow-axioms": "@scripts/lean/allow_axioms_conway.txt",
-      "axiom-fail-on-sorry": "false",
-      "axiom-include-i18n-siblings": "true",
-      "axiom-blocking-target-modules": "Conway.KochenSpecker,Conway.FreeWillTheorem",
-      "axiom-blocking-allow-axioms": "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound",
-      "axiom-blocking-fail-on-sorry": "true",
-      "build-threads": "1",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
-        "scripts/lean/allow_axioms_conway.txt"
+        "MyIA.AI.Notebooks/ML/learning_theory_lean/**.lean",
+        "MyIA.AI.Notebooks/ML/learning_theory_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/ML/learning_theory_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "mathlibexamples",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples",
+      "display-name": "mathlib_examples",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "mimo",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean",
+      "display-name": "mimo_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-include-i18n-siblings": "true",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/lake-manifest.json"
       ]
+    },
+    {
+      "lake": "minimax",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/minimax_lean",
+      "display-name": "minimax_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/minimax_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/minimax_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/minimax_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "percolation",
+      "project-path": "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean",
+      "display-name": "percolation_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/**.lean",
+        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "planning",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean",
+      "display-name": "planning_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean/lake-manifest.json"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "riemann200",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean",
+      "display-name": "riemann200_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lake-manifest.json"
+      ],
+      "axiom-include-i18n-siblings": "false"
+    },
+    {
+      "lake": "search",
+      "project-path": "MyIA.AI.Notebooks/Search/search_lean",
+      "display-name": "search_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/Search/search_lean/**.lean",
+        "MyIA.AI.Notebooks/Search/search_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Search/search_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "sensitivity",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean",
+      "display-name": "sensitivity_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "serre100",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean",
+      "display-name": "serre100_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "socialchoicecore",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean",
+      "display-name": "social_choice_core_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "SocialChoice,SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.Groves,SocialChoice.Groves_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,SocialChoice._SmokeTest",
+      "axiom-fail-on-sorry": "true",
+      "certified-subdir": "SocialChoice",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/CERTIFIED.txt",
+        "scripts/lean/check_certified_sorry.py",
+        "scripts/lean/count_code_sorry.py",
+        "scripts/tests/test_check_certified_sorry.py"
+      ],
+      "axiom-include-i18n-siblings": "false"
+    },
+    {
+      "lake": "socialchoicepeters",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters",
+      "display-name": "social_choice_lean_peters",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "sudoku",
+      "project-path": "MyIA.AI.Notebooks/Sudoku/sudoku_lean",
+      "display-name": "sudoku_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/**.lean",
+        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/Sudoku/sudoku_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "true"
+    },
+    {
+      "lake": "tegmarkmuh",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean",
+      "display-name": "tegmark_muh_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain"
+      ],
+      "axiom-include-i18n-siblings": "false"
     }
   ]
 }
