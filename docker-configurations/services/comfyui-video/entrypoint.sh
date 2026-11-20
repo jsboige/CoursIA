@@ -179,4 +179,4 @@ echo "Demarrage du serveur ComfyUI-Video..."
 GPU_ID=${GPU_DEVICE_ID:-0}
 echo "Utilisation GPU ${GPU_ID}"
 
-exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention --cuda-device ${GPU_ID}
+exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention --cuda-device ${GPU_ID} ${COMFYUI_EXTRA_ARGS:-}
