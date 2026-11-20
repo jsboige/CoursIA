@@ -180,7 +180,7 @@ Un **problème** est défini par les éléments suivants :
 
 # Exemple Abstraction: Assemblage robotique
 
-<img src="./images/img_004.png" style="position:absolute; top:140px; right:30px; width:630px;" alt="Bras robotique" />
+<img src="./images/img_004.png" style="position:absolute; top:225px; right:30px; width:630px;" alt="Bras robotique" />
 
 - **États** : Coordonnées réelles des joints du robot et des objets
 - **Test de but** : Objet assemblé
@@ -388,7 +388,7 @@ Les stratégies non informées (aveugle) utilisent uniquement la définition du 
 
 # Propriétés de l'exploration en largeur
 
-<img src="./images/img_013.png" style="position:absolute; top:130px; right:20px; width:720px;" alt="Tableau complexité BFS" />
+<img src="./images/img_013.png" style="position:absolute; top:245px; right:20px; width:720px;" alt="Tableau complexité BFS" />
 
 - **Complet** ? Oui (si b est fini)
 - **Complexité en temps** ? O(b^(d+1))
@@ -553,7 +553,7 @@ fonction Exploration-Iterative-Profondeur(probleme) retourne une solution, ou ec
 
 # Les missionnaires et cannibales
 
-<img src="./images/img_019.png" style="position:absolute; top:120px; right:20px; width:690px;" alt="Missionnaires et cannibales" />
+<img src="./images/img_019.png" style="position:absolute; top:195px; right:20px; width:560px;" alt="Missionnaires et cannibales" />
 
 - Les missionnaires et cannibales doivent traverser la riviere
 - Pas plus de 2 personnes sur la barque
@@ -591,7 +591,7 @@ layout: section
 
 # Exploration A*
 
-<img src="./images/img_022.png" style="position:absolute; top:110px; right:30px; width:425px;" alt="Triangle consistance A*" />
+<img src="./images/img_022.png" style="position:absolute; top:110px; right:30px; width:395px;" alt="Triangle consistance A*" />
 
 ## Idee
 
@@ -770,7 +770,7 @@ retourne maximum local
 
 ## Escalade reprise aléatoire (complet)
 
-<img src="./images/img_026.png" alt="Escalade : l'amelioration locale peut se bloquer sur un maximum local du paysage" style="display:block; margin:4px auto 0; max-height:150px; width:auto; max-width:100%; object-fit:contain;">
+<img src="./images/img_026.png" alt="Escalade : l'amelioration locale peut se bloquer sur un maximum local du paysage" style="display:block; margin:4px auto 0; max-height:120px; width:auto; max-width:100%; object-fit:contain;">
 
 ---
 
@@ -1105,7 +1105,7 @@ layout: section
 
 # Arbre de jeu
 
-<img src="./images/img_037.png" style="position:absolute; top:130px; right:10px; width:720px;" alt="Arbre de jeu morpion" />
+<img src="./images/img_037.png" style="position:absolute; top:130px; right:10px; width:540px;" alt="Arbre de jeu morpion" />
 
 ## Ex : Morpion
 
@@ -1324,8 +1324,8 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 - Approches modernes : **CFR** (Counterfactual Regret Minimization, Libratus/Pluribus au poker)
 
 <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center; margin-top:8px;">
-  <img src="./images/img_043.png" alt="StarCraft II : jeu strategique temps reel partiellement observable, cas d'ecole d'AlphaStar" style="max-height:160px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
-  <img src="./images/img_044.png" alt="Jeu complexe multi-agents : l'explosion combinatoire des etats empeche l'exploration exhaustive" style="max-height:240px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+  <img src="./images/img_043.png" alt="StarCraft II : jeu strategique temps reel partiellement observable, cas d'ecole d'AlphaStar" style="max-height:110px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
+  <img src="./images/img_044.png" alt="Jeu complexe multi-agents : l'explosion combinatoire des etats empeche l'exploration exhaustive" style="max-height:150px; width:auto; max-width:100%; margin:0 auto; object-fit:contain;">
 </div>
 
 ---
