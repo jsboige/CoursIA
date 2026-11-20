@@ -93,3 +93,19 @@ def test_p2_le_paquet_finance_est_seul_pareto_et_invaincu() -> None:
     df = frozenset({"D", "F"})
     assert op.pareto(op.P2, op.V3) == [df]
     assert op.invaincues(op.P2, op.V3) == [df]
+
+
+if __name__ == "__main__":
+    import sys
+    import inspect
+    _fns = [f for n, f in inspect.getmembers(sys.modules[__name__], inspect.isfunction) if n.startswith("test_")]
+    _fail = 0
+    for _f in _fns:
+        try:
+            _f()
+            print(f"  PASS {_f.__name__}")
+        except AssertionError as _e:
+            _fail += 1
+            print(f"  FAIL {_f.__name__}: {_e}")
+    print(f"\n{len(_fns) - _fail}/{len(_fns)} passed")
+    sys.exit(1 if _fail else 0)

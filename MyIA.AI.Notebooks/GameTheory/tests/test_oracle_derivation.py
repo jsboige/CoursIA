@@ -181,3 +181,19 @@ def test_effet_hors_comparaison() -> None:
     jeu = ((4, 2, 1, 3), (2, 4, 3, 1))  # matching pennies ordinal : aucun equilibre pur
     assert od.equilibres_purs(jeu) == []
     assert od.effet(jeu, 0, od.swap(jeu[1], 1), 0, "R") is None
+
+
+if __name__ == "__main__":
+    import sys
+    import inspect
+    _fns = [f for n, f in inspect.getmembers(sys.modules[__name__], inspect.isfunction) if n.startswith("test_")]
+    _fail = 0
+    for _f in _fns:
+        try:
+            _f()
+            print(f"  PASS {_f.__name__}")
+        except AssertionError as _e:
+            _fail += 1
+            print(f"  FAIL {_f.__name__}: {_e}")
+    print(f"\n{len(_fns) - _fail}/{len(_fns)} passed")
+    sys.exit(1 if _fail else 0)
