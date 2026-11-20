@@ -15,7 +15,7 @@
     },
     "scripts/check_adjoint_prevalidation.py": {
       "lines": 4383,
-      "note": "Dossier de prevalidation : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 66 lignes depuis la mesure du 13/11 (4314 -> 4380) Releve au 20/11 : croissance heritee du merge #27367 (tranche 2, relogement gh_identity, +3 lignes) ; main n'ayant pas rejoue scripts-tests, la PR pleine-suite #27448 est la premiere bloquee et releve le plafond ici"
+      "note": "Dossier de prevalidation : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 66 lignes depuis la mesure du 13/11 (4314 -> 4380), puis de 3 ligne(s) au 20/11 (4380 -> 4383) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee"
     },
     "scripts/check_lane_claim.py": {
       "lines": 8487,
@@ -27,7 +27,7 @@
     },
     "scripts/check_unaddressed_nits.py": {
       "lines": 6759,
-      "note": "B.0 : cible T5 (separer la grammaire des marqueurs, l'evaluation et le rapport). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 332 lignes depuis la mesure du 13/11 (6414 -> 6746), puis de 12 lignes de plus (6746 -> 6758) apres le #26763 Releve au 20/11 : croissance heritee du merge #27367 (tranche 2, relogement gh_identity) ; debloque dans #27448, premiere PR pleine-suite bloquee par le cliquet."
+      "note": "B.0 : cible T5 (separer la grammaire des marqueurs, l'evaluation et le rapport). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 332 lignes depuis la mesure du 13/11 (6414 -> 6746), puis de 12 lignes de plus (6746 -> 6758) apres le #26763, puis de 1 ligne(s) au 20/11 (6758 -> 6759) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee"
     },
     "scripts/ci/fast_lane_registry.py": {
       "lines": 4924,
@@ -59,7 +59,7 @@
     },
     "scripts/pick_idle_grain.py": {
       "lines": 16392,
-      "note": "Tapis (#22983) : cible T1 (voie legeres), T2 (bascule), T6 (retrait). Plafond pose sur la taille du 13/11 ; la refonte doit le faire BAISSER. Releve au 16/11 sur origin/main : le script a grossi de 44 lignes depuis la mesure du 13/11 (16327 -> 16371), puis de 20 lignes de plus (16371 -> 16391) Releve au 20/11 : croissance heritee du merge #27367 (tranche 2, relogement gh_identity) ; debloque dans #27448, premiere PR pleine-suite bloquee par le cliquet. ; la refonte T1/T2/T6 reste due et fera BAISSER ce plafond, ce releve n'est qu'un constat"
+      "note": "Tapis (#22983) : cible T1 (voie legeres), T2 (bascule), T6 (retrait). Plafond pose sur la taille du 13/11 ; la refonte doit le faire BAISSER. Releve au 16/11 sur origin/main : le script a grossi de 44 lignes depuis la mesure du 13/11 (16327 -> 16371), puis de 20 lignes de plus (16371 -> 16391) ; la refonte T1/T2/T6 reste due et fera BAISSER ce plafond, ce releve n'est qu'un constat, puis de 1 ligne(s) au 20/11 (16391 -> 16392) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee"
     },
     "scripts/coordination/claim_grammar.py": {
       "lines": 2269,
@@ -71,7 +71,7 @@
     },
     "scripts/pr_gate.py": {
       "lines": 2846,
-      "note": "Porte de fusion : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 195 lignes depuis la mesure du 13/11 (2650 -> 2845) Releve au 20/11 : croissance heritee du merge #27367 (tranche 2, relogement gh_identity) ; debloque dans #27448, premiere PR pleine-suite bloquee par le cliquet."
+      "note": "Porte de fusion : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 195 lignes depuis la mesure du 13/11 (2650 -> 2845), puis de 1 ligne(s) au 20/11 (2845 -> 2846) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee"
     }
   },
   "known_large": [

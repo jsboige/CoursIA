@@ -23,8 +23,9 @@ Série de notebooks pour la **détection et classification de sophismes** (falla
 | 1 — Survey SOTA | [docs/research/fallacy-detection-survey.md](../../../docs/research/fallacy-detection-survey.md) | livré |
 | 1 — Extraction Jessynoo | [data/jessynoo_rfallacy_anonymized.csv](data/jessynoo_rfallacy_anonymized.csv) + [scripts/fallacy_detection/extract_jessynoo_fallacy.py](../../../scripts/fallacy_detection/extract_jessynoo_fallacy.py) | livré |
 | 1 — Paysage datasets | [02_fallacy_datasets_landscape.ipynb](02_fallacy_datasets_landscape.ipynb) — 7 datasets testés en accès réel | livré |
-| 1 — Inventaire SAE Qwen | ≥ 3 tailles (gate de faisabilité) | à livrer |
+| 1 — Inventaire SAE Qwen | ≥ 3 tailles (gate de faisabilité) : [_research/qwen_sae_inventory.md](../_research/qwen_sae_inventory.md) — verdict **OK, 3 bases Qwen3.5** couvertes (9B en usage dans le harnais ICT) | livré |
 | 2 — Dataset builder | tranche A : [05_dataset_builder.ipynb](05_dataset_builder.ipynb) + [scripts/fallacy_detection/cartesian_dataset_builder.py](../../../scripts/fallacy_detection/cartesian_dataset_builder.py) — couples (scénario, nœud) sur **167 × (1407 + 222)**, splits dans [data/phase2/](data/phase2/) ; tranches B (génération des textes par LLM auto-hébergé) et C (test humain externe) à venir ([#17578](https://github.com/jsboige/CoursIA/issues/17578)) | tranche A livrée |
+| 2 — Lot apparié avec/sans sophisme | section 2(b) de la revue EPITA : [paired_scenario_corpus.py](../../../scripts/fallacy_detection/paired_scenario_corpus.py) + lot mesuré 110 bras (55 paires, rôle constant, polarité variable — le raccourci rôle→polarité tombe à 0,500) dans [data/teacher/](data/teacher/) (`paired_scenario_*.{jsonl,json,md}`, empreintes SHA-256 au rapport, rejeu sans clé via `--report-only`) | pilote livré |
 | 3 — Fine-tuning (série FT) | mémorisation du motif général→particulier | Phase 3 |
 | 4 — Post-training (série PT) | utilisation du workflow | Phase 4 |
 | 5 — Analyse SAE (strate 6 ICT) | features « motif » FT vs PT | gate de succès, Phase 5 |
@@ -80,3 +81,17 @@ Produits par [05_dataset_builder.ipynb](05_dataset_builder.ipynb) (ou `python sc
 | `scenario_path` | chemin décimal du scénario (`catégorie.sous-catégorie.rang`) |
 
 Les textes ne sont pas dans les splits : ils se relisent dans les trois sources au moment du rendu du prompt, ce qui garde les CSV petits et fait porter toute la traçabilité par les SHA1 de blob épinglés dans `manifest.json`. `val.csv` (un couple par nœud) et `test.csv` (deux par nœud) sont committés ; `train.csv` se régénère à l'identique et n'est épinglé que par son SHA-256 dans le manifeste. Les trois splits utilisent des scénarii disjoints (117 / 25 / 25).
+
+### Lot apparié avec/sans sophisme (`data/teacher/`)
+
+Pilote de la **section 2(b) de la revue EPITA** : à scénario et locuteur constants, seul le statut de sophisme varie entre les deux bras d'une paire. C'est le lot qui interdit le raccourci de surface « rôle → polarité » : les deux bras d'une paire partagent le rôle du locuteur, donc un modèle qui n'apprendrait que le rôle ne peut pas deviner la polarité. Produit par [paired_scenario_corpus.py](../../../scripts/fallacy_detection/paired_scenario_corpus.py) — génération par teacher LLM avec contrôle croisé, le reste en stdlib.
+
+| Fichier | Contenu |
+|---|---|
+| [paired_scenario_corpus.jsonl](data/teacher/paired_scenario_corpus.jsonl) | le lot : 110 bras = 55 paires acceptées, une ligne par bras |
+| [paired_scenario_report.json](data/teacher/paired_scenario_report.json) | rapport du run : empreintes SHA-256, paramètres, verdicts, mesure du raccourci |
+| [paired_scenario_report.md](data/teacher/paired_scenario_report.md) | rendu lisible du rapport |
+
+Paramètres du run publiés (graine 42, 60 paires tentées, 5 distracteurs par bras, 2 essais max par paire, températures génération 0,8 / contrôle 0,0, teacher `qwen3.6-35b-a3b`) : **55 paires acceptées** (taux 0,917), 5 rejets au dernier essai — 4 reclassements du bras négatif vers une autre famille, 1 vertu non reclassée — dont 3 acceptations via le contrôle croisé du bras counterpart. La propriété visée est **mesurée dans le rapport**, pas seulement affirmée : `role_is_constant_within_pair: true` et `best_role_only_accuracy` = 0,5000 exactement (rôle `smoothTalker`, 55 bras avec / 55 sans sophisme).
+
+Empreintes épinglées dans le rapport : source `val_fr.jsonl` = `d7621fffa05dc857…`, corpus produit = `112f68e26b42217b…`. **Rejeu sans clé ni réseau** : `python scripts/fallacy_detection/paired_scenario_corpus.py --report-only` reconstruit le corpus depuis le rapport publié — vérifié **byte-identique** le 2026-11-19 (l'empreinte `112f68e26b42217b` se reproduit exact). Note de vérification : ces empreintes se mesurent sur le **blob Git** (fins de ligne LF) ; un checkout de travail sous `autocrlf` CRLF fait dériver le sha256 du fichier sur disque alors que le contenu committé, lui, n'a pas changé.
