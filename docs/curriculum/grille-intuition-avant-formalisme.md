@@ -8,7 +8,7 @@
 
 Une grille courte, applicable au corps d'un carnet de cours : par quoi il
 commence, et dans quel ordre la situation, l'intuition et la formalisation
-s'y apparaissent. Elle complète le parcours narratif
+y apparaissent. Elle complète le parcours narratif
 [IA Symbolique et Formalisation](symbolic-formalization.md) (issue #15806),
 qui dit **dans quel ordre** faire les carnets ; la grille dit **comment chaque
 carnet est écrit à l'intérieur**.
@@ -28,7 +28,7 @@ Le parcours « IA Symbolique et Formalisation » fixe trois choses :
 Ce que #15806 ne dit pas : comment un carnet est écrit *à l'intérieur*. Un
 parcours peut recommander un carnet dans un ordre parfait ; si le carnet
 commence par une définition d'API, l'étudiant qui le suit n'a aucun point
-d'appui avant la formalismation. C'est cet écart que la grille comble.
+d'appui avant la formalisation. C'est cet écart que la grille comble.
 
 ## Ce que la grille ajoute
 
@@ -52,7 +52,7 @@ apporte. Une figure est relue par un agent qui voit avant d'être commitée.
 **R3 — Le pont.** Une lecture explicite relie l'intuition à la
 formalisation : ce que l'étudiant a compté à la main, l'outil le déclare en
 une ligne ; ce que la figure montrait, la contrainte l'exprime. Sans ce pont,
-l'intuition est un décor et la formalismation recommence à zéro.
+l'intuition est un décor et la formalisation recommence à zéro.
 
 **R4 — Un fil conducteur.** Un carnet suit un objet d'une section à l'autre,
 et le lecteur doit pouvoir nommer cet objet : la même instance, la même
@@ -68,7 +68,7 @@ produit n'est pas une intuition, c'est une promesse.
 Avant de merger une ouverture de carnet :
 
 - [ ] les premières cellules donnent une situation, pas une définition ;
-- [ ] une cellule de calcul ou une figure anticipe la formalismation ;
+- [ ] une cellule de calcul ou une figure anticipe la formalisation ;
 - [ ] une lecture fait le lien entre les deux ;
 - [ ] l'objet suivi d'une section à l'autre est nommé ;
 - [ ] la lecture est postérieure à la cellule interprétée.
@@ -96,12 +96,12 @@ résout » et « la preuve se certifie ».
 
 | Carnet | Situation d'ouverture | Intuition | Formalisation qui suit |
 |---|---|---|---|
-| Z3-01 Introduction | partager dix unités entre deux ateliers, l'un strictement plus grand que l'autre | les solutions possibles énumérées à la main, puis tracées dans le plan | `Solver`, `add`, `check`, `model` |
+| Z3-01 Introduction | partager dix unités entre deux commandes, l'un strictement plus grand que l'autre | les solutions possibles énumérées à la main, puis tracées dans le plan | `Solver`, `add`, `check`, `model` |
 | Z3-02 Sudoku | une grille imprimée, et les candidats d'une case | le nombre de candidats par case vide, après élimination par ligne, colonne et bloc | les trois familles de contraintes, puis la résolution déclarative |
 | Z3-03 Tactiques | une chaîne d'implications qui se contredit | l'exploration de toutes les affectations possibles, face à la propagation qui coupe court | `Goal`, `Tactic`, `simplify`, le contrôle de la stratégie |
 
 Chaque ouverture suit le même geste : la situation et son calcul d'abord, la
-lecture qui fait le pont, puis la section formalismée déjà présente dans le
+lecture qui fait le pont, puis la section formalisée déjà présente dans le
 carnet. Le fil du carnet est l'objet nommé dans la situation : les dix unités
 à partager, la grille de Sudoku, la chaîne d'implications.
 
@@ -111,7 +111,7 @@ carnet. Le fil du carnet est l'objet nommé dans la situation : les dix unités
   portent le même contenu sous une autre API ; leur portage suit la grille
   dans un lot distinct, pour que la comparaison des deux formulations reste
   possible.
-- La grille n'ordonne pas la **densité** des sections formalismées : elle
+- La grille n'ordonne pas la **densité** des sections formalisées : elle
   règle l'ouverture, pas le niveau de détail.
 - Une grille devenue un contrôle automatique de forme produirait des
   ouvertures stéréotypées. Elle reste une prescription de rédaction, appliquée
