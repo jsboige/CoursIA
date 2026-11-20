@@ -1,3 +1,5 @@
+> RAPPORT — 2026-08-06 — diagnostic doc-only du répertoire translations/ racine : état des lieux et options de disposition — figé
+
 # Diagnostic `translations/` racine — état des lieux + options de disposition
 
 > **Statut** : diagnostic doc-only, **sans action destructive** sur le répertoire `translations/`.
