@@ -73,6 +73,14 @@ liens de navigation rétablis après la descente d'un niveau.
 | [`queue-hors-strates-note-de-conception.md`](queue-hors-strates-note-de-conception.md) | Note de conception de la **queue « hors strates »** de la série ICT : destination de chacun des 8 carnets hors strates (40a/40b/47/47b/48-Onset/48-Wolfram/49/50) et clôture des trois options ouvertes (47b, 40b, 48-Onset). Note seule, mouvement différé. Issue [#20298](https://github.com/jsboige/CoursIA/issues/20298). |
 | [`banc-strate7-note-de-conception.md`](banc-strate7-note-de-conception.md) | Note de conception du **banc unique de la strate 7** (capstone, tête du palier) : les six proxys d'`ict/free_coordinates.py` employés comme lentille sur les mécanismes inter-séries qui changent l'espace des actions, chacun appelé par son organe natif et classé latent / nouveau / décoratif. Issue [#23778](https://github.com/jsboige/CoursIA/issues/23778). |
 
+## Pré-enregistrements d'expérience (docs/ict/)
+
+Un pré-enregistrement fixe **avant** l'exécution le protocole d'une campagne : modèle, bras, graines, pas, critères de lecture, biais connus. Il est écrit et committé **avant** le premier appel du GPU — un protocole écrit après le résultat ne scelle rien, il ne fait que justifier après coup.
+
+| Document | Rôle |
+|----------|------|
+| [`ict25a-2b-pre-enregistrement.md`](ict25a-2b-pre-enregistrement.md) | Campagne ICT-25a au palier **2B** (Gates 20-21 de [#5105](https://github.com/jsboige/CoursIA/issues/5105)) : backbone `Qwen3.5-2B-Base` + contrôle intra-famille `Qwen3.5-0.8B`, bras N et Np, quatre graines (0, 1, 7, 42), 120 pas, critères de lecture scellés, **biais écrit d'avance** (le passage 1.5B → 2B change la taille *et* la famille), limite nommée (la moitié « panel persona » de la Gate 21 reste ouverte). |
+
 ## Parcours suggéré
 
 - **Entrée par les fils** (lecture verticale) : [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md) → [`genealogy-representation-interne.md`](genealogy-representation-interne.md) → [`dissolution-scalaires.md`](dissolution-scalaires.md) → [`strate7-boussole-myth.md`](strate7-boussole-myth.md).
