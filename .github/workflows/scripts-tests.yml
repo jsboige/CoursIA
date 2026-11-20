@@ -701,10 +701,13 @@ jobs:
         # migrating that module to tmp_path.
         #
         # `--import-mode importlib` (pytest.ini addopts) is equally load-bearing
-        # here: three test basenames are duplicated across these 14 paths
-        # (test_check_dataset_registry, test_check_public_anchor,
+        # here: historically three test basenames were duplicated across these
+        # 14 paths (test_check_dataset_registry, test_check_public_anchor,
         # scan_slidev_composition), and without it pytest raises
         # `import file mismatch` -- sequentially too, not just under xdist.
+        # T2 de #25366 dedouble les basenames au fil des tranches ; le mode
+        # importlib reste conserve par securite tant que la dette T2 n'est pas
+        # a zero.
         #
         # Audited for inter-module parallel safety before enabling: no shared
         # fixed-path writes outside the module above, no git mutation against

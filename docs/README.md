@@ -97,6 +97,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/sota-verdicts-detail.md](reference/sota-verdicts-detail.md) | SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication |
 | [reference/submodule-maintenance-detail.md](reference/submodule-maintenance-detail.md) | Sous-modules — détail : état vérifié, incidents et mesures datées |
 | [reference/variation-protocol-detail.md](reference/variation-protocol-detail.md) | Protocole de variation — détail, justifications mesurées, incidents fondateurs |
+| [reference/github-access-policy.md](reference/github-access-policy.md) | Politique d'accès GitHub — arbre des usages, quotas et révocation (#27124, proposition) |
 
 ### Outils & méthodologie (docs/reference/)
 
@@ -265,6 +266,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/strange-loop-scalefree-pre-enregistrement.md](ict/strange-loop-scalefree-pre-enregistrement.md) | Case 8c — métrique de ré-adaptation sans échelle |
 | [ict/bach-self-model-pre-enregistrement.md](ict/bach-self-model-pre-enregistrement.md) | Case 8d — self-model causal vs cache descriptif (H_b), ré-attribution option (c) Bach 2009 ; dette IIT-05 #12215 DOCUMENTÉE et OUVERTE (livre non archivé en GDrive) |
 | [ict/inoculation-rl-experimental-conditions.md](ict/inoculation-rl-experimental-conditions.md) | Distillation des conditions expérimentales de l'*Inoculation Prompting* (Anthropic, arXiv 2511.18397) confrontée au protocole ICT-25 — source canonique citée et vérifiée en HTML |
+| [ict/ict25-panel-persona-pre-enregistrement.md](ict/ict25-panel-persona-pre-enregistrement.md) | Panel persona ICT-25 — issues disqualifiantes D1-D4 écrites avant mesure, **contrôle de l'instrument EWS exécuté d'abord** (verdict : non informatif tel qu'implémenté), prérequis du gate 20 mesuré sur les artefacts committés (N-signal 0,228-0,266 vs I 0,159-0,178), et run pré-enregistré. Issue #26945 T1 |
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
 | [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
 | [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
