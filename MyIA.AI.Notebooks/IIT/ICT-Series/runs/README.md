@@ -48,7 +48,7 @@ de l'artefact et dans chaque résultat de graine) date de `ad2b817535a6`, mergé
 
 Ces six fichiers sont produits par la campagne 2B du 2026-11-20 (device : GPU 2
 de `myia-ai-01`). La lecture des criteres scelles (C1, C2, A1, A2, A4) est dans
-[`docs/ict/ict25a-2b-resultats-2b.md`](../../../docs/ict/ict25a-2b-resultats-2b.md).
+[`docs/ict/ict25a-2b-resultats-2b.md`](../../../../docs/ict/ict25a-2b-resultats-2b.md).
 
 **Une asymetrie d'echantillon, a lire avant de comparer les audits :** les
 graines 7 et 42 du bras `Np` portent leurs 240 enregistrements dans
