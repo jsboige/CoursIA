@@ -39,6 +39,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -361,6 +362,120 @@ def test_la_charge_de_commit_est_lue_d_un_bloc(guarded):
     assert 0 <= pct <= 100, lecture
     assert 0 < committed <= limit, lecture
     assert limit > committed, "la machine ne devrait pas etre au-dela de son plafond"
+
+
+# --- canal de secours de la charge de commit (2026-11-20) --------------------
+#
+# Mesure fondatrice : sur `myia-ai-01`, le fournisseur WMI s'est wedged le
+# 2026-11-20 -- TOUTE lecture CIM pendait, et le client `powershell` etait
+# intuable (il tenait son pipeline). La garde rendait alors `None` et
+# refusait tout lancement, et la sonde elle-meme pouvait figer le lanceur
+# (> 27 min observees). Deux corrections sont verifiees ici :
+#   1. la sonde de reference est BORDEE et lit sa sortie dans un FICHIER ;
+#   2. un canal de secours lit la MEME grandeur nommee (la charge de
+#      commit) sans WMI.
+
+
+def test_le_canal_de_secours_lit_la_charge_de_commit(guarded):
+    """Le canal de secours rend le trio (pourcentage, engage, plafond).
+
+    Meme grandeur nommee que la voie de reference : l'engagement de commit
+    et son plafond, pas la memoire physique.
+    """
+    lecture = guarded._commit_charge_global_memory()
+    assert lecture is not None, "canal de secours illisible sur cette machine"
+    pct, committed, limit = lecture
+    assert 0 <= pct <= 100, lecture
+    assert 0 < committed <= limit, lecture
+    assert limit > committed, "la machine ne devrait pas etre au-dela de son plafond"
+
+
+def test_le_canal_de_secours_ne_depend_pas_de_wmi(guarded, monkeypatch):
+    """Le canal de secours ne passe par aucun compteur de performance.
+
+    Si le fournisseur WMI est wedged, la voie de reference pend : le canal
+    de secours doit rester lisible, sinon le repli ne sert a rien.
+    """
+    import subprocess as real_subprocess
+
+    def percuteur_qui_pend(*args, **kwargs):
+        raise real_subprocess.TimeoutExpired(cmd="powershell", timeout=1)
+
+    monkeypatch.setattr(
+        guarded.subprocess, "run", percuteur_qui_pend, raising=False)
+    lecture = guarded._commit_charge_global_memory()
+    assert lecture is not None, "le canal de secours ne doit dependre d'aucune sonde WMI"
+
+
+def test_le_canal_de_secours_prend_le_relais_d_une_sonde_wmi_pendante(
+        guarded, monkeypatch):
+    """Sonde de reference illisible -> le canal de secours prend le relais.
+
+    La grandeur rendue reste la charge de commit : la panne d'instrument ne
+    doit pas se lire comme une machine sous le seuil.
+    """
+    monkeypatch.setattr(guarded, "_probe_perf_counter_commit", lambda *a, **k: None)
+    lecture = guarded._commit_charge()
+    assert lecture is not None, "le repli doit rendre une lecture exploitable"
+    pct, committed, limit = lecture
+    assert 0 <= pct <= 100, lecture
+    assert 0 < committed <= limit, lecture
+
+
+def test_deux_canaux_illisibles_refusent_le_lancement(guarded, monkeypatch):
+    """Les DEUX canaux illisibles -> lecture `None` -> refus (fail-CLOSED).
+
+    Une panne d'instrument ne doit JAMAIS se lire comme une machine sous le
+    seuil : sans lecture, la garde refuse.
+    """
+    monkeypatch.setattr(guarded, "_probe_perf_counter_commit", lambda *a, **k: None)
+    monkeypatch.setattr(guarded, "_commit_charge_global_memory", lambda: None)
+    assert guarded._commit_charge() is None
+    assert guarded._commit_charge_pct() is None
+
+
+def test_la_voie_de_reference_est_preferencee(guarded, monkeypatch):
+    """Quand la voie de reference rend une lecture, elle est retenue.
+
+    Le canal de secours est un repli, pas un remplacement : il ne doit pas
+    ecraser une lecture de reference valide.
+    """
+    reference = (42, 4000, 10000)
+    monkeypatch.setattr(
+        guarded, "_probe_perf_counter_commit", lambda *a, **k: reference)
+    monkeypatch.setattr(
+        guarded, "_commit_charge_global_memory",
+        lambda: (99, 9900, 10000))
+    assert guarded._commit_charge() == reference
+
+
+def test_la_sonde_wmi_pendante_ne_fige_pas_le_lanceur(guarded, monkeypatch):
+    """Une sonde qui ne rend jamais est ABANDONNEE au delai, sans second wait.
+
+    Regression mesuree le 2026-11-20 : le client WMI wedged tient son
+    pipeline, un `communicate()` attend un EOF qui ne vient jamais, et le
+    `timeout` de `subprocess.run` ne rendait pas la main -- le lanceur
+    restait bloque (> 27 min). Ici l'enfant pend reellement (dormant de 60 s),
+    la sonde doit rendre `None` en quelques secondes.
+    """
+    import subprocess as real_subprocess
+
+    vrai_popen = real_subprocess.Popen
+
+    def dormeur(*args, **kwargs):
+        # On garde le vrai Popen (donc le vrai comportement de processus et
+        # de capture de sortie) mais on remplace l'interpreteur par un
+        # dormant : la sonde pend exactement comme un client WMI wedge.
+        args = list(args)
+        args[0] = [sys.executable, "-c", "import time; time.sleep(60)"]
+        return vrai_popen(*args, **kwargs)
+
+    monkeypatch.setattr(guarded.subprocess, "Popen", dormeur)
+    debut = time.time()
+    lecture = guarded._probe_perf_counter_commit(timeout_s=3)
+    duree = time.time() - debut
+    assert lecture is None, "une sonde pendante ne doit pas rendre de lecture"
+    assert duree < 30, f"la sonde a fige le lanceur pendant {duree:.1f} s"
 
 
 def test_verrou_n1_refuse_un_second_lancement(guarded, tmp_path):
