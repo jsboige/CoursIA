@@ -15,7 +15,8 @@ if str(_SCRIPTS_DIR) not in sys.path:
 # T3-c (#25366) : les outils internes reloges dans leur famille (audit,
 # bibliography, ci, coordination, notebook_tools, slides) restent importables
 # a nu par les tests de scripts/tests/, comme ils l etaient a la racine.
-for _fam in ("audit", "bibliography", "ci", "coordination", "notebook_tools", "slides"):
+# V3 #13737 tranche 1 : familles genai et quantconnect ajoutees (meme geste).
+for _fam in ("audit", "bibliography", "ci", "coordination", "notebook_tools", "slides", "genai", "quantconnect"):
     _fam_dir = _SCRIPTS_DIR / _fam
     if _fam_dir.is_dir() and str(_fam_dir) not in sys.path:
         sys.path.insert(0, str(_fam_dir))

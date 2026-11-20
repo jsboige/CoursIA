@@ -153,9 +153,9 @@ on:
       # manifeste. Le wrapper declarait aussi lakefile.toml : le lake n'en a
       # pas (mesure au repertoire), le pattern mort n'est pas reporte.
       # lean_server.py / lean_utils.py sont self-cover globaux ci-dessous.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
@@ -264,7 +264,7 @@ on:
       # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
       # HashlifeMarginFragment.lean, framework sorry documente). Le profil
       # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
-      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # allow-axioms: 83 native_decide axioms via @allow_axioms_conway.txt
       # (liste explicite, source de verite #21905 -- le compte de ce
       # commentaire est mesure contre le fichier par test_axiom_allow_file)
       # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
@@ -422,9 +422,9 @@ on:
       # manifeste. Le wrapper declarait aussi lakefile.toml : le lake n'en a
       # pas (mesure au repertoire), le pattern mort n'est pas reporte.
       # lean_server.py / lean_utils.py sont self-cover globaux ci-dessous.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
@@ -533,7 +533,7 @@ on:
       # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
       # HashlifeMarginFragment.lean, framework sorry documente). Le profil
       # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
-      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # allow-axioms: 83 native_decide axioms via @allow_axioms_conway.txt
       # (liste explicite, source de verite #21905 -- le compte de ce
       # commentaire est mesure contre le fichier par test_axiom_allow_file)
       # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
