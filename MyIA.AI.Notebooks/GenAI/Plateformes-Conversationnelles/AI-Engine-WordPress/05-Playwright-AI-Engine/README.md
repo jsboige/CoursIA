@@ -67,6 +67,18 @@ Le carnet pilote un vrai processus navigateur. Un noyau Jupyter tourne déjà da
 
 Le carnet bascule des indicateurs `module_*` du plugin. Sa dernière cellule les remet dans l'état que le script d'installation déclare, et le vérifie par l'API ; aucun contenu, aucun utilisateur, aucun chatbot n'est touché. Exécutez-le sur l'instance jetable, jamais sur un site en service.
 
+### Périmètre publiable — vérifications avant contribution
+
+Ce dossier vit dans un dépôt public. La cible est unique : l'instance jetable locale, corpus entièrement synthétique — jamais une instance réelle, jamais de données réelles. Aucune valeur sensible ne doit entrer dans les fichiers committés : les adresses, identifiants et clés viennent de `instance-jetable/.env`, gitignoré, et seul son `.env.example` documente les variables attendues. Les sorties sont committées telles qu'exécutées, jamais retouchées à la main. Vérification rapide avant toute contribution à ce dossier :
+
+```bash
+# le .env ne doit jamais entrer dans l'index
+git check-ignore -v ../instance-jetable/.env
+
+# aucune valeur sensible dans le notebook
+grep -nE "Bearer |password|localhost:80(8|9)[0-9]" 00-Parcours-QA-AI-Engine.ipynb
+```
+
 ## Pour aller plus loin
 
 *Niveau Recherche.*

@@ -63,6 +63,8 @@ Une suite de tests d'interface vieillit avec l'application qu'elle teste. Des no
 - [Nouveautés v0.10](WHATS-NEW-v0.10.md) : la mémoire repensée, les dossiers d'équipe, le raisonnement affiché en direct, la compaction automatique. L'appel d'outils natif y devient le comportement par défaut : un modèle conversationnel interrogé par l'API sans streaming peut alors renvoyer un contenu vide.
 - [Nouveautés v0.11](WHATS-NEW-v0.11.md) : la refonte de l'interface. Les réglages d'administration deviennent des onglets, et la note détaille ce que ce changement a cassé dans la suite, avec les pièges mesurés au passage : un état transitoire sur lequel il ne faut pas asserter, un libellé devenu ambigu.
 
+La suite elle-même a été revalidée sur la flotte v0.11.0 (campagne #9854) : les carnets des modules 01 à 05 le rappellent dans leur note de reproductibilité, et aucun claim de compatibilité n'est porté au-delà de cette version. Le [module 06](06-nouveautes-v0.10/README.md), qui démontre la ligne v0.10, cible v0.10.2.
+
 Prérequis en plus : une instance dans la version concernée, pour rejouer les exemples.
 
 ## Sous-séries
@@ -114,8 +116,30 @@ Le dépôt versionne le code des tests, les utilitaires, la configuration avec s
 |---|---|
 | `.env` | Secret : l'adresse et les identifiants de votre instance. |
 | `.auth/*.json` | Secret : l'état de session sauvegardé par Playwright contient un jeton d'authentification. |
+| `storage-state*.json` (racine), `playwright/.auth/` (racine) | Secret : mêmes cookies de session, scope global du dépôt. |
 | `node_modules/`, `dist/` | Régénérables par `npm install` et par la compilation TypeScript. |
-| `playwright-report/`, `test-results/`, `blob-report/` | Régénérables : sorties de chaque exécution. |
+| `playwright-report/`, `test-results/`, `blob-report/`, `playwright/.cache/` | Régénérables : sorties de chaque exécution et téléchargements de navigateurs. |
+
+Le gabarit [`.env.example`](.env.example) est le seul fichier de configuration committé : il porte des valeurs vides ou des exemples neutres, jamais une adresse ni un identifiant réels. Son inventaire actuel se lit directement dans le fichier : les clés actives couvrent l'instance (`OWUI_URL`, `OWUI_EMAIL`, `OWUI_PASSWORD`), le modèle de chat (`OWUI_CLOUD_MODEL`) et les réglages Playwright (`PLAYWRIGHT_TIMEOUT`, `PLAYWRIGHT_HEADLESS`, `PLAYWRIGHT_BROWSER`, `PLAYWRIGHT_LOCALE`) ; les clés commentées, toutes optionnelles, couvrent la seconde instance (`OWUI_TENANT2_*`), les modèles local et persona (`OWUI_LOCAL_MODEL`, `OWUI_PERSONA_MODEL`) et le modèle de raisonnement (`OWUI_REASONING_MODEL`).
+
+Ce périmètre publiable a été tranché par [#10025](https://github.com/jsboige/CoursIA/issues/10025) (livrable 1 — périmètre publiable ; le livrable 2, les patterns `.gitignore` globaux, est dans la PR [#10057](https://github.com/jsboige/CoursIA/pull/10057)). Vérifications à rejouer avant toute contribution à ce dossier :
+
+```bash
+# 1. Check-ignore sur les 3 chemins sensibles
+git check-ignore -v <racine>/.auth/owui.json          # → ignoré
+git check-ignore -v <racine>/playwright-report/index.html  # → ignoré
+git check-ignore -v <racine>/test-results/.last-run.json  # → ignoré
+
+# 2. git add -An (dry-run) doit ne rien proposer de sensible
+git add -An -- MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/
+# (vide)
+
+# 3. Aucun fichier credential-class dans l'index
+git ls-files | grep -ciE '\.auth/|storage[-_]?state'
+# 0
+```
+
+(``<racine>`` désigne la racine du clone.) Décisions et constats voisins : [#10021](https://github.com/jsboige/CoursIA/issues/10021) — même défaut de fond, un harnais de calcul non committé donne des sorties invérifiables ; [#16](https://github.com/jsboige/CoursIA/issues/16) — provisioning des services OWUI/auth de la flotte.
 
 ## Installation et prérequis
 
@@ -125,7 +149,7 @@ Le dépôt versionne le code des tests, les utilitaires, la configuration avec s
 
 **Pour exécuter les tests** :
 
-- Node.js 18 ou plus récent ;
+- [Node.js](https://nodejs.org) 18 ou plus récent ;
 - une instance Open WebUI : celle du cours, fournie par l'enseignant, ou une instance locale ;
 - un compte sur cette instance, administrateur de préférence pour la suite complète ;
 - au moins un modèle de chat branché sur l'instance, pour les tests qui obtiennent une réponse générée.
@@ -230,7 +254,7 @@ Derrière un serveur mandataire, certaines routes d'API renvoient la page HTML d
 
 *Niveau Découverte.*
 
-**`npm install` échoue, ou Playwright ne trouve pas Chromium.** Vérifiez la version de Node par `node --version`, puis installez le navigateur par `npx playwright install chromium`. Sous Linux, `npx playwright install-deps chromium` installe les bibliothèques système qui manqueraient.
+**`npm install` échoue, ou Playwright ne trouve pas Chromium.** Vérifiez la version de Node par `node --version`, puis installez le navigateur par `npx playwright install chromium`. Sous Linux, `npx playwright install-deps chromium` installe les bibliothèques système qui manqueraient. Derrière un proxy ou un pare-feu, le téléchargement du navigateur peut être dirigé vers un miroir : `PLAYWRIGHT_DOWNLOAD_HOST=https://proxy.example.com npx playwright install chromium`.
 
 **Les tests de chat dépassent leur délai.** Ils attendent la réponse d'un moteur de langage réel, qui peut être lent ou chargé. Vérifiez d'abord que l'instance répond et que le modèle déclaré dans `.env` existe sous ce nom exact ; allongez ensuite le délai, globalement par `PLAYWRIGHT_TIMEOUT` ou pour un test par `test.setTimeout()`. Le module 03 explique les stratégies d'attente et d'assertion sur un contenu non déterministe.
 
@@ -238,7 +262,14 @@ Derrière un serveur mandataire, certaines routes d'API renvoient la page HTML d
 
 **Les tests du module 04 sont presque tous sautés.** C'est attendu sur une instance où ces fonctions ne sont pas configurées : il faut au moins une base de connaissances, des outils MCP configurés et au moins un canal. Chaque test sauté donne sa raison. Lisez-la : un test sauté parce que la fonction est absente est sain, un test sauté parce que son sélecteur est devenu obsolète masque une dérive de l'interface.
 
-**Comment adapter la suite à une autre version de la plateforme ?** Vérifiez les sélecteurs de [`helpers/selectors.ts`](helpers/selectors.ts) avec le navigateur visible, préférez l'accès par rôle aux libellés, qui changent avec la langue et la version, et lisez la note de la version visée dans « Approfondissements ».
+**Comment adapter la suite à une autre version de la plateforme ?** Les mécanismes que teste la suite — authentification, éditeur de chat, streaming — sont restés stables de la v0.8 à la v0.11, mais chaque refonte d'interface a cassé des sélecteurs ; la suite est aujourd'hui revalidée sur la flotte v0.11.0 (campagne #9854). Si votre instance diffère :
+
+1. **Sélecteurs** : vérifiez avec le mode debug (`npx playwright test --debug`) que les sélecteurs de [`helpers/selectors.ts`](helpers/selectors.ts) correspondent à votre version.
+2. **Libellés multilingues** : la ligne v0.9 a changé certains libellés. Adaptez les tests ou préférez `getByRole()`, plus robuste que `getByText()`.
+3. **Nouvelles fonctionnalités** : la v0.9.1 ajoute calendrier et tâches planifiées (voir [Nouveautés v0.9.1](WHATS-NEW-v0.9.1.md)) ; la v0.10 ajoute la mémoire persistante, les dossiers d'équipe et le raisonnement streamé (voir [Nouveautés v0.10](WHATS-NEW-v0.10.md) et le [module 06](06-nouveautes-v0.10/README.md)) ; la v0.11 refond l'interface, dont les réglages d'administration devenus des onglets (voir [Nouveautés v0.11](WHATS-NEW-v0.11.md)). Ce sont de bons candidats pour des exercices bonus.
+4. **Changement de comportement v0.10** : l'appel d'outils natif devient le comportement par défaut. Les modèles conversationnels sans outils qui répondaient normalement peuvent renvoyer des réponses vides s'ils héritent de ce mode — à surveiller lors de l'adaptation des tests de chat.
+
+Le [module 01](01-decouverte/README.md) enseigne les sélecteurs robustes (`getByRole`, `getByTestId`), qui résistent aux changements d'interface.
 
 ## Pour aller plus loin
 
@@ -255,4 +286,5 @@ Derrière un serveur mandataire, certaines routes d'API renvoient la page HTML d
 - [Vibe-Coding](../../../Vibe-Coding/README.md) — le développement assisté par IA, dont cette série est le pendant côté validation.
 - [Documentation de Playwright](https://playwright.dev/) — la référence de l'outil.
 - [Dépôt d'Open WebUI](https://github.com/open-webui/open-webui) — le code et les notes de version de la plateforme.
+- [TipTap](https://tiptap.dev/) — l'éditeur de texte riche de la zone de saisie du chat, que le module 03 apprend à piloter au clavier.
 - [Spécification du protocole MCP](https://modelcontextprotocol.io) — la référence du protocole que teste le module 04.
