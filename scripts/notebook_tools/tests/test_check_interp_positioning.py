@@ -296,7 +296,7 @@ class TestScanNotebookOkCases(unittest.TestCase):
     def test_interp_anchored_across_sibling_subheader(self):
         """Acceptance 2(a) : code -> ### sous-header -> interp -> ## header.
 
-        Cas de 03-Voting-Methods cell#4..7 (#10910) : le sous-header `###`
+        Cas de ChoixSocial-03-Voting-Methods-Python cell#4..7 (#10910) : le sous-header `###`
         entre le code et l'interp est DANS la meme section (notebook structure
         en `##`) -- la remontee de la condition 4 doit le traverser et
         atteindre le code, donc ABSOUDRE l'interp.

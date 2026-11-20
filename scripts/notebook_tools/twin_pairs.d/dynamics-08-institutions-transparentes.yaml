@@ -1,0 +1,14 @@
+- name: Dynamics-08 Institutions Transparentes
+  family: GameTheory/Dynamics
+  python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Python exécute sept textes via exec ; C# les compile et appelle
+    réellement via Microsoft.CodeAnalysis.CSharp.Scripting 4.14.0, avec un vérificateur
+    indépendant JSON/rôles.
+  known_differences:
+  - 'Marqueurs # BYLAW en Python et // BYLAW en C# ; mêmes neuf règles, sept rôles,
+    49 paires et contrôles k=0..4.'
+  - La clôture finie ne prouve aucun résultat PBLT ; les dix problèmes restent ouverts
+    et les références sont héritées.

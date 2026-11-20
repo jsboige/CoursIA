@@ -418,7 +418,7 @@ python3 -c "import lean4_jupyter; print('OK')"
 | [02b-Lean-Definitions](GameTheory-02b-Lean-Definitions-Lean.ipynb) | Lean 4 (WSL) | Définitions formelles Game, Nash |
 | [04b-Lean-NashExistence](GameTheory-04b-Lean-NashExistence-Lean.ipynb) | Lean 4 (WSL) | Existence de Nash en Lean |
 | [08b-Lean-CombinatorialGames](GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) | Lean 4 (WSL) | Jeux combinatoires en Lean |
-| [SocialChoice/01b-Lean-SocialChoice-Formal](SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) | Lean 4 (WSL) | Arrow, Sen en Lean natif |
+| [SocialChoice/ChoixSocial-01b-Lean-SocialChoice-Formal-Lean](SocialChoice/ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb) | Lean 4 (WSL) | Arrow, Sen en Lean natif |
 
 ### Dépannage Lean
 
