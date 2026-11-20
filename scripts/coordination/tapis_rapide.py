@@ -26,7 +26,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import frozen_campaigns, gh_bulk, tapis_equilibre, tapis_origami, tapis_service
+from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_equilibre,
+                         tapis_origami, tapis_sature, tapis_service)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -51,8 +52,10 @@ LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
 # Main a sorti les textes de service dans tapis_service (#26926) : REPLI et VERIF
 # n'ont plus d'usage ici, seul le code d'ecart HORSFLOTTE reste a cabler.
-CODES = ("HORSFLOTTE", "LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE",
-         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE")
+# EPAISSE et SATURE sont les deux barrieres de FOND d'un CONTENEUR (#26973) :
+# le fil declare l'epuisement, ou tous les enfants sont fermes.
+CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "LIVREE", "MERGEE", "COUVERTE",
+         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
 
 _CITE_RE = re.compile(r"#(\d+)\b")
 _PART_OF_RE = re.compile(r"\bpart\s+of\s*:?\s*#(\d+)\b", re.IGNORECASE)
@@ -219,6 +222,7 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LABEL", lambda: "label candidate-delivered : urne de cloture (coordinateur, adjoint)"
          if any(lab.strip().lower() == LABEL_LIVRE for lab in e.labels) else None),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
+        ("EPAISSE", lambda: tapis_sature.epuise(e, it.get("comments") or [])),
         ("LIVREE", lambda: _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
@@ -363,6 +367,41 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
+def _ecarts_de_fond(tous: list, file: list, args, lecture, run, maintenant,
+                    graine: str, lire_fils) -> tuple[list, dict | None]:
+    """Les deux ecarteurs de FOND, dans l'ordre qui les rend cumulatifs.
+
+    1. la **re-decision** (#27179) : un grain servi au fil tronque se re-decide
+       sur son fil complet ; hors ligne ou cache, la fenetre reste la fenetre ;
+    2. l'**ecart de saturation** (#26973) : les conteneurs dont tous les
+       enfants sont fermes sortent de la file, et le tirage est refait pour
+       les remplacer par un grain reel. La mesure porte sur les seuls
+       conteneurs de la file, et elle est fail-OPEN : une panne n'ecarte rien.
+       Un rejeu `--lecture` est hors ligne : rien n'est mesure, rien n'est
+       ecarte.
+
+    **ORDRE** : la re-decision passe AVANT la saturation. Les deux marquent le
+    meme objet (`e.ecart`) et la saturation est la seule des deux a ne JAMAIS
+    effacer une marque etrangere : la re-decision, elle, RECALCULE `e.ecart`
+    depuis le fil complet -- appliquee apres, elle pourrait rendre servable un
+    conteneur qui vient d'etre mesure sature. Dans cet ordre les deux
+    exclusions subsistent : `ordonner` ne garde que les items dont
+    `e.ecart is None`.
+    """
+    reverif = None
+    if not args.lecture and not lecture.depuis_cache:
+        from coordination import tapis_reverif
+        file, reverif = tapis_reverif.passer(
+            tous, file, args.grains, args.lane, maintenant, args.jours, graine,
+            lecture, lire_fils)
+    if not args.lecture:
+        file = tapis_sature.ecarter_satures(
+            tous, file,
+            lambda n: gh_recherche.chercher_enfants(run, gh_bulk.DEPOT_GH, n),
+            lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
+    return file, reverif
+
+
 def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
          maintenant: datetime | None = None, lire_fils: object = None) -> int:
     args = _parser().parse_args(argv)
@@ -404,14 +443,8 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
-    # #27179 : un grain servi au fil tronque se re-decide sur son fil complet
-    # au moment du service ; hors ligne ou cache, la fenetre reste la fenetre.
-    reverif = None
-    if not args.lecture and not lecture.depuis_cache:
-        from coordination import tapis_reverif
-        file, reverif = tapis_reverif.passer(
-            tous, file, args.grains, args.lane, maintenant, args.jours, graine,
-            lecture, lire_fils)
+    file, reverif = _ecarts_de_fond(tous, file, args, lecture, run, maintenant,
+                                     graine, lire_fils)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
     if reverif is not None:
