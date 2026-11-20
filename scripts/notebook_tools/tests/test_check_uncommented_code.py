@@ -16,10 +16,13 @@ Ce que ces tests protegent, dans l'ordre d'importance :
    testes : `#` dans une chaine Python, `//` dans une URL C# ;
 3. **le bornage** — une cellule inchangee par la PR n'est pas re-jugee,
    sinon cabler l'organe rougit les ~950 carnets de `main` au lieu de tenir
-   la ligne sur ce que la PR touche.
+   la ligne sur ce que la PR touche. Le bornage couvre le renommage
+   (#26690) : un carnet renomme sans changement de contenu n'est pas neuf,
+   sa base se lit a l'ancien chemin.
 
 Les tests portent sur la logique pure (`analyse_cell`, `analyse_notebook`,
-`changed_keys`) : pas de git, pas de noyau.
+`changed_keys`, `_parse_rename_status`, `renamed_notebooks`, `compare`) :
+git est simule par monkeypatch, aucun sous-processus reel, pas de noyau.
 """
 import json
 import sys
@@ -306,3 +309,131 @@ def test_sortie_json_est_lisible(tmp_path, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["flagged_cells"] == 1
     assert payload["rows"][0]["cells"][0]["code_lines"] == BODY_11_LINES
+
+
+# --------------------------------------------------------------------------
+# 8. Le renommage : la base se lit a l'ancien chemin (#26690, correctif
+#    #26837 -- ces tests pytests doublent le self-test integre)
+# --------------------------------------------------------------------------
+
+def test_table_de_renommage_lit_toutes_les_lignes_R(monkeypatch):
+    # R100 = renommage pur, R075 = renommage remanie (toujours un renommage
+    # tant que la similarite passe le seuil -M). A/M/D sont ignores.
+    out = "\n".join([
+        "R100\tancien/Avant.ipynb\tnouveau/Apres.ipynb",
+        "A\tnouveau/Neuf.ipynb",
+        "M\tmodifie/Notebook.ipynb",
+        "D\tdisparu/Vieux.ipynb",
+        "R075\tsrc/Old.ipynb\tdst/New.ipynb",
+        "",
+    ])
+    monkeypatch.setattr(organ.check_output_failure_text, "git",
+                        lambda *args, **kwargs: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
+    assert organ.renamed_notebooks("base") == {
+        "nouveau/Apres.ipynb": "ancien/Avant.ipynb",
+        "dst/New.ipynb": "src/Old.ipynb",
+    }
+
+
+def test_table_de_renommage_normalise_les_antislashs(monkeypatch):
+    # git sous Windows rend des chemins a antislashs ; l'organe partage les
+    # normalise avant de construire la table nouveau->ancien.
+    out = ("R100\tancien" + organ.check_output_failure_text.BS + "Avant.ipynb\tnouveau"
+           + organ.check_output_failure_text.BS + "Apres.ipynb")
+    monkeypatch.setattr(organ.check_output_failure_text, "git",
+                        lambda *args, **kwargs: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
+    assert organ.renamed_notebooks("base") == {
+        "nouveau/Apres.ipynb": "ancien/Avant.ipynb",
+    }
+
+
+def test_renommage_hors_seuil_absent_de_la_table(monkeypatch):
+    # Un renommage lourdement remanie (similarite sous -M) apparait comme
+    # une paire D+A, jamais comme R : il sera juge carnet neuf. C'est le
+    # sur-signalement assume, jamais un blanchiment.
+    out = "D\tancien/Avant.ipynb\nA\tnouveau/Apres.ipynb"
+    monkeypatch.setattr(organ.check_output_failure_text, "git",
+                        lambda *args, **kwargs: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
+    assert organ.renamed_notebooks("base") == {}
+
+
+def _fake_reader(heads: dict, bases: dict):
+    """read_notebook_at simule : heads = contenu HEAD par chemin (ref None),
+    bases = contenu de la base par chemin (toute autre ref)."""
+    def read(ref, path, cwd=None):
+        if ref is None:
+            return heads.get(path)
+        return bases.get(path)
+    return read
+
+
+def test_renommage_pur_sans_changement_pas_de_finding(monkeypatch):
+    # Le defaut fondeur de #26690 : lire la base au NOUVEAU chemin rend
+    # None, et le carnet renomme etait juge en entier comme neuf. La base
+    # doit etre relue a l'ANCIEN chemin.
+    content = _notebook(_cell(*BODY_12), _cell("x = 1"))
+    monkeypatch.setattr(organ, "read_notebook_at", _fake_reader(
+        heads={"nouveau/Apres.ipynb": content},
+        bases={"ancien/Avant.ipynb": content},  # rien au nouveau chemin
+    ))
+    renames = {"nouveau/Apres.ipynb": "ancien/Avant.ipynb"}
+    rows = organ.compare("BASE", ["nouveau/Apres.ipynb"], renames=renames)
+    assert rows == []
+
+
+def test_renommage_avec_cellule_modifiee_borne_au_changement(monkeypatch):
+    head = _notebook(_cell(*BODY_12), _cell("x = 1"))
+    base = _notebook(_cell("# explique, taxes incluses", *BODY_12), _cell("x = 1"))
+    monkeypatch.setattr(organ, "read_notebook_at", _fake_reader(
+        heads={"nouveau/Apres.ipynb": head},
+        bases={"ancien/Avant.ipynb": base},
+    ))
+    rows = organ.compare("BASE", ["nouveau/Apres.ipynb"],
+                         renames={"nouveau/Apres.ipynb": "ancien/Avant.ipynb"})
+    assert len(rows) == 1
+    assert rows[0]["new_notebook"] is False  # la base a ete trouvee
+    assert len(rows[0]["cells"]) == 1         # seule la cellule modifiee
+
+
+def test_renomme_vers_chemin_exclu_sort_du_perimetre(monkeypatch):
+    # Un carnet renomme vers un chemin exclu (_output, archive...) n'est pas
+    # juge : le filtre porte sur le chemin NOUVEAU (renamed_notebooks).
+    out = "R100\tsrc/Ok.ipynb\tdst/_output/Ok.ipynb\nR100\tsrc/A.ipynb\tdst/A.ipynb"
+    monkeypatch.setattr(organ.check_output_failure_text, "git",
+                        lambda *a, **k: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
+    assert organ.renamed_notebooks("BASE") == {
+        "dst/A.ipynb": "src/A.ipynb",
+    }
+
+
+def test_vrai_carnet_neuf_reste_juge_en_entier(monkeypatch):
+    # Sans renommage et sans base au chemin, le carnet reste neuf : la
+    # correction ne doit jamais blanchir un vrai nouveau carnet.
+    monkeypatch.setattr(organ, "read_notebook_at", _fake_reader(
+        heads={"nouveau/Neuf.ipynb": _notebook(_cell(*BODY_12))},
+        bases={},
+    ))
+    rows = organ.compare("BASE", ["nouveau/Neuf.ipynb"], renames={})
+    assert len(rows) == 1
+    assert rows[0]["new_notebook"] is True
+    assert len(rows[0]["cells"]) == 1
