@@ -1,0 +1,20 @@
+{
+  "mesure": "mur 8 Go — Qwen3-8B GRPO/QLoRA smoke, harnais campagne inchangé",
+  "carte": "NVIDIA GeForce RTX 3070 Laptop GPU",
+  "vram_total_MiB": 8192,
+  "harnais": "probe_15099_dapo_grpo.py smoke --model qwen3_8b --dataset hermes --seed 0",
+  "env": "coursia-ml-training (torch 2.14.1+cu126, TRL 1.12)",
+  "poids": "cache HF local models--Qwen--Qwen3-8B, aucun téléchargement",
+  "sampler": {
+    "cadence_declaree_s": 1.0,
+    "n_echantillons": 60,
+    "duree_s": 59.0
+  },
+  "pic_mem_used_MiB": 123,
+  "resultat": "OOM a la construction du GRPOTrainer (from_pretrained -> caching_allocator_warmup), tentative 6.80 Gio pour 6.96 Gio libres",
+  "run_rc": 1,
+  "steps": 0,
+  "generations": 0,
+  "duree_run_s": 59,
+  "derive_de": "vram_8b_grpo_8go.jsonl + oom_traceback.txt (rien de saisi a la main hors les champs texte)"
+}
