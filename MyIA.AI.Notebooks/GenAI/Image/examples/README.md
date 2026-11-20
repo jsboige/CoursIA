@@ -6,6 +6,14 @@ Exemples concrets d'utilisation des notebooks GenAI Image dans différents domai
 
 **Dans le cadre du fil rouge contenu visuel educatif** : ces notebooks montrent l'application directe des techniques des niveaux precedents. [science-diagrams](science-diagrams.ipynb) genere des diagrammes et schemas techniques pour les cours de sciences. [history-geography](history-geography.ipynb) cree des cartes et reconstitutions historiques. [literature-visual](literature-visual.ipynb) illustre des textes litteraires.
 
+## Comment lire ce README
+
+- Vous cherchez **un modèle de prompt pour un domaine précis** : chaque section d'[exemples concrets](#exemples-concrets) donne le prompt, la sortie réelle et l'usage pédagogique visé — commencez par le domaine qui vous concerne.
+- Vous voulez **voir la mécanique avant les exemples** : les trois carnets supposent les techniques de [01-Foundation](../01-Foundation/README.md) et [02-Advanced](../02-Advanced/README.md) (génération par API, paramètres, itération sur un prompt) ; le [workflow typique](#workflow-typique) en donne l'ordre.
+- Vous voulez **réutiliser les sorties** : la provenance de chaque figure (carnet, format, poids) est dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md) — les images sont les sorties réelles de `gpt-image-1`, pas des maquettes.
+
+Cette navigation par niveaux suit le principe des séries à plusieurs vitesses décrit dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
 ## Vue d'overview
 
 | Statistique | Valeur |
@@ -17,11 +25,11 @@ Exemples concrets d'utilisation des notebooks GenAI Image dans différents domai
 
 ## Notebooks par domaine
 
-| Domaine | Notebook | Description |
-|---------|---------|-------------|
-| **Histoire-Geographie** | [history-geography](history-geography.ipynb) | Création de cartes historiques, reconstitutions, illustrations éducatives |
-| **Littérature** | [literature-visual](literature-visual.ipynb) | Illustrations de textes, couvertures de livres, visuels narratifs |
-| **Science** | [science-diagrams](science-diagrams.ipynb) | Diagrammes scientifiques, schémas techniques, visualisations complexes |
+| Domaine | Notebook | Description | Ce qu'on y apprend |
+|---------|---------|-------------|--------------------|
+| **Histoire-Geographie** | [history-geography](history-geography.ipynb) | Création de cartes historiques, reconstitutions, illustrations éducatives | Formuler un prompt qui rend un contenu lisible (carte avec légende, frise, reconstitution) plutôt qu'une image d'ambiance |
+| **Littérature** | [literature-visual](literature-visual.ipynb) | Illustrations de textes, couvertures de livres, visuels narratifs | Passer d'un passage de texte à une illustration fidèle, et d'un personnage à une planche multi-poses |
+| **Science** | [science-diagrams](science-diagrams.ipynb) | Diagrammes scientifiques, schémas techniques, visualisations complexes | Obtenir un schéma annoté et légendé (organites, flux) au lieu d'une illustration décorative |
 
 ## Exemples concrets
 
@@ -86,6 +94,12 @@ Le notebook [science-diagrams](science-diagrams.ipynb) génère des schémas ann
 3. **Génération** : Créer les images avec paramètres précis
 4. **Post-processing** : Amélioration et édition si nécessaire
 5. **Intégration** : Utilisation dans le support final
+
+## Approfondissements
+
+- **Le prompt de chaque figure est lisible dans son carnet** : les sections ci-dessus commentent les sorties ; le prompt exact, la seed et les paramètres vivent dans les cellules de [history-geography](history-geography.ipynb), [literature-visual](literature-visual.ipynb) et [science-diagrams](science-diagrams.ipynb) — c'est là qu'on adapte un exemple à son propre cours.
+- **La provenance des images** : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md) documente le carnet, la cellule et le poids natif de chaque WebP affiché ; les fichiers sont des réductions d'outputs réels.
+- **En amont** : les techniques employées (API cloud, paramètres de rendu, itérations sur un prompt) sont introduites dans [01-Foundation](../01-Foundation/README.md) et affinées dans [02-Advanced](../02-Advanced/README.md).
 
 ## Ressources
 

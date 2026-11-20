@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — Matrice de dissociations (notebook × claim × proxy × contrôle × réplicats × type × verdict × portée)
 
 > **Statut.** Document de synthèse transversal, grade **C-documentaire** (consolidation, pas de nouveau dispatch). Ossaturé par la **factorisation 4-objets** dégagée par l'audit #4 (tour 523) — remplace « la variable latente miraculeuse » comme cadre de lecture des claims.

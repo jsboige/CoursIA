@@ -1,0 +1,141 @@
+#!/usr/bin/env python3
+"""La rotation UNIVERSELLE du tapis : toutes les issues, donnees legeres.
+
+Le tirage actuel (`coordination/tapis_rapide.py`) classe le pool entier, mais
+applique **neuf regles d'ecart avant la rotation** et lit le **corps, les
+commentaires et les PRs** de chaque issue ouverte. Pour classer 439 issues
+afin d'en servir quelques-unes, ce sont deux lectures qui ne servent a rien.
+
+Ce module fait la rotation **sur les metadonnees seules** :
+
+- la lecture est **legere** (`coordination.gh_selection`) : numero, titre,
+  date, labels -- et le signal du **travail reel** (les commits de
+  `origin/main` qui citent l'issue). Une apparition dans une liste n'est pas
+  une visite ;
+- la rotation porte sur **toutes** les issues ouvertes, sans ecarter : ce
+  sont les verifications (claim, gel, contenu livre) qui se font **a la prise
+  en charge**, par le lecteur existant, sur le grain servi ;
+- chaque grain servi porte son **etat et l'action a faire**, jamais une
+  exclusion silencieuse.
+
+La bascule du tirage par defaut est la tranche suivante : elle suppose que la
+prise en charge qualifie le grain (le lecteur lourd cible), ce qui est un
+changement de protocole autant que de code.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from datetime import UTC, datetime
+from pathlib import Path
+
+from coordination import gh_bulk, gh_selection, tapis_equilibre, tapis_marqueurs
+from coordination.tapis_rapide import Etat, graine_defaut, ordonner
+
+
+def _parent_de_titre(titre: str) -> int | None:
+    """La racine d'EPIC portee par le TITRE (le corps n'est pas lu ici).
+
+    Mêmes motifs que le tirage complet : `[EPIC] ... #12345` et `[#12345] ...`.
+    """
+    for motif in (r"^\s*\[\s*epic\b[^\]]{0,40}?#(\d+)", r"^\s*\[#(\d+)\b"):
+        import re
+        m = re.match(motif, titre or "", re.IGNORECASE)
+        if m:
+            return int(m.group(1))
+    return None
+
+
+def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
+                maintenant: datetime) -> list[Etat]:
+    """Un etat par issue ouverte, sur les metadonnees seules.
+
+    Les visites comptent le **travail reel** : les commits qui citent l'issue.
+    Les marqueurs de visite vivent dans les commentaires -- ils sont lus a la
+    prise en charge, pas au classement."""
+    etats = []
+    for it in metas:
+        n = int(it["number"])
+        labels = list(it.get("labels") or [])
+        parent = _parent_de_titre(it.get("title") or "")
+        e = Etat(n, it.get("title") or "", labels, it.get("created_at") or "",
+                 parent, parent or n, False,
+                 any(lab.strip().lower() == "consolidation" for lab in labels))
+        e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
+            [], citations.get(n, []), maintenant)
+        etats.append(e)
+    return etats
+
+
+def rotation_universelle(etats_: list[Etat], lane: str, maintenant: datetime,
+                          grains: int, graine: str | None = None) -> list[Etat]:
+    """La rotation de TOUTES les issues ouvertes, sans ecarter.
+
+    L'ordre est celui de `tapis_equilibre` : niveau croissant (visites du
+    tour moins les priorites legeres), puis le decalage de tete par lane."""
+    return ordonner(etats_, lane, maintenant, grains, graine)
+
+
+def action_de(e: Etat, lane: str) -> str:
+    """Ce que la lane doit faire de ce grain : le lire, le qualifier, le servir."""
+    base = (f"lire l'issue #{e.numero}, la qualifier (claim vivant, gel, "
+            f"contenu deja livre) puis la servir")
+    if e.consolidation:
+        base += " -- issue de consolidation"
+    return base
+
+
+def rapport(etats_: list[Etat], file: list[Etat], lane: str, maintenant: datetime,
+            lecture: dict) -> dict:
+    """Le rapport du tirage universel : les grains, leur etat, l'action, la mesure."""
+    conso = tapis_equilibre.familles_consolidation(etats_)
+    return {
+        "lane": lane, "maintenant": tapis_marqueurs._iso(maintenant),
+        "lecture": lecture, "pool": len(etats_),
+        "grains": [{"numero": e.numero, "titre": e.titre,
+                    "visites": e.visites, "visites_total": e.visites_total,
+                    "consolidation": e.consolidation,
+                    "priorite": tapis_equilibre.raisons(e, conso, maintenant),
+                    "action": action_de(e, lane)} for e in file],
+    }
+
+
+def _parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        description="Tapis universel : rotation de toutes les issues, lecture legere.")
+    p.add_argument("--lane", required=True, help="machine:workspace")
+    p.add_argument("--grains", type=int, default=8)
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--jours", type=int, default=45, help="fenetre des commits cites")
+    p.add_argument("--budget-s", type=float, default=gh_selection.MUR_GLOBAL_S,
+                   help="budget global de la lecture de selection")
+    return p
+
+
+def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
+         maintenant: datetime | None = None) -> int:
+    args = _parser().parse_args(argv)
+    depot = Path(__file__).resolve().parents[2]
+    maintenant = maintenant or datetime.now(UTC)
+    try:
+        metas, duree = gh_selection.lire_metadonnees_issues(
+            run, budget_s=args.budget_s)
+        citations = gh_bulk.lire_citations_mergees(depot, args.jours, run)
+    except gh_bulk.LectureIncomplete as exc:
+        print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
+              file=sys.stderr)
+        return 3
+    etats_ = etats_leger(metas, citations, maintenant)
+    file = rotation_universelle(etats_, args.lane, maintenant, args.grains,
+                                graine_defaut(args.lane, maintenant))
+    r = rapport(etats_, file, args.lane, maintenant,
+                {"issues": len(metas), "secondes": duree, "budget_s": args.budget_s})
+    out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else "\n".join(
+        f"#{g['numero']} {g['titre'][:70]} -- {g['action']}" for g in r["grains"])
+    sys.stdout.buffer.write((out + "\n").encode("utf-8"))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
