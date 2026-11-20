@@ -485,12 +485,15 @@ def test_aucun_lake_du_manifeste_ne_tombe_a_zero_module():
     repo_root = here.parents[3]
     lakes = json.loads(manifest.read_text(encoding="utf-8")).get("lakes") or []
     vides = []
+    visites = 0
     for entry in lakes:
         root = repo_root / entry["project-path"]
         if not root.is_dir():
             continue
+        visites += 1
         if not enumerate_modules(root):
             vides.append(entry["lake"])
+    assert visites > 0, "aucun lake du manifeste present dans ce checkout"
     assert not vides, "lakes sans module enumeré : {}".format(", ".join(vides))
 
 
