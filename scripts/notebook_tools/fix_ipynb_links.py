@@ -15,7 +15,7 @@ convertissait `.ipynb` -> `.html`, classe `STALE_LINK` de #13025/#18970,
 ~2428 violations). L'arbitrage du user (Concern du 2026-10-08 sur #19897,
 decision c.6076029168) a renverse la politique.
 
-Classes actuelles de `scripts/regen_quarto_render.py --check-readme-links` :
+Classes actuelles de `scripts/ci/regen_quarto_render.py --check-readme-links` :
 - HTML_404 : le lien `.html` pointe une cible absente du depot -> 404 sur
   github.com. **C'est la classe que cet outil corrige**, en repointant vers le
   `.ipynb` sibling quand il existe.
@@ -172,8 +172,9 @@ def main(argv=None) -> int:
     ap.add_argument("targets", nargs="+", help="fichiers README.md ou repertoires")
     args = ap.parse_args(argv)
 
-    # Import tardif pour eviter une dep circulaire dans les tests
-    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+    # Import tardif pour eviter une dep circulaire dans les tests.
+    # Depuis le relogement #27355, le scanner vit dans scripts/ci/.
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "ci"))
     from regen_quarto_render import git_tracked_notebooks
 
     # `notebooks` = les notebooks suivis (repo-relative). Depuis l'inversion

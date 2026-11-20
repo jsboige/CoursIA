@@ -28,7 +28,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 V4_DIR = REPO_ROOT / "MyIA.AI.Notebooks" / "GenAI" / "Audio" / "04-Applications"
 DEFAULT_BOOK = V4_DIR.parent / "boule_de_suif_full.txt"
 

@@ -30,9 +30,9 @@ Manifest (gitignored) records offsets so restore is verified. Byte-level
 replacement, no JSON re-serialization.
 
 Usage:
-  python scripts/quarto_yaml_safe.py apply [--target <path>]
-  python scripts/quarto_yaml_safe.py restore
-  python scripts/quarto_yaml_safe.py check [--strict] [--target <path>]
+  python scripts/ci/quarto_yaml_safe.py apply [--target <path>]
+  python scripts/ci/quarto_yaml_safe.py restore
+  python scripts/ci/quarto_yaml_safe.py check [--strict] [--target <path>]
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ import sys
 from pathlib import Path
 from typing import Iterable
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
 DEFAULT_MANIFEST = REPO_ROOT / ".quarto_yaml_safe_manifest.json"
 

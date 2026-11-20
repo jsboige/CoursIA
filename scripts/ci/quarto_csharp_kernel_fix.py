@@ -37,7 +37,7 @@ import re
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ROOT = REPO_ROOT / "MyIA.AI.Notebooks"
 DEFAULT_MANIFEST = REPO_ROOT / ".quarto_csharp_fix_manifest.json"
 

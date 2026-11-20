@@ -14,7 +14,7 @@ project:
     - "docs/parcours.qmd"
     - "COURSE_CATALOG.generated.md"
     # README.md rendus en HTML (Axe C #4211). Liste explicite
-    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
+    # (regeneree par scripts/ci/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
     - "README.md"
