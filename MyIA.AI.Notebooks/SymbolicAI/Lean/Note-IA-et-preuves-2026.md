@@ -2,7 +2,7 @@
 
 > Sous-issue de [#19729](https://github.com/jsboige/CoursIA/issues/19729) (grain 3 / 3).
 > Référence : `MyIA.AI.Notebooks/SymbolicAI/Lean/Note-IA-et-preuves-2026.md` (note transverse, ce fichier).
-> Série parente : [`MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/`](./ANALYSE/) (fil vivant #18408, distillation de résultats majeurs récents en Lean + Python).
+> Série parente : [`MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/`](./Analyse/) (fil vivant #18408, distillation de résultats majeurs récents en Lean + Python).
 > Sources archivées sur GDrive : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Probabilistic\2026 - …` (cf. corps de l'issue #19729).
 
 Cette note compare les **trois AI-disclosures** publiées à l'occasion de la résolution de la conjecture KLS (Kannan–Lovász–Simonovits, ouverte 1995, tranchée 3× début octobre 2026). Elle ne porte pas sur la mathématique des preuves (cf. le carnet Lean `ANALYSE-05`, livré, pour ça), mais sur **ce que la collaboration humain–IA révèle des modes de production et de vérification**, en regard des règles d'or du dépôt (B.0, G-VAR, MEMORY le tells cross-cycle).
@@ -53,9 +53,9 @@ Laissant la mathématique au carnet `ANALYSE-05` (livré), on tire trois leçons
 
 ### Ré-évaluation à la lumière d'ANALYSE-05 (2026-10-28)
 
-> Mesures à l'appui : audit de pin, `#check` et `#print axioms` dans [`ANALYSE-05-KLS-Lean-Python` §3 et §3.2](./ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb) — carnet committé sur `main`, outputs inclus.
+> Mesures à l'appui : audit de pin, `#check` et `#print axioms` dans [`ANALYSE-05-KLS-Lean-Python` §3 et §3.2](./Analyse/ANALYSE-05-KLS-Lean-Python.ipynb) — carnet committé sur `main`, outputs inclus.
 
-[`ANALYSE-05-KLS-Lean-Python`](./ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb) est livrée — grains 1 et 2 par #19830 et #19834, grain 4 (Song–Zhang O(1), `ANALYSE-05b`) par #22275. Le pied de page de cette note demandait de confronter L1–L3 à ce que l'expérience concrète aurait montré ; c'est fait ci-dessous, mesures sur `main` à l'appui.
+[`ANALYSE-05-KLS-Lean-Python`](./Analyse/ANALYSE-05-KLS-Lean-Python.ipynb) est livrée — grains 1 et 2 par #19830 et #19834, grain 4 (Song–Zhang O(1), `ANALYSE-05b`) par #22275. Le pied de page de cette note demandait de confronter L1–L3 à ce que l'expérience concrète aurait montré ; c'est fait ci-dessous, mesures sur `main` à l'appui.
 
 **L1 — tenue, et doublée d'un pendant formel.** Le carnet s'exécute de bout en bout : zéro `execution_count` nul, zéro erreur, aucune sortie de repli. Ce que l'expérience ajoute : la discipline de sortie a son exact homologue du côté formel — **l'axiome déclaré**. `#print axioms` rend `[propext, Classical.choice, Quot.sound]` : aucun `sorryAx`, aucun `native_decide`, et les cinq preuves du lac sont complètes au sens du noyau. La « documentation de l'IA comme auteur de fait » devient, côté preuve, une **dette de formalisation écrite** : le `README` du lac `kls_lean` énumère les énoncés exclus (Théorème 1.1, thin-shell, germe quadratique) et la condition de leur entrée, plutôt que de poser des `sorry` d'énoncé. L'honnêteté sur ce qui n'est pas prouvé est la même vertu que L1 exige sur ce qui n'est pas exécuté.
 
@@ -73,7 +73,7 @@ Trois grains documentés à [#19729](https://github.com/jsboige/CoursIA/issues/1
 - **Grain 2 (à ouvrir en sous-issue)** : `Probas-KLS-Concentration` — carnet Probas sur la concentration des mesures log-concaves : estimation Monte-Carlo du gap spectral / de la constante de Cheeger sur cube, simplexe et gaussienne en dimension croissante ; marche hit-and-run et temps de mélange ; variance thin-shell. Pas de verdict SOTA (CPU-borné). PR attendue à partir de c.99+.
 - **Grain 3 (cette note)** : la présente note transverse. PR à ouvrir en c.97.
 
-Statut : note rédigée en c.97 par `myia-po-2024:CoursIA-2`. Référencée par le README de la série `ANALYSE/`. Relue en regard de la sortie d'ANALYSE-05 (livrée) : leçons L1–L3 ré-évaluées au §4 — consolidées, aucune inversée (critère 4 de #19762).
+Statut : note rédigée en c.97 par `myia-po-2024:CoursIA-2`. Référencée par le README de la série `Analyse/`. Relue en regard de la sortie d'ANALYSE-05 (livrée) : leçons L1–L3 ré-évaluées au §4 — consolidées, aucune inversée (critère 4 de #19762).
 
 ## Sources
 

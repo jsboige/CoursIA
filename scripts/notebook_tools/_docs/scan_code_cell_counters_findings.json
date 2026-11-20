@@ -7,21 +7,21 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-13-SymbolicAutomata-Csharp.ipynb",
+    "path": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-13-SymbolicAutomata-CSharp.ipynb",
     "cell_index": 52,
     "line_no": 23,
     "text": "// --- Contre-vérification C# (avant le pont) : énumération EXHAUSTIVE des 64 lignes, sans BDD ---",
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-13-SymbolicAutomata-Csharp.ipynb",
+    "path": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-13-SymbolicAutomata-CSharp.ipynb",
     "cell_index": 52,
     "line_no": 95,
     "text": "# --- Contre-vérification exhaustive côté Python : les 64 lignes balayées à la brute ---",
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-15-Infer-Csharp.ipynb",
+    "path": "MyIA.AI.Notebooks\\Sudoku\\Sudoku-15-Infer-CSharp.ipynb",
     "cell_index": 40,
     "line_no": 5,
     "text": "// Kuhn-Munkres en C# (~50 lignes) -- pas d'Or-Tools LinearSumAssignment car",
@@ -42,7 +42,7 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Lean-16c-Conway-Game-of-Life-Golly.ipynb",
+    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\JeuDeLaVie\\GOL-02-Golly.ipynb",
     "cell_index": 25,
     "line_no": 37,
     "text": "# Temps par generation ~ O(W x H) : pour le gun (50x120=6000 cells), 1000 gens a pris gun_time",
@@ -63,7 +63,7 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\ANALYSE\\ANALYSE-02-Tao-Lean-Python.ipynb",
+    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Analyse\\ANALYSE-02-Tao-Lean-Python.ipynb",
     "cell_index": 2,
     "line_no": 4,
     "text": "# au 2026-08-11) : 109 fichiers Lean / 44 297 LOC / 2079 sorry. Si aucun clone local",
@@ -98,14 +98,14 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\Search\\Applications\\CSP\\App-08-MiniZinc-CSharp.ipynb",
+    "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-08-MiniZinc-CSharp.ipynb",
     "cell_index": 11,
     "line_no": 2,
     "text": "// MiniZinc exprime N-Reines en ~5 lignes grace a la contrainte globale alldifferent.",
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\Search\\Applications\\CSP\\App-08-MiniZinc-Python.ipynb",
+    "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-08-MiniZinc-Python.ipynb",
     "cell_index": 15,
     "line_no": 36,
     "text": "# CP-SAT (Python, OR-Tools) - 12 lignes utiles",
@@ -126,7 +126,7 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\IIT\\ICT-Series\\ICT-35-HumorCausalProbe-Pilot.ipynb",
+    "path": "MyIA.AI.Notebooks\\IIT\\ICT-Series\\ICT-35-HumorCausalProbe-Pilot-Python.ipynb",
     "cell_index": 11,
     "line_no": 5,
     "text": "# = moyenne des 5 repetitions ; 1 ligne par groupe N = 30 lignes) ; StratifiedKFold",

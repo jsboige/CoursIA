@@ -10,7 +10,7 @@ name: Lean Build (reusable)
 #     ci:
 #       uses: jsboige/CoursIA/.github/workflows/lean-build.yml@main
 #       with:
-#         project-path:      MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean
+#         project-path:      MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean
 #         display-name:      grothendieck_lean
 #         sorry-baseline:    "0"
 #         sorry-filter-mode: prose-header   # raw | prose-header | standalone-tactic

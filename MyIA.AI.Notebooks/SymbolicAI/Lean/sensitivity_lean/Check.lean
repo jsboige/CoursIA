@@ -5,7 +5,7 @@ import Sensitivity.Sens2026
 # Point d'entree de verification pour le carnet ANALYSE-06-Sensibilite-2026-Lean-Python
 
 Ce fichier n'est PAS compile par `lake build` (hors globs de la lib) : il sert
-au carnet `../ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb`, qui
+au carnet `../Analyse/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb`, qui
 l'execute via `lake env lean Check.lean` pour afficher les signatures reelles
 du socle et de l'ajout 2026, et prouver l'integrite des theoremes (aucun
 axiome au-dela des trois standards, aucun sorry).

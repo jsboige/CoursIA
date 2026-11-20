@@ -114,7 +114,7 @@ def test_reclass_with_matching_ordinal_is_silent():
 
     Without it the widening reds on every cross-family citation in the repo.
     """
-    src = "[Lean-03 (Galois)](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-03-x.ipynb)"
+    src = "[Lean-03 (Galois)](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/GALOIS-03-x.ipynb)"
     assert organ.check_text(src, "<test>", RECLASS_FAMILIES) == []
 
 

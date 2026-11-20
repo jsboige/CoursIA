@@ -20,7 +20,7 @@ import sys
 from pathlib import Path
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
-_LAKE = _REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GROTH" / "grothendieck_lean"
+_LAKE = _REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "Grothendieck" / "grothendieck_lean"
 UMBRELLA = _LAKE / "Grothendieck.lean"
 MODULES_DIR = _LAKE / "Grothendieck"
 

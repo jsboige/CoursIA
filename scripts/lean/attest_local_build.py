@@ -112,7 +112,7 @@ LEAN_EXEC = LEAN_DIR / "lean_exec.py"
 # --------------------------------------------------------------------------
 # #26630 -- le cache chaud se RESOUT par toolchain, il n'est plus fige.
 #
-# Un seul pivot (`GOL/conway_lean`, toolchain v4.33.0) rendait trois lakes
+# Un seul pivot (`JeuDeLaVie/conway_lean`, toolchain v4.33.0) rendait trois lakes
 # INMERGEABLES PAR CONSTRUCTION : `formal_logic` (v4.33.1),
 # `socialchoicepeters` (v4.32.1) et `conwaycgt` (v4.33.0-rc1) ne peuvent pas
 # emprunter le cache d'une autre toolchain -- le build est produit par la
