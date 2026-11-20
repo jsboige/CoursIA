@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`symboliclearning.csv`](symboliclearning.csv) | `SymbolicAI/SymbolicLearning/` (top-level) | 20 (`SL-1-LogicalLearning` → `SL-12-DifferentiableLogicGateNetworks`, parité Python ⇄ C# `-Csharp`) | 738 (444 markdown + 294 code, 20 colonnes) |
+| [`symboliclearning.csv`](symboliclearning.csv) | `SymbolicAI/SymbolicLearning/` (top-level) | 20 (`SL-01-LogicalLearning-Python` → `SL-12-DifferentiableLogicGateNetworks-Python`, parité Python ⇄ C# `-Csharp`) | 738 (444 markdown + 294 code, 20 colonnes) |
 
 **Schéma** : 20 colonnes (#4957 §1). `src_lang=fr`, `src_hash` (sha256-16) + `text_fr` remplies ; colonnes cibles (`text_en/es/ar/...`) vides pour le moteur T3 Argumentum (#1650 Phase 1).
 

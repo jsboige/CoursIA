@@ -444,7 +444,7 @@ déclaration dans un notebook :
 
 - [`02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb`](../DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) — côté série ML : modèle, échantillon, concentration uniforme (EPIC #11703) ;
 - [`04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb`](../DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb) — côté série Vision : évanouissement `c ^ n` vs survie `(1-c) ^ n`, table Float du balayage en profondeur et 3 exercices (See #13106) ;
-- [`SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb`](../../SymbolicAI/SymbolicLearning/SL-1b-LogicalLearning-Lean-Native.ipynb) — côté série SymbolicAI : chaîne complète des bornes (Valiant classe finie, agnostique, Hoeffding-Chernoff) et branche perceptron (Novikoff + serrage), avec 3 exercices de preuve (See #11703).
+- [`SymbolicAI/SymbolicLearning/SL-01b-LogicalLearning-Lean.ipynb`](../../SymbolicAI/SymbolicLearning/SL-01b-LogicalLearning-Lean.ipynb) — côté série SymbolicAI : chaîne complète des bornes (Valiant classe finie, agnostique, Hoeffding-Chernoff) et branche perceptron (Novikoff + serrage), avec 3 exercices de preuve (See #11703).
 
 ## Référence
 

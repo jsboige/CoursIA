@@ -696,7 +696,7 @@ class TestCSharpLeakCandidates:
 def _md_protocol_cell(title):
     """Markdown exercise-header cell carrying the full proof protocol in a
     fenced lean block -- the class (h) anatomy measured on PR #14161
-    (pre-fix SHA 016fbd4410, SL-1b-LogicalLearning-Lean-Native)."""
+    (pre-fix SHA 016fbd4410, SL-01b-LogicalLearning-Lean)."""
     return _md_cell(
         f"### {title}\n\n"
         "**Le protocole de preuve** :\n\n"

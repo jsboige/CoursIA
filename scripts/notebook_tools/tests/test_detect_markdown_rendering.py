@@ -555,7 +555,7 @@ class TestYamlBlockOpenNoClose:
 
         The pre-#11630 exemption claimed a blank line after the opening ``---``
         made it a "thematic break, not a YAML opener". ai-01's arbitration
-        (2026-08-18) refuted it empirically: SL-8-KnowledgeGraphs-ILP.ipynb --
+        (2026-08-18) refuted it empirically: SL-08-KnowledgeGraphs-ILP-Python.ipynb --
         the notebook that took the site down the SECOND time, at 20:27Z, AFTER
         #11629 -- is exactly ``---\\n\\n## Titre`` in all 15 markdown cells,
         and the oracle js-yaml renders ``scanned=1 bad=1`` (*bad indentation of

@@ -46890,14 +46890,14 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ip
 **Navigation** : [<< Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | [Index](README.md) | [Lean-11-TorchLean >>](Lean-11-TorchLean.ipynb)",,,,,,,,2825ace62e6fc54e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12c-Tensor-Product-Representations-Lean.ipynb,298ddbd3,markdown,fr,0c13e32a6ecd3979,"# Lean-12c : algèbre TPR — binding, unbinding et constituent surgery dans le noyau Lean
 
-**Série** : [SymbolicAI/Lean](README.md) | Précédent : [Lean-12b — Sensitivity natif](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Suivant : [Lean-13 — Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | Jumeau empirique : [SL-13 — DISCOVER/TPR](../SymbolicLearning/SL-13-Discover-TPR.ipynb)
+**Série** : [SymbolicAI/Lean](README.md) | Précédent : [Lean-12b — Sensitivity natif](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Suivant : [Lean-13 — Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | Jumeau empirique : [SL-13 — DISCOVER/TPR](../SymbolicLearning/SL-13-Discover-TPR-Python.ipynb)
 
 **Référence** : R. Thomas McCoy, Paul Soulos, Tal Linzen, Paul Smolensky, *The Emergent Symbolic Structure of Artificial Neural Networks*, arXiv:2608.29530. Modèle TPR : Smolensky (1990).
 
 Ce notebook est le **companion formel** du module
 [`Sensitivity/TensorProductRepresentation.lean`](sensitivity_lean/Sensitivity/TensorProductRepresentation.lean)
 du lake `sensitivity_lean` — grain **G7** de l'EPIC [#14366](https://github.com/jsboige/CoursIA/issues/14366).
-Là où [SL-13](../SymbolicLearning/SL-13-Discover-TPR.ipynb) *mesure* (sur des GRU CPU) dans quelle
+Là où [SL-13](../SymbolicLearning/SL-13-Discover-TPR-Python.ipynb) *mesure* (sur des GRU CPU) dans quelle
 mesure des états cachés sont **proches** d'une représentation par produit tensoriel, ce notebook
 exhibe dans le kernel Lean l'**algèbre exacte du modèle TPR** : ce qui est vrai, sans erreur ni
 approximation, *à l'intérieur du modèle* — et l'ensemble des hypothèses sous lesquelles c'est vrai.
@@ -46925,7 +46925,7 @@ laisserait le module TPR invisible du parcours pédagogique.
 ### Prérequis
 
 - [Lean-12b](Lean-12b-Lean-Sensitivity-Theorem.ipynb) — la cérémonie `#check` / `#print axioms` (kernel `lean4-wsl`) ;
-- recommandé : [SL-13](../SymbolicLearning/SL-13-Discover-TPR.ipynb) pour le versant empirique (non requis) ;
+- recommandé : [SL-13](../SymbolicLearning/SL-13-Discover-TPR-Python.ipynb) pour le versant empirique (non requis) ;
 - algèbre linéaire de base : produit matrice-vecteur, produit scalaire.
 
 ### Durée estimée : 35 minutes
@@ -47331,7 +47331,7 @@ affine, `TprApproxEntrywise`).
    mécaniquement le prouvé de l'hypothèse — la frontière épistémique de la section 7 n'est pas
    une posture, elle est dans les types.
 
-**Raccords** : [SL-13](../SymbolicLearning/SL-13-Discover-TPR.ipynb) mesure la distance
+**Raccords** : [SL-13](../SymbolicLearning/SL-13-Discover-TPR-Python.ipynb) mesure la distance
 réseau-modèle (DISCOVER, réinjection, chirurgie, contrôles) ;
 [Lean-12b](Lean-12b-Lean-Sensitivity-Theorem.ipynb) couvre l'autre corpus du lake (Huang 2019) ;
 [Lean-13](Lean-13-Kochen-Specker.ipynb) poursuit la série. Le module existe aussi en jumeau

@@ -1,6 +1,6 @@
 - name: "SL-10 ActiveAutomataLearning"
   family: SymbolicAI/SymbolicLearning
-  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Python.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK

@@ -3011,8 +3011,8 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb,cel
 
 La théorie PAC n'est pas qu'un cadre abstrait : elle est **appliquée** concrètement dans deux notebooks de la série `SymbolicLearning`, où l'on retrouve exactement les mêmes quantités `ε`, `δ` et `m` :
 
-- **[SL-3 — Relevance Learning](../../../SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb)** : la borne PAC est appliquée au **Relevance-Based Learning** (RBL) de l'IA symbolique — combien d'exemples suffisent pour identifier les littéraux pertinents d'un concept conjonctif.
-- **[SL-10 — Active Automata Learning](../../../SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb)** : la théorie PAC rencontre l'algorithme **L\\*** d'Angluin pour l'apprentissage actif d'automates (*query learning* + borne d'échantillonnage minimale).
+- **[SL-3 — Relevance Learning](../../../SymbolicAI/SymbolicLearning/SL-03-RelevanceLearning-Python.ipynb)** : la borne PAC est appliquée au **Relevance-Based Learning** (RBL) de l'IA symbolique — combien d'exemples suffisent pour identifier les littéraux pertinents d'un concept conjonctif.
+- **[SL-10 — Active Automata Learning](../../../SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Python.ipynb)** : la théorie PAC rencontre l'algorithme **L\\*** d'Angluin pour l'apprentissage actif d'automates (*query learning* + borne d'échantillonnage minimale).
 
 Ici, PAC est enseigné **comme socle théorique du ML** ; dans SL-3 et SL-10, il est **réinvesti comme outil**. Aucune duplication de contenu : ce notebook pose les définitions, les notebooks SL les mettent en œuvre sur des objets symboliques.
 ",,,,,,,,354e99e9eeba9f89,,,,,,,,,,,,,,,

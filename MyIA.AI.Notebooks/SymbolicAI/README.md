@@ -33,7 +33,7 @@ Chaque série est autonome. Un fil rouge les traverse pourtant : du formalisme p
 2. **Prouver** la correction d'un énoncé par assistant de preuve interactif — types dépendants, isomorphisme de Curry-Howard, tactiques Lean, librairie Mathlib4 côté [Lean](Lean/README.md) (cell.0 de `Lean-01-Setup-Lean-Python.ipynb`) ; démonstration automatique en géométrie (vérification probabiliste, bases de Gröbner, méthode de Wu) côté Lean/Geometry (notebook `Geometry-01-From-Figure-To-Equation`).
 3. **Décider** la satisfiabilité et optimiser sous contraintes — encodeur SMT-LIB, preuves par `unsat`, arithmétique linéaire/non-linéaire, optimisation modulo théories côté [SMT](SMT/README.md) (cell.0 de `Z3-API/Z3-01-Introduction-Python.ipynb`) ; planification classique PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique côté [Planners](Planners/README.md) (cell.0 de `00-Environment/Planners-00-Setup-Python.ipynb`).
 4. **Exécuter** dans un monde simulé ou sur blockchain — agents autonomes, recherche heuristique et compromis expressivité/temps de recherche côté Planners (notebooks `Planners-1-*`) ; standards de jetons (ERC-20, ERC-721), DeFi, gouvernance on-chain, ZK, conservation de la valeur côté [SmartContracts](SmartContracts/README.md) (cell.0 de `00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`).
-5. **Apprendre** à partir de connaissances plutôt que de données et **relier** le symbolique au neuronal — version space, explanation-based learning, programmation logique inductive (FOIL), automates, neuro-symbolique côté [SymbolicLearning](SymbolicLearning/README.md) (cell.0 de `SL-1-LogicalLearning.ipynb`) ; orchestration d'agents LLM validés par Tweety, détection de sophismes, prompting structuré côté ArgumentAnalysis (notebooks `Argumentation-04-*`).
+5. **Apprendre** à partir de connaissances plutôt que de données et **relier** le symbolique au neuronal — version space, explanation-based learning, programmation logique inductive (FOIL), automates, neuro-symbolique côté [SymbolicLearning](SymbolicLearning/README.md) (cell.0 de `SL-01-LogicalLearning-Python.ipynb`) ; orchestration d'agents LLM validés par Tweety, détection de sophismes, prompting structuré côté ArgumentAnalysis (notebooks `Argumentation-04-*`).
 
 Chaque verbe se construit par accumulation : un lecteur qui ne suit qu'une série atteint un sous-ensemble, et c'est en croisant les huit qu'il couvre la carte complète. Les **flèches pleines** de la [carte de la famille](#carte-de-la-famille) ci-dessous matérialisent les ponts : une compétence acquise dans Tweety devient argument dans ArgumentAnalysis, un encodage SMT devient prouveur de borne dans Planners, une ontologie OWL devient garde-fou pour un LLM via GraphRAG.
 
@@ -60,7 +60,7 @@ Un nom de notebook suit la forme `<Prefixe>-<NN><lettre?>-<Titre>[-Part<N>]-<Noy
 | `-Part<N>` | — | un notebook découpé en parties à lire dans l'ordre |
 | noyau en dernier | `-Python`, `-CSharp`, `-Lean`, `-Lean-Python` | le kernel à installer ; `-Lean-Python` désigne un notebook Python qui pilote Lean |
 
-La normalisation des noms est en cours (#16231). Beaucoup de fichiers de la famille n'ont pas encore leur padding ou leur suffixe de noyau (`Lean-02-Dependent-Types-Lean`, `SL-4-InductiveLogicProgramming`). En attendant, la colonne Noyau des tables fait foi.
+La normalisation des noms est en cours (#16231). Beaucoup de fichiers de la famille n'ont pas encore leur padding ou leur suffixe de noyau (`Lean-02-Dependent-Types-Lean`, `SL-04-InductiveLogicProgramming-Python`). En attendant, la colonne Noyau des tables fait foi.
 
 ## Carte de la famille
 
@@ -126,7 +126,7 @@ Trois séries se prennent **à côté** de ce parcours, selon ce qui vous attire
 | Série | Ce qu'on y apprend | Ce qu'elle suppose | Porte d'entrée | Public | Noyau |
 |---|---|---|---|---|---|
 | [Argumentation](ArgumentAnalysis/README.md) | Analyse argumentative outillée : Toulmin, sophismes, sémantiques de Dung, orchestration d'agents LLM validés par Tweety | les bases de Tweety, une clé d'API | [Argumentation-00-Setup-Tweety-Python](ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb) | Licence | Python |
-| [SymbolicLearning](SymbolicLearning/README.md) | Apprentissage à partir de connaissances (AIMA ch. 19) : Version Space, EBL, programmation logique inductive, automates, neuro-symbolique | Python seul | [SL-1-LogicalLearning](SymbolicLearning/SL-1-LogicalLearning.ipynb) | Licence | Python · C# |
+| [SymbolicLearning](SymbolicLearning/README.md) | Apprentissage à partir de connaissances (AIMA ch. 19) : Version Space, EBL, programmation logique inductive, automates, neuro-symbolique | Python seul | [SL-01-LogicalLearning-Python](SymbolicLearning/SL-01-LogicalLearning-Python.ipynb) | Licence | Python · C# |
 | [Geometry](Lean/Geometry/README.md) | Démonstration automatique en géométrie : vérification probabiliste, bases de Gröbner, méthode de Wu | la géométrie du lycée | [Geometry-01-From-Figure-To-Equation](Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb) | Découverte | Python |
 
 ## Les séries en bref

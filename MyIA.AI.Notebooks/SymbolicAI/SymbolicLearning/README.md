@@ -46,11 +46,11 @@ Les notebooks (~22h50 total — 17 Python + 8 jumeaux C# marathon parité #4956 
 
 ## Parité .NET ⇄ Python
 
-Le notebook [SL-1-LogicalLearning-CSharp.ipynb](SL-1-LogicalLearning-CSharp.ipynb) est le jumeau C# (.NET Interactive) de SL-1 — implémentation from-scratch des mêmes algorithmes (CBH + Candidate Elimination) en C# pur (type system + `HashSet<>`, pas de lib externe). Marathon parité .NET ⇄ Python (#4956).
+Le notebook [SL-01-LogicalLearning-CSharp.ipynb](SL-01-LogicalLearning-CSharp.ipynb) est le jumeau C# (.NET Interactive) de SL-1 — implémentation from-scratch des mêmes algorithmes (CBH + Candidate Elimination) en C# pur (type system + `HashSet<>`, pas de lib externe). Marathon parité .NET ⇄ Python (#4956).
 
 ## Compagnon Lean natif
 
-Le notebook [SL-1b-LogicalLearning-Lean-Native.ipynb](SL-1b-LogicalLearning-Lean-Native.ipynb) exécute le lake [`learning_theory_lean`](../../ML/learning_theory_lean/README.md) (théorie PAC + perceptron de Novikoff, 0-sorry) directement dans le kernel Lean 4 `lean4-wsl` : `#check` des théorèmes du lake (borne de Valiant classe finie, généralisation agnostique, concentration de Hoeffding-Chernoff, convergence et serrage du perceptron), une distribution construite à la main, et 3 exercices de preuve. C'est le pendant formel de l'inductif de SL-1 — là où SL-1 *implémente* l'apprentissage inductif, SL-1b *prouve* ses garanties d'échantillonnage (See #11703).
+Le notebook [SL-01b-LogicalLearning-Lean.ipynb](SL-01b-LogicalLearning-Lean.ipynb) exécute le lake [`learning_theory_lean`](../../ML/learning_theory_lean/README.md) (théorie PAC + perceptron de Novikoff, 0-sorry) directement dans le kernel Lean 4 `lean4-wsl` : `#check` des théorèmes du lake (borne de Valiant classe finie, généralisation agnostique, concentration de Hoeffding-Chernoff, convergence et serrage du perceptron), une distribution construite à la main, et 3 exercices de preuve. C'est le pendant formel de l'inductif de SL-1 — là où SL-1 *implémente* l'apprentissage inductif, SL-1b *prouve* ses garanties d'échantillonnage (See #11703).
 
 ## Séries connexes
 
@@ -189,67 +189,67 @@ Modalite de la séance : chaque groupe choisit **un exercice** dans la table ci-
 
 | # | Notebook | Exercice | Question-twist (en bref) |
 |---|----------|----------|--------------------------|
-| 1 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 1 — CBH avec ordre personnalise | Deux ordres d'exemples, deux hypothèses finales : pourquoi, a accuracy égale ? |
-| 2 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 2 — Version Space sur sous-ensemble | Qu'est-ce qui rend un exemple *informatif* (frontières S et G) ? |
-| 3 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 3 — Règles avec couverture | Compacite vs hypothèse AIMA : quel biais (rasoir d'Occam) préfère l'une a l'autre ? |
-| 4 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 4 — Réflexion sur le biais conjonctif | Un domaine où ce biais est idéal, un où il est catastrophique (no free lunch) |
-| 5 | [SL-1](SL-1-LogicalLearning.ipynb) | Ex. 5 — La consistance sans Occam (aima) | Echantillonner les graines ne prouve pas la minimalité : quel algorithme exact le ferait ? |
-| 6 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 1 — EBL differentiation symbolique | Exhiber une variabilisation trop agressive qui produit une règle compilee fausse |
-| 7 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 2 — RBL, robustesse au bruit | Une colonne bruitée qui « détermine » accidentellement la cible : régularité accidentelle ou véritable détermination ? |
-| 8 | [SL-2](SL-2-KnowledgeBasedLearning.ipynb) | Ex. 3 — Speedup EBL | Le *utility problem* (Minton 1990) : pourquoi apprendre plus finit par ralentir |
-| 9 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 1 — Déterminations meteo | Une observation bruitee : quelle détermination minimale survit ? |
-| 10 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 2 — RBL vs sélection aleatoire | Trouver le point de croisement ou la sélection statistique bat le RBL |
-| 11 | [SL-3](SL-3-RelevanceLearning.ipynb) | Ex. 3 — Sélecteur hybride | Quelles garanties votre hybride hérite-t-il vraiment ? Contre-exemple construit |
-| 12 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 1 — `sibling` avec FOIL | Le rôle du biais de langage : que se passe-t-il sans le littéral `X != Y` ? |
-| 13 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 2 — Opérateur W | Généralisation consistante mais fausse : pourquoi le bottom-up y est expose |
-| 14 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 3 — Règles sur mini-KG | Monde clos vs PCA (cf SL-8) : quelle confiance est la bonne pour VOTRE KG ? |
-| 15 | [SL-4](SL-4-InductiveLogicProgramming.ipynb) | Ex. 4 — `grandparent` avec Popper | Sans négatif arrière-grand-parent, quel programme plus court devient consistant ? |
-| 16 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 1 — Apprendre `grandmother/2` | Pourquoi `grandparent/2` (sans sexe) est *plus facile* — rôle des négatifs |
-| 17 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 2 — Profondeur de la clause bottom | Croissance de la clause bottom avec la profondeur ; la cible reste-t-elle dans le treillis ? |
-| 18 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 3 — Tolérance au bruit | Le score `p - n - L` comme argument MDL : quand préfère-t-il une clause imparfaite ? |
-| 19 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 4 — Reduction de Plotkin | Subsomption vs implication : le cas des clauses récursives ou elles divergent |
-| 20 | [SL-5](SL-5-InverseResolution.ipynb) | Ex. 5 — Aleph face au bruit | Memoriser l'exception, sur-généraliser ou payer L dans f : trois frontières face au même bruit |
-| 21 | [SL-6](SL-6-ModernILP.ipynb) | Ex. 1 — Direction de mode (Aleph) | Pourquoi `(+,-)` apprend et `(+,+)` échoue : ce que la direction des modes change pour l'entailment inverse |
-| 22 | [SL-6](SL-6-ModernILP.ipynb) | Ex. 2 — `grandparent` non récursif | Cible a 2 sauts sans clôture : quel biais (max_clauses, pas de récursion) suffit, et l'invention de prédicats sert-elle encore ? |
-| 23 | [SL-6](SL-6-ModernILP.ipynb) | Ex. 3 — Robustesse au bruit (∂ILP vs symbolique) | Un faux positif injecte : ∂ILP degrade sa confiance, Popper exact n'a pas de notion de bruit — a quel prix chacun ? |
-| 24 | [SL-7](SL-7-NeuroSymbolic.ipynb) | Ex. 2 — LTN frere/oncle | Retirer les axiomes négatifs : pourquoi une LTN a besoin de négatifs explicites |
-| 25 | [SL-7](SL-7-NeuroSymbolic.ipynb) | Ex. 3 — Règle transitive `ancestor` | Le modèle trivial « vrai partout » sature la règle : qu'est-ce qui l'évite ? |
-| 26 | [SL-7](SL-7-NeuroSymbolic.ipynb) | Ex. 4 — T-norm de Lukasiewicz | Gradients exactement nuls : qu'est-ce qu'une sémantique floue *apprenable* ? |
-| 27 | [SL-7](SL-7-NeuroSymbolic.ipynb) | Ex. 5 — Ablation de l'axiome 4 (LTNtorch) | Le négatif difficile (Marie, Pierre) est-il indispensable ? Contraste avec clingo (SL-8) |
-| 28 | [SL-8](SL-8-KnowledgeGraphs-ILP.ipynb) | Ex. 1 — Nouvelle relation au KG | Règles redondantes (même extension, syntaxe différente) : comment AMIE les évite |
-| 29 | [SL-8](SL-8-KnowledgeGraphs-ILP.ipynb) | Ex. 2 — PCA confidence | Construire un mini-KG ou la PCA confidence est trompeuse |
-| 30 | [SL-8](SL-8-KnowledgeGraphs-ILP.ipynb) | Ex. 3 — Règles a 3 atomes | Explosion combinatoire : pourquoi AMIE impose des règles fermées, a quel prix |
-| 31 | [SL-8](SL-8-KnowledgeGraphs-ILP.ipynb) | Ex. 4 — Reparation minimale (clingo) | Les reparations optimales sont ex-aequo : départager par des poids de confiance |
-| 32 | [SL-9](SL-9-LLM-SymbolicLearning.ipynb) | Ex. 1 — Prompt personnalise | Changer de modèle LLM : que garantit vraiment l'oracle symbolique ? |
-| 33 | [SL-9](SL-9-LLM-SymbolicLearning.ipynb) | Ex. 2 — Prompt direct vs CoT | Validation oracle vs plausibilite du texte : les deux métriques peuvent diverger |
-| 34 | [SL-9](SL-9-LLM-SymbolicLearning.ipynb) | Ex. 3 — Detection d'hallucinations | Le detecteur suppose un monde clos : que devient-il en monde ouvert (cf SL-8) ? |
-| 35 | [SL-9](SL-9-LLM-SymbolicLearning.ipynb) | Ex. 4 — Taux d'hallucination du vrai LLM | Maximiser le taux de validation ou le nombre de règles validees par appel ? |
-| 36 | [SL-10](SL-10-ActiveAutomataLearning.ipynb) | Ex. 1 — Le langage « contient abb » | Certificat de minimalité : un suffixe distinguant pour chaque paire d'états (Myhill-Nerode) |
-| 37 | [SL-10](SL-10-ActiveAutomataLearning.ipynb) | Ex. 2 — Fiabilité de l'EQ échantillonnée | Relier le taux de réussite empirique à la borne PAC ; construire une distribution adverse |
-| 38 | [SL-10](SL-10-ActiveAutomataLearning.ipynb) | Ex. 3 — Contre-exemples : prefixes vs suffixes | Le pire cas qui fait exploser la table d'observation (Rivest-Schapire) |
-| 39 | [SL-10](SL-10-ActiveAutomataLearning.ipynb) | Ex. 4 — Oracle bruite | Reparer L* par vote majoritaire : surcout en requêtes et probabilité residuelle d'erreur |
-| 40 | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) | Ex. 1 — Etendre le schéma (`marie_avec`) | Le mineur redecouvre la symetrie injectee par l'oracle : règle ou tautologie ? |
-| 41 | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) | Ex. 2 — Politique de conflit a sources | *Truth discovery* : estimer la fiabilité des sources en même temps que les faits |
-| 42 | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) | Ex. 3 — Le bon seuil n'existe pas | Vraie et fausse règle a confiance égale (0.67) : quel signal au-dela du seuil ? |
-| 43 | [SL-11](SL-11-Capstone-NeuroSymbolic.ipynb) | Ex. 4 — Empoisonnement bout-en-bout | Classer les defenses par étage du pipeline ; ou s'arrete la provenance ? |
-| 44 | [SL-12](SL-12-DifferentiableLogicGateNetworks.ipynb) | Ex. 1 — Variation de profondeur | Trade-off capacité vs sur-apprentissage : combien de couches pour quel régime ? |
-| 45 | [SL-12](SL-12-DifferentiableLogicGateNetworks.ipynb) | Ex. 2 — Porte favorite d'un neurone isole | Quelle porte (AND/NAND/XOR) l'apprentissage favorise-t-il pour MNIST ? |
-| 46 | [SL-12](SL-12-DifferentiableLogicGateNetworks.ipynb) | Ex. 3 — Robustesse au bruit pixel | La discretisation booleenne aide-t-elle face au bruit vs un MLP équivalent ? |
-| 47 | [SL-1b](SL-1b-LogicalLearning-Lean-Native.ipynb) | Ex. 1 — Erreur nulle contre soi-même (Lean) | Spécialiser `trueError_self` : quel quantificateur la structure `Distribution` rend-il gratuit ? |
-| 48 | [SL-1b](SL-1b-LogicalLearning-Lean-Native.ipynb) | Ex. 2 — Masse des échantillons (Lean) | `sampleWeight_sum_one` : pourquoi la Fubini discrète suffit-elle sans théorie de la mesure ? |
-| 49 | [SL-1b](SL-1b-LogicalLearning-Lean-Native.ipynb) | Ex. 3 — Symétrie du désaccord (Lean) | `trueError_comm` : que dit la symétrie sur l'interprétabilité de l'erreur comme distance ? |
-| 50 | [SL-12b](SL-12b-SpectralLogicSynthesis.ipynb) | Ex. 1 — Spectre de EXACT2 (poids de Hamming) | Degré Fourier contre degré PTF : lequel ment sur la complexité ? |
-| 51 | [SL-12b](SL-12b-SpectralLogicSynthesis.ipynb) | Ex. 2 — Sinkhorn sur ligne uniforme | Une permutation unique au coût minimal prouve-t-elle que le routage « a choisi » ? |
-| 52 | [SL-12b](SL-12b-SpectralLogicSynthesis.ipynb) | Ex. 3 — Instance séparant SA et PT | Qu'est-ce qui rend une instance « dure » pour une seule température ? |
-| 53 | [SL-13](SL-13-Discover-TPR.ipynb) | Ex. 1 — Tâche à rôles sémantiques (argmax_pos) | Quand les rôles ne sont plus des positions mais des étiquettes, la TPR émerge-t-elle encore ? |
-| 54 | [SL-13](SL-13-Discover-TPR.ipynb) | Ex. 2 — Constituent surgery sémantique | La permutation des rôles 0↔1 dans la TPR produit-elle la sortie attendue pour la séquence aux rôles permutés ? |
-| 55 | [SL-13](SL-13-Discover-TPR.ipynb) | Ex. 3 — Seuil de capacité et TPR | Quel d_model marque le point d'inflexion entre compression forcée et TPR non-nécessaire ? |
-| 56 | [SL-14](SL-14-AIFeynman-Discover-Equations.ipynb) | Ex. 1 — Rejet statistique anticipé (ν=10) | En combien de points un mauvais candidat meurt-il, et pourquoi ν=10 rend-il le test quasi immunisé aux faux positifs ? |
-| 57 | [SL-14](SL-14-AIFeynman-Discover-Equations.ipynb) | Ex. 2 — Addition relativiste récursive | La symétrie généralisée se déclenche deux fois de suite : jusqu'où peut-on empiler les vitesses ? |
-| 58 | [SL-14](SL-14-AIFeynman-Discover-Equations.ipynb) | Ex. 3 — Frontière de bruit | À quel niveau de bruit la forme relativiste disparaît-elle du front — et que mesure vraiment la table 3 du papier ? |
-| 59 | [SL-15](SL-15-LearnedConjectures-Solver.ipynb) | Ex. 1 — Top-k par confiance | Le hint complet ne rend que −18 % là où une fixation isolée vaut −62 % : quelle tête garder, et pourquoi la confiance du MLP n'est *pas* le juge du gain ? |
-| 60 | [SL-15](SL-15-LearnedConjectures-Solver.ipynb) | Ex. 2 — Réfutation des conjectures | Détecter les arêtes en conflit : comment une conjecture peut-elle être *fausse* au sens de l'oracle et pourtant *profitable* au solveur ? |
-| 61 | [SL-15](SL-15-LearnedConjectures-Solver.ipynb) | Ex. 3 — Réparation gloutonne | Retirer les fixations conflictuelles jusqu'à zéro conflit : le hint réparé conserve-t-il le gain, ou paie-t-il le coût de sa réparation ? |
+| 1 | [SL-1](SL-01-LogicalLearning-Python.ipynb) | Ex. 1 — CBH avec ordre personnalise | Deux ordres d'exemples, deux hypothèses finales : pourquoi, a accuracy égale ? |
+| 2 | [SL-1](SL-01-LogicalLearning-Python.ipynb) | Ex. 2 — Version Space sur sous-ensemble | Qu'est-ce qui rend un exemple *informatif* (frontières S et G) ? |
+| 3 | [SL-1](SL-01-LogicalLearning-Python.ipynb) | Ex. 3 — Règles avec couverture | Compacite vs hypothèse AIMA : quel biais (rasoir d'Occam) préfère l'une a l'autre ? |
+| 4 | [SL-1](SL-01-LogicalLearning-Python.ipynb) | Ex. 4 — Réflexion sur le biais conjonctif | Un domaine où ce biais est idéal, un où il est catastrophique (no free lunch) |
+| 5 | [SL-1](SL-01-LogicalLearning-Python.ipynb) | Ex. 5 — La consistance sans Occam (aima) | Echantillonner les graines ne prouve pas la minimalité : quel algorithme exact le ferait ? |
+| 6 | [SL-2](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 1 — EBL differentiation symbolique | Exhiber une variabilisation trop agressive qui produit une règle compilee fausse |
+| 7 | [SL-2](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 2 — RBL, robustesse au bruit | Une colonne bruitée qui « détermine » accidentellement la cible : régularité accidentelle ou véritable détermination ? |
+| 8 | [SL-2](SL-02-KnowledgeBasedLearning-Python.ipynb) | Ex. 3 — Speedup EBL | Le *utility problem* (Minton 1990) : pourquoi apprendre plus finit par ralentir |
+| 9 | [SL-3](SL-03-RelevanceLearning-Python.ipynb) | Ex. 1 — Déterminations meteo | Une observation bruitee : quelle détermination minimale survit ? |
+| 10 | [SL-3](SL-03-RelevanceLearning-Python.ipynb) | Ex. 2 — RBL vs sélection aleatoire | Trouver le point de croisement ou la sélection statistique bat le RBL |
+| 11 | [SL-3](SL-03-RelevanceLearning-Python.ipynb) | Ex. 3 — Sélecteur hybride | Quelles garanties votre hybride hérite-t-il vraiment ? Contre-exemple construit |
+| 12 | [SL-4](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 1 — `sibling` avec FOIL | Le rôle du biais de langage : que se passe-t-il sans le littéral `X != Y` ? |
+| 13 | [SL-4](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 2 — Opérateur W | Généralisation consistante mais fausse : pourquoi le bottom-up y est expose |
+| 14 | [SL-4](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 3 — Règles sur mini-KG | Monde clos vs PCA (cf SL-8) : quelle confiance est la bonne pour VOTRE KG ? |
+| 15 | [SL-4](SL-04-InductiveLogicProgramming-Python.ipynb) | Ex. 4 — `grandparent` avec Popper | Sans négatif arrière-grand-parent, quel programme plus court devient consistant ? |
+| 16 | [SL-5](SL-05-InverseResolution-Python.ipynb) | Ex. 1 — Apprendre `grandmother/2` | Pourquoi `grandparent/2` (sans sexe) est *plus facile* — rôle des négatifs |
+| 17 | [SL-5](SL-05-InverseResolution-Python.ipynb) | Ex. 2 — Profondeur de la clause bottom | Croissance de la clause bottom avec la profondeur ; la cible reste-t-elle dans le treillis ? |
+| 18 | [SL-5](SL-05-InverseResolution-Python.ipynb) | Ex. 3 — Tolérance au bruit | Le score `p - n - L` comme argument MDL : quand préfère-t-il une clause imparfaite ? |
+| 19 | [SL-5](SL-05-InverseResolution-Python.ipynb) | Ex. 4 — Reduction de Plotkin | Subsomption vs implication : le cas des clauses récursives ou elles divergent |
+| 20 | [SL-5](SL-05-InverseResolution-Python.ipynb) | Ex. 5 — Aleph face au bruit | Memoriser l'exception, sur-généraliser ou payer L dans f : trois frontières face au même bruit |
+| 21 | [SL-6](SL-06-ModernILP-Python.ipynb) | Ex. 1 — Direction de mode (Aleph) | Pourquoi `(+,-)` apprend et `(+,+)` échoue : ce que la direction des modes change pour l'entailment inverse |
+| 22 | [SL-6](SL-06-ModernILP-Python.ipynb) | Ex. 2 — `grandparent` non récursif | Cible a 2 sauts sans clôture : quel biais (max_clauses, pas de récursion) suffit, et l'invention de prédicats sert-elle encore ? |
+| 23 | [SL-6](SL-06-ModernILP-Python.ipynb) | Ex. 3 — Robustesse au bruit (∂ILP vs symbolique) | Un faux positif injecte : ∂ILP degrade sa confiance, Popper exact n'a pas de notion de bruit — a quel prix chacun ? |
+| 24 | [SL-7](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 2 — LTN frere/oncle | Retirer les axiomes négatifs : pourquoi une LTN a besoin de négatifs explicites |
+| 25 | [SL-7](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 3 — Règle transitive `ancestor` | Le modèle trivial « vrai partout » sature la règle : qu'est-ce qui l'évite ? |
+| 26 | [SL-7](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 4 — T-norm de Lukasiewicz | Gradients exactement nuls : qu'est-ce qu'une sémantique floue *apprenable* ? |
+| 27 | [SL-7](SL-07-NeuroSymbolic-Python.ipynb) | Ex. 5 — Ablation de l'axiome 4 (LTNtorch) | Le négatif difficile (Marie, Pierre) est-il indispensable ? Contraste avec clingo (SL-8) |
+| 28 | [SL-8](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 1 — Nouvelle relation au KG | Règles redondantes (même extension, syntaxe différente) : comment AMIE les évite |
+| 29 | [SL-8](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 2 — PCA confidence | Construire un mini-KG ou la PCA confidence est trompeuse |
+| 30 | [SL-8](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 3 — Règles a 3 atomes | Explosion combinatoire : pourquoi AMIE impose des règles fermées, a quel prix |
+| 31 | [SL-8](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | Ex. 4 — Reparation minimale (clingo) | Les reparations optimales sont ex-aequo : départager par des poids de confiance |
+| 32 | [SL-9](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 1 — Prompt personnalise | Changer de modèle LLM : que garantit vraiment l'oracle symbolique ? |
+| 33 | [SL-9](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 2 — Prompt direct vs CoT | Validation oracle vs plausibilite du texte : les deux métriques peuvent diverger |
+| 34 | [SL-9](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 3 — Detection d'hallucinations | Le detecteur suppose un monde clos : que devient-il en monde ouvert (cf SL-8) ? |
+| 35 | [SL-9](SL-09-LLM-SymbolicLearning-Python.ipynb) | Ex. 4 — Taux d'hallucination du vrai LLM | Maximiser le taux de validation ou le nombre de règles validees par appel ? |
+| 36 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 1 — Le langage « contient abb » | Certificat de minimalité : un suffixe distinguant pour chaque paire d'états (Myhill-Nerode) |
+| 37 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 2 — Fiabilité de l'EQ échantillonnée | Relier le taux de réussite empirique à la borne PAC ; construire une distribution adverse |
+| 38 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 3 — Contre-exemples : prefixes vs suffixes | Le pire cas qui fait exploser la table d'observation (Rivest-Schapire) |
+| 39 | [SL-10](SL-10-ActiveAutomataLearning-Python.ipynb) | Ex. 4 — Oracle bruite | Reparer L* par vote majoritaire : surcout en requêtes et probabilité residuelle d'erreur |
+| 40 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 1 — Etendre le schéma (`marie_avec`) | Le mineur redecouvre la symetrie injectee par l'oracle : règle ou tautologie ? |
+| 41 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 2 — Politique de conflit a sources | *Truth discovery* : estimer la fiabilité des sources en même temps que les faits |
+| 42 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 3 — Le bon seuil n'existe pas | Vraie et fausse règle a confiance égale (0.67) : quel signal au-dela du seuil ? |
+| 43 | [SL-11](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Ex. 4 — Empoisonnement bout-en-bout | Classer les defenses par étage du pipeline ; ou s'arrete la provenance ? |
+| 44 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 1 — Variation de profondeur | Trade-off capacité vs sur-apprentissage : combien de couches pour quel régime ? |
+| 45 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 2 — Porte favorite d'un neurone isole | Quelle porte (AND/NAND/XOR) l'apprentissage favorise-t-il pour MNIST ? |
+| 46 | [SL-12](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | Ex. 3 — Robustesse au bruit pixel | La discretisation booleenne aide-t-elle face au bruit vs un MLP équivalent ? |
+| 47 | [SL-1b](SL-01b-LogicalLearning-Lean.ipynb) | Ex. 1 — Erreur nulle contre soi-même (Lean) | Spécialiser `trueError_self` : quel quantificateur la structure `Distribution` rend-il gratuit ? |
+| 48 | [SL-1b](SL-01b-LogicalLearning-Lean.ipynb) | Ex. 2 — Masse des échantillons (Lean) | `sampleWeight_sum_one` : pourquoi la Fubini discrète suffit-elle sans théorie de la mesure ? |
+| 49 | [SL-1b](SL-01b-LogicalLearning-Lean.ipynb) | Ex. 3 — Symétrie du désaccord (Lean) | `trueError_comm` : que dit la symétrie sur l'interprétabilité de l'erreur comme distance ? |
+| 50 | [SL-12b](SL-12b-SpectralLogicSynthesis-Python.ipynb) | Ex. 1 — Spectre de EXACT2 (poids de Hamming) | Degré Fourier contre degré PTF : lequel ment sur la complexité ? |
+| 51 | [SL-12b](SL-12b-SpectralLogicSynthesis-Python.ipynb) | Ex. 2 — Sinkhorn sur ligne uniforme | Une permutation unique au coût minimal prouve-t-elle que le routage « a choisi » ? |
+| 52 | [SL-12b](SL-12b-SpectralLogicSynthesis-Python.ipynb) | Ex. 3 — Instance séparant SA et PT | Qu'est-ce qui rend une instance « dure » pour une seule température ? |
+| 53 | [SL-13](SL-13-Discover-TPR-Python.ipynb) | Ex. 1 — Tâche à rôles sémantiques (argmax_pos) | Quand les rôles ne sont plus des positions mais des étiquettes, la TPR émerge-t-elle encore ? |
+| 54 | [SL-13](SL-13-Discover-TPR-Python.ipynb) | Ex. 2 — Constituent surgery sémantique | La permutation des rôles 0↔1 dans la TPR produit-elle la sortie attendue pour la séquence aux rôles permutés ? |
+| 55 | [SL-13](SL-13-Discover-TPR-Python.ipynb) | Ex. 3 — Seuil de capacité et TPR | Quel d_model marque le point d'inflexion entre compression forcée et TPR non-nécessaire ? |
+| 56 | [SL-14](SL-14-AIFeynman-Discover-Equations-Python.ipynb) | Ex. 1 — Rejet statistique anticipé (ν=10) | En combien de points un mauvais candidat meurt-il, et pourquoi ν=10 rend-il le test quasi immunisé aux faux positifs ? |
+| 57 | [SL-14](SL-14-AIFeynman-Discover-Equations-Python.ipynb) | Ex. 2 — Addition relativiste récursive | La symétrie généralisée se déclenche deux fois de suite : jusqu'où peut-on empiler les vitesses ? |
+| 58 | [SL-14](SL-14-AIFeynman-Discover-Equations-Python.ipynb) | Ex. 3 — Frontière de bruit | À quel niveau de bruit la forme relativiste disparaît-elle du front — et que mesure vraiment la table 3 du papier ? |
+| 59 | [SL-15](SL-15-LearnedConjectures-Solver-Python.ipynb) | Ex. 1 — Top-k par confiance | Le hint complet ne rend que −18 % là où une fixation isolée vaut −62 % : quelle tête garder, et pourquoi la confiance du MLP n'est *pas* le juge du gain ? |
+| 60 | [SL-15](SL-15-LearnedConjectures-Solver-Python.ipynb) | Ex. 2 — Réfutation des conjectures | Détecter les arêtes en conflit : comment une conjecture peut-elle être *fausse* au sens de l'oracle et pourtant *profitable* au solveur ? |
+| 61 | [SL-15](SL-15-LearnedConjectures-Solver-Python.ipynb) | Ex. 3 — Réparation gloutonne | Retirer les fixations conflictuelles jusqu'à zéro conflit : le hint réparé conserve-t-il le gain, ou paie-t-il le coût de sa réparation ? |
 
 Note : dans SL-7, le premier exercice de la numérotation interne est un exemple guide ; les exercices à piocher sont Ex. 2 à Ex. 5.
 
@@ -257,29 +257,29 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 
 | # | Notebook | Contenu | Durée | Pour approfondir |
 |---|----------|---------|-------|-------------------|
-| 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min | [1b](#autour-de-sl-1) |
-| 1 | [SL-1 - Apprentissage Logique (Twin C#)](SL-1-LogicalLearning-CSharp.ipynb) | **Jumeau C#** — CBH (Current-Best-Hypothesis) + Candidate Elimination / Version Space implémentés from-scratch en C# pur (type system + `HashSet<>`, pas de lib externe ML) (See #4956) | 50 min | [1b](#autour-de-sl-1) |
-| 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |  |
-| 2 | [SL-2 - Apprentissage et Connaissance (Twin C#)](SL-2-KnowledgeBasedLearning-CSharp.ipynb) | **Jumeau C#** — EBL (chaînage avant + unification, arbre de preuve, variabilisation) + RBL (vérification de détermination) from-scratch (See #4956) | 50 min |  |
-| 3 | [SL-3 - Apprentissage Basé sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |  |
-| 3 | [SL-3 - RBL (Twin C#)](SL-3-RelevanceLearning-CSharp.ipynb) | **Jumeau C#** — Treillis des déterminations, MINIMAL-CONSISTENT-DET (BFS), PAC bound, information mutuelle from-scratch (See #4956) | 50 min |  |
-| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, résolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |  |
-| 4 | [SL-4 - ILP (Twin C#)](SL-4-InductiveLogicProgramming-CSharp.ipynb) | **Jumeau C#** — FOIL (gain Quinlan) + résolution inverse (V/W) + unification from-scratch, mini-KG (See #4956) | 50 min |  |
-| 5 | [SL-5 - Résolution Inverse et Progol](SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |  |
-| 5 | [SL-5 - Résolution Inverse (Twin C#)](SL-5-InverseResolution-CSharp.ipynb) | **Jumeau C#** — LGG de Plotkin, θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p − L`) from-scratch (See #4956) | 55 min |  |
-| 6 | [SL-6 - Moteurs ILP modernes](SL-6-ModernILP.ipynb) | Aleph, Metagol, Popper, ∂ILP (Lernd) sur `ancestor/2` (moteurs réels) | 65 min |  |
-| 6 | [SL-6 - Moteurs ILP (Twin C#)](SL-6-ModernILP-CSharp.ipynb) | **Jumeau C#** — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, couverture extensionnelle par backtracking, récursion `ancestor/2` = cas de base + pas récursif), benchmark profondeur 5-20, verdict SOTA des 4 moteurs externes (Aleph/Metagol/Popper=RECOVERABLE-MACHINE, ∂ILP=INTRINSIC) (See #4956) | 45 min |  |
-| 7 | [SL-7 - Intégration Neuro-Symbolique](SL-7-NeuroSymbolic.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |  |
-| 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |  |
-| 8 | [SL-8 - KG mining (Twin C#)](SL-8-KnowledgeGraphs-ILP-CSharp.ipynb) | **Jumeau C#** — KG familial dotNetRDF 3.4.1, AMIE rule mining from-scratch (clauses Horn 1-2 atomes, JOIN relationnel subject-indexé), PCA confidence, complétion KG 5→14, saturation fixpoint, arbre généalogique ASCII (See #4956) | 50 min |  |
-| 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |  |
-| 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |  |
+| 1 | [SL-1 - Apprentissage Logique](SL-01-LogicalLearning-Python.ipynb) | CBH, Version Space, Candidate Elimination | 50 min | [1b](#autour-de-sl-1) |
+| 1 | [SL-1 - Apprentissage Logique (Twin C#)](SL-01-LogicalLearning-CSharp.ipynb) | **Jumeau C#** — CBH (Current-Best-Hypothesis) + Candidate Elimination / Version Space implémentés from-scratch en C# pur (type system + `HashSet<>`, pas de lib externe ML) (See #4956) | 50 min | [1b](#autour-de-sl-1) |
+| 2 | [SL-2 - Apprentissage et Connaissance](SL-02-KnowledgeBasedLearning-Python.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |  |
+| 2 | [SL-2 - Apprentissage et Connaissance (Twin C#)](SL-02-KnowledgeBasedLearning-CSharp.ipynb) | **Jumeau C#** — EBL (chaînage avant + unification, arbre de preuve, variabilisation) + RBL (vérification de détermination) from-scratch (See #4956) | 50 min |  |
+| 3 | [SL-3 - Apprentissage Basé sur la Pertinence](SL-03-RelevanceLearning-Python.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |  |
+| 3 | [SL-3 - RBL (Twin C#)](SL-03-RelevanceLearning-CSharp.ipynb) | **Jumeau C#** — Treillis des déterminations, MINIMAL-CONSISTENT-DET (BFS), PAC bound, information mutuelle from-scratch (See #4956) | 50 min |  |
+| 4 | [SL-4 - Programmation Logique Inductive](SL-04-InductiveLogicProgramming-Python.ipynb) | FOIL, résolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |  |
+| 4 | [SL-4 - ILP (Twin C#)](SL-04-InductiveLogicProgramming-CSharp.ipynb) | **Jumeau C#** — FOIL (gain Quinlan) + résolution inverse (V/W) + unification from-scratch, mini-KG (See #4956) | 50 min |  |
+| 5 | [SL-5 - Résolution Inverse et Progol](SL-05-InverseResolution-Python.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |  |
+| 5 | [SL-5 - Résolution Inverse (Twin C#)](SL-05-InverseResolution-CSharp.ipynb) | **Jumeau C#** — LGG de Plotkin, θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p − L`) from-scratch (See #4956) | 55 min |  |
+| 6 | [SL-6 - Moteurs ILP modernes](SL-06-ModernILP-Python.ipynb) | Aleph, Metagol, Popper, ∂ILP (Lernd) sur `ancestor/2` (moteurs réels) | 65 min |  |
+| 6 | [SL-6 - Moteurs ILP (Twin C#)](SL-06-ModernILP-CSharp.ipynb) | **Jumeau C#** — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, couverture extensionnelle par backtracking, récursion `ancestor/2` = cas de base + pas récursif), benchmark profondeur 5-20, verdict SOTA des 4 moteurs externes (Aleph/Metagol/Popper=RECOVERABLE-MACHINE, ∂ILP=INTRINSIC) (See #4956) | 45 min |  |
+| 7 | [SL-7 - Intégration Neuro-Symbolique](SL-07-NeuroSymbolic-Python.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |  |
+| 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-08-KnowledgeGraphs-ILP-Python.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |  |
+| 8 | [SL-8 - KG mining (Twin C#)](SL-08-KnowledgeGraphs-ILP-CSharp.ipynb) | **Jumeau C#** — KG familial dotNetRDF 3.4.1, AMIE rule mining from-scratch (clauses Horn 1-2 atomes, JOIN relationnel subject-indexé), PCA confidence, complétion KG 5→14, saturation fixpoint, arbre généalogique ASCII (See #4956) | 50 min |  |
+| 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-09-LLM-SymbolicLearning-Python.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |  |
+| 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning-Python.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |  |
 | 10 | [SL-10 - L* Angluin (Twin C#)](SL-10-ActiveAutomataLearning-CSharp.ipynb) | **Jumeau C#** — DFA, ObservationTable (S/E/T), requêtes MQ/EQ, conjecture DFA, contre-exemple (Angluin/Maler-Pnueli), oracle bruité + L* borné, forward sum-product + agrégation d'evidence from-scratch (See #4956) | 60 min |  |
-| 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |  |
-| 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min | [12b](#autour-de-sl-12) · [12b'](#autour-de-sl-12) |
-| 13 | [SL-13 - DISCOVER léger : diagnostic TPR](SL-13-Discover-TPR.ipynb) | Diagnostic DISCOVER (McCoy et al. arXiv:2608.29530) sur GRU 1 couche : TPR par ALS (role × filler), réinjection décodeur, constituent surgery, white-box TPR vs embeddings atomiques, balayage capacité d_model ∈ {8,16,32,48}, régularisation L2,1 — conclusion bornée (structure approximative, pas exacte) (See #14366) | 25 min | [13b](#autour-de-sl-13) |
-| 14 | [SL-14 - AIFeynman : découvrir des équations](SL-14-AIFeynman-Discover-Equations.ipynb) | Régression symbolique AI Feynman 2.0 (Udrescu et al., NeurIPS 2020) sur l'énergie cinétique relativiste : symétries lues dans les gradients, front de Pareto complexité-précision, exécuté dans le conteneur `aifeynman:sl14` (See #14366) | 75 min |  |
-| 15 | [SL-15 - Conjectures apprises pour un vérificateur symbolique](SL-15-LearnedConjectures-Solver.ipynb) | Neural diving en doctrine SL : MLP de solutions sœurs → conjectures (fixations) offertes à CP-SAT ; décomposition par conjecture (300/300 aidantes, médiane −62 %), hint complet −18 % malgré ~25 % d'arêtes conflictuelles (42/~168), boucle conjecture → réfutation → réparation exécutée (42 conflits → 0), seconde famille couverture (hint −15,9 %, réparation coûteuse) (See #17605) | 40 min |  |
+| 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic-Python.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |  |
+| 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks-Python.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min | [12b](#autour-de-sl-12) · [12b'](#autour-de-sl-12) |
+| 13 | [SL-13 - DISCOVER léger : diagnostic TPR](SL-13-Discover-TPR-Python.ipynb) | Diagnostic DISCOVER (McCoy et al. arXiv:2608.29530) sur GRU 1 couche : TPR par ALS (role × filler), réinjection décodeur, constituent surgery, white-box TPR vs embeddings atomiques, balayage capacité d_model ∈ {8,16,32,48}, régularisation L2,1 — conclusion bornée (structure approximative, pas exacte) (See #14366) | 25 min | [13b](#autour-de-sl-13) |
+| 14 | [SL-14 - AIFeynman : découvrir des équations](SL-14-AIFeynman-Discover-Equations-Python.ipynb) | Régression symbolique AI Feynman 2.0 (Udrescu et al., NeurIPS 2020) sur l'énergie cinétique relativiste : symétries lues dans les gradients, front de Pareto complexité-précision, exécuté dans le conteneur `aifeynman:sl14` (See #14366) | 75 min |  |
+| 15 | [SL-15 - Conjectures apprises pour un vérificateur symbolique](SL-15-LearnedConjectures-Solver-Python.ipynb) | Neural diving en doctrine SL : MLP de solutions sœurs → conjectures (fixations) offertes à CP-SAT ; décomposition par conjecture (300/300 aidantes, médiane −62 %), hint complet −18 % malgré ~25 % d'arêtes conflictuelles (42/~168), boucle conjecture → réfutation → réparation exécutée (42 conflits → 0), seconde famille couverture (hint −15,9 %, réparation coûteuse) (See #17605) | 40 min |  |
 
 ## Approfondissements
 
@@ -289,24 +289,24 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1b (Lean) | [SL-1b - Apprentissage PAC formel (Lean natif)](SL-1b-LogicalLearning-Lean-Native.ipynb) | **Compagnon Lean natif** — le lake `learning_theory_lean` exécuté au kernel `lean4-wsl` : modèle PAC, borne de Valiant classe finie, agnostique, Hoeffding-Chernoff, perceptron Novikoff + serrage (See #11703) | 40 min |
+| 1b (Lean) | [SL-1b - Apprentissage PAC formel (Lean natif)](SL-01b-LogicalLearning-Lean.ipynb) | **Compagnon Lean natif** — le lake `learning_theory_lean` exécuté au kernel `lean4-wsl` : modèle PAC, borne de Valiant classe finie, agnostique, Hoeffding-Chernoff, perceptron Novikoff + serrage (See #11703) | 40 min |
 
 ### Autour de SL-12
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 12b | [SL-12b - Synthèse Logique Spectrale](SL-12b-SpectralLogicSynthesis.ipynb) | Fourier booléen exact (FWHT), PTF ternaires, routage Sinkhorn, quantification + Metropolis/parallel tempering avec oracle exact (Pavlov arXiv 2601.13953) (See #14366) | 75 min |
-| 12b' | [SL-12b' - Reproduction Pavlov DLS (recherche)](SL-12b-PavlovDLS-Reproduction.ipynb) | Reproduction CPU Phase 1+2 de Pavlov (arXiv 2601.13953) : Walsh exacte, routeur linéaire signé vs Sinkhorn-constrained, mesure de séparation, verdict honnête (See #14366) | 25 min |
+| 12b | [SL-12b - Synthèse Logique Spectrale](SL-12b-SpectralLogicSynthesis-Python.ipynb) | Fourier booléen exact (FWHT), PTF ternaires, routage Sinkhorn, quantification + Metropolis/parallel tempering avec oracle exact (Pavlov arXiv 2601.13953) (See #14366) | 75 min |
+| 12b' | [SL-12b' - Reproduction Pavlov DLS (recherche)](SL-12b-PavlovDLS-Reproduction-Python.ipynb) | Reproduction CPU Phase 1+2 de Pavlov (arXiv 2601.13953) : Walsh exacte, routeur linéaire signé vs Sinkhorn-constrained, mesure de séparation, verdict honnête (See #14366) | 25 min |
 
 ### Autour de SL-13
 
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 13b | [SL-13b - TPR × SAE : deux lectures des mêmes états cachés](SL-13b-TPR-SAE.ipynb) | Confrontation de la lecture TPR de SL-13 à un dictionnaire SAE top-k entraîné par l'organe réel `ict/sae_dictionary.py` (série ICT) : sélectivité aux facteurs (position, symbole) contre null apparié, prédiction géométrique rang 1 (non soutenue à ces effectifs, verdict exploratoire), double perturbation (permutation de blocs de coordonnées — contrôle structurel — vs ablation SAE dirigée, contrôles appariés en activité), généralisation encode-only — CPU borné, conclusion bornée (See #14366) | 30 min |
+| 13b | [SL-13b - TPR × SAE : deux lectures des mêmes états cachés](SL-13b-TPR-SAE-Python.ipynb) | Confrontation de la lecture TPR de SL-13 à un dictionnaire SAE top-k entraîné par l'organe réel `ict/sae_dictionary.py` (série ICT) : sélectivité aux facteurs (position, symbole) contre null apparié, prédiction géométrique rang 1 (non soutenue à ces effectifs, verdict exploratoire), double perturbation (permutation de blocs de coordonnées — contrôle structurel — vs ablation SAE dirigée, contrôles appariés en activité), généralisation encode-only — CPU borné, conclusion bornée (See #14366) | 30 min |
 
 ## Contenu détaillé
 
-### SL-1-LogicalLearning.ipynb
+### SL-01-LogicalLearning-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -318,7 +318,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Prédiction | Stratégies unanime, conservateur, majority |
 | Limites | Sensibilité au bruit, incapacité à représenter les disjonctions |
 
-### SL-1b-LogicalLearning-Lean-Native.ipynb
+### SL-01b-LogicalLearning-Lean.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -330,7 +330,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Perceptron | Trajectoire `perceptronWeights`, borne de Novikoff (`align_growth`, `norm_bound`, `novikoff_mistake_bound`), serrage (`witnessPts`, `novikoff_bound_is_sharp`) |
 | Exercices | 3 preuves à compléter (`sorry` stubs, convention C.1) : `trueError_self`, `sampleWeight_sum_one`, `trueError_comm` |
 
-### SL-2-KnowledgeBasedLearning.ipynb
+### SL-02-KnowledgeBasedLearning-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -341,11 +341,11 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | EBL - Efficacité | Opérationalité vs généralité, prolifération de règles |
 | RBL - Introduction | Déterminations, vérification fonctionnelle, réduction d'espace (approfondi dans SL-3) |
 
-> **Parité .NET** : [SL-2-KnowledgeBasedLearning-CSharp.ipynb](SL-2-KnowledgeBasedLearning-CSharp.ipynb) est le jumeau C# (.NET Interactive) — EBL (chaînage avant + unification, arbre de preuve, variabilisation) et RBL (vérification de détermination) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
+> **Parité .NET** : [SL-02-KnowledgeBasedLearning-CSharp.ipynb](SL-02-KnowledgeBasedLearning-CSharp.ipynb) est le jumeau C# (.NET Interactive) — EBL (chaînage avant + unification, arbre de preuve, variabilisation) et RBL (vérification de détermination) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
 
-> **Parité .NET** : [SL-5-InverseResolution-CSharp.ipynb](SL-5-InverseResolution-CSharp.ipynb) est le jumeau C# (.NET Interactive) — LGG (Plotkin), θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p−L`) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
+> **Parité .NET** : [SL-05-InverseResolution-CSharp.ipynb](SL-05-InverseResolution-CSharp.ipynb) est le jumeau C# (.NET Interactive) — LGG (Plotkin), θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p−L`) implémentés from-scratch, sans lib ML. Marathon parité .NET ⇄ Python (#4956).
 
-### SL-3-RelevanceLearning.ipynb
+### SL-03-RelevanceLearning-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -356,7 +356,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Analyse PAC | Réduction exponentielle, bornes d'échantillonnage |
 | Web Sémantique | Parallel RBL <-> OWL (FunctionalProperty, hasKey) |
 
-### SL-4-InductiveLogicProgramming.ipynb
+### SL-04-InductiveLogicProgramming-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -368,7 +368,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Popper (Learning From Failures) | Programme récursif optimal, ablation sans récursion, vérification SWI-Prolog (kernel Linux/WSL) |
 | Exercices | sibling, opérateur W, règles sur KG |
 
-### SL-5-InverseResolution.ipynb
+### SL-05-InverseResolution-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -379,7 +379,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Recherche Progol | Sous-ensembles connectés du corps de bottom, score `f = p - L`, consistance dure |
 | Cover-set | Boucle d'apprentissage de théorie complète |
 
-### SL-6-ModernILP.ipynb
+### SL-06-ModernILP-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -392,9 +392,9 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Synthèse | Quatre machineries pour un même concept ; forces et angles morts |
 | Exercices | Direction de mode (Aleph), `grandparent` non récursif, robustesse au bruit (dILP) |
 
-> **Parité .NET** : [SL-6-ModernILP-CSharp.ipynb](SL-6-ModernILP-CSharp.ipynb) est le jumeau C# (.NET Interactive) — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, recherche dans le graphe de raffinement, couverture extensionnelle par backtracking, récursion `ancestor/2` via les clauses déjà apprises), benchmark de scalabilité (profondeur 5-20), et verdict SOTA des 4 moteurs externes du twin Python (Aleph/Metagol/Popper=RECOVERABLE-MACHINE Prolog/ASP, ∂ILP=INTRINSIC TensorFlow). Marathon parité .NET ⇄ Python (#4956).
+> **Parité .NET** : [SL-06-ModernILP-CSharp.ipynb](SL-06-ModernILP-CSharp.ipynb) est le jumeau C# (.NET Interactive) — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, recherche dans le graphe de raffinement, couverture extensionnelle par backtracking, récursion `ancestor/2` via les clauses déjà apprises), benchmark de scalabilité (profondeur 5-20), et verdict SOTA des 4 moteurs externes du twin Python (Aleph/Metagol/Popper=RECOVERABLE-MACHINE Prolog/ASP, ∂ILP=INTRINSIC TensorFlow). Marathon parité .NET ⇄ Python (#4956).
 
-### SL-7-NeuroSymbolic.ipynb
+### SL-07-NeuroSymbolic-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -404,7 +404,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Raisonnement guidé | Règles logiques guidant l'entraînement neuronal |
 | DeepProbLog | Programmation logique probabiliste + prédicats neuronaux |
 
-### SL-8-KnowledgeGraphs-ILP.ipynb
+### SL-08-KnowledgeGraphs-ILP-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -413,9 +413,9 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Complétion | Inférence de nouveaux triples |
 | ASP avec clingo | Validation croisée de la complétion, récursion (`ancestorOf`), contraintes d'intégrité (pont série Tweety) |
 
-> **Parité .NET** : [SL-8-KnowledgeGraphs-ILP-CSharp.ipynb](SL-8-KnowledgeGraphs-ILP-CSharp.ipynb) est le jumeau C# (.NET Interactive) — KG familial (14 personnes, 47 triples) construit avec dotNetRDF 3.4.1, AMIE rule mining **from-scratch** (clauses Horn 1-2 atomes, JOIN relationnel par subject-indexing, PCA confidence), complétion de graphe (+9 triples `grandparentOf`, 5→14) et saturation fixpoint (ré-application Datalog non-récursive, 0 nouveau triple : point fixe atteint dès la complétion). Vérdict SOTA du twin Python : rdflib/dotNetRDF=SOTA-OK, clingo ASP=INTRINSIC en .NET (récursion/réparation = principalement un solveur externe). Marathon parité .NET ⇄ Python (#4956).
+> **Parité .NET** : [SL-08-KnowledgeGraphs-ILP-CSharp.ipynb](SL-08-KnowledgeGraphs-ILP-CSharp.ipynb) est le jumeau C# (.NET Interactive) — KG familial (14 personnes, 47 triples) construit avec dotNetRDF 3.4.1, AMIE rule mining **from-scratch** (clauses Horn 1-2 atomes, JOIN relationnel par subject-indexing, PCA confidence), complétion de graphe (+9 triples `grandparentOf`, 5→14) et saturation fixpoint (ré-application Datalog non-récursive, 0 nouveau triple : point fixe atteint dès la complétion). Vérdict SOTA du twin Python : rdflib/dotNetRDF=SOTA-OK, clingo ASP=INTRINSIC en .NET (récursion/réparation = principalement un solveur externe). Marathon parité .NET ⇄ Python (#4956).
 
-### SL-9-LLM-SymbolicLearning.ipynb
+### SL-09-LLM-SymbolicLearning-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -424,7 +424,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Vérification symbolique | Cohérence formelle des sorties LLM |
 | Boucle LLM-Symbolique | Génération + vérification + feedback |
 
-### SL-10-ActiveAutomataLearning.ipynb
+### SL-10-ActiveAutomataLearning-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -438,7 +438,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 
 > **Parité .NET** : [SL-10-ActiveAutomataLearning-CSharp.ipynb](SL-10-ActiveAutomataLearning-CSharp.ipynb) est le jumeau C# (.NET Interactive) — L\* d'Angluin implémenté from-scratch (DFA, ObservationTable S/E/T, requêtes d'appartenance et d'équivalence, conjecture, contre-exemples Angluin/Maler-Pnueli, oracle d'équivalence échantillonné PAC, oracle bruité + L\* borné, algorithme forward sum-product et agrégation d'evidence), BCL .NET 9 seule (0 NuGet). Marathon parité .NET ⇄ Python (#4956).
 
-### SL-11-Capstone-NeuroSymbolic.ipynb
+### SL-11-Capstone-NeuroSymbolic-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -450,7 +450,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 | Étage 5 - Inférence | Chainage avant avec provenance ; le dérivé peut violer l'oracle (lecon d'architecture) |
 | Étage 6 - QA | Question 2 sauts : réponse KG (dérivation citée) vs réponse LLM seule |
 
-### SL-12-DifferentiableLogicGateNetworks.ipynb
+### SL-12-DifferentiableLogicGateNetworks-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -463,7 +463,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 
 **Référence** : Petersen et al., *Deep Differentiable Logic Gate Networks*, NeurIPS 2022 ([arXiv 2210.08277](https://arxiv.org/abs/2210.08277)).
 
-### SL-12b-SpectralLogicSynthesis.ipynb
+### SL-12b-SpectralLogicSynthesis-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -476,7 +476,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 
 **Référence** : Gorgi Pavlov, *Differentiable Logic Synthesis: Spectral Coefficient Selection via Sinkhorn-Constrained Composition* ([arXiv 2601.13953](https://arxiv.org/abs/2601.13953)) — digestion EPIC #14366 grain G2.
 
-### SL-12b-PavlovDLS-Reproduction.ipynb
+### SL-12b-PavlovDLS-Reproduction-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -492,7 +492,7 @@ Les notebooks lettrés prolongent un palier du parcours principal. Les liens de 
 
 **Référence** : Gorgi Pavlov, *Differentiable Logic Synthesis* ([arXiv 2601.13953](https://arxiv.org/abs/2601.13953)) — reproduction bornée Phase 1+2, EPIC #14366 grain G1.
 
-### SL-13-Discover-TPR.ipynb
+### SL-13-Discover-TPR-Python.ipynb
 
 | Section | Contenu |
 |---------|---------|
@@ -614,32 +614,32 @@ Le treillis des déterminations croît exponentiellement avec le nombre d'attrib
 
 ```
 SymbolicLearning/
-├── SL-1-LogicalLearning.ipynb              # CBH, Version Space
-├── SL-1-LogicalLearning-CSharp.ipynb       # Jumeau C# (.NET Interactive) — CBH + Candidate Elimination from-scratch, parité #4956
-├── SL-1b-LogicalLearning-Lean-Native.ipynb # Compagnon Lean natif (kernel lean4-wsl) — théorie PAC + perceptron de Novikoff, See #11703
-├── SL-2-KnowledgeBasedLearning.ipynb        # EBL, RBL
-├── SL-2-KnowledgeBasedLearning-CSharp.ipynb # Jumeau C# (.NET Interactive) — EBL + RBL, parité #4956
-├── SL-3-RelevanceLearning.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
-├── SL-3-RelevanceLearning-CSharp.ipynb # Jumeau C# (.NET Interactive) — Treillis + MINIMAL-CONSISTENT-DET + PAC + MI, parité #4956
-├── SL-4-InductiveLogicProgramming.ipynb     # FOIL, résolution inverse, knowledge graphs
-├── SL-4-InductiveLogicProgramming-CSharp.ipynb  # Jumeau C# (.NET Interactive) — FOIL + V/W + unification, parité #4956
-├── SL-5-InverseResolution.ipynb             # LGG, theta-subsomption, clause bottom, Progol
-├── SL-5-InverseResolution-CSharp.ipynb      # Jumeau C# (.NET Interactive) — LGG + clause bottom + Progol, parité #4956
-├── SL-6-ModernILP.ipynb                     # Aleph, Metagol, Popper, dILP (Lernd) — moteurs réels
-├── SL-6-ModernILP-CSharp.ipynb            # Jumeau C# (.NET Interactive) — FOIL relationnel + récursion ancestor/2, parité #4956
-├── SL-7-NeuroSymbolic.ipynb                 # T-norms, LTN, DeepProbLog
-├── SL-8-KnowledgeGraphs-ILP.ipynb           # rdflib, AMIE rule mining
-├── SL-8-KnowledgeGraphs-ILP-CSharp.ipynb    # Jumeau C# (.NET Interactive) — dotNetRDF KG + AMIE from-scratch + PCA + saturation, parité #4956
-├── SL-9-LLM-SymbolicLearning.ipynb          # LLMs + vérification symbolique (Gemini 3.5 Flash optionnel)
-├── SL-10-ActiveAutomataLearning.ipynb        # L* d'Angluin, apprentissage actif d'automates
+├── SL-01-LogicalLearning-Python.ipynb              # CBH, Version Space
+├── SL-01-LogicalLearning-CSharp.ipynb       # Jumeau C# (.NET Interactive) — CBH + Candidate Elimination from-scratch, parité #4956
+├── SL-01b-LogicalLearning-Lean.ipynb # Compagnon Lean natif (kernel lean4-wsl) — théorie PAC + perceptron de Novikoff, See #11703
+├── SL-02-KnowledgeBasedLearning-Python.ipynb        # EBL, RBL
+├── SL-02-KnowledgeBasedLearning-CSharp.ipynb # Jumeau C# (.NET Interactive) — EBL + RBL, parité #4956
+├── SL-03-RelevanceLearning-Python.ipynb             # Treillis, MINIMAL-CONSISTENT-DET, RBL vs sklearn
+├── SL-03-RelevanceLearning-CSharp.ipynb # Jumeau C# (.NET Interactive) — Treillis + MINIMAL-CONSISTENT-DET + PAC + MI, parité #4956
+├── SL-04-InductiveLogicProgramming-Python.ipynb     # FOIL, résolution inverse, knowledge graphs
+├── SL-04-InductiveLogicProgramming-CSharp.ipynb  # Jumeau C# (.NET Interactive) — FOIL + V/W + unification, parité #4956
+├── SL-05-InverseResolution-Python.ipynb             # LGG, theta-subsomption, clause bottom, Progol
+├── SL-05-InverseResolution-CSharp.ipynb      # Jumeau C# (.NET Interactive) — LGG + clause bottom + Progol, parité #4956
+├── SL-06-ModernILP-Python.ipynb                     # Aleph, Metagol, Popper, dILP (Lernd) — moteurs réels
+├── SL-06-ModernILP-CSharp.ipynb            # Jumeau C# (.NET Interactive) — FOIL relationnel + récursion ancestor/2, parité #4956
+├── SL-07-NeuroSymbolic-Python.ipynb                 # T-norms, LTN, DeepProbLog
+├── SL-08-KnowledgeGraphs-ILP-Python.ipynb           # rdflib, AMIE rule mining
+├── SL-08-KnowledgeGraphs-ILP-CSharp.ipynb    # Jumeau C# (.NET Interactive) — dotNetRDF KG + AMIE from-scratch + PCA + saturation, parité #4956
+├── SL-09-LLM-SymbolicLearning-Python.ipynb          # LLMs + vérification symbolique (Gemini 3.5 Flash optionnel)
+├── SL-10-ActiveAutomataLearning-Python.ipynb        # L* d'Angluin, apprentissage actif d'automates
 ├── SL-10-ActiveAutomataLearning-CSharp.ipynb # Jumeau C# (.NET Interactive) — L* d'Angluin (DFA/ObservationTable/MQ-EQ/forward) from-scratch, parité #4956
-├── SL-11-Capstone-NeuroSymbolic.ipynb       # Capstone : pipeline neuro-symbolique 6 étages
-├── SL-12-DifferentiableLogicGateNetworks.ipynb # Portes logiques différentiables (difflogic), discrétisation en circuit booléen
-├── SL-12b-SpectralLogicSynthesis.ipynb      # Synthèse logique spectrale : FWHT, PTF ternaires, Sinkhorn, MCMC (#14366 G2)
-├── SL-12b-PavlovDLS-Reproduction.ipynb      # Reproduction Pavlov DLS Phase 1+2 : linéaire signé vs Sinkhorn-constrained, verdict honnête (#14366 G1)
-├── SL-12b-PavlovDLS-Reproduction-output.ipynb # Artefact d'exécution papermill (non indexé catalogue)
-├── SL-13-Discover-TPR.ipynb                 # Diagnostic DISCOVER (TPR role × filler, ALS, réinjection, surgery, white-box) sur GRU 1 couche (#14366 G6)
-├── SL-13-Discover-TPR-output.ipynb          # Artefact d'exécution papermill (non indexé catalogue)
+├── SL-11-Capstone-NeuroSymbolic-Python.ipynb       # Capstone : pipeline neuro-symbolique 6 étages
+├── SL-12-DifferentiableLogicGateNetworks-Python.ipynb # Portes logiques différentiables (difflogic), discrétisation en circuit booléen
+├── SL-12b-SpectralLogicSynthesis-Python.ipynb      # Synthèse logique spectrale : FWHT, PTF ternaires, Sinkhorn, MCMC (#14366 G2)
+├── SL-12b-PavlovDLS-Reproduction-Python.ipynb      # Reproduction Pavlov DLS Phase 1+2 : linéaire signé vs Sinkhorn-constrained, verdict honnête (#14366 G1)
+├── SL-12b-PavlovDLS-Reproduction-output-Python.ipynb # Artefact d'exécution papermill (non indexé catalogue)
+├── SL-13-Discover-TPR-Python.ipynb                 # Diagnostic DISCOVER (TPR role × filler, ALS, réinjection, surgery, white-box) sur GRU 1 couche (#14366 G6)
+├── SL-13-Discover-TPR-output-Python.ipynb          # Artefact d'exécution papermill (non indexé catalogue)
 ├── assets/
 │   └── readme/                              # Figures du README (sl10-dfa-target.png) + MANIFEST.md
 ├── tests/
