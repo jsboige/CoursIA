@@ -83,7 +83,7 @@ Ce précis par domaine est une **vue** ; la commande fait foi : `grep -l '^paths
 
 **Prescription complète** : [pr-review-context.md §Prescription B.0](docs/reference/pr-review-context.md) — trois surfaces (`comments[]`, `reviews[].body`, `reviewThreads`), trois voies de levée (réponse écrite, thread résolu, issue nommée avant merge), auteur et heure obligatoires.
 
-**Précis** : avant tout `gh pr merge`, chaque remarque postée après le dernier commit doit être levée par une **phrase** (pas un SHA, pas l'écoulement du temps, pas `CLEAN`). L'auteur d'une PR ne lève pas la réserve d'un tiers. Organe : `python scripts/check_unaddressed_nits.py <PR>` (exit 1 = ne pas merger).
+**Précis** : avant tout `gh pr merge`, chaque remarque postée après le dernier commit doit être levée par une **phrase** (pas un SHA, pas l'écoulement du temps, pas `CLEAN`). L'auteur d'une PR ne lève pas la réserve d'un tiers ; une levée existe **avant** le merge, avec auteur et heure. **Sous le login partagé** (`jsboige`), seul le coordinateur lève par une phrase — `[OVERRIDE] lane myia-ai-01:CoursIA` en tête, login de l'auteur de la réserve nommé ; exception Q185 : l'adjoint `myia-po-2025:CoursIA-2` lève par phrase les réserves de bot, jamais celles du coordinateur, du user ou d'une autre lane. Trois négations : un commentaire de merge est un compte-rendu, **jamais une porte** ; `state: COMMENTED` n'est **pas** une absence de réserve (le verdict Hermes vit dans le préfixe du body) ; `exit 0` de l'organe dit seulement qu'aucune phrase de levée ne manque — qui, quand et la substance se lisent à la main. Organe : `python scripts/check_unaddressed_nits.py <PR>` (exit 1 = ne pas merger).
 
 #### Les 5 points
 
@@ -183,7 +183,7 @@ Arborescence des séries de notebooks et des dossiers techniques : [README §Str
 
 **Collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
 
-**Modèle explicite obligatoire** : tout `Agent()` DOIT porter un modèle explicite — `subagent_type: "swift-reader"` (lecture en volume, gratuit) sans argument `model`, sinon `model: "sonnet"` ou `"haiku"`. `"opus"` jamais sur po-* (mandat user 2026-10-10). Cf [model-delegation.md](.claude/rules/model-delegation.md).
+**Modèle explicite obligatoire** : tout `Agent()` DOIT porter un modèle explicite — `subagent_type: "swift-reader"` (lecture en volume, gratuit) sans argument `model`, sinon `model: "sonnet"` ou `"haiku"`. `"opus"` jamais sur po-* (mandat user 2026-10-10), sauf lane autorisée nommément (cf [model-delegation.md](.claude/rules/model-delegation.md) point 3).
 
 ---
 
