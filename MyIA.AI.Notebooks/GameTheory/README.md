@@ -458,7 +458,7 @@ Leur numéro nu reste un héritage de leur livraison, pas une étape du parcours
 | 23 | [Failles légales](GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb) | Les règles fiscales comme jeu formel (distillation de l'article Lexifina, 11/2026) : un BFS borné retrouve le backdoor Roth sans qu'on le lui décrive, et le compagnon Lean `LegalLoophole/Toy` du lake de la série prouve le plafond à toute profondeur et l'optimalité du témoin sans taxe — chaque coup du plan est légal, la faille est dans les règles (#25686) | Python | Recherche |
 | 06i | [Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
 | 18c | [Banc humour](GameTheory-18c-Humour-Banc-Python.ipynb) | Banc de calibration (forme partagée contre stimulus, matrice de confusion) puis passage à l'échelle consolidé : corpus Argumentum 120 instances, comparaison LLM, circularité, paires minimales (#14032) | Python | Recherche |
-| 17e | [Persuasion bayésienne](GameTheory-17e-Bayesian-Persuasion-Python.ipynb) | La concavification évaluée par deux méthodes indépendantes (programme linéaire et enveloppe concave) dont l'accord est vérifié, avec un contrôle négatif | Python | Recherche |
+| 17e | [Persuasion bayésienne](GameTheory-17e-Bayesian-Persuasion-Python.ipynb) · [C#](GameTheory-17e-Bayesian-Persuasion-CSharp.ipynb) | La concavification évaluée par deux méthodes indépendantes (programme linéaire et enveloppe concave) dont l'accord est vérifié, avec un contrôle négatif | Python · C# | Recherche |
 
 ## Installation
 
