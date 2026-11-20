@@ -16,7 +16,7 @@ de Turing de 196 etats dont l'arret est independant de l'arithmetique de Peano.
 
 `formal_logic_lean`, le lake voisin, est en Lean 4.33.1 : c'est la version de son
 manifeste Mathlib et de son fork ModalLogic. PA196 est en 4.35.0, et son
-`vendor/Foundation` l'est aussi. Le corpus amont compte 2113 fichiers Lean ; le
+`vendor/Foundation` l'est aussi. Le corpus amont est volumineux ; le
 ramener a 4.33.1 pour le seul besoin du lake voisin demanderait de porter tout le
 corpus, alors qu'un lake par toolchain est la forme prevue par Lake. Les deux
 lakes vivent donc cote a cote, chacun avec sa version : le consommateur epingle
@@ -26,7 +26,7 @@ ne depend d'aucune adaptation.
 R2 : « les exceptions sont nommees, jamais tacites »). Ce lake n'a **pas**
 d'entree dans `scripts/lean/ci_lakes.json`. Le motif est mesure : un job de la
 matrice devrait installer un toolchain hors groupe canonique, telecharger le
-cache Mathlib v4.35 puis construire 2113 fichiers amont sur un runner a quatre
+cache Mathlib v4.35 puis construire le corpus amont sur un runner a quatre
 coeurs — un cout sans rapport avec les autres entrees, pour un contenu dont la
 CI ne verifierait que la reussite d'une compilation deja mesuree ici. La
 verification du lake est portee par le carnet (`lake build` sous l'organe borne
