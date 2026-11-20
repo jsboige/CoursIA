@@ -299,6 +299,19 @@ except ImportError:
     except ImportError:
         frozen_campaigns = None  # type: ignore[assignment]
 
+# #26893 : la declaration d'exemption « Hors flotte » (#17713), partagee avec
+# le tapis rapide. Import best-effort, comme frozen_campaigns : sans module,
+# le tirage lourd tourne sans cette lecture (fail-OPEN), jamais l'inverse.
+try:
+    import tapis_hors_flotte
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import tapis_hors_flotte
+    except ImportError:
+        tapis_hors_flotte = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -4828,6 +4841,13 @@ def filter_candidates(
     urns = urns or set(URN_NAMES)
     checks = [
         ("exclude_issue", lambda item, labels: item["number"] in exclude_issues),
+        # #26893 : une issue dont le body DECLARE l'exemption « Hors flotte »
+        # (#17713) n'est pas un grain de lane -- la raison est nommee dans
+        # l'entonnoir, jamais tuee. La prose qui mentionne une session hors
+        # flotte ne declare rien (cf. tapis_hors_flotte.py).
+        ("hors_flotte", lambda item, labels: tapis_hors_flotte is not None
+         and tapis_hors_flotte.hors_flotte_declaration(item.get("body"))
+         is not None),
         ("require_label", lambda item, labels: not required_labels.issubset(labels)),
         ("exclude_label", lambda item, labels: bool(excluded_labels & labels)),
         ("min_age_days", lambda item, labels: min_age_days is not None
@@ -5671,7 +5691,12 @@ def check_claims(numbers: list[int], lane: str, *,
 #   - un echec de TRANSPORT n'ecrit aucun cache : le lecteur refait sa
 #     propre enumeration complete (le repli d'avant) ;
 #   - l'ecriture est ATOMIQUE (fichier temporaire + `os.replace`).
-_OPEN_PRS_CACHE_FORMAT = "open-prs-v2"
+# v3 (#26725) -- l'enveloppe suit le LECTEUR : les entrees portent
+# `baseRefName` et, pour une PR empilee, une liste `files` reduite a ce
+# qu'elle change (au lieu de la diff base-relative de `/pulls/{n}/files`).
+# Un cache v2 relu par un lecteur v3 serait rejete -- deux constantes qui
+# divergent refont payer l'enumeration a chaque candidat (#19643).
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v3"
 
 # Enumeration complete, MEMOISEE : une passe de tirage n'enumerere qu'une
 # fois, et la sonde de couverture (#16589) consomme la meme enumeration.
@@ -13823,6 +13848,31 @@ def _log_tirage_safe(*, lane, candidates, retained, urn, mode):
     return record
 
 
+# #26926 : le tapis lourd ne sert plus de grains aux lanes. Il mettait ~240 s a
+# rendre des grains non verifies (livres, couverts, chantiers coordinateur), et
+# la consigne ecrite n'a pas suffi : une lane qui le tirait de memoire repartait
+# pour quatre minutes de propositions bloquantes. Le refus vit donc dans
+# l'organe : un `--belt` sans `--diagnostic` rend la main tout de suite et
+# nomme le tapis rapide. La variable d'environnement sert aux tests, qui
+# exercent le tapis lourd comme outil de diagnostic.
+HEAVY_BELT_DIAGNOSTIC_ENV = "COURSIA_HEAVY_BELT_DIAGNOSTIC"
+FAST_BELT_COMMAND = "python scripts/coordination/tapis_rapide.py --lane {lane} --json"
+
+
+def heavy_belt_refusal(lane: str | None) -> dict:
+    """Le refus du tapis lourd, avec la commande qui le remplace."""
+    commande = FAST_BELT_COMMAND.format(lane=f'"{lane}"' if lane else "<machine:workspace>")
+    return {
+        "mode": "tapis-lourd-refuse",
+        "issue": 26926,
+        "raison": ("le tapis lourd ne sert plus de grains (240 s, grains non "
+                   "verifies) ; le tirage passe par le tapis rapide"),
+        "commande": commande,
+        "diagnostic": "--diagnostic (ou %s=1) pour un usage de diagnostic"
+                      % HEAVY_BELT_DIAGNOSTIC_ENV,
+    }
+
+
 def main(argv: list[str] | None = None) -> int:
     # Console Windows cp1252 : un titre d'issue portant un caractere hors table
     # (fleche U+2192 etc.) fait crasher le print en UnicodeEncodeError et perd
@@ -13940,7 +13990,12 @@ def main(argv: list[str] | None = None) -> int:
                          "date de derniere livraison -- puis par createdAt puis "
                          "par numero. Pas de ponderation, pas d'urne. Les gardes "
                          "(rouge, WIP, secheresse) restent en tete et rende la "
-                         "file comme rappel, jamais comme motif de vide.")
+                         "file comme rappel, jamais comme motif de vide. "
+                         "#26926 : sans --diagnostic, refuse et nomme le "
+                         "tapis rapide (tapis_rapide.py).")
+    ap.add_argument("--diagnostic", action="store_true",
+                    help="#26926 : autorise le tapis lourd (--belt) pour un "
+                         "diagnostic ; il ne sert plus de grains aux lanes")
     ap.add_argument("--belt-replay-export", default=None, metavar="PATH",
                     help="#25082 : exporter hors depot les entrees preparees "
                          "par un tapis live pour un rejeu deterministe. Requiert "
@@ -14106,6 +14161,16 @@ def main(argv: list[str] | None = None) -> int:
                          "l'issue N (defaut : dry-run, impression seule)")
     ap.set_defaults(check_claims=True)
     args = ap.parse_args(argv)
+    if args.belt and not (args.diagnostic
+                          or os.environ.get(HEAVY_BELT_DIAGNOSTIC_ENV) == "1"):
+        refus = heavy_belt_refusal(args.lane)
+        if args.json:
+            print(json.dumps(refus, ensure_ascii=False, indent=2))
+        else:
+            print(f"REFUS (#26926) : {refus['raison']}.\n"
+                  f"Tirer : {refus['commande']}\n"
+                  f"Diagnostic seulement : {refus['diagnostic']}.")
+        return 2
     args.prev_genre = sorted(normalize_prev_genres(args.prev_genre))
     # #21436 : la borne de --grains est enforcee, pas seulement documentee.
     # Au-dela, la fenetre de service (grains*5+50) explose le mur de temps
