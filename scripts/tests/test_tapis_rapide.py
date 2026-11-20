@@ -212,6 +212,25 @@ def test_le_recul_sert_apres_et_ne_franchit_aucun_verrou():
     assert file[0] == 1 and sorted(file[1:]) == [2, 3]  # servies, apres l'issue libre
 
 
+def test_un_grain_en_recul_passe_devant_un_conteneur_hors_quota():
+    """#26926 : un conteneur ne passe jamais devant un grain, meme en recul.
+    Quatre places, quota conteneurs de 1 : le grain libre, un conteneur dans
+    son quota, puis les deux grains en recul -- les conteneurs hors quota ne
+    comblent que ce qui reste."""
+    rendue = f"[RELEASED] lane {AUTRE} -- barriere reelle, mesuree"
+    prs = [{"number": 900, "title": "Fix(x,#2): y", "body": f"Grain: x -- lane {AUTRE}"}]
+    lec = lecture([
+        issue(1),
+        issue(2),                                         # COUVERTE : recul
+        issue(3, comments=[com(24, rendue)]),             # RELACHEE : recul
+        issue(10, titre="[EPIC] a"), issue(11, titre="[EPIC] b"),
+        issue(12, titre="[EPIC] c"),
+    ], prs=prs)
+    file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 4)
+    assert sorted(e.numero for e in file if not e.conteneur) == [1, 2, 3]
+    assert sum(e.conteneur for e in file) == 1  # le seul conteneur du quota
+
+
 def test_livree_info_avec_lane_avant_le_mot():
     """Forme de #20603 (13/11) : le mot vient apres `lane X --` sur la ligne du tag."""
     lec = lecture([

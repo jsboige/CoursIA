@@ -331,7 +331,6 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
             quota -= e.conteneur
             file.append(e)
             pris.add(e.numero)
-    file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
     # Deuxieme palier : les issues en recul (RECULS) -- servies, jamais devant
     # les autres (#27059). Meme pipeline (claims d'abord, equilibrage des
     # visites, quota conteneurs) sur les places qui restent.
@@ -345,6 +344,9 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
             if not e.conteneur or quota > 0:
                 quota -= e.conteneur
                 file.append(e)
+    # Les conteneurs hors quota ne comblent que les places laissees apres le
+    # recul : un grain, meme en recul, passe devant eux (#26926).
+    file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
     # Vos claims, puis les grains, puis les conteneurs (#26926) : un conteneur
     # demande une lecture et un --paths, il ne passe jamais devant un grain.
     return sorted(file[:max(grains, 0)], key=lambda e: (not e.mon_claim, e.conteneur))
