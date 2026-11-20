@@ -1,0 +1,8 @@
+date: '2026-11-19'
+by: myia-po-2027:CoursIA-2
+python_sha: b2a7068988a831e0c6429a654111e2e34158cfcc
+csharp_sha: 7931c04a61777f45eb43784c912a3cf3f54982f0
+content_python_sha: c45460ae2c1d7837237bbabbc38b89a4a3637e707379d9ea64704b1da31fa17a
+content_csharp_sha: 2af4ab55599f3b9f2280e713e58d083fdb4d64c8758b4a90abaebc1181ce9410
+known_differences:
+  - "Section §6bis « Confrontation : quelques centièmes de bit — jusqu'où ? » (contrôles + balayage 200 Dirichlet skew, lecture) ajoutée côté Python seulement ; non portée au jumeau C# — asymétrie pédagogique (review #27354)"
