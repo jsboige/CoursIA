@@ -1030,18 +1030,23 @@ class ScanMainCollisionTests(unittest.TestCase):
         self.assertTrue(csr._same_item_scan(a, b),
                         "la paire renommee doit etre reconnue comme jumeau")
 
-    def test_scan_main_finds_known_collision_ict48(self):
-        # ICT-48 est la collision documentee de la tranche 1. Si le
-        # balayage la manque, la garde regresse.
+    def test_scan_main_finds_known_collision_gametheory02(self):
+        # Témoin de balayage : une collision structurelle vivante doit
+        # remonter. Ancien témoin ICT-48 (tranche 1) : dissous par le
+        # renommage ICT-47b/ICT-48 -> PT_20/PT_21 vers PostTraining (#26757)
+        # -- plus aucune paire IIT/ICT-Series sur ce slot. GameTheory-02
+        # (Python/CSharp x 1/Part2) est une famille jumelle ancienne et
+        # stable du dépôt.
         try:
             collisions = csr.scan_main_collisions("origin/main")
         except RuntimeError:
             self.skipTest("origin/main indisponible")
-        ict48 = [c for c in collisions
-                 if c["slot"] == "ICT-48"
-                 and c["dir"].endswith("IIT/ICT-Series")]
-        self.assertEqual(len(ict48), 1, "ICT-48 doit remonter comme collision documentee")
-        self.assertGreaterEqual(len(ict48[0]["paths"]), 2)
+        gt02 = [c for c in collisions
+                if c["slot"] == "GameTheory-02"
+                and c["dir"].endswith("GameTheory")]
+        self.assertEqual(len(gt02), 1,
+                         "GameTheory-02 doit remonter comme collision structurelle vivante")
+        self.assertGreaterEqual(len(gt02[0]["paths"]), 4)
 
     def test_scan_main_finds_known_collision_sl12b(self):
         # SL-12b : PavlovDLS-Reproduction vs SpectralLogicSynthesis.
