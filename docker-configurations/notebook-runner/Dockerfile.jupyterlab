@@ -1,0 +1,31 @@
+# JupyterLab learning image — thin derivation of notebook-runner (Pli 1.2, #27545)
+#
+# Issue #27545 : « image d'apprentissage interactive, JupyterLab et tous les
+# noyaux, dérivée de notebook-runner ». Ce Dockerfile ne RÉDÉRIVE PAS les étages
+# de notebook-runner (il ne les duplique pas) : il consomme l'image de base déjà
+# construite (`coursia/notebook-runner:base`, issue par le Dockerfile sœur) et
+# n'y ajoute que JupyterLab + l'ENTRYPOINT interactif.
+#
+# Noyaux canoniques (docs/reference/kernels-runtime.md) présents via la base :
+#   python3 · global-3.13 · .net-csharp · .net-fsharp · .net-powershell
+# Continuations (hors base — un étage dédié les ajouterait sans dupliquer,
+# registré comme suite dans le body de la PR) :
+#   Lean 4 (lean4-jupyter) · Rust (evcxr_jupyter 0.22.0)
+#
+# Build + usage :
+#   docker build -t coursia/notebook-runner:base -f Dockerfile .            # 1re, base
+#   docker build -t coursia/notebook-jupyterlab:latest -f Dockerfile.jupyterlab .
+#   docker run -p 8888:8888 -v "$PWD/MyIA.AI.Notebooks:/notebooks" \
+#     coursia/notebook-jupyterlab:latest
+#   -> http://localhost:8888/lab
+
+FROM coursia/notebook-runner:base
+
+# JupyterLab dans le python3 SYSTÈME (3.11 bookworm), là où vit déjà `jupyter`
+# (étage python-env du Dockerfile sœur). Aucune duplication des étages.
+RUN python3 -m pip install --break-system-packages --no-cache-dir jupyterlab
+
+# L'image est interactive : JupyterLab remplace le batch-runner de la base.
+# --allow-root (l'image tourne root) · --no-browser (headless, accès par port).
+WORKDIR /notebooks
+ENTRYPOINT ["jupyter", "lab", "--ip=0.0.0.0", "--port=8888", "--allow-root", "--no-browser"]

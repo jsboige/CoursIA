@@ -1,7 +1,7 @@
 # H.7 P3 Notebook Runner
 
 Multi-kernel Docker runner for CoursIA notebook execution.
-Supports Python 3.12, .NET 9.0 Interactive (C#), and Lean 4 kernels.
+Supports Python 3.11 (system) + kernel global-3.13, .NET 10.0 Interactive (C#), and Lean 4 kernels.
 
 ## Quick Start
 
@@ -39,11 +39,35 @@ The runner auto-detects the kernel from notebook metadata:
 
 ```
 notebook-runner/
-├── Dockerfile          # Multi-stage: .NET 9.0 + Python 3.12 + Lean 4
-├── docker-compose.yml  # Volume mounts + resource limits
+├── Dockerfile              # Multi-stage: .NET 10.0 + Python 3.11 + global-3.13 + Lean 4
+├── Dockerfile.jupyterlab   # Thin JupyterLab learning image (FROM the base, #27545)
+├── docker-compose.yml      # Volume mounts + resource limits
 ├── h7_p3_notebook_runner.sh  # Unified kernel dispatch script
 └── README.md
 ```
+
+## JupyterLab learning image (Pli 1.2, #27545)
+
+`Dockerfile.jupyterlab` derives an interactive image from the batch runner
+above: it `FROM`s the already-built `coursia/notebook-runner:base` and adds
+only JupyterLab — it does **not** re-run the multi-stage build. The canonical
+kernels the base already carries (`python3`, `global-3.13`, `.net-csharp`,
+`.net-fsharp`, `.net-powershell`) are inherited as-is.
+
+```bash
+# Build (after the base image exists)
+docker build -t coursia/notebook-jupyterlab:latest -f Dockerfile.jupyterlab .
+
+# Run with the notebook tree mounted
+docker run -p 8888:8888 \
+  -v "$PWD/../../MyIA.AI.Notebooks:/notebooks" \
+  coursia/notebook-jupyterlab:latest
+# -> http://localhost:8888/lab
+```
+
+This increment does not yet carry the Lean 4 (`lean4-jupyter`) and Rust
+(`evcxr`) kernels — they are absent from the base image; a dedicated stage
+adds them without duplication (next step, tracked in the PR body).
 
 ## Volume Mounts
 
