@@ -105,7 +105,8 @@
       "7860": "Forge (SD.Next)",
       "8190": "orchestrateur GenAI / Whisper API",
       "8193": "demucs-api",
-      "8090": "orchestrateur GenAI"
+      "8090": "orchestrateur GenAI",
+      "8200": "planners-fast-downward"
     }
   },
   "container_services": {

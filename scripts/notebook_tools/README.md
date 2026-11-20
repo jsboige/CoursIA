@@ -51,7 +51,23 @@ invention.
 ```bash
 python scripts/notebook_tools/dependency_manifest.py --write   # ecrit docs/curriculum/manifeste-dependances.{md,json}
 python scripts/notebook_tools/dependency_manifest.py --print    # table sur la sortie standard
+python scripts/notebook_tools/dependency_manifest.py --check    # garde de fraicheur : 0 frais, 1 perime, 2 incident
 ```
+
+Les sorties versionnees decrivent l'etat du depot : elles derivent. La mode
+`--check` est la **garde de fraicheur** : il regenere le manifeste dans un
+depot donne et le compare aux sorties committes. Deux champs sont ignores
+dans la comparaison -- `generated_from` (le SHA de generation) et
+`counts.tracked_files` (le nombre de fichiers suivis) -- parce qu'ils
+**decrivent l'etat du depot, pas le contenu du manifeste** : les ignorer
+evite un rouge sur chaque commit sans changement de fond. Tout le reste est
+compare, groupe par groupe (indexes par leur nom, pas par leur rang), et le
+SHA est neutralise dans le Markdown comme dans le JSON.
+
+Trois verdicts, jamais deux : `frais` (0), `perime` (1) et `incident` (2).
+`incident` signifie que la sortie commitee est absente ou illisible : ce
+n'est **pas** un verdict de perimetre, c'est un verdict inconnu, et les deux
+ne se confondent jamais.
 
 Le **manifeste consolide** produit (paquets des series incluses, version
 retenue, series contributrices) est la seule source de paquets de l'image

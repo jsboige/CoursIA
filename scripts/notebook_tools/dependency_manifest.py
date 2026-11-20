@@ -19,6 +19,13 @@ Ce que fait l'organe
 2. **Besoins** : pour chaque serie, il mesure sur les **sources des cellules**
    des carnets trois besoins : **GPU**, **cle d'API**, **service reseau**.
    La mesure porte sur des marqueurs explicites ; rien n'est devine.
+   Le service reseau est lu a trois profondeurs : l'URL **en dur**
+   (``http://localhost:8200``), l'URL dont le port est une **constante**
+   du carnet (``FD_API_PORT = 8200`` puis ``f"http://localhost:{FD_API_PORT}"``),
+   et le **fichier de code que le carnet cite** (le pont Fast Downward en C# :
+   le service que ce fichier appelle est un besoin du carnet). Les appels de
+   service dont l'URL n'est pas lisible sur la ligne de l'appel sont comptes
+   a part : ils disent qu'un appel existe, pas quel service il vise.
 
 3. **Verdict d'inclusion** dans l'image CPU, avec un **motif** obligatoire.
    Chaque motif porte son **origine** :
@@ -71,6 +78,7 @@ Usage
 
     python scripts/notebook_tools/dependency_manifest.py --out-dir docs/curriculum
     python scripts/notebook_tools/dependency_manifest.py --print
+    python scripts/notebook_tools/dependency_manifest.py --check
 
 Les sorties par defaut sont versionnees dans le depot :
 
@@ -80,6 +88,18 @@ Les sorties par defaut sont versionnees dans le depot :
 Le code de sortie vaut 0 lorsque l'inventaire est complet (toutes les series
 sont dans la table, tous les conflits sont nommes avec une resolution) et 1
 sinon.
+
+Garde de fraicheur (``--check``)
+--------------------------------
+
+``--check`` regenere le manifeste depuis l'etat courant du depot et le
+compare aux sorties committes : il repond « le manifeste committe decrit-il
+encore l'arbre ? ». Le SHA de generation et le compte de fichiers suivis
+sont **ignores** -- ils decrivent l'etat du depot, pas le contenu du
+manifeste ; tout le reste est compare. Sortie **0** frais, **1** perime,
+**2** incident (sortie absente ou illisible : verdict inconnu, jamais un
+verdict de perimetre). C'est un garde **advisory** : il signale une
+derive, il ne tient aucun merge.
 """
 
 from __future__ import annotations
@@ -117,7 +137,7 @@ except Exception as exc:  # noqa: BLE001 - pragma: no cover - degrade signalee, 
 else:
     _LIB_VERSIONS_IMPORT_ERROR = None
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 NOTEBOOKS_ROOT = "MyIA.AI.Notebooks"
 POLICY_RELPATH = "scripts/notebook_tools/dependency_manifest_policy.json"
 DEFAULT_OUT_DIR = "docs/curriculum"
@@ -162,14 +182,38 @@ ENV_SECRET_NAME_RE = re.compile(
     r"(API_KEY|_KEY$|^KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL)", re.IGNORECASE
 )
 
-#: Appels reseau explicites.
+#: Appels reseau explicites. La liste couvre les entrees HTTP usuelles ;
+#: un appel dont la cible n'est pas lisible dans la ligne n'etablit rien :
+#: il est compte comme appel a cible dynamique.
 SERVICE_CALL_RE = re.compile(
     r"(?:requests|httpx|urllib\.request|socket\.socket|aiohttp)"
-    r"\.(?:get|post|put|request|connect)\s*\(",
+    r"\.(?:get|post|put|request|connect|urlopen)\s*\(",
     re.IGNORECASE,
 )
 URL_RE = re.compile(r"https?://([A-Za-z0-9_.\-]+)(?::(\d+))?")
+#: URL dont le port est une constante interpolee (``f"http://localhost:{PORT}"``).
+URL_TEMPLATE_RE = re.compile(
+    r"https?://([A-Za-z0-9_.\-]+):\{([A-Za-z_][A-Za-z0-9_]*)\}"
+)
+#: Constante numerique d'un carnet (``FD_API_PORT = 8200``) : elle rend le
+#: port lisible quand l'URL l'interpole au lieu de l'ecrire en dur.
+INT_CONST_RE = re.compile(
+    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(\d{1,5})\s*$", re.MULTILINE
+)
 LOCAL_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "::1"}
+
+#: Suffixes des fichiers de code **compagnons** d'un carnet : un carnet peut
+#: appeler un moteur vivant dans un fichier de sa serie (le pont Fast Downward
+#: en C#). Le service que ce fichier appelle est alors un besoin du carnet.
+COMPANION_CODE_SUFFIXES = (".py", ".cs")
+#: Mention d'un fichier de code dans une source : `X.cs`, `x_y.py` ou un
+#: nom de module en `snake_case` (le pont Cite sans son extension).
+CODE_MENTION_RE = re.compile(
+    r"[A-Za-z0-9_\-]{3,}\.(?:py|cs)\b|\b[a-z0-9]+(?:_[a-z0-9]+)+\b"
+)
+#: Taille maximale lue pour un fichier compagnon : au-dela, le fichier n'est
+#: pas un moteur de carnet, il ne doit pas peser sur la mesure.
+COMPANION_MAX_BYTES = 512 * 1024
 
 #: Imports de premier niveau dans une cellule de code.
 IMPORT_RE = re.compile(
@@ -287,8 +331,12 @@ class Group:
     local_endpoints: list[str] = field(default_factory=list)
     requires_python: str = ""
     requires_python_source: str = ""
+    requires_python_constraints: list[dict] = field(default_factory=list)
     imports: set[str] = field(default_factory=set)
     gaps: list[str] = field(default_factory=list)
+    service_calls: int = 0
+    dynamic_service_calls: int = 0
+    companion_files: list[str] = field(default_factory=list)
     verdict: str = "inclus"
     motifs: list[dict] = field(default_factory=list)
 
@@ -445,18 +493,136 @@ def _split_series(group_path: str) -> tuple[str, str]:
     return series, subseries
 
 
-def _requires_python(repo_root: Path, relative: str) -> str:
-    """La contrainte ``requires-python`` d'un ``pyproject.toml`` (ou la chaine vide)."""
+def _python_constraints(repo_root: Path, relative: str) -> list[tuple[str, str]]:
+    """Les contraintes d'interpreteur declarees par un ``pyproject.toml``.
+
+    Deux champs portent une contrainte, et ils ne disent pas la meme chose :
+    ``project.requires-python`` est le **plancher d'installation** du
+    paquet, ``tool.coursia.pinned_env.requires-python`` est l'**env de la
+    serie** -- celle dans laquelle les carnets tournent reellement. Cette
+    derniere prime sur la premiere (cf. ``check_kernel_drift``), et c'est
+    elle qu'il faut confronter au noyau canonique : lire la seule premiere
+    ferait passer pour compatible un env que la serie n'utilise pas.
+
+    Rend ``[(champ, contrainte)]`` ; une liste vide si le fichier est absent
+    ou illisible -- une absence de declaration n'etablit aucune contrainte.
+    """
     path = repo_root / relative
     if not path.is_file():
-        return ""
+        return []
     try:
         with path.open("rb") as handle:
             data = tomllib.load(handle)
     except Exception:  # noqa: BLE001 - un pyproject illisible n'etablit aucune contrainte
-        return ""
+        return []
+    found: list[tuple[str, str]] = []
     project = data.get("project", {}) or {}
-    return str(project.get("requires-python", "") or "").strip()
+    value = str(project.get("requires-python", "") or "").strip()
+    if value:
+        found.append(("project.requires-python", value))
+    pinned = (data.get("tool", {}) or {}).get("coursia", {}) or {}
+    pinned = pinned.get("pinned_env", {}) or {}
+    value = str(pinned.get("requires-python", "") or "").strip()
+    if value:
+        found.append(("tool.coursia.pinned_env.requires-python", value))
+    return found
+
+
+def _int_constants(source: str) -> dict[str, str]:
+    """Les constantes numeriques d'une source (``FD_API_PORT = 8200``)."""
+    return {name: value for name, value in INT_CONST_RE.findall(source)}
+
+
+def _endpoints(source: str) -> list[tuple[str, str]]:
+    """Les ``(hote, port)`` vises par une source.
+
+    Le port est lu soit en dur dans l'URL, soit dans une constante
+    interpolee que la source declare. Une URL a port non resolu est rendue
+    avec un port vide : elle est comptee comme endpoint local sans service
+    (le service n'est pas identifiable), jamais comme un port devine.
+    """
+    constants = _int_constants(source)
+    found: list[tuple[str, str]] = []
+    for match in URL_RE.finditer(source):
+        host, port = match.group(1), match.group(2)
+        if not port and source[match.end() :].startswith(":{"):
+            # URL a port interpole : le motif de gabarit le traite.
+            continue
+        found.append((host, port))
+    for host, name in URL_TEMPLATE_RE.findall(source):
+        value = constants.get(name, "")
+        if value:
+            found.append((host, value))
+    return found
+
+
+def _service_calls(source: str) -> tuple[int, int]:
+    """Les appels de service d'une source : ``(total, cible non identifiable)``.
+
+    Un appel est a **cible non identifiable** quand sa ligne ne porte aucune
+    URL : la cible est alors une variable, le lecteur ne peut pas nommer le
+    service. C'est une mesure, pas une supposition.
+    """
+    total = 0
+    dynamic = 0
+    lines = source.splitlines()
+    for index, line in enumerate(lines):
+        hits = SERVICE_CALL_RE.findall(line)
+        if not hits:
+            continue
+        total += len(hits)
+        if "http" not in line.lower():
+            dynamic += len(hits)
+    return total, dynamic
+
+
+def _companion_sources(repo_root: Path, names: set[str]) -> list[tuple[str, str]]:
+    """Les sources des fichiers de code **compagnons** cites par un carnet.
+
+    Un carnet appelle parfois son moteur dans un fichier de sa serie (le pont
+    Fast Downward en C#). Le service que ce fichier appelle est un besoin du
+    carnet, pas un detail du fichier : sans cette lecture, le manifeste
+    declare une serie autonome alors qu'elle appelle un service du depot.
+
+    Rend ``[(chemin relatif, source)]`` ; un fichier absent, trop gros ou
+    illisible est ignore -- il n'etablit alors aucun besoin.
+    """
+    found: list[tuple[str, str]] = []
+    for relative in sorted(names):
+        path = repo_root / relative
+        try:
+            if not path.is_file() or path.stat().st_size > COMPANION_MAX_BYTES:
+                continue
+            found.append((relative, path.read_text(encoding="utf-8", errors="replace")))
+        except OSError:
+            continue
+    return found
+
+
+def _record_endpoints(
+    entry: Group, source: str, local_ports: dict, services: dict
+) -> None:
+    """Note les endpoints vises et les services qu'ils nomment."""
+    for host, port in _endpoints(source):
+        endpoint = f"{host}:{port}" if port else host
+        if host.lower() in LOCAL_HOSTS:
+            if endpoint not in entry.local_endpoints:
+                entry.local_endpoints.append(endpoint)
+            if port and port in local_ports:
+                service = local_ports[port]
+                if service not in entry.network_services:
+                    entry.network_services.append(service)
+            continue
+        service = services.get(host.lower())
+        if service and service not in entry.network_services:
+            entry.network_services.append(service)
+
+
+def _record_service_calls(entry: Group, source: str) -> None:
+    """Note les appels de service et ceux dont la cible n'est pas lisible."""
+    total, dynamic = _service_calls(source)
+    entry.service_calls += total
+    entry.dynamic_service_calls += dynamic
 
 
 def _specifier_bounds(spec: str) -> dict:
@@ -550,6 +716,23 @@ def build_manifest(repo_root: Path) -> dict:
         entry = group_entry(relative)
         dep_groups[relative] = entry.path
 
+    # --- fichiers de code candidats au role de compagnon --------------------
+    # Un carnet cite parfois son moteur par son nom de fichier. On ne retient
+    # que les noms **uniques** dans l'arbre : un nom ambigu (`utils.py`) ne
+    # designe aucun moteur et ne doit pas etre lu comme tel.
+    code_files: dict[str, list[str]] = defaultdict(list)
+    for relative in tracked:
+        if not relative.startswith(NOTEBOOKS_ROOT + "/"):
+            continue
+        if not relative.endswith(COMPANION_CODE_SUFFIXES):
+            continue
+        name = Path(relative).name
+        code_files[name].append(relative)
+        code_files[name[: -len(Path(name).suffix)]].append(relative)
+    companion_by_name = {
+        name: paths[0] for name, paths in code_files.items() if len(paths) == 1
+    }
+
     # --- carnets : famille de noyau et besoins -------------------------------
     for relative in notebooks:
         entry = groups.get(notebook_groups.get(relative, ""))
@@ -573,19 +756,22 @@ def build_manifest(repo_root: Path) -> dict:
         for variable in ENV_READ_RE.findall(joined):
             if ENV_SECRET_NAME_RE.search(variable) and variable not in entry.api_keys:
                 entry.api_keys.append(variable)
-        for host, port in URL_RE.findall(joined):
-            endpoint = f"{host}:{port}" if port else host
-            if host.lower() in LOCAL_HOSTS:
-                if endpoint not in entry.local_endpoints:
-                    entry.local_endpoints.append(endpoint)
-                if port and port in local_ports:
-                    service = local_ports[port]
-                    if service not in entry.network_services:
-                        entry.network_services.append(service)
-                continue
-            service = services.get(host.lower())
-            if service and service not in entry.network_services:
-                entry.network_services.append(service)
+        _record_endpoints(entry, joined, local_ports, services)
+        _record_service_calls(entry, joined)
+        for token in CODE_MENTION_RE.findall(joined):
+            companion = companion_by_name.get(token)
+            if companion and companion not in entry.companion_files:
+                entry.companion_files.append(companion)
+
+    # --- fichiers de code compagnon : les services qu'ils appellent ---------
+    # Le carnet appelle son moteur (le pont Fast Downward en C#) : le service
+    # que ce fichier appelle est un besoin du carnet, pas un detail du fichier.
+    for entry in groups.values():
+        for _relative, source in _companion_sources(
+            repo_root, set(entry.companion_files)
+        ):
+            _record_endpoints(entry, source, local_ports, services)
+            _record_service_calls(entry, source)
 
     # --- fichiers de dependances (heritage des repertoires ancetres) ---------
     for relative, group_path in dep_groups.items():
@@ -600,21 +786,30 @@ def build_manifest(repo_root: Path) -> dict:
                 read_requirements(repo_root, relative, group_path)
             )
 
-    # --- contraintes requires-python -----------------------------------------
+    # --- contraintes d'interpreteur -----------------------------------------
+    # Deux champs peuvent declarer une contrainte : le plancher d'installation
+    # du paquet (`project.requires-python`) et l'env de la serie
+    # (`tool.coursia.pinned_env.requires-python`). C'est l'env de la serie qui
+    # prime : c'est elle que les carnets traversent. Lire la seule premiere
+    # ferait passer pour compatible un env que la serie n'utilise pas.
     for relative in tracked:
         if not relative.endswith("pyproject.toml"):
             continue
         if not relative.startswith(NOTEBOOKS_ROOT + "/"):
             continue
-        constraint = _requires_python(repo_root, relative)
-        if not constraint:
+        constraints = _python_constraints(repo_root, relative)
+        if not constraints:
             continue
         directory = str(Path(relative).parent).replace("\\", "/")
         target = groups.get(directory)
         if target is None:
             continue
-        target.requires_python = constraint
-        target.requires_python_source = relative
+        target.requires_python_constraints = [
+            {"field": name, "constraint": value} for name, value in constraints
+        ]
+        effective_field, effective = constraints[-1]
+        target.requires_python = effective
+        target.requires_python_source = f"{relative} [{effective_field}]"
 
     # --- verdicts ------------------------------------------------------------
     import_aliases = {
@@ -716,26 +911,28 @@ def build_manifest(repo_root: Path) -> dict:
                     ),
                 }
             )
-        # Conflit de version d'interpreteur : requires-python de la serie vs
-        # version Python canonique de son noyau.
+        # Conflit de version d'interpreteur : la contrainte effective de la
+        # serie vs la version Python canonique de ses noyaux. Le conflit est
+        # declare des qu'UN noyau canonique est incompatible : la serie ne
+        # tourne pas sous la totalite de ses noyaux.
         if entry.requires_python and entry.kernelspecs:
-            kernel = min(entry.kernelspecs)
-            canonical = canonical_python.get(kernel.lower())
-            if canonical is None:
-                note = ambiguous_python.get(kernel.lower())
-                if note:
-                    motifs.append(
-                        {
-                            "origin": "declaration",
-                            "policy": "canonical_python_by_kernelspec",
-                            "text": (
-                                "version Python canonique ambigue pour le noyau "
-                                f"{kernel} ({note}) : aucun conflit declare"
-                            ),
-                        }
-                    )
-            else:
-                bounds = _specifier_bounds(entry.requires_python)
+            bounds = _specifier_bounds(entry.requires_python)
+            for kernel in sorted(entry.kernelspecs):
+                canonical = canonical_python.get(kernel.lower())
+                if canonical is None:
+                    note = ambiguous_python.get(kernel.lower())
+                    if note:
+                        motifs.append(
+                            {
+                                "origin": "declaration",
+                                "policy": "canonical_python_by_kernelspec",
+                                "text": (
+                                    "version Python canonique ambigue pour le noyau "
+                                    f"{kernel} ({note}) : aucun conflit declare"
+                                ),
+                            }
+                        )
+                    continue
                 allowed = _specifiers_compatible(
                     {"exact": "", "lower": canonical, "upper": "", "excludes": []},
                     {
@@ -758,6 +955,20 @@ def build_manifest(repo_root: Path) -> dict:
                             ),
                         }
                     )
+                    break
+        # Appel de service dont la cible n'est pas lisible : le service ne peut
+        # pas etre nomme, donc la serie n'est pas prouvee autonome.
+        if entry.dynamic_service_calls:
+            motifs.append(
+                {
+                    "origin": "mesure",
+                    "policy": "dynamic_service_calls",
+                    "text": (
+                        "appel(s) de service dont l'URL n'est pas lisible sur la "
+                        f"ligne de l'appel : {entry.dynamic_service_calls}"
+                    ),
+                }
+            )
         # Le verdict est la **consequence** des motifs : une exclusion l'emporte
         # sur un service optionnel, tous les motifs restent affiches.
         policies = {motif["policy"] for motif in motifs}
@@ -1015,6 +1226,7 @@ def _group_dict(entry: Group) -> dict:
         "package_count": len(entry.requirements),
         "requires_python": entry.requires_python,
         "requires_python_source": entry.requires_python_source,
+        "requires_python_constraints": entry.requires_python_constraints,
         "needs": {
             "gpu": bool(entry.gpu_notebooks),
             "gpu_notebooks": entry.gpu_notebooks[:10],
@@ -1026,6 +1238,12 @@ def _group_dict(entry: Group) -> dict:
             "api_key_count": len(entry.api_keys),
             "network_services": sorted(entry.network_services),
             "local_endpoints": sorted(entry.local_endpoints)[:10],
+            # Appels de service mesures, et ceux dont la cible n'est pas
+            # lisible (le service ne peut alors pas etre nomme).
+            "service_call_count": entry.service_calls,
+            "dynamic_service_calls": entry.dynamic_service_calls,
+            # Fichiers de code que le carnet cite (le moteur qu'il appelle).
+            "companion_files": sorted(entry.companion_files)[:10],
         },
         "verdict": entry.verdict,
         "service_optionnel": any(
@@ -1212,6 +1430,100 @@ def render_markdown(manifest: dict) -> str:
     return "\n".join(lines)
 
 
+#: Champs ignores par la garde de fraicheur. Le SHA de generation change a
+#: chaque commit et le compte de fichiers suivis change avec l'arbre : les deux
+#: decrivent l'ETAT DU DEPOT, pas le contenu du manifeste. Tout le reste est
+#: compare : un manifeste qui ne decrit plus l'arbre est perime.
+FRESHNESS_IGNORED_TOP = ("generated_from",)
+FRESHNESS_IGNORED_COUNTS = ("tracked_files",)
+#: Un SHA de commit, neutralise dans la comparaison du Markdown.
+SHA_RE = re.compile(r"\b[0-9a-f]{40}\b")
+
+
+def _normalize_for_freshness(manifest: dict) -> dict:
+    """La copie comparable d'un manifeste : hors SHA, hors compte de fichiers.
+
+    Les groupes sont **indexes par leur nom** et non par leur rang : l'ajout
+    d'un groupe ne doit pas faire conclure que tous les suivants ont change.
+    """
+    normalized = {
+        key: value
+        for key, value in manifest.items()
+        if key not in FRESHNESS_IGNORED_TOP
+    }
+    counts = dict(normalized.get("counts") or {})
+    for key in FRESHNESS_IGNORED_COUNTS:
+        counts.pop(key, None)
+    normalized["counts"] = counts
+    groups = normalized.get("groups")
+    if isinstance(groups, list):
+        normalized["groups"] = {
+            str(group.get("group")): group
+            for group in groups
+            if isinstance(group, dict)
+        }
+    return normalized
+
+
+def _diff_paths(left, right, prefix: str = "") -> list[str]:
+    """Les chemins JSON qui different entre deux structures."""
+    diffs: list[str] = []
+    if isinstance(left, dict) and isinstance(right, dict):
+        for key in sorted(set(left) | set(right)):
+            path = prefix + "/" + str(key)
+            if key not in left:
+                diffs.append(path + " (absent du manifeste committe)")
+            elif key not in right:
+                diffs.append(path + " (absent de la regeneration)")
+            else:
+                diffs.extend(_diff_paths(left[key], right[key], path))
+        return diffs
+    if isinstance(left, list) and isinstance(right, list):
+        if len(left) != len(right):
+            return [prefix + " (longueur %d/%d)" % (len(left), len(right))]
+        for index, (one, other) in enumerate(zip(left, right)):
+            diffs.extend(_diff_paths(one, other, prefix + "/" + str(index)))
+        return diffs
+    if left != right:
+        diffs.append(prefix + " : %r != %r" % (left, right))
+    return diffs
+
+
+def _normalize_markdown(text: str) -> str:
+    """Le Markdown compare : le SHA de generation est neutralise."""
+    return SHA_RE.sub("<sha>", text)
+
+
+def check_freshness(repo_root: Path, out_dir: Path) -> tuple[str, list[str]]:
+    """Compare les sorties versionnees a une regeneration de l'etat courant.
+
+    Rend ``(etat, ecarts)`` avec ``etat`` dans ``{"frais", "perime",
+    "incident"}``. ``incident`` signifie que la sortie committe est absente ou
+    illisible : ce n'est pas une preuve de perimetre, c'est un **verdict
+    inconnu**, et les deux ne se confondent jamais.
+    """
+    json_path = out_dir / "manifeste-dependances.json"
+    md_path = out_dir / "manifeste-dependances.md"
+    if not json_path.is_file():
+        return "incident", ["sortie absente : %s" % json_path]
+    try:
+        committed = json.loads(json_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001 - une sortie illisible est un incident
+        return "incident", ["sortie illisible : %s (%s)" % (json_path, exc)]
+    manifest = build_manifest(repo_root)
+    diffs = _diff_paths(
+        _normalize_for_freshness(committed), _normalize_for_freshness(manifest)
+    )
+    if md_path.is_file():
+        committed_md = _normalize_markdown(md_path.read_text(encoding="utf-8"))
+        fresh_md = _normalize_markdown(render_markdown(manifest))
+        if committed_md != fresh_md:
+            diffs.append(
+                "manifeste-dependances.md : contenu different de la regeneration"
+            )
+    return ("perime", diffs) if diffs else ("frais", [])
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description=(
@@ -1240,9 +1552,39 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="affiche le rendu Markdown sur la sortie standard",
     )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help=(
+            "garde de fraicheur : compare les sorties versionnees a une "
+            "regeneration de l'etat courant (0 frais, 1 perime, 2 incident)"
+        ),
+    )
     args = parser.parse_args(argv)
 
     repo_root = args.repo_root.resolve()
+
+    if args.check:
+        out_dir = (args.out_dir or (repo_root / DEFAULT_OUT_DIR)).resolve()
+        etat, ecarts = check_freshness(repo_root, out_dir)
+        if etat == "frais":
+            print("FRAIS : le manifeste committe decrit l'etat courant.")
+            return 0
+        if etat == "incident":
+            print("INCIDENT : la garde de fraicheur n'a pas pu conclure.")
+            for line in ecarts:
+                print("  - %s" % line)
+            return 2
+        print(
+            "PERIME : %d ecart(s) entre le manifeste committe et sa regeneration."
+            % len(ecarts)
+        )
+        for line in ecarts[:20]:
+            print("  - %s" % line)
+        if len(ecarts) > 20:
+            print("  ... %d ecart(s) supplementaire(s)" % (len(ecarts) - 20))
+        return 1
+
     manifest = build_manifest(repo_root)
     markdown = render_markdown(manifest)
 
