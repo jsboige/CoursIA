@@ -935,7 +935,7 @@ print(f""unified-planning version : {up.__version__}"")
 #     print(f""Plan   : {result.plan}"")
 
 pass  # Remplacer par votre implementation",,,,,,,,c452d33324feb027,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,79014e5f,markdown,fr,c08e2ea8decc9e2e,"# Planners-01-Introduction-CSharp : la planification automatique from-scratch, puis moteur SOTA
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,79014e5f,markdown,fr,f65c2bee9319f55f,"# Planners-01-Introduction-CSharp : la planification automatique from-scratch, puis moteur SOTA
 
 **Navigation** : [<< Setup](../00-Environment/Planners-00-Setup-Python.ipynb) | [Twin Python unified-planning](Planners-01-Introduction-Python.ipynb) | [PDDL Basics >>](Planners-02-PDDL-Basics-Python.ipynb)
 
@@ -951,7 +951,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSh
 
 Pas d'équivalent NuGet maintenu et didactique a `unified-planning` en .NET → la Partie 1 from-scratch porte la valeur pédagogique (on code chaque brique), la Partie 2 porte la parité d'outil (le même moteur de production que le jumeau Python enveloppe, cf [Planners-04-Fast-Downward-CSharp](../02-Classical/Planners-04-Fast-Downward-CSharp.ipynb)).
 
-**Stack technique** : BCL .NET seule + Fast Downward par `FastDownwardBackend.cs` (Partie 2) : service Docker ou paquet Python `up-fast-downward`. Kernel `.net-csharp` (.NET Interactive).",,,,,,,,c08e2ea8decc9e2e,,,,,,,,,,,,,,,
+**Stack technique** : BCL .NET seule + Fast Downward par `FastDownwardBackend.cs` (Partie 2) : service Docker ou paquet Python `up-fast-downward`. Kernel `.net-csharp` (.NET Interactive).",,,,,,,,f65c2bee9319f55f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,e868c323,markdown,fr,fe866e51886524d7,"## 1. Qu'est-ce que la planification ?
 
 La **planification automatique** est la branche de l'IA qui genere des **sequences d'actions** pour atteindre un objectif. Etant donne :
@@ -2095,7 +2095,7 @@ Dans les notebooks suivants, nous approfondirons :
 ***
 
 **Notebook suivant** : [Planners-02-PDDL-Basics-Python](Planners-02-PDDL-Basics-Python.ipynb)",,,,,,,,8a82845228b8e372,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,32f61567,markdown,fr,94bf3393d017a436,"# Planners-02-PDDL-Basics-CSharp
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,32f61567,markdown,fr,db0f6453af9f942b,"# Planners-02-PDDL-Basics-CSharp
 
 **Navigation** : [Index](../../README.md) | [<< Introduction C#](Planners-01-Introduction-CSharp.ipynb) | [State Space C# >>](Planners-03-State-Space-CSharp.ipynb) |
 
@@ -2110,7 +2110,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSha
 5. **Comprendre** la mécanique interne qu'une bibliothèque comme `unified-planning` (côté Python) cache derrière un appel `solve()`.
 
 > **Parité .NET (#4956).** Ce notebook est le **jumeau C#** de [Planners-02-PDDL-Basics-Python.ipynb](Planners-02-PDDL-Basics-Python.ipynb). Le notebook Python définit les domaines PDDL en texte puis invoque la bibliothèque `unified-planning` qui grounde et solve. Ici, **tout est déroulé à la main** (.NET 9, 0 NuGet) : on construit le modèle STRIPS, on grounde les actions et on code la recherche. C'est la complémentarité *axe-2 SOTA* ([#3801](https://github.com/jsboige/CoursIA/issues/3801)) : la lib utilitaire d'un côté, la compréhension des internes de l'autre.
-",,,,,,,,94bf3393d017a436,,,,,,,,,,,,,,,
+",,,,,,,,db0f6453af9f942b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,1926d390,markdown,fr,48bf45e93f414b4a,"***
 
 ## 1. Introduction : PDDL et le modèle STRIPS
@@ -2725,7 +2725,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSha
 
 Un **planificateur STRIPS complet from-scratch** — le même moteur résout Logistics (7 actions) et Gripper (5 actions). Vous avez déroulé à la main ce que `unified-planning.solve()` fait en un appel côté Python : la modélisation typée, le grounding et la recherche dans l'espace d'états.
 ",,,,,,,,ca83185456d5c80e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,d8a9b18c,markdown,fr,26d54e3bbe662046,"***
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,d8a9b18c,markdown,fr,30357486d6b1bc7e,"***
 
 ## Conclusion
 
@@ -2742,7 +2742,7 @@ La recherche BFS trouve le plan optimal en nombre d'actions, mais **l'espace d'�
 
 - **[Planners-03-State-Space-CSharp](Planners-03-State-Space-CSharp.ipynb)** : la structure des espaces d'états et pourquoi BFS explose.
 - **[Planners-05-Heuristics-CSharp](../02-Classical/Planners-05-Heuristics-CSharp.ipynb)** : les heuristiques qui rendent la recherche tractable.
-",,,,,,,,26d54e3bbe662046,,,,,,,,,,,,,,,
+",,,,,,,,30357486d6b1bc7e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,d7b5503d,markdown,fr,9603022450725b9c,"***
 
 ## Ressources
@@ -3882,7 +3882,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Pyth
 ***
 
 **Notebook suivant** : [Planners-03-State-Space-Python](Planners-03-State-Space-Python.ipynb)",,,,,,,,19abd151b6da07a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,483916e0,markdown,fr,4e7cde4ec3a8bb84,"***
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,483916e0,markdown,fr,2be1b4420cb472c6,"***
 
 **Navigation** : [<< PDDL Basics C#](Planners-02-PDDL-Basics-CSharp.ipynb) | [Index](../../README.md) | [Fast Downward C# >>](../02-Classical/Planners-04-Fast-Downward-CSharp.ipynb)
 
@@ -3901,7 +3901,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSha
 
 Pas d'équivalent NuGet didactique idiomatique pour ce niveau -> from-scratch = la valeur. BCL .NET seule, 0 NuGet.
 
-**Le point cle (#3801 Prong B, cas non-degenere)** : sur un terrain uniforme BFS = A*. Sur un **terrain pondere**, A* trouve un chemin **plus long en étapes mais moins couteux** que BFS — c'est la ou A* discrimine vraiment. Le twin Python le demontre visuellement (heatmap) ; le twin C# le demontre **numeriquement** (table Pas/Coût/Nœuds).",,,,,,,,4e7cde4ec3a8bb84,,,,,,,,,,,,,,,
+**Le point cle (#3801 Prong B, cas non-degenere)** : sur un terrain uniforme BFS = A*. Sur un **terrain pondere**, A* trouve un chemin **plus long en étapes mais moins couteux** que BFS — c'est la ou A* discrimine vraiment. Le twin Python le demontre visuellement (heatmap) ; le twin C# le demontre **numeriquement** (table Pas/Coût/Nœuds).",,,,,,,,2be1b4420cb472c6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,337fe2e8,markdown,fr,798e928f2645483c,"## Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
@@ -4820,7 +4820,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Pyth
 | **Zero** | Oui | Optimal (équivalent a Dijkstra) |
 | **Double Manhattan** | Non | Sous-optimal possible |
 | **Carre de Manhattan** | Non | Sous-optimal certain",,,,,,,,890c6ee351b55c65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb,cell-28,code,fr,085ab062cc2ac32b,"# Comparaison d'heuristiques admissibles et non admissibles
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb,cell-28,code,fr,c65e13dbdb63bc4b,"# Comparaison d'heuristiques admissibles et non admissibles
+# Terrain non degenerere : la grille 3x3 de la section 2 identifie l'optimum
+# en si peu de noeuds que la qualite de l'heuristique n'y coute rien.
+# Ici, 8x8 avec obstacles : les detours rendent le guidage decisif.
 
 # Heuristique non admissible: double de Manhattan
 def double_manhattan(state: GridState, goal: GridState) -> int:
@@ -4832,7 +4835,33 @@ def zero_heuristic(state: GridState, goal: GridState) -> int:
     """"""Heuristique admissible triviale.""""""
     return 0
 
-print(""=== Comparaison d'heuristiques ==="")
+# Terrain de mesure : obstacles qui forcent des detours des deux cotes du trajet
+TERRAIN_OBSTACLES = {
+    (0, 2), (0, 4),                    # epars cote gauche
+    (1, 6), (1, 7), (2, 6),            # poche close en haut
+    (3, 5), (3, 6), (3, 7), (4, 5),    # mur central-droit
+    (5, 4),                            # marche du mur
+    (6, 1), (6, 2), (6, 3),            # colonne basse-droite
+}
+terrain = GridWorld(8, 8, obstacles=TERRAIN_OBSTACLES)
+t_initial = GridState(0, 0)
+t_goal = GridState(7, 7)
+
+print(""=== Terrain de mesure 8x8 (S depart, G but, # obstacle) ==="")
+for y in range(7, -1, -1):
+    row = []
+    for x in range(8):
+        if (x, y) == (0, 0):
+            row.append(""S"")
+        elif (x, y) == (7, 7):
+            row.append(""G"")
+        elif (x, y) in TERRAIN_OBSTACLES:
+            row.append(""#"")
+        else:
+            row.append(""."")
+    print("" "".join(row))
+
+print(""\n=== Comparaison d'heuristiques sur ce terrain ==="")
 print(f""{'Heuristique':<20} {'Admissible':<12} {'Cout':<8} {'Noeuds explores'}"")
 print(""-"" * 55)
 
@@ -4844,25 +4873,26 @@ heuristics = [
 ]
 
 for name, h_func, is_adm in heuristics:
-    path, cost, nodes = a_star(initial_state, goal_state, grid.get_successors, h_func)
+    path, cost, nodes = a_star(t_initial, t_goal, terrain.get_successors, h_func)
     adm_str = ""Oui"" if is_adm else ""Non""
     print(f""{name:<20} {adm_str:<12} {cost:<8} {nodes}"")
 
-print(""\nObservation: Double Manhattan peut trouver une solution sous-optimale."")",,,,,,,,085ab062cc2ac32b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb,84b24b6e,markdown,fr,d1f16aa66e10be8c,"### Interpretation : Impact de l'heuristique sur l'efficacite d'A*
+print(""\nObservation: Double Manhattan rend un chemin de cout 16 pour un optimal de 14."")",,,,,,,,c65e13dbdb63bc4b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb,84b24b6e,markdown,fr,37ea5aa1198e32f0,"### Interpretation : Impact de l'heuristique sur l'efficacite d'A*
 
-**Résultat obtenu** : trois heuristiques testees sur le même problème donnent des résultats contrastes.
+**Résultat obtenu** : sur le terrain 8×8 à obstacles, les trois heuristiques ne se valent plus — le guidage se paie en noeuds explorés, et la non-admissibilité se paie en coût.
 
-| Heuristique | Admissible | Noeuds explores | Coût trouve | Optimal ? |
+| Heuristique | Admissible | Noeuds explores | Coût trouvé | Optimal ? |
 |-------------|-----------|-----------------|-------------|-----------|
-| Manhattan | Oui | 8 | 4 | Oui |
-| Zero (Dijkstra) | Oui | 8 | 4 | Oui |
-| Double Manhattan | Non | 4 | 4 | Oui (chanceux) |
+| Manhattan | Oui | 36 | 14 | Oui |
+| Zero (Dijkstra) | Oui | 42 | 14 | Oui |
+| Double Manhattan | Non | 37 | 16 | Non |
 
 **Points clés** :
-- Manhattan et Zero explorent le même nombre de noeuds (8) ici car la grille est petite ; l'ecart grandit sur des problèmes plus grands
-- Double Manhattan est plus rapide (4 noeuds) mais **non optimal en general** : sur cette instance simple, le hasard a produit le chemin optimal
-- Une heuristique non admissible peut etre utilisee quand la vitesse prime sur l'optimalité (planning temps réel)",,,,,,,,d1f16aa66e10be8c,,,,,,,,,,,,,,,
+- Manhattan explore le moins (36 noeuds) : une heuristique admissible **et informée** guide A* vers le but en réduisant l'exploration
+- Zero (équivalent Dijkstra) reste optimale mais explore 42 noeuds : sans information, A* déroule presque tout le terrain
+- Double Manhattan perd sur les deux tableaux : 37 noeuds explorés **et** un coût de 16 au lieu de 14 — surestimer les distances résiduelles détourne A* vers un chemin sous-optimal, mesuré ici au lieu d'hypothétique
+- Le choix d'une heuristique admissible informée n'est pas un luxe théorique : sur ce terrain, il vaut 6 noeuds d'exploration face à Dijkstra et 2 unités de coût face au double",,,,,,,,37ea5aa1198e32f0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb,cell-29,markdown,fr,bd2811980fbe0862,"***
 
 ## 6. Exemple Pratique : Problème du 8-Puzzle
@@ -5214,7 +5244,7 @@ Dans le prochain notebook **Planners-04-Fast-Downward-Python**, nous explorerons
 ***
 
 **Notebook suivant** : [Planners-04-Fast-Downward-Python](../02-Classical/Planners-04-Fast-Downward-Python.ipynb)",,,,,,,,e1f4b2750b6419f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,f4bc7eae,markdown,fr,e9998d90d7678b57,"# Planners-04-Fast-Downward-Python (C#)
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,f4bc7eae,markdown,fr,38faad2f0418c64c,"# Planners-04-Fast-Downward-Python (C#)
 
 ## Architecture Fast Downward, SAS+, A\*, GBFS et Enforced Hill Climbing
 
@@ -5241,7 +5271,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Durée estimee : 45 minutes
 
-> **Verdict SOTA (#3801 Prong A).** Ce twin C# est un **planificateur SAS+ pédagogique from-scratch** (SOTA-OK pour le concept du moteur). Le notebook Python [Planners-04-Fast-Downward-Python](Planners-04-Fast-Downward-Python.ipynb) invoque le **vrai Fast Downward** (IPC winner, Helmert 2006) (service Docker ou plugin local `up-fast-downward`) + `unified-planning` ; la Tranche 2 de ce twin l'appelle aussi depuis .NET. Le twin from-scratch rend visibles les internes (représentation SAS+, opérateurs prevail/pre/eff, RPG, EHC) que Fast Downward cache dans son binaire C++ — compagnon pédagogique intentionnel, même pattern que le twin [App-19 WFC C#](../../../Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb). Implementation en BCL .NET 9 **pure, 0 NuGet**.",,,,,,,,e9998d90d7678b57,,,,,,,,,,,,,,,
+> **Verdict SOTA (#3801 Prong A).** Ce twin C# est un **planificateur SAS+ pédagogique from-scratch** (SOTA-OK pour le concept du moteur). Le notebook Python [Planners-04-Fast-Downward-Python](Planners-04-Fast-Downward-Python.ipynb) invoque le **vrai Fast Downward** (IPC winner, Helmert 2006) (service Docker ou plugin local `up-fast-downward`) + `unified-planning` ; la Tranche 2 de ce twin l'appelle aussi depuis .NET. Le twin from-scratch rend visibles les internes (représentation SAS+, opérateurs prevail/pre/eff, RPG, EHC) que Fast Downward cache dans son binaire C++ — compagnon pédagogique intentionnel, même pattern que le twin [App-19 WFC C#](../../../Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb). Implementation en BCL .NET 9 **pure, 0 NuGet**.",,,,,,,,38faad2f0418c64c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,3b99f00d,markdown,fr,e9e0bcc05b0b35dc,"## 1. Pourquoi SAS+ ? L'apport cle de Fast Downward
 
 Le **translator** de Fast Downward convertit un problème PDDL (prédicats booléens) en une représentation **SAS+** (Simplified Action Structures) ou l'état est un vecteur de **variables multi-valuees**. C'est le changement de représentation fondateur du planificateur.
@@ -5437,7 +5467,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSh
 | Prevail distinct de pre | `board` a prevail `ferry_pos, empty` (non modifiés) + pre `car1` (modifie) | reflete la structure causale |
 
 **Plan optimal théorique** : pour `n` voitures, capacité 1, ferry du cote de départ, le plan compte `3n + (n-1) = 4n - 1` actions (n cycles board-sail-debark + n-1 sail-retour, sauf après la dernière). Pour n=3 -> **11 actions**. C'est ce qu'A\* doit retrouver.",,,,,,,,743e3bae6ae86304,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,3b745c48,markdown,fr,5b41f9786fc77649,"## 4. Heuristique h^FF par graphe de plan relaxation (RPG)
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,3b745c48,markdown,fr,f3ff07870325a859,"## 4. Heuristique h^FF par graphe de plan relaxation (RPG)
 
 Les trois recherches ci-dessous ont besoin d'une heuristique `h(s)` estimant le coût restant. On construit le **graphe de plan relaxation** (RPG) : on ignore les effets de **suppression** (delete-relaxation), et on propage les faits couche par couche. Dans le monde relaxe, le nombre de faits vrais ne fait que croitre — le problème devient polynomial.
 
@@ -5447,7 +5477,7 @@ Les trois recherches ci-dessous ont besoin d'une heuristique `h(s)` estimant le 
 - **h^FF** (non admissible mais très informative) : on extrait gloutonnement un **plan relaxe** depuis le but en remontant le meilleur achiever de chaque fait, et `h^FF = nombre d'actions du plan relaxe`. C'est l'heuristique de reference pour la planification satisficing (Hoffmann & Nebel 2001).
 
 Le detail des propagations (point fixe, double-compte de h^add vs max) est dans [Planners-05-Heuristics-CSharp](Planners-05-Heuristics-CSharp.ipynb) ; ici on reutilise la même mecanique, adaptee a la projection d'atomes SAS+.
-",,,,,,,,5b41f9786fc77649,,,,,,,,,,,,,,,
+",,,,,,,,f3ff07870325a859,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,0d747276,code,fr,fc9d2cb2b92ce679,"// Heuristiques par relaxation de suppression sur SAS+ (projection en atomes).
 // Chaque paire (var=val) devient un atome string ""var=val"". L'operateur relaxe = (pre-atomes, add-atomes).
 
@@ -5869,11 +5899,13 @@ sb.AppendLine();
 sb.AppendLine($""Cout optimal attendu = 5 : load(pkg1,A), load(pkg2,A), drive(A,B), unload(pkg1,B), unload(pkg2,B)."");
 sb.ToString().Display();
 ",,,,,,,,2ad782ab1ec3591a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,640835fe,markdown,fr,83979f1af725e23f,"### Interpretation : Logistics
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,640835fe,markdown,fr,c11d5dbe77eb3f6a,"### Interpretation : Logistics
 
 Sur ce petit domaine, **A\*, GBFS et EHC convergent vers le même plan optimal de 5 actions** : la structure est tellement simple que les trois stratégies convergent. On notera toutefois que sur cette instance precise, **h^FF est exactement egal a h\*** (le plan relaxe coincide avec le plan réel : pas d'interaction cachee) — EHC descend donc en escalier direct, une action par phase (5 phases, 5 noeuds expanses).
 
-**Ce que le translator apporte ici** : en passant des prédicats PDDL `(at pkg1 A) / (at pkg1 B) / (in pkg1 truck)` a une seule variable `pkg1{A, B, in_truck}`, l'encodage elimine les états impossibles (pkg1 ne peut pas etre simultanément en A et dans le camion) et compactifie la représentation.",,,,,,,,83979f1af725e23f,,,,,,,,,,,,,,,
+**Ce que le translator apporte ici** : en passant des prédicats PDDL `(at pkg1 A) / (at pkg1 B) / (in pkg1 truck)` a une seule variable `pkg1{A, B, in_truck}`, l'encodage elimine les états impossibles (pkg1 ne peut pas etre simultanément en A et dans le camion) et compactifie la représentation.
+
+La cellule suivante fait passer le domaine au-dessus de ce seuil : un lieu et un colis de plus suffisent à faire **diverger les coûts** des trois stratégies.",,,,,,,,c11d5dbe77eb3f6a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,6ad1a58a,markdown,fr,e614d4384e9bff23,"### Exercice 3 — h^max vs h^FF comme guidage pour A\*
 
 Comparez les deux heuristiques comme fonction de guidage **pour A\*** sur le domaine Ferry. A\* + h^max est optimal (h^max admissible) mais h^max est faible ; A\* + h^FF n'est **pas** garanti optimal (h^FF non admissible) mais explore généralement beaucoup moins de noeuds. Quantifiez le trade-off.
@@ -5893,7 +5925,7 @@ public static (int nodesHMax, int nodesHFF, int costHMax, int costHFF) CompareAS
 
 ""Exercice 3 (h^max vs h^FF en A*) a completer."".Display();
 ",,,,,,,,766b814d29527a87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,856e1d0f,markdown,fr,fea8ce398f06fa5d,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,856e1d0f,markdown,fr,754c21eee9c32c68,"## Conclusion
 
 ### Ce que vous avez appris
 
@@ -5930,7 +5962,7 @@ Le notebook Python [Planners-04-Fast-Downward-Python](Planners-04-Fast-Downward-
 
 ***
 *Marathon #4956 (parite .NET <-> Python). Twin C# du notebook Python [Planners-04-Fast-Downward-Python.ipynb](Planners-04-Fast-Downward-Python.ipynb). Regitre SOTA : EPIC #3801.*
-",,,,,,,,fea8ce398f06fa5d,,,,,,,,,,,,,,,
+",,,,,,,,754c21eee9c32c68,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb,cell-0,markdown,fr,22d3feec11efd0f3,"# Planners-04-Fast-Downward-Python - Planificateur Classique
 
 **Navigation** : [Index](../../README.md) | [<< State-Space](../01-Foundation/Planners-03-State-Space-Python.ipynb) | [Heuristics >>](Planners-05-Heuristics-Python.ipynb)
@@ -7167,7 +7199,7 @@ Dans le notebook **Planners-05-Heuristics-Python**, nous approfondirons la théo
 ***
 
 **Notebook suivant** : [Planners-05-Heuristics-Python](Planners-05-Heuristics-Python.ipynb)",,,,,,,,98acb92c9f6e068a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb,bc077f37,markdown,fr,b21a7d1d258c833a,"# Planners-05-Heuristics-CSharp
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb,bc077f37,markdown,fr,6bd7980e9814d310,"# Planners-05-Heuristics-CSharp
 
 **Navigation** : [Index](../../README.md) | [<< Fast Downward C#](Planners-04-Fast-Downward-CSharp.ipynb) | [Domaines C# >>](Planners-06-Domains-CSharp.ipynb)
 
@@ -7192,7 +7224,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp
 > **Complementarite (#3801 Prong B)** : le twin Python appelle la lib `unified-planning`
 > (pas d'équivalent NuGet maintenu) ; ce twin C# implemente **from-scratch** la propagation de coûts
 > et l'extraction de plan relaxe -- la valeur pédagogique est de **comprendre la mecanique** des
-> heuristiques de relaxation (Bonet & Geffner 2001, Hoffmann & Nebel 2001).",,,,,,,,b21a7d1d258c833a,,,,,,,,,,,,,,,
+> heuristiques de relaxation (Bonet & Geffner 2001, Hoffmann & Nebel 2001).",,,,,,,,6bd7980e9814d310,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb,a8734485,code,fr,91b12379884f4e5f,"#r ""Microsoft.DotNet.Interactive""
 
 using System;
@@ -8895,7 +8927,7 @@ planification classique moderne.
 
 **Jalon ouvert** : la consistance de la relaxation (existence d'un plan relaxé) et la
 complexité algorithmique ne sont pas formalisées dans le lake ; la lib reste sorry-free.",,,,,,,,ae700e30735972ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb,eb3d4ef2,markdown,fr,d02c234b9e5008c8,"# Planners-06-Domains-CSharp — Jumeau C# : planificateur STRIPS from-scratch
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb,eb3d4ef2,markdown,fr,038801a3802df8d7,"# Planners-06-Domains-CSharp — Jumeau C# : planificateur STRIPS from-scratch
 
 **Navigation** : [Index](../../README.md) | [<< Heuristiques C#](Planners-05-Heuristics-CSharp.ipynb) | [OR-Tools C# >>](../03-Advanced/Planners-07-OR-Tools-CSharp.ipynb)
 
@@ -8928,7 +8960,7 @@ flowchart LR
     D --> F
     E --> F
 ```
-",,,,,,,,d02c234b9e5008c8,,,,,,,,,,,,,,,
+",,,,,,,,038801a3802df8d7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb,7df45571,markdown,fr,de3ade067ef26d36,"## 1. Modèle STRIPS en C# pur
 
 Un état STRIPS est un **ensemble d'atomes booléens grounded** (ex. `on(a,b)`, `clear(a)`, `handempty`). Une **action** a un nom, des paramètres (déjà instanciés ici), une **précondition** (ensemble d'atomes qui doivent tous être vrais) et un **effet** décomposé en listes `add` / `del` (ce que l'action rend vrai / faux).
@@ -9357,7 +9389,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ip
 Console.WriteLine(""Exercice 3 (A* avec heuristique naïve) — à compléter par l'étudiant."");
 // TODO étudiant : implémenter StripsPlanner.AStar et comparer.
 ",,,,,,,,cb4106207f217072,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb,480198e4,markdown,fr,28b29a0eb8cac279,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb,480198e4,markdown,fr,9c1175349f3f82ab,"## Conclusion
 
 Ce jumeau C# reconstruit **à la main** ce que `unified-planning` (notebook Python) délègue à un solveur externe. Les deux approches sont **complémentaires** et servent des apprentissages différents :
 
@@ -9383,10 +9415,7 @@ Ce jumeau C# reconstruit **à la main** ce que `unified-planning` (notebook Pyth
 - Russell, S., & Norvig, P. — *Artificial Intelligence: A Modern Approach* (4e éd., 2021), ch. « Planning and Acting in the Real World ». Recherche avant, heuristiques de relaxation.
 - Bonet, B., & Geffner, H. (2001) — « Planning as heuristic search », *Artificial Intelligence* 129(1-2). Les heuristiques delete-free qui font le cœur de `pyperplan`/`Fast Downward`.
 
-## Navigation
-
-[← Planners (parent)](../README.md) | [Planners-6 Python](Planners-06-Domains-Python.ipynb) | [Planners-7 →](../03-Advanced/Planners-07-OR-Tools-Python.ipynb)
-",,,,,,,,28b29a0eb8cac279,,,,,,,,,,,,,,,
+",,,,,,,,9c1175349f3f82ab,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb,cell-0,markdown,fr,ce4c7e7c53c19098,"# Planners-06-Domains-Python - Domaines Classiques de Planification
 
 **Navigation** : [Index](../../README.md) | [<< Heuristiques](Planners-05-Heuristics-Python.ipynb) | [OR-Tools >>](../03-Advanced/Planners-07-OR-Tools-Python.ipynb)
@@ -10869,7 +10898,7 @@ from unified_planning.shortcuts import *
 # OneshotPlanner. Choisissez un domaine original (ni Block World ni Transport).
 
 print(""Exercice a completer"")",,,,,,,,59407e9b526091f4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb,37647cc7,markdown,fr,cc5c0ebdb66f0bbe,"# Planners-07-OR-Tools-CSharp — Jumeau C# : solveur CP from-scratch (Job-Shop)
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb,37647cc7,markdown,fr,3dfdbd71f482682d,"# Planners-07-OR-Tools-CSharp — Jumeau C# : solveur CP from-scratch (Job-Shop)
 
 **Navigation** : [Index](../../README.md) | [<< Domaines C#](../02-Classical/Planners-06-Domains-CSharp.ipynb) | [Temporel C# >>](Planners-08-Temporal-CSharp.ipynb)
 > **Jumeau C# (.NET 9)** de [`Planners-07-OR-Tools-Python`](Planners-07-OR-Tools-Python.ipynb). Le notebook Python invoque le vrai solveur **OR-Tools CP-SAT** (`ortools.sat.python.cp_model`) pour résoudre des problèmes d'ordonnancement (Job-Shop, VRP, Planning-as-CP). **Ce jumeau prend le parti Prong B du marathon #4956** : plutôt que d'appeler un solveur industriel, on **reconstruit un solveur de programmation par contraintes from-scratch** en C# pur (BCL .NET 9, zéro NuGet) — propagation de domaines + backtracking — et on l'applique au même problème Job-Shop canonique (exemple OR-Tools « a simple example of a job shop problem »). L'objectif pédagogique : rendre **visible le moteur interne** que CP-SAT cache (variables, domaines, propagation, recherche).
@@ -10899,7 +10928,7 @@ flowchart LR
     D --> E[""Backtracking<br/>min makespan""]
     E --> F[""Schedule ASCII<br/>+ comparaison CP-SAT""]
 ```
-",,,,,,,,cc5c0ebdb66f0bbe,,,,,,,,,,,,,,,
+",,,,,,,,3dfdbd71f482682d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb,36a2b4a9,markdown,fr,ed213e3d7dc1e53e,"## 1. Modèle Job-Shop en C# pur
 
 Un problème de Job-Shop : un ensemble de **jobs**, chacun composé d'une séquence d'**opérations** à exécuter sur des **machines** distinctes, dans l'ordre. Deux contraintes structurantes :
@@ -11223,7 +11252,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ip
 Console.WriteLine(""Exercice 3 (heuristique Best-Fit) — à compléter par l'étudiant."");
 // TODO étudiant : modifier l'ordre de machineKeys dans JobShopSolver.Solve.
 ",,,,,,,,3510a6f11b6d68a5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb,e8d572c1,markdown,fr,259682b0205c5c54,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb,e8d572c1,markdown,fr,cb94eedee8d3264f,"## Conclusion
 
 Ce jumeau C# reconstruit **à la main** le moteur CP que OR-Tools (notebook Python) délègue à sa bibliothèque `cp_model`. Les deux approches sont **complémentaires** :
 
@@ -11252,7 +11281,7 @@ Ce jumeau C# reconstruit **à la main** le moteur CP que OR-Tools (notebook Pyth
 ## Navigation
 
 [← Planners (parent)](../README.md) | [Planners-7 Python](Planners-07-OR-Tools-Python.ipynb) | [Planners-8 →](Planners-08-Temporal-Python.ipynb)
-",,,,,,,,259682b0205c5c54,,,,,,,,,,,,,,,
+",,,,,,,,cb94eedee8d3264f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb,cell-header,markdown,fr,a44da63016c6dae7,"# Planners-07-OR-Tools-Python - Programmation par Contraintes
 
 **Navigation** : [Index](../../README.md) | [<< Domaines](../02-Classical/Planners-06-Domains-Python.ipynb) | [Temporel >>](Planners-08-Temporal-Python.ipynb)
@@ -12375,7 +12404,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ip
     print(f""Demandes: {demands}, Capacites: {vehicle_capacities}"")
     print(""Exercice a completer"")
 ",,,,,,,,5826eeeedf0ece0a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb,d030aa58-d0dc-4685-afb0-a88a89d3b321,markdown,fr,a84872c185c6f2f9,"# Planners-08-Temporal-Python — Planification Temporelle (twin C#)
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb,d030aa58-d0dc-4685-afb0-a88a89d3b321,markdown,fr,e8d76c7b92cd59af,"# Planners-08-Temporal-Python — Planification Temporelle (twin C#)
 
 **Navigation** : [Index](../../README.md) | [<< OR-Tools C#](Planners-07-OR-Tools-CSharp.ipynb) | [HTN C# >>](Planners-09-HTN-CSharp.ipynb)
 Ce notebook est le **jumeau C# (.NET Interactive)** du notebook Python `Planners-08-Temporal-Python.ipynb`. Il réimplémente **from-scratch** (BCL .NET, **0 NuGet**, 0 `unified_planning`, 0 `ortools`) les concepts de la planification temporelle : **PDDL 2.1 actions duratives**, **algèbre d'intervalles d'Allen**, **réseau temporel simple (STN)** et **ordonnancement avec contraintes de précédence et ressources**.
@@ -12395,7 +12424,7 @@ Le notebook Python original s'appuie sur **`unified_planning`** (API Python de p
 ## Prérequis
 
 .NET 9.0+ (kernel `csharp`). Familiarité avec la planification classique state-space (cf. `Planners-03-State-Space-CSharp.ipynb`). Aucune librairie externe.
-",,,,,,,,a84872c185c6f2f9,,,,,,,,,,,,,,,
+",,,,,,,,e8d76c7b92cd59af,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb,26b7dc8f-9800-46ea-9c9c-1e8c678ee04a,markdown,fr,45fe125b9ae1e3cc,"## Setup — utilitaires d'affichage
 ",,,,,,,,45fe125b9ae1e3cc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb,94dc3baf-79c8-4622-b388-22f4a0313fc0,code,fr,626193a3ae6aba16,"using System;
@@ -13801,7 +13830,7 @@ Ce notebook a explore la **planification temporelle** en etendant le modèle cla
 La planification temporelle repond a une limitation fondamentale de la planification classique : l'hypothèse d'actions instantanees et séquentielles. En autorisant le parallélisme, elle exploite pleinement les ressources disponibles et réduit le makespan, comme l'a illustre le gain de 1.83x sur l'exemple d'ordonnancement (11 unites séquentiel vs 6 en parallele). La detection et la resolution des conflits temporels (ressource, précondition, effet) sont au coeur de la complexité algorithmique, et les mutex temporels jouent un rôle analogue aux mutex classiques dans la planification parallele. La gestion des invariants `over all` est particulierement critique : un invariant viole pendant l'exécution d'une action rend le plan invalide.
 
 Le notebook suivant, [Planners-09-HTN-Python](Planners-09-HTN-Python.ipynb), aborde la **planification hiérarchique** (Hierarchical Task Networks), un paradigme complémentaire qui structure le problème en tâches decomposables recursivement, offrant une alternative a la recherche dans l'espace d'états.",,,,,,,,a844d7e88d7d56fc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb,714647de-9b71-463b-a1c2-adfec91b4814,markdown,fr,74f9992bc39dfec7,"# Planners-09-HTN-Python (C#)
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb,714647de-9b71-463b-a1c2-adfec91b4814,markdown,fr,b440f63b60d38806,"# Planners-09-HTN-Python (C#)
 
 **Navigation** : [<< 8-Temporal](Planners-08-Temporal-CSharp.ipynb) | [Index](../../README.md) | [10-LLM-Planning >>](../04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb)
 
@@ -13819,7 +13848,7 @@ La **planification hiérarchique** (HTN, Hierarchical Task Network) est un chang
 6. **Exercices**
 
 > **Parite #4956** : la version Python deroule un solveur HTN from-scratch (§4) ET le compare au planificateur SOTA `unified_planning` (§5.2). Ce twin C# (BCL .NET 9, **0 NuGet**) traduit le solveur from-scratch (le coeur pédagogique) ; la comparaison SOTA `unified_planning` (Python-only, pas d'équivalent C# du même niveau) devient une note documentee honnete (RECOVERABLE-MACHINE — l'outil SOTA n'est pas rebranchable en C# pédagogique, mais le from-scratch solver EST la substance).
-",,,,,,,,74f9992bc39dfec7,,,,,,,,,,,,,,,
+",,,,,,,,b440f63b60d38806,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb,a921b736-546d-4121-8652-01facd716b15,markdown,fr,6383eebaae9ae49f,"## 1. État et prédicats
 
 Un **état** est un ensemble de prédicats groundes (faits vrais au moment courant). Un prédicat est un symbole + des arguments : `at(truck1, paris)`, `in(package1, truck1)`. Les opérateurs et méthodes manipulent l'état via leurs **préconditions** (prédicats requis) et **effets** (prédicats ajoutes / retires).",,,,,,,,6383eebaae9ae49f,,,,,,,,,,,,,,,
@@ -20091,7 +20120,7 @@ Trois signaux le confirment dans la sortie ci-dessus :
 3. **Le Gantt montre les reports.** C démarre à $t=3$ (et non $t=0$) parce que A + B saturent déjà les deux machines ; E démarre à $t=6$ (et non $t=3$) parce qu'il attend la fin de C et exige les deux machines simultanément.
 
 C'est exactement la situation que le scheduler RCPSP est censé résoudre — **niveler la demande sous la capacité** en différant des tâches — et qui serait invisible sur une instance sans contention (makespan égal au chemin critique, boucle de capacité jamais rejetante). L'heuristique LPT (*Longest Processing Time first*) fixe l'ordre de priorité ; elle n'est pas optimale (RCPSP est NP-difficile) — l'exercice 3 propose de comparer au makespan optimal obtenu par énumération des ordres topologiques.",,,,,,,,0718f2a4be2f1112,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,fd2a1001,markdown,fr,d0a3659012cb5375,"## Partie 2 — Le moteur de production : Fast Downward
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,fd2a1001,markdown,fr,8ce5528379d79ceb,"## Partie 2 — Le moteur de production : Fast Downward
 
 La Partie 1 a **construit** le planificateur (STRIPS + BFS from-scratch). Le jumeau Python, lui, **invoque** des moteurs de production via `unified-planning` (pyperplan sur l'interrupteur, plan optimal 3 actions sur le problème de livraison). Cette Partie 2 fait de même côté .NET : on délègue au **vrai Fast Downward** — le moteur PDDL SOTA (Helmert 2006, lignée championne IPC) — atteint par le service Docker `coursia-fast-downward` (port 8200) s'il répond, sinon le pilote local du paquet Python `up-fast-downward` (wheels compilées pour Linux, macOS et Windows), par [`FastDownwardBackend.cs`](../FastDownwardBackend.cs), la même approche que [Planners-04-Fast-Downward-CSharp](../02-Classical/Planners-04-Fast-Downward-CSharp.ipynb).
 
@@ -20102,8 +20131,8 @@ La Partie 1 a **construit** le planificateur (STRIPS + BFS from-scratch). Le jum
 | Recherche | BFS (aveugle) | **A\* + heuristique `lmcut`** (admissible) |
 | Garantie | plan le plus court | plan **optimal** (coût minimal) |
 
-Prérequis : le service Docker (`docker start coursia-fast-downward`, vérif `GET http://localhost:8200/health`) ou le paquet Python `up-fast-downward` (`pip install up-fast-downward`). La première ligne de sortie nomme le moteur retenu.",,,,,,,,d0a3659012cb5375,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,fd2a1002,code,fr,925be178ae0f112f,"#load ""../FastDownwardBackend.cs""
+Prérequis : le service Docker (`docker start coursia-fast-downward`, vérif `GET http://localhost:8200/health`) ou le paquet Python `up-fast-downward` (`pip install up-fast-downward`). La première ligne de sortie nomme le moteur retenu.",,,,,,,,8ce5528379d79ceb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,fd2a1002,code,fr,f6c17a99e199bfb9,"#load ""../FastDownwardBackend.cs""
 // === Partie 2 : Fast Downward (moteur PDDL de production) ===
 // Meme approche que le jumeau Python (unified-planning enveloppe les moteurs de
 // production) et que Planners-04-Fast-Downward-CSharp : on poste domaine + probleme en PDDL
@@ -20180,7 +20209,7 @@ Console.WriteLine();
 Console.WriteLine($""PARITE : BFS from-scratch = [{string.Join("" -> "", planBfsSw!)}] ({planBfsSw!.Count} action(s))"");
 Console.WriteLine(planBfsSw!.Count == fdPlanSw.Count
     ? ""-> MEME LONGUEUR OPTIMALE (1 action) : turn-on <-> allumer, les deux moteurs concluent.""
-    : ""-> DIVERGENCE de longueur ! (imprevu : BFS est optimal lui aussi)"");",,,,,,,,925be178ae0f112f,,,,,,,,,,,,,,,
+    : ""-> DIVERGENCE de longueur ! (imprevu : BFS est optimal lui aussi)"");",,,,,,,,f6c17a99e199bfb9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,fd2a1003,markdown,fr,09a4ee10a09fa655,"### Multi-interrupteurs (N=3 + maitresse) — la section 7 rejouée cote moteur
 
 Le problème non-trivial de la Partie 1 (maitresse + 3 interrupteurs, but conjonctif) est fourni à Fast Downward **sans écrire une seule classe C#** : le texte PDDL suffit. On compare plan FD et plan BFS action par action — et on lit l'heuristique initiale `lmcut`, qui vaut ici exactement le nombre de faits du but (4 landmarks : 1 maitresse + 3 interrupteurs).",,,,,,,,09a4ee10a09fa655,,,,,,,,,,,,,,,
@@ -21015,7 +21044,7 @@ Trois observations rendent cette mesure probante :
 3. **Elle est réaliste.** Les vrais domaines (Logistics, Gripper, Blocks World) contiennent des dizaines à centaines de faits/actions non pertinents ; c'est exactement cette structure que les heuristiques de relaxation ($h^{FF}$, $h^{LM}$, LM-cut) et le filtrage des *helpful actions* permettent de dominer — la raison pour laquelle Fast Downward (§7) résout des problèmes où la recherche aveugle est intractable.
 
 > **Lien CS** : la borne théorique est que A* avec une heuristique admissible ne développe que les nœuds de $f(n) < C^*$ (coût optimal), contre tous les nœuds de $g(n) < C^*$ pour uniform-cost. Plus le domaine contient de faits/états non pertinents à $f$ élevé, plus le ratio de nœuds épargnés grandit — exactement ce que la table ci-dessus montre croître avec $D$.",,,,,,,,a760bd022c2b677c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb,60efafcd,markdown,fr,3db04f7c446c8cf1,"## 4bis. Monotonie en l'état initial — `step_mono` / `run_mono` du lake, illustrés sur un domaine jouet
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb,60efafcd,markdown,fr,8b4e991c7b9d2af5,"## 4bis. Monotonie en l'état initial — `step_mono` / `run_mono` du lake, illustrés sur un domaine jouet
 
 La relaxation rend l'état **croissant le long du plan** (`stepR a s = s ∪ a.add` ne retire
 jamais rien). Mais il existe une seconde monotonie, plus discrète, que le lake prouve aussi
@@ -21027,7 +21056,7 @@ Un état de départ **mieux informé** (plus de fluents vrais) reste mieux infor
 action, même destructrice. Ce sont [`step_mono`](../planning_lean/Planning/Strips.lean) (niveau
 action, `Strips.lean:69`) et [`run_mono`](../planning_lean/Planning/Relaxation.lean) (niveau plan, `Relaxation.lean:41`, par induction sur la longueur du plan) — les contreparties réelles de `stepR_mono`/`runR_mono` du lemme central.
 
-**Encadré par le vrai** : le lake **est chargé** depuis la cellule 3 (`import Planning.Strips / Planning.Relaxation / Planning.Admissibility`) — un `#check @PlanningLean.step_mono` dans le kernel lean4-wsl rendrait la signature canonique. Le kernel lean4-wsl n'est **pas exécutable sur ce runner** (RECOVERABLE-MACHINE : wrapper `/home/jesse/...` codé en dur v6, `repl` binaire absent d'elan install, cf `MEMORY.md` c.380) — les signatures des deux lemmes sont donc **reproduites ici en markdown depuis le source du lake** (lecture directe `Strips.lean:69` et `Relaxation.lean:41`), pas générées par `#check` :
+**Encadré par le vrai** : le lake **est chargé** depuis la cellule 3 (`import Planning.Strips / Planning.Relaxation / Planning.Admissibility`) — un `#check @PlanningLean.step_mono` dans le kernel lean4-wsl rendrait la signature canonique. Le kernel lean4-wsl n'est **pas exécutable sur ce runner** (RECOVERABLE-MACHINE : wrapper `<USER_HOME>/...` codé en dur v6, `repl` binaire absent d'elan install, cf `MEMORY.md` c.380) — les signatures des deux lemmes sont donc **reproduites ici en markdown depuis le source du lake** (lecture directe `Strips.lean:69` et `Relaxation.lean:41`), pas générées par `#check` :
 
 ```lean
 -- Strips.lean:69
@@ -21041,7 +21070,7 @@ lemma run_mono (π : List (Action F)) {s s' : State F} (h : s ⊆ s') : run π s
 Le domaine jouet qui suit (`ToyAction` / `toyStep` / `toyRun`, `List` au lieu de `Finset`, sans Mathlib) **illustre l'instance** sur un exemple concret `decide`-able — `decide` ne marche pas sur `Finset` général, c'est pourquoi le jouet existe. Les preuves génériques restent dans le lake (et sont rejouables par un futur `#check` quand le kernel sera disponible sur ce runner).
 
 Démonstration sur le domaine jouet : un monde à trois fluents où l'action `pickup` exige
-`onTable` et `clear`, ajoute `held` et **détruit** `onTable` et `clear`.",,,,,,,,3db04f7c446c8cf1,,,,,,,,,,,,,,,
+`onTable` et `clear`, ajoute `held` et **détruit** `onTable` et `clear`.",,,,,,,,8b4e991c7b9d2af5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb,42b2f149,code,fr,3e910fa2ea3353ca,"-- Version simplifiee du lake : List au lieu de Finset, sans Mathlib
 structure ToyAction (F : Type) where
   pre : List F
@@ -22422,7 +22451,7 @@ Les Sections 1 à 5 ont assemblé les briques d'un solveur *from-scratch* : mod�
 - **Branche .NET** : package NuGet officiel `Google.OrTools`, intégration native via `#r ""nuget: ...""` en .NET Interactive.
 
 L'objectif de la Tranche 2 est de passer `from-scratch -> CP-SAT` sur la **même instance**, sans reformuler le problème (mêmes tâches, mêmes ressources, mêmes durées). Sur cette instance précise, l'apport du moteur n'est **pas** un makespan plus court — le glouton était déjà optimal — mais la **preuve** d'optimalité et l'explication de l'écart à la borne inférieure : la certification, pas l'amélioration.",,,,,,,,6724f3c8fea3e406,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb,f7ab8cd8-fb7a-4167-8dcc-4e5b95d0a60c,markdown,fr,fb1c4522c6549397,"## Bilan Tranche 2 — ce que le moteur ajoute (et ce qu'il n'ajoute pas)
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb,f7ab8cd8-fb7a-4167-8dcc-4e5b95d0a60c,markdown,fr,7694badf8bf01a36,"## Bilan Tranche 2 — ce que le moteur ajoute (et ce qu'il n'ajoute pas)
 
 La comparaison `RCPSP-lite glouton` (Partie 5) versus `Google.OrTools CP-SAT` (Tranche 2) porte sur la **même instance** (5 tâches A–E, une ressource de capacité 2). Lecture honnête de la sortie mesurée ci-dessus :
 
@@ -22432,7 +22461,7 @@ La comparaison `RCPSP-lite glouton` (Partie 5) versus `Google.OrTools CP-SAT` (T
 
 **Règle d'or** : la Tranche 1 from-scratch est la **fondation pédagogique** (comprendre *comment* marche un solveur avant d'en utiliser un) ; la Tranche 2 est la **certification et le passage à l'échelle** (prouver l'optimalité, viser les instances réelles).
 
-**Où aller ensuite ?** `Google.OrTools` est aussi utilisé en Python (`Planners-07-OR-Tools-Python.ipynb`) et en C# (`Planners-07-OR-Tools-CSharp.ipynb`). Pour les très grandes instances ou certains critères continus, les alternatives sont les solveurs MIP (CBC, SCIP) ou les métaheuristiques — voir `MyIA.AI.Notebooks/Search/MetaGeneticSharp` pour la filière métaheuristique C#.",,,,,,,,fb1c4522c6549397,,,,,,,,,,,,,,,
+**Où aller ensuite ?** `Google.OrTools` est aussi utilisé en Python (`Planners-07-OR-Tools-Python.ipynb`) et en C# (`Planners-07-OR-Tools-CSharp.ipynb`). Pour les très grandes instances ou certains critères continus, les alternatives sont les solveurs MIP (CBC, SCIP) ou les métaheuristiques — voir `MyIA.AI.Notebooks/Search/MetaGeneticSharp` pour la filière métaheuristique C#.",,,,,,,,7694badf8bf01a36,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb,9cb9cb29,markdown,fr,090faa3f21465b47,"## 7. Tranche 2 : le même problème via un vrai moteur HTN (`unified_planning` + `aries`, pont .NET -> CPython)
 
 Le solveur des sections 3-5 est **pédagogique** : il montre la décomposition récursive, mais son domaine `Logistics` ne couvre que l'instance à **un** colis. Le jumeau Python conclut son notebook en résolvant, avec la lib SOTA [`unified_planning`](https://unified-planning.readthedocs.io/) (AIPlan4EU) et son moteur HTN **`aries`**, une instance à **deux** colis qui exige un **repositionnement** du camion — la tâche composée `goto(v, dst)` et le choix entre ses deux méthodes (`noop` si déjà sur place, `move` sinon), que notre solveur jouet ne possède pas.
@@ -23309,3 +23338,824 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Re
 MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb,f8d4f394,markdown,fr,b3f8e8f2283a92b9,"Ce bras change de contrat : au lieu d'explorer l'espace, on demande au LLM de produire directement le programme. Il n'y a pas de comptage de noeuds ici — la question est celle du *verdict immediat* : le programme rendu est-il correct selon l'oracle ? La cellule suivante applique ce verdict a chaque tâche, et c'est ce qui distingue un vrai solver d'une illusion de solver.",,,,,,,,b3f8e8f2283a92b9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb,eb226b94,markdown,fr,a8f4426bb14622c3,"Le verdict est honnete : le LLM *trouve* les trois solutions en un seul essai. Mais ce n'est pas une preuve de capacité générale — c'est un résultat sur trois tâches a solution courte, dans un DSL de huit primitives. Le bras 2 repond vite, mais il ne garantit rien sur le reste de l'espace : il peut se tromper hors de ces trois cas, et il ne produit aucun comptage de noeuds ni certificat de correction. C'est la faiblesse que le bras 3 adresse : garder la vitesse du LLM, mais lui faire *reduire* au lieu de trancher.",,,,,,,,a8f4426bb14622c3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb,edb1f83e,markdown,fr,b87cb5b26a4d0ce2,"La mesure de reduction est le coeur de la these. Pour T2, le sous-espace propose par le LLM ne contient que `132` programmes contre `176,434,840` au départ : une reduction d'un facteur `1,336,628`. Le solveur déterministe ne parcourt alors que `67` noeuds — contre `2,071` a l'exhaustif. T3, inaccessible au bras 1, est trouve en `373` noeuds dans un sous-espace de `1,884`. Le LLM ne *resout* pas ici : il *digine* l'espace, et le solveur fait le reste. La reduction, pas la magie, est le mécanisme.",,,,,,,,b87cb5b26a4d0ce2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb,48d5ff45,markdown,fr,30cfa0376b04c47b,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| Un même problème, quatre configurations d'A*, un même plan optimal | Sur « empiler A sur B » : `A* + blind`, `A* + LM-cut`, `A* + FF`, `A* + hmax` rendent toutes `OK` avec `Cout: 4` en `0.10` à `0.12 s` |
+| L'heuristique se paie en nœuds évalués, pas en longueur de plan | Sur le même problème : `blind` évalue `21` nœuds, `hmax` `13`, `ff` `11`, `add` `11`, `lmcut` `10` — toutes trouvent `Cout: 4` |
+| Un algorithme incomplet échoue là où le glouton réussit | `Enforced Hill Climbing` rend `Succes: False` quand `Eager/Lazy Greedy + FF` et `Eager Greedy + CG` rendent toutes `OK` avec `Cout: 4` |
+| Le plan optimal se lit action par action | Logistics : `Cout du plan: 4 actions` — `load pkg1 truck loc-a`, `drive truck loc-a loc-b`, `drive truck loc-b loc-c`, `unload pkg1 truck loc-c`, avec `Expanded 5 state(s)` |
+| Le statut satisficing n'est pas un certificat d'optimalité | unified-planning rend `PlanGenerationResultStatus.SOLVED_SATISFICING` et un plan de `4 actions` ; c'est la passe A* + LM-cut qui certifie le coût (`Cout optimal: 11 actions`, `Noeuds evalues: 35` sur Ferry) |
+| Moteur réel, résultat local | Chaque passe tourne sur le service Docker `coursia-fast-downward` (port `8200`, Fast Downward `24.06.1`) |
+
+## Vérifiez votre compréhension
+
+**Question 1 — Pourquoi garder `blind` au panneau des heuristiques si `lmcut` évalue deux fois moins de nœuds ?**
+
+La section 6 imprime `blind ... 21` nœuds contre `lmcut ... 10`, pour le même `Cout: 4`.
+
+<details><summary>Réponse</summary>
+
+Parce que `blind` est le **témoin** : elle montre ce que la recherche paie sans aucune guidance (`21` nœuds évalués). Les quatre heuristiques guidées tombent entre `10` et `13` nœuds sur ce petit problème — l'écart grandit avec la taille du domaine (sur Ferry, A* + LM-cut certifie `Cout optimal: 11 actions` en `Noeuds evalues: 35`). Sans le témoin aveugle, l'économie de `lmcut` serait invisible ; avec lui, chaque nœud économisé est mesuré.
+
+</details>
+
+**Question 2 — Le plan unified-planning de 4 actions est-il optimal, et qu'est-ce qui le prouve dans ce carnet ?**
+
+La section 8 affiche `Statut: PlanGenerationResultStatus.SOLVED_SATISFICING` avec `Plan trouve: 4 actions` (`pick-up(b)`, `stack(b, c)`, `pick-up(a)`, `stack(a, b)`), et Pyperplan retrouve le même plan à 4 actions.
+
+<details><summary>Réponse</summary>
+
+Le statut `SOLVED_SATISFICING` certifie seulement qu'un plan **valide** a été trouvé — pas qu'il est le plus court. Ce qui rend ce plan optimal ici, c'est le recoupement : les passes A* de la section 5 (`A* + blind`, `A* + LM-cut`, …) rendent toutes `Cout: 4` sur le même problème, et `blind` est admissible donc exhaustive en coût. Le plan satisficing de 4 actions coïncide donc avec le coût optimal mesuré — mais c'est la **confrontation des deux passes** qui le prouve, pas le statut.
+
+</details>
+
+## Pour aller plus loin
+
+- [Index de la sous-série 02-Classical](README.md) — le parcours principal (4, 5, 6) et les paliers d'approfondissement (5b, 5c).
+- [Index de la série Planners](../README.md) — la place de la planification classique parmi les fondations, l'avancé et le neuro-symbolique.
+
+Les carnets voisins sont cités en prose, sans lien. Le jumeau `Planners-04-Fast-Downward-CSharp` reprend le même arc en reconstruisant un planificateur SAS+ from-scratch avant de brancher le même moteur. `Planners-05-Heuristics-Python` ouvre la boîte noire utilisée ici : d'où viennent `LM-cut`, `FF` et `add`, et pourquoi elles restent admissibles. `Planners-05c-Differentiel-Atteignabilite-Python` montre l'autre usage d'une heuristique relaxée : prouver qu'un but est **inatteignable**. La suite du travail est déjà posée dans le carnet : les trois exercices demandent le domaine Ferry en variation.
+",,,,,,,,30cfa0376b04c47b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb,02b4638a,markdown,fr,c6a100f0e03d4c67,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| h^max et h^add divergent exactement là où la théorie le prédit | Trois interrupteurs indépendants : `h^max : 1`, `h^add : 3`, `h* (optimal): 3` |
+| Le contre-exemple d'inadmissibilité de h^add, imprimé en C# | Précondition partagée : `h^add : 4 (> h*=3, INADMISSIBLE)` quand `h^max : 2 (<= h*=3, admissible)` — `Cout reel de setup = 1 (execute une fois). Cout h^add de setup = 2.` |
+| FF compte le plan relaxé, pas la somme des chemins | `h^FF (3 interrupteurs) : 3` avec actions helpful `[turn_on_1, turn_on_2, turn_on_3]` |
+| Les landmarks se vérifient par garde | Branches disjointes/partagées/achiever unique : `h_landmark_count(...) = 0 (attendu 0)` — la garde est complète |
+| Le moteur SOTA confirme nos h* from-scratch | Fast Downward 24.06.1 sur Blocks World : `lmcut` coût `4` en `10 évaluées / 6 expansées / 13 générées`, devant `h^FF` et `h^add` (`11/7/15`) et `h^max` (`13/8/18`) |
+| Le guidage se mesure en nœuds | Chaîne M=3, `D = 16` leurres : `UCS = 172` nœuds contre `4` pour les trois variantes guidées |
+
+## Vérifiez votre compréhension
+
+**Question 1 — Sur le benchmark Blocks World, pourquoi lmcut développe-t-il moins d'états que h^max alors que les deux sont admissibles ?**
+
+La section 6.2 imprime `lmcut ... 4 4 10 6 13` contre `h^max ... 4 4 13 8 18` (coût, plan, évaluées, expansées, générées).
+
+<details><summary>Réponse</summary>
+
+Les deux trouvent le même plan optimal de coût `4` — c'est la garantie d'admissibilité. La différence est dans la **qualité du guidage** : `lmcut` est plus informative que `h^max` (elle raisonne sur des coupes de landmarks, pas sur un simple max des sous-buts), donc A* évalue `10` états au lieu de `13` et en développe `6` au lieu de `8`. Admissible + plus informative = même plan, moins de travail. C'est le compromis que la section « Guide de sélection » résume : payer un calcul d'heuristique plus cher à chaque nœud pour en visiter moins.
+
+</details>
+
+**Question 2 — h^add et h^FF valent toutes deux 4 sur le Blocks World (h* = 4) : la démonstration de la section 3.5 les rend-elles égales pour autant ?**
+
+La section 3.5 imprime `h^add : 4 (> h*=3, INADMISSIBLE)` sur l'instance à précondition partagée ; la section 6 imprime `h^add 4 True` et `h^FF 4 True` dans la colonne « <= h*=4 ».
+
+<details><summary>Réponse</summary>
+
+Non. Le `True` de la section 6 dit seulement que la valeur `4` est `<= h* = 4` **sur cette instance** — c'est un fait numérique, pas une propriété. La section 3.5 a déjà produit une instance où h^add surestime (`4 > 3`), donc h^add n'est pas admissible **en général**, quel que soit le tableau. h^FF a le même statut sur ce benchmark ; la différence est ailleurs : sur l'instance à précondition partagée, h^FF compte le plan relaxé et ne double pas `setup`, ce que le jumeau Python mesure (`h^FF = 3 = h*`). Sur un même problème, les valeurs peuvent coïncider par accident — la propriété, elle, se démontre ou se réfute par contre-exemple.
+
+</details>
+
+## Pour aller plus loin
+
+- [Index de la sous-série 02-Classical](README.md) — le parcours principal et les paliers d'approfondissement.
+- [Index de la série Planners](../README.md) — la place des heuristiques dans le fil de la série.
+
+Les carnets voisins sont cités en prose, sans lien. Le jumeau `Planners-05-Heuristics-Python` déroule les mêmes démos en Python et valide son h* par Pyperplan ; les nombres des deux jumeaux coïncident par construction. `Planners-05b-Lean-Relaxation-Lean` prouve en Lean l'admissibilité de la relaxation dont h^max et h^add descendent. `Planners-04-Fast-Downward-CSharp` donne l'architecture du moteur (translator, preprocessor, search) que ce carnet interroge ici par le service Docker. La suite du travail est déjà posée dans le carnet : l'exercice 1 demande `goalcount`, l'exercice 2 la cohérence de h^max, l'exercice 3 h^FF contre le plan optimal.
+",,,,,,,,c6a100f0e03d4c67,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb,462683ec,markdown,fr,3121a5b02b785e36,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| h^max admissible, h^add plus informative — sur trois interrupteurs indépendants | `h^max : 1`, `h^add : 3`, `h* (optimal) : 3` : h^max sous-estime, h^add tombe juste |
+| La non-admissibilité de h^add n'est pas une théorie, c'est un contre-exemple imprimé | Sur l'instance à précondition partagée : `h^add = 4 > h* = 3` — la cause est écrite : `h^add compte setup (cout 1) dans le chemin de g1 ET dans celui de g2` |
+| FF répare ce double-comptage sur cette instance | `h^FF = 3` quand `h^add = 4` et `h* = 3` : le plan relaxé `{setup, make_g1, make_g2}` compte `setup` une fois |
+| Une valeur égale à h* sur une instance ne rend pas une heuristique admissible | Sur Blocks World : `h^add = 4`, `h^FF = 4`, `h_landmark = 4`, `h* = 4` — et le carnet le dit : `cela ne les rend pas admissibles en general (cf cellule 3.5)` |
+| Les landmarks comptent les faits obligatoires | Trois interrupteurs : landmarks `on_1`, `on_2`, `on_3`, `h_landmark_count = 3` |
+| Le guidage se mesure en nœuds développés, pas en longueur de plan | Chaîne de longueur 3 avec `D = 16` leurres : `UCS (aveugle) = 172` nœuds contre `4` pour `A*+h^max`, `A*+h^add` et `Greedy+h^FF` |
+| Le planificateur valide notre h* | Pyperplan rend `SOLVED_SATISFICING`, plan de `4 actions`, `Plan valide : True`, `Cout du plan : 4`, et la ligne `Coherence planificateur / h* : OK` |
+
+## Vérifiez votre compréhension
+
+**Question 1 — Sur le problème à précondition partagée, pourquoi h^FF = 3 et h^add = 4 alors que les deux descendent de la même relaxation ?**
+
+La section 3.5 imprime `h^add = 4 (double-compte setup : 2+2 = 4 > h*)` et la section 4.2 `h^FF = 3 (plan relaxe {setup, make_g1, make_g2} = 3 = h*)`.
+
+<details><summary>Réponse</summary>
+
+Parce que h^add **somme** les coûts des sous-buts indépendamment : le fait `p` produit par `setup` sert `g1` et `g2`, et sa contribution est payée une fois dans chaque chemin (`2 + 2 = 4`). h^FF extrait un **plan relaxé** et compte ses actions : `{setup, make_g1, make_g2}` ne contient `setup` qu'une fois, d'où `3 = h*`. C'est exactement la différence imprimée par le carnet — même relaxation, deux manières d'agréger, et seule la seconde évite le double-comptage sur cette instance.
+
+</details>
+
+**Question 2 — Toutes les heuristiques valent 4 sur le Blocks World simplifié : laquelle peut-on utiliser avec A* en garantissant l'optimalité ?**
+
+La section 6.1 imprime `h^max 2 Oui`, `h^add 4 Non`, `h^FF 4 Non`, `h_landmark 4 Non` dans la colonne « Admissible (universelle) », avec `h* (optimal) 4`.
+
+<details><summary>Réponse</summary>
+
+`h^max` seule, et pour deux raisons visibles dans le tableau. D'abord elle est la seule marquée `Oui` en admissibilité **universelle** : h^add, h^FF et h_landmark égalent h* **sur cette instance** mais la section 3.5 a déjà produit une instance où `h^add = 4 > h* = 3`. Ensuite, sur cette instance précise, `h^max = 2` sous-estime (`2 <= 4`) : c'est sa définition — ne jamais surestimer — au prix d'être moins informative (`2` contre `4`). A* reste optimal avec h^max ; avec les autres, l'optimalité de A* n'est plus garantie en général.
+
+</details>
+
+## Pour aller plus loin
+
+- [Index de la sous-série 02-Classical](README.md) — le parcours principal et les paliers d'approfondissement.
+- [Index de la série Planners](../README.md) — la place des heuristiques dans le fil de la série.
+
+Les carnets voisins sont cités en prose, sans lien. Le jumeau `Planners-05-Heuristics-CSharp` dérive les mêmes heuristiques from-scratch en C# et les confronte au vrai moteur Fast Downward. `Planners-05b-Lean-Relaxation-Lean` prouve formellement en Lean, sans `sorry`, le théorème qui fonde tout ce carnet : la relaxation sans delete est admissible (`h^+ <= h*`). `Planners-04-Fast-Downward-Python` montre ces heuristiques à l'œuvre dans un planificateur industriel. La suite du travail est déjà posée dans le carnet : l'exercice 2 demande `goalcount`, l'exercice 3 la comparaison avec unified-planning.
+",,,,,,,,3121a5b02b785e36,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb,0ba2bb60,markdown,fr,233193d3d2af52d7,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| L'admissibilité de la relaxation est prouvée, pas assertée | `#print axioms` rend : `'PlanningLean.relaxed_plan_admissible' depends on axioms: [propext, Classical.choice, Quot.sound]` — aucun `sorryAx`, aucun `native_decide` |
+| Le théorème phare | `relaxed_plan_admissible (h : reaches π s g) : reachesR π s g` : tout plan réel atteint aussi son but dans le monde relaxé — c'est `h^+ <= h^*` |
+| La chaîne causale est exhibée lemme par lemme | `step a s ⊆ stepR a s` (une action), puis `run π s ⊆ runR π s` (un plan), par monotonie `runR_mono` |
+| La monotonie en l'état initial est décidable sur un domaine jouet | `toyRun [pickup, putdown] [Fl.onTable] ⊆ toyRun [pickup, putdown] [Fl.onTable, Fl.clear]` passe par `decide` |
+| Les signatures sortent du compilateur, pas d'une transcription | Chaque cellule `#check` rend la signature réelle du lake `planning_lean` (ex. `runR_mono`, `run_subset_runR`) |
+
+## Vérifiez votre compréhension
+
+**Question 1 — Que répond `#print axioms` et pourquoi cette ligne vaut-elle plus qu'un « il n'y a pas de sorry » ?**
+
+La section 2 rend `'PlanningLean.relaxed_plan_admissible' depends on axioms: [propext, Classical.choice, Quot.sound]`.
+
+<details><summary>Réponse</summary>
+
+Elle liste les **axiomes réels** dont dépend la preuve compilée : `propext`, `Classical.choice` et `Quot.sound` — les trois axiomes de base de Lean, aucun `sorryAx` (un `sorry` caché apparaîtrait ici, où qu'il soit dans la chaîne de preuve) et aucun `native_decide`. C'est le compilateur qui rend cette liste, pas une lecture du source : la preuve est vérifiée en totalité, transitivement. La ligne dit aussi ce que la preuve **coûte** : elle est non-constructive (`Classical.choice`), ce qui est standard pour ce style de résultat.
+
+</details>
+
+**Question 2 — Pourquoi la monotonie de `stepR` (section 4) suffit-elle à faire passer l'inclusion du niveau action au niveau plan ?**
+
+La section 4 enchaîne `runR_mono` (`s ⊆ s'` entraîne `runR π s ⊆ runR π s'`) puis `run_subset_runR` (`run π s ⊆ runR π s`).
+
+<details><summary>Réponse</summary>
+
+Parce qu'un plan est un **pli** : `run π s = step a_n (... (step a_1 s))`. Si chaque `stepR` préserve l'inclusion des états (`step a s ⊆ stepR a s`, et `stepR` est monotone), alors l'inclusion se propige de proche en proche le long de la composition — c'est exactement le contenu de `runR_mono` et `run_subset_runR`, que la chaîne causale de la section 6 assemble : `reaches π s g` donne `run π s ⊢ g`, l'inclusion donne `runR π s ⊢ g`, donc `reachesR π s g`. La section 4bis l'illustre en décidable : ajouter `Fl.clear` à l'état initial ne retire rien au plan relaxé exécuté depuis cet état.
+
+</details>
+
+## Pour aller plus loin
+
+- [Index de la sous-série 02-Classical](README.md) — le parcours principal et les paliers d'approfondissement (ce carnet est le palier 5b).
+- [Index de la série Planners](../README.md) — la place de la formalisation Lean dans la série.
+
+Les carnets voisins sont cités en prose, sans lien. `Planners-05-Heuristics-Python` et son jumeau C# utilisent ce théorème sans le prouver : h^max et h^add sont admissibles parce que la relaxation l'est, et c'est ici que cette promesse est honorée. `Planners-05c-Differentiel-Atteignabilite-Python` invoque explicitement la garantie (`le lake garantit h+ <= h* en Admissibility.lean:41`) pour distinguer l'inatteignable réel de l'inatteignable relaxé. Le lake `planning_lean` porte le module complet ; `LEAN_INVENTORY.md` en dresse l'état. La suite du travail est déjà posée dans le carnet : l'exercice 3 demande un domaine où la relaxation est **strictement** moins chère que le plan réel.
+",,,,,,,,233193d3d2af52d7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb,50d1876b,markdown,fr,d5357c0e03ca98aa,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| L'inatteignabilité se démontre, elle ne se suppose pas | BFS exhaustif dans `A_t` : `36 etats, 36 expansions` — `g1 ... atteignable=False h*=infini`, `g2 ... atteignable=False`, `g3: detenir la cle atteignable=True h*=3` |
+| Un échec de recherche n'est pas un certificat : trois budgets, même verdict | `g1` et `g2` échouent aux trois niveaux d'effort : `BFS ECHEC( 36)`, `A*+h_max ECHEC( 36)`, `IDDFS(24) ECHEC( 4151)` ; `g3` passe aux trois (`OK( 36)`, `OK( 4)`, `OK( 24)`) |
+| La relaxation ne peut pas inventer la rive droite | `g1: balise (5,2): h_max dans A_t = INFINI (relaxement inatteignable)` — et le carnet cite sa garantie : `le lake garantit h+ <= h* en Admissibility.lean:41` |
+| La chaîne d'admissibilité se vérifie sur le but conjonctif | `h* (reel, BFS uniforme) = 8`, `h_max (relaxe, exact) = 3`, `chaine verifiee : h_max (3) <= h* (8) -> STRICT` |
+| Le différentiel se mesure : une primitive nommée, trois opérateurs | `A_t : 41 operateurs` ; `A_t+1 : 44 operateurs (primitive ajoutee : ['raft-across-y0', 'raft-across-y1', 'raft-across-y2'])` |
+| Ce que la primitive ouvre, en états et en coûts | `|A_t| = 36 etats -> |A_t+1| = 60 etats (+24)` ; `g1 ECHEC -> OK h*(A_t+1) = 7 NOUVELLEMENT ATTEIGNABLE`, `g2 ECHEC -> OK h* = 6`, `g3 OK -> OK h* = 3` |
+
+## Vérifiez votre compréhension
+
+**Question 1 — Pourquoi le tableau du pas 2 (trois algorithmes) n'ajoute-t-il rien au verdict du pas 1 (BFS exhaustif), et pourquoi le faire quand même ?**
+
+Le pas 1 rend `Ensemble atteignable dans A_t : 36 etats, 36 expansions (BFS exhaustif)` ; le pas 2 rend `Verdict du controle : g1 et g2 echouent aux TROIS niveaux d'effort. L'espace atteignable est le MEME (36 etats) quel que soit le budget.`
+
+<details><summary>Réponse</summary>
+
+Parce que le pas 1 **démontre** (énumération exhaustive des 36 états : rive droite absente), tandis que le pas 2 teste la **robustesse du verdict** face à l'objection « tu n'as pas cherché assez ». IDDFS pousse le budget à `4151` expansions — deux ordres de grandeur au-delà des `36` de l'exhaustif — et ne trouve rien de plus : c'est la signature d'une barrière structurelle (le gouffre sans radeau), pas d'un budget trop court. La mesure asymétrique est la leçon : `g3 OK(4)` en A* contre `OK(36)` en BFS montre aussi ce que le guidage achète quand le but **est** atteignable.
+
+</details>
+
+**Question 2 — Après l'ajout du radeau, h_max(g1) passe de l'infini à 7 : que vérifie la ligne `chaine h_max<=h*: OK` et d'où vient la garantie ?**
+
+Le pas 4 rend `g1: balise (5,2) h_max: A_t=inf -> A_t+1=7 h*(A_t+1)=7 chaine h_max<=h*: OK` et le carnet cite `le lake garantit h+ <= h* en Admissibility.lean:41`.
+
+<details><summary>Réponse</summary>
+
+Elle vérifie numériquement ce que le lake prouve formellement : `h_max <= h+ <= h*` (h_max majore par le fait le plus cher du but relaxé ; h+ est le coût du plan relaxé ; l'admissibilité de la relaxation est le théorème d'`Admissibility.lean:41`, prouvé sans `sorry` dans le companion `Planners-05b-Lean-Relaxation-Lean`). Sur g1 après ajout : `h_max = 7 = h*` — égalité, jamais inversion. Et sur le but conjonctif du contrôle, l'écart était strict (`3 < 8`) : la chaîne autorise l'égalité, elle interdit la surestimation. C'est ce qui rend h_max utilisable pour **certifier** l'inatteignabilité : `h_max = INFINI` dans A_t ne peut pas venir d'une sous-estimation.
+
+</details>
+
+## Pour aller plus loin
+
+- [Index de la sous-série 02-Classical](README.md) — le parcours principal et les paliers d'approfondissement (ce carnet est le palier 5c).
+- [Index de la série Planners](../README.md) — la place du protocole de mesure dans la série.
+
+Les carnets voisins sont cités en prose, sans lien. `Planners-05b-Lean-Relaxation-Lean` prouve le théorème (`h+ <= h*`) que ce carnet applique et cite à sa source ; `Planners-05-Heuristics-Python` construit les heuristiques (h_max, h+, h_landmark) dont la chaîne est mesurée ici ; `Planners-06-Domains-Python` montre les domaines classiques où ces questions d'atteignabilité se posent à grande échelle. La suite du travail est déjà posée dans le carnet : l'exercice 1 mesure le delta d'une primitive **gratuite** (le deltaplane), l'exercice 2 d'une extension **stérile** (jeter la planchette), l'exercice 3 la chaîne `h_max <= h+ <= h*` sur g3.
+",,,,,,,,d5357c0e03ca98aa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb,48cc9574,markdown,fr,acc6f80d76651750,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| Un BFS from-scratch trouve les plans optimaux des domaines jouets | `blocks-tower` : `Longueur du plan : 4 action(s)` (`pick-up(b)`, `stack(b,c)`, `pick-up(a)`, `stack(a,b)`) ; `blocks-reverse` (4 blocs) : `8 action(s)` ; Hanoï 3 disques : `7 action(s)` ; Gripper 2 balles/2 pinces : `5 action(s)` |
+| L'explosion combinatoire se voit dans les nœuds, pas dans les plans | `Block World (tour 3 blocs) 4 / 20`, `Block World (reverse, 4 blocs) 8 / 85`, `Tours de Hanoï (3 disques) 7 / 25`, `Gripper (2 balles, 2 pinces) 5 / 25` — le plan croît linéairement, les nœuds explosent |
+| Le SOTA confirme la parité, domaine par domaine | Fast Downward 24.06.1 : `Block World tour ... Coût du plan : 4 | États expansés : 6` puis `Parité from-scratch : BFS trouvait 4 actions → FD coût 4 = PARITÉ CONFIRMÉE` ; `blocks-reverse` : FD `8` également |
+| Les deux pinces achètent un plan plus court | Gripper : `pick(b1)`, `pick(b2)`, `move`, `drop(b1)`, `drop(b2)` = `5 action(s)` — un seul trajet pour deux balles |
+
+## Vérifiez votre compréhension
+
+**Question 1 — BFS trouve 8 actions pour `blocks-reverse` et Fast Downward aussi (coût 8) : pourquoi ce doublement n'est-il pas redondant ?**
+
+La section 6 rend le tableau from-scratch (`8 / 85` pour reverse) ; la tranche 2 rend `Block World reverse (4 blocs) ... Coût du plan : 8 | États expansés : 9` et `Parité from-scratch : BFS trouvait 4 actions → FD coût 4 = PARITÉ CONFIRMÉE` pour la tour.
+
+<details><summary>Réponse</summary>
+
+Parce que les deux ne mesurent **pas la même chose**. Le BFS from-scratch prouve qu'un planificateur minimal (état immuable + anti-cycle) suffit sur ces tailles — mais il paie `85` nœuds pour reverse, quand l'A*+lmcut du moteur réel en développe `9`. La parité des coûts (4/4, 8/8) valide la **modélisation** (même domaine, même optimal) ; l'écart de nœuds (85 contre 9) motive tout le reste de la série : ce sont les heuristiques — h^max, h^FF, LM-cut, cf. `Planners-05` — qui font cette différence, et c'est précisément ce que la BFS « naïve atteint vite ses limites » de la conclusion annonce.
+
+</details>
+
+**Question 2 — Hanoï 3 disques rend 7 actions : pourquoi la longueur est-elle prévisible alors que Block World 4 blocs (reverse) en rend 8 ?**
+
+La section 4 rend `Longueur du plan : 7 action(s)` ; la section 5 le contexte (`Complexité : 2^n - 1` citée par le jumeau Python) ; la section 3.1 rend `8 action(s)` pour reverse.
+
+<details><summary>Réponse</summary>
+
+Parce que Hanoï a une **formule fermée** : 3 disques exigent exactement `2^3 - 1 = 7` mouvements, et le BFS la retrouve — la structure (un seul disque mobile à la fois, jamais un grand sur un petit) rend le plan optimal unique en longueur. Block World n'a pas cette régularité : la longueur optimale dépend de la configuration initiale et du but (tour de 3 : `4` ; inversion de 2 tours de 2 : `8`), et c'est la recherche qui l'établit. C'est la leçon de la section 6 : « l'explosion dépend de la structure du domaine » — Hanoï croît exponentiellement **en longueur** (2^n − 1), Block World en **nœuds explorés** à longueur modeste.
+
+</details>
+
+## Pour aller plus loin
+
+- [Index de la sous-série 02-Classical](README.md) — le parcours principal et les paliers d'approfondissement.
+- [Index de la série Planners](../README.md) — la place des domaines classiques dans le fil de la série.
+
+Les carnets voisins sont cités en prose, sans lien. Le jumeau `Planners-06-Domains-Python` modélise ces mêmes domaines en PDDL et délègue la recherche à Pyperplan — les deux approches sont dites complémentaires dans la conclusion de ce carnet : l'une apprend à modéliser, l'autre comment un planificateur fonctionne. `Planners-07-OR-Tools-Python` (partie 3) bascule vers CP-SAT ; le branchement du moteur réel passe par `FastDownwardBackend.cs`. La suite du travail est déjà posée dans le carnet : la Tirelire, Hanoï 4 disques, et A* avec heuristique naïve.
+",,,,,,,,acc6f80d76651750,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb,a77de26b,markdown,fr,c5f11b5076c363cb,"## Navigation
+
+[← Planners (parent)](../README.md) | [Planners-6 Python](Planners-06-Domains-Python.ipynb) | [Planners-7 →](../03-Advanced/Planners-07-OR-Tools-Python.ipynb)
+",,,,,,,,c5f11b5076c363cb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb,c71cd300,markdown,fr,9818156233e46825,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| Un même moteur, quatre domaines, quatre structures de plan | Blocks World tour : `Longueur du plan: 4 actions` (`pick-up(b)`, `stack(b, c)`, `pick-up(a)`, `stack(a, b)`) ; Logistics : `6 actions` (`load`, `load`, `drive`, `unload`, `drive`, `unload`) ; Gripper 3 balles / 2 pinces : `Plan trouve (11 actions)` |
+| La structure du domaine se lit dans sa formule d'état | `Block World: state_size_formula: O(n^2)` ; `Gripper: state_size_formula: O(n x k)` — et Hanoï croît en `2^n - 1 mouvements pour n disques` |
+| Le parallélisme des pinces se paie en longueur de plan | Gripper : 3 balles transportées en `11 actions` avec 2 pinces (`pick`, `move`, `drop` en boucle) — le ferry, lui, `ne peut porter qu'une voiture a la fois` |
+| Le planificateur valide le modèle, pas l'inverse | Pyperplan rend `Solution trouvee !` sur Blocks World et Logistics — un modèle PDDL faux ne produit pas de plan, et le debugging a sa méthode |
+| Le débogage PDDL est une procédure, pas un talent | `Techniques de debugging PDDL` : 7 étapes numérotées, de la validation de syntaxe au domaine minimal reproductible |
+
+## Vérifiez votre compréhension
+
+**Question 1 — Pourquoi le plan Logistics à 6 actions alterne-t-il les `load` avant le premier `drive`, et que se passerait-il avec un seul `drive` final ?**
+
+La section 3.4 rend le plan : `load(box2, truck1, depot)`, `load(box1, truck1, depot)`, `drive(truck1, depot, warehouse)`, `unload(box2, truck1, warehouse)`, `drive(truck1, warehouse, store)`, `unload(box1, truck1, store)` — box2 va au warehouse, box1 au store.
+
+<details><summary>Réponse</summary>
+
+Parce que les deux colis ont des **destinations différentes** : box2 au warehouse, box1 au store. Les deux `load` se groupent au dépôt (le camion est vide, les deux préconditions tiennent), puis le cameron suit l'itinéraire depot → warehouse → store en livrant chaque colis là où il doit aller. Un seul `drive` final ne pourrait livrer qu'une destination : l'autre colis resterait à bord. Le solveur n'« optimise » pas la tournée ici — il trouve une séquence valide ; c'est la modélisation (un camion, deux dépôts de destination) qui impose l'alternance.
+
+</details>
+
+**Question 2 — Gripper transporte 3 balles en 11 actions avec 2 pinces ; pourquoi pas 6 (une action par prise et une par dépôt) ?**
+
+La section 4.1 pose `Le robot peut porter 2 balles a la fois !` ; l'exemple guide rend `Plan trouve (11 actions)` commençant par `pick(ball2, room_a, left)`, `move(room_a, room_b)`, `drop(ball2, room_b, left)`.
+
+<details><summary>Réponse</summary>
+
+Parce que les `move` comptent. Le plan regroupe : prendre deux balles (2 actions), traverser (1), les déposer (2), retraverser (1), prendre la dernière (1), retraverser (1), la déposer (1) — soit 9 actions au mieux pour 3 balles et 2 pinces, plus les allers-retours que l'ordre d'assemblage impose ; le solveur rend 11. La leçon de modélisation est celle du carnet : le **parallélisme des pinces** réduit le nombre de trajets (2 balles par traversée au lieu d'une), et c'est exactement ce que la comparaison des domaines chiffre (`state_size_formula: O(n x k)` — n balles, k pinces). Le ferry, à l'autre extrême, n'a qu'une capacité de 1 : chaque voiture coûte son aller-retour.
+
+</details>
+
+## Pour aller plus loin
+
+- [Index de la sous-série 02-Classical](README.md) — le parcours principal et les paliers d'approfondissement.
+- [Index de la série Planners](../README.md) — la place des domaines classiques dans le fil de la série.
+
+Les carnets voisins sont cités en prose, sans lien. Le jumeau `Planners-06-Domains-CSharp` reprend ces domaines avec un planificateur BFS écrit à la main, rendant visible la mécanique qu'unified-planning délègue ici à Pyperplan. `Planners-04-Fast-Downward-Python` donne les moteurs et `Planners-05-Heuristics-Python` les heuristiques qui rendent ces domaines tractables au-delà de la taille jouet. La partie 3 (`03-Advanced`) bascule vers OR-Tools (CP-SAT) et la planification temporelle. La suite du travail est déjà posée dans le carnet : l'exercice Ferry à résoudre, le domaine Entrepot à modéliser, et le domaine de synthèse à concevoir.
+",,,,,,,,9818156233e46825,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb,432015dd,markdown,fr,8882bdd15675b577,"## Tranche 2 : RCPSP via Google.OrTools CP-SAT (moteur .NET natif)
+
+La Partie 5 ci-dessus résout l'ordonnancement de l'atelier (5 tâches A/B/C/D/E,
+capacité 2 machines) avec un scheduler **glouton** (heuristique LPT, placement au plus
+tôt respectant la capacité). Le jumeau Python, lui, délègue ce type de problème à
+**OR-Tools CP-SAT** (cellules 26-29). Pour que le C# atteigne lui aussi le moteur de
+production de son écosystème — sans abandonner le glouton qui enseigne les mécanismes —
+cette seconde tranche résout la **même instance** via `Google.OrTools` (CP-SAT natif
+.NET), avec la contrainte de ressource cumulative `AddCumulative`.
+
+Critère owner (#10382) : chaque côté atteint un moteur de production de son écosystème
+— le from-scratch reste **en plus**, jamais **à la place**.",,,,,,,,8882bdd15675b577,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb,c34c1746,code,fr,86c1134a8f726f3d,"#r ""nuget: Google.OrTools""
+// Tranche 2 : meme instance RCPSP que la Partie 5 (cellule 12), via Google.OrTools CP-SAT .NET.
+using Google.OrTools.Sat;
+using System.Collections.Generic;
+using System.Linq;
+
+// --- Instance : atelier 5 taches, capacite 2 (meme que cellule 12) ---
+var jobs = new (string Name, int Dur, int Demand, string[] Preds)[] {
+    (""A"", 3, 1, new string[]{}),
+    (""B"", 3, 1, new string[]{}),
+    (""C"", 3, 1, new string[]{}),
+    (""D"", 2, 1, new[]{""A""}),
+    (""E"", 4, 2, new[]{""B"",""C""}),
+};
+int CAPACITY = 2;
+int horizon = jobs.Sum(j => j.Dur);
+
+Console.WriteLine(""Tranche 2 : RCPSP via Google.OrTools CP-SAT (moteur .NET natif)"");
+Console.WriteLine(new string('=', 60));
+Console.WriteLine($""Taches: {jobs.Length} | Capacite: {CAPACITY} | Horizon: {horizon}"");
+Console.WriteLine(""Makespan glouton LPT (Partie 5, cellule 12) = 10"");
+
+var model = new CpModel();
+var starts = new Dictionary<string, IntVar>();
+var ends = new Dictionary<string, IntVar>();
+// Contrainte de ressource cumulative (AddCumulative builder fluent).
+var cum = model.AddCumulative(CAPACITY);
+foreach (var j in jobs)
+{
+    starts[j.Name] = model.NewIntVar(0, horizon, $""s_{j.Name}"");
+    ends[j.Name] = model.NewIntVar(0, horizon, $""e_{j.Name}"");
+    var iv = model.NewIntervalVar(starts[j.Name], j.Dur, ends[j.Name], $""iv_{j.Name}"");
+    cum.AddDemand(iv, j.Demand);   // chaque tache consomme sa demande sur la capacite
+}
+
+// (1) Precedences : une tache demarre apres la fin de ses predecesseurs.
+foreach (var j in jobs)
+    foreach (var p in j.Preds)
+        model.Add(starts[j.Name] >= ends[p]);
+
+// (2) Objectif : minimiser le makespan = max de tous les ends.
+IntVar makespan = model.NewIntVar(0, horizon, ""makespan"");
+model.AddMaxEquality(makespan, jobs.Select(j => (LinearExpr)ends[j.Name]).ToList());
+model.Minimize(makespan);
+
+var solver = new CpSolver();
+var status = solver.Solve(model);
+Console.WriteLine($""Statut CP-SAT : {status}"");
+Console.WriteLine($""Makespan OPTIMAL = {solver.Value(makespan)}  (glouton LPT = 10, chemin critique = 7)"");
+Console.WriteLine($""Gain vs glouton : {10 - solver.Value(makespan)} unite(s) -> le glouton LPT etait DEJA optimal"");
+Console.WriteLine($""Wall-clock solve : {solver.WallTime():F3}s | branches: {solver.NumBranches()}"");
+Console.WriteLine(""\nSchedule CP-SAT optimal :"");
+foreach (var j in jobs)
+{
+    var predStr = j.Preds.Length == 0 ? ""-"" : string.Join("","", j.Preds);
+    Console.WriteLine($""  {j.Name}: [{solver.Value(starts[j.Name])}-{solver.Value(ends[j.Name])}] dur={j.Dur} dem={j.Demand} apres=[{predStr}]"");
+}
+Console.WriteLine(""\nApport du moteur de production :"");
+Console.WriteLine(""- Le glouton LPT (Partie 5) trouvait 10 SANS preuve d'optimalite."");
+Console.WriteLine(""- CP-SAT PROUVE que 10 est optimal (statut Optimal, branches explorees)."");
+Console.WriteLine(""- Pourquoi le chemin critique (7) est inaccessible : E (demande 2) ne peut"");
+Console.WriteLine(""  demarrer a t=3 apres B et C qu'en occupant toutes les ressources, donc A doit"");
+Console.WriteLine(""  etre differe au-dela de E -> makespan remonte a 10. La borne 7 ignore la ressource."");
+Console.WriteLine(""Le moteur certifie le resultat du glouton et borne l'ecart a la relaxation."");
+",,,,,,,,86c1134a8f726f3d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb,33ed97ec,markdown,fr,e1bda2f5f2cd9015,"## Bilan des 8 sections et conventions pedagogiques
+
+Avant de conclure, un regard meta sur la structure de ce notebook. Les 8 sections suivent un parcours en spirale qui merite d'etre explicite :
+
+- **Sections 1-3** : fondations théoriques (definition, syntaxe PDDL 2.1, sémantique des conflits). Elles posent le vocabulaire et les invariants du domaine. Aucune machine requise -- ces sections sont lisibles hors exécution.
+- **Sections 4-5** : mise en pratique avec `unified-planning` puis `OR-Tools CP-SAT`. C'est ici que les abstractions précédentes deviennent du code executable. Le passage d'une bibliotheque a l'autre illustre la portabilite du modèle PDDL.
+- **Sections 6-7** : comparaison d'approches et exercices. La Section 6 explicite *quand* choisir PDDL vs CP-SAT (la règle n'est pas universelle : PDDL pour les benchmarks classiques, CP-SAT pour les problèmes industriels structures). Les 3 exercices Section 7 etendent l'exemple guide.
+- **Section 8** : resume et bonnes pratiques (cette section-ci et la suivante).
+
+**Convention pédagogique du dépôt** : chaque section est concue pour etre lue indépendamment. Les dependances sont explicitees dans le Resume (Section 8.1) et la table 'Ou aller ensuite ?' plus bas. Cette structure modulaire permet aux enseignants de sélectionner les sections adaptees a leur cours.",,,,,,,,e1bda2f5f2cd9015,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,01848125,markdown,fr,f4fdb5e0b946ad48,"# Planners-13 — Mesurer la qualité des plans (benchmark de planificateurs)
+
+**Navigation** : [Index](../../README.md) | [<< HTN](Planners-09-HTN-Python.ipynb) | [LLM Planning >>](../04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb)
+
+***
+
+## Objectifs d'apprentissage
+
+À la fin de ce notebook, vous saurez :
+
+1. **Mesurer** la qualité d'un plan (longueur, coût, nombre d'états explorés, temps)
+2. **Comparer** des configurations de Fast Downward (heuristiques admissibles vs non admissibles, A* vs greedy) sur un **domaine non-trivial**
+3. **Interpreter** pourquoi le choix de l'heuristique change radicalement l'efficience, à plan optimal égal
+4. **Reproduire** une recherche naïve en Python et mesurer l'écart face à un vrai planificateur
+
+### Prérequis
+
+- [Planners-4](../02-Classical/Planners-04-Fast-Downward-Python.ipynb) (Fast Downward) et [Planners-5](../02-Classical/Planners-05-Heuristics-Python.ipynb) (Heuristiques)
+- Fast Downward : Docker (image `jsboige/coursia-fast-downward`) **ou** le paquet Python `up-fast-downward`, installé par `requirements.txt`
+
+### Durée estimée : 40 minutes",,,,,,,,f4fdb5e0b946ad48,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,aebb02fc,markdown,fr,97dd7c7a6c6b616f,"***
+
+## 1. Pourquoi mesurer la qualité des plans
+
+Dans [Planners-4](../02-Classical/Planners-04-Fast-Downward-Python.ipynb), nous comparions les algorithmes et heuristiques de Fast Downward sur des problèmes **simples** (Blocks World à 3 blocs, Logistics, Ferry). La conclusion honnête de ce carnet était :
+
+> *Pour un problème simple comme Blocks World, les différences sont minimes.*
+
+C'est le piège de l'évaluation sur un cas **dégénéré** : quand le problème est trop facile, tous les planificateurs convergent vers le même résultat et on ne voit **pas** la capacité distinctive de l'outil. Un benchmark n'a de sens que si le problème est **assez riche** pour que le choix de la stratégie change un résultat **mesurable**.
+
+Ce notebook reprend la méthode de Planners-4 (comparer des configurations Fast Downward) et l'applique à un domaine **non-trivial** — un Blocks World à 4 blocs — là où la discrimination devient nette : même plan optimal, mais un **écart net de plusieurs fois** sur le nombre d'états explorés.",,,,,,,,97dd7c7a6c6b616f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,d96f201c,markdown,fr,9a4ca7c16fb798ab,"## 2. Environnement
+
+On réutilise l'infrastructure de Planners-4 : le conteneur Docker `jsboige/coursia-fast-downward` expose Fast Downward via une API HTTP sur le port 8200 ; sans Docker, le module `fast_downward_backend.py` de la série lance le même moteur par le pilote du paquet `up-fast-downward`. La cellule suivante le vérifie, le démarre, et définit les deux fonctions qui porteront tout le benchmark.",,,,,,,,9a4ca7c16fb798ab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,8ed1a9c0,code,fr,877729e87a963119,"import sys, os, platform, subprocess, time, re, json
+from pathlib import Path
+import urllib.request, urllib.error
+from collections import deque
+
+OS_NAME = platform.system()
+IS_WINDOWS = OS_NAME == 'Windows'
+print(f""Système: {OS_NAME} | Python: {sys.version_info.major}.{sys.version_info.minor}"")
+
+# --- Docker + conteneur Fast Downward ---
+def check_docker():
+    """"""Docker installé ET démon joignable (`docker info`) : un client seul ne lance pas de conteneur.""""""
+    try:
+        r = subprocess.run(['docker', '--version'], capture_output=True, text=True, encoding=""utf-8"", errors=""replace"", timeout=10)
+        if r.returncode != 0:
+            return False, r.stderr.strip()
+        d = subprocess.run(['docker', 'info', '--format', '{{.ServerVersion}}'], capture_output=True, text=True, encoding=""utf-8"", errors=""replace"", timeout=20)
+        if d.returncode != 0:
+            return False, f""{r.stdout.strip()}, démon injoignable""
+        return True, r.stdout.strip()
+    except FileNotFoundError:
+        return False, ""Docker non installé""
+    except Exception as e:
+        return False, str(e)
+
+DOCKER_OK, DOCKER_INFO = check_docker()
+print(f""Docker: {'OK - ' + DOCKER_INFO if DOCKER_OK else 'NON DISPONIBLE - ' + DOCKER_INFO}"")
+
+FAST_DOWNWARD_IMAGE = ""jsboige/coursia-fast-downward:latest""
+FD_API_PORT = 8200
+FD_CONTAINER_NAME = ""coursia-fast-downward""
+
+def start_fd_container():
+    subprocess.run(['docker', 'rm', '-f', FD_CONTAINER_NAME], capture_output=True, timeout=10)
+    r = subprocess.run(['docker', 'run', '-d', '--name', FD_CONTAINER_NAME,
+                        '-p', f'{FD_API_PORT}:{FD_API_PORT}', FAST_DOWNWARD_IMAGE],
+                       capture_output=True, text=True, encoding=""utf-8"", errors=""replace"", timeout=120)
+    if r.returncode != 0:
+        print(""Erreur conteneur:"", r.stderr); return False
+    for _ in range(20):
+        try:
+            resp = urllib.request.urlopen(f""http://localhost:{FD_API_PORT}/health"", timeout=2)
+            if resp.status == 200:
+                print(f""Conteneur Fast Downward prêt (port {FD_API_PORT})""); return True
+        except (urllib.error.URLError, ConnectionError):
+            time.sleep(1)
+    print(""Timeout: conteneur non réactif""); return False
+
+FD_DOCKER_OK = start_fd_container() if DOCKER_OK else False
+
+# --- Moteur Fast Downward : service Docker s'il répond, sinon plugin local (fast_downward_backend.py) ---
+sys.path.insert(0, str(Path.cwd().parent))
+import fast_downward_backend as fdb
+FD_OK = fdb.available()
+if not FD_OK:
+    print(""Fast Downward non disponible (ni service Docker, ni plugin local) — les mesures FD seront marquées ÉCHEC"")
+
+# --- Helper d'exécution Fast Downward (service Docker ou plugin local) ---
+def run_fast_downward(domain_pddl, problem_pddl, search_config=""astar(lmcut())"", timeout=60):
+    if not FD_OK:
+        return {""success"": False, ""error"": ""Fast Downward non disponible"", ""time"": 0}
+    try:
+        t0 = time.time()
+        data = fdb.plan(domain_pddl, problem_pddl, search_config, timeout=timeout)
+        elapsed = time.time() - t0
+    except Exception as e:
+        return {""success"": False, ""error"": str(e), ""time"": 0}
+    if data[""returncode""] == 0:
+        return {""success"": True, ""stdout"": data[""stdout""], ""time"": elapsed}
+    return {""success"": False, ""stdout"": data[""stdout""], ""error"": data[""stderr""], ""time"": elapsed}
+
+# --- Helper d'extraction des mesures ---
+def extract_metrics(stdout):
+    cost = re.search(r'Plan cost:\s*(\d+)', stdout)
+    length = re.search(r'Plan length:\s*(\d+)', stdout)
+    evaluated = re.search(r'Evaluated (\d+) state', stdout)
+    expanded = re.search(r'Expanded (\d+) state', stdout)
+    return {
+        ""plan_length"": int(length.group(1)) if length else None,
+        ""plan_cost"": int(cost.group(1)) if cost else None,
+        ""evaluated"": int(evaluated.group(1)) if evaluated else None,
+        ""expanded"": int(expanded.group(1)) if expanded else None,
+    }
+
+print(f""Helper run_fast_downward() prêt | Fast Downward : {fdb.description()}"")",,,,,,,,877729e87a963119,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,05715145,markdown,fr,c95c6c825e88d7b9,"### Lecture du résultat
+
+L'audit de l'environnement confirme les outils disponibles (voir le tableau imprimé ci-dessus) :
+
+| Composant | Rôle |
+|-----------|------|
+| Docker | fait tourner le conteneur Fast Downward |
+| Image `coursia-fast-downward` | embarque Fast Downward + API HTTP |
+| Port 8200 | endpoint `/plan` (reçoit domaine + problème + config de recherche) |
+| Paquet `up-fast-downward` | sans Docker, fournit le même moteur, lancé en local |
+
+Le helper `run_fast_downward()` encapsule l'appel au moteur (service HTTP ou pilote local) ; `extract_metrics()` en extrait les mesures (longueur, coût, états évalués). Tout le benchmark repose sur ces deux fonctions.",,,,,,,,c95c6c825e88d7b9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,15779315,markdown,fr,b8b3b6baa93d883a,"***
+
+## 3. Un domaine non-trivial
+
+Nous reprenons le domaine STRIPS **Blocks World** de Planners-4, mais à une échelle où l'espace d'états devient non-négligeable : une **tour de 4 blocs** à construire. Le domaine est défini une fois pour toutes, puis un petit générateur de problème permet de changer la taille de la tour (ce que les exercices utiliseront).",,,,,,,,b8b3b6baa93d883a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,898ce0cd,code,fr,78ac31227fcb4205,"# Blocks World — domaine STRIPS classique (4 actions)
+DOMAIN_BLOCKS = """"""
+(define (domain blocks)
+  (:requirements :strips :typing)
+  (:types block)
+  (:predicates
+    (on ?x - block ?y - block)
+    (ontable ?x - block)
+    (clear ?x - block)
+    (handempty)
+    (holding ?x - block)
+  )
+  (:action pick-up
+    :parameters (?x - block)
+    :precondition (and (clear ?x) (ontable ?x) (handempty))
+    :effect (and (not (ontable ?x)) (not (clear ?x)) (not (handempty)) (holding ?x)))
+  (:action put-down
+    :parameters (?x - block)
+    :precondition (holding ?x)
+    :effect (and (not (holding ?x)) (clear ?x) (handempty) (ontable ?x)))
+  (:action stack
+    :parameters (?x - block ?y - block)
+    :precondition (and (holding ?x) (clear ?y))
+    :effect (and (not (holding ?x)) (not (clear ?y)) (clear ?x) (handempty) (on ?x ?y)))
+  (:action unstack
+    :parameters (?x - block ?y - block)
+    :precondition (and (on ?x ?y) (clear ?x) (handempty))
+    :effect (and (not (on ?x ?y)) (not (clear ?x)) (not (handempty)) (holding ?x) (clear ?y)))
+)
+""""""
+
+# Problème NON-TRIVIAL : tour de 4 blocs a/b/c/d (a en haut)
+N_BLOCKS = 4
+BLOCKS = ['a', 'b', 'c', 'd']
+
+def build_tower_problem(blocks):
+    """"""Problème : construire la tour blocks[0]/blocks[1]/.../blocks[-1] (blocks[0] en haut).""""""
+    n = len(blocks)
+    objs = ' '.join(blocks) + ' - block'
+    init = []
+    for b in blocks:
+        init.append('(ontable ' + b + ')')
+        init.append('(clear ' + b + ')')
+    init.append('(handempty)')
+    init_str = '\n    '.join(init)
+    goal_parts = ['(on ' + blocks[i] + ' ' + blocks[i + 1] + ')' for i in range(n - 1)]
+    goal = goal_parts[0] if len(goal_parts) == 1 else '(and ' + ' '.join(goal_parts) + ')'
+    lines = [
+        '(define (problem tower-' + str(n) + ')',
+        '  (:domain blocks)',
+        '  (:objects ' + objs + ')',
+        '  (:init',
+        '    ' + init_str,
+        '  )',
+        '  (:goal ' + goal + ')',
+        ')',
+    ]
+    return '\n'.join(lines) + '\n'
+
+PROBLEM_TOWER4 = build_tower_problem(BLOCKS)
+print(""Domaine blocks défini (4 actions STRIPS)"")
+print('Problème: tour de ' + str(N_BLOCKS) + ' blocs — but: ' + ' > '.join(reversed(BLOCKS)))
+print('----- PDDL du problème -----')
+print(PROBLEM_TOWER4)",,,,,,,,78ac31227fcb4205,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,d7a0c608,markdown,fr,0a0407325112b19e,"### Lecture du résultat
+
+Le problème affiché ci-dessus demande de construire une **tour de 4 blocs** (`a` au sommet, posé sur `b`, sur `c`, sur `d`). C'est le même domaine STRIPS que Planners-4, mais à une **échelle où l'espace d'états devient non-négligeable** : chaque bloc peut être sur la table, sur un autre bloc, ou en main, et l'ordre dans lequel on les empile génère de nombreux états intermédiaires.
+
+C'est précisément cette richesse qui rend le benchmark informatif : sur 3 blocs, tous les planificateurs convergent vite ; sur 4 blocs, la **stratégie de recherche** commence à compter.",,,,,,,,0a0407325112b19e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,2dc8bd17,markdown,fr,bb5422f33ed37af0,"***
+
+## 4. Le benchmark — 5 configurations, un même problème
+
+On soumet le **même** problème à cinq configurations de Fast Downward : quatre recherches A* de qualité croissante (`blind`, `hmax`, `ff`, `lmcut`), dont trois heuristiques **admissibles** (`blind`, `hmax`, `lmcut`) qui garantissent chacune un plan optimal — `ff` ne l'est pas en général (plan relaxé : elle peut surestimer le coût restant), mais atteint ici le même optimum, ce qui rend le cas plus riche — et une recherche gloutonne (`lazy_greedy`), qui sacrifie toute garantie d'optimalité au profit de la vitesse. Pour chacune, on mesure la longueur du plan, son coût, le nombre d'états **évalués** et le temps.",,,,,,,,bb5422f33ed37af0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,6f335adf,code,fr,c4bd81aab63ab5b6,"# Benchmark : 5 configurations Fast Downward sur le meme probleme non-trivial
+SEARCH_CONFIGS = [
+    (""A* + blind"",    ""astar(blind())""),
+    (""A* + hmax"",     ""astar(hmax())""),
+    (""A* + lmcut"",    ""astar(lmcut())""),
+    (""A* + ff"",       ""astar(ff())""),
+    (""Greedy + ff"",   ""lazy_greedy([ff()])""),
+]
+
+results = {}
+print(f""{'Configuration':<16} {'Succès':<8} {'Longueur':<9} {'Coût':<6} {'Évalués':<9} {'Temps'}"")
+print(""-"" * 62)
+for name, cfg in SEARCH_CONFIGS:
+    r = run_fast_downward(DOMAIN_BLOCKS, PROBLEM_TOWER4, search_config=cfg, timeout=60)
+    if r['success']:
+        m = extract_metrics(r['stdout'])
+        results[name] = m
+        print(f""{name:<16} {'OK':<8} {str(m['plan_length']):<9} {str(m['plan_cost']):<6} {str(m['evaluated']):<9} {r['time']:.2f}s"")
+    else:
+        results[name] = None
+        print(f""{name:<16} {'ÉCHEC':<8} {r.get('error','')[:32]}"")",,,,,,,,c4bd81aab63ab5b6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,6fd54da0,markdown,fr,9142bb582ed9dadf,"### Lecture du résultat — là où la discrimination apparaît
+
+Le tableau ci-dessus est le cœur du notebook. Lisez-le en croisant deux colonnes :
+
+- **Longueur / Coût** : les quatre recherches A* (`blind`, `hmax`, `ff`, `lmcut`) trouvent le **même plan optimal** — ces colonnes sont identiques d'une ligne à l'autre. Trois sont admissibles (`blind`, `hmax`, `lmcut`) : l'optimalité en découle. `ff` **n'est pas admissible** en général, mais atteint ici le même optimum — la garantie est une **conjonction** (« A* **et** heuristique admissible »), pas une propriété de la seule recherche.
+- **Évalués** : c'est ici que tout se joue. La recherche **aveugle** (`blind`) explore un nombre d'états **très supérieur** à celui de `lmcut`, pour aboutir au **même** plan. L'heuristique ne sert pas à *améliorer* le plan (déjà optimal) ; elle sert à **l'atteindre en explorant moins**.
+
+C'est la leçon que le cas à 3 blocs de Planners-4 masquait : *le choix de l'heuristique est un choix d'EFFICIENCE* (nombre d'états, temps), pas de qualité de plan, dès lors que l'heuristique est admissible. La ligne `Greedy + ff` (`lazy_greedy`) illustre le contrepoint : un plan **non optimal** — 10 actions contre 6 pour l'optimum, soit **4 actions de détour** — pour un nombre d'états évalués comparable à `lmcut` (20 contre 22) : sur cette instance, la vitesse n'est pas acquise, seule la garantie est perdue.",,,,,,,,9142bb582ed9dadf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,d6504e93,markdown,fr,e45f3d3df60471e0,"***
+
+## 5. Un vrai planificateur vs une recherche naïve
+
+Pour isoler la valeur de l'heuristique, la cellule suivante reproduit **en Python, sans Fast Downward**, une recherche **aveugle** (BFS) du même problème. C'est le contrepoint le plus pur : même problème, même complétude, mais **aucune heuristique** pour guider l'exploration. On compare alors le nombre d'états que cette recherche naïve explore à celui de `A* + lmcut`.",,,,,,,,e45f3d3df60471e0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,2fda0bbd,code,fr,e9c4e66f29ece7c3,"# --- Représentation d'un état Blocks World ---
+# state = (on, holding) où on: dict bloc -> 'table' | 'hand' | bloc ; holding: bloc ou None
+def initial_state(blocks):
+    on = {b: 'table' for b in blocks}
+    return (frozenset(on.items()), None)
+
+def is_clear(on, b):
+    return not any(loc == b for loc in on.values())
+
+def successors(state, blocks):
+    on_f, holding = state
+    on = dict(on_f)
+    for x in blocks:
+        if holding is None and on[x] == 'table' and is_clear(on, x):   # pick-up
+            on2 = dict(on); on2[x] = 'hand'
+            yield (frozenset(on2.items()), x)
+        if holding == x:                                                # put-down
+            on2 = dict(on); on2[x] = 'table'
+            yield (frozenset(on2.items()), None)
+        if holding == x:                                                # stack
+            for y in blocks:
+                if y != x and is_clear(on, y):
+                    on2 = dict(on); on2[x] = y
+                    yield (frozenset(on2.items()), None)
+        if holding is None and on[x] not in ('table', 'hand') and is_clear(on, x):  # unstack
+            on2 = dict(on); on2[x] = 'hand'
+            yield (frozenset(on2.items()), x)
+
+def goal_reached(state, blocks):
+    on = dict(state[0])
+    for i in range(len(blocks) - 1):
+        if on[blocks[i]] != blocks[i + 1]:
+            return False
+    return True
+
+# --- BFS naïve (sans heuristique) ---
+def bfs_solve(blocks):
+    start = initial_state(blocks)
+    if goal_reached(start, blocks):
+        return 0, 0
+    queue = deque([start])
+    seen = {start}
+    expanded = 0
+    depth = {start: 0}
+    while queue:
+        state = queue.popleft()
+        expanded += 1
+        d = depth[state]
+        for nxt in successors(state, blocks):
+            if nxt not in seen:
+                seen.add(nxt)
+                depth[nxt] = d + 1
+                if goal_reached(nxt, blocks):
+                    return d + 1, expanded
+                queue.append(nxt)
+    return None, expanded
+
+plan_len_bfs, expanded_bfs = bfs_solve(BLOCKS)
+print(""BFS naïve (Python, sans heuristique) :"")
+print('  Longueur du plan trouvé : ' + str(plan_len_bfs))
+print('  États explorés          : ' + str(expanded_bfs))
+lm = results.get(""A* + lmcut"")
+if lm and lm.get(""evaluated""):
+    print('\nFast Downward A* + lmcut : longueur ' + str(lm['plan_length']) + ', états évalués ' + str(lm['evaluated']))
+    ratio = expanded_bfs / lm['evaluated']
+    print('  -> le BFS naïve explore ~' + str(int(round(ratio))) + 'x plus d\'états que A*+lmcut pour le MÊME plan optimal')
+else:
+    print('\n(Comparaison indisponible : A*+lmcut n\'a pas produit de mesure)')",,,,,,,,e9c4e66f29ece7c3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,d3a1b21f,markdown,fr,f54fed60acfe3a3e,"### Lecture du résultat — un vrai planificateur vs une recherche naïve
+
+La cellule précédente reproduit, en une quarantaine de lignes de Python, une recherche **aveugle** (BFS) du même problème, sans aucune heuristique. Le message est le même que pour Fast Downward : la recherche naïve explore **beaucoup** d'états, là où `A* + lmcut` s'en tient à une fraction.
+
+L'écart affiché (le ratio d'états explorés) est la traduction chiffrée d'une idée simple : **une heuristique admissible est ce qui sépare un planificateur qui « devine bien » d'une recherche qui « essaie tout »**. C'est la valeur distinctive de l'outil SOTA, mesurable — et c'est exactement ce qu'un benchmark sur un problème trop simple ne permet pas de voir.",,,,,,,,f54fed60acfe3a3e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,ddc4ac14,markdown,fr,87993cbd43a92107,"***
+
+## 6. Exercices",,,,,,,,87993cbd43a92107,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,2541e27e,markdown,fr,28ffd2f1d062893f,"### Exercice 1 — Passer à 5 blocs
+
+Construisez le problème **tower-5** (blocs `a b c d e`) avec `build_tower_problem`, relancez le benchmark (les 5 configurations) et comparez le nombre d'états **évalués** de `A* + blind` à celui de `A* + lmcut`. Le ratio doit **croître** avec la taille de la tour : c'est la signature d'une heuristique qui « travaille ».",,,,,,,,28ffd2f1d062893f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,3e320b53,code,fr,f09504f4da552dbf,"# Exercice 1 : passer à 5 blocs
+# 1. BLOCKS5 = ['a', 'b', 'c', 'd', 'e']
+# 2. PROBLEM_TOWER5 = build_tower_problem(BLOCKS5)
+# 3. Relancez la boucle de SEARCH_CONFIGS sur PROBLEM_TOWER5 et mesurez le ratio
+#    états(A*+blind) / états(A*+lmcut).
+#
+# Indice : le but est (and (on a b) (on b c) (on c d) (on d e))
+# Indice : réutilisez extract_metrics() sur la sortie de chaque configuration
+
+pass  # TODO étudiant
+print(""Exercice à compléter"")",,,,,,,,f09504f4da552dbf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,dfc2170a,markdown,fr,d0e0bf66ad2f957a,"**Indice :** le but de la tour à 5 blocs est `(and (on a b) (on b c) (on c d) (on d e))`. La longueur optimale est de 8 actions. Ce qui change, c'est le nombre d'états que chaque configuration doit évaluer pour l'atteindre : observez l'écart `blind`/`lmcut`.
+
+### Exercice 2 — Une heuristique admissible en mode glouton
+
+Ajoutez la configuration `greedy + lmcut` (recherche gloutonne avec une heuristique **admissible**) et observez si le plan trouvé reste **optimal en longueur**.
+
+La recherche gloutonne évalue `f(n) = h(n)` **sans** le coût accumulé `g(n)` : l'admissibilité de `h` ne suffit plus à garantir l'optimalité.",,,,,,,,d0e0bf66ad2f957a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,39f24a3a,code,fr,df5dbf3b552ad424,"# Exercice 2 : greedy + lmcut
+# Ajoutez (""Greedy + lmcut"", ""lazy_greedy([lmcut()])"") à SEARCH_CONFIGS,
+# relancez le benchmark, et comparez la LONGUEUR du plan à celle de A* + lmcut.
+#
+# Indice : greedy minimise h(n) seul — un plan plus long peut avoir un h plus faible
+# Indice : la question à trancher est « même longueur qu'A*+lmcut ? »
+
+pass  # TODO étudiant
+print(""Exercice à compléter"")",,,,,,,,df5dbf3b552ad424,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,94b36ae3,markdown,fr,7e15015dd1b40dd0,"**Indice :** comparez la colonne *Longueur* de `Greedy + lmcut` à celle de `A* + lmcut`. S'ils diffèrent, c'est la preuve que l'admissibilité garantit l'optimalité **pour A***, pas pour le glouton.
+
+### Exercice 3 — Reconstruire la séquence du plan
+
+Modifiez `bfs_solve` pour qu'il renvoie aussi la **séquence d'actions** du plan (et pas seulement sa longueur), puis vérifiez que cette séquence satisfait bien le but.
+
+C'est le passage de la *mesure* (combien d'états) à la *preuve* (quel plan) : un benchmark doit pouvoir produire le plan qu'il compte.",,,,,,,,7e15015dd1b40dd0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,8ef14a56,code,fr,9d17c30691b0ae2b,"# Exercice 3 : reconstruire la séquence d'actions du BFS
+# 1. Dans bfs_solve, conservez le PARENT de chaque état (dict parent[nxt] = state)
+# 2. Depuis l'état but, remontez la chaîne parent jusqu'à l'état initial
+# 3. Déduisez de chaque transition (parent -> enfant) l'action appliquée
+#
+# Indice : une transition change un seul bloc (on[x]) et/ou holding — c'est l'action
+# Indice : comparez la séquence obtenue au plan que Fast Downward a imprimé
+
+pass  # TODO étudiant
+print(""Exercice à compléter"")",,,,,,,,9d17c30691b0ae2b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb,95809aea,markdown,fr,77964c6d1b8030a7,"**Indice :** la remontée de `parent` donne la chaîne d'états ; pour en extraire l'action, comparez `on` et `holding` entre un état et son parent (un seul bloc change de support, et `holding` passe de `None` à un bloc ou vice-versa).
+
+***
+
+## 7. Ce qu'il faut retenir
+
+1. **Un benchmark n'a de sens que sur un problème non-trivial** : sur un cas dégénéré, tous les planificateurs convergent et on ne mesure rien.
+2. **Admissible = plan optimal garanti** : `blind`, `hmax`, `lmcut` donnent la même longueur de plan ; l'admissibilité protège la qualité.
+3. **L'heuristique est un choix d'efficience** : à plan optimal égal, `lmcut` explore nettement moins d'états que `blind`. C'est le rôle de l'heuristique.
+4. **Satisficing (greedy) = vitesse sans garantie** : plus rapide à lancer, plan non garanti optimal.
+5. **La valeur d'un vrai planificateur se mesure** : face à une recherche naïve (BFS), l'écart d'états explorés est l'indice de sa capacité distinctive.
+
+## Pour aller plus loin
+
+- Pattern databases et heuristiques additives (`merge-and-shrink`) : au-delà de `lmcut`.
+- Domaines à coûts explicites (`:metric`) : quand la longueur ne suffit plus.
+- [Planners-09-HTN-Python](Planners-09-HTN-Python.ipynb) : la planification hiérarchique, un autre levier d'efficience.
+
+***
+
+**Notebook précédent** : [Planners-09-HTN-Python](Planners-09-HTN-Python.ipynb) · **Suivant** : [Planners-10-LLM-Planning-Python](../04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb)",,,,,,,,77964c6d1b8030a7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,4838a41a,markdown,fr,0a7390ffb1ab71d6,"### Au-delà du seuil : le satisficing cesse d'être optimal
+
+L'instance ci-dessus est **sous le seuil** de divergence : h^FF y est exacte (le plan relâché coïncide avec le plan réel), donc GBFS et EHC ne peuvent pas se tromper. Ajoutons **un lieu et un colis** : le camion doit maintenant enchaîner des détours, et la relaxation — qui autorise le camion à « être partout à la fois » — sous-estime le prix des trajets réels. C'est le régime annoncé en §8 : *« la différence d'optimalité s'observe sur des domaines où h^FF présente des plateaux (Logistics à plus de colis) »*.",,,,,,,,0a7390ffb1ab71d6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,73fc1d5b,code,fr,84c89bab7d1d92f3,"// LOGISTICS etendu : k lieux, plusieurs colis, capacite illimitee. Drives entre toute
+// paire de lieux ; load/unload pour chaque (colis, lieu). L'instance a 2 colis (18 etats)
+// reste en §9 ; ici on passe au-dessus du seuil de divergence des couts.
+List<SasOperator> LogisticsOpsEtendu(string[] locs, (string pkg, int from, int to)[] jobs)
+{
+    var ops = new List<SasOperator>();
+    for (int i = 0; i < locs.Length; i++)
+        for (int j = 0; j < locs.Length; j++)
+            if (i != j)
+                ops.Add(new SasOperator($""drive({locs[i]},{locs[j]})"", new(), new() { [""truck""] = i }, new() { [""truck""] = j }));
+    int IN_T = locs.Length;
+    foreach (var (pkg, from, to) in jobs)
+        for (int l = 0; l < locs.Length; l++)
+        {
+            ops.Add(new SasOperator($""load({pkg},{locs[l]})"", Prevail: new() { [""truck""] = l }, Precondition: new() { [pkg] = l }, Effect: new() { [pkg] = IN_T }));
+            ops.Add(new SasOperator($""unload({pkg},{locs[l]})"", Prevail: new() { [""truck""] = l }, Precondition: new() { [pkg] = IN_T }, Effect: new() { [pkg] = l }));
+        }
+    return ops;
+}
+
+void RunLogistics(string label, string[] locs, int truckStart, (string pkg, int from, int to)[] jobs)
+{
+    var ops = LogisticsOpsEtendu(locs, jobs);
+    var init = new Dictionary<string, int> { [""truck""] = truckStart };
+    var goal = new Dictionary<string, int>();
+    foreach (var (pkg, from, to) in jobs) { init[pkg] = from; goal[pkg] = to; }
+    var (pA, cA, nA) = AStarSas(init, goal, ops, s => HMaxSas(ops, goal, s));
+    var (pG, cG, nG) = GBFSSas(init, goal, ops, s => HFFSas(ops, goal, s));
+    var (pE, cE, nE, okE) = EHCSas(init, goal, ops, s => HFFSas(ops, goal, s));
+    long espace = locs.Length;
+    for (int i = 0; i < jobs.Length; i++) espace *= locs.Length + 1;
+    var sb = new System.Text.StringBuilder();
+    sb.AppendLine($""--- {label} ---"");
+    sb.AppendLine($""Espace = {locs.Length} x {locs.Length + 1}^{jobs.Length} = {espace} etats ; {ops.Count} operateurs ; h^FF(init) = {HFFSas(ops, goal, init)}."");
+    sb.AppendLine($""A*   (h^max) : cout={cA}, noeuds={nA}  [{string.Join("", "", pA)}]"");
+    sb.AppendLine($""GBFS (h^FF)  : cout={cG}, noeuds={nG}  [{string.Join("", "", pG)}]"");
+    sb.AppendLine($""EHC  (h^FF)  : succes={okE}, cout={cE}, noeuds={nE}  [{string.Join("", "", pE)}]"");
+    sb.AppendLine();
+    sb.ToString().Display();
+}
+
+string[] lieux3 = { ""A"", ""B"", ""C"" };
+string[] lieux4 = { ""A"", ""B"", ""C"", ""D"" };
+RunLogistics(""E1 : 3 lieux, pkgA A->B, pkgB C->B (camion en A)"", lieux3, 0, new[] { (""pkgA"", 0, 1), (""pkgB"", 2, 1) });
+RunLogistics(""E2 : 4 lieux, pkgA A->B, pkgB C->B, pkgC D->B (camion en A)"", lieux4, 0, new[] { (""pkgA"", 0, 1), (""pkgB"", 2, 1), (""pkgC"", 3, 1) });",,,,,,,,84c89bab7d1d92f3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,262efac2,markdown,fr,598ac542cddec636,"### Interprétation : le compromis satisficing devient visible
+
+Résultats observés (exécution réelle ci-dessus) :
+
+| Instance | Algorithme | Coût | Écart à l'optimal | Nœuds expandés |
+|---|---|---|---|---|
+| E1 | A* (h^max) | 6 | référence | 17 |
+| E1 | GBFS (h^FF) | 7 | +1 | 8 |
+| E1 | EHC (h^FF) | 7 | +1 | 8 |
+| E2 | A* (h^max) | 9 | référence | 135 |
+| E2 | GBFS (h^FF) | 11 | +2 | 12 |
+| E2 | EHC (h^FF) | 11 | +2 | 14 |
+
+**Lecture** : sur E1, GBFS et EHC livrent `pkgA` à B dès qu'ils le peuvent — chaque livraison fait chuter h^FF, c'est donc toujours un état améliorant — puis doivent retourner chercher `pkgB` à C et revenir : 7 actions, au lieu du balayage optimal A->C->B qui transporte `pkgA` pendant le détour (6). Sur E2, l'écart à l'optimal **croît** (+2) pendant que l'écart de nœuds explose dans l'autre sens (135 contre 12) : c'est le compromis exact annoncé en §8 — le satisficing paie ses nœuds en optimalité, et réciproquement.
+
+**Pourquoi h^FF ne voit pas le piège** : dans le monde relâché, le camion peut « être » en A, C et B simultanément — le plan relâché ne compte chaque détour qu'une fois, sans le chaînage réel des positions. Dès que plusieurs colis imposent des détours imbriqués, h^FF devient optimiste, et l'état qui la fait baisser n'est plus forcément sur un plan optimal. C'est pourquoi FF lance EHC d'abord et garde une recherche complète en secours (§7) : sur les instances opaques à h^FF, seul A* garantit le coût minimal.",,,,,,,,598ac542cddec636,,,,,,,,,,,,,,,
