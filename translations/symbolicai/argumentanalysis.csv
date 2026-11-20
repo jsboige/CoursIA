@@ -6114,16 +6114,13 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Pyt
 
 **Évolution de la source amont** : l’idiome actuel de sérialisation a été introduit lors de la refondation du 10 juillet 2026 (Argumentum PR #763).
 ",,,,,,,,2ff7f4a345c0b2eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fea709ae,markdown,fr,843f80b111e0eef6,"# Liens croisés crossLink et attaques AIF du CSV canonique Argumentum
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fea709ae,markdown,fr,5f60b3e253ef49e2,"# Liens croisés crossLink et attaques AIF du CSV canonique Argumentum
 
-**Notebook pédagogique** : exploration du **CSV canonique Argumentum** (dédoublonné en sophismes canoniques), complémentaire à `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` (PR-A, OWL2/XML).
+**Notebook pédagogique** : exploration du **CSV canonique Argumentum** (dédoublonné en sophismes canoniques), complémentaire à `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` (OWL2/XML).
 
-> **⚠️ Mise à jour 2026-07-10 (Argumentum PR #763)** — l'intégration ontologique des Fallacies a été complétée en amont. Les 8 relations `crossLink_*` et les colonnes AIF attack (`AIF_attackType`/`AIF_attackedNode`), jusque-là **présentes uniquement dans le CSV**, sont désormais **émises dans l'OWL** (comme `AnnotationAssertion`). La couverture crossLink est passée de **1,5 % (22 relations)** à **59,9 % (1081 entrées / 844 sophismes)** après curation transverse (#141) + câblage du générateur (#763), puis la dé-curation #1247/#1286 l'a ramenée à **34,6 % (539 entrées / 487 sophismes)**. Ce notebook reflète l'état **à l'épingle datée en tête** (submodule `5cb4a75`, 2026-10-23), pas celui de #763.
+> **État de l'intégration ontologique** — l'intégration ontologique des Fallacies a été complétée en amont. Les 8 relations `crossLink_*` et les colonnes AIF attack (`AIF_attackType`/`AIF_attackedNode`), jusque-là **présentes uniquement dans le CSV**, ont été **émises dans l'OWL** (comme `AnnotationAssertion`) à l'époque de l'intégration ; la couche crossLink n'y est **plus émise** à l'épingle datée (§7, §8). La couverture crossLink est passée de **1,5 % (22 relations)** à **59,9 % (1081 entrées / 844 sophismes)** après curation transverse, puis la dé-curation l'a ramenée à **34,6 % (539 entrées / 487 sophismes)**. Ce notebook reflète l'état **à l'épingle datée** (sous-module Argumentum `33f25e8`, 2026-11-06 — voir « Références et provenance ») — pas celui de l'époque où l'OWL ne portait aucune relation transversale.
 
-**Filiation** :
-- EPIC parent : **#4960** ArgumentAnalysis v3 (submodule Argumentum)
-- PR-A : **#5721** (`Argumentation-Onto-01-AIF-OWL2-Python.ipynb`)
-- PR-B : **ce notebook** (CSV canonique + crossLink_* + AIF mappings)
+**Deux substances** : ce carnet lit le **CSV canonique** (crossLink et AIF mappings) ; le carnet frère `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` lit la **substance OWL**. Les deux sont réconciliées (§8).
 
 **Objectifs d'apprentissage** :
 
@@ -6132,40 +6129,39 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-C
 3. Mesurer la **couverture multilingue** (8 langues : fr, en, ru, pt, ar, es, zh, fa) — 100 %.
 4. Analyser les **AIF mappings** (`AIF_skosDirectRef` + `AIF_skosExceptionRef` + `AIF_skosMappingType`) : 116 mappages vers 60 schemes Walton, **plus** les 2 colonnes AIF attack (145 sophismes typés RA/I/CA-node).
 5. Caractériser la **couverture des crossLink** : un tiers de couverture (34,6 %, soit 487 sophismes sur 1408).
-6. **Faire le pont** entre substance OWL (PR-A) et substance CSV (PR-B), et montrer que #763 a réconcilié les deux.
+6. **Faire le pont** entre substance OWL et substance CSV, et montrer que le pont est effectif.
 
 **Sommaire** :
 
-1. Contexte (PR-A → PR-B, mise à jour #763)
+1. Contexte (OWL et CSV)
 2. Loader CSV (pandas + utf-8-sig)
 3. Vue d'ensemble (1408 sophismes, 104 colonnes)
 4. Taxonomie : 8 familles × 9 niveaux
 5. Couverture multilingue (8 langues)
 6. AIF mappings : 116 mappages vers 60 schemes Walton
 7. CrossLink coverage : couverture 34,6 % des sophismes
-8. Pont OWL ↔ CSV : #763 a câblé crossLink + AIF dans l'OWL
+8. Pont OWL ↔ CSV : les deux couches AIF concordent dans l'OWL, la couche crossLink n'y est plus émise
 9. Pont avec Walton : 60 schemes uniques
 10. Honnêteté méthodologique
 11. Exercices (3 stubs #2161)
 12. Conclusion + Ponts
 
-**Verdict SOTA** : SOTA-OK (pandas + matplotlib natifs, pas de workaround dégradé).
+**Série Argumentation** | | Précédent : [Onto-01-AIF-OWL2-Python](./Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | Suivant : [Onto-03-Vertus-SKOS-Python](./Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | [↑ Série Argumentation](README.md)
+",,,,,,,,5f60b3e253ef49e2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,1d25090a,markdown,fr,25d8582a00f27a9b,"## 1. Contexte — De l'OWL au CSV
 
-**Série Argumentation** | | Précédent : [Onto-01-AIF-OWL2-Python](./Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | Suivant : [Onto-03-Vertus-SKOS-Python](./Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | [↑ Série Argumentation](README.md)",,,,,,,,843f80b111e0eef6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,1d25090a,markdown,fr,51fb551982f9b339,"## 1. Contexte — De PR-A à PR-B (mis à jour après #763)
+`Argumentation-Onto-01-AIF-OWL2-Python.ipynb` charge `ontologies/argumentum_fallacies.owl` (OWL2/XML) via un parseur regex tolérant (rdflib échoue sur le dialecte OWL/XML ; owlready2 charge mais n'expose rien via son API Python).
 
-`Argumentation-Onto-01-AIF-OWL2-Python.ipynb` (PR-A) charge `ontologies/argumentum_fallacies.owl` (OWL2/XML) via un parseur regex tolérant (rdflib échoue sur le dialecte OWL/XML ; owlready2 charge mais n'expose rien via son API Python).
-
-**Évolution majeure (Argumentum PR #763, mergée 2026-07-10)** : au moment de la première version de PR-A, l'OWL n'émettait **qu'une** des trois couches ontologiques du CSV (les mappings `AIF_skos*`). Les 8 relations `crossLink_*` et les colonnes `AIF_attackType`/`AIF_attackedNode` étaient **dans le CSV mais absentes de l'OWL** — le chemin de données CSV→OWL n'existait pas encore. #763 a :
+**Évolution majeure de l'amont** : avant l'intégration ontologique des Fallacies, l'OWL n'émettait **qu'une** des trois couches ontologiques du CSV (les mappings `AIF_skos*`). Les 8 relations `crossLink_*` et les colonnes `AIF_attackType`/`AIF_attackedNode` étaient **dans le CSV mais absentes de l'OWL** — le chemin de données CSV→OWL n'existait pas encore. L'intégration ontologique a :
 
 - ajouté le mapping des 10 colonnes dans l'entité `Fallacy` + le générateur OWL (2ᵉ passe d'émission) ;
-- curé la couche transverse (scan #141, transverse + confiance ≥ 0,6, 22 seeds manuels préservés) : **1,5 % → 59,9 %** de couverture crossLink ;
+- curé la couche transverse (scan transversal, transverse + confiance ≥ 0,6, 22 seeds manuels préservés) : **1,5 % → 59,9 %** de couverture crossLink ;
 - régénéré l'OWL, qui porte désormais **1977 `AnnotationAssertion` crossLink** + **93 typages AIF attack** (undercut/undermine/rebut → RA/I/CA-node).
 
-**PR-B** lit `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (le CSV canonique, source curée à la main, **1408 sophismes × 104 colonnes**) et expose la taxonomie, la couverture 8 langues, les AIF mappings et la couche crossLink — **désormais réconciliée avec l'OWL** (§8).
+**Ce carnet** lit `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (le CSV canonique, source curée à la main, **1408 sophismes × 104 colonnes**) et expose la taxonomie, la couverture 8 langues, les AIF mappings et la couche crossLink — **désormais réconciliée avec l'OWL** (§8).
 
-**Troisième âge (05/09, #1247/#1286)** : dé-curation délibérée de la couche crossLink — retrait des liens *siblings* qui restataient l'arbre taxonomique : la matrice passe de 1081 à 539, couverture 59,9 % → 34,6 %. Lecture détaillée en §7.
-",,,,,,,,51fb551982f9b339,,,,,,,,,,,,,,,
+**Dé-curation (05/09)** : retrait délibéré des liens *siblings* qui restataient l'arbre taxonomique : la matrice passe de 1081 à 539, couverture 59,9 % → 34,6 %. Lecture détaillée en §7.
+",,,,,,,,25d8582a00f27a9b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,24cbc6fd,markdown,fr,926ee5e5076d1c3f,"## 2. Loader CSV — pandas + utf-8-sig
 
 Le CSV upstream `Argumentum Fallacies - Taxonomy.csv` est encodé en **UTF-8 avec BOM** (3 octets `\xEF\xBB\xBF` en tête), signature Microsoft Excel. Pandas exige `encoding='utf-8-sig'` pour ignorer ce BOM.
@@ -6380,24 +6376,24 @@ total_cells = 8 * len(df)
 print()
 print(f'TOTAL cellules: {total} / {total_cells} = {100*total/total_cells:.2f}% de densité')
 print(f'Couverture par sophisme: {cov_nodes} / {len(df)} = {cov_pct:.1f}%')",,,,,,,,da97d1c1061bd8bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,ac9eec91,markdown,fr,f6d22771e884e9c4,"## 8. Pont OWL ↔ CSV — #763 a câblé crossLink + AIF dans l'OWL
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,ac9eec91,markdown,fr,ac56b49845c9a207,"## 8. Pont OWL ↔ CSV — les deux couches AIF concordent dans l'OWL, la couche crossLink n'y est plus émise
 
-Historiquement, PR-A (OWL) et PR-B (CSV) exposaient des substances **disjointes** : l'OWL ne portait ni les crossLink, ni les colonnes AIF attack. **#763 a réconcilié les deux** en régénérant l'OWL depuis le CSV avec les 3 couches câblées :
+Historiquement, la substance OWL et la substance CSV exposaient des contenus **disjoints** : l'OWL ne portait ni les crossLink, ni les colonnes AIF attack. **L'intégration ontologique les a réconciliés** en régénérant l'OWL depuis le CSV avec les 3 couches câblées :
 
-> Tableau **daté de #763** (juillet 2026) : la colonne « CSV (PR-B) » y décrit le CSV tel qu'il était alors. Les deux lignes AIF ont crû depuis ; leur valeur à l'épingle en tête du carnet est rappelée sous le tableau, et c'est elle que mesure la cellule exécutée de cette section.
+> Tableau **daté** (juillet 2026) : la colonne « CSV, état de l'époque » y décrit le CSV tel qu'il était alors. Les deux lignes AIF ont crû depuis ; leur valeur à l'épingle datée du carnet est rappelée sous le tableau, et c'est elle que mesure la cellule exécutée de cette section.
 
-| Aspect | OWL avant #763 | OWL après #763 | CSV (PR-B), état à #763 |
+| Aspect | OWL avant l'intégration | OWL après l'intégration | CSV, état de l'époque |
 |--------|----------------|----------------|------------|
 | Concepts | `NamedIndividual` (ancien générateur) | **1509 `owl:Class`** (+ 4 classes AIF) | 1408 sophismes |
 | Relations hiérarchiques | `ObjectPropertyAssertion` | **`AnnotationAssertion`** (narrower/broader/inScheme) | `path` / `decimal_path` |
 | CrossLink | **0 (absent)** | **1977 `AnnotationAssertion`** | couverture 59,9 % |
-| AIF attack (RA/I/CA-node) | **0 (absent)** | **93 `aifAttackType` + 93 `aifAttackedNode`** | 93 typés (→ **145** à l'épingle en tête) |
-| AIF SKOS (Walton) | 70 (`skos:*Match`) | **70** (`broadMatch` 57 / `closeMatch` 10 / `narrowMatch` 3) | 70 (→ **116** : `broadMatch` 64 / `closeMatch` 33 / `narrowMatch` 19 à l'épingle en tête) |
+| AIF attack (RA/I/CA-node) | **0 (absent)** | **93 `aifAttackType` + 93 `aifAttackedNode`** | 93 typés (→ **145** à l'épingle datée) |
+| AIF SKOS (Walton) | 70 (`skos:*Match`) | **70** (`broadMatch` 57 / `closeMatch` 10 / `narrowMatch` 3) | 70 (→ **116** : `broadMatch` 64 / `closeMatch` 33 / `narrowMatch` 19 à l'épingle datée) |
 
-**Note structurelle** : #763 a aussi changé l'idiome du générateur — les concepts sont désormais des `owl:Class` (et non des `owl:NamedIndividual`), et **toutes** les relations passent par `AnnotationAssertion` (l'`ObjectPropertyAssertion` a disparu, `SKOSHelper` d'OWLSharp étant cassé sur cette version). Le notebook AIF (PR-A) a été re-fondé en conséquence (traversée annotation-space). Le gap historique « OWL 10 976 vs CSV 1408 » venait de l'ancien générateur qui matérialisait chaque label multilingue comme un `NamedIndividual` distinct ; le nouveau générateur modélise **1 `owl:Class` par sophisme** avec ses labels en annotations.
+**Note structurelle** : l'intégration a aussi changé l'idiome du générateur — les concepts sont désormais des `owl:Class` (et non des `owl:NamedIndividual`), et **toutes** les relations passent par `AnnotationAssertion` (l'`ObjectPropertyAssertion` a disparu, `SKOSHelper` d'OWLSharp étant cassé sur cette version). Le carnet AIF a été re-fondé en conséquence (traversée annotation-space). Le gap historique « OWL 10 976 vs CSV 1408 » venait de l'ancien générateur qui matérialisait chaque label multilingue comme un `NamedIndividual` distinct ; le nouveau générateur modélise **1 `owl:Class` par sophisme** avec ses labels en annotations.
 
-**À l'épingle datée en tête** : AIF attack 93 → **145** (87 undercut / 53 undermine / 5 rebut) et AIF SKOS 70 → **116** (64 broadMatch / 33 closeMatch / 19 narrowMatch) — les deux couches AIF ont continué de croître, côté CSV comme côté OWL (vérifié en §8). La couche crossLink, elle, n'est **plus émise** dans l'OWL à cette épingle (0 `AnnotationAssertion`, contre 1 977 à l'époque de #763) : elle ne vit plus que dans le CSV.
-",,,,,,,,f6d22771e884e9c4,,,,,,,,,,,,,,,
+**À l'épingle datée** : AIF attack 93 → **145** (87 undercut / 53 undermine / 5 rebut) et AIF SKOS 70 → **116** (64 broadMatch / 33 closeMatch / 19 narrowMatch) — les deux couches AIF ont continué de croître, côté CSV comme côté OWL (vérifié en §8). La couche crossLink, elle, n'est **plus émise** dans l'OWL à cette épingle (0 `AnnotationAssertion`, contre 1 977 à l'époque de l'intégration) : elle ne vit plus que dans le CSV.
+",,,,,,,,ac56b49845c9a207,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,a87dac2e,code,fr,6b84f1ff0754addd,"import matplotlib.pyplot as plt
 
 # Substance mesuree sur l'etat date en tete : les valeurs CSV sont recalculees depuis df,
@@ -6545,9 +6541,10 @@ print(f'  État validé:     {etat_count:>4} / {len(df)} ({100*etat_count/len(df
 print(f'  Image:           {image_count:>4} / {len(df)} ({100*image_count/len(df):.1f}%)')
 print(f'  Latin named:     {latin_count:>4} / {len(df)} ({100*latin_count/len(df):.1f}%)')
 ",,,,,,,,f76b93fd968d9bcc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fdaba1d0,markdown,fr,5f5a0a7f825af76e,"## 11. Exercices (3 stubs #2161)
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fdaba1d0,markdown,fr,ad3ca4c88082f6ed,"## 11. Exercices (3 stubs #2161)
 
-Trois exercices pour explorer la substance PR-B. Chaque exercice = stub `print(""Exercice a completer"")` (règle C.1 : pas d'erreur volontaire). Le notebook s'exécute end-to-end même exercices non complétés.",,,,,,,,5f5a0a7f825af76e,,,,,,,,,,,,,,,
+Trois exercices pour explorer la substance CSV. Chaque exercice = stub `print(""Exercice a completer"")` (règle C.1 : pas d'erreur volontaire). Le notebook s'exécute end-to-end même exercices non complétés.
+",,,,,,,,ad3ca4c88082f6ed,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,95afa396,code,fr,12e54b45b74376ea,"# Exercice 1 : Distribution par famille × niveau (heatmap)
 #
 # TODO :
@@ -6589,24 +6586,25 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-C
 
 print(""Exercice a completer"")
 ",,,,,,,,41a6d78b09cf97d7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,92ac11fa,markdown,fr,2a75dff458855418,"## 12. Conclusion + Ponts
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,92ac11fa,markdown,fr,189b7e548626683d,"## 12. Conclusion + Ponts
 
-**Substance PR-B** : 1 408 sophismes canoniques, 8 langues (100% coverage), 8 familles, 9 niveaux, 116 AIF mappings vers 60 schemes Walton uniques, 539 entrées crossLink crossLink (couverture 34,6 % = 487/1 408 sophismes ; densité 4,8 % sur la matrice 8 × 1 408 = 11 264). Le CSV canonique Argumentum est la **source curée à la main** d'où l'OWL est probablement généré par script.
+**Substance CSV** : 1 408 sophismes canoniques, 8 langues (100% coverage), 8 familles, 9 niveaux, 116 AIF mappings vers 60 schemes Walton uniques, 539 entrées crossLink crossLink (couverture 34,6 % = 487/1 408 sophismes ; densité 4,8 % sur la matrice 8 × 1 408 = 11 264). Le CSV canonique Argumentum est la **source curée à la main** d'où l'OWL est probablement généré par script.
 
-**Complémentarité avec PR-A** :
-- PR-A expose la **substance OWL** (10 976 `NamedIndividual`, 4 183 `ObjectPropertyAssertion`, multilingue sparse).
-- PR-B expose la **substance CSV** (1 408 sophismes, multilingue dense, AIF mappings, crossLinks).
+**Complémentarité avec la substance OWL** :
+- La substance OWL **dans son état d'origine** expose 10 976 `NamedIndividual` et 4 183 `ObjectPropertyAssertion` (multilingue sparse) ; l'OWL re-fondé expose 1 `owl:Class` par sophisme (§8).
+- La substance CSV expose 1 408 sophismes, multilingue dense, AIF mappings, crossLinks.
 - Le pont se fait en §8 : le ratio × 7,8 = 1 `NamedIndividual` ≈ 7,8 labels multilingues, cohérent avec une projection RDF multi-labels par sophisme.
 
-**Pédagogie** : PR-B est **plus accessible** que PR-A pour un cours d'argumentation appliqué — le CSV est lisible par tableur, les crossLinks et AIF mappings sont directement enseignables. PR-A est plus technique (OWL, SKOS, RDF).
+**Pédagogie** : la substance CSV est **plus accessible** que la substance OWL pour un cours d'argumentation appliqué — le CSV est lisible par tableur, les crossLinks et AIF mappings sont directement enseignables. La substance OWL est plus technique (OWL, SKOS, RDF).
 
 **Ponts** :
-- **#4960** (EPIC ArgumentAnalysis v3) — PR-B ferme le volet substance CSV.
-- **#5721** (PR-A) — substance OWL complémentaire.
+- **#4960** (EPIC ArgumentAnalysis v3) — le volet substance CSV.
+- **#5721** — le volet substance OWL.
 - **Argumentum upstream** (`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`) — source canonique.
 - **Walton, Reed & Macagno 2008** — Argumentation Schemes (60 schemes référencés).
 
-**Limitations disclosed** : AIF mapping 5% (tâche d'annotation lourde), crossLink 34,6 % de couverture (487/1 408 sophismes ; 65 % restants sans relation transversale, cf. §10), `argumentum_virtues.owl` désormais publié upstream (docs/ontology/), `AIF_skosOther` toujours vide (réservé usage futur).",,,,,,,,2a75dff458855418,,,,,,,,,,,,,,,
+**Limitations disclosed** : AIF mapping 5% (tâche d'annotation lourde), crossLink 34,6 % de couverture (487/1 408 sophismes ; 65 % restants sans relation transversale, cf. §10), `argumentum_virtues.owl` désormais publié upstream (docs/ontology/), `AIF_skosOther` toujours vide (réservé usage futur).
+",,,,,,,,189b7e548626683d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb,ea1ca9ca,markdown,fr,1202e6d8eea6c00d,"# Argumentation graduée — sémantiques de classement (h-Categoriser & fardeau)
 
 Dans le notebook compagnon [`Argument_Analysis_Dung_AF_Semantics`](Argumentation-03-Dung-AF-Semantics-Python.ipynb),
@@ -14359,3 +14357,36 @@ La sortie de la cellule de la section 5 est `AF abstrait : 7 arguments, 9 attaqu
 - **Cas complexes** : ASPIC+ préserve l'info nécessaire pour des analyses fines (par exemple, 'pourquoi cet argument est-il OUT ?').
 
 **Conclusion honnête** : les deux représentations sont **complémentaires**, pas opposées. Le framework abstrait est un cas particulier d'ASPIC+ (avec une seule règle par argument). Le choix dépend du contexte d'application.",,,,,,,,148401e7548e8b51,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,bloc-fin-a-retenir,markdown,fr,2cde960522fbbac0,"## À retenir
+
+- **La substance CSV en un chiffre chacun** : 1 408 sophismes canoniques, 104 colonnes, 8 familles × 9 niveaux de taxonomie, 8 langues à 100 % de couverture.
+- **Les deux ponts nommés** : 116 mappings AIF vers 60 schemes Walton uniques, et 539 entrées crossLink — couverture 34.6 % (487/1 408 sophismes), densité 4.8 % de la matrice 8 × 1 408 = 11 264.
+- **Le pont OWL/CSV se vérifie par le ratio × 7.8** : un `NamedIndividual` de l'OWL d'origine ≈ 7.8 labels multilingues (10 976 individus, 4 183 `ObjectPropertyAssertion`) — cohérent avec une projection RDF multi-labels par sophisme.
+- **Le CSV est la source curée à la main** dont l'OWL est probablement généré par script — le CSV enseigne le contenu, l'OWL la forme technique.
+- **Les limitations sont énoncées** : AIF mapping à 5 % (tâche d'annotation lourde), crossLink à 34.6 % — 65 % de la taxonomie reste sans relation transversale.
+",,,,,,,,2cde960522fbbac0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,bloc-fin-verifiez,markdown,fr,23700badbb7ec3c7,"## Vérifiez votre compréhension
+
+1. Couverture 34.6 % contre densité 4.8 % : quelle est la différence ? *(réponse : la couverture compte la part de sophismes ayant au moins un crossLink (487/1 408) ; la densité compte la part de cellules remplies dans la matrice cible (539/11 264) — beaucoup de sophismes touchés, peu de liens chacun)*
+2. Pourquoi le ratio × 7.8 entre la substance OWL d'origine et la substance CSV est-il une preuve de cohérence ? *(réponse : si l'OWL est généré depuis le CSV, chaque sophisme doit projeter ses ~8 labels de langues en individus RDF — le ratio mesuré sur l'OWL d'origine correspond exactement à une projection multi-labels par sophisme)*
+3. Que signifie « 60 schemes Walton uniques » pour 116 mappings ? *(réponse : plusieurs sophismes mappent vers le même scheme — le mapping est plus fin côté source que côté cible, et l'exercice 3 demande cette couverture conditionnelle par famille)*
+4. Pourquoi la substance CSV est-elle présentée comme plus accessible pédagogique ? *(réponse : le CSV se lit au tableur, crossLinks et AIF mappings s'enseignent directement ; la substance OWL exige OWL, SKOS et RDF)*
+",,,,,,,,23700badbb7ec3c7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,f4cfe065,markdown,fr,e5f3eb1eb91b487c,"## Références et provenance
+
+Les repères de fabrication de ce carnet sont réunis ici, une seule fois — le corps du carnet n'en parle plus.
+
+- **EPIC** : [#4960](https://github.com/jsboige/CoursIA/issues/4960) — ArgumentAnalysis v3 (volet substance CSV) ; [#5721](https://github.com/jsboige/CoursIA/issues/5721) — volet substance OWL.
+- **Intégration ontologique des Fallacies** : juillet 2026 — ajout du mapping des 10 colonnes dans l'entité `Fallacy`, curation transverse de la couche `crossLink` (#141), puis dé-curation (#1247/#1286, 05/09).
+- **Épingle** : sous-module Argumentum `33f25e8` (2026-11-06) — l'état des données que ce carnet mesure : c'est l'épingle qu'impriment les sorties commitées (« Submodule Argumentum : 33f25e8 »). Le gitlink du sous-module dans l'arbre a avancé depuis (`b56a546a`, 2026-11-16) : le carnet n'a pas été re-exécuté à cette épingle, et les valeurs qu'il affiche restent celles de `33f25e8`.
+",,,,,,,,e5f3eb1eb91b487c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,bloc-fin-aller-plus-loin,markdown,fr,a03a6fb103d8cb7c,"## Pour aller plus loin
+
+- [Index de la sous-série ArgumentAnalysis](README.md) — la place de ce carnet dans le parcours.
+- [Index de la série SymbolicAI](../README.md) — le fil complet.
+
+- Le carnet [Onto-01-AIF-OWL2](./Argumentation-Onto-01-AIF-OWL2-Python.ipynb) — la substance OWL complémentaire, reliée ici par le ratio × 7.8.
+- Le carnet [Onto-03-Vertus-SKOS](./Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) — le pôle vertus et son pont `goodTenorOf` vers les mêmes schemes.
+- L'Epic [#4960](https://github.com/jsboige/CoursIA/issues/4960) (ArgumentAnalysis v3) — ce carnet y ferme le volet substance CSV ; [#5721](https://github.com/jsboige/CoursIA/issues/5721) porte le volet OWL.
+- **Référence** — Walton, Reed & Macagno (2008), *Argumentation Schemes* — les 60 schemes référencés par les mappings AIF.
+",,,,,,,,a03a6fb103d8cb7c,,,,,,,,,,,,,,,
