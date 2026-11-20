@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-ArgumentAnalysis
-pedagogical_count: 38
-breakdown: ArgumentAnalysis=38
-maturity: BETA=36, ALPHA=1, DRAFT=1
+pedagogical_count: 39
+breakdown: ArgumentAnalysis=39
+maturity: BETA=38, DRAFT=1
 -->
 
 [← SmartContracts](../SmartContracts/README.md) | [↑ SymbolicAI](../README.md) | [SymbolicLearning →](../SymbolicLearning/README.md)
@@ -66,6 +66,7 @@ Durée totale estimée : **~4-5 h** pour l'ensemble du parcours. Kernel Python 3
 | 08 | [Capstone](Argumentation-08-Capstone-Python.ipynb) | Comparer une baseline LLM seule au pipeline complet, puis vérifier que la synthèse cite les artefacts sur lesquels elle s'appuie | Licence | [Exécution, interface et synthèse](#autour-de-08--intégration-et-restitution) |
 | 09 | [Garde-fous AI Shield](Argumentation-09-Guardrails-AI-Shield-Python.ipynb) | Distinguer heuristique, filtre de sortie et validation par LLM ; choisir explicitement entre fail-open et fail-closed lorsqu'un garde-fou tombe en panne | Licence | — |
 | 10 | [Export privé](Argumentation-10-Privacy-Export-Python.ipynb) | Opacifier les identifiants, filtrer un état avant export et ne conserver que des motifs agrégés ; mesurer les limites de cette protection | Recherche | — |
+| 11 | [Debate & sécurité](Argumentation-11-Debate-Protocol-Safety-Python.ipynb) | Reformuler le protocole de debate (juge faible, deux agents) en révélation par saliencer ; formaliser le transcript en cadre Dung/ADF et mesurer les modes de défaillance (collusion, mind-hack) | Recherche | — |
 
 Le parcours numérique n'est pas une chaîne d'exécution rigide : les fondations de Toulmin, Dung et des dialogues éclairent le pipeline, tandis que le JTMS, les garde-fous et l'export privé peuvent être étudiés avec leurs propres prérequis. L'[ordre partiel détaillé](#ordre-partiel-et-prérequis) distingue ces dépendances.
 
@@ -299,7 +300,7 @@ ArgumentAnalysis/
 ├── *.ipynb                    # notebooks pédagogiques (pipeline agentique + Dung)
 ├── .env / .env.example        # Configuration
 ├── install_jdk_portable.py    # Installation JDK
-├── data/                      # Données (taxonomie sophismes)
+├── data/                      # Copies figées des taxonomies Argumentum (sophismes + vertus) + notices de licence
 ├── ext_tools/                 # Outils externes locaux (SPASS) — EProver est partagé : ../ext_tools/
 ├── jdk-17-portable/           # JDK (ignoré git)
 ├── libs/                      # JARs Tweety
@@ -334,7 +335,9 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
 | **[Lean](../Lean/)** | Preuves formelles | La formalisation logique des arguments (Agentic-2) suit le même paradigme que les tactiques Lean. La vérification de cohérence via SAT est analogue aux proof checkers. |
 | **[Tweety-9](../Tweety/Tweety-09-Preferences-Python.ipynb)** | Préférences et vote | L'analyse d'arguments de valeur croise les modèles de préférence et la théorie du choix social (GameTheory/game_theory_lean/SocialChoice/). |
 | **[SemanticWeb](../SemanticWeb/)** | Raisonneur OWL/SHACL | Pattern analogue pour la détection d'incohérence ; l'ontologie Argumentum partage les mêmes contraintes de parsing (`rdflib` et `owlready2` échouent sur l'OWL/XML fonctionnel ; `ObjectExactCardinality` bien formées) — le notebook `Onto-01-AIF-OWL2` charge `argumentum_fallacies.owl` via parseur regex dédié. |
-| **[Argumentum](../../../../Argumentum)** *(submodule, hors-repo)* | Ontologie source | L'ontologie `argumentum_fallacies.owl` (OWL2/XML) est l'export formel de la taxonomie utilisée par le détecteur de sophismes (`02`). Les 8 colonnes `crossLink_*` du CSV upstream complètent les relations OWL natives par des liens inter-noeuds (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo). |
+| **[Argumentum](Argumentum/)** *(sous-module, épingle active)* | Ontologie source | L'ontologie `argumentum_fallacies.owl` (OWL2/XML) est l'export formel de la taxonomie utilisée par le détecteur de sophismes (`02`). Les 8 colonnes `crossLink_*` du CSV upstream complètent les relations OWL natives par des liens inter-noeuds (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo). |
+
+> **Provenance des sources Argumentum** — deux canaux distincts. Le **sous-module** voisin [`Argumentum/`](Argumentum/) porte l'épingle active du dépôt parent (gitlink ; état épinglé lu par `git ls-tree HEAD MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum`). Les **copies figées** sous [`data/`](data/) — `argumentum_fallacies_taxonomy.csv` et `argumentum_virtues_taxonomy.csv`, avec `NOTICE` et `NOTICE-VIRTUES` — sont les entrées de rejeu des carnets : un carnet relit la copie versionnée, jamais le sous-module vivant. Les copies **ne suivent pas l'épingle automatiquement** : à l'épingle courante (mesuré au moment de cette note), la copie Vertus est identique au byte près au CSV épinglé, tandis que la copie Sophismes diffère du CSV épinglé — deux états de provenance distincts, suivis en [#24498](https://github.com/jsboige/CoursIA/issues/24498).
 
 [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt — l'analyse d'argumentation comme changement de représentation vers le vérifiable : du langage naturel aux sémantiques formelles qu'on peut interroger.
 
@@ -430,6 +433,7 @@ Cet ordre est dérivé des déclarations de prérequis et des liens de navigatio
 | `06c` | `05` pour Tweety, `06` pour le raisonnement non monotone | JVM Tweety et JPype, ni clé ni LLM |
 | `09` | Aucun | Bibliothèque standard Python, aucun appel réseau ni clé d'API |
 | `10` | Aucun ; la navigation le présente après `08f` | Bibliothèque standard Python, aucun réseau, clé ou JVM |
+| `11` | Aucun ; la navigation le présente après `10` | `torch` (CPU) et MNIST local, ni réseau ni clé ni JVM |
 
 ### Fondations théoriques et études associées
 
