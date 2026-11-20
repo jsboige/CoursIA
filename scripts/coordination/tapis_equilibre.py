@@ -137,9 +137,14 @@ def _decaler(tour: list, graine: str, cle: float) -> list:
     return tete + list(tour[TETE:])
 
 
-def ordre(etats_, servables, graine: str, maintenant: datetime) -> list:
+def ordre(etats_, servables, graine: str, maintenant: datetime,
+          rotation: bool = True) -> list:
     """Niveau croissant ; dans un niveau, la jamais visitee puis la plus
-    ancienne d'abord, les familles servies a tour de role."""
+    ancienne d'abord, les familles servies a tour de role.
+
+    `rotation=False` : l'ordre **fair**, sans rotation de tete par lane
+    (la fenetre qui avance decide de la rotation, pas le pool)."""
+
     conso = familles_consolidation(etats_)
     niveaux: dict[float, dict[int, list]] = {}
     for e in sorted(servables, key=lambda e: (e.visites_total > 0, e.cree_le,
@@ -151,5 +156,5 @@ def ordre(etats_, servables, graine: str, maintenant: datetime) -> list:
         while any(rang < len(lst) for lst in listes):
             rr.extend(lst[rang] for lst in listes if rang < len(lst))
             rang += 1
-        tour += _decaler(rr, graine, n)
+        tour += _decaler(rr, graine, n) if rotation else rr
     return tour

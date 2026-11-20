@@ -1,13 +1,16 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-18
+> REFERENCE — vivante — dernière révision 2026-11-20
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
 le 2026-11-14 pour tenir le plafond de lignes), `scripts/coordination/tapis_service.py` (la forme du service :
 commande, procédure de conteneur, lecture de secours, sortie texte), `scripts/coordination/tapis_origami.py`
-(parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179)
-et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
+(parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179),
+`scripts/coordination/tapis_leger.py` (la voie légère du tirage, #27225), `scripts/coordination/tapis_fenetre.py`
+(la fenêtre du pool classé et celle du fil, #27225), `scripts/coordination/gh_issues.py`
+(la lecture ciblée des issues nommées, #27225) et `scripts/coordination/gh_bulk.py` (seul module qui lance
+`gh` ou `git`).
 Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
 ## La commande
@@ -15,7 +18,12 @@ Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #2
 ```bash
 python scripts/coordination/tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json]
        [--jours 45] [--cache-s 300] [--graine S] [--lecture <dossier>]
+       [--voie {leger,lourd}]
 ```
+
+**La voie par défaut est légère** (classement sur métadonnées, qualification du grain servi sur son **fil
+complet**) depuis #27225 ; `--voie lourd` garde l'ancienne lecture du pool entier, et le rejeu `--lecture`
+y reste. Voir « La bascule » plus bas.
 
 Trois lectures groupées, quel que soit le nombre de candidats : les issues ouvertes (GraphQL, pages de 50,
 12 derniers commentaires par issue), les PRs ouvertes (REST, pages de 100) et **un** `git log origin/main`
@@ -192,7 +200,7 @@ L'ordre des servables :
 | `BONUS_CONSOLIDATION` | 0,4 visite | priorité de consolidation, à tout âge (label ou racine de famille) |
 | `BONUS_TOTAL_MAX` | 0,9 visite | borne du bonus total : une issue à 0 visite passe devant une issue à 1 visite |
 | `MARATHONS` | #26070, #26510 | racines des marathons de parité C# et Rust, hors équilibrage |
-| `TETE` | 24 | la tête de chaque niveau est décalée par lane |
+| `TETE` | 24 | la tête de chaque niveau est décalée par lane (voie **lourde**) ; en voie légère, c'est la **fenêtre** qui est décalée — voir « La fenêtre qui avance » |
 | `PART_CONTENEURS` | 0,25 | part au plus des conteneurs dans la liste (2 sur 8) ; ils la complètent s'il manque des grains |
 
 **Les deux priorités légères du 18/11.** `coordination/tapis_avantages.py` porte deux contributions petites
@@ -249,5 +257,156 @@ quelques-unes, ce sont deux lectures qui ne servent à rien.
 
 Chaque grain servi porte son **état et l'action à faire** (`qualifier` : lire l'issue, vérifier le claim
 vivant, le gel, le contenu déjà livré), jamais une exclusion silencieuse. La bascule du tirage par défaut
-reste la tranche suivante : elle suppose que la prise en charge qualifie le grain, ce qui est un changement
-de protocole autant que de code.
+est la tranche suivante (#27225) : elle suppose que la prise en charge qualifie le grain, ce qui est un
+changement de protocole autant que de code.
+
+## La bascule — le tirage par défaut est léger (#27225)
+
+Depuis #27225, `tapis_rapide.py` tire par défaut sur la **voie légère** : le classement porte sur les
+**métadonnées seules**, et la qualification du grain est **déplacée à la prise en charge**. La voie
+lourde reste accessible (`--voie lourd`) et le rejeu `--lecture` y reste — c'est la seule voie qui sait
+relire un dossier de lecture.
+
+```bash
+python scripts/coordination/tapis_rapide.py --lane <machine:workspace> [--voie {leger,lourd}]
+```
+
+| | voie lourde (`--voie lourd`) | voie légère (défaut) |
+| --- | --- | --- |
+| classement | lecture du pool entier (corps + 12 commentaires + PRs) | **métadonnées seules** (`gh_selection`), pagination complète, budget global de 60 s |
+| qualification | intégrée au classement | **à la prise en charge** : `scripts/coordination/tapis_prise_en_charge.py --issue N` |
+| règles d'écart | neuf, appliquées au classement | **les mêmes neuf**, rejouées sur le grain qualifié (`tapis_rapide.etats` inchangé) |
+| re-décision de fil (#27179) | passe au moment du service | **déplacée avec la qualification** : le fil complet est relu au moment de l'action |
+| parcage Origami | mesure sur le pool | mesure sur les **grains qualifiés** |
+
+**Mesures (pool de 441 issues, 18/11, même machine, même lane).**
+
+| Chemin | Lecture | Durée | Ce qu'il rend |
+| --- | --- | --- | --- |
+| lourd | corps + 12 commentaires de tout le pool (5,2 Mo) | 33,5 s | 11 grains, exclusions appliquées |
+| **léger (défaut)** | **métadonnées seules** (8,6 s à chaud, 15,4 s à froid) + citations (1,6 s) + PRs (4,7 s) | **17,9 s** | une file de `3 × grains`, exclusions à décider à l'action |
+| qualification (prise en charge) | le corps + le fil complet du grain pris | **1 à 2 appels par grain** | son verdict : servable, ou son code et son motif |
+
+**Pourquoi la qualification a quitté le tirage.** Les neuf écarts ne sont pas décidables sur des
+métadonnées : un gel, une livraison, un claim se lisent dans le corps ou dans le fil. Les décider pour
+**tout** le pool coûtait 22 s de lecture — plus cher que le chemin lourd lui-même (21,9 s pour 441
+issues). La première version de la bascule le faisait au tirage, par vagues de 12 candidats : mesure du
+2026-11-18, **48 candidats qualifiés, 47 écartés, 1 grain servi, 50 appels, 59 s** — une régression
+face aux 33,5 s du chemin lourd, sur le même besoin. Décider au moment de l'action coûte 1 à 2 appels par
+grain **effectivement pris**, et le tirage redevient le plus rapide des deux.
+
+**Le fil complet, jamais la fenêtre.** C'est la condition de la bascule : la lecture groupée ne voit que
+les **12 derniers** commentaires (`comments(last:12)`), et le marqueur qui écarte un grain peut être plus
+vieux que la fenêtre — constat de #27179, qui a produit l'organe `tapis_reverif`. La qualification lit
+donc **tous** les commentaires par l'organe REST déjà livré (`gh_snapshot`, pagination REST), jamais la
+fenêtre — et **seulement** pour les candidats que la fenêtre retient : un candidat dont la fenêtre *est*
+le fil complet (moins de 12 commentaires) n'appelle aucun appel supplémentaire. Elle dit, pour chaque
+grain, ce que la fenêtre a décidé : « fenêtre = fil complet (N commentaires) » ou « fenêtre de M
+commentaires sur N : aucun marqueur décisif hors fenêtre » (la relecture elle-même est déjà notée par
+l'organe de re-vérification : « fil complet relu (N commentaires) »).
+
+**La qualification est fail-CLOSED.** Une décision qui n'a pas pu être prise **refuse** le grain, avec son
+code et son motif — `FIL_ILLISIBLE` (fil illisible), `MUR_EPUISE` (mur de lectures REST atteint),
+`ECHEANCE` (échéance de qualification dépassée). Un grain dont la décision n'a pas été prise n'est pas
+servi : le temps d'action engage un grain dont le fil a été lu. Le rapport distingue ces refus des
+écarts de règle (`ecartees`) et les publie (`refus`).
+
+> La passe de rebut du chemin **lourd** (`tapis_reverif`) reste, elle, fail-OPEN : elle réduit les grains
+> servis à rebuter et ne remplace pas la vérification — `check_lane_claim.py` reste l'autorité avant
+> d'éditer. C'est la **qualification**, qui est le temps d'action, qui est fail-CLOSED.
+
+**Deux latences, jamais confondues.** La **latence du classement** est celle du tirage (`lecture.secondes`
+de son rapport, 17,9 s sur le pool de 441). Le **temps jusqu'au premier grain servable** est celui de
+l'action : `chrono.premier_servable_s` du rapport de `tapis_prise_en_charge.py`. Le rapport de qualification
+porte les deux, séparément.
+
+**Aucune exclusion n'est silencieuse.** Chaque écart porte son **code** et son **motif**, et il est
+affiché : `RELACHEE` (rendue par X il y a N j — **une fenêtre de 3 jours**, pas une disqualification :
+l'issue redevient servable après), `PLAFOND`, `LIVREE`, `COUVERTE`, `RECLAMEE`, `MERGEE`, `GEL`,
+`HORSFLOTTE`, `LABEL`, `ORIGAMI`. Au tirage, l'**état** affiché est celui du classement (visites,
+consolidation, conteneur) et l'**action** est explicite : `qualifier #N avant action (corps + fil
+complet, scripts/coordination/tapis_prise_en_charge.py) puis la servir`.
+
+**Un conteneur ne passe jamais devant un grain** (#26926) : la détection se fait sur les métadonnées
+(titre `[EPIC]`, labels `epic`/`umbrella`), donc elle ne peut pas attendre la lecture du corps.
+
+**Le mur global** (`--budget-s`, 60 s par défaut) couvre la lecture de sélection ; son dépassement lève
+`LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une liste à moitié. La qualification
+a son propre mur : dépassée, elle rend ce qu'elle a et le dit (`budget_epuise`).
+
+**Les organes du chemin de tirage sont dans la garde de fraîcheur.** `main_freshness.ORGANES` porte
+désormais le chemin complet du tirage (sélection, lecture ciblée, snapshot, rotation, fenêtre, avantages,
+qualification légère, re-vérif, parcage) : un tirage refuse (sortie `4`) si l'un d'eux diffère
+d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa première livraison.
+
+### Les modules
+
+| Module | Rôle |
+| --- | --- |
+| `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
+| `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
+| `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
+| `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
+| `scripts/coordination/tapis_qualification_fil.py` | la qualification **côté consommateur** : le fil complet déjà lu, rejoué sans appel réseau (`tapis_rapide.etats`) — extrait de `check_lane_claim.py` (#27242) |
+| `scripts/coordination/tapis_fil_complet.py` | le **fil complet** des seuls candidats retenus : lever le doute de la fenêtre (`gh_snapshot`, REST paginé) |
+| `scripts/coordination/gh_issues.py` | la lecture **ciblée** des issues nommées, aux champs demandés — une porte pour tous les lecteurs ciblés (`gh_selection.qualifier`) |
+| `scripts/coordination/gh_selection.py` | le classement sur métadonnées (pagination complète, budget global) |
+| `scripts/coordination/tapis_universel.py` | la rotation universelle sur les métadonnées |
+| `scripts/coordination/gh_snapshot.py` | le **fil complet** (REST paginé) — l'organe de la qualification |
+
+## La fenêtre qui avance sur le pool (#27225, suite du 18/11)
+
+Le classement classe le pool entier ; ce qu'il rend, c'est un **ordre**. La voie légère servait jusqu'ici
+la **tête** de cet ordre — et la tête est restée figée : mesure du 18/11 sur le pool réel de la lane
+(441 issues, 18 069 citations de merge, 114 issues jamais visitées), **12 tours consécutifs ne
+couvraient que 38 issues**, la tête était toujours la même, et les 114 issues jamais visitées n'étaient
+jamais proposées. La liste `3 × grains` écrasait le reste du pool.
+
+La correction n'est pas dans le classement mais dans ce qui en est **servi** : la **fenêtre**. `coordination/
+tapis_fenetre.py` sert un **bloc contigu** du pool classé, qui avance d'un bloc par tranche de 4 h, décalé
+par lane (le décalage qui faisait tourner la tête est désormais appliqué à la fenêtre, pas au pool : sinon
+la fenêtre ne peut pas être un bloc contigu — `tapis_equilibre.ordre(..., rotation=False)`).
+
+**Mesure du 18/11, pool réel de 440 issues (transport REST : le bucket GraphQL était en limite
+secondaire à l'heure de la mesure), 21 tranches de 4 h :**
+
+| | avant (tête figée) | après (fenêtre qui avance) |
+| --- | --- | --- |
+| issues couvertes sur **12 tours** (48 h) | **38** | **262** |
+| issues jamais visitées atteintes sur 12 tours | 0 | **104 / 113** |
+| issues couvertes sur 21 tours (84 h) | ~38 | **380 / 440** |
+| la tête bouge-t-elle ? | non | oui |
+| balayage complet du pool | jamais | **17 tranches (68 h)** |
+
+Le test `test_la_fenetre_avance_sur_le_pool` vérifie hors ligne la propriété que la mesure confirme : les
+blocs d'un tour sont **disjoints** (toute issue est proposée une fois avant qu'une autre le soit deux
+fois) et couvrent le pool entier. Sur le pool réel, les blocs sont *presque* disjoints : les bandes d'âge
+(`BANDS_AGE_J`) franchies entre deux tranches font glisser le classement, et le balayage complet prend
+17 tranches au lieu de 18.
+
+**Les issues reportées reviennent.** Une issue rendue par une autre lane (`RELACHEE`) est servable après sa
+fenêtre de 3 jours ; le balayage la ramène dans la file en 17 tranches (68 h), soit **après** l'expiration de
+la fenêtre : une issue reportée redevient servable *et* revient dans la file au tour suivant de son tour de
+pool. Le motif du `[RELEASED]` est lu par la qualification, qui l'affiche.
+
+## La qualification, côté consommateur (#27225, suite du 18/11)
+
+La qualification n'est pas seulement une étape que la lane *peut* faire : elle est **incontournable avant
+tout claim ou toute édition**. Le protocole impose `python scripts/check_lane_claim.py N` avant d'éditer
+un fichier pour un grain rattaché à une issue ; cette commande applique maintenant la **qualification**, par
+le **même organe** que le tirage (`tapis_rapide.etats`), sur le **fil complet** que la lecture a déjà rendu
+— sans appel réseau supplémentaire. Un grain écarté par la qualification n'est ni claimed ni édité : la
+commande rend `1` et nomme le code et le motif (`[QUALIFICATION] RELACHEE : rendue par X il y a 0,4 j
+(< 3 j) : lire son motif`).
+
+Sont rejouées les règles **décidables sur l'issue seule** : `HORSFLOTTE`, `LABEL`, `GEL`, `RELACHEE`.
+Les règles qui dépendent du **pool** (`MERGEE`, `COUVERTE`, `PLAFOND`) restent au tirage et à la
+qualification (`tapis_prise_en_charge.py`, qui lit les citations de merge et les PRs ouvertes) ; `RECLAMEE`
+et `LIVREE` sont déjà décidées par la grammaire du claim, en plus fin (override, scopes disjoints, état de
+la PR qui porte le `[DELIVERED]` — 14 tests de cette grammaire s'appuient sur ce comportement, mesuré le
+18/11 : les ajouter à la porte consumer en cassait 14).
+
+Le cas que la voie légère ne peut plus voir est précisément `RELACHEE` : elle classe sur métadonnées
+seules, elle ne voit donc plus les marqueurs du fil. La porte consumer les rejoue sur le fil complet.
+
+

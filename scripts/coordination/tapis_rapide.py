@@ -94,13 +94,22 @@ def parent_de(it: dict) -> int | None:
     return None
 
 
-def _conteneur_propre(it: dict) -> bool:
+def _conteneur_de(titre: str, labels: list[str]) -> bool:
     """Label EPIC/umbrella, ou titre `[EPIC...` qui ne nomme pas de parent
-    (un `[EPIC #N] Phase 2` est une tranche)."""
-    if any(lab.strip().lower() in LABELS_CONTENEUR for lab in it.get("labels") or []):
+    (un `[EPIC #N] Phase 2` est une tranche).
+
+    C'est la meme regle sur les **metadonnees seules** (titre + labels) que sur
+    le corps complet : la voie legere doit classer un conteneur comme un
+    conteneur, sans attendre la lecture de son corps."""
+    if any(lab.strip().lower() in LABELS_CONTENEUR for lab in labels):
         return True
-    titre = it.get("title") or ""
+    titre = titre or ""
     return titre.lstrip(" [").upper().startswith("EPIC") and not _TITRE_EPIC_RE.match(titre)
+
+
+def _conteneur_propre(it: dict) -> bool:
+    """Le conteneur, d'apres le titre et les labels de l'issue."""
+    return _conteneur_de(it.get("title") or "", list(it.get("labels") or []))
 
 
 def _ancetres(n: int, parents: dict[int, int | None]) -> tuple[list[int], int]:
@@ -302,14 +311,14 @@ def graine_defaut(lane: str, maintenant: datetime) -> str:
 
 
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
-             graine: str | None = None) -> list[Etat]:
+             graine: str | None = None, rotation: bool = True) -> list[Etat]:
     """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`) :
     le niveau le moins visite d'abord, la plus ancienne issue d'abord."""
     graine = graine or graine_defaut(lane, maintenant)
     servables = [e for e in etats_ if e.ecart is None]
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
     tour = tapis_equilibre.ordre(etats_, [e for e in servables if not e.mon_claim],
-                                 graine, maintenant)
+                                 graine, maintenant, rotation=rotation)
     quota, pris = max(1, int(grains * PART_CONTENEURS)), set()
     for e in tour:  # un conteneur ne passe que dans son quota
         if len(file) < grains and (not e.conteneur or quota > 0):
@@ -360,22 +369,42 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--allow-stale", action="store_true",
                    help="outre-passer la garde de fraicheur (main local en retard "
                         "ou module du tirage divergent d'origin/main)")
+    p.add_argument("--voie", choices=("leger", "lourd"), default="leger",
+                   help="leger (defaut) : classement sur metadonnees, "
+                        "qualification du grain servi sur son FIL COMPLET ; "
+                        "lourd : l'ancienne lecture du pool entier (rejeu "
+                        "--lecture inclus)")
     return p
 
 
-def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None, lire_fils: object = None) -> int:
-    args = _parser().parse_args(argv)
-    depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
-    # repli picker) sur un main local en retard ou un organe du tirage divergent
-    # d'origin/main ; un rejeu --lecture est hors ligne, pas de garde.
-    fraicheur = None
-    if not args.lecture:
-        from coordination import main_freshness
-        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale)
-        if fraicheur["refuse"]:
-            return 4  # pas le repli picker : il fait rejouer le meme incident
+def _voie_leger(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
+                fraicheur: dict | None) -> int:
+    """La voie LEGERE : classement sur metadonnees, qualification sur fil complet.
+
+    Le classement ne lit que les metadonnees du pool ; ce qui exige le corps et
+    le fil se decide sur le grain servi, sur son **fil complet** (organe REST
+    `gh_snapshot`), jamais sur la fenetre des 12 derniers commentaires.
+    """
+    from coordination import tapis_leger
+    maintenant = maintenant or datetime.now(UTC)
+    graine = args.graine or graine_defaut(args.lane, maintenant)
+    try:
+        r, code = tapis_leger.tirage(args.lane, args.grains, maintenant,
+                                     args.jours, graine, depot, run)
+    except gh_bulk.LectureIncomplete as exc:
+        print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
+              file=sys.stderr)
+        return 3
+    r["fraicheur"] = fraicheur
+    out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else \
+        tapis_leger.texte(r)
+    sys.stdout.buffer.write((out + "\n").encode("utf-8"))
+    return code
+
+
+def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
+                 fraicheur: dict | None, lire_fils: object) -> int:
+    """La voie LOURDE : la lecture du pool entier (rejeu --lecture inclus)."""
     try:
         if args.lecture:
             lecture = gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
@@ -422,6 +451,28 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else texte(r, source)
     sys.stdout.buffer.write((out + "\n").encode("utf-8"))
     return 0
+
+
+def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
+         maintenant: datetime | None = None, lire_fils: object = None) -> int:
+    args = _parser().parse_args(argv)
+    depot = Path(__file__).resolve().parents[2]
+    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
+    # repli picker) sur un main local en retard ou un organe du tirage divergent
+    # d'origin/main ; un rejeu --lecture est hors ligne, pas de garde.
+    fraicheur = None
+    if not args.lecture:
+        from coordination import main_freshness
+        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale)
+        if fraicheur["refuse"]:
+            return 4  # pas le repli picker : il fait rejouer le meme incident
+    # Bascule (#27225) : le tirage par defaut est leger -- classement sur
+    # metadonnees, qualification du grain servi sur son FIL COMPLET. Le rejeu
+    # --lecture est hors ligne : il reste sur la voie lourde, seule voie qui
+    # sait relire un dossier de lecture.
+    if args.voie == "leger" and not args.lecture:
+        return _voie_leger(args, depot, run, maintenant, fraicheur)
+    return _voie_lourde(args, depot, run, maintenant, fraicheur, lire_fils)
 
 
 if __name__ == "__main__":
