@@ -57,6 +57,29 @@ graines du bras `N` portent 64 en tete et 64 en queue. L'ecriture de
 l'artefact n'est donc pas symetrique entre les bras : les audits `head` seuls
 sont la comparaison homogene graine par graine.
 
+## Controle intra-famille 0.8B (`Qwen/Qwen3.5-0.8B`)
+
+| Artefact | Bras | Graines | Pas | `max_completion_length` declare |
+|---|---|---|---|---|
+| `ict25a_N_0.8B.json` | N | 0, 1, 7, 42 | 120 | 80 (`protocol`) |
+| `ict25a_Np_0.8B.json` | Np | 0, 1, 7, 42 | 120 | 80 (`protocol`) |
+| `ict25a_N_0.8B.rewardspy_audit.json` | N | 0, 1, 7, 42 | — | fenetres `head` et `tail` |
+| `ict25a_Np_0.8B.rewardspy_audit.json` | Np | 0, 1, 7, 42 | — | idem |
+| `ict25a_N_0.8B.rewardspy_audit_head.json` | N | 0, 1, 7, 42 | — | fenetre `head` seule |
+| `ict25a_Np_0.8B.rewardspy_audit_head.json` | Np | 0, 1, 7, 42 | — | idem |
+
+Controle intra-famille scelle du pre-enregistrement (sections 2 et 6) : meme
+famille que la campagne 2B, meme protocole (4 graines, 120 pas, cap 80), device
+GPU 2 de `myia-ai-01`, campagne du 2026-11-20. Contrairement aux artefacts 2B,
+l'ecriture est **symetrique** sur ce controle : chaque graine des deux bras
+porte 64 enregistrements en tete et 64 en queue -- la comparaison `both` y est
+homogene, en plus de la comparaison `head`.
+
+Le controle rejoint la conclusion de la campagne : les bras divergent deja a
+0.8B (fenetre `head` : `N` rend `PAS_DE_DOMINANCE` sur 3 graines sur 4, `Np`
+n'a aucun verdict dominant) -- la divergence constatee a 2B n'est pas
+emergente d'echelle.
+
 ## Ce que ces artefacts ne disent pas
 
 La révision exacte du producteur (`git_commit`) n'est pas enregistrée par cette
