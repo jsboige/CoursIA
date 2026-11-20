@@ -31,6 +31,8 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 11 | **Constellation ICT-38 / ICT-39 / ICT-40a** (extension #11690) | trois carnets chaînés — S-Lens self-location, composition de regards (lentilles), triangulation causale multi-instrument ; ICT-40b écarté : PR ouverte #26584 (ai-01:vllm) | **LU** (strand 11, 2026-11-17) |
 | 12 | **Strate 7 : ICT-46 / ICT-46b** (extension #11690) | deux carnets — l'organe exécutable de la strate 7 et son banc unique en travers du dépôt | **LU** (strand 12, 2026-11-17) |
 | 13 | **Trio Argumentation non numéroté** (extension #11690) | trois carnets — TruthMaintenance, QBFAcceptance, Capstone ; la strate 6 bouclée au ledger (BeliefTrajectories au strand 5) | **LU** (strand 13, 2026-11-18) |
+| 14 | **Axe douleur : ICT-47 / ICT-47b** (extension #11690) | deux carnets — la question pain-axis au contrat Gate 24 complet, et son pendant instrumental (quantification transparente, barrière d'échelle documentée avec preuve) | **LU** (strand 14, 2026-11-18) |
+| 15 | **Non numérotés résiduels : DehaeneF2 / Greffe5 / MUH-FibreTegmark** (extension #11690) | trois carnets — le self-model de Dehaene F2 au test de dissociation ABC pré-enregistré, l'attribution causale des greffes (verdict tri-état, garde-fou IV), et le témoin de lecture Tegmark (cinq gestes du texte sur bancs finis, grade C) | **LU** (strand 15, 2026-11-18) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -264,6 +266,53 @@ Les 15 carnets non couverts, recalculés :
 - **Non numérotés (3)** : `ICT-Dissociation-DehaeneF2-SelfReport`, `ICT-Greffe5-AttributionCausale`, `ICT-MUH-FibreTegmark`
 
 Le plus gros bloc restant devient l'**axe douleur 47/47b + la paire ICT-48** (quatre carnets en deux familles contiguës), puis les trois non numérotés résiduels ; les orphelins récents (`17c`, `36f`, `40b`) restent un carnet chacun. La strate 6 est désormais couverte 4/4 — trajectoire (strand 5), révision, acceptabilité, capstone.
+
+### Recompte du 2026-11-18 (après le strand 14)
+
+Même méthode, rejouée une fois le strand 14 posé (axe douleur : ICT-47 PainAxisDistillation, ICT-47b PainAxisInstrument).
+
+| Mesure | 2026-11-18 (s13) | 2026-11-18 (s14) |
+|---|---|---|
+| Carnets ICT sur `main` | 101 | **101** |
+| Sections de carnet au ledger | 86 | **88** |
+| Non couverts | 15 | **13** |
+| Taux de couverture | 85 % | **87 %** |
+
+Zéro fantôme, toujours : les 88 entrées du ledger correspondent toutes à un carnet présent au `ls-tree` (normalisation `-Python`). Le dénominateur n'a pas bougé ; le solde est `15 − 2 = 13`, et `86 + 2 = 88`.
+
+Les 13 carnets non couverts, recalculés :
+
+- **ICT-17c** TorchLens-Inspection (descendu dans `ICT-17-EpsilonMachine/`), **ICT-20** FeatureCatastrophes
+- **ICT-32** StratificationCausaleLife, **ICT-33** SoupCollisions, **ICT-34** BancRecollementLectures
+- **ICT-36f** FLens-SpecParam (arrivé le 16/11), **ICT-40b** AnalogCognitionWaves, **ICT-43** Calibration-MultiEchelle
+- **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
+- **Non numérotés (3)** : `ICT-Dissociation-DehaeneF2-SelfReport`, `ICT-Greffe5-AttributionCausale`, `ICT-MUH-FibreTegmark`
+
+Le plus gros bloc restant devient la **paire ICT-48** — deux carnets portant le même numéro, dont l'ambiguïté de chaînage est documentée au finding transverse 2 du strand 14 — puis les trois non numérotés résiduels ; les orphelins (`17c`, `32-34`, `36f`, `40b`, `43`) restent un carnet chacun.
+
+### Recompte du 2026-11-18 (après le strand 15)
+
+Même méthode, rejouée une fois le strand 15 posé (non numérotés résiduels : `ICT-Dissociation-DehaeneF2-SelfReport`, `ICT-Greffe5-AttributionCausale`, `ICT-MUH-FibreTegmark`).
+
+| Mesure | 2026-11-18 (s14) | 2026-11-18 (s15) |
+|---|---|---|
+| Carnets ICT sur `main` | 101 | **101** |
+| Sections de carnet au ledger | 88 | **91** |
+| Non couverts | 13 | **10** |
+| Taux de couverture | 87 % | **90 %** |
+
+Zéro fantôme, toujours : les 91 entrées du ledger correspondent toutes à un carnet présent au `ls-tree` (normalisation `-Python`). Le dénominateur n'a pas bougé ; le solde est `13 − 3 = 10`, et `88 + 3 = 91`.
+
+Les 10 carnets non couverts, recalculés :
+
+- **ICT-17c** TorchLens-Inspection (descendu dans `ICT-17-EpsilonMachine/`), **ICT-20** FeatureCatastrophes
+- **ICT-32** StratificationCausaleLife, **ICT-33** SoupCollisions, **ICT-34** BancRecollementLectures
+- **ICT-36f** FLens-SpecParam (arrivé le 16/11), **ICT-40b** AnalogCognitionWaves, **ICT-43** Calibration-MultiEchelle
+- **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
+
+La **priorité « six non numérotés » est épuisée** (trio Argumentation au strand 13, trois résiduels au strand 15). Le plus gros bloc restant redevient la **paire ICT-48**, désormais sous **occupation vive mesurée au tirage du strand 15** : `#26757` (po-2027) déplace Onset9B-Aggregate vers `PostTraining/` (PT_20/PT_21) **et retire aussi ICT-47b du périmètre ICT** (déjà couvert au strand 14), `#27095` (po-2024:CoursIA-2) touche WolframClasses-ThermoSignature — la couverture attend **la résolution de ces PRs**. Projection corrigée (fichiers de #26757 vérifiés) : si le Move merge, le recompte passe à **90/99** — le dénominateur perd ICT-47b et ICT-48 Onset9B, la couverture perd ICT-47b, et **un ICT-48 reste à traiter** (WolframClasses). Les orphelins (`17c`, `32-34`, `36f`, `40b`, `43`) restent un carnet chacun.
+
+Note (acceptance §6) : « couvert » au sens du recompte signifie **section présente au ledger** (lecture, verdict, action nommée) — l'attribution ou le retrait d'un numéro ICT reste un arbitrage distinct ; la couverture du ledger ne vaut pas attribution d'un numéro.
 
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
@@ -1436,3 +1485,78 @@ Les trois sont exécutés et datés : **toutes les cellules de code exécutées,
 3. **Les quirks conservés et enseignés sont la marque de la strate.** Negation-as-failure (un état inconnu satisfait la clause `out`), nogood non persistant (« perte documentée »), parseur QBF sans parenthèses (limite épinglée par test), borne n≤15 comme refus de mesurer. Chaque carnet nomme ce qu'il ne démontre pas ; le capstone va jusqu'à renverser sa propre note de conception par la mesure — l'honnêteté n'y est jamais une impression, elle est figée par témoins exécutables.
 
 4. **La leçon méthodologique du capstone déborde la strate.** L'invariance exacte de l'agrégat (S3) coexiste avec la perte du signal fin (S2) : un σ invariant sur permutations uniformes ne prouve pas que l'identité des arguments survit à l'encodage. La recommandation du carnet — échantillonnage non uniforme, encodage lisible par la TPM — vaut pour toute la série ICT quand elle mesure des agrégats sur des permutations ; c'est un candidat transversal pour l'arbitrage, pas seulement un chantier du palier 20.
+
+## Strand 14 — Axe douleur : ICT-47 / ICT-47b (extension #11690)
+
+Le strand 13 fermait la strate 6 ; celui-ci prend le plus gros bloc restant du recompte s13 : l'**axe douleur**, un diptyque exécuté le même jour (2026-10-08 — 47 en 3 min 44 s, 47b en 10 min 45 s, papermill), zéro erreur, stubs C.1 conformes (`pass` et `result = None  # TODO etudiant`). Le premier carnet adapte la question du papier Pain Axis (Tagliabue, Dung & Berg, arXiv 2609.16247) à l'échelle du substrat de la série ; le second mesure l'**instrument** qui permettrait de pousser l'échelle — et la barrière qui l'empêche.
+
+### `ICT-47-PainAxisDistillation-Python.ipynb` (47) — 33 md / 23 code, 23/23 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | « La douleur » : direction linéaire unique du résiduel, ou conglomérat ne partageant que la détresse générale ? **Adaptation de la question** (pas réplique terme à terme — l'écart est audité en Limites) du papier au substrat de la série. Epic DEEP #18746, sous-issue #18808, statut épistémique **Dissociation partielle, grade INTERNAL**, trois claims vers la matrice de dissociations. |
+| **Contenu réel** | Neuf sections : corpus 9 groupes × 24 énoncés **appariés en thème** (le mot *pain* n'y figure jamais — voulu) ; capture de fin d'énoncé à 4 profondeurs, padding gauche justifié ; directions difference-in-means + cosinus inter-catégories ; sondes `ict.probes` (MM/LR) et matrice de transfert ; **retrait de la variance partagée** `D_shared` puis matrice de dissociations 4D ; **contrat causal Gate 24 complet** via `ict.causal_engine` (cible 64 dims, aléatoire apparié norme+fréquence, sham, doses symétriques, Holm, dommage hors cible) ; steering vivant par hook additif ; banc de choix d'action (éviter/endurer, 8 scénarios) ; **split-half autonome** (`SPLIT_SEED` injecté papermill, reconstruction garantie par ordre des cellules) ; regard 9B + point 14B par artefact committé. 3 exercices stubs C.1. Frontière éthique explicite (contrepoint REALITI en veille #18974, versant « chambre de torture » interdit). |
+| **Résultat** | Unité inter-douleur : cosinus moyen 0,648 au bloc 12 (min 0,535), cluster psychologique/sociale/morale serré (0,76-0,83), **cognitive la plus distante**. **Le contre-exemple central : pain~valence MONTE au retrait (0,76 → 0,94)** alors que pain⊥fear tombe 0,71 → 0,31 et pain⊥sadness 0,76 → 0,45 ; matrice 4D : diagonale 0,86 / hors-diagonale 0,67 / écart 0,19. Contrat causal : cible +0,18 / aléatoire +0,00 / sham +0,00 / dommage hors cible 0,0000 / **Holm p = 0,000 sur les deux comparaisons** (appariement élargi ±50 % → ±90 %, diagnostic nommé : dim 1684 sans candidate). Steering vivant : +0,031 nat sur la seule famille pain, voisins qui descendent. Banc d'action : +D −0,05 / −D +0,09 / random 0,00 — **le signe de la dose retourne le biais**, 8 scénarios concordants. Held-out 2B : cible +0,19 contre témoin +0,01 (~19×). Multi-partitions externe (#1454, 3 graines × 2 orientations) : cible moyenne +3,44 (σ 0,77), minimum +2,63 = **8× le plus fort témoin** (+0,32). Échelle : pain~valence **0,94 / 0,93 / 0,93** (2B / 9B / 14B-artefact, le 14B changeant de famille — réserve répétée en Limites). |
+| **Critique** | Le carnet surdocumente ses nuances — marge au repos ≠ sham (−28,41 démonté), amplitude ×1,7 selon la moitié, repli d'appariement sur 3/6 partitions, section 6 pas strictement hors-échantillon, 6 partitions ≠ validation croisée. Seule asymétrie réelle : la navigation (finding transverse 2). |
+| **Verdict + action** | **SOLIDE**. Verdict borné honnête : axes peur et tristesse défendables, **indépendance douleur/valence non résolue à l'échelle de la série** — les deux lectures (échelle supérieure, ou axe valence = négativité générale) restent ouvertes. Action d'arbitrage : l'ambiguïté de chaînage ICT-48 (finding transverse 2). |
+
+### `ICT-47b-PainAxisInstrument-Python.ipynb` (47b) — 16 md / 9 code, 9/9 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Le sibling instrumental : la quantification (int8, 4-bit NF4) **change-t-elle la géométrie** des directions émotionnelles ? Et la barrière qui empêche le point d'échelle supérieur — **mesurée avec preuve, pas contournée**. Statut épistémique : **sans verdict à ce jour** (aucune ligne de la matrice ; les verdicts de la famille sont ancrés sur 47). |
+| **Contenu réel** | Corpus **hérité verbatim** d'ICT-47 (condition de comparabilité nommée : « un corpus réécrit mesurerait un autre objet »). `load_substrate` = porte unique (padding gauche documenté, `load_quiet` filtrant le docstring-print de transformers — la garde étant le contrôle de reproduction). Plan factorisé 2 échelles × 3 instruments. Fenêtre en profondeur 9B lue **au même passage** que la mesure principale (aucun rechargement, aucun drift de harnais possible). 3 exercices stubs C.1. |
+| **Résultat** | **Contrôle de reproduction d'abord** : bf16 re-mesuré contre le publié — |max| **0,003** (2B) / **0,010** (9B), sur machine et kernel différents (torch 2.6.0+cu124 contre 2.8.0+cu126) : la chaîne de mesure est validée avant toute comparaison. **Effet de l'instrument** : int8 |max| 0,013, NF4 0,042 (le pire étant l'unité inter-douleur 2B) — **transparence au centième**, résultat transversal (mesurer quantifié sans requalifier chaque comparaison, à condition de publier la référence bf16). Fenêtre en profondeur : pain~valence 0,886-0,934 à travers 4 couches (stable) ; sonde pain_all 0,50-0,73 selon la graine (σ 0,098) — pourquoi la section mesure sur cosinus et non accuracy. **Barrière avec preuve** : 27B bf16 ne charge pas, 27B int8 `ValueError`, 27B NF4 **SIGSEGV ×3 configs reproductible à froid**, Qwen2.5-14B-Instruct bf16 SIGSEGV, 9B charge en 22 s ; deux hypothèses écartées par la mesure (« la quantification plante » non, « l'offload CPU plante » non) ; frontière = **taille du substrat** (≤9B charge, ≥14B plante), mécanisme racine non établi, machine po-2023 nommée — la barrière n'est **pas recopiable** comme propriété des substrats. |
+| **Critique** | Rien de fond. Le carnet démontre que **le point qui trancherait la question d'échelle (un Qwen3.5-14B ou plus, dans la famille) est exactement celui que la machine refuse de charger** — le point 14B existant change de famille en même temps que de taille, et le carnet le redit. |
+| **Verdict + action** | **SOLIDE**. Documente au lieu de contourner, et rend un résultat transversal réutilisable par toute la série. Action d'arbitrage : le point d'échelle dans-la-famille exige une machine plus large — décision de routage, pas de correction. |
+
+### Findings transverses du strand 14 (pour l'arbitrage user)
+
+1. **Un diptyque question/instrument, pas deux carnets voisins.** 47 borne la question (pain~valence non dissocié, stable 0,94/0,93/0,93) ; 47b mesure ce qui autoriserait à pousser l'échelle (instrument transparent au centième) et ce qui l'empêche (barrière ≥14B avec preuve). La question d'échelle reste ouverte **précisément parce que l'instrument est prêt et la machine non** — l'un sans l'autre serait incomplet. Le couple illustre « l'instrument propose, le moteur tranche » (#15475) sur son versant GPU.
+
+2. **Deux carnets portent le numéro 48 — le chaînage d'ICT-47 est ambigu.** L'en-tête d'ICT-47 nomme « 48 — Onset/SAE Qwen3.5-9B-Base agregat 4 graines » et pointe `ICT-48-Onset9B-Aggregate` ; son pied « Suivant » et son « Pour aller plus loin » pointent `ICT-48-WolframClasses-ThermoSignature` (« Origami Wolfram, pli 2 ») ; ICT-47b renvoie vers Onset9B. Les deux fichiers existent réellement : c'est une **ambiguïté de numérotation**, pas une typo. Trancher la succession (ou renuméroter) appartient à l'arbitrage user — la fournée markdown ne peut pas la corriger.
+
+3. **Le contrôle de reproduction avant l'instrument — candidat transversal.** 47b ne compare int8/NF4 à la référence publiée qu'après avoir **re-mesuré bf16 ailleurs** (0,003/0,010) : sans cette jambe, un écart d'instrument serait indiscernable d'un écart de harnais. Même geste que l'exécution différentielle des strands 12-13 (fidélité prouvée avant l'usage) — la série gagne à en faire un standard écrit pour toute mesure multi-machine.
+
+4. **Les barrières machine se documentent avec preuve, elles ne se recopient pas.** Le tableau SIGSEGV reproductible de 47b, avec ses deux hypothèses écartées par la mesure, est la forme honnête d'un « ne charge pas » : la barrière est po-2023-spécifique et le carnet le dit lui-même. Toute lane qui voudrait le point 14B-dans-la-famille doit apporter **sa propre machine** — pas hériter du verdict.
+
+## Strand 15 — Non numérotés résiduels : DehaeneF2 / Greffe5 / MUH-FibreTegmark (extension #11690)
+
+Troisième et dernier volet de la priorité « six non numérotés » (trio Argumentation au strand 13, ces trois carnets au strand 15). Tous trois exécutés par papermill — DehaeneF2 le 2026-10-30 (31,7 s), Greffe5 le 2026-11-04 (3,0 s), MUH-FibreTegmark le 2026-10-26 (6,6 s) — zéro erreur, stubs C.1 conformes. Lecture seule, convention des strands : aucun `.ipynb` modifié.
+
+### `ICT-Dissociation-DehaeneF2-SelfReport.ipynb` (28) — 19 md / 9 code, 9/9 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | [#19343](https://github.com/jsboige/CoursIA/issues/19343) T3 Dehaene F2, volet **direct** (le volet proxy livré par #19345) : le self-model survit-il au vidage du store étendu ? F2 (GNW) prédit `score_A >> score_B` ; falsification pré-enregistrée `|A−B| < 2σ_B` sur les graines {0, 1, 7, 42} (#19225), n_shuffles 50 (#19335), substrat synthétique numpy-only. |
+| **Contenu réel** | 9 sections, famille dissociations (case 3). Trois régimes : A store plein / B **lésion** (store vidé du monde ET du modèle, la lettre de l'issue) / C self-model ablaté (contrôle de dégénérescence, 0 exact par construction). Score **symétrique apparié** (différence de différences — les biais de cadre s'annulent). Appariement spectral exact des deux agents (écart 8,9e-16, identités distinctes ‖ΔA‖ = 0,297) ; vérification de manipulation : canal G·h porte 0,426 de la variance (vider n'est pas cosmétique), cycle d'ignition 0,136. |
+| **Résultat** | A +0,384 ± 0,308 vs B +0,095 ± 0,037 : delta **+0,289** contre seuil pré-enregistré 2σ_B = 0,073, **4 graines sur 4** dans le sens prédit, p < 0,02 partout, C = 0,000 partout. **Verdict `F2_CONFIRMED_EXTENDED_REQUIRED`.** Réserves mesurées : B ne tombe pas à zéro (persistance proprioceptive), σ_A = 8× σ_B (le verdict tient au seuil pré-enregistré, pas à 2σ_A), modèle jouet (volet traces réelles GPU-only). Deux faux départs de protocole documentés (contrôle C à −0,99 → confond d'amplitude ; appariement spectral absent), tous deux attrapés par le contrôle C. |
+| **Critique** | Les deux lectures de la persistance B (redondance vs deux composantes) restent ouvertes, avec les mesures discriminantes proposées en exercices 1-2 ; la dette théorique est tenue « question ouverte », volontairement pas issue-ifiée avant que l'exercice 1 tranche. |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### `ICT-Greffe5-AttributionCausale.ipynb` (25) — 15 md / 10 code, 10/10 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | [#13903](https://github.com/jsboige/CoursIA/issues/13903) (Epic #4588) : la question causale que Greffe 2 ne posait pas — `+raft` est-il la cause de l'élargissement ou un artefact de mesure ? Consomme `ict.causal_attribution` (greffe 1, PR #13916) ; la relaxation STRIPS est consommée, jamais re-dérivée. |
+| **Contenu réel** | 3 estimateurs (naïf / backdoor, Pearl 2009 ch. 3.3 / IV, Angrist-Krueger 2001) et verdict tri-état AGREEMENT / DÉSACCORD / NON_IDENTIFIABLE (analogue ICT-12e). Design 2×2 orthogonal : 4 vocabulaires (A_t, +discard, +teleport, les deux) × 30 graines = 120 observations, 30 par cellule, Cov(X,Z) = 0 par construction. Grillage 3×3, X = teleport (analogue +raft), Z = discard, Y = \|F_B\|. |
+| **Résultat** | \|F\| moyen 6,23 → 9,23 avec teleport (+48 %) ; taux de but **plat à 0,233** sur les quatre vocabulaires (7/30 graines — dissociation plus d'états / même taux de but). Balayage budget : discard inerte à B = 2 (delta +0,000, 0/30) mais actif à B = 3 (+0,233) et B = 4 (+0,933) — l'inertie est une propriété du **budget**, pas du discard. ATE naïf = backdoor = **+3,0000** (AGREEMENT tol 0,10 — le design orthogonal garantit que le backdoor ne corrige rien : il n'y a rien à corriger) ; IV **NON_IDENTIFIABLE** (\|Cov(X,Z)\| = 0 < 5/√n = 0,456) — la méthode refuse de fabriquer un nombre, résultat légitime. |
+| **Critique** | Le caractère instrumental est assumé : statut « sans verdict à ce jour » (la matrice des dissociations ne porte aucune ligne pour ce carnet) ; l'exercice 3 (adaptateurs cross-engine `ict.bridges`) est gated post-merge #13921 et le dit dans sa propre sortie. |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### `ICT-MUH-FibreTegmark.ipynb` (30) — 19 md / 11 code, 11/11 exécutées
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | [#16759](https://github.com/jsboige/CoursIA/issues/16759) (arc C de #16741) : le texte où Tegmark cite Schmidhuber (p. 12 « an entire ensemble is often much simpler than one of its members », double référence [13, 17] aux p. 18 et 20), pris au sérieux sur bancs finis. **Témoin de lecture grade C documentaire, PAS une fibre** (critère #16759 : une fibre s'acquiert par un organe, pas par une citation ; la voie organe = #16753, Annexe A en Lean, ouverte). |
+| **Contenu réel** | 7 sections, cinq gestes du texte chacun sur son banc : bird/frog/consensus (Markov 4 états, NLL 0,6245 → 0,5201 vs plancher H = 0,5032, model_bits KT qui monte en parallèle) ; baggage (3 labellisations : brut 99-131 octets, canonique 85 partout, écart nul) ; ensemble-plus-simple-qu'un-membre (cycles p = 3..7 : gain 39,3 % → 82,8 %, index ceil(log₂N) 1 → 10 bits, comparaison conditionnelle à p) ; anti-anything-goes (256 règles élémentaires via l'**organe** `ict/wolfram_step.py` : 64 miroir 25 %, 16 totalistiques 6,25 %, description 8 → 6 → 4 bits) ; jumeaux premiers Éq. 8-9 (précision de décidabilité : T est Σ₁, semi-décidé, mais décidable **non constructivement** dans les deux branches ; P vérifié à 10⁵ : 1224 jumeaux, 314 divisions max sous la borne 316,2 ; Goldbach 4999 instances, universel non couvert). Conclusion en table 4 colonnes dont « ce que le banc NE prouve PAS ». |
+| **Résultat** | Pas de verdict — c'est le protocole même du témoin de lecture : chaque section porte son « ce que le banc ne dit pas », le statut grade C est déclaré trois fois (tête, §1.2, conclusion). Consomme trois organes (`ict.compression`, `ict.mdl`, `ict.wolfram_step`) sans ré-derivation, note organ-first explicite dans la cellule Wolfram. |
+| **Critique** | Rien à signaler — la discipline anti-analogie est le sujet du carnet ; l'écart résiduel du banc bird/frog (~0,017 bit) est rapporté non-attribué avec ses deux causes candidates (lissage +1/2, réalisation finie de l'échantillon test). |
+| **Verdict / action** | **SOLIDE** — rien dû avant arbitrage. |
+
+### Findings transverses du strand 15 (pour l'arbitrage user)
+
+1. **L'instrument qui dit non est le standard non écrit de la série.** Les trois carnets le déclinent : contrôle C de dégénérescence qui invalide deux faux départs (DehaeneF2), garde-fou IV qui rend NON_IDENTIFIABLE plutôt que de fabriquer un nombre (Greffe5), colonne systématique « ce que le banc NE prouve PAS » (MUH). À distinguer du finding 3 du strand 14 (contrôle de reproduction **avant** l'usage) : ici c'est le **refus de conclure**, là-bas la preuve de fidélité.
+2. **Le bloc Statut épistémique en tête de carnet discrimine trois régimes** : verdict pré-enregistré (DehaeneF2), « sans verdict à ce jour » parce que la matrice des dissociations n'a pas de ligne pour lui (Greffe5), « témoin de lecture grade C » jamais candidat verdict (MUH). La typographie est tenue sur les trois — un lecteur peut trier les carnets de la série sur ce seul bloc.
+3. **La nuance mesurée, non masquée, reste la règle** : persistance du régime B et σ_A = 8× σ_B rapportés par DehaeneF2 alors même que le verdict principal est positif ; taux de but plat documenté par Greffe5 comme la *raison* du choix d'outcome ; écart résiduel non attribué par MUH. Le standard « le dire fait partie du résultat » (strand 14) se confirme sur trois carnets d'intentions très différentes.
+4. **La paire ICT-48 est sous occupation vive — sa couverture attend la résolution des PRs.** Mesuré au tirage de ce strand : #26757 (po-2027) **déplace** Onset9B-Aggregate vers `PostTraining/` et retire aussi ICT-47b du périmètre (déjà couvert au strand 14), #27095 (po-2024:CoursIA-2) touche WolframClasses-ThermoSignature. Projection corrigée (fichiers de #26757 vérifiés) : si le Move merge, le recompte passe à **90/99** et **un ICT-48 reste à traiter** (WolframClasses) — lire WolframClasses avant la résolution de #27095 documenterait un carnet en cours de révision, mais la paire ne sort pas entière du périmètre.
