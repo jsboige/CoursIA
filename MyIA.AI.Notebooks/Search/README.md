@@ -4,9 +4,9 @@ pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 173
-breakdown: Part1-Foundations=55, Part3-Cas-pratiques=52, Part4-Metaheuristics=35, Part2-CSP=20, Part5-Frontieres=11
-maturity: BETA=170, ALPHA=3
+pedagogical_count: 179
+breakdown: Part1-Foundations=57, Part3-Cas-pratiques=53, Part4-Metaheuristics=35, Part2-CSP=20, Part5-Frontieres=14
+maturity: BETA=176, ALPHA=3
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
