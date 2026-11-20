@@ -14,7 +14,7 @@ project:
     - "docs/parcours.qmd"
     - "COURSE_CATALOG.generated.md"
     # README.md rendus en HTML (Axe C #4211). Liste explicite
-    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
+    # (regeneree par scripts/ci/regen_quarto_render.py) car Quarto 1.7
     # n'etend pas le glob **/README.md sur les sous-repertoires.
     # Archives et libs vendored EXCLUES (history interne, non pedagogique).
     - "README.md"
@@ -1316,6 +1316,8 @@ project:
     - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb"
     - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb"
     - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_18_laya_ablation_distillation.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb"
+    - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb"
     - "MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb"
     - "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/01-Hands-On-Grounding.ipynb"
     - "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb"
@@ -1532,8 +1534,6 @@ project:
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46b-BancUnique-Strate7-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb"
-    - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47b-PainAxisInstrument-Python.ipynb"
-    - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb"

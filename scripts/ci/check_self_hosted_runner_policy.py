@@ -211,6 +211,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "linux-self-hosted-tests.yml",
     "banner-guard.yml",
     "prose-counts-guard.yml",
+    # prose-output-numbers-sweep.yml (#27231) : balayage cron hebdomadaire
+    #   (schedule + workflow_dispatch) pur-Python stdlib, exit 0 PAR
+    #   CONSTRUCTION, GITHUB_TOKEN absent (contents: read seul). Aucun
+    #   trigger pull_request -> aucune garde same-repo requise (tranche 4
+    #   #14283, meme profil que grain-orphans-sweep). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "prose-output-numbers-sweep.yml",
     "notebook-interp-positioning.yml",
     "cell-order-gate.yml",
     "pip-leak-guard.yml",
