@@ -1,6 +1,6 @@
 # Cluster CoursIA — machines, lanes, capacités
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-16
 
 Référence durable sur la structure du cluster qui porte les grains CoursIA : les machines, les lanes et leurs rôles, les GPU, et les barrières de capacité qui contraignent un dispatch. Les **règles de coordination** vivent dans [CLAUDE.md](../../CLAUDE.md) §A et dans [tricephale-circulation.md](tricephale-circulation.md) ; le **calendrier d'enseignement** dans [teaching-context.md](teaching-context.md).
 
@@ -77,7 +77,7 @@ Deux garde-fous, l'un et l'autre mesurés à l'usage :
 
 Il n'y a **aucune table de spécialités** dans cette page, et c'est délibéré. Une table « tel sujet va à telle lane » contredit le tirage sur le pool entier ([proactive-coordination.md](../../.claude/rules/proactive-coordination.md), R5), et la dernière qui figurait ici n'était plus appliquée par aucune lane.
 
-Le grain d'une lane vient du **tapis** (`python scripts/pick_idle_grain.py --belt --lane <machine:workspace>`) ou d'une file composée par le coordinateur. Ce qui contraint une lane, ce sont des **barrières de capacité**, et elles seules :
+Le grain d'une lane vient du **tapis** (`python scripts/coordination/tapis_rapide.py --lane <machine:workspace>`, [tapis-rapide.md](tapis-rapide.md)) ou d'une file composée par le coordinateur. Ce qui contraint une lane, ce sont des **barrières de capacité**, et elles seules :
 
 - **GPU** : la VRAM requise, et la disponibilité au ledger ;
 - **vision** : la capacité du modèle qui anime la lane (section suivante) ;
