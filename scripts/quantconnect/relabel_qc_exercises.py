@@ -4,9 +4,9 @@
 Same approach as relabel_exercises.py but for QC notebooks.
 
 Usage:
-    python scripts/relabel_qc_exercises.py --dry-run
-    python scripts/relabel_qc_exercises.py
-    python scripts/relabel_qc_exercises.py --verify
+    python scripts/quantconnect/relabel_qc_exercises.py --dry-run
+    python scripts/quantconnect/relabel_qc_exercises.py
+    python scripts/quantconnect/relabel_qc_exercises.py --verify
 """
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ import re
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parent.parent.parent
 
 # Only truly scrambled notebooks (excluding per-section duplicates [1,1,2,2,3,3])
 RELABEL_MAP = {
