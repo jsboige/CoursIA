@@ -19,11 +19,21 @@ n'est pas construit est **nomme** dans l'attestation, jamais silent.
 Ce qui est exclu, et pourquoi
 -----------------------------
 Un module **agregateur** (`Conway.lean`, `Conway/Life.lean`) n'importe que des
-modules, sans declarer de theorme : c'est un hub de re-export. Il est
+modules, sans porter la moindre commande : c'est un hub de re-export. Il est
 dependant de tout ce qu'il importe, mais le construire ne prouverait rien de
 plus que construire ses imports -- et cela ramenerait le build du lac
 entier. Les agregateurs sont donc **ecartes** de l'ensemble des dependants,
 et **listes** dans le rendu : la borne est visible, pas silencieuse.
+
+Un fichier qui porte une **commande** (`attribute`, `notation`, `macro`,
+`syntax`, `elab`, `deriving instance`, `#check`, `#eval`, `open ... in`) n'est
+**pas** un agregateur (#26966) : ces commandes cassent des que l'import
+qu'elles citent est renomme ou retire, donc un tel fichier doit etre
+construit.
+
+Et un fichier **non `.lean`** du lake touche (`lakefile.lean`,
+`lakefile.toml`) force le **repli sur le lac entier** (#26966) : il change la
+compilation de modules que le build cible ne construit pas.
 
 La resolution est **pure** (lecture de fichiers) et **testee** : elle ne
 depend d'aucun `lake`, d'aucun reseau, d'aucun etat de la machine.
@@ -46,12 +56,18 @@ IMPORT_RE = re.compile(
     re.MULTILINE,
 )
 
-#: Mots-cles de declaration Lean. Un fichier qui n'en porte AUCUN est un
-#: **agregateur** : un hub de re-export, pas un module de contenu.
-DECLARATION_RE = re.compile(
-    r"^[ \t]*(?:private[ \t]+|protected[ \t]+|noncomputable[ \t]+|partial[ \t]+)*"
-    r"(?:theorem|lemma|def|abbrev|instance|structure|inductive|class|example|axiom|opaque)\b",
-    re.MULTILINE,
+#: Lignes **compatibles** avec un agregateur : un hub de re-export. Tout le
+#: reste est du contenu et doit etre construit (#26966).
+#:
+#: `import` importe ; `namespace` / `end` ouvrent et ferment un espace de
+#: noms ; `open X` ouvre un espace de noms **sans** argument de commande.
+#: `open X in` est une **commande** : elle agit sur la suite du fichier, donc
+#: c'est du contenu.
+AGGREGATOR_LINE_RE = re.compile(
+    r"^(?:import[ \t]+\S.*"
+    r"|namespace[ \t]+\S.*"
+    r"|end\b.*"
+    r"|open[ \t]+[A-Za-z_][A-Za-z0-9_'.]*[ \t]*)$"
 )
 
 #: `lean_lib «Nom»` / `lean_lib Nom`.
@@ -210,15 +226,84 @@ def import_graph(lake_root: Path, modules: dict[str, str]) -> dict[str, set[str]
     return graph
 
 
-def is_aggregator(text: str) -> bool:
-    """Vrai si le fichier est un hub de re-export (aucune declaration).
+def _strip_comments(text: str) -> str:
+    """Retire les commentaires Lean : `--` (ligne) et `/- ... -/` (bloc,
+    **imbrique**).
 
-    Un aggregateur ne declare ni theoreme, ni lemme, ni definition : il ne
-    fait qu'importer. Le construire ne prouve rien que ses imports ne
+    Un commentaire n'est pas une declaration : un fichier dont le seul
+    contenu est un commentaire n'a pas de corps a construire.
+    """
+    out: list[str] = []
+    i = 0
+    n = len(text)
+    depth = 0
+    in_string = False
+    while i < n:
+        if depth:
+            if text.startswith("/-", i):
+                depth += 1
+                i += 2
+                continue
+            if text.startswith("-/", i):
+                depth -= 1
+                i += 2
+                continue
+            out.append("\n" if text[i] == "\n" else " ")
+            i += 1
+            continue
+        if in_string:
+            out.append(text[i])
+            if text[i] == '"':
+                in_string = False
+            i += 1
+            continue
+        if text.startswith("--", i):
+            while i < n and text[i] != "\n":
+                i += 1
+            continue
+        if text.startswith("/-", i):
+            depth = 1
+            i += 2
+            continue
+        if text[i] == '"':
+            in_string = True
+            out.append(text[i])
+            i += 1
+            continue
+        out.append(text[i])
+        i += 1
+    return "".join(out)
+
+
+def is_aggregator(text: str) -> bool:
+    """Vrai si le fichier est un hub de re-export : des imports, rien d'autre.
+
+    Un aggregateur ne porte **aucune commande** : il n'importe que des
+    modules, sans declarer. Le construire ne prouve rien que ses imports ne
     prouvent pas -- et l'inclure dans les dependants ramene le build du lac
     entier.
+
+    La definition est **stricte** (#26966) : un agregateur est un fichier
+    dont **toutes** les lignes -- hors commentaires et lignes vides -- sont
+    des `import`, `namespace`, `end` ou `open` sans argument de commande.
+    Tout le reste est du **contenu** et doit etre construit : une commande
+    comme `attribute [simp] foo`, `notation`, `macro`, `syntax`, `elab`,
+    `deriving instance`, `#check`, `#eval` ou `open ... in` casse des que
+    l'import qu'elle cite est renomme ou retire -- et un tel fichier, ecarte
+    comme agregateur, ne serait jamais construit.
     """
-    return not DECLARATION_RE.search(text or "")
+    lines = [
+        line.strip()
+        for line in _strip_comments(text or "").splitlines()
+    ]
+    lines = [line for line in lines if line]
+    if not lines:
+        # Un fichier vide (ou fait de commentaires) n'a rien a construire.
+        return True
+    for line in lines:
+        if not AGGREGATOR_LINE_RE.match(line):
+            return False
+    return True
 
 
 def dependents_of(graph: dict[str, set[str]], roots: set[str]) -> set[str]:
@@ -287,6 +372,9 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
       ``skipped_aggregators`` -- les agregateurs ecartes (la borne, nommee) ;
       ``unresolved`` -- les fichiers `.lean` touches qui ne sont pas des
       modules de ce lake (le repli est alors obligatoire) ;
+      ``non_lean_touched`` -- les fichiers **non `.lean`** du lake touches
+      (le repli est alors obligatoire : ces fichiers changent la
+      compilation du lac) ;
       ``module_count`` -- le nombre de modules du lake.
     """
     verdict = {
@@ -297,6 +385,7 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
         "dependents": [],
         "skipped_aggregators": [],
         "unresolved": [],
+        "non_lean_touched": [],
         "module_count": 0,
     }
     modules = enumerate_modules(lake_root)
@@ -311,11 +400,20 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
         lake_prefix = _relative_prefix(lake_root, repo_root)
     roots: set[str] = set()
     unresolved: list[str] = []
+    non_lean: list[str] = []
     for path in changed_paths:
         normalized = path.replace("\\", "/")
-        if not normalized.endswith(".lean"):
-            continue
         if not normalized.startswith(lake_prefix):
+            continue
+        if not normalized.endswith(".lean"):
+            # Un fichier **non `.lean`** du lake est touche : `lakefile.lean`
+            # (options du build, globs, `moreLeanArgs`), `lakefile.toml`,
+            # `lean-toolchain`... Ces fichiers ne sont pas des modules, mais
+            # ils **changent la compilation** du lac entier. Un build cible
+            # n'attesterait alors que les modules cites, pendant que le
+            # changement peut en casser d'autres (#26966) : le repli sur le
+            # lac entier est obligatoire, et sa raison est nommee.
+            non_lean.append(normalized)
             continue
         rel_to_lake = normalized[len(lake_prefix):]
         module = module_name_of(rel_to_lake)
@@ -323,6 +421,17 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
             unresolved.append(normalized)
             continue
         roots.add(module)
+
+    if non_lean:
+        verdict["reason"] = (
+            "fichier non-.lean touche dans le lake ({}) : un build cible "
+            "n'attesterait que les modules cites, alors que ce fichier "
+            "change la compilation du lac -- repli sur le lac entier".format(
+                ", ".join(sorted(non_lean)[:5])
+            )
+        )
+        verdict["non_lean_touched"] = sorted(non_lean)
+        return verdict
 
     if not roots:
         verdict["reason"] = "aucun module Lean touche dans ce lake"

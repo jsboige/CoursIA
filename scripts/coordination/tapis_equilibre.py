@@ -13,26 +13,24 @@ Le tapis range les servables par NIVEAU, le nombre de visites recues dans les
 16/11 (395 issues ouvertes, environ 47 seances par jour) donne un tour
 complet en 4 a 8 jours. Un compte sur toute la vie de l'issue aurait l'effet
 inverse du mandat : les anciennes en ont plus parce qu'elles vivent plus
-longtemps (1,1 visite en moyenne avant 7 jours, 6,2 entre 30 et 90 jours), et
-un niveau strict sur ce compte les affamerait. Dans un niveau, l'issue jamais
-visitee passe d'abord, puis la plus ancienne : une issue recente recoit sa
-premiere visite, puis attend que les anciennes aient recu la leur.
+longtemps. Dans un niveau, l'issue jamais visitee passe d'abord, puis la plus
+ancienne.
 
-Deux exceptions, celles du mandat :
+Les priorites LEGERES du mandat du 2026-11-18 (age, consolidation) sont dans
+`coordination/tapis_avantages.py` ; leur somme reste sous une visite, donc
+l'equite du 16/11 tient : une issue a 0 visite passe devant une issue a
+1 visite. La division par 3 des consolidations anciennes, plus forte qu'une
+priorite legere, disparait.
 
-- une issue de consolidation (label, ou racine de famille labellisee) ouverte
-  depuis plus de `AGE_CONSOLIDATION_J` jours a pour niveau
-  `visites // VISITES_CONSOLIDATION` : elle recoit plusieurs visites par tour ;
-- les marathons de parite C# (#26070, titres « Marathon ») et Rust (#26510)
-  sortent de l'equilibrage et passent apres le pool equilibre : c'est le
-  harnais sk-agent qui les servira.
+Une exception reste : les marathons de parite C# (#26070, titres « Marathon »)
+et Rust (#26510) sortent de l'equilibrage et passent apres le pool equilibre :
+c'est le harnais sk-agent qui les servira.
 
 Une visite est une SEANCE : les marqueurs VISITE (CLAIMED, CLAIMED-AMEND,
 DELIVERED) d'une meme lane a moins de `SEANCE_H` heures d'intervalle n'en font
 qu'une. Les commits de `origin/main` qui citent l'issue forment des seances
-sans lane ; le compte retenu est le plus grand des deux (un claim puis le merge
-de sa PR comptent une fois). Fonctions pures, sans reseau. Doc :
-docs/reference/tapis-rapide.md, section « L'ordre : l'equilibrage des visites ».
+sans lane ; le compte retenu est le plus grand des deux. Fonctions pures, sans
+reseau. Doc : docs/reference/tapis-rapide.md.
 """
 from __future__ import annotations
 
@@ -41,11 +39,10 @@ import math
 import re
 from datetime import datetime, timedelta
 
+from coordination import tapis_avantages
 from coordination.tapis_marqueurs import VISITE, Evt, _dt, _iso
 
 FENETRE_J = 7  # le tour : un tour de flotte complet mesure en 4 a 8 jours (16/11)
-AGE_CONSOLIDATION_J = 60
-VISITES_CONSOLIDATION = 3
 SEANCE_H = 24
 MARATHONS = frozenset({26070, 26510})  # racines : parite C# (Marathon II), parite Rust
 TETE = 24  # tete de niveau decalee par lane, pour que deux lanes divergent
@@ -89,19 +86,27 @@ def familles_consolidation(etats_) -> set[int]:
     return {e.numero for e in etats_ if e.consolidation}
 
 
-def _vieille_consolidation(e, conso: set[int], maintenant: datetime) -> bool:
-    cree = _dt(e.cree_le)
-    return bool((e.consolidation or e.famille in conso) and cree
-                and maintenant - cree > timedelta(days=AGE_CONSOLIDATION_J))
+def bonus(e, conso: set[int], maintenant: datetime) -> tuple[float, list[str]]:
+    """Le bonus leger du mandat du 18/11 : l'age, puis la consolidation.
+
+    Deux contributions PETITES et DISTINCTES, comptees en dixiemes de visite :
+    le niveau reste un multiple de 0,1, les issues se regroupent par niveau
+    (c'est ce qui fait tourner la tete d'une lane a l'autre), et l'equite du
+    16/11 tient : 0 visite avant 1 visite."""
+    dix, motifs = tapis_avantages.bonus_dixiemes(
+        tapis_avantages.age_jours(e.cree_le, maintenant),
+        tapis_avantages.est_consolidation(e.consolidation, e.famille, conso))
+    return dix / 10, motifs
 
 
 def niveau(e, conso: set[int], maintenant: datetime) -> float:
-    """Le niveau de service : les marathons hors equilibrage, au fond."""
+    """Le niveau de service : les visites du tour moins le bonus leger.
+
+    Plus petit niveau d'abord : 0 visite passe devant 1 visite (le bonus total
+    est borne a 0,9), et l'age puis la consolidation font les departages."""
     if est_marathon(e):
         return math.inf
-    if _vieille_consolidation(e, conso, maintenant):
-        return e.visites // VISITES_CONSOLIDATION
-    return e.visites
+    return e.visites - bonus(e, conso, maintenant)[0]
 
 
 def raisons(e, conso: set[int], maintenant: datetime) -> list[str]:
@@ -109,8 +114,7 @@ def raisons(e, conso: set[int], maintenant: datetime) -> list[str]:
     if est_marathon(e):
         return ["marathon : hors equilibrage (harnais sk-agent)"]
     r = [f"{e.visites} visite(s) en {FENETRE_J} j ({e.visites_total} au total)"]
-    if _vieille_consolidation(e, conso, maintenant):
-        r.append(f"consolidation ancienne : niveau {int(niveau(e, conso, maintenant))}")
+    r.extend(bonus(e, conso, maintenant)[1])
     return r
 
 
