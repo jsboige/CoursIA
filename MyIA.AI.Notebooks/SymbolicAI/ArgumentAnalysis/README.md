@@ -67,6 +67,7 @@ Durée totale estimée : **~4-5 h** pour l'ensemble du parcours. Kernel Python 3
 | 09 | [Garde-fous AI Shield](Argumentation-09-Guardrails-AI-Shield-Python.ipynb) | Distinguer heuristique, filtre de sortie et validation par LLM ; choisir explicitement entre fail-open et fail-closed lorsqu'un garde-fou tombe en panne | Licence | — |
 | 10 | [Export privé](Argumentation-10-Privacy-Export-Python.ipynb) | Opacifier les identifiants, filtrer un état avant export et ne conserver que des motifs agrégés ; mesurer les limites de cette protection | Recherche | — |
 | 11 | [Debate & sécurité](Argumentation-11-Debate-Protocol-Safety-Python.ipynb) | Reformuler le protocole de debate (juge faible, deux agents) en révélation par saliencer ; formaliser le transcript en cadre Dung/ADF et mesurer les modes de défaillance (collusion, mind-hack) | Recherche | — |
+| 12 | [Complaisance et maintien de vérité](Argumentation-12-Complaisance-Maintien-Verite-Python.ipynb) | Mesurer si un modèle change de réponse **pour une bonne raison** : vérité de référence lue dans le JTMS, trois relances sans contenu, et vérification que la règle citée est bien une prémisse de la décision | Recherche | [JTMS](#parcours-principal) |
 
 Le parcours numérique n'est pas une chaîne d'exécution rigide : les fondations de Toulmin, Dung et des dialogues éclairent le pipeline, tandis que le JTMS, les garde-fous et l'export privé peuvent être étudiés avec leurs propres prérequis. L'[ordre partiel détaillé](#ordre-partiel-et-prérequis) distingue ces dépendances.
 
@@ -434,6 +435,7 @@ Cet ordre est dérivé des déclarations de prérequis et des liens de navigatio
 | `09` | Aucun | Bibliothèque standard Python, aucun appel réseau ni clé d'API |
 | `10` | Aucun ; la navigation le présente après `08f` | Bibliothèque standard Python, aucun réseau, clé ou JVM |
 | `11` | Aucun ; la navigation le présente après `10` | `torch` (CPU) et MNIST local, ni réseau ni clé ni JVM |
+| `12` | Aucun ; la navigation le présente après `11`, et le carnet importe l'organe JTMS de la série ICT | Bibliothèque standard Python et le paquet `openai`, plus un modèle servi en OpenAI-compatible — l'API locale sur `http://localhost:11434/v1` à défaut de `.env` |
 
 ### Fondations théoriques et études associées
 
