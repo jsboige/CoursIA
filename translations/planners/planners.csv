@@ -21042,7 +21042,7 @@ Trois observations rendent cette mesure probante :
 3. **Elle est réaliste.** Les vrais domaines (Logistics, Gripper, Blocks World) contiennent des dizaines à centaines de faits/actions non pertinents ; c'est exactement cette structure que les heuristiques de relaxation ($h^{FF}$, $h^{LM}$, LM-cut) et le filtrage des *helpful actions* permettent de dominer — la raison pour laquelle Fast Downward (§7) résout des problèmes où la recherche aveugle est intractable.
 
 > **Lien CS** : la borne théorique est que A* avec une heuristique admissible ne développe que les nœuds de $f(n) < C^*$ (coût optimal), contre tous les nœuds de $g(n) < C^*$ pour uniform-cost. Plus le domaine contient de faits/états non pertinents à $f$ élevé, plus le ratio de nœuds épargnés grandit — exactement ce que la table ci-dessus montre croître avec $D$.",,,,,,,,a760bd022c2b677c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb,60efafcd,markdown,fr,3db04f7c446c8cf1,"## 4bis. Monotonie en l'état initial — `step_mono` / `run_mono` du lake, illustrés sur un domaine jouet
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb,60efafcd,markdown,fr,8b4e991c7b9d2af5,"## 4bis. Monotonie en l'état initial — `step_mono` / `run_mono` du lake, illustrés sur un domaine jouet
 
 La relaxation rend l'état **croissant le long du plan** (`stepR a s = s ∪ a.add` ne retire
 jamais rien). Mais il existe une seconde monotonie, plus discrète, que le lake prouve aussi
@@ -21054,7 +21054,7 @@ Un état de départ **mieux informé** (plus de fluents vrais) reste mieux infor
 action, même destructrice. Ce sont [`step_mono`](../planning_lean/Planning/Strips.lean) (niveau
 action, `Strips.lean:69`) et [`run_mono`](../planning_lean/Planning/Relaxation.lean) (niveau plan, `Relaxation.lean:41`, par induction sur la longueur du plan) — les contreparties réelles de `stepR_mono`/`runR_mono` du lemme central.
 
-**Encadré par le vrai** : le lake **est chargé** depuis la cellule 3 (`import Planning.Strips / Planning.Relaxation / Planning.Admissibility`) — un `#check @PlanningLean.step_mono` dans le kernel lean4-wsl rendrait la signature canonique. Le kernel lean4-wsl n'est **pas exécutable sur ce runner** (RECOVERABLE-MACHINE : wrapper `/home/jesse/...` codé en dur v6, `repl` binaire absent d'elan install, cf `MEMORY.md` c.380) — les signatures des deux lemmes sont donc **reproduites ici en markdown depuis le source du lake** (lecture directe `Strips.lean:69` et `Relaxation.lean:41`), pas générées par `#check` :
+**Encadré par le vrai** : le lake **est chargé** depuis la cellule 3 (`import Planning.Strips / Planning.Relaxation / Planning.Admissibility`) — un `#check @PlanningLean.step_mono` dans le kernel lean4-wsl rendrait la signature canonique. Le kernel lean4-wsl n'est **pas exécutable sur ce runner** (RECOVERABLE-MACHINE : wrapper `<USER_HOME>/...` codé en dur v6, `repl` binaire absent d'elan install, cf `MEMORY.md` c.380) — les signatures des deux lemmes sont donc **reproduites ici en markdown depuis le source du lake** (lecture directe `Strips.lean:69` et `Relaxation.lean:41`), pas générées par `#check` :
 
 ```lean
 -- Strips.lean:69
@@ -21068,7 +21068,7 @@ lemma run_mono (π : List (Action F)) {s s' : State F} (h : s ⊆ s') : run π s
 Le domaine jouet qui suit (`ToyAction` / `toyStep` / `toyRun`, `List` au lieu de `Finset`, sans Mathlib) **illustre l'instance** sur un exemple concret `decide`-able — `decide` ne marche pas sur `Finset` général, c'est pourquoi le jouet existe. Les preuves génériques restent dans le lake (et sont rejouables par un futur `#check` quand le kernel sera disponible sur ce runner).
 
 Démonstration sur le domaine jouet : un monde à trois fluents où l'action `pickup` exige
-`onTable` et `clear`, ajoute `held` et **détruit** `onTable` et `clear`.",,,,,,,,3db04f7c446c8cf1,,,,,,,,,,,,,,,
+`onTable` et `clear`, ajoute `held` et **détruit** `onTable` et `clear`.",,,,,,,,8b4e991c7b9d2af5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb,42b2f149,code,fr,3e910fa2ea3353ca,"-- Version simplifiee du lake : List au lieu de Finset, sans Mathlib
 structure ToyAction (F : Type) where
   pre : List F
