@@ -15,9 +15,9 @@
 | [`Claw-Systems/`](../Claw-Systems/) | 16 | 0 | 12 | Agents autonomes (NanoClaw, OpenClaw, philosophie agentic engineering) + `configs/` |
 | [`Claudish/`](../Claudish/) | 8 | 1 | 3 | Proxy multi-provider (routes assistants → Anthropic/GLM/Qwen) + `configs/` |
 | [`analyzers/`](../analyzers/) | 7 | 0 | 1 | **Projet C# exécutable** `AgentSafetyAnalyzer` (+ `.Tests`) — hors paradigme notebook |
-| [`docs/`](.) | 11 | 2 | 7 | Transverse : `CLUSTER-ORCHESTRATION.md`, `COMPARAISON-CLAUDE-ROO.md`, `INTRO-GENAI.md`, notebooks transverses, `sessions/`, `csharprepl-demo/` — `activites/` a déménagé vers [`GenAI/activites/`](../../activites/) (#18223) |
+| [`docs/`](.) | 6 | 0 | 6 | Transverse : `CLUSTER-ORCHESTRATION.md`, `COMPARAISON-CLAUDE-ROO.md`, `INTRO-GENAI.md`, `sessions/` — `activites/` a déménagé vers [`GenAI/activites/`](../../activites/) (#18223), le carnet CSharpRepl et `csharprepl-demo/` vers [`GenAI/Integrations-DotNet/CSharpRepl/`](../../Integrations-DotNet/CSharpRepl/) (#27237) |
 
-**Notebooks pédagogiques déclarés au catalogue** : 8 (marqueur `CATALOG-STATUS` du README — l'écart avec les comptes bruts ci-dessus vient des notebooks d'outillage transverses, non comptés pédagogiques).
+**Notebooks pédagogiques déclarés au catalogue** : 8 (marqueur `CATALOG-STATUS` du README — l'écart avec les comptes bruts ci-dessus vient des notebooks d'outillage transverses, non comptés pédagogiques). Le carnet CSharpRepl rejoint le hub .NET (#27237) : le marqueur sera recompté à la régénération du catalogue.
 
 ### Les voisins cités par l'issue — où ils vivent réellement
 
@@ -39,13 +39,13 @@
 | `Claude-Code/01..05`, `Roo-Code/01..05` | **Sous-thèmes** | Parcours pédagogiques numérotés au sein de leur workspace |
 | `Roo-Code/ateliers-avances`, `Demo-Roo-Capabilities`, `Corrections` | **Sous-thèmes** | Extensions latérales du workspace Roo |
 | `analyzers/AgentSafetyAnalyzer` | **Consommateur** | Projet C# qui **consomme** les modèles (analyse de sécurité agentique) sans documenter l'espace — c'est un artefact de code, pas un atelier |
-| `docs/` (CLUSTER-ORCHESTRATION, COMPARAISON, INTRO, notebooks transverses, sessions, csharprepl-demo) | **Transverse** | Contenus multi-workspaces — `activites/` déménagé vers `GenAI/activites/` (#18223) |
+| `docs/` (CLUSTER-ORCHESTRATION, COMPARAISON, INTRO, sessions) | **Transverse** | Contenus multi-workspaces — `activites/` déménagé vers `GenAI/activites/` (#18223), carnet CSharpRepl + `csharprepl-demo/` vers `Integrations-DotNet/CSharpRepl/` (#27237) |
 
 ## 3. Problèmes relevés (éclatés, doublons, liens)
 
 1. **9 noms de fichiers partagés entre Claude-Code/ et Roo-Code/** (`README.md`, `composants-web.md`, `documentation-scripts.md`, `exemples-questions.md`, `guide-agent.md`, `methodologie-recherche.md`, `modeles-evenements.md`, `plan.md`, `taches-demo.md`) — la structure parallèle est **assumée** (ateliers jumeaux), mais elle rend les liens ambigus depuis l'extérieur : toujours qualifier par l'espace, jamais par le nom seul.
 2. **Déchet versionné** : `Activités - IA Générative.old.md` (désormais dans [`GenAI/activites/`](../../activites/) depuis #18223) — un `.old.md` qui traîne (remplacé par `Activités-GenAI.md`).
-3. `docs/` éclaté en 3 sous-intérêts (`sessions/`, `csharprepl-demo/`, transverses racine) sans page d'index autre que le README de série.
+3. `docs/` éclaté en 2 sous-intérêts (`sessions/`, transverses racine) sans page d'index autre que le README de série — le carnet CSharpRepl et `csharprepl-demo/` ont rejoint `Integrations-DotNet/CSharpRepl/` (#27237).
 4. `analyzers/` est un binaire de projet C# (.csproj + Tests) **sans README de rattachement** (1 seul md) — un lecteur ne sait pas pourquoi il est dans une série notebooks.
 5. Voisins dispersés : Open-WebUI vit dans `Plateformes-Conversationnelles/`, vLLM dans `docker-configurations/` — aucun renvoi depuis le README Vibe-Coding vers ces espaces frères.
 
@@ -66,8 +66,7 @@ Vibe-Coding/
     ├── COMPARAISON-CLAUDE-ROO.md
     ├── INTRO-GENAI.md
     ├── CARTE-ESPACES.md         # CE DOCUMENT (nouveau)
-    ├── sessions/
-    └── csharprepl-demo/         # (activites/ a quitté docs/ → GenAI/activites/, #18223)
+    └── sessions/                # (activites/ a quitté docs/ → GenAI/activites/, #18223 ; csharprepl-demo/ et le carnet CSharpRepl → Integrations-DotNet/CSharpRepl/, #27237)
 ```
 
 **Emplacement de la page collective unique** : le `README.md` de la série — confirmé, il est déjà le parcours consolidé depuis #15787 ; cette carte s'y référence et le complète. Aucun dossier individuel supplémentaire n'est créé.
