@@ -124,6 +124,18 @@ class TestDeclaresMathlib:
         lake = _make_lake(tmp_path, "L", body='-- TODO add mathlib dependency')
         assert declares_mathlib(lake) is True
 
+    def test_mathlib_in_manifest_transitive_dep(self, tmp_path):
+        # Lakefile names no mathlib dep, but lake-manifest.json records mathlib
+        # as a resolved (transitive) package: the checker must see it, else such
+        # a lake is mislabeled no_mathlib_dep and its missing cache is never flagged.
+        lake = _make_lake(tmp_path, "L", body="require batteries from git")
+        (lake / "lake-manifest.json").write_text(
+            '{"packages":[{"name":"mathlib",'
+            '"git_url":"https://github.com/leanprover-community/mathlib4"}]}',
+            encoding="utf-8",
+        )
+        assert declares_mathlib(lake) is True
+
 
 # ---------------------------------------------------------------------------
 # count_oleans
