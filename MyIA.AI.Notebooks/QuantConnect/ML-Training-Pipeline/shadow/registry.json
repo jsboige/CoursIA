@@ -149,30 +149,17 @@
       "fingerprint": "7d02080d7db3635f"
     },
     {
-      "id": "btc-gate-settled",
-      "kind": "qc",
-      "sha": "6d5c3af5d01be01f0b8b5b8960641fcb3b09505b",
-      "frozen_on": "2026-11-20",
-      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC:37556083",
-      "params": {
-        "mode": "gate",
-        "execution": "settled"
-      },
-      "fee_model": "barème de frais actions US intégré à Lean, multiplicateur fee_mult à 1",
-      "fingerprint": "f57d57c3badd9b44"
-    },
-    {
       "id": "x775-lev1",
       "kind": "qc",
       "sha": "6d5c3af5d01be01f0b8b5b8960641fcb3b09505b",
       "frozen_on": "2026-11-20",
-      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/FourSleeve774:37594256",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/FourSleeve774:39713035",
       "params": {
         "layout": "775",
         "lev": "1"
       },
       "fee_model": "barème de frais actions US intégré à Lean, multiplicateur fee_mult à 1",
-      "fingerprint": "30a5c297ce0b6475"
+      "fingerprint": "bab80288133ee46b"
     }
   ]
 }
