@@ -84,7 +84,7 @@ La sous-série Percolation demande en plus `networkx`, et Lean 4 pour ses carnet
 - G. Pólya, *Mathematische Annalen* **84**, 149–160 (1921) : le théorème de récurrence.
 - G. N. Watson, « Three Triple Integrals », *Q. J. Math.* **10**(1), 266–276 (1939), doi:10.1093/qmath/os-10.1.266 : l'intégrale isotrope, exprimée en intégrales elliptiques complètes. L'article n'est pas en accès ouvert.
 - G. S. Joyce, « On the simple cubic lattice Green function », *Phil. Trans. R. Soc. Lond. A* **273**, 583–610 (1973) : la fonction de Green du réseau cubique simple, dont le carnet recalcule la valeur à l'origine, environ 1,5164.
-- M. D. Schwartz, *Vibe physics* et *Claude-shaped science* (essais, 2026) ; article associé [arXiv:2601.02484](https://arxiv.org/abs/2601.02484) (2026) : le récit de la clôture du problème anisotrope.
+- M. D. Schwartz, *Vibe physics* et *Claude-shaped science* (essais, 2025) ; article associé [arXiv:2601.02484](https://arxiv.org/abs/2601.02484) (2026) : le récit de la clôture du problème anisotrope.
 - [Pyro](https://pyro.ai/) : la bibliothèque de programmation probabiliste du carnet RSA.
 - Chaque carnet donne sa bibliographie en fin de texte : géométrie des mesures log-concaves pour Probas-KLS-Concentration, pragmatique probabiliste pour Pyro_RSA_Hyperbole.
 
