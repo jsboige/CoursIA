@@ -6030,60 +6030,165 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c9,ma
 Sur cette enigme, l'ecart est **frappant** : Z3 resout les 25 variables entrelacees en quelques millisecondes, alors que la brute force doit affronter **~25 milliards** de combinaisons (soit plusieurs minutes même a cadence elevee, et bien plus avec le test des 15 indices a chaque candidat).
 
 La **propagation** fait tout le travail : `Norwegian == 0` et `Milk == 2` sont des ancres imposees par les indices 9 et 8, puis les egalites de position et les adjacences reduisent les domaines restants jusqu'a ce qu'il ne reste qu'une seule combinaison coherente. C'est exactement la mecanique qu'un humain deployerait a la main sur le tableau - mais le solveur la realise sans erreur et la **prouve complete** (unicite via `unsat` sur la negation).",,,,,,,,7f0510aeb5a4b881,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c10,markdown,fr,6fc051499651d077,"## Exercices
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c10,markdown,fr,ee1292970a50371e,"## Exercices
 
+Les trois exercices initiaux de ce carnet ont été résolus par un rendu de TP : chacun devient un **exemple guidé** (code de l'étudiante conservé tel quel), suivi d'une lecture du résultat puis d'un **nouvel exercice** non résolu, de difficulté comparable et portant le même concept Z3. Vous y réutiliserez l'encodage par position et la fonction `build_einstein_solver`.",,,,,,,,ee1292970a50371e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c11,markdown,fr,9ae51a39a77a3506,"### Exemple guidé 1 -- Un 16e indice : le Chat boit de l'Eau
 
+Résolu par @EmmaLehec (TP2 IA2-Min2, groupe G02, PR #27026), intégré comme exemple guidé.
 
-Les trois exercices suivants vous font reutiliser l'encodage par position et la fonction `build_einstein_solver`. Chaque stub est self-contained : redefinissez le solveur, ajustez les contraintes, puis `check()`.",,,,,,,,6fc051499651d077,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c11,markdown,fr,8ed0cc9c0890184b,"### Exercice 1 -- Un 16e indice : le Chat boit de l'Eau
+**Objectif** : ajouter l'indice `Cat == Water` (le Chat et l'Eau sont dans la même maison) et observer si l'énigme reste satisfaisable (`sat`) ou devient contradictoire (`unsat`).
 
-**Objectif** : ajouter l'indice `Cat == Water` (le Chat et l'Eau sont dans la même maison) et observer si l'enigme reste satisfaisable (`sat`) ou devient contradictoire (`unsat`).
-
-**Indices** : reprenez `build_einstein_solver()`, ajoutez `s.add(v[""Cat""] == v[""Water""])` avant `check()`. Que se passe-t-il ? (Pensez a comparer avec la solution trouvee plus haut : le Chat et l'Eau y sont-ils dans la même maison ?)",,,,,,,,8ed0cc9c0890184b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c12,code,fr,aea53664d9b6b27c,"# Exercice 1 : ajoutez l'indice Cat == Water et testez la satisfiabilite.
+**Rappel** : on reprend `build_einstein_solver()`, on ajoute `s.add(v[""Cat""] == v[""Water""])` avant `check()`, et on compare avec la solution trouvée plus haut — le Chat et l'Eau y sont-ils dans la même maison ?",,,,,,,,9ae51a39a77a3506,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c12,code,fr,059b540091d750b3,"# Exemple guidé 1 : ajout de l'indice Cat == Water et test de la satisfiabilite.
 # Etape 1 : reprenez build_einstein_solver() -> s, v, _.
 # Etape 2 : s.add(v[""Cat""] == v[""Water""]).
 # Etape 3 : s.check() -> sat ou unsat ?
 
 def tester_chat_eau():
     """"""Retourne 'sat' ou 'unsat' apres ajout de l'indice Cat == Water.""""""
-    # TODO etudiant : construire le solveur, ajouter l'indice, retourner le verdict
-    return None
+    # Étape 1 : On récupère le solveur déjà configuré avec les 15 indices
+    s, v, _ = build_einstein_solver()
 
-print(""Exercice 1 a completer : ajoutez Cat == Water et testez la satisfiabilite."")",,,,,,,,aea53664d9b6b27c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c13,markdown,fr,5fe2db6ad5137c97,"### Exercice 2 -- Enumerer toutes les solutions
+    # Étape 2 : On ajoute le 16e indice (le Chat et l'Eau dans la même maison)
+    s.add(v[""Cat""] == v[""Water""])
 
-**Objectif** : enumerer **toutes** les solutions de l'enigme par **blocage iteratif** (on resout, on compte, on ajoute une contrainte interdisant le temoin trouve, on re-resout) jusqu'a `unsat`. Le compte attendu est 1 (solution unique), ce qui confirme le benchmark ci-dessus.
+    # Étape 3 : On vérifie si le problème reste possible et on renvoie le résultat
+    resultat = s.check()
+    return str(resultat)  # Retournera 'sat'
 
-**Indices** : boucle `while s.check() == z3.sat` ; a chaque tour, comptez++, puis `s.add(z3.Or([v[n] != m[v[n]].as_long() for n in v]))` pour interdire le temoin courant et forcer une solution différente au tour suivant.",,,,,,,,5fe2db6ad5137c97,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c14,code,fr,3b3d30ba013bdfd7,"# Exercice 2 : enumerer toutes les solutions par blocage iteratif.
+# Pour tester ta fonction et afficher le résultat :
+print(""Verdict avec Cat == Water :"", tester_chat_eau())",,,,,,,,059b540091d750b3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c13,markdown,fr,daa4128e34734fd8,"### Exemple guidé 2 -- Énumérer toutes les solutions par blocage itératif
+
+Résolu par @EmmaLehec (TP2 IA2-Min2, groupe G02, PR #27026), intégré comme exemple guidé.
+
+**Objectif** : énumérer **toutes** les solutions de l'énigme par **blocage itératif** (on résout, on compte, on ajoute une contrainte interdisant le témoin trouvé, on re-résout) jusqu'à `unsat`. Le compte attendu est 1 (solution unique), ce qui confirme le benchmark ci-dessus. Le rendu généralise la fonction en `compter_solutions(s=None, v=None, limite=1000)` pour qu'elle s'applique à n'importe quel solveur — elle resservira dans l'exemple guidé 3 et le nouvel exercice 2.",,,,,,,,daa4128e34734fd8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c14,code,fr,63283f19335ddeeb,"# Exemple guidé 2 : énumérer toutes les solutions par blocage itératif.
 # Etape 1 : s, v, _ = build_einstein_solver().
 # Etape 2 : while s.check() == z3.sat: compte += 1; m = s.model(); s.add(z3.Or([v[n] != m[v[n]].as_long() for n in v])).
 # Etape 3 : afficher le compte (attendu : 1).
 
-def compter_solutions():
-    """"""Retourne le nombre total de solutions de l'enigme (attendu : 1).""""""
-    # TODO etudiant : boucle de blocage iteratif
-    return None
+def compter_solutions(s=None, v=None, limite=1000):
+    """"""Retourne le nombre total de solutions (attendu : 1 pour l'enigme d'Einstein).
+    Sans argument : utilise le solveur complet de l'enigme.
+    On peut aussi lui passer un autre solveur (s, v), par exemple la mini-enigme de l'exemple guide 3.""""""
+    # Etape 1 : le solveur avec les 15 indices
+    if s is None:
+        s, v, _ = build_einstein_solver()
 
-print(""Exercice 2 a completer : enumerer toutes les solutions par blocage iteratif."")",,,,,,,,3b3d30ba013bdfd7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c15,markdown,fr,94fe15b0f36ae32c,"### Exercice 3 -- Mini-Zebra a 4 maisons / 4 attributs
+    # Etape 2 : boucle de blocage iteratif
+    compte = 0
+    while compte < limite and s.check() == z3.sat:
+        compte += 1
+        m = s.model()                                            # la solution trouvee
+        s.add(z3.Or([v[n] != m[v[n]].as_long() for n in v]))     # on l'interdit : au moins 1 variable doit changer
+    return compte
 
-**Objectif** : modeliser une **mini-enigme** a 4 maisons et 4 attributs (4 nationalites, 4 couleurs, 4 animaux) avec 8 indices de votre choix, et verifyez que `build_einstein_solver` se generalise (le modèle est paramètre par les données).
+# Etape 3 : afficher le compte
+nb = compter_solutions()
+print(f""Nombre de solutions de l'enigme d'Einstein : {nb} (attendu : 1)"")",,,,,,,,63283f19335ddeeb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c15,markdown,fr,41f8fefee17d15f0,"### Exemple guidé 3 -- Mini-Zebra à 4 maisons
 
-**Indices** : definissez `groups_4` avec 4 valeurs par attribut, domaine `0..3`, 3 groupes `Distinct`, puis 8 indices (identites de position + adjacences) inventes. Inspirez-vous de la structure de `build_einstein_solver`.",,,,,,,,94fe15b0f36ae32c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c16,code,fr,be3b1899aa0063e1,"# Exercice 3 : modelisez un mini-Zebra a 4 maisons / 4 attributs.
+Résolu par @EmmaLehec (TP2 IA2-Min2, groupe G02, PR #27026), intégré comme exemple guidé.
+
+**Objectif** : modéliser une **mini-énigme** à 4 maisons et 3 attributs (4 nationalités, 4 couleurs, 4 animaux) avec 8 indices, et vérifier que l'encodage par position se généralise — le modèle est paramètre par les données, seule l'instance change.",,,,,,,,41f8fefee17d15f0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c16,code,fr,fb32616691b047ec,"# Exemple guidé 3 : un mini-Zebra a 4 maisons / 3 attributs.
 # Indice : groups_4 = {""Nat"": [...4...], ""Couleur"": [...4...], ""Animal"": [...4...]}, domaine 0..3.
-# Etape 1 : definissez groups_4 (4 valeurs par attribut) et un solveur avec domaine 0..3 + 3 Distinct.
+# Etape 1 : définissez groups_4 (4 valeurs par attribut) et un solveur avec domaine 0..3 + 3 Distinct.
 # Etape 2 : ajoutez 8 indices (identites + adjacences) de votre choix.
 # Etape 3 : check() -> solution unique ?
 
 def resoudre_mini_zebra():
-    """"""Retourne (solver, var_dict) pour une mini-enigme 4 maisons / 4 attributs.""""""
-    # TODO etudiant : definir groups_4 + solveur + 8 indices
-    return None
+    # 1. Définition des groupes
+    groups_4 = {
+        ""Nationalite"": [""Francais"", ""Anglais"", ""Espagnol"", ""Italien""],
+        ""Couleur"": [""Rouge"", ""Bleu"", ""Vert"", ""Jaune""],
+        ""Animal"": [""Chien"", ""Chat"", ""Poisson"", ""Oiseau""]
+    }
 
-print(""Exercice 3 a completer : modelisez un mini-Zebra a 4 maisons / 4 attributs."")",,,,,,,,be3b1899aa0063e1,,,,,,,,,,,,,,,
+    # Création du solveur
+    s = z3.Solver()
+
+    # Création des variables
+    v = {
+        nom: z3.Int(nom)
+        for groupe in groups_4.values()
+        for nom in groupe
+    }
+
+    # 2. Domaine : chaque variable doit être entre 0 et 3
+    for var in v.values():
+        s.add(var >= 0, var <= 3)
+
+    # Les 4 valeurs de chaque attribut doivent être dans
+    # des maisons différentes
+    for groupe in groups_4.values():
+        s.add(z3.Distinct([v[nom] for nom in groupe]))
+
+    # 3. Les 8 indices
+
+    # 1. Le Français habite dans la maison rouge
+    s.add(v[""Francais""] == v[""Rouge""])
+
+    # 2. L'Anglais possède le chien
+    s.add(v[""Anglais""] == v[""Chien""])
+
+    # 3. L'Espagnol habite dans la maison verte
+    s.add(v[""Espagnol""] == v[""Vert""])
+
+    # 4. Le Français possède le chat
+    s.add(v[""Francais""] == v[""Chat""])
+
+    # 5. L'Espagnol habite dans la première maison
+    s.add(v[""Espagnol""] == 0)
+
+    # 6. Le chien est à côté de la maison jaune
+    s.add(z3.Or(
+        v[""Chien""] - v[""Jaune""] == 1,
+        v[""Jaune""] - v[""Chien""] == 1
+    ))
+
+    # 7. Le poisson est dans la maison verte
+    s.add(v[""Poisson""] == v[""Vert""])
+
+    # 8. La maison bleue est à côté de la maison verte
+    s.add(z3.Or(
+        v[""Bleu""] - v[""Vert""] == 1,
+        v[""Vert""] - v[""Bleu""] == 1
+    ))
+
+    return s, v
+
+
+# Test du solveur
+s, v = resoudre_mini_zebra()
+
+if s.check() == z3.sat:
+    print(""Solution trouvée !"")
+
+    m = s.model()
+
+    # Affichage des maisons
+    for maison in range(4):
+        print(f""\nMaison {maison + 1} :"")
+
+        for groupe, valeurs in {
+            ""Nationalité"": [""Francais"", ""Anglais"", ""Espagnol"", ""Italien""],
+            ""Couleur"": [""Rouge"", ""Bleu"", ""Vert"", ""Jaune""],
+            ""Animal"": [""Chien"", ""Chat"", ""Poisson"", ""Oiseau""]
+        }.items():
+
+            for valeur in valeurs:
+                if m[v[valeur]].as_long() == maison:
+                    print(f""  {groupe} : {valeur}"")
+
+else:
+    print(""Aucune solution."")
+
+# Etape 3 : solution unique ? On reutilise compter_solutions (exemple guide 2).
+s_u, v_u = resoudre_mini_zebra()
+print(f""\nNombre de solutions : {compter_solutions(s_u, v_u)} (attendu : 1)"")",,,,,,,,fb32616691b047ec,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c17,markdown,fr,d62092dae0f41dd7,"## Conclusion
 
 L'enigme d'Einstein illustre le gain du **declaratif** sur une classe de problemes ou l'approche humaine (deduction progressive sur un tableau) et l'approche naive (brute force) sont toutes deux laborieuses :
@@ -11796,3 +11901,97 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f10a0004,markdown,fr,97d4a9a78847a98f,"Le parsing tolérant livre 1 465 recettes et 13 666 ingrédients : 91 % portent une quantité, 78 % une unité, et seuls quelques fichiers XML irrécupérables sont ignorés. L'exemple affiché donne la forme exacte consommée par la suite — des triplets (item, quantité, unité) comme « White sugar | 2.0 | cups » : tout ce que la section 4 attend pour convertir en grammes.",,,,,,,,97d4a9a78847a98f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f10a0005,markdown,fr,08e4e0db1aab2d07,"Chaque ligne montre la conversion en deux couches : 2 cups de sucre → 402.2 g (volume puis densité), 4 ounces de beurre → 113.4 g (masse directe), 2 eggs comptés → 100.0 g (poids moyen par pièce). Et le cas « 1 can crushed pineapple → 0.0 g (non convertible) » est la sortie honnête : l'unité de conditionnement n'a pas de densité connue, la masse reste nulle, et l'ingrédient dégradera d'autant la couverture de sa recette à l'étape suivante.",,,,,,,,08e4e0db1aab2d07,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb,f10a0006,markdown,fr,22a654fadaf4594d,"L'agrégation pondérée par la masse produit les vecteurs nutritionnels : couverture moyenne de 74.1 %, avec 226 recettes appariées à 100 %, 716 à ≥ 80 % et 127 sous 50 %. L'échantillon affiche des vecteurs complets — par exemple le Cake #10 à [25886.9, 69.1, 857.5, 262.3, 1.0] (énergie, prot, gluc, lip, sel) — exactement la forme (titre, couverture, vecteur) que le cache final sérialisera.",,,,,,,,22a654fadaf4594d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,d4ee2cb6,markdown,fr,e24bf53d25410e1e,"### Lecture du résultat : un indice déjà vrai
+
+Le verdict est `sat` : l'énigme reste satisfaisable. Ce n'est pas un hasard — dans l'unique solution affichée plus haut, le Chat et l'Eau sont **déjà** dans la même maison (maison 1, chez le Norvégien). Le 16e indice est donc déjà vrai : il ne crée aucune contradiction et n'apporte aucune information nouvelle. Un indice qui contredirait la solution (par exemple `Fish == Water`) rendrait au contraire l'énigme `unsat` — c'est exactement l'objet du nouvel exercice 1.",,,,,,,,e24bf53d25410e1e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,bef77e95,markdown,fr,125974200f6d591a,"### Exercice 1 -- Prédire le verdict d'un 17e indice
+
+**Objectif** : généraliser l'exemple guidé 1 en une fonction qui classe **n'importe quel** indice candidat, puis répondre à la question conceptuelle.
+
+Écrire `classer_indice(indice)` qui prend un indice candidat (une fonction de `v` retournant une expression booléenne Z3, sur le patron du bonus de l'exemple guidé 2), reconstruit le solveur complet, ajoute l'indice et retourne `'sat'` ou `'unsat'`. Classer ensuite les quatre candidats :
+
+1. `lambda v: v[""Cat""] == v[""Water""]` — le Chat et l'Eau dans la même maison ;
+2. `lambda v: v[""Fish""] == v[""Water""]` — le Poisson et l'Eau dans la même maison ;
+3. `lambda v: v[""Horse""] == v[""Blend""]` — le Cheval dans la maison du fumeur de Blend ;
+4. `lambda v: v[""Bird""] == v[""Milk""]` — l'Oiseau dans la maison au lait.
+
+**Question** : parmi les verdicts obtenus, peut-il exister un indice qui donne `sat` tout en **changeant** la solution du tableau ? Justifier à partir de l'unicité prouvée plus haut.
+
+**Indices** : chaque appel doit repartir d'un solveur **frais** (`build_einstein_solver()`) — sinon les indices s'accumulent d'un appel à l'autre. Pour la question : que vaut l'ensemble des solutions avant l'ajout, et que lui fait un indice déjà vrai ?",,,,,,,,125974200f6d591a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,eaf007eb,code,fr,54d996a74acc150a,"# Exercice 1 : classer un 17e indice candidat (sat / unsat).
+# Etape 1 : une fonction classer_indice(indice) qui repart d'un solveur FRAIS a chaque appel.
+# Etape 2 : classer les 4 indices candidats de l'enonce.
+# Etape 3 : repondre a la question -- un indice sat peut-il changer la solution ?
+
+def classer_indice(indice):
+    """"""Retourne 'sat' ou 'unsat' pour l'enigme complete + l'indice candidat.
+    indice : une fonction qui prend v et retourne l'expression Z3 (patron du bonus).""""""
+    # TODO etudiant : build_einstein_solver(), ajouter indice(v), retourner le verdict
+    return None  # TODO etudiant
+
+print(""Exercice a completer : classer les 4 indices candidats."")",,,,,,,,54d996a74acc150a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,ef7c6bc8,code,fr,85e3965cebfdc802,"# Bonus exemple guidé 2 : la boucle compte-t-elle vraiment ? On retire un indice et on recompte.
+def solveur_sans_indice(indice):
+    """"""Recree le solveur d'Einstein en retirant UNE contrainte (l'indice donne).""""""
+    s, v, _ = build_einstein_solver()
+    s2 = z3.Solver()
+    for a in s.assertions():
+        if not z3.eq(a, indice(v)):      # on recopie toutes les contraintes sauf celle-la
+            s2.add(a)
+    assert len(s2.assertions()) == len(s.assertions()) - 1, ""l'indice n'a pas ete trouve""
+    return s2, v
+
+tests = [
+    (""9  (Norvegien en maison 1)"",  lambda v: v[""Norwegian""] == 0),
+    (""15 (Blend voisin de l'Eau)"",  lambda v: z3.Or(v[""Blend""] - v[""Water""] == 1, v[""Water""] - v[""Blend""] == 1)),
+]
+for nom, indice in tests:
+    s2, v2 = solveur_sans_indice(indice)
+    print(f""Sans l'indice {nom} : {compter_solutions(s2, v2)} solution(s)"")",,,,,,,,85e3965cebfdc802,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,06ec4397,markdown,fr,988275f98788216f,"### Lecture du résultat : la boucle compte vraiment, et un indice est redondant
+
+Le blocage itératif (trouver une solution, l'interdire par un `Or` sur les 25 variables, recommencer jusqu'à `unsat`) donne **1 solution** : l'énigme d'Einstein est bien unique, ce qui confirme le benchmark. Pour vérifier que la boucle compte réellement, on retire un indice et on recompte : sans l'indice 9 (Norvégien en maison 1), on trouve **17 solutions**. Sans l'indice 15 (Blend voisin de l'Eau), il en reste **1** : cet indice est **redondant**, les 14 autres suffisent à déterminer la solution. Le nouvel exercice 2 pousse cette question un cran plus loin.",,,,,,,,988275f98788216f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c15ec4c1,markdown,fr,1d167c7d3c4ff230,"### Exercice 2 -- Un sous-ensemble minimal d'indices
+
+**Objectif** : l'indice 15 est redondant, mais il n'est probablement pas le seul. Trouver par **élimination gloutonne** un sous-ensemble des 15 indices qui garde **exactement 1 solution** : partir de la liste complète, et pour chaque indice dans l'ordre, essayer de le retirer **définitivement** — si le reste a toujours exactement 1 solution, il reste retiré, sinon il est remis.
+
+**Indices** : listez d'abord les 15 indices sous forme de lambdas `lambda v: <expr>` (les deux du bonus donnent le patron) ; reconstruisez à chaque essai un solveur frais ne contenant que les indices retenus, et comptez avec `compter_solutions(s, v)`. Affichez le nombre d'indices conservés et leur liste. Attention : un indice isolément redondant peut devenir nécessaire une fois d'autres indices retirés — d'où le test à chaque étape.",,,,,,,,1d167c7d3c4ff230,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,8bfffb58,code,fr,fffe077d982c50f2,"def indices_minimaux():
+    """"""Retourne la liste (nom, lambda) du sous-ensemble glouton qui garde exactement 1 solution.""""""
+    # TODO etudiant : liste des 15 indices, puis boucle d'élimination gloutonne
+    return None  # TODO etudiant
+
+print(""Exercice a completer : élimination gloutonne des indices redondants."")",,,,,,,,fffe077d982c50f2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,c461098f,markdown,fr,4f12d2b186995007,"### Lecture du résultat : l'encodage se généralise tel quel
+
+Le même encodage par position passe directement à 4 maisons : domaine `0..3`, 3 groupes `Distinct` et 8 indices (égalités de position et adjacences). Trouver une solution (`sat`) ne suffit pas pour une énigme : il faut aussi qu'elle soit **unique**. En réutilisant `compter_solutions` (exemple guidé 2), on vérifie que les 8 indices déterminent **une seule solution** : l'Espagnol, dans la maison verte, possède le poisson.",,,,,,,,4f12d2b186995007,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,3d0cfd4c,markdown,fr,96a169fc26bd5341,"### Exercice 3 -- Cinq amies, cinq boissons, cinq loisirs
+
+**Objectif** : modéliser une énigme à **5 maisons** sur un autre thème, avec deux types de relations **nouveaux** par rapport au mini-Zebra : « à gauche quelque part » (`a < b`) et « immédiatement à gauche de » (`a == b - 1`). Cinq amies (Alice, Bruno, Chloe, David, Emilie), cinq boissons (Cafe, The, Jus, Lait, Eau) et cinq loisirs (Echecs, Lecture, Course, Peinture, Musique) — une valeur par maison, une maison par valeur.
+
+Les 11 indices :
+
+1. Alice habite la première maison.
+2. Emilie habite la dernière maison.
+3. Qui boit du lait fait de la peinture.
+4. Bruno boit du thé.
+5. Le joueur d'échecs habite quelque part à gauche du buveur de café.
+6. David boit du jus.
+7. Le coureur habite immédiatement à gauche de Chloe.
+8. La lectrice boit de l'eau.
+9. Chloe fait de la musique.
+10. Le buveur de café habite immédiatement à droite de Bruno.
+11. La peinture se pratique dans une maison à gauche de celle de Chloe.
+
+**Indices** : reprenez la structure de `resoudre_mini_zebra` (domaine `0..4`, 3 groupes `Distinct`) ; « immédiatement à gauche de » se code `x == y - 1` et « à gauche quelque part » `x < y`. Vérifiez `sat` **puis** l'unicité avec `compter_solutions(s, v)` — attendu : exactement 1 solution.",,,,,,,,96a169fc26bd5341,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb,f1a647fc,code,fr,2e4b4a88a6a04b5f,"# Exercice 3 : cinq amies, cinq boissons, cinq loisirs (5 maisons, 3 attributs, 11 indices).
+# Etape 1 : définissez groups_5 (Prenom, Boisson, Loisir), domaine 0..4 + 3 Distinct.
+# Etape 2 : encodez les 11 indices de l'énoncé (égalités, adjacences, ""à gauche"", ""immédiatement à gauche"").
+# Etape 3 : check() -> sat, puis compter_solutions(s, v) -> attendu exactement 1.
+
+def resoudre_cinq_amies():
+    """"""Retourne (solver, var_dict) pour l'énigme des cinq amies (attendu : sat et solution unique).""""""
+    # TODO etudiant : groups_5 + solveur avec domaine 0..4 + 3 Distinct + les 11 indices
+    return None  # TODO etudiant
+
+print(""Exercice a completer : l'enigme des cinq amies (5 maisons, 11 indices)."")",,,,,,,,2e4b4a88a6a04b5f,,,,,,,,,,,,,,,
