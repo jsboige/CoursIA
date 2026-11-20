@@ -358,11 +358,26 @@ class TestRunCheck:
         assert result["error"] == "series_not_found"
 
     def test_serie_nom_invalide(self):
-        """Un nom de serie avec / ou \\ est refuse."""
-        for bad in ("../foo", "a/b", "a\\b", ".hidden"):
+        """Un nom de serie qui SORT de SERIES_ROOT est refuse.
+
+        Depuis #26973 (ligne 3), un separateur ne suffit plus a invalider un
+        nom : `A/B` est une sous-serie legitime, confinee sous SERIES_ROOT.
+        Ce qui reste refuse : le segment `..`, le segment cache, le segment
+        vide, le chemin absolu -- tous testes dans
+        `tests/test_check_series_finish_subserie.py`.
+        """
+        for bad in ("../foo", ".hidden", "a//b", "/abs", "C:/Windows"):
             result = mod.run_check(bad)
             assert result["rc"] == 2
             assert result["error"] == "invalid_series_name"
+
+    def test_un_nom_de_sous_serie_nest_pas_refuse(self):
+        """`a/b` est un nom de sous-serie : il est refuse par ABSENCE, pas
+        par invalidite. C'est la distinction que la regle nouvelle etablit."""
+        for nom in ("a/b", "a\\b"):
+            result = mod.run_check(nom)
+            assert result["rc"] == 2
+            assert result["error"] == "series_not_found"
 
     def test_serie_vide(self, tmp_path):
         """Une serie sans carnets retourne finished=False."""

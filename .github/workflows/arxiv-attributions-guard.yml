@@ -39,7 +39,7 @@ name: arXiv attributions guard
 on:
   pull_request:
     paths:
-      - 'arxiv_attributions_registry.yaml'
+      - 'docs/reference/arxiv_attributions_registry.yaml'
       - 'scripts/check_arxiv_attributions.py'
       - 'scripts/tests/test_check_arxiv_attributions.py'
       - '.github/workflows/arxiv-attributions-guard.yml'

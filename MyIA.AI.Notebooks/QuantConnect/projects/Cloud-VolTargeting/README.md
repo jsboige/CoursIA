@@ -72,7 +72,7 @@ Les variants v2 (diversification multi-actifs + contribution en risque égale) e
 
 ## Noyau de risque déterministe (#24698)
 
-Le paramètre `kernel` ajoute à la variante v1 le noyau de risque déterministe de Steward (arXiv 2610.30557), dont le projet `DeterministicRiskKernel-QC` est le portage de référence dans ce dépôt. Il ne s'applique qu'à `version=1`. Avec la valeur par défaut, `kernel=off`, le code de la stratégie est inchangé.
+Le paramètre `kernel` ajoute à la variante v1 le noyau de risque déterministe de Steward (arXiv 2610.30557), dont le projet `DeterministicRiskKernel-QC` est le portage de référence dans ce dépôt. Il ne s'applique qu'à `version=1`. Avec la valeur par défaut, `kernel=off`, le code de la stratégie est inchangé. Le noyau vit dans `risk_kernel.py`, copie du module commun [`RiskKernel`](../RiskKernel/README.md).
 
 | `kernel` | Plafond d'exposition à 90 % | Stop à 2 ATR(14) | Coupe-circuit à −3 % |
 |---|---|---|---|
@@ -137,6 +137,7 @@ Suites possibles, non mesurées : le dimensionnement à risque fixe de Steward, 
 | Fichier | Description |
 |---------|-------------|
 | `main.py` | Ciblage de volatilité avec 3 variantes (v1 SPY seul, v2 multi-actifs equal-risk, v3 +momentum +défensif IEF), et noyau de risque déterministe optionnel sur v1 (paramètres `kernel` et `reentry`) |
+| `risk_kernel.py` | Noyau de risque déterministe, copie identique de [`RiskKernel/risk_kernel.py`](../RiskKernel/README.md) |
 
 ## Références
 

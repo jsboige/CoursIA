@@ -1,21 +1,9 @@
 {
   "description": "Dette connue des sens d'inventaire de #25366 (dossiers de tests non triés, basenames dupliqués) et du sens fichier de #26759 (fichiers qu'aucune jambe ne collecte). Ratchet T4 : ces entrées sont tolérées, tout finding NOUVEAU fait rougir la garde. Régénération : python scripts/check_testpaths_coverage.py --inventory --write-baseline scripts/tests/baseline_testpaths_inventory.json",
   "duplicate_basenames": {
-    "test_alpha_model.py": [
-      "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/tests",
-      "MyIA.AI.Notebooks/QuantConnect/projects/MomentumStrategy/tests"
-    ],
     "test_catastrophe.py": [
       "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
       "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
-    ],
-    "test_check_cell_source_parses.py": [
-      "scripts/notebook_tools/tests",
-      "scripts/tests"
-    ],
-    "test_check_public_anchor.py": [
-      "scripts/lean/tests",
-      "scripts/tests"
     ],
     "test_compression.py": [
       "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
