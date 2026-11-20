@@ -86,3 +86,14 @@ La lentille grothendieckienne (changement de représentation) lit le couple Ferm
 1. **Ce document, commité, est le scellé.** Toute modification ultérieure des bandes P1/P2/P3/nulls/portes se fait par amendement **pré-exécution** horodaté dans ce fichier (pattern des cases 14/15/17/18 : `v1 → v2 AVANT re-run`), jamais silencieusement.
 2. Le banc `MyIA.AI.Notebooks/IIT/ICT-Series/ict/penrose_orch_or.py` + tests `ict/tests/test_penrose_orch_or.py` + mesures `ict/results/penrose_orch_or_results.json` vivront dans un commit fils, avec la ligne matrice case 24 et la ligne du tableau README ajoutées dans la même PR.
 3. Verdict rapporté sur [#8182](https://github.com/jsboige/CoursIA/issues/8182) avec les mesures brutes par graine. La veille ne se clôt pas sur une tranche.
+
+## 8. Amendement v2 (pré-exécution, 2026-11-20 — AVANT calibration et run principal)
+
+**Portée** : géométrie du régime blob et une bande P3c. Motivation **analytique** (aucune mesure sur graine de test n'a été prise — le banc n'existe pas encore au moment de l'amendement).
+
+1. **D = 8·R_lat** (au lieu de 2·R_lat). À D = 2·R_lat, la somme croisée S_AB n'a pas convergé : ⟨1/|D+δ|⟩/⟨1/r⟩ ≈ 0.37, donc E_G^B/S_AA ≈ 0.63 — **sous** la bande scellée [0.80, 1.05] : la clause P3b-1 aurait échoué pour une raison de géométrie du jouet, pas de physique. À D = 8·R_lat : S_AB/S_AA ≈ 0.09 → E_G^B/S_AA ≈ 0.91 ∈ [0.80, 1.05] ✓. La bande reste inchangée ; seul D change.
+2. **Étendue R_lat = 400 nm (diamètre), plancher dur 2 nm** (implémente la clause v1 « espacement ≥ ~1,6 nm »), **échelle blob K ∈ {1024, 2048, 4096, 8192}**, doublement mesuré à **(4096, 8192)**. Justification : le terme de plus proches voisins (linéaire en N, au plancher) corrige la loi N² ; sa part relative ≈ 2c/(N·⟨1/r⟩) tombe sous 5 % à N = 8192 → doublement prédit ≈ 3.86 ∈ [3.5, 4.5] ✓ (bande inchangée). Aux petits K (256-1024) la correction domine et le doublement descend vers 3 : la clause ne se mesure plus qu'au doublement supérieur.
+3. **P3c blob, bande élargie** : N_B(τ/2)/N_B(τ) ∈ **[1.39, 1.49]** (au lieu de √2 ± 0.02). L'exposant effectif au doublement supérieur vaut α_eff ≈ 1.95 (correction de plancher, cf. point 2), donc le ratio prédit = 2^{1/α_eff} ≈ 1.44 : la bande √2 ± 0.02 aurait échoué sur la correction du **jouet**, pas sur la quadratique de la source. Bande centrale √2 = 1.414, élargie asymétriquement vers le haut pour absorber la correction déclarée. **La clause Fermi (2.00 ± 0.02) reste inchangée** — exacte par linéarité, aucune correction.
+4. L'échelle de τ du régime blob suit la même échelle miroir que Fermi : τ_blob(8192) ≈ ħ/E_G^B(8192) ≈ 2.3×10⁻⁴ s ; la paire (τ, τ/2) pour P3c-blob se prend dans la échelle interpolée [4096, 8192] → {458 µs, 229 µs}.
+
+Aucune autre clause (P1, P2, P3a, P3d, nulls, portes, verdict borné) n'est touchée.
