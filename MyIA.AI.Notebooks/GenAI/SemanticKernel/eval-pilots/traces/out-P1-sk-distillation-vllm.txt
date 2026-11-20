@@ -1,0 +1,21 @@
+﻿probe qwen3.6-35b-a3b: OK -> OK
+sonde echec (modele inexistant): ServiceResponseException
+charge: distill_charge_vraie.md (18916 caracteres, charge reelle)
+endpoint: http://localhost:5002/v1 | modele: qwen3.6-35b-a3b | temperature 0 | jetons max: 3000
+[run 1] tours=1 verdict_final=ACCEPTE wall=189.74s appels=3
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: ACCEPTE tour 1
+    appel[stream]: latence=70.06s jetons=n/d
+    appel[stream]: latence=93.99s jetons=n/d
+    appel[stream]: latence=25.63s jetons=n/d
+[run 2] tours=1 verdict_final=ACCEPTE wall=283.54s appels=3
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: ACCEPTE tour 1
+    appel[stream]: latence=120.84s jetons=n/d
+    appel[stream]: latence=140.35s jetons=n/d
+    appel[stream]: latence=22.28s jetons=n/d
+DETERMINISME (tours, decision, tour d'arbitrage): OK (1, 'DECISION', '1') vs (1, 'DECISION', '1')
+LLM CALLS: 8/16
+LOC PILOT: 416 lignes
+MESURES: moteur=sk modele=qwen3.6-35b-a3b endpoint=http://localhost:5002/v1 charge=distill_charge_vraie.md carac=18916 appels=8 jetons_in=n/d jetons_out=n/d latence_appels_s=474.82 tours=1 decision=DECISION: ACCEPTE tour 1 determinisme=OK
+PILOT OK sk=1.41.3 orchestration=GroupChat(manager_custom) charge=distillation

@@ -1,4 +1,4 @@
-"""Tests for scripts/execute_sudoku_python.py.
+"""Tests for scripts/notebook_tools/execute_sudoku_python.py.
 
 Covers:
 - ``SUDOKU_DIR`` is computed relative to ``__file__``, not hardcoded to a
@@ -23,13 +23,13 @@ from pathlib import Path
 import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent
-MODULE_PATH = SCRIPTS_DIR / "execute_sudoku_python.py"
+MODULE_PATH = SCRIPTS_DIR / "notebook_tools" / "execute_sudoku_python.py"  # relogé #13737 V3
 REPO_ROOT = SCRIPTS_DIR.parent
 SUDOKU_DIR = REPO_ROOT / "MyIA.AI.Notebooks" / "Sudoku"
 
 
 def _load_module():
-    """Load ``scripts/execute_sudoku_python.py`` by file path.
+    """Load ``scripts/notebook_tools/execute_sudoku_python.py`` by file path.
 
     Avoids polluting sys.modules permanently (cf test_manage_crypto_archive
     pattern) and bypasses the need for scripts/ to be an importable package.

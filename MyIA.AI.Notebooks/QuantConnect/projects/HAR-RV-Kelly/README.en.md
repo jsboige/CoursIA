@@ -26,7 +26,7 @@ Open the cloud project (local-id: 230839018), compile and run a backtest.
 
 ## Deterministic risk kernel (#24698)
 
-The `kernel` parameter adds Steward's deterministic risk kernel (arXiv 2610.30557) to the strategy. The reference port of this kernel in the repository is the `DeterministicRiskKernel-QC` project. With the default value, `kernel=off`, the strategy code is unchanged.
+The `kernel` parameter adds Steward's deterministic risk kernel (arXiv 2610.30557) to the strategy. The reference port of this kernel in the repository is the `DeterministicRiskKernel-QC` project. With the default value, `kernel=off`, the strategy code is unchanged. The kernel lives in `risk_kernel.py`, a copy of the shared [`RiskKernel`](../RiskKernel/README.md) module.
 
 | `kernel` | 90 % exposure cap | 2 ATR(14) stop | −3 % circuit breaker |
 |---|---|---|---|
@@ -163,6 +163,7 @@ Possible follow-ups, not measured: fix the scale defect (separate issue, separat
 | File | Description |
 |------|-------------|
 | `main.py` | HAR-RV volatility forecasting with Kelly Criterion sizing on 6 multi-asset ETFs |
+| `risk_kernel.py` | Deterministic risk kernel, identical copy of [`RiskKernel/risk_kernel.py`](../RiskKernel/README.md) |
 | `config.json` | Project configuration (local-id) |
 | `research.ipynb` | Research notebook with HAR-RV model analysis and Kelly fraction exploration |
 

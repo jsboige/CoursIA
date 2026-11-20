@@ -137,6 +137,15 @@ LAKE_NOT_IN_CLONE = "lake-absent-du-clone"
 #: Sous-dossier qui porte le checkout Mathlib chaud (cible de la junction).
 WARM_PACKAGES = Path(".lake") / "packages"
 
+#: Variable d'environnement qui designates la RACINE des pivots prechauffes
+#: hors clone principal.
+PIVOT_ROOT_ENV = "COURSIA_LEAN_PIVOT_ROOT"
+
+#: Nom du manifeste des lakes, DANS un depot (il sert aussi a decrire les
+#: lakes d'un pivot : un worktree detache est un depot, donc il porte le
+#: meme manifeste).
+LAKES_MANIFEST_RELATIVE = Path("scripts") / "lean" / "ci_lakes.json"
+
 #: Timeout du build, en secondes. Deux modules a cache chaud prennent ~90 s
 #: (mesure du coordinateur) ; le budget laisse une marge large sans devenir
 #: une attente non bornee.
@@ -396,6 +405,12 @@ def cache_pivot_candidates(manifest: dict) -> list[Path]:
     Tous les lakes du manifeste sont candidats : la table de pivots se resout
     a l'EXECUTION, un lake prechauffe devient pivot de sa toolchain sans
     qu'une table soit a maintenir dans le code (#26630).
+
+    S'y ajoutent les pivots **prechauffes hors clone** (#26889) : le plan de
+    prechauffage travaille dans un worktree detache, donc HORS du clone
+    principal, et le resolveur ne regardait que le clone -- un prechauffage
+    fait comme le plan le prescrit n'etait jamais vu, et le lake continuait
+    de rendre `no-warm-cache-for-toolchain`.
     """
     out: list[Path] = []
     for entry in manifest.get("lakes") or []:
@@ -404,6 +419,66 @@ def cache_pivot_candidates(manifest: dict) -> list[Path]:
         project_path = entry.get("project-path")
         if isinstance(project_path, str) and project_path:
             out.append(REPO_ROOT / project_path)
+    vus = {p.resolve() for p in out if p.exists()}
+    for extra in prewarmed_pivot_candidates():
+        if extra.resolve() not in vus:
+            vus.add(extra.resolve())
+            out.append(extra)
+    return out
+
+
+def pivot_root() -> Path:
+    """RACINE des pivots prechauffes, hors du clone principal.
+
+    Le plan de prechauffage travaille dans un worktree detache : le cache
+    chaud atterrit HORS du clone de travail, ce qui evite que `lake`
+    re-resolve et lance git dans le depot englobant (#26630). Il faut donc
+    une racine **conventionnelle** : le resolveur doit pouvoir retrouver
+    les pivots sans qu'on les declare a la main.
+
+    La racine est surchargeable par `COURSIA_LEAN_PIVOT_ROOT` (les clones
+    de travail et les clones de production ne sont pas forcement voisins).
+    """
+    raw = os.environ.get(PIVOT_ROOT_ENV, "").strip()
+    if raw:
+        return Path(raw).expanduser()
+    return REPO_ROOT.parent / "coursia-lean-pivots"
+
+
+def prewarmed_pivot_candidates(root: Path | None = None) -> list[Path]:
+    """Lakes prechauffes **hors clone**, decouverts dans la racine des pivots.
+
+    Un pivot est un WORKTREE detache (un depot) ; les lakes qu'il porte sont
+    ceux de son manifeste (`scripts/lean/ci_lakes.json`), a la tete qui a
+    ete prechauffee. Seuls sont retenus les lakes qui portent DEJA un
+    `.lake/packages` : les autres n'ont pas ete prechauffes, et les lister
+    comme candidats ne ferait que bruire dans les motifs de rejet.
+    """
+    base = root if root is not None else pivot_root()
+    if not base.is_dir():
+        return []
+    out: list[Path] = []
+    for worktree in sorted(base.iterdir()):
+        if not worktree.is_dir():
+            continue
+        manifest_path = worktree / LAKES_MANIFEST_RELATIVE
+        if not manifest_path.is_file():
+            continue
+        try:
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(payload, dict):
+            continue
+        for entry in payload.get("lakes") or []:
+            if not isinstance(entry, dict):
+                continue
+            project_path = entry.get("project-path")
+            if not isinstance(project_path, str) or not project_path:
+                continue
+            lake_dir = worktree / project_path
+            if (lake_dir / WARM_PACKAGES).is_dir():
+                out.append(lake_dir)
     return out
 
 
@@ -614,8 +689,15 @@ def prewarm_plan(lake: dict, *, head: str, timeout: float) -> dict:
     la fois, plafond memoire) : ce fichier ne lance aucun processus lake lui
     meme. Les marqueurs `<stdout>` / `<stderr>` sont a remplacer par des
     chemins reels.
+
+    Le worktree est cree dans la RACINE DES PIVOTS (`pivot_root()`), pas
+    dans un `<worktree-detache>` sans adresse : c'est cette racine que le
+    resolveur de pivot parcourt (#26889). Un prechauffage fait dans un
+    worktree hors de cette racine produirait un cache chaud que le
+    resolveur ne voit pas -- l'echec etait muet (le lake rendait
+    `no-warm-cache-for-toolchain` apres un prechauffage pourtant fait).
     """
-    worktree = "<worktree-detache>"
+    worktree = str(pivot_root() / (lake.get("lake") or "pivot"))
     lake_dir = "{}/{}".format(worktree, lake.get("project-path") or "")
 
     def _cmd(payload: list[str]) -> list[str]:
@@ -628,6 +710,8 @@ def prewarm_plan(lake: dict, *, head: str, timeout: float) -> dict:
         )
 
     return {
+        "pivot_root": str(pivot_root()),
+        "prepare": ["mkdir", "-p", str(pivot_root())],
         "worktree": [
             "git",
             "-C",
@@ -641,10 +725,11 @@ def prewarm_plan(lake: dict, *, head: str, timeout: float) -> dict:
         "cache_get": _cmd(["lake", "exe", "cache", "get"]),
         "build": _cmd(["lake", "build"]),
         "note": (
-            "prechauffage dans un worktree DETACHE, via lean_exec.py ; "
-            "sur un lac au paquet vide, lake re-resout et lance git dans le "
-            "depot englobant"
-        ),
+            "prechauffage dans un worktree DETACHE sous la racine des pivots "
+            "({}), via lean_exec.py ; sur un lac au paquet vide, lake "
+            "re-resout et lance git dans le depot englobant ; le resolveur "
+            "retrouve ce pivot dans la meme racine"
+        ).format(pivot_root()),
     }
 
 
@@ -1311,7 +1396,7 @@ def _attestation_extra(builds: list[dict], modules_mode: str) -> str:
         skipped = scope.get("skipped_aggregators") or []
         if skipped:
             lines.append(
-                "Agregateurs ecartes (imports seuls, sans declaration) : {}.".format(
+                "Agregateurs ecartes (imports seuls, sans commande) : {}.".format(
                     ", ".join("`{}`".format(s) for s in skipped)
                 )
             )
