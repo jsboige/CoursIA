@@ -195,11 +195,11 @@ independamment des autres, donc reechantillonner les paires est legitime
 > compte l'ecol de la regle sous l'effet, **effet nul compris**. Or le
 > substitut qui produit ces nombres (bootstrap sur les 30 paires reelles)
 > a une **queue nulle qui se degrade avec `n`** : a `n = 90`, la regle
-> s'ecole deja dans **9,1 %** des cas *sans aucun effet* ; a `n = 210`, dans
-> **23,5 %**. Lue en **contraste** (puissance brute moins taux de faux
-> positifs), la ligne `d = 0,50` resiste (0,866 a `n = 90`, au-dessus de
+> s'ecole deja dans **9,3 %** des cas *sans aucun effet* ; a `n = 210`, dans
+> **23,9 %**. Lue en **contraste** (puissance brute moins taux de faux
+> positifs), la ligne `d = 0,50` resiste (0,871 a `n = 90`, au-dessus de
 > 0,80), mais les lignes `d = 0,40` et `d = 0,30` **ne resistent pas** :
-> leur contraste plafonne a **0,77** et **0,68**, quel que soit `n`.
+> leur contraste plafonne a **0,78** et **0,70**, quel que soit `n`.
 > Ce que ces lignes etablissent n'est donc pas un nombre de paires, mais
 > une **borne** : ces 30 paires ne permettent pas d'extrapoler un
 > protocole, et le nombre de paires **independantes** necessaire n'est pas
@@ -384,32 +384,48 @@ Sur les 30 paires reelles (20 000 retournements) :
 
 ### 11.2 Le substitut se degrade avec `n`
 
-Meme statistique (la regle s'ecole sous null), mesuree sur le substitut
-(8 bootstraps x 100 replicats, `seed=42`) :
+La table est **regeneree depuis une grille documentee**, et non saisie
+separement de la section 11.3. Les deux tables partagent les memes tirages.
+
+**Grille de regeneration** — trace `humor35b_qwen35-2b-base_layer12of24_trained.npz`,
+30 paires reelles du corpus GT-24b, seuil `t = 3`, regle d'au moins trois
+features du meme cote, `d = 0` (aucun effet plante), 8 bootstraps x 100
+replicats, `seed=42` :
+
+| Critere de la grille | Derivation de la valeur de la table |
+| --- | --- |
+| `n` = 30, 60, 90, 120, 180, 210, 240 | Une ligne par valeur de `n` ; chaque bootstrap tire `n` indices avec remise parmi les 30 paires. |
+| paires distinctes / maximum de copies | Moyenne sur les 8 bootstraps de `#{i : c_i > 0}` et de `max_i c_i`, ou `c_i` est le nombre de fois que la paire `i` est tiree. |
+| `p_rule` et `p_any` a `t=3` | `power_vs_pairs(..., n_values, [0.0], n_bootstraps=8, n_replicates=100, seed=42)` : comptes sur les **800 tirages**, divises par 800. Les memes tirages produisent les faux positifs de 11.3. |
+| effectif effectif median (Kish) | Pour chaque feature active et chaque bootstrap, `(sum_i abs(x_i))^2 / sum_i(x_i^2)` sur les `n` lignes reechantillonnees ; mediane sur les features actives, puis mediane sur les 8 bootstraps. |
+| part de `n` | Effectif de Kish median divise par `n`, arrondi a deux decimales. |
 
 | `n` | paires **distinctes** utilisees (max de copies) | `p_rule` a `t=3` | `p_any` a `t=3` | effectif effectif median (Kish) |
 | ---: | --- | ---: | ---: | ---: |
-| 30 | 19,4 / 30 (3) | 0,0000 | 0,0537 | 1,0 (0,03 n) |
-| 60 | 25,9 / 30 (5,2) | 0,0375 | 0,2087 | 2,9 (0,05 n) |
-| 90 | 29,1 / 30 (6,6) | 0,0813 | 0,3187 | 4,0 (0,04 n) |
-| 120 | 29,1 / 30 (8,5) | 0,1325 | 0,3950 | 5,4 (0,04 n) |
-| 180 | 30,0 / 30 (11,6) | 0,2275 | 0,4863 | 7,9 (0,04 n) |
-| 240 | 30,0 / 30 (14,0) | 0,2863 | 0,5350 | 10,2 (0,04 n) |
+| 30 | 19,5 / 30 (3,5) | 0,00125 | 0,05375 | 2,0 (0,07 n) |
+| 60 | 25,8 / 30 (5,1) | 0,0200 | 0,20125 | 3,0 (0,05 n) |
+| 90 | 28,1 / 30 (7,8) | 0,0925 | 0,34125 | 4,0 (0,04 n) |
+| 120 | 29,8 / 30 (8,4) | 0,1350 | 0,4175 | 5,2 (0,04 n) |
+| 180 | 30,0 / 30 (11,1) | 0,2175 | 0,49625 | 8,0 (0,04 n) |
+| 210 | 30,0 / 30 (12,5) | 0,23875 | 0,5075 | 9,0 (0,04 n) |
+| 240 | 30,0 / 30 (14,8) | 0,24625 | 0,5225 | 10,0 (0,04 n) |
 
 Trois faits, tous mesures :
 
 1. **A 30 paires, le substitut est deja un peu plus bavard que l'exact**
-   (`p_any` 0,0537 contre 0,0345 ; `p_rule` 0,0013 contre 0,0001) : le
-   reechantillonnage n'est pas neutre, il perd des paires (19,4 distinctes
+   (`p_any` 0,05375 contre 0,0345 ; `p_rule` 0,00125 contre 0,0001) : le
+   reechantillonnage n'est pas neutre, il perd des paires (19,5 distinctes
    sur 30) et change la geometrie du design.
 2. **La queue nulle du substitut se degrade avec `n`** : la regle s'ecole
-   sous null dans 3,8 % des cas a 60 paires, 9,1 % a 90, 28,6 % a 240. La
+   sous null dans 2,0 % des cas a 60 paires, 9,3 % a 90, 24,6 % a 240. La
    degradation vient du fait que les lignes ajoutees sont des repetitions
    du meme couple (paire, signe) : le design s'aplatit, et l'information
    effective par feature (**effectif effectif de Kish**
-   `(Σ|x|)² / Σx²`) plafonne a **4 % de `n`** -- « 240 paires » ne
+   `(Σ|x|)² / Σx²`) plafonne autour de **4 % de `n`** a partir de 60 paires
+   -- « 240 paires » ne
    transportent qu'une dizaine de paires effectives par feature. La part
-   des features a effectif effectif < 10 passe de 99 % (design exact) a 47 %.
+   des features a effectif effectif < 10 passe de 98 % (a `n = 30`) a 45 %
+   (a `n = 240`).
 3. **Le `n` mesure n'est donc pas un protocole realisable.** Une vague de
    240 paires **independantes** n'a pas la meme queue nulle que le
    substitut : la queue nulle reelle d'un design de paires independantes
@@ -426,13 +442,13 @@ termes sont mesures sur les memes tirages, au seuil pre-enregistre
 
 | `n` | faux positifs (brut) | `d=0,3` | `d=0,4` | `d=0,5` |
 | ---: | ---: | --- | --- | --- |
-| 30 | 0,0013 | 0,003 / **0,001** | 0,041 / **0,040** | 0,079 / **0,077** |
-| 60 | 0,0200 | 0,083 / **0,062** | 0,273 / **0,253** | 0,477 / **0,457** |
-| 90 | 0,0912 | 0,228 / **0,136** | 0,557 / **0,466** | 0,958 / **0,866** |
-| 120 | 0,1375 | 0,412 / **0,275** | 0,806 / **0,669** | 0,998 / **0,860** |
-| 180 | 0,2288 | 0,774 / **0,545** | 0,998 / **0,769** | 1,000 / **0,771** |
-| 210 | 0,2350 | 0,882 / **0,647** | 1,000 / **0,765** | 1,000 / **0,765** |
-| 240 | 0,2662 | 0,944 / **0,677** | 1,000 / **0,734** | 1,000 / **0,734** |
+| 30 | 0,00125 | 0,003 / **0,001** | 0,041 / **0,040** | 0,079 / **0,078** |
+| 60 | 0,0200 | 0,090 / **0,070** | 0,284 / **0,264** | 0,478 / **0,458** |
+| 90 | 0,0925 | 0,226 / **0,134** | 0,531 / **0,439** | 0,964 / **0,871** |
+| 120 | 0,1350 | 0,404 / **0,269** | 0,819 / **0,684** | 0,999 / **0,864** |
+| 180 | 0,2175 | 0,813 / **0,595** | 0,995 / **0,778** | 1,000 / **0,783** |
+| 210 | 0,23875 | 0,889 / **0,650** | 1,000 / **0,761** | 1,000 / **0,761** |
+| 240 | 0,24625 | 0,943 / **0,696** | 1,000 / **0,754** | 1,000 / **0,754** |
 
 *(cellule = brut / contraste ; le contraste est en gras)*
 
@@ -441,9 +457,9 @@ dans le body de la PR) :
 
 | Ce qui etait publie | Lecture brute | Lecture en contraste | Verdict |
 | --- | --- | --- | --- |
-| `d=0,5` : ~90 paires | 0,958 | **0,866** | **resiste** (au-dessus de 0,80) |
-| `d=0,4` : ~120 paires | 0,819 | 0,669 | **ne resist pas** (plafond 0,77) |
-| `d=0,3` : ~210 paires | 0,882 | 0,647 | **ne resist pas** (plafond 0,68) |
+| `d=0,5` : ~90 paires | 0,964 | **0,871** | **resiste** (au-dessus de 0,80) |
+| `d=0,4` : ~120 paires | 0,819 | 0,684 | **ne resist pas** (plafond 0,78) |
+| `d=0,3` : ~210 paires | 0,889 | 0,650 | **ne resist pas** (plafond 0,70) |
 
 Le contraste **plafonne** : l'ecol brute sature a 1 pendant que le taux de
 faux positifs continue de monter. Ce plateau n'est pas une loi de la
@@ -545,3 +561,34 @@ exact_null_rates(d, [1.5, 2.0, 2.5, 3.0, 3.5, 4.0], n_flips=20000, seed=42)
 
 Duree : ~26 s pour 20 000 retournements sur 32 768 features (numpy seul,
 memoire bornee par blocs de 256 retournements).
+
+Les sections 11.2 et 11.3 partagent une seule grille, regeneree par :
+
+```python
+import numpy as np
+from ict.humor_power import power_vs_pairs
+
+n_values = [30, 60, 90, 120, 180, 210, 240]
+res = power_vs_pairs(d, n_values, [0.0, 0.3, 0.4, 0.5],
+                     n_bootstraps=8, n_replicates=100, seed=42)
+for row in res["rows"]:
+    print(row["n_pairs"], row["effect_size"], row["p_rule"], row["p_any"])
+
+rng = np.random.default_rng(42)
+for n in n_values:
+    for _ in range(8):
+        idx = rng.integers(0, d.shape[0], size=n)
+        sample = d[idx]
+        copies = np.bincount(idx, minlength=d.shape[0])
+        sums = np.abs(sample).sum(axis=0)
+        squares = (sample**2).sum(axis=0)
+        active = squares > 0
+        kish = sums[active]**2 / squares[active]
+        print(n, "distinct=", (copies > 0).sum(), "max_copies=", copies.max(),
+              "kish_median=", np.median(kish), "kish_lt10=", np.mean(kish < 10))
+```
+
+La colonne `p_rule` de `d=0` est commune aux tables 11.2 et 11.3 ; dans
+11.3, chaque contraste est le `p_rule` brut du meme `n` et du meme `d`
+moins ce faux-positif de la grille. Les `p_any` et les statistiques de
+multiplicite sont tires de cette meme execution.
