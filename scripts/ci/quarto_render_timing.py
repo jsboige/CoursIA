@@ -35,7 +35,7 @@ surviving covariate is park OCCUPATION (busy/online at job start, cf #14429
 samples it in a FIRST step (before the ~20 min render -- the count must
 describe the park when the job started, not when it finished)::
 
-    python scripts/quarto_render_timing.py --sample-occupation occupation.json
+    python scripts/ci/quarto_render_timing.py --sample-occupation occupation.json
 
 then the report step merges it into the table and prints a one-line
 machine-readable record (greppable across >=6 runs for the two regressions:
@@ -52,7 +52,7 @@ The same format is produced outside CI by::
 
     quarto render --to html 2>&1 \
       | awk '{ print strftime("%H:%M:%S"), $0; fflush() }' | tee render-timed.log
-    python scripts/quarto_render_timing.py render-timed.log
+    python scripts/ci/quarto_render_timing.py render-timed.log
 
 (mawk lacks ``strftime``; gawk or the CI bash builtin loop are the portable
 options).
