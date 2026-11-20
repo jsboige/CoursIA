@@ -39,6 +39,7 @@ PANEL_27611 = {
     "GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb",
     "GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb",
+    "GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-CSharp.ipynb",
     "GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb",
     "GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb",
