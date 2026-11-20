@@ -104,7 +104,7 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
 
 ## Interdits
 
-- `panic!` / `unimplemented!()` / `todo!()` à la place d'une valeur : INTERDIT partout, cellules de cours comme exercices
+- `panic!` / `unimplemented!()` / `todo!()` / `unreachable!()` à la place d'une valeur : INTERDIT partout, cellules de cours comme exercices
 - Stub vide ou affichage de substitution à la place d'une implémentation des cellules de cours
 - Sortie fabriquée ou hand-editée : chaque cellule code est exécutée sous le kernelspec `rust`, sorties réelles committées (C.2)
 - Carnet committé sans exécution complète ; aucun `execution_count` null
@@ -134,7 +134,7 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
 | Contrôle | Où il vit | Ce qu'il refuse |
 |---|---|---|
 | `:dep` en tête de carnet | validateur du pli 3 (point 5) | un `:dep` hors de la tête, ou plusieurs `:dep` de tête |
-| Pas d'erreur volontaire (C.1) | validateur du pli 3 (point 5) | `panic!`, `unimplemented!()`, `todo!()` dans un stub |
+| Pas d'erreur volontaire (C.1) | validateur du pli 3 (point 5) | `panic!`, `unimplemented!()`, `todo!()`, `unreachable!()` dans un stub |
 | Exécution complète committée (C.2) | validateur du pli 3 (point 5) | un `execution_count` null, une sortie non exécutée |
 | Conformité différentielle | registre `scripts/notebook_tools/rust_conformance.d/` (point 2 du pli) | une sortie Rust qui s'écarte du Python/C# au-delà de la tolérance déclarée |
 | Parité à trois côtés | `scripts/notebook_tools/twin_pairs.d/` (point 1 du pli) | un triplet attesté dont l'empreinte ne correspond plus au blob au commit |
