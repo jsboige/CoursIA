@@ -66,6 +66,14 @@ flowchart TD
 
 Les trois projets reposent sur un **modèle simulé** : un objet logiciel qui représente l'état d'un système — état clinique du patient ou réseau électrique — et réagit à des interventions (diagnostic proposé, traitement appliqué, dispatch injecté). Ce pattern, appelé **jumeau numérique** (digital twin), est devenu central en santé numérique, en industrie 4.0 et en simulation environnementale. L'apprendre sur 10 patients diabétiques (Diagnostic-Medical-Python), un cas oncologique (Planification-Oncologie-Python) ou un réseau électrique sous incertitude (Reseau-Electrique-Intelligent) prépare directement aux applications professionnelles.
 
+## Comment lire ce README — découverte
+
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue parcours principal, approfondissements et prolongements de recherche.
+
+- **Vous découvrez** : partez du parcours principal et choisissez le projet dont vous avez déjà les prérequis — chaque étude de cas est autonome, aucun ordre n'est imposé entre elles. Le Diagnostic Médical est l'entrée la plus légère en prérequis (recherche informée et CSP/Z3).
+- **Vous approfondissez** : travaillez le template étudiant (`student/`) puis confrontez-le à la solution de référence (`solution/`) ; les exercices d'extension de chaque projet prolongent le pipeline au-delà du barème (voir [Approfondissements](#approfondissements--les-exercices-dextension)).
+- **Vous cherchez des prolongements** : consultez [Pour aller plus loin](#pour-aller-plus-loin) pour les directions de recherche (MDP, LLM en boucle, multi-agent) et la cartographie des paradigmes mobilisés par série.
+
 ## Structure
 
 ```text
@@ -90,7 +98,15 @@ CaseStudies/
 └── requirements.txt       # Dépendances communes (9 packages)
 ```
 
-## Projets
+## Parcours principal — les trois études de cas
+
+Chaque étude de cas est autonome : aucune n'exige d'avoir fait les deux autres, et le choix se fait par les prérequis. Le fil commun dépasse les outils — aucun paradigme ne suffit seul, et la compétence visée est la **composition ordonnée** (filtrer l'impossible, modéliser l'incertitude, puis optimiser) plutôt que la maîtrise isolée d'un solveur. Chaque projet se déroule sur le template étudiant puis la solution de référence (~3-4 h).
+
+| # | Étude de cas | Ce qu'on y apprend | Public et prérequis | Pour approfondir |
+|---|---|---|---|---|
+| 01 | [Diagnostic Médical](Diagnostic-Medical/README.md) | Composer quatre briques qui répondent à quatre facettes distinctes du problème — classer (agent à base de règles), chercher (A*), calibrer (algorithme génétique), vérifier (Z3) — en un pipeline d'aide à la décision appliqué au diabète de type 2. | Search Part 1 (recherche informée) et Part 2 (CSP/Z3) ; Python. | Exercices d'extension : score de risque composite, heuristique A* alternative, contraintes d'interaction médicamenteuse (voir Approfondissements). |
+| 02 | [Oncology Planning](Planification-Oncologie/README.md) | Placer la frontière entre le déterministe — ontologie des chimiothérapies, planification CSP — et le probabiliste — inférence Pyro du profil de toxicité — pour construire un jumeau numérique patient et simuler des scénarios « et si ? » (dose, report). | Probas (inférence bayésienne) ; idéalement Planners (CP-SAT). | Exercices d'extension : ontologie RDFLib étendue, sensibilité au prior, journal d'audit du smart contract (voir Approfondissements). |
+| 03 | [SmartGrid Energy](Reseau-Electrique-Intelligent/README.md) | Composer dans le bon ordre — dispatch faisable (CP-SAT), puis risque de défaillance (bayésien), puis arbitrage (multi-objectif coût/CO2) — un unit commitment sous incertitude renouvelable, et lire un compromis de type Pareto. | Planners (CP-SAT/OR-Tools) et Probas (risque bayésien) ; Python. | Exercices d'extension : réserve tournante n-1, sensibilité au prior, équité territoriale (voir Approfondissements). |
 
 ### Diagnostic Médical
 
@@ -118,6 +134,20 @@ Ordonnancement de la production électrique (unit commitment) sous incertitude r
 - **Concepts** : Unit commitment NP-difficile, modèle bayésien de l'incertitude, optimisation multi-objectif, architecture en couches (filtrer > modéliser > optimiser)
 
 [Sujet](Reseau-Electrique-Intelligent/subject.md) | notebooks (student + solution) | ~3-4h
+
+## Approfondissements — les exercices d'extension
+
+Chaque projet laisse en squelette dans son notebook étudiant des exercices d'extension, au-delà du barème principal : ils transforment le pipeline livré en objet d'expérimentation personnelle.
+
+| Étude de cas | Exercices d'extension |
+|---|---|
+| [Diagnostic Médical](Diagnostic-Medical/README.md) | Un **score de risque composite** agrégeant plusieurs facteurs cliniques au-delà de la règle de classification ; une **heuristique alternative pour A\*** comparée à celle du carnet, avec l'effet mesuré sur le nombre de nœuds explorés ; des **contraintes d'interaction médicamenteuse** ajoutées au solveur Z3 pour enrichir la validation formelle du protocole. |
+| [Oncology Planning](Planification-Oncologie/README.md) | L'**ontologie médicamenteuse étendue** (RDFLib) avec de nouveaux traitements et interactions, puis re-vérification de la prescription ; la **sensibilité au prior** du profil patient dans l'inférence Pyro (comment évolue la probabilité d'adaptation) ; le **journal d'audit du smart contract** bonus pour rendre le calendrier de cures auditable. |
+| [SmartGrid Energy](Reseau-Electrique-Intelligent/README.md) | La **réserve tournante n-1** — couvrir la perte de la plus grosse centrale en service ; la **sensibilité au prior** — le risque quand l'incertitude renouvelable est divisée ou multipliée par 2 ; l'**équité territoriale** comme troisième objectif, évitant de concentrer les centrales polluantes sur une région. |
+
+La méthode recommandée sur l'ensemble du parcours se joue en trois phases : (1) comprendre la solution de référence, (2) implémenter le template en s'appuyant sur les tests unitaires, (3) étendre avec les exercices ci-dessus puis des variantes personnelles. Le template reste exécutable de bout en bout grâce aux stubs conformes (règle C.1 : `pass`, `return None`, jamais d'erreur volontaire).
+
+Les prolongements de recherche — reformuler OncoPlan en MDP, boucler un LLM, faire délibérer plusieurs agents — relèvent de [Pour aller plus loin](#pour-aller-plus-loin) : ce sont des directions après la série, pas des activités du devoir.
 
 ## Installation
 
@@ -276,5 +306,7 @@ Trois familles d'**outils d'infrastructure** MCP rendent les projets interopéra
 **Parenté cross-lane** : CaseStudies ne maintient pas un dépôt isolé, mais sert de **hub d'intégration** pour ~8 séries atomiques. Toute évolution d'une série fondamentale (nouvelle méthode de recherche dans Search, nouveau solveur dans Probas, nouveau moteur dans SymbolicAI) enrichit potentiellement les projets CaseStudies — c'est l'**effet de composition** qui justifie le découpage en couches plutôt qu'en silos.
 
 ---
+
+*Version 1.4.0 — Novembre 2026 — mise à la forme cible des grands README (#3973) : section « Comment lire ce README », parcours principal numéroté avec la colonne « Ce qu'on y apprend », section « Approfondissements » portant les exercices d'extension des trois fiches projet (#25509).*
 
 *Version 1.3.0 — Juillet 2026 — audit §E whole-file gate (réconciliation disque↔catalogue 6 nb + correction 5 incohérences prose : 3 paradigmes / validation par assertions / requirements.txt 9 deps / Sudoku-03 référence génétique / `SVI+Trace_ELBO` au lieu de `poutine.scale` / tree structure avec README.md+subject.md par cas). EPIC #3975 tranche casestudies.*
