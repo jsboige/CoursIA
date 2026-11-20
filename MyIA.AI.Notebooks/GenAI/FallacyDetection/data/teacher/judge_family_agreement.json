@@ -1,0 +1,2570 @@
+{
+  "schema": 1,
+  "generated_at": "2026-11-18T03:22:48+00:00",
+  "what": "Accord inter-familles de juges sur le split val FR (section 2a de la revue EPITA, c.6344505010)",
+  "corpus": {
+    "path": "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/teacher/val_fr.jsonl",
+    "sha256": "b64ec9dc756d51f926901e84f47752ecad176150e5ef75f08f86f0d1e1da6d44",
+    "n_total": 280
+  },
+  "params": {
+    "seed": 42,
+    "n_pairs": 200,
+    "distractors": 5,
+    "temperature": 0.0,
+    "max_tokens": 400,
+    "lang": "fr"
+  },
+  "draw": {
+    "pair_ids": [
+      "val-F1050-2.1.5",
+      "val-F1052-2.2.10",
+      "val-F1090-2.1.5",
+      "val-F1119-2.2.2",
+      "val-F1120-3.1.2",
+      "val-F1161-4.1.4",
+      "val-F1172-7.2.4",
+      "val-F1197-3.1.2",
+      "val-F1198-3.3.10",
+      "val-F1275-5.2.1",
+      "val-F1276-4.1.5",
+      "val-F1287-5.2.1",
+      "val-F1307-3.1.3",
+      "val-F131-5.2.1",
+      "val-F1318-2.3.2",
+      "val-F1320-5.2.7",
+      "val-F1325-2.2.10",
+      "val-F1333-1.1.3",
+      "val-F1336-3.1.3",
+      "val-F1340-5.2.1",
+      "val-F1343-5.2.1",
+      "val-F1360-2.3.2",
+      "val-F1363-1.3.1",
+      "val-F1368-2.2.10",
+      "val-F137-1.2.5",
+      "val-F1375-6.2.1",
+      "val-F1402-2.2.10",
+      "val-F142-4.3.8",
+      "val-F149-5.2.7",
+      "val-F152-6.2.1",
+      "val-F163-4.1.5",
+      "val-F176-3.2.12",
+      "val-F225-4.1.10",
+      "val-F226-2.1.5",
+      "val-F235-1.2.5",
+      "val-F268-5.2.1",
+      "val-F272-6.2.1",
+      "val-F33-2.3.2",
+      "val-F378-2.2.2",
+      "val-F38-3.2.14",
+      "val-F418-7.2.4",
+      "val-F445-2.3.2",
+      "val-F486-4.1.10",
+      "val-F488-3.3.10",
+      "val-F507-3.2.14",
+      "val-F520-5.3.4",
+      "val-F542-7.2.5",
+      "val-F58-1.1.3",
+      "val-F595-3.1.2",
+      "val-F609-3.2.14",
+      "val-F615-4.1.5",
+      "val-F616-1.1.3",
+      "val-F620-4.1.10",
+      "val-F63-1.2.5",
+      "val-F650-2.2.10",
+      "val-F654-3.3.10",
+      "val-F661-4.1.4",
+      "val-F666-3.2.14",
+      "val-F670-3.1.3",
+      "val-F680-4.1.4",
+      "val-F683-2.2.2",
+      "val-F687-4.2.7",
+      "val-F689-3.1.2",
+      "val-F704-5.2.7",
+      "val-F706-7.2.4",
+      "val-F712-1.2.5",
+      "val-F715-3.3.10",
+      "val-F723-1.2.5",
+      "val-F726-4.1.4",
+      "val-F731-6.3.3",
+      "val-F749-4.2.7",
+      "val-F76-4.1.10",
+      "val-F762-3.3.10",
+      "val-F771-7.3.4",
+      "val-F782-6.3.3",
+      "val-F783-4.1.5",
+      "val-F785-4.2.7",
+      "val-F79-3.2.12",
+      "val-F792-7.3.4",
+      "val-F803-4.1.5",
+      "val-F81-4.3.8",
+      "val-F810-2.2.2",
+      "val-F815-3.2.12",
+      "val-F816-1.3.1",
+      "val-F825-4.1.10",
+      "val-F830-6.3.3",
+      "val-F831-1.1.3",
+      "val-F834-3.2.12",
+      "val-F836-3.1.3",
+      "val-F84-4.1.5",
+      "val-F847-3.3.10",
+      "val-F849-2.3.2",
+      "val-F851-5.2.7",
+      "val-F859-1.2.5",
+      "val-F863-2.3.2",
+      "val-F872-5.2.7",
+      "val-F919-2.2.10",
+      "val-F930-4.2.7",
+      "val-F939-7.3.4",
+      "val-F97-2.1.5",
+      "val-F985-1.3.1",
+      "val-V104-5.2.1",
+      "val-V105-3.1.3",
+      "val-V107-3.1.2",
+      "val-V111-2.3.2",
+      "val-V12-2.3.2",
+      "val-V124-7.2.5",
+      "val-V125-7.2.5",
+      "val-V126-1.1.3",
+      "val-V129-7.2.4",
+      "val-V13-4.1.4",
+      "val-V131-7.2.4",
+      "val-V136-7.2.4",
+      "val-V137-7.2.5",
+      "val-V138-2.1.5",
+      "val-V140-3.1.2",
+      "val-V141-3.3.10",
+      "val-V142-4.3.8",
+      "val-V143-3.1.2",
+      "val-V145-4.1.4",
+      "val-V146-3.1.2",
+      "val-V147-4.1.10",
+      "val-V149-2.2.2",
+      "val-V150-4.2.7",
+      "val-V151-1.3.1",
+      "val-V152-2.2.10",
+      "val-V153-4.1.4",
+      "val-V155-4.1.5",
+      "val-V157-5.2.7",
+      "val-V162-3.1.3",
+      "val-V163-3.1.3",
+      "val-V164-1.3.1",
+      "val-V166-7.2.4",
+      "val-V167-4.1.4",
+      "val-V168-2.2.2",
+      "val-V169-2.2.10",
+      "val-V17-6.2.1",
+      "val-V170-3.1.2",
+      "val-V172-3.2.14",
+      "val-V174-1.3.1",
+      "val-V179-1.2.5",
+      "val-V18-5.2.7",
+      "val-V181-3.2.14",
+      "val-V182-4.3.8",
+      "val-V183-3.1.2",
+      "val-V187-2.1.5",
+      "val-V19-7.2.5",
+      "val-V191-1.1.3",
+      "val-V195-2.3.2",
+      "val-V196-1.2.5",
+      "val-V199-7.3.4",
+      "val-V20-7.2.4",
+      "val-V208-1.3.1",
+      "val-V209-1.3.1",
+      "val-V21-7.2.5",
+      "val-V212-2.3.2",
+      "val-V214-4.1.5",
+      "val-V219-2.2.2",
+      "val-V22-7.2.4",
+      "val-V31-6.3.3",
+      "val-V33-3.2.12",
+      "val-V35-3.1.2",
+      "val-V36-2.2.10",
+      "val-V38-3.2.14",
+      "val-V4-4.2.7",
+      "val-V40-6.2.1",
+      "val-V42-6.2.1",
+      "val-V43-7.2.5",
+      "val-V44-1.1.3",
+      "val-V47-3.3.10",
+      "val-V49-1.2.5",
+      "val-V5-7.2.4",
+      "val-V50-4.2.7",
+      "val-V53-6.3.3",
+      "val-V56-1.3.1",
+      "val-V57-6.2.1",
+      "val-V58-3.1.2",
+      "val-V59-2.2.2",
+      "val-V6-1.3.1",
+      "val-V60-4.1.5",
+      "val-V61-4.2.7",
+      "val-V62-2.3.2",
+      "val-V65-3.1.2",
+      "val-V66-3.3.10",
+      "val-V68-7.3.4",
+      "val-V7-2.1.5",
+      "val-V70-1.3.1",
+      "val-V72-5.2.7",
+      "val-V73-6.3.3",
+      "val-V74-7.3.4",
+      "val-V75-2.3.2",
+      "val-V77-4.1.5",
+      "val-V78-1.1.3",
+      "val-V85-3.1.3",
+      "val-V89-4.2.7",
+      "val-V9-7.2.5",
+      "val-V91-6.3.3",
+      "val-V94-2.2.10",
+      "val-V95-7.2.5",
+      "val-V96-3.3.10"
+    ],
+    "family_counts": {
+      "Abus de langage": 15,
+      "Argument pertinent": 15,
+      "Erreur de raisonnement": 14,
+      "Erreur mathématique": 14,
+      "Honnêteté intellectuelle": 14,
+      "Influence": 14,
+      "Inférence maîtrisée": 15,
+      "Insuffisance": 15,
+      "Justesse lexicale": 13,
+      "Obstruction": 14,
+      "Présentation intègre": 14,
+      "Sens quantitatif": 14,
+      "Tricherie": 15,
+      "Échange enrichissant": 14
+    },
+    "polarity_counts": {
+      "fallacy": 101,
+      "virtue": 99
+    }
+  },
+  "judges": [
+    {
+      "name": "openai",
+      "family": "GPT (OpenAI)",
+      "model": "gpt-4o-mini",
+      "url": "https://api.openai.com/v1/chat/completions",
+      "n_pairs": 200,
+      "n_measured": 200,
+      "n_unparsed": 0,
+      "hits": 165,
+      "rate": 0.825,
+      "ci95_wilson": [
+        0.7663556885175099,
+        0.8713948493372666
+      ],
+      "by_family": {
+        "Tricherie": {
+          "n": 15,
+          "measured": 15,
+          "hits": 15,
+          "rate": 1.0,
+          "ci95": [
+            0.7961166989641515,
+            1.0
+          ]
+        },
+        "Obstruction": {
+          "n": 14,
+          "measured": 14,
+          "hits": 12,
+          "rate": 0.8571428571428571,
+          "ci95": [
+            0.6005862050302965,
+            0.9599060787285351
+          ]
+        },
+        "Insuffisance": {
+          "n": 15,
+          "measured": 15,
+          "hits": 14,
+          "rate": 0.9333333333333333,
+          "ci95": [
+            0.7018347012621998,
+            0.9881331045067315
+          ]
+        },
+        "Influence": {
+          "n": 14,
+          "measured": 14,
+          "hits": 13,
+          "rate": 0.9285714285714286,
+          "ci95": [
+            0.6853129557584889,
+            0.9872777847521093
+          ]
+        },
+        "Erreur mathématique": {
+          "n": 14,
+          "measured": 14,
+          "hits": 13,
+          "rate": 0.9285714285714286,
+          "ci95": [
+            0.6853129557584889,
+            0.9872777847521093
+          ]
+        },
+        "Erreur de raisonnement": {
+          "n": 14,
+          "measured": 14,
+          "hits": 14,
+          "rate": 1.0,
+          "ci95": [
+            0.7846891972623643,
+            1.0
+          ]
+        },
+        "Abus de langage": {
+          "n": 15,
+          "measured": 15,
+          "hits": 11,
+          "rate": 0.7333333333333333,
+          "ci95": [
+            0.4804956594401943,
+            0.8910254667430761
+          ]
+        },
+        "Inférence maîtrisée": {
+          "n": 15,
+          "measured": 15,
+          "hits": 8,
+          "rate": 0.5333333333333333,
+          "ci95": [
+            0.30116980025498397,
+            0.7519046463426261
+          ]
+        },
+        "Argument pertinent": {
+          "n": 15,
+          "measured": 15,
+          "hits": 13,
+          "rate": 0.8666666666666667,
+          "ci95": [
+            0.6211801716767764,
+            0.9626387408969346
+          ]
+        },
+        "Justesse lexicale": {
+          "n": 13,
+          "measured": 13,
+          "hits": 8,
+          "rate": 0.6153846153846154,
+          "ci95": [
+            0.355228915126657,
+            0.8229029220223743
+          ]
+        },
+        "Honnêteté intellectuelle": {
+          "n": 14,
+          "measured": 14,
+          "hits": 12,
+          "rate": 0.8571428571428571,
+          "ci95": [
+            0.6005862050302965,
+            0.9599060787285351
+          ]
+        },
+        "Échange enrichissant": {
+          "n": 14,
+          "measured": 14,
+          "hits": 12,
+          "rate": 0.8571428571428571,
+          "ci95": [
+            0.6005862050302965,
+            0.9599060787285351
+          ]
+        },
+        "Présentation intègre": {
+          "n": 14,
+          "measured": 14,
+          "hits": 10,
+          "rate": 0.7142857142857143,
+          "ci95": [
+            0.4535091567010681,
+            0.8827862135542308
+          ]
+        },
+        "Sens quantitatif": {
+          "n": 14,
+          "measured": 14,
+          "hits": 10,
+          "rate": 0.7142857142857143,
+          "ci95": [
+            0.4535091567010681,
+            0.8827862135542308
+          ]
+        }
+      }
+    },
+    {
+      "name": "openrouter",
+      "family": "Mistral (OpenRouter)",
+      "model": "mistralai/mistral-small-24b-instruct-2501",
+      "url": "https://openrouter.ai/api/v1/chat/completions",
+      "n_pairs": 200,
+      "n_measured": 200,
+      "n_unparsed": 0,
+      "hits": 160,
+      "rate": 0.8,
+      "ci95_wilson": [
+        0.7391448134346212,
+        0.8495479907390189
+      ],
+      "by_family": {
+        "Tricherie": {
+          "n": 15,
+          "measured": 15,
+          "hits": 13,
+          "rate": 0.8666666666666667,
+          "ci95": [
+            0.6211801716767764,
+            0.9626387408969346
+          ]
+        },
+        "Obstruction": {
+          "n": 14,
+          "measured": 14,
+          "hits": 14,
+          "rate": 1.0,
+          "ci95": [
+            0.7846891972623643,
+            1.0
+          ]
+        },
+        "Insuffisance": {
+          "n": 15,
+          "measured": 15,
+          "hits": 15,
+          "rate": 1.0,
+          "ci95": [
+            0.7961166989641515,
+            1.0
+          ]
+        },
+        "Influence": {
+          "n": 14,
+          "measured": 14,
+          "hits": 11,
+          "rate": 0.7857142857142857,
+          "ci95": [
+            0.524107694133997,
+            0.9242861328730683
+          ]
+        },
+        "Erreur mathématique": {
+          "n": 14,
+          "measured": 14,
+          "hits": 13,
+          "rate": 0.9285714285714286,
+          "ci95": [
+            0.6853129557584889,
+            0.9872777847521093
+          ]
+        },
+        "Erreur de raisonnement": {
+          "n": 14,
+          "measured": 14,
+          "hits": 12,
+          "rate": 0.8571428571428571,
+          "ci95": [
+            0.6005862050302965,
+            0.9599060787285351
+          ]
+        },
+        "Abus de langage": {
+          "n": 15,
+          "measured": 15,
+          "hits": 14,
+          "rate": 0.9333333333333333,
+          "ci95": [
+            0.7018347012621998,
+            0.9881331045067315
+          ]
+        },
+        "Inférence maîtrisée": {
+          "n": 15,
+          "measured": 15,
+          "hits": 7,
+          "rate": 0.4666666666666667,
+          "ci95": [
+            0.24809535365737387,
+            0.698830199745016
+          ]
+        },
+        "Argument pertinent": {
+          "n": 15,
+          "measured": 15,
+          "hits": 12,
+          "rate": 0.8,
+          "ci95": [
+            0.5481455128483065,
+            0.9295245065301844
+          ]
+        },
+        "Justesse lexicale": {
+          "n": 13,
+          "measured": 13,
+          "hits": 10,
+          "rate": 0.7692307692307693,
+          "ci95": [
+            0.49743624053272495,
+            0.9182047128150143
+          ]
+        },
+        "Honnêteté intellectuelle": {
+          "n": 14,
+          "measured": 14,
+          "hits": 12,
+          "rate": 0.8571428571428571,
+          "ci95": [
+            0.6005862050302965,
+            0.9599060787285351
+          ]
+        },
+        "Échange enrichissant": {
+          "n": 14,
+          "measured": 14,
+          "hits": 13,
+          "rate": 0.9285714285714286,
+          "ci95": [
+            0.6853129557584889,
+            0.9872777847521093
+          ]
+        },
+        "Présentation intègre": {
+          "n": 14,
+          "measured": 14,
+          "hits": 12,
+          "rate": 0.8571428571428571,
+          "ci95": [
+            0.6005862050302965,
+            0.9599060787285351
+          ]
+        },
+        "Sens quantitatif": {
+          "n": 14,
+          "measured": 14,
+          "hits": 2,
+          "rate": 0.14285714285714285,
+          "ci95": [
+            0.040093921271464966,
+            0.39941379496970353
+          ]
+        }
+      }
+    }
+  ],
+  "generator_auto_accord_subset": {
+    "n_pairs": 200,
+    "n_measured": 200,
+    "hits": 179,
+    "rate": 0.895,
+    "ci95_wilson": [
+      0.8448196800887696,
+      0.9302925120731899
+    ]
+  },
+  "per_pair": [
+    {
+      "pair_id": "val-F1050-2.1.5",
+      "target": "F1050",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1050",
+        "openrouter": "F1050"
+      }
+    },
+    {
+      "pair_id": "val-F1052-2.2.10",
+      "target": "F1052",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1052",
+        "openrouter": "F1052"
+      }
+    },
+    {
+      "pair_id": "val-F1090-2.1.5",
+      "target": "F1090",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1090",
+        "openrouter": "F1090"
+      }
+    },
+    {
+      "pair_id": "val-F1119-2.2.2",
+      "target": "F1119",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1119",
+        "openrouter": "F1119"
+      }
+    },
+    {
+      "pair_id": "val-F1120-3.1.2",
+      "target": "F1120",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1120",
+        "openrouter": "F1120"
+      }
+    },
+    {
+      "pair_id": "val-F1161-4.1.4",
+      "target": "F1161",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1161",
+        "openrouter": "F1161"
+      }
+    },
+    {
+      "pair_id": "val-F1172-7.2.4",
+      "target": "F1172",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1172",
+        "openrouter": "F777"
+      }
+    },
+    {
+      "pair_id": "val-F1197-3.1.2",
+      "target": "F1197",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1197",
+        "openrouter": "F1197"
+      }
+    },
+    {
+      "pair_id": "val-F1198-3.3.10",
+      "target": "F1198",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1198",
+        "openrouter": "F1198"
+      }
+    },
+    {
+      "pair_id": "val-F1275-5.2.1",
+      "target": "F1275",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1275",
+        "openrouter": "F820"
+      }
+    },
+    {
+      "pair_id": "val-F1276-4.1.5",
+      "target": "F1276",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1276",
+        "openrouter": "F1276"
+      }
+    },
+    {
+      "pair_id": "val-F1287-5.2.1",
+      "target": "F1287",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F876",
+        "openrouter": "F1287"
+      }
+    },
+    {
+      "pair_id": "val-F1307-3.1.3",
+      "target": "F1307",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1307",
+        "openrouter": "F1307"
+      }
+    },
+    {
+      "pair_id": "val-F131-5.2.1",
+      "target": "F131",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F131",
+        "openrouter": "F131"
+      }
+    },
+    {
+      "pair_id": "val-F1318-2.3.2",
+      "target": "F1318",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1395",
+        "openrouter": "F1318"
+      }
+    },
+    {
+      "pair_id": "val-F1320-5.2.7",
+      "target": "F1320",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1320",
+        "openrouter": "F1320"
+      }
+    },
+    {
+      "pair_id": "val-F1325-2.2.10",
+      "target": "F1325",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1325",
+        "openrouter": "F1325"
+      }
+    },
+    {
+      "pair_id": "val-F1333-1.1.3",
+      "target": "F1333",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1333",
+        "openrouter": "F1333"
+      }
+    },
+    {
+      "pair_id": "val-F1336-3.1.3",
+      "target": "F1336",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1336",
+        "openrouter": "F1336"
+      }
+    },
+    {
+      "pair_id": "val-F1340-5.2.1",
+      "target": "F1340",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1340",
+        "openrouter": "F1340"
+      }
+    },
+    {
+      "pair_id": "val-F1343-5.2.1",
+      "target": "F1343",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1343",
+        "openrouter": "F1343"
+      }
+    },
+    {
+      "pair_id": "val-F1360-2.3.2",
+      "target": "F1360",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1360",
+        "openrouter": "F1360"
+      }
+    },
+    {
+      "pair_id": "val-F1363-1.3.1",
+      "target": "F1363",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1363",
+        "openrouter": "F1363"
+      }
+    },
+    {
+      "pair_id": "val-F1368-2.2.10",
+      "target": "F1368",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1368",
+        "openrouter": "F1368"
+      }
+    },
+    {
+      "pair_id": "val-F137-1.2.5",
+      "target": "F137",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F137",
+        "openrouter": "F137"
+      }
+    },
+    {
+      "pair_id": "val-F1375-6.2.1",
+      "target": "F1375",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1375",
+        "openrouter": "F1375"
+      }
+    },
+    {
+      "pair_id": "val-F1402-2.2.10",
+      "target": "F1402",
+      "family": "Obstruction",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1402",
+        "openrouter": "F1402"
+      }
+    },
+    {
+      "pair_id": "val-F142-4.3.8",
+      "target": "F142",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F142",
+        "openrouter": "F142"
+      }
+    },
+    {
+      "pair_id": "val-F149-5.2.7",
+      "target": "F149",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F149",
+        "openrouter": "F149"
+      }
+    },
+    {
+      "pair_id": "val-F152-6.2.1",
+      "target": "F152",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F152",
+        "openrouter": "F152"
+      }
+    },
+    {
+      "pair_id": "val-F163-4.1.5",
+      "target": "F163",
+      "family": "Insuffisance",
+      "roundtrip": false,
+      "picks": {
+        "openai": "F323",
+        "openrouter": "F163"
+      }
+    },
+    {
+      "pair_id": "val-F176-3.2.12",
+      "target": "F176",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F176",
+        "openrouter": "F176"
+      }
+    },
+    {
+      "pair_id": "val-F225-4.1.10",
+      "target": "F225",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F225",
+        "openrouter": "F225"
+      }
+    },
+    {
+      "pair_id": "val-F226-2.1.5",
+      "target": "F226",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F226",
+        "openrouter": "F226"
+      }
+    },
+    {
+      "pair_id": "val-F235-1.2.5",
+      "target": "F235",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F235",
+        "openrouter": "F235"
+      }
+    },
+    {
+      "pair_id": "val-F268-5.2.1",
+      "target": "F268",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F140",
+        "openrouter": "F272"
+      }
+    },
+    {
+      "pair_id": "val-F272-6.2.1",
+      "target": "F272",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F272",
+        "openrouter": "F272"
+      }
+    },
+    {
+      "pair_id": "val-F33-2.3.2",
+      "target": "F33",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F33",
+        "openrouter": "F33"
+      }
+    },
+    {
+      "pair_id": "val-F378-2.2.2",
+      "target": "F378",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F378",
+        "openrouter": "F1297"
+      }
+    },
+    {
+      "pair_id": "val-F38-3.2.14",
+      "target": "F38",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F38",
+        "openrouter": "F38"
+      }
+    },
+    {
+      "pair_id": "val-F418-7.2.4",
+      "target": "F418",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F418",
+        "openrouter": "F418"
+      }
+    },
+    {
+      "pair_id": "val-F445-2.3.2",
+      "target": "F445",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F445",
+        "openrouter": "F445"
+      }
+    },
+    {
+      "pair_id": "val-F486-4.1.10",
+      "target": "F486",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F486",
+        "openrouter": "F486"
+      }
+    },
+    {
+      "pair_id": "val-F488-3.3.10",
+      "target": "F488",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F488",
+        "openrouter": "F488"
+      }
+    },
+    {
+      "pair_id": "val-F507-3.2.14",
+      "target": "F507",
+      "family": "Influence",
+      "roundtrip": false,
+      "picks": {
+        "openai": "F507",
+        "openrouter": "F507"
+      }
+    },
+    {
+      "pair_id": "val-F520-5.3.4",
+      "target": "F520",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F520",
+        "openrouter": "F816"
+      }
+    },
+    {
+      "pair_id": "val-F542-7.2.5",
+      "target": "F542",
+      "family": "Influence",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F542",
+        "openrouter": "F542"
+      }
+    },
+    {
+      "pair_id": "val-F58-1.1.3",
+      "target": "F58",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F58",
+        "openrouter": "F58"
+      }
+    },
+    {
+      "pair_id": "val-F595-3.1.2",
+      "target": "F595",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F595",
+        "openrouter": "F595"
+      }
+    },
+    {
+      "pair_id": "val-F609-3.2.14",
+      "target": "F609",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F609",
+        "openrouter": "F609"
+      }
+    },
+    {
+      "pair_id": "val-F615-4.1.5",
+      "target": "F615",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F615",
+        "openrouter": "F615"
+      }
+    },
+    {
+      "pair_id": "val-F616-1.1.3",
+      "target": "F616",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F616",
+        "openrouter": "F616"
+      }
+    },
+    {
+      "pair_id": "val-F620-4.1.10",
+      "target": "F620",
+      "family": "Erreur mathématique",
+      "roundtrip": false,
+      "picks": {
+        "openai": "F620",
+        "openrouter": "F620"
+      }
+    },
+    {
+      "pair_id": "val-F63-1.2.5",
+      "target": "F63",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F63",
+        "openrouter": "F63"
+      }
+    },
+    {
+      "pair_id": "val-F650-2.2.10",
+      "target": "F650",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F650",
+        "openrouter": "F650"
+      }
+    },
+    {
+      "pair_id": "val-F654-3.3.10",
+      "target": "F654",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F654",
+        "openrouter": "F654"
+      }
+    },
+    {
+      "pair_id": "val-F661-4.1.4",
+      "target": "F661",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F661",
+        "openrouter": "F661"
+      }
+    },
+    {
+      "pair_id": "val-F666-3.2.14",
+      "target": "F666",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F666",
+        "openrouter": "F666"
+      }
+    },
+    {
+      "pair_id": "val-F670-3.1.3",
+      "target": "F670",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F670",
+        "openrouter": "F670"
+      }
+    },
+    {
+      "pair_id": "val-F680-4.1.4",
+      "target": "F680",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F680",
+        "openrouter": "F158"
+      }
+    },
+    {
+      "pair_id": "val-F683-2.2.2",
+      "target": "F683",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F683",
+        "openrouter": "F683"
+      }
+    },
+    {
+      "pair_id": "val-F687-4.2.7",
+      "target": "F687",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F687",
+        "openrouter": "F687"
+      }
+    },
+    {
+      "pair_id": "val-F689-3.1.2",
+      "target": "F689",
+      "family": "Erreur mathématique",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F797",
+        "openrouter": "F689"
+      }
+    },
+    {
+      "pair_id": "val-F704-5.2.7",
+      "target": "F704",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F704",
+        "openrouter": "F704"
+      }
+    },
+    {
+      "pair_id": "val-F706-7.2.4",
+      "target": "F706",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F706",
+        "openrouter": "F1389"
+      }
+    },
+    {
+      "pair_id": "val-F712-1.2.5",
+      "target": "F712",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F712",
+        "openrouter": "F712"
+      }
+    },
+    {
+      "pair_id": "val-F715-3.3.10",
+      "target": "F715",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F715",
+        "openrouter": "F715"
+      }
+    },
+    {
+      "pair_id": "val-F723-1.2.5",
+      "target": "F723",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F723",
+        "openrouter": "F723"
+      }
+    },
+    {
+      "pair_id": "val-F726-4.1.4",
+      "target": "F726",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F726",
+        "openrouter": "F726"
+      }
+    },
+    {
+      "pair_id": "val-F731-6.3.3",
+      "target": "F731",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F731",
+        "openrouter": "F731"
+      }
+    },
+    {
+      "pair_id": "val-F749-4.2.7",
+      "target": "F749",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F749",
+        "openrouter": "F749"
+      }
+    },
+    {
+      "pair_id": "val-F76-4.1.10",
+      "target": "F76",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F76",
+        "openrouter": "F76"
+      }
+    },
+    {
+      "pair_id": "val-F762-3.3.10",
+      "target": "F762",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F762",
+        "openrouter": "F762"
+      }
+    },
+    {
+      "pair_id": "val-F771-7.3.4",
+      "target": "F771",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F771",
+        "openrouter": "F771"
+      }
+    },
+    {
+      "pair_id": "val-F782-6.3.3",
+      "target": "F782",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F782",
+        "openrouter": "F782"
+      }
+    },
+    {
+      "pair_id": "val-F783-4.1.5",
+      "target": "F783",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F783",
+        "openrouter": "F783"
+      }
+    },
+    {
+      "pair_id": "val-F785-4.2.7",
+      "target": "F785",
+      "family": "Erreur de raisonnement",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F785",
+        "openrouter": "F785"
+      }
+    },
+    {
+      "pair_id": "val-F79-3.2.12",
+      "target": "F79",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F79",
+        "openrouter": "F79"
+      }
+    },
+    {
+      "pair_id": "val-F792-7.3.4",
+      "target": "F792",
+      "family": "Erreur de raisonnement",
+      "roundtrip": false,
+      "picks": {
+        "openai": "F792",
+        "openrouter": "F175"
+      }
+    },
+    {
+      "pair_id": "val-F803-4.1.5",
+      "target": "F803",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F803",
+        "openrouter": "F803"
+      }
+    },
+    {
+      "pair_id": "val-F81-4.3.8",
+      "target": "F81",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F81",
+        "openrouter": "F81"
+      }
+    },
+    {
+      "pair_id": "val-F810-2.2.2",
+      "target": "F810",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F810",
+        "openrouter": "F810"
+      }
+    },
+    {
+      "pair_id": "val-F815-3.2.12",
+      "target": "F815",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F815",
+        "openrouter": "F815"
+      }
+    },
+    {
+      "pair_id": "val-F816-1.3.1",
+      "target": "F816",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F816",
+        "openrouter": "F816"
+      }
+    },
+    {
+      "pair_id": "val-F825-4.1.10",
+      "target": "F825",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F825",
+        "openrouter": "F825"
+      }
+    },
+    {
+      "pair_id": "val-F830-6.3.3",
+      "target": "F830",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F830",
+        "openrouter": "F830"
+      }
+    },
+    {
+      "pair_id": "val-F831-1.1.3",
+      "target": "F831",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F819",
+        "openrouter": "F831"
+      }
+    },
+    {
+      "pair_id": "val-F834-3.2.12",
+      "target": "F834",
+      "family": "Abus de langage",
+      "roundtrip": false,
+      "picks": {
+        "openai": "F242",
+        "openrouter": "F834"
+      }
+    },
+    {
+      "pair_id": "val-F836-3.1.3",
+      "target": "F836",
+      "family": "Abus de langage",
+      "roundtrip": false,
+      "picks": {
+        "openai": "F836",
+        "openrouter": "F836"
+      }
+    },
+    {
+      "pair_id": "val-F84-4.1.5",
+      "target": "F84",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F84",
+        "openrouter": "F84"
+      }
+    },
+    {
+      "pair_id": "val-F847-3.3.10",
+      "target": "F847",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F847",
+        "openrouter": "F847"
+      }
+    },
+    {
+      "pair_id": "val-F849-2.3.2",
+      "target": "F849",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F849",
+        "openrouter": "F849"
+      }
+    },
+    {
+      "pair_id": "val-F851-5.2.7",
+      "target": "F851",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F1325",
+        "openrouter": "F1114"
+      }
+    },
+    {
+      "pair_id": "val-F859-1.2.5",
+      "target": "F859",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F859",
+        "openrouter": "F859"
+      }
+    },
+    {
+      "pair_id": "val-F863-2.3.2",
+      "target": "F863",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F81",
+        "openrouter": "F863"
+      }
+    },
+    {
+      "pair_id": "val-F872-5.2.7",
+      "target": "F872",
+      "family": "Abus de langage",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F872",
+        "openrouter": "F872"
+      }
+    },
+    {
+      "pair_id": "val-F919-2.2.10",
+      "target": "F919",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F919",
+        "openrouter": "F919"
+      }
+    },
+    {
+      "pair_id": "val-F930-4.2.7",
+      "target": "F930",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F930",
+        "openrouter": "F930"
+      }
+    },
+    {
+      "pair_id": "val-F939-7.3.4",
+      "target": "F939",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F939",
+        "openrouter": "F939"
+      }
+    },
+    {
+      "pair_id": "val-F97-2.1.5",
+      "target": "F97",
+      "family": "Insuffisance",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F97",
+        "openrouter": "F97"
+      }
+    },
+    {
+      "pair_id": "val-F985-1.3.1",
+      "target": "F985",
+      "family": "Tricherie",
+      "roundtrip": true,
+      "picks": {
+        "openai": "F985",
+        "openrouter": "F985"
+      }
+    },
+    {
+      "pair_id": "val-V104-5.2.1",
+      "target": "V104",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V113",
+        "openrouter": "V113"
+      }
+    },
+    {
+      "pair_id": "val-V105-3.1.3",
+      "target": "V105",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V104",
+        "openrouter": "V104"
+      }
+    },
+    {
+      "pair_id": "val-V107-3.1.2",
+      "target": "V107",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V107",
+        "openrouter": "V107"
+      }
+    },
+    {
+      "pair_id": "val-V111-2.3.2",
+      "target": "V111",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V111",
+        "openrouter": "V111"
+      }
+    },
+    {
+      "pair_id": "val-V12-2.3.2",
+      "target": "V12",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V88",
+        "openrouter": "V12"
+      }
+    },
+    {
+      "pair_id": "val-V124-7.2.5",
+      "target": "V124",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V124",
+        "openrouter": "V126"
+      }
+    },
+    {
+      "pair_id": "val-V125-7.2.5",
+      "target": "V125",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V125",
+        "openrouter": "V125"
+      }
+    },
+    {
+      "pair_id": "val-V126-1.1.3",
+      "target": "V126",
+      "family": "Inférence maîtrisée",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V126",
+        "openrouter": "V105"
+      }
+    },
+    {
+      "pair_id": "val-V129-7.2.4",
+      "target": "V129",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V129",
+        "openrouter": "V129"
+      }
+    },
+    {
+      "pair_id": "val-V13-4.1.4",
+      "target": "V13",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V13",
+        "openrouter": "V13"
+      }
+    },
+    {
+      "pair_id": "val-V131-7.2.4",
+      "target": "V131",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V101",
+        "openrouter": "V101"
+      }
+    },
+    {
+      "pair_id": "val-V136-7.2.4",
+      "target": "V136",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V136",
+        "openrouter": "V136"
+      }
+    },
+    {
+      "pair_id": "val-V137-7.2.5",
+      "target": "V137",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V137",
+        "openrouter": "V137"
+      }
+    },
+    {
+      "pair_id": "val-V138-2.1.5",
+      "target": "V138",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V7",
+        "openrouter": "V83"
+      }
+    },
+    {
+      "pair_id": "val-V140-3.1.2",
+      "target": "V140",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V135",
+        "openrouter": "V140"
+      }
+    },
+    {
+      "pair_id": "val-V141-3.3.10",
+      "target": "V141",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V141",
+        "openrouter": "V141"
+      }
+    },
+    {
+      "pair_id": "val-V142-4.3.8",
+      "target": "V142",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V142",
+        "openrouter": "V142"
+      }
+    },
+    {
+      "pair_id": "val-V143-3.1.2",
+      "target": "V143",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V143",
+        "openrouter": "V143"
+      }
+    },
+    {
+      "pair_id": "val-V145-4.1.4",
+      "target": "V145",
+      "family": "Justesse lexicale",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V145",
+        "openrouter": "V145"
+      }
+    },
+    {
+      "pair_id": "val-V146-3.1.2",
+      "target": "V146",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V146",
+        "openrouter": "V146"
+      }
+    },
+    {
+      "pair_id": "val-V147-4.1.10",
+      "target": "V147",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V156",
+        "openrouter": "V73"
+      }
+    },
+    {
+      "pair_id": "val-V149-2.2.2",
+      "target": "V149",
+      "family": "Justesse lexicale",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V185",
+        "openrouter": "V185"
+      }
+    },
+    {
+      "pair_id": "val-V150-4.2.7",
+      "target": "V150",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V79",
+        "openrouter": "V150"
+      }
+    },
+    {
+      "pair_id": "val-V151-1.3.1",
+      "target": "V151",
+      "family": "Justesse lexicale",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V151",
+        "openrouter": "V151"
+      }
+    },
+    {
+      "pair_id": "val-V152-2.2.10",
+      "target": "V152",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V192",
+        "openrouter": "V192"
+      }
+    },
+    {
+      "pair_id": "val-V153-4.1.4",
+      "target": "V153",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V153",
+        "openrouter": "V153"
+      }
+    },
+    {
+      "pair_id": "val-V155-4.1.5",
+      "target": "V155",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V3",
+        "openrouter": "V3"
+      }
+    },
+    {
+      "pair_id": "val-V157-5.2.7",
+      "target": "V157",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V157",
+        "openrouter": "V157"
+      }
+    },
+    {
+      "pair_id": "val-V162-3.1.3",
+      "target": "V162",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V162",
+        "openrouter": "V162"
+      }
+    },
+    {
+      "pair_id": "val-V163-3.1.3",
+      "target": "V163",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V163",
+        "openrouter": "V163"
+      }
+    },
+    {
+      "pair_id": "val-V164-1.3.1",
+      "target": "V164",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V164",
+        "openrouter": "V164"
+      }
+    },
+    {
+      "pair_id": "val-V166-7.2.4",
+      "target": "V166",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V166",
+        "openrouter": "V166"
+      }
+    },
+    {
+      "pair_id": "val-V167-4.1.4",
+      "target": "V167",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V167",
+        "openrouter": "V167"
+      }
+    },
+    {
+      "pair_id": "val-V168-2.2.2",
+      "target": "V168",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V168",
+        "openrouter": "V168"
+      }
+    },
+    {
+      "pair_id": "val-V169-2.2.10",
+      "target": "V169",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V169",
+        "openrouter": "V169"
+      }
+    },
+    {
+      "pair_id": "val-V17-6.2.1",
+      "target": "V17",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V17",
+        "openrouter": "V17"
+      }
+    },
+    {
+      "pair_id": "val-V170-3.1.2",
+      "target": "V170",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V170",
+        "openrouter": "V170"
+      }
+    },
+    {
+      "pair_id": "val-V172-3.2.14",
+      "target": "V172",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V172",
+        "openrouter": "V172"
+      }
+    },
+    {
+      "pair_id": "val-V174-1.3.1",
+      "target": "V174",
+      "family": "Honnêteté intellectuelle",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V174",
+        "openrouter": "V174"
+      }
+    },
+    {
+      "pair_id": "val-V179-1.2.5",
+      "target": "V179",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V179",
+        "openrouter": "V179"
+      }
+    },
+    {
+      "pair_id": "val-V18-5.2.7",
+      "target": "V18",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V18",
+        "openrouter": "V18"
+      }
+    },
+    {
+      "pair_id": "val-V181-3.2.14",
+      "target": "V181",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V181",
+        "openrouter": "V181"
+      }
+    },
+    {
+      "pair_id": "val-V182-4.3.8",
+      "target": "V182",
+      "family": "Échange enrichissant",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V182",
+        "openrouter": "V182"
+      }
+    },
+    {
+      "pair_id": "val-V183-3.1.2",
+      "target": "V183",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V197",
+        "openrouter": "V183"
+      }
+    },
+    {
+      "pair_id": "val-V187-2.1.5",
+      "target": "V187",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V187",
+        "openrouter": "V187"
+      }
+    },
+    {
+      "pair_id": "val-V19-7.2.5",
+      "target": "V19",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V96",
+        "openrouter": "V19"
+      }
+    },
+    {
+      "pair_id": "val-V191-1.1.3",
+      "target": "V191",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V191",
+        "openrouter": "V191"
+      }
+    },
+    {
+      "pair_id": "val-V195-2.3.2",
+      "target": "V195",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V195",
+        "openrouter": "V195"
+      }
+    },
+    {
+      "pair_id": "val-V196-1.2.5",
+      "target": "V196",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V196",
+        "openrouter": "V196"
+      }
+    },
+    {
+      "pair_id": "val-V199-7.3.4",
+      "target": "V199",
+      "family": "Échange enrichissant",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V217",
+        "openrouter": "V217"
+      }
+    },
+    {
+      "pair_id": "val-V20-7.2.4",
+      "target": "V20",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V20",
+        "openrouter": "V20"
+      }
+    },
+    {
+      "pair_id": "val-V208-1.3.1",
+      "target": "V208",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V208",
+        "openrouter": "V208"
+      }
+    },
+    {
+      "pair_id": "val-V209-1.3.1",
+      "target": "V209",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V209",
+        "openrouter": "V209"
+      }
+    },
+    {
+      "pair_id": "val-V21-7.2.5",
+      "target": "V21",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V21",
+        "openrouter": "V21"
+      }
+    },
+    {
+      "pair_id": "val-V212-2.3.2",
+      "target": "V212",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V212",
+        "openrouter": "V212"
+      }
+    },
+    {
+      "pair_id": "val-V214-4.1.5",
+      "target": "V214",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V214",
+        "openrouter": "V214"
+      }
+    },
+    {
+      "pair_id": "val-V219-2.2.2",
+      "target": "V219",
+      "family": "Échange enrichissant",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V219",
+        "openrouter": "V219"
+      }
+    },
+    {
+      "pair_id": "val-V22-7.2.4",
+      "target": "V22",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V22",
+        "openrouter": "V1"
+      }
+    },
+    {
+      "pair_id": "val-V31-6.3.3",
+      "target": "V31",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V31",
+        "openrouter": "V1"
+      }
+    },
+    {
+      "pair_id": "val-V33-3.2.12",
+      "target": "V33",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V33",
+        "openrouter": "V33"
+      }
+    },
+    {
+      "pair_id": "val-V35-3.1.2",
+      "target": "V35",
+      "family": "Présentation intègre",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V35",
+        "openrouter": "V35"
+      }
+    },
+    {
+      "pair_id": "val-V36-2.2.10",
+      "target": "V36",
+      "family": "Présentation intègre",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V44",
+        "openrouter": "V36"
+      }
+    },
+    {
+      "pair_id": "val-V38-3.2.14",
+      "target": "V38",
+      "family": "Présentation intègre",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V38",
+        "openrouter": "V38"
+      }
+    },
+    {
+      "pair_id": "val-V4-4.2.7",
+      "target": "V4",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V4",
+        "openrouter": "V4"
+      }
+    },
+    {
+      "pair_id": "val-V40-6.2.1",
+      "target": "V40",
+      "family": "Présentation intègre",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V166",
+        "openrouter": "V40"
+      }
+    },
+    {
+      "pair_id": "val-V42-6.2.1",
+      "target": "V42",
+      "family": "Présentation intègre",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V42",
+        "openrouter": "V195"
+      }
+    },
+    {
+      "pair_id": "val-V43-7.2.5",
+      "target": "V43",
+      "family": "Présentation intègre",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V43",
+        "openrouter": "V145"
+      }
+    },
+    {
+      "pair_id": "val-V44-1.1.3",
+      "target": "V44",
+      "family": "Présentation intègre",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V44",
+        "openrouter": "V44"
+      }
+    },
+    {
+      "pair_id": "val-V47-3.3.10",
+      "target": "V47",
+      "family": "Présentation intègre",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V47",
+        "openrouter": "V47"
+      }
+    },
+    {
+      "pair_id": "val-V49-1.2.5",
+      "target": "V49",
+      "family": "Présentation intègre",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V153",
+        "openrouter": "V49"
+      }
+    },
+    {
+      "pair_id": "val-V5-7.2.4",
+      "target": "V5",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V5",
+        "openrouter": "V5"
+      }
+    },
+    {
+      "pair_id": "val-V50-4.2.7",
+      "target": "V50",
+      "family": "Présentation intègre",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V50",
+        "openrouter": "V50"
+      }
+    },
+    {
+      "pair_id": "val-V53-6.3.3",
+      "target": "V53",
+      "family": "Présentation intègre",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V73",
+        "openrouter": "V53"
+      }
+    },
+    {
+      "pair_id": "val-V56-1.3.1",
+      "target": "V56",
+      "family": "Présentation intègre",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V56",
+        "openrouter": "V56"
+      }
+    },
+    {
+      "pair_id": "val-V57-6.2.1",
+      "target": "V57",
+      "family": "Présentation intègre",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V57",
+        "openrouter": "V57"
+      }
+    },
+    {
+      "pair_id": "val-V58-3.1.2",
+      "target": "V58",
+      "family": "Présentation intègre",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V58",
+        "openrouter": "V58"
+      }
+    },
+    {
+      "pair_id": "val-V59-2.2.2",
+      "target": "V59",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V59",
+        "openrouter": "V131"
+      }
+    },
+    {
+      "pair_id": "val-V6-1.3.1",
+      "target": "V6",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V6",
+        "openrouter": "V6"
+      }
+    },
+    {
+      "pair_id": "val-V60-4.1.5",
+      "target": "V60",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V60",
+        "openrouter": "V153"
+      }
+    },
+    {
+      "pair_id": "val-V61-4.2.7",
+      "target": "V61",
+      "family": "Sens quantitatif",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V11",
+        "openrouter": "V185"
+      }
+    },
+    {
+      "pair_id": "val-V62-2.3.2",
+      "target": "V62",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V62",
+        "openrouter": "V62"
+      }
+    },
+    {
+      "pair_id": "val-V65-3.1.2",
+      "target": "V65",
+      "family": "Sens quantitatif",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V65",
+        "openrouter": "V65"
+      }
+    },
+    {
+      "pair_id": "val-V66-3.3.10",
+      "target": "V66",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V64",
+        "openrouter": "V64"
+      }
+    },
+    {
+      "pair_id": "val-V68-7.3.4",
+      "target": "V68",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V68",
+        "openrouter": "V217"
+      }
+    },
+    {
+      "pair_id": "val-V7-2.1.5",
+      "target": "V7",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V7",
+        "openrouter": "V7"
+      }
+    },
+    {
+      "pair_id": "val-V70-1.3.1",
+      "target": "V70",
+      "family": "Sens quantitatif",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V129",
+        "openrouter": "V96"
+      }
+    },
+    {
+      "pair_id": "val-V72-5.2.7",
+      "target": "V72",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V72",
+        "openrouter": "V183"
+      }
+    },
+    {
+      "pair_id": "val-V73-6.3.3",
+      "target": "V73",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V73",
+        "openrouter": "V195"
+      }
+    },
+    {
+      "pair_id": "val-V74-7.3.4",
+      "target": "V74",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V74",
+        "openrouter": "V4"
+      }
+    },
+    {
+      "pair_id": "val-V75-2.3.2",
+      "target": "V75",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V78",
+        "openrouter": "V78"
+      }
+    },
+    {
+      "pair_id": "val-V77-4.1.5",
+      "target": "V77",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V77",
+        "openrouter": "V128"
+      }
+    },
+    {
+      "pair_id": "val-V78-1.1.3",
+      "target": "V78",
+      "family": "Sens quantitatif",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V78",
+        "openrouter": "V74"
+      }
+    },
+    {
+      "pair_id": "val-V85-3.1.3",
+      "target": "V85",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V93",
+        "openrouter": "V140"
+      }
+    },
+    {
+      "pair_id": "val-V89-4.2.7",
+      "target": "V89",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V96",
+        "openrouter": "V89"
+      }
+    },
+    {
+      "pair_id": "val-V9-7.2.5",
+      "target": "V9",
+      "family": "Argument pertinent",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V9",
+        "openrouter": "V161"
+      }
+    },
+    {
+      "pair_id": "val-V91-6.3.3",
+      "target": "V91",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V91",
+        "openrouter": "V209"
+      }
+    },
+    {
+      "pair_id": "val-V94-2.2.10",
+      "target": "V94",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V94",
+        "openrouter": "V94"
+      }
+    },
+    {
+      "pair_id": "val-V95-7.2.5",
+      "target": "V95",
+      "family": "Inférence maîtrisée",
+      "roundtrip": false,
+      "picks": {
+        "openai": "V79",
+        "openrouter": "V79"
+      }
+    },
+    {
+      "pair_id": "val-V96-3.3.10",
+      "target": "V96",
+      "family": "Inférence maîtrisée",
+      "roundtrip": true,
+      "picks": {
+        "openai": "V91",
+        "openrouter": "V96"
+      }
+    }
+  ]
+}
