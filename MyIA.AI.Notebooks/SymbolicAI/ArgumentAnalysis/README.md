@@ -101,6 +101,7 @@ Les extensions lettrées creusent un palier du parcours ; elles ne le font pas a
 
 - [06b — ATMS et conflits](Argumentation-06b-ATMS-Conflits-Python.ipynb) : représenter une croyance par les environnements minimaux qui la dérivent, observer une invalidation qui retranche sans recalcul, puis comparer les stratégies de résolution de conflits entre agents.
 - [06c — Révision de croyances AGM](Argumentation-06c-Revision-Croyances-Python.ipynb) : appliquer contraction de noyau et révision de Levi sur l'organe Tweety, et examiner les écarts réels du portage — comportements convergents et limites du parseur propositionnel inclus.
+- [06d — Complaisance auditée](Argumentation-06d-Complaisance-Auditee-Python.ipynb) : encoder les règles de cas de décision bornés dans un JTMS, qui donne la réponse attendue par construction, puis mesurer si un modèle servi change de réponse pour une bonne raison — un fait nouveau qui l'y oblige, une pression sans contenu, une affirmation fausse — et s'il abandonne son raisonnement lorsque la pression s'installe.
 
 ### Autour de 07 — Orchestration
 
