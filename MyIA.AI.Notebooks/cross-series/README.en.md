@@ -7,6 +7,7 @@ Showcase projects that span multiple pedagogical series (Search, SymbolicAI, Gen
 | Project | Description | Domains |
 |---------|-------------|---------|
 | [matching-cv/](matching-cv/) | Flask web app comparing 3 CV-to-job matching algorithms (Gale-Shapley, semantic similarity, hybrid RAG) | Search, GenAI, SymbolicAI |
+| [AgentSystems/](AgentSystems/) | Composable agent orchestration: the perceive→decide→act loop as a reusable spine, inference (deterministic or LLM) as a composition point, active perception by value of information. | Search, SymbolicAI, GenAI, ML, Compression |
 
 ## Purpose
 
