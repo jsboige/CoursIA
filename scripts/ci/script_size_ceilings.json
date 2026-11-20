@@ -30,8 +30,8 @@
       "note": "B.0 : cible T5 (separer la grammaire des marqueurs, l'evaluation et le rapport). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 332 lignes depuis la mesure du 13/11 (6414 -> 6746), puis de 12 lignes de plus (6746 -> 6758) apres le #26763, puis de 1 ligne(s) au 20/11 (6758 -> 6759) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee"
     },
     "scripts/ci/fast_lane_registry.py": {
-      "lines": 4924,
-      "note": "Registre de la voie rapide : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 300 lignes depuis la mesure du 13/11 (4305 -> 4605), puis de 62 lignes de plus (4605 -> 4667). Releve au 19/11 sur origin/main : le script a grossi de 257 lignes de plus (4667 -> 4924) -- le cliquet bloque la PR tant que le plafond n'est pas releve ici."
+      "lines": 4984,
+      "note": "Registre de la voie rapide : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 300 lignes depuis la mesure du 13/11 (4305 -> 4605), puis de 62 lignes de plus (4605 -> 4667). Releve au 19/11 sur origin/main : le script a grossi de 257 lignes de plus (4667 -> 4924) -- le cliquet bloque la PR tant que le plafond n'est pas releve ici.. Releve au 20/11 sur origin/main : +60 lignes (4924 -> 4984) par le cablage du contrat des carnets Rust dans la voie rapide (#27189)"
     },
     "scripts/ci/prune_merged_worktrees.py": {
       "lines": 3939,
