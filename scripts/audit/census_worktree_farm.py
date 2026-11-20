@@ -24,9 +24,9 @@ pour les criteres de retrait).
 
 Usage :
 
-    python scripts/ci/census_worktree_farm.py --farm D:/CoursIA-2-wt
-    python scripts/ci/census_worktree_farm.py --farm D:/CoursIA-2-wt --json
-    python scripts/ci/census_worktree_farm.py --farm D:/CoursIA-2-wt --lane myia-ai-01:CoursIA-2
+    python scripts/audit/census_worktree_farm.py --farm D:/CoursIA-2-wt
+    python scripts/audit/census_worktree_farm.py --farm D:/CoursIA-2-wt --json
+    python scripts/audit/census_worktree_farm.py --farm D:/CoursIA-2-wt --lane myia-ai-01:CoursIA-2
 
 Sorties : rc 0 = census produit ; rc 1 = ferme introuvable ou liste illisible ;
 rc 2 = `--gh` impose et `gh` indisponible (degrade assume, aucun verdict
@@ -52,13 +52,19 @@ RECYCLABLE_STATES = ("MERGED", "CLOSED")
 def lane_from_body(body: str) -> str | None:
     """La lane declaree par le tag `Grain:` d'un body de PR, ou None.
 
-    Le tag est la premiere ligne du body ; on lit la premiere occurrence
-    reconnue, sans jamais deduire une lane d'un autre texte.
+    Le tag est la premiere ligne du body : la lecture est **ancree** sur cette
+    premiere ligne non vide. Une mention de lane plus bas dans le corps (une
+    citation, un historique, un renvoi) ne peut donc pas detourner
+    l'attribution.
     """
     if not body:
         return None
-    m = LANE_TAG.search(body)
-    return m.group(1) if m else None
+    for line in body.splitlines():
+        if not line.strip():
+            continue
+        m = LANE_TAG.search(line)
+        return m.group(1) if m else None
+    return None
 
 
 def parse_worktree_list(text: str) -> list[dict[str, Any]]:
@@ -130,17 +136,22 @@ def gh_slug(repo: str) -> str | None:
     return None
 
 
-def fetch_prs(repo: str) -> tuple[dict[str, list[dict[str, Any]]], str | None]:
+def fetch_prs(repo: str, limit: int = 600) -> tuple[dict[str, list[dict[str, Any]]], str | None]:
     """Les PRs du depot, indexees par branche de tete.
 
     Retourne `(index, erreur)`. L'index est vide et l'erreur non nulle si `gh`
     est indisponible : l'inventaire degrade alors en « sans attribution »,
     ce qui est un etat honnete, pas un echec de mesure.
+
+    `limit` borne le nombre de PRs interrogees (`gh pr list --limit`). Le
+    defaut de 600 couvre les PRs merger recemment ; au-dela, une PR ancienne
+    sort de l'index et son worktree est lu « sans PR ». Le plafond est
+    expose (`--pr-limit`) pour qu'une ferme large puisse l'elever.
     """
     try:
         raw = subprocess.run(
             ["gh", "pr", "list", "--repo", repo, "--state", "all",
-             "--limit", "600", "--json",
+             "--limit", str(limit), "--json",
              "number,headRefName,body,title,state,mergedAt"],
             capture_output=True, text=True, encoding="utf-8", errors="replace")
     except OSError as exc:
@@ -183,7 +194,7 @@ def worktree_state(path: str, branch: str | None) -> dict[str, Any]:
 
 
 def census(farm: str, repo: str, use_gh: bool = True,
-           gh_repo: str | None = None) -> dict[str, Any]:
+           gh_repo: str | None = None, pr_limit: int = 600) -> dict[str, Any]:
     """L'inventaire complet de la ferme."""
     rc, listing = git(repo, "worktree", "list", "--porcelain")
     if rc != 0:
@@ -194,7 +205,7 @@ def census(farm: str, repo: str, use_gh: bool = True,
         if not slug:
             gh_error = "slug GitHub introuvable sur le remote origin"
         else:
-            pr_index, gh_error = fetch_prs(slug)
+            pr_index, gh_error = fetch_prs(slug, limit=pr_limit)
     rows: list[dict[str, Any]] = []
     farm_norm = os.path.normcase(os.path.abspath(farm))
     rc_top, toplevel = git(repo, "rev-parse", "--show-toplevel")
@@ -284,13 +295,15 @@ def main(argv: list[str] | None = None) -> int:
                     help="sortie structuree")
     ap.add_argument("--no-gh", action="store_true",
                     help="sans GitHub : aucune attribution par tag de PR")
+    ap.add_argument("--pr-limit", type=int, default=600,
+                    help="nombre maximal de PRs interrogees (defaut : 600)")
     args = ap.parse_args(argv)
     if not os.path.isdir(args.farm):
         sys.stderr.write("ferme introuvable : %s\n" % args.farm)
         return 1
     try:
         report = census(args.farm, args.repo, use_gh=not args.no_gh,
-                        gh_repo=args.gh_repo)
+                        gh_repo=args.gh_repo, pr_limit=args.pr_limit)
     except RuntimeError as exc:
         sys.stderr.write("%s\n" % exc)
         return 1
