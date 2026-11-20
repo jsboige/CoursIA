@@ -11,7 +11,9 @@ Ce qui est compte (marqueurs de RECIT) :
   - un numero de pull request suivi d'un contexte de fusion ;
   - le bloc de filiation d'une intro (« Filiation », « EPIC parent ») ;
   - le vocabulaire de decoupage de production (« sous-grain ») ;
-  - un verdict de revue pose dans le carnet (« SOTA-OK », « CHANGES_REQUESTED ») ;
+  - un verdict de revue pose dans le carnet (« SOTA-OK », « CHANGES_REQUESTED »,
+    « RECOVERABLE-USER-HAND ») ;
+  - un intertitre de recit de production (« Cadre de production ») ;
   - une date de fusion (« mergee 2026-07-10 »).
 
 Ce qui n'est PAS compte (renvois pedagogiques legitimes, qui restent des
@@ -42,9 +44,11 @@ MARQUEURS = [
     "PR-B",
     "SOTA-OK",
     "CHANGES_REQUESTED",
+    "RECOVERABLE-USER-HAND",
     "sous-grain",
     "Filiation",
     "EPIC parent",
+    "Cadre de production",
     "mergée 2026",
     "mergee 2026",
     "mergée le",
