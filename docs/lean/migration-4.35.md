@@ -66,7 +66,7 @@ Recensement firsthand sur `origin/main` au `d1937ebe375fc` (2026-11-20) :
 `lakefile.lean` ni `lake-manifest.json`** : c'est un répertoire conteneur qui porte les
 carnets. Son `lean-toolchain` sert les carnets Lean qui n'ont **pas** de lac au-dessus
 d'eux. Les 20 sous-lacs portent **chacun** leur pin et **aucun n'hérite** de l'ancre
-(mesuré le 2026-11-20 : 20 fichiers, 20 pins distincts, aucun `v4.33.0` hérité de l'ancre).
+(mesuré le 2026-11-20 : 20 pins distincts, aucun `v4.33.0` hérité de l'ancre).
 
 Conséquence directe : `scripts/lean/ci_lakes.json` ne cite **que** des sous-lacs (mesuré :
 aucune entrée ne pointe `SymbolicAI/Lean/lean-toolchain`). **Migrer l'ancre ne déclenche
@@ -151,7 +151,7 @@ exécutables sous `lean4-wsl`. Ne pas le dire comme le contraire.
 `lake build` qui rend **143** (SIGTERM) ou qui reste bloqué sur les modules Mathlib 6000+ /
 8498 est un **OOM / kill de parallélisme**, pas une incompatibilité de version.
 
-Procédure : [windows-native-toolchain.md §3](../reference/windows-native-toolchain.md).
+Procédure : [windows-native-toolchain.md §3](windows-native-toolchain.md#3-quand-lake-build-sigterm-ise-lean-exited-143).
 Le build Lean **borné** est obligatoire côté WSL (mandat user du 29/10 : un build Lean non
 borné peut vider la VM) :
 
@@ -245,8 +245,8 @@ le repli `#27477` (jalon 3).
 ## Voir aussi
 
 - [EPIC #27478](https://github.com/jsboige/CoursIA/issues/27478) — le mandat et les jalons
-- [windows-native-toolchain.md](../reference/windows-native-toolchain.md) — build Windows natif
+- [windows-native-toolchain.md](windows-native-toolchain.md) — build Windows natif
 - [wsl-kernels-detail.md](../reference/wsl-kernels-detail.md) — le kernel `lean4-wsl`
 - [l902_tactic_pitfalls.md](l902_tactic_pitfalls.md) — pièges de tactic
 - [knot-4.33-investigation.md](knot-4.33-investigation.md) — investigation d'un lac 4.33
-- [precedent mesuré](#) — PR #24965 (`9be411ea0898a`), bump de l'ancre v4.30.0 → v4.33.0
+- [precedent mesuré](https://github.com/jsboige/CoursIA/pull/24965) — PR #24965 (`9be411ea0898a`), bump de l'ancre v4.30.0 → v4.33.0
