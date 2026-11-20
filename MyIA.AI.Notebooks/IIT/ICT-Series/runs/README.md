@@ -35,6 +35,28 @@ Le schéma qui rend le budget lisible (`script`, `max_completion_length` au nive
 de l'artefact et dans chaque résultat de graine) date de `ad2b817535a6`, mergé en
 `9ab5eed36a4b` le 2026-10-26. Les runs postérieurs le portent.
 
+## Campagne 2B (Gates 20-21, `Qwen/Qwen3.5-2B-Base`)
+
+| Artefact | Bras | Graines | Pas | `max_completion_length` declare |
+|---|---|---|---|---|
+| `ict25a_N_2B.json` | N | 0, 1, 7, 42 | 120 | 80 (`protocol`) |
+| `ict25a_Np_2B.json` | Np | 0, 1, 7, 42 | 120 | 80 (`protocol`) |
+| `ict25a_N_2B.rewardspy_audit.json` | N | 0, 1, 7, 42 | — | fenetres `head` et `tail` traitees separement |
+| `ict25a_Np_2B.rewardspy_audit.json` | Np | 0, 1, 7, 42 | — | idem |
+| `ict25a_N_2B.rewardspy_audit_head.json` | N | 0, 1, 7, 42 | — | fenetre `head` seule (comparaison homogene) |
+| `ict25a_Np_2B.rewardspy_audit_head.json` | Np | 0, 1, 7, 42 | — | idem |
+
+Ces six fichiers sont produits par la campagne 2B du 2026-11-20 (device : GPU 2
+de `myia-ai-01`). La lecture des criteres scelles (C1, C2, A1, A2, A4) est dans
+[`docs/ict/ict25a-2b-resultats-2b.md`](../../../docs/ict/ict25a-2b-resultats-2b.md).
+
+**Une asymetrie d'echantillon, a lire avant de comparer les audits :** les
+graines 7 et 42 du bras `Np` portent leurs 240 enregistrements dans
+`records_sample` et **rien** dans `records_sample_tail`, alors que les quatre
+graines du bras `N` portent 64 en tete et 64 en queue. L'ecriture de
+l'artefact n'est donc pas symetrique entre les bras : les audits `head` seuls
+sont la comparaison homogene graine par graine.
+
 ## Ce que ces artefacts ne disent pas
 
 La révision exacte du producteur (`git_commit`) n'est pas enregistrée par cette
