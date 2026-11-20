@@ -603,7 +603,31 @@ def changed_notebooks(base, head="HEAD", cwd=None):
     return sorted(paths)
 
 
-def renamed_notebooks(base, head="HEAD", cwd=None):
+def _parse_rename_status(out):
+    """{chemin a la tete: chemin a la base} depuis une sortie ``--name-status``.
+
+    Extrait du corps de ``renamed_notebooks`` (#26914) : les tests pytest de
+    l'organe frere ``check_uncommented_code`` doublent son self-test et
+    verifient le parseur SEUL, sur des sorties fabriquees -- pas via un stub
+    de git. Seules les lignes ``R<score>\\t<ancien>\\t<nouveau>`` comptent :
+    A/M/D sont ignorees, et une paire D+A (similarite sous ``-M``) n'est pas
+    un renommage -- c'est le sur-signalement assume, jamais un blanchiment.
+
+    ``None`` (git muet) rend une table vide ; les antislashs Windows sont
+    normalises pour rester comparables aux chemins ``--name-only``.
+    """
+    renames: dict[str, str] = {}
+    if out is None:
+        return renames
+    for line in out.splitlines():
+        parts = [p for p in line.split("\t") if p]
+        if len(parts) == 3 and parts[0].startswith("R"):
+            renames[parts[2].strip().replace(BS, "/")] = (
+                parts[1].strip().replace(BS, "/"))
+    return renames
+
+
+def renamed_notebooks(base, head="HEAD", cwd=None, git_fn=None):
     """{chemin a la tete: chemin a la base} pour les carnets RENOMMES.
 
     Lecture git partagee par les organes freres en mode diff : un carnet
@@ -618,18 +642,20 @@ def renamed_notebooks(base, head="HEAD", cwd=None):
     c'est un vrai ajout, pas un renommage. Sortie ``--name-status`` :
     ``R100\\t<ancien>\\t<nouveau>`` ; un R090 (renomme + edite) mappe pareil
     -- c'est la base qu'on cherche, pas la qualite du rapprochement.
+
+    ``git_fn`` (interne) laisse un module frere deleguer l'appel avec SON
+    propre ``git`` module-level : un stub ``monkeypatch.setattr`` cible le
+    module appelant, pas celui qui definit la commande (#26914).
+
+    Un renommage dont la CIBLE est hors perimetre (``_output``, archive,
+    recherche) sort de la table : ``changed_notebooks`` ne la rendra pas non
+    plus -- les deux tables partagent le meme filtre ``EXCLUDE_MARKERS``.
     """
-    out = git("diff", "-M", "--name-status", "--diff-filter=R", base, head,
-              "--", "*.ipynb", cwd=cwd)
-    renames: dict[str, str] = {}
-    if out is None:
-        return renames
-    for line in out.splitlines():
-        parts = [p for p in line.split("\t") if p]
-        if len(parts) == 3 and parts[0].startswith("R"):
-            renames[parts[2].strip().replace(BS, "/")] = (
-                parts[1].strip().replace(BS, "/"))
-    return renames
+    out = (git_fn or git)("diff", "-M", "--name-status", "--diff-filter=R",
+                          base, head, "--", "*.ipynb", cwd=cwd)
+    renames = _parse_rename_status(out)
+    return {new: old for new, old in renames.items()
+            if not any(m in "/" + new for m in EXCLUDE_MARKERS)}
 
 
 def all_notebooks(cwd=None):

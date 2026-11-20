@@ -1,4 +1,5 @@
 import json
+from datetime import date, datetime, timedelta
 
 import pytest
 
@@ -124,3 +125,72 @@ def test_state_file_without_the_new_flags_keeps_a_drawdown_halt_liquidating(tmp_
                                 "day_start_equity": 1070.0, "halted": True,
                                 "halt_reason": "max drawdown 10.83% >= 10.00%"}), encoding="utf-8")
     assert RiskGate.load(RISK, path, 1000.0).exposure_scale == 0.0
+
+
+# -- daily-loss window (#27121) ------------------------------------------------
+
+D0 = date(2026, 11, 2)
+
+
+def _slow_decline(sessions=11, step=0.995):
+    """One equity mark per session, -0.5 % each: -4.9 % after ten sessions."""
+    return [1000.0 * step**k for k in range(sessions)]
+
+
+def test_two_marks_on_the_same_day_keep_the_window():
+    gate = RiskGate(RISK, 1000.0)
+    gate.update_equity(1000.0, day=D0)
+    assert gate.update_equity(975.0, day=datetime(2026, 11, 2, 21, 0))  # -2.5 %, same session
+    assert gate.day_start_equity == 1000.0
+    assert not gate.update_equity(965.0, day=D0)  # -3.5 % since the session's first mark
+    assert "daily loss" in gate.halt_reason
+
+
+def test_a_slow_decline_over_ten_sessions_never_trips_the_daily_halt():
+    marks = _slow_decline()
+    assert (1000.0 - marks[-1]) / 1000.0 > RISK.daily_var_pct  # past the threshold in total
+    gate = RiskGate(RISK, 1000.0)
+    for k, equity in enumerate(marks):
+        assert gate.update_equity(equity, day=D0 + timedelta(days=k)), k
+    assert gate.day_start_equity == pytest.approx(marks[-2])
+    # Positive control: the same marks without dates keep the window on the
+    # starting capital, and the cumulative loss reads as one session.
+    undated = RiskGate(RISK, 1000.0)
+    for equity in marks:
+        undated.update_equity(equity)
+    assert undated.halted and "daily loss" in undated.halt_reason
+
+
+def test_the_window_rolls_across_restarts(tmp_path):
+    path = tmp_path / "risk.json"
+    for k, equity in enumerate(_slow_decline()):
+        gate = RiskGate.load(RISK, path, starting_capital=1000.0)
+        assert gate.update_equity(equity, day=D0 + timedelta(days=k)), k
+        gate.save(path)
+    state = json.loads(path.read_text(encoding="utf-8"))
+    assert state["last_mark_date"] == (D0 + timedelta(days=10)).isoformat()
+    assert not state["halted"]
+
+
+def test_a_single_session_drop_past_the_threshold_halts_without_liquidating():
+    gate = RiskGate(RISK, 1000.0)
+    gate.update_equity(1000.0, day=D0)
+    gate.update_equity(990.0, day=D0 + timedelta(days=1))
+    assert not gate.update_equity(955.0, day=D0 + timedelta(days=2))  # -3.5 % since 990
+    assert "daily loss" in gate.halt_reason
+    assert not gate.liquidate and gate.exposure_scale == 1.0
+    # A new session rolls the window; it does not clear the halt.
+    assert not gate.update_equity(960.0, day=D0 + timedelta(days=3))
+
+
+def test_a_state_file_without_mark_dates_opens_the_window_on_the_first_dated_mark(tmp_path):
+    path = tmp_path / "old.json"
+    path.write_text(json.dumps({"starting_capital": 1000.0, "peak_equity": 1000.0,
+                                "day_start_equity": 1000.0, "halted": False,
+                                "halt_reason": None}), encoding="utf-8")
+    gate = RiskGate.load(RISK, path, 1000.0)
+    assert gate.last_mark_date is None
+    assert gate.update_equity(950.0, day=D0)  # -5 % since the start, sessions unknown: no halt
+    assert gate.day_start_equity == 950.0
+    assert not gate.update_equity(920.0, day=D0 + timedelta(days=1))  # -3.2 % in one session
+    assert "daily loss" in gate.halt_reason
