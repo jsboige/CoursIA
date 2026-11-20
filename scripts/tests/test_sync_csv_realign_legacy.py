@@ -55,8 +55,13 @@ def _write_csv(path: pathlib.Path, text_en: str) -> None:
 @pytest.fixture()
 def pair(tmp_path: pathlib.Path):
     csv_path = tmp_path / "serie.csv"
-    pivot = tmp_path / "Notebook-Python.ipynb"
-    twin = tmp_path / "Notebook-Python_en.ipynb"
+    # Le pivot vit dans serie/ : la ligne CSV (repo-relative) et le chemin
+    # absolu passe en --pivot designent alors le MEME carnet. Le filtre
+    # discriminant par chemin complet (#27148) exige cette correspondance.
+    serie = tmp_path / "serie"
+    serie.mkdir()
+    pivot = serie / "Notebook-Python.ipynb"
+    twin = serie / "Notebook-Python_en.ipynb"
     _write_csv(csv_path, LEGACY_EN)
     _write_notebook(pivot, PIVOT_FR)
     _write_notebook(twin, TWIN_EN)
@@ -137,3 +142,46 @@ def test_realign_legacy_leaves_in_sync_untouched(pair):
     rc = sync.main(_argv(pair, "--apply", "--realign-legacy", "passe 2"))
     assert rc == 0
     assert csv_path.read_bytes() == after_first
+
+
+def test_filter_never_matches_same_basename_sibling(tmp_path, capsys):
+    """Regression #27148 : deux carnets distincts partageant le basename
+    research.ipynb dans le meme CSV -- une paire pivot/jumeau ne reecrit
+    QUE les lignes de son pivot. Le filtre historique par basename
+    reecrivait aussi les lignes du carnet homonyme (cross-contamination
+    mesuree sur partner-course.csv, c.7026312711)."""
+    serie_a = tmp_path / "crypto"
+    serie_b = tmp_path / "transitoire"
+    serie_a.mkdir()
+    serie_b.mkdir()
+    pivot = serie_b / "research.ipynb"
+    twin = serie_b / "research_en.ipynb"
+    _write_notebook(pivot, PIVOT_FR)
+    _write_notebook(twin, TWIN_EN)
+    csv_path = tmp_path / "partner.csv"
+    rows = []
+    for nb, seed_letter in (("crypto/research.ipynb", "a"),
+                            ("transitoire/research.ipynb", "e")):
+        rows.append({"notebook": nb, "cell_id": "cell-1",
+                     "text": PIVOT_FR, "hash": seed_letter * 16,
+                     "src_hash": chr(ord(seed_letter) + 1) * 16,
+                     "text_en": LEGACY_EN,
+                     "hash_en": chr(ord(seed_letter) + 2) * 16,
+                     "src_hash_en": chr(ord(seed_letter) + 3) * 16})
+    buf = io.StringIO()
+    writer = csv.DictWriter(buf, fieldnames=FIELDS, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    csv_path.write_bytes(buf.getvalue().encode("utf-8"))
+
+    rc = sync.main(["--csv", str(csv_path), "--pivot", str(pivot),
+                    "--twin", str(twin), "--apply", "--realign-legacy",
+                    "regression basename (#27148)"])
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "[ALIGNED_LEGACY] cell-1" in out
+    out_rows = {r["notebook"]: r for r in _rows(csv_path)}
+    # La ligne du pivot est alignee depuis le jumeau...
+    assert out_rows["transitoire/research.ipynb"]["text_en"] == TWIN_EN
+    # ...celle du carnet homonyme est intacte (ancien filtre : reecrite aussi).
+    assert out_rows["crypto/research.ipynb"]["text_en"] == LEGACY_EN
