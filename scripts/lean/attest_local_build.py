@@ -1396,7 +1396,7 @@ def _attestation_extra(builds: list[dict], modules_mode: str) -> str:
         skipped = scope.get("skipped_aggregators") or []
         if skipped:
             lines.append(
-                "Agregateurs ecartes (imports seuls, sans declaration) : {}.".format(
+                "Agregateurs ecartes (imports seuls, sans commande) : {}.".format(
                     ", ".join("`{}`".format(s) for s in skipped)
                 )
             )

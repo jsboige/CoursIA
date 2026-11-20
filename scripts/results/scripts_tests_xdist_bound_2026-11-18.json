@@ -1,0 +1,198 @@
+{
+  "generated_at": "2026-11-18T04:49:20.847777Z",
+  "repo": "jsboige/CoursIA",
+  "workflow": "scripts-tests.yml",
+  "branch": "main",
+  "job": "Scripts Tests (CPU)",
+  "split": "2026-11-18T04:25:19Z",
+  "runs_excluded_cancelled": true,
+  "before": {
+    "n": 14,
+    "median_s": 1096.5,
+    "mean_s": 1220.8,
+    "min_s": 924.0,
+    "max_s": 1798.0
+  },
+  "after": {
+    "n": 1,
+    "median_s": 883.0,
+    "mean_s": 883.0,
+    "min_s": 883.0,
+    "max_s": 883.0
+  },
+  "by_conclusion": {
+    "after:success": {
+      "n": 1,
+      "median_s": 883.0,
+      "mean_s": 883.0,
+      "min_s": 883.0,
+      "max_s": 883.0
+    },
+    "before:failure": {
+      "n": 5,
+      "median_s": 1551.0,
+      "mean_s": 1593.4,
+      "min_s": 1489.0,
+      "max_s": 1798.0
+    },
+    "before:success": {
+      "n": 9,
+      "median_s": 974.0,
+      "mean_s": 1013.8,
+      "min_s": 924.0,
+      "max_s": 1121.0
+    }
+  },
+  "measurements": [
+    {
+      "run_id": 44237207495,
+      "head_sha": "c390263a4711",
+      "created_at": "2026-11-18T04:25:22Z",
+      "conclusion": "success",
+      "started_at": "2026-11-18T04:32:20Z",
+      "completed_at": "2026-11-18T04:47:03Z",
+      "duration_s": 883.0,
+      "group": "after"
+    },
+    {
+      "run_id": 44236218233,
+      "head_sha": "ba602514227c",
+      "created_at": "2026-11-18T04:16:50Z",
+      "conclusion": "success",
+      "started_at": "2026-11-18T04:16:53Z",
+      "completed_at": "2026-11-18T04:32:17Z",
+      "duration_s": 924.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44223494031,
+      "head_sha": "b82151be9cd5",
+      "created_at": "2026-11-18T02:28:20Z",
+      "conclusion": "success",
+      "started_at": "2026-11-18T02:28:23Z",
+      "completed_at": "2026-11-18T02:47:04Z",
+      "duration_s": 1121.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44209073751,
+      "head_sha": "dc44cb3bfe9d",
+      "created_at": "2026-11-18T00:35:30Z",
+      "conclusion": "success",
+      "started_at": "2026-11-18T00:43:13Z",
+      "completed_at": "2026-11-18T00:58:46Z",
+      "duration_s": 933.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44204606736,
+      "head_sha": "240c8026bf0f",
+      "created_at": "2026-11-18T00:03:21Z",
+      "conclusion": "success",
+      "started_at": "2026-11-18T00:24:42Z",
+      "completed_at": "2026-11-18T00:43:10Z",
+      "duration_s": 1108.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44203510626,
+      "head_sha": "715f1a7b3390",
+      "created_at": "2026-11-17T23:55:18Z",
+      "conclusion": "failure",
+      "started_at": "2026-11-17T23:58:08Z",
+      "completed_at": "2026-11-18T00:24:39Z",
+      "duration_s": 1591.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44201634449,
+      "head_sha": "8c8adc8023f3",
+      "created_at": "2026-11-17T23:41:59Z",
+      "conclusion": "success",
+      "started_at": "2026-11-17T23:42:04Z",
+      "completed_at": "2026-11-17T23:58:04Z",
+      "duration_s": 960.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44197738776,
+      "head_sha": "119db25c83d3",
+      "created_at": "2026-11-17T23:15:21Z",
+      "conclusion": "success",
+      "started_at": "2026-11-17T23:15:24Z",
+      "completed_at": "2026-11-17T23:31:38Z",
+      "duration_s": 974.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44188063240,
+      "head_sha": "4cff580faae3",
+      "created_at": "2026-11-17T22:14:27Z",
+      "conclusion": "failure",
+      "started_at": "2026-11-17T22:14:31Z",
+      "completed_at": "2026-11-17T22:40:09Z",
+      "duration_s": 1538.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44179791820,
+      "head_sha": "362a576770d3",
+      "created_at": "2026-11-17T21:26:13Z",
+      "conclusion": "failure",
+      "started_at": "2026-11-17T21:43:43Z",
+      "completed_at": "2026-11-17T22:08:32Z",
+      "duration_s": 1489.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44175203474,
+      "head_sha": "7f75be7cf3b6",
+      "created_at": "2026-11-17T21:00:18Z",
+      "conclusion": "failure",
+      "started_at": "2026-11-17T21:17:49Z",
+      "completed_at": "2026-11-17T21:43:40Z",
+      "duration_s": 1551.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44173042844,
+      "head_sha": "7280568f9e4f",
+      "created_at": "2026-11-17T20:47:43Z",
+      "conclusion": "failure",
+      "started_at": "2026-11-17T20:47:47Z",
+      "completed_at": "2026-11-17T21:17:45Z",
+      "duration_s": 1798.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44156912771,
+      "head_sha": "cdf792ad07e7",
+      "created_at": "2026-11-17T19:17:05Z",
+      "conclusion": "success",
+      "started_at": "2026-11-17T19:28:02Z",
+      "completed_at": "2026-11-17T19:45:33Z",
+      "duration_s": 1051.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44155354167,
+      "head_sha": "25429ed1a589",
+      "created_at": "2026-11-17T19:08:30Z",
+      "conclusion": "success",
+      "started_at": "2026-11-17T19:09:45Z",
+      "completed_at": "2026-11-17T19:27:50Z",
+      "duration_s": 1085.0,
+      "group": "before"
+    },
+    {
+      "run_id": 44149259889,
+      "head_sha": "7e5f86d310ec",
+      "created_at": "2026-11-17T18:34:11Z",
+      "conclusion": "success",
+      "started_at": "2026-11-17T18:36:15Z",
+      "completed_at": "2026-11-17T18:52:23Z",
+      "duration_s": 968.0,
+      "group": "before"
+    }
+  ]
+}
