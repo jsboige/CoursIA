@@ -264,3 +264,118 @@ def test_mode_check_rend_son_code_de_sortie(fake_repo: Path, tmp_path: Path):
     )
     _commit(fake_repo)
     assert dm.main(["--repo-root", str(fake_repo), "--out-dir", str(out), "--check"]) == 1
+
+
+# --- Hermes : trois mesures fausses, trois tests qui ferment la porte -------
+
+
+def test_chemin_accentue_inventorie(fake_repo: Path):
+    """Un chemin accentue reste un chemin (defaut 1 de la revue).
+
+    ``git ls-files`` C-quote les chemins non-ASCII : le chemin ressort entre
+    guillemets avec des echappements octaux, ne finit plus par ``.ipynb``,
+    et disparait de l'inventaire. La mesure des carnets etait donc fausse
+    sur les noms accentues.
+    """
+    _write(
+        fake_repo / "MyIA.AI.Notebooks/Search/Créateur de mail personnalisé.ipynb",
+        _notebook("python3", "python", "print('mail')\n"),
+    )
+    _write(
+        fake_repo / "MyIA.AI.Notebooks/Données/requirements.txt",
+        "pandas>=2.0\n",
+    )
+    _commit(fake_repo)
+    manifest = dm.build_manifest(fake_repo)
+    assert manifest["counts"]["notebooks"] == 2
+    groups = {group["group"]: group for group in manifest["groups"]}
+    assert groups["MyIA.AI.Notebooks/Search"]["notebook_count"] == 2
+    assert "MyIA.AI.Notebooks/Données" in groups
+    assert groups["MyIA.AI.Notebooks/Données"]["dependency_files"] == [
+        "MyIA.AI.Notebooks/Données/requirements.txt"
+    ]
+
+
+def test_groupe_sans_carnet_n_est_pas_exclu(fake_repo: Path):
+    """Un groupe sans carnet n'est pas un groupe « non-Python » (defaut 2).
+
+    L'absence de carnet est une **absence de mesure** : elle ne peut pas
+    exclure le groupe, sinon ses paquets reels disparaissent du manifeste
+    consolide (cas `cross-series/matching-cv`, `SymbolicAI/Lean/agent_tests`).
+    """
+    _write(
+        fake_repo / "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt",
+        "flask>=3.0\n",
+    )
+    _commit(fake_repo)
+    manifest = dm.build_manifest(fake_repo)
+    groups = {group["group"]: group for group in manifest["groups"]}
+    matching = groups["MyIA.AI.Notebooks/cross-series/matching-cv"]
+    assert matching["verdict"] == "inclus"
+    assert matching["kernel_families_source"] == "non mesure"
+    motif = next(
+        motif
+        for motif in matching["motifs"]
+        if motif["policy"] == "kernel_family_unmeasured"
+    )
+    assert motif["origin"] == "declaration"
+    consolidated = {record["package"] for record in manifest["consolidated_manifest"]}
+    assert "flask" in consolidated
+
+
+def test_famille_heritee_des_sous_repertoires(fake_repo: Path):
+    """Un repertoire sans carnet direct lit sa famille dans ses enfants.
+
+    Le groupe parent porte les dependances ; ses carnets vivent un niveau
+    plus bas. La famille se lit donc dans les sous-repertoires : c'est une
+    mesure, pas une supposition.
+    """
+    _write(
+        fake_repo / "MyIA.AI.Notebooks/Series/requirements.txt",
+        "numpy>=1.24\n",
+    )
+    _write(
+        fake_repo / "MyIA.AI.Notebooks/Series/Sub/A-01.ipynb",
+        _notebook("python3", "python", "import numpy\n"),
+    )
+    _commit(fake_repo)
+    manifest = dm.build_manifest(fake_repo)
+    groups = {group["group"]: group for group in manifest["groups"]}
+    parent = groups["MyIA.AI.Notebooks/Series"]
+    assert parent["verdict"] == "inclus"
+    assert parent["kernel_families"] == ["Python"]
+    assert parent["kernel_families_source"] == "herite"
+
+
+def test_entete_du_manifeste_reconnu_par_le_garde_prose(fake_repo: Path):
+    """Le Markdown genere se declare genere devant le garde `prose-counts`.
+
+    Le garde est bloquant sur les compteurs ecrits a la main : un fichier
+    genere qui ne se declare pas tel est traite comme de la prose et
+    bloque la PR sans raison de fond. L'en-tete doit porter le motif que
+    l'organe sait lire.
+    """
+    import importlib.util
+
+    organe = Path(dm.__file__).resolve().parent / "check_prose_quantitative_claims.py"
+    spec = importlib.util.spec_from_file_location("cpq", organe)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    manifest = dm.build_manifest(fake_repo)
+    markdown = dm.render_markdown(manifest)
+    assert module._declares_generated(markdown)
+
+
+def test_repli_de_normalisation_divulgue(fake_repo: Path, monkeypatch):
+    """Un repli de normalisation est compte, pas tait en silence.
+
+    Sans l'organe natif des versions, le repli compare les chaines brutes
+    et invente des conflits : il doit etre visible dans les compteurs.
+    """
+    monkeypatch.setattr(dm, "version_key", None)
+    manifest = dm.build_manifest(fake_repo)
+    assert manifest["counts"]["version_normalization_fallbacks"] > 0
+    markdown = dm.render_markdown(manifest)
+    assert "Repli de normalisation" in markdown
+

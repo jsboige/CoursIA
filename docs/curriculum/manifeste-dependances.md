@@ -1,8 +1,8 @@
 # Manifeste des dependances du cursus
 
-Genere par `scripts/notebook_tools/dependency_manifest.py` (#27544) sur `49f6022724b6ce39181513d63e69e5abcbcdb24e`, sans reseau. Politique : `scripts/notebook_tools/dependency_manifest_policy.json`.
+Fichier genere par `scripts/notebook_tools/dependency_manifest.py` (#27544) sur `58049642bf02ea013b3eaab710e75dada155fdba`, sans reseau. Politique : `scripts/notebook_tools/dependency_manifest_policy.json`. Ne pas editer a la main : la sortie est regeneree a chaque execution de l'organe.
 
-Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 series, 278 groupes de repertoires, 63 groupes inclus dans l'image CPU, 47 conflits de versions.
+Mesure : 1930 carnets, fichiers de dependances du cursus et hors cursus, 16 series, 278 groupes de repertoires, 69 groupes inclus dans l'image CPU, 47 conflits de versions.
 
 **Origine des motifs** : `mesure` = deduit d'une lecture du depot ; `declaration` = regle ecrite dans la politique versionnee, contestable.
 
@@ -11,7 +11,7 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | Groupe | Serie | Sous-serie | Noyaux | Fichiers de dependances | Carnets | GPU | Cle d'API (nb) | Service reseau | Verdict | Service optionnel | Motifs (origine) | Lacunes de declaration |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `MyIA.AI.Notebooks` |  | - | .NET | aucun | 1 | non | - | - | **exclu** | non | mesure : noyau non-Python (.NET) : hors image CPU Python | - |
-| `MyIA.AI.Notebooks/CaseStudies` | CaseStudies | - | - | MyIA.AI.Notebooks/CaseStudies/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) ; mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/CaseStudies` | CaseStudies | - | Python | MyIA.AI.Notebooks/CaseStudies/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
 | `MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution` | CaseStudies | Diagnostic-Medical | Python | aucun | 1 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
 | `MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student` | CaseStudies | Diagnostic-Medical | Python | aucun | 1 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
 | `MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution` | CaseStudies | Planification-Oncologie | Python | aucun | 1 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
@@ -27,7 +27,7 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/GameTheory/Metajeux` | GameTheory | Metajeux | Python | aucun | 7 | non | - | - | **inclus** | non | - | torch |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice` | GameTheory | SocialChoice | .NET, Python, autre | aucun | 17 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/GameTheory/gateway` | GameTheory | gateway | Python | MyIA.AI.Notebooks/GameTheory/gateway/requirements.txt | 1 | non | - | - | **inclus** | non | - | - |
-| `MyIA.AI.Notebooks/GenAI` | GenAI | - | - | MyIA.AI.Notebooks/GenAI/requirements-audio.txt, MyIA.AI.Notebooks/GenAI/requirements-video.txt, MyIA.AI.Notebooks/GenAI/requirements.txt | 0 | non | - | - | **exclu** | oui | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; declaration : fichier de dependances optionnel : MyIA.AI.Notebooks/GenAI/requirements-audio.txt, MyIA.AI.Notebooks/GenAI/requirements-video.txt ; mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/GenAI` | GenAI | - | Python, autre, .NET | MyIA.AI.Notebooks/GenAI/requirements-audio.txt, MyIA.AI.Notebooks/GenAI/requirements-video.txt, MyIA.AI.Notebooks/GenAI/requirements.txt | 0 | non | - | - | **exclu** | oui | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; declaration : fichier de dependances optionnel : MyIA.AI.Notebooks/GenAI/requirements-audio.txt, MyIA.AI.Notebooks/GenAI/requirements-video.txt | - |
 | `MyIA.AI.Notebooks/GenAI/00-GenAI-Environment` | GenAI | 00-GenAI-Environment | Python | aucun | 7 | oui | 5 | ComfyUI, orchestrateur GenAI / Whisper API | **exclu** | oui | mesure : GPU requis : marqueur mesure dans 1 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; declaration : service conteneurise requis (patron Planners) : ComfyUI, orchestrateur GenAI / Whisper API ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 9 | pyyaml |
 | `MyIA.AI.Notebooks/GenAI/3D` | GenAI | 3D | Python, autre | aucun | 9 | oui | - | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 4 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) | - |
 | `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation` | GenAI | Audio | Python | aucun | 5 | oui | 2 | orchestrateur GenAI / TTS API, orchestrateur GenAI / Whisper API | **exclu** | oui | mesure : GPU requis : marqueur mesure dans 2 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; declaration : service conteneurise requis (patron Planners) : orchestrateur GenAI / TTS API, orchestrateur GenAI / Whisper API ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 2 | - |
@@ -80,10 +80,10 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/GenAI/Security/Oversight` | GenAI | Security | Python | aucun | 6 | non | 2 | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 4 | - |
 | `MyIA.AI.Notebooks/GenAI/Security/RedTeam` | GenAI | Security | Python | aucun | 1 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 2 | - |
 | `MyIA.AI.Notebooks/GenAI/Security/Tooling` | GenAI | Security | Python | aucun | 1 | non | 2 | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) | - |
-| `MyIA.AI.Notebooks/GenAI/SemanticKernel` | GenAI | SemanticKernel | Python, .NET | aucun | 24 | non | 3 | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 8 | - |
+| `MyIA.AI.Notebooks/GenAI/SemanticKernel` | GenAI | SemanticKernel | Python, .NET | aucun | 25 | non | 3 | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 8 | - |
 | `MyIA.AI.Notebooks/GenAI/Texte` | GenAI | Texte | Python, .NET | MyIA.AI.Notebooks/GenAI/Texte/requirements-structured-outputs.txt | 45 | oui | 8 | TTS (FishAudio), orchestrateur GenAI / TTS | **exclu** | oui | mesure : GPU requis : marqueur mesure dans 8 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; declaration : service conteneurise requis (patron Planners) : TTS (FishAudio), orchestrateur GenAI / TTS ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 37 | peft, trl |
 | `MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants` | GenAI | Texte | Python | aucun | 7 | oui | - | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 2 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) | - |
-| `MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple` | GenAI | Vibe-Coding | - | MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple` | GenAI | Vibe-Coding | - | MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; declaration : aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe | - |
 | `MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks` | GenAI | Vibe-Coding | Python | aucun | 5 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) | - |
 | `MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claudish/notebooks` | GenAI | Vibe-Coding | Python | aucun | 1 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) | - |
 | `MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers` | GenAI | Vibe-Coding | .NET | aucun | 1 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision) ; mesure : noyau non-Python (.NET) : hors image CPU Python | - |
@@ -107,7 +107,7 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive` | ML | DataScienceWithAgents | Python | aucun | 3 | oui | - | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 3 carnet(s) de la serie | torch, torchvision |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision` | ML | DataScienceWithAgents | .NET, Python, autre | MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt | 15 | oui | 2 | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 12 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), torchvision) | python-dotenv |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/05-Wavelet-Scattering` | ML | DataScienceWithAgents | Python | aucun | 6 | oui | - | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 1 carnet(s) de la serie | scikit-learn, torch, torchvision |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents` | ML | DataScienceWithAgents | - | MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt | 0 | non | - | - | **exclu** | non | mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents` | ML | DataScienceWithAgents | Python | MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt | 0 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day1-Foundations/Labs` | ML | DataScienceWithAgents | Python | aucun | 1 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day2-Document-Agents/Labs/Lab2-RFP-Analysis` | ML | DataScienceWithAgents | Python | aucun | 1 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day2-Document-Agents/Labs/Lab3-CV-Screening` | ML | DataScienceWithAgents | Python | aucun | 1 | non | - | - | **inclus** | non | - | - |
@@ -115,7 +115,7 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML` | ML | DataScienceWithAgents | Python | aucun | 1 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent` | ML | DataScienceWithAgents | Python | aucun | 1 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent` | ML | DataScienceWithAgents | Python | aucun | 1 | non | - | - | **inclus** | non | - | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration` | ML | DataScienceWithAgents | - | MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt | 0 | non | - | - | **exclu** | non | mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration` | ML | DataScienceWithAgents | Python | MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt | 0 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations` | ML | DataScienceWithAgents | Python | aucun | 2 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star` | ML | DataScienceWithAgents | Python | aucun | 7 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star` | ML | DataScienceWithAgents | Python | aucun | 3 | non | - | - | **inclus** | non | mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 1 | - |
@@ -138,9 +138,9 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC` | Probas | DecisionTheory | Python | aucun | 8 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
 | `MyIA.AI.Notebooks/Probas/Fondations` | Probas | Fondations | .NET, Python | aucun | 4 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
 | `MyIA.AI.Notebooks/Probas/Infer` | Probas | Infer | .NET | aucun | 21 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) ; mesure : noyau non-Python (.NET) : hors image CPU Python | - |
-| `MyIA.AI.Notebooks/Probas/Infer/scripts` | Probas | Infer | - | MyIA.AI.Notebooks/Probas/Infer/scripts/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) ; mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/Probas/Infer/scripts` | Probas | Infer | - | MyIA.AI.Notebooks/Probas/Infer/scripts/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) ; declaration : aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe | - |
 | `MyIA.AI.Notebooks/Probas/PyMC` | Probas | PyMC | Python | aucun | 20 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
-| `MyIA.AI.Notebooks/QuantConnect` | QuantConnect | - | - | MyIA.AI.Notebooks/QuantConnect/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) ; mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/QuantConnect` | QuantConnect | - | Python, autre, .NET | MyIA.AI.Notebooks/QuantConnect/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | - |
 | `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline` | QuantConnect | ML-Training-Pipeline | Python | aucun | 18 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | - |
 | `MyIA.AI.Notebooks/QuantConnect/Python` | QuantConnect | Python | Python, autre | aucun | 66 | oui | 2 | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 9 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | torch |
 | `MyIA.AI.Notebooks/QuantConnect/Python/research` | QuantConnect | Python | Python | aucun | 2 | oui | - | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 1 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | torch |
@@ -208,7 +208,7 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/QuantConnect/projects/OptionsIncome` | QuantConnect | projects | Python | aucun | 2 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | - |
 | `MyIA.AI.Notebooks/QuantConnect/projects/PairsTrading` | QuantConnect | projects | Python | aucun | 2 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | - |
 | `MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid` | QuantConnect | projects | Python | aucun | 2 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | - |
-| `MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness` | QuantConnect | projects | - | MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) ; mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness` | QuantConnect | projects | - | MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) ; declaration : aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe | - |
 | `MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-Optimization-ML` | QuantConnect | projects | Python | aucun | 1 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | - |
 | `MyIA.AI.Notebooks/QuantConnect/projects/RL-Options-Hedging` | QuantConnect | projects | Python | aucun | 1 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | torch |
 | `MyIA.AI.Notebooks/QuantConnect/projects/RL-Portfolio` | QuantConnect | projects | Python | aucun | 2 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | - |
@@ -234,14 +234,14 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/QuantConnect/research` | QuantConnect | research | Python | aucun | 26 | oui | - | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 3 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow) | torch |
 | `MyIA.AI.Notebooks/RL` | RL | - | Python, .NET | MyIA.AI.Notebooks/RL/requirements.txt | 32 | oui | - | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 2 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
 | `MyIA.AI.Notebooks/RL/PostTraining` | RL | PostTraining | .NET, Python | aucun | 12 | oui | - | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 3 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | peft |
-| `MyIA.AI.Notebooks/Search` | Search | - | - | MyIA.AI.Notebooks/Search/requirements.txt | 0 | non | - | - | **exclu** | non | mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/Search` | Search | - | .NET, Python, autre | MyIA.AI.Notebooks/Search/requirements.txt | 0 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/Search/Part1-Foundations` | Search | Part1-Foundations | .NET, Python, autre | MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt | 57 | oui | 1 | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 2 carnet(s) de la serie | - |
 | `MyIA.AI.Notebooks/Search/Part2-CSP` | Search | Part2-CSP | .NET, Python | aucun | 20 | non | 1 | - | **inclus** | non | mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 2 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques` | Search | Part3-Cas-pratiques | .NET, Python | aucun | 53 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/Search/Part4-Metaheuristics` | Search | Part4-Metaheuristics | .NET, Python | MyIA.AI.Notebooks/Search/Part4-Metaheuristics/requirements-mgs-tsp.txt | 25 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy` | Search | Part4-Metaheuristics | .NET | aucun | 10 | non | - | - | **exclu** | non | mesure : noyau non-Python (.NET) : hors image CPU Python | - |
 | `MyIA.AI.Notebooks/Search/Part5-Frontieres` | Search | Part5-Frontieres | Python, .NET | aucun | 14 | non | - | - | **inclus** | non | - | - |
-| `MyIA.AI.Notebooks/Search/_archive` | Search | _archive | Python | aucun | 1 | non | - | - | **inclus** | non | - | - |
+| `MyIA.AI.Notebooks/Search/_archive` | Search | _archive | Python | aucun | 2 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/Sudoku` | Sudoku | - | .NET, Python, Rust, autre | MyIA.AI.Notebooks/Sudoku/requirements.txt | 42 | oui | 1 | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 1 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (JAX, PyTorch (roues CUDA)) | python-dotenv |
 | `MyIA.AI.Notebooks/SymbolicAI` | SymbolicAI | - | .NET | aucun | 1 | non | - | - | **exclu** | non | mesure : noyau non-Python (.NET) : hors image CPU Python | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis` | SymbolicAI | ArgumentAnalysis | Python | MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt | 38 | non | 2 | - | **inclus** | non | mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 9 | scikit-learn, torch, torchvision |
@@ -258,8 +258,8 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO` | SymbolicAI | Lean | Python, autre | aucun | 4 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200` | SymbolicAI | Lean | Python | aucun | 13 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100` | SymbolicAI | Lean | Python, autre | aucun | 34 | non | - | - | **inclus** | non | - | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests` | SymbolicAI | Lean | - | MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/requirements.txt | 0 | non | - | - | **exclu** | non | mesure : noyau non-Python (aucun) : hors image CPU Python | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Planners` | SymbolicAI | Planners | - | MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) ; mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests` | SymbolicAI | Lean | - | MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/requirements.txt | 0 | non | - | - | **inclus** | non | declaration : aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Planners` | SymbolicAI | Planners | Python, .NET, autre | MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment` | SymbolicAI | Planners | Python | aucun | 1 | non | - | planners-fast-downward | **exclu** | oui | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) ; declaration : service conteneurise requis (patron Planners) : planners-fast-downward ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 2 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation` | SymbolicAI | Planners | .NET, Python | aucun | 6 | non | - | planners-fast-downward | **exclu** | oui | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) ; declaration : service conteneurise requis (patron Planners) : planners-fast-downward | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical` | SymbolicAI | Planners | .NET, Python, autre | aucun | 8 | non | - | planners-fast-downward | **exclu** | oui | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) ; declaration : service conteneurise requis (patron Planners) : planners-fast-downward ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 4 | - |
@@ -267,11 +267,11 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic` | SymbolicAI | Planners | Python | aucun | 4 | oui | 4 | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 1 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | python-dotenv |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive` | SymbolicAI | Planners | .NET | aucun | 1 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) ; mesure : noyau non-Python (.NET) : hors image CPU Python | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API` | SymbolicAI | SMT | .NET, Python | MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/requirements.txt | 35 | non | - | - | **inclus** | non | mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 2 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway` | SymbolicAI | SMT | - | MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/requirements.txt | 0 | non | - | - | **exclu** | non | mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway` | SymbolicAI | SMT | - | MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/requirements.txt | 0 | non | - | - | **inclus** | non | declaration : aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3` | SymbolicAI | SMT | .NET | aucun | 20 | non | - | - | **exclu** | non | mesure : noyau non-Python (.NET) : hors image CPU Python ; mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 2 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb` | SymbolicAI | SemanticWeb | .NET, Python | MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt | 28 | non | 2 | - | **inclus** | non | - | python-dotenv, scikit-learn |
 | `MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy` | SymbolicAI | SemanticWeb | .NET | aucun | 1 | non | - | - | **exclu** | non | mesure : noyau non-Python (.NET) : hors image CPU Python | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SmartContracts` | SymbolicAI | SmartContracts | - | MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements-optional.txt, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt | 0 | non | - | - | **exclu** | oui | declaration : fichier de dependances optionnel : MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements-optional.txt ; mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SmartContracts` | SymbolicAI | SmartContracts | Python, autre | MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements-optional.txt, MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt | 0 | non | - | - | **service optionnel** | oui | declaration : fichier de dependances optionnel : MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements-optional.txt | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations` | SymbolicAI | SmartContracts | Python | aucun | 4 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation` | SymbolicAI | SmartContracts | Python | aucun | 4 | non | - | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/02-Solidity-Advanced` | SymbolicAI | SmartContracts | Python, autre | aucun | 8 | non | 1 | - | **inclus** | non | mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 1 | - |
@@ -281,12 +281,12 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World` | SymbolicAI | SmartContracts | Python | aucun | 5 | non | 1 | - | **inclus** | non | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning` | SymbolicAI | SymbolicLearning | .NET, Python, autre | MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt | 29 | oui | 1 | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 4 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | tensorflow, torchvision |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12` | SymbolicAI | SymbolicLearning | Python | aucun | 2 | oui | - | - | **exclu** | non | mesure : GPU requis : marqueur mesure dans 1 carnet(s) de la serie ; declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA)) | - |
-| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments` | SymbolicAI | SymbolicLearning | - | MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), torchvision) ; mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments` | SymbolicAI | SymbolicLearning | - | MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments/requirements.txt | 0 | non | - | - | **exclu** | non | declaration : taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), torchvision) ; declaration : aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety` | SymbolicAI | Tweety | Python, .NET, autre | MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt | 38 | non | - | - | **inclus** | non | mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 1 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/_probes` | SymbolicAI | Tweety | .NET | aucun | 1 | non | - | - | **exclu** | non | mesure : noyau non-Python (.NET) : hors image CPU Python | - |
 | `MyIA.AI.Notebooks/SymbolicAI/_archive` | SymbolicAI | _archive | Python | aucun | 1 | non | - | - | **inclus** | non | mesure : appel(s) de service dont l'URL n'est pas lisible sur la ligne de l'appel : 3 | - |
 | `MyIA.AI.Notebooks/cross-series/AgentSystems` | cross-series | AgentSystems | Python | aucun | 1 | non | - | - | **inclus** | non | - | - |
-| `MyIA.AI.Notebooks/cross-series/matching-cv` | cross-series | matching-cv | - | MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt | 0 | non | - | - | **exclu** | non | mesure : noyau non-Python (aucun) : hors image CPU Python | - |
+| `MyIA.AI.Notebooks/cross-series/matching-cv` | cross-series | matching-cv | - | MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt | 0 | non | - | - | **inclus** | non | declaration : aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe | - |
 | `MyIA.AI.Notebooks/cross-series/socle-metadata-driven` | cross-series | socle-metadata-driven | .NET | aucun | 2 | non | - | - | **exclu** | non | mesure : noyau non-Python (.NET) : hors image CPU Python | - |
 
 ## 2. Conflits de versions
@@ -345,93 +345,103 @@ Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 seri
 
 | Paquet | Version retenue | Groupes | Conflit |
 |---|---|---|---|
-| `anthropic` | a resoudre | 11 | oui |
+| `agent-framework-openai` | a resoudre | 1 | non |
+| `anthropic` | a resoudre | 12 | oui |
 | `antropy` | a resoudre | 5 | non |
-| `automata-lib` | a resoudre | 5 | oui |
+| `automata-lib` | a resoudre | 6 | oui |
 | `axelrod` | a resoudre | 6 | non |
-| `cvxpy` | a resoudre | 5 | oui |
-| `deap` | a resoudre | 5 | non |
+| `chromadb` | a resoudre | 1 | non |
+| `cvxpy` | a resoudre | 6 | oui |
+| `deap` | a resoudre | 6 | non |
 | `dowhy` | a resoudre | 6 | non |
-| `duckduckgo-search` | a resoudre | 4 | non |
+| `duckduckgo-search` | a resoudre | 5 | non |
 | `eth-tester` | a resoudre | 7 | non |
 | `fastapi` | a resoudre | 1 | non |
-| `google-adk` | 2.8.0 | 4 | non |
-| `google-cloud-aiplatform` | a resoudre | 4 | non |
-| `google-cloud-bigquery` | a resoudre | 4 | non |
-| `google-generativeai` | a resoudre | 4 | non |
-| `graphviz` | a resoudre | 11 | non |
+| `flask` | a resoudre | 1 | non |
+| `google-adk` | 2.8.0 | 5 | non |
+| `google-cloud-aiplatform` | a resoudre | 5 | non |
+| `google-cloud-bigquery` | a resoudre | 5 | non |
+| `google-generativeai` | a resoudre | 5 | non |
+| `graphviz` | a resoudre | 12 | non |
 | `httpx` | a resoudre | 1 | oui |
-| `ipykernel` | a resoudre | 11 | oui |
-| `ipywidgets` | a resoudre | 11 | oui |
+| `ipykernel` | a resoudre | 13 | oui |
+| `ipywidgets` | a resoudre | 12 | oui |
 | `jpype1` | a resoudre | 4 | non |
-| `jupyter` | a resoudre | 11 | non |
-| `jupyter-kernel-gateway` | a resoudre | 1 | oui |
-| `jupyterlab` | a resoudre | 4 | non |
-| `kaggle` | a resoudre | 4 | non |
+| `jupyter` | a resoudre | 13 | non |
+| `jupyter-kernel-gateway` | a resoudre | 2 | oui |
+| `jupyterlab` | a resoudre | 5 | non |
+| `kaggle` | a resoudre | 5 | non |
 | `kglab` | a resoudre | 1 | non |
-| `langchain` | a resoudre | 11 | oui |
-| `langchain-community` | a resoudre | 7 | non |
-| `langchain-core` | a resoudre | 7 | non |
-| `langchain-experimental` | a resoudre | 11 | non |
-| `langchain-openai` | a resoudre | 11 | oui |
-| `langgraph` | a resoudre | 7 | non |
-| `litellm` | 1.100.4 | 4 | non |
-| `matplotlib` | a resoudre | 47 | oui |
-| `mealpy` | a resoudre | 5 | non |
-| `mlflow` | a resoudre | 4 | non |
+| `langchain` | a resoudre | 13 | oui |
+| `langchain-community` | a resoudre | 8 | non |
+| `langchain-core` | a resoudre | 8 | non |
+| `langchain-experimental` | a resoudre | 13 | non |
+| `langchain-openai` | a resoudre | 13 | oui |
+| `langgraph` | a resoudre | 8 | non |
+| `litellm` | 1.100.4 | 5 | non |
+| `matching` | a resoudre | 1 | non |
+| `matplotlib` | a resoudre | 52 | oui |
+| `mealpy` | a resoudre | 6 | non |
+| `mlflow` | a resoudre | 5 | non |
 | `mpyc` | a resoudre | 7 | non |
 | `nashpy` | a resoudre | 6 | non |
-| `nest-asyncio` | a resoudre | 13 | oui |
-| `networkx` | a resoudre | 13 | oui |
-| `numpy` | a resoudre | 27 | oui |
+| `nest-asyncio` | a resoudre | 14 | oui |
+| `networkx` | a resoudre | 14 | oui |
+| `numpy` | a resoudre | 31 | oui |
 | `open-spiel` | a resoudre | 6 | oui |
-| `openai` | 2.24.0 | 25 | oui |
-| `optuna` | a resoudre | 9 | oui |
-| `ortools` | a resoudre | 11 | oui |
+| `openai` | 2.24.0 | 27 | oui |
+| `opentelemetry-sdk` | a resoudre | 1 | non |
+| `optuna` | a resoudre | 11 | oui |
+| `ortools` | a resoudre | 12 | oui |
 | `owlready2` | a resoudre | 1 | non |
 | `owlrl` | a resoudre | 1 | non |
-| `pandas` | a resoudre | 23 | non |
-| `papermill` | a resoudre | 5 | non |
+| `pandas` | a resoudre | 27 | non |
+| `papermill` | a resoudre | 6 | non |
 | `phe` | a resoudre | 7 | non |
-| `pulp` | a resoudre | 5 | non |
+| `playwright` | a resoudre | 1 | non |
+| `pulp` | a resoudre | 6 | non |
 | `py-ecc` | a resoudre | 7 | non |
 | `py-evm` | a resoudre | 7 | non |
 | `py-solc-x` | a resoudre | 7 | non |
 | `pyarrow` | a resoudre | 6 | oui |
 | `pycryptodome` | a resoudre | 7 | non |
-| `pydantic` | 2.12.5 | 4 | oui |
-| `pydantic-settings` | a resoudre | 4 | oui |
+| `pydantic` | 2.12.5 | 5 | oui |
+| `pydantic-settings` | a resoudre | 5 | oui |
 | `pyemd` | 0.5.1 | 5 | non |
-| `pygad` | a resoudre | 5 | non |
-| `pymoo` | a resoudre | 5 | non |
+| `pygad` | a resoudre | 6 | non |
+| `pymoo` | a resoudre | 6 | non |
 | `pyphi` | 1.2.0 | 5 | non |
 | `pyshacl` | a resoudre | 1 | non |
-| `pytest` | a resoudre | 7 | oui |
+| `pytest` | a resoudre | 9 | oui |
+| `pytest-asyncio` | a resoudre | 1 | non |
+| `pytest-html` | a resoudre | 1 | non |
+| `pytest-playwright` | a resoudre | 1 | non |
 | `python-bitcoinlib` | a resoudre | 7 | non |
-| `python-constraint` | a resoudre | 5 | non |
-| `python-dotenv` | a resoudre | 30 | non |
-| `python-sat` | a resoudre | 15 | oui |
+| `python-constraint` | a resoudre | 6 | non |
+| `python-dotenv` | a resoudre | 33 | non |
+| `python-sat` | a resoudre | 16 | oui |
 | `pyvis` | a resoudre | 1 | non |
 | `rdflib` | a resoudre | 1 | oui |
 | `reasonable` | a resoudre | 1 | non |
 | `requests` | a resoudre | 12 | oui |
-| `rustuna` | a resoudre | 5 | non |
-| `scikit-learn` | a resoudre | 16 | oui |
-| `scipy` | a resoudre | 16 | oui |
-| `seaborn` | a resoudre | 17 | non |
-| `semantic-kernel` | a resoudre | 13 | oui |
+| `rustuna` | a resoudre | 6 | non |
+| `scikit-learn` | a resoudre | 20 | oui |
+| `scipy` | a resoudre | 17 | oui |
+| `seaborn` | a resoudre | 19 | non |
+| `semantic-kernel` | a resoudre | 15 | oui |
 | `sparqlwrapper` | a resoudre | 1 | non |
 | `sympy` | a resoudre | 6 | non |
 | `tabulate` | a resoudre | 7 | non |
-| `tavily-python` | a resoudre | 4 | non |
+| `tavily-python` | a resoudre | 5 | non |
 | `tenseal` | a resoudre | 7 | non |
 | `torchlens` | 3.0.3 | 4 | non |
 | `tqdm` | a resoudre | 8 | oui |
 | `uvicorn` | a resoudre | 1 | non |
 | `vyper` | a resoudre | 7 | non |
 | `web3` | a resoudre | 7 | non |
+| `werkzeug` | a resoudre | 1 | non |
 | `xrpl-py` | a resoudre | 7 | non |
-| `z3-solver` | a resoudre | 13 | oui |
+| `z3-solver` | a resoudre | 15 | oui |
 
 ## 4. Lacunes de declaration
 

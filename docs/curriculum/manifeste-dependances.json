@@ -1,17 +1,18 @@
 {
   "schema_version": 2,
-  "generated_from": "49f6022724b6ce39181513d63e69e5abcbcdb24e",
+  "generated_from": "58049642bf02ea013b3eaab710e75dada155fdba",
   "policy": "scripts/notebook_tools/dependency_manifest_policy.json",
   "counts": {
-    "tracked_files": 17641,
-    "notebooks": 1928,
+    "tracked_files": 17642,
+    "notebooks": 1930,
     "dependency_files": 42,
     "curriculum_dependency_files": 37,
     "infra_dependency_files": 5,
     "groups": 278,
-    "series": 17,
-    "included": 63,
-    "conflicts": 47
+    "series": 16,
+    "included": 69,
+    "conflicts": 47,
+    "version_normalization_fallbacks": 0
   },
   "groups": [
     {
@@ -21,6 +22,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -56,7 +58,10 @@
       "group": "MyIA.AI.Notebooks/CaseStudies",
       "series": "CaseStudies",
       "subseries": "",
-      "kernel_families": [],
+      "kernel_families": [
+        "Python"
+      ],
+      "kernel_families_source": "herite",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -83,11 +88,6 @@
           "origin": "declaration",
           "policy": "heavy_distributions",
           "text": "taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA))"
-        },
-        {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
         }
       ],
       "gaps": [],
@@ -110,6 +110,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -158,6 +159,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -206,6 +208,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -254,6 +257,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -302,6 +306,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -350,6 +355,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -399,6 +405,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 17,
         "coursia-ml-training": 1,
@@ -438,6 +445,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 4,
         "python3": 12
@@ -479,6 +487,7 @@
       "kernel_families": [
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 1
       },
@@ -519,6 +528,7 @@
         ".NET",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 43,
         "coursia-ml-training": 3,
@@ -599,6 +609,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 1,
         "python3": 4
@@ -657,6 +668,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 4,
         "lean4-wsl": 2,
@@ -720,6 +732,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "coursia-ml-training": 1,
         "python3": 6
@@ -778,6 +791,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 5,
         "lean4-wsl": 1,
@@ -837,6 +851,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -892,7 +907,12 @@
       "group": "MyIA.AI.Notebooks/GenAI",
       "series": "GenAI",
       "subseries": "",
-      "kernel_families": [],
+      "kernel_families": [
+        "Python",
+        "autre",
+        ".NET"
+      ],
+      "kernel_families_source": "herite",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -926,11 +946,6 @@
           "origin": "declaration",
           "policy": "optional_file_markers",
           "text": "fichier de dependances optionnel : MyIA.AI.Notebooks/GenAI/requirements-audio.txt, MyIA.AI.Notebooks/GenAI/requirements-video.txt"
-        },
-        {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
         }
       ],
       "gaps": [],
@@ -1004,6 +1019,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 7
       },
@@ -1137,6 +1153,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "gsplat310": 2,
         "python3": 7
@@ -1247,6 +1264,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 5
       },
@@ -1373,6 +1391,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "dia-tts": 1,
         "python3": 10,
@@ -1512,6 +1531,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "pipecat-kokoro": 1,
         "python3": 3
@@ -1639,6 +1659,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 6
       },
@@ -1767,6 +1788,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 6
       },
@@ -1895,6 +1917,7 @@
         "autre",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "basicpitch-t4": 1,
         "mert2-gpu": 1,
@@ -2008,6 +2031,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 3
       },
@@ -2127,6 +2151,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "coursia-ml-training": 1,
         "python3": 1
@@ -2235,6 +2260,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 3
       },
@@ -2347,6 +2373,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -2471,6 +2498,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -2581,6 +2609,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -2680,6 +2709,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -2779,6 +2809,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -2878,6 +2909,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 5
       },
@@ -2977,6 +3009,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 20
       },
@@ -3094,6 +3127,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -3193,6 +3227,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 9
       },
@@ -3310,6 +3345,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "inconnu": 1,
         "python3": 4
@@ -3435,6 +3471,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -3557,6 +3594,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 6
       },
@@ -3675,6 +3713,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 8
       },
@@ -3785,6 +3824,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 3
       },
@@ -3889,6 +3929,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -3993,6 +4034,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 11
       },
@@ -4127,6 +4169,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -4233,6 +4276,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 4
       },
@@ -4340,6 +4384,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -4447,6 +4492,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -4546,6 +4592,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 7
       },
@@ -4652,6 +4699,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -4758,6 +4806,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -4864,6 +4913,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -4971,6 +5021,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 3
       },
@@ -5077,6 +5128,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -5183,6 +5235,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -5287,6 +5340,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -5386,6 +5440,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -5485,6 +5540,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -5584,6 +5640,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -5683,6 +5740,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -5782,6 +5840,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -5881,6 +5940,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -5981,6 +6041,7 @@
         "Python",
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1,
         "coursia-ml-training": 14,
@@ -6122,6 +6183,7 @@
         "Python",
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 4,
         "coursia-ml-training": 4,
@@ -6240,6 +6302,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -6346,6 +6409,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -6452,6 +6516,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 6
       },
@@ -6558,6 +6623,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -6664,6 +6730,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -6764,11 +6831,12 @@
         "Python",
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 7,
-        "python3": 17
+        "python3": 18
       },
-      "notebook_count": 24,
+      "notebook_count": 25,
       "dependency_files": [],
       "package_count": 79,
       "requires_python": "",
@@ -6886,6 +6954,7 @@
         "Python",
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 4,
         "coursia-ml-training": 2,
@@ -7039,6 +7108,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 7
       },
@@ -7150,6 +7220,7 @@
       "series": "GenAI",
       "subseries": "Vibe-Coding",
       "kernel_families": [],
+      "kernel_families_source": "non mesure",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -7178,9 +7249,9 @@
           "text": "taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), bitsandbytes, torchaudio, torchvision)"
         },
         {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
+          "origin": "declaration",
+          "policy": "kernel_family_unmeasured",
+          "text": "aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe"
         }
       ],
       "gaps": [],
@@ -7257,6 +7328,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 5
       },
@@ -7358,6 +7430,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -7461,6 +7534,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -7565,6 +7639,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -7669,6 +7744,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 6
       },
@@ -7780,6 +7856,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 8
       },
@@ -7909,6 +7986,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 3
       },
@@ -8035,6 +8113,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 6
       },
@@ -8146,6 +8225,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1,
         "python3": 1
@@ -8270,6 +8350,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 4,
         "pyphi": 6
@@ -8313,6 +8394,7 @@
         "autre",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "ict-py313": 2,
         "inconnu": 4,
@@ -8407,6 +8489,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 3
       },
@@ -8452,6 +8535,7 @@
         "autre",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "coursia-ml-training": 1,
         "pyphi-iit": 1,
@@ -8500,6 +8584,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 5
       },
@@ -8548,6 +8633,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "inconnu": 1,
         "python3": 11
@@ -8600,6 +8686,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 3
       },
@@ -8658,6 +8745,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 6
       },
@@ -8719,6 +8807,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 6
       },
@@ -8753,6 +8842,7 @@
         ".NET",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 10,
         "coursia-drift": 1,
@@ -8830,6 +8920,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 4,
         "coursia-ml-training": 5,
@@ -8889,6 +8980,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "coursia-ml-training": 1,
         "python3": 2
@@ -8937,6 +9029,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1,
         "coursia-ml-training": 2,
@@ -9009,6 +9102,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 6
       },
@@ -9050,7 +9144,10 @@
       "group": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
       "series": "ML",
       "subseries": "DataScienceWithAgents",
-      "kernel_families": [],
+      "kernel_families": [
+        "Python"
+      ],
+      "kernel_families_source": "herite",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -9070,15 +9167,9 @@
         "dynamic_service_calls": 0,
         "companion_files": []
       },
-      "verdict": "exclu",
+      "verdict": "inclus",
       "service_optionnel": false,
-      "motifs": [
-        {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
-        }
-      ],
+      "motifs": [],
       "gaps": [],
       "packages": [
         "ipykernel",
@@ -9103,6 +9194,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -9149,6 +9241,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -9195,6 +9288,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -9241,6 +9335,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -9287,6 +9382,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -9333,6 +9429,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -9379,6 +9476,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -9422,7 +9520,10 @@
       "group": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration",
       "series": "ML",
       "subseries": "DataScienceWithAgents",
-      "kernel_families": [],
+      "kernel_families": [
+        "Python"
+      ],
+      "kernel_families_source": "herite",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -9442,15 +9543,9 @@
         "dynamic_service_calls": 0,
         "companion_files": []
       },
-      "verdict": "exclu",
+      "verdict": "inclus",
       "service_optionnel": false,
-      "motifs": [
-        {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
-        }
-      ],
+      "motifs": [],
       "gaps": [],
       "packages": [
         "duckduckgo-search",
@@ -9487,6 +9582,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -9547,6 +9643,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 7
       },
@@ -9609,6 +9706,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 3
       },
@@ -9675,6 +9773,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -9736,6 +9835,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 15,
         "coursia-ml-training": 1,
@@ -9783,6 +9883,7 @@
         "Python",
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 9,
         "coursia-ml-training": 3,
@@ -9819,6 +9920,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 11
       },
@@ -9851,6 +9953,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -9883,6 +9986,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -9915,6 +10019,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -9947,6 +10052,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -9981,6 +10087,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -10019,6 +10126,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -10073,6 +10181,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -10126,6 +10235,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl-perc": 2,
         "python3": 6
@@ -10179,6 +10289,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "coursia-ml-training": 4,
         "python3": 8
@@ -10248,6 +10359,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -10300,6 +10412,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 5
       },
@@ -10354,6 +10467,7 @@
         "autre",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 8,
         "lean4-wsl": 3,
@@ -10411,6 +10525,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 8
       },
@@ -10466,6 +10581,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 2,
         "python3": 2
@@ -10519,6 +10635,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 21
       },
@@ -10577,6 +10694,7 @@
       "series": "Probas",
       "subseries": "Infer",
       "kernel_families": [],
+      "kernel_families_source": "non mesure",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -10605,9 +10723,9 @@
           "text": "taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA))"
         },
         {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
+          "origin": "declaration",
+          "policy": "kernel_family_unmeasured",
+          "text": "aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe"
         }
       ],
       "gaps": [],
@@ -10638,6 +10756,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 20
       },
@@ -10690,7 +10809,12 @@
       "group": "MyIA.AI.Notebooks/QuantConnect",
       "series": "QuantConnect",
       "subseries": "",
-      "kernel_families": [],
+      "kernel_families": [
+        "Python",
+        "autre",
+        ".NET"
+      ],
+      "kernel_families_source": "herite",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -10717,11 +10841,6 @@
           "origin": "declaration",
           "policy": "heavy_distributions",
           "text": "taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow)"
-        },
-        {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
         }
       ],
       "gaps": [],
@@ -10785,6 +10904,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 18
       },
@@ -10886,6 +11006,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "conda-torch": 1,
         "coursia-py313-argu": 1,
@@ -11001,6 +11122,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -11100,6 +11222,7 @@
         "autre",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "inconnu": 4,
         "lean4-wsl": 1,
@@ -11191,6 +11314,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -11280,6 +11404,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -11373,6 +11498,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -11462,6 +11588,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -11551,6 +11678,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -11640,6 +11768,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -11729,6 +11858,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -11818,6 +11948,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -11907,6 +12038,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -11998,6 +12130,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -12088,6 +12221,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1,
         "python3": 1
@@ -12178,6 +12312,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -12267,6 +12402,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -12356,6 +12492,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -12445,6 +12582,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -12534,6 +12672,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -12627,6 +12766,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -12718,6 +12858,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -12816,6 +12957,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -12905,6 +13047,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -12994,6 +13137,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -13083,6 +13227,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -13172,6 +13317,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -13261,6 +13407,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -13350,6 +13497,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -13439,6 +13587,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -13528,6 +13677,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -13619,6 +13769,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -13708,6 +13859,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -13802,6 +13954,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -13891,6 +14044,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -13980,6 +14134,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14069,6 +14224,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14158,6 +14314,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14247,6 +14404,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -14336,6 +14494,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14425,6 +14584,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14516,6 +14676,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14605,6 +14766,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14694,6 +14856,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14783,6 +14946,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14872,6 +15036,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -14961,6 +15126,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15057,6 +15223,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15146,6 +15313,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15235,6 +15403,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15324,6 +15493,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15422,6 +15592,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15518,6 +15689,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -15607,6 +15779,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15696,6 +15869,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15785,6 +15959,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15874,6 +16049,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -15963,6 +16139,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -16052,6 +16229,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -16143,6 +16321,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -16232,6 +16411,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -16321,6 +16501,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -16410,6 +16591,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -16499,6 +16681,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -16588,6 +16771,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -16677,6 +16861,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -16766,6 +16951,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -16853,6 +17039,7 @@
       "series": "QuantConnect",
       "subseries": "projects",
       "kernel_families": [],
+      "kernel_families_source": "non mesure",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -16881,9 +17068,9 @@
           "text": "taille : distribution(s) lourde(s) hors image CPU legere (TensorFlow)"
         },
         {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
+          "origin": "declaration",
+          "policy": "kernel_family_unmeasured",
+          "text": "aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe"
         }
       ],
       "gaps": [],
@@ -16950,6 +17137,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -17039,6 +17227,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -17132,6 +17321,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -17221,6 +17411,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -17310,6 +17501,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -17399,6 +17591,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 10
       },
@@ -17488,6 +17681,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -17577,6 +17771,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -17666,6 +17861,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -17755,6 +17951,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -17844,6 +18041,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -17933,6 +18131,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -18024,6 +18223,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -18113,6 +18313,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -18202,6 +18403,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -18291,6 +18493,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -18380,6 +18583,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -18469,6 +18673,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -18558,6 +18763,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -18647,6 +18853,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -18736,6 +18943,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -18825,6 +19033,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -18914,6 +19123,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 26
       },
@@ -19025,6 +19235,7 @@
         "Python",
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 4,
         "python3": 28
@@ -19089,6 +19300,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1,
         "coursia-ml-training": 4,
@@ -19153,7 +19365,12 @@
       "group": "MyIA.AI.Notebooks/Search",
       "series": "Search",
       "subseries": "",
-      "kernel_families": [],
+      "kernel_families": [
+        ".NET",
+        "Python",
+        "autre"
+      ],
+      "kernel_families_source": "herite",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -19173,15 +19390,9 @@
         "dynamic_service_calls": 0,
         "companion_files": []
       },
-      "verdict": "exclu",
+      "verdict": "inclus",
       "service_optionnel": false,
-      "motifs": [
-        {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
-        }
-      ],
+      "motifs": [],
       "gaps": [],
       "packages": [
         "automata-lib",
@@ -19217,6 +19428,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 28,
         "lean4-wsl": 1,
@@ -19298,6 +19510,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 10,
         "python3": 10
@@ -19364,6 +19577,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 23,
         "python3": 30
@@ -19426,6 +19640,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 23,
         "python3": 2
@@ -19493,6 +19708,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 10
       },
@@ -19562,6 +19778,7 @@
         "Python",
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 2,
         "python3": 12
@@ -19620,10 +19837,11 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
-        "python3": 1
+        "python3": 2
       },
-      "notebook_count": 1,
+      "notebook_count": 2,
       "dependency_files": [],
       "package_count": 22,
       "requires_python": "",
@@ -19678,6 +19896,7 @@
         "Rust",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 20,
         "lean4-wsl": 1,
@@ -19753,6 +19972,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -19791,6 +20011,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "coursia-py313-argu": 1,
         "python3": 37
@@ -19858,6 +20079,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -19909,6 +20131,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -19950,6 +20173,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "global-3.13": 1,
         "lean4-wsl": 19,
@@ -20015,6 +20239,7 @@
         ".NET",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1,
         "lean4-wsl": 5,
@@ -20056,6 +20281,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -20104,6 +20330,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 4,
         "python3": 5,
@@ -20155,6 +20382,7 @@
         "autre",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 4,
         "python3": 2
@@ -20195,6 +20423,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 8
       },
@@ -20236,6 +20465,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4,
         "python3-lean": 1
@@ -20277,6 +20507,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 1,
         "python3": 6
@@ -20318,6 +20549,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 1,
         "python3": 3
@@ -20358,6 +20590,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 13
       },
@@ -20398,6 +20631,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 1,
         "py311-po2028": 1,
@@ -20437,6 +20671,7 @@
       "series": "SymbolicAI",
       "subseries": "Lean",
       "kernel_families": [],
+      "kernel_families_source": "non mesure",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -20456,13 +20691,13 @@
         "dynamic_service_calls": 0,
         "companion_files": []
       },
-      "verdict": "exclu",
+      "verdict": "inclus",
       "service_optionnel": false,
       "motifs": [
         {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
+          "origin": "declaration",
+          "policy": "kernel_family_unmeasured",
+          "text": "aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe"
         }
       ],
       "gaps": [],
@@ -20483,7 +20718,12 @@
       "group": "MyIA.AI.Notebooks/SymbolicAI/Planners",
       "series": "SymbolicAI",
       "subseries": "Planners",
-      "kernel_families": [],
+      "kernel_families": [
+        "Python",
+        ".NET",
+        "autre"
+      ],
+      "kernel_families_source": "herite",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -20510,11 +20750,6 @@
           "origin": "declaration",
           "policy": "heavy_distributions",
           "text": "taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA))"
-        },
-        {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
         }
       ],
       "gaps": [],
@@ -20537,6 +20772,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -20600,6 +20836,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 3,
         "python3": 3
@@ -20662,6 +20899,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 3,
         "lean4-wsl": 1,
@@ -20730,6 +20968,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 3,
         "python3": 4
@@ -20796,6 +21035,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -20853,6 +21093,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -20907,6 +21148,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 10,
         "python3": 25
@@ -20955,6 +21197,7 @@
       "series": "SymbolicAI",
       "subseries": "SMT",
       "kernel_families": [],
+      "kernel_families_source": "non mesure",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -20974,13 +21217,13 @@
         "dynamic_service_calls": 0,
         "companion_files": []
       },
-      "verdict": "exclu",
+      "verdict": "inclus",
       "service_optionnel": false,
       "motifs": [
         {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
+          "origin": "declaration",
+          "policy": "kernel_family_unmeasured",
+          "text": "aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe"
         }
       ],
       "gaps": [],
@@ -20997,6 +21240,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 20
       },
@@ -21043,6 +21287,7 @@
         ".NET",
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 13,
         "python3": 15
@@ -21099,6 +21344,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -21150,7 +21396,11 @@
       "group": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts",
       "series": "SymbolicAI",
       "subseries": "SmartContracts",
-      "kernel_families": [],
+      "kernel_families": [
+        "Python",
+        "autre"
+      ],
+      "kernel_families_source": "herite",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -21171,18 +21421,13 @@
         "dynamic_service_calls": 0,
         "companion_files": []
       },
-      "verdict": "exclu",
+      "verdict": "service optionnel",
       "service_optionnel": true,
       "motifs": [
         {
           "origin": "declaration",
           "policy": "optional_file_markers",
           "text": "fichier de dependances optionnel : MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements-optional.txt"
-        },
-        {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
         }
       ],
       "gaps": [],
@@ -21213,6 +21458,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -21268,6 +21514,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4
       },
@@ -21323,6 +21570,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "lean4-wsl": 1,
         "python3": 7
@@ -21386,6 +21634,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 3
       },
@@ -21436,6 +21685,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2,
         "python3-sc16-concrete-wsl": 1
@@ -21488,6 +21738,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 4,
         "smartcontracts": 1
@@ -21547,6 +21798,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 5
       },
@@ -21604,6 +21856,7 @@
         "Python",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 8,
         "difflogic-sl12": 1,
@@ -21680,6 +21933,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 2
       },
@@ -21733,6 +21987,7 @@
       "series": "SymbolicAI",
       "subseries": "SymbolicLearning",
       "kernel_families": [],
+      "kernel_families_source": "non mesure",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -21761,9 +22016,9 @@
           "text": "taille : distribution(s) lourde(s) hors image CPU legere (PyTorch (roues CUDA), torchvision)"
         },
         {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
+          "origin": "declaration",
+          "policy": "kernel_family_unmeasured",
+          "text": "aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe"
         }
       ],
       "gaps": [],
@@ -21791,6 +22046,7 @@
         ".NET",
         "autre"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 18,
         "lean4-wsl": 1,
@@ -21847,6 +22103,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 1
       },
@@ -21893,6 +22150,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -21936,6 +22194,7 @@
       "kernel_families": [
         "Python"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         "python3": 1
       },
@@ -21966,6 +22225,7 @@
       "series": "cross-series",
       "subseries": "matching-cv",
       "kernel_families": [],
+      "kernel_families_source": "non mesure",
       "kernelspecs": {},
       "notebook_count": 0,
       "dependency_files": [
@@ -21985,13 +22245,13 @@
         "dynamic_service_calls": 0,
         "companion_files": []
       },
-      "verdict": "exclu",
+      "verdict": "inclus",
       "service_optionnel": false,
       "motifs": [
         {
-          "origin": "mesure",
-          "policy": "kernel_family",
-          "text": "noyau non-Python (aucun) : hors image CPU Python"
+          "origin": "declaration",
+          "policy": "kernel_family_unmeasured",
+          "text": "aucun carnet dans ce groupe ni dans ses sous-repertoires : famille de noyau non mesurable ; l'absence de mesure n'exclut pas le groupe"
         }
       ],
       "gaps": [],
@@ -22018,6 +22278,7 @@
       "kernel_families": [
         ".NET"
       ],
+      "kernel_families_source": "direct",
       "kernelspecs": {
         ".net-csharp": 2
       },
@@ -23834,6 +24095,17 @@
   ],
   "consolidated_manifest": [
     {
+      "package": "agent-framework-openai",
+      "version": "",
+      "specs": [
+        ">=1.3.0,<2.0.0"
+      ],
+      "groups": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests"
+      ],
+      "conflict": false
+    },
+    {
       "package": "anthropic",
       "version": "",
       "specs": [
@@ -23851,7 +24123,8 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100",
-        "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
+        "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests"
       ],
       "conflict": true
     },
@@ -23881,7 +24154,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": true
     },
@@ -23902,6 +24176,15 @@
       "conflict": false
     },
     {
+      "package": "chromadb",
+      "version": "",
+      "specs": [],
+      "groups": [
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
+      ],
+      "conflict": false
+    },
+    {
       "package": "cvxpy",
       "version": "",
       "specs": [
@@ -23912,7 +24195,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": true
     },
@@ -23927,7 +24211,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": false
     },
@@ -23957,7 +24242,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -23988,6 +24274,15 @@
       "conflict": false
     },
     {
+      "package": "flask",
+      "version": "",
+      "specs": [],
+      "groups": [
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
+      ],
+      "conflict": false
+    },
+    {
       "package": "google-adk",
       "version": "2.8.0",
       "specs": [
@@ -23997,7 +24292,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -24011,7 +24307,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -24025,7 +24322,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -24039,7 +24337,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -24060,7 +24359,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": false
     },
@@ -24090,7 +24390,9 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": true
     },
@@ -24112,7 +24414,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": true
     },
@@ -24147,7 +24450,9 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -24155,10 +24460,12 @@
       "package": "jupyter-kernel-gateway",
       "version": "",
       "specs": [
-        ">=3.0"
+        ">=3.0",
+        ">=3.0,<4"
       ],
       "groups": [
-        "MyIA.AI.Notebooks/GameTheory/gateway"
+        "MyIA.AI.Notebooks/GameTheory/gateway",
+        "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway"
       ],
       "conflict": true
     },
@@ -24172,7 +24479,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -24186,7 +24494,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -24218,7 +24527,9 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": true
     },
@@ -24235,7 +24546,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents"
       ],
       "conflict": false
     },
@@ -24252,7 +24564,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents"
       ],
       "conflict": false
     },
@@ -24273,7 +24586,9 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -24294,7 +24609,9 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": true
     },
@@ -24311,7 +24628,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents"
       ],
       "conflict": false
     },
@@ -24325,7 +24643,17 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
+      ],
+      "conflict": false
+    },
+    {
+      "package": "matching",
+      "version": "",
+      "specs": [],
+      "groups": [
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
       ],
       "conflict": false
     },
@@ -24384,7 +24712,12 @@
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World",
-        "MyIA.AI.Notebooks/SymbolicAI/Tweety"
+        "MyIA.AI.Notebooks/SymbolicAI/Tweety",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration",
+        "MyIA.AI.Notebooks/Search",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests",
+        "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway"
       ],
       "conflict": true
     },
@@ -24399,7 +24732,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": false
     },
@@ -24413,7 +24747,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -24470,7 +24805,8 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100"
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests"
       ],
       "conflict": true
     },
@@ -24494,7 +24830,8 @@
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
         "MyIA.AI.Notebooks/Search/_archive",
         "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb",
-        "MyIA.AI.Notebooks/SymbolicAI/Tweety"
+        "MyIA.AI.Notebooks/SymbolicAI/Tweety",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": true
     },
@@ -24533,7 +24870,11 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration",
+        "MyIA.AI.Notebooks/Search",
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
       ],
       "conflict": true
     },
@@ -24560,7 +24901,8 @@
       "specs": [
         "==2.24.0",
         ">=1.0",
-        ">=1.0.0"
+        ">=1.0.0",
+        ">=2.0.0"
       ],
       "groups": [
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
@@ -24587,9 +24929,22 @@
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains",
-        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World"
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests"
       ],
       "conflict": true
+    },
+    {
+      "package": "opentelemetry-sdk",
+      "version": "",
+      "specs": [
+        ">=1.20.0"
+      ],
+      "groups": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests"
+      ],
+      "conflict": false
     },
     {
       "package": "optuna",
@@ -24607,7 +24962,9 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": true
     },
@@ -24629,7 +24986,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": true
     },
@@ -24685,7 +25043,11 @@
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
         "MyIA.AI.Notebooks/Search/_archive",
-        "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
+        "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration",
+        "MyIA.AI.Notebooks/Search",
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
       ],
       "conflict": false
     },
@@ -24700,7 +25062,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": false
     },
@@ -24722,6 +25085,15 @@
       "conflict": false
     },
     {
+      "package": "playwright",
+      "version": "",
+      "specs": [],
+      "groups": [
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
+      ],
+      "conflict": false
+    },
+    {
       "package": "pulp",
       "version": "",
       "specs": [
@@ -24732,7 +25104,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": false
     },
@@ -24830,7 +25203,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": true
     },
@@ -24844,7 +25218,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": true
     },
@@ -24874,7 +25249,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": false
     },
@@ -24889,7 +25265,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": false
     },
@@ -24923,7 +25300,8 @@
       "package": "pytest",
       "version": "",
       "specs": [
-        ">=7.0.0"
+        ">=7.0.0",
+        ">=8.0.0"
       ],
       "groups": [
         "MyIA.AI.Notebooks/GameTheory/Coalitions",
@@ -24932,9 +25310,40 @@
         "MyIA.AI.Notebooks/GameTheory/Metajeux",
         "MyIA.AI.Notebooks/GameTheory/SocialChoice",
         "MyIA.AI.Notebooks/GameTheory/gateway",
-        "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
+        "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests",
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
       ],
       "conflict": true
+    },
+    {
+      "package": "pytest-asyncio",
+      "version": "",
+      "specs": [
+        ">=0.23.0"
+      ],
+      "groups": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests"
+      ],
+      "conflict": false
+    },
+    {
+      "package": "pytest-html",
+      "version": "",
+      "specs": [],
+      "groups": [
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
+      ],
+      "conflict": false
+    },
+    {
+      "package": "pytest-playwright",
+      "version": "",
+      "specs": [],
+      "groups": [
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
+      ],
+      "conflict": false
     },
     {
       "package": "python-bitcoinlib",
@@ -24964,7 +25373,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": false
     },
@@ -25005,7 +25415,10 @@
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/03-Foundry-Testing",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/04-Privacy-Cryptography",
         "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains",
-        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World"
+        "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests",
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
       ],
       "conflict": false
     },
@@ -25032,7 +25445,8 @@
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/_archive",
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/groupe-I2-contre-arguments-aspic",
-        "MyIA.AI.Notebooks/SymbolicAI/Tweety"
+        "MyIA.AI.Notebooks/SymbolicAI/Tweety",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": true
     },
@@ -25103,7 +25517,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": false
     },
@@ -25130,7 +25545,11 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration",
+        "MyIA.AI.Notebooks/Search",
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
       ],
       "conflict": true
     },
@@ -25158,7 +25577,8 @@
         "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
         "MyIA.AI.Notebooks/Search/Part4-Metaheuristics",
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
-        "MyIA.AI.Notebooks/Search/_archive"
+        "MyIA.AI.Notebooks/Search/_archive",
+        "MyIA.AI.Notebooks/Search"
       ],
       "conflict": true
     },
@@ -25185,7 +25605,9 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -25209,7 +25631,9 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100"
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests",
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
       ],
       "conflict": true
     },
@@ -25267,7 +25691,8 @@
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production"
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
       ],
       "conflict": false
     },
@@ -25365,6 +25790,15 @@
       "conflict": false
     },
     {
+      "package": "werkzeug",
+      "version": "",
+      "specs": [],
+      "groups": [
+        "MyIA.AI.Notebooks/cross-series/matching-cv"
+      ],
+      "conflict": false
+    },
+    {
       "package": "xrpl-py",
       "version": "",
       "specs": [
@@ -25401,7 +25835,9 @@
         "MyIA.AI.Notebooks/Search/Part5-Frontieres",
         "MyIA.AI.Notebooks/Search/_archive",
         "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API",
-        "MyIA.AI.Notebooks/SymbolicAI/Tweety"
+        "MyIA.AI.Notebooks/SymbolicAI/Tweety",
+        "MyIA.AI.Notebooks/Search",
+        "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway"
       ],
       "conflict": true
     }

@@ -261,11 +261,21 @@ def _compare(left: str, right: str) -> int:
     return (left > right) - (left < right)
 
 
+#: Normalisations de version faites en repli local (organe natif absent ou en
+#: erreur). Le repli compare les chaines brutes : il invente des conflits.
+#: Le compteur est remis a zero au debut de chaque construction de manifeste.
+_VERSION_FALLBACK_CALLS: list[str] = []
+
+
 def _norm_ver(version: str) -> str:
     """Forme canonique d'une version : ``1.0`` et ``1.0.0`` ne font qu'un.
 
     La normalisation passe par l'organe natif des versions (#23073) : deux
     chaines differentes qui designent la meme version ne sont pas un conflit.
+
+    Si l'organe natif est absent, le repli compare les chaines brutes et
+    **invente** des conflits (`numpy>=0.29` contre `numpy>=0.29.0`). Le repli
+    est donc compte et divilogue : un conflit mesure en repli est suspect.
     """
     if not version:
         return ""
@@ -274,6 +284,7 @@ def _norm_ver(version: str) -> str:
             return repr(version_key(version))
         except Exception:  # noqa: BLE001,S110 - repli local, l'organe natif reste l'original
             pass
+    _VERSION_FALLBACK_CALLS.append(version)
     return version
 
 
@@ -332,6 +343,8 @@ class Group:
     requires_python: str = ""
     requires_python_source: str = ""
     requires_python_constraints: list[dict] = field(default_factory=list)
+    kernel_families: list[str] = field(default_factory=list)
+    kernel_families_source: str = ""
     imports: set[str] = field(default_factory=set)
     gaps: list[str] = field(default_factory=list)
     service_calls: int = 0
@@ -363,8 +376,17 @@ def git_sha(repo_root: Path) -> str:
 
 
 def git_ls_files(repo_root: Path) -> list[str]:
-    """Les fichiers suivis par git, sans le depot de travail."""
-    return [line for line in _git(repo_root, ["ls-files"]).splitlines() if line]
+    """Les fichiers suivis par git, sans le depot de travail.
+
+    ``git ls-files`` **C-quote** les chemins non-ASCII par defaut : le chemin
+    ressort entre guillemets avec des echappements octaux
+    (``"Cr\\303\\251ateur"``), ne finit donc plus par son extension, et
+    disparait de l'inventaire. On neutralise le quoting
+    (``core.quotePath=false``) et on lit la sortie NUL-separee : un chemin
+    accentue reste un chemin.
+    """
+    output = _git(repo_root, ["-c", "core.quotePath=false", "ls-files", "-z"])
+    return [path for path in output.split("\0") if path]
 
 
 def load_policy(repo_root: Path) -> dict:
@@ -477,6 +499,26 @@ def _kernel_family(language: str) -> str:
     if any(key in lowered for key in ("python", "py3", "py31")):
         return "Python"
     return "autre"
+
+
+def _descendant_families(group_path: str, groups: dict) -> list[str]:
+    """Les familles de noyau des sous-repertoires d'un groupe.
+
+    Un repertoire qui ne porte **directement** aucun carnet porte neanmoins
+    des dependances : sa famille de noyau n'est pas « non-Python », elle est
+    celle de ses sous-repertoires. La lire, c'est une mesure ; la supposer
+    absente, c'est inventer une exclusion.
+    """
+    families: list[str] = []
+    prefix = group_path + "/"
+    for other in groups.values():
+        if not other.path.startswith(prefix):
+            continue
+        for kernelspec in other.kernelspecs:
+            family = _kernel_family(kernelspec)
+            if family not in families:
+                families.append(family)
+    return families
 
 
 def _split_series(group_path: str) -> tuple[str, str]:
@@ -671,6 +713,7 @@ def _specifiers_compatible(left: dict, right: dict) -> bool:
 
 def build_manifest(repo_root: Path) -> dict:
     """Construit le manifeste complet (donnees brutes, sans rendu)."""
+    _VERSION_FALLBACK_CALLS.clear()
     policy = load_policy(repo_root)
     gpu_re = re.compile("|".join(policy["gpu"]["markers"]), re.IGNORECASE)
     heavy = policy["heavy_distributions"]["entries"]
@@ -830,6 +873,18 @@ def build_manifest(repo_root: Path) -> dict:
             family = _kernel_family(kernelspec)
             if family not in families:
                 families.append(family)
+        families_source = "direct" if families else ""
+        if not families:
+            # Le groupe ne porte directement aucun carnet : sa famille se lit
+            # dans ses sous-repertoires (mesure), et seulement s'il n'y en a
+            # pas non plus, la famille reste **inconnue** — ce qui ne vaut pas
+            # une exclusion.
+            inherited = _descendant_families(entry.path, groups)
+            if inherited:
+                families = inherited
+                families_source = "herite"
+        entry.kernel_families = families
+        entry.kernel_families_source = families_source or "non mesure"
 
         if entry.gpu_notebooks:
             motifs.append(
@@ -899,14 +954,30 @@ def build_manifest(repo_root: Path) -> dict:
                     + ", ".join(sorted(entry.network_services)),
                 }
             )
-        if not families or all(family != "Python" for family in families):
+        if not families:
+            # Aucun carnet, donc aucune famille observee : c'est une **absence
+            # de mesure**, pas une mesure de non-Python. Exclure sur cette base
+            # ferait disparaitre du manifeste consolide des paquets reellement
+            # declares (cas `cross-series/matching-cv`, `agent_tests`).
+            motifs.append(
+                {
+                    "origin": "declaration",
+                    "policy": "kernel_family_unmeasured",
+                    "text": (
+                        "aucun carnet dans ce groupe ni dans ses sous-repertoires : "
+                        "famille de noyau non mesurable ; l'absence de mesure "
+                        "n'exclut pas le groupe"
+                    ),
+                }
+            )
+        elif all(family != "Python" for family in families):
             motifs.append(
                 {
                     "origin": "mesure",
                     "policy": "kernel_family",
                     "text": (
                         "noyau non-Python ("
-                        + (", ".join(families) if families else "aucun")
+                        + ", ".join(families)
                         + ") : hors image CPU Python"
                     ),
                 }
@@ -1142,9 +1213,16 @@ def build_manifest(repo_root: Path) -> dict:
             "curriculum_dependency_files": len(dependency_files) - len(infra_files),
             "infra_dependency_files": len(infra_files),
             "groups": len(groups),
-            "series": len({g.series for g in groups.values()}),
+            # La racine du cursus (`MyIA.AI.Notebooks`, qui ne porte que
+            # `GradeBook.ipynb`) ne **nomme** aucune serie : la compter
+            # gonflerait le total d'une serie fantome.
+            "series": len({g.series for g in groups.values() if g.series}),
             "included": len(included),
             "conflicts": len(conflicts),
+            # Replis de normalisation de version : autant de conflits sont
+            # suspects que de replis (l'organe natif des versions etait
+            # indisponible sur ces chaines).
+            "version_normalization_fallbacks": len(_VERSION_FALLBACK_CALLS),
         },
         "groups": [_group_dict(g) for g in sorted(groups.values(), key=lambda g: g.path)],
         "conflicts": conflicts,
@@ -1210,16 +1288,12 @@ def _propose_resolution(
 
 def _group_dict(entry: Group) -> dict:
     """Serialise une ligne de la table."""
-    families: list[str] = []
-    for kernelspec in entry.kernelspecs:
-        family = _kernel_family(kernelspec)
-        if family not in families:
-            families.append(family)
     return {
         "group": entry.path,
         "series": entry.series,
         "subseries": entry.subseries,
-        "kernel_families": families,
+        "kernel_families": list(entry.kernel_families),
+        "kernel_families_source": entry.kernel_families_source,
         "kernelspecs": dict(sorted(entry.kernelspecs.items())),
         "notebook_count": len(entry.notebooks),
         "dependency_files": entry.dependency_files,
@@ -1296,9 +1370,10 @@ def render_markdown(manifest: dict) -> str:
     lines.append("# Manifeste des dependances du cursus")
     lines.append("")
     lines.append(
-        "Genere par `scripts/notebook_tools/dependency_manifest.py` (#27544) sur "
-        f"`{manifest['generated_from']}`, sans reseau. Politique : "
-        f"`{manifest['policy']}`."
+        "Fichier genere par `scripts/notebook_tools/dependency_manifest.py` (#27544) "
+        f"sur `{manifest['generated_from']}`, sans reseau. Politique : "
+        f"`{manifest['policy']}`. Ne pas editer a la main : la sortie est "
+        "regeneree a chaque execution de l'organe."
     )
     lines.append("")
     lines.append(
@@ -1313,6 +1388,14 @@ def render_markdown(manifest: dict) -> str:
         "**Origine des motifs** : `mesure` = deduit d'une lecture du depot ; "
         "`declaration` = regle ecrite dans la politique versionnee, contestable."
     )
+    fallbacks = counts.get("version_normalization_fallbacks", 0)
+    if fallbacks:
+        lines.append("")
+        lines.append(
+            f"**Repli de normalisation** : {fallbacks} version(s) comparee(s) sans "
+            "l'organe natif des versions (`check_lib_versions.py`) : les conflits "
+            "qui les concernent sont suspects et doivent etre relus a la source."
+        )
     lines.append("")
     lines.append("## 1. Table par serie et sous-serie")
     lines.append("")
@@ -1328,6 +1411,11 @@ def render_markdown(manifest: dict) -> str:
         motifs = " ; ".join(
             f"{m['origin']} : {m['text']}" for m in entry["motifs"]
         ) or "-"
+        families = ", ".join(entry["kernel_families"])
+        if not families:
+            families = "non mesure"
+        elif entry.get("kernel_families_source") == "herite":
+            families += " (herite des sous-repertoires)"
         lines.append(
             f"| `{entry['group']}` | {entry['series']} | {entry['subseries'] or '-'} | "
             f"{', '.join(entry['kernel_families']) or '-'} | {files} | "
