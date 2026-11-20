@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-18
+> REFERENCE — vivante — dernière révision 2026-11-20
 
 # Décision Fish Audio S2 Pro — voie API vs voie locale (issue #19694)
 
