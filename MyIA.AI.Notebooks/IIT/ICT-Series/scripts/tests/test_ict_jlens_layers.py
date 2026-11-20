@@ -196,8 +196,9 @@ def test_is_full_panel():
 # 4. Verrou de source : le notebook ne doit pas revenir au panneau entier
 # --------------------------------------------------------------------- #
 
-_NB = (Path(__file__).resolve().parents[2] / "MyIA.AI.Notebooks" / "IIT"
-       / "ICT-Series" / "ICT-40a-TriangulationCausale-Python.ipynb")
+# Le carnet est dans le dossier de la serie (le parent de scripts/).
+_NB = (Path(__file__).resolve().parents[2]
+       / "ICT-40a-TriangulationCausale-Python.ipynb")
 
 
 def _jlens_cell_source():
