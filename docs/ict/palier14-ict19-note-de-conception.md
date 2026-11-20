@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 ## Note de conception — palier 14 « Enjeu » (ICT-19 + ICT-19b) — phase 2
 
 Lane `myia-po-2027:CoursIA-2`, tranche suivante de la consolidation par escaliers après #22289 (palier 10, en attente de merge). Dispatch ai-01 du 26/10 12:33Z.
