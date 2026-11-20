@@ -632,7 +632,15 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # elle-meme : le diff ET l'etat de la PR -- extrait de tapis_diff.py pour
 # tenir le plafond, 19/11) ; gh_lecture.py la vingt-et-unieme (la LECTURE :
 # son conteneur, son echec et la mise a plat d'une issue -- extrait de
-# gh_bulk.py pour tenir le plafond, 19/11).
+# gh_bulk.py pour tenir le plafond, 19/11) ; tapis_non_tente.py la
+# vingt-deuxieme (le grain NON TENTE : propose, jamais qualifie -- ni verdict
+# terminal, ni refus de lecture ; il ne fige pas le curseur, 19/11) ;
+# tapis_etat_schema.py la vingt-troisieme (le SCHEMA de l'etat : les classes,
+# l'etat neuf, les accesseurs, extrait de tapis_etat.py pour tenir le
+# plafond, 19/11) ; tapis_etat_commit.py la vingt-quatrieme (le COMMIT qui a
+# ecrit l'etat : l'etat est lie au code qui l'a produit, 19/11) ;
+# tapis_entrelace.py la vingt-cinquieme (le LOT entrelace : primaire et
+# reprise alternes, la reprise passe devant un tour sur deux, 19/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -654,7 +662,12 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_preuves.py", 80),
                                               ("tapis_rotation.py", 80),
                                               ("tapis_ancre.py", 140),
-                                              ("tapis_etat.py", 115),
+                                              ("tapis_avance.py", 60),
+                                              ("tapis_non_tente.py", 60),
+                                              ("tapis_etat.py", 95),
+                                              ("tapis_etat_schema.py", 80),
+                                              ("tapis_etat_commit.py", 100),
+                                              ("tapis_entrelace.py", 40),
                                               ("tapis_retry.py", 50),
                                               ("tapis_tranche.py", 70),
                                               ("tapis_verdict.py", 50),
@@ -663,7 +676,11 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("gh_lecture.py", 70),
                                               ("tapis_diff.py", 200),
                                               ("tapis_perimetre.py", 110),
-                                              ("tapis_preuve.py", 110)])
+                                              ("tapis_preuve.py", 110),
+                                              ("tapis_public.py", 40),
+                                              ("tapis_tete.py", 30),
+                                              ("tapis_citations.py", 40),
+                                              ("belt_equite.py", 110)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

@@ -176,6 +176,35 @@ lane à moins de 24 h d'intervalle (`SEANCE_H`) font une seule visite. Les commi
 citent l'issue forment des séances sans lane. Le compte retenu est le plus grand des deux : un claim puis le
 merge de sa PR comptent une fois.
 
+**Une livraison ouvre une séance neuve** (19/11, famine de l'umbrella #27338). Sans cela, une lane qui
+enchaîne plusieurs grains du même umbrella le jour même n'y compte qu'**une** visite — et l'issue reste en
+tête de classement, servie sept fois dans la journée pendant que des issues anciennes n'attendaient
+aucune PR. La séance se ferme sur la livraison (ou la release) ; la suite ouvre une séance neuve. Mesure
+sur l'issue réelle : avant correction, 2 visites sur 8 livraisons ; après, 8.
+
+**Les PRs ouvertes comptent le travail en cours** (19/11, même famine). Le classement léger ne voyait que
+les commits **mergés** : une issue sur laquelle huit PRs sont ouvertes — pas encore mergées — restait à
+`visites = 0`, donc en tête de rotation. `scripts/coordination/tapis_citations.py` extrait les citations des
+PRs ouvertes avec la même règle que les commits mergés (une mention `#N` dans le corps, auto-référence
+exclue) ; chacune compte **une** visite, à la date de la dernière activité de la PR : une PR abandonnée
+depuis trois mois ne tient pas une issue en tête. C'est le classement **léger** qui est concerné ; la voie
+rapide lit les marqueurs du fil, qui portent la même information.
+
+**La mesure qui prouve l'inversion** (19/11, même famine). Le témoin d'**ordre** ne discriminait pas le
+correctif : à niveau égal, l'ordre de création mettait déjà les anciennes devant. Ce qui change, c'est le
+**niveau**. Pool de 14 issues (12 anciennes à zéro visite, une issue à une visite, l'umbrella #27338 à huit
+livraisons) :
+
+| | visites de #27338 | niveau de #27338 | niveau de l'issue à 1 visite | rang de #27338 |
+| --- | --- | --- | --- | --- |
+| avant (les PRs ouvertes ne comptent pas) | 0 | 0 | 0,5 | **devant** elle |
+| après | 8 | 8 | 0,5 | **derrière** elle |
+
+Avant correction, une racine servie huit fois passait **devant** une issue qui avait déjà reçu sa visite : le
+contre-sens exact du mandat du 16/11 (« toute issue doit être visitée au moins une fois avant qu'une autre le
+soit deux fois »). Le témoin `scripts/tests/test_tapis_public.py` rejoue les deux colonnes : il échoue si la
+correction disparaît, et il échoue aussi si l'inversion ne se reproduit plus.
+
 **Le niveau compte les visites du tour, pas celles de toute la vie de l'issue.** Le tour vaut
 `FENETRE_J` = 7 jours. Mesure du 16/11 sur la lecture de 13:27Z : environ 47 séances par jour pour 395
 issues ouvertes, soit un tour complet de la flotte en 4 à 8 jours. Un compte sur la vie entière aurait l'effet
@@ -330,6 +359,21 @@ complet, scripts/coordination/tapis_prise_en_charge.py) puis la servir`.
 **Un conteneur ne passe jamais devant un grain** (#26926) : la détection se fait sur les métadonnées
 (titre `[EPIC]`, labels `epic`/`umbrella`), donc elle ne peut pas attendre la lecture du corps.
 
+**Chaque classe a un créneau de lecture** (arbitrage du 19/11) : dans le **lot public de la rotation**
+(`tapis_public.lot_public`, la voie `tapis_leger`), les deux classes sont entrelacées — le conteneur
+tient un créneau à lui, un tour sur deux. Ce qu'il ne peut pas faire, c'est **déplacer un grain** : son
+quota de créneaux (25 % du lot) est inchangé, et la part des grains n'en dépend pas. La règle #26926
+est donc **étroitié** dans le lot de *lecture*, pas abandonnée : l'**ordre de service** de la sortie du
+tapis (les grains d'abord) reste inchangé.
+
+**La tête du lot est le numéro suivant le curseur** (famine du 19/11) : la priorité d'entrée gardait la
+même tête à chaque tranche — le plus prioritaire du bloc — et le curseur sautait alors par blocs
+entiers ; les grains du milieu du bloc n'étaient plus jamais servis (mesure du peer : **4 numéros lus
+sur 80** en 400 tours). Le curseur n'avance en outre que sur les numéros **lus** (le lot
+propriétaire) : un numéro proposé mais non qualifié reste *en attente*, et la tranche suivante le sert
+en tête. Les deux témoins de la famine sont rejoués sur le lot public dans
+`scripts/tests/test_tapis_public.py`.
+
 **Le mur global** (`--budget-s`, 60 s par défaut) couvre la lecture de sélection ; son dépassement lève
 `LectureIncomplete` et l'appelant le dit (code de sortie 3) — jamais une liste à moitié. La qualification
 a son propre mur : dépassée, elle rend ce qu'elle a et le dit (`budget_epuise`).
@@ -344,6 +388,10 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | Module | Rôle |
 | --- | --- |
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
+| `scripts/coordination/tapis_public.py` | le **lot public** : la proposition comprise (la tranche, les ancres) — la voie que les tests rejouent |
+| `scripts/coordination/tapis_tete.py` | la **tête** du lot : le numéro suivant le curseur, ahead de la priorité (famine du 19/11) |
+| `scripts/coordination/tapis_citations.py` | les **citations des PRs ouvertes** : le travail en cours compte comme une visite (famine du 19/11) |
+| `scripts/coordination/belt_equite.py` | l'**équité du dispatch** : les grains déjà servis qu'une file place devant les issues jamais servies (famine du 19/11) |
 | `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
@@ -408,5 +456,4 @@ la PR qui porte le `[DELIVERED]` — 14 tests de cette grammaire s'appuient sur 
 
 Le cas que la voie légère ne peut plus voir est précisément `RELACHEE` : elle classe sur métadonnées
 seules, elle ne voit donc plus les marqueurs du fil. La porte consumer les rejoue sur le fil complet.
-
 

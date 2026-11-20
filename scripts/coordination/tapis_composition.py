@@ -19,19 +19,23 @@ curseur.
 """
 from __future__ import annotations
 
-from coordination import tapis_ancre, tapis_retry
+from coordination import tapis_ancre, tapis_entrelace, tapis_retry
 
 
 def compose(grains: list, conteneurs: list, part: int, quota: int,
             ancre_g: int | None, ancre_c: int | None,
             inc_g: dict, inc_c: dict,
-            depart_g: int, depart_c: int, avance: int = 0):
+            depart_g: int, depart_c: int, avance: int = 0,
+            reprise_d_abord: bool = False):
     """Le bloc, les tranches primaires et les reprises.
 
     Rend `(grains_bloc, conteneurs_bloc, primaires, reprises)` : les
     numeros sont donnes par classe, pour que l'appelant les passe a
     `tapis_ancre.proposer` **separement** -- la primaire porte le curseur,
     la reprise ne le porte pas.
+
+    Le lot rendu ENTRELACE les deux classes (`tapis_entrelace`) : une
+    reprise en queue n'etait jamais lue (mesure du 19/11).
     """
     b_g, prim_g = tapis_ancre.membres(grains, ancre_g, part, avance, depart_g)
     b_c, prim_c = tapis_ancre.membres(conteneurs, ancre_c, quota, avance,
@@ -41,7 +45,9 @@ def compose(grains: list, conteneurs: list, part: int, quota: int,
     reprises = {"grains": [g.numero for g in rep_g],
                 "conteneurs": [c.numero for c in rep_c]}
     primaires = {"grains": prim_g, "conteneurs": prim_c}
-    return b_g + rep_g, b_c + rep_c, primaires, reprises
+    return (tapis_entrelace.intercale(b_g, rep_g, reprise_d_abord),
+            tapis_entrelace.intercale(b_c, rep_c, reprise_d_abord),
+            primaires, reprises)
 
 
 def dernier(numeros: list) -> int | None:
