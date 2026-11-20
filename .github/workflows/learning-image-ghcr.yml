@@ -6,8 +6,19 @@ name: Learning image (GHCR)
 # carnet temoin par famille de noyau, puis publier sur GHCR.
 #
 # Le deploiement (push vers le registre) n'a lieu que sur push sur main ;
-# les PR executent construction + temoins SANS publication (load: true),
-# ce qui prouve le vert sans toucher au paquet.
+# les PR executent construction + temoins SANS publication, ce qui prouve le
+# vert sans toucher au paquet.
+#
+# MOINDRE PRIVILEGE (revue du 20/11, deux points de securite) :
+#   1. deux jobs, un droit par job. Le job `construire-temoins` n'a que
+#      `contents: read` et tourne sur PR, push et dispatch -- il construit le
+#      Dockerfile d'une PR et y execute des carnets, il ne doit donc jamais
+#      pouvoir ecrire dans le registre. Le droit `packages: write` n'existe
+#      que dans le job `publier`, qui ne s'execute sur aucun evenement
+#      `pull_request`.
+#   2. `actions/checkout` recoit `persist-credentials: false` : le jeton du
+#      depot n'est pas conserve dans `.git/config` apres le checkout, alors
+#      que le job n'en a pas besoin apres cette etape.
 
 on:
   push:
@@ -39,9 +50,9 @@ on:
         type: boolean
         default: false
 
+# Aucun droit d'ecriture au niveau du workflow : chaque job declare le sien.
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: learning-image-ghcr-${{ github.ref }}
@@ -53,49 +64,32 @@ env:
   CONTEXTE: docker-configurations/notebook-runner
 
 jobs:
-  construire-temoins-publier:
-    name: Construire, executer les 7 temoins, publier
+  construire-temoins:
+    name: Construire et executer les 7 temoins
     # Runner heberge : build lourd (compilation du REPL Lean a froid), docker
     # et buildx disponibles, aucune contention avec les machines de la flotte.
     runs-on: ubuntu-latest
     timeout-minutes: 240
+    # Lecture seule : ce job construit le Dockerfile d'une pull_request et y
+    # execute des carnets temoins. Il ne doit jamais pouvoir ecrire dans le
+    # registre -- le droit `packages: write` est porte par le seul job
+    # `publier` (revue du 20/11).
+    permissions:
+      contents: read
     steps:
       - name: Recuperer le depot
         uses: actions/checkout@v4
+        with:
+          # Le jeton n'est pas conserve dans `.git/config` apres le checkout :
+          # le job n'en a pas besoin ensuite.
+          persist-credentials: false
 
       - name: Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Connexion GHCR
-        if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Etiquettes
-        id: tags
-        run: |
-          set -euo pipefail
-          date_tag="$(date -u +%Y%m%d-%H%M)"
-          sha_tag="sha-${GITHUB_SHA::12}"
-          echo "date_tag=$date_tag" >> "$GITHUB_OUTPUT"
-          echo "sha_tag=$sha_tag" >> "$GITHUB_OUTPUT"
-
       - name: Construction (mesuree, sans publication)
         id: build
         uses: docker/build-push-action@v6
-        env:
-          # Cache de couches dans le registre lui-meme (ref buildcache) :
-          # le cache gha est plafonne a 10 Go, l'image pere ~14 Gio. Mais
-          # sur evenement PR la connexion GHCR est sautee (aucune
-          # publication) : un cache registre y ecrirait en anonyme et
-          # echoue en 403 (mesure, run 44795615124). Sans login : pas de
-          # cache du tout — la PR paie une construction a froid (~4 min),
-          # c'est aussi la mesure a froid de l'acceptance.
-          CACHE_FROM: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:buildcache', env.IMAGE) || '' }}
-          CACHE_TO: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:buildcache,mode=max', env.IMAGE) || '' }}
         with:
           context: ${{ env.CONTEXTE }}
           build-contexts: |
@@ -104,8 +98,12 @@ jobs:
           target: learning
           load: true
           tags: ${{ env.IMAGE }}:smoke
-          cache-from: ${{ env.CACHE_FROM }}
-          cache-to: ${{ env.CACHE_TO }}
+          # Aucun cache de registre ici : ce job n'a pas le droit d'ecrire
+          # dans ghcr.io. Le cache de couches est ecrit et relu par le job
+          # `publier`, qui, lui, est authentifie. Consequence mesuree : la
+          # construction de ce job est toujours a froid (~4 min, mesure du run
+          # 44795615124) -- c'est aussi la mesure a froid que demande
+          # l'acceptance de #27546.
 
       - name: Temoin par famille de noyau (7 sur 7 exigees)
         run: |
@@ -138,8 +136,64 @@ jobs:
           rm -rf .tmp-out
           exit $rc
 
-      - name: Publier (etiquettes date, sha, latest)
-        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.pousser)
+      - name: Relever temps et taille
+        if: always()
+        run: |
+          set -uo pipefail
+          {
+            echo "## Image d'apprentissage — releve (construction + temoins)"
+            echo
+            echo "- evenement : ${{ github.event_name }}"
+            if docker image inspect "${{ env.IMAGE }}:smoke" >/dev/null 2>&1; then
+              taille="$(docker image inspect '${{ env.IMAGE }}:smoke' --format '{{.Size}}')"
+              echo "- taille : ${taille} octets ($(( taille / 1024 / 1024 / 1024 )) Gio)"
+            fi
+            echo "- publication : job `publier` (absent sur evenement pull_request)"
+            echo
+            echo "_Le temps de construction par etape est dans le journal du job ;_"
+            echo "_le premier run apres un changement du Dockerfile est la mesure a froid._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publier:
+    name: Publier (etiquettes date, sha, latest)
+    # Depend des temoins : on ne publie une image que si les 7 carnets
+    # temoins sont passes.
+    needs: construire-temoins
+    # Jamais sur une pull_request : c'est ici que vit le droit
+    # `packages: write`. Le dispatch exige en plus l'option `pousser`, sinon
+    # un run manuel se limite a la construction et aux temoins.
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.pousser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Connexion GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Etiquettes
+        id: tags
+        run: |
+          set -euo pipefail
+          date_tag="$(date -u +%Y%m%d-%H%M)"
+          sha_tag="sha-${GITHUB_SHA::12}"
+          echo "date_tag=$date_tag" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=$sha_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Publication (etiquettes date, sha, latest)
         uses: docker/build-push-action@v6
         with:
           context: ${{ env.CONTEXTE }}
@@ -155,22 +209,17 @@ jobs:
           cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
           cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
 
-      - name: Relever temps et taille
+      - name: Relever la publication
         if: always()
         run: |
           set -uo pipefail
           {
-            echo "## Image d'apprentissage — releve"
+            echo "## Image d'apprentissage — publication"
             echo
             echo "- evenement : ${{ github.event_name }}"
-            if docker image inspect "${{ env.IMAGE }}:smoke" >/dev/null 2>&1; then
-              taille="$(docker image inspect '${{ env.IMAGE }}:smoke' --format '{{.Size}}')"
-              echo "- taille : ${taille} octets ($(( taille / 1024 / 1024 / 1024 )) Gio)"
-            fi
-            echo "- publication : ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.pousser)) && 'oui' || 'non (PR/depot sans pousser)' }}"
             echo "- etiquette date : \`${{ steps.tags.outputs.date_tag }}\`"
             echo "- etiquette sha : \`${{ steps.tags.outputs.sha_tag }}\`"
+            echo "- cache de couches : registre \`${{ env.IMAGE }}:buildcache\` (mode=max)"
             echo
             echo "_Le temps de construction par etape est dans le journal du job ;_"
-            echo "_le premier run apres un changement du Dockerfile est la mesure a froid._"
           } >> "$GITHUB_STEP_SUMMARY"
