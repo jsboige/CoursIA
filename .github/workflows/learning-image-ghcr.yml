@@ -86,6 +86,16 @@ jobs:
       - name: Construction (mesuree, sans publication)
         id: build
         uses: docker/build-push-action@v6
+        env:
+          # Cache de couches dans le registre lui-meme (ref buildcache) :
+          # le cache gha est plafonne a 10 Go, l'image pere ~14 Gio. Mais
+          # sur evenement PR la connexion GHCR est sautee (aucune
+          # publication) : un cache registre y ecrirait en anonyme et
+          # echoue en 403 (mesure, run 44795615124). Sans login : pas de
+          # cache du tout — la PR paie une construction a froid (~4 min),
+          # c'est aussi la mesure a froid de l'acceptance.
+          CACHE_FROM: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:buildcache', env.IMAGE) || '' }}
+          CACHE_TO: ${{ github.event_name != 'pull_request' && format('type=registry,ref={0}:buildcache,mode=max', env.IMAGE) || '' }}
         with:
           context: ${{ env.CONTEXTE }}
           build-contexts: |
@@ -94,10 +104,8 @@ jobs:
           target: learning
           load: true
           tags: ${{ env.IMAGE }}:smoke
-          # Cache de couches dans le registre lui-meme (ref buildcache) :
-          # le cache gha est plafonne a 10 Go, l'image pese ~14 Gio.
-          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
-          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+          cache-from: ${{ env.CACHE_FROM }}
+          cache-to: ${{ env.CACHE_TO }}
 
       - name: Temoin par famille de noyau (7 sur 7 exigees)
         run: |
