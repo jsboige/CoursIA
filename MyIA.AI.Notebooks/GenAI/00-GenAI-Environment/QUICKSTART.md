@@ -74,7 +74,7 @@ curl -s -w "%{http_code}" "https://z-image.myia.io/health"
 
 ### OpenRouter (LLMs - gratuit)
 
-- `01-1-OpenAI-DALL-E-3.ipynb` - Génération d'images via API
+- `01-1-Generation-Image-Texte-API.ipynb` - Génération d'images via API
 - `01-2-Generation-Image-API.ipynb` - Vision multimodale
 - `01-3-Basic-Image-Operations.ipynb` - Opérations de base
 
@@ -88,8 +88,8 @@ OPENAI_CHAT_MODEL_ID=meta-llama/llama-3.2-3b-instruct:free
 
 ### SD Forge Turbo (SDXL)
 
-- `01-4-Forge-SD-XL-Turbo.ipynb` - Génération rapide SDXL
-- `02-3-Stable-Diffusion-3-5.ipynb` - SD avancé
+- `01-4-Generation-Image-Locale-Forge.ipynb` - Génération rapide SDXL
+- `02-3-Generation-Image-MMDiT.ipynb` - SD avancé
 
 **Config requise :**
 

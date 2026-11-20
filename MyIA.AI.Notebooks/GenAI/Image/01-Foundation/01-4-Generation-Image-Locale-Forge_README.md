@@ -1,6 +1,6 @@
 # Notebook: Stable Diffusion Forge - SD XL Turbo
 
-**Fichier**: [`01-4-Forge-SD-XL-Turbo.ipynb`](01-4-Forge-SD-XL-Turbo.ipynb)  
+**Fichier**: [`01-4-Generation-Image-Locale-Forge.ipynb`](01-4-Generation-Image-Locale-Forge.ipynb)  
 **Niveau**: Intermédiaire  
 **Durée estimée**: 45-60 minutes  
 **Prérequis**: Python 3.x, connaissances API REST basiques
@@ -117,7 +117,7 @@ Le notebook est organisé en **7 sections progressives** :
 
 3. **Lancer Jupyter** :
    ```bash
-   jupyter notebook 01-4-Forge-SD-XL-Turbo.ipynb
+   jupyter notebook 01-4-Generation-Image-Locale-Forge.ipynb
    ```
 
 4. **Exécuter cellules** dans l'ordre (Shift+Enter)

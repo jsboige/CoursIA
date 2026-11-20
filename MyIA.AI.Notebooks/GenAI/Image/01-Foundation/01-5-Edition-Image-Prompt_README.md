@@ -271,7 +271,7 @@ pip install Pillow
 
 ### Notebooks Associés
 
-- **`01-4-Forge-SD-XL-Turbo.ipynb`**: Génération images Stable Diffusion (comparaison API)
+- **`01-4-Generation-Image-Locale-Forge.ipynb`**: Génération images Stable Diffusion (comparaison API)
 - **`Image/01-Foundation/`**: Série complète notebooks GenAI images
 
 ---

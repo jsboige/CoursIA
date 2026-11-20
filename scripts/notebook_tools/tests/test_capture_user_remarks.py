@@ -81,7 +81,7 @@ class ResolveNotebooks(unittest.TestCase):
         self.index = [
             "QuantConnect/Python/QC-Py-02-Platform-Fundamentals.ipynb",
             "QuantConnect/Python/QC-Py-20-Bitcoin-Strategy.ipynb",
-            "GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb",
+            "GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb",
         ]
 
     def test_unique_prefix_match(self):
