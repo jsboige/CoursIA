@@ -4,7 +4,7 @@
 
 Ce module couvre l'orchestration de plusieurs modèles audio, les pipelines complexes, l'API temps réel d'OpenAI et le streaming TTS local avec pipecat.
 
-**Dans le cadre du fil rouge podcast** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles STT et TTS pour choisir le meilleur selon le budget et la qualité visés. [03-2](03-2-Audio-Pipeline-Orchestration.ipynb) construit le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatisé. [03-3](03-3-Realtime-Voice-API.ipynb) montre l'alternative temps réel d'OpenAI pour les interactions live. [03-4](03-4-TTS-Streaming-Local-Pipecat.ipynb) ajoute la brique locale : du TTS Kokoro servi par le framework d'orchestration pipecat, avec mesures de débit et de latence premier audio.
+**Dans le cadre du fil rouge podcast** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles STT et TTS pour choisir le meilleur selon le budget et la qualité visés. [03-2](03-2-Audio-Pipeline-Orchestration.ipynb) construit le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatisé. [03-3](03-3-Realtime-Voice-API.ipynb) montre l'alternative temps réel d'OpenAI pour les interactions live. [03-4](03-4-TTS-Streaming-Local-Pipecat.ipynb) ajoute la brique locale : du TTS Kokoro servi par le framework d'orchestration pipecat, avec mesures de débit et de latence premier audio. [03-5](03-5-MCP-Audio.ipynb) expose la transcription, la synthèse et l'analyse audio comme outils du protocole MCP, et fait choisir ces outils par un agent réel.
 
 ## Vue d'ensemble
 
@@ -24,6 +24,7 @@ Pour un inventaire à jour des carnets, consultez le [catalogue du dépôt](../.
 | 2 | [03-2-Audio-Pipeline-Orchestration](03-2-Audio-Pipeline-Orchestration.ipynb) | Pipelines STT→LLM→TTS, podcast | Mixed | ~14 GB |
 | 3 | [03-3-Realtime-Voice-API](03-3-Realtime-Voice-API.ipynb) | OpenAI Realtime API, WebSocket | OpenAI API | 0 |
 | 4 | [03-4-TTS-Streaming-Local-Pipecat](03-4-TTS-Streaming-Local-Pipecat.ipynb) | TTS Kokoro local, streaming et service pipecat, RTF et TTFA | Local (Kokoro ONNX) | 0 |
+| 5 | [03-5-MCP-Audio](03-5-MCP-Audio.ipynb) | Serveur MCP audio (transcription, synthèse, analyse) et choix d'outils par un agent | Local (CPU) | 0 |
 
 ## Prérequis
 
@@ -47,6 +48,7 @@ pip install pipecat-ai kokoro-onnx soundfile  # Pour le TTS streaming local (03-
 2. **03-2-Audio-Pipeline-Orchestration** - Création de pipelines audio complexes
 3. **03-3-Realtime-Voice-API** - Intégration temps réel en production
 4. **03-4-TTS-Streaming-Local-Pipecat** - TTS local avec mesure du débit et de la latence premier audio
+5. **03-5-MCP-Audio** - Exposer les moteurs audio comme outils MCP et mesurer le choix d'un agent
 
 ## Concepts clés
 
