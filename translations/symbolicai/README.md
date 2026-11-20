@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`argumentanalysis.csv`](argumentanalysis.csv) | `SymbolicAI/ArgumentAnalysis/` | 16 au seed 2026-07-05 (20 au total à l'époque, 4 `_agent.ipynb` auto-générés exclus — le compte courant vit dans le CSV) | 395 au seed 2026-07-05 (cf. en-tête — compte courant mesurable dans le CSV) |
+| [`argumentanalysis.csv`](argumentanalysis.csv) | `SymbolicAI/ArgumentAnalysis/` | 16 au 2026-07-09, resync 2 notebooks OWL #5799 (14 + 4 `_agent.ipynb` exclus au seed initial 2026-07-05, 20 au total à l'époque — le compte courant vit dans le CSV) | 395 au 2026-07-09 (cf. en-tête — compte courant mesurable dans le CSV) |
 
 ## Régénération
 

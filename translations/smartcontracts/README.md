@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`smartcontracts.csv`](smartcontracts.csv) | `SymbolicAI/SmartContracts/` | 27 au seed 2026-07-09 (SC-00-Cypherpunk-Origins-Python → SC-26-Final-Project-Python, parité Solidity/Foundry/Vyper/Solana/Move + Python tutorials — le compte courant vit dans le CSV) | 956 au seed 2026-07-09 (en-tête + lignes CSV-escaped, 20 colonnes — compte courant mesurable dans le CSV) |
+| [`smartcontracts.csv`](smartcontracts.csv) | `SymbolicAI/SmartContracts/` | 27 au seed 2026-07-09 (SC-00-Cypherpunk-Origins-Python → SC-26-Final-Project-Python, parité Solidity/Foundry/Vyper/Solana/Move + Python tutorials — le compte courant vit dans le CSV) | 956 au seed 2026-07-09 (en-tête + lignes CSV-escaped, 21 colonnes — compte courant mesurable dans le CSV) |
 
 **Note cross-language** : la série SmartContracts est cross-language (Solidity, Vyper, Move/Sui, Anchor/Solana, Bitcoin Scripting, EVM) avec jumeaux Python (web3.py, pytest, etc.). Le script d'extraction prend **les deux familles** verbatim (chaque notebook est une cellule source indépendante). La traduction future T3 (moteur Argumentum) appliquera les deux familles.
 

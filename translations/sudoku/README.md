@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`sudoku.csv`](sudoku.csv) | `Sudoku/` | 36 au seed 2026-07-09 (Sudoku-0-Environment → Sudoku-19-Lean-Propagation, parité C#/Python via paires miroir 1-15 et 18, + 0-Environment C# only, 16-NeuralNetwork et 17-LLM Python only, 19-Lean natif — le compte courant vit dans le CSV) | 1 223 au seed 2026-07-09 (markdown + code, 20 colonnes ; lignes CSV-escaped comptées à l'époque : 32 362 — compte courant mesurable dans le CSV) |
+| [`sudoku.csv`](sudoku.csv) | `Sudoku/` | 36 au seed 2026-07-09 (Sudoku-0-Environment → Sudoku-19-Lean-Propagation, parité C#/Python via paires miroir 1-15 et 18, + 0-Environment C# only, 16-NeuralNetwork et 17-LLM Python only, 19-Lean natif — le compte courant vit dans le CSV) | 1 223 au seed 2026-07-09 (markdown + code, 21 colonnes ; lignes CSV-escaped comptées à l'époque : 32 362 — compte courant mesurable dans le CSV) |
 
 **Note owner-lane strict** : la série Sudoku = **owner po-2025 strict** (toutes les PRs récentes #5473 #5404 #5406 #5407 #5454 #5639 #5769 #5778 = `Jean-Sylvain Boige`). L'extraction i18n est **safe owner-lane** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 

@@ -6,14 +6,14 @@
 
 | Fichier | Série | Notebooks seedés | Cellules |
 |---------|-------|-------------------|----------|
-| [`partner-course.csv`](partner-course.csv) | `MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/` | **2 / 7** au seed 2026-07-16 (notebooks research avec cell_id v4.5 — le périmètre courant vit dans le CSV) | 25 au seed 2026-07-16 (cellules markdown + code, 20 colonnes #4957 §1 — compte courant mesurable dans le CSV) |
+| [`partner-course.csv`](partner-course.csv) | `MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/` | **2 / 7** au seed 2026-07-16 (notebooks research avec cell_id v4.5 — le périmètre courant vit dans le CSV) | 25 au seed 2026-07-16 (cellules markdown + code, 21 colonnes #4957 §1 — compte courant mesurable dans le CSV) |
 
 Les deux notebooks seedés au seed 2026-07-16 étaient :
 
 - `examples/Sector-Momentum/deep_research_optimization.ipynb` (cells 13 : 7 md + 6 code) — Sharpe optimization analysis (Sector-Momentum strategy, walk-forward, leverage grid, régime detection)
 - `examples/Sector-Momentum/research_robustness.ipynb` (cells 12 : 6 md + 6 code) — Robustness checks 2015-2025 sur régimes bull/COVID/bear/recovery/AI-Bull
 
-**Schéma** : 20 colonnes ratifiées (#4957 §1). `src_lang=fr`, `src_hash` (sha256-16 sur texte normalisé) + `text_fr` remplies ; colonnes cibles (`text_en/es/ar/fa/zh/ru/pt`) vides en attendant le moteur T3 Argumentum (#1650 Phase 1 connecteur gated #1271).
+**Schéma** : 21 colonnes ratifiées (#4957 §1). `src_lang=fr`, `src_hash` (sha256-16 sur texte normalisé) + `text_fr` remplies ; colonnes cibles (`text_en/es/ar/fa/zh/ru/pt`) vides en attendant le moteur T3 Argumentum (#1650 Phase 1 connecteur gated #1271).
 
 **Note C.2/C.3 / scope kernels** : les 2 notebooks seedés sont en kernel `python3` standard (research notebooks Jupyter classiques). Pas de QuantBook (`QuantBook()`), pas de QC Cloud requis, pas de re-exécution possible localement (= dette #3968/#4362 connue ; reproducible only via QC Cloud ou data cache locale). L'extraction T1 ne touche pas au contenu exécutable, seulement aux cellules textuelles (markdown + commentaires dans cellules code).
 

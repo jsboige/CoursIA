@@ -5,7 +5,7 @@
 | Métrique | Valeur |
 |----------|--------|
 | Série source | `MyIA.AI.Notebooks/Probas/Infer/` (Infer.NET probabilistic programming, .NET Interactive) |
-| Notebooks source | **19** (post-renum narratif #5637 c.377 — cycle 5/7/9/11/14) |
+| Notebooks source | **18** (post-renum narratif #5637 c.377 — cycle 5/7/9/11/14) |
 | Cellules extraites | **902** (code + markdown, nbformat canonique) |
 | Taille CSV | proportionnelle au nombre de cellules extraites — le fichier lui-même fait foi |
 | Langue pivot | **fr** (PIVOT_LANG = "fr", cf #1650 Phase 0.5 / #4980 Lean i18n) |
