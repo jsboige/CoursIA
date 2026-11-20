@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — Méta-cadrage D1 ↔ C4 — la rencontre du formel et de l'opérationnel
 
 > **Statut.** Document de cadrage **méta** (mode 3 d'articulation), grade **C-documentaire**. Ni vertical (par fil : Thom, Grothendieck, Schmidhuber, Friston), ni horizontal (cartographie de la tresse, [#7738](https://github.com/jsboige/CoursIA/issues/7738)) : ce document **articule** ce que le cadrage formel D1 ([#7745](https://github.com/jsboige/CoursIA/issues/7745), [`strate7-cadres-libres.md`](strate7-cadres-libres.md)) et la jauge opérationnelle C4 ([#7743](https://github.com/jsboige/CoursIA/issues/7743), [`jambe-c4-propagation.md`](jambe-c4-propagation.md)) *se doivent mutuellement*. Il ne refait ni l'un ni l'autre : il explicite le **seuil commun** (ρ_c ↔ (π_c, W_c, P_c)), montre **pourquoi** ce seuil est le même objet vu sous deux angles, et identifie **ce que cette articulation rend possible** (et ce qu'elle interdit). *See* [#4588](https://github.com/jsboige/CoursIA/issues/4588) (Epic umbrella ICT). *Part of* [#7395](https://github.com/jsboige/CoursIA/issues/7395) (méta-proxy ICT).

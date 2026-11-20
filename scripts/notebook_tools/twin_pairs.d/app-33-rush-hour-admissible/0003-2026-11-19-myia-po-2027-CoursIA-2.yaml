@@ -1,0 +1,8 @@
+date: '2026-11-19'
+by: myia-po-2027:CoursIA-2
+python_sha: 86bc53f44d5dd37775fb144562944270f6eea3d0
+csharp_sha: 427575133605051804f9673bcb48a719dafb5570
+content_python_sha: 9cbe3b5d08161fab1b5d32e8b8ab588eab5a4068d432565b16d4b3fd4a0c8c0b
+content_csharp_sha: aa185bf93eaa027484c602e439fabd7be57d32bd2ea4536c188a136c2da168c7
+known_differences:
+  - "§6bis (balayage d'admissibilité état par état : BFS de référence, 30 états, portée brouillage ≤ 10 coups) ajouté côté Python seulement ; non porté au jumeau C# — asymétrie pédagogique assumée (review #27365)"
