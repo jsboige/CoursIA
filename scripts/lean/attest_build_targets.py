@@ -338,7 +338,7 @@ def dependents_of(graph: dict[str, set[str]], roots: set[str]) -> set[str]:
     return seen
 
 
-def sibling_en_module(lake_root: Path, modules: dict[str, str], module: str) -> str | None:
+def sibling_en_module(modules: dict[str, str], module: str) -> str | None:
     """Le jumeau `_en` d'un module, s'il existe dans le lake.
 
     Convention i18n EPIC #4980 : `Foo.lean` et `Foo_en.lean` sont deux
@@ -488,7 +488,7 @@ def resolve_targets(lake_root: Path, changed_paths: list[str],
 
     # Les jumeaux `_en` des modules touches : deux fichiers, deux modules.
     for module in sorted(roots):
-        twin = sibling_en_module(lake_root, modules, module)
+        twin = sibling_en_module(modules, module)
         if twin:
             roots.add(twin)
 

@@ -459,11 +459,11 @@ def test_le_prefixe_du_lake_est_deduit_du_depot(tmp_path):
 def test_le_jumeau_en_est_resolu_dans_les_deux_sens(tmp_path):
     lake = _make_lake(tmp_path)
     modules = enumerate_modules(lake)
-    assert sibling_en_module(lake, modules, "Demo.Alpha") == "Demo.Alpha_en"
-    assert sibling_en_module(lake, modules, "Demo.Alpha_en") == "Demo.Alpha"
+    assert sibling_en_module(modules, "Demo.Alpha") == "Demo.Alpha_en"
+    assert sibling_en_module(modules, "Demo.Alpha_en") == "Demo.Alpha"
     # `Demo.Beta` a un jumeau `_en` ; `Demo.Delta` n'en a pas.
-    assert sibling_en_module(lake, modules, "Demo.Beta") == "Demo.Beta_en"
-    assert sibling_en_module(lake, modules, "Demo.Delta") is None
+    assert sibling_en_module(modules, "Demo.Beta") == "Demo.Beta_en"
+    assert sibling_en_module(modules, "Demo.Delta") is None
 
 
 # ---------------------------------------------------------------------------
