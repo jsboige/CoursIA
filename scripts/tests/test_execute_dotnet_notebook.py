@@ -1,4 +1,4 @@
-"""Tests for scripts/execute_dotnet_notebook.py.
+"""Tests for scripts/notebook_tools/execute_dotnet_notebook.py.
 
 Covers the timeout + cell-success accounting regression that this module
 shipped with:
@@ -37,7 +37,7 @@ from queue import Empty as QueueEmpty
 import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent
-MODULE_PATH = SCRIPTS_DIR / "execute_dotnet_notebook.py"
+MODULE_PATH = SCRIPTS_DIR / "notebook_tools" / "execute_dotnet_notebook.py"  # relogé #13737 V3
 
 
 def _load_module(monkeypatch):

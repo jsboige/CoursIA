@@ -28,9 +28,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-# T3-c (#25366) : reloge dans scripts/coordination/ -- gh_identity reste a la
-# racine de scripts/ (point d entree), on amorce le chemin explicitement.
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# T3-c (#25366) : reloge dans scripts/coordination/. #13737 tranche 2 :
+# gh_identity vit dans scripts/ci/ -- on amorce le chemin explicitement.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
 import gh_identity
 
