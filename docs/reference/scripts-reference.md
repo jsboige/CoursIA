@@ -14,6 +14,28 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 | `extract_notebook_skeleton.py` | Extraire le squelette (structure cellules) d'un notebook |
 | `notebook_lint.py` | Lint structurel notebooks (+ `test_notebook_lint.py`) |
 
+### Conformite differentielle Rust
+| Script | Usage |
+|--------|-------|
+| `check_rust_conformance.py` | Compare les sorties numeriques d'un carnet **Rust** a celles de ses jumeaux Python et C#, a une tolerance declaree par cellule. Registre : `scripts/notebook_tools/rust_conformance.d/` (un YAML par triplet + `_schema.yaml`). Pli 3 de l'Epic Origami #26510 |
+
+```bash
+python scripts/notebook_tools/check_rust_conformance.py                      # tout le registre
+python scripts/notebook_tools/check_rust_conformance.py --entry sudoku-02-dancinglinks
+python scripts/notebook_tools/check_rust_conformance.py --json
+```
+
+La correspondance entre les cotes est **ecrite dans le registre** (cellule + motif
+d'extraction par cote) : les trois cotes n'ont pas la meme structure de cellules, une
+correspondance automatique comparerait des grandeurs differentes. Un cote explicitement
+`absent:` est signale sans faire echouer le controle ; un cote declare dont l'extraction
+echoue est un finding (fail-CLOSED).
+
+**Couts de sortie** : `0` conforme · `1` divergence ou finding · `2` instrument en panne
+(registre illisible, **selection `--entry` sans correspondance**, registre vide). Un controle
+qui ne mesure rien ne rend jamais un vert : une coquille dans le nom d'une entree rend `2`,
+pas `0`.
+
 ### Exécution
 | Script | Usage |
 |--------|-------|
@@ -257,7 +279,7 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 | `scripts/validation/dispatch.py` + `matrix.yml` | Matrice de validation / dispatch |
 | `scripts/genai-stack/genai.py` | GenAI Docker (ComfyUI + Qwen) + validation — cf [docs/genai/genai-services.md](../genai/genai-services.md) |
 | `scripts/slides/livecoding_video_pipeline.py` | **Pipeline livecoding-video #15604 (étapes 1 + 4)** : composition Strudel par template (`compose_strudel`, visuals `.scope()`/`.pianoroll()` opt-in) et capture navigateur `--capture` — pattern injecté par hash d'URL (`build_repl_url`, encodage `encodeURIComponent(base64)` observé sur le bouton share), clic play trusted (headed requis : clic JS ≠ user gesture, AudioContext live suspendu), gate checksum canvas avant enregistrement, `canvas.captureStream` + MediaRecorder (webm), **Export to WAV natif du REPL** (rendu offline du moteur strudel — aucun routage audio système VB-Cable), mux ffmpeg H.264/AAC. Tests : `scripts/tests/test_livecoding_video_pipeline.py`. Étapes 2/3/5/6 deferred avec claim par phase |
-| `scripts/repair_genai_notebooks.py`, `scripts/audit/audit_genai_corruption.py` | Réparation / audit corruption GenAI |
+| `scripts/genai/repair_genai_notebooks.py`, `scripts/audit/audit_genai_corruption.py` | Réparation / audit corruption GenAI |
 | `scripts/notebook_tools/fix_robust_dotenv.py` | Robustesse chargement `.env` |
 | `scripts/scan_student_forks.py` | Scan des forks étudiants |
 | `scripts/series_progress_manager.py` | Suivi de progression des séries |
@@ -265,13 +287,13 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 | `scripts/qc-mcp-lite/qc_measure.py` | **Mesure générique de stratégies QC Cloud** : CLI `plan`/`run`/`status`/`read` — plan de passes nommées, exécution idempotente et reprenable (projet retrouvé par nom, backtest adopté par son nom, `state.json` écrit à chaque étape), lecture refusée tant que le backtest n'est pas terminé (champ `completed`), normalisation des clés de statistiques (`statistics`/`runtimeStatistics`/camelCase), tableau Markdown ou `--json` ; cadenceur 6 appels/min (plafond flotte 10), sondage ≥ 20 s ; réutilise le client REST de `scripts/qc-mcp-lite/server.py` par import — usage : [README qc-mcp-lite](../../scripts/qc-mcp-lite/README.md) |
 | `scripts/update_navigation.py` | Mise à jour navigation README |
 | `scripts/notebook_tools/extract_pptx_titles.py`, `scripts/extract_slidev_titles.py` | Extraction titres slides (PPTX / Slidev) |
-| `scripts/execute_with_env.py`, `scripts/execute_dotnet_notebook.py`, `scripts/execute_sudoku_python.py` | Wrappers d'exécution avec env |
+| `scripts/notebook_tools/execute_with_env.py`, `scripts/notebook_tools/execute_dotnet_notebook.py`, `scripts/notebook_tools/execute_sudoku_python.py` | Wrappers d'exécution avec env |
 | `scripts/post_bake_slides.py` | **Post-bake Slidev Windows** : rend la sortie `slidev build` machine-indépendante (chemin cwd injecté dans HTML/JS/CSS/`_redirects`, URL-encodage des espaces) — à passer après chaque build local de deck destiné à la CI (T3-b #25366, census #26009) |
 | `scripts/roosync_archive_backfill.py` | **Backfill des archives RooSync sans résumé** (#8889) : quand l'auto-condensation dégrade en truncation fallback (LLM de résumé injoignable), repasse derrière pour combler les fenêtres ; réutilisable à chaque panne du LLM de résumé |
-| `scripts/audiobook_pipeline.py` | **Orchestrateur end-to-end du pipeline audiobook agentique** (EPIC #1028 P6) : chaîne les passes v4 (`--book`, `--dry-run`) de `GenAI/Audio/04-Applications/v4/` — seule entrée unique du pipeline complet |
+| `scripts/genai/audiobook_pipeline.py` | **Orchestrateur end-to-end du pipeline audiobook agentique** (EPIC #1028 P6) : chaîne les passes v4 (`--book`, `--dry-run`) de `GenAI/Audio/04-Applications/v4/` — seule entrée unique du pipeline complet |
 | `scripts/detect_family_recurrence.py` | **Détecteur read-only des familles récurrentes du pool ouvert** : mesure la règle Q162 b (« un constat petit et local s'écrit dans l'issue de sa famille ») en listant les familles d'issues qui reviennent — alimente la consolidation #25366 |
 | `scripts/audit_consolidation_orphans.py` | **Organe d'audit des issues orphelines par axe (A-F)** (#16473) : liste les issues sans chaperon de consolidation avec la preuve de ce qui a été cherché — un tri, pas un verdict |
-| `scripts/relabel_qc_exercises.py` | **Renumérotation des en-têtes d'exercices des carnets QuantConnect** (`--dry-run` / `--verify`), même geste que le canon notebook pour la famille QC |
+| `scripts/quantconnect/relabel_qc_exercises.py` | **Renumérotation des en-têtes d'exercices des carnets QuantConnect** (`--dry-run` / `--verify`), même geste que le canon notebook pour la famille QC |
 | `scripts/quantconnect/`, `scripts/smartcontracts/`, `scripts/sudoku/`, `scripts/datasets/`, `scripts/tests/` | Outils par domaine |
 | `scripts/ci/heavy_batch.py` | **Lot quotidien en ombre** (P3 du plan « CI à deux étages », #25510) : sélection des PRs du lot, **arbre d'intégration** et **mesure** de sa durée. Le verdict de revue est lu dans les **corps** (réutilisation de `pool_review_verdicts.py`, jamais `reviewDecision` qui vaut `null` à perpétuité sous token COMMENT-only). Trois règles de sélection, dans l'ordre : **garde fork** (une PR de fork n'entre qu'après l'APPROVE de `myia-ai-01` — une désignation par le coordinateur ne lève pas cette garde), **porte du merge** (l'APPROVE de `myia-ai-01` **à la tête exacte** — la porte que le merge franchit ; un `LGTM` de Hermes est un avis, pas une approbation ; le verdict de revue est lu et affiché mais ne sélectionne plus), **ancienneté** (les plus anciennes d'abord) ; chaque exclusion est **nommée**. La **population** candidates est celle que le merge touche : les PRs ouvertes que le coordinateur a relues (`--search "reviewed-by:myia-ai-01 sort:created-asc"`), **sans troncature** ni **plafond par défaut** (`--max-prs 0`) — mesure du 2026-11-09 sur le pool réel : 16 PRs inspectées, 5 sélectionnées, 11 exclusions nommées (sous la liste tronquée et le plafond de 4 : 1 PR sélectionnée sur 15). Quatre créneaux UTC (04:30 → échéance 10:00, 10:30 → 13:00, 16:30 → 21:30, 21:30 → 00:00), un seul lot à la fois (`concurrency` sans `cancel-in-progress`). `--run` exécute le lot (worktree jetable, tests désignés par `select_tests.py`, durée et statut par PR) ; `--integration` construit l'arbre **qui va réellement atterrir** (`main` + les PRs du lot, dans l'ordre du lot) et joue **la suite complète de la jambe `Scripts Tests`** dessus — les cibles sont **lues** dans le bloc pytest de `scripts-tests.yml` (`suite_lourde_cible`), jamais recopiées, et l'environnement est installé par le script partagé `scripts/ci/install_scripts_tests_deps.sh` que les deux jambes appellent — un conflit d'intégration est **nommé** et la PR sort de l'arbre ; un arbre rouge est **bissectionné** par `git bisect run` (organe natif), chaque fusion portant le sujet `lot: PR #N`, et le coupable est rendu par le sujet ou, à défaut, par **ascendance**. `--bisect-run` est la commande que `git bisect run` invoque : elle rend 0 (bon), 1 (mauvais) ou 125 (indéterminé — dépendance absente, cible absente). `--pr N` lance le lot sur une seule PR (avance du coordinateur). `--results` rend la mesure : durée du lot et **fin dans les temps** — le créneau de référence est celui du **début** du lot. Une dépendance manquante rend une PR « non mesurable », jamais rouge. Workflow : `.github/workflows/slow-lane.yml` (job `lot`, permissions minimales, aucun secret, runner `ubuntu-latest`). Environnement : `scripts/ci/install_scripts_tests_deps.sh` (source unique de l'installation de la suite `scripts-tests`, extraite verbatim de son bloc `Install dependencies` le 2026-11-09 et appelée par les deux jambes). Tests : `scripts/tests/test_heavy_batch.py` |
 
@@ -286,7 +308,7 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 | **smartcontracts/** | 2 | validate_sc_notebooks.py |
 | **extract-titles (top-level)** | 4 | extract_pptx_titles.py, extract_slidev_titles.py, extract_titles.py, extract_readme_figures.py |
 | **ml/** | 1 | garch_baseline |
-| **autres (top-level + misc)** | 26 | check_docs_links, regen_quarto_render, quarto_render_timing (mesure phases #14597), render_envs (secrets), scan_student_forks, series_progress_manager, update_navigation, validate_qc_projects, execute_sudoku_python, execute_qcpy_docker, translation_sync, translate_csv, detect_{ascii_workaround,blank_figures,svg_decimal_commas}, verify_{prosody,transcript}, audit_exposed_services, auth_manager, configure_max_quantization, container_startup, download_yfinance, manage_crypto_archive, notebook_tools_pure, repair_genai_notebooks, validation_dispatch |
+| **autres (top-level + misc)** | 22 | check_docs_links, render_envs (secrets), scan_student_forks, series_progress_manager, update_navigation, validate_qc_projects, execute_qcpy_docker, translation_sync, translate_csv, detect_{ascii_workaround,blank_figures,svg_decimal_commas}, verify_{prosody,transcript}, audit_exposed_services, auth_manager, configure_max_quantization, container_startup, download_yfinance, manage_crypto_archive, notebook_tools_pure, validation_dispatch |
 
 Lancer la suite : `python -m pytest scripts/tests/ -v` (depuis la racine du repo).
 

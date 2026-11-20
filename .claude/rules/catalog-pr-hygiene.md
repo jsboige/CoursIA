@@ -1,5 +1,5 @@
 ---
-paths: "{COURSE_CATALOG.generated.*,_quarto.yml,**/README*.md,.github/workflows/catalog-*.yml,.github/workflows/translation-sync.yml,.github/workflows/quarto-render-list-freshness.yml,scripts/**/catalog*,scripts/regen_quarto_render.py}"
+paths: "{COURSE_CATALOG.generated.*,_quarto.yml,**/README*.md,.github/workflows/catalog-*.yml,.github/workflows/translation-sync.yml,.github/workflows/quarto-render-list-freshness.yml,scripts/**/catalog*,scripts/ci/regen_quarto_render.py}"
 ---
 
 # Catalogue & hygiène PR — le catalogue appartient à l'automatisation
@@ -69,7 +69,7 @@ Cette discipline est ce qui fait **baisser le compte d'issues** sans interventio
 
 **Issu de #19895 (arbitration #19901)** : la liste `project.render` de `_quarto.yml` est un **artefact généré** au même titre que `COURSE_CATALOG.generated.*` — son contenu est dérivé de l'arbre git, sa dérive est silencieuse, et le conflit de merge est garanti à chaque PR notebook tant que la liste n'est pas régénérée au bon moment. Mêmes acteur et cadence :
 
-- **Qui régénère** : `catalog-cron.yml` (job `regen`) appelle `python scripts/regen_quarto_render.py` après le regen du catalogue, sur la même branche longue `chore/catalog-refresh-pending`. La livraison passe par la PR permanente #20776 et suit.
+- **Qui régénère** : `catalog-cron.yml` (job `regen`) appelle `python scripts/ci/regen_quarto_render.py` après le regen du catalogue, sur la même branche longue `chore/catalog-refresh-pending`. La livraison passe par la PR permanente #20776 et suit.
 - **Qui détecte** : `.github/workflows/quarto-render-list-freshness.yml` (ADVISORY par arbitration #19901 — un check bloquant forcerait chaque PR notebook à committer un regen, ce qui recrée le conflit que la garde veut éteindre).
 - **Ce que la lane NE fait PAS** : ne **jamais** régénérer `_quarto.yml` à la main sur une PR de contenu. Si la branche a malgré tout du churn `_quarto.yml` :
 
