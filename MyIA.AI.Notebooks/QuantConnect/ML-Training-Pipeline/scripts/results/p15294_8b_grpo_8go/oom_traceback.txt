@@ -1,0 +1,31 @@
+[W1120 01:54:58.000000000 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 7302283264 bytes (free: 7474249728, total: 8589410304).
+[W1120 01:54:58.000000000 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 7302283264 bytes (free: 7474249728, total: 8589410304).
+[qwen3_8b seed0] budget de completion = 384 tokens
+Traceback (most recent call last):
+  File "D:\Dev\CoursIA\MyIA.AI.Notebooks\QuantConnect\ML-Training-Pipeline\scripts\probe_15099_dapo_grpo.py", line 1229, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "D:\Dev\CoursIA\MyIA.AI.Notebooks\QuantConnect\ML-Training-Pipeline\scripts\probe_15099_dapo_grpo.py", line 1222, in main
+    mode_run(args.model, args.seed, steps, smoke=args.mode == "smoke",
+  File "D:\Dev\CoursIA\MyIA.AI.Notebooks\QuantConnect\ML-Training-Pipeline\scripts\probe_15099_dapo_grpo.py", line 942, in mode_run
+    trainer, model_path = build_trainer(model_key, seed, steps, train_rows,
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Dev\CoursIA\MyIA.AI.Notebooks\QuantConnect\ML-Training-Pipeline\scripts\probe_15099_dapo_grpo.py", line 653, in build_trainer
+    trainer = GRPOTrainer(
+              ^^^^^^^^^^^^
+  File "C:\Users\jsboi\.conda\envs\coursia-ml-training\Lib\site-packages\trl\trainer\grpo_trainer.py", line 345, in __init__
+    model = create_model_from_path(model, **model_init_kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jsboi\.conda\envs\coursia-ml-training\Lib\site-packages\trl\trainer\utils.py", line 1169, in create_model_from_path
+    model = architecture.from_pretrained(model_id, **kwargs)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jsboi\.conda\envs\coursia-ml-training\Lib\site-packages\transformers\modeling_utils.py", line 4339, in from_pretrained
+    loading_info, disk_offload_index = cls._load_pretrained_model(model, state_dict, checkpoint_files, load_config)
+                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\jsboi\.conda\envs\coursia-ml-training\Lib\site-packages\transformers\modeling_utils.py", line 4419, in _load_pretrained_model
+    caching_allocator_warmup(model, expanded_device_map, load_config.hf_quantizer)
+  File "C:\Users\jsboi\.conda\envs\coursia-ml-training\Lib\site-packages\transformers\modeling_utils.py", line 5107, in caching_allocator_warmup
+    _ = torch.empty(int(byte_count // 2), dtype=torch.float16, device=device, requires_grad=False)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 6.80 GiB. GPU 0 has a total capacity of 8.00 GiB of which 6.96 GiB is free. Process 26104 has 17179869184.00 GiB memory in use. Including non-PyTorch memory, this process has 17179869184.00 GiB memory in use. Of the allocated memory 0 bytes is allocated by PyTorch, and 0 bytes is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://docs.pytorch.org/docs/stable/notes/cuda.html#optimizing-memory-usage-with-pytorch-cuda-alloc-conf)
+run_rc=1

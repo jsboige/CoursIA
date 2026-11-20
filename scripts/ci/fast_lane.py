@@ -44,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # bloc ci-dessous : les tranches voisines sont modifiees par d'autres PRs en
 # vol, et un bloc reecrit fusionne moins bien qu'un ajout de ligne eloigne.
 from fast_lane_registry import TRANCHE51  # noqa: E402
+from fast_lane_registry import TRANCHE52  # noqa: E402  # #27231, meme motif
 
 from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
@@ -57,6 +58,12 @@ from fast_lane_registry import (  # noqa: E402
     TRANCHE50, RISK_KERNEL_GUARDS, Guard,
 )
 import advisory_sticky  # noqa: E402  # organe partage (#24514, comme #24441)
+
+# #27098 : la tranche 53 (contrat des carnets Rust) est importee par une ligne
+# a part, eloignee du bloc d'import et de la chaine d'agregation -- les
+# tranches voisines sont modifiees par d'autres PRs en vol, et une ligne
+# isolee fusionne sans conflit.
+from fast_lane_registry import TRANCHE53  # noqa: E402
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
@@ -894,7 +901,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(changed)} fichier(s) modifie(s) "
           f"contre {args.base_ref}")
 
-    guards = [g for g in PILOT + TRANCHE51
+    guards = [g for g in PILOT + TRANCHE51 + TRANCHE52
+              # #27098 : tranche 53 ajoutee sur la meme ligne que la 51 (ligne
+              # isolee de la chaine ci-dessous, qui est modifiee par d'autres
+              # PRs en vol).
+              + TRANCHE53
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
