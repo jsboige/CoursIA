@@ -28,9 +28,12 @@ c'est le harnais sk-agent qui les servira.
 
 Une visite est une SEANCE : les marqueurs VISITE (CLAIMED, CLAIMED-AMEND,
 DELIVERED) d'une meme lane a moins de `SEANCE_H` heures d'intervalle n'en font
-qu'une. Les commits de `origin/main` qui citent l'issue forment des seances
-sans lane ; le compte retenu est le plus grand des deux. Fonctions pures, sans
-reseau. Doc : docs/reference/tapis-rapide.md.
+qu'une. Le **classement** ne compte que ces prises en charge nominatives --
+un **grain** (`coordination/tapis_dernier_grain.py`) : une citation Git
+n'est pas une visite. `compter` ci-dessous garde l'ancien compte (marqueurs
+**et** citations) pour la seule **voie legere**, qui ne lit pas le fil : elle
+ne peut pas distinguer un grain d'un passage. Fonctions pures, sans reseau.
+Doc : docs/reference/tapis-rapide.md.
 """
 from __future__ import annotations
 
@@ -41,27 +44,23 @@ from datetime import datetime, timedelta
 
 from coordination import tapis_avantages
 from coordination.tapis_marqueurs import VISITE, Evt, _dt, _iso
+from coordination.tapis_dernier_grain import cle_tri, seances
 
 FENETRE_J = 7  # le tour : un tour de flotte complet mesure en 4 a 8 jours (16/11)
-SEANCE_H = 24
 MARATHONS = frozenset({26070, 26510})  # racines : parite C# (Marathon II), parite Rust
 TETE = 24  # tete de niveau decalee par lane, pour que deux lanes divergent
 _MARATHON_RE = re.compile(r"^\s*\[?\s*marathon\b", re.IGNORECASE)
 
 
-def _seances(instants: list[datetime], depuis: datetime | None = None) -> int:
-    """Le nombre de seances : un ecart de plus de SEANCE_H en ouvre une neuve."""
-    n, avant = 0, None
-    for t in sorted(t for t in instants if depuis is None or t >= depuis):
-        if avant is None or t - avant > timedelta(hours=SEANCE_H):
-            n += 1
-        avant = t
-    return n
-
-
 def compter(evts: list[Evt], citations: list[dict],
             maintenant: datetime) -> tuple[str | None, int, int]:
-    """La derniere visite (ISO), les visites au total, celles du tour."""
+    """La derniere visite (ISO), les visites au total, celles du tour.
+
+    Le compte **historique** : marqueurs et citations, le plus grand des deux.
+    C'est le compte de la **voie legere** (elle ne lit pas le fil, donc elle
+    ne peut pas distinguer un grain d'un passage) ; le classement lui passe
+    par `tapis_dernier_grain.compter_grains`, qui ne compte que les grains.
+    """
     par_lane: dict[str, list[datetime]] = {}
     for ev in evts:
         if ev.marque in VISITE:
@@ -70,8 +69,8 @@ def compter(evts: list[Evt], citations: list[dict],
     tous = [t for ts in par_lane.values() for t in ts] + commits
 
     def compte(depuis: datetime | None) -> int:
-        marques = sum(_seances(ts, depuis) for ts in par_lane.values())
-        return max(marques, _seances(commits, depuis))
+        marques = sum(seances(ts, depuis) for ts in par_lane.values())
+        return max(marques, seances(commits, depuis))
 
     return ((_iso(max(tous)) if tous else None), compte(None),
             compte(maintenant - timedelta(days=FENETRE_J)))
@@ -142,8 +141,7 @@ def ordre(etats_, servables, graine: str, maintenant: datetime) -> list:
     ancienne d'abord, les familles servies a tour de role."""
     conso = familles_consolidation(etats_)
     niveaux: dict[float, dict[int, list]] = {}
-    for e in sorted(servables, key=lambda e: (e.visites_total > 0, e.cree_le,
-                                             e.derniere_visite or "", e.numero)):
+    for e in sorted(servables, key=cle_tri):
         niveaux.setdefault(niveau(e, conso, maintenant), {}).setdefault(e.famille, []).append(e)
     tour: list = []
     for n in sorted(niveaux):

@@ -58,12 +58,22 @@ def test_une_seance_par_lane_et_par_jour():
 
 
 def test_les_commits_ne_doublent_pas_la_seance_de_leur_claim():
+    """Une citation Git n'est PAS une visite : le classement ne la compte
+    plus (c3274). Le compte HISTORIQUE -- marqueurs et citations -- reste
+    disponible pour la voie legere, qui ne lit pas le fil."""
     # un claim, puis le merge de sa PR le lendemain : une visite, pas deux
     lec = lecture([issue(1, comments=[claim(40)])], citations={1: [commit("a" * 12, 20)]})
     assert etat(lec, 1).visites == 1
-    # des commits sans marqueur comptent : trois jours distincts, trois visites
+    # des commits SANS marqueur : un PASSAGE (activite autour de l'issue),
+    # pas des visites de l'issue
     lec = lecture([issue(2)], citations={2: [commit("b" * 12, h) for h in (10, 80, 150)]})
-    assert etat(lec, 2).visites == 3
+    e2 = etat(lec, 2)
+    assert e2.visites == 0, "une citation Git n'est pas une visite"
+    assert e2.etat_grain == "passage_seul"
+    # le compte historique garde l'ancien comportement
+    cites = [commit("b" * 12, h) for h in (10, 80, 150)]
+    _d, total, _v = te.compter([], cites, NOW)
+    assert total == 3, "le compte historique compte les citations"
 
 
 # --- le niveau strict et l'anciennete ---------------------------------------

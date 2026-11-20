@@ -99,12 +99,13 @@ ARCHIVE_REL = Path("docs") / "archive"
 #   wave 3  docs/genai/               16
 #   wave 4  docs/reference/           72
 #   wave 5  docs/ci/ 3 + docs/translation/ 2 + docs/coordination/ 3 = 8
+#   vague 5 docs/ict (#14623)        20
 # The count is the measurement, not a claim about which PR marked what: a
 # wave's PR is one contribution among several (the permanent index #25274 and
 # #25439 also carry headers). The nit ai-01 of the 2026-11-11 asked for the
 # comment to stop carrying a stale count -- it is now the measured one.
 # Raise it as perenne waves land; it is a monotone floor, never a target.
-DEFAULT_BASELINE = 113
+DEFAULT_BASELINE = 133  # 113 (main) + 20 docs/ict -- a ajuster sur la mesure
 
 # "> REFERENCE — vivante — dernière révision 2026-10-31"
 # (marker, then "vivante", then "derniere revision" with its trailing date --

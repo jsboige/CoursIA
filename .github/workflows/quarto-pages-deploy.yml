@@ -9,7 +9,7 @@ name: Quarto Pages Deploy
 #
 # Spécificités CoursIA :
 # - `freeze: auto` dans `_quarto.yml` : Quarto re-render seulement sur changement source
-# - Les .ipynb des familles de NOTEBOOK_SUBTREES (scripts/regen_quarto_render.py)
+# - Les .ipynb des familles de NOTEBOOK_SUBTREES (scripts/ci/regen_quarto_render.py)
 #   sont RENDUS en HTML statique (EPIC #10921, #10923) : echo:true au niveau
 #   racine (_quarto.yml), sans exécution de kernel (execute.enabled: false).
 # - Pas de kernel exec sur CI : les notebooks .NET C# / Lean 4 / Python sont déjà
@@ -32,7 +32,7 @@ on:
       - "favicon.ico"
       - "styles.css"
       - ".github/workflows/quarto-pages-deploy.yml"
-      - "scripts/quarto_yaml_safe.py"
+      - "scripts/ci/quarto_yaml_safe.py"
       # La passe post-rendu des liens (#10921) transforme _site/ a CHAQUE
       # deploy : un fix du transform doit re-servir le site pour s'appliquer,
       # exactement comme yaml_safe ci-dessus.
@@ -64,7 +64,7 @@ on:
       # Auto-couverture : une PR qui ne touche QUE ce workflow doit quand meme
       # emettre l'evenement pull_request (asymetrie push/pull_request, #14391).
       - ".github/workflows/quarto-pages-deploy.yml"
-      - "scripts/quarto_yaml_safe.py"
+      - "scripts/ci/quarto_yaml_safe.py"
       # Catalog-drift re-regenere l'artefact sur les branches same-repo : la PR
       # doit valider le rendu AVANT le merge, pas seulement le deploy apres
       # (#15490, symetrique au filtre push ci-dessus).
@@ -74,7 +74,7 @@ on:
       # suffit pas -- voir le mode `smoke` du step de scope, sans lequel une PR
       # qui ne touche que ces deux fichiers sauterait le rendu et rendrait
       # l'auto-couverture de #14391 creuse.
-      - "scripts/quarto_render_scope.py"
+      - "scripts/ci/quarto_render_scope.py"
       # Meme auto-couverture pour la passe post-rendu des liens (#10921) :
       # une PR qui ne touche QUE le transform doit exercer le pipeline sur
       # le smoke set, pas sauter le rendu.
@@ -174,7 +174,7 @@ jobs:
         env:
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: python3 scripts/quarto_render_timing.py --sample-occupation occupation.json
+        run: python3 scripts/ci/quarto_render_timing.py --sample-occupation occupation.json
 
       - name: Set up Quarto
         # Routage #14283 (feu vert ai-01 2026-09-02) : PAS quarto-dev/quarto-actions/setup@v2 —
@@ -199,8 +199,8 @@ jobs:
         # sous-répertoires). On régénère cette liste avant le render pour que les
         # nouveaux fichiers apparaissent sur le site sans commit manuel de
         # _quarto.yml (Axe C #4211). Idempotent ; archives et libs vendored
-        # exclues (cf. scripts/regen_quarto_render.py).
-        run: python3 scripts/regen_quarto_render.py
+        # exclues (cf. scripts/ci/regen_quarto_render.py).
+        run: python3 scripts/ci/regen_quarto_render.py
 
       - name: Préparer et vérifier les titres README
         run: |
@@ -218,7 +218,7 @@ jobs:
         # render et le restore APRES. kernelspec.language est informationnel :
         # l'execution Jupyter/papermill utilise kernelspec.name ".net-csharp"
         # (inchange) -> le patch n'affecte jamais l'execution.
-        run: python3 scripts/quarto_csharp_kernel_fix.py apply
+        run: python3 scripts/ci/quarto_csharp_kernel_fix.py apply
 
       - name: Escape YAML-ambiguous `---` separators (issue #11611)
         # Les cellules markdown commencant par `---` (separateur visuel avant
@@ -230,7 +230,7 @@ jobs:
         # standalone en `***` (autre syntaxe de regle horizontale markdown, NON
         # reconnue comme separateur YAML). Round-trip byte-level propre, restore
         # via le meme script en fin de job.
-        run: python3 scripts/quarto_yaml_safe.py apply
+        run: python3 scripts/ci/quarto_yaml_safe.py apply
 
       - name: Render Quarto site
         # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks
@@ -256,7 +256,7 @@ jobs:
         # --occupation : busy/online echantillonne au demarrage (step amont) ;
         # --runner-name implicite via $RUNNER_NAME. Imprime aussi la ligne
         # greppable "#14597-covariates:" pour la moisson multi-runs.
-        run: python3 scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+        run: python3 scripts/ci/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restaurer les README
         if: always()
@@ -268,14 +268,14 @@ jobs:
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
         # garde le worktree coherent si un step futur relit les notebooks sources.
-        run: python3 scripts/quarto_csharp_kernel_fix.py restore
+        run: python3 scripts/ci/quarto_csharp_kernel_fix.py restore
 
       - name: Restore YAML-safe separators
         # Restore les `***` en `---` dans les notebooks sources pour ne pas laisser
         # le worktree dans un etat different de la branche. Le checkout CI est
         # ephemere (meme remarque que ci-dessus), mais le restore garde les
         # outputs `git diff` propres pour les etapes suivantes.
-        run: python3 scripts/quarto_yaml_safe.py restore
+        run: python3 scripts/ci/quarto_yaml_safe.py restore
 
       - name: Check output
         # Sécurité : vérifie que _site/ existe (sinon le deploy échouera avec une
@@ -604,7 +604,7 @@ jobs:
           python-version: '3.11'
 
       - name: Regenerate render list
-        run: python scripts/regen_quarto_render.py
+        run: python scripts/ci/regen_quarto_render.py
 
       - name: Conserver la liste complète des README
         run: cp _quarto.yml "$RUNNER_TEMP/readme-render-list.yml"
@@ -637,7 +637,7 @@ jobs:
         # 60 min qu'elle existe pour eviter.
         id: scope
         run: |
-          python scripts/quarto_render_scope.py \
+          python scripts/ci/quarto_render_scope.py \
             --base "${{ github.event.pull_request.base.sha }}" \
             --head "${{ github.event.pull_request.head.sha }}" \
             --apply --github-output
@@ -650,7 +650,7 @@ jobs:
         env:
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
+        run: python scripts/ci/quarto_render_timing.py --sample-occupation occupation.json
 
       - name: Préparer et vérifier les titres README
         if: steps.scope.outputs.mode != 'empty'
@@ -660,11 +660,11 @@ jobs:
 
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_csharp_kernel_fix.py apply
+        run: python scripts/ci/quarto_csharp_kernel_fix.py apply
 
       - name: Escape YAML-ambiguous `---` separators (issue #11611)
         if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_yaml_safe.py apply
+        run: python scripts/ci/quarto_yaml_safe.py apply
 
       - name: Render Quarto site (PR check)
         # Commande inchangee : c'est la LISTE qui a ete restreinte au-dessus,
@@ -687,7 +687,7 @@ jobs:
         # des runs a 53 min (#14225). Sur un rendu scope (1-2 documents), la
         # phase post-rendu n'est pas representative et le rapport resterait muet.
         if: steps.scope.outputs.mode == 'full'
-        run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+        run: python scripts/ci/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restaurer les README
         if: always() && steps.scope.outputs.mode != 'empty'
@@ -698,11 +698,11 @@ jobs:
 
       - name: Restore kernel language (hygiene)
         if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_csharp_kernel_fix.py restore
+        run: python scripts/ci/quarto_csharp_kernel_fix.py restore
 
       - name: Restore YAML-safe separators
         if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_yaml_safe.py restore
+        run: python scripts/ci/quarto_yaml_safe.py restore
 
       - name: Check output
         run: |
