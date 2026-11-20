@@ -969,6 +969,10 @@ def mode_selftest() -> int:
         ("qwen3_14b_seed0_smoke.json", {"max_steps": 3}, "smoke"),
         ("qwen3_8b_seed1.json", {"max_steps": 40}, "partiel"),
         ("qwen3_8b_seed7.json", {"aborted": True, "max_steps": MAX_STEPS}, "aborted"),
+        # Fail-closed : un budget absent ou non positif ne devient jamais une
+        # graine comparable par l'application silencieuse de MAX_STEPS.
+        ("qwen3_8b_seed8.json", {"post_eval": {"reward_mean": 0.2}}, "exclu"),
+        ("qwen3_8b_seed9.json", {"max_steps": 0}, "exclu"),
     ):
         got = classify_run(name, run)
         if got != want:
@@ -1595,7 +1599,11 @@ def classify_run(name: str, run: dict[str, Any]) -> str:
     - "smoke"    : boucle de validation courte (`_smoke`), budget de pas
                    different -> son post-eval n'est pas comparable ;
     - "partiel"  : run interrompu avant le budget complet ;
-    - "seed"     : une graine du protocole, la seule comparable.
+    - "seed"     : une graine du protocole, la seule comparable ;
+    - "exclu"    : budget de pas absent ou invalide, donc incomparable.
+
+    La classification est fail-closed : sans budget entier strictement positif,
+    aucune valeur par defaut ne peut faire passer un run pour une graine.
 
     Pourquoi la distinction compte : un smoke de 3 pas a un delta de 0 PAR
     CONSTRUCTION (post-eval apres 3 pas d'entrainement), et le compter comme
@@ -1607,9 +1615,11 @@ def classify_run(name: str, run: dict[str, Any]) -> str:
     if "_smoke" in name:
         return "smoke"
     try:
-        steps = int(run.get("max_steps", MAX_STEPS))
-    except (TypeError, ValueError):
-        steps = MAX_STEPS
+        steps = int(run["max_steps"])
+    except (KeyError, TypeError, ValueError):
+        return "exclu"
+    if steps <= 0:
+        return "exclu"
     if steps < MAX_STEPS:
         return "partiel"
     return "seed"
