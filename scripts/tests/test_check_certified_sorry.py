@@ -209,6 +209,10 @@ def test_workflow_targets_match_manifest():
         "ProgramGames.FairBot", "ProgramGames.FairBot_en",
         "RepeatedGames.Discounting", "RepeatedGames.Discounting_en",
         "RepeatedGames.GrimTrigger", "RepeatedGames.GrimTrigger_en",
+        # #26945 T3 : equilibre parfait en sous-jeux (deviation unique +
+        # grim_isSPE_iff), ajoute a axiom-target-modules avec la tranche --
+        # meme statut de revue, 0 sorry verifie par count_code_sorry.
+        "RepeatedGames.Perfect", "RepeatedGames.Perfect_en",
         "RepeatedGames.Stage", "RepeatedGames.Stage_en",
         "RepeatedGames_en",
         "SocialChoice._SmokeTest",

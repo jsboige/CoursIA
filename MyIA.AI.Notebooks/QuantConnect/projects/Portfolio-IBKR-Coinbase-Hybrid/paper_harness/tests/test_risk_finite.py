@@ -1,5 +1,7 @@
 """Les valeurs non finies ne doivent jamais contourner le coupe-circuit."""
 
+from datetime import date
+
 import pytest
 
 from paper_harness.config import RiskConfig
@@ -25,6 +27,26 @@ def test_invalid_mark_preserves_state(value: float, method: str) -> None:
     with pytest.raises(ValueError, match="equity must be finite"):
         getattr(gate, method)(value)
     assert vars(gate) == before
+
+
+@pytest.mark.parametrize("value", NON_FINITE)
+def test_invalid_dated_mark_does_not_roll_the_window(value: float) -> None:
+    gate = RiskGate(RISK, 1000.0)
+    gate.update_equity(990.0, date(2026, 1, 5))
+    before = vars(gate).copy()
+    with pytest.raises(ValueError, match="equity must be finite"):
+        gate.update_equity(value, date(2026, 1, 6))
+    assert vars(gate) == before
+
+
+@pytest.mark.parametrize("value", NON_FINITE)
+def test_non_finite_saved_dated_mark_is_rejected(value: float) -> None:
+    gate = RiskGate(RISK, 1000.0)
+    gate.update_equity(990.0, date(2026, 1, 5))
+    state = gate.to_state()
+    state["last_mark_equity"] = value
+    with pytest.raises(ValueError, match="last_mark_equity must be finite"):
+        RiskGate.from_state(RISK, state)
 
 
 @pytest.mark.parametrize("value", NON_FINITE)
