@@ -53,7 +53,7 @@ L'avantage se **resserre** en OOS : l'écart CAGR passe de +1.87 pp (fenêtre co
 
 ## Files
 
-- main.py — la règle de sélection mensuelle (univers grossier/fin, classement par proximité au plus-haut 52 semaines, top 10 à poids égal)
+- main.py — la règle de sélection mensuelle (univers fixe de 30 mega-caps, classement par proximité au plus-haut 52 semaines, top 10 à poids égal)
 
 ## References
 
