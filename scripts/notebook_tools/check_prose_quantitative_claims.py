@@ -1228,6 +1228,13 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "Fait passe figure."
         ),
     ),
+    # Rapport de scan V3 (EPIC #4362, PR #27414) : les deux exemptions posees
+    # initialement couvraient des ELISIONS ecrites a la main, pas des sorties
+    # d'outil (review ai-01 du 2026-11-20 : ni le script de scan ni l'organe
+    # de cache n'impriment une elision). Elles sont RETIREES depuis que le
+    # rapport cite les sorties INTEGRALES des deux outils en blocs verbatim :
+    # un bloc verbatim complet ne porte plus de compte fait a la main, et les
+    # compteurs d'etat du depot restent surveilles.
 )
 
 # ----------------------------------------------------------------------------
