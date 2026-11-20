@@ -1,0 +1,6145 @@
+{
+ "schema": 1,
+ "issue": 27544,
+ "sources": {
+  "inventaire": "git ls-files (arbre de travail, aucun appel reseau)",
+  "besoins": "COURSE_CATALOG.generated.json",
+  "kernelspec": "lecture du bloc metadata de chaque carnet"
+ },
+ "budget_mb": 2000,
+ "totals": {
+  "notebooks": 1939,
+  "dependency_files": 37,
+  "dependency_files_hors_perimetre": 5,
+  "groups": 83,
+  "packages_distincts_declares": 206,
+  "packages_retenus": 200,
+  "conflits": 0,
+  "empreinte_manifeste_mb": 3278
+ },
+ "kernel_families": {
+  "python": {
+   "notebooks": 1462,
+   "series": [
+    "CaseStudies",
+    "Complexity",
+    "Compression",
+    "GameTheory",
+    "GenAI",
+    "IIT",
+    "InformationCalcul",
+    "ML",
+    "NLP",
+    "Physique",
+    "Probas",
+    "QuantConnect",
+    "RL",
+    "Search",
+    "Sudoku",
+    "SymbolicAI",
+    "cross-series",
+    "scripts"
+   ]
+  },
+  "csharp": {
+   "notebooks": 393,
+   "series": [
+    "Complexity",
+    "Compression",
+    "GameTheory",
+    "GenAI",
+    "ML",
+    "MyIA.AI.Notebooks",
+    "NLP",
+    "Probas",
+    "QuantConnect",
+    "RL",
+    "Search",
+    "Sudoku",
+    "SymbolicAI",
+    "cross-series",
+    "scripts"
+   ]
+  },
+  "lean": {
+   "notebooks": 73,
+   "series": [
+    "Compression",
+    "GameTheory",
+    "IIT",
+    "ML",
+    "Probas",
+    "QuantConnect",
+    "Search",
+    "Sudoku",
+    "SymbolicAI"
+   ]
+  },
+  "rust": {
+   "notebooks": 1,
+   "series": [
+    "Sudoku"
+   ]
+  },
+  "other": {
+   "notebooks": 10,
+   "series": [
+    "GenAI",
+    "IIT",
+    "QuantConnect"
+   ]
+  }
+ },
+ "kernel_names": {
+  "python3": 1359,
+  ".net-csharp": 393,
+  "lean4-wsl": 68,
+  "coursia-ml-training": 51,
+  "unknown": 10,
+  "python3-lean": 9,
+  "pyphi": 6,
+  "python3-wsl": 6,
+  "pyphi-iit": 4,
+  "python3-coursia2": 3,
+  "coursia-py313-argu": 2,
+  "gametheory-wsl": 2,
+  "gsplat310": 2,
+  "ict-py313": 2,
+  "lean4-wsl-perc": 2,
+  "py310-gpu": 2,
+  "basicpitch-t4": 1,
+  "conda-torch": 1,
+  "coursia-drift": 1,
+  "coursia-py313": 1,
+  "dia-tts": 1,
+  "difflogic-sl12": 1,
+  "global-3.13": 1,
+  "lean4-wsl-conway": 1,
+  "lean4-wsl-groth16200": 1,
+  "leandojo-v2": 1,
+  "mert2-gpu": 1,
+  "pipecat-kokoro": 1,
+  "py311-po2028": 1,
+  "python3-sc16-concrete-wsl": 1,
+  "rust": 1,
+  "rvc-wsl": 1,
+  "sheetsage2-gpu": 1,
+  "smartcontracts": 1
+ },
+ "out_of_scope": [
+  {
+   "path": "docker-configurations/services/comfyui-qwen/workspace/requirements.txt",
+   "packages": 35
+  },
+  {
+   "path": "docker-configurations/services/orchestrator/requirements.txt",
+   "packages": 17
+  },
+  {
+   "path": "scripts/genai-stack/requirements.txt",
+   "packages": 6
+  },
+  {
+   "path": "scripts/notebook_tools/requirements.txt",
+   "packages": 4
+  },
+  {
+   "path": "scripts/sudoku/requirements.txt",
+   "packages": 4
+  }
+ ],
+ "groups": [
+  {
+   "serie": "CaseStudies",
+   "sous_serie": "(racine)",
+   "notebooks": 0,
+   "kernel_families": {},
+   "kernel_names": {},
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 9,
+   "footprint_mb": 1082,
+   "own_footprint_mb": 1082,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "CaseStudies",
+   "sous_serie": "Diagnostic-Medical",
+   "notebooks": 2,
+   "kernel_families": {
+    "python": 2
+   },
+   "kernel_names": {
+    "python3": 2
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt"
+   ],
+   "packages": 9,
+   "footprint_mb": 1082,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "CaseStudies",
+   "sous_serie": "Planification-Oncologie",
+   "notebooks": 2,
+   "kernel_families": {
+    "python": 2
+   },
+   "kernel_names": {
+    "python3": 2
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt"
+   ],
+   "packages": 9,
+   "footprint_mb": 1082,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "CaseStudies",
+   "sous_serie": "Reseau-Electrique-Intelligent",
+   "notebooks": 2,
+   "kernel_families": {
+    "python": 2
+   },
+   "kernel_names": {
+    "python3": 2
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt"
+   ],
+   "packages": 9,
+   "footprint_mb": 1082,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Complexity",
+   "sous_serie": "(racine)",
+   "notebooks": 44,
+   "kernel_families": {
+    "csharp": 17,
+    "python": 27
+   },
+   "kernel_names": {
+    ".net-csharp": 17,
+    "coursia-ml-training": 1,
+    "coursia-py313": 1,
+    "python3": 25
+   },
+   "requires_gpu": 0,
+   "requires_api": 2,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Compression",
+   "sous_serie": "(racine)",
+   "notebooks": 17,
+   "kernel_families": {
+    "csharp": 5,
+    "python": 12
+   },
+   "kernel_names": {
+    ".net-csharp": 5,
+    "python3": 12
+   },
+   "requires_gpu": 0,
+   "requires_api": 3,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Compression",
+   "sous_serie": "Compression_lean",
+   "notebooks": 1,
+   "kernel_families": {
+    "lean": 1
+   },
+   "kernel_names": {
+    "lean4-wsl": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GameTheory",
+   "sous_serie": "(racine)",
+   "notebooks": 123,
+   "kernel_families": {
+    "csharp": 43,
+    "lean": 10,
+    "python": 70
+   },
+   "kernel_names": {
+    ".net-csharp": 43,
+    "coursia-ml-training": 3,
+    "gametheory-wsl": 2,
+    "lean4-wsl": 10,
+    "python3": 65
+   },
+   "requires_gpu": 1,
+   "requires_api": 4,
+   "requires_cloud": 0,
+   "requires_wsl": 13,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 20,
+   "footprint_mb": 288,
+   "own_footprint_mb": 288,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GameTheory",
+   "sous_serie": "Coalitions",
+   "notebooks": 5,
+   "kernel_families": {
+    "lean": 1,
+    "python": 4
+   },
+   "kernel_names": {
+    "lean4-wsl": 1,
+    "python3": 4
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 2,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt"
+   ],
+   "packages": 20,
+   "footprint_mb": 288,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GameTheory",
+   "sous_serie": "Dynamics",
+   "notebooks": 17,
+   "kernel_families": {
+    "csharp": 4,
+    "lean": 2,
+    "python": 11
+   },
+   "kernel_names": {
+    ".net-csharp": 4,
+    "lean4-wsl": 2,
+    "python3": 11
+   },
+   "requires_gpu": 0,
+   "requires_api": 1,
+   "requires_cloud": 0,
+   "requires_wsl": 3,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt"
+   ],
+   "packages": 20,
+   "footprint_mb": 288,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GameTheory",
+   "sous_serie": "Metajeux",
+   "notebooks": 8,
+   "kernel_families": {
+    "csharp": 1,
+    "python": 7
+   },
+   "kernel_names": {
+    ".net-csharp": 1,
+    "coursia-ml-training": 1,
+    "python3": 6
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt"
+   ],
+   "packages": 20,
+   "footprint_mb": 288,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GameTheory",
+   "sous_serie": "SocialChoice",
+   "notebooks": 17,
+   "kernel_families": {
+    "csharp": 5,
+    "lean": 1,
+    "python": 11
+   },
+   "kernel_names": {
+    ".net-csharp": 5,
+    "lean4-wsl": 1,
+    "python3": 10,
+    "python3-wsl": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 2,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt"
+   ],
+   "packages": 20,
+   "footprint_mb": 288,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GameTheory",
+   "sous_serie": "gateway",
+   "notebooks": 1,
+   "kernel_families": {
+    "python": 1
+   },
+   "kernel_names": {
+    "python3": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/GameTheory/gateway/requirements.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt"
+   ],
+   "packages": 21,
+   "footprint_mb": 291,
+   "own_footprint_mb": 6,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "(racine)",
+   "notebooks": 0,
+   "kernel_families": {},
+   "kernel_names": {},
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 1787,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "00-GenAI-Environment",
+   "notebooks": 7,
+   "kernel_families": {
+    "python": 7
+   },
+   "kernel_names": {
+    "python3": 7
+   },
+   "requires_gpu": 6,
+   "requires_api": 6,
+   "requires_cloud": 0,
+   "requires_wsl": 1,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "exclu",
+   "motif": "gpu"
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "3D",
+   "notebooks": 9,
+   "kernel_families": {
+    "python": 9
+   },
+   "kernel_names": {
+    "gsplat310": 2,
+    "python3": 7
+   },
+   "requires_gpu": 7,
+   "requires_api": 2,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "exclu",
+   "motif": "gpu"
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "Audio",
+   "notebooks": 49,
+   "kernel_families": {
+    "python": 49
+   },
+   "kernel_names": {
+    "basicpitch-t4": 1,
+    "coursia-ml-training": 1,
+    "dia-tts": 1,
+    "mert2-gpu": 1,
+    "pipecat-kokoro": 1,
+    "python3": 42,
+    "rvc-wsl": 1,
+    "sheetsage2-gpu": 1
+   },
+   "requires_gpu": 35,
+   "requires_api": 23,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements-audio.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 58,
+   "footprint_mb": 1793,
+   "own_footprint_mb": 126,
+   "verdict": "exclu",
+   "motif": "gpu"
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "CaseStudies",
+   "notebooks": 6,
+   "kernel_families": {
+    "python": 6
+   },
+   "kernel_names": {
+    "python3": 6
+   },
+   "requires_gpu": 1,
+   "requires_api": 6,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "FallacyDetection",
+   "notebooks": 5,
+   "kernel_families": {
+    "python": 5
+   },
+   "kernel_names": {
+    "python3": 5
+   },
+   "requires_gpu": 0,
+   "requires_api": 1,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "FineTuning",
+   "notebooks": 20,
+   "kernel_families": {
+    "python": 20
+   },
+   "kernel_names": {
+    "python3": 20
+   },
+   "requires_gpu": 20,
+   "requires_api": 2,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "exclu",
+   "motif": "gpu"
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "HumorDetection",
+   "notebooks": 1,
+   "kernel_families": {
+    "python": 1
+   },
+   "kernel_names": {
+    "python3": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "Image",
+   "notebooks": 35,
+   "kernel_families": {
+    "other": 1,
+    "python": 34
+   },
+   "kernel_names": {
+    "python3": 34,
+    "unknown": 1
+   },
+   "requires_gpu": 16,
+   "requires_api": 25,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "Integrations-DotNet",
+   "notebooks": 19,
+   "kernel_families": {
+    "csharp": 19
+   },
+   "kernel_names": {
+    ".net-csharp": 19
+   },
+   "requires_gpu": 2,
+   "requires_api": 8,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "Plateformes-Conversationnelles",
+   "notebooks": 28,
+   "kernel_families": {
+    "python": 28
+   },
+   "kernel_names": {
+    "python3": 28
+   },
+   "requires_gpu": 0,
+   "requires_api": 15,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "PostTraining",
+   "notebooks": 27,
+   "kernel_families": {
+    "csharp": 1,
+    "python": 26
+   },
+   "kernel_names": {
+    ".net-csharp": 1,
+    "coursia-ml-training": 14,
+    "python3": 12
+   },
+   "requires_gpu": 16,
+   "requires_api": 0,
+   "requires_cloud": 2,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/GenAI/PostTraining/requirements.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 61,
+   "footprint_mb": 1854,
+   "own_footprint_mb": 1335,
+   "verdict": "exclu",
+   "motif": "gpu"
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "RAG-et-Memoire-Semantique",
+   "notebooks": 19,
+   "kernel_families": {
+    "csharp": 4,
+    "python": 15
+   },
+   "kernel_names": {
+    ".net-csharp": 4,
+    "coursia-ml-training": 4,
+    "python3": 11
+   },
+   "requires_gpu": 5,
+   "requires_api": 7,
+   "requires_cloud": 0,
+   "requires_wsl": 1,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "Security",
+   "notebooks": 9,
+   "kernel_families": {
+    "python": 9
+   },
+   "kernel_names": {
+    "python3": 9
+   },
+   "requires_gpu": 1,
+   "requires_api": 3,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "SemanticKernel",
+   "notebooks": 25,
+   "kernel_families": {
+    "csharp": 7,
+    "python": 18
+   },
+   "kernel_names": {
+    ".net-csharp": 7,
+    "python3": 18
+   },
+   "requires_gpu": 1,
+   "requires_api": 19,
+   "requires_cloud": 1,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "service optionnel",
+   "motif": "service"
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "Texte",
+   "notebooks": 52,
+   "kernel_families": {
+    "csharp": 4,
+    "python": 48
+   },
+   "kernel_names": {
+    ".net-csharp": 4,
+    "coursia-ml-training": 2,
+    "python3": 45,
+    "python3-coursia2": 1
+   },
+   "requires_gpu": 13,
+   "requires_api": 34,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/GenAI/Texte/requirements-structured-outputs.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 60,
+   "footprint_mb": 1816,
+   "own_footprint_mb": 35,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "Vibe-Coding",
+   "notebooks": 7,
+   "kernel_families": {
+    "csharp": 1,
+    "python": 6
+   },
+   "kernel_names": {
+    ".net-csharp": 1,
+    "python3": 6
+   },
+   "requires_gpu": 0,
+   "requires_api": 2,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/requirements.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 59,
+   "footprint_mb": 1801,
+   "own_footprint_mb": 14,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "Video",
+   "notebooks": 23,
+   "kernel_families": {
+    "python": 23
+   },
+   "kernel_names": {
+    "python3": 23
+   },
+   "requires_gpu": 19,
+   "requires_api": 16,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements-video.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 58,
+   "footprint_mb": 1793,
+   "own_footprint_mb": 373,
+   "verdict": "exclu",
+   "motif": "gpu"
+  },
+  {
+   "serie": "GenAI",
+   "sous_serie": "_research",
+   "notebooks": 2,
+   "kernel_families": {
+    "csharp": 1,
+    "python": 1
+   },
+   "kernel_names": {
+    ".net-csharp": 1,
+    "python3": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt"
+   ],
+   "packages": 56,
+   "footprint_mb": 1787,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "IIT",
+   "sous_serie": "(racine)",
+   "notebooks": 10,
+   "kernel_families": {
+    "lean": 4,
+    "python": 6
+   },
+   "kernel_names": {
+    "lean4-wsl": 4,
+    "pyphi": 6
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/IIT/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 6,
+   "footprint_mb": 134,
+   "own_footprint_mb": 134,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "IIT",
+   "sous_serie": "ICT-Series",
+   "notebooks": 100,
+   "kernel_families": {
+    "other": 5,
+    "python": 95
+   },
+   "kernel_names": {
+    "coursia-ml-training": 1,
+    "ict-py313": 2,
+    "py310-gpu": 1,
+    "pyphi-iit": 4,
+    "python3": 87,
+    "unknown": 5
+   },
+   "requires_gpu": 18,
+   "requires_api": 5,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/IIT/ICT-Series/requirements-torchlens.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/IIT/requirements.txt"
+   ],
+   "packages": 7,
+   "footprint_mb": 137,
+   "own_footprint_mb": 3,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "InformationCalcul",
+   "sous_serie": "InformationTheory",
+   "notebooks": 1,
+   "kernel_families": {
+    "python": 1
+   },
+   "kernel_names": {
+    "python3": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "ML",
+   "sous_serie": "DataScienceWithAgents",
+   "notebooks": 131,
+   "kernel_families": {
+    "csharp": 15,
+    "lean": 4,
+    "python": 112
+   },
+   "kernel_names": {
+    ".net-csharp": 15,
+    "coursia-drift": 1,
+    "coursia-ml-training": 12,
+    "lean4-wsl": 4,
+    "py310-gpu": 1,
+    "python3": 97,
+    "python3-coursia2": 1
+   },
+   "requires_gpu": 32,
+   "requires_api": 10,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 44,
+   "footprint_mb": 1445,
+   "own_footprint_mb": 1445,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "ML",
+   "sous_serie": "ML.Net",
+   "notebooks": 29,
+   "kernel_families": {
+    "csharp": 15,
+    "python": 14
+   },
+   "kernel_names": {
+    ".net-csharp": 15,
+    "coursia-ml-training": 1,
+    "python3": 13
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "MyIA.AI.Notebooks",
+   "sous_serie": "(racine)",
+   "notebooks": 1,
+   "kernel_families": {
+    "csharp": 1
+   },
+   "kernel_names": {
+    ".net-csharp": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "NLP",
+   "sous_serie": "(racine)",
+   "notebooks": 20,
+   "kernel_families": {
+    "csharp": 9,
+    "python": 11
+   },
+   "kernel_names": {
+    ".net-csharp": 9,
+    "coursia-ml-training": 3,
+    "python3": 8
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Physique",
+   "sous_serie": "Chaines",
+   "notebooks": 11,
+   "kernel_families": {
+    "python": 11
+   },
+   "kernel_names": {
+    "python3": 11
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Physique",
+   "sous_serie": "Constructeur",
+   "notebooks": 1,
+   "kernel_families": {
+    "python": 1
+   },
+   "kernel_names": {
+    "python3": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Physique",
+   "sous_serie": "InformationQuantique",
+   "notebooks": 1,
+   "kernel_families": {
+    "python": 1
+   },
+   "kernel_names": {
+    "python3": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Physique",
+   "sous_serie": "Integrales",
+   "notebooks": 4,
+   "kernel_families": {
+    "python": 4
+   },
+   "kernel_names": {
+    "python3": 4
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Physique",
+   "sous_serie": "Jauge",
+   "notebooks": 4,
+   "kernel_families": {
+    "python": 4
+   },
+   "kernel_names": {
+    "python3": 4
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Physique",
+   "sous_serie": "Numerique",
+   "notebooks": 2,
+   "kernel_families": {
+    "python": 2
+   },
+   "kernel_names": {
+    "python3": 2
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 1,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Probas",
+   "sous_serie": "(racine)",
+   "notebooks": 1,
+   "kernel_families": {
+    "python": 1
+   },
+   "kernel_names": {
+    "python3": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 13,
+   "footprint_mb": 1206,
+   "own_footprint_mb": 1206,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Probas",
+   "sous_serie": "Applications",
+   "notebooks": 12,
+   "kernel_families": {
+    "lean": 2,
+    "python": 10
+   },
+   "kernel_names": {
+    "lean4-wsl-perc": 2,
+    "python3": 10
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt"
+   ],
+   "packages": 13,
+   "footprint_mb": 1206,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Probas",
+   "sous_serie": "Causalite",
+   "notebooks": 12,
+   "kernel_families": {
+    "python": 12
+   },
+   "kernel_names": {
+    "coursia-ml-training": 4,
+    "python3": 8
+   },
+   "requires_gpu": 0,
+   "requires_api": 1,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt"
+   ],
+   "packages": 13,
+   "footprint_mb": 1206,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Probas",
+   "sous_serie": "DecisionTheory",
+   "notebooks": 26,
+   "kernel_families": {
+    "csharp": 8,
+    "lean": 3,
+    "python": 15
+   },
+   "kernel_names": {
+    ".net-csharp": 8,
+    "lean4-wsl": 3,
+    "python3": 15
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt"
+   ],
+   "packages": 13,
+   "footprint_mb": 1206,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Probas",
+   "sous_serie": "Fondations",
+   "notebooks": 4,
+   "kernel_families": {
+    "csharp": 2,
+    "python": 2
+   },
+   "kernel_names": {
+    ".net-csharp": 2,
+    "python3": 2
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt"
+   ],
+   "packages": 13,
+   "footprint_mb": 1206,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Probas",
+   "sous_serie": "Infer",
+   "notebooks": 21,
+   "kernel_families": {
+    "csharp": 21
+   },
+   "kernel_names": {
+    ".net-csharp": 21
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/Probas/Infer/scripts/requirements.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt"
+   ],
+   "packages": 17,
+   "footprint_mb": 1235,
+   "own_footprint_mb": 29,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Probas",
+   "sous_serie": "PyMC",
+   "notebooks": 20,
+   "kernel_families": {
+    "python": 20
+   },
+   "kernel_names": {
+    "python3": 20
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt"
+   ],
+   "packages": 13,
+   "footprint_mb": 1206,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "QuantConnect",
+   "sous_serie": "(racine)",
+   "notebooks": 0,
+   "kernel_families": {},
+   "kernel_names": {},
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 50,
+   "footprint_mb": 1397,
+   "own_footprint_mb": 1397,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "QuantConnect",
+   "sous_serie": "ML-Training-Pipeline",
+   "notebooks": 18,
+   "kernel_families": {
+    "python": 18
+   },
+   "kernel_names": {
+    "python3": 18
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 4,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt"
+   ],
+   "packages": 50,
+   "footprint_mb": 1397,
+   "own_footprint_mb": 0,
+   "verdict": "service optionnel",
+   "motif": "service"
+  },
+  {
+   "serie": "QuantConnect",
+   "sous_serie": "Python",
+   "notebooks": 68,
+   "kernel_families": {
+    "python": 68
+   },
+   "kernel_names": {
+    "conda-torch": 1,
+    "coursia-py313-argu": 1,
+    "python3": 65,
+    "python3-coursia2": 1
+   },
+   "requires_gpu": 10,
+   "requires_api": 6,
+   "requires_cloud": 66,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt"
+   ],
+   "packages": 50,
+   "footprint_mb": 1397,
+   "own_footprint_mb": 0,
+   "verdict": "service optionnel",
+   "motif": "service"
+  },
+  {
+   "serie": "QuantConnect",
+   "sous_serie": "kelly_lean",
+   "notebooks": 6,
+   "kernel_families": {
+    "lean": 1,
+    "other": 4,
+    "python": 1
+   },
+   "kernel_names": {
+    "lean4-wsl": 1,
+    "python3": 1,
+    "unknown": 4
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 6,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt"
+   ],
+   "packages": 50,
+   "footprint_mb": 1397,
+   "own_footprint_mb": 0,
+   "verdict": "service optionnel",
+   "motif": "service"
+  },
+  {
+   "serie": "QuantConnect",
+   "sous_serie": "partner-course-quant-trading",
+   "notebooks": 12,
+   "kernel_families": {
+    "python": 12
+   },
+   "kernel_names": {
+    "python3": 12
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt"
+   ],
+   "packages": 50,
+   "footprint_mb": 1397,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "QuantConnect",
+   "sous_serie": "projects",
+   "notebooks": 114,
+   "kernel_families": {
+    "csharp": 1,
+    "python": 113
+   },
+   "kernel_names": {
+    ".net-csharp": 1,
+    "python3": 113
+   },
+   "requires_gpu": 1,
+   "requires_api": 0,
+   "requires_cloud": 49,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness/requirements.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt"
+   ],
+   "packages": 53,
+   "footprint_mb": 1406,
+   "own_footprint_mb": 9,
+   "verdict": "service optionnel",
+   "motif": "service"
+  },
+  {
+   "serie": "QuantConnect",
+   "sous_serie": "research",
+   "notebooks": 26,
+   "kernel_families": {
+    "python": 26
+   },
+   "kernel_names": {
+    "python3": 26
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt"
+   ],
+   "packages": 50,
+   "footprint_mb": 1397,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "RL",
+   "sous_serie": "(racine)",
+   "notebooks": 32,
+   "kernel_families": {
+    "csharp": 4,
+    "python": 28
+   },
+   "kernel_names": {
+    ".net-csharp": 4,
+    "python3": 28
+   },
+   "requires_gpu": 5,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/RL/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 13,
+   "footprint_mb": 1192,
+   "own_footprint_mb": 1192,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "RL",
+   "sous_serie": "PostTraining",
+   "notebooks": 12,
+   "kernel_families": {
+    "csharp": 1,
+    "python": 11
+   },
+   "kernel_names": {
+    ".net-csharp": 1,
+    "coursia-ml-training": 4,
+    "python3": 7
+   },
+   "requires_gpu": 4,
+   "requires_api": 0,
+   "requires_cloud": 1,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/RL/requirements.txt"
+   ],
+   "packages": 13,
+   "footprint_mb": 1192,
+   "own_footprint_mb": 0,
+   "verdict": "service optionnel",
+   "motif": "service"
+  },
+  {
+   "serie": "Search",
+   "sous_serie": "(racine)",
+   "notebooks": 0,
+   "kernel_families": {},
+   "kernel_names": {},
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/Search/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 22,
+   "footprint_mb": 378,
+   "own_footprint_mb": 378,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Search",
+   "sous_serie": "Part1-Foundations",
+   "notebooks": 57,
+   "kernel_families": {
+    "csharp": 28,
+    "lean": 1,
+    "python": 28
+   },
+   "kernel_names": {
+    ".net-csharp": 28,
+    "lean4-wsl": 1,
+    "python3": 28
+   },
+   "requires_gpu": 0,
+   "requires_api": 3,
+   "requires_cloud": 0,
+   "requires_wsl": 1,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Search/requirements.txt"
+   ],
+   "packages": 26,
+   "footprint_mb": 395,
+   "own_footprint_mb": 20,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Search",
+   "sous_serie": "Part2-CSP",
+   "notebooks": 20,
+   "kernel_families": {
+    "csharp": 10,
+    "python": 10
+   },
+   "kernel_names": {
+    ".net-csharp": 10,
+    "python3": 10
+   },
+   "requires_gpu": 2,
+   "requires_api": 4,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Search/requirements.txt"
+   ],
+   "packages": 22,
+   "footprint_mb": 378,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Search",
+   "sous_serie": "Part3-Cas-pratiques",
+   "notebooks": 53,
+   "kernel_families": {
+    "csharp": 23,
+    "python": 30
+   },
+   "kernel_names": {
+    ".net-csharp": 23,
+    "python3": 30
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Search/requirements.txt"
+   ],
+   "packages": 22,
+   "footprint_mb": 378,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Search",
+   "sous_serie": "Part4-Metaheuristics",
+   "notebooks": 35,
+   "kernel_families": {
+    "csharp": 33,
+    "python": 2
+   },
+   "kernel_names": {
+    ".net-csharp": 33,
+    "python3": 2
+   },
+   "requires_gpu": 0,
+   "requires_api": 1,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/requirements-mgs-tsp.txt"
+   ],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Search/requirements.txt"
+   ],
+   "packages": 26,
+   "footprint_mb": 395,
+   "own_footprint_mb": 17,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Search",
+   "sous_serie": "Part5-Frontieres",
+   "notebooks": 15,
+   "kernel_families": {
+    "csharp": 2,
+    "python": 13
+   },
+   "kernel_names": {
+    ".net-csharp": 2,
+    "python3": 13
+   },
+   "requires_gpu": 0,
+   "requires_api": 1,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Search/requirements.txt"
+   ],
+   "packages": 22,
+   "footprint_mb": 378,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Search",
+   "sous_serie": "_archive",
+   "notebooks": 2,
+   "kernel_families": {
+    "python": 2
+   },
+   "kernel_names": {
+    "python3": 2
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [
+    "MyIA.AI.Notebooks/Search/requirements.txt"
+   ],
+   "packages": 22,
+   "footprint_mb": 378,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "Sudoku",
+   "sous_serie": "(racine)",
+   "notebooks": 43,
+   "kernel_families": {
+    "csharp": 20,
+    "lean": 1,
+    "python": 21,
+    "rust": 1
+   },
+   "kernel_names": {
+    ".net-csharp": 20,
+    "lean4-wsl": 1,
+    "python3": 21,
+    "rust": 1
+   },
+   "requires_gpu": 1,
+   "requires_api": 1,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 18,
+   "footprint_mb": 1293,
+   "own_footprint_mb": 1293,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "(racine)",
+   "notebooks": 1,
+   "kernel_families": {
+    "csharp": 1
+   },
+   "kernel_names": {
+    ".net-csharp": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "ArgumentAnalysis",
+   "notebooks": 43,
+   "kernel_families": {
+    "python": 43
+   },
+   "kernel_names": {
+    "coursia-py313-argu": 1,
+    "python3": 42
+   },
+   "requires_gpu": 0,
+   "requires_api": 6,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 7,
+   "footprint_mb": 19,
+   "own_footprint_mb": 19,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "Lean",
+   "notebooks": 168,
+   "kernel_families": {
+    "csharp": 2,
+    "lean": 38,
+    "python": 128
+   },
+   "kernel_names": {
+    ".net-csharp": 2,
+    "global-3.13": 1,
+    "lean4-wsl": 35,
+    "lean4-wsl-conway": 1,
+    "lean4-wsl-groth16200": 1,
+    "leandojo-v2": 1,
+    "py311-po2028": 1,
+    "python3": 114,
+    "python3-lean": 9,
+    "python3-wsl": 3
+   },
+   "requires_gpu": 1,
+   "requires_api": 7,
+   "requires_cloud": 0,
+   "requires_wsl": 167,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 10,
+   "footprint_mb": 60,
+   "own_footprint_mb": 60,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "Planners",
+   "notebooks": 27,
+   "kernel_families": {
+    "csharp": 10,
+    "lean": 1,
+    "python": 16
+   },
+   "kernel_names": {
+    ".net-csharp": 10,
+    "lean4-wsl": 1,
+    "python3": 16
+   },
+   "requires_gpu": 1,
+   "requires_api": 2,
+   "requires_cloud": 0,
+   "requires_wsl": 1,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 9,
+   "footprint_mb": 973,
+   "own_footprint_mb": 973,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "SMT",
+   "notebooks": 56,
+   "kernel_families": {
+    "csharp": 31,
+    "python": 25
+   },
+   "kernel_names": {
+    ".net-csharp": 31,
+    "python3": 25
+   },
+   "requires_gpu": 0,
+   "requires_api": 1,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 3,
+   "footprint_mb": 78,
+   "own_footprint_mb": 78,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "SemanticWeb",
+   "notebooks": 29,
+   "kernel_families": {
+    "csharp": 14,
+    "python": 15
+   },
+   "kernel_names": {
+    ".net-csharp": 14,
+    "python3": 15
+   },
+   "requires_gpu": 0,
+   "requires_api": 5,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 15,
+   "footprint_mb": 139,
+   "own_footprint_mb": 139,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "SmartContracts",
+   "notebooks": 32,
+   "kernel_families": {
+    "lean": 1,
+    "python": 31
+   },
+   "kernel_names": {
+    "lean4-wsl": 1,
+    "python3": 29,
+    "python3-sc16-concrete-wsl": 1,
+    "smartcontracts": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 3,
+   "requires_cloud": 0,
+   "requires_wsl": 7,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements-optional.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 17,
+   "footprint_mb": 76,
+   "own_footprint_mb": 76,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "SymbolicLearning",
+   "notebooks": 31,
+   "kernel_families": {
+    "csharp": 8,
+    "lean": 1,
+    "python": 22
+   },
+   "kernel_names": {
+    ".net-csharp": 8,
+    "difflogic-sl12": 1,
+    "lean4-wsl": 1,
+    "python3": 19,
+    "python3-wsl": 2
+   },
+   "requires_gpu": 5,
+   "requires_api": 2,
+   "requires_cloud": 0,
+   "requires_wsl": 3,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 12,
+   "footprint_mb": 1171,
+   "own_footprint_mb": 1171,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "Tweety",
+   "notebooks": 39,
+   "kernel_families": {
+    "csharp": 19,
+    "lean": 1,
+    "python": 19
+   },
+   "kernel_names": {
+    ".net-csharp": 19,
+    "lean4-wsl": 1,
+    "python3": 19
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 7,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 7,
+   "footprint_mb": 90,
+   "own_footprint_mb": 90,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "SymbolicAI",
+   "sous_serie": "_archive",
+   "notebooks": 1,
+   "kernel_families": {
+    "python": 1
+   },
+   "kernel_names": {
+    "python3": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "cross-series",
+   "sous_serie": "AgentSystems",
+   "notebooks": 2,
+   "kernel_families": {
+    "python": 2
+   },
+   "kernel_names": {
+    "python3": 2
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "cross-series",
+   "sous_serie": "matching-cv",
+   "notebooks": 0,
+   "kernel_families": {},
+   "kernel_names": {},
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "inherited_files": [],
+   "packages": 13,
+   "footprint_mb": 218,
+   "own_footprint_mb": 218,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "cross-series",
+   "sous_serie": "socle-metadata-driven",
+   "notebooks": 2,
+   "kernel_families": {
+    "csharp": 2
+   },
+   "kernel_names": {
+    ".net-csharp": 2
+   },
+   "requires_gpu": 0,
+   "requires_api": 1,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  },
+  {
+   "serie": "scripts",
+   "sous_serie": "notebook_tools",
+   "notebooks": 2,
+   "kernel_families": {
+    "csharp": 1,
+    "python": 1
+   },
+   "kernel_names": {
+    ".net-csharp": 1,
+    "python3": 1
+   },
+   "requires_gpu": 0,
+   "requires_api": 0,
+   "requires_cloud": 0,
+   "requires_wsl": 0,
+   "dependency_files": [],
+   "inherited_files": [],
+   "packages": 0,
+   "footprint_mb": 0,
+   "own_footprint_mb": 0,
+   "verdict": "inclus",
+   "motif": ""
+  }
+ ],
+ "manifest": {
+  "accelerate": {
+   "pin": ">=0.25.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.25.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 10
+  },
+  "agent-framework-openai": {
+   "pin": ">=1.3.0",
+   "declared_by": [
+    "SymbolicAI/Lean"
+   ],
+   "constraints": [
+    ">=1.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "aiohttp": {
+   "pin": ">=3.8.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=3.8.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "anthropic": {
+   "pin": ">=0.25.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "QuantConnect/(racine)",
+    "SymbolicAI/Lean",
+    "SymbolicAI/SemanticWeb"
+   ],
+   "constraints": [
+    ">=0.18.0",
+    ">=0.20.0",
+    ">=0.21.0",
+    ">=0.25.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "antropy": {
+   "pin": "<0.2",
+   "declared_by": [
+    "IIT/(racine)"
+   ],
+   "constraints": [
+    "<0.2"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/IIT/requirements.txt",
+    "MyIA.AI.Notebooks/IIT/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "anyio": {
+   "pin": ">=4.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=4.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "arch": {
+   "pin": ">=6.1.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=6.1.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "arviz": {
+   "pin": ">=1.0",
+   "declared_by": [
+    "Probas/(racine)"
+   ],
+   "constraints": [
+    ">=1.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "asyncio-throttle": {
+   "pin": ">=1.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=1.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "audiocraft": {
+   "pin": ">=1.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=1.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "automata-lib": {
+   "pin": ">=9.2.0",
+   "declared_by": [
+    "Search/(racine)",
+    "Search/Part1-Foundations"
+   ],
+   "constraints": [
+    ">=7.1.0",
+    ">=9.2.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "av": {
+   "pin": ">=11.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=11.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "axelrod": {
+   "pin": ">=4.0.0",
+   "declared_by": [
+    "GameTheory/(racine)"
+   ],
+   "constraints": [
+    ">=4.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "bark": {
+   "pin": ">=0.1.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.1.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "basicsr": {
+   "pin": ">=1.4.2",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=1.4.2"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "bcrypt": {
+   "pin": ">=4.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=4.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "beautifulsoup4": {
+   "pin": ">=4.12.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=4.12.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "bitsandbytes": {
+   "pin": ">=0.41.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.41.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 120
+  },
+  "black": {
+   "pin": ">=24.0.0",
+   "declared_by": [
+    "GenAI/Vibe-Coding",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=23.0.0",
+    ">=24.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "catboost": {
+   "pin": ">=1.2.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=1.2.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "chromadb": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "cross-series/matching-cv"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "cloudpickle": {
+   "pin": ">=3.0.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=3.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "coinbase-advanced-py": {
+   "pin": ">=1.8.4",
+   "declared_by": [
+    "QuantConnect/projects"
+   ],
+   "constraints": [
+    ">=1.8.4"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "cvxpy": {
+   "pin": ">=1.5",
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)",
+    "Search/(racine)"
+   ],
+   "constraints": [
+    ">=1.4.0",
+    ">=1.5"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "datasets": {
+   "pin": ">=5.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "RL/(racine)"
+   ],
+   "constraints": [
+    ">=2.14.0",
+    ">=5.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 40
+  },
+  "dd": {
+   "pin": ">=0.6",
+   "declared_by": [
+    "Sudoku/(racine)"
+   ],
+   "constraints": [
+    ">=0.6"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "deap": {
+   "pin": ">=1.4",
+   "declared_by": [
+    "Search/(racine)"
+   ],
+   "constraints": [
+    ">=1.4"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "demucs": {
+   "pin": ">=4.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=4.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "dice-ml": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "difflogic": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "diffprivlib": {
+   "pin": "==0.6.6",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    "==0.6.6"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "diffusers": {
+   "pin": ">=0.24.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.24.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 25
+  },
+  "dowhy": {
+   "pin": ">=0.12",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "Probas/(racine)"
+   ],
+   "constraints": [
+    ">=0.12"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "duckduckgo-search": {
+   "pin": ">=4.0.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=4.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "elevenlabs": {
+   "pin": ">=0.2.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.2.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "empyrical": {
+   "pin": ">=0.5.5",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.5.5"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "eth-tester": {
+   "pin": ">=0.13.0b1",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=0.13.0b1"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "fastapi": {
+   "pin": ">=0.115",
+   "declared_by": [
+    "GenAI/Texte",
+    "Search/Part1-Foundations",
+    "Search/Part4-Metaheuristics"
+   ],
+   "constraints": [
+    ">=0.115"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/Texte/requirements-structured-outputs.txt",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt",
+    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/requirements-mgs-tsp.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "faster-whisper": {
+   "pin": ">=0.10.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.10.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "flake8": {
+   "pin": ">=7.0.0",
+   "declared_by": [
+    "GenAI/Vibe-Coding",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=6.0.0",
+    ">=7.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "flask": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "cross-series/matching-cv"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "google-adk": {
+   "pin": "==2.8.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    "==2.8.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "google-cloud-aiplatform": {
+   "pin": ">=1.40.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=1.40.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "google-cloud-bigquery": {
+   "pin": ">=3.0.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=3.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "google-generativeai": {
+   "pin": ">=0.8.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=0.8.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "graphviz": {
+   "pin": ">=0.20",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "Search/(racine)"
+   ],
+   "constraints": [
+    ">=0.20"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "groundingdino-py": {
+   "pin": ">=0.1.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.1.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "gymnasium": {
+   "pin": ">=0.29.0",
+   "declared_by": [
+    "QuantConnect/(racine)",
+    "RL/(racine)"
+   ],
+   "constraints": [
+    ">=0.29",
+    ">=0.29.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 12
+  },
+  "highway-env": {
+   "pin": ">=1.8",
+   "declared_by": [
+    "RL/(racine)"
+   ],
+   "constraints": [
+    ">=1.8"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "hmmlearn": {
+   "pin": ">=0.3",
+   "declared_by": [
+    "Probas/(racine)"
+   ],
+   "constraints": [
+    ">=0.3"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "httpcore": {
+   "pin": ">=1.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=1.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "httpx": {
+   "pin": ">=0.27.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "GenAI/Texte",
+    "Search/Part1-Foundations",
+    "Search/Part4-Metaheuristics"
+   ],
+   "constraints": [
+    ">=0.27",
+    ">=0.27.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/Texte/requirements-structured-outputs.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt",
+    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/requirements-mgs-tsp.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "huggingface-hub": {
+   "pin": ">=0.20.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.20.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "ib-insync": {
+   "pin": ">=0.9.86",
+   "declared_by": [
+    "QuantConnect/projects"
+   ],
+   "constraints": [
+    ">=0.9.86"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "imageio": {
+   "pin": ">=2.31.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=2.31.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "imageio-ffmpeg": {
+   "pin": ">=0.4.9",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.4.9"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 25
+  },
+  "imbalanced-learn": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "ipykernel": {
+   "pin": ">=6.29.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=6.0.0",
+    ">=6.29.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "ipywidgets": {
+   "pin": ">=8.1",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "QuantConnect/(racine)",
+    "Search/(racine)"
+   ],
+   "constraints": [
+    ">=8.0.0",
+    ">=8.1"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "jax": {
+   "pin": ">=0.4",
+   "declared_by": [
+    "Sudoku/(racine)"
+   ],
+   "constraints": [
+    ">=0.4"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt"
+   ],
+   "footprint_mb": 120
+  },
+  "jaxtyping": {
+   "pin": ">=0.3.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "joblib": {
+   "pin": ">=1.3.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=1.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "jpype1": {
+   "pin": ">=1.4",
+   "declared_by": [
+    "Sudoku/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Tweety"
+   ],
+   "constraints": [
+    ">=1.4"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "jsonschema": {
+   "pin": ">=4.23",
+   "declared_by": [
+    "GenAI/Texte"
+   ],
+   "constraints": [
+    ">=4.23"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/Texte/requirements-structured-outputs.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "jupyter": {
+   "pin": ">=1.0.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/Infer",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=1.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/Infer/scripts/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 20
+  },
+  "jupyter-client": {
+   "pin": ">=7.0.0",
+   "declared_by": [
+    "Probas/Infer"
+   ],
+   "constraints": [
+    ">=7.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Probas/Infer/scripts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "jupyter-kernel-gateway": {
+   "pin": ">=3.0",
+   "declared_by": [
+    "GameTheory/gateway",
+    "SymbolicAI/SMT"
+   ],
+   "constraints": [
+    ">=3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/gateway/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "jupyter-ui-poll": {
+   "pin": ">=1.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=1.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "jupyterlab": {
+   "pin": ">=4.0.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=4.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "kaggle": {
+   "pin": ">=1.6.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=1.6.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "keras": {
+   "pin": ">=3.0.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=3.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "kglab": {
+   "pin": ">=0.6.0",
+   "declared_by": [
+    "SymbolicAI/SemanticWeb"
+   ],
+   "constraints": [
+    ">=0.6.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "langchain": {
+   "pin": ">=0.3.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.1.0",
+    ">=0.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "langchain-community": {
+   "pin": ">=0.3.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=0.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "langchain-core": {
+   "pin": ">=0.3.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=0.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "langchain-experimental": {
+   "pin": ">=0.3.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=0.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "langchain-openai": {
+   "pin": ">=0.2.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.0.5",
+    ">=0.2.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "langgraph": {
+   "pin": ">=0.2.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=0.2.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "libreyolo": {
+   "pin": "==1.6.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    "==1.6.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "librosa": {
+   "pin": ">=0.10.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.10.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 15
+  },
+  "lightgbm": {
+   "pin": ">=4.0.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=4.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "lime": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "litellm": {
+   "pin": "==1.100.4",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    "==1.100.4"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "loguru": {
+   "pin": ">=0.7.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.7.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "ltntorch": {
+   "pin": ">=1.0",
+   "declared_by": [
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "constraints": [
+    ">=1.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "lxml": {
+   "pin": ">=5.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=5.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "matching": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "cross-series/matching-cv"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "matplotlib": {
+   "pin": ">=3.7.0",
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "IIT/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "RL/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Lean",
+    "SymbolicAI/Planners",
+    "SymbolicAI/SMT",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SmartContracts",
+    "SymbolicAI/SymbolicLearning",
+    "SymbolicAI/Tweety"
+   ],
+   "constraints": [
+    ">=3.5",
+    ">=3.7",
+    ">=3.7.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/IIT/requirements.txt",
+    "MyIA.AI.Notebooks/IIT/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt"
+   ],
+   "footprint_mb": 30
+  },
+  "mealpy": {
+   "pin": ">=3.0",
+   "declared_by": [
+    "Search/(racine)",
+    "Sudoku/(racine)"
+   ],
+   "constraints": [
+    ">=3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "mlflow": {
+   "pin": ">=2.10.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=2.10.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "moviepy": {
+   "pin": ">=2.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "RL/(racine)"
+   ],
+   "constraints": [
+    ">=1.0",
+    ">=2.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 25
+  },
+  "mpyc": {
+   "pin": ">=0.10",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=0.10"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "nashpy": {
+   "pin": ">=0.0.40",
+   "declared_by": [
+    "GameTheory/(racine)"
+   ],
+   "constraints": [
+    ">=0.0.40"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "nbformat": {
+   "pin": ">=5.0.0",
+   "declared_by": [
+    "Probas/Infer"
+   ],
+   "constraints": [
+    ">=5.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Probas/Infer/scripts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "nest-asyncio": {
+   "pin": ">=1.6.0",
+   "declared_by": [
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Lean"
+   ],
+   "constraints": [
+    ">=1.5",
+    ">=1.6.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "networkx": {
+   "pin": ">=3.1",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "Probas/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Planners",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/Tweety"
+   ],
+   "constraints": [
+    ">=3.0",
+    ">=3.1"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "newsapi-python": {
+   "pin": ">=0.2.7",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.2.7"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "numpy": {
+   "pin": ">=1.24.0",
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "IIT/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "RL/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Planners",
+    "SymbolicAI/SymbolicLearning",
+    "cross-series/matching-cv"
+   ],
+   "constraints": [
+    ">=1.21",
+    ">=1.24",
+    ">=1.24.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/IIT/requirements.txt",
+    "MyIA.AI.Notebooks/IIT/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 25
+  },
+  "numpyro": {
+   "pin": ">=0.12",
+   "declared_by": [
+    "Sudoku/(racine)"
+   ],
+   "constraints": [
+    ">=0.12"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "open-spiel": {
+   "pin": ">=2.0",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GameTheory/gateway"
+   ],
+   "constraints": [
+    ">=1.4",
+    ">=2.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/gateway/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "openai": {
+   "pin": "==2.24.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "GenAI/Texte",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Lean",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SmartContracts",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "constraints": [
+    "==2.24.0",
+    ">=1.0",
+    ">=1.0.0",
+    ">=1.12.0",
+    ">=1.55",
+    ">=2.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/Texte/requirements-structured-outputs.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "opencv-python": {
+   "pin": ">=4.8.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=4.8.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt"
+   ],
+   "footprint_mb": 80
+  },
+  "opentelemetry-sdk": {
+   "pin": ">=1.20.0",
+   "declared_by": [
+    "SymbolicAI/Lean"
+   ],
+   "constraints": [
+    ">=1.20.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "optuna": {
+   "pin": ">=3.5.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "Search/(racine)"
+   ],
+   "constraints": [
+    ">=3.0",
+    ">=3.5.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "ortools": {
+   "pin": ">=9.11",
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Planners"
+   ],
+   "constraints": [
+    ">=9.11",
+    ">=9.8"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "owlready2": {
+   "pin": ">=0.45",
+   "declared_by": [
+    "SymbolicAI/SemanticWeb"
+   ],
+   "constraints": [
+    ">=0.45"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "owlrl": {
+   "pin": ">=0.4.0",
+   "declared_by": [
+    "SymbolicAI/SemanticWeb"
+   ],
+   "constraints": [
+    ">=0.4.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pandas": {
+   "pin": ">=2.0.0",
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "RL/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/SemanticWeb",
+    "cross-series/matching-cv"
+   ],
+   "constraints": [
+    ">=2.0",
+    ">=2.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 70
+  },
+  "pandas-ta": {
+   "pin": ">=0.3.14b0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.3.14b0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "papermill": {
+   "pin": ">=2.4.0",
+   "declared_by": [
+    "Probas/Infer",
+    "Search/(racine)",
+    "Sudoku/(racine)"
+   ],
+   "constraints": [
+    ">=2.4",
+    ">=2.4.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Probas/Infer/scripts/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pettingzoo": {
+   "pin": ">=1.24.0",
+   "declared_by": [
+    "RL/(racine)"
+   ],
+   "constraints": [
+    ">=1.24.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "phe": {
+   "pin": ">=1.5",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=1.5"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pillow": {
+   "pin": ">=10.0.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=10.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pillow-heif": {
+   "pin": ">=0.13.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.13.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "playwright": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "cross-series/matching-cv"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "plotly": {
+   "pin": ">=5.14.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=5.14.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pulp": {
+   "pin": ">=2.8.0",
+   "declared_by": [
+    "Search/(racine)"
+   ],
+   "constraints": [
+    ">=2.8.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "py-ecc": {
+   "pin": ">=7.0",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=7.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "py-evm": {
+   "pin": ">=0.12.1b1",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=0.12.1b1"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "py-solc-x": {
+   "pin": ">=1.1",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=1.1"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pyarrow": {
+   "pin": ">=26.0.0",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=14.0.0",
+    ">=26.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pycryptodome": {
+   "pin": ">=3.20",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=3.20"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pydantic": {
+   "pin": "==2.12.5",
+   "declared_by": [
+    "GenAI/Texte",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    "==2.12.5",
+    ">=2.6.0",
+    ">=2.7"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/Texte/requirements-structured-outputs.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 20
+  },
+  "pydantic-settings": {
+   "pin": ">=2.1.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=2.0.0",
+    ">=2.1.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pydub": {
+   "pin": ">=0.25.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.25.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pyemd": {
+   "pin": "==0.5.1",
+   "declared_by": [
+    "IIT/(racine)"
+   ],
+   "constraints": [
+    "==0.5.1"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/IIT/requirements.txt",
+    "MyIA.AI.Notebooks/IIT/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pyfolio": {
+   "pin": ">=0.9.2",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.9.2"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pygad": {
+   "pin": ">=3.3",
+   "declared_by": [
+    "Search/(racine)",
+    "Sudoku/(racine)"
+   ],
+   "constraints": [
+    ">=3.3"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pymc": {
+   "pin": ">=6.0",
+   "declared_by": [
+    "Probas/(racine)"
+   ],
+   "constraints": [
+    ">=6.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pymoo": {
+   "pin": ">=0.6",
+   "declared_by": [
+    "Search/(racine)"
+   ],
+   "constraints": [
+    ">=0.6"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pyphi": {
+   "pin": "==1.2.0",
+   "declared_by": [
+    "IIT/(racine)"
+   ],
+   "constraints": [
+    "==1.2.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/IIT/requirements.txt",
+    "MyIA.AI.Notebooks/IIT/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pyportfolioopt": {
+   "pin": ">=1.5.5",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=1.5.5"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pyro-ppl": {
+   "pin": ">=1.8",
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "Probas/(racine)"
+   ],
+   "constraints": [
+    ">=1.8"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "pyshacl": {
+   "pin": ">=0.27.0",
+   "declared_by": [
+    "SymbolicAI/SemanticWeb"
+   ],
+   "constraints": [
+    ">=0.27.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pytest": {
+   "pin": ">=8.0.0",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/Vibe-Coding",
+    "QuantConnect/(racine)",
+    "Search/Part1-Foundations",
+    "Search/Part4-Metaheuristics",
+    "SymbolicAI/Lean",
+    "cross-series/matching-cv"
+   ],
+   "constraints": [
+    ">=7.0.0",
+    ">=8.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt",
+    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/requirements-mgs-tsp.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/requirements.txt",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 8
+  },
+  "pytest-asyncio": {
+   "pin": ">=0.23.0",
+   "declared_by": [
+    "SymbolicAI/Lean"
+   ],
+   "constraints": [
+    ">=0.23.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pytest-html": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "cross-series/matching-cv"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pytest-playwright": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "cross-series/matching-cv"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "python-binance": {
+   "pin": ">=1.0.37",
+   "declared_by": [
+    "QuantConnect/projects"
+   ],
+   "constraints": [
+    ">=1.0.37"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "python-bitcoinlib": {
+   "pin": ">=0.12",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=0.12"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "python-constraint": {
+   "pin": ">=1.4.0",
+   "declared_by": [
+    "Search/(racine)"
+   ],
+   "constraints": [
+    ">=1.4.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "python-dotenv": {
+   "pin": ">=1.0.0",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Lean",
+    "SymbolicAI/SmartContracts",
+    "SymbolicAI/SymbolicLearning",
+    "cross-series/matching-cv"
+   ],
+   "constraints": [
+    ">=1.0",
+    ">=1.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 1
+  },
+  "python-sat": {
+   "pin": ">=1.8.dev13",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "Search/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Tweety"
+   ],
+   "constraints": [
+    ">=0.1",
+    ">=0.1.8",
+    ">=1.8.dev13"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "pyvis": {
+   "pin": ">=0.3.0",
+   "declared_by": [
+    "SymbolicAI/SemanticWeb"
+   ],
+   "constraints": [
+    ">=0.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "quantconnect-lean": {
+   "pin": ">=2.5.14000",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=2.5.14000"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "quantconnect-stubs": {
+   "pin": ">=14.0.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=14.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "qwen-vl-utils": {
+   "pin": ">=0.0.1",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.0.1"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "rdflib": {
+   "pin": ">=7.0.0",
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "constraints": [
+    ">=7.0",
+    ">=7.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "realesrgan": {
+   "pin": ">=0.3.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "reasonable": {
+   "pin": ">=0.1.0",
+   "declared_by": [
+    "SymbolicAI/SemanticWeb"
+   ],
+   "constraints": [
+    ">=0.1.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "regex": {
+   "pin": ">=2023.0",
+   "declared_by": [
+    "Sudoku/(racine)"
+   ],
+   "constraints": [
+    ">=2023.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "requests": {
+   "pin": ">=2.31.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SmartContracts",
+    "SymbolicAI/Tweety"
+   ],
+   "constraints": [
+    ">=2.28",
+    ">=2.31",
+    ">=2.31.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "rustuna": {
+   "pin": ">=0.1.0",
+   "declared_by": [
+    "Search/(racine)"
+   ],
+   "constraints": [
+    ">=0.1.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "safetensors": {
+   "pin": ">=0.4.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.4.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "scikit-learn": {
+   "pin": "==1.5.2",
+   "declared_by": [
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "Search/(racine)",
+    "SymbolicAI/SymbolicLearning",
+    "cross-series/matching-cv"
+   ],
+   "constraints": [
+    "==1.5.2",
+    ">=1.2",
+    ">=1.3",
+    ">=1.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments/requirements.txt",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 90
+  },
+  "scipy": {
+   "pin": "==1.14.1",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "IIT/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "constraints": [
+    "==1.14.1",
+    ">=0.13.3",
+    ">=1.10",
+    ">=1.10.0",
+    ">=1.11"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/IIT/requirements.txt",
+    "MyIA.AI.Notebooks/IIT/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt"
+   ],
+   "footprint_mb": 70
+  },
+  "seaborn": {
+   "pin": ">=0.12.0",
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.12",
+    ">=0.12.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "semantic-kernel": {
+   "pin": ">=1.39.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Lean",
+    "cross-series/matching-cv"
+   ],
+   "constraints": [
+    ">=1.0",
+    ">=1.0.0",
+    ">=1.39.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/requirements.txt",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "sentencepiece": {
+   "pin": ">=0.1.99",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.1.99"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "shap": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "shimmy": {
+   "pin": ">=1.3.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=1.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "simanneal": {
+   "pin": ">=0.5",
+   "declared_by": [
+    "Sudoku/(racine)"
+   ],
+   "constraints": [
+    ">=0.5"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "soundfile": {
+   "pin": ">=0.12.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.12.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "spacy": {
+   "pin": ">=3.7.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=3.7.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 70
+  },
+  "sparqlwrapper": {
+   "pin": ">=2.0.0",
+   "declared_by": [
+    "SymbolicAI/SemanticWeb"
+   ],
+   "constraints": [
+    ">=2.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "stable-baselines3": {
+   "pin": ">=2.2.0",
+   "declared_by": [
+    "QuantConnect/(racine)",
+    "RL/(racine)"
+   ],
+   "constraints": [
+    ">=2.0",
+    ">=2.2.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "statsmodels": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "sympy": {
+   "pin": ">=1.12",
+   "declared_by": [
+    "GameTheory/(racine)"
+   ],
+   "constraints": [
+    ">=1.12"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "ta-lib": {
+   "pin": ">=0.4.28",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.4.28"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "tabulate": {
+   "pin": ">=0.9",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=0.9"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "tavily-python": {
+   "pin": ">=0.3.0",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    ">=0.3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "tenseal": {
+   "pin": ">=0.3",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=0.3"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "tensorflow": {
+   "pin": ">=2.15.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=2.15.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 800
+  },
+  "tensorflow-probability": {
+   "pin": ">=0.23.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.23.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "textblob": {
+   "pin": ">=0.17.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.17.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "tiktoken": {
+   "pin": ">=0.7.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.7.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "tokenizers": {
+   "pin": ">=0.21",
+   "declared_by": [
+    "RL/(racine)"
+   ],
+   "constraints": [
+    ">=0.21"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "torch": {
+   "pin": "==2.14.0",
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "RL/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Planners",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "constraints": [
+    "==2.14.0",
+    ">=2.0",
+    ">=2.0.0",
+    ">=2.13"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments/requirements.txt"
+   ],
+   "footprint_mb": 900
+  },
+  "torchaudio": {
+   "pin": ">=2.0.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=2.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 20
+  },
+  "torchlens": {
+   "pin": "==3.0.3",
+   "declared_by": [
+    "IIT/ICT-Series"
+   ],
+   "constraints": [
+    "==3.0.3"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/IIT/ICT-Series/requirements-torchlens.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "torchvision": {
+   "pin": "==0.29.0",
+   "declared_by": [
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "constraints": [
+    "==0.29.0",
+    ">=0.15.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments/requirements.txt"
+   ],
+   "footprint_mb": 40
+  },
+  "tqdm": {
+   "pin": ">=4.66.0",
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "QuantConnect/(racine)",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SymbolicLearning",
+    "SymbolicAI/Tweety"
+   ],
+   "constraints": [
+    ">=4.65",
+    ">=4.65.0",
+    ">=4.66.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/vendor/difflogic/experiments/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "transformers": {
+   "pin": ">=5.12",
+   "declared_by": [
+    "GenAI/(racine)",
+    "QuantConnect/(racine)",
+    "RL/(racine)"
+   ],
+   "constraints": [
+    ">=4.35.0",
+    ">=4.37.0",
+    ">=5.12"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 70
+  },
+  "trl": {
+   "pin": ">=1.10",
+   "declared_by": [
+    "RL/(racine)"
+   ],
+   "constraints": [
+    ">=1.10"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/RL/requirements.txt",
+    "MyIA.AI.Notebooks/RL/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 8
+  },
+  "tts": {
+   "pin": ">=0.22.0",
+   "declared_by": [
+    "GenAI/(racine)"
+   ],
+   "constraints": [
+    ">=0.22.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/requirements.txt",
+    "MyIA.AI.Notebooks/GenAI/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "ultralytics": {
+   "pin": "==8.4.173",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [
+    "==8.4.173"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "umap-learn": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "ML/DataScienceWithAgents"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "unified-planning": {
+   "pin": ">=1.1",
+   "declared_by": [
+    "SymbolicAI/Planners"
+   ],
+   "constraints": [
+    ">=1.1"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "up-aries": {
+   "pin": ">=0.5",
+   "declared_by": [
+    "SymbolicAI/Planners"
+   ],
+   "constraints": [
+    ">=0.5"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "up-fast-downward": {
+   "pin": ">=1.0",
+   "declared_by": [
+    "SymbolicAI/Planners"
+   ],
+   "constraints": [
+    ">=1.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "up-pyperplan": {
+   "pin": ">=1.1",
+   "declared_by": [
+    "SymbolicAI/Planners"
+   ],
+   "constraints": [
+    ">=1.1"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "uvicorn": {
+   "pin": ">=0.30",
+   "declared_by": [
+    "GenAI/Texte",
+    "Search/Part1-Foundations",
+    "Search/Part4-Metaheuristics"
+   ],
+   "constraints": [
+    ">=0.30"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/GenAI/Texte/requirements-structured-outputs.txt",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt",
+    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/requirements-mgs-tsp.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "vadersentiment": {
+   "pin": ">=3.3.2",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=3.3.2"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "vyper": {
+   "pin": ">=0.4",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=0.4"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "web3": {
+   "pin": ">=7.0",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=7.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "werkzeug": {
+   "pin": "(non borne)",
+   "declared_by": [
+    "cross-series/matching-cv"
+   ],
+   "constraints": [],
+   "sources": [
+    "MyIA.AI.Notebooks/cross-series/matching-cv/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "xgboost": {
+   "pin": ">=2.0.0",
+   "declared_by": [
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=2.0.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "xrpl-py": {
+   "pin": ">=3.0",
+   "declared_by": [
+    "SymbolicAI/SmartContracts"
+   ],
+   "constraints": [
+    ">=3.0"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/requirements.txt"
+   ],
+   "footprint_mb": 3
+  },
+  "yfinance": {
+   "pin": ">=0.2.36",
+   "declared_by": [
+    "Probas/(racine)",
+    "QuantConnect/(racine)"
+   ],
+   "constraints": [
+    ">=0.2",
+    ">=0.2.36"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/Probas/requirements.txt",
+    "MyIA.AI.Notebooks/Probas/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt",
+    "MyIA.AI.Notebooks/QuantConnect/requirements.txt (socle de serie)"
+   ],
+   "footprint_mb": 3
+  },
+  "z3-solver": {
+   "pin": ">=4.13",
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/SMT",
+    "SymbolicAI/Tweety"
+   ],
+   "constraints": [
+    ">=4.12",
+    ">=4.13"
+   ],
+   "sources": [
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt",
+    "MyIA.AI.Notebooks/CaseStudies/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt",
+    "MyIA.AI.Notebooks/GameTheory/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Search/requirements.txt",
+    "MyIA.AI.Notebooks/Search/requirements.txt (socle de serie)",
+    "MyIA.AI.Notebooks/Sudoku/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/requirements.txt",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/requirements.txt"
+   ],
+   "footprint_mb": 45
+  }
+ },
+ "conflicts": [],
+ "divergences": [
+  {
+   "package": "anthropic",
+   "pin": ">=0.25.0",
+   "constraints": [
+    ">=0.18.0",
+    ">=0.20.0",
+    ">=0.21.0",
+    ">=0.25.0"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "QuantConnect/(racine)",
+    "SymbolicAI/Lean",
+    "SymbolicAI/SemanticWeb"
+   ],
+   "resolution": "retenir >=0.25.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "automata-lib",
+   "pin": ">=9.2.0",
+   "constraints": [
+    ">=7.1.0",
+    ">=9.2.0"
+   ],
+   "declared_by": [
+    "Search/(racine)",
+    "Search/Part1-Foundations"
+   ],
+   "resolution": "retenir >=9.2.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "black",
+   "pin": ">=24.0.0",
+   "constraints": [
+    ">=23.0.0",
+    ">=24.0.0"
+   ],
+   "declared_by": [
+    "GenAI/Vibe-Coding",
+    "QuantConnect/(racine)"
+   ],
+   "resolution": "retenir >=24.0.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "cvxpy",
+   "pin": ">=1.5",
+   "constraints": [
+    ">=1.4.0",
+    ">=1.5"
+   ],
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)",
+    "Search/(racine)"
+   ],
+   "resolution": "retenir >=1.5 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "datasets",
+   "pin": ">=5.0",
+   "constraints": [
+    ">=2.14.0",
+    ">=5.0"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "RL/(racine)"
+   ],
+   "resolution": "retenir >=5.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "flake8",
+   "pin": ">=7.0.0",
+   "constraints": [
+    ">=6.0.0",
+    ">=7.0.0"
+   ],
+   "declared_by": [
+    "GenAI/Vibe-Coding",
+    "QuantConnect/(racine)"
+   ],
+   "resolution": "retenir >=7.0.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "gymnasium",
+   "pin": ">=0.29.0",
+   "constraints": [
+    ">=0.29",
+    ">=0.29.0"
+   ],
+   "declared_by": [
+    "QuantConnect/(racine)",
+    "RL/(racine)"
+   ],
+   "resolution": "retenir >=0.29.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "httpx",
+   "pin": ">=0.27.0",
+   "constraints": [
+    ">=0.27",
+    ">=0.27.0"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "GenAI/Texte",
+    "Search/Part1-Foundations",
+    "Search/Part4-Metaheuristics"
+   ],
+   "resolution": "retenir >=0.27.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "ipykernel",
+   "pin": ">=6.29.0",
+   "constraints": [
+    ">=6.0.0",
+    ">=6.29.0"
+   ],
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "resolution": "retenir >=6.29.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "ipywidgets",
+   "pin": ">=8.1",
+   "constraints": [
+    ">=8.0.0",
+    ">=8.1"
+   ],
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "QuantConnect/(racine)",
+    "Search/(racine)"
+   ],
+   "resolution": "retenir >=8.1 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "langchain",
+   "pin": ">=0.3.0",
+   "constraints": [
+    ">=0.1.0",
+    ">=0.3.0"
+   ],
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "resolution": "retenir >=0.3.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "langchain-openai",
+   "pin": ">=0.2.0",
+   "constraints": [
+    ">=0.0.5",
+    ">=0.2.0"
+   ],
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "resolution": "retenir >=0.2.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "matplotlib",
+   "pin": ">=3.7.0",
+   "constraints": [
+    ">=3.5",
+    ">=3.7",
+    ">=3.7.0"
+   ],
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "IIT/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "RL/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Lean",
+    "SymbolicAI/Planners",
+    "SymbolicAI/SMT",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SmartContracts",
+    "SymbolicAI/SymbolicLearning",
+    "SymbolicAI/Tweety"
+   ],
+   "resolution": "retenir >=3.7.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "moviepy",
+   "pin": ">=2.0",
+   "constraints": [
+    ">=1.0",
+    ">=2.0"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "RL/(racine)"
+   ],
+   "resolution": "retenir >=2.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "nest-asyncio",
+   "pin": ">=1.6.0",
+   "constraints": [
+    ">=1.5",
+    ">=1.6.0"
+   ],
+   "declared_by": [
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Lean"
+   ],
+   "resolution": "retenir >=1.6.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "networkx",
+   "pin": ">=3.1",
+   "constraints": [
+    ">=3.0",
+    ">=3.1"
+   ],
+   "declared_by": [
+    "GameTheory/(racine)",
+    "Probas/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Planners",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/Tweety"
+   ],
+   "resolution": "retenir >=3.1 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "numpy",
+   "pin": ">=1.24.0",
+   "constraints": [
+    ">=1.21",
+    ">=1.24",
+    ">=1.24.0"
+   ],
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "IIT/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "RL/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Planners",
+    "SymbolicAI/SymbolicLearning",
+    "cross-series/matching-cv"
+   ],
+   "resolution": "retenir >=1.24.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "open-spiel",
+   "pin": ">=2.0",
+   "constraints": [
+    ">=1.4",
+    ">=2.0"
+   ],
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GameTheory/gateway"
+   ],
+   "resolution": "retenir >=2.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "openai",
+   "pin": "==2.24.0",
+   "constraints": [
+    "==2.24.0",
+    ">=1.0",
+    ">=1.0.0",
+    ">=1.12.0",
+    ">=1.55",
+    ">=2.0.0"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "GenAI/Texte",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Lean",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SmartContracts",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "resolution": "retenir ==2.24.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "optuna",
+   "pin": ">=3.5.0",
+   "constraints": [
+    ">=3.0",
+    ">=3.5.0"
+   ],
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "Search/(racine)"
+   ],
+   "resolution": "retenir >=3.5.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "ortools",
+   "pin": ">=9.11",
+   "constraints": [
+    ">=9.11",
+    ">=9.8"
+   ],
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Planners"
+   ],
+   "resolution": "retenir >=9.11 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "pandas",
+   "pin": ">=2.0.0",
+   "constraints": [
+    ">=2.0",
+    ">=2.0.0"
+   ],
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "RL/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/SemanticWeb",
+    "cross-series/matching-cv"
+   ],
+   "resolution": "retenir >=2.0.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "papermill",
+   "pin": ">=2.4.0",
+   "constraints": [
+    ">=2.4",
+    ">=2.4.0"
+   ],
+   "declared_by": [
+    "Probas/Infer",
+    "Search/(racine)",
+    "Sudoku/(racine)"
+   ],
+   "resolution": "retenir >=2.4.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "pyarrow",
+   "pin": ">=26.0.0",
+   "constraints": [
+    ">=14.0.0",
+    ">=26.0.0"
+   ],
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)"
+   ],
+   "resolution": "retenir >=26.0.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "pydantic",
+   "pin": "==2.12.5",
+   "constraints": [
+    "==2.12.5",
+    ">=2.6.0",
+    ">=2.7"
+   ],
+   "declared_by": [
+    "GenAI/Texte",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "resolution": "retenir ==2.12.5 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "pydantic-settings",
+   "pin": ">=2.1.0",
+   "constraints": [
+    ">=2.0.0",
+    ">=2.1.0"
+   ],
+   "declared_by": [
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "resolution": "retenir >=2.1.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "pytest",
+   "pin": ">=8.0.0",
+   "constraints": [
+    ">=7.0.0",
+    ">=8.0.0"
+   ],
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/Vibe-Coding",
+    "QuantConnect/(racine)",
+    "Search/Part1-Foundations",
+    "Search/Part4-Metaheuristics",
+    "SymbolicAI/Lean",
+    "cross-series/matching-cv"
+   ],
+   "resolution": "retenir >=8.0.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "python-dotenv",
+   "pin": ">=1.0.0",
+   "constraints": [
+    ">=1.0",
+    ">=1.0.0"
+   ],
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Lean",
+    "SymbolicAI/SmartContracts",
+    "SymbolicAI/SymbolicLearning",
+    "cross-series/matching-cv"
+   ],
+   "resolution": "retenir >=1.0.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "python-sat",
+   "pin": ">=1.8.dev13",
+   "constraints": [
+    ">=0.1",
+    ">=0.1.8",
+    ">=1.8.dev13"
+   ],
+   "declared_by": [
+    "GameTheory/(racine)",
+    "Search/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Tweety"
+   ],
+   "resolution": "retenir >=1.8.dev13 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "rdflib",
+   "pin": ">=7.0.0",
+   "constraints": [
+    ">=7.0",
+    ">=7.0.0"
+   ],
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "resolution": "retenir >=7.0.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "requests",
+   "pin": ">=2.31.0",
+   "constraints": [
+    ">=2.28",
+    ">=2.31",
+    ">=2.31.0"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SmartContracts",
+    "SymbolicAI/Tweety"
+   ],
+   "resolution": "retenir >=2.31.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "scikit-learn",
+   "pin": "==1.5.2",
+   "constraints": [
+    "==1.5.2",
+    ">=1.2",
+    ">=1.3",
+    ">=1.3.0"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "Search/(racine)",
+    "SymbolicAI/SymbolicLearning",
+    "cross-series/matching-cv"
+   ],
+   "resolution": "retenir ==1.5.2 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "scipy",
+   "pin": "==1.14.1",
+   "constraints": [
+    "==1.14.1",
+    ">=0.13.3",
+    ">=1.10",
+    ">=1.10.0",
+    ">=1.11"
+   ],
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "IIT/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "QuantConnect/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "resolution": "retenir ==1.14.1 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "seaborn",
+   "pin": ">=0.12.0",
+   "constraints": [
+    ">=0.12",
+    ">=0.12.0"
+   ],
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "ML/DataScienceWithAgents",
+    "QuantConnect/(racine)"
+   ],
+   "resolution": "retenir >=0.12.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "semantic-kernel",
+   "pin": ">=1.39.0",
+   "constraints": [
+    ">=1.0",
+    ">=1.0.0",
+    ">=1.39.0"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "SymbolicAI/ArgumentAnalysis",
+    "SymbolicAI/Lean",
+    "cross-series/matching-cv"
+   ],
+   "resolution": "retenir >=1.39.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "stable-baselines3",
+   "pin": ">=2.2.0",
+   "constraints": [
+    ">=2.0",
+    ">=2.2.0"
+   ],
+   "declared_by": [
+    "QuantConnect/(racine)",
+    "RL/(racine)"
+   ],
+   "resolution": "retenir >=2.2.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "torch",
+   "pin": "==2.14.0",
+   "constraints": [
+    "==2.14.0",
+    ">=2.0",
+    ">=2.0.0",
+    ">=2.13"
+   ],
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "Probas/(racine)",
+    "RL/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/Planners",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "resolution": "retenir ==2.14.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "torchvision",
+   "pin": "==0.29.0",
+   "constraints": [
+    "==0.29.0",
+    ">=0.15.0"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "ML/DataScienceWithAgents",
+    "SymbolicAI/SymbolicLearning"
+   ],
+   "resolution": "retenir ==0.29.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "tqdm",
+   "pin": ">=4.66.0",
+   "constraints": [
+    ">=4.65",
+    ">=4.65.0",
+    ">=4.66.0"
+   ],
+   "declared_by": [
+    "GameTheory/(racine)",
+    "GenAI/(racine)",
+    "QuantConnect/(racine)",
+    "SymbolicAI/SemanticWeb",
+    "SymbolicAI/SymbolicLearning",
+    "SymbolicAI/Tweety"
+   ],
+   "resolution": "retenir >=4.66.0 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "transformers",
+   "pin": ">=5.12",
+   "constraints": [
+    ">=4.35.0",
+    ">=4.37.0",
+    ">=5.12"
+   ],
+   "declared_by": [
+    "GenAI/(racine)",
+    "QuantConnect/(racine)",
+    "RL/(racine)"
+   ],
+   "resolution": "retenir >=5.12 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "yfinance",
+   "pin": ">=0.2.36",
+   "constraints": [
+    ">=0.2",
+    ">=0.2.36"
+   ],
+   "declared_by": [
+    "Probas/(racine)",
+    "QuantConnect/(racine)"
+   ],
+   "resolution": "retenir >=0.2.36 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  },
+  {
+   "package": "z3-solver",
+   "pin": ">=4.13",
+   "constraints": [
+    ">=4.12",
+    ">=4.13"
+   ],
+   "declared_by": [
+    "CaseStudies/(racine)",
+    "GameTheory/(racine)",
+    "Search/(racine)",
+    "Sudoku/(racine)",
+    "SymbolicAI/SMT",
+    "SymbolicAI/Tweety"
+   ],
+   "resolution": "retenir >=4.13 : c'est la contrainte la plus exigeante, elle satisfait les autres"
+  }
+ ]
+}
