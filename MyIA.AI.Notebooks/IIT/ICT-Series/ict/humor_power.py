@@ -35,8 +35,8 @@ La sixieme lecture (``exact_null_rates``) est la **reference qui ne degrade
 pas** : les lectures par `n` extrapolent en reechantillonnant les 30 paires
 reelles, et ce substitut n'est valide qu'a ``n = 30`` -- au-dela, les
 "paires ajoutees" sont des repetitions, et la queue nulle du substitut se
-degrade (la regle s'ecole sous null dans 0,00 % des cas a 30 paires, contre
-28,6 % a 240). `exact_null_rates` applique le null **exact** de
+degrade (la regle s'ecole sous null dans 0,125 % des cas a 30 paires, contre
+24,6 % a 240). `exact_null_rates` applique le null **exact** de
 l'instrument (retournement de signe intra-paire, aucun re-tirage), qui est la
 seule procedure dont la validite ne depend pas du nombre de paires.
 
