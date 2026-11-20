@@ -97,6 +97,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/sota-verdicts-detail.md](reference/sota-verdicts-detail.md) | SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication |
 | [reference/submodule-maintenance-detail.md](reference/submodule-maintenance-detail.md) | Sous-modules — détail : état vérifié, incidents et mesures datées |
 | [reference/variation-protocol-detail.md](reference/variation-protocol-detail.md) | Protocole de variation — détail, justifications mesurées, incidents fondateurs |
+| [reference/github-access-policy.md](reference/github-access-policy.md) | Politique d'accès GitHub — arbre des usages, quotas et révocation (#27124, proposition) |
 
 ### Outils & méthodologie (docs/reference/)
 
@@ -156,6 +157,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
 | [genai/parametres-par-modele.md](genai/parametres-par-modele.md) | Paramètres servis par modèle — table mesurée par appels réels et garde de cohérence (#20682) |
 | [genai/vibe-coding-workspace-map.md](genai/vibe-coding-workspace-map.md) | Vibe-Coding — Carte des workspaces GenAI |
+| [genai/pt16-sleep-dreaming-pre-enregistrement.md](genai/pt16-sleep-dreaming-pre-enregistrement.md) | Pré-enregistrement PT-16 Sleep/Dreaming — 4 stades (wake/consolidation/dreaming + témoins randomisés) sous SAE officiel Qwen3-1.7B×W32K, gates G1–G5 tri-état (#27376) |
 | [genai/3d-enveloppe-vram-8go.md](genai/3d-enveloppe-vram-8go.md) | Enveloppe GPU de la famille NeRF sur l'étage pionnier 8 Go — pic VRAM et débit mesurés |
 
 ## QuantConnect (docs/qc/)
