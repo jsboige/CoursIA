@@ -17,7 +17,7 @@ en est la mise en étalage.
 
 | # | Carnet | Le geste | Ex-racine |
 |---|--------|----------|-----------|
-| 01 | [Open games et lentilles](Metajeux-01-Open-Games-Lentilles-Python.ipynb) | **Composer** : une représentation locale (lentille) qui modifie le global dont elle est issue — les open games de Hedges et la propriété de composition des équilibres | 18 |
+| 01 | [Open games et lentilles](Metajeux-01-Open-Games-Lentilles-Python.ipynb) · [jumeau C#](Metajeux-01-Open-Games-Lentilles-CSharp.ipynb) | **Composer** : une représentation locale (lentille) qui modifie le global dont elle est issue — les open games de Hedges et la propriété de composition des équilibres | 18 |
 | 02 | [Casser la composition](Metajeux-02-Casser-la-Composition-Python.ipynb) | **Casser** : contre-exemples mesurés à la compositionnalité (sélection multivoque, paiements couplés) et frontière de contraction coïncidant avec la borne de Banach | 18b |
 | 03 | [Abstraction à dette](Metajeux-03-Abstraction-a-Dette-Python.ipynb) | **Abstraire** : résoudre un jeu abstrait plus petit, relever la stratégie, chiffrer l'exploitabilité dans le jeu d'origine — la courbe de dette est le livrable | 19 |
 | 03b | [Co-design bilevel](Metajeux-03b-Bilevel-PPO-Python.ipynb) | **Co-concevoir** : la morphologie du jeu et la politique du joueur s'optimisent l'une l'autre par Stackelberg PPO — extension de la marche 03, hors du chemin linéaire | 19b |
