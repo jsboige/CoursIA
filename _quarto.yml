@@ -1538,6 +1538,7 @@ project:
     - "MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb"
+    - "MyIA.AI.Notebooks/Complexity/Complexity-08d-IndependanceProuvee-BusyBeaver-Covering-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb"
     - "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-Capstone-Python.ipynb"
