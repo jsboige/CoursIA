@@ -18,10 +18,33 @@ Reference : <https://github.com/jamesyc/BusyBeaver/tree/main/PA196>,
 commit `8419afeb6513c2ec5a14d4cbd0d2ade43d5553b0`, licence MIT.
 -/
 
+-- Les temoins ci-dessous sont des `def` a corps constant : le type infere est
+-- l'enonce amont, sans le recopier. Le linter defProp les verrait en
+-- `theorem` -- c'est delibere : l'organe d'axiomes enumere les `def` comme
+-- les `theorem`, et le corps-constant garde chaque temoin synchrone avec
+-- l'amont sans duplication d'enonce.
+set_option linter.defProp false
+
 namespace BusyBeaver
 
-/-- Les quatre theoremes consommes existent et sont ceux de l'amont. -/
-example : True := trivial
+/-- Temoins consommateurs : chaque corps EST la constante amont, le type
+infere est son enonce exact. Les axiomes de chaque temoin sont donc
+exactement ceux du theoreme consomme -- c'est ce que l'organe
+`axiom_check_step.py` mesure quand il evalue ce lake (mode `*`) : il enumere
+ces declarations-ci, dans les sources propres du projet, sans avoir a
+resoudre les modules de la dependance (le basename `Independence.lean`
+existe aussi chez Mathlib, la resolution par fichier serait ambigue). -/
+def witness_machine_nonhalting :=
+  PA196.machine_nonhalting
+
+def witness_nonhalting_unprovable :=
+  PA196.Arithmetic.nonhalting_unprovable
+
+def witness_halting_unprovable :=
+  PA196.Arithmetic.halting_unprovable
+
+def witness_two_sided_independence :=
+  PA196.Arithmetic.two_sided_independence
 
 end BusyBeaver
 
