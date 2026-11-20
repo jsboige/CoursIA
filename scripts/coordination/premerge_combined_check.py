@@ -81,6 +81,12 @@ INTEGRITY_TESTS: tuple[str, ...] = (
     "scripts/lean/tests/test_lean_theorem_duplicates.py",
     "scripts/tests/test_guard_gauntlet.py",
     "scripts/tests/test_heal_worktree_action.py",
+    # #26364 T0 -- le cliquet de taille des scripts lit le depot ENTIER : il
+    # echoue des qu'un fichier epingle change d'une ligne, dans un sens comme
+    # dans l'autre. Joue sur l'arbre fusionne, il retient la PR qui n'a pas
+    # ajuste son plafond -- au lieu de la merger et de rougir `main`
+    # (mesure du 2026-11-14 : 7 PRs ouvertes touchaient un fichier epingle).
+    "scripts/tests/test_script_size_ratchet.py",
 )
 
 DEFAULT_TIMEOUT_S = 600

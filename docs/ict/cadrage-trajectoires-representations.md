@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — Cadrage « trajectoires de représentations » : le pivot états → représentations (N2)
 
 > **Statut.** Document de cadrage, grade **C-documentaire** (positionnement, pas de nouveau

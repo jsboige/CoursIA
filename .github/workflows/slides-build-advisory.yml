@@ -128,12 +128,15 @@ jobs:
     # 2026-10-28 (#23053 famille (c), lane myia-ai-01:CoursIA-2) : forme hybride
     # de debordement CI (#22937/#22944/#23016). PR meme-depot ET
     # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
-    # (variable absente ou fausse, forks, nocturne) retombe sur ubuntu-latest.
+    # (variable absente ou fausse, forks, nocturne) retombe sur ubuntu-24.04
+    # (pinné le 18/11, #27194 : le rollout d'Ubuntu 26.04 sur ubuntu-latest
+    # casse l'install de playwright-chromium, que ce job installe — même
+    # famille que le retrait de Python 3.9, #27184/#27186).
     # La garde same-repo vit dans l'expression elle-meme : c'est la forme
     # hybride acceptee par l'organe, et le `if:` ci-dessous reste inchange.
     # Bascule : `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo
     # jsboige/CoursIA`. Retour arriere = variable a `false` ou supprimee.
-    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-24.04' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Newly blocking on the PR leg, so it must not be able to hang one: the
     # worst case is a cold `npm ci` (~12 min, #15835 body) plus one build per
