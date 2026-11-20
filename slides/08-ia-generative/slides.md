@@ -57,12 +57,12 @@ class: nb-map nb-k92
 <p class="nb-lead">Ce diaporama survole toute la série <code>GenAI</code> du dépôt CoursIA. Chaque planche renvoie au notebook où le concept se manipule ; chaque séance se prépare par un exercice de notebook corrigé, soumis par pull request.</p>
 
 <div class="nb-grid nb-cols-3">
-<div class="nb-card"><p class="nb-step">Texte et conversation</p><p class="nb-what">Prompts, sorties structurées, outils, raisonnement, production, plateformes conversationnelles. 80 notebooks : <code>Texte</code>, <code>Plateformes-Conversationnelles</code>.</p></div>
-<div class="nb-card"><p class="nb-step">Recherche et mémoire</p><p class="nb-what">Tokens, embeddings, index vectoriels, RAG, citations, mémoire d’agent. 18 notebooks : <code>RAG-et-Memoire-Semantique</code>.</p></div>
-<div class="nb-card"><p class="nb-step">Orchestration et agents</p><p class="nb-what">Semantic Kernel, MCP, agents de code, pile .NET, études de cas. 55 notebooks : <code>SemanticKernel</code>, <code>Vibe-Coding</code>, <code>Integrations-DotNet</code>, <code>CaseStudies</code>.</p></div>
-<div class="nb-card"><p class="nb-step">Image, audio, vidéo, 3D</p><p class="nb-what">Diffusion, édition, voix, musique, vidéo, NeRF et gaussiennes. 110 notebooks : <code>Image</code>, <code>Audio</code>, <code>Video</code>, <code>3D</code>.</p></div>
-<div class="nb-card"><p class="nb-step">Entraînement et adaptation</p><p class="nb-what">LoRA, QLoRA, préférences, récompenses vérifiables, interprétabilité. 38 notebooks : <code>FineTuning</code>, <code>PostTraining</code>.</p></div>
-<div class="nb-card"><p class="nb-step">Données, sécurité, environnement</p><p class="nb-what">Jeux de données, red team et supervision, installation du poste. 22 notebooks : <code>FallacyDetection</code>, <code>HumorDetection</code>, <code>Security</code>, <code>00-GenAI-Environment</code>.</p></div>
+<div class="nb-card"><p class="nb-step">Texte et conversation</p><p class="nb-what">Prompts, sorties structurées, outils, raisonnement, production, plateformes conversationnelles. Dossiers : <code>Texte</code>, <code>Plateformes-Conversationnelles</code>.</p></div>
+<div class="nb-card"><p class="nb-step">Recherche et mémoire</p><p class="nb-what">Tokens, embeddings, index vectoriels, RAG, citations, mémoire d’agent. Dossiers : <code>RAG-et-Memoire-Semantique</code>.</p></div>
+<div class="nb-card"><p class="nb-step">Orchestration et agents</p><p class="nb-what">Semantic Kernel, MCP, agents de code, pile .NET, études de cas. Dossiers : <code>SemanticKernel</code>, <code>Vibe-Coding</code>, <code>Integrations-DotNet</code>, <code>CaseStudies</code>.</p></div>
+<div class="nb-card"><p class="nb-step">Image, audio, vidéo, 3D</p><p class="nb-what">Diffusion, édition, voix, musique, vidéo, NeRF et gaussiennes. Dossiers : <code>Image</code>, <code>Audio</code>, <code>Video</code>, <code>3D</code>.</p></div>
+<div class="nb-card"><p class="nb-step">Entraînement et adaptation</p><p class="nb-what">LoRA, QLoRA, préférences, récompenses vérifiables, interprétabilité. Dossiers : <code>FineTuning</code>, <code>PostTraining</code>.</p></div>
+<div class="nb-card"><p class="nb-step">Données, sécurité, environnement</p><p class="nb-what">Jeux de données, red team et supervision, installation du poste. Dossiers : <code>FallacyDetection</code>, <code>HumorDetection</code>, <code>Security</code>, <code>00-GenAI-Environment</code>.</p></div>
 </div>
 
 <p class="nb-foot"><strong>Mode d’emploi.</strong> Les liens en bas de carte ouvrent le notebook sur GitHub ; « À observer » donne la question à trancher en l’exécutant.</p>
