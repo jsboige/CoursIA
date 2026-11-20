@@ -32,6 +32,7 @@ import argparse
 import contextlib
 import http.server
 import json
+import re
 import socket
 import socketserver
 import threading
@@ -39,12 +40,97 @@ import time
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Sequence
 
+# Un chemin de machine ou un port ephemere dans une preuve publique, c'est
+# l'etat de la machine qui a produit la mesure, pas la mesure. Les purges
+# ci-dessous sont appliquees au moment de l'ecriture du rapport.
+PORT_LOCAL = re.compile(r"(?:127\.0\.0\.1|localhost|\[::1\]):\d+")
+NOYAU = re.compile(r"ws://[^\s/]+/api/kernels/[0-9a-fA-F-]+")
+UUID = re.compile(
+    r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+)
+
 
 class QuietHandler(http.server.SimpleHTTPRequestHandler):
     """Serveur HTTP sans journal (le journal polluerait la mesure)."""
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002
         return
+
+
+def racine_depot() -> Path:
+    """Racine du depot, deduite de l'emplacement du script."""
+    return Path(__file__).resolve().parents[2]
+
+
+def chemin_relatif(chemin: Path, racine: Path) -> str:
+    """Chemin exprime depuis la racine du depot, en POSIX.
+
+    Un site construit hors du clone (le cas habituel : le site est un
+    artefact de travail, pas une versionnee) est reduit au nom de son
+    dossier : la preuve ne doit jamais porter l'arborescence de la machine
+    qui l'a produite.
+    """
+    try:
+        return chemin.resolve().relative_to(racine.resolve()).as_posix()
+    except ValueError:
+        return chemin.resolve().name
+
+
+def rediger(ligne: str) -> str:
+    """Retire les ports locaux et les identifiants de noyau d'une ligne de journal."""
+    ligne = NOYAU.sub("ws://<hote>/api/kernels/<id>", ligne)
+    ligne = PORT_LOCAL.sub("<hote-local>", ligne)
+    ligne = UUID.sub("<uuid>", ligne)
+    return ligne
+
+
+def filtrer_console(journal: Sequence[str]) -> List[str]:
+    """Ne garde que les erreurs et les avertissements, expurges.
+
+    Le journal complet du navigateur est un bruit de chantier : il porte
+    les ports du serveur local et les identifiants de noyau, qui sont des
+    etats de la machine, pas de la preuve d'execution.
+    """
+    garde: List[str] = []
+    for entree in journal:
+        typ = entree.split(":", 1)[0].strip().lower()
+        if typ not in ("error", "warning", "warn"):
+            continue
+        garde.append(rediger(entree))
+    return garde
+
+
+def url_de_page(nom: str) -> str:
+    """URL de la page servie, sans l'hote ni le port de la machine."""
+    return "/lab/index.html?path=%s" % nom
+
+
+def lire_lot(chemin: Path) -> List[Dict[str, Any]]:
+    """Carnets d'un fichier de lot (JSON), dans l'ordre du lot."""
+    with open(chemin, encoding="utf-8") as fh:
+        lot = json.load(fh)
+    return list(lot["carnets"])
+
+
+def agreger(resultats: Sequence[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Une ligne de synthese par carnet.
+
+    Le rapport et le JSON portent la meme synthese : elle est calculee une
+    seule fois, ici, et les deux la consomment.
+    """
+    lignes: List[Dict[str, Any]] = []
+    for r in resultats:
+        lignes.append({
+            "carnet": r.get("carnet", ""),
+            "cellules_code": r.get("cellules_code", 0),
+            "cellules_executees": r.get("cellules_executees", 0),
+            "cellules_avec_sortie": r.get("cellules_avec_sortie", 0),
+            "erreurs": len(r.get("erreurs", [])),
+            "duree_s": r.get("duree_s", 0),
+            "temps_premier_resultat_s": r.get("temps_premier_resultat_s"),
+            "succes": bool(r.get("succes")),
+        })
+    return lignes
 
 
 @contextlib.contextmanager
@@ -109,7 +195,9 @@ def run_one(page: Any, base_url: str, name: str, timeout_s: int) -> Dict[str, An
     url = "%s/lab/index.html?path=%s" % (base_url, name)
     result: Dict[str, Any] = {
         "carnet": name,
-        "url": url,
+        # l'URL publique est relative : le port du serveur local est un
+        # etat ephemere de la machine, pas une donnee de la mesure
+        "url": url_de_page(name),
         "succes": False,
         "cellules": [],
         "erreurs": [],
@@ -177,12 +265,12 @@ def render_markdown(results: List[Dict[str, Any]]) -> str:
     lines.append("")
     lines.append("| Carnet | Cellules code | Cellules executees | Cellules avec sortie | Erreurs | Duree (s) | Premier resultat (s) | Verdict |")
     lines.append("|---|---:|---:|---:|---:|---:|---:|---|")
-    for r in results:
-        verdict = "succes" if r.get("succes") else "echec"
+    for ligne in agreger(results):
+        verdict = "succes" if ligne["succes"] else "echec"
         lines.append("| `%s` | %s | %s | %s | %s | %s | %s | **%s** |" % (
-            r["carnet"], r.get("cellules_code", 0), r.get("cellules_executees", 0),
-            r.get("cellules_avec_sortie", 0), len(r.get("erreurs", [])),
-            r.get("duree_s", 0), r.get("temps_premier_resultat_s"), verdict))
+            ligne["carnet"], ligne["cellules_code"], ligne["cellules_executees"],
+            ligne["cellules_avec_sortie"], ligne["erreurs"],
+            ligne["duree_s"], ligne["temps_premier_resultat_s"], verdict))
     lines.append("")
     for r in results:
         lines.append("## `%s`" % r["carnet"])
@@ -217,9 +305,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(args.lot, encoding="utf-8") as fh:
-        lot = json.load(fh)
-    names = [Path(c["path"]).name for c in lot["carnets"]]
+    names = [Path(c["path"]).name for c in lire_lot(Path(args.lot))]
 
     from playwright.sync_api import sync_playwright
 
@@ -267,10 +353,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
             browser.close()
 
     payload = {
-        "site": str(site),
+        # le site est un artefact de travail : on note son chemin par
+        # rapport au depot (ou son seul nom), jamais l'arborescence de la
+        # machine qui l'a construit
+        "site": chemin_relatif(site, racine_depot()),
         "navigateur": "chromium (playwright, headless)",
         "noyau": "pyodide (jupyterlite)",
-        "carnets": results,
+        "carnets": [
+            {
+                **r,
+                "url": url_de_page(r.get("carnet", "")),
+                "console": filtrer_console(r.get("console", [])),
+            }
+            for r in results
+        ],
         "succes": sum(1 for r in results if r.get("succes")),
         "total": len(results),
     }

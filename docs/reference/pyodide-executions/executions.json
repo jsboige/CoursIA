@@ -106,30 +106,15 @@
    "cellules_executees": 6,
    "cellules_rendues": 16,
    "console": [
-    "info: Registering new JupyterLite ServiceWorker http://127.0.0.1:52455/service-worker.js?enableCache=false",
-    "info: JupyterLite ServiceWorker was successfully registered",
     "warning: Disabling terminals plugin because they are not available on the server",
-    "warning: No exact match found for python, using kernel python that matches language=python",
-    "info: Pyodide contents will be synced with Jupyter Contents",
-    "debug: Starting WebSocket: ws://127.0.0.1:52455/api/kernels/4d5e6564-2c8e-42f3-882c-5cbd052705f6",
-    "log: Loading micropip",
-    "log: Loaded micropip",
-    "log: Loading Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loaded Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loading jedi, parso",
-    "log: Loaded jedi, parso",
-    "log: six already loaded from default channel",
-    "log: Loading Pillow, contourpy, cycler, fonttools, kiwisolver, matplotlib, numpy, packaging, pyparsing, python-dateutil, pytz",
-    "log: Loaded Pillow, contourpy, cycler, fonttools, kiwisolver, matplotlib, numpy, packaging, pyparsing, python-dateutil, pytz",
-    "log: Pillow already loaded from default channel",
-    "log: No new packages to load"
+    "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 53.6,
+   "duree_s": 26.9,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 6.8,
-   "url": "http://127.0.0.1:52455/lab/index.html?path=10-SIG-3D-Tiles-Python.ipynb"
+   "temps_premier_resultat_s": 7.2,
+   "url": "/lab/index.html?path=10-SIG-3D-Tiles-Python.ipynb"
   },
   {
    "capture": "AgentSystems-02-Perception-Active-Valeur-Information-Python.png",
@@ -249,25 +234,15 @@
    "cellules_executees": 6,
    "cellules_rendues": 18,
    "console": [
-    "info: Registering new JupyterLite ServiceWorker http://127.0.0.1:52455/service-worker.js?enableCache=false",
-    "info: JupyterLite ServiceWorker was successfully registered",
     "warning: Disabling terminals plugin because they are not available on the server",
-    "warning: No exact match found for python, using kernel python that matches language=python",
-    "info: Pyodide contents will be synced with Jupyter Contents",
-    "debug: Starting WebSocket: ws://127.0.0.1:52455/api/kernels/3f6f981e-01bb-45f9-aa77-525107df0420",
-    "log: Loading micropip",
-    "log: Loaded micropip",
-    "log: Loading Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loaded Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loading jedi, parso",
-    "log: Loaded jedi, parso"
+    "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 43.0,
+   "duree_s": 16.0,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 6.8,
-   "url": "http://127.0.0.1:52455/lab/index.html?path=AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb"
+   "temps_premier_resultat_s": 7.0,
+   "url": "/lab/index.html?path=AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb"
   },
   {
    "capture": "Quotients-Fibres-Recollement-Python.png",
@@ -429,27 +404,15 @@
    "cellules_executees": 9,
    "cellules_rendues": 25,
    "console": [
-    "info: Registering new JupyterLite ServiceWorker http://127.0.0.1:52455/service-worker.js?enableCache=false",
-    "info: JupyterLite ServiceWorker was successfully registered",
     "warning: Disabling terminals plugin because they are not available on the server",
-    "warning: No exact match found for python, using kernel python that matches language=python",
-    "info: Pyodide contents will be synced with Jupyter Contents",
-    "debug: Starting WebSocket: ws://127.0.0.1:52455/api/kernels/9e2b5478-eb3a-4c0c-a3f7-82fecc93a9aa",
-    "log: Loading micropip",
-    "log: Loaded micropip",
-    "log: Loading Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loaded Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loading jedi, parso",
-    "log: Loaded jedi, parso",
-    "log: Loading numpy, scipy",
-    "log: Loaded numpy, scipy"
+    "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 62.5,
+   "duree_s": 23.7,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 6.7,
-   "url": "http://127.0.0.1:52455/lab/index.html?path=Quotients-Fibres-Recollement-Python.ipynb"
+   "temps_premier_resultat_s": 7.0,
+   "url": "/lab/index.html?path=Quotients-Fibres-Recollement-Python.ipynb"
   },
   {
    "capture": "Argumentation-01-Toulmin-Model-Python.png",
@@ -575,25 +538,15 @@
    "cellules_executees": 7,
    "cellules_rendues": 19,
    "console": [
-    "info: Registering new JupyterLite ServiceWorker http://127.0.0.1:52455/service-worker.js?enableCache=false",
-    "info: JupyterLite ServiceWorker was successfully registered",
     "warning: Disabling terminals plugin because they are not available on the server",
-    "warning: No exact match found for python, using kernel python that matches language=python",
-    "info: Pyodide contents will be synced with Jupyter Contents",
-    "debug: Starting WebSocket: ws://127.0.0.1:52455/api/kernels/aa7d7f7b-53d3-4e22-9b57-4ce57b3505c8",
-    "log: Loading micropip",
-    "log: Loaded micropip",
-    "log: Loading Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loaded Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loading jedi, parso",
-    "log: Loaded jedi, parso"
+    "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 24.9,
+   "duree_s": 22.1,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 6.8,
-   "url": "http://127.0.0.1:52455/lab/index.html?path=Argumentation-01-Toulmin-Model-Python.ipynb"
+   "temps_premier_resultat_s": 7.0,
+   "url": "/lab/index.html?path=Argumentation-01-Toulmin-Model-Python.ipynb"
   },
   {
    "capture": "06-3-AudioDiffusion-Comparison-A-vs-B.png",
@@ -707,30 +660,20 @@
    "cellules_executees": 1,
    "cellules_rendues": 17,
    "console": [
-    "info: Registering new JupyterLite ServiceWorker http://127.0.0.1:52455/service-worker.js?enableCache=false",
-    "info: JupyterLite ServiceWorker was successfully registered",
     "warning: Disabling terminals plugin because they are not available on the server",
-    "warning: No exact match found for python, using kernel python that matches language=python",
-    "info: Pyodide contents will be synced with Jupyter Contents",
-    "debug: Starting WebSocket: ws://127.0.0.1:52455/api/kernels/4626a12a-415a-4a01-98e4-e6a49e463ff0",
-    "log: Loading micropip",
-    "log: Loaded micropip",
-    "log: Loading Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loaded Pygments, asttokens, decorator, executing, ipython, matplotlib-inline, prompt_toolkit, pure-eval, six, stack-data, traitlets, wcwidth",
-    "log: Loading jedi, parso",
-    "log: Loaded jedi, parso"
+    "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 25.0,
+   "duree_s": 17.6,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 6.9,
-   "url": "http://127.0.0.1:52455/lab/index.html?path=06-3-AudioDiffusion-Comparison-A-vs-B.ipynb"
+   "temps_premier_resultat_s": 7.0,
+   "url": "/lab/index.html?path=06-3-AudioDiffusion-Comparison-A-vs-B.ipynb"
   }
  ],
  "navigateur": "chromium (playwright, headless)",
  "noyau": "pyodide (jupyterlite)",
- "site": "D:\\CoursIA-2\\.tmp\\lite-site\\_output",
+ "site": ".tmp/lite-site/_output",
  "succes": 5,
  "total": 5
 }

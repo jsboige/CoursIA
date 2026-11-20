@@ -10,15 +10,15 @@ de `[ ]:` a `[n]:`.
 
 | Carnet | Cellules code | Cellules executees | Cellules avec sortie | Erreurs | Duree (s) | Premier resultat (s) | Verdict |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `10-SIG-3D-Tiles-Python.ipynb` | 6 | 6 | 6 | 0 | 53.6 | 6.8 | **succes** |
-| `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 3 | 0 | 43.0 | 6.8 | **succes** |
-| `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 9 | 0 | 62.5 | 6.7 | **succes** |
-| `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 7 | 0 | 24.9 | 6.8 | **succes** |
-| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 1 | 0 | 25.0 | 6.9 | **succes** |
+| `10-SIG-3D-Tiles-Python.ipynb` | 6 | 6 | 6 | 0 | 26.9 | 7.2 | **succes** |
+| `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 3 | 0 | 16.0 | 7.0 | **succes** |
+| `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 9 | 0 | 23.7 | 7.0 | **succes** |
+| `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 7 | 0 | 22.1 | 7.0 | **succes** |
+| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 1 | 0 | 17.6 | 7.0 | **succes** |
 
 ## `10-SIG-3D-Tiles-Python.ipynb`
 
-Verdict : **succes** · cellules executees 6/6 · duree 53.6 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 6/6 · duree 26.9 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 1 (`[1]:`)
 
@@ -64,7 +64,7 @@ Exercice à compléter
 
 ## `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb`
 
-Verdict : **succes** · cellules executees 6/6 · duree 43.0 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 6/6 · duree 16.0 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 3 (`[1]:`)
 
@@ -97,7 +97,7 @@ POLITIQUE NAIVE
 
 ## `Quotients-Fibres-Recollement-Python.ipynb`
 
-Verdict : **succes** · cellules executees 9/9 · duree 62.5 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 9/9 · duree 23.7 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 2 (`[1]:`)
 
@@ -191,7 +191,7 @@ Exercice 3 a completer : voir la cellule precedente pour les etapes
 
 ## `Argumentation-01-Toulmin-Model-Python.ipynb`
 
-Verdict : **succes** · cellules executees 7/7 · duree 24.9 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 7/7 · duree 22.1 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 3 (`[1]:`)
 
@@ -290,7 +290,7 @@ Exercice 3 a completer.
 
 ## `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb`
 
-Verdict : **succes** · cellules executees 1/1 · duree 25.0 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 1/1 · duree 17.6 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 8 (`[1]:`)
 
