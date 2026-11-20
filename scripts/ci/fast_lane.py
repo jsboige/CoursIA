@@ -44,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # bloc ci-dessous : les tranches voisines sont modifiees par d'autres PRs en
 # vol, et un bloc reecrit fusionne moins bien qu'un ajout de ligne eloigne.
 from fast_lane_registry import TRANCHE51  # noqa: E402
+from fast_lane_registry import TRANCHE52  # noqa: E402  # #27231, meme motif
 
 from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
@@ -54,7 +55,7 @@ from fast_lane_registry import (  # noqa: E402
     TRANCHE33, TRANCHE34, TRANCHE35, TRANCHE36, TRANCHE37, TRANCHE38,
     TRANCHE39, TRANCHE40, TRANCHE41, TRANCHE42, TRANCHE43,
     TRANCHE44, TRANCHE45, TRANCHE46, TRANCHE47, TRANCHE48, TRANCHE49,
-    TRANCHE50, Guard,
+    TRANCHE50, RISK_KERNEL_GUARDS, Guard,
 )
 import advisory_sticky  # noqa: E402  # organe partage (#24514, comme #24441)
 
@@ -894,7 +895,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"[fast-lane] {len(changed)} fichier(s) modifie(s) "
           f"contre {args.base_ref}")
 
-    guards = [g for g in PILOT + TRANCHE51
+    guards = [g for g in PILOT + TRANCHE51 + TRANCHE52
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
@@ -904,7 +905,7 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE31 + TRANCHE32 + TRANCHE33 + TRANCHE34 + TRANCHE35
               + TRANCHE36 + TRANCHE37 + TRANCHE38 + TRANCHE39 + TRANCHE40 + TRANCHE41
               + TRANCHE42 + TRANCHE43 + TRANCHE44 + TRANCHE45 + TRANCHE46 + TRANCHE47
-              + TRANCHE48 + TRANCHE49 + TRANCHE50
+              + TRANCHE48 + TRANCHE49 + TRANCHE50 + RISK_KERNEL_GUARDS
               if not args.only or g.name == args.only]
     if args.effects:
         guards = [g for g in guards if g.commenters]
