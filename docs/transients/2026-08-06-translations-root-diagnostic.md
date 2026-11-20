@@ -182,7 +182,7 @@ Si la décision user penche différemment (option B ou C), ce diagnostic fournit
 ## 7. Cross-références
 
 - [scripts/translation/README.md](../../scripts/translation/README.md) — référence opérationnelle T1/T2/T3.
-- [docs/translation/argumentum-fork-mapping.md](argumentum-fork-mapping.md) — fork T3, OUVERTE par décision coord.
+- [docs/translation/argumentum-fork-mapping.md](../translation/argumentum-fork-mapping.md) — fork T3, OUVERTE par décision coord.
 - [docs/transients/2026-07-19-epic-4957-status.md](../transients/2026-07-19-epic-4957-status.md) — Phase 1 LIVRÉE, Phase 2 rollout via PRs filles.
 - [Issue #6949](https://github.com/jsboige/CoursIA/issues/6949) — T3 moteur + doctrine c.31 « pas de resync-only ».
 - [Issue #4957](https://github.com/jsboige/CoursIA/issues/4957) — Epic infra synchro, CLOSED.
