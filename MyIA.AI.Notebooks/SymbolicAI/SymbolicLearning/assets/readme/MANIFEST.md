@@ -6,7 +6,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 **Audit juillet 2026 (PR #5780, doctrine corrigée)** : conformément à la doctrine « pas de Galerie, légende = ce que l'image MONTRE, choisir figure distinctive ou renoncer », trois figures ont été retirées du README :
 
-- `sl6-modernilp.png` (cellule 18 de SL-6) ne montrait qu'une seule courbe dILP alors que le contexte du README parle de quatre moteurs ILP comparés. Légende factuellement fausse → figure retirée (doctrine « renoncer »).
+- `sl6-modernilp.png` (cellule 18 de SL-06) ne montrait qu'une seule courbe dILP alors que le contexte du README parle de quatre moteurs ILP comparés. Légende factuellement fausse → figure retirée (doctrine « renoncer »).
 - `sl10-angluin-lstar.png` (cellule 39 de SL-10) montrait l'agrégation bayésienne de preuves, pas l'automate minimal de Myhill-Nerode. Légende misleading → figure remplacée par le rendu mermaid de l'automate cible à 4 états (voir ci-dessous).
 - `sl12-difflogic.png` (cellule 11 de SL-12) montrait des courbes d'entraînement MNIST génériques, pas le circuit booléen discrétisé. Légende misleading → figure retirée (doctrine « renoncer », le circuit exact nécessite la ré-exécution de l'environnement difflogic).
 

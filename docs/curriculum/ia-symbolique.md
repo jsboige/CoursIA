@@ -397,8 +397,8 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [SL-1 - Apprentissage Logique : CBH Search et Version…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-CSharp.ipynb) | BETA | Oui |
-| 2 | [SL-1 - Apprentissage Logique : CBH Search et Version…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb) | BETA | Oui |
+| 1 | [SL-01 - Apprentissage Logique : CBH Search et Version…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-CSharp.ipynb) | BETA | Oui |
+| 2 | [SL-01 - Apprentissage Logique : CBH Search et Version…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb) | BETA | Oui |
 | 3 | [SL-10 --- Apprentissage Actif d'Automates (L*…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-CSharp.ipynb) | BETA | Oui |
 | 4 | [SL-10 --- Apprentissage Actif d'Automates (L*…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Python.ipynb) | BETA | Oui |
 | 5 | [SL-11 --- Capstone : un pipeline neuro-symbolique de…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic-Python.ipynb) | BETA | Non |
@@ -409,21 +409,21 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 10 | [SL-13b : TPR x SAE — deux lectures des mêmes états…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE-Python.ipynb) | BETA | Non |
 | 11 | [SL-14 — AI Feynman : découvrir des équations](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations-Python.ipynb) | BETA | Non |
 | 12 | [SL-15 — Conjectures apprises pour un vérificateur…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver-Python.ipynb) | BETA | Oui |
-| 13 | [SL-1b — Apprentissage PAC formellement : le lake…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01b-LogicalLearning-Lean.ipynb) | BETA | Non |
-| 14 | [SL-2 - Apprentissage et Connaissance : EBL & RBL (C#)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-02-KnowledgeBasedLearning-CSharp.ipynb) | ALPHA | Oui |
-| 15 | [SL-2 --- Apprentissage et Connaissance (EBL & RBL)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-02-KnowledgeBasedLearning-Python.ipynb) | BETA | Oui |
-| 16 | [SL-3 — Apprentissage basé sur la pertinence (twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-03-RelevanceLearning-CSharp.ipynb) | BETA | Oui |
-| 17 | [SL-3 --- Apprentissage Base sur la Pertinence (RBL…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-03-RelevanceLearning-Python.ipynb) | BETA | Oui |
-| 18 | [SL-4 — Programmation Logique Inductive (ILP) — Twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-CSharp.ipynb) | BETA | Oui |
-| 19 | [SL-4 --- Programmation Logique Inductive (ILP)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-Python.ipynb) | BETA | Non |
-| 20 | [SL-5 - Resolution Inverse & ILP (C#)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-05-InverseResolution-CSharp.ipynb) | ALPHA | Oui |
-| 21 | [SL-5 --- Resolution Inverse et Progol (ILP bottom-up)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-05-InverseResolution-Python.ipynb) | BETA | Oui |
-| 22 | [SL-6 (C#) : Moteurs ILP modernes — apprendre des…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-06-ModernILP-CSharp.ipynb) | BETA | Oui |
-| 23 | [SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-06-ModernILP-Python.ipynb) | BETA | Non |
-| 24 | [SL-7 : Integration Neuro-Symbolique](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-07-NeuroSymbolic-Python.ipynb) | BETA | Non |
-| 25 | [SL-8 (C#) : ILP Moderne et Knowledge Graphs](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-08-KnowledgeGraphs-ILP-CSharp.ipynb) | BETA | Oui |
-| 26 | [SL-8 - ILP Moderne et Knowledge Graphs](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-08-KnowledgeGraphs-ILP-Python.ipynb) | BETA | Oui |
-| 27 | [SL-9 - LLMs et Apprentissage Symbolique : Generation et…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-09-LLM-SymbolicLearning-Python.ipynb) | BETA | Non |
+| 13 | [SL-01b — Apprentissage PAC formellement : le lake…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01b-LogicalLearning-Lean.ipynb) | BETA | Non |
+| 14 | [SL-02 - Apprentissage et Connaissance : EBL & RBL (C#)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-02-KnowledgeBasedLearning-CSharp.ipynb) | ALPHA | Oui |
+| 15 | [SL-02 --- Apprentissage et Connaissance (EBL & RBL)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-02-KnowledgeBasedLearning-Python.ipynb) | BETA | Oui |
+| 16 | [SL-03 — Apprentissage basé sur la pertinence (twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-03-RelevanceLearning-CSharp.ipynb) | BETA | Oui |
+| 17 | [SL-03 --- Apprentissage Base sur la Pertinence (RBL…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-03-RelevanceLearning-Python.ipynb) | BETA | Oui |
+| 18 | [SL-04 — Programmation Logique Inductive (ILP) — Twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-CSharp.ipynb) | BETA | Oui |
+| 19 | [SL-04 --- Programmation Logique Inductive (ILP)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-Python.ipynb) | BETA | Non |
+| 20 | [SL-05 - Resolution Inverse & ILP (C#)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-05-InverseResolution-CSharp.ipynb) | ALPHA | Oui |
+| 21 | [SL-05 --- Resolution Inverse et Progol (ILP bottom-up)](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-05-InverseResolution-Python.ipynb) | BETA | Oui |
+| 22 | [SL-06 (C#) : Moteurs ILP modernes — apprendre des…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-06-ModernILP-CSharp.ipynb) | BETA | Oui |
+| 23 | [SL-06 --- Moteurs ILP modernes : Aleph, Metagol, Popper…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-06-ModernILP-Python.ipynb) | BETA | Non |
+| 24 | [SL-07 : Integration Neuro-Symbolique](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-07-NeuroSymbolic-Python.ipynb) | BETA | Non |
+| 25 | [SL-08 (C#) : ILP Moderne et Knowledge Graphs](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-08-KnowledgeGraphs-ILP-CSharp.ipynb) | BETA | Oui |
+| 26 | [SL-08 - ILP Moderne et Knowledge Graphs](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-08-KnowledgeGraphs-ILP-Python.ipynb) | BETA | Oui |
+| 27 | [SL-09 - LLMs et Apprentissage Symbolique : Generation et…](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-09-LLM-SymbolicLearning-Python.ipynb) | BETA | Non |
 
 ## SymbolicAI/Tweety (39 notebooks)
 

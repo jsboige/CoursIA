@@ -158,9 +158,9 @@ contenu — et sa durée catalogue.
 - Le critère de succès de l'EPIC — « un apprenant qui suit le parcours dans l'ordre peut
   compléter chacun des notebooks référencés avec ses prérequis satisfaits » — a été vérifié
   étape par étape sur les sections Prérequis **réelles** des carnets, pas déduit des
-  numérotations. C'est ce critère qui a **exclu** des candidats naturels : `SL-9`
-  (boucle LLM-vérification) suppose SL-1 à SL-4 complets, `SL-11` (capstone neuro-symbolique)
-  suppose SL-1 à SL-10, `Lean-07`/`Lean-08` (preuve à l'ère des LLMs) supposent Lean-1 à
+  numérotations. C'est ce critère qui a **exclu** des candidats naturels : `SL-09`
+  (boucle LLM-vérification) suppose SL-01 à SL-04 complets, `SL-11` (capstone neuro-symbolique)
+  suppose SL-01 à SL-10, `Lean-07`/`Lean-08` (preuve à l'ère des LLMs) supposent Lean-1 à
   Lean-6 — les inclure aurait exigé d'embarquer 4 à 7 h de fondations et cassé la promesse
   d'un parcours d'une journée. Ils sont en prolongements, avec leur prérequis annoncé.
 - Les trois blocs sont **détachables** : un apprenant qui n'a pas de clé API fait les
@@ -168,10 +168,10 @@ contenu — et sa durée catalogue.
 
 ## Prolongements (ce que ce parcours débloque)
 
-- **SymbolicLearning** — `SL-9` (boucle LLM-vérification symbolique, ~40 min, suppose
-  SL-1 à SL-4 ≈ 3 h), puis `SL-7` (T-norms différentiables, Logic Tensor Networks) et
+- **SymbolicLearning** — `SL-09` (boucle LLM-vérification symbolique, ~40 min, suppose
+  SL-01 à SL-04 ≈ 3 h), puis `SL-07` (T-norms différentiables, Logic Tensor Networks) et
   `SL-11` (capstone : du texte brut aux faits découverts, LLM réel aux deux extrémités,
-  suppose SL-1 à SL-10). Cf [README SymbolicLearning](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/README.md).
+  suppose SL-01 à SL-10). Cf [README SymbolicLearning](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/README.md).
 - **Lean 7-10, la preuve à l'ère des LLMs** — intégration LLM, preuve agentique,
   orchestration multi-agents, LeanDojo (suppose les fondations Lean-1 à Lean-6 ≈ 4 h 30).
   Cf [README Lean](../../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md).
