@@ -159,6 +159,13 @@ def extract_numbers(text: str) -> list[NumToken]:
 
 _HTML_TAG_RE = re.compile(r"<[^>]+>")
 _HTML_ENTITY_RE = re.compile(r"&[a-zA-Z#0-9]+;")
+# Blocs invisibles au lecteur : le contenu de <style>/<script> n'est jamais
+# rendu comme valeur -- un nombre qui n'y vit QUE la ne peut pas ancrer une
+# citation (reserve ai-01 sur la fournee 8 ML-04). Retires ENTIERS, contenu
+# compris, avant le depouillement des balises.
+_HTML_INVISIBLE_RE = re.compile(
+    r"<(style|script)\b[^>]*>.*?</\1\s*>", re.IGNORECASE | re.DOTALL
+)
 
 
 def output_numbers(nb: dict) -> list[NumToken]:
@@ -204,8 +211,11 @@ def output_numbers(nb: dict) -> list[NumToken]:
             for chunk in html_chunks:
                 # Tables riches .NET Interactive : les valeurs vivent dans le
                 # texte des balises (<pre>1.3080861318665928</pre>), pas dans
-                # le balisage -- on lit le texte hors balises.
-                text_only = _HTML_ENTITY_RE.sub(" ", _HTML_TAG_RE.sub(" ", chunk))
+                # le balisage -- on lit le texte hors balises. Les blocs
+                # <style>/<script> sont retires avec leur contenu : leur
+                # texte n'est pas rendu au lecteur (nombres invisibles).
+                visible = _HTML_INVISIBLE_RE.sub(" ", chunk)
+                text_only = _HTML_ENTITY_RE.sub(" ", _HTML_TAG_RE.sub(" ", visible))
                 pool.extend(extract_numbers(text_only))
             for chunk in chunks:
                 pool.extend(extract_numbers(chunk))
@@ -684,7 +694,37 @@ def self_test() -> int:
     if citations(r) != ["0,912"]:
         failures.append(f"controle HTML : {citations(r)}")
 
-    # 15. Semantique ± : « ±0.002 pres » correspond a la sortie signee
+    # 15. Controle nombres INVISIBLES (reserve ai-01, fournee 8 ML-04) : un
+    # nombre qui ne vit que dans un bloc <style> ou <script> n'est pas rendu
+    # au lecteur -- il ne peut pas ancrer la citation. Temoin exact de la
+    # reserve : une sortie HTML dont le seul 0.912 est dans le style.
+    r = analyze_notebook(
+        nb_html(
+            ["### Lecture : R2 de 0,912 sur ce fold"],
+            '<style>.dial { value: 0.912 }</style>'
+            '<table><tr><td>RSquared</td><td><div class="dni-plaintext">'
+            "<pre>0.8785</pre></div></td></tr></table>",
+        ),
+        "t.ipynb",
+    )
+    if citations(r) != ["0,912"]:
+        failures.append(f"controle style invisible : {citations(r)}")
+
+    # Variante <script> : meme temoin, bloc script multi-ligne.
+    r = analyze_notebook(
+        nb_html(
+            ["### Lecture : R2 de 0,912 sur ce fold"],
+            '<script type="text/javascript">\nvar dial = { value: 0.912 };\n'
+            "</script>"
+            '<table><tr><td>RSquared</td><td><div class="dni-plaintext">'
+            "<pre>0.8785</pre></div></td></tr></table>",
+        ),
+        "t.ipynb",
+    )
+    if citations(r) != ["0,912"]:
+        failures.append(f"controle script invisible : {citations(r)}")
+
+    # 16. Semantique ± : « ±0.002 pres » correspond a la sortie signee
     # « +-0.002 pres » (2.11-Regularisation, sweep #27233).
     r = analyze_notebook(
         nb(["### Lecture : ElasticNet suit LASSO a ±0.002 pres"],
@@ -694,7 +734,7 @@ def self_test() -> int:
     if citations(r):
         failures.append(f"semantique ± : {citations(r)}")
 
-    # 16. Controle : magnitude FAUSSE reste un finding (« ±0.003 » vs -0.002).
+    # 17. Controle : magnitude FAUSSE reste un finding (« ±0.003 » vs -0.002).
     r = analyze_notebook(
         nb(["### Lecture : ElasticNet suit LASSO a ±0.003 pres"],
            ["elasticnet suit lasso a +-0.002 pres"]),
@@ -707,7 +747,7 @@ def self_test() -> int:
         for f in failures:
             print(f"SELFTEST FAIL: {f}")
         return 1
-    print("selftest: OK (16 fixtures)")
+    print("selftest: OK (17 fixtures)")
     return 0
 
 
