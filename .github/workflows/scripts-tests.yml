@@ -32,7 +32,7 @@ on:
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
       # #17850 : ce registre est relu par la suite de scripts.
-      - 'arxiv_attributions_registry.yaml'
+      - 'docs/reference/arxiv_attributions_registry.yaml'
       # See the push: block above for why these two are pinned here.
       - '.github/workflows/catalog-cron.yml'
       - '.github/workflows/translation-sync.yml'

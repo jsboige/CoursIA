@@ -31,7 +31,7 @@ from pathlib import Path
 # Previously hard-coded to "d:/Dev/CoursIA/MyIA.AI.Notebooks/Sudoku" which is
 # specific to one Windows workstation. Resolve relative to this file so the
 # script works on any checkout (CI, fellow workers, fresh clone).
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SUDOKU_DIR = REPO_ROOT / "MyIA.AI.Notebooks" / "Sudoku"
 
 

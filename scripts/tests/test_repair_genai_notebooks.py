@@ -1,4 +1,4 @@
-"""Tests for scripts/repair_genai_notebooks.py — pure function unit tests.
+"""Tests for scripts/genai/repair_genai_notebooks.py — pure function unit tests.
 
 Tests cover is_cell_corrupted (corruption detection) and fix_source
 (corruption repair). Both are pure functions with no I/O.
