@@ -3,9 +3,33 @@
 <!-- Genere par scripts/notebook_tools/pyodide_eligibility.py -- ne pas editer a la main. -->
 
 Perimetre : carnets Python suivis par git, hors `_output`, `_en` et `_archive`.
-Census : **1347** carnets Python, **626** eligibles, **721** refuses.
+La famille Python se lit sur la langue declaree (`language_info.name`), le nom du
+noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
+compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
+donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
+Census : **1431** carnets Python, **750** eligibles, **681** refuses.
 
-Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 356 paquets), complete les pure wheels par sonde PyPI (`--probe-pypi`, cache versionne). Regeneration : `python scripts/notebook_tools/pyodide_eligibility.py --format md --out docs/reference/pyodide-eligibilite.md --refus-out docs/reference/pyodide-refus.tsv --pyodide-lock <chemin>/pyodide-lock.json --probe-pypi`.
+Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
+commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
+PyPI (`docs/reference/pyodide-wheel-cache.json`) : la regeneration ci-dessous est entierement hors
+reseau. Un import absent du lock et absent de la bibliotheque standard est
+refuse, sauf si le cache (ou une sonde `--probe-pypi`, acces reseau explicite)
+a constate une roue pure ; sans l'un ni l'autre, le refus est rendu tel quel.
+
+Le lock commite provient du canal `dev` de Pyodide, qui avance : le bump du lock
+est un geste delibere (regenerer puis committer lock, cache et rapport ensemble),
+et un ecart de census entre deux regenerations s'explique d'abord par la
+difference de lock, pas par le critere.
+
+Regeneration (hors reseau, deterministe) :
+
+```bash
+python scripts/notebook_tools/pyodide_eligibility.py --format md \
+  --out docs/reference/pyodide-eligibilite.md \
+  --refus-out docs/reference/pyodide-refus.tsv \
+  --pyodide-lock docs/reference/pyodide-lock.json \
+  --wheel-cache docs/reference/pyodide-wheel-cache.json
+```
 
 ## Critere d'eligibilite
 
@@ -21,13 +45,14 @@ jamais sur une liste maintenue a la main.
 3. **Aucun service reseau** : aucun appel a un hote distant (`http(s)://`), aucun port
    local de service, aucun module client reseau (`requests`, `httpx`, `socket`, ...).
 4. **Tous les imports resolus** : chaque import est soit dans la bibliotheque
-   standard, soit un module local du depot (helper du carnet), soit un paquet present
-   dans `pyodide-lock.json`, soit un paquet PyPI existant en roue pure
-   (`py3-none-any`), installable par `micropip` dans le navigateur.
+   standard, soit un module local du depot (helper du carnet, **paquet inclus** :
+   un dossier porteur d'un `__init__.py` compte comme un module local), soit un
+   paquet present dans `pyodide-lock.json`, soit un paquet PyPI existant en roue
+   pure (`py3-none-any`), installable par `micropip` dans le navigateur.
 
 Le refus porte toujours un motif : `gpu`, `cle`, `reseau` ou `import_absent`.
 
-Lock de reference : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3, 356 paquets).
+Lock de reference : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3, 357 paquets).
 
 Les **noms** des variables d'environnement ne sont pas publies : un nom qui ressemble
 a une cle (`*_API_KEY`) fait echouer le scanner de secrets du depot, alors que le nom
@@ -40,17 +65,17 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Serie | Carnets Python | Eligibles | Refuses | dont GPU | dont cle | dont reseau | dont import absent |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | 00-GenAI-Environment | 7 | 0 | 7 | 1 | 4 | 7 | 1 |
-| 3D | 7 | 2 | 5 | 5 | 0 | 1 | 0 |
+| 3D | 9 | 2 | 7 | 7 | 0 | 1 | 0 |
 | AgentSystems | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | Applications | 10 | 9 | 1 | 1 | 0 | 0 | 1 |
-| ArgumentAnalysis | 38 | 12 | 26 | 1 | 5 | 6 | 20 |
-| Audio | 40 | 2 | 38 | 21 | 20 | 14 | 17 |
+| ArgumentAnalysis | 39 | 19 | 20 | 1 | 6 | 7 | 11 |
+| Audio | 47 | 4 | 43 | 26 | 20 | 17 | 18 |
 | CaseStudies | 4 | 0 | 4 | 0 | 4 | 0 | 0 |
-| Causalite | 8 | 6 | 2 | 1 | 0 | 1 | 0 |
+| Causalite | 12 | 10 | 2 | 1 | 0 | 1 | 0 |
 | Chaines | 11 | 11 | 0 | 0 | 0 | 0 | 0 |
-| Coalitions | 4 | 1 | 3 | 0 | 0 | 0 | 3 |
+| Coalitions | 4 | 2 | 2 | 0 | 0 | 0 | 2 |
 | Constructeur | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| DataScienceWithAgents | 96 | 48 | 48 | 33 | 4 | 2 | 23 |
+| DataScienceWithAgents | 109 | 49 | 60 | 44 | 5 | 3 | 26 |
 | DecisionTheory | 15 | 15 | 0 | 0 | 0 | 0 | 0 |
 | Diagnostic-Medical | 2 | 0 | 2 | 0 | 0 | 0 | 2 |
 | Dynamics | 11 | 10 | 1 | 0 | 1 | 1 | 0 |
@@ -58,19 +83,20 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | FineTuning | 11 | 0 | 11 | 11 | 0 | 0 | 4 |
 | Fondations | 2 | 2 | 0 | 0 | 0 | 0 | 0 |
 | HumorDetection | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
-| ICT-Series | 92 | 6 | 86 | 8 | 1 | 3 | 85 |
-| Image | 33 | 5 | 28 | 7 | 21 | 22 | 5 |
+| ICT-Series | 100 | 88 | 12 | 9 | 1 | 3 | 0 |
+| Image | 33 | 6 | 27 | 7 | 21 | 22 | 4 |
 | InformationQuantique | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | Integrales | 4 | 4 | 0 | 0 | 0 | 0 | 0 |
 | Jauge | 4 | 3 | 1 | 1 | 0 | 0 | 0 |
-| Lean | 122 | 105 | 17 | 1 | 3 | 4 | 11 |
+| Lean | 125 | 107 | 18 | 1 | 5 | 4 | 11 |
 | ML-Training-Pipeline | 18 | 17 | 1 | 0 | 0 | 0 | 1 |
-| ML.Net | 13 | 12 | 1 | 0 | 0 | 0 | 1 |
-| Metajeux | 6 | 5 | 1 | 0 | 0 | 0 | 1 |
-| MyIA.AI.Notebooks/Complexity | 24 | 20 | 4 | 0 | 0 | 0 | 4 |
+| ML.Net | 14 | 12 | 2 | 1 | 0 | 0 | 2 |
+| Metajeux | 7 | 5 | 2 | 1 | 0 | 0 | 1 |
+| MyIA.AI.Notebooks/Complexity | 26 | 25 | 1 | 0 | 0 | 0 | 1 |
 | MyIA.AI.Notebooks/Compression | 12 | 11 | 1 | 1 | 0 | 0 | 0 |
-| MyIA.AI.Notebooks/GameTheory | 65 | 53 | 12 | 2 | 3 | 3 | 8 |
-| MyIA.AI.Notebooks/NLP | 8 | 6 | 2 | 0 | 0 | 0 | 2 |
+| MyIA.AI.Notebooks/GameTheory | 70 | 58 | 12 | 2 | 3 | 3 | 8 |
+| MyIA.AI.Notebooks/IIT | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
+| MyIA.AI.Notebooks/NLP | 11 | 8 | 3 | 0 | 0 | 0 | 3 |
 | MyIA.AI.Notebooks/Probas | 1 | 1 | 0 | 0 | 0 | 0 | 0 |
 | MyIA.AI.Notebooks/RL | 28 | 16 | 12 | 12 | 0 | 0 | 0 |
 | MyIA.AI.Notebooks/Sudoku | 20 | 12 | 8 | 2 | 1 | 1 | 5 |
@@ -83,19 +109,19 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Planification-Oncologie | 2 | 0 | 2 | 2 | 0 | 0 | 2 |
 | Planners | 16 | 8 | 8 | 1 | 2 | 3 | 4 |
 | Plateformes-Conversationnelles | 28 | 8 | 20 | 0 | 19 | 18 | 2 |
-| PostTraining | 19 | 3 | 16 | 12 | 0 | 1 | 8 |
+| PostTraining | 37 | 6 | 31 | 29 | 2 | 1 | 12 |
 | PyMC | 20 | 19 | 1 | 0 | 0 | 0 | 1 |
-| Python | 66 | 19 | 47 | 12 | 3 | 3 | 39 |
-| RAG-et-Memoire-Semantique | 10 | 1 | 9 | 4 | 4 | 5 | 2 |
+| Python | 68 | 19 | 49 | 13 | 4 | 4 | 40 |
+| RAG-et-Memoire-Semantique | 14 | 4 | 10 | 4 | 4 | 5 | 3 |
 | Reseau-Electrique-Intelligent | 2 | 1 | 1 | 0 | 0 | 0 | 1 |
 | SMT | 25 | 1 | 24 | 0 | 0 | 0 | 24 |
 | Security | 9 | 4 | 5 | 2 | 3 | 3 | 0 |
 | SemanticKernel | 18 | 5 | 13 | 0 | 11 | 8 | 3 |
 | SemanticWeb | 15 | 7 | 8 | 0 | 1 | 5 | 3 |
-| SmartContracts | 30 | 11 | 19 | 0 | 3 | 16 | 18 |
+| SmartContracts | 31 | 11 | 20 | 0 | 3 | 17 | 19 |
 | SocialChoice | 11 | 6 | 5 | 0 | 0 | 0 | 5 |
-| SymbolicLearning | 19 | 8 | 11 | 6 | 2 | 2 | 6 |
-| Texte | 46 | 9 | 37 | 16 | 21 | 26 | 10 |
+| SymbolicLearning | 20 | 8 | 12 | 7 | 2 | 2 | 6 |
+| Texte | 48 | 9 | 39 | 18 | 22 | 27 | 5 |
 | Tweety | 19 | 1 | 18 | 0 | 0 | 2 | 18 |
 | Vibe-Coding | 6 | 6 | 0 | 0 | 0 | 0 | 0 |
 | Video | 23 | 3 | 20 | 16 | 11 | 14 | 6 |
@@ -130,17 +156,30 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03b-Value-Based-AF-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04b-Knowledge-Base-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06b-ATMS-Conflits-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07c-Orchestration-Modes-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08e-Argument-Profile-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-09-Guardrails-AI-Shield-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-10-Privacy-Export-Python.ipynb` | ArgumentAnalysis | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb` | ArgumentAnalysis | python3 | networkx==3.6.1, numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0 | rdflib |
 | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` | ArgumentAnalysis | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb` | Audio | python3 | ipython==9.12.0 | - |
 | `MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-17-MIR-Classique.ipynb` | Audio | python3 | matplotlib==3.10.8, numpy==2.4.6 | librosa |
+| `MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-18-Basic-Pitch-Transcription.ipynb` | Audio | basicpitch-t4 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, soundfile==0.12.1 | basic_pitch, librosa, pretty_midi |
 | `MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | Audio | python3 | - | - |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb` | Causalite | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-01-Calcul-Do-Python.ipynb` | Causalite | python3 | networkx==3.6.1, numpy==2.4.6, pandas==3.0.2 | dowhy |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb` | Causalite | python3 | numpy==2.4.6, pandas==3.0.2 | dowhy |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb` | Causalite | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/Probas/Causalite/Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb` | Causalite | coursia-ml-training | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/Probas/Causalite/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb` | Causalite | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | dowhy |
+| `MyIA.AI.Notebooks/Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb` | Causalite | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb` | Causalite | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0, scipy==1.18.0, statsmodels==0.14.6 | - |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-08-Equite-Causale-Python.ipynb` | Causalite | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6, pandas==3.0.2 | dowhy |
 | `MyIA.AI.Notebooks/Probas/Causalite/Causalite-09-Hernan-Emulation-Essai-Cible-Python.ipynb` | Causalite | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6, pandas==3.0.2 | dowhy |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-01-Axiome-Intrication-Constante-Structure-Fine-Python.ipynb` | Chaines | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -154,6 +193,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-09-Coordonnee-Ordre-Chaine-Serie-Python.ipynb` | Chaines | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-10-Groupe-Rotations-Automorphismes-Directions-Python.ipynb` | Chaines | python3 | - | - |
 | `MyIA.AI.Notebooks/Physique/Chaines/Chaines-11-Groupe-Lorentz-Signature-Un-Contre-Trois-Python.ipynb` | Chaines | python3 | - | - |
+| `MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-02-Assistance-Games-Python.ipynb` | Coalitions | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb` | Coalitions | python3 | numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb` | Constructeur | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb` | DataScienceWithAgents | python3 | - | - |
@@ -183,6 +223,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7b-SMO-From-Scratch.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, scikit-learn==1.8.0 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7c-SVM-SOTA-Comparison.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, scikit-learn==1.8.0 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb` | DataScienceWithAgents | coursia-ml-training | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0-Theorie-Information.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -235,13 +276,96 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb` | Fondations | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb` | Fondations | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/HumorDetection/01_humor_intro.ipynb` | HumorDetection | python3 | - | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb` | ICT-Series | pyphi-iit | matplotlib==3.10.8, numpy==2.4.6 | pyphi |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb` | ICT-Series | pyphi-iit | matplotlib==3.10.8, numpy==2.4.6 | pyphi |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb` | ICT-Series | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12b-LearnedValence-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12d-InhibitedActionAnimat-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15b-SensitivityCanonicity-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15c-MetaProxyObstruction-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15d-CechObstruction-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15g-EmpiricalHuangExploitation-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb` | ICT-Series | - | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15j-NerveDiscriminant-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15k-RecollementMacroCells-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15l-IndependanceGenerateur-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb` | ICT-Series | pyphi-iit | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb` | ICT-Series | python3 | ipython==9.12.0, matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21b-SAECalibration-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21c-SAECatastrophes-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-22-LLMSubstrat-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-29-ConceptInoculation-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-30-InhibitedInvention-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-31-ContrasteTroisSubstrats-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-33-SoupCollisions-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-34-BancRecollementLectures-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35-HumorCausalProbe-Pilot-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6, scikit-learn==1.8.0 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35b-HumorCausalPairs-SAE-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35c-HumorDepthProfile-SAE-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36b-RuzsaOnFactorGeometry-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36c-FLens-HiguchiBridge-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | antropy |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36d-FLens-DecorrelationTemporelle-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | antropy |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36e-FLens-SNR-Python.ipynb` | ICT-Series | ict-py313 | matplotlib==3.10.8, numpy==2.4.6 | antropy |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36f-FLens-SpecParam-Python.ipynb` | ICT-Series | ict-py313 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | antropy, fooof |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-39-CompositionRegards-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42c-InoculationHysteresis-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42d-InoculationMatchedPair-Python.ipynb` | ICT-Series | - | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42e-InoculationNegativeWitness-Python.ipynb` | ICT-Series | - | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42f-ReadingGrid-SignedArea-Sham-Python.ipynb` | ICT-Series | - | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-JLensFideliteCrossTaille-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb` | ICT-Series | python3 | - | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb` | ICT-Series | python3 | cryptography==47.0.0, ipython==9.12.0, matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb` | ICT-Series | python3 | - | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb` | ICT-Series | python3 | - | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb` | ICT-Series | python3 | - | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb` | ICT-Series | python3 | - | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb` | ICT-Series | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb` | ICT-Series | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb` | ICT-Series | pyphi-iit | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb` | Image | python3 | ipython==9.12.0, matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0-Generateurs-Symboliques.ipynb` | Image | python3 | ipython==9.12.0, matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0b-Demoscene-Intros-Procedurales-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0c-Low-Complexity-Art-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0e-MDL-Mesure-Unique-Python.ipynb` | Image | python3 | numpy==2.4.6 | - |
@@ -306,6 +430,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-25-Coherence-et-Temoin.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Complex-Structure-S6.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34-Calculabilite-et-Limites.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-37-Capstone-Serre100.ipynb` | Lean | python3-lean | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-38-Capstone-Geometry-Lean-Python.ipynb` | Lean | python3 | numpy==2.4.6, sympy==1.14.0 | - |
@@ -353,6 +478,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/22-vecteurs-witt-frobenius.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/23-e8-viazovska.ipynb` | Lean | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/24-hasse-minkowski-principe-local-global.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/25-groupe-galois-calcule.ipynb` | Lean | py311-po2028 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/26-trois-carres-legendre.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/27-pell-fermat.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/28-inversion-mobius-phi-euler.ipynb` | Lean | python3 | - | - |
@@ -396,6 +522,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | matplotlib==3.10.8 | - |
+| `MyIA.AI.Notebooks/Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb` | MyIA.AI.Notebooks/Complexity | coursia-py313 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | - | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | - | - |
@@ -411,8 +538,12 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-06c-ClassicalAtHeart-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | numpy==2.4.6, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/Complexity/Complexity-07-KolmogorovBornee-Sequences-Python.ipynb` | MyIA.AI.Notebooks/Complexity | coursia-ml-training | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-07b-LeTourDesGrandsNombres-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | - | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-07c-LeBilanMathocalypse-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | - | - |
+| `MyIA.AI.Notebooks/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | numpy==2.4.6, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | - | - |
+| `MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | matplotlib==3.10.8 | - |
@@ -422,8 +553,8 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | - | - |
 | `MyIA.AI.Notebooks/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | openai==2.30.0, pillow==12.2.0 | semantic_kernel |
-| `MyIA.AI.Notebooks/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | lxml==6.0.2 | - |
-| `MyIA.AI.Notebooks/Compression/Compression-09-Assemblage-LLM-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | lxml==6.0.2, openai==2.30.0 | semantic_kernel |
+| `MyIA.AI.Notebooks/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | lxml==6.1.3 | - |
+| `MyIA.AI.Notebooks/Compression/Compression-09-Assemblage-LLM-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | lxml==6.1.3, openai==2.30.0 | semantic_kernel |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | nashpy |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | nashpy |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -448,6 +579,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
@@ -456,11 +588,15 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-11e-Global-Games-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | coursia-ml-training | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-13g-Ataraxos-Organe-Natif.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | - | - |
@@ -477,6 +613,14 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | - | - |
+| `MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb` | MyIA.AI.Notebooks/IIT | pyphi | numpy==2.4.6 | pyphi |
+| `MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb` | MyIA.AI.Notebooks/IIT | pyphi | numpy==2.4.6 | pyphi |
+| `MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb` | MyIA.AI.Notebooks/IIT | pyphi | numpy==2.4.6 | pyphi |
+| `MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb` | MyIA.AI.Notebooks/IIT | pyphi | numpy==2.4.6, pandas==3.0.2 | pyphi |
+| `MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb` | MyIA.AI.Notebooks/IIT | pyphi | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb` | MyIA.AI.Notebooks/IIT | pyphi | matplotlib==3.10.8, numpy==2.4.6 | pyphi |
+| `MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb` | MyIA.AI.Notebooks/NLP | coursia-ml-training | matplotlib==3.10.8, nltk==3.9.4 | - |
+| `MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb` | MyIA.AI.Notebooks/NLP | coursia-ml-training | matplotlib==3.10.8, nltk==3.9.4, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25.ipynb` | MyIA.AI.Notebooks/NLP | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/NLP/07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb` | MyIA.AI.Notebooks/NLP | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/NLP/08-Word2Vec-CBOW-SkipGram.ipynb` | MyIA.AI.Notebooks/NLP | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
@@ -567,8 +711,11 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/05-multi-tenant-ci/05-Multi-Tenant-CI-QA-OWUI.ipynb` | Plateformes-Conversationnelles | python3 | - | - |
 | `MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/06-nouveautes-v0.10/06-Nouveautes-v0.10-QA-OWUI.ipynb` | Plateformes-Conversationnelles | python3 | - | - |
 | `MyIA.AI.Notebooks/GenAI/PostTraining/PT_01_intro_post_training.ipynb` | PostTraining | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb` | PostTraining | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/GenAI/PostTraining/PT_15b_geometrie_features_sae.ipynb` | PostTraining | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/GenAI/PostTraining/PT_18_laya_ablation_distillation.ipynb` | PostTraining | python3 | numpy==2.4.6, pandas==3.0.2, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb` | PostTraining | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb` | PostTraining | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb` | PyMC | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | arviz, pymc |
 | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb` | PyMC | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | arviz, pymc, pytensor |
 | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb` | PyMC | python3 | matplotlib==3.10.8, numpy==2.4.6 | arviz, pymc |
@@ -608,6 +755,9 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb` | Python | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Dataset-Workflow.ipynb` | Python | python3 | matplotlib==3.10.8, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/01-Hands-On-Grounding.ipynb` | RAG-et-Memoire-Semantique | python3 | - | qdrant_client |
+| `MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03b-Espace-Embeddings-Visualisation.ipynb` | RAG-et-Memoire-Semantique | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6, scikit-learn==1.8.0 | sentence_transformers |
+| `MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb` | RAG-et-Memoire-Semantique | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6 | transformers |
+| `MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb` | RAG-et-Memoire-Semantique | coursia-ml-training | matplotlib==3.10.8, numpy==2.4.6 | qdrant_client |
 | `MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-Python.ipynb` | Reseau-Electrique-Intelligent | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb` | SMT | python3 | - | truststore |
 | `MyIA.AI.Notebooks/GenAI/Security/Oversight/Backdoor-Code-From-Scratch.ipynb` | Security | python3 | numpy==2.4.6 | - |
@@ -748,27 +898,27 @@ fichier `pyodide-refus.tsv`, une ligne par carnet refuse.
 | 00-GenAI-Environment | cle, gpu, import_absent, reseau | psutil (1) |
 | 3D | gpu, reseau | - |
 | Applications | gpu, import_absent | pyro (1), pyro.distributions (1), pyro.distributions.util (1), pyro.infer.abstract_infer (1), pyro.poutine (1) |
-| ArgumentAnalysis | cle, gpu, import_absent, reseau | argumentation_lib (13), jpype (6), java.util (2), spacy (2), argumentation_analysis.plugins.fallacy_workflow_plugin (1), argumentation_lib._atms_core (1) |
-| Audio | cle, gpu, import_absent, reseau | torchaudio (6), audiocraft.models (3), chatterbox.tts (2), v4.narration (2), v4.schemas (2), MIDI (1) |
+| ArgumentAnalysis | cle, gpu, import_absent, reseau | jpype (6), java.util (2), spacy (2), argumentation_analysis.plugins.fallacy_workflow_plugin (1), org.tweetyproject.arg.aspic.ruleformulagenerator (1), org.tweetyproject.arg.aspic.syntax (1) |
+| Audio | cle, gpu, import_absent, reseau | torchaudio (9), audiocraft.models (3), chatterbox.tts (2), MIDI (1), TTS.api (1), acestep.pipeline_ace_step (1) |
 | CaseStudies | cle | - |
 | Causalite | gpu, reseau | - |
-| Coalitions | import_absent | cooperative_games.assistance_games (1), pulp (1), z3 (1) |
-| DataScienceWithAgents | cle, gpu, import_absent, reseau | torchvision (12), cvxpy (4), torchvision.datasets (4), pywt (3), torchvision.models (2), lime.lime_tabular (1) |
+| Coalitions | import_absent | pulp (1), z3 (1) |
+| DataScienceWithAgents | cle, gpu, import_absent, reseau | torchvision (14), cvxpy (4), torchvision.datasets (4), pywt (3), lime.lime_tabular (2), shap (2) |
 | Diagnostic-Medical | import_absent | z3 (2) |
 | Dynamics | cle, reseau | - |
 | FallacyDetection | import_absent, reseau | fallacy_detection (1) |
 | FineTuning | gpu, import_absent | torchvision (4), bitsandbytes (1) |
-| ICT-Series | cle, gpu, import_absent, reseau | ict (53), ict.self_sorting (7), ict.bistable (6), ict.factor_geometry (5), ict.reaction_diffusion (5), ict.humor_pairs (4) |
+| ICT-Series | cle, gpu, reseau | - |
 | Image | cle, gpu, import_absent, reseau | CLIP_.clip (1), calculate_metrics (1), clip (1), dnnlib (1), generate_images (1), guided_diffusion.script_util (1) |
 | Jauge | gpu | - |
 | Lean | cle, gpu, import_absent, reseau | snappy (3), Analysis.Section_9_7 (1), Converse (1), Conway.Angel (1), Conway.Life (1), Conway.Life.Oscillators (1) |
 | ML-Training-Pipeline | import_absent | hmmlearn (1) |
-| ML.Net | import_absent | shap (1) |
-| Metajeux | import_absent | Abstraction (1) |
-| MyIA.AI.Notebooks/Complexity | import_absent | ict (1), ict.goedel_machine (1), ict.wolfram_step (1), stim (1) |
+| ML.Net | gpu, import_absent | onnx (1), shap (1) |
+| Metajeux | gpu, import_absent | Abstraction (1) |
+| MyIA.AI.Notebooks/Complexity | import_absent | stim (1) |
 | MyIA.AI.Notebooks/Compression | gpu | - |
-| MyIA.AI.Notebooks/GameTheory | cle, gpu, import_absent, reseau | pyspiel (3), cooperative_games (2), cooperative_games.core (1), cooperative_games.french_politics (1), humour_banc.organ (1), ict.strategic_morphodynamics (1) |
-| MyIA.AI.Notebooks/NLP | import_absent | hmmlearn (1), hmmlearn.hmm (1), seqeval.metrics (1) |
+| MyIA.AI.Notebooks/GameTheory | cle, gpu, import_absent, reseau | pyspiel (5), open_spiel.python (2), open_spiel.python.algorithms (2), humour_banc.organ (1), pulp (1), z3 (1) |
+| MyIA.AI.Notebooks/NLP | import_absent | hmmlearn (1), hmmlearn.hmm (1), seqeval.metrics (1), spacy (1) |
 | MyIA.AI.Notebooks/RL | gpu | - |
 | MyIA.AI.Notebooks/Sudoku | cle, gpu, import_absent, reseau | ortools.sat.python (2), z3 (2), dd.autoref (1), jpype (1), jpype.imports (1), jpype.types (1) |
 | Part1-Foundations | cle, import_absent, reseau | cvxpy (2), ortools.sat.python (2), z3 (2), automata.fa.dfa (1), automata.fa.nfa (1), open_spiel.python.algorithms (1) |
@@ -778,19 +928,19 @@ fichier `pyodide-refus.tsv`, une ligne par carnet refuse.
 | Planification-Oncologie | gpu, import_absent | ortools.sat.python (2), pyro (2), pyro.distributions (2), pyro.infer (2), pyro.optim (2) |
 | Planners | cle, gpu, import_absent, reseau | ortools.sat.python (3), ortools.constraint_solver (1), ortools.sat.python.cp_model (1), up_fast_downward (1) |
 | Plateformes-Conversationnelles | cle, import_absent, reseau | playwright.sync_api (2) |
-| PostTraining | gpu, import_absent, reseau | ict (2), rewardspy (2), tokenizers (2), z3 (2), ict.causal_engine (1), ict.onset_compare (1) |
+| PostTraining | cle, gpu, import_absent, reseau | z3 (8), rewardspy (5), rewardspy.integrations (4), tokenizers (2), rewardspy.store (1) |
 | PyMC | import_absent | opentelemetry (1), opentelemetry.sdk (1), opentelemetry.sdk.trace (1), opentelemetry.sdk.trace.export (1), opentelemetry.sdk.trace.export.in_memory_span_exporter (1) |
-| Python | cle, gpu, import_absent, reseau | AlgorithmImports (39), Portfolio.MeanVarianceOptimizationPortfolioConstructionModel (1), hmmlearn (1) |
-| RAG-et-Memoire-Semantique | cle, gpu, import_absent, reseau | faiss (1), pypdfium2 (1) |
+| Python | cle, gpu, import_absent, reseau | AlgorithmImports (40), Portfolio.MeanVarianceOptimizationPortfolioConstructionModel (1), hmmlearn (1) |
+| RAG-et-Memoire-Semantique | cle, gpu, import_absent, reseau | faiss (1), pypdfium2 (1), tokenizers (1) |
 | Reseau-Electrique-Intelligent | import_absent | ortools.sat.python (1) |
 | SMT | import_absent | z3 (24) |
 | Security | cle, gpu, reseau | - |
 | SemanticKernel | cle, import_absent, reseau | System (1), System.IO (1), System.Reflection (1), a2a (1), a2a.client (1), a2a.helpers.proto_helpers (1) |
 | SemanticWeb | cle, import_absent, reseau | owlready2 (3), jdk4py (1), reasonable (1) |
-| SmartContracts | cle, import_absent, reseau | solcx (16), bitcoin (1), bitcoin.core (1), bitcoin.core.script (1), bitcoin.wallet (1), solcx.exceptions (1) |
+| SmartContracts | cle, import_absent, reseau | solcx (16), xrpl (2), xrpl.models.transactions (2), xrpl.utils (2), bitcoin (1), bitcoin.core (1) |
 | SocialChoice | import_absent | z3 (4), pysat.solvers (2), pysat.formula (1) |
-| SymbolicLearning | cle, gpu, import_absent, reseau | janus_swi (3), popper (2), popper.loop (2), popper.util (2), aifeynman (1), ict.sae_calibration (1) |
-| Texte | cle, gpu, import_absent, reseau | tv (2), tv.loc (2), __main__ (1), bitsandbytes (1), jevlike (1), jevlike.data (1) |
+| SymbolicLearning | cle, gpu, import_absent, reseau | janus_swi (3), popper (2), popper.loop (2), popper.util (2), aifeynman (1), lernd.classes (1) |
+| Texte | cle, gpu, import_absent, reseau | __main__ (1), bitsandbytes (1), jevlike (1), jevlike.data (1), jevlike.model (1), jevlike.train (1) |
 | Tweety | import_absent, reseau | jpype (16), jpype.types (14), jpype.imports (11), java.util (10), org.tweetyproject.arg.dung.syntax (8), org.tweetyproject.logics.pl.syntax (8) |
 | Video | cle, gpu, import_absent, reseau | basicsr.archs.rrdbnet_arch (2), bitsandbytes (2), decord (2), ffmpeg (1), imageio_ffmpeg (1) |
 | _research | cle, gpu, reseau | - |

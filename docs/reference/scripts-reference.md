@@ -13,7 +13,8 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 | `notebook_helpers.py` | Helpers partagés (import, pas d'exécution directe) |
 | `extract_notebook_skeleton.py` | Extraire le squelette (structure cellules) d'un notebook |
 | `notebook_lint.py` | Lint structurel notebooks (+ `test_notebook_lint.py`) |
-| `pyodide_eligibility.py` | Eligibilite Pyodide/JupyterLite des carnets Python : critere en quatre conditions (aucun GPU, aucune cle, aucun service reseau, tous les imports resolus), recensement par serie, sortie Markdown / JSON, detail des refus en TSV, selection d'un lot. Reference : `docs/reference/pyodide-eligibilite.md` |
+| `pyodide_eligibility.py` | Eligibilite Pyodide/JupyterLite des carnets Python : critere en quatre conditions (aucun GPU, aucune cle, aucun service reseau, tous les imports resolus), famille Python lue sur `language_info.name` (le nom du kernelspec nomme un env, pas une langue), recensement par serie, sortie Markdown / JSON. Reference : `docs/reference/pyodide-eligibilite.md` |
+| `pyodide_eligibility_report.py` | Moitie « rendus » du precedent : tableau par serie, Markdown, TSV des refus, selection du lot. Separation calcule / met en forme (testee separement) |
 
 ### Conformite differentielle Rust
 | Script | Usage |
