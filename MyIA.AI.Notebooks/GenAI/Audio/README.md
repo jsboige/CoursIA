@@ -108,7 +108,7 @@ La séparation de sources en est l'exemple le plus visuel : plutôt que de rég�
 
 ### 03-Orchestration - Multi-modèles & Temps réel
 
-Les composants existent, il faut les assembler. Ce niveau construit les pipelines qui transforment un audio en texte (STT), l'enrichissent via un LLM, puis le reconvertissent en parole (TTS). Le notebook 03-2 réalise explicitement un pipeline de podcast. L'API Realtime d'OpenAI (03-3) montre la version temps réel pour les interactions live. Le TTS streaming local (03-4) ajoute la brique sans dépendance cloud : le moteur Kokoro servi par le framework pipecat, mesuré en débit (RTF) et en latence premier audio (TTFA).
+Les composants existent, il faut les assembler. Ce niveau construit les pipelines qui transforment un audio en texte (STT), l'enrichissent via un LLM, puis le reconvertissent en parole (TTS). Le notebook 03-2 réalise explicitement un pipeline de podcast. L'API Realtime d'OpenAI (03-3) montre la version temps réel pour les interactions live. Le TTS streaming local (03-4) ajoute la brique sans dépendance cloud : le moteur Kokoro servi par le framework pipecat, mesuré en débit (RTF) et en latence premier audio (TTFA). Le notebook 03-5 expose la transcription, la synthèse et l'analyse comme outils du protocole MCP, et mesure le choix d'outils d'un agent réel.
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
@@ -116,6 +116,7 @@ Les composants existent, il faut les assembler. Ce niveau construit les pipeline
 | [03-2-Audio-Pipeline-Orchestration](03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) | Pipelines STT->LLM->TTS, podcast | Mixed | ~14 GB |
 | [03-3-Realtime-Voice-API](03-Orchestration/03-3-Realtime-Voice-API.ipynb) | OpenAI Realtime API, WebSocket | OpenAI API | 0 |
 | [03-4-TTS-Streaming-Local-Pipecat](03-Orchestration/03-4-TTS-Streaming-Local-Pipecat.ipynb) | TTS streaming local Kokoro via pipecat, RTF et TTFA | Local (Kokoro ONNX) | 0 |
+| [03-5-MCP-Audio](03-Orchestration/03-5-MCP-Audio.ipynb) | Serveur MCP audio (transcription, synthèse, analyse) et choix d'outils par un agent | Local (CPU) | 0 |
 
 ### 04-Applications - Cas d'usage production
 

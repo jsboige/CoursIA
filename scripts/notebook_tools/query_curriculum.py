@@ -10,7 +10,7 @@ from typing import Iterable
 from rdflib import BNode, Graph, Literal, RDF, URIRef
 from rdflib.namespace import DCTERMS, RDFS, SKOS
 
-from generate_curriculum_rdf import VOCAB
+from generate_curriculum_rdf import INTERFACE_CLASSES, VOCAB
 
 
 RESOURCE_PREDICATES = {
@@ -156,6 +156,26 @@ def list_notebooks(
     return matches[:limit] if limit is not None else matches
 
 
+def list_interfaces(
+    graph: Graph,
+    interface_class: str | None = None,
+    limit: int | None = None,
+) -> list[str]:
+    """Liste les interfaces agentiques de l'export (classe d'interface, #27071)."""
+    matches = []
+    for interface in graph.subjects(RDF.type, VOCAB.Interface):
+        class_value = graph.value(interface, VOCAB.interfaceClass)
+        listed_class = str(class_value) if class_value is not None else ""
+        if interface_class and listed_class != interface_class:
+            continue
+        label = _label(graph, interface)
+        identifier = graph.value(interface, DCTERMS.identifier)
+        path = str(identifier) if identifier is not None else str(interface)
+        matches.append(f"{label}\t{path}\t{listed_class}")
+    matches.sort(key=str.casefold)
+    return matches[:limit] if limit is not None else matches
+
+
 def show_notebook(graph: Graph, path: str) -> list[str]:
     notebook = find_notebook(graph, path)
     lines = [f"Titre : {_label(graph, notebook)}", f"Chemin : {_identifier(graph, notebook)}"]
@@ -292,6 +312,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     concepts.add_argument("--query", help="filtrer le libellé du concept")
     concepts.add_argument("--limit", type=positive_int, help="nombre maximal de résultats")
+    interfaces_cmd = commands.add_parser(
+        "interfaces", help="lister les interfaces agentiques (CLI, MCP, bridges) de l'export"
+    )
+    interfaces_cmd.add_argument(
+        "--class", dest="interface_class", choices=sorted(INTERFACE_CLASSES),
+        help="filtrer par classe d'interface",
+    )
+    interfaces_cmd.add_argument(
+        "--limit", type=positive_int, help="nombre maximal de résultats"
+    )
     path = commands.add_parser("path", help="afficher le chemin série > sous-série > carnet")
     path.add_argument("path")
     args = parser.parse_args(argv)
@@ -312,6 +342,8 @@ def main(argv: list[str] | None = None) -> int:
             _print_lines(prerequisites_for(graph, args.path))
         elif args.command == "concepts":
             _print_lines(concepts_for(graph, args.query, args.limit))
+        elif args.command == "interfaces":
+            _print_lines(list_interfaces(graph, args.interface_class, args.limit))
         elif args.command == "path":
             print(" > ".join(path_for(graph, args.path)))
     except KeyError as error:

@@ -259,12 +259,12 @@ def _prs_par_issue(prs: list[dict]) -> dict[int, list[dict]]:
     return index
 
 
-def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
-          jours: int = 45) -> list[Etat]:
-    """Un `Etat` par issue ouverte, decide sur la seule lecture."""
+def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
+              jours: int = 45):
+    """Issues ouvertes, parents, naissances et contexte de decision -- partages
+    par `etats` et la re-decision sur fil complet (#27179)."""
     ouvertes = {it["number"]: it for it in lecture.issues}
     parents = {n: parent_de(it) for n, it in ouvertes.items()}
-    nommes = {p for p in parents.values() if p is not None}
     # Naissances des filles ouvertes par conteneur : une visite du parent (#22500).
     filles: dict[int, list[tuple[int, str | None]]] = {}
     for n, p in parents.items():
@@ -273,6 +273,14 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
            "limite": maintenant - timedelta(days=jours), "filles": filles,
            "prs_par_issue": _prs_par_issue(lecture.prs)}
+    return ouvertes, parents, filles, ctx
+
+
+def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
+          jours: int = 45) -> list[Etat]:
+    """Un `Etat` par issue ouverte, decide sur la seule lecture."""
+    ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours)
+    nommes = {p for p in parents.values() if p is not None}
     resultat = []
     for n, it in ouvertes.items():
         ancetres, famille = _ancetres(n, parents)
@@ -388,7 +396,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None) -> int:
+         maintenant: datetime | None = None, lire_fils: object = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
     # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
@@ -428,8 +436,18 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
+    # #27179 : un grain servi au fil tronque se re-decide sur son fil complet
+    # au moment du service ; hors ligne ou cache, la fenetre reste la fenetre.
+    reverif = None
+    if not args.lecture and not lecture.depuis_cache:
+        from coordination import tapis_reverif
+        file, reverif = tapis_reverif.passer(
+            tous, file, args.grains, args.lane, maintenant, args.jours, graine,
+            lecture, lire_fils)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
+    if reverif is not None:
+        r["reverif_fils"] = reverif
     if fraicheur is not None:
         r["fraicheur"] = fraicheur  # le depassement --allow-stale se LIT dans le JSON
     source = f"dossier {args.lecture}" if args.lecture else "GitHub + origin/main local"

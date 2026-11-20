@@ -1,0 +1,10 @@
+- name: ML DataScience 2.7c SVM SOTA
+  family: ML/DataScienceWithAgents/02-ML-Cours
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7c-SVM-SOTA-Comparison.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7c-SVM-SOTA-Comparison-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: C# orchestre les vrais ajustements sklearn SVC utilisant LIBSVM via Python.NET, puis reconstruit le dual et les diagnostics nativement.
+  known_differences:
+    - Le chronométrage C# inclut le pont Python.NET ; les temps et unités de compteurs ne sont pas directement interchangeables.
+    - Les bibliothèques NumPy et scikit-learn doivent être installées dans le CPython configuré pour Python.NET.
