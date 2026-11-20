@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-18
+> REFERENCE — vivante — dernière révision 2026-11-20
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -251,3 +251,43 @@ Chaque grain servi porte son **état et l'action à faire** (`qualifier` : lire 
 vivant, le gel, le contenu déjà livré), jamais une exclusion silencieuse. La bascule du tirage par défaut
 reste la tranche suivante : elle suppose que la prise en charge qualifie le grain, ce qui est un changement
 de protocole autant que de code.
+
+## Couverture des visites (#27590)
+
+L'équilibrage ci-dessus n'ordonne que les issues **servables** (30 sur 459 ouvertes à la mesure du 20/11) :
+une issue écartée par un code dépend d'un autre rôle — l'urne de clôture, la revue d'une PR, le mainteneur —
+et rien ne mesurait si ce rôle la visitait. `coordination/visit_coverage.py` attribue à chaque issue ouverte
+le rôle responsable de son prochain pas, sur la même lecture groupée (aucun appel réseau de plus) :
+
+| Rôle | Code d'écart | Prochain pas |
+| --- | --- | --- |
+| `harnais` | marathon (`tapis_equilibre.est_marathon`), écart ou non | harnais sk-agent ; tous les marathons sortent des agrégats |
+| `worker` | servable, `RECLAMEE` | le tapis, pour la lane qui la sert |
+| `urne` | `LIVREE`, `MERGEE`, `LABEL` (`candidate-delivered`) | clôture par le coordinateur, l'adjoint ou le secrétaire |
+| `revue` | `COUVERTE` | revue et fusion de la PR citée (son numéro est lu dans le motif) |
+| `mainteneur` | `GEL` | décision du mainteneur |
+| `attente` | `RELACHEE`, `PLAFOND`, `ORIGAMI` | attente bornée, puis le tapis |
+| `hors-flotte` | `HORSFLOTTE` | hors flotte |
+| `autre` | tout code non mappé | le motif est rapporté |
+
+Une issue **avance** dans la fenêtre du tour (7 jours) par un marqueur `[DELIVERED]` daté, ou par un commit
+de `origin/main` qui la cite (`lecture.citations`). Le bilan donne par rôle le nombre d'issues, celles à zéro
+visite et celles visitées sans avancer, l'invariant du 16/11 sur le pool servable (hors claim propre et hors
+marathon) et les jamais visitées. Mesure du 20/11 sur la lecture de 13:35Z : 443 issues hors marathons, 87 à
+zéro visite, dont 59 d'urne et 12 de revue.
+
+```bash
+python scripts/coordination/visit_coverage.py [--json] [--dashboard-line]
+       [--lecture <dossier>] [--cache-s 3600] [--jours 45] [--lane myia-ai-01:CoursIA]
+```
+
+Codes de sortie : `0` tout est couvert ; `1` invariant violé, ou une issue d'urne ou de revue sans visite
+dans le tour alors qu'elle a plus de `FENETRE_J` jours ; `2` lecture incomplète sans secours (jamais un faux
+`0`). `--dashboard-line` rend une ligne de 200 caractères au plus, à poster sur le dashboard du secrétariat.
+
+**Ce que la mesure ne voit pas** : une fermeture (la lecture ne contient que les issues ouvertes), une PR
+fusionnée sans commit cité (le squash cite sa PR, pas forcément l'issue), un `[DELIVERED]` plus ancien que
+les 12 derniers commentaires lus (fil tronqué), et `[INFO] candidate-delivered`, reconnu comme livraison par
+le tapis mais pas retenu comme preuve d'avancée. Le test de propriété (`scripts/tests/test_visit_coverage.py`)
+simule 30 servables et 120 pas de service : la tête de `tapis_equilibre.ordre` garde le niveau minimal du
+pool, donc aucune issue n'atteint deux visites tant qu'une autre est à zéro.
