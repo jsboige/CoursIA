@@ -135,6 +135,49 @@ SEAM_RESIDUE_RE = re.compile(
 )
 SEAM_WINDOW = 40
 SEAM_BAD_PAIRS = {(".", "."), (",", ","), (";", ";")}
+POSTCOND_WINDOW = 12
+_SEP_RUN = re.compile(r"[,;·—–/|]\s+[,;:·—–/]")
+_PREP_ORPHAN_RE = re.compile(
+    r"\b(?:de|du|des|à|au|aux|dans|sur|par|pour|avec|sans|vers|entre)\s*[,;:)]",
+    re.IGNORECASE,
+)
+
+
+def _postcondition(text: str, start: int, original: str, original_start: int, original_end: int) -> None:
+    """Refuse les constructions vidées par le retrait à la couture.
+
+    La fenêtre reste courte et ancrée au point de coupe : une recherche large
+    signale à tort les fermetures Markdown légitimes éloignées du retrait.
+    """
+    before = text[start - 1:start]
+    after = text[start:start + 2]
+    if before == "[" and after.startswith("]("):
+        raise ValueError("texte de lien vide apres retrait -- ecriture refusee")
+    if before == "*" and after[:1] in (",", ";", ":"):
+        raise ValueError("accentuation videe apres retrait -- ecriture refusee")
+    if before in ",;:" and after[:1] == "]":
+        raise ValueError("separateur colle a une fermante -- ecriture refusee")
+    if before in ",;:/—–" and after[:1] == ")":
+        raise ValueError("separateur orphelin avant fermante -- ecriture refusee")
+    seam = text[max(0, start - 1):start + 3]
+    if _SEP_RUN.search(seam):
+        raise ValueError("separateurs orphelins a la couture -- ecriture refusee")
+    removed = original[original_start:original_end]
+    left = original[max(0, original_start - POSTCOND_WINDOW):original_start]
+    if re.match(r"\s*l['’]\s*EPIC\b", removed, re.IGNORECASE):
+        raise ValueError("elision orpheline apres retrait -- ecriture refusee")
+    # Inspect only the *new* seam. Searching a broad window can mistake a
+    # preposition elsewhere in the sentence for one orphaned by this deletion.
+    seam = text[max(0, start - POSTCOND_WINDOW):start + POSTCOND_WINDOW]
+    if _PREP_ORPHAN_RE.search(seam):
+        raise ValueError("preposition orpheline apres retrait -- ecriture refusee")
+    # Refuser les constructions où la suppression enlève aussi une préposition
+    # exigée par le verbe restant (ex. « relève de l'Epic #N »). La décision
+    # porte sur la couture originale, avant que le span ne soit perdu.
+    if re.search(r"\b(?:relève|releve|dépend|depend|provient|résulte|resulte)\s*$", left, re.IGNORECASE) and re.match(
+        r"\s+(?:de|du|des|d['’]|à|au|aux)\b", removed, re.IGNORECASE
+    ):
+        raise ValueError("preposition orpheline : complement requis supprime avec la reference -- ecriture refusee")
 
 # La note de pied de carnet deposee par l'organe.
 FOOTER_TEMPLATE = "> Carnet issu de l'EPIC #{ref}."
@@ -265,8 +308,11 @@ def _strip_clause(text: str) -> tuple[str, list[str]] | None:
         r"EPIC\s*#(\d+)|EPIC\s*\[#(\d+)\]", " ".join(refs), re.IGNORECASE
     )]
     new = text
-    for start, end in reversed([m.span() for m in matches]):
+    offset = 0
+    for original_start, original_end in [m.span() for m in matches]:
+        start, end = original_start - offset, original_end - offset
         new = new[:start] + new[end:]
+        offset += original_end - original_start
         new, start = _clean_seam(new, start)
         if start > 0 and start < len(new) and new[start - 1] == "(" and new[start] == ")":
             raise ValueError("parenthese vide apres retrait -- ecriture refusee")
@@ -276,6 +322,7 @@ def _strip_clause(text: str) -> tuple[str, list[str]] | None:
         seam = new[max(0, start - 1): start + 1]
         if len(seam) == 2 and (seam[0], seam[1]) in SEAM_BAD_PAIRS:
             raise ValueError("ponctuation orpheline a la couture -- ecriture refusee")
+        _postcondition(new, start, text, original_start, original_end)
     # Le vocabulaire de revue qui suivait la reference sans virgule.
     new = PRONG_RE.sub("", new)
     return new, numbers
