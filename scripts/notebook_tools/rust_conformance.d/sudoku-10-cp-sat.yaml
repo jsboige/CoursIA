@@ -1,0 +1,106 @@
+- name: "Sudoku-10 CP-SAT"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-10-CP-SAT-Rust.ipynb
+  measures:
+    - id: solution_grid
+      description: "Grille resolue du puzzle de reference (81 chiffres, ordre de lecture)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: 'Solution:(.*)'
+          transform: digits
+        rust:
+          cell: 11
+          pattern: 'Solution:(.*)'
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas la grille du meme puzzle sous une forme
+            comparable : ses sorties sont des tableaux .NET (format `| 9  6  2 |`)
+            sur un autre jeu de puzzles, et la resolution y est operee par
+            `OrToolsSatSolver` sans affichage de la grille complete. Cote declare
+            ABSENT, pas mesure : la comparaison porte sur les deux cotes qui
+            publient la grandeur.
+    - id: nqueens_counts
+      description: "Nombre de solutions N-Reines pour N=4..8 (compte exact)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: '(N=4:.*?N=8: \d+ solutions)'
+          transform: digits
+        rust:
+          cell: 21
+          pattern: '(N=4:.*?N=8: \d+ solutions)'
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# n'implemente pas le solveur N-Reines : la cellule
+            correspondante est un exercice non resolu (« Exercice a completer »).
+            Cote declare ABSENT, pas mesure.
+    - id: max_reward
+      description: "Valeur objective maximale du carre latin 5x5 (reward)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: 'Reward optimal maximise: ([0-9.]+)'
+          transform: float
+        rust:
+          cell: 25
+          pattern: 'Reward optimal maximise: ([0-9.]+)'
+          transform: float
+        csharp:
+          absent: >-
+            Le jumeau C# ne porte pas l'exemple d'optimisation du carre latin
+            pondere (cellule d'exercice non resolue). Cote declare ABSENT, pas
+            mesure.
+    - id: min_cost
+      description: "Valeur objective minimale du carre latin 5x5 (cout pondere)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: 'Cout optimal minimise: ([0-9.]+)'
+          transform: float
+        rust:
+          cell: 27
+          pattern: 'Cout optimal minimise: ([0-9.]+)'
+          transform: float
+        csharp:
+          absent: >-
+            Le jumeau C# ne porte pas l'exemple miroir de minimisation (cellule
+            d'exercice non resolue). Cote declare ABSENT, pas mesure.
+    - id: benchmark_total_time
+      description: "Temps total du benchmark sur la serie difficile (11 puzzles)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "'total_time': ([0-9.]+)"
+          transform: float
+        rust:
+          absent: >-
+            La grandeur n'est pas publiee sous la meme forme des deux cotes :
+            le jumeau Python publie un dictionnaire `{'solved': 11,
+            'total_time': ...}` en secondes, le portage Rust publie des
+            tableaux en millisecondes. La comparaison de TEMPS n'est donc pas
+            declaree ici -- la bande de tolerance de la spec (relative 50 %)
+            est plus fine que la variance observee entre deux executions
+            consecutives sur la meme machine (serie difficile : 118.06 ms de
+            total au commit ; 28.31 ms de moyenne par puzzle sur l'execution
+            precedente). La parite du portage est portee par les
+            grandeurs deterministes (grille, comptes N-Reines, valeurs
+            objectives), comparees ci-dessus avec une tolerance nulle.
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas de mesure de temps comparable sur le
+            meme jeu de puzzles. Cote declare ABSENT, pas mesure.
