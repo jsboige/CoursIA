@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-20
 
 # ICT — Matrice de dissociations (notebook × claim × proxy × contrôle × réplicats × type × verdict × portée)
 
