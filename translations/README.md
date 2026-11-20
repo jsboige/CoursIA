@@ -24,9 +24,9 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 
 ## Familles couvertes (T1 baseline)
 
-**33 CSV, 24 470 cellules** au total (extraction `src_lang=fr`, comptage enregistrements `csv.reader` hors en-tête, audit Python `csv.DictReader` c.1252 2026-08-06). Regroupement par domaine pédagogique :
+**33 CSV / 24 470 cellules au 2026-08-06** (extraction `src_lang=fr`, comptage enregistrements `csv.reader` hors en-tête, audit Python `csv.DictReader` c.1252) — mesure d'époque conservée pour l'historique ; les comptes courants (nombre de CSV, enregistrements, schéma) se mesurent directement dans les CSV eux-mêmes, aucun organe ne tient cette prose à jour. Regroupement par domaine pédagogique :
 
-| Domaine | CSV | Cellules | Série source |
+| Domaine | CSV | Cellules (au 2026-08-06) | Série source |
 |---------|-----|---------:|--------------|
 | SymbolicAI — Tweety | `tweety/tweety.csv` | 864 | `SymbolicAI/Tweety/` |
 | SymbolicAI — SemanticWeb | `semanticweb/semanticweb.csv` | 1193 | `SymbolicAI/SemanticWeb/` |

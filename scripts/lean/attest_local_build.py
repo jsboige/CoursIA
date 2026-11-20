@@ -1215,6 +1215,33 @@ def restore_project_build(cache_dir: Path, lake_dir: Path) -> dict:
     return {"restored": True, "reason": "cache de build du projet restaure"}
 
 
+def seed_project_build_from_pivot(pivot_dir: Path, lake_dir: Path) -> dict:
+    """Reseme le `.lake/build` du lac depuis le pivot prechauffe (#27516).
+
+    Le pivot est deja valide par `prepare_lake` (meme toolchain, meme graphe
+    de dependances) : ses oleans des modules du projet sont le point d'appui
+    que la CI tire de son cache Actions. Sans ce semis, la premiere
+    attestation d'une PR repart de zero sur les modules herites de `main` --
+    dont `Knots.AlexanderTrivial_en` (olean de 95,7 Mo, elaboration au-dela
+    du budget local, mesure #27516) -- et se fait tuer au minuteur.
+
+    COPIE, jamais deplacement ni jonction : le pivot garde son build pour
+    les PRs suivantes, et `preserve_project_build` (qui DEPLACE le
+    `.lake/build` du worktree vers le cache par-PR) n'arrache jamais rien au
+    pivot. Les traces Lake font le reste : seuls les modules dont la source
+    differe a la tete de la PR sont re-elabores.
+    """
+    source = pivot_dir / ".lake" / "build"
+    if not source.is_dir():
+        return {"seeded": False, "reason": "aucun build de projet dans le pivot"}
+    target = lake_dir / ".lake" / "build"
+    if target.exists():
+        return {"seeded": False, "reason": "build deja present dans le worktree"}
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, target)
+    return {"seeded": True, "reason": "build du projet reseme depuis le pivot"}
+
+
 def preserve_project_build(cache_dir: Path, lake_dir: Path) -> dict:
     """Conserve le `.lake/build` du worktree dans le cache du projet.
 
@@ -1250,7 +1277,10 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
     `project_cache_dir` est le repertoire du cache de build du PROJET pour ce
     lake : le `.lake/build` est **remis** dans le worktree avant le build et
     **reconserve** apres -- un timeout ne jette plus la compilation deja
-    faite.
+    faite. Quand ce cache par-PR n'a rien restaure (premier essai de la
+    PR), le `.lake/build` du pivot `cache_root` -- deja valide par
+    `prepare_lake` -- est **reseme par copie** : meme point d'appui que le
+    cache Lake d'Actions en CI (#27516).
     """
     lake_dir = worktree / lake["project-path"]
     if not lake_dir.is_dir():
@@ -1262,6 +1292,13 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
     cache_state: dict = {"restored": False, "preserved": False}
     if project_cache_dir is not None:
         cache_state.update(restore_project_build(project_cache_dir, lake_dir))
+    if not cache_state.get("restored"):
+        # #27516 : premier essai de la PR (cache par-PR vide ou ecrase). Le
+        # pivot -- cache_root, deja valide par prepare_lake (meme toolchain,
+        # meme graphe de dependances) -- fournit le point d'appui que la CI
+        # tire de son cache Actions. Sans lui, chaque premiere attestation
+        # re-elabore les modules herites de main et se fait tuer au minuteur.
+        cache_state.update(seed_project_build_from_pivot(cache_root, lake_dir))
     try:
         payload = run_lake_build(lake_dir, timeout, jobs=jobs, budget=budget, targets=targets)
     finally:

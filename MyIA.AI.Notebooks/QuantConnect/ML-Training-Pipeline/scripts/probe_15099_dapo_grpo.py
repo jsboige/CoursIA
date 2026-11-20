@@ -62,6 +62,10 @@ SPLIT_SEED = 15099
 # budget incompatible ; DAPO papier entraine egalement des modeles non-thinking).
 CHAT_KWARGS: dict[str, Any] = {}
 MAX_COMPLETION = 384
+# Geometrie de reference du protocole DAPO : 8 sequences par micro-batch x 4
+# accumulations = 32 completions par pas d'optimiseur = 4 prompts x 8
+# generations par round. Toute autre geometrie doit etre annoncee.
+REFERENCE_EFFECTIVE_BATCH = 32
 
 MODELS: dict[str, dict[str, str]] = {
     "minicpm5": {
@@ -585,6 +589,7 @@ def build_no_signal_guard(threshold: int) -> Any:
 def build_trainer(
     model_key: str, seed: int, steps: int, train_rows: list[dict[str, Any]],
     reward_fn: Any = dapo_reward, dataset_key: str = "dapo",
+    per_device_batch: int = 8, grad_accum: int = 4,
 ):
     import torch
     from datasets import Dataset
@@ -630,8 +635,20 @@ def build_trainer(
         learning_rate=2e-5,
         warmup_steps=5,
         lr_scheduler_type="constant_with_warmup",
-        per_device_train_batch_size=8,
-        gradient_accumulation_steps=4,  # 32 completions/step = 4 prompts x 8 generations
+        # Geometrie du protocole. Deux invariants portent la mesure :
+        #   (1) `per_device_train_batch_size * gradient_accumulation_steps`
+        #       completions par pas d'optimiseur (32 = 4 prompts x 8 generations) ;
+        #   (2) le round de generation vaut
+        #       `per_device * num_processes * steps_per_generation`, avec
+        #       `steps_per_generation = gradient_accumulation_steps` (defaut TRL),
+        #       donc 32 completions = 4 prompts de 8 generations.
+        # Diviser la micro-batch et doubler l'accumulation laisse les DEUX
+        # invariants inchanges : seule la taille du tenseur de logits du
+        # backward est divise. C'est le levier mesure contre l'OOM de la leg
+        # 1024 (#15099) -- l'allocateur `expandable_segments`, leve par
+        # PyTorch, est refuse sur ce poste Windows.
+        per_device_train_batch_size=per_device_batch,
+        gradient_accumulation_steps=grad_accum,  # 32 completions/step = 4 prompts x 8 generations
         num_generations=8,
         max_completion_length=MAX_COMPLETION,
         temperature=1.0,
@@ -932,15 +949,34 @@ def mode_baseline(model_key: str, dataset_key: str) -> dict[str, Any]:
 
 def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
              dataset_key: str = "dapo",
-             no_signal_threshold: int = 0) -> dict[str, Any]:
+             no_signal_threshold: int = 0,
+             per_device_batch: int = 8, grad_accum: int = 4) -> dict[str, Any]:
     ds = DATASETS[dataset_key]
     # Self-describing : le budget est la variable du diagnostic de troncature
     # (#15294), il doit etre lisible dans run.log a cote de clipped_ratio.
     print(f"[{model_key} seed{seed}] budget de completion = {MAX_COMPLETION} tokens")
+    # La geometrie du protocole est un fait du run, pas une convention : elle
+    # est ecrite dans le log ET dans le JSON, pour qu'un tiers puisse verifier
+    # que le batch effectif et le round de generation n'ont pas bouge quand la
+    # micro-batch a ete divisee (levier OOM de la leg 1024, #15099).
+    effective = per_device_batch * grad_accum
+    print(f"[{model_key} seed{seed}] geometrie : micro-batch = {per_device_batch} sequences, "
+          f"accumulation = {grad_accum}, batch effectif = {effective} completions/pas, "
+          f"round = {effective} completions ({effective // 8} prompts x 8 generations)")
+    if effective != REFERENCE_EFFECTIVE_BATCH:
+        # Garde de comparabilite : changer UN seul des deux leviers change le
+        # protocole de mesure sans qu'on le voie dans le resultat. Learnes
+        # explicitement, parce qu'un run non comparable ne vaut pas une
+        # re-execution de plus.
+        print(f"[{model_key} seed{seed}] ATTENTION protocole : batch effectif "
+              f"{effective} != reference {REFERENCE_EFFECTIVE_BATCH} "
+              f"(8 x 4) -- ce run n'est pas comparable au protocole de reference")
     train_rows, eval_rows = ds["load"]()
     t0 = time.time()
     trainer, model_path = build_trainer(model_key, seed, steps, train_rows,
-                                        reward_fn=ds["reward"], dataset_key=dataset_key)
+                                        reward_fn=ds["reward"], dataset_key=dataset_key,
+                                        per_device_batch=per_device_batch,
+                                        grad_accum=grad_accum)
     if no_signal_threshold > 0:
         # Garde d'entree : si AUCUN des `no_signal_threshold` premiers pas ne
         # porte de gradient, le run s'arrete (option 2 de la decision de
@@ -998,6 +1034,12 @@ def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
         "dataset_label": ds["label"],
         "chat_mode": "thinking" if not CHAT_KWARGS else "nonthinking",
         "max_completion_length": MAX_COMPLETION,
+        # Geometrie du protocole : elle dit ce que le run a mesure. Une
+        # micro-batch divisee ne doit pas se lire comme un protocole change.
+        "per_device_train_batch_size": per_device_batch,
+        "gradient_accumulation_steps": grad_accum,
+        "effective_completions_per_step": effective,
+        "generation_batch_size": effective,
         "model": MODELS[model_key]["label"],
         "model_key": model_key,
         "seed": seed,
@@ -1191,6 +1233,24 @@ def main() -> int:
              "42 du bras 8B, la garde aurait arrete le run en quelques minutes au "
              "lieu de 6 h 30.",
     )
+    ap.add_argument(
+        "--per-device-batch",
+        type=int,
+        default=8,
+        help="micro-batch en sequences par forward/backward (defaut : 8). "
+             "Diviser ce nombre divise le tenseur de logits du backward ; "
+             "pour que la MESURE ne bouge pas, il faut doubler --grad-accum "
+             "en meme temps (batch effectif et round de generation inchanges).",
+    )
+    ap.add_argument(
+        "--grad-accum",
+        type=int,
+        default=4,
+        help="accumulation de gradient (defaut : 4). Le batch effectif par "
+             "pas d'optimiseur vaut --per-device-batch x --grad-accum ; "
+             "le round de generation vaut le meme produit (4 prompts x 8 "
+             "generations a 8 x 4).",
+    )
     args = ap.parse_args()
 
     global MAX_COMPLETION
@@ -1221,7 +1281,9 @@ def main() -> int:
     RUNS_ROOT.mkdir(parents=True, exist_ok=True)
     mode_run(args.model, args.seed, steps, smoke=args.mode == "smoke",
              dataset_key=args.dataset,
-             no_signal_threshold=args.abort_if_no_signal)
+             no_signal_threshold=args.abort_if_no_signal,
+             per_device_batch=args.per_device_batch,
+             grad_accum=args.grad_accum)
     return 0
 
 
