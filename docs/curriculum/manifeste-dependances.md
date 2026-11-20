@@ -1,8 +1,8 @@
 # Manifeste des dependances du cursus
 
-Genere par `scripts/notebook_tools/dependency_manifest.py` (#27544) sur `037f285364def048d2f8f272b0306eeb832919cb`, sans reseau. Politique : `scripts/notebook_tools/dependency_manifest_policy.json`.
+Genere par `scripts/notebook_tools/dependency_manifest.py` (#27544) sur `040a4edeb17d2f3530a8fe8953ce63a465b8560b`, sans reseau. Politique : `scripts/notebook_tools/dependency_manifest_policy.json`.
 
-Mesure : 1928 carnets, 37 fichiers de dependances du cursus (+ 5 hors cursus), 17 series, 278 groupes de repertoires, 63 groupes inclus dans l'image CPU, 47 conflits de versions.
+Mesure : 1928 carnets, fichiers de dependances du cursus et hors cursus, 17 series, 278 groupes de repertoires, 63 groupes inclus dans l'image CPU, 47 conflits de versions.
 
 **Origine des motifs** : `mesure` = deduit d'une lecture du depot ; `declaration` = regle ecrite dans la politique versionnee, contestable.
 

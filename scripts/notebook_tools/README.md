@@ -34,7 +34,7 @@ Tests unitaires dans `scripts/notebook_tools/tests/`.
 
 `dependency_manifest.py` repond a la question du pli 1 de l'Epic #27543 :
 **que doit contenir l'image d'apprentissage CPU, et qu'en reste-t-il exclu ?**
-Il lit `git ls-files` (aucun reseau), enumere les 42 fichiers
+Il lit `git ls-files` (aucun reseau), enumere les fichiers
 `requirements*.txt` / `environment*.yml` du depot, les rattache a leur serie et
 sous-serie, lit le `kernelspec` des carnets (famille de noyau : Python, .NET,
 Lean, Rust), mesure sur la **source des cellules** les besoins GPU, cle d'API

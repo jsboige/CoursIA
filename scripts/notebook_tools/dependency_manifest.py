@@ -1085,8 +1085,7 @@ def render_markdown(manifest: dict) -> str:
     lines.append("")
     lines.append(
         f"Mesure : {counts['notebooks']} carnets, "
-        f"{counts['curriculum_dependency_files']} fichiers de dependances du cursus "
-        f"(+ {counts['infra_dependency_files']} hors cursus), "
+        f"fichiers de dependances du cursus et hors cursus, "
         f"{counts['series']} series, {counts['groups']} groupes de repertoires, "
         f"{counts['included']} groupes inclus dans l'image CPU, "
         f"{counts['conflicts']} conflits de versions."
