@@ -19,6 +19,12 @@ from pyshacl import validate
 VOCAB = Namespace("https://github.com/jsboige/CoursIA/vocab/cursus#")
 DEFAULT_CATALOG = Path(__file__).resolve().parents[2] / "COURSE_CATALOG.generated.json"
 DEFAULT_SHAPES = Path(__file__).with_name("curriculum-shapes.ttl")
+DEFAULT_INTERFACES = Path(__file__).with_name("agent_interfaces.json")
+
+# Facette « classe d'interface » (#27071) : les trois classes mesurées par le
+# recensement agentique. Enumeration fermee -- une classe inconnue est refusee,
+# jamais inventee.
+INTERFACE_CLASSES = ("bridge", "cli", "mcp")
 
 
 def _resource(kind: str, key: str) -> URIRef:
@@ -134,6 +140,47 @@ def build_graph(entries: list[dict]) -> Graph:
     return graph
 
 
+def build_interfaces_graph(interfaces: list[dict]) -> Graph:
+    """Convertit l'inventaire des interfaces agentiques en ressources RDF.
+
+    Chaque entree porte une classe d'interface fermee (cli / mcp / bridge),
+    un chemin reel du depot et le contrat d'invocation mesure. Les champs
+    absents ne sont pas deduits : une description ou une semantique de
+    sortie manquante reste absente du graphe.
+    """
+    graph = Graph()
+    graph.bind("cursus", VOCAB)
+    graph.bind("dct", DCTERMS)
+    graph.bind("rdfs", RDFS)
+    for entry in interfaces:
+        name = entry.get("name")
+        path = entry.get("path")
+        interface_class = entry.get("class")
+        contract = entry.get("contract") or {}
+        usage = contract.get("usage")
+        if not all(isinstance(v, str) and v.strip() for v in (name, path, interface_class, usage)):
+            raise ValueError(
+                "chaque interface doit avoir name, path, class et contract.usage non vides"
+            )
+        if interface_class not in INTERFACE_CLASSES:
+            raise ValueError(f"{name}: class doit etre une de {', '.join(INTERFACE_CLASSES)}")
+        interface = _resource("interface", name)
+        graph.add((interface, RDF.type, VOCAB.Interface))
+        graph.add((interface, RDFS.label, Literal(name, lang="fr")))
+        graph.add((interface, DCTERMS.identifier, Literal(path)))
+        graph.add((interface, VOCAB.interfaceClass, Literal(interface_class)))
+        graph.add((interface, VOCAB.invocation, Literal(usage.strip())))
+        description = entry.get("description")
+        if isinstance(description, str) and description.strip():
+            graph.add(
+                (interface, DCTERMS.description, Literal(description.strip(), lang="fr"))
+            )
+        exit_semantics = contract.get("exit_semantics")
+        if isinstance(exit_semantics, str) and exit_semantics.strip():
+            graph.add((interface, VOCAB.exitSemantics, Literal(exit_semantics.strip())))
+    return graph
+
+
 def validate_graph(graph: Graph, shapes_path: Path = DEFAULT_SHAPES) -> tuple[bool, str]:
     """Valide la structure commune du graphe avec les formes SHACL."""
     shapes = Graph().parse(shapes_path, format="turtle")
@@ -144,9 +191,17 @@ def validate_graph(graph: Graph, shapes_path: Path = DEFAULT_SHAPES) -> tuple[bo
     return bool(conforms), str(report_text)
 
 
-def generate(catalog_path: Path, output_path: Path, shapes_path: Path) -> int:
+def generate(
+    catalog_path: Path,
+    output_path: Path,
+    shapes_path: Path,
+    interfaces_path: Path | None = None,
+) -> int:
     entries = json.loads(catalog_path.read_text(encoding="utf-8"))
     graph = build_graph(entries)
+    if interfaces_path is not None:
+        inventory = json.loads(interfaces_path.read_text(encoding="utf-8"))
+        graph += build_interfaces_graph(inventory.get("interfaces", []))
     conforms, report = validate_graph(graph, shapes_path)
     if not conforms:
         print(report, file=sys.stderr)
@@ -162,8 +217,12 @@ def main() -> int:
     parser.add_argument("--catalog", type=Path, default=DEFAULT_CATALOG)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--shapes", type=Path, default=DEFAULT_SHAPES)
+    parser.add_argument(
+        "--interfaces", type=Path, default=None,
+        help="inventaire JSON optionnel des interfaces agentiques (classes cli/mcp/bridge)",
+    )
     args = parser.parse_args()
-    return generate(args.catalog, args.output, args.shapes)
+    return generate(args.catalog, args.output, args.shapes, args.interfaces)
 
 
 if __name__ == "__main__":

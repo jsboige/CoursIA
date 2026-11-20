@@ -1201,3 +1201,166 @@ def test_cli_scan_missing_path_exits_two(tmp_path):
     )
     assert "Traceback" not in r.stderr
     assert "path not found" in r.stderr.lower()
+
+# Custom absolute NuGet caches seen in the 26239 and 26249 E2E outputs.
+_REAL_CUSTOM_BANNER = (
+    'Loading extensions from `/workspace/coursia-toolchains/nuget/skiasharp/'
+    '2.88.6/interactive-extensions/dotnet/SkiaSharp.DotNet.Interactive.dll`'
+)
+
+
+@pytest.mark.parametrize('banner', [
+    _REAL_CUSTOM_BANNER,
+    _REAL_CUSTOM_BANNER + '\n',
+    'Loading extensions from `/opt/shared cache/pkg.name/1.2.3-beta.1/'
+    'interactive-extensions/dotnet/Extension.dll`',
+    'Loading extensions from `D:\\cache\\pkg\\1.0.0\\interactive-extensions\\dotnet\\Ext.dll`',
+    'Loading extensions from `\\\\server\\cache\\pkg\\1.0.0\\interactive-extensions\\dotnet\\Ext.dll`',
+])
+def test_custom_nuget_banner_is_detected(banner):
+    assert _has_leak(banner)
+    assert _first_matching_label(banner) == 'nuget'
+
+
+@pytest.mark.parametrize('banner', [
+    _REAL_CUSTOM_BANNER.replace('/workspace/', '~/workspace/'),
+    _REAL_CUSTOM_BANNER.replace('/workspace/', './workspace/'),
+    _REAL_CUSTOM_BANNER.replace('Loading extensions from ', 'Loaded extensions from '),
+    _REAL_CUSTOM_BANNER.replace('`', ''),
+    _REAL_CUSTOM_BANNER.replace('/interactive-extensions/', '/lib/'),
+    _REAL_CUSTOM_BANNER.replace('/2.88.6/', '/latest/'),
+    _REAL_CUSTOM_BANNER.replace('.dll`', '.pdb`'),
+    'scientific result\n' + _REAL_CUSTOM_BANNER,
+    _REAL_CUSTOM_BANNER + '\nscientific result',
+])
+def test_custom_nuget_near_matches_are_preserved(banner):
+    assert not _has_leak(banner)
+
+
+def test_custom_nuget_category_filter():
+    import strip_machine_paths as smp
+
+    smp.ACTIVE_CATEGORIES = {'pip'}
+    assert not _has_leak(_REAL_CUSTOM_BANNER)
+    smp.ACTIVE_CATEGORIES = {'nuget'}
+    assert _has_leak(_REAL_CUSTOM_BANNER)
+
+
+@pytest.mark.parametrize('form', ['list', 'string'])
+def test_custom_nuget_surgical_and_idempotent(tmp_path, form):
+    # Two matching real-world banners plus nearby output and notebook state.
+    banner_value = [_REAL_CUSTOM_BANNER] if form == 'list' else _REAL_CUSTOM_BANNER
+    keep = 'scientific result\n' + _REAL_CUSTOM_BANNER
+    cells = [_code(['# source must survive\n', 'print("scientific result")\n'], [
+        {'output_type': 'display_data', 'metadata': {'tag': 'retained'},
+         'data': {'text/plain': banner_value, 'image/svg+xml': ['<svg/>']}},
+        _stream_output(keep),
+        _display_output('ordinary result'),
+    ], execution_count=19)]
+    p = _write_nb(tmp_path / 'real-banner.ipynb', cells)
+    before = json.loads(p.read_text(encoding='utf-8'))
+    assert count_leak_lines(p) == 1
+    assert find_leak_outputs(p) == [(0, 0, 'text/plain')]
+    assert strip_in_place(p) == (1, 1)
+    after = json.loads(p.read_text(encoding='utf-8'))
+    expected = json.loads(json.dumps(before))
+    expected['cells'][0]['outputs'][0]['data']['text/plain'] = [] if form == 'list' else ''
+    assert after == expected
+    clean_bytes = p.read_bytes()
+    assert strip_in_place(p) == (0, 0)
+    assert p.read_bytes() == clean_bytes
+
+
+@pytest.mark.parametrize('form', ['list', 'string'])
+def test_matching_metadata_and_non_code_fields_are_byte_preserved(tmp_path, form):
+    value = [_REAL_CUSTOM_BANNER] if form == 'list' else _REAL_CUSTOM_BANNER
+    nb = _nb([
+        {'cell_type': 'markdown', 'metadata': {'text/plain': value},
+         'source': [_REAL_CUSTOM_BANNER]},
+        _code(['pass\n'], [_display_output(_REAL_CUSTOM_BANNER, form=form)]),
+    ])
+    nb['metadata'] = {'text/plain': value, 'text': value}
+    p = tmp_path / 'metadata.ipynb'
+    p.write_text(json.dumps(nb, indent=2), encoding='utf-8')
+    raw_before = p.read_text(encoding='utf-8')
+    needle = json.dumps(_REAL_CUSTOM_BANNER)
+    # Locate the output after its output_type; metadata copies remain untouched.
+    position = raw_before.index(needle, raw_before.index('"output_type": "display_data"'))
+    expected = (raw_before[:position] + ('' if form == 'list' else '""')
+                + raw_before[position + len(needle):])
+    assert strip_in_place(p) == (1, 1)
+    assert p.read_text(encoding='utf-8') == expected
+    assert json.loads(expected)['metadata'] == nb['metadata']
+
+
+def test_custom_banner_preserves_crlf_and_neighbor_elements(tmp_path):
+    nb = _nb([_code(['pass\n'], [{
+        'output_type': 'display_data', 'metadata': {},
+        'data': {'text/plain': ['before', _REAL_CUSTOM_BANNER, 'after']},
+    }])])
+    raw = json.dumps(nb, indent=2).replace('\n', '\r\n').encode()
+    p = tmp_path / 'crlf.ipynb'
+    p.write_bytes(raw)
+    needle = (json.dumps(_REAL_CUSTOM_BANNER) + ',').encode()
+    assert strip_in_place(p) == (1, 1)
+    # Only the banner and its separator are removed; line endings are intact.
+    assert p.read_bytes() == raw.replace(needle, b'', 1)
+    assert json.loads(p.read_bytes())['cells'][0]['outputs'][0]['data']['text/plain'] == ['before', 'after']
+
+
+@pytest.mark.parametrize(('category', 'cache'), [
+    ('pip', r'AppData\Roaming\Python\cache'),
+    ('hf', r'.cache\huggingface\cache'),
+])
+def test_banner_overlap_respects_non_nuget_category(tmp_path, category, cache):
+    import strip_machine_paths as smp
+
+    smp.ACTIVE_CATEGORIES = {category}
+    banner = (f'Loading extensions from `C:\\Users\\alice\\{cache}\\pkg\\1.0.0\\'
+              'interactive-extensions\\dotnet\\Ext.dll`')
+    p = _write_nb(tmp_path / 'overlap.ipynb', [_code(['pass\n'], [_display_output(banner)])])
+    assert _has_leak(banner)
+    assert _first_matching_label(banner) == category
+    assert strip_in_place(p) == (1, 1)
+    result = json.loads(p.read_text(encoding='utf-8'))['cells'][0]['outputs'][0]['data']['text/plain'][0]
+    assert result.startswith('Loading extensions from `<USER_PATH>')
+    assert 'alice' not in result
+    assert result.endswith('interactive-extensions\\dotnet\\Ext.dll`')
+    assert strip_in_place(p) == (0, 0)
+
+
+def test_adjacent_drop_runs_and_redactions_preserve_complete_json(tmp_path):
+    """Exhaust all DROP/REDACT/keep sequences through length five."""
+    from itertools import product
+
+    warning = (r'warning C:\Users\alice\AppData\Roaming\Python\Python313'
+               r'\site-packages\m.py: detail')
+    redacted = (r'warning <USER_PATH>\AppData\Roaming\Python\Python313'
+                r'\site-packages\m.py: detail')
+    values = {'D': _REAL_CUSTOM_BANNER, 'R': warning, 'K': 'science é [x]'}
+    for size in range(1, 6):
+        for sequence in product('DRK', repeat=size):
+            if 'D' not in sequence:
+                continue
+            original = _nb([_code(['source'], [{
+                'output_type': 'display_data',
+                'metadata': {'text/plain': [_REAL_CUSTOM_BANNER]},
+                'data': {'text/plain': [values[k] for k in sequence],
+                         'image/svg+xml': ['<svg/>']},
+            }])])
+            expected = json.loads(json.dumps(original))
+            expected['cells'][0]['outputs'][0]['data']['text/plain'] = [
+                redacted if k == 'R' else values[k] for k in sequence if k != 'D'
+            ]
+            p = tmp_path / 'runs.ipynb'
+            p.write_text(json.dumps(original, ensure_ascii=False, separators=(',', ':')),
+                         encoding='utf-8')
+            count = sequence.count('D') + sequence.count('R')
+            assert strip_in_place(p) == (1, count), sequence
+            # json.loads must succeed before checking the exact bytes and data.
+            assert json.loads(p.read_bytes()) == expected, sequence
+            assert p.read_bytes() == json.dumps(expected, ensure_ascii=False,
+                                                separators=(',', ':')).encode(), sequence
+            clean = p.read_bytes()
+            assert strip_in_place(p) == (0, 0), sequence
+            assert p.read_bytes() == clean, sequence
