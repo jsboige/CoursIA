@@ -34,8 +34,12 @@ class FiftyTwoWeekHighAlgorithm(QCAlgorithm):
         self.set_end_date(2026, 11, 18)
         self.set_cash(100_000)  # USD by default
         self.set_benchmark("SPY")
+        # Transaction costs: no custom brokerage model is set, so Lean's
+        # default equity brokerage model (per-share commission + slippage)
+        # is in force on every liquidate()/set_holdings() below and on the
+        # benchmark's single initial buy.
         for sym in UNIVERSE:
-            self.add_equity(sym)
+            self.add_equity(sym, Resolution.Daily)
         self._rebal_month = None
 
     def OnData(self, slice):
@@ -45,10 +49,15 @@ class FiftyTwoWeekHighAlgorithm(QCAlgorithm):
         self._rebal_month = month
         scores = []
         for sym in UNIVERSE:
-            bars = list(self.history(sym, 365))
-            if len(bars) < 120:
+            # 365 daily closes as a DataFrame. The explicit Resolution.Daily
+            # is load-bearing: without it the int argument is read as *seconds*
+            # (a handful of Minute bars) and the result is a DataFrame whose
+            # `len()` is the row count, so `len(df) < 120` is always true and
+            # the strategy silently never trades.
+            hist = self.history(sym, 365, Resolution.Daily)
+            if len(hist) < 120:
                 continue
-            closes = [bar.Close for bar in bars]
+            closes = list(hist["close"])
             high52 = max(closes)
             if high52 <= 0:
                 continue
