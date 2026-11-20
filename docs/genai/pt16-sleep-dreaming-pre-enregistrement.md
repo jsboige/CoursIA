@@ -13,7 +13,7 @@ Ali Behrouz, Farnoosh Hashemi, Adel Javanmard, Vahab Mirrokni, « Language Model
 ## Claim, contre-claim et périmètre
 
 - **Hypothèse H1 (consolidation stabilise).** Après consolidation par replay, les features SAE portant les faits appris sont **plus stables** (split-half, voisinage) et **plus fidèles** (reconstruction locale) qu'après la seule acquisition rapide — à budget d'optimisation égal.
-- **Hypothèse H2 (l'ordre compte).** La séquence consolidation→dreaming diffère mesurablement (au sens des sondes S1–S5 ci-dessous) du dreaming direct sans consolidation (bras C-nc) et du wake prolongé à budget égal (bras C-wake).
+- **Hypothèse H2 (l'ordre compte).** La séquence consolidation→dreaming diffère mesurablement (au sens des sondes P1–P5 ci-dessous) du dreaming direct sans consolidation (bras C-nc) et du wake prolongé à budget égal (bras C-wake).
 - **Hypothèse H3 (causalité lisible).** Le clamp des features identifiées comme porteuses des faits (par le stade le plus consolidé) dégrade le rappel des faits **plus** qu'un clamp témoin de features aléatoires appariées en activité (panel du harnais, `--matched-panel`) — l'effet est directionnel et spécifique.
 - **Contre-claim adversarial.** Tout changement observé entre stades est un artefact du déplacement des poids sous un SAE **fixe** (le microscope se désaligne à mesure que le modèle bouge), pas une propriété de la consolidation. Le banc doit la mettre en défaut par des sondes qui ne dépendent pas de l'alignement SAE seul (P4 : rétention comportementale des faits ; mesure de dérive de reconstruction sur corpus **neutre** — des faits jamais appris).
 - **Non-claim.** Ni une reproduction du paradigme Sleep complet (pas de croissance de réseau, pas de RL), ni une claim neurophysiologique sur le sommeil humain, ni une claim de transférabilité du SAE (le SAE reste sur **son** modèle de base — appariement par repo-id, cf. « Sujet et lentille »). Échelle pédagogique : les effets mesurés caractérisent ce couple modèle×corpus, pas « les LLM ».
@@ -62,7 +62,7 @@ Ali Behrouz, Farnoosh Hashemi, Adel Javanmard, Vahab Mirrokni, « Language Model
 | Gate | Prédiction (direction) | Échec |
 |---|---|---|
 | **G1** | stabilité split-half (P2) des features-faits : S2 > S1, et S2 ≥ C-wake au même point de budget | si S2 ≤ S1 |
-| **G2** | l'ordre compte : au moins une sonde S1–S5 sépare {S2→S3} de {C-nc} au-delà de la bande v2 | si aucune sonde ne sépare |
+| **G2** | l'ordre compte : au moins une sonde P1–P5 sépare {S2→S3} de {C-nc} au-delà de la bande v2 | si aucune sonde ne sépare |
 | **G3** | spécificité : le replay de faits étrangers (C-shuffle) ne stabilise **pas** les features-faits au-delà de C-wake | si C-shuffle ≈ S2 |
 | **G4** | causalité : clamp des top-features-faits dégrade P4 plus que le panel apparié en activité (H3) | si Δclamp-faits ≤ Δclamp-témoin |
 | **G5** (validité) | P5 (dérive du microscope sur neutre) reste sous bande v2 — sinon les gates G1–G4 sont **non interprétables** et le verdict le dit | — |
