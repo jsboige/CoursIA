@@ -67,11 +67,13 @@ from pathlib import Path
 ORGANES = (
     "scripts/coordination/tapis_rapide.py",
     "scripts/coordination/tapis_marqueurs.py",
+    "scripts/coordination/tapis_sature.py",
     "scripts/coordination/gh_bulk.py",
     # La LECTURE elle-meme : le conteneur, l'echec qui interdit de servir a
     # moitie, et la mise a plat d'une issue -- dont le `comments_total`
     # INCONNU, qui decide si la fenetre est prouvee complete.
     "scripts/coordination/gh_lecture.py",
+    "scripts/coordination/gh_recherche.py",
     "scripts/coordination/frozen_campaigns.py",
     "scripts/coordination/main_freshness.py",
     # Le CHEMIN DU TIRAGE (bascule #27225) : le classement, ses deux
