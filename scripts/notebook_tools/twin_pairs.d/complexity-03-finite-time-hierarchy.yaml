@@ -1,7 +1,7 @@
 - name: "Complexity-03 Finite-Time Hierarchy"
   family: Complexity
-  python: MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Jumeau solver-free by design : les deux côtés illustrent trois objets finis (budgets, quatre machines booléennes et observations bornées), sans prétendre construire une machine universelle ni démontrer une hiérarchie asymptotique. Python utilise ses entiers natifs ; C# utilise BigInteger et bool? pour représenter les budgets et observations du même modèle. Aucun moteur externe n'est requis par l'expérience source."
