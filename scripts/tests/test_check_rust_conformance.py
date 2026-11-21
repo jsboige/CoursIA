@@ -81,8 +81,12 @@ def test_le_pilote_est_conforme():
     rc, report = crc.run(REGISTRY, ROOT)
     assert rc == 0, f"pilote non conforme : {json.dumps(report, ensure_ascii=False)}"
     assert report["divergences"] == 0
-    entry = report["entries"][0]
-    assert entry["name"] == "Sudoku-02 DancingLinks"
+    # Le pilote se repere par son nom, pas par sa position : le registre
+    # s'enrichit (csp-4-scheduling avant sudoku-02 alphabetiquement) sans
+    # que ce temoin doive suivre l'ordre des fichiers.
+    entry = next(e for e in report["entries"]
+                 if e["name"] == "Sudoku-02 DancingLinks")
+    assert entry is not None
     measures = {m["id"]: m for m in entry["measures"]}
     assert measures["solution_grid"]["status"] == "OK"
     assert measures["solution_grid"]["values"]["python"] == \
@@ -95,7 +99,8 @@ def test_un_cote_absent_est_signale_sans_echouer():
     et sa declaration `absent` n'echoue pas -- l'absence est un fait
     DECLARE, pas une mesure manquante."""
     rc, report = crc.run(REGISTRY, ROOT)
-    entry = report["entries"][0]
+    entry = next(e for e in report["entries"]
+                 if e["name"] == "Sudoku-02 DancingLinks")
     grid = next(m for m in entry["measures"] if m["id"] == "solution_grid")
     assert "csharp" in grid["absent"]
     assert grid["absent"]["csharp"].strip()
