@@ -824,7 +824,10 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 2026-11-09 : +1 paire -- tranche FT-00b de l'axe E de #1650 :
 #   FT-00b-LoRA-Hyperparams-from-scratch-Python_en (deuxieme des trois carnets
 #   encore sans jumeau ; reste FT-00d). 24 + 1 = 25.
-EXPECTED_PAIR_COUNT = 25
+# 2026-11-20 (PR #27587, #27477 jalon 2) : +1 paire -- le carnet Lean-42 de la
+#   Greffe A arrive avec son jumeau : Lean-42-Independance-Arithmetique
+#   -BusyBeaver-Lean_en. 25 + 1 = 26.
+EXPECTED_PAIR_COUNT = 26
 
 
 def _collect_parity_failures(repo_root: Path,
