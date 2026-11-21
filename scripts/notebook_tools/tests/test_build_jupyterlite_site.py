@@ -274,6 +274,53 @@ def test_une_dependance_presente_dans_la_distribution_est_satisfaisante(tmp_path
     assert len(publie) == 1
 
 
+def test_un_import_du_carnet_absent_de_la_distribution_refuse_le_carnet(tmp_path):
+    """Le bundle publie des fichiers et n'installe rien : un import que la
+    distribution ne fournit pas n'est pas satisfait.
+
+    Le critere, lui, accepte une roue pure presente dans son cache -- le
+    deploiement est plus strict, et c'est lui qui publie.
+    """
+    root = tmp_path / "depot"
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb", _nb(["import nashpy"]))
+    publie, refus = bjs.suffisance(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                                   {}, set())
+    assert publie == []
+    assert len(refus) == 1
+    assert any("nashpy" in motif and "absent de la distribution" in motif
+               for motif in refus[0][1])
+
+
+def test_un_carnet_qui_installe_lui_meme_la_roue_est_publie(tmp_path):
+    """Le carnet peut installer une roue pure a l'execution : cette trace
+    la rend disponible, donc l'import est satisfait."""
+    root = tmp_path / "depot"
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb",
+           _nb(["await micropip.install(\"nashpy\")", "import nashpy"]))
+    publie, refus = bjs.suffisance(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                                   {}, set())
+    assert refus == []
+    assert len(publie) == 1
+
+
+def test_un_module_hors_serie_refuse_le_carnet(tmp_path):
+    """Le bundle ne livre que la serie du carnet : un module d'une autre
+    serie ne sera pas dans le site, l'import echouerait en navigation."""
+    root = tmp_path / "depot"
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    (root / "AutresSeries").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb", _nb(["import module_partout"]))
+    (root / "AutresSeries" / "module_partout.py").write_text(
+        "VALEUR = 1\n", encoding="utf-8")
+    publie, refus = bjs.suffisance(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                                   {}, set())
+    assert publie == []
+    assert len(refus) == 1
+    assert any("hors serie" in motif for motif in refus[0][1])
+
+
 def test_un_import_inconnu_ne_stage_aucun_module(tmp_path):
     """Un import qui n'est pas un module de la serie n'embarque rien.
 

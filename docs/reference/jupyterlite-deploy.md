@@ -63,11 +63,25 @@ verrou `pyodide-lock.json`), et non etre une roue pure que le carnet
 installerait lui-meme.
 
 Le deploiement applique donc une regle de suffisance **au-dessus** du
-critere : pour chaque candidat du lot, il resout les imports du carnet,
-puis ceux des modules locaux que le carnet importe. Un carnet dont une
-dependance manque est **ecarte du lot**, avec le motif ecrit dans le
-manifeste (`refuses`) et sur la sortie de la construction. Rien n'est
-silencieusement retire.
+critere : pour chaque candidat du lot, il resout
+
+1. les imports **du carnet lui-meme** ;
+2. puis ceux des **modules locaux** que le carnet importe, recursivement.
+
+Un import n'est satisfait que s'il est :
+
+- dans la **stdlib** ;
+- dans la **distribution** Pyodide (le verrou `pyodide-lock.json`) ;
+- **installe par le carnet lui-meme** (`micropip.install`, `%pip install`,
+  `!pip install` -- le deploiement lit ces appels dans les sources) ;
+- fourni par un **module local** que le carnet embarque (et dont les
+  dependances sont, elles aussi, satisfaites) ;
+- un module **d'une autre serie** : refuse, car le bundle ne livre que la
+  serie du carnet (`module hors serie non livre par le bundle`).
+
+Un carnet dont une dependance manque est **ecarte du lot**, avec le motif
+ecrit dans le manifeste (`refuses`) et sur la sortie de la construction.
+Rien n'est silencieusement retire.
 
 Mesure (lot de huit candidats) : `Causalite-06-DoWhy-Instrument-Faible-Python.ipynb`
 importe son organe de serie `dowhy_iv_organs`, qui importe `dowhy` --
@@ -80,11 +94,17 @@ REFUS MyIA.AI.Notebooks/Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Py
 
 Le lot publie compte alors **sept carnets** sur huit candidats.
 
-C'est un **angle mort du critere**, qu'il porte sur les imports
-*transitifs* des modules locaux : le critere regarde les imports du carnet,
-pas ceux des modules que le carnet embarque. L'alignement des deux est
-poursuivi dans le PR du critere (pli 2.1) ; en attendant, c'est le
-deploiement qui refuse, et qui dit pourquoi.
+C'est un **ecart entre le critere et ce que le bundle livre**. Sur le
+`main` courant, le critere compte 753 carnets Python eligibles ; parmi
+eux, 20 ont un module de serie dont une dependance est absente de la
+distribution, 23 importent un module d'une autre serie, et 138 s'appuient
+sur une **roue pure** du cache sans que le carnet l'installe lui-meme --
+une promesse que le bundle, qui n'installe rien, ne peut pas tenir.
+
+Le deploiement refuse donc ce que le bundle ne peut pas servir ; le
+critere (pli 2.1) doit dire la meme chose, et son alignement est porte
+par l'Epic. Tant que le critere n'a pas bouge, c'est le deploiement qui
+refuse, et qui dit pourquoi.
 
 ## Les modules locaux voyagent avec le carnet
 
