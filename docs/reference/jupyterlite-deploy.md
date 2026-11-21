@@ -232,7 +232,8 @@ celles committes : le carnet `10-SIG-3D-Tiles` affiche `NumPy 2.4.6` a
 l'execution, la sortie commitee annonce `NumPy 2.4.2`.
 
 La preuve complete (sorties de chaque cellule) est versionnee dans
-`docs/reference/jupyterlite-executions/` (`executions.json`, `executions.md`).
+`docs/reference/jupyterlite-executions/` (`executions.json`,
+[`executions.md`](jupyterlite-executions/executions.md)).
 
 ## Limites connues
 
