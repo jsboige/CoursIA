@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-ArgumentAnalysis
-pedagogical_count: 38
-breakdown: ArgumentAnalysis=38
-maturity: BETA=36, ALPHA=1, DRAFT=1
+pedagogical_count: 39
+breakdown: ArgumentAnalysis=39
+maturity: BETA=38, DRAFT=1
 -->
 
 [← SmartContracts](../SmartContracts/README.md) | [↑ SymbolicAI](../README.md) | [SymbolicLearning →](../SymbolicLearning/README.md)
@@ -101,6 +101,7 @@ Les extensions lettrées creusent un palier du parcours ; elles ne le font pas a
 
 - [06b — ATMS et conflits](Argumentation-06b-ATMS-Conflits-Python.ipynb) : représenter une croyance par les environnements minimaux qui la dérivent, observer une invalidation qui retranche sans recalcul, puis comparer les stratégies de résolution de conflits entre agents.
 - [06c — Révision de croyances AGM](Argumentation-06c-Revision-Croyances-Python.ipynb) : appliquer contraction de noyau et révision de Levi sur l'organe Tweety, et examiner les écarts réels du portage — comportements convergents et limites du parseur propositionnel inclus.
+- [06d — Complaisance auditée](Argumentation-06d-Complaisance-Auditee-Python.ipynb) : encoder les règles de cas de décision bornés dans un JTMS, qui donne la réponse attendue par construction, puis mesurer si un modèle servi change de réponse pour une bonne raison — un fait nouveau qui l'y oblige, une pression sans contenu, une affirmation fausse — et s'il abandonne son raisonnement lorsque la pression s'installe.
 
 ### Autour de 07 — Orchestration
 
@@ -218,7 +219,7 @@ Le pipeline mobilise un vocabulaire issu de trois traditions — la rhétorique 
 | **SKOS (Simple Knowledge Organization System)** | Famille de propriétés W3C (`skos:broader`, `skos:narrower`, `skos:inScheme`, `skos:Concept`) qui dominent l'ontologie Argumentum (une relation de chacun de ces types par sophisme, à quelques unités près). La navigation dans la taxonomie s'appuie sur ces relations plutôt que sur AIF. | Onto-01-AIF-OWL2 |
 | **Schemes d'argumentation (Walton)** | Patterns d'inférence (Position to Know, Sign, Rule, Cause to Effect) servant de taxonomie pour présomption : la reconnaissance d'un scheme active les *critiques* associées. Argumentum expose `Sign` (11 labels) et `Analogy` (4 labels) ; `Position to Know`, `Cause to Effect`, `Expert Opinion` et `Popular Opinion` sont absents du label parsing (0 occurrence). | Onto-01-AIF-OWL2, 02 |
 | **CrossLinks `crossLink_*` (Argumentum CSV)** | Huit relations transverses (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo) qui créeraient un **graphe** au-dessus de l'arbre taxonomique. Les relations sont renseignées sur une minorité de sophismes, avec une dominance de `Leverages` et de `IsRelatedTo` — `Denounces` et `Mirrors` restent rares. La couche `crossLink` n'est pas lue de la même façon selon l'OWL : le CSV la porte (carnet Onto-02 §7) ; l'OWL local `ontologies/argumentum_fallacies.owl` en émet aussi (carnet Onto-01 §5), alors que l'OWL du submodule épinglé n'en émet aucune (carnet Onto-02 §8). Les deux carnets lisent donc deux OWL différents et n'aboutissent pas au même constat : écart à réconcilier côté upstream. **Finding méthodologique** : la couche transverse a été curée puis dé-curée délibérément (carnet Onto-02 §1 et §7). | Onto-02-CrossLinks-CSV |
-| **Mappings AIF/Walton (Argumentum CSV)** | Trois colonnes `AIF_skosDirectRef` / `AIF_skosExceptionRef` / `AIF_skosMappingType` (colonnes 70-72 du CSV) relient chaque sophisme aux schemes Walton via les types SKOS `broadMatch` (64), `closeMatch` (33) et `narrowMatch` (19). 116 mappings (8,2% des sophismes) ; 60 schemes Walton uniques sont référencés, top : `VagueVerbalClassification_Inference` (14 occurrences). Ces mappings CSV **concordent avec les `*Match` AA de l'OWL** à l'épingle (116/116) ; le CSV reste la source canonique pour l'alignement sophisme→scheme. | Onto-02-CrossLinks-CSV, 02 |
+| **Mappings AIF/Walton (Argumentum CSV)** | Trois colonnes `AIF_skosDirectRef` / `AIF_skosExceptionRef` / `AIF_skosMappingType` (colonnes 70-72 du CSV) relient chaque sophisme aux schemes Walton via les types SKOS `broadMatch` (118), `relatedMatch` (8), `narrowMatch` (4) et `closeMatch` (1). 131 mappings (9,3% des sophismes) ; 60 schemes Walton uniques sont référencés, top : `VagueVerbalClassification_Inference` (14 occurrences). À l'épingle `b56a546a`, le CSV (131) **devance** les `*Match` AA de l'OWL (116) : l'OWL n'a pas encore absorbé les mappings ajoutés après #763 (divergence mesurée carnet Onto-02 §8) ; le CSV reste la source canonique pour l'alignement sophisme→scheme. | Onto-02-CrossLinks-CSV, 02 |
 | **Gap OWL ↔ CSV (Argumentum upstream)** | L'OWL `argumentum_fallacies.owl` porte un `owl:Class` par sophisme (plus les nœuds AIF) et des labels `skos:prefLabel` fr/en ; le CSV canonique porte les sophismes en 8 langues. L'écart historique entre les deux (un `NamedIndividual` par label, dans l'ancien générateur) est résorbé (carnet Onto-02 §8). Il reste un écart entre le nombre de `owl:Class` et celui des sophismes du CSV, que les carnets ne ventilent pas. La différence de nature est **structurelle** : l'OWL porte les classes, les propriétés et la couche AIF ; le CSV porte la version canonique 8-langues, les relations `crossLink_*` et les mappings AIF. Les deux sources sont **complémentaires, pas redondantes** : OWL = squelette structurel ; CSV = graphe opérationnel. | Onto-02-CrossLinks-CSV, Onto-01-AIF-OWL2 |
 
 ## Prérequis
@@ -300,7 +301,7 @@ ArgumentAnalysis/
 ├── *.ipynb                    # notebooks pédagogiques (pipeline agentique + Dung)
 ├── .env / .env.example        # Configuration
 ├── install_jdk_portable.py    # Installation JDK
-├── data/                      # Données (taxonomie sophismes)
+├── data/                      # Copies figées des taxonomies Argumentum (sophismes + vertus) + notices de licence
 ├── ext_tools/                 # Outils externes locaux (SPASS) — EProver est partagé : ../ext_tools/
 ├── jdk-17-portable/           # JDK (ignoré git)
 ├── libs/                      # JARs Tweety
@@ -335,7 +336,9 @@ Le pipeline génère un rapport JSON dans `output/analysis_report.json` :
 | **[Lean](../Lean/)** | Preuves formelles | La formalisation logique des arguments (Agentic-2) suit le même paradigme que les tactiques Lean. La vérification de cohérence via SAT est analogue aux proof checkers. |
 | **[Tweety-9](../Tweety/Tweety-09-Preferences-Python.ipynb)** | Préférences et vote | L'analyse d'arguments de valeur croise les modèles de préférence et la théorie du choix social (GameTheory/game_theory_lean/SocialChoice/). |
 | **[SemanticWeb](../SemanticWeb/)** | Raisonneur OWL/SHACL | Pattern analogue pour la détection d'incohérence ; l'ontologie Argumentum partage les mêmes contraintes de parsing (`rdflib` et `owlready2` échouent sur l'OWL/XML fonctionnel ; `ObjectExactCardinality` bien formées) — le notebook `Onto-01-AIF-OWL2` charge `argumentum_fallacies.owl` via parseur regex dédié. |
-| **[Argumentum](../../../../Argumentum)** *(submodule, hors-repo)* | Ontologie source | L'ontologie `argumentum_fallacies.owl` (OWL2/XML) est l'export formel de la taxonomie utilisée par le détecteur de sophismes (`02`). Les 8 colonnes `crossLink_*` du CSV upstream complètent les relations OWL natives par des liens inter-noeuds (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo). |
+| **[Argumentum](Argumentum/)** *(sous-module, épingle active)* | Ontologie source | L'ontologie `argumentum_fallacies.owl` (OWL2/XML) est l'export formel de la taxonomie utilisée par le détecteur de sophismes (`02`). Les 8 colonnes `crossLink_*` du CSV upstream complètent les relations OWL natives par des liens inter-noeuds (PredatesOn, Denounces, Leverages, Allows, Opposes, Inverts, Mirrors, IsRelatedTo). |
+
+> **Provenance des sources Argumentum** — deux canaux distincts. Le **sous-module** voisin [`Argumentum/`](Argumentum/) porte l'épingle active du dépôt parent (gitlink ; état épinglé lu par `git ls-tree HEAD MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum`). Les **copies figées** sous [`data/`](data/) — `argumentum_fallacies_taxonomy.csv` et `argumentum_virtues_taxonomy.csv`, avec `NOTICE` et `NOTICE-VIRTUES` — sont les entrées de rejeu des carnets : un carnet relit la copie versionnée, jamais le sous-module vivant. Les copies **ne suivent pas l'épingle automatiquement** : à l'épingle courante (mesuré au moment de cette note), la copie Vertus est identique au byte près au CSV épinglé, tandis que la copie Sophismes diffère du CSV épinglé — deux états de provenance distincts, suivis en [#24498](https://github.com/jsboige/CoursIA/issues/24498).
 
 [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) : une grille de lecture grothendieckienne du dépôt — l'analyse d'argumentation comme changement de représentation vers le vérifiable : du langage naturel aux sémantiques formelles qu'on peut interroger.
 
