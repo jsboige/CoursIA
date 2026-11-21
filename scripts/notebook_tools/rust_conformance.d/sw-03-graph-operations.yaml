@@ -1,0 +1,375 @@
+- name: "SW-03 GraphOperations"
+  family: SemanticWeb
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-Rust.ipynb
+  measures:
+    - id: example_count
+      description: "Example.ttl charge : nombre de triplets (methode fichier)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Fichier  : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 5
+          pattern: "Fichier  : (\\d+) triplets"
+          transform: digits
+        csharp:
+          cell: 6
+          pattern: "Fichier  : (\\d+) triplets"
+          transform: digits
+    - id: parse_identique
+      description: "Comptage fichier vs streaming identique (bool)"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 6
+          pattern: "Identique: (\\w+)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "Identique: (\\w+)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# publie les deux comptes (Fichier/Stream) mais pas la
+            comparaison booleenne entre eux.
+    - id: nt_count
+      description: "Ligne N-Triples parsee : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Format explicite \\(nt\\)  : (\\d+) triplet"
+          transform: digits
+        rust:
+          cell: 7
+          pattern: "Format explicite \\(nt\\)  : (\\d+) triplet"
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# ne reproduit pas la cellule de parsing depuis chaine
+            (1.2) : la demonstration deux-syntaxes est portee par Python et Rust.
+    - id: ttl_count
+      description: "Meme ligne en Turtle : nombre de triplets (une seule semantique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Format explicite \\(ttl\\) : (\\d+) triplet"
+          transform: digits
+        rust:
+          cell: 7
+          pattern: "Format explicite \\(ttl\\) : (\\d+) triplet"
+          transform: digits
+        csharp:
+          absent: "Meme raison que nt_count."
+    - id: animals_count
+      description: "animals.ttl charge : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "animals.ttl : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 9
+          pattern: "animals.ttl : (\\d+) triplets"
+          transform: digits
+        csharp:
+          cell: 11
+          pattern: "animals.ttl : (\\d+) triplets"
+          transform: digits
+    - id: xml_roundtrip
+      description: "RDF/XML chaine vs fichier relus : identiques (bool)"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 15
+          pattern: "Identiques             : (\\w+)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "Identiques             : (\\w+)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit directement via le writer (pas de comparaison
+            chaine/fichier publiee).
+    - id: merge_count
+      description: "Fusion Example+animals : total apres union"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "Apres fusion \\(\\+\\=\\)      : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 19
+          pattern: "Apres fusion \\(insert\\)  : (\\d+) triplets"
+          transform: digits
+        csharp:
+          cell: 22
+          pattern: "Apres fusion           : (\\d+) triplets"
+          transform: digits
+    - id: merge_doublons
+      description: "Doublons refuses a la fusion (namespaces disjoints)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "Doublons supprimes     : (\\d+)"
+          transform: digits
+        rust:
+          cell: 19
+          pattern: "Doublons refuses       : (\\d+)"
+          transform: digits
+        csharp:
+          cell: 22
+          pattern: "Doublons supprimes     : (\\d+)"
+          transform: digits
+    - id: rdf_type_count
+      description: "Selection rdf:type dans animals.ttl : nombre de triplets"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "\\((\\d+) triplets rdf:type\\)"
+          transform: digits
+        rust:
+          cell: 22
+          pattern: "\\((\\d+) triplets rdf:type\\)"
+          transform: digits
+        csharp:
+          absent: >-
+            Le jumeau C# enumere les triplets sans publier leur compte ; la
+            grandeur est portee par Python et Rust.
+    - id: rex_age
+      description: "Propriete ex:age de rex (litteral xsd:integer, nu des suffixes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "ex:age -> \"5\""
+          transform: digits
+        rust:
+          cell: 22
+          pattern: "ex:age -> \"5\""
+          transform: digits
+        csharp:
+          absent: >-
+            Les proprietes de rex en C# ne sont pas publiees au format court
+            (affichage IRIs completes) ; grandeur portee par Python et Rust.
+    - id: older_coco
+      description: "Filtre age > 5 : age de coco"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "ex:coco : 12"
+          transform: digits
+        rust:
+          cell: 24
+          pattern: "ex:coco : 12"
+          transform: digits
+        csharp:
+          cell: 28
+          pattern: "coco : (\\d+)"
+          transform: digits
+    - id: older_buddy
+      description: "Filtre age > 5 : age de buddy"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "ex:buddy : 7"
+          transform: digits
+        rust:
+          cell: 24
+          pattern: "ex:buddy : 7"
+          transform: digits
+        csharp:
+          absent: >-
+            La cellule C# correspondante publie coco (minimum/maximum), pas la
+            liste complete du filtre.
+    - id: oldest_coco
+      description: "Animal le plus age : coco"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "ex:coco : 12 ans"
+          transform: digits
+        rust:
+          cell: 24
+          pattern: "ex:coco : 12 ans"
+          transform: digits
+        csharp:
+          absent: "Couvert indirectement par older_coco (meme valeur 12 publiee)."
+    - id: list_items
+      description: "Liste RDF [1, 2, 3] construite : valeurs lues (digits, nu des suffixes datatypes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "Items \\(Collection\\) : \\[(.*)\\]"
+          transform: digits
+        rust:
+          cell: 27
+          pattern: "Items \\(manual read\\) : \\[(.*)\\]"
+          transform: digits
+        csharp:
+          absent: >-
+            Les items C# portent les suffixes datatype XSD complets, dont les
+            chiffres (2001) polluent la transform digits ; la grandeur est
+            portee par list_total (6 triplets, cote C# compris).
+    - id: list_total
+      description: "Liste de 3 elements : total rdf:first + rdf:rest"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "Total liste        : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 27
+          pattern: "Total liste        : (\\d+) triplets"
+          transform: digits
+        csharp:
+          cell: 31
+          pattern: "GetListAsTriples : (\\d+) triplets"
+          transform: digits
+    - id: append_result
+      description: "Liste [1, 2, 3] apres append x2 : valeurs finales"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "Apres append    : \\[1, 2, 3, 4, 5\\]"
+          transform: text
+        rust:
+          cell: 29
+          pattern: "Apres append    : \\[1, 2, 3, 4, 5\\]"
+          transform: text
+        csharp:
+          absent: >-
+            Les items C# portent les suffixes datatype XSD complets dans le
+            texte ; la grandeur est couverte par list_items (digits).
+    - id: del3_result
+      description: "Liste apres suppression de la valeur 3 : valeurs finales"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "Apres del '3'   : \\[1, 2, 4, 5\\]"
+          transform: text
+        rust:
+          cell: 29
+          pattern: "Apres del '3'   : \\[1, 2, 4, 5\\]"
+          transform: text
+        csharp:
+          absent: "Meme raison que append_result (suffixes datatype dans le texte)."
+    - id: cycle_initial
+      description: "Liste Alice/Bob/Charlie : etat initial"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "Initial\\s+: \\[Alice, Bob, Charlie\\]"
+          transform: text
+        rust:
+          cell: 31
+          pattern: "Initial\\s+: \\[Alice, Bob, Charlie\\]"
+          transform: text
+        csharp:
+          absent: "La sequence Alice/Bob/Charlie du cycle complet est propre aux jumeaux Python et Rust."
+    - id: cycle_clear
+      description: "Destruction de la liste : vide, triplets 6 -> 0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "Apres clear\\(\\)\\s*: \\[\\] \\| triplets 6 -> 0"
+          transform: text
+        rust:
+          cell: 31
+          pattern: "Apres clear\\(\\)\\s*: \\[\\] \\| triplets 6 -> 0"
+          transform: text
+        csharp:
+          absent: >-
+            RetractList C# mesure le graphe entier (11 -> 7), pas la liste
+            seule : grandeur non alignee, declaree ABSENT.
+    - id: ex1_total
+      description: "Exemple guide 1 : total triplets animals.ttl"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 37
+          pattern: "Total triplets : (\\d+)"
+          transform: digits
+        rust:
+          cell: 36
+          pattern: "Total triplets : (\\d+)"
+          transform: digits
+        csharp:
+          cell: 40
+          pattern: "Total triplets : (\\d+)"
+          transform: digits
+    - id: ex2_merge
+      description: "Exemple guide 2 : total apres fusion (avec refus)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 42
+          pattern: "Apres fusion : (\\d+) triplets"
+          transform: digits
+        rust:
+          cell: 41
+          pattern: "Apres fusion : (\\d+) triplets"
+          transform: digits
+        csharp:
+          cell: 45
+          pattern: "Apres fusion : (\\d+) triplets"
+          transform: digits
+    - id: ex3_suppression
+      description: "Exemple guide 3 : liste apres suppression de Bob"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 47
+          pattern: "Apres suppression: \\[Alice, Charlie, Diana\\]"
+          transform: text
+        rust:
+          cell: 46
+          pattern: "Apres suppression: \\[Alice, Charlie, Diana\\]"
+          transform: text
+        csharp:
+          cell: 49
+          pattern: "Apres suppression: \\[Alice, Charlie, Diana\\]"
+          transform: text
