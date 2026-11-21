@@ -866,6 +866,7 @@ project:
     - "docs/reference/repo-size-policy.md"
     - "docs/reference/review-coverage-threshold.md"
     - "docs/reference/rust-ecosystem-map.md"
+    - "docs/reference/rust-porting-spec.md"
     - "docs/reference/scripts-reference.md"
     - "docs/reference/secrets-and-coord-detail.md"
     - "docs/reference/setup-linux-macos.md"
