@@ -32,6 +32,7 @@ import json
 import math
 import random
 import re
+import statistics
 import sys
 import os
 import time
@@ -80,10 +81,12 @@ MODELS: dict[str, dict[str, str]] = {
         # mask_truncated_completions annule la perte (smoke 08/10 :
         # loss/grad/entropy = 0).
         "eos_token": "<|im_end|>",
+        "tier": "0.8-2B",
     },
     "qwen35": {
         "path_glob": "models--Qwen--Qwen3.5-0.8B/snapshots/*",
         "label": "Qwen3.5-0.8B",
+        "tier": "0.8-2B",
     },
     # Etage >= 8-9B demande par #15293 (review user de #15249 : le casting
     # 0.8B/2B est errone pour un exercice de raisonnement mathematique).
@@ -93,6 +96,7 @@ MODELS: dict[str, dict[str, str]] = {
     "qwen3_8b": {
         "path_glob": "models--Qwen--Qwen3-8B/snapshots/*",
         "label": "Qwen3-8B",
+        "tier": "8-14B",
     },
     # Second backbone de l'etage >= 8-9B (#15293), sur le GPU 2 d'ai-01.
     # Le glob suit le depot HF `Qwen/Qwen3-14B` (instruct, non-Base) : c'est
@@ -101,8 +105,13 @@ MODELS: dict[str, dict[str, str]] = {
     "qwen3_14b": {
         "path_glob": "models--Qwen--Qwen3-14B/snapshots/*",
         "label": "Qwen3-14B",
+        "tier": "8-14B",
     },
 }
+
+# Etages de taille compares par #15293 ("tableau comparatif 0.8B/2B vs 8-9B").
+# L'ordre est significatif : le plus petit d'abord.
+TIERS: tuple[str, ...] = ("0.8-2B", "8-14B")
 
 
 def hf_hub_dir() -> Path:
@@ -886,6 +895,245 @@ def mode_selftest() -> int:
         wire_skipped = True
         print(f"selftest: cablage du callback NON teste ({exc}) -- transformers absent")
 
+    # Tableau comparatif par ETAGE de taille (#15293) : la fonction est PURE,
+    # elle se teste sans GPU -- c'est ce qui permet de valider le critere
+    # "tableau comparatif 0.8B/2B vs 8-9B" avant d'avoir les runs 8-14B.
+    tier_fails = []
+    tier_total = 0
+
+    def _pm(model_key: str, deltas: list[float]) -> dict[str, Any]:
+        n = len(deltas)
+        mean = sum(deltas) / n
+        std = (sum((d - mean) ** 2 for d in deltas) / n) ** 0.5
+        return {"label": MODELS[model_key]["label"], "n_seeds": n,
+                "pre_mean": 0.1, "post_mean": 0.1 + mean,
+                "delta_mean": mean, "delta_std": std, "deltas": list(deltas)}
+
+    # (a) etage haut nettement meilleur, 2 graines de chaque cote -> BEATS
+    per_model = {"minicpm5": _pm("minicpm5", [0.01, 0.02]),
+                 "qwen35": _pm("qwen35", [0.00, 0.01]),
+                 "qwen3_8b": _pm("qwen3_8b", [0.20, 0.22]),
+                 "qwen3_14b": _pm("qwen3_14b", [0.21, 0.19])}
+    tbl = build_tier_table(per_model, {k: True for k in per_model})
+    tier_total += 1
+    if not (tbl["cross_tier"]["comparable"] and tbl["cross_tier"]["beats"]
+            and tbl["cross_tier"]["delta_intervals_disjoint"]):
+        tier_fails.append("cas_a")
+        print("FAIL: etage haut nettement meilleur non detecte :", tbl["cross_tier"])
+    tier_total += 1
+    if tbl["tiers"]["8-14B"]["n_seeds"] != 4 or tbl["tiers"]["0.8-2B"]["n_seeds"] != 4:
+        tier_fails.append("cas_a_nseeds")
+        print("FAIL: agregation par etage :", {k: v["n_seeds"] for k, v in tbl["tiers"].items()})
+
+    # (b) un seul cote en 1 graine -> NON comparable (le verdict reste null)
+    tbl_b = build_tier_table({"minicpm5": _pm("minicpm5", [0.01, 0.02]),
+                               "qwen3_8b": _pm("qwen3_8b", [0.20])},
+                              {"minicpm5": True, "qwen3_8b": True})
+    tier_total += 1
+    if tbl_b["cross_tier"]["comparable"] is not False:
+        tier_fails.append("cas_b")
+        print("FAIL: etage a 1 graine declare comparable :", tbl_b["cross_tier"])
+
+    # (c) intervalles chevauchants -> disjoint False, BEATS False
+    tbl_c = build_tier_table({"minicpm5": _pm("minicpm5", [0.01, 0.03]),
+                               "qwen3_8b": _pm("qwen3_8b", [0.02, 0.03])},
+                              {"minicpm5": True, "qwen3_8b": True})
+    tier_total += 1
+    if tbl_c["cross_tier"]["delta_intervals_disjoint"] or tbl_c["cross_tier"]["beats"]:
+        tier_fails.append("cas_c")
+        print("FAIL: intervalles chevauchants declares disjoints :", tbl_c["cross_tier"])
+
+    # (c bis) intervalles QUI SE TOUCHENT (0.02 vs 0.02) : des intervalles
+    # fermes qui se touchent ne sont pas disjoints. Sans epsilon, le bruit
+    # flottant (0.020000000000000004 > 0.02) les declarait disjoints.
+    tbl_c2 = build_tier_table({"minicpm5": _pm("minicpm5", [0.01, 0.02]),
+                                "qwen3_8b": _pm("qwen3_8b", [0.02, 0.03])},
+                               {"minicpm5": True, "qwen3_8b": True})
+    tier_total += 1
+    if tbl_c2["cross_tier"]["delta_intervals_disjoint"]:
+        tier_fails.append("cas_c_bis")
+        print("FAIL: intervalles qui se touchent declares disjoints :",
+              tbl_c2["cross_tier"])
+
+    # (d) une courbe degeneree (pas saine) suffit a bloquer le BEATS
+    tbl_d = build_tier_table(per_model, {**{k: True for k in per_model},
+                                          "qwen3_14b": False})
+    tier_total += 1
+    if tbl_d["cross_tier"]["beats"]:
+        tier_fails.append("cas_d")
+        print("FAIL: BEATS alors qu'une courbe n'est pas saine :", tbl_d["cross_tier"])
+
+    # (e) le rango de taille est le bon pour chaque modele
+    tier_total += 1
+    for key, want in (("minicpm5", "0.8-2B"), ("qwen35", "0.8-2B"),
+                      ("qwen3_8b", "8-14B"), ("qwen3_14b", "8-14B")):
+        if MODELS[key].get("tier") != want:
+            tier_fails.append(f"tier_{key}")
+            print(f"FAIL: tier de {key} = {MODELS[key].get('tier')} (attendu {want})")
+
+    # (f) le tableau markdown porte une ligne par modele
+    tier_total += 1
+    md = render_comparative_table({"per_model": per_model, "tiers": tbl})
+    for label in ("MiniCPM5-2B", "Qwen3-8B", "Qwen3-14B"):
+        if label not in md:
+            tier_fails.append(f"md_{label}")
+            print(f"FAIL: {label} absent du tableau markdown")
+
+    # (g) classification d'un run : graine / smoke / partiel / aborted
+    tier_total += 1
+    for name, run, want in (
+        ("qwen3_8b_seed42.json", {"max_steps": MAX_STEPS}, "seed"),
+        ("qwen3_14b_seed0_smoke.json", {"max_steps": 3}, "smoke"),
+        ("qwen3_8b_seed1.json", {"max_steps": 40}, "partiel"),
+        ("qwen3_8b_seed7.json", {"aborted": True, "max_steps": MAX_STEPS}, "aborted"),
+        # Fail-closed : un budget absent ou non positif ne devient jamais une
+        # graine comparable par l'application silencieuse de MAX_STEPS.
+        ("qwen3_8b_seed8.json", {"post_eval": {"reward_mean": 0.2}}, "exclu"),
+        ("qwen3_8b_seed9.json", {"max_steps": 0}, "exclu"),
+    ):
+        got = classify_run(name, run)
+        if got != want:
+            tier_fails.append(f"class_{name}")
+            print(f"FAIL: classify_run({name}) -> {got} (attendu {want})")
+
+    # (h) axe de saturation : l'organe est consomme, pas reecrit. Les fixtures
+    # sont construites pour tomber sur les trois verdicts de l'organe
+    # (SIGNAL_NUL / SIGNAL_PARTIEL / SIGNAL_UTILE).
+    def _sat_run(model_key: str, seed: int, *, longueur: float,
+                 grads: list[float], reward: float = 0.2,
+                 zero_std: float = 0.0,
+                 pre: float | None = None, post: float | None = None) -> dict[str, Any]:
+        artefact: dict[str, Any] = {
+            "model_key": model_key, "model": MODELS[model_key]["label"],
+            "seed": seed, "max_completion_length": 384,
+            "log_history": [
+                {"completions/mean_length": longueur,
+                 "completions/clipped_ratio": 1.0 if longueur >= 384 else 0.0,
+                 "grad_norm": g, "loss": 0.5, "frac_reward_zero_std": zero_std,
+                 "reward": reward}
+                for g in grads],
+        }
+        if pre is not None:
+            artefact["pre_eval"] = {"reward_mean": pre}
+        if post is not None:
+            artefact["post_eval"] = {"reward_mean": post}
+        return artefact
+
+    run_sature = _sat_run("qwen3_8b", 0, longueur=384.0, grads=[0.0] * 10)
+    run_utile = _sat_run("qwen3_8b", 1, longueur=100.0, grads=[0.5] * 10)
+    run_partiel = _sat_run("qwen3_8b", 2, longueur=100.0,
+                           grads=[0.5, 0.5] + [0.0] * 8)
+    axis = build_saturation_axis([run_sature, run_utile, run_partiel])
+    tier_total += 1
+    if not axis.get("disponible"):
+        tier_fails.append("sat_disponible")
+        print("FAIL: l'axe de saturation n'est pas disponible :", axis)
+    else:
+        bras = axis["par_bras"].get("qwen3_8b", {})
+        # Le bras suit la graine MEDIANE (regle de l'organe) : trois graines
+        # dont les verdicts sont SIGNAL_NUL / SIGNAL_PARTIEL / SIGNAL_UTILE ->
+        # mediane = SIGNAL_PARTIEL.
+        tier_total += 1
+        if bras.get("verdict") != "SIGNAL_PARTIEL":
+            tier_fails.append("sat_verdict_median")
+            print("FAIL: verdict de bras (mediane) =", bras.get("verdict"),
+                  "(attendu SIGNAL_PARTIEL)")
+        # fraction des steps saturees : MEDIANE des graines (regle de l'organe)
+        # -> sur 1,00 / 0,00 / 0,00 la mediane vaut 0,00 (la moyenne vaudrait
+        # 0,33 : c'est exactement la divergence que l'axe evite).
+        tier_total += 1
+        frac = bras.get("frac_steps_satures")
+        if frac is None or abs(frac - 0.0) > 1e-6:
+            tier_fails.append("sat_frac_median")
+            print("FAIL: frac_steps_satures =", frac, "(attendu 0,0, mediane)")
+        # un bras dont toutes les graines saturent -> SIGNAL_NUL
+        tier_total += 1
+        if build_saturation_axis([run_sature, run_sature])["par_bras"]["qwen3_8b"]["verdict"] != "SIGNAL_NUL":
+            tier_fails.append("sat_verdict_nul")
+            print("FAIL: un bras 100 % sature n'est pas classe SIGNAL_NUL")
+        # l'axe du harness CONCORDE avec la sortie de l'organe lui-meme
+        # (`mesurer_fichiers`) : c'est le controle qui interdit au tableau
+        # d'afficher un chiffre que l'organe ne produit pas.
+        tier_total += 1
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            chemins = []
+            for art in (run_sature, run_utile, run_partiel):
+                chemin = Path(tmp) / f"{art['model_key']}_seed{art['seed']}.json"
+                chemin.write_text(json.dumps(art), encoding="utf-8")
+                chemins.append(chemin)
+            sat_mod = _saturation_module()
+            if sat_mod is not None:
+                organe = sat_mod.mesurer_fichiers(chemins)
+                axe_ref = build_saturation_axis([run_sature, run_utile, run_partiel],
+                                                organe_bras=organe.get("bras"))
+                if not axe_ref.get("tous_concordants"):
+                    tier_fails.append("sat_concordance")
+                    print("FAIL: l'axe du harness diverge de l'organe :", axe_ref["par_bras"])
+            else:
+                tier_fails.append("sat_organe_absent")
+                print("FAIL: l'organe de saturation est introuvable")
+
+        # le tableau markdown porte l'axe de saturation
+        tier_total += 1
+        md_sat = render_comparative_table({"per_model": per_model, "tiers": tbl})
+        if "verdict saturation" not in md_sat:
+            tier_fails.append("md_saturation")
+            print("FAIL: le tableau markdown ne porte pas la colonne de saturation")
+
+        # --- Axe « reponse au reward » (2e axe du critere 2) ----------------
+        # Un batch sans dispersion de reward (`frac_reward_zero_std >= 1`) ne
+        # permet aucun gradient d'advantage : c'est la panne du REWARD, et
+        # elle est distincte de la panne de l'optimiseur (gradient sature).
+        run_degenere = _sat_run("qwen3_8b", 3, longueur=100.0,
+                                grads=[0.5] * 10, reward=0.0, zero_std=1.0)
+        tier_total += 1
+        axe_degenere = build_saturation_axis([run_degenere])
+        bras_deg = axe_degenere.get("par_bras", {}).get("qwen3_8b", {})
+        if bras_deg.get("frac_steps_sans_signal") is None \
+                or abs(bras_deg["frac_steps_sans_signal"] - 1.0) > 1e-6:
+            tier_fails.append("reward_sans_signal")
+            print("FAIL: frac_steps_sans_signal =",
+                  bras_deg.get("frac_steps_sans_signal"), "(attendu 1,0)")
+        tier_total += 1
+        if bras_deg.get("frac_steps_recompense_nulle") is None \
+                or abs(bras_deg["frac_steps_recompense_nulle"] - 1.0) > 1e-6:
+            tier_fails.append("reward_nulle")
+            print("FAIL: frac_steps_recompense_nulle =",
+                  bras_deg.get("frac_steps_recompense_nulle"), "(attendu 1,0)")
+        # le tableau markdown porte les deux colonnes de reponse au reward
+        tier_total += 1
+        if "steps sans signal reward" not in md_sat or "reward nulle" not in md_sat:
+            tier_fails.append("md_reward")
+            print("FAIL: le tableau markdown ne porte pas les colonnes de reponse au reward")
+        # garde de comparabilite du gain par step porteur : un bras dont la
+        # mediane des steps porteurs de gradient vaut moins de 1 ne publie
+        # pas ce gain (divise par 0,5, il doublerait un gain reel) -- meme
+        # regle que l'organe. Deux graines : 0 step porteur et 1 step porteur
+        # -> mediane 0,5 -> non comparable.
+        tier_total += 1
+        run_faible_a = _sat_run("qwen3_8b", 4, longueur=100.0, grads=[0.0],
+                                pre=0.1, post=0.3)
+        run_faible_b = _sat_run("qwen3_8b", 5, longueur=100.0, grads=[0.5],
+                                pre=0.1, post=0.3)
+        bras_faible = build_saturation_axis([run_faible_a, run_faible_b])["par_bras"]["qwen3_8b"]
+        if bras_faible.get("gain_eval_par_step_avec_gradient") is not None \
+                or bras_faible.get("gain_eval_par_step_comparable") is not False:
+            tier_fails.append("gain_non_comparable")
+            print("FAIL: un gain par step porteur non comparable est publie :",
+                  bras_faible.get("gain_eval_par_step_avec_gradient"))
+        # ... et il est publie quand la mediane des steps porteurs vaut 1
+        tier_total += 1
+        run_suffisant = _sat_run("qwen3_8b", 5, longueur=100.0, grads=[0.5] * 3,
+                                 pre=0.1, post=0.3)
+        bras_suffisant = build_saturation_axis([run_suffisant])["par_bras"]["qwen3_8b"]
+        if bras_suffisant.get("gain_eval_par_step_avec_gradient") is None \
+                or abs(bras_suffisant["gain_eval_par_step_avec_gradient"] - 0.066667) > 1e-5:
+            tier_fails.append("gain_comparable")
+            print("FAIL: gain par step porteur =",
+                  bras_suffisant.get("gain_eval_par_step_avec_gradient"),
+                  "(attendu +0,0667)")
+
     total_ok = n_match + n_xlam + n_guard + (2 - len(hub_fails))
     total = len(cases) + len(xlam_cases) + len(guard_cases) + 2
     if not wire_skipped:
@@ -893,12 +1141,16 @@ def mode_selftest() -> int:
         # "(câblage 3/3)" se contredisent et obligent a une addition mentale.
         total_ok += wire_total - len(wire_fails)
         total += wire_total
+    total_ok += tier_total - len(tier_fails)
+    total += tier_total
     wire_line = ("câblage NON teste" if wire_skipped
                  else f"câblage {wire_total - len(wire_fails)}/{wire_total}")
     print(f"selftest: {total_ok}/{total} pass (dapo {n_match}/{len(cases)}, "
           f"xlam {n_xlam}/{len(xlam_cases)}, garde {n_guard}/{len(guard_cases)}, "
-          f"cache-hf {2 - len(hub_fails)}/2, {wire_line})")
-    return 1 if (fails or xlam_fails or guard_fails or hub_fails or wire_fails) else 0
+          f"cache-hf {2 - len(hub_fails)}/2, {wire_line}, "
+          f"etages {tier_total - len(tier_fails)}/{tier_total})")
+    return 1 if (fails or xlam_fails or guard_fails or hub_fails or wire_fails
+                 or tier_fails) else 0
 
 
 def mode_baseline(model_key: str, dataset_key: str) -> dict[str, Any]:
@@ -1064,6 +1316,357 @@ def mode_run(model_key: str, seed: int, steps: int, smoke: bool = False,
     return result
 
 
+def _saturation_module() -> Any:
+    """L'organe de saturation, ou None s'il est introuvable.
+
+    ORGANE-FIRST : la mesure de la saturation du budget et ses seuils
+    appartiennent a `scripts/analyse_dapo_saturation.py`. On l'**appelle**,
+    on ne le reecrit pas : une copie divergerait en silence et le tableau
+    comparatif afficherait des seuils que personne ne pourrait refaire.
+    """
+    try:
+        import analyse_dapo_saturation  # noqa: PLC0415  (import tardif volontaire)
+        return analyse_dapo_saturation
+    except Exception:
+        dossier = str(Path(__file__).resolve().parent)
+        if dossier not in sys.path:
+            sys.path.insert(0, dossier)
+        try:
+            import analyse_dapo_saturation  # noqa: PLC0415
+            return analyse_dapo_saturation
+        except Exception:
+            return None
+
+
+def build_saturation_axis(runs: list[dict[str, Any]],
+                          organe_bras: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Axe « saturation » du tableau comparatif (#15293, critere 2).
+
+    Les trois axes demandes par l'issue sont « trainabilite, reponse au
+    reward, saturation » : les deux premiers sortent de l'eval (pre/post),
+    le troisieme sort de l'**organe** `analyse_dapo_saturation.py`, qui
+    mesure la fraction de steps saturees (completions tronquees au budget) et
+    le verdict par bras.
+
+    Regle de l'organe, reprise telle quelle : les seuils s'appliquent au
+    **BRAS** (le `model_key`), pas au lot de fichiers passe en argument. Le
+    verdict est donc reporte par bras et **jamais fusionne entre etages**.
+
+    L'agregat d'un bras est la **MEDIANE** de ses graines (regle de l'organe :
+    « le bras suit la graine mediane »), pas la moyenne : pour le bras 8B,
+    0,64 / 0,65 / 0,83 -> mediane 0,65, moyenne 0,71. Une moyenne afficherait
+    un chiffre que l'organe ne produit pas -- d'ou la comparaison explicite
+    avec `organe_bras` (la sortie de l'organe lui-meme), et le drapeau
+    `concordant` qui dit si les deux concordent.
+
+    FONCTION PURE du point de vue des tests : elle ne lit ni disque ni GPU.
+    """
+    sat = _saturation_module()
+    if sat is None:
+        return {"disponible": False,
+                "raison": "organe analyse_dapo_saturation introuvable"}
+    par_bras: dict[str, list[dict[str, Any]]] = {}
+    for run in runs:
+        rapport = sat.mesurer(run)
+        cle = rapport.get("model_key") or "?"
+        par_bras.setdefault(cle, []).append(rapport)
+    axes: dict[str, Any] = {}
+    for model_key, graines in par_bras.items():
+        graines = sorted(graines, key=lambda g: (g.get("graine") is None, g.get("graine")))
+        frac = [g.get("frac_steps_satures") for g in graines
+                if isinstance(g.get("frac_steps_satures"), (int, float))]
+        sans_grad = [g.get("frac_steps_sans_gradient") for g in graines
+                     if isinstance(g.get("frac_steps_sans_gradient"), (int, float))]
+        vivantes = [g.get("steps_avec_gradient") for g in graines
+                    if isinstance(g.get("steps_avec_gradient"), (int, float))]
+        # --- Axe « reponse au reward » -------------------------------------
+        # Mesures de l'ORGANE, jamais recalculees ici :
+        #  - `frac_steps_sans_signal`     : steps dont le batch de reward n'a
+        #    aucune dispersion (`frac_reward_zero_std >= 1`) -> aucun gradient
+        #    d Advantage possible : le modele ne peut rien apprendre de ce
+        #    step, meme si le gradient existe ;
+        #  - `frac_steps_recompense_nulle`: steps dont la reward moyenne est
+        #    nulle (le modele ne produit aucune reponse correcte) ;
+        #  - `gain_eval_par_step_avec_gradient` : gain d'eval **normalise** par
+        #    le nombre de steps porteurs de gradient -- sans quoi un bras qui
+        #    n'a appris que sur 2 steps parait comparable a un bras qui en a
+        #    appris sur 24 (le point 51 de l'organe).
+        # Ces trois grandeurs separent deux pannes distinctes : celle de
+        # l'OPTIMISEUR (le gradient sature) et celle du REWARD (le batch est
+        # degenere). Le tableau ne les confondait pas.
+        sans_signal = [g.get("frac_steps_sans_signal") for g in graines
+                       if isinstance(g.get("frac_steps_sans_signal"), (int, float))]
+        recompense_nulle = [g.get("frac_steps_recompense_nulle") for g in graines
+                            if isinstance(g.get("frac_steps_recompense_nulle"), (int, float))]
+        gain_normalise = [g.get("gain_eval_par_step_avec_gradient") for g in graines
+                          if isinstance(g.get("gain_eval_par_step_avec_gradient"), (int, float))]
+        # Meme garde de comparabilite que l'organe : le gain par step porteur
+        # n'est publie que si la MEDIANE des steps porteurs de gradient vaut au
+        # moins 1 (divise par 0,5, il doublerait un gain reel). Sans cette
+        # garde, l'axe afficherait un chiffre que l'organe refuse de publier.
+        median_vivantes = statistics.median(vivantes) if vivantes else None
+        comparable_gain = median_vivantes is not None and median_vivantes >= 1
+        axes[model_key] = {
+            "verdict": sat.verdict_bras(graines),
+            "n_seeds": len(graines),
+            "graines_ids": [g.get("graine") for g in graines],
+            "frac_steps_satures": round(statistics.median(frac), 4) if frac else None,
+            "frac_steps_sans_gradient": (round(statistics.median(sans_grad), 4)
+                                         if sans_grad else None),
+            "frac_steps_sans_signal": (round(statistics.median(sans_signal), 4)
+                                       if sans_signal else None),
+            "frac_steps_recompense_nulle": (round(statistics.median(recompense_nulle), 4)
+                                            if recompense_nulle else None),
+            "gain_eval_par_step_avec_gradient": (
+                round(statistics.median(gain_normalise), 6)
+                if gain_normalise and comparable_gain else None),
+            "gain_eval_par_step_comparable": bool(comparable_gain),
+            # MEDIANE comme l'organe (sans arrondi : sur deux graines elle
+            # vaut 1,5 -- un entier l'aurait transforme en 1 et aurait fait
+            # diverger l'axe de la sortie de l'organe).
+            "steps_avec_gradient": statistics.median(vivantes) if vivantes else None,
+            "graines": [
+                {"graine": g.get("graine"), "verdict": g.get("verdict"),
+                 "frac_steps_satures": g.get("frac_steps_satures"),
+                 "frac_steps_sans_gradient": g.get("frac_steps_sans_gradient"),
+                 "frac_steps_sans_signal": g.get("frac_steps_sans_signal"),
+                 "frac_steps_recompense_nulle": g.get("frac_steps_recompense_nulle"),
+                 "steps_avec_gradient": g.get("steps_avec_gradient")}
+                for g in graines],
+        }
+        if organe_bras and model_key in organe_bras:
+            reference = organe_bras[model_key]
+            axes[model_key]["organe"] = {
+                cle: reference.get(cle) for cle in
+                ("verdict", "frac_steps_satures", "frac_steps_sans_gradient",
+                 "steps_avec_gradient", "gain_eval_par_step_avec_gradient")}
+            axes[model_key]["concordant"] = bool(
+                reference.get("verdict") == axes[model_key]["verdict"]
+                and reference.get("frac_steps_satures") == axes[model_key]["frac_steps_satures"]
+                and reference.get("steps_avec_gradient") == axes[model_key]["steps_avec_gradient"]
+                and reference.get("gain_eval_par_step_avec_gradient")
+                == axes[model_key]["gain_eval_par_step_avec_gradient"])
+    return {"disponible": True, "par_bras": axes,
+            "source": "scripts/analyse_dapo_saturation.py",
+            "tous_concordants": all(a.get("concordant") for a in axes.values())
+            if axes else None,
+            # Les deux mesures de reponse au reward (`frac_steps_sans_signal`,
+            # `frac_steps_recompense_nulle`) viennent de l'ORGANE graine par
+            # graine, mais son agregat par bras ne les publie pas : il n'y a
+            # donc aucune reference contre laquelle comparer. Elles sont
+            # agregees ici avec la MEME regle de mediane que l'organe, et le
+            # tableau les presente comme des mesures de l'organe, pas comme
+            # un calcul du harness.
+            "reponse_au_reward_agreggee_par_l_organe": True}
+
+
+def _mean_optional(values: list[Any]) -> float | None:
+    """Moyenne des valeurs numeriques non nulles ; None si aucune.
+
+    Distincte d'une moyenne sur 0 : « on ne sait pas » et « zero » ne sont
+    pas le meme chiffre, et un tableau qui affiche 0,0000 la ou la mesure
+    n'existe pas invente une mesure.
+    """
+    nums = [float(v) for v in values if isinstance(v, (int, float))]
+    if not nums:
+        return None
+    return sum(nums) / len(nums)
+
+
+def build_tier_table(per_model: dict[str, dict[str, Any]],
+                     healthy: dict[str, bool]) -> dict[str, Any]:
+    """Tableau comparatif par etage de taille (#15293).
+
+    FONCTION PURE : elle ne lit ni disque ni GPU, donc elle se teste dans
+    `selftest` sans attendre un run de plusieurs heures de GPU.
+
+    per_model : {model_key: {"delta_mean", "delta_std", "deltas", "n_seeds", ...}}
+    healthy   : {model_key: bool} -- "courbes saines" (post > pre sur chaque
+                graine, pas d'effondrement de longueur), verdict de l'analyse
+                de courbes.
+
+    Le critere de l'issue est un COMPARATIF d'etages (0.8B/2B vs 8-9B), pas
+    une comparaison de paires de modeles : la table par etage est donc
+    calculee par-dessus `per_model`, et le verdict inter-etage suit la meme
+    regle que la regle par paires (intervalles +-1 std disjoints + courbes
+    saines), sans la reecrire.
+    """
+    tiers: dict[str, Any] = {}
+    for tier in TIERS:
+        keys = [k for k in sorted(per_model)
+                if MODELS.get(k, {}).get("tier") == tier]
+        if not keys:
+            continue
+        pooled: list[float] = []
+        for k in keys:
+            pooled.extend(per_model[k].get("deltas", []))
+        n = len(pooled)
+        mean = (sum(pooled) / n) if n else 0.0
+        std = ((sum((d - mean) ** 2 for d in pooled) / n) ** 0.5) if n else 0.0
+        tiers[tier] = {
+            "models": keys,
+            "n_models": len(keys),
+            "n_seeds": n,
+            "delta_mean": mean,
+            "delta_std": std,
+            "per_model_delta_mean": {k: per_model[k]["delta_mean"] for k in keys},
+            "courbes_saines": {k: bool(healthy.get(k, False)) for k in keys},
+            "toutes_courbes_saines": all(bool(healthy.get(k, False)) for k in keys),
+            "saturation": {
+                # Le VERDICT de saturation est par BRAS (regle de l'organe) :
+                # il est reporte, jamais fusionne. Seule la fraction des
+                # branches est moyennee sur l'etage -- et cette moyenne est
+                # nommee comme telle (elle n'est pas un chiffre de l'organe).
+                "par_bras": {k: (per_model[k].get("saturation") or {}) for k in keys},
+                "frac_satures_moyenne_bras": _mean_optional([
+                    ((per_model[k].get("saturation") or {}).get("frac_steps_satures"))
+                    for k in keys]),
+            },
+        }
+    cross: dict[str, Any] = {
+        "comparable": False,
+        "regle": ("comparaison inter-etage : deux etages, >= 2 graines chacun, "
+                  "delta moyen de l'etage haut > etage bas avec intervalles "
+                  "+-1 std disjoints, et courbes saines des deux cotes"),
+    }
+    if len(tiers) == 2:
+        bas, haut = TIERS
+        tb, th = tiers[bas], tiers[haut]
+        # Disjointness of CLOSED intervals: two intervals that only touch are
+        # NOT disjoint. The strict `>` alone is decided by float noise
+        # (0.025-0.005 = 0.020000000000000004 > 0.015+0.005 = 0.02 -> True),
+        # so the separation is compared with a relative epsilon. The legacy
+        # per-pair rule (identical formula, no epsilon) is left untouched on
+        # purpose: the historical verdict must not move.
+        hi = th["delta_mean"] - th["delta_std"]
+        lo = tb["delta_mean"] + tb["delta_std"]
+        eps = 1e-9 * max(1.0, abs(hi), abs(lo))
+        disjoint = hi > lo + eps
+        seeds_ok = tb["n_seeds"] >= 2 and th["n_seeds"] >= 2
+        cross = {
+            "comparable": bool(seeds_ok),
+            "tier_bas": bas,
+            "tier_haut": haut,
+            "n_seeds": {bas: tb["n_seeds"], haut: th["n_seeds"]},
+            "delta_intervals_disjoint": bool(disjoint),
+            "beats": bool(th["toutes_courbes_saines"]
+                          and tb["toutes_courbes_saines"] and disjoint),
+            "regle": cross["regle"],
+        }
+    return {"tiers": tiers, "cross_tier": cross}
+
+
+def render_comparative_table(summary: dict[str, Any]) -> str:
+    """Rend le tableau comparatif en markdown (critere "tableau comparatif"
+    de #15293) : une ligne par modele, puis le verdict inter-etage.
+
+    Les trois axes demandes par l'issue sont dans le tableau :
+    trainabilite (delta eval, et gain **normalise** par step porteur),
+    reponse au reward (fraction de steps dont le batch **n'a aucune
+    dispersion de reward** -> aucun gradient d'Advantage possible, et
+    fraction de steps a recompense nulle), et saturation (fraction de steps
+    saturees + verdict PAR BRAS). Les trois viennent de l'organe
+    `analyse_dapo_saturation.py` : le harness ne recalcule aucun seuil.
+    """
+    lines = ["| Modele | Etage | Graines | eval pre | eval post | delta | +- 1 std | courbes saines | steps satures | verdict saturation | steps sans signal reward | reward nulle | gain/step porteuse |",
+             "|---|---|---:|---:|---:|---:|---:|---|---:|---|---:|---:|---:|"]
+    tiers = summary.get("tiers", {}).get("tiers", {})
+    for tier in TIERS:
+        t = tiers.get(tier)
+        if not t:
+            continue
+        sat_bras = (t.get("saturation") or {}).get("par_bras", {})
+        for k in t["models"]:
+            pm = summary["per_model"][k]
+            sat = sat_bras.get(k) or {}
+            frac = sat.get("frac_steps_satures")
+            sans_signal = sat.get("frac_steps_sans_signal")
+            reward_nulle = sat.get("frac_steps_recompense_nulle")
+            gain_step = sat.get("gain_eval_par_step_avec_gradient")
+            lines.append(
+                f"| {pm['label']} | {tier} | {pm['n_seeds']} | "
+                f"{pm['pre_mean']:.4f} | {pm['post_mean']:.4f} | "
+                f"{pm['delta_mean']:+.4f} | {pm['delta_std']:.4f} | "
+                f"{'oui' if t['courbes_saines'].get(k) else 'non'} | "
+                f"{'n.d.' if frac is None else format(frac, '.2f')} | "
+                f"{sat.get('verdict', 'n.d.')} | "
+                f"{'n.d.' if sans_signal is None else format(sans_signal, '.2f')} | "
+                f"{'n.d.' if reward_nulle is None else format(reward_nulle, '.2f')} | "
+                f"{'n.d.' if gain_step is None else format(gain_step, '+.4f')} |")
+        frac_tier = (t.get("saturation") or {}).get("frac_satures_moyenne_bras")
+        lines.append(f"| **moyenne etage {tier}** | {tier} | {t['n_seeds']} | | | "
+                     f"{t['delta_mean']:+.4f} | {t['delta_std']:.4f} | "
+                     f"{'oui' if t['toutes_courbes_saines'] else 'non'} | "
+                     f"{'n.d.' if frac_tier is None else format(frac_tier, '.2f')} | "
+                     f"moyenne sur les bras | | | |")
+    cross = summary.get("tiers", {}).get("cross_tier", {})
+    lines.append("")
+    lines.append(f"Verdict inter-etage ({cross.get('tier_bas', '?')} vs "
+                 f"{cross.get('tier_haut', '?')}) : "
+                 f"comparable={cross.get('comparable')} · "
+                 f"intervalles disjoints={cross.get('delta_intervals_disjoint')} · "
+                 f"BEATS={cross.get('beats')}.")
+    lines.append("")
+    lines.append(f"Regle : {cross.get('regle', '')}")
+    lines.append("")
+    lines.append("Saturation : `steps satures` est la fraction **mediane** (par "
+                 "bras) de steps tronquees au budget de completion, mesuree par "
+                 "l'organe `scripts/analyse_dapo_saturation.py` ; le verdict est "
+                 "**par bras** (le seuil s'applique au bras, pas au lot de "
+                 "graines) et n'est donc pas fusionne entre etages. La ligne "
+                 "d'etage est une moyenne de branches, pas un chiffre de "
+                 "l'organe.")
+    lines.append("")
+    lines.append("Reponse au reward : `steps sans signal reward` est la fraction "
+                 "de steps dont le batch de reward n'a **aucune dispersion** "
+                 "(`frac_reward_zero_std >= 1`) : l'algorithme d Advantage n'a "
+                 "rien a y comparer, donc **aucun gradient d'advantage n'y est "
+                 "possible** meme si le gradient existe. C'est la panne du "
+                 "REWARD, distincte de la panne de l'OPTIMISEUR (le gradient "
+                 "sature). `reward nulle` est la fraction de steps dont la "
+                 "reward moyenne est nulle (aucune reponse correcte). "
+                 "`gain/step porteuse` est le gain d'eval divise par le nombre "
+                 "de steps porteurs de gradient, avec la meme garde de "
+                 "comparabilite que l'organe (non publie si la mediane des "
+                 "steps porteurs vaut moins de 1).")
+    return "\n".join(lines) + "\n"
+
+
+def classify_run(name: str, run: dict[str, Any]) -> str:
+    """Classe un run pour l'agregation du `summarize`.
+
+    FONCTION PURE (testable sans GPU).
+
+    - "aborted"  : arret par la garde d'entree (aucun gradient porte) ;
+    - "smoke"    : boucle de validation courte (`_smoke`), budget de pas
+                   different -> son post-eval n'est pas comparable ;
+    - "partiel"  : run interrompu avant le budget complet ;
+    - "seed"     : une graine du protocole, la seule comparable ;
+    - "exclu"    : budget de pas absent ou invalide, donc incomparable.
+
+    La classification est fail-closed : sans budget entier strictement positif,
+    aucune valeur par defaut ne peut faire passer un run pour une graine.
+
+    Pourquoi la distinction compte : un smoke de 3 pas a un delta de 0 PAR
+    CONSTRUCTION (post-eval apres 3 pas d'entrainement), et le compter comme
+    une graine dilue le delta de son bras -- et, par etage, le verdict
+    entier. Un smoke se compte, il ne se melange pas.
+    """
+    if run.get("aborted") is True:
+        return "aborted"
+    if "_smoke" in name:
+        return "smoke"
+    try:
+        steps = int(run["max_steps"])
+    except (KeyError, TypeError, ValueError):
+        return "exclu"
+    if steps <= 0:
+        return "exclu"
+    if steps < MAX_STEPS:
+        return "partiel"
+    return "seed"
+
+
 def mode_summarize(dataset_key: str = "dapo") -> int:
     import matplotlib
 
@@ -1080,22 +1683,27 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
     if not runs:
         print("aucun run trouve dans", results_dir)
         return 1
-    loaded = [json.loads(p.read_text(encoding="utf-8")) for p in runs]
+    loaded = [(p.name, json.loads(p.read_text(encoding="utf-8"))) for p in runs]
     # Un run arrete par la garde d'entree n'a pas de post-eval : il porte ZERO
     # signal (aucun gradient n'a passe sur les premiers pas) et n'a donc rien
     # a dire sur l'eval. L'inclure dans les deltas fausserait la moyenne --
     # on le liste a part, et on ne calcule que sur les runs scores.
     # Un run sans post-eval mais SANS le drapeau `aborted` (run interrompu pour
     # une autre raison) reste distingue : il n'a pas ete arrete par la garde.
-    aborted_runs = [r for r in loaded if r.get("aborted") is True]
-    incomplete_runs = [r for r in loaded
+    aborted_runs = [r for _n, r in loaded if r.get("aborted") is True]
+    incomplete_runs = [r for _n, r in loaded
                        if r.get("post_eval") is None and r.get("aborted") is not True]
-    scored = [r for r in loaded if r.get("post_eval") is not None]
+    # Smoke et runs partiels : ils se COMPTENT (liste dediee) mais ne se
+    # MELANGENT pas aux graines -- voir `classify_run`.
+    smoke_runs = [r for n, r in loaded if classify_run(n, r) == "smoke"]
+    partial_runs = [r for n, r in loaded if classify_run(n, r) == "partiel"]
+    scored = [r for n, r in loaded
+              if classify_run(n, r) == "seed" and r.get("post_eval") is not None]
     by_model: dict[str, list[dict[str, Any]]] = {}
     for r in scored:
         by_model.setdefault(r["model_key"], []).append(r)
 
-    summary: dict[str, Any] = {"runs": [r["model_key"] + f"_seed{r['seed']}" for r in loaded],
+    summary: dict[str, Any] = {"runs": [r["model_key"] + f"_seed{r['seed']}" for _n, r in loaded],
                                "aborted_runs": [
                                    {"model_key": r["model_key"], "seed": r["seed"],
                                     "reason": (r.get("no_signal_guard") or {}).get("reason", ""),
@@ -1105,6 +1713,14 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
                                "runs_sans_post_eval": [
                                    {"model_key": r["model_key"], "seed": r["seed"]}
                                    for r in incomplete_runs],
+                               "runs_smoke": [
+                                   {"model_key": r["model_key"], "seed": r["seed"],
+                                    "max_steps": r.get("max_steps")}
+                                   for r in smoke_runs],
+                               "runs_partiels": [
+                                   {"model_key": r["model_key"], "seed": r["seed"],
+                                    "max_steps": r.get("max_steps")}
+                                   for r in partial_runs],
                                "per_model": {}, "verdict": None}
     fig, axes = plt.subplots(1, 2, figsize=(12, 4.5))
     # Le trainer nomme la serie d'apres la fn de reward : dapo/gsm8k loggent
@@ -1141,25 +1757,50 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
     axes[1].set_xlabel("step")
     axes[0].legend(fontsize=7)
 
+    # Axe « saturation » (3e axe du critere 2 de #15293) : il est MESURE par
+    # l'organe `scripts/analyse_dapo_saturation.py`, qui possede les seuils et
+    # la regle « le verdict est par bras ». On consomme l'organe, on ne le
+    # reecrit pas -- ni ses seuils, ni son verdict.
+    saturation = build_saturation_axis(scored)
+    # La sortie de l'organe est relue et COMPAREE : si l'agregat du harness et
+    # celui de l'organe divergent, le tableau le dit (`concordant: false`)
+    # au lieu d'afficher un chiffre que personne ne peut refaire.
+    sat_mod = _saturation_module()
+    if sat_mod is not None:
+        noms_scores = {n for n, r in loaded
+                       if classify_run(n, r) == "seed" and r.get("post_eval") is not None}
+        organe = sat_mod.mesurer_fichiers([p for p in runs if p.name in noms_scores])
+        saturation = build_saturation_axis(scored, organe_bras=organe.get("bras"))
+    summary["saturation"] = saturation
+    if saturation.get("disponible"):
+        for model_key, axis in saturation["par_bras"].items():
+            if model_key in summary["per_model"]:
+                summary["per_model"][model_key]["saturation"] = axis
+
+    def curves_healthy(model_key: str) -> bool:
+        rl = [r for r in scored if r["model_key"] == model_key]
+        improved = all(r["post_eval"]["reward_mean"] > r["pre_eval"]["reward_mean"] for r in rl)
+        def seg(vals):
+            n = len(vals)
+            return (sum(vals[: n // 4]) / max(1, n // 4), sum(vals[-n // 4:]) / max(1, n // 4))
+        no_collapse = True
+        for r in rl:
+            ln = [e["completions/mean_length"] for e in r["log_history"]
+                  if "completions/mean_length" in e]
+            if ln:
+                a, b = seg(ln)
+                if b < 0.8 * a:  # effondrement de longueur > 20 %
+                    no_collapse = False
+        return improved and no_collapse
+
+    health = {k: curves_healthy(k) for k in summary["per_model"]}
+
+    # Tableau comparatif par ETAGE de taille (#15293) : le critere de l'issue
+    # est un comparatif "0.8B/2B vs 8-9B", pas une liste de paires de modeles.
+    # La table est pure (aucun GPU) -> elle se teste dans `selftest`.
+    summary["tiers"] = build_tier_table(summary["per_model"], health)
+
     if len(summary["per_model"]) >= 2:
-        def curves_healthy(model_key: str) -> bool:
-            rl = [r for r in scored if r["model_key"] == model_key]
-            improved = all(r["post_eval"]["reward_mean"] > r["pre_eval"]["reward_mean"] for r in rl)
-            def seg(vals):
-                n = len(vals)
-                return (sum(vals[: n // 4]) / max(1, n // 4), sum(vals[-n // 4:]) / max(1, n // 4))
-            no_collapse = True
-            for r in rl:
-                ln = [e["completions/mean_length"] for e in r["log_history"]
-                      if "completions/mean_length" in e]
-                if ln:
-                    a, b = seg(ln)
-                    if b < 0.8 * a:  # effondrement de longueur > 20 %
-                        no_collapse = False
-            return improved and no_collapse
-
-        health = {k: curves_healthy(k) for k in summary["per_model"]}
-
         # La comparaison est desormais N-aire : #15293 demande de rejouer le
         # harnais au-dela de 2B et de dire si le classement tient a cette
         # echelle. Une paire codee en dur interdisait de lire l'etage >= 8-9B.
@@ -1196,8 +1837,16 @@ def mode_summarize(dataset_key: str = "dapo") -> int:
     fig.savefig(png, dpi=130)
     summary_json = results_dir / "summary.json"
     summary_json.write_text(json.dumps(summary, indent=2), encoding="utf-8")
+    # Le tableau comparatif en markdown est un livrable de l'issue (#15293) :
+    # il est ecrit a cote du JSON, pas calcule a la main.
+    table_md = results_dir / "tableau_comparatif.md"
+    # newline explicite : sans lui, l'ecriture texte de Windows convertit les
+    # \n en \r\n et l'artefact differe d'une machine a l'autre (churn CRLF/LF
+    # dans le diff du depot).
+    table_md.write_text(render_comparative_table(summary), encoding="utf-8",
+                        newline="\n")
     print(json.dumps({k: v for k, v in summary.items() if k != "runs"}, indent=2)[:1500])
-    print(f"courbes -> {png} | summary -> {summary_json}")
+    print(f"courbes -> {png} | summary -> {summary_json} | tableau -> {table_md}")
     return 0
 
 
