@@ -315,6 +315,19 @@ def graine_defaut(lane: str, maintenant: datetime) -> str:
     return f"{lane}|{m:%Y-%m-%d}|{m.hour // 4}"
 
 
+def _servable(e: Etat) -> bool:
+    """Une issue que le tapis peut servir.
+
+    Le #27059 elargit cette notion aux ecarts de recul (COUVERTE, RELACHEE,
+    MERGEE), servis apres les autres : quand sa definition est presente, on la
+    suit ; sinon on garde celle d'avant (aucun ecart dur). Sans cette
+    compatibilite, le filtre de `ordonner` ecarterait du tour des issues que
+    le tirage du #27059 entend servir.
+    """
+    f = globals().get("servable")
+    return f(e) if f is not None else e.ecart is None
+
+
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
              graine: str | None = None) -> list[Etat]:
     """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`) :
@@ -333,7 +346,7 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
     l'ordre final (les grains d'abord) restent inchangés.
     """
     graine = graine or graine_defaut(lane, maintenant)
-    servables = [e for e in etats_ if e.ecart is None]
+    servables = [e for e in etats_ if _servable(e)]
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
     pris = {e.numero for e in file}
     # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute pas la

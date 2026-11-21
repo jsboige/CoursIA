@@ -205,3 +205,17 @@ def test_l_organe_signale_l_equite_viollee(monkeypatch):
     etats = [_etat(numero=1, visites=3), _etat(numero=2, visites=0)]
     r = vc.atteignable(etats, LANE, NOW, grains=2)
     assert r["equite"] == [1]
+
+
+def test_le_filtre_de_servabilite_suit_la_definition_du_module(monkeypatch):
+    """Compatibilite avec le #27059 (lane myia-ai-01:CoursIA, PR ouverte) : ce
+    tirage elargit la notion de servable aux ecarts de recul (COUVERTE,
+    RELACHEE, MERGEE). Sans le shim, le filtre de `ordonner` ecarterait du
+    tour des issues que ce tirage entend servir.
+    """
+    e = _etat(numero=1, ecart="COUVERTE")
+    assert tr._servable(e) is False   # avant le #27059 : un ecart dur n'est pas servi
+    monkeypatch.setattr(tr, "servable",
+                        lambda x: x.ecart is None or x.ecart in ("COUVERTE", "RELACHEE", "MERGEE"),
+                        raising=False)
+    assert tr._servable(e) is True
