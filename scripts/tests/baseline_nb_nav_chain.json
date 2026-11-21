@@ -482,23 +482,23 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12d-Token-Usage.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12e-Session-Persistence.ipynb",
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star"
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12e-Session-Persistence.ipynb",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star"
     },
     {
       "kind": "orphan_entry",
@@ -1217,15 +1217,15 @@
       "notebooks": 39
     },
     {
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day4-Foundations",
       "notebooks": 2
     },
     {
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day6-MLE-Star",
       "notebooks": 3
     },
     {
-      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production",
+      "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day7-Production",
       "notebooks": 2
     },
     {
