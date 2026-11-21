@@ -26,8 +26,10 @@ construction -- et il est verifie sur le site publie, jamais dans le depot.
 
 ## Ce que publie la construction
 
-1. **Le lot** : huit carnets eligibles, un par serie, choisis par
-   `select_lot()`.
+1. **Le lot** : jusqu'a huit carnets eligibles, un par serie, choisis par
+   `select_lot()`, puis **filtres par la regle de suffisance** (voir
+   « La suffisance filtre le lot ») : un carnet dont les dependances ne sont
+   pas dans la distribution n'est pas publie.
 2. **Le site JupyterLite** : les carnets sont poses dans `files/` (le
    repertoire de contenus de JupyterLite) **par nom de fichier**, comme le
    site mesure au pli 2.1 (`?path=<fichier>.ipynb`). Deux carnets de series
@@ -38,16 +40,52 @@ construction -- et il est verifie sur le site publie, jamais dans le depot.
 4. **Le manifeste** (`manifest.json`, a la racine du site construit) : pour
    chaque carnet, son chemin dans le depot, sa serie, ses deux URLs
    publiques -- `files` (carnet brut) et `lab` (ouverture et execution) --
-   et les modules locaux embarques avec lui.
+   et les modules locaux embarques avec lui. Il porte aussi la liste des
+   **refus** et le nombre de candidats.
 
-Trois verifications ne laissent pas passer un site faux :
+Quatre verifications ne laissent pas passer un site faux :
 
 - le repertoire de contenus est **remis a zero** avant la pose et avant la
   construction (un reste de construction anterieure ne doit pas rester en
   ligne) ;
 - apres la construction, le site est compare au lot : **ni carnet manquant,
   ni carnet en trop** -- l'ecart fait echouer la construction ;
-- chaque module local embarque est present dans le site construit.
+- chaque module local embarque est present dans le site construit ;
+- le manifeste est ecrit **sans BOM** (le garde post-deploiement le lit).
+
+## La suffisance filtre le lot
+
+Le critere d'eligibilite (pli 2.1) classe un module de la serie comme
+*embarquable* : ce n'est pas un motif de refus du carnet. Mais le bundle
+**publie des fichiers et n'installe rien** -- une dependance d'un module
+local embarque doit donc faire partie de la **distribution** Pyodide (le
+verrou `pyodide-lock.json`), et non etre une roue pure que le carnet
+installerait lui-meme.
+
+Le deploiement applique donc une regle de suffisance **au-dessus** du
+critere : pour chaque candidat du lot, il resout les imports du carnet,
+puis ceux des modules locaux que le carnet importe. Un carnet dont une
+dependance manque est **ecarte du lot**, avec le motif ecrit dans le
+manifeste (`refuses`) et sur la sortie de la construction. Rien n'est
+silencieusement retire.
+
+Mesure (lot de huit candidats) : `Causalite-06-DoWhy-Instrument-Faible-Python.ipynb`
+importe son organe de serie `dowhy_iv_organs`, qui importe `dowhy` --
+absent de la distribution. Le carnet est ecarte :
+
+```text
+REFUS MyIA.AI.Notebooks/Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb
+       : dowhy_iv_organs -> dowhy : absent de la distribution
+```
+
+Le lot publie compte alors **sept carnets** sur huit candidats.
+
+C'est un **angle mort du critere**, qu'il porte sur les imports
+*transitifs* des modules locaux : le critere regarde les imports du carnet,
+pas ceux des modules que le carnet embarque. L'alignement des deux est
+poursuivi dans le PR du critere (pli 2.1) ; en attendant, c'est le
+deploiement qui refuse, et qui dit pourquoi.
+
 
 ## Les modules locaux voyagent avec le carnet
 
@@ -135,6 +173,37 @@ All Cells**. Il mesure, par carnet, le **temps jusqu'au premier resultat** et
 la duree totale.
 
 <!-- MESURES-LOCALES -->
+
+### Mesure relevee (lot de sept carnets publies)
+
+Site construit **en local** (JupyterLite 0.8.7, noyau Pyodide 314.0.6),
+carnets servis par le site lui-meme, execution reelle dans Chromium
+headless via `Run > Run All Cells`. « Premier resultat » est l'instant ou
+la premiere cellule a produit une sortie lisible -- c'est la mesure que
+demande le critere d'acceptation.
+
+| Carnet | Cellules code | Executees | Erreurs | Duree (s) | Premier resultat (s) |
+|---|---:|---:|---:|---:|---:|
+| `10-SIG-3D-Tiles-Python.ipynb` | 6 | 6 | 0 | 23,6 | 7,0 |
+| `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 0 | 15,8 | 6,8 |
+| `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 0 | 21,9 | 8,3 |
+| `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 0 | 16,0 | 6,9 |
+| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 0 | 15,7 | 6,7 |
+| `Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb` | 8 | 8 | 0 | 16,0 | 6,9 |
+| `Coalitions-04-Munkres-Affectation-Python.ipynb` | 10 | 10 | 0 | 41,6 | 6,9 |
+
+**Sept carnets sur sept s'executent sans erreur.** Le temps jusqu'au premier
+resultat est de **6,7 a 8,3 s** ; il est dominé par le demarrage du noyau
+Pyodide, non par le carnet lui-meme -- c'est aussi pourquoi la duree totale
+monte a 41,6 s sur le carnet le plus long (dix cellules) sans que le premier
+resultat bouge.
+
+Les sorties relevees sont bien celles d'une **execution reelle** et non
+celles committes : le carnet `10-SIG-3D-Tiles` affiche `NumPy 2.4.6` a
+l'execution, la sortie commitee annonce `NumPy 2.4.2`.
+
+La preuve complete (sorties de chaque cellule) est versionnee dans
+`docs/reference/jupyterlite-executions/` (`executions.json`, `executions.md`).
 
 ## Limites connues
 

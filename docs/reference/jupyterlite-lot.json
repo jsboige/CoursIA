@@ -1,0 +1,39 @@
+{
+ "carnets": [
+  {
+   "path": "MyIA.AI.Notebooks/GenAI/3D/10-SIG-3D-Tiles-Python.ipynb",
+   "fichier": "10-SIG-3D-Tiles-Python.ipynb",
+   "serie": "3D"
+  },
+  {
+   "path": "MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb",
+   "fichier": "AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb",
+   "serie": "AgentSystems"
+  },
+  {
+   "path": "MyIA.AI.Notebooks/Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb",
+   "fichier": "Quotients-Fibres-Recollement-Python.ipynb",
+   "serie": "Applications"
+  },
+  {
+   "path": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01-Toulmin-Model-Python.ipynb",
+   "fichier": "Argumentation-01-Toulmin-Model-Python.ipynb",
+   "serie": "ArgumentAnalysis"
+  },
+  {
+   "path": "MyIA.AI.Notebooks/GenAI/Audio/06-Diffusion-SOTA/06-3-AudioDiffusion-Comparison-A-vs-B.ipynb",
+   "fichier": "06-3-AudioDiffusion-Comparison-A-vs-B.ipynb",
+   "serie": "Audio"
+  },
+  {
+   "path": "MyIA.AI.Notebooks/Physique/Chaines/Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb",
+   "fichier": "Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb",
+   "serie": "Chaines"
+  },
+  {
+   "path": "MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb",
+   "fichier": "Coalitions-04-Munkres-Affectation-Python.ipynb",
+   "serie": "Coalitions"
+  }
+ ]
+}

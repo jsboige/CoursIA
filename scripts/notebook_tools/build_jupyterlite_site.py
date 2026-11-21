@@ -37,11 +37,15 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence, Tuple
+from typing import Dict, List, Optional, Sequence, Set, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pyodide_eligibility import (  # noqa: E402
+    GPU_MODULES,
+    GPU_PACKAGES,
+    MODULE_TO_PACKAGE,
+    NETWORK_MODULES,
     NotebookVerdict,
     analyse_notebook,
     collect_imports,
@@ -132,15 +136,19 @@ _SKIP_DIRS = {".git", ".tmp", "node_modules", "__pycache__", ".venv", "venv",
               ".pytest_cache", ".mypy_cache", "build", "dist", ".claude"}
 
 
-def _dossiers_candidats(dossier: Path, series_root: Path) -> List[Path]:
-    """Dossiers ou peut se trouver un module local, du plus proche au plus lointain."""
+def _dossiers_candidats(dossier: Path, series_root: Path, root: Path) -> List[Path]:
+    """Dossiers ou peut se trouver un module local, du plus proche au plus lointain.
+
+    La montee est **bornee** : elle s'arrete a la racine de la serie, et au
+    pire a la racine du depot. Sans cette borne, un carnet pose directement
+    sous la racine de sa serie fait monter la recherche jusqu'a la racine du
+    systeme de fichiers -- et la construction y passe des heures.
+    """
     candidats: List[Path] = [dossier]
     for parent in dossier.parents:
         candidats.append(parent)
-        if parent == series_root:
+        if parent == series_root or parent == root:
             break
-    if not candidats or candidats[-1] != series_root:
-        candidats.append(series_root)
     return candidats
 
 
@@ -168,8 +176,74 @@ def _chercher_module(dossier: Path, nom: str) -> Optional[Tuple[Path, bool]]:
     return trouves[0][1], trouves[0][2]
 
 
-def modules_pour_carnet(root: Path, rel_path: str) -> List[Tuple[str, str, bool]]:
-    """Modules locaux (de la serie) que le carnet importe.
+def _source_du_module(root: Path, rel_path: str, nom: str) -> Optional[Tuple[Path, bool]]:
+    """Emplacement du module local `nom` pour le carnet `rel_path`.
+
+    La recherche est limitee a la **serie** du carnet : c'est la seule
+    partie du depot que le bundle publie (avec le carnet).
+    """
+    path = root / rel_path
+    series_root = root / "MyIA.AI.Notebooks" / series_of(rel_path)
+    for dossier in _dossiers_candidats(path.parent, series_root, root):
+        trouve = _chercher_module(dossier, nom)
+        if trouve is not None:
+            return trouve
+    return None
+
+
+def imports_non_satisfaits(source: Path, pyodide_packages: Dict[str, str],
+                            stdlib_names: Set[str], resolver, vus: Set[str],
+                            chaine: Tuple[str, ...] = ()) -> List[str]:
+    """Imports d'un module local que la distribution Pyodide ne fournit pas.
+
+    Le bundle publie des **fichiers**, il n'installe rien : une dependance
+    d'un module local embarque doit donc faire partie de la **distribution**
+    (verrou Pyodide), et non etre une roue pure que le carnet installerait
+    lui-meme.
+
+    Mesure : le carnet `Causalite-06` importe `dowhy_iv_organs`, qui importe
+    `dowhy` ; `dowhy` n'est pas dans la distribution -> le carnet echoue en
+    navigation (`ModuleNotFoundError: No module named 'dowhy'`), meme une
+    fois le module embarque.
+    """
+    problemes: List[str] = []
+    cle = str(source)
+    if cle in vus:
+        return problemes
+    vus.add(cle)
+    fichier = source / "__init__.py" if source.is_dir() else source
+    if not fichier.is_file():
+        return problemes
+    texte = fichier.read_text(encoding="utf-8", errors="replace")
+    for module in sorted(collect_imports([texte])):
+        top = top_level_module(module)
+        if top in stdlib_names:
+            continue
+        if top in GPU_MODULES or top in GPU_PACKAGES:
+            problemes.append("%s : GPU" % (" -> ".join(chaine + (module,))))
+            continue
+        if top in NETWORK_MODULES:
+            problemes.append("%s : reseau" % (" -> ".join(chaine + (module,))))
+            continue
+        package = MODULE_TO_PACKAGE.get(top, top)
+        if package in pyodide_packages:
+            continue
+        local = resolver(top)
+        if local is None:
+            problemes.append("%s : absent de la distribution"
+                              % " -> ".join(chaine + (module,)))
+            continue
+        problemes.extend(imports_non_satisfaits(
+            local[0], pyodide_packages, stdlib_names, resolver, vus,
+            chaine + (module,)))
+    return problemes
+
+
+def modules_et_problemes(root: Path, rel_path: str,
+                          pyodide_packages: Dict[str, str],
+                          stdlib_names: Set[str]) -> Tuple[List[Tuple[str, str, bool]],
+                                                           List[str]]:
+    """Modules locaux que le carnet importe, et dependances non satisfaites.
 
     Le critere d'eligibilite (pli 2.1) considere qu'un module Python de la
     serie du carnet est **embarquable** dans le bundle JupyterLite : ce n'est
@@ -179,7 +253,7 @@ def modules_pour_carnet(root: Path, rel_path: str) -> List[Tuple[str, str, bool]
     (`ModuleNotFoundError: dowhy_iv_organs`), parce que seul le carnet etait
     pose dans le site.
 
-    Rend la liste `(nom, chemin relatif dans le depot, est_paquet)`.
+    Rende le couple `([(nom, chemin relatif, est_paquet)], [raisons])`.
     """
     path = root / rel_path
     with path.open(encoding="utf-8") as fh:
@@ -188,8 +262,13 @@ def modules_pour_carnet(root: Path, rel_path: str) -> List[Tuple[str, str, bool]
     series_root = root / "MyIA.AI.Notebooks" / series_of(rel_path)
     local, _elsewhere = local_modules(root, path, series_root)
 
-    trouves: List[Tuple[str, str, bool]] = []
-    vus: set = set()
+    modules: List[Tuple[str, str, bool]] = []
+    problemes: List[str] = []
+    vus: Set[str] = set()
+
+    def resolver(nom: str):
+        return _source_du_module(root, rel_path, nom)
+
     for module in sorted(set(imports)):
         top = top_level_module(module)
         if top in local:
@@ -198,21 +277,44 @@ def modules_pour_carnet(root: Path, rel_path: str) -> List[Tuple[str, str, bool]
             nom = module
         else:
             continue
-        if nom in vus:
-            continue
-        emplacement = None
-        for dossier in _dossiers_candidats(path.parent, series_root):
-            emplacement = _chercher_module(dossier, nom)
-            if emplacement is not None:
-                break
+        emplacement = resolver(nom)
         if emplacement is None:
-            raise FileNotFoundError(
-                "module local '%s' importe par %s : introuvable dans sa serie"
-                % (nom, rel_path))
+            problemes.append("%s : module local introuvable" % nom)
+            continue
         source, est_paquet = emplacement
-        vus.add(nom)
-        trouves.append((nom, source.relative_to(root).as_posix(), est_paquet))
-    return trouves
+        modules.append((nom, source.relative_to(root).as_posix(), est_paquet))
+        problemes.extend(imports_non_satisfaits(
+            source, pyodide_packages, stdlib_names, resolver, vus, (nom,)))
+    return modules, problemes
+
+
+def suffisance(root: Path, lot_notebooks: Sequence[NotebookVerdict],
+                pyodide_packages: Dict[str, str],
+                stdlib_names: Set[str]) -> Tuple[List[Tuple[NotebookVerdict, List]],
+                                                 List[Tuple[str, List[str]]]]:
+    """Repartit le lot du critere en **lot publie** et refus motives.
+
+    Le critere d'eligibilite (pli 2.1) dit quels carnets sont candidats : un
+    carnet qui importe un module de sa serie est candidat. Le deploiement, lui,
+    doit garantir que tout carnet **publie** s'execute : il verifie donc que
+    les dependances des modules locaux qu'il embarque sont bien fournies par
+    la distribution Pyodide. Un carnet qui echoue a cette verification n'est
+    pas publie -- et le motif est inscrit dans le manifeste.
+
+    Rend `(publie, refus)` : `publie` porte `(verdict, modules)`, `refus`
+    porte `(chemin, [raisons])`.
+    """
+    publie: List[Tuple[NotebookVerdict, List]] = []
+    refus: List[Tuple[str, List[str]]] = []
+    for verdict in lot_notebooks:
+        rel = verdict.path.replace("\\", "/")
+        modules, problemes = modules_et_problemes(root, rel, pyodide_packages,
+                                                   stdlib_names)
+        if problemes:
+            refus.append((rel, problemes))
+        else:
+            publie.append((verdict, modules))
+    return publie, refus
 
 
 # ---------------------------------------------------------------------------
@@ -250,6 +352,10 @@ def stage(root: Path, lot_notebooks: Sequence[NotebookVerdict],
 
     Rend un dictionnaire : `carnets` (noms de fichier poses), `modules`
     (nom pose -> chemin relatif source), `modules_par_carnet`.
+
+    `lot_notebooks` est la liste des couples `(verdict, modules)` produite
+    par `suffisance()` : les modules a embarquer sont deja decides (et
+    verifies) la.
     """
     source_dir.mkdir(parents=True, exist_ok=True)
     ancien = source_dir / "files"
@@ -259,7 +365,7 @@ def stage(root: Path, lot_notebooks: Sequence[NotebookVerdict],
     vus: Dict[str, str] = {}
     modules: Dict[str, str] = {}
     modules_par_carnet: Dict[str, List[str]] = {}
-    for verdict in lot_notebooks:
+    for verdict, modules_du_carnet in lot_notebooks:
         rel = verdict.path.replace("\\", "/")
         source = root / rel
         if not source.is_file():
@@ -275,7 +381,7 @@ def stage(root: Path, lot_notebooks: Sequence[NotebookVerdict],
         poses.append(nom)
 
         embarques: List[str] = []
-        for nom_module, chemin_module, est_paquet in modules_pour_carnet(root, rel):
+        for nom_module, chemin_module, est_paquet in modules_du_carnet:
             cle = nom_module if est_paquet else nom_module + ".py"
             if cle in modules:
                 if modules[cle] != chemin_module:
@@ -483,14 +589,28 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
               file=sys.stderr)
         return 1
 
-    poses = stage(root, lot_notebooks, source_dir)
-    data = manifeste(lot_notebooks, args.base_url,
+    # Regle de suffisance : tout carnet publie doit pouvoir s'executer dans
+    # le bundle. Un carnet dont un module local exige un paquet absent de la
+    # distribution Pyodide n'est pas publie ; le motif est inscrit dans le
+    # manifeste (rien n'est ecarte en silence).
+    pyodide_packages, _lock_info = load_pyodide_lock(lock_path)
+    stdlib_names = set(sys.stdlib_module_names)
+    publie, refus = suffisance(root, lot_notebooks, pyodide_packages, stdlib_names)
+
+    poses = stage(root, publie, source_dir)
+    data = manifeste([v for v, _m in publie], args.base_url,
                       poses["modules_par_carnet"])
+    data["refuses"] = [{"chemin": chemin, "motifs": motifs}
+                       for chemin, motifs in refus]
+    data["taille_candidat"] = len(lot_notebooks)
 
     if args.sans_build:
         manifeste_path = output_dir / NOM_MANIFESTE
         ecrire_manifeste(data, manifeste_path)
-        print("lot : %d carnets (stages, pas de construction)" % len(lot_notebooks))
+        print("lot : %d carnets publies sur %d candidats (stages, pas de construction)"
+              % (len(publie), len(lot_notebooks)))
+        for chemin, motifs in refus:
+            print("  REFUS %s : %s" % (chemin, " ; ".join(motifs)))
         for c in data["carnets"]:
             print("  - %s [%s] %s" % (c["chemin"], c["serie"], c["lab"]))
         return 0
@@ -505,7 +625,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # remettre a zero le repertoire de sortie, et un manifeste ecrit avant
     # dispararait avec.
     manifeste_path = ecrire_manifeste(data, output_dir / NOM_MANIFESTE)
-    print("lot : %d carnets -- site construit dans %s" % (len(lot_notebooks), output_dir))
+    print("lot : %d carnets publies sur %d candidats -- site construit dans %s"
+          % (len(publie), len(lot_notebooks), output_dir))
+    for chemin, motifs in refus:
+        print("  REFUS %s : %s" % (chemin, " ; ".join(motifs)))
     for c in data["carnets"]:
         print("  - %s [%s] %s" % (c["chemin"], c["serie"], c["lab"]))
         for cle in c["modules_locaux"]:

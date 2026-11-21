@@ -141,7 +141,8 @@ def test_la_pose_met_a_zero_le_repertoire_de_contenus(tmp_path):
     source = tmp_path / "site"
     (source / "files").mkdir(parents=True)
     (source / "files" / "ancien.ipynb").write_text("{}", encoding="utf-8")
-    poses = bjs.stage(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")], source)
+    poses = bjs.stage(root, [(_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb"), [])],
+                      source)
     assert poses["carnets"] == ["a.ipynb"]
     assert (source / "files" / "a.ipynb").is_file()
     assert not (source / "files" / "ancien.ipynb").exists()
@@ -158,8 +159,8 @@ def test_deux_carnets_homonymes_font_echouer_la_construction(tmp_path):
     _write(root, "MyIA.AI.Notebooks/SerieB/meme.ipynb", _nb(["import json"]))
     source = tmp_path / "site"
     with pytest.raises(ValueError):
-        bjs.stage(root, [_verdict("MyIA.AI.Notebooks/SerieA/meme.ipynb", "SerieA"),
-                         _verdict("MyIA.AI.Notebooks/SerieB/meme.ipynb", "SerieB")],
+        bjs.stage(root, [(_verdict("MyIA.AI.Notebooks/SerieA/meme.ipynb", "SerieA"), []),
+                         (_verdict("MyIA.AI.Notebooks/SerieB/meme.ipynb", "SerieB"), [])],
                   source)
 
 
@@ -168,7 +169,7 @@ def test_un_carnet_du_lot_absent_du_depot_est_signale(tmp_path):
     root = tmp_path / "depot"
     root.mkdir()
     with pytest.raises(FileNotFoundError):
-        bjs.stage(root, [_verdict()], tmp_path / "site")
+        bjs.stage(root, [(_verdict(), [])], tmp_path / "site")
 
 
 # --- 3. le site construit publie exactement le lot --------------------------
@@ -214,6 +215,17 @@ def test_un_site_sans_repertoire_de_contenus_est_signale(tmp_path):
 
 # --- 4. les modules locaux de la serie voyagent avec le carnet ---------------
 
+def _depot_avec_organe(tmp_path, source_module, notebook_sources=None):
+    """Depot minimal : un carnet qui importe `mon_organe`, et l'organe."""
+    root = tmp_path / "depot"
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb",
+           _nb(notebook_sources or ["import mon_organe", "print(mon_organe.VALEUR)"]))
+    (root / "MyIA.AI.Notebooks" / "SerieA" / "mon_organe.py").write_text(
+        source_module, encoding="utf-8")
+    return root
+
+
 def test_un_module_local_de_la_serie_est_embarque_avec_le_carnet(tmp_path):
     """Un carnet qui importe un module de sa serie ne doit pas etre publie
     seul : sans le module, le carnet echoue a l'import en navigation
@@ -222,18 +234,44 @@ def test_un_module_local_de_la_serie_est_embarque_avec_le_carnet(tmp_path):
     Le critere d'eligibilite declare ces modules **embarquables** : le
     deploiement doit les embarquer pour de vrai.
     """
-    root = tmp_path / "depot"
-    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
-    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb",
-           _nb(["import mon_organe", "print(mon_organe.VALEUR)"]))
-    (root / "MyIA.AI.Notebooks" / "SerieA" / "mon_organe.py").write_text(
-        "VALEUR = 1\n", encoding="utf-8")
-    source = tmp_path / "site"
-    poses = bjs.stage(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")], source)
+    root = _depot_avec_organe(tmp_path, "VALEUR = 1\n")
+    publie, refus = bjs.suffisance(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                                   {}, set())
+    assert refus == []
+    poses = bjs.stage(root, publie, tmp_path / "site")
     assert poses["modules"] == {"mon_organe.py": "MyIA.AI.Notebooks/SerieA/mon_organe.py"}
-    assert (source / "files" / "mon_organe.py").is_file()
+    assert (tmp_path / "site" / "files" / "mon_organe.py").is_file()
     assert poses["modules_par_carnet"]["MyIA.AI.Notebooks/SerieA/a.ipynb"] == \
         ["mon_organe.py"]
+
+
+def test_un_carnet_qui_importe_un_module_local_non_satisfaisant_n_est_pas_publie(tmp_path):
+    """Un module local dont une dependance est absente de la distribution
+    rend le carnet impropre au bundle : le carnet n'est pas publie.
+
+    Mesure : le carnet `Causalite-06` importe `dowhy_iv_organs`, qui importe
+    `dowhy` -- absent de la distribution Pyodide. Le carnet echoue en
+    navigation ; le deploiement l'ecarte, avec le motif.
+    """
+    root = _depot_avec_organe(tmp_path, "import dowhy\nVALEUR = 1\n")
+    publie, refus = bjs.suffisance(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                                   {"numpy": "2.4.6"}, set())
+    assert publie == []
+    assert len(refus) == 1
+    chemin, motifs = refus[0]
+    assert chemin == "MyIA.AI.Notebooks/SerieA/a.ipynb"
+    assert any("dowhy" in motif and "absent de la distribution" in motif
+               for motif in motifs)
+
+
+def test_une_dependance_presente_dans_la_distribution_est_satisfaisante(tmp_path):
+    """Un module local dont les dependances sont dans la distribution ne
+    fait pas refuser le carnet."""
+    root = _depot_avec_organe(tmp_path, "import numpy as np\nVALEUR = 1\n")
+    publie, refus = bjs.suffisance(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                                   {"numpy": "2.4.6"}, set())
+    assert refus == []
+    assert len(publie) == 1
 
 
 def test_un_import_inconnu_ne_stage_aucun_module(tmp_path):
@@ -245,8 +283,9 @@ def test_un_import_inconnu_ne_stage_aucun_module(tmp_path):
     root = tmp_path / "depot"
     (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
     _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb", _nb(["import paquet_absent_xyz"]))
-    poses = bjs.stage(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
-                      tmp_path / "site")
+    publie, refus = bjs.suffisance(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                                   {}, set())
+    poses = bjs.stage(root, publie, tmp_path / "site")
     assert poses["modules"] == {}
 
 
@@ -262,10 +301,11 @@ def test_deux_modules_locaux_homonymes_dans_le_lot_font_echouer(tmp_path):
         "VALEUR = 1\n", encoding="utf-8")
     (root / "MyIA.AI.Notebooks" / "SerieB" / "mon_organe.py").write_text(
         "VALEUR = 2\n", encoding="utf-8")
+    publie, _refus = bjs.suffisance(
+        root, [_verdict("MyIA.AI.Notebooks/SerieA/a.ipynb", "SerieA"),
+               _verdict("MyIA.AI.Notebooks/SerieB/b.ipynb", "SerieB")], {}, set())
     with pytest.raises(ValueError):
-        bjs.stage(root, [_verdict("MyIA.AI.Notebooks/SerieA/a.ipynb", "SerieA"),
-                         _verdict("MyIA.AI.Notebooks/SerieB/b.ipynb", "SerieB")],
-                  tmp_path / "site")
+        bjs.stage(root, publie, tmp_path / "site")
 
 
 def test_un_module_local_absent_du_site_construit_est_signale(tmp_path):
