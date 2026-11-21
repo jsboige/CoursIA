@@ -16,6 +16,8 @@ from pathlib import Path
 import pytest
 from coordination import tapis_equilibre as te
 from coordination import tapis_rapide as tr
+from coordination import tapis_seance
+from coordination.tapis_marqueurs import Evt
 
 # Les fabriques de test_tapis_rapide.py, chargees par chemin : sous
 # `--import-mode importlib`, `tests.` designe le premier paquet `tests` collecte
@@ -55,6 +57,22 @@ def test_une_seance_par_lane_et_par_jour():
     # aucun marqueur : zero, et la derniere visite est absente
     e4 = etat(lecture([issue(4)]), 4)
     assert (e4.visites, e4.derniere_visite) == (0, None)
+
+
+def _evt(marque: str, heures: float, lane: str = AUTRE) -> Evt:
+    """Un marqueur pose a NOW - `heures` heures."""
+    return Evt(NOW - timedelta(hours=heures), marque, lane, None, "")
+
+
+def test_la_voie_legere_compte_comme_le_classement():
+    """UNE SEULE REGLE DE SEANCE (#27338) : la voie legere appelle l'organe
+    natif (`tapis_seance.par_lane`), elle ne le reimplemente pas. Sept
+    livraisons dans la journee : sept visites, dans les deux voies."""
+    evts = []
+    for h in (100, 90, 80, 70, 60, 50, 40):
+        evts += [_evt("CLAIMED", h), _evt("DELIVERED", h - 1)]
+    _d, total, _v = te.compter(evts, [], NOW)
+    assert total == 7, "sept livraisons dans la journee : sept visites"
 
 
 def test_les_commits_ne_doublent_pas_la_seance_de_leur_claim():
@@ -247,8 +265,12 @@ def test_l_age_est_compte_en_jours_pleins():
 def test_module_pur_et_borne():
     """Fonctions pures : aucun import de processus ni de reseau. Plafond releve
     a la livraison ; un depassement se paie en extrayant, pas en relevant."""
+    for module, plafond in ((te, 160), (tapis_seance, 60)):
+        texte = (Path(module.__file__)).read_text(encoding="utf-8")
+        assert len(texte.splitlines()) <= plafond
+    # La purete et la taille des fonctions se verifient sur le module du
+    # classement : le dernier lu par la boucle n'est pas ce module.
     texte = (Path(te.__file__)).read_text(encoding="utf-8")
-    assert len(texte.splitlines()) <= 160
     arbre = ast.parse(texte)
     importes = {a.name for n in ast.walk(arbre) if isinstance(n, ast.Import) for a in n.names}
     importes |= {n.module or "" for n in ast.walk(arbre) if isinstance(n, ast.ImportFrom)}

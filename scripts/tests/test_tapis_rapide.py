@@ -620,7 +620,10 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # 18/11) ; tapis_dernier_grain.py la neuvieme (le DERNIER GRAIN d'une issue --
 # grain, passage, absence etablie ou non mesurable -- et la regle des SEANCES,
 # extraite de tapis_equilibre.py pour que le module du classement tienne son
-# plafond, #27242, 19/11).
+# plafond, #27242, 19/11) ; tapis_citations.py la dixieme (les citations des
+# PRs OUVERTES : le travail en cours compte comme une visite, #27338) ;
+# belt_equite.py la onzieme (l'equite du dispatch : un grain deja servi ne
+# passe pas devant les premieres visites, #27338).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -631,7 +634,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_avantages.py", 80),
                                               ("tapis_universel.py", 160),
                                               ("tapis_reverif.py", 120),
-                                              ("tapis_dernier_grain.py", 260)])
+                                              ("tapis_dernier_grain.py", 260),
+                                              ("tapis_citations.py", 40),
+                                              ("belt_equite.py", 110)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
