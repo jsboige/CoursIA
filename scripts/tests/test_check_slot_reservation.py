@@ -1023,10 +1023,10 @@ class ScanMainCollisionTests(unittest.TestCase):
                         "la paire renommee doit etre reconnue comme jumeau")
 
     def test_same_item_scan_matches_renamed_app12_pair(self):
-        # #12933 : App-12c -> App-12b-ConnectFour-CSharp, meme slot 12b
+        # #12933 : App-12c -> App-12-ConnectFour-CSharp, meme slot 12b
         # que le jumeau Python : paire reconnue, pas collision.
-        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour.ipynb"
-        b = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb"
+        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour.ipynb"
+        b = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-CSharp.ipynb"
         self.assertTrue(csr._same_item_scan(a, b),
                         "la paire renommee doit etre reconnue comme jumeau")
 
@@ -1265,6 +1265,141 @@ class TestOpenPrAgeRule(unittest.TestCase):
             {"path": self.OCC, "additions": 10, "deletions": 0}]}], 26585)
         self.assertEqual(len(claims), 1,
                          "numero illisible = pas d'age connu = reserve (fail-closed)")
+
+
+# ------------------------------------------- collision preexistante de la base (#27576)
+
+APP = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+SL = "MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning"
+
+
+class TestPreexistingBaseCollision(unittest.TestCase):
+    """#27576 -- le jumeau d'un item deja assis ne HERITE pas la collision.
+
+    Mesure fondatrice : #26603 ajoute le jumeau C# de
+    `App-02-GraphColoring-Statistical-Validity-Python.ipynb` (deja sur main)
+    et se voyait imputer `App-02-GraphColoring-CSharp` / `-Python`, occupants
+    d'AUTRES sujets du meme slot -- une double occupation LIVREE sur main,
+    AVANT la PR. Idem #26617 sur SL-12b (`SL-12b-PavlovDLS-Reproduction`).
+    Le passeur `merge_ready` ecartait deux PRs approuvees en
+    `slot-collision-on-merge:taken_on_base`.
+
+    Le contrat : quand le jumeau de la cible siege deja dans le slot sur la
+    base, les autres occupants de la base forment une collision PREEXISTANTE
+    -- etat distinct `preexisting_on_base`, NON bloquant, imprime avec ses
+    chemins. Les autres sources restent bloquantes, et un item NEUF sur un
+    slot occupe reste `taken_on_base`.
+    """
+
+    def test_app02_twin_joins_its_sibling_without_inheriting_the_collision(self):
+        """Cas reel #26603 : jumeau C# d'un item assis, deux autres sujets herites."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [
+                APP + "/App-02-GraphColoring-Statistical-Validity-Python.ipynb",
+                APP + "/App-02-GraphColoring-CSharp.ipynb",
+                APP + "/App-02-GraphColoring-Python.ipynb",
+            ])
+            _write(repo, APP + "/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0,
+                             "une PR de jumeau n'herite pas la collision preexistante\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("preexisting_on_base", r.stdout)
+            # Signalement : la collision heritee est imprimee AVEC ses chemins.
+            self.assertIn("App-02-GraphColoring-CSharp.ipynb", r.stdout)
+            self.assertIn("App-02-GraphColoring-Python.ipynb", r.stdout)
+            self.assertNotIn("TAKEN_ON_BASE", r.stdout)
+
+    def test_sl12b_twin_joins_its_sibling_without_inheriting_the_collision(self):
+        """Cas reel #26617 : jumeau C# de SL-12b-SpectralLogicSynthesis, PavlovDLS herite."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [
+                SL + "/SL-12b-PavlovDLS-Reproduction.ipynb",
+                SL + "/SL-12b-PavlovDLS-Reproduction-output.ipynb",
+                SL + "/SL-12b-SpectralLogicSynthesis.ipynb",
+            ])
+            _write(repo, SL + "/SL-12b-SpectralLogicSynthesis-CSharp.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0,
+                             "une PR de jumeau n'herite pas la collision preexistante\n"
+                             + r.stdout + r.stderr)
+            self.assertIn("preexisting_on_base", r.stdout)
+            self.assertIn("SL-12b-PavlovDLS-Reproduction.ipynb", r.stdout)
+            self.assertNotIn("TAKEN_ON_BASE", r.stdout)
+
+    def test_new_item_on_an_occupied_slot_stays_taken_on_base(self):
+        """Temoin negatif : sans jumeau dans la base, la collision est imputee.
+
+        C'est exactement la forme du controle positif historique
+        (`test_addition_on_a_slot_taken_on_base_reddens`), rejoue sur la
+        forme App-02 : le slot porte d'autres sujets, la cible n'y a AUCUN
+        jumeau -- l'etat doit rester `taken_on_base` et rougir."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [
+                APP + "/App-02-GraphColoring-CSharp.ipynb",
+                APP + "/App-02-GraphColoring-Python.ipynb",
+            ])
+            _write(repo, APP + "/App-02-NouveauSujet-CSharp.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("taken_on_base", r.stdout)
+            self.assertNotIn("preexisting_on_base", r.stdout)
+
+    def test_twin_of_base_item_with_open_pr_claim_stays_blocking(self):
+        """Temoin negatif : une PR OUVERTE sur le slot reste bloquante, jumeau ou pas.
+
+        Le jumeau Python siege deja sur la base (condition #27576 remplie),
+        mais une PR ouverte ecrit un autre sujet du slot : le conflit
+        `reserved_by_open_pr` doit tenir -- le statut non bloquant ne vaut
+        que pour les occupants de la BASE."""
+        target = APP + "/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb"
+        twin = APP + "/App-02-GraphColoring-Statistical-Validity-Python.ipynb"
+        other = APP + "/App-02-GraphColoring-CSharp.ipynb"
+        claims = csr.pr_claims([{"number": 27000, "files": [
+            {"path": other, "additions": 8, "deletions": 0}]}])
+        occ = csr.merge(csr.group_by_slot([twin], csr.SOURCE_BASE), claims)
+
+        v = csr.verdict_for(target, occ, set())
+        self.assertEqual(v["verdict"], "conflict")
+        self.assertEqual(v["state"], "reserved_by_open_pr")
+        # merge_ready nomme la cause par conflicts[0] : ce doit etre le
+        # bloquant, jamais le rappel informatif.
+        self.assertEqual(v["conflicts"][0]["state"], "reserved_by_open_pr")
+
+    def test_preexisting_state_is_carried_in_json_without_conflict_count(self):
+        """Le payload machine : etat distinct present, compteur de conflits a zero.
+
+        merge_ready ecarte sur `verdict == "conflict"` et nomme par
+        `conflicts[0]["state"]` : la collision heritee ne doit alimenter ni
+        l'un ni l'autre, tout en restant lisible dans `verdicts`."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [
+                APP + "/App-02-GraphColoring-Statistical-Validity-Python.ipynb",
+                APP + "/App-02-GraphColoring-CSharp.ipynb",
+            ])
+            _write(repo, APP + "/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base, "--json")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertEqual(doc["conflicts"], 0)
+            self.assertEqual(doc["states"].get("preexisting_on_base"), 1)
+            self.assertEqual(doc["verdicts"][0]["verdict"], "ok")
+            self.assertEqual(doc["verdicts"][0]["state"], "preexisting_on_base")
+            self.assertEqual(
+                len(doc["verdicts"][0]["conflicts"]), 1,
+                "la collision heritee reste rappelee avec ses chemins")
 
 
 if __name__ == "__main__":

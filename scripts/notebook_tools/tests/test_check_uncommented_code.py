@@ -251,6 +251,58 @@ def test_cellule_lean_sans_commentaire_signalee():
 
 
 # --------------------------------------------------------------------------
+# 5 bis. La langue : le Rust (noyau evcxr) commente avec '//'
+# --------------------------------------------------------------------------
+
+RUST_BODY = (
+    "fn somme<'a>(v: &'a [i64]) -> i64 {",
+    "    let mut total = 0;",
+    "    for x in v.iter() {",
+    "        total += x;",
+    "    }",
+    "    total",
+    "}",
+    "let v = vec![1, 2, 3];",
+    'println!("{}", somme(&v));',
+)
+
+
+def test_cellule_rust_commentee_par_slash_slash_non_signalee():
+    # Avant la famille rust, le tokenizer Python lisait '//' comme un
+    # operateur et comptait 0 commentaire sur cette cellule.
+    assert organ.analyse_cell(
+        _cell("// Somme des elements.", *RUST_BODY), language="rust") is None
+
+
+def test_cellule_rust_sans_commentaire_signalee():
+    finding = organ.analyse_cell(_cell(*RUST_BODY), language="rust")
+    assert finding is not None
+    assert finding["counter"] == "rust"
+
+
+def test_url_dans_une_chaine_rust_ne_compte_pas_comme_commentaire():
+    for line in ('let api = "https://api.exemple.fr/v1";',
+                 'let api = r#"https://api.exemple.fr/"v1""#;',
+                 "let barre = '/'; let api = \"http://x\";"):
+        finding = organ.analyse_cell(_cell(line, *RUST_BODY), language="rust")
+        assert finding is not None, line
+        assert finding["comments"] == 0, line
+
+
+def test_commentaire_bloc_rust_compte():
+    cell = _cell("/* Somme des elements */", *RUST_BODY)
+    assert organ.analyse_cell(cell, language="rust") is None
+
+
+def test_duree_de_vie_ne_masque_pas_un_commentaire_rust():
+    # Deux durees de vie sur une ligne ne forment pas un caractere : le
+    # commentaire qui les suit reste visible.
+    cell = _cell("fn f<'a, 'b>(x: &'a str) {} // deux durees de vie",
+                 *RUST_BODY)
+    assert organ.analyse_cell(cell, language="rust") is None
+
+
+# --------------------------------------------------------------------------
 # 6. Le bornage au diff
 # --------------------------------------------------------------------------
 

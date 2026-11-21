@@ -17,7 +17,7 @@ Structure de la 4e édition lue dans le sommaire du PDF du gisement (p. vii-xiii
 | Chap. | Titre (4e) | Série porteuse | Organe exécutant | Notebooks |
 |---|---|---|---|---:|
 | 1 | Introduction | — | — (chapitre de cadrage, pas d'organe par nature) | — |
-| 2 | Intelligent Agents | `ML/DataScienceWithAgents/07-Agent-Orchestration` | Google ADK (Agent Development Kit), p. ex. `Lab8-ADK-Introduction` | 101 |
+| 2 | Intelligent Agents | `ML/DataScienceWithAgents/07-Orchestration-d-Agents` | Google ADK (Agent Development Kit), p. ex. `Lab8-ADK-Introduction` | 101 |
 | 3 | Solving Problems by Searching | `Search/Part1-Foundations` | A*, heuristiques (implémentations C#/Python + `Search/MetaGeneticSharp`) | 156 (série Search entière) |
 | 4 | Search in Complex Environments | `Search/Part4-Metaheuristics` | métaheuristiques, algos évolutionnaires (`MetaGeneticSharp`, sous-module) | idem |
 | 5 | Adversarial Search and Games | `GameTheory` | OpenSpiel (`pyspiel`), minimax/CFR/MCTS + miroirs C# | 109 |
