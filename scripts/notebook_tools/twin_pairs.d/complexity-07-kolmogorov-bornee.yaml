@@ -1,0 +1,10 @@
+- name: "Complexity-07 Kolmogorov Bornee"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-07-KolmogorovBornee-Sequences-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-07-KolmogorovBornee-Sequences-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    La grammaire finie, les prédicats de faisabilité, l'énumérateur et les baselines sont implémentés nativement en C# avec BigInteger.
+  known_differences:
+    - "Le modèle est un estimateur de faisabilité et ne reproduit pas un système complet de réécriture cognitive ; les temps d'exécution dépendent de la machine."
