@@ -197,7 +197,14 @@ def atteignable(etats_: list[Etat], lane: str, maintenant: datetime,
         for e in tour:
             # Une issue deja visitée servie pendant qu'une issue jamais visitée
             # attend encore : la violation du mandat du 16/11.
-            if avant[e.numero] > 0 and (a_zero - servis):
+            #
+            # Les **claims de la lane** sont exclus, comme dans le pool : une
+            # lane sert d'abord ses propres claims, et une issue qu'elle tient
+            # en claim n'est pas une issue que le tapis « republie ». Sans
+            # cette exclusion, l'organe rend rc 1 sur le fonctionnement
+            # normal du tirage (le coordinateur tient des claims) et masque
+            # les vraies violations.
+            if avant[e.numero] > 0 and not e.mon_claim and (a_zero - servis):
                 equite.append(e.numero)
             if e.numero in a_zero:
                 servis.add(e.numero)
