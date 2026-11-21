@@ -175,7 +175,15 @@ def _plafond(e: Etat, evts: list[Evt], naissances: list[tuple[int, str | None]],
              lane: str, maintenant: datetime) -> str | None:
     """Plafond hebdo des conteneurs hors consolidation (#22500 point 3) : le
     tapis ne sert pas un EPIC que le gate L898 refuserait. Une visite = un
-    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte."""
+    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte.
+
+    **Effet declare** (#27590, revue du 21/11) : l'ensemble lu ici est
+    `VISITE` -- une **lecture** d'une autre lane (`VISITE-INFO`) y compte donc
+    aussi. Un conteneur recemment regarde par une autre lane est un
+    conteneur chaud : l'ecarter pendant la fenetre du plafond est le meme
+    geste que l'ecarter pour un claim vivant. Ce comportement est couvert par
+    un test (`test_un_info_visite_ecarte_le_conteneur_chaud`).
+    """
     if not e.conteneur or e.consolidation:
         return None
     limite = maintenant - timedelta(days=PLAFOND_EPIC_J)

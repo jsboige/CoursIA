@@ -332,3 +332,31 @@ les 12 derniers commentaires lus (fil tronqué), et `[INFO] candidate-delivered`
 le tapis mais pas retenu comme preuve d'avancée. Le test de propriété (`scripts/tests/test_visit_coverage.py`)
 simule 30 servables et 120 pas de service : la tête de `tapis_equilibre.ordre` garde le niveau minimal du
 pool, donc aucune issue n'atteint deux visites tant qu'une autre est à zéro.
+
+### Visite et prise en charge : deux ensembles distincts (#27590)
+
+Le secrétariat et l'adjoint rendent compte d'une **lecture** par une ligne `[INFO] Visite …` ou
+`[INFO] … candidate-delivered`. Ces formes sont des **visites**, mais elles ne sont pas des **prises en
+charge** : personne n'a travaille sur l'issue, quelqu'un l'a regardée. Deux ensembles distincts expriment
+cette différence (`scripts/coordination/tapis_marqueurs.py`) :
+
+| Ensemble | Marques | Ce qu'il dit |
+| --- | --- | --- |
+| `MARQUEUR_GRAIN` | `CLAIMED`, `CLAIMED-AMEND`, `DELIVERED` | une lane a pris l'issue en charge |
+| `VISITE` | `MARQUEUR_GRAIN` + `VISITE-INFO` | l'issue a été visitée (prise en charge **ou** lecture) |
+
+Les consommateurs ne lisent pas le même ensemble, et c'est délibéré :
+
+| Consommateur | Ensemble | Effet |
+| --- | --- | --- |
+| `tapis_dernier_grain._marqueurs_grain` (état de grain) | `MARQUEUR_GRAIN` | une lecture **ne** fait pas une prise en charge : elle ne rajeunit pas le dernier grain (une qualification est une lecture) |
+| `tapis_dernier_grain.compter_grains` (compteur de visites) | `VISITE` | une lecture **est** une visite : l'issue n'est plus au niveau zéro de l'équilibrage |
+| `tapis_rapide._plafond` (plafond #22500) | `VISITE` | un conteneur regardé récemment par une autre lane est un conteneur chaud : il est écarté pendant la fenêtre du plafond |
+
+Deux formes ont été écartées au passage : une ligne qui répond aux deux motifs (`[INFO] Visite … candidate-delivered`)
+ne compte qu'**une** fois — la déduplication se fait par ligne, pas par fragment capturé — et une visite
+**annulée** (`[INFO] Visite annulée`) n'est pas une visite.
+
+Un grain est aussi un claim : la boucle d'équité de `visit_coverage.atteignable` exclut les claims de la lane,
+comme le pool qu'elle mesure. Sans cette exclusion, une lane qui tient un claim voit l'organe rendre `rc 1`
+sur le fonctionnement normal du tirage, et les vraies violations disparaissent derrière le bruit.
