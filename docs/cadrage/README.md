@@ -16,6 +16,8 @@ Une **veille** (texte connu et non traité) figure dans le tableau comme une lig
 | Recherche en sûreté de l'IA — veille | — | veille | *International AI Safety Report 2026* (arXiv 2602.21012) et ses deux *Key Updates* | non traité |
 | Recherche en sûreté de l'IA — veille | — | veille | *Towards Guaranteed Safe AI* | non traité (#16761) |
 | Science ouverte et évaluation | — (section de Leiden tant qu'il n'y a pas de pratique propre) | section | UNESCO Open Science, FAIR, DORA | traité (section du document Leiden) |
+| Constructeurs de l'IA de frontière | [`frontier-labs-position.md`](frontier-labs-position.md) | position | *Machines of Loving Grace* (2024) et *The Adolescence of Technology* (2026), Dario Amodei | brouillon (#21702) |
+| Constructeurs de l'IA de frontière — veille | — | veille | Constitution de Claude (Anthropic, 2026) | non traité |
 | Fondateurs de la discipline | [`aima-armature.md`](aima-armature.md) | armature | AIMA 4e, textes de position des auteurs, position « benchmark-driven AI » (ICML 2026) | traité (#17541) |
 | Lecture interne transversale | [`grothendieckian-lens.md`](grothendieckian-lens.md) | lens | — | traité (clé de lecture) |
 
