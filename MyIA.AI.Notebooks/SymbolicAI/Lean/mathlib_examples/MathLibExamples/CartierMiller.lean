@@ -15,7 +15,7 @@ formalise ni Cartier, ni Frobenius.
 
 La brique P3+ (candidat 3 du P2) y ajoute la base j=1728 : la courbe de
 Weierstrass d'invariant `j = 1728` via `WeierstrassCurve`, invariant j établi
-formellement via `c4^3 / Δ`.
+formellement via `c₄^3 / Δ`.
 
 -/
 
@@ -88,19 +88,36 @@ cette courbe (et la preuve de la congruence sur elle) est la suite de la
 brique.
 -/
 
-/-- La courbe de Weierstrass courte `y^2 = x^3 + x` (coefficient `a_4 = 1`). -/
+/-- La courbe de Weierstrass courte `y^2 = x^3 + x` (coefficient `a_4 = 1`).
+Les cinq coefficients de Weierstrass sont `a₁ a₂ a₃ a₄ a₆` ; ici `a₄ = 1`
+et les autres sont nuls. -/
 abbrev E1728 (K : Type*) [Field K] : Type :=
-  WeierstrassCurve K 0 0 0 (1 : K) 0
+  WeierstrassCurve K ⟨(0 : K), (0 : K), (0 : K), (1 : K), (0 : K)⟩
 
 /-- L'invariant j de la courbe `y^2 = x^3 + x` vaut 1728.
-Pour `y^2 = x^3 + A x + B`, `c4 = -48·A` et `Δ = -16·(4·A^3 + 27·B^2)` ;
-avec `A = 1`, `B = 0`, `j = c4^3 / Δ = (-48)^3 / (-64) = 1728`. -/
+Pour `y^2 = x^3 + A x + B`, `c₄ = -48·A` et `Δ = -16·(4·A^3 + 27·B^2)` ;
+avec `A = 1`, `B = 0`, `c₄ = -48` et `Δ = -64`, et
+`j = c₄^3 / Δ = (-48)^3 / (-64) = 1728`. -/
 theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K] :
     (E1728 K).j = 1728 := by
-  unfold E1728
-  simp only [WeierstrassCurve.j, WeierstrassCurve.c4, WeierstrassCurve.disc,
-    WeierstrassCurve.b2, WeierstrassCurve.b4, WeierstrassCurve.b6,
-    WeierstrassCurve.b8]
+  let W : WeierstrassCurve K := E1728 K
+  -- La courbe est elliptique : Δ = -64 est une unité (non nulle) dans un
+  -- corps de caractéristique 0.
+  letI _ : W.IsElliptic := ⟨by
+    have hne : (W.Δ : K) ≠ 0 := by
+      simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+        WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+      norm_num
+    exact (Field.isUnit_iff_ne_zero).mpr hne⟩
+  have hc₄ : W.c₄ = -48 := by
+    simp only [E1728, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄]
+    norm_num
+  have hΔ : W.Δ = -64 := by
+    simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+    norm_num
+  simp only [WeierstrassCurve.j, Units.coe_inv, coe_Δ', hΔ, hc₄]
   norm_num
 
 instance : Fact (Nat.Prime 97) := ⟨by decide⟩

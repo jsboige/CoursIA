@@ -15,7 +15,7 @@ formalize Cartier operators or Frobenius.
 
 The P3+ brick (P2 candidate 3) adds the j=1728 base: the Weierstrass
 curve of invariant `j = 1728` via `WeierstrassCurve`, with the j-invariant
-established formally via `c4^3 / Δ`.
+established formally via `c₄^3 / Δ`.
 
 -/
 
@@ -87,19 +87,36 @@ branching the sequence `a_n` onto the Frobenius trace of this curve (and
 proving the congruence on it) is the continuation of the brick.
 -/
 
-/-- The short Weierstrass curve `y^2 = x^3 + x` (coefficient `a_4 = 1`). -/
+/-- The short Weierstrass curve `y^2 = x^3 + x` (coefficient `a_4 = 1`).
+The five Weierstrass coefficients are `a₁ a₂ a₃ a₄ a₆`; here `a₄ = 1` and
+the rest are zero. -/
 abbrev E1728 (K : Type*) [Field K] : Type :=
-  WeierstrassCurve K 0 0 0 (1 : K) 0
+  WeierstrassCurve K ⟨(0 : K), (0 : K), (0 : K), (1 : K), (0 : K)⟩
 
 /-- The j-invariant of the curve `y^2 = x^3 + x` is 1728.
-For `y^2 = x^3 + A x + B`, `c4 = -48·A` and `Δ = -16·(4·A^3 + 27·B^2)`;
-with `A = 1`, `B = 0`, `j = c4^3 / Δ = (-48)^3 / (-64) = 1728`. -/
+For `y^2 = x^3 + A x + B`, `c₄ = -48·A` and `Δ = -16·(4·A^3 + 27·B^2)`;
+with `A = 1`, `B = 0`, `c₄ = -48` and `Δ = -64`, and
+`j = c₄^3 / Δ = (-48)^3 / (-64) = 1728`. -/
 theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K] :
     (E1728 K).j = 1728 := by
-  unfold E1728
-  simp only [WeierstrassCurve.j, WeierstrassCurve.c4, WeierstrassCurve.disc,
-    WeierstrassCurve.b2, WeierstrassCurve.b4, WeierstrassCurve.b6,
-    WeierstrassCurve.b8]
+  let W : WeierstrassCurve K := E1728 K
+  -- The curve is elliptic: Δ = -64 is a unit (nonzero) in a field of
+  -- characteristic 0.
+  letI _ : W.IsElliptic := ⟨by
+    have hne : (W.Δ : K) ≠ 0 := by
+      simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+        WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+      norm_num
+    exact (Field.isUnit_iff_ne_zero).mpr hne⟩
+  have hc₄ : W.c₄ = -48 := by
+    simp only [E1728, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄]
+    norm_num
+  have hΔ : W.Δ = -64 := by
+    simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+      WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+    norm_num
+  simp only [WeierstrassCurve.j, Units.coe_inv, coe_Δ', hΔ, hc₄]
   norm_num
 
 instance : Fact (Nat.Prime 97) := ⟨by decide⟩
