@@ -86,7 +86,6 @@ pas ceux des modules que le carnet embarque. L'alignement des deux est
 poursuivi dans le PR du critere (pli 2.1) ; en attendant, c'est le
 deploiement qui refuse, et qui dit pourquoi.
 
-
 ## Les modules locaux voyagent avec le carnet
 
 Le critere d'eligibilite (pli 2.1) considere qu'un module Python **de la
@@ -97,7 +96,7 @@ Mesure (premiere passe d'execution du lot, 8 carnets) : le carnet
 `Causalite-06-DoWhy-Instrument-Faible-Python.ipynb` echoue a l'import en
 navigation --
 
-```
+```text
 ModuleNotFoundError: No module named 'dowhy_iv_organs'
 ```
 
@@ -132,7 +131,13 @@ verifie le contenu publie et ecrit le manifeste. Options utiles :
 - `--probe-pypi` : sonde PyPI pour les paquets absents du lock (reseau ; sans
   ce drapeau, aucun acces reseau n'est fait) ;
 - `--base-url` : prefixe du site publie. En local, `/CoursIA` reproduit le
-  chemin de Pages (`https://jsboige.github.io/CoursIA/`).
+  chemin de Pages (`https://jsboige.github.io/CoursIA/`). La construction
+  **refuse** un prefixe qui n'est pas une URL d'origine-racine : sous Git
+  Bash, `/CoursIA` est converti en chemin Windows
+  (`C:/Program Files/Git/CoursIA`), et le manifeste porterait alors des URL
+  de liens morts que le garde rapporterait comme casses, pour une cause
+  etrangere au lot. Sous Git Bash, passer le prefixe via
+  `MSYS_NO_PATHCONV=1`.
 
 Un point qui a cout une construction : **`--lite-dir` est explicite** dans la
 ligne de commande. Sans lui, la construction prend le repertoire courant

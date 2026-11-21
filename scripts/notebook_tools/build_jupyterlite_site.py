@@ -429,6 +429,30 @@ def verifier_contenu(output_dir: Path, poses: Sequence[str],
     return anomalies
 
 
+def verifier_base_url(base: str) -> str:
+    """Verifie que le prefixe du site est une URL d'origine, et le rend normalise.
+
+    Mesure : sous Git Bash (MSYS), l'argument `--base-url /CoursIA` est
+    converti en chemin Windows (`C:/Program Files/Git/CoursIA`). Le manifeste
+    publie portait alors des URL de la forme `C:/Program Files/Git/CoursIA/...`
+    -- des liens morts que le garde post-deploiement aurait rapportes comme
+    casses, pour une cause qui n'a rien a voir avec le lot. On refuse donc un
+    prefixe qui n'est pas un chemin absolu-racine.
+    """
+    base = (base or "").strip()
+    if not base:
+        return ""
+    if "\\" in base or ":" in base:
+        raise ValueError(
+            "prefixe de site invalide : %r (un chemin Windows, ou une URL "
+            "convertie par MSYS, ne peut pas servir de prefixe de site ; "
+            "attendu : /Nom-du-depot)" % base)
+    if not base.startswith("/"):
+        raise ValueError(
+            "prefixe de site invalide : %r (attendu : /Nom-du-depot)" % base)
+    return base.rstrip("/")
+
+
 def urls(base: str, nom: str) -> Dict[str, str]:
     """URLs publiques des deux formes du carnet.
 
@@ -598,7 +622,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     publie, refus = suffisance(root, lot_notebooks, pyodide_packages, stdlib_names)
 
     poses = stage(root, publie, source_dir)
-    data = manifeste([v for v, _m in publie], args.base_url,
+    try:
+        base_url = verifier_base_url(args.base_url)
+    except ValueError as erreur:
+        print("PREFIXE DE SITE : %s" % erreur, file=sys.stderr)
+        return 2
+    data = manifeste([v for v, _m in publie], base_url,
                       poses["modules_par_carnet"])
     data["refuses"] = [{"chemin": chemin, "motifs": motifs}
                        for chemin, motifs in refus]

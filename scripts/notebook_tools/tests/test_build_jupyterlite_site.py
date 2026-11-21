@@ -328,6 +328,27 @@ def test_le_manifeste_nomme_les_modules_embarques(tmp_path):
 
 # --- 5. les URLs publiques --------------------------------------------------
 
+def test_un_prefixe_de_site_converti_par_msys_est_refuse():
+    """Sous Git Bash, `--base-url /CoursIA` devient un chemin Windows.
+
+    Un manifeste publie avec un tel prefixe porterait des URL de la forme
+    `C:/Program Files/Git/CoursIA/...` : des liens morts que le garde
+    rapporterait comme casses, pour une cause etrangere au lot. La
+    construction refuse ce prefixe.
+    """
+    with pytest.raises(ValueError):
+        bjs.verifier_base_url("C:/Program Files/Git/CoursIA")
+    with pytest.raises(ValueError):
+        bjs.verifier_base_url("CoursIA")
+
+
+def test_un_prefixe_de_site_valide_est_normalise():
+    """Un prefixe d'origine-racine est accepte, sans barre oblique finale."""
+    assert bjs.verifier_base_url("/CoursIA") == "/CoursIA"
+    assert bjs.verifier_base_url("/CoursIA/") == "/CoursIA"
+    assert bjs.verifier_base_url("") == ""
+
+
 def test_les_urls_publiques_portent_le_prefixe_du_site():
     """Les deux URLs sont relatives au prefixe du site publie."""
     urls = bjs.urls("/CoursIA", "a.ipynb")
