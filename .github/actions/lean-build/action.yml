@@ -42,6 +42,19 @@ outputs:
       l'id n'existe que dans le job `ci` et dans ce composite (revue ai-01 sur
       #19668).
     value: ${{ steps.lake-cache.outputs.cache-primary-key }}
+  mathlib-src-cache-hit:
+    description: >
+      'true' quand la SOURCE Mathlib partagee (#27727 tranche 2, cle
+      `lake-mathlib-src-*`) a ete restauree dans $RUNNER_TEMP/mathlib-src.
+      Exposee pour que le SAVE de premier peuplement du job appelant, place
+      APRES son `Drop Mathlib oleans`, conditionne sur le miss.
+    value: ${{ steps.mathlib-src-cache.outputs.cache-hit }}
+  mathlib-src-cache-key:
+    description: >
+      Cle primaire du cache de source Mathlib partagee, telle que calculee
+      par la restauration du composite. Meme contrat que `lake-cache-key`
+      (exposee car l'id n'existe que dans ce composite).
+    value: ${{ steps.mathlib-src-cache.outputs.cache-primary-key }}
 
 runs:
   using: composite
@@ -153,12 +166,28 @@ runs:
         ./elan-init -y --default-toolchain none
         echo "$HOME/.elan/bin" >> $GITHUB_PATH
 
+    # #27727 tranche 2 : cache PARTAGE de la SOURCE Mathlib. Chaque archive
+    # `.lake` portait sa propre copie de la meme source (~1.6 Go sur disque,
+    # ~600 Mo d'archive -- les 31 lakes ne tenaient pas dans le quota de
+    # 10 Go et s'evictaient mutuellement : 31/31 misses mesure le 2026-11-21
+    # a 10:12Z, 5/31 a 13:21Z). Une seule entree `lake-mathlib-src-*` sert
+    # tous les lakes ; c'est le jumeau CI des junctions #4362. Les oleans
+    # Mathlib ne sont PAS dans ce cache : `lake exe cache get` les telecharge
+    # du cache server Mathlib, hors quota (37 s, mesure #18185).
+    - name: Restore shared Mathlib source
+      id: mathlib-src-cache
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ runner.temp }}/mathlib-src
+        key: lake-mathlib-src-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path)) }}
+        restore-keys: lake-mathlib-src-${{ runner.os }}-
+
     # RESTORE SEUL (restore-only, #19658) : le SAVE est un pas explicite du job
     # appelant, place APRES son etape `Drop Mathlib oleans` et conditionne a
     # `github.ref == refs/heads/main`. Avant, `actions/cache@v4` sauvegardait en
     # post-step sur TOUTE ref qui manquait la cle : mesure du 2026-10-07, la
     # famille `lake-*` comptait 8 entrees de ~650 Mo, 8/8 sur `refs/pull/*`
-    # et 0 sur `main` -- la meme cle dupliquee par PR, 5,2 Go du quota de 10 Go.
+    # et 0 sur `main` -- la meme cle dupliquee par PR, 5.2 Go du quota de 10 Go.
     - name: Restore Lake build artifacts
       id: lake-cache
       uses: actions/cache/restore@v4
@@ -166,6 +195,25 @@ runs:
         path: ${{ inputs.project-path }}/.lake
         key: lake-${{ inputs.display-name }}-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lean-toolchain', inputs.project-path)) }}
         restore-keys: lake-${{ inputs.display-name }}-${{ runner.os }}-
+
+    # #27727 tranche 2 : quand le cache partage a HIT, il est le PROVIDER de
+    # la source Mathlib : on ecarte la copie que l'archive `.lake` portait
+    # (periode de transition) et on branche le repertoir de staging par
+    # symlink. Les oleans telecharges par `lake exe cache get` atterrissent
+    # dans le staging A TRAVERS le lien et en sont retires avant le save
+    # partage (etape `Drop Mathlib oleans` du job appelant). Sur miss :
+    # comportement exact d'avant (le clone `lake update` fait la source).
+    - name: Use the shared Mathlib source
+      working-directory: ${{ inputs.project-path }}
+      run: |
+        if [ "${{ steps.mathlib-src-cache.outputs.cache-hit }}" = "true" ] \
+           && [ -f "${RUNNER_TEMP}/mathlib-src/Mathlib.lean" ]; then
+          rm -rf .lake/packages/mathlib
+          ln -sfn "$RUNNER_TEMP/mathlib-src" .lake/packages/mathlib
+          echo "Mathlib source: shared cache (symlinked into .lake/packages)."
+        else
+          echo "Mathlib source: per-lake copy (shared cache miss)."
+        fi
 
     # Hosted leg only (#14337 tranche 2a): the specialised Lean pool carries
     # its swap OUTSIDE the job (cgroup `--memory-swap 24g`, supervise.sh
