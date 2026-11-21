@@ -11,41 +11,33 @@ tirages ».
 Ce critere a ete mesure sur une VOIE qui n'est plus le service :
 
 - le **rejeu** (``pick_idle_grain.py --belt-replay-input``) rejoue le
-  classement du 07/11 sur un vivier capture ; c'est un **diagnostic** depuis
-  le 13/11 (#26926) -- le service effectif est ``tapis_rapide.py`` ;
+  classement du 07/11 : c'est un **diagnostic** (#26926), pas le service ;
 - le **service effectif** n'a jamais ete mesure : le releve persistant n'a
   pas de section de service remplie, et le journal des tirages ne porte que
   des tirages de la voie diagnostic (octobre) ;
 - la classe ``delivered`` n'est **pas servie** par le service effectif : les
   regles ``LIVREE`` et ``LABEL candidate-delivered`` l'ecartent AVANT le
-  tirage (seules les issues de consolidation y sont exemptes). La part
-  ``delivered`` d'un tirage du service effectif est donc **nulle par
-  construction** : sur cette voie, le critere se lit « consolidation ».
+  tirage (seules les issues de consolidation y sont exemptes) : la part
+  ``delivered`` est donc **nulle par construction**.
 
 Ce module comble le manque : il **journalise** les tirages reellement servis
 et **mesure** les deux criteres sur le service effectif. Il n'invente ni le
-journal ni son verrou -- il reutilise ``coordination.tirage_journal`` (magasin
-et verrou interprocessus deja eprouves par la voie diagnostic).
+journal ni son verrou -- il reutilise ``coordination.tirage_journal``.
 
 Deux garde-fous, mesures :
 
 - **un magasin dedie** (``%LOCALAPPDATA%/CoursIA/tapis_service/journal.jsonl``) :
-  le journal de la voie diagnostic melange 945 enregistrements ``belt`` avec
-  ceux du service ; la mesure du service lit son propre magasin ;
-- **une lecture reelle** : un tirage issu d'une lecture INJECTEE (les tests
-  appellent ``main()`` avec une lecture factice) n'est pas un tirage servi et
-  ne s'ecrit pas -- sinon la suite de tests pollue le magasin machine et la
-  mesure compte des grains qui n'ont jamais ete servis.
+  la mesure du service lit son propre magasin, distinct des ``belt`` ;
+- **une lecture reelle** : un tirage issu d'une lecture INJECTEE n'est pas un
+  tirage servi et ne s'ecrit pas -- sinon la mesure compte des grains jamais servis.
 
 Ecriture consultative : une panne de telemetry ne doit pas casser le service
 (le tirage reste servi) ; elle se dit sur stderr. La mesure, elle, est
 fail-CLOSED : sans echantillon elle rend ``AUCUNE MESURE``, jamais 0 % ; sous
-l'echantillon plein (50 tirages) elle rend ``MESURE PARTIELLE``, jamais un
-verdict.
+l'echantillon plein (50 tirages) elle rend ``MESURE PARTIELLE``.
 
-Usage :
-    python scripts/coordination/tapis_acceptance.py --stat [--json]
-    python scripts/coordination/tapis_acceptance.py --draw <tirage.json> [--json]
+Usage : ``--stat [--json]`` pour mesurer le magasin, ``--draw <tirage.json>``
+pour journaliser un tirage capture.
 """
 from __future__ import annotations
 
@@ -157,14 +149,33 @@ def journaliser_service(r: dict, lane: str, replay: bool = False,
     return {"enregistres": ecrits}
 
 
+def _tirages(servies: list[tirage_journal.TirageRecord]) -> list[list[tirage_journal.TirageRecord]]:
+    """Les enregistrements regroupes par tirage (le `draw_id`).
+
+    Le journal ecrit un enregistrement par grain servi ; l'unite du critere
+    de #25082 est le tirage (« 50 tirages »), pas le grain.
+    """
+    groupes: dict[str, list[tirage_journal.TirageRecord]] = {}
+    for r in servies:
+        # Un enregistrement sans `draw_id` n'est attribuable a aucun tirage :
+        # il compte pour lui.
+        cle = r.draw_id or f"__sans_draw_id__:{len(groupes)}"
+        groupes.setdefault(cle, []).append(r)
+    return list(groupes.values())
+
+
 def mesurer(records: Iterable[tirage_journal.TirageRecord]) -> dict:
     """Mesure les deux criteres de #25082 sur les tirages du service effectif.
 
     Seuls les enregistrements du service effectif (``mode == MODE``) comptent :
     ceux de la voie diagnostic mesurent une autre chose.
+
+    L'unite est le **tirage** : il est de consolidation si un de ses grains
+    l'est, et sa famille est resolue si tous ses grains l'ont.
     """
     servies = [r for r in records if r.mode == MODE]
-    n = len(servies)
+    tirages = _tirages(servies)
+    n = len(tirages)
     if n == 0:
         return {
             "tirages": 0,
@@ -177,13 +188,15 @@ def mesurer(records: Iterable[tirage_journal.TirageRecord]) -> dict:
             },
             "note_delivered": NOTE_DELIVERED,
         }
-    conso = sum(1 for r in servies if (r.extras or {}).get("consolidation"))
-    famille = sum(1 for r in servies if (r.extras or {}).get("famille") is not None)
+    conso = sum(1 for t in tirages
+                if any((r.extras or {}).get("consolidation") for r in t))
+    famille = sum(1 for t in tirages
+                  if all((r.extras or {}).get("famille") is not None for r in t))
     part_c = conso / n
     part_f = famille / n
     return {
         "tirages": n,
-        "grains": n,
+        "grains": len(servies),
         "part_consolidation": part_c,
         "part_famille": part_f,
         "criteres": {
@@ -231,7 +244,8 @@ def _texte(m: dict) -> str:
         return "n/a" if v is None else f"{v * 100:.1f} %"
     lignes = [
         "Acceptance 2 de #25082, mesuree sur le service effectif",
-        f"grains servis (magasin dedie, mode {MODE}) : {m['tirages']}",
+        f"tirages servis (magasin dedie, mode {MODE}) : {m['tirages']}",
+        f"grains servis : {m['grains']}",
         ("part consolidation : " + part(m['part_consolidation'])
          + f" (seuil {CRITERE_PART_PRIORITAIRE * 100:.0f} % -> {m['criteres']['prioritaire']['statut']})"),
         ("part famille resolue : " + part(m['part_famille'])

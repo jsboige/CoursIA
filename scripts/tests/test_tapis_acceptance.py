@@ -13,7 +13,7 @@ from coordination import gh_bulk, tapis_acceptance, tirage_journal
 
 
 def _record(numero: int, *, consolidation: bool = False, famille: int | None = None,
-            resolue: bool = True,
+            resolue: bool = True, draw_id: str | None = None,
             mode: str = tapis_acceptance.MODE, lane: str = "myia-ai-01:CoursIA-2"):
     return tirage_journal.TirageRecord.new(
         lane=lane,
@@ -21,6 +21,7 @@ def _record(numero: int, *, consolidation: bool = False, famille: int | None = N
         retained=numero,
         urn=tapis_acceptance.URN,
         mode=mode,
+        draw_id=draw_id,
         extras={"famille": (famille if famille is not None else numero) if resolue else None,
                 "consolidation": consolidation},
     )
@@ -159,3 +160,49 @@ def test_la_note_delivered_est_portee():
     m = tapis_acceptance.mesurer([_record(1, consolidation=True)])
     assert "delivered" in m["note_delivered"]
     assert "consolidation" in m["note_delivered"]
+
+
+# --- l'unite du critere est le TIRAGE, pas le grain ------------------------
+
+def test_deux_tirages_de_tailles_differentes_comptent_pour_deux():
+    """Un tirage de trois grains et un tirage d'un grain : deux tirages.
+
+    Le journal ecrit un enregistrement par grain servi ; le critere de
+    #25082 parle de « 50 tirages ». Sans regroupement par `draw_id`,
+    l'echantillon tombait a 50 grains et les gros tours pesaient plus.
+    """
+    gros = [_record(1, draw_id="A"), _record(2, draw_id="A"),
+            _record(3, draw_id="A", consolidation=True)]
+    petit = [_record(4, draw_id="B")]
+    m = tapis_acceptance.mesurer(gros + petit)
+    assert m["tirages"] == 2
+    assert m["grains"] == 4
+    assert m["part_consolidation"] == 0.5  # le tirage A est un tirage de consolidation
+    assert m["part_famille"] == 1.0
+
+
+def test_un_gros_tirage_ne_pese_pas_plus_qu_un_petit():
+    """Le poids d'un tour ne vient plus de sa taille."""
+    gros = [_record(1, draw_id="A", consolidation=True) for _ in range(9)]
+    petits = [_record(100 + i, draw_id=f"P{i}") for i in range(49)]
+    m = tapis_acceptance.mesurer(gros + petits)
+    assert m["tirages"] == 50
+    assert m["grains"] == 58
+    assert m["part_consolidation"] == 1 / 50
+
+
+def test_une_famille_non_resolue_poids_dans_le_tirage_qui_la_sert():
+    """Un tirage dont un grain n'a pas de famille n'a pas resolu sa famille."""
+    resolvable = [_record(1, draw_id="A"), _record(2, draw_id="A", resolue=False)]
+    m = tapis_acceptance.mesurer(resolvable)
+    assert m["tirages"] == 1
+    assert m["part_famille"] == 0.0
+    assert m["criteres"]["famille"]["statut"] == "NON TENU"
+
+
+def test_l_echantillon_plein_compte_des_tirages():
+    """`ECHANTILLON_PLEIN` porte sur les tirages : 50 tirages d'un grain."""
+    servis = [_record(100 + i, draw_id=f"T{i}") for i in range(50)]
+    m = tapis_acceptance._statut_partiel(tapis_acceptance.mesurer(servis))
+    assert m["tirages"] == 50
+    assert m["criteres"]["famille"]["statut"] == "TENU"
