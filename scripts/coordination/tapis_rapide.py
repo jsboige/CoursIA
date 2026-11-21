@@ -33,6 +33,7 @@ from coordination.tapis_marqueurs import (
     claims_ouverts, evenements, lane_de_pr)
 from coordination.tapis_hors_flotte import ecart_hors_flotte
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
+from coordination.tapis_visites import evenements_info
 
 # Part au plus des conteneurs (EPIC, parapluie) dans la liste : la lane recoit des grains,
 # pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains,
@@ -174,7 +175,15 @@ def _plafond(e: Etat, evts: list[Evt], naissances: list[tuple[int, str | None]],
              lane: str, maintenant: datetime) -> str | None:
     """Plafond hebdo des conteneurs hors consolidation (#22500 point 3) : le
     tapis ne sert pas un EPIC que le gate L898 refuserait. Une visite = un
-    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte."""
+    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte.
+
+    **Effet declare** (#27590, revue du 21/11) : l'ensemble lu ici est
+    `VISITE` -- une **lecture** d'une autre lane (`VISITE-INFO`) y compte donc
+    aussi. Un conteneur recemment regarde par une autre lane est un
+    conteneur chaud : l'ecarter pendant la fenetre du plafond est le meme
+    geste que l'ecarter pour un claim vivant. Ce comportement est couvert par
+    un test (`test_un_info_visite_ecarte_le_conteneur_chaud`).
+    """
     if not e.conteneur or e.consolidation:
         return None
     limite = maintenant - timedelta(days=PLAFOND_EPIC_J)
@@ -279,7 +288,11 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
         e = Etat(n, it.get("title") or "", labels, it.get("created_at") or "", parents[n],
                  famille, n in nommes or _conteneur_propre(it),
                  any(lab.strip().lower() == LABEL_CONSOLIDATION for lab in labels))
-        evts = evenements(it.get("comments") or [])
+        comments = it.get("comments") or []
+        # Les formes `[INFO] Visite` comptent comme visite : l'union des deux
+        # familles d'evenements, triee par date.
+        evts = sorted(evenements(comments) + evenements_info(comments),
+                      key=lambda e: e.quand)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
         # Raccord du classement (c3274) : une prise en charge nominative est
         # une visite, une citation Git n'en est pas une. L'etat de grain
@@ -315,21 +328,67 @@ def graine_defaut(lane: str, maintenant: datetime) -> str:
     return f"{lane}|{m:%Y-%m-%d}|{m.hour // 4}"
 
 
+def _servable(e: Etat) -> bool:
+    """Une issue que le tapis peut servir.
+
+    Le #27059 elargit cette notion aux ecarts de recul (COUVERTE, RELACHEE,
+    MERGEE), servis apres les autres : quand sa definition est presente, on la
+    suit ; sinon on garde celle d'avant (aucun ecart dur). Sans cette
+    compatibilite, le filtre de `ordonner` ecarterait du tour des issues que
+    le tirage du #27059 entend servir.
+    """
+    f = globals().get("servable")
+    return f(e) if f is not None else e.ecart is None
+
+
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
              graine: str | None = None) -> list[Etat]:
     """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`) :
-    le niveau le moins visite d'abord, la plus ancienne issue d'abord."""
+    le niveau le moins visite d'abord, la plus ancienne issue d'abord.
+
+    Invariant de couverture (#27590, dispatch `c0013-tapis-coverage-20`) : une
+    issue **jamais visitée** ne cède jamais sa place a une issue deja visitée.
+    Mesure du 21/11 sur le pool reel : 20 issues worker a 0 visite, dont 14
+    conteneurs hors du tour de 8 -- deux issues deja visitees prenaient leurs
+    places (le quota de conteneurs ecartait les conteneurs jamais visites, et
+    le tri final plaçait les grains d'abord, #26926). Le mandat du 16/11
+    (« toute issue visitée au moins une fois avant qu'une autre le soit deux
+    fois ») etait donc structurellement violable. Les conteneurs jamais
+    visités que le quota ecarte passent desormais en second temps, quand la
+    place ne peut pas etre prise par une issue deja visitée. Le quota et
+    l'ordre final (les grains d'abord) restent inchangés.
+    """
     graine = graine or graine_defaut(lane, maintenant)
-    servables = [e for e in etats_ if e.ecart is None]
+    servables = [e for e in etats_ if _servable(e)]
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
+    pris = {e.numero for e in file}
+    # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute pas la
+    # place d'une issue du pool, et il ne bloque pas non plus une issue deja
+    # visitee -- sinon un marathon jamais visite passerait devant le grain
+    # equilibre du tour.
+    jamais = {e.numero for e in servables
+              if e.visites == 0 and not tapis_equilibre.est_marathon(e)}
     tour = tapis_equilibre.ordre(etats_, [e for e in servables if not e.mon_claim],
                                  graine, maintenant)
-    quota, pris = max(1, int(grains * PART_CONTENEURS)), set()
+    quota = max(1, int(grains * PART_CONTENEURS))
+    reportes: list[Etat] = []
     for e in tour:  # un conteneur ne passe que dans son quota
-        if len(file) < grains and (not e.conteneur or quota > 0):
-            quota -= e.conteneur
-            file.append(e)
-            pris.add(e.numero)
+        if len(file) >= grains:
+            break
+        if e.visites > 0 and (jamais - pris):
+            # Une issue deja visitée ne prend pas la place d'une jamais visitée.
+            continue
+        if e.conteneur and quota <= 0:
+            reportes.append(e)  # jamais visitée : elle passe en second temps
+            continue
+        quota -= e.conteneur
+        file.append(e)
+        pris.add(e.numero)
+    for e in reportes:  # second temps : les conteneurs jamais visités
+        if len(file) >= grains:
+            break
+        file.append(e)
+        pris.add(e.numero)
     file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
     # Vos claims, puis les grains, puis les conteneurs (#26926) : un conteneur
     # demande une lecture et un --paths, il ne passe jamais devant un grain.

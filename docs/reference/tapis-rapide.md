@@ -1,6 +1,6 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-20
+> REFERENCE — vivante — dernière révision 2026-11-21
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
@@ -266,6 +266,30 @@ visités et 300 graines, où les huit grains servis viennent toujours des 24 plu
 Les grains restent servis avant les conteneurs (#26926), même quand le conteneur est à un niveau plus bas : un
 conteneur demande une lecture et un `--paths`.
 
+**L'équité du 16/11 — une issue jamais visitée ne cède pas sa place** (#27590, dispatch `c0013-tapis-coverage-20`).
+Le mandat du 16/11 : « toute issue doit être visitée au moins une fois avant qu'une autre le soit deux fois ».
+Mesure du 21/11 sur le pool réel (lecture du 01:47Z, 51 issues servables, 21 à 0 visite) : le tour de 8 grains
+servait **deux issues déjà visitées** pendant que 14 issues jamais visitées restaient dehors — le quota de
+conteneurs (25 %) écartait les conteneurs jamais visités, et le tri final plaçait les grains d'abord. Deux
+corrections :
+
+- dans `tapis_rapide.ordonner`, une issue **déjà visitée** ne prend plus la place d'une issue jamais visitée
+  encore au tour ; le conteneur jamais visité que le quota écarte passe en **second temps**, quand la place ne
+  peut plus être prise par une issue déjà visitée. Le quota et l'ordre final (les grains d'abord) ne changent pas ;
+- dans `visit_coverage`, le **parcage Origami** est appliqué comme dans le tirage : sans lui, l'organe comptait
+  en rôle « worker » cinq EPIC Origami que le tapis ne sert jamais (leur dépliage est réservé au coordinateur).
+
+Effet mesuré sur la même lecture : le tour de 8 sert 8 issues **jamais visitées** (avant : 6, dont 2 déjà
+visitées), et les 16 issues « worker » à 0 visite sont toutes servies en **2 tours**. L'organe
+`visit_coverage.atteignable` mesure cette garantie (`tours`, `equite`) et la porte en **rouge** si une issue
+déjà visitée est servie pendant qu'une autre attend ; son test d'invariant est dans
+`scripts/tests/test_tapis_couverture_invariant.py` (contrôle positif et contrôle négatif).
+
+Ce que la garantie **ne** corrige pas : le quota de conteneurs reste une part de la liste (les conteneurs
+jamais visités occupent la place d'autres grains quand ils remplissent le tour), et une issue écartée par un
+code — `ORIGAMI`, `PLAFOND`, `RECLAMEE`, `LIVREE` — reste hors du tapis, par construction. L'organe compte
+désormais les issues dont le fil est tronqué et que le tirage re-décidera au service (`redecider_au_service`).
+
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 
 - Le **bandit de fermeture par zone** : la variété vient du tour de rôle par famille dans un niveau et du décalage par lane.
@@ -317,6 +341,15 @@ visite et celles visitées sans avancer, l'invariant du 16/11 sur le pool servab
 marathon) et les jamais visitées. Mesure du 20/11 sur la lecture de 13:35Z : 443 issues hors marathons, 87 à
 zéro visite, dont 59 d'urne et 12 de revue.
 
+Le bilan porte en outre deux mesures neuves (21/11) :
+
+- `redecider_au_service` — les issues « worker » à 0 visite dont le **fil est tronqué** (la lecture groupée ne
+  voit que les 12 derniers commentaires) : le tirage les re-décide sur le fil complet au moment du service, donc
+  l'écart peut changer après le bilan ;
+- `atteignable` — la simulation du tapis (`tapis_rapide.ordonner`) sur la même lecture : combien de tours pour
+  servir toutes les issues jamais visitées, et **équité** — la liste des issues déjà visitées qui seraient
+  servies pendant qu'une autre attend. Une équité non vide est un **rouge** (code de sortie 1).
+
 ```bash
 python scripts/coordination/visit_coverage.py [--json] [--dashboard-line]
        [--lecture <dossier>] [--cache-s 3600] [--jours 45] [--lane myia-ai-01:CoursIA]
@@ -332,3 +365,31 @@ les 12 derniers commentaires lus (fil tronqué), et `[INFO] candidate-delivered`
 le tapis mais pas retenu comme preuve d'avancée. Le test de propriété (`scripts/tests/test_visit_coverage.py`)
 simule 30 servables et 120 pas de service : la tête de `tapis_equilibre.ordre` garde le niveau minimal du
 pool, donc aucune issue n'atteint deux visites tant qu'une autre est à zéro.
+
+### Visite et prise en charge : deux ensembles distincts (#27590)
+
+Le secrétariat et l'adjoint rendent compte d'une **lecture** par une ligne `[INFO] Visite …` ou
+`[INFO] … candidate-delivered`. Ces formes sont des **visites**, mais elles ne sont pas des **prises en
+charge** : personne n'a travaille sur l'issue, quelqu'un l'a regardée. Deux ensembles distincts expriment
+cette différence (`scripts/coordination/tapis_marqueurs.py`) :
+
+| Ensemble | Marques | Ce qu'il dit |
+| --- | --- | --- |
+| `MARQUEUR_GRAIN` | `CLAIMED`, `CLAIMED-AMEND`, `DELIVERED` | une lane a pris l'issue en charge |
+| `VISITE` | `MARQUEUR_GRAIN` + `VISITE-INFO` | l'issue a été visitée (prise en charge **ou** lecture) |
+
+Les consommateurs ne lisent pas le même ensemble, et c'est délibéré :
+
+| Consommateur | Ensemble | Effet |
+| --- | --- | --- |
+| `tapis_dernier_grain._marqueurs_grain` (état de grain) | `MARQUEUR_GRAIN` | une lecture **ne** fait pas une prise en charge : elle ne rajeunit pas le dernier grain (une qualification est une lecture) |
+| `tapis_dernier_grain.compter_grains` (compteur de visites) | `VISITE` | une lecture **est** une visite : l'issue n'est plus au niveau zéro de l'équilibrage |
+| `tapis_rapide._plafond` (plafond #22500) | `VISITE` | un conteneur regardé récemment par une autre lane est un conteneur chaud : il est écarté pendant la fenêtre du plafond |
+
+Deux formes ont été écartées au passage : une ligne qui répond aux deux motifs (`[INFO] Visite … candidate-delivered`)
+ne compte qu'**une** fois — la déduplication se fait par ligne, pas par fragment capturé — et une visite
+**annulée** (`[INFO] Visite annulée`) n'est pas une visite.
+
+Un grain est aussi un claim : la boucle d'équité de `visit_coverage.atteignable` exclut les claims de la lane,
+comme le pool qu'elle mesure. Sans cette exclusion, une lane qui tient un claim voit l'organe rendre `rc 1`
+sur le fonctionnement normal du tirage, et les vraies violations disparaissent derrière le bruit.
