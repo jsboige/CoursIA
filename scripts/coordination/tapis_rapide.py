@@ -26,7 +26,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import frozen_campaigns, gh_bulk, tapis_equilibre, tapis_origami, tapis_service
+from coordination import frozen_campaigns, gh_bulk, tapis_acceptance, tapis_equilibre, tapis_origami, tapis_service
 from coordination import tapis_dernier_grain
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
@@ -391,10 +391,13 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
     ecartees: dict[str, list[dict]] = {code: [] for code in CODES}
     for e in etats_:
         if e.ecart:
-            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif})
+            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif,
+                                       "feuille": not e.conteneur})
     return {
         "lane": lane, "graine": graine, "maintenant": _iso(maintenant),
         "lecture": {"issues": len(etats_), "servables": sum(e.ecart is None for e in etats_),
+                    "servables_feuilles": sum(e.ecart is None and not e.conteneur for e in etats_),
+                    "servables_conteneurs": sum(e.ecart is None and e.conteneur for e in etats_),
                     "familles": len({e.famille for e in etats_ if e.ecart is None}), "lu_a": lecture.lu_a, "appels": lecture.appels,
                     "secondes": lecture.secondes, "depuis_cache": lecture.depuis_cache,
                     "fetch_note": lecture.fetch_note,
@@ -437,10 +440,9 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
         if fraicheur["refuse"]:
             return 4  # pas le repli picker : il fait rejouer le meme incident
     try:
-        if args.lecture:
-            lecture = gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
-        else:
-            lecture = gh_bulk.lire_tout(depot, args.cache_s, run, args.jours)
+        lecture = (gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
+                   if args.lecture else
+                   gh_bulk.lire_tout(depot, args.cache_s, run, args.jours))
     except gh_bulk.LectureIncomplete as exc:
         # Secours (#26926) : la derniere lecture COMPLETE du cache (< 12 h), jamais
         # le tapis lourd (240 s, grains non verifies). Un rejeu n'a pas de secours.
@@ -474,6 +476,7 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
             lecture, lire_fils)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
+    r["journal_service"] = tapis_acceptance.journaliser_service(r, args.lane, args.lecture, run)
     if reverif is not None:
         r["reverif_fils"] = reverif
     if fraicheur is not None:

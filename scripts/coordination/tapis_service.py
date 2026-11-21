@@ -100,8 +100,10 @@ def texte(r: dict, source: str) -> str:
     fetch = f" ; {lu['fetch_note']}" if lu.get("fetch_note") else ""
     lignes = [f"Tapis rapide -- lane {r['lane']} -- {r['maintenant']} -- source : {source}",
               (f"{lu['issues']} issues ouvertes, {lu['servables']} servables en "
-               f"{lu['familles']} familles ; lecture {lu['secondes']} s, {lu['appels']} "
-               f"appels, cache {'oui' if lu['depuis_cache'] else 'non'} ; origin/main "
+               f"{lu['familles']} familles (feuilles {lu.get('servables_feuilles', '?')}, "
+               f"conteneurs {lu.get('servables_conteneurs', '?')}) ; lecture "
+               f"{lu['secondes']} s, {lu['appels']} appels, cache "
+               f"{'oui' if lu['depuis_cache'] else 'non'} ; origin/main "
                f"local : dernier commit {age}{fetch}"),
               (f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits "
                "(reserves, rouge propre, conflit) ; une PR verte qui n'attend que la "
