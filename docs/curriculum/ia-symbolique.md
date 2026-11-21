@@ -244,25 +244,25 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [Planners-00-Setup-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb) | BETA | Oui |
-| 2 | [Planners-01-Introduction-Csharp : la planification…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Csharp.ipynb) | BETA | Oui |
+| 2 | [Planners-01-Introduction-CSharp : la planification…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb) | BETA | Oui |
 | 3 | [Planners-01-Introduction-Python a la Planification…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) | BETA | Oui |
-| 4 | [Planners-02-PDDL-Basics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb) | BETA | Oui |
+| 4 | [Planners-02-PDDL-Basics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb) | BETA | Oui |
 | 5 | [Planners-02-PDDL-Basics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb) | BETA | Oui |
-| 6 | [Planners-3 : Recherche dans l'Espace d'États — twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Csharp.ipynb) | BETA | Oui |
+| 6 | [Planners-3 : Recherche dans l'Espace d'États — twin C#…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb) | BETA | Oui |
 | 7 | [Planners-03-State-Space-Python - Recherche dans…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb) | BETA | Oui |
-| 8 | [Planners-04-Fast-Downward-Python (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Csharp.ipynb) | BETA | Oui |
+| 8 | [Planners-04-Fast-Downward-Python (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb) | BETA | Oui |
 | 9 | [Planners-04-Fast-Downward-Python - Planificateur…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb) | BETA | Oui |
-| 10 | [Planners-05-Heuristics-Csharp](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Csharp.ipynb) | BETA | Oui |
+| 10 | [Planners-05-Heuristics-CSharp](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb) | BETA | Oui |
 | 11 | [Planners-5-Heuristiques en Planification](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb) | BETA | Oui |
 | 12 | [Planners-5b — Admissibilité de la relaxation…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) | BETA | Non |
 | 13 | [Planners-5c — Le différentiel d'atteignabilité : ce que…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb) | BETA | Oui |
-| 14 | [Planners-06-Domains-Csharp — Jumeau C# : planificateur…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Csharp.ipynb) | BETA | Oui |
+| 14 | [Planners-06-Domains-CSharp — Jumeau C# : planificateur…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb) | BETA | Oui |
 | 15 | [Planners-06-Domains-Python - Domaines Classiques de…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb) | BETA | Oui |
-| 16 | [Planners-07-OR-Tools-Csharp — Jumeau C# : solveur CP…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb) | BETA | Oui |
+| 16 | [Planners-07-OR-Tools-CSharp — Jumeau C# : solveur CP…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb) | BETA | Oui |
 | 17 | [Planners-07-OR-Tools-Python - Programmation par…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb) | BETA | Oui |
-| 18 | [Planners-08-Temporal-Python — Planification Temporelle…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Csharp.ipynb) | BETA | Oui |
+| 18 | [Planners-08-Temporal-Python — Planification Temporelle…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb) | BETA | Oui |
 | 19 | [Planners-08-Temporal-Python - Planification Temporelle](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb) | BETA | Oui |
-| 20 | [Planners-09-HTN-Python (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Csharp.ipynb) | BETA | Oui |
+| 20 | [Planners-09-HTN-Python (C#)](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb) | BETA | Oui |
 | 21 | [Planners-09-HTN-Python - Planification Hiérarchique](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb) | BETA | Oui |
 | 22 | [Planners-13 — Mesurer la qualité des plans (benchmark…](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb) | BETA | Oui |
 | 23 | [Planners-10: LLMs pour la Planification](../../MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb) | BETA | Non |
