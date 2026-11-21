@@ -276,8 +276,7 @@
         "scripts/lean/count_code_sorry.py",
         "scripts/tests/test_check_certified_sorry.py"
       ],
-      "axiom-include-i18n-siblings": "false",
-      "certified-subdir": null
+      "axiom-include-i18n-siblings": "false"
     },
     {
       "lake": "geometry",
