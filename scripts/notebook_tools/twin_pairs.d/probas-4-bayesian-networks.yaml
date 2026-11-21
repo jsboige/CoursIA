@@ -30,3 +30,16 @@
     8d45d8c4a4 -- reference de la cellule "Pour aller plus loin" (47) PyMC 5.28.5 -> 6.3.2 documentation
     avec URL. 1 ligne touchee, 0 cellule code, sorties et execution_count intacts (exception C.2
     markdown). Jumeau C# Infer-4 non touche. --update en DERNIERE operation (cf #8957).'
+  - '2026-11-19 (myia-po-2028:CoursIA, PR #27310, fournée 6 de #27231) : REBASELINE côté Python --
+    ancrage des 34 valeurs théoriques d''énumération exacte non exécutées (organe prose<->sorties
+    #27233, 34 findings -> 0). 2 cellules code + 2 cellules markdown ajoutées (p_joint : énumération
+    des 16 configurations de la jointe, assert somme=1, marginales dont P(W=1)=0.6471 ; posterior_exacte()
+    pas-à-pas ré-exécutant la dérivation manuelle : 0.9720/0.9180/0.0486/0.2295/0.2781, 4 posteriors
+    0.4298/0.1945/0.7079/0.3204, corrélation théorique -0.7399, 2 variantes du piège C=0 dont 0.3665
+    qui remplace la valeur prose invérifiable 0.356) ; cellule D-séparation étendue (théorie -0.7399
+    imprimée en regard de la simulation, écart 0.0001). Re-exécution complète 2 passes 14/14 sous le
+    bandeau PyMC 6.3.2 (env dédiée), valeurs MCMC seedées byte-identiques (seed 42), seules les durées
+    dérivent (22->24 s, 18->20 s) et la prose les suit. 49 -> 53 cellules. Jumeau C# Infer-4 non
+    touché : l''énumération exacte côté Python valide l''échantillonneur PyMC, sans analogue nécessaire
+    côté Infer.NET (inférence déterministe EP/VMP, pas d''échantillonnage à valider). --update en
+    DERNIERE opération (cf #8957).'

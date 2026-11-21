@@ -37,14 +37,22 @@ l'agregat recalcule.
 
 from __future__ import annotations
 
+import hashlib
+import os
+import platform
 import re
+import subprocess
+from datetime import datetime, timezone
+from importlib import metadata
+from pathlib import Path
 from statistics import fmean
 
 # Union des deux cotes du conflit : main expose `extract_int`,
 # `hackable_record`, `audit_rows` et `MAGIC_TOKEN`, la branche `hack_late_by_seed`.
 __all__ = ["record_windows", "window_stats", "protocol_block", "hack_late_by_seed",
            "extract_int", "hackable_record", "audit_rows", "MAGIC_TOKEN",
-           "reward_dynamics", "REWARD_DYNAMICS_EPSILON"]
+           "reward_dynamics", "REWARD_DYNAMICS_EPSILON",
+           "environment_block", "ENV_PACKAGES", "ENV_PILOT_FILES"]
 
 DEFAULT_MAX_RECORDS = 64
 DEFAULT_MAX_COMPLETION_LENGTH = 1024
@@ -383,4 +391,93 @@ def protocol_block(*, max_completion_length: int, seeds, steps: int) -> dict:
         "max_completion_length": max_completion_length,
         "seeds": seeds_list,
         "steps": steps,
+    }
+
+
+# --- Environnement fige (campagnes 2B et controle 0.8B, #5105) ----------
+#
+# Un controle intra-famille n'est comparable que si les deux runs ont
+# tourne dans le MEME environnement : l'artefact portait le protocole
+# (cap, seeds, steps) mais pas l'environnement.
+#
+# Deux runs de memes parametres sous des versions differentes de torch
+# se lisaient donc comme une comparaison a protocole ET a environnement
+# egaux. Chaque sonde qui echoue vaut "absent" : un bloc d'environnement
+# troue doit se voir dans l'artefact.
+
+ENV_PACKAGES = ("torch", "transformers", "peft", "bitsandbytes",
+                "trl", "datasets", "accelerate", "numpy")
+ENV_PILOT_FILES = ("ict25a_scaleup_grpo.py", "ict25_records.py", "ict25_arms.py")
+
+
+def environment_block(*, packages=ENV_PACKAGES, pilot_files=ENV_PILOT_FILES,
+                      repo_root=None, pilot_dir=None) -> dict:
+    """Environnement d'un run, fige au moment de la mesure (#5105).
+
+    Six sections sont rendues : `captured_at_utc`, `python`, `packages`,
+    `cuda`, `git` et `pilot`. Chaque champ est une chaine ou un booleen :
+    le bloc est serialisable en JSON sans conversion.
+
+    Ce bloc decrit l'environnement de l'invocation qui l'a produit : une
+    campagne reprise ecrit donc, pour les graines anterieures,
+    l'environnement du run repris -- l'horodatage permet de le voir.
+    """
+    here = Path(__file__).resolve().parent
+    root = Path(repo_root) if repo_root is not None else here.parents[3]
+    pdir = Path(pilot_dir) if pilot_dir is not None else here
+
+    versions = {}
+    for name in packages:
+        try:
+            versions[name] = metadata.version(name)
+        except Exception:
+            versions[name] = "absent"
+
+    pilot = {}
+    for name in pilot_files:
+        try:
+            pilot[name] = "sha256:" + hashlib.sha256(
+                (pdir / name).read_bytes()).hexdigest()
+        except OSError:
+            pilot[name] = "absent"
+
+    def git(*args) -> str | None:
+        try:
+            out = subprocess.run(["git", "-C", str(root)] + list(args),
+                                 capture_output=True, text=True,
+                                 encoding="utf-8", errors="replace", timeout=30)
+        except Exception:
+            return None
+        return out.stdout.strip() if out.returncode == 0 else None
+
+    sha = git("rev-parse", "HEAD")
+    status = git("status", "--porcelain")
+
+    visible = os.environ.get("CUDA_VISIBLE_DEVICES", "unset")
+    index = next((int(p) for p in visible.split(",") if p.strip().isdigit()), None)
+    query = ["nvidia-smi"]
+    if index is not None:
+        query += ["-i", str(index)]
+    try:
+        out = subprocess.run(query + ["--query-gpu=driver_version,name,compute_cap",
+                                      "--format=csv,noheader"], capture_output=True,
+                             text=True, encoding="utf-8", errors="replace", timeout=30)
+        raw = out.stdout.strip() if out.returncode == 0 else ""
+    except Exception:
+        raw = ""
+    lines = raw.splitlines()
+    parts = [p.strip() for p in lines[0].split(",")] if lines else []
+    cuda = {"visible_devices": visible, "index": index, "driver": "absent",
+            "device_name": "absent", "compute_capability": "absent"}
+    if len(parts) == 3:
+        cuda["driver"], cuda["device_name"], cuda["compute_capability"] = parts
+
+    return {
+        "captured_at_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "python": platform.python_version(),
+        "packages": versions,
+        "cuda": cuda,
+        "git": {"sha": sha or "absent",
+                "dirty": None if status is None else bool(status)},
+        "pilot": pilot,
     }

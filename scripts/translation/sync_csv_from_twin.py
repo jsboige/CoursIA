@@ -144,6 +144,29 @@ def main(argv: list[str] | None = None) -> int:
     pivot = _cells(json.loads(args.pivot.read_text(encoding="utf-8")))
     twin = _cells(json.loads(args.twin.read_text(encoding="utf-8")))
     pivot_rel = args.pivot.as_posix()
+    pivot_posix = pathlib.PurePosixPath(pivot_rel).as_posix()
+
+    def _row_vise_pivot(brut: object) -> bool:
+        """Vrai si la ligne CSV vise exactement le carnet pivot demande.
+
+        Jamais le seul basename : dans partner-course.csv, quatre carnets
+        distincts partagent ``research.ipynb`` -- le filtre historique par
+        basename reecrivait les lignes des autres carnets avec le jumeau
+        du pivot (#27148, c.7026312711). Discriminant = chemin complet :
+        egalite exacte, ou suffixe dont le cote le plus court porte au
+        moins un repertoire (pivot absolu vs ligne relative au depot, et
+        inversement).
+        """
+        nb = str(brut or "").strip()
+        if not nb:
+            return False
+        if nb == pivot_posix:
+            return True
+        if "/" in nb and pivot_posix.endswith("/" + nb):
+            return True
+        if "/" in pivot_posix and nb.endswith("/" + pivot_posix):
+            return True
+        return False
     wanted = {c.strip() for c in args.cells.split(",")} if args.cells else None
     lang = args.lang
 
@@ -159,7 +182,7 @@ def main(argv: list[str] | None = None) -> int:
     if realign:
         alignable = alignable + ("CSV_ONLY_CONTENT",)
     for row in rows:
-        if not (row.get("notebook") or "").endswith(pathlib.PurePosixPath(pivot_rel).name):
+        if not _row_vise_pivot(row.get("notebook")):
             continue
         cid = row.get("cell_id") or ""
         if wanted is not None and cid not in wanted:
