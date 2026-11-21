@@ -251,6 +251,64 @@ def test_cellule_lean_sans_commentaire_signalee():
 
 
 # --------------------------------------------------------------------------
+# 5 bis. La langue : le Rust commente avec '//' (noyau evcxr)
+# --------------------------------------------------------------------------
+
+RUST_BODY = (
+    "let mut essaim: Vec<Organisme> = Vec::new();",
+    "for _ in 0..taille {",
+    "    let g = grille_aleatoire(&mut rng, &puzzle);",
+    "    essaim.push(Organisme::new(g));",
+    "}",
+    "essaim.sort_by_key(|o| o.erreur);",
+    "let meilleur = essaim[0].erreur;",
+    "println!(\"Epoch 0, Best error: {}\", meilleur);",
+    "essaim.truncate(taille / 2);",
+)
+
+
+def test_cellule_rust_commentee_non_signalee():
+    assert organ.analyse_cell(
+        _cell("// Initialisation de l'essaim.", *RUST_BODY), language="rust") is None
+
+
+def test_cellule_rust_sans_commentaire_signalee():
+    finding = organ.analyse_cell(_cell(*RUST_BODY), language="rust")
+    assert finding is not None
+    assert finding["counter"] == "rust"
+
+
+def test_url_dans_une_chaine_rust_ne_compte_pas_comme_commentaire():
+    # Meme piege miroir que cote C# : sans masquage, le '//' de l'URL
+    # blanchirait la cellule.
+    cell = _cell('let api = "https://api.exemple.fr/v1";', *RUST_BODY)
+    finding = organ.analyse_cell(cell, language="rust")
+    assert finding is not None
+    assert finding["comments"] == 0
+
+
+def test_chaine_brute_rust_ne_compte_pas_comme_commentaire():
+    # Une chaine brute r#"..."# peut contenir quotes et '//' : elle est
+    # masquee d'un bloc jusqu'a son propre fermant.
+    cell = _cell('let doc = r#"voir "https://x" // pas un commentaire"#;', *RUST_BODY)
+    finding = organ.analyse_cell(cell, language="rust")
+    assert finding is not None
+    assert finding["counter"] == "rust"
+
+
+def test_commentaire_bloc_rust_compte():
+    cell = _cell("/* Initialisation de l'essaim */", *RUST_BODY)
+    assert organ.analyse_cell(cell, language="rust") is None
+
+
+def test_langue_rust_lue_dans_les_metadonnees_du_carnet():
+    nb = _notebook(_cell(*RUST_BODY), language="rust")
+    findings = organ.analyse_notebook(nb)
+    assert len(findings) == 1
+    assert findings[0]["counter"] == "rust"
+
+
+# --------------------------------------------------------------------------
 # 6. Le bornage au diff
 # --------------------------------------------------------------------------
 

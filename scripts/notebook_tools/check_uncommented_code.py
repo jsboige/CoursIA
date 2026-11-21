@@ -52,7 +52,13 @@ du noyau, lue dans ``metadata.kernelspec.language`` :
     masquage, l'URL ``"https://..."`` d'une cellule C# compterait comme un
     commentaire et blanchirait la cellule (le piège miroir du ``#`` dans une
     chaine) ;
-  * **Lean** : ``--`` et ``/- -/``, chaines masquees.
+  * **Lean** : ``--`` et ``/- -/``, chaines masquees ;
+  * **Rust** : ``//`` et ``/* */``, chaines masquees -- brutes ``r"..."`` /
+    ``r#"..."#`` comprises. Sans cette famille, le noyau evcxr partait au
+    tokenizer Python, qui echouait, et le repli comptait des ``#`` inexistants :
+    des cellules Rust commentees par ``//`` etaient signalees avec
+    ``counter="fallback"`` (mesure du 2026-11-21 sur ``Sudoku-05-PSO-Rust``
+    et ``CSP-4-Scheduling-Rust``).
 
 Bornage
 -------
@@ -152,6 +158,16 @@ _CS_STRING = re.compile(r'@"(?:[^"]|"")*"|\$?"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])
 #: Chaines Lean a masquer avant de chercher ``--``.
 _LEAN_STRING = re.compile(r'"(?:\\.|[^"\\])*"')
 
+#: Chaines Rust a masquer avant de chercher ``//`` : brutes ``r"..."`` a
+#: ``r#"..."#`` (le nombre de ``#`` ouvre et ferme), echappees, et litteraux
+#: de caractere bornes a UNE unite -- une duree de vie ``'a`` n'ouvre pas de
+#: litteral et ne doit pas masquer jusqu'a la quote suivante.
+_RUST_STRING = re.compile(
+    r'r(?P<h>#*)"[\s\S]*?"(?P=h)'
+    r'|"(?:\\.|[^"\\])*"'
+    r"|'(?:\\.|[^'\\\n])'"
+)
+
 
 def _line_kind(line: str) -> str:
     """'blank' | 'comment' | 'magic' | 'code' pour une ligne brute."""
@@ -195,7 +211,7 @@ def _token_facts(source: str) -> tuple[int, bool] | None:
 
 
 def _family(language: str) -> str:
-    """'python' | 'csharp' | 'lean' depuis le ``language`` du kernelspec.
+    """'python' | 'csharp' | 'lean' | 'rust' depuis le ``language`` du kernelspec.
 
     Un noyau inconnu (``?``, ``ict-py313``, ``py310-gpu``) tombe sur Python :
     c'est le defaut du depot, et se tromper dans ce sens signale une cellule
@@ -204,6 +220,8 @@ def _family(language: str) -> str:
     key = (language or "").strip().lower()
     if key.startswith(("csharp", "c#", ".net-csharp")):
         return "csharp"
+    if key.startswith(("rust", "evcxr")):
+        return "rust"
     if key.startswith("lean"):
         return "lean"
     return "python"
@@ -218,6 +236,9 @@ def _marker_facts(source: str, family: str) -> tuple[int, bool]:
     """
     if family == "csharp":
         masked = _CS_STRING.sub('""', source)
+        line_marker, block = "//", "/*"
+    elif family == "rust":
+        masked = _RUST_STRING.sub('""', source)
         line_marker, block = "//", "/*"
     else:  # lean
         masked = _LEAN_STRING.sub('""', source)
@@ -541,6 +562,45 @@ def self_test() -> int:
     checks.append((
         "langue : cellule Lean sans commentaire signalee",
         analyse_cell(_cell(*lean_body), language="lean4") is not None,
+    ))
+
+    # 10 bis. LANGUE -- Rust commente par `//` (noyau evcxr). Sans famille
+    #    Rust, le tokenizer Python echouait et le repli comptait des `#`
+    #    inexistants : des cellules pourtant commentees etaient signalees en
+    #    `counter="fallback"` (mesure du 21/11 sur les carnets Origami Rust).
+    rs_body = (
+        "let mut essaim: Vec<Organisme> = Vec::new();",
+        "for _ in 0..taille {",
+        "    let g = grille_aleatoire(&mut rng, &puzzle);",
+        "    essaim.push(Organisme::new(g));",
+        "}",
+        "essaim.sort_by_key(|o| o.erreur);",
+        "let meilleur = essaim[0].erreur;",
+        "println!(\"Epoch 0, Best error: {}\", meilleur);",
+        "essaim.truncate(taille / 2);",
+    )
+    checks.append((
+        "langue : cellule Rust commentee par // non signalee",
+        analyse_cell(_cell("// Initialisation de l'essaim.", *rs_body),
+                     language="rust") is None,
+    ))
+    checks.append((
+        "langue : cellule Rust sans commentaire signalee",
+        analyse_cell(_cell(*rs_body), language="rust") is not None,
+    ))
+    # ... et le piege miroir : une URL dans une chaine ne compte pas -- ni
+    # une chaine brute `r#"..."#`, qui peut contenir des quotes et des `//`.
+    url_rs = ('let api = "https://api.exemple.fr/v1";',) + rs_body
+    url_rs_finding = analyse_cell(_cell(*url_rs), language="rust")
+    checks.append((
+        "langue : '//' dans une chaine Rust ne compte pas comme commentaire",
+        url_rs_finding is not None and url_rs_finding["counter"] == "rust",
+    ))
+    raw_rs = ('let doc = r#"voir "https://x" // pas un commentaire"#;',) + rs_body
+    raw_rs_finding = analyse_cell(_cell(*raw_rs), language="rust")
+    checks.append((
+        "langue : chaine brute Rust r#...# ne compte pas non plus",
+        raw_rs_finding is not None and raw_rs_finding["counter"] == "rust",
     ))
 
     # 11. RENOMMAGE -- la table nouveau->ancien delegue a l'organe partage
