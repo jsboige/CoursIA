@@ -820,6 +820,48 @@ CONCERN_MARKERS = CONCERN_MARKERS + ("concerns about", "concerns remain")
 CONCERN_MARKERS = CONCERN_MARKERS + (_EN_CONCERN_LABEL,)
 CONCERN_MARKERS = CONCERN_MARKERS + (_CONCERN_LABEL,)
 
+# #27881 — DEUX FAMILLES de marqueurs de reserve, a ne pas confondre.
+# Les marqueurs FORMELS sont des VERDICTS : « CHANGES_REQUESTED », le glyphe
+# 🟡/🔴, le refus d'approbation, la forme etiquetee « Concern: ». Les
+# marqueurs de PROSE sont des LOCUTIONS : « avant merge », « il va faudra »,
+# « a changer ». La PROSE sur-accuse d'un facteur 5 — c'est le motif meme
+# pour lequel #14682 a refuse d'ajouter des mots de prose « bloquante » au
+# filet (le contrat est cote EMISSION).
+#
+# Pourquoi la separation est necessaire ICI : un commentaire de SIGNALEMENT
+# agent (`[ACTION]` / `[DIAG]` / `[BASE-INHERITED]`) est, par construction,
+# un commentaire qui PORTE une action ou un constat — pas une reserve. Le
+# prefixe l'exempte deja de la classification (CLASSIFY_AGENT_PREFIXES, ligne
+# de `classify`), SAUF s'il « porte une reserve » — et cette exception ne
+# distinguait pas la PROSE du VERDICT. Consequence mesuree (PR #27368,
+# 2026-11-20) : le commentaire `[ACTION] lane myia-ai-01:CoursIA-2` de la
+# lane — qui dit « la PR merite un regard de taille avant merge » — est
+# classe BOT-CONCERN par le seul marqueur de prose `avant merge`, et la PR
+# est bloquee par SON PROPRE commentaire d'action (29 h). C'est le regime
+# absorbant decrit au founding incident #16381, en miroir : la LIFT
+# absorbait la reserve, ici c'est la PROSE qui transforme le signalement en
+# reserve — et personne ne peut lever une reserve que la lane a posee
+# elle-meme (B.0 : une reponse d'auteur ne leve pas une reserve de tiers).
+#
+# Le bouclage est donc : dans un commentaire de signalement, seule une
+# reserve FORMELLE reste un nit ; la PROSE seule ne bloque plus. Un verdict
+# formel l'emporte toujours (le tag n'est pas un passe-droit).
+PROSE_CONCERN_MARKERS = (
+    "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
+    "[BEFORE-MERGE]", "before merge", "a changer",
+    "concerns about", "concerns remain",
+)
+FORMAL_CONCERN_MARKERS = tuple(
+    m for m in CONCERN_MARKERS if m not in PROSE_CONCERN_MARKERS
+)
+# Les trois prefixes de SIGNALEMENT (et non l'ensemble des prefixes de
+# protocole) : ce sont ceux que #26364 a ajoutes precisement pour que le
+# signalement d'un agent ne bloque pas la PR qu'il documente.
+SIGNAL_COMMENT_PREFIXES = ("[ACTION", "[DIAG", "[BASE-INHERITED")
+# La forme STRICTE du tag (`[ACTION]` suivi d'un separateur), comme la
+# taxonomie COMMENT_TAG_RE : `[ACTIONNEEDED` n'est pas un tag.
+_SIGNAL_HEAD_RE = re.compile(r"\[(ACTION|DIAG|BASE-INHERITED)\](?=\s|$)")
+
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
@@ -5084,7 +5126,8 @@ def classify(author: str, body: str) -> str | None:
     # un rapport de correction qui nomme le verdict qu'il corrige n'emet pas
     # de reserve. Uniquement pour CONCERN_MARKERS et l'etage lift (symetrie
     # #13083 ci-dessus) : VERDICT_POSITIVE garde le body brut.
-    live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
+    concern_surface = _strip_mentioned_verdicts(_strip_quoted(body))
+    live_concern = has_live_marker(concern_surface, CONCERN_MARKERS)
     # #13938 — exemption de « comment-only Hermes » : quand un reviewer pose
     # `[Hermes] COMMENT_WITH_CONCERNS` (verdict de pure emission, force a
     # state:COMMENTED par #12311) ET que le corps declare explicitement
@@ -5111,6 +5154,14 @@ def classify(author: str, body: str) -> str | None:
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
     if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
+        if live_concern and _SIGNAL_HEAD_RE.match(stripped):
+            # #27881 — dans un commentaire de SIGNALEMENT, la PROSE seule ne
+            # fait pas une reserve : seule la mention « la PR merite un regard
+            # avant merge » dans un `[ACTION]` de la lane bloquait la PR par
+            # son propre commentaire d'action (cas #27368). Un VERDICT formel
+            # (CHANGES_REQUESTED, glyphe 🟡/🔴, refus d'approbation) reste un
+            # nit : le tag n'est pas un passe-droit.
+            live_concern = has_live_marker(concern_surface, FORMAL_CONCERN_MARKERS)
         return "BOT-CONCERN" if live_concern else None
     # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
     # une reserve claire (live_concern) OU une structure de plainte UI web
