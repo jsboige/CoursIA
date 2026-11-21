@@ -290,6 +290,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/ia-symbolique.md](curriculum/ia-symbolique.md) | Parcours IA symbolique (Lean, Tweety, SemanticWeb, Planning) |
 | [curriculum/recherche.md](curriculum/recherche.md) | Parcours recherche avancée (Infer.NET, Pyro, IIT, RL, GameTheory) |
 | [curriculum/trading.md](curriculum/trading.md) | Parcours trading algorithmique (QuantConnect, ML, Probas) |
+| [curriculum/prerequis.qmd](curriculum/prerequis.qmd) | **Carte des prérequis** — dépendances carnet → carnet dérivées de la taxonomie conceptuelle (`curriculum/taxonomy/*.json`, #24993). Page **générée** par `scripts/curriculum/generate_prereq_map.py`, rejouée par la CI de déploiement avant chaque rendu ; la couverture de chaque série y est mesurée contre l'inventaire réel du disque |
 | [curriculum/genai.md](curriculum/genai.md) | Parcours GenAI multimodale (Image, Audio, Vidéo, Texte) |
 | [curriculum/stage5_mamba_ssm.md](curriculum/stage5_mamba_ssm.md) | Note d'exploration Mamba/SSM pour le forecasting financier |
 | [transients/2026-09-02-curriculum-inventory.md](transients/2026-09-02-curriculum-inventory.md) | Inventaire des embryons de parcours — Phase 0 de l'EPIC #13844. **Fichier de travail tenu à la main** (statut `MANUEL`, non régénéré) : recense ce qui existe déjà en germe avant d'écrire de nouveaux parcours |

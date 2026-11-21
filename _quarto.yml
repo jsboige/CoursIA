@@ -12,6 +12,7 @@ project:
     - "MyIA.AI.Notebooks/Physique/index.qmd"
     - "docs/index.qmd"
     - "docs/parcours.qmd"
+    - "docs/curriculum/prerequis.qmd"
     - "COURSE_CATALOG.generated.md"
     # README.md rendus en HTML (Axe C #4211). Liste explicite
     # (regeneree par scripts/ci/regen_quarto_render.py) car Quarto 1.7
@@ -2888,6 +2889,8 @@ site:
         text: "Documentation"
       - href: docs/parcours.qmd
         text: "Parcours"
+      - href: docs/curriculum/prerequis.qmd
+        text: "Prérequis"
     right:
       - icon: github
         href: https://github.com/jsboige/CoursIA
