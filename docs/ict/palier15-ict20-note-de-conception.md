@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # Palier 15 « Lentilles et représentations ICT » — note de conception (tête ICT-20)
 
 Lane `myia-po-2023:CoursIA`. Note rendue sur l'issue (#20298, c.6607814524) et

@@ -1,0 +1,9 @@
+- name: "GameTheory-17e Bayesian-Persuasion"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-17e-Bayesian-Persuasion-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-17e-Bayesian-Persuasion-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux cotes resolvent le meme programme lineaire au moyen d'un moteur de production : cote Python scipy.optimize.linprog, cote C# Google.OrTools 9.15 (solveur GLOP). Les deux methodes du carnet (A : LP sur la loi jointe q(w,s) par affectation action/message ; B : concavification sur grille du simplexe, egalement un LP) s'appuient sur ces solveurs reels ; aucune reimplementation a la main. Cote C# : OrTools GLOP + ScottPlot 5.0.55 pour le rendu. Paire creee 2026-11-17 (myia-po-2024:CoursIA-2, #27112) : les 37 cellules (14 code) du C# reprennent une a une les 37 (14 code) du Python, memes instances (procureur / alignees / trois-etats), memes valeurs d'optimum (0.6 / 1.0 / 0.8) et meme contre-exemple de non-monotonie (4 ne divise pas 5)."
+  known_differences:
+    - "2026-11-17 (myia-po-2024:CoursIA-2, #27112) : portage C# initial. Meme canevas pedagogique (37 cellules, 14 code) ; les 3 exercices du Python deviennent 3 stubs C# (sentinelle null, C.1 sans erreur volontaire). Moteurs : scipy.optimize.linprog (Python) vs Google.OrTools GLOP (C#) ; rendu matplotlib (Python) vs ScottPlot 5.0.55 (C#). Les valeurs d'optimum, les posteriors du signal optimal et la table de convergence sont identiques a la precision de la virgule flottante."

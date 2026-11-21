@@ -755,17 +755,24 @@ def test_duplicate_basenames_ne_compte_que_les_enfants_directs(
 def test_duplicate_basenames_plafond_sur_main_actuel() -> None:
     """Contrôle positif sur le dépôt réel : le sens voit la dette connue.
 
-    30 basenames après les tranches de dédoublonnage (#25366 ; T2 #26137 a
-    retiré `tests/test_batch_reexecute.py` racine). Le plafond est un
-    cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
-    T2 en supprime — jamais l'inverse.
+    1 basename restant sur cet arbre, mesuré après la fusion des deux tranches
+    (#25366 ; T2 #26137 a retiré `tests/test_batch_reexecute.py` racine ;
+    T2 #26541 a préfixé 10 basenames génériques ; T2-residu #27066 a renommé
+    les copies stratégiques, retire `test_check_cell_source_parses.py` et
+    `test_check_public_anchor.py` ; T2 ICT a préfixé les 16 paires du hub
+    série ICT). Chaque tranche abaisse le plafond de son propre côté ; le
+    survivant `test_utils.py` est porté par deux projets-exemples Vibe-Coding,
+    qui sont des données de démonstration et non des suites du dépôt. Le
+    plafond est un cliquet inversé : il rougit sur un doublon NOUVEAU, verdit
+    quand T2 en supprime — jamais l'inverse.
     """
     from check_testpaths_coverage import duplicate_basenames
 
     dupes = duplicate_basenames(REPO_ROOT)
-    assert len(dupes) <= 30, f"dette de doublons en hausse : {len(dupes)} > 30"
-    assert "test_check_cell_source_parses.py" in dupes
-    assert len(dupes["test_check_cell_source_parses.py"]) == 2
+    assert len(dupes) <= 1, f"dette de doublons en hausse : {len(dupes)} > 1"
+    assert "test_check_cell_source_parses.py" not in dupes
+    assert "test_utils.py" in dupes
+    assert len(dupes["test_utils.py"]) == 2
 
 
 def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:
