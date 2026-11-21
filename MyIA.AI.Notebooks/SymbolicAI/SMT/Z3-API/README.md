@@ -58,7 +58,7 @@ Ce README suit la [signalétique de lecture du dépôt](https://github.com/jsboi
 | 19 | [Optimisation multi-objectif (lex/Pareto/weighted)](Z3-19-Optimization-Lexicographic-Python.ipynb) | Comparaison des trois stratégies d'arbitrage (lexicographique, front de Pareto énuméré, somme pondérée avec sweep) sur 3 projets jouet (coût/impact) | Découverte | — |
 | 20 | [Machine de Gödel](Z3-20-Machine-de-Goedel-Python.ipynb) **(BETA)** | Auto-réécriture sur preuve (Schmidhuber 2006) : théorème cible prouvé par réfutation sous axiomes d'environnement, optimalité globale contre une machine gloutonne, prix d'une amélioration non prouvable (contre-exemple Z3), coût du temps de preuve (`rlimit`) | Découverte | — |
 
-> **Les jumeaux C#** : les notebooks 01 à 06, le 10, le 12, le 13 et le compagnon 16e existent chacun en version .NET (`Z3-01-Introduction-CSharp.ipynb`, …), accessibles directement depuis la colonne *Notebook* ci-dessus. Chaque jumeau rejoue le parcours du notebook Python via le binding `Microsoft.Z3` (NuGet) — même moteur Z3, autre langage — et se repère au suffixe `CSharp` du fichier et à l'exposant `ᶜˢ` (01ᶜˢ–06ᶜˢ, 10ᶜˢ, 12ᶜˢ, 13ᶜˢ, 16eᶜˢ) utilisé dans le reste du README.
+> **Les jumeaux C#** : les notebooks 01 à 06, le 10, le 12, le 13 et les compagnons 16d et 16e existent chacun en version .NET (`Z3-01-Introduction-CSharp.ipynb`, …), accessibles directement depuis la colonne *Notebook* ci-dessus. Chaque jumeau rejoue le parcours du notebook Python via le binding `Microsoft.Z3` (NuGet) — même moteur Z3, autre langage — et se repère au suffixe `CSharp` du fichier et à l'exposant `ᶜˢ` (01ᶜˢ–06ᶜˢ, 10ᶜˢ, 12ᶜˢ, 13ᶜˢ, 16dᶜˢ, 16eᶜˢ) utilisé dans le reste du README.
 
 ## Approfondissements (Découverte)
 
@@ -88,7 +88,7 @@ Des compagnons regroupés par palier : chaque palier prolonge un notebook du par
 |---|----------|---------------------|
 | 16b | [Meal-Planner : données réelles](Z3-16b-Meal-Planner-Data-External-Python.ipynb) **(BETA)** | Couche de données (compagnon du 16) : corpus Ciqual ANSES 2025 × archive RecipeML, lecture en flux (`iterparse`), appariement lexical flou, agrégation pondérée par la masse |
 | 16c | [Meal-Planner : capstone patient](Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) **(BETA)** | Capstone (compagnon du 16) : restrictions nutritionnelles (énergie bornée, protéines min, lipides max), menu multi-jours, port du C# `08_Meal_Planner_Patient_Capstone` |
-| 16d | [Meal-Planner : convergence à l'échelle](Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) **(BETA)** | Convergence (compagnon du 16) : l'encodage décide de la tractabilité — index+disjonction explose, `Array` insoluble (`unknown`), one-hot pseudo-booléen (`PbEq`/`PbLe`/`PbGe`) passe à l'échelle |
+| 16d | [Meal-Planner : convergence à l'échelle](Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) **(BETA)** — jumeau [C#](Z3-16d-Meal-Planner-Convergence-Scale-CSharp.ipynb) | Convergence (compagnon du 16) : l'encodage décide de la tractabilité — index+disjonction explose, `Array` insoluble (`unknown`), one-hot pseudo-booléen (`PbEq`/`PbLe`/`PbGe`) passe à l'échelle |
 | 16e | [Meal-Planner : optimisation](Z3-16e-Meal-Planner-Optimize-Python.ipynb) **(BETA)** — jumeau [C#](Z3-16e-Meal-Planner-Optimize-CSharp.ipynb) | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global |
 
 ## Ouvrage de référence
