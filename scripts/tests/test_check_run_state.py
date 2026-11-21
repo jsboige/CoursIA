@@ -366,3 +366,89 @@ def test_head_sha_leve_quand_les_deux_chemins_tombent(monkeypatch):
 
     with pytest.raises(RuntimeError):
         m._head_sha(19912)
+
+
+# --- 18/11/2026 (#27242) : le jeu des checks requis est une propriete de la
+# --- branche CIBLEE, pas de `main`. Une PR empilee (base = branche de feature,
+# --- non protegee) n'exige AUCUN check ; `pr-gate.yml` ne se declenche que sur
+# --- `base: main`, donc son `PR gate` n'y est jamais poste. Lire la protection
+# --- de `main` affirmait un check absent : un « BLOQUEE sans rouge visible »
+# --- (#21463) sur une PR que GitHub juge CLEAN.
+
+def test_une_branche_non_protegee_exige_aucun_check(monkeypatch):
+    """404 « Branch not protected » = branche lisible, aucun check requis :
+    le jeu est CONNU et VIDE (set()), pas indeterminable (None)."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        raise RuntimeError("gh api repos/jsboige/CoursIA/branches/feature/x/"
+                           "protection... -> 1: gh: Branch not protected "
+                           "(HTTP 404)")
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._required_contexts(base="feature/x") == set()
+
+
+def test_une_branche_introuvable_laisse_indeterminable(monkeypatch):
+    """404 « Branch not found » n'est PAS une reponse « aucun check » : on ne
+    sait toujours pas, donc None (fail-closed cote determination)."""
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        raise RuntimeError("gh api ... -> 1: gh: Branch not found (HTTP 404)")
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._required_contexts(base="feature/inexistante") is None
+
+
+def test_pr_base_lit_la_branche_ciblee(monkeypatch):
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        assert args[:2] == ["api", "repos/jsboige/CoursIA/pulls/27242"]
+        return '{"base": {"ref": "feature/tapis-bascule-legere"}}'
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._pr_base(27242) == "feature/tapis-bascule-legere"
+
+
+def test_pr_base_illisible_rend_none(monkeypatch):
+    import scripts.check_run_state as m
+
+    def fake_run_gh(args):
+        raise RuntimeError("gh api ... -> 1: down")
+    monkeypatch.setattr(m, "_run_gh", fake_run_gh)
+
+    assert m._pr_base(27242) is None
+
+
+def test_main_sur_une_pr_empilee_n_annonce_aucun_requis_manquant(monkeypatch,
+                                                                   capsys):
+    """Le cas mesure (#27242) : la tete ne porte pas `PR gate`, la PR est
+    empilee sur une branche non protegee -- l'instrument ne doit PAS annoncer
+    un check requis absent (le verdict reste vert, exit 0)."""
+    import scripts.check_run_state as m
+
+    vert = [{"name": "Always-on guards", "conclusion": "success",
+             "started_at": "T", "id": 1}]
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", vert))
+    monkeypatch.setattr(m, "_pr_base", lambda pr: "feature/tapis-bascule-legere")
+    monkeypatch.setattr(m, "_required_contexts", lambda *a, **k: set())
+    assert m.main(["--pr", "27242"]) == 0
+    out = capsys.readouterr().out
+    assert "MISSING-REQUIRED" not in out
+    assert "base feature/tapis-bascule-legere" in out
+
+
+def test_main_emploie_la_base_de_la_pr_pour_la_protection(monkeypatch):
+    """La protection lue est celle de la branche ciblee de la PR, pas celle de
+    `main` : c'est le point du correctif."""
+    import scripts.check_run_state as m
+
+    vues = []
+    monkeypatch.setattr(m, "collect", lambda pr=None, sha=None: ("ab", []))
+    monkeypatch.setattr(m, "_pr_base", lambda pr: "feature/tapis-banc-replay")
+    monkeypatch.setattr(m, "_required_contexts",
+                        lambda *a, **k: vues.append(k.get("base")) or set())
+    assert m.main(["--pr", "27251"]) == 0
+    assert vues == ["feature/tapis-banc-replay"]

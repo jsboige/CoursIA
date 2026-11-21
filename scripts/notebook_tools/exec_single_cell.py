@@ -11,9 +11,12 @@ tool runs only the target cell on a fresh kernel and persists just that cell.
 
 It reads/writes with the raw ``json`` module (NOT nbformat) so the on-disk key
 order of every other cell is preserved exactly: only the target cell's
-``execution_count`` and ``outputs`` are mutated. This avoids the whole-file
-key-order churn nbformat.write() introduces on notebooks that were saved by
-VS Code / dotnet-interactive (non nbformat-canonical key order).
+``execution_count``, ``outputs`` and stale per-cell papermill/execution blocks
+are mutated. This avoids the whole-file key-order churn nbformat.write()
+introduces on notebooks that were saved by VS Code / dotnet-interactive
+(non nbformat-canonical key order), and the mass metadata deletion a global
+``strip_stale_papermill_metadata`` call caused (mesure du 14/11 : 70 cellules
+strippées pour une seule exécutée, +50/-716 au lieu de +50/-7).
 
 For .NET (.net-csharp) kernels, the dotnet-interactive HTTP-port bootstrap
 ``<div>`` that a fresh kernel injects on the first executed cell (a
@@ -30,6 +33,7 @@ import argparse
 import json
 import queue
 import sys
+import time
 
 from jupyter_client.manager import start_new_kernel
 
@@ -75,7 +79,11 @@ def collect_outputs(kc, msg_id, timeout):
             outputs.append({
                 "output_type": "stream",
                 "name": content["name"],
-                "text": content["text"],
+                # nbformat canonical : une sortie stream porte son texte en
+                # liste de lignes, pas en chaine unique -- c'est la forme que
+                # produisent papermill et Jupyter, donc celle des autres
+                # cellules du carnet (#25188).
+                "text": content["text"].splitlines(keepends=True),
             })
         elif mt == "execute_result":
             exec_count = content.get("execution_count", exec_count)
@@ -109,6 +117,16 @@ def main():
     ap.add_argument("--cell-id", help="id of the code cell to execute")
     ap.add_argument("--index", type=int, help="absolute cell index to execute")
     ap.add_argument("--kernel", default="python3", help="registered kernel name")
+    ap.add_argument("--cwd", default=None,
+                    help="working directory of the kernel (default: the working "
+                         "directory of this process). A notebook that resolves its "
+                         "project from Path.cwd() (ex. the Lean series) needs it.")
+    ap.add_argument("--prelude-cell-id", action="append", default=None,
+                    help="id of a code cell to execute BEFORE the target, in the "
+                         "SAME kernel (repeatable, order preserved). Its outputs "
+                         "are discarded: it exists only to build the namespace the "
+                         "target depends on (ex. a setup cell defining a path "
+                         "constant).")
     ap.add_argument("--timeout", type=int, default=120)
     ap.add_argument("--set-ec", type=int, default=None,
                     help="override the written execution_count with this value. "
@@ -121,8 +139,12 @@ def main():
     if not args.cell_id and args.index is None:
         ap.error("provide --cell-id or --index")
 
-    with open(args.notebook, encoding="utf-8") as f:
-        nb = json.load(f)
+    with open(args.notebook, "rb") as f:
+        raw = f.read()
+    # Un carnet sans saut de ligne final doit le rester : l'ecriture en
+    # ajouterait un octet (bruit de diff sur la derniere ligne du fichier).
+    trailing_newline = raw.endswith(b"\n")
+    nb = json.loads(raw.decode("utf-8"))
 
     target = None
     for i, c in enumerate(nb["cells"]):
@@ -138,23 +160,44 @@ def main():
         print(f"ERROR: code cell not found (cell-id={args.cell_id} index={args.index})")
         sys.exit(2)
 
+    prelude_cells = []
+    for cid in (args.prelude_cell_id or []):
+        pre = next((c for c in nb["cells"]
+                    if c.get("cell_type") == "code" and c.get("id") == cid), None)
+        if pre is None:
+            print(f"ERROR: prelude code cell not found (id={cid})")
+            sys.exit(2)
+        prelude_cells.append(pre)
+
     # Bound OpenMP/BLAS pools: native training cells oversubscribe many-core
     # hosts and look frozen (#11111). Kernel inherits env.
     bound_native_thread_pools()
-    km, kc = start_new_kernel(kernel_name=args.kernel)
+    km, kc = start_new_kernel(kernel_name=args.kernel, cwd=args.cwd)
     status = "unknown"
     try:
+        for pre in prelude_cells:
+            pre_id = kc.execute(_source(pre))
+            # Drain and discard: the prelude only builds the namespace.
+            collect_outputs(kc, pre_id, args.timeout)
         msg_id = kc.execute(_source(target))
         outputs, exec_count = collect_outputs(kc, msg_id, args.timeout)
-        try:
-            reply = kc.get_shell_msg(timeout=args.timeout)
+        # The shell channel carries one reply per execution: the preludes'
+        # replies come first and must be skipped, not mistaken for the target's.
+        deadline = time.monotonic() + args.timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            try:
+                reply = kc.get_shell_msg(timeout=remaining)
+            except queue.Empty:
+                break
             if reply["parent_header"].get("msg_id") == msg_id:
                 status = reply["content"].get("status", status)
                 ec = reply["content"].get("execution_count")
                 if ec is not None:
                     exec_count = ec
-        except queue.Empty:
-            pass
+                break
     finally:
         kc.stop_channels()
         km.shutdown_kernel(now=True)
@@ -168,11 +211,19 @@ def main():
     target["outputs"] = outputs
 
     # Les sorties/ec fraîchement écrits décrivent CE run : un bloc papermill
-    # hérité d'une passe antérieure les daterait au mauvais run (#12722).
-    strip_stale_papermill_metadata(nb)
-    with open(args.notebook, "w", encoding="utf-8") as f:
+    # hérité d'une passe antérieure les daterait au mauvais run (#12722). Le
+    # strip est BORNÉ à la cellule cible : les blocs des cellules non
+    # ré-exécutées décrivent le run qui a produit leurs sorties intactes —
+    # les retirer détruit une provenance valide (mesure du 14/11 : 70 cellules
+    # strippées pour une seule exécutée, +50/-716 au lieu de +50/-7 ; même
+    # classe que #24434 sur le writer générique). Le niveau carnet part bien :
+    # le ratchet #11155 autorise son absence (BLOCK_REMOVED), pas sa survie
+    # sur des sorties changées (STALE_BLOCK).
+    strip_stale_papermill_metadata(nb, cells=[target])
+    with open(args.notebook, "w", encoding="utf-8", newline="\n") as f:
         json.dump(nb, f, ensure_ascii=False, indent=1)
-        f.write("\n")
+        if trailing_newline:
+            f.write("\n")
 
     has_err = any(o.get("output_type") == "error" for o in outputs)
     print(f"Executed cell kernel_ec={exec_count} written_ec={written_ec} "

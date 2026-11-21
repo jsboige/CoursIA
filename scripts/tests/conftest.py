@@ -15,7 +15,8 @@ if str(_SCRIPTS_DIR) not in sys.path:
 # T3-c (#25366) : les outils internes reloges dans leur famille (audit,
 # bibliography, ci, coordination, notebook_tools, slides) restent importables
 # a nu par les tests de scripts/tests/, comme ils l etaient a la racine.
-for _fam in ("audit", "bibliography", "ci", "coordination", "notebook_tools", "slides"):
+# V3 #13737 tranche 1 : familles genai et quantconnect ajoutees (meme geste).
+for _fam in ("audit", "bibliography", "ci", "coordination", "notebook_tools", "slides", "genai", "quantconnect"):
     _fam_dir = _SCRIPTS_DIR / _fam
     if _fam_dir.is_dir() and str(_fam_dir) not in sys.path:
         sys.path.insert(0, str(_fam_dir))
@@ -139,3 +140,33 @@ def _belt_deadline_hermetique():
     _reset_belt_deadline()
     yield
     _reset_belt_deadline()
+
+
+@pytest.fixture(autouse=True)
+def _gh_etag_desactive(monkeypatch):
+    """Filet de securite (#26631, CR coordinateur) : ETag persiste DESACTIVE.
+
+    Les tests qui mockent ``subprocess.run`` servent un stdout SANS bloc
+    d'en-tetes de ``gh api -i`` : si le chemin conditionnel etait pris, le
+    corps lu serait vide (incident : test_gh_json_porte_une_borne_par_appel,
+    run 43651006619 -- rouge sur le runner Linux la ou le garde
+    ``cache_dir()`` de gh_etag suffit sur machine sans LOCALAPPDATA ; ce
+    filet couvre AUSSI Windows ou LOCALAPPDATA est pose). Sans cache
+    (``COURSIA_GH_ETAG=0``), ``etag_applicable`` rend None et les organes
+    reprennent leur chemin d'origine octet pour octet. Les tests de gh_etag
+    eux-memes re-activent explicitement dans leur fixture ``cache_isole``.
+    """
+    monkeypatch.setenv("COURSIA_GH_ETAG", "0")
+    yield
+
+
+@pytest.fixture(autouse=True)
+def _tapis_lourd_en_diagnostic(monkeypatch):
+    """#26926 : les tests exercent le tapis lourd comme outil de diagnostic.
+
+    Hors diagnostic, ``pick_idle_grain.py --belt`` refuse et nomme le tapis
+    rapide. Les suites du tapis lourd testent ses mecanismes : elles le lancent
+    donc en diagnostic. Le test du refus retire la variable explicitement.
+    """
+    monkeypatch.setenv("COURSIA_HEAVY_BELT_DIAGNOSTIC", "1")
+    yield

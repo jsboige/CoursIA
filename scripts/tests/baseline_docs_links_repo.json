@@ -1,0 +1,223 @@
+{
+  "broken_links": [
+    {
+      "source": "MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/distill_charge_fixture.md",
+      "target": "02-SemanticKernel-Advanced.ipynb",
+      "line": 20,
+      "text": "02-Functions >>"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/GenAI/activites/PREPARATION-ACTIVITES.md",
+      "target": "../INTRO-GENAI.md",
+      "line": 104,
+      "text": "INTRO-GENAI.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/GenAI/activites/PREPARATION-ACTIVITES.md",
+      "target": "../../Roo-Code/",
+      "line": 377,
+      "text": "Roo-Code/"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/GenAI/activites/PREPARATION-ACTIVITES.md",
+      "target": "../../Claude-Code/docs/",
+      "line": 378,
+      "text": "Claude-Code/docs/"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/IIT/ICT-Series/thom-synthese-distillation.md",
+      "target": "ICT-12-ValenceFieldsAndAnimats-Python.ipynb",
+      "line": 65,
+      "text": "ICT-12"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/README.en.md",
+      "target": "../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb",
+      "line": 30,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/README.en.md",
+      "target": "../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb",
+      "line": 113,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/templates/student-presentation/slides.md",
+      "target": "equity_curve.png",
+      "line": 116,
+      "text": "Equity Curve"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/QuantConnect/projects/ML-XGBoost/assets/readme/MANIFEST.md",
+      "target": "../../../../../../../scratchpad/xgb-pr-body.md",
+      "line": 5,
+      "text": "c.453 PR body"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/QuantConnect/projects/STRATEGIES_DETAIL.md",
+      "target": "../../../../docs/qc/qc-strategies-status.md",
+      "line": 172,
+      "text": "docs/qc/qc-strategies-status.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/data/app27-sparse-index-tracking/SOURCE.md",
+      "target": "../../../../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md",
+      "line": 49,
+      "text": "Sparse-Index-Tracking-QC"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/Sudoku/index.qmd",
+      "target": "../../parcours.qmd",
+      "line": 39,
+      "text": "Parcours 2 — ML.NET + Symbolic"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Observatoire-2-Initiation-Regional_PreRegistration.md",
+      "target": "../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb",
+      "line": 7,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Observatoire-2-Initiation-Regional_PreRegistration.md",
+      "target": "../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb",
+      "line": 166,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_RelationalForms_Protocol.md",
+      "target": "../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb",
+      "line": 5,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_RelationalForms_Protocol.md",
+      "target": "../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb",
+      "line": 107,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/I18N_INVENTORY.md",
+      "target": "../../.claude/rules/readme-french-first.md",
+      "line": 515,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/Note-IA-et-preuves-2026.md",
+      "target": "../../.claude/rules/secrets-hygiene.md",
+      "line": 40,
+      "text": "secrets-hygiene.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/Note-IA-et-preuves-2026.md",
+      "target": "../../.claude/rules/notebook-conventions.md",
+      "line": 42,
+      "text": "notebook-conventions.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/Note-IA-et-preuves-2026.md",
+      "target": "../../.claude/rules/pr-review-discipline.md",
+      "line": 42,
+      "text": "pr-review-discipline.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/Note-IA-et-preuves-2026.md",
+      "target": "../../.claude/rules/verify-before-claiming.md",
+      "line": 50,
+      "text": "verify-before-claiming.md"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/session_state/reference_docs/stable_marriage/mmaaz-git-gs-strategies.md",
+      "target": ".../memory/project_prover_c35_01_woman_pessimal.md",
+      "line": 147,
+      "text": "project_prover_c35_01_woman_pessimal"
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/README.en.md",
+      "target": "../conway_lean/",
+      "line": 65,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/README.en.md",
+      "target": "../knot_lean/",
+      "line": 66,
+      "text": ""
+    },
+    {
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/README.en.md",
+      "target": "../conway_lean/",
+      "line": 48,
+      "text": ""
+    },
+    {
+      "source": "docs/curriculum/recherche.md",
+      "target": "../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb",
+      "line": 376,
+      "text": "DecInfer-10-Thompson-Sampling : Bandits bayesiens par…"
+    },
+    {
+      "source": "docs/curriculum/recherche.md",
+      "target": "../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb",
+      "line": 377,
+      "text": "DecInfer 11 — Théories de la décision face à un…"
+    },
+    {
+      "source": "docs/curriculum/recherche.md",
+      "target": "../../MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb",
+      "line": 478,
+      "text": "RL 19 - Reward tampering : quand l'agent peut modifier…"
+    },
+    {
+      "source": "docs/curriculum/recherche.md",
+      "target": "../../MyIA.AI.Notebooks/RL/RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb",
+      "line": 479,
+      "text": "RL-20 — Du simulateur au réel : la randomisation de…"
+    },
+    {
+      "source": "docs/curriculum/recherche.md",
+      "target": "../../MyIA.AI.Notebooks/RL/RL-21-Auto-Jeu-AlphaZero-Python.ipynb",
+      "line": 480,
+      "text": "RL 21 - Auto-jeu à la AlphaZero : quand le réseau guide…"
+    },
+    {
+      "source": "docs/curriculum/trading.md",
+      "target": "../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb",
+      "line": 235,
+      "text": "DecInfer-10-Thompson-Sampling : Bandits bayesiens par…"
+    },
+    {
+      "source": "docs/curriculum/trading.md",
+      "target": "../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb",
+      "line": 236,
+      "text": "DecInfer 11 — Théories de la décision face à un…"
+    },
+    {
+      "source": "scripts/mcp-maintenance/docs/24-RESOLUTION-TECHNIQUE-NUGET-TARGETS-PATH1-NULL.md",
+      "target": "../debug-nuget-path1-minimal.ipynb",
+      "line": 222,
+      "text": ""
+    },
+    {
+      "source": "scripts/mcp-maintenance/docs/24-RESOLUTION-TECHNIQUE-NUGET-TARGETS-PATH1-NULL.md",
+      "target": "../debug-nuget-path1-minimal-direct.ipynb",
+      "line": 223,
+      "text": ""
+    },
+    {
+      "source": "scripts/mcp-maintenance/docs/24-RESOLUTION-TECHNIQUE-NUGET-TARGETS-PATH1-NULL.md",
+      "target": "../debug-nuget-version-explicite.ipynb",
+      "line": 224,
+      "text": ""
+    },
+    {
+      "source": "scripts/mcp-maintenance/docs/24-RESOLUTION-TECHNIQUE-NUGET-TARGETS-PATH1-NULL.md",
+      "target": "../debug-nuget-paths-absolus.ipynb",
+      "line": 225,
+      "text": ""
+    }
+  ],
+  "orphans": [],
+  "scanned_files": 1397,
+  "total_links": 11627
+}

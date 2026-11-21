@@ -1,0 +1,11 @@
+- name: "ML-3.2 Optimisateurs"
+  family: ML
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Optimiseurs et MLP manuels vérifiés contre les vraies API TorchSharp ; make_moons utilise scikit-learn via Python.NET."
+  known_differences:
+    - "Python utilise NumPy, PyTorch et scikit-learn ; C# utilise MathNet et TorchSharp, et appelle scikit-learn via Python.NET."
+    - "Les générateurs Python et C# diffèrent ; les initialisations et minibatches sont appariés entre méthodes dans chaque carnet."
+    - "Matplotlib produit les figures Python ; le twin C# utilise cinq SVG statiques."

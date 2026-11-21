@@ -28,8 +28,11 @@ CALIBRATION), **reclassé honnêtement après sondage Lean** :
 | `panel_constant_stream_monotone` | P2 — **bas de classe : la voie directe existe** | `Summable.tsum_le_tsum` existe au pin sur ℝ (nom généré par `to_additive`, invisible au grep) ; `exact?` ne clôt pas d'un coup, mais la preuve complète fait 3 lignes (`summable_geometric_of_lt_one` + point-à-point `mul_le_mul_of_nonneg_left`) — établie en sondage |
 | `panel_partial_sums_tendsto` | P3 — composition de limites | le lake a déjà la forme fermée `geometricPartialSum_closed` et `geometric_series_converges` ; Mathlib a `tendsto_pow_atTop_nhds_zero_of_lt_one` (sondé au pin) ; `exact?` échoue sur l'énoncé (déf locale) — la difficulté est la **composition** (réécriture par forme fermée puis algèbre des limites), pas un lemme manquant |
 
-La baseline `sorry-baseline` de `scripts/lean/ci_lakes.json` passe de 2 à 5
-dans la même PR (le gate exige l'égalité exacte, échec bidirectionnel).
+Après fusion avec `main` (P2 prouvé par #26755), l'arbre porte 2 `sorry`
+réels — le théorème de Gittins (`GittinsTheorem.lean`) et le P3
+`panel_partial_sums_tendsto` ci-dessous ; la baseline `sorry-baseline` de
+`scripts/lean/ci_lakes.json` vaut 2 (le gate exige l'égalité exacte,
+échec bidirectionnel).
 Convention i18n (#4980) : miroir anglais dans `Gittins/Panel_en.lean`
 (namespace `Gittins_en`), docstrings seules divergentes.
 -/
@@ -51,7 +54,8 @@ une définition du lake — hors d'atteinte de Mathlib par construction. `exact?
 échoue sur l'énoncé (déf locale) ; la route vérifiée en sondage est la forme
 fermée du lake `geometricPartialSum_closed` puis `norm_num`. -/
 theorem panel_quarter_partial_sum : geometricPartialSum (1 / 4) 3 = 21 / 16 := by
-  sorry
+  rw [geometricPartialSum_closed (by norm_num : (1:ℝ) / 4 ≠ 1)]
+  norm_num
 
 /-- **Terrain P2 — monotonie d'un flux constant, reclassée bas de classe**
 (programme prover #1453, dispatch c2770 ; reclassement après review
@@ -86,7 +90,10 @@ plan logique. -/
 theorem panel_constant_stream_monotone {γ μ₁ μ₀ : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1)
     (hμ₁ : 0 ≤ μ₁) (h : μ₁ ≤ μ₀) :
     ∑' n : ℕ, γ ^ n * μ₁ ≤ ∑' n : ℕ, γ ^ n * μ₀ := by
-  sorry
+  refine Summable.tsum_le_tsum
+    (fun n => mul_le_mul_of_nonneg_left h (pow_nonneg hγ₁.le n))
+    (Summable.mul_right μ₁ (summable_geometric_of_lt_one hγ₁.le hγ₂))
+    (Summable.mul_right μ₀ (summable_geometric_of_lt_one hγ₁.le hγ₂))
 
 /-- **Terrain P3 — composition de limites** (programme prover #1453, dispatch
 c2770 ; description réalignée après review c.5778073186).
@@ -111,6 +118,23 @@ travers la division et la multiplication par `μ` (algèbre des limites), puis
 identifier la limite à `∑' γᵏ·μ` via `geometric_series_converges`. -/
 theorem panel_partial_sums_tendsto {γ μ : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1) :
     Tendsto (fun n => geometricPartialSum γ n * μ) atTop (nhds (∑' k : ℕ, γ ^ k * μ)) := by
-  sorry
+  have hγne : γ ≠ 1 := ne_of_lt hγ₂
+  have hpow : Tendsto (fun n : ℕ => γ ^ n) atTop (nhds 0) :=
+    tendsto_pow_atTop_nhds_zero_of_lt_one hγ₁.le hγ₂
+  have hsum : Tendsto (fun n : ℕ => geometricPartialSum γ n)
+      atTop (nhds ((1:ℝ) / (1 - γ))) := by
+    have hrew : (fun n : ℕ => geometricPartialSum γ n)
+        = fun n : ℕ => (1 - γ ^ n) / (1 - γ) :=
+      funext fun n => geometricPartialSum_closed hγne n
+    rw [hrew]
+    have hcont : Continuous fun x : ℝ => (1 - x) / (1 - γ) := by continuity
+    have hcomp := hcont.continuousAt.tendsto.comp hpow
+    simpa [Function.comp_def] using hcomp
+  have hsumm : Summable fun k : ℕ => γ ^ k :=
+    summable_geometric_of_lt_one hγ₁.le hγ₂
+  have hlim : ∑' k : ℕ, γ ^ k * μ = (1:ℝ) / (1 - γ) * μ := by
+    rw [tsum_mul_right, geometric_series_converges hγ₁.le hγ₂]
+  rw [hlim]
+  exact hsum.mul_const μ
 
 end Gittins
