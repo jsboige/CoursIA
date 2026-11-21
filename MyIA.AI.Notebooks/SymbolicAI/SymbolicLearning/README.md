@@ -769,4 +769,4 @@ L'apprentissage symbolique est l'art de **réussir là où les données seules �
 
 ### Parité de la synthèse spectrale
 
-La [version C#](SL-12b-SpectralLogicSynthesis-CSharp.ipynb) reprend le [carnet Python](SL-12b-SpectralLogicSynthesis.ipynb) : Walsh, PTF, Sinkhorn et recherches discrètes aux mêmes budgets. Math.NET calcule les moindres carrés ; les générateurs aléatoires diffèrent et les figures C# sont des SVG statiques.
+La [version C#](SL-12b-SpectralLogicSynthesis-CSharp.ipynb) reprend le [carnet Python](SL-12b-SpectralLogicSynthesis-Python.ipynb) : Walsh, PTF, Sinkhorn et recherches discrètes aux mêmes budgets. Math.NET effectue les moindres carrés du port C# ; les générateurs aléatoires diffèrent et les figures C# sont des SVG statiques.
