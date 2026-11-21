@@ -824,7 +824,11 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 2026-11-09 : +1 paire -- tranche FT-00b de l'axe E de #1650 :
 #   FT-00b-LoRA-Hyperparams-from-scratch-Python_en (deuxieme des trois carnets
 #   encore sans jumeau ; reste FT-00d). 24 + 1 = 25.
-EXPECTED_PAIR_COUNT = 25
+# 2026-11-15 : +2 paires -- tranches CaseStudies de l'axe E de #1650 :
+#   barbie-schreck_en et receipe_maker_en (les deux seuls carnets CaseStudies
+#   encore sans jumeau ; fort-boyard-python et medical_chatbot l'avaient deja).
+#   25 + 2 = 27.
+EXPECTED_PAIR_COUNT = 27
 
 
 def _collect_parity_failures(repo_root: Path,

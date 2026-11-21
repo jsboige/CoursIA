@@ -1,7 +1,4 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,f4a5ed66,code,fr,d7a1ea74a47bcb51,"# Parameters
-BATCH_MODE = True
-",,,,,,,,d7a1ea74a47bcb51,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,21e84a2e,markdown,fr,036770fc8ee911b5,"# Duel Verbal : Barbie vs l'Âne de Shrek
 ## Introduction - barbie schreck
 
@@ -1603,9 +1600,6 @@ This use case illustrates several advanced Semantic Kernel concepts:
 - Implement a persistent consultation history (storage in a database)
 - Use a vector model to search for similar medical cases in a knowledge base
 - Add ethical guardrails (refusal to diagnose certain conditions, systematic referral to a healthcare professional)",,,,,,,990b5f81a41d5ab5,fd5dfdbd3bbbd6b4,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,7a16c5fb,code,fr,d7a1ea74a47bcb51,"# Parameters
-BATCH_MODE = True
-",,,,,,,,d7a1ea74a47bcb51,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,24f0e13f,markdown,fr,51d902e944fe5d18,"# Générateur de Recettes PDF
 ## Introduction - recipe maker
 
@@ -1643,7 +1637,7 @@ Ce notebook orchestre une collaboration multi-agents pour :
 - `RecipeGenerator` → Creates the recipe via LLM  
 - `PDFGenerator` → Generates the final document
 
----",,,,,,,16d73e913af0445e,4c86de0038c622f6,,,,,,,,,,,,,,
+***",,,,,,,16d73e913af0445e,59cf953df81e3049,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,348b305b,markdown,fr,d2d5c1388f395a4c,"### Bibliothèques et garde-fous d'import
 
 **Pourquoi ce notebook s'appuie sur Semantic Kernel et non sur un simple appel d'API** : générer une recette structurée (titre, ingrédients listés, étapes numérotées, respect des contraintes diététiques) en une seule requête LLM produit un résultat au format libre et souvent incohérent. Semantic Kernel orchestre **plusieurs agents spécialisés** (collecteur de critères, générateur de recette, producteur du PDF) qui se passent un état partagé — c'est l'architecture *multi-agent* qui garantit que la recette finale respecte toutes les contraintes (végétarien, sans champignons, 6 convives). Les *import guards* de la cellule suivante rendent explicites les deux dépendances optionnelles (`dotenv`, `semantic_kernel`) : si l'une manque, le notebook l'imprime et poursuit en mode dégradé. Les autres dépendances (`reportlab`, `openai`, `pypdf`) s'importent sans garde : elles sont requises pour la partie génération, et leur absence se lira sur l'`ImportError` de leur cellule.",### Installing libraries,,,,,,,d2d5c1388f395a4c,37ae75552eece061,,,,,,,,,,,,,,
@@ -1695,9 +1689,9 @@ The `RecipeState` class stores the diet, excluded ingredients, and number of gue
 **Objective**: extend `RecipeState` with these new attributes and create the corresponding update methods.
 
 **Hints**:
-- # Step 1: Add the attributes `difficulty`, `max_prep_time`, and `cuisine_type` in `__init__`
-- # Step 2: Create the methods `set_difficulty`, `set_max_prep_time`, and `set_cuisine`
-- # Hint: follow the existing pattern of the other attributes (type hints + default value)",,,,,,,e3057c4d9e6e52a7,4dbc9c4426840334,,,,,,,,,,,,,,
+- `# Step 1`: Add the attributes `difficulty`, `max_prep_time`, and `cuisine_type` in `__init__`
+- `# Step 2`: Create the methods `set_difficulty`, `set_max_prep_time`, and `set_cuisine`
+- `# Hint`: follow the existing pattern of the other attributes (type hints + default value)",,,,,,,e3057c4d9e6e52a7,71d60bc8ef83842b,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,26b00761,code,fr,147a59853e1b4967,"class ExtendedRecipeState(RecipeState):
     # TODO etudiant : enrichir l'etat avec les nouvelles preferences
     
@@ -1830,9 +1824,9 @@ The current plugins handle information collection and recipe generation, but no 
 **Objective**: create a `NutritionPlugin` class with an `estimate_nutrition` method annotated with `@kernel_function` that returns an estimate of calories per serving.
 
 **Hints**:
-- # Step 1: Define an approximate dictionary of calories per basic ingredient
-- # Step 2: Calculate the sum of calories and divide by the number of diners
-- # Hint: the dictionary can contain average values (e.g., chicken = 165 kcal/100g, rice = 130 kcal/100g)",,,,,,,0e71fb41693ce1da,65fcf3c89b748e51,,,,,,,,,,,,,,
+- `# Step 1`: Define an approximate dictionary of calories per basic ingredient
+- `# Step 2`: Calculate the sum of calories and divide by the number of diners
+- `# Hint`: the dictionary can contain average values (e.g., chicken = 165 kcal/100g, rice = 130 kcal/100g)",,,,,,,0e71fb41693ce1da,a1c35ec70d6d7dca,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,2772b5c3,code,fr,5d667c20e03d1d49,"class NutritionPlugin:
     """"""Plugin d'estimation nutritionnelle pour les recettes.""""""
     
@@ -2027,9 +2021,9 @@ The current workflow launches generation without checking that the constraints a
 **Objective**: write a function that detects inconsistencies (for example: vegan diet + request for cheese, negative number of guests, excluded ingredients that are part of the diet).
 
 **Hints**:
-- # Step 1: Define the validation rules (list of conditions to check)
-- # Step 2: Return a tuple `(est_valide, liste_erreurs)` to guide the user
-- # Hint: use if/elif conditions for each rule and accumulate error messages",,,,,,,ae401f350b00deaa,2e273de502a194ee,,,,,,,,,,,,,,
+- `# Step 1`: Define the validation rules (list of conditions to check)
+- `# Step 2`: Return a tuple `(est_valide, liste_erreurs)` to guide the user
+- `# Hint`: use if/elif conditions for each rule and accumulate error messages",,,,,,,ae401f350b00deaa,3fcd040c889645d7,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,7d996ec0,code,fr,ebf2616347378ace,"def valider_contraintes(state: RecipeState) -> tuple[bool, list[str]]:
     # TODO etudiant : implementer la validation des contraintes
     erreurs = []
@@ -2306,9 +2300,9 @@ Le point d'architecture à retenir dès maintenant : le kernel de ce notebook es
 
 The architecture point to keep in mind right now: this notebook's kernel is **single and shared**. The three plugins (`doctor`, `medical`, `pharmacist`) will be registered on it via `kernel.add_plugin(...)`, and all three agents use it — every `ChatCompletionAgent` built on this kernel sees the `@kernel_function` functions of all registered plugins. This pooling (one LLM service, N personas) is an architecture choice, not an obligation: one kernel per agent would remain possible to isolate each one's tools.",,,,,,,c577ba7465a8ebda,a1b5d400cb80e42e,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,49c585d3,markdown,fr,6e1e0d698887ab32,"> **Adapté d'une production étudiante EPF** : **Dorian & Bastien** (cuisine). Universalisation : refactor [#890](https://github.com/jsboige/CoursIA/pull/890).
-",,,,,,,,6e1e0d698887ab32,,,,,,,,,,,,,,,
+",> **Adapted from an EPF student production**: **Dorian & Bastien** (cooking). Universalization: refactor [#890](https://github.com/jsboige/CoursIA/pull/890).,,,,,,,6e1e0d698887ab32,67a07ad8efb647f2,,,,,,,6e1e0d698887ab32,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,1d1b334b,markdown,fr,29aaa283cadb33f8,"Le fichier PDF **recette_generee.pdf** est confirmé présent sur le disque avec un poids de quelques kilo-octets (la taille varie avec la recette générée), validant que la génération a produit un fichier exploitable.
-",,,,,,,,29aaa283cadb33f8,,,,,,,,,,,,,,,
+","The PDF file **recette_generee.pdf** is confirmed to be present on the disk with a size of a few kilobytes (the size varies depending on the generated recipe), validating that the generation produced a usable file.",,,,,,,29aaa283cadb33f8,2128e7d5c0ff8605,,,,,,,29aaa283cadb33f8,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,63290f8e,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,,,,,,,,
@@ -2465,19 +2459,27 @@ def mesurer_indices(history_messages: list) -> dict:
 print(""Exercice 3 a completer"")
 ",,,,,,,,d474392d7bce72b4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,7ae17d1d,markdown,fr,1e6bb719dfcda6fc,"> **Adapté d'une production étudiante EPF** : **Carole & Cléo**. Universalisation : refactor [#890](https://github.com/jsboige/CoursIA/pull/890).
-",,,,,,,,1e6bb719dfcda6fc,,,,,,,,,,,,,,,
+",> **Adapted from an EPF student production**: **Carole & Cléo**. Universalization: refactor [#890](https://github.com/jsboige/CoursIA/pull/890).,,,,,,,1e6bb719dfcda6fc,a72754ed20ab2d46,,,,,,,1e6bb719dfcda6fc,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,75838d87,markdown,fr,8d1cb95df6ade7cc,"### Lecture du résultat — exemple guidé 1
 
 La liste passe de 3 à 6 contraintes, et les trois nouvelles sont affichées avec leur description : le format `(nom, description)` est bien celui que les instructions système attendent.
 
 **Limite de l'exemple, à connaître avant de s'en servir.** La contrainte du duel a été tirée au sort **avant** cet ajout (`contrainte_choisie = random.choice(CONTRAINTES)`, cellule de la liste d'origine). Les trois contraintes neuves existent donc dans `CONTRAINTES`, mais le duel qui suit joue encore celle qui a été tirée. Pour qu'une contrainte neuve soit réellement jouée, il faut **tirer après avoir étendu la liste** — c'est précisément ce que fait l'exercice 1 de remplacement, par une autre voie.
-",,,,,,,,8d1cb95df6ade7cc,,,,,,,,,,,,,,,
+","### Reading the result — guided example 1
+
+The list goes from 3 to 6 constraints, and the three new ones are displayed with their description: the format `(nom, description)` is indeed the one expected by the system instructions.
+
+**Limitation of the example, to know before using it.** The duel constraint was chosen at random **before** this addition (`contrainte_choisie = random.choice(CONTRAINTES)`, cell from the original list). The three new constraints therefore exist in `CONTRAINTES`, but the duel that follows still uses the one that was drawn. For a new constraint to actually be played, you must **draw after extending the list** — this is precisely what replacement exercise 1 does, by another route.",,,,,,,8d1cb95df6ade7cc,e4692cce3f1b05a5,,,,,,,8d1cb95df6ade7cc,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,b66e991f,markdown,fr,319687fa6f4b576b,"### Lecture du résultat — exemple guidé 2
 
 L'agent `Arbitre` est créé avec son propre kernel et ses instructions, et l'appel `print` affiche bien `Agent créé : Arbitre`. La construction demandée par l'énoncé est donc complète.
 
 **Limite de l'exemple, et elle est de taille : l'Arbitre ne participe à aucun duel.** Le commentaire de la dernière ligne le dit — `# Pour l'utiliser dans le duel : AgentGroupChat(agents=[barbie, ane, arbitre], ...)` — mais la cellule de duel plus bas construit toujours `AgentGroupChat(agents=[barbie, ane])`. Autrement dit, l'Arbitre existe, il n'est jamais convoqué : le carnet ne montre nulle part ses commentaires ni ses notes. Un agent créé mais absent de la boucle ne produit rien — c'est exactement ce que l'exercice 2 de remplacement demande de corriger.
-",,,,,,,,319687fa6f4b576b,,,,,,,,,,,,,,,
+","### Reading the result — guided example 2
+
+The `Arbitre` agent is created with its own kernel and instructions, and the `print` call correctly displays `Agent créé : Arbitre`. The construction requested by the prompt is therefore complete.
+
+**Limitation of the example, and it is a major one: the Arbiter does not take part in any duel.** The comment on the last line says so — `# Pour l'utiliser dans le duel : AgentGroupChat(agents=[barbie, ane, arbitre], ...)` — but the duel cell below still constructs `AgentGroupChat(agents=[barbie, ane])`. In other words, the Arbiter exists, but is never summoned: the notebook never shows its comments or scores. An agent that is created but absent from the loop produces nothing — this is exactly what replacement exercise 2 asks you to correct.",,,,,,,319687fa6f4b576b,3d00e6000ec0fe1e,,,,,,,319687fa6f4b576b,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,4c8fa8d2,code,fr,7f758e7e47dda282,"# Exemple guidé 3 — la stratégie en action : un duel court, sans illustration.
 # Le duel ci-dessous n'appelle pas le plugin d'image : on ne mesure ici que la terminaison.
 
@@ -2511,7 +2513,16 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,93c36a2c
 2. **La méthode surchargée n'est pas le point d'accroche canonique.** La classe redéfinit `should_terminate`, que l'orchestrateur appelle — cela marche — mais Semantic Kernel délègue de `should_terminate` vers `should_agent_terminate`, la méthode prévue pour les sous-classes. Surcharger `should_terminate` court-circuite la vérification de portée (`agents`) intégrée. La cellule de la section « Stratégie de terminaison » illustre la forme canonique.
 
 L'exercice 3 de remplacement demande de traiter ces deux points.
-",,,,,,,,cbef4a5e84e088e2,,,,,,,,,,,,,,,
+","### Reading the result — guided example 3
+
+**What works.** The strategy correctly reads the last message, and keyword-based stopping works: when the duel ends without capitulation, it is the safeguard `MAX_TURNS = 10` that cuts it off, and the reply count shows this. The strategy is therefore **executed**, unlike its first version, which remained unexecuted in the group’s working copy.
+
+**Two limitations to name.**
+
+1. **Detection is a substring search** (`mot in dernier`). It distinguishes neither the speaker nor negation: “I will never give up” or “you’re going to give up, Donkey” both contain a trigger, and cut off the debate even though no one yields. The strategy therefore detects *an occurrence*, not *a capitulation*.
+2. **The overloaded method is not the canonical hook point.** The class redefines `should_terminate`, which the orchestrator calls — this works — but Semantic Kernel delegates from `should_terminate` to `should_agent_terminate`, the method intended for subclasses. Overloading `should_terminate` short-circuits the built-in scope check (`agents`). The cell in the “Termination strategy” section illustrates the canonical form.
+
+Replacement exercise 3 asks you to address these two points.",,,,,,,cbef4a5e84e088e2,b14884a3af96e830,,,,,,,cbef4a5e84e088e2,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,87cc6fec,markdown,fr,957039a4c4056674,"## 9. Exercices
 
 Trois exercices de remplacement, sur le même carnet. Chacun prolonge l'un des trois exemples guidés — même socle, question différente. Les cellules ci-dessous sont des **squelettes** : elles s'exécutent telles quelles et affichent ce qu'il reste à faire.
@@ -2521,7 +2532,15 @@ Trois exercices de remplacement, sur le même carnet. Chacun prolonge l'un des t
 | 1 | Exemple guidé 1 (contraintes) | rendre une contrainte **vérifiable par le code** et mesurer son taux de respect |
 | 2 | Exemple guidé 2 (Arbitre) | faire **entrer l'Arbitre dans le duel** et exploiter ses notes |
 | 3 | Exemple guidé 3 (terminaison) | détecter une capitulation **sans se tromper de cible** |
-",,,,,,,,957039a4c4056674,,,,,,,,,,,,,,,
+","## 9. Exercises
+
+Three replacement exercises, on the same notebook. Each extends one of the three guided examples — same foundation, different question. The cells below are **skeletons**: they run as-is and display what remains to be done.
+
+| Exercise | Extends | Question |
+|---|---|---|
+| 1 | Guided example 1 (constraints) | make a constraint **verifiable by code** and measure its compliance rate |
+| 2 | Guided example 2 (Referee) | **bring the Referee into the duel** and make use of its notes |
+| 3 | Guided example 3 (termination) | detect a capitulation **without targeting the wrong thing** |",,,,,,,957039a4c4056674,c724530aba21d760,,,,,,,957039a4c4056674,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,c0a00040,markdown,fr,c83212c5735a56e1,"### Exercice 1 — Une contrainte que le code peut vérifier
 
 L'exemple guidé 1 ajoute des contraintes **déclaratives** : leur description est une phrase en français, et rien ne vérifie que le modèle l'a suivie. L'objectif est de rendre une contrainte **mesurable**.
@@ -2537,7 +2556,21 @@ L'exemple guidé 1 ajoute des contraintes **déclaratives** : leur description e
 - `# Étape 1` : une contrainte vérifiable = un nom, une description **et** une fonction `regle(texte) -> bool` ;
 - `# Étape 2` : `result = None  # TODO étudiant`, puis le calcul réplique par réplique ;
 - `# Indice` : `sum(1 for r in repliques if regle(str(r))) / len(repliques)`.
-",,,,,,,,c83212c5735a56e1,,,,,,,,,,,,,,,
+","### Exercise 1 — A constraint that the code can verify
+
+Guided example 1 adds **declarative** constraints: their description is a sentence in French, and nothing checks that the model followed it. The goal is to make a constraint **measurable**.
+
+**Objective**:
+
+1. define a mechanically verifiable rule — for example “the reply contains at least one word from the list `MOTS_ANES`”;
+2. write `taux_de_respect(repliques, regle)` which receives the replies from a duel and **returns the proportion** of replies that respect the rule;
+3. apply it to the duel already present in the notebook (variable `repliques_du_duel`).
+
+**Hints**:
+
+- `# Étape 1`: a verifiable constraint = a name, a description **and** a function `regle(texte) -> bool`;
+- `# Étape 2`: `result = None  # TODO étudiant`, then the calculation reply by reply;
+- `# Indice`: `sum(1 for r in repliques if regle(str(r))) / len(repliques)`.",,,,,,,c83212c5735a56e1,f526a30d66ec14d5,,,,,,,c83212c5735a56e1,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,53a9b313,code,fr,15b7443c588ea354,"# Exercice 1 — Une contrainte que le code peut vérifier.
 # L'expérience est autonome : elle ne modifie ni CONTRAINTES, ni les agents, ni le duel.
 
@@ -2574,7 +2607,22 @@ L'exemple guidé 2 crée l'agent `Arbitre`, mais le duel tourne toujours à deux
 - `# Étape 1` : `chat = AgentGroupChat(agents=[barbie, ane, arbitre], termination_strategy=DebateTerminationStrategy())` ;
 - `# Étape 2` : parcourir les répliques dont `msg.name == ""Arbitre""` ;
 - `# Indice` : `float(m.group(1).replace("","", "".""))` pour convertir la note trouvée.
-",,,,,,,,a3e8ae298e2e27a3,,,,,,,,,,,,,,,
+","### Exercise 2 — Put the Referee into the duel
+
+Guided example 2 creates the `Arbitre` agent, but the duel still runs with two participants: `AgentGroupChat(agents=[barbie, ane])` never summons it. The objective is to bring it into the loop **and** make use of what it produces.
+
+**Objective**:
+
+1. restart a duel with `agents=[barbie, ane, arbitre]` — remember to increase `MAX_TURNS`, otherwise the Referee will speak at most once;
+2. collect the replies from this new duel;
+3. write `notes_arbitre(repliques)` that returns the list of scores out of 10 assigned by the Referee, extracted from the text (for example with `re.compile(r""(\d+(?:[.,]\d+)?)\s*/\s*10"")`);
+4. display the number of scores and their average.
+
+**Hints**:
+
+- `# Étape 1`: `chat = AgentGroupChat(agents=[barbie, ane, arbitre], termination_strategy=DebateTerminationStrategy())`;
+- `# Étape 2`: iterate over the replies where `msg.name == ""Arbitre""`;
+- `# Indice`: `float(m.group(1).replace("","", "".""))` to convert the score found.",,,,,,,a3e8ae298e2e27a3,ff53dce83463a9bd,,,,,,,a3e8ae298e2e27a3,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,54ea1c2d,code,fr,ad8564aff3c6785c,"# Exercice 2 — Mettre l'Arbitre dans le duel et lire ses notes.
 # `arbitre` a été créé dans l'exemple guidé 2 ; `repliques_du_duel` vient du duel de la section « Lancement du débat ».
 import re
@@ -2621,7 +2669,21 @@ L'exemple guidé 3 détecte la capitulation par **sous-chaîne** dans le dernier
 - `# Étape 1` : `re.compile(r""\b(j'abandonne|je me rends|je capitule)\b"")` — et traiter la négation (`n'`, `ne ... jamais`, `pas`) ;
 - `# Étape 2` : tester au minimum « Je n'abandonnerai jamais ! », « Tu vas abandonner, l'Âne ! », « J'abandonne, tu gagnes. » ;
 - `# Indice` : retourner un `dict` phrase -> booléen attendu/observé, et compter les écarts.
-",,,,,,,,ece9674abe57f514,,,,,,,,,,,,,,,
+","### Exercise 3 — A surrender detection that does not target the wrong person
+
+Guided example 3 detects surrender by **substring** in the last message. Two ways to get it wrong, both measurable: “I will never surrender” (negation) and “you are going to surrender, Donkey” (talking about the other person) trigger the stop even though no one is giving in.
+
+**Objective**:
+
+1. write `capitule(phrase)` that returns `True` only for a surrender **by the speaker** — in the first person and not negated;
+2. test it on a list of trap sentences, **without calling the model**: this is a unit test, it must be deterministic;
+3. (bonus) reimplement `SurrenderTerminationStrategy` on the canonical hook point `should_agent_terminate` and verify that the duel behaves the same way.
+
+**Hints**:
+
+- `# Étape 1`: `re.compile(r""\b(j'abandonne|je me rends|je capitule)\b"")` — and handle negation (`n'`, `ne ... jamais`, `pas`);
+- `# Étape 2`: test at least “I will never surrender!”, “You are going to surrender, Donkey!”, “I surrender, you win.”;
+- `# Indice`: return a `dict` phrase -> expected/observed boolean, and count the discrepancies.",,,,,,,ece9674abe57f514,51140bd6f651c1ef,,,,,,,ece9674abe57f514,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,016fb4cd,code,fr,bc24c6a4afd53f7b,"# Exercice 3 — Une detection de capitulation qui ne se trompe pas de cible.
 # Test unitaire : aucune replique n'est generee ici, tout est deterministe.
 import re
