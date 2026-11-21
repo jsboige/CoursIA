@@ -181,7 +181,18 @@ def test_measure_size_matches_h1_and_control_scales():
     m = c.measure_size(n, c.potential_base(n))
     assert m["delta_h"] == pytest.approx(math.sqrt((n * n - 1) / 12.0), rel=1e-12)
     assert 0.0 < m["s_lin_T"] < 1.0
-    assert m["s_ddot_eq81"] == pytest.approx(m["s_ddot_finite"], rel=1e-6)
+    # A2/A3 scelles (pre-enregistrement) : pour l'etat propre de position de la
+    # construction du papier, eq. 81 predit S''(0) = 0 exactement (temoin A3,
+    # residu < 1e-12). La difference finie ne se compare a eq. 81 QUE si elle
+    # est au-dessus du bruit numerique : au dt par defaut (1e-4), S(dt) est au
+    # plancher eps machine et fd ne mesure que la troncature O(dt^2), pas un
+    # accord. Le critere scelle est la signature quartique : quand le signal
+    # sort du bruit, fd(2dt)/fd(dt) -> (2dt)^2/dt^2 = 4 (bande [3.5, 4.5]).
+    assert abs(m["s_ddot_eq81"]) < 1e-12
+    h, _h3, psi0 = c.build_hamiltonian(n, c.potential_base(n))
+    fd_a = c.entropy_curvature_finite(h, psi0, n, dt=1e-2)
+    fd_b = c.entropy_curvature_finite(h, psi0, n, dt=2e-2)
+    assert 3.5 <= fd_b / fd_a <= 4.5
     assert m["autonomy"] == pytest.approx(m["tau_ind"] / m["tau_dyn"])
 
 
