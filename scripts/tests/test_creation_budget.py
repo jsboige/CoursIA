@@ -427,7 +427,7 @@ def test_le_cliquet_ne_reient_pas_sur_une_ambiguite(monkeypatch, catalog,
     etat = _ecrire_etat_anti_entropie(tmp_path, "RECULE")
     monkeypatch.setenv(cb.ENV_ANTI_ENTROPY, str(etat))
     pool = [_grain_qui_cree(
-        fichier="MyIA.AI.Notebooks/Complexity/"
+        fichier="MyIA.AI.Notebooks/InformationCalcul/Complexity/"
                 "Complexity-03e-Barrieres-WordRAM-Python.ipynb")]
     gate = cb.creation_gate(pool, catalog=catalog, state=None)
     assert gate == {}
