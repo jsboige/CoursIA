@@ -40,7 +40,7 @@ les précédentes — le contrôle est le même, et il est vert.
 | Répertoire | Devenir |
 |-----------|---------|
 | ~~`cooperative_games_lean`~~ | **Supprimé** (rm #6587) → [`game_theory_lean/CooperativeGames/`](game_theory_lean/CooperativeGames/) |
-| ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) → [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) — ne subsistent que 3 markdown tombstone |
+| ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) puis descendu en lake autonome (#24183, T3) → [`SocialChoice/social_choice_core_lean/`](SocialChoice/social_choice_core_lean/) — ne subsistent que 3 markdown tombstone |
 | ~~`repeated_games_lean`~~ | Absorbé (#6146) → [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — coquille retirée du disque (#4362) |
 
 Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemple pédagogique, pas du code de production. `asymmetric_information_lean` porte 2 *naive* sorry (prose/docstrings) pour 0 vrai sorry de code.
@@ -130,15 +130,18 @@ Mathlib sans aucun axiome ajouté. Lignage : #3933 (cone kernel) → #3941 (brid
 > **⚑ Tombstone documentaire — home canonique déplacé.** Depuis la PR #6058 (EPIC #4365
 Phase-4, 2026-07-11), les sept modules (Basic, Framework, Arrow, Sen, Voting,
 MechanismDesign, SortedListCounting) ont été absorbés byte-identique dans
-[`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) (FR canonique + miroirs
-`_en.lean` Pattern A #4980). **Ce répertoire n'est plus un lake** — la coquille technique
+`game_theory_lean/SocialChoice/` (FR canonique + miroirs
+`_en.lean` Pattern A #4980), puis **descendus le 2026-11-08** (#24183, T3, 21 renommages
+R100) vers le lake autonome
+[`SocialChoice/social_choice_core_lean/`](SocialChoice/social_choice_core_lean/). **Ce
+répertoire n'est plus un lake** — la coquille technique
 (`lakefile.lean`, `lean-toolchain`, `lake-manifest.json`) a été retirée ; ne subsistent que
 3 markdown (`README`, `STATUS`, `LEAN_PREREQUISITES`) conservés comme tombstone.
 
 **Statut (historique, préservé dans le home canonique)** : COMPLET, 0 sorry — impossibilité
 d'Arrow (Geanakoplos 2005), paradoxe libéral de Sen, électeur médian / Split Cycle / clones,
 véracité Vickrey + contre-exemple au premier prix (#1469). Build repris par
-`.github/workflows/lean-ci-matrix.yml` (clé `gametheory`) sur `game_theory_lean`.
+`.github/workflows/lean-ci-matrix.yml` (clé `socialchoicecore`) sur le lake autonome.
 
 ---
 
@@ -162,7 +165,7 @@ véracité Vickrey + contre-exemple au premier prix (#1469). Build repris par
 
 **Contenu** : importe la bibliothèque de Peters (Gibbard-Satterthwaite, Duggan-Schwartz, 4 impossibilités de Condorcet, 15+ règles de vote avec vérification d'axiomes). Depuis le plan #17988, le lake porte aussi **six bibliothèques de preuve** (`ApprovalDefs`, `ApprovalCore`, `ApprovalPareto`, `ApprovalQuota`, `ApprovalConsensus`, `ApprovalPayment`) qui formalisent le core d'approbation de Becker-Greger-Peters 2026 — elles restaient hors carte jusqu'à la re-derivation du 2026-10-29 (#21765). Lake de support du notebook compagnon du tour SocialChoiceLean (prévu, pas encore créé).
 
-**Relation avec `social_choice_lean` (absorbé)** : complémentaire, pas un doublon. Notre cadre historique utilisait un `PrefOrder` custom (nos preuves, désormais dans `game_theory_lean/SocialChoice/`) ; ce lake expose le `LinearOrder` de Peters (référence externe). Les deux sont conservés par complétude pédagogique.
+**Relation avec `social_choice_lean` (absorbé)** : complémentaire, pas un doublon. Notre cadre historique utilisait un `PrefOrder` custom (nos preuves, désormais dans `SocialChoice/social_choice_core_lean/`) ; ce lake expose le `LinearOrder` de Peters (référence externe). Les deux sont conservés par complétude pédagogique.
 
 ---
 
@@ -325,7 +328,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 |---------|----------|-----------|
 | game_theory_lean | COMPLET | 1 sorry (stretch Folk, toléré #4880). StableMarriage : anciens énoncés faux réfutés, `exists_isManOptimal` honnête prouvé ; Lattice fermé. A absorbé `stable_marriage_lean/` + `cooperative_games_lean/` + `social_choice_lean/` + `repeated_games_lean/` (EPIC #4365) ; porte en outre `Abstraction`, `ProgramGames`, `StackelbergBilevel`, `CongestionGames` et `LegalLoophole` (0 sorry chacune). |
 | ~~cooperative_games_lean~~ | **Supprimé** (rm #6587) | Absorbé byte-identique dans `game_theory_lean/CooperativeGames/`. |
-| ~~social_choice_lean~~ | **Absorbé** (#6058) | → `game_theory_lean/SocialChoice/` ; docs tombstone uniquement. |
+| ~~social_choice_lean~~ | **Absorbé** (#6058), puis descendu (#24183 T3) | → `SocialChoice/social_choice_core_lean/` ; docs tombstone uniquement. |
 | ~~repeated_games_lean~~ | **Absorbé** (#6146) | → `game_theory_lean/RepeatedGames/` ; coquille retirée du disque (#4362). |
 | lean_game_defs / _ext | COMPLET | 0 sorry, sans Mathlib. |
 | minimax_lean | COMPLET | 0 sorry ; application de Sion prouvée. |

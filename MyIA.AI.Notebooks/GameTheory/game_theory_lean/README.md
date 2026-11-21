@@ -298,7 +298,7 @@ pour éviter de retélécharger `~3 GB` à chaque incrément.
 | Projet | Statut | Raison de la séparation |
 |--------|--------|-------------------------|
 | [`conway_cgt_lean/`](../conway_cgt_lean/) | Lake séparé (vihdzp/combinatorial-games) | Théorie des jeux combinatoires (PGame, surréels, nimbers) — Mathlib-only via `SetTheory.PGame` |
-| [`social_choice_lean/`](../social_choice_lean/) | **Absorbé** (PR #6058 mergée) | Contenu (Arrow / Sen / Voting, FR + EN) déplacé sous `game_theory_lean/SocialChoice/` ; dossier conservé comme tombstone |
+| [`social_choice_lean/`](../social_choice_lean/) | **Absorbé** (PR #6058 mergée) | Contenu (Arrow / Sen / Voting, FR + EN) déplacé sous `game_theory_lean/SocialChoice/` (PR #6058), puis descendu vers le lake autonome [`SocialChoice/social_choice_core_lean/`](../SocialChoice/social_choice_core_lean/) (#24183, T3) ; dossier conservé comme tombstone |
 | [`SocialChoice/social_choice_lean_peters/`](../SocialChoice/social_choice_lean_peters/) | Lake séparé (pinné commit `94a4c650` Peters) | Gibbard-Satterthwaite, Duggan-Schwartz — divergence de rev ; convergence Mathlib v4.32.1 acquise (#12134) |
 | `cooperative_games_lean/` | **Supprimé** (rm #6587, absorbé dans `game_theory_lean/CooperativeGames/`) | contenu (Basic / ConeKernel / Shapley, FR + EN) préservé byte-identique sous `CooperativeGames/` |
 | `stable_marriage_lean/` | **Supprimé** (c.305 finalisation + PR #5971 doublon) | — |

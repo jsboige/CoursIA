@@ -184,16 +184,34 @@ def test_gametheory_entry_carries_axiom_and_certified_keys():
     list is pinned against CERTIFIED.txt by
     test_check_certified_sorry.py::test_workflow_targets_match_manifest --
     here we pin the KEYS and the trigger surface, the two joints a silent
-    edit could break."""
-    entry = next(e for e in _manifest()["lakes"] if e["lake"] == "gametheory")
-    assert entry["axiom-target-modules"].startswith("SocialChoice."), (
-        "gametheory lost its B.3 target list")
+    edit could break.
+
+    Depuis la descente #24183 (#25262), le contrat vit sur l'entree
+    `socialchoicecore` (lac autonome sous les carnets SC) ; gametheory ne
+    porte plus que ses compagnons (Abstraction, ProgramGames). Le test
+    epingle la migration dans les DEUX sens : le nouveau porteur a les
+    cles, l'ancien n'en garde aucune."""
+    entry = next(e for e in _manifest()["lakes"]
+                 if e["lake"] == "socialchoicecore")
+    targets = [m.strip() for m in entry["axiom-target-modules"].split(",")]
+    assert any(m == "SocialChoice" or m.startswith("SocialChoice.")
+               for m in targets), (
+        "socialchoicecore lost its B.3 target list")
     assert entry["axiom-fail-on-sorry"] == "true"
     assert entry["certified-subdir"] == "SocialChoice"
-    for p in (["MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/"
-               "CERTIFIED.txt"] + CERTIFIED_SELF_COVER):
+    for p in (["MyIA.AI.Notebooks/GameTheory/SocialChoice/"
+               "social_choice_core_lean/SocialChoice/CERTIFIED.txt"]
+              + CERTIFIED_SELF_COVER):
         assert p in entry["paths"], (
-            f"gametheory manifest entry lost gate trigger {p}")
+            f"socialchoicecore manifest entry lost gate trigger {p}")
+
+    gt = next(e for e in _manifest()["lakes"] if e["lake"] == "gametheory")
+    gt_targets = [m.strip() for m in gt["axiom-target-modules"].split(",")]
+    assert not any(m.startswith("SocialChoice.") for m in gt_targets), (
+        "gametheory still carries SocialChoice targets after the descent: "
+        f"{sorted(m for m in gt_targets if m.startswith('SocialChoice.'))}")
+    assert "certified-subdir" not in gt, (
+        "gametheory still carries a certified contract after the descent")
 
 
 def test_certified_step_is_gated_on_the_manifest_key():
@@ -219,8 +237,10 @@ def test_certified_gate_files_are_self_covered():
     for event in ("push", "pull_request"):
         paths = on[event]["paths"]
         for p in CERTIFIED_SELF_COVER + [
-            "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/"
-            "CERTIFIED.txt",
+            # Descente #24183 (#25262) : le contrat certified vit dans le
+            # lac autonome sous les carnets SocialChoice.
+            "MyIA.AI.Notebooks/GameTheory/SocialChoice/"
+            "social_choice_core_lean/SocialChoice/CERTIFIED.txt",
         ]:
             assert p in paths, f"{p} missing from on.paths[{event}]"
 

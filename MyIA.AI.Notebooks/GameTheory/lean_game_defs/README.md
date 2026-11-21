@@ -27,7 +27,7 @@ Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lea
 Ces fichiers sont des définitions de référence (couche introductive, 0 preuve), vérifiables par `lake build`. Utilisation :
 
 1. **Copier-coller dans une cellule de notebook** (workflow pédagogique typique dans `GameTheory-2b`, `GameTheory-8b`, etc.).
-2. **Importer depuis un projet Lake adjacent** en ajoutant le chemin du fichier au `lakefile.lean` du projet. Exemple depuis `game_theory_lean/SocialChoice/` :
+2. **Importer depuis un projet Lake adjacent** en ajoutant le chemin du fichier au `lakefile.lean` du projet. Exemple depuis `SocialChoice/social_choice_core_lean/` :
 
    ```lean
    import GameTheory.lean_game_defs.Basic
@@ -46,7 +46,7 @@ import Mathlib.SetTheory.Game.Nim
 ## Relation aux autres projets Lean de GameTheory
 
 - [game_theory_lean/](../game_theory_lean/) — Projet Lake multi-module (StableMarriage = formalisation Gale-Shapley, EPIC #4365 ; CooperativeGames absorbé depuis `cooperative_games_lean/` rm #6587).
-- [game_theory_lean/SocialChoice/](../game_theory_lean/SocialChoice/) — Module absorbé dans `game_theory_lean` (Arrow / Sen / électeur médian / Voting, EPIC #4365).
+- [SocialChoice/social_choice_core_lean/](../SocialChoice/social_choice_core_lean/) — Lake autonome descendu du hub `game_theory_lean` (Arrow / Sen / électeur médian / Voting, EPIC #4365 puis #24183 T3).
 - [social_choice_lean_peters/](../SocialChoice/social_choice_lean_peters/) — Projet Lake indépendant référençant Peters au commit `94a4c650` du `lake-manifest.json` (Gibbard-Satterthwaite, Duggan-Schwartz).
 - [lean_game_defs_ext/](../lean_game_defs_ext/) — Lake autonome voisin, même parti pris « cœur Lean, zéro dépendance », qui porte les extensions bayésiennes de l'Epic #2610 (BNE décidable, enchères, valeur de l'information, réputation, regret externe, Fictitious Play *born-correct*). Voisin, pas dérivé : il **n'importe pas** ce module.
 
@@ -63,7 +63,7 @@ flowchart TD
     NOTEBOOKS["Notebooks d'enseignement<br/><i>copier-coller les définitions</i>"]
     INTRO["lean_game_defs/<br/><b>couche introductive</b><br/>définitions uniquement · 0 sorry · cœur Lean<br/>lake autonome (ce module)"]
     PROJ["Projets Lake — preuves formelles<br/>chacun vendore ses définitions adaptées"]
-    SC["game_theory_lean/SocialChoice/<br/>Arrow · Sen · électeur médian<br/>Voting (absorbé, EPIC #4365)"]
+    SC["SocialChoice/social_choice_core_lean/<br/>Arrow · Sen · électeur médian<br/>Voting (lake autonome, #24183 T3)"]
     COOP["cooperative_games_lean/<br/>Shapley · Cœur · Banzhaf"]
     SM["game_theory_lean/<br/>StableMarriage (Gale-Shapley)"]
     CGT["conway_cgt_lean/<br/>surréels · nimbers (via Mathlib)"]
@@ -81,13 +81,13 @@ flowchart TD
 Depuis le 2026-11-02 (#24183), les énoncés d'Arrow et de Sen existent en **deux
 formalisations indépendantes**. Ce lake porte la **maison canonique** de ces énoncés,
 [`SocialChoice.lean`](SocialChoice.lean) ; l'autre vit dans
-[`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/) (`Arrow.lean` +
+[`SocialChoice/social_choice_core_lean/SocialChoice/`](../SocialChoice/social_choice_core_lean/SocialChoice/) (`Arrow.lean` +
 `Sen.lean`) et reste une **preuve alternative déclarée** — conservée, pas dépréciée : elle
 enseigne une autre stratégie de preuve sur les mêmes énoncés.
 
 Ce qui les sépare, mesuré sur les deux fichiers :
 
-| Axe | `lean_game_defs/SocialChoice.lean` (canonique) | `game_theory_lean/SocialChoice/` (alternative) |
+| Axe | `lean_game_defs/SocialChoice.lean` (canonique) | `social_choice_core_lean/SocialChoice/` (alternative) |
 |---|---|---|
 | Socle | cœur Lean seul, zéro dépendance | Mathlib |
 | Généralité | `Fin nI` / `Fin nA`, `nA ≥ 3` global | `ι` et `σ` arbitraires, agenda **local** (`Finset σ`, `3 ≤ X.card`) |
@@ -125,7 +125,7 @@ Ce qui les sépare, mesuré sur les deux fichiers :
 2026-10-28 → 2026-11-01) ; son en-tête le dit « inspiré de `asouther4/lean-social-choice` »,
 ce qui est une inspiration et non un portage. L'attribution, l'état des licences et le taux de
 reprise module par module sont consignés dans
-[`game_theory_lean/SocialChoice/NOTICE.md`](../game_theory_lean/SocialChoice/NOTICE.md) :
+[`NOTICE.md`](../SocialChoice/social_choice_core_lean/SocialChoice/NOTICE.md) :
 `Arrow.lean` y est un portage mesuré (19 noms sur 29), `Sen.lean` un ajout CoursIA (0 sur 4).
 
 ## Voir aussi
@@ -187,7 +187,7 @@ plutôt que de la redéfinir ici.
 ### Où aller ensuite
 
 - **Projets compilables** (chacun vendore ses propres définitions adaptées aux preuves) :
-  [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/) (Arrow / Sen / électeur médian / Voting, absorbé dans `game_theory_lean`, EPIC #4365),
+  [`SocialChoice/social_choice_core_lean/`](../SocialChoice/social_choice_core_lean/) (Arrow / Sen / électeur médian / Voting, lake autonome depuis #24183 T3),
   [`game_theory_lean/`](../game_theory_lean/) (StableMarriage + CooperativeGames absorbé : valeur de Shapley, Cœur, EPIC #4365).
 - **Visite CGT** : [`conway_cgt_lean/`](../conway_cgt_lean/) — surréels, nimbers via
   `vihdzp/combinatorial-games`.
