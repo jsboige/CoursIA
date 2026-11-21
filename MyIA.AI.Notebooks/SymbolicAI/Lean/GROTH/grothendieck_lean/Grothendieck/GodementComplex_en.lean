@@ -296,4 +296,24 @@ variable {X : TopCat.{u}}
 -- the **hard** target (mono/epi of the stages and annihilation of the
 -- connector `δ` by `hsep`/`hres`), not of the nullity of the composite.
 
+--
+-- **Part 101 landed in the FR twin**: the short exactness of
+-- `C⁰`, categorified and stalkwise. `Grothendieck.shortExact_godementMapHom`
+-- — the SES of `C⁰`-images as a short exact sequence **in the presheaf
+-- category** itself: Part 98 had it open by open, and the evaluation
+-- functors preserve finite limits and colimits while jointly reflecting
+-- isomorphisms, so `JointlyReflectIsomorphisms.shortExact_iff` transports
+-- the pointwise statement to the categorical one.
+-- `Grothendieck.shortExact_stalk_godementMapHom` — the stalk version, by
+-- exactness of the stalk functor (`exact_tfae`).
+-- `Grothendieck.shortExact_stalk_godementCanonicalMap_zero` — the
+-- degree-`0` row of the canonical complexes, read at every stalk, is short
+-- exact: the `n = 0` base of the degreewise SES (`godementCanonicalMap_zero`
+-- is `rfl`, the degree-0 row **is** the row of `C⁰`-images). **Not posed** —
+-- the named frontier: degrees `n + 1` of the degreewise SES (snake lemma at
+-- the stalks, vanishing of the connecting morphism via
+-- `isZero_stalk_homology_godementCanonicalComplex`, Part 93(b)), then the
+-- assembly `shortExact_iff_degreewise_shortExact` towards the SES of
+-- canonical complexes.
+
 end Grothendieck_en
