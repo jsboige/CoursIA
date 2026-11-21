@@ -75,678 +75,6 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-01-StepCounting-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-01 — Compter des pas"@fr ;
-    dct:identifier "Complexity/Complexity-01-StepCounting-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-01-StepCounting-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-01 — Compter des pas"@fr ;
-    dct:identifier "Complexity/Complexity-01-StepCounting-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-02-P-NP-Reduction-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-02 — Vérifier ou trouver : P, NP et la réduction"@fr ;
-    dct:identifier "Complexity/Complexity-02-P-NP-Reduction-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-02-P-NP-Reduction-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-02 — Vérifier ou trouver : P, NP et la réduction"@fr ;
-    dct:identifier "Complexity/Complexity-02-P-NP-Reduction-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-02b-SAT-PhaseTransition-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-02b — Le seuil du 3-SAT, mesuré contre la densité"@fr ;
-    dct:identifier "Complexity/Complexity-02b-SAT-PhaseTransition-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-02b-SAT-PhaseTransition-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-02b — Le seuil du 3-SAT, mesuré contre la densité"@fr ;
-    dct:identifier "Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-02c-XOR-SAT-Phase-Transition-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-02c — La transition de phase sans mur : les systèmes linéaires aléatoires sur GF(2)"@fr ;
-    dct:identifier "Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03-HierarchieTemporelle-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03 — Plus de temps, plus de problèmes"@fr ;
-    dct:identifier "Complexity/Complexity-03-HierarchieTemporelle-CSharp.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03-HierarchieTemporelle-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03 — Plus de temps, plus de problèmes"@fr ;
-    dct:identifier "Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb" ;
-    cursus:estimatedDuration "15min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03-HierarchieTemporelle-Python_en.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03 — More time, more problems"@fr ;
-    dct:identifier "Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb" ;
-    cursus:estimatedDuration "15min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03b — Le théorème de hiérarchie temporelle de Hartmanis et Stearns (1965)"@fr ;
-    dct:identifier "Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03c-ComplexityZoo-Navigation-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03c — Carte du zoo de complexite (C#)"@fr ;
-    dct:identifier "Complexity/Complexity-03c-ComplexityZoo-Navigation-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03c-ComplexityZoo-Navigation-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03c — Naviguer le Zoo exécutable"@fr ;
-    dct:identifier "Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03d — La réfutation annoncée de l'ETH : deux formalisations lues de près"@fr ;
-    dct:identifier "Complexity/Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI true ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "DEMO"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03e — Barrières d'exposants et word RAM"@fr ;
-    dct:identifier "Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03e — Barrières d'exposants et word RAM : lire une formalisation à la machine"@fr ;
-    dct:identifier "Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03f — La chaîne des réductions : de 3SUM au triangle lopsided"@fr ;
-    dct:identifier "Complexity/Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-03f-ReductionsTriangle-Lopsided-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-03f — La chaîne des réductions : de 3SUM au triangle lopsided"@fr ;
-    dct:identifier "Complexity/Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-04-OnlineAlgorithms-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-04 — Décider sans connaître la suite"@fr ;
-    dct:identifier "Complexity/Complexity-04-OnlineAlgorithms-CSharp.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-04-OnlineAlgorithms-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-04 — Décider sans connaître la suite"@fr ;
-    dct:identifier "Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-04b-OnlineConjectures-Secretary-KServer-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-04b — La semaine historique de l'algorithmique online : secrétaire matroïdal et k-server"@fr ;
-    dct:identifier "Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-04b — La semaine historique de l'algorithmique online : secrétaire matroïdal et k-server"@fr ;
-    dct:identifier "Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-04c-KServer-WorkFunction-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity 04c (C#) — k-server et work function : la conjecture tombée, mesurée en monde jouet"@fr ;
-    dct:identifier "Complexity/Complexity-04c-KServer-WorkFunction-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-04c-KServer-WorkFunction-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity 04c - k-server et work function : la conjecture tombée, mesurée en monde jouet"@fr ;
-    dct:identifier "Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-04d-Secretaire-Matroidal-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-04d — Secretaire matroidal (C#)"@fr ;
-    dct:identifier "Complexity/Complexity-04d-Secretaire-Matroidal-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-04d-Secretaire-Matroidal-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity 04d - Le secrétaire matroïdal : la conjecture mesurée, élément par élément"@fr ;
-    dct:identifier "Complexity/Complexity-04d-Secretaire-Matroidal-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-05-CountingHarder-Permanent-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-05 — Compter est plus dur que vérifier : #P et la permanente"@fr ;
-    dct:identifier "Complexity/Complexity-05-CountingHarder-Permanent-CSharp.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-05-CountingHarder-Permanent-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-05 — Compter est plus dur que vérifier : #P et la permanente"@fr ;
-    dct:identifier "Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-05b — La permanente, frontière quantique : BosonSampling (Aaronson–Arkhipov, 2011)"@fr ;
-    dct:identifier "Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-06 — Simuler un circuit quantique classiquement"@fr ;
-    dct:identifier "Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-06 — Simuler un circuit quantique classiquement"@fr ;
-    dct:identifier "Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb" ;
-    cursus:estimatedDuration "15min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-06b-AaronsonGottesman-Dequantification-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-06b — Déquantifier les suprématies (Aaronson–Gottesman)"@fr ;
-    dct:identifier "Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-06c-ClassicalAtHeart-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "« Classical at heart » (C#) — quand l'oracle classique implémente l'opération quantique"@fr ;
-    dct:identifier "Complexity/Complexity-06c-ClassicalAtHeart-CSharp.ipynb" ;
-    cursus:estimatedDuration "15min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-06c-ClassicalAtHeart-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "« Classical at heart » — quand l'oracle classique implémente l'opération quantique"@fr ;
-    dct:identifier "Complexity/Complexity-06c-ClassicalAtHeart-Python.ipynb" ;
-    cursus:estimatedDuration "15min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "La structure est nécessaire — la conjecture d'Aaronson–Ambainis, prouvée et formalisée"@fr ;
-    dct:identifier "Complexity/Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-07-KolmogorovBornee-Sequences-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-07 — C# — Complexité de Kolmogorov bornée : résolution de séquences numériques à mémoire limitée"@fr ;
-    dct:identifier "Complexity/Complexity-07-KolmogorovBornee-Sequences-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-07-KolmogorovBornee-Sequences-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-07 — Complexité de Kolmogorov bornée : résolution de séquences numériques à mémoire limitée"@fr ;
-    dct:identifier "Complexity/Complexity-07-KolmogorovBornee-Sequences-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-07b-LeTourDesGrandsNombres-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "C# — Le tour des grands nombres — quelle écriture courte pour quelle croissance ?"@fr ;
-    dct:identifier "Complexity/Complexity-07b-LeTourDesGrandsNombres-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-07b-LeTourDesGrandsNombres-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Le tour des grands nombres — quelle écriture courte pour quelle croissance ?"@fr ;
-    dct:identifier "Complexity/Complexity-07b-LeTourDesGrandsNombres-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-07c-LeBilanMathocalypse-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "C# — Le bilan « mathocalypse » — quand l'IA publie 372 théorèmes en un soir"@fr ;
-    dct:identifier "Complexity/Complexity-07c-LeBilanMathocalypse-CSharp.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-07c-LeBilanMathocalypse-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Le bilan « mathocalypse » — quand l'IA publie 372 théorèmes en un soir"@fr ;
-    dct:identifier "Complexity/Complexity-07c-LeBilanMathocalypse-Python.ipynb" ;
-    cursus:estimatedDuration "15min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI true ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "DEMO"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-08 — Origami Wolfram pli 2 : la regle 30 comme generateur d'alea, la regle 110 et son universalite"@fr ;
-    dct:identifier "Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-08b-CombinateursSKI-TagDePost-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-08b — Origami Wolfram pli 4 : les combinateurs S/K/I, ou la representation ultime du calcul"@fr ;
-    dct:identifier "Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Complexity%2FComplexity-08c-MachinesDeGoedel-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Complexity-08c — Machines de Gödel : l'auto-amélioration prouvée, en jouet honnête"@fr ;
-    dct:identifier "Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Complexity> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-01-ShannonFano-Prefixe-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-01 — Codes préfixes : de Shannon-Fano à Huffman"@fr ;
-    dct:identifier "Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-01-ShannonFano-Prefixe-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-01 — Codes préfixes : de Shannon-Fano à Huffman"@fr ;
-    dct:identifier "Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-02-HuffmanCanonique-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-02 — Huffman canonique : des longueurs aux tables de décodage"@fr ;
-    dct:identifier "Compression/Compression-02-HuffmanCanonique-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-02-HuffmanCanonique-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-02 — Huffman canonique : des longueurs aux tables de décodage"@fr ;
-    dct:identifier "Compression/Compression-02-HuffmanCanonique-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-03-LZ77-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-03 — LZ77 : compresser par références dans une fenêtre glissante"@fr ;
-    dct:identifier "Compression/Compression-03-LZ77-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-03-LZ77-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-03 — LZ77 : compresser par références dans une fenêtre glissante"@fr ;
-    dct:identifier "Compression/Compression-03-LZ77-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-04-ANS-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression 04 — Codage entropique ANS en C#"@fr ;
-    dct:identifier "Compression/Compression-04-ANS-CSharp.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-04-ANS-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression 04 — Codage entropique ANS (rANS et tANS)"@fr ;
-    dct:identifier "Compression/Compression-04-ANS-Python.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-04b-CodecsSOTA-Pareto-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression 04b — Codecs SOTA : le front de Pareto vitesse x taux"@fr ;
-    dct:identifier "Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-05-MLCompression-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-05 — Compression des modèles : quantifier, élaguer, distiller"@fr ;
-    dct:identifier "Compression/Compression-05-MLCompression-Python.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-05b-NeuroSymbolic-Recipe-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-05b — Recettes neuro-symboliques : le modèle découvre, le vérificateur certifie"@fr ;
-    dct:identifier "Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-06-MDL-Kolmogorov-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-06 — MDL : décrire le modèle autant que les données"@fr ;
-    dct:identifier "Compression/Compression-06-MDL-Kolmogorov-Python.ipynb" ;
-    cursus:estimatedDuration "15min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-07-Triage-LLM-Operations-Reelles-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-07 — Le triage par le LLM : recettes inversables d'opérations réelles"@fr ;
-    dct:identifier "Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI true ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "DEMO"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Triage par LLM sous Semantic Kernel — codecs réels, couverture prouvée"@fr ;
-    dct:identifier "Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI true ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-08-Assemblage-Vectoriel-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "Reconstruire un document assemblé — l'élimination des redondances vectorielles"@fr ;
-    dct:identifier "Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression-09-Assemblage-LLM-Python.ipynb> a cursus:Notebook ;
-    rdfs:label "L'assemblage proposé par le modèle — isolation des segments, reconstruction scriptée"@fr ;
-    dct:identifier "Compression/Compression-09-Assemblage-LLM-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:requiresAPI true ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "DEMO"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/Compression%2FCompression_lean%2FCompression-01b-Kraft-McMillan-Lean.ipynb> a cursus:Notebook ;
-    rdfs:label "Compression-01b — Kraft et McMillan en Lean 4 : le carnet compagnon du lake"@fr ;
-    dct:identifier "Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/Compression%2FCompression_lean> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
 <https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FCoalitions%2FCoalitions-01-Pouvoir-Coalitionnel-SMT-Python.ipynb> a cursus:Notebook ;
     rdfs:label "Coalitions-01 — Pouvoir coalitionnel : calcul, SMT borné et preuve"@fr ;
     dct:identifier "GameTheory/Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Python.ipynb" ;
@@ -867,6 +195,18 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FDynamics%2FDynamics-04-Open-Source-Game-Theory-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Dynamics 04 — Transparence des programmes et issue du Dilemme du prisonnier one-shot"@fr ;
+    dct:identifier "GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FDynamics> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FDynamics%2FDynamics-04-Open-Source-Game-Theory-Python.ipynb> a cursus:Notebook ;
     rdfs:label "Dynamics 04 — Transparence des programmes et issue du Dilemme du prisonnier one-shot"@fr ;
     dct:identifier "GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb" ;
@@ -889,6 +229,18 @@
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL true ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FDynamics%2FDynamics-04c-Cooperation-Payorienne-Kripke-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Dynamics 04c (C#) — Coopération payorienne : le FairBot qui se prouve par cadres de Kripke"@fr ;
+    dct:identifier "GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FDynamics> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FDynamics%2FDynamics-04c-Cooperation-Payorienne-Kripke-Python.ipynb> a cursus:Notebook ;
@@ -1223,7 +575,7 @@
 <https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FGameTheory-04-NashEquilibrium-Python.ipynb> a cursus:Notebook ;
     rdfs:label "GameTheory-04-NashEquilibrium-Python"@fr ;
     dct:identifier "GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb" ;
-    cursus:estimatedDuration "30min"@fr ;
+    cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
@@ -1388,6 +740,17 @@
 <https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FGameTheory-04j-Rationalisabilite-Python.ipynb> a cursus:Notebook ;
     rdfs:label "GameTheory-04j — Rationalisabilité : ce que la seule rationalité peut délier"@fr ;
     dct:identifier "GameTheory/GameTheory-04j-Rationalisabilite-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FGameTheory-04k-Equilibre-Correle-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "GT-04k — Équilibre corrélé (Aumann 1974) : le médiateur bat le Nash"@fr ;
+    dct:identifier "GameTheory/GameTheory-04k-Equilibre-Correle-CSharp.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
     cursus:requiresAPI false ;
@@ -2276,6 +1639,17 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FGameTheory-18-Capstone-Metajeux-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "GameTheory-18 : Capstone — ce qui survit au changement de representation (twin C# / .NET)"@fr ;
+    dct:identifier "GameTheory/GameTheory-18-Capstone-Metajeux-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FGameTheory-18-Capstone-Metajeux-Python.ipynb> a cursus:Notebook ;
     rdfs:label "GameTheory-18 : Capstone — ce qui survit au changement de representation"@fr ;
     dct:identifier "GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb" ;
@@ -2364,9 +1738,33 @@
     cursus:requiresWSL true ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FMetajeux%2FMetajeux-01-Open-Games-Lentilles-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Metajeux-01 : Open Games et Lentilles -- la representation locale qui modifie le global dont elle est issue"@fr ;
+    dct:identifier "GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FMetajeux> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FMetajeux%2FMetajeux-01-Open-Games-Lentilles-Python.ipynb> a cursus:Notebook ;
     rdfs:label "Metajeux-01 : Open Games et Lentilles -- la representation locale qui modifie le global dont elle est issue"@fr ;
     dct:identifier "GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FMetajeux> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FMetajeux%2FMetajeux-02-Casser-la-Composition-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Metajeux-02 : Casser la composition — où la meilleure réponse composée cesse d'être l'équilibre du jeu composé"@fr ;
+    dct:identifier "GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-CSharp.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FMetajeux> ;
@@ -2482,6 +1880,18 @@
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL true ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FSocialChoice%2FChoixSocial-01c-Paradoxe-NonParticipation-NoShow-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "SocialChoice 01c - Le paradoxe de la non-participation (no-show)"@fr ;
+    dct:identifier "GameTheory/SocialChoice/ChoixSocial-01c-Paradoxe-NonParticipation-NoShow-Python.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FSocialChoice> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/notebook/GameTheory%2FSocialChoice%2FChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb> a cursus:Notebook ;
@@ -2904,9 +2314,9 @@
     cursus:requiresWSL false ;
     cursus:status "DEMO"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FAudio%2F01-Foundation%2F01-5-Kokoro-TTS-Local.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FAudio%2F01-Foundation%2F01-5-TTS-Local-ONNX.ipynb> a cursus:Notebook ;
     rdfs:label "Kokoro TTS Local - Synthèse vocale légère"@fr ;
-    dct:identifier "GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb" ;
+    dct:identifier "GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb" ;
     cursus:estimatedDuration "1h"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio%2F01-Foundation> ;
@@ -2940,9 +2350,9 @@
     cursus:requiresWSL false ;
     cursus:status "DEMO"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FAudio%2F02-Advanced%2F02-11-AudioGen-Text-to-Audio.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FAudio%2F02-Advanced%2F02-11-Text-to-Audio-Bruitages.ipynb> a cursus:Notebook ;
     rdfs:label "AudioGen - Generation de Bruitages par IA"@fr ;
-    dct:identifier "GenAI/Audio/02-Advanced/02-11-AudioGen-Text-to-Audio.ipynb" ;
+    dct:identifier "GenAI/Audio/02-Advanced/02-11-Text-to-Audio-Bruitages.ipynb" ;
     cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio%2F02-Advanced> ;
@@ -3107,6 +2517,18 @@
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FAudio%2F03-Orchestration%2F03-5-MCP-Audio.ipynb> a cursus:Notebook ;
+    rdfs:label "MCP audio : exposer la transcription, la synthèse et l'analyse comme outils d'agent"@fr ;
+    dct:identifier "GenAI/Audio/03-Orchestration/03-5-MCP-Audio.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio%2F03-Orchestration> ;
+    cursus:requiresAPI true ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "DEMO"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FAudio%2F04-Applications%2F04-1-Educational-Audio-Content.ipynb> a cursus:Notebook ;
     rdfs:label "Création de Contenu Audio Educatif"@fr ;
@@ -4332,6 +3754,18 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FIntegrations-DotNet%2FCSharpRepl%2FCSharpRepl-Live-Patching.ipynb> a cursus:Notebook ;
+    rdfs:label "CSharpRepl attache a un process .NET vivant"@fr ;
+    dct:identifier "GenAI/Integrations-DotNet/CSharpRepl/CSharpRepl-Live-Patching.ipynb" ;
+    cursus:estimatedDuration "1h"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FIntegrations-DotNet%2FCSharpRepl> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FIntegrations-DotNet%2FCopilotSDK%2F01-GitHub-Copilot-SDK-Binding.ipynb> a cursus:Notebook ;
     rdfs:label "GitHub Copilot SDK en C# : binding, streaming, Scrutor"@fr ;
     dct:identifier "GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb" ;
@@ -5280,6 +4714,18 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FSecurity%2FCapability%2FCapability-Plan-Data-Separation.ipynb> a cursus:Notebook ;
+    rdfs:label "Agent par capacités — séparer le plan des données"@fr ;
+    dct:identifier "GenAI/Security/Capability/Capability-Plan-Data-Separation.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity%2FCapability> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FSecurity%2FControl%2FControl-Refusal-Direction.ipynb> a cursus:Notebook ;
     rdfs:label "Contrôle par interpretabilite — direction du refus, ablation, unlearning"@fr ;
     dct:identifier "GenAI/Security/Control/Control-Refusal-Direction.ipynb" ;
@@ -5301,6 +4747,18 @@
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FSecurity%2FOversight%2FBackdoor-Detection-Spectral-Clustering.ipynb> a cursus:Notebook ;
+    rdfs:label "Sécurité des modèles de texte — détecter une porte dérobée par signature spectrale et clustering d'activations"@fr ;
+    dct:identifier "GenAI/Security/Oversight/Backdoor-Detection-Spectral-Clustering.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity%2FOversight> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU true ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
@@ -6390,18 +5848,6 @@
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVibe-Coding%2Fanalyzers> ;
-    cursus:requiresAPI false ;
-    cursus:requiresCloud false ;
-    cursus:requiresGPU false ;
-    cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
-
-<https://github.com/jsboige/CoursIA/cursus/notebook/GenAI%2FVibe-Coding%2Fdocs%2FCSharpRepl-Live-Patching.ipynb> a cursus:Notebook ;
-    rdfs:label "CSharpRepl attache a un process .NET vivant"@fr ;
-    dct:identifier "GenAI/Vibe-Coding/docs/CSharpRepl-Live-Patching.ipynb" ;
-    cursus:estimatedDuration "1h"@fr ;
-    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVibe-Coding%2Fdocs> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
@@ -7800,6 +7246,18 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/IIT%2FICT-Series%2FICT-Greffe2-EspaceAtteignable-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "ICT-Greffe2 — Le quadruplet $(A, F, r, \\pi)$ : rendre « élargir son espace » testable"@fr ;
+    dct:identifier "IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/IIT> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/IIT%2FICT-Series> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/IIT%2FICT-Series%2FICT-Greffe2-EspaceAtteignable-Python.ipynb> a cursus:Notebook ;
     rdfs:label "ICT-Greffe2 — Le quadruplet $(A, F, r, \\pi)$ : rendre « élargir son espace » testable"@fr ;
     dct:identifier "IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb" ;
@@ -7988,6 +7446,786 @@
     dct:identifier "IIT/IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/IIT> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-01-StepCounting-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-01 — Compter des pas"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-01-StepCounting-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-01-StepCounting-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-01 — Compter des pas"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-01-StepCounting-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-02-P-NP-Reduction-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-02 — Vérifier ou trouver : P, NP et la réduction"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-02-P-NP-Reduction-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-02-P-NP-Reduction-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-02 — Vérifier ou trouver : P, NP et la réduction"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-02b-SAT-PhaseTransition-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-02b — Le seuil du 3-SAT, mesuré contre la densité"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-02b-SAT-PhaseTransition-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-02b-SAT-PhaseTransition-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-02b — Le seuil du 3-SAT, mesuré contre la densité"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-02c-XOR-SAT-Phase-Transition-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-02c — La transition de phase sans mur : les systèmes linéaires aléatoires sur GF(2)"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03-HierarchieTemporelle-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03 — Plus de temps, plus de problèmes"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03-HierarchieTemporelle-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03 — Plus de temps, plus de problèmes"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03-HierarchieTemporelle-Python_en.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03 — More time, more problems"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03b — Le théorème de hiérarchie temporelle de Hartmanis et Stearns (1965)"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03c-ComplexityZoo-Navigation-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03c — Carte du zoo de complexite (C#)"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03c-ComplexityZoo-Navigation-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03c-ComplexityZoo-Navigation-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03c — Naviguer le Zoo exécutable"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03d — La réfutation annoncée de l'ETH : deux formalisations lues de près"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI true ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "DEMO"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03e — Barrières d'exposants et word RAM"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03e — Barrières d'exposants et word RAM : lire une formalisation à la machine"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03f — La chaîne des réductions : de 3SUM au triangle lopsided"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-03f-ReductionsTriangle-Lopsided-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-03f — La chaîne des réductions : de 3SUM au triangle lopsided"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-04-OnlineAlgorithms-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-04 — Décider sans connaître la suite"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-04-OnlineAlgorithms-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-04-OnlineAlgorithms-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-04 — Décider sans connaître la suite"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-04b-OnlineConjectures-Secretary-KServer-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-04b — La semaine historique de l'algorithmique online : secrétaire matroïdal et k-server"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-04b — La semaine historique de l'algorithmique online : secrétaire matroïdal et k-server"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-04c-KServer-WorkFunction-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity 04c (C#) — k-server et work function : la conjecture tombée, mesurée en monde jouet"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-04c-KServer-WorkFunction-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-04c-KServer-WorkFunction-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity 04c - k-server et work function : la conjecture tombée, mesurée en monde jouet"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-04d-Secretaire-Matroidal-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-04d — Secretaire matroidal (C#)"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-04d-Secretaire-Matroidal-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-04d-Secretaire-Matroidal-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity 04d - Le secrétaire matroïdal : la conjecture mesurée, élément par élément"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-04d-Secretaire-Matroidal-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-05-CountingHarder-Permanent-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-05 — Compter est plus dur que vérifier : #P et la permanente"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-05-CountingHarder-Permanent-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-05-CountingHarder-Permanent-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-05 — Compter est plus dur que vérifier : #P et la permanente"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-05b — La permanente, frontière quantique : BosonSampling (Aaronson–Arkhipov, 2011)"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-06 — Simuler un circuit quantique classiquement"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-06 — Simuler un circuit quantique classiquement"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-06b-AaronsonGottesman-Dequantification-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-06b — Déquantifier les suprématies (Aaronson–Gottesman)"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-06c-ClassicalAtHeart-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "« Classical at heart » (C#) — quand l'oracle classique implémente l'opération quantique"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-06c-ClassicalAtHeart-CSharp.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-06c-ClassicalAtHeart-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "« Classical at heart » — quand l'oracle classique implémente l'opération quantique"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-06c-ClassicalAtHeart-Python.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "La structure est nécessaire — la conjecture d'Aaronson–Ambainis, prouvée et formalisée"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-07-KolmogorovBornee-Sequences-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-07 — C# — Complexité de Kolmogorov bornée : résolution de séquences numériques à mémoire limitée"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-07-KolmogorovBornee-Sequences-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-07-KolmogorovBornee-Sequences-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-07 — Complexité de Kolmogorov bornée : résolution de séquences numériques à mémoire limitée"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-07-KolmogorovBornee-Sequences-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-07b-LeTourDesGrandsNombres-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "C# — Le tour des grands nombres — quelle écriture courte pour quelle croissance ?"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-07b-LeTourDesGrandsNombres-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-07b-LeTourDesGrandsNombres-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Le tour des grands nombres — quelle écriture courte pour quelle croissance ?"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-07b-LeTourDesGrandsNombres-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-07c-LeBilanMathocalypse-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "C# — Le bilan « mathocalypse » — quand l'IA publie 372 théorèmes en un soir"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-07c-LeBilanMathocalypse-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-07c-LeBilanMathocalypse-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Le bilan « mathocalypse » — quand l'IA publie 372 théorèmes en un soir"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-07c-LeBilanMathocalypse-Python.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI true ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "DEMO"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-08 — Origami Wolfram pli 2 : la regle 30 comme generateur d'alea, la regle 110 et son universalite"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-08b-CombinateursSKI-TagDePost-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-08b — Origami Wolfram pli 4 : les combinateurs S/K/I, ou la representation ultime du calcul"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-08c-MachinesDeGoedel-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-08c — Machines de Gödel : l'auto-amélioration prouvée, en jouet honnête"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FComplexity%2FComplexity-08d-IndependanceProuvee-BusyBeaver-Covering-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complexity-08d — Indépendance prouvée : le Castor affairé, une borne de couverture, et la preuve comme objet"@fr ;
+    dct:identifier "InformationCalcul/Complexity/Complexity-08d-IndependanceProuvee-BusyBeaver-Covering-Python.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-01-ShannonFano-Prefixe-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-01 — Codes préfixes : de Shannon-Fano à Huffman"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-01-ShannonFano-Prefixe-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-01 — Codes préfixes : de Shannon-Fano à Huffman"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-02-HuffmanCanonique-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-02 — Huffman canonique : des longueurs aux tables de décodage"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-02-HuffmanCanonique-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-02 — Huffman canonique : des longueurs aux tables de décodage"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-02-HuffmanCanonique-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-03-LZ77-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-03 — LZ77 : compresser par références dans une fenêtre glissante"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-03-LZ77-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-03-LZ77-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-03 — LZ77 : compresser par références dans une fenêtre glissante"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-03-LZ77-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-04-ANS-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression 04 — Codage entropique ANS en C#"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-04-ANS-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression 04 — Codage entropique ANS (rANS et tANS)"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-04-ANS-Python.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-04b-CodecsSOTA-Pareto-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression 04b — Codecs SOTA : le front de Pareto vitesse x taux"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-05-MLCompression-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-05 — Compression des modèles : quantifier, élaguer, distiller"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-05b-NeuroSymbolic-Recipe-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-05b — Recettes neuro-symboliques : le modèle découvre, le vérificateur certifie"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-06-MDL-Kolmogorov-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-06 — MDL : décrire le modèle autant que les données"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-06-MDL-Kolmogorov-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-06 — MDL : décrire le modèle autant que les données"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-07-Triage-LLM-Operations-Reelles-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-07 — Le triage par le LLM : recettes inversables d'opérations réelles"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI true ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "DEMO"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Triage par LLM sous Semantic Kernel — codecs réels, couverture prouvée"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI true ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-08-Assemblage-Vectoriel-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Reconstruire un document assemblé — l'élimination des redondances vectorielles"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression-09-Assemblage-LLM-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "L'assemblage proposé par le modèle — isolation des segments, reconstruction scriptée"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression-09-Assemblage-LLM-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:requiresAPI true ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "DEMO"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FCompression%2FCompression_lean%2FCompression-01b-Kraft-McMillan-Lean.ipynb> a cursus:Notebook ;
+    rdfs:label "Compression-01b — Kraft et McMillan en Lean 4 : le carnet compagnon du lake"@fr ;
+    dct:identifier "InformationCalcul/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression%2FCompression_lean> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FInformationTheory%2FInformationTheory-03-Code-de-Hamming-Et-Decodage-Par-Syndrome.ipynb> a cursus:Notebook ;
+    rdfs:label "CodingTheory-01 — Les codes correcteurs d'erreurs comme objet calculable"@fr ;
+    dct:identifier "InformationCalcul/InformationTheory/InformationTheory-03-Code-de-Hamming-Et-Decodage-Par-Syndrome.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FInformationTheory> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/InformationCalcul%2FInformationTheory%2FInformationTheory-08-Theorie-De-L-Information-Des-Reseaux.ipynb> a cursus:Notebook ;
+    rdfs:label "Théorie de l'information des réseaux"@fr ;
+    dct:identifier "InformationCalcul/InformationTheory/InformationTheory-08-Theorie-De-L-Information-Des-Reseaux.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FInformationTheory> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
@@ -9278,252 +9516,252 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay1-Foundations%2FLabs%2FLab1-PythonForDataScience.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay1-Foundations%2FLabs%2FLab1-PythonForDataScience.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 1 - Les Bases de la Data Science en Python"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/06-Data-Agents/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/06-Agents-de-Donnees/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay1-Foundations%2FLabs> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay1-Foundations%2FLabs> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents%2FLabs%2FLab2-RFP-Analysis%2FLab2-RFP-Analysis.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents%2FLabs%2FLab2-RFP-Analysis%2FLab2-RFP-Analysis.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 2 - Analyser un Appel d'Offre avec l'IA"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/06-Data-Agents/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/06-Agents-de-Donnees/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents%2FLabs%2FLab2-RFP-Analysis> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents%2FLabs%2FLab2-RFP-Analysis> ;
     cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents%2FLabs%2FLab3-CV-Screening%2FLab3-CV-Screening.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents%2FLabs%2FLab3-CV-Screening%2FLab3-CV-Screening.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 3 - Pré-qualifier des Candidats avec l'IA"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/06-Data-Agents/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/06-Agents-de-Donnees/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb" ;
     cursus:estimatedDuration "15min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents%2FLabs%2FLab3-CV-Screening> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents%2FLabs%2FLab3-CV-Screening> ;
     cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "DEMO"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab4-DataWrangling%2FLab4-DataWrangling.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab4-DataWrangling%2FLab4-DataWrangling.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 4 - Le Nettoyage de Données avec Pandas"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab4-DataWrangling> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab4-DataWrangling> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab5-Viz-ML%2FLab5-Viz-ML.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab5-Viz-ML%2FLab5-Viz-ML.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 5 - De la Visualisation au Machine Learning"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab5-Viz-ML> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab5-Viz-ML> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab6-First-Agent%2FLab6-First-Agent.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab6-First-Agent%2FLab6-First-Agent.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 6 - Anatomie de votre premier Agent d'IA"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab6-First-Agent> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab6-First-Agent> ;
     cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "DEMO"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab7-Data-Analysis-Agent%2FLab7-Data-Analysis-Agent.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab7-Data-Analysis-Agent%2FLab7-Data-Analysis-Agent.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 7 - Votre premier Agent Analyste de Données"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab7-Data-Analysis-Agent> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab7-Data-Analysis-Agent> ;
     cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay4-Foundations%2FLab8-ADK-Introduction.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay4-Foundations%2FLab8-ADK-Introduction.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 8: Introduction au Framework ADK et Multi-Provider"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab8-ADK-Introduction.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day4-Foundations/Lab8-ADK-Introduction.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay4-Foundations> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay4-Foundations> ;
     cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "DEMO"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay4-Foundations%2FLab9-First-ADK-Agent.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay4-Foundations%2FLab9-First-ADK-Agent.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 9: Premier Agent ADK pour Data Science"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day4-Foundations/Lab9-First-ADK-Agent.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay4-Foundations> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay4-Foundations> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star%2FLab10-File-Analyzer.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star%2FLab10-File-Analyzer.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 10: Data File Analyzer (DS-STAR Component)"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab10-File-Analyzer.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab10-File-Analyzer.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star%2FLab11-Planner-Coder-Loop.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star%2FLab11-Planner-Coder-Loop.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 11: Planner-Coder-Verifier Loop (DS-STAR Core)"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb" ;
     cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star%2FLab12-DS-Star-Workshop.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star%2FLab12-DS-Star-Workshop.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 12: DS-STAR Workshop - Analyse Multi-Fichiers"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb" ;
     cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star%2FLab12b-Sequential-Orchestration.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star%2FLab12b-Sequential-Orchestration.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 12b : Désignation séquentielle — le contrat C4, l'orchestrateur explicite au-dessus d'ADK"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star> ;
     cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star%2FLab12c-Agent-Handoff.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star%2FLab12c-Agent-Handoff.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 12c : Handoff entre agents — le contrat C5, le transfert natif câblé et observable"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star> ;
     cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star%2FLab12d-Token-Usage.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star%2FLab12d-Token-Usage.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 12d : Traçabilité de la consommation — le contrat C6 rend l'usage LLM observable"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12d-Token-Usage.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star> ;
     cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star%2FLab12e-Session-Persistence.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star%2FLab12e-Session-Persistence.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 12e : Persistance d'état de session - une conversation qui se souvient"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12e-Session-Persistence.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12e-Session-Persistence.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star> ;
     cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "DEMO"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay6-MLE-Star%2FLab13-Web-Search-SOTA.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay6-MLE-Star%2FLab13-Web-Search-SOTA.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 13: Web Search pour Modèles SOTA (MLE-STAR Component)"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay6-MLE-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay6-MLE-Star> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay6-MLE-Star%2FLab14-Ablation-Refinement.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay6-MLE-Star%2FLab14-Ablation-Refinement.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 14: Ablation et Raffinement Ciblé (MLE-STAR Component)"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay6-MLE-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay6-MLE-Star> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay6-MLE-Star%2FLab15-Kaggle-Challenge.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay6-MLE-Star%2FLab15-Kaggle-Challenge.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 15: Kaggle Challenge avec MLE-STAR"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay6-MLE-Star> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay6-MLE-Star> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay7-Production%2FLab16-Data-Science-Agent.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay7-Production%2FLab16-Data-Science-Agent.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 16: Data Science Agent avec GCP BigQuery"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production/Lab16-Data-Science-Agent.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day7-Production/Lab16-Data-Science-Agent.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay7-Production> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay7-Production> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay7-Production%2FLab17-Final-Project.ipynb> a cursus:Notebook ;
+<https://github.com/jsboige/CoursIA/cursus/notebook/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay7-Production%2FLab17-Final-Project.ipynb> a cursus:Notebook ;
     rdfs:label "Lab 17: Projet Final - Pipeline DS-STAR Complet"@fr ;
-    dct:identifier "ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production/Lab17-Final-Project.ipynb" ;
+    dct:identifier "ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day7-Production/Lab17-Final-Project.ipynb" ;
     cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
-    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay7-Production> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay7-Production> ;
     cursus:requiresAPI false ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
@@ -10162,6 +10400,18 @@
     rdfs:label "Chaînes — Carnet 06 : L'intégrale de chemin comme somme finie d'enregistrements"@fr ;
     dct:identifier "Physique/Chaines/Chaines-06-Integrale-Chemin-Somme-Finie-Enregistrements-Python.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Physique> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/Physique%2FChaines> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/Physique%2FChaines%2FChaines-07-Fonction-Wigner-Signe-N-Corps-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Chaînes — Carnet 07 (C#) : La fonction de Wigner et le signe à N corps"@fr ;
+    dct:identifier "Physique/Chaines/Chaines-07-Fonction-Wigner-Signe-N-Corps-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Physique> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/Physique%2FChaines> ;
     cursus:requiresAPI false ;
@@ -11883,7 +12133,7 @@
     cursus:requiresCloud true ;
     cursus:requiresGPU true ;
     cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
+    cursus:status "DEMO"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/notebook/QuantConnect%2FPython%2FQC-Py-23-State-Space-Models.ipynb> a cursus:Notebook ;
     rdfs:label "QC-Py-23 — State Space Models pour Séries Temporelles (S4 Mamba)"@fr ;
@@ -12027,12 +12277,12 @@
     cursus:requiresCloud true ;
     cursus:requiresGPU true ;
     cursus:requiresWSL false ;
-    cursus:status "READY"@fr .
+    cursus:status "DEMO"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/notebook/QuantConnect%2FPython%2FQC-Py-31-Transformer-Training.ipynb> a cursus:Notebook ;
     rdfs:label "QC-Py-31 - Transformer Encoder Multi-Asset (GPU)"@fr ;
     dct:identifier "QuantConnect/Python/QC-Py-31-Transformer-Training.ipynb" ;
-    cursus:estimatedDuration "45min"@fr ;
+    cursus:estimatedDuration "1h"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/QuantConnect> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/QuantConnect%2FPython> ;
     cursus:requiresAPI false ;
@@ -12510,7 +12760,7 @@
     cursus:status "READY"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/notebook/QuantConnect%2Fprojects%2FDL-LSTM%2Fquantbook.ipynb> a cursus:Notebook ;
-    rdfs:label "Research QuantBook: Deep Learning LSTM pour SPY"@fr ;
+    rdfs:label "Research QuantBook : LSTM pour SPY"@fr ;
     dct:identifier "QuantConnect/projects/DL-LSTM/quantbook.ipynb" ;
     cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/QuantConnect> ;
@@ -14313,6 +14563,18 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/Search%2FPart2-CSP%2FCSP-4-Scheduling-Rust.ipynb> a cursus:Notebook ;
+    rdfs:label "CSP-4-Scheduling : Problèmes d'Ordonnancement (Rust / evcxr)"@fr ;
+    dct:identifier "Search/Part2-CSP/CSP-4-Scheduling-Rust.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Search> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/Search%2FPart2-CSP> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/Search%2FPart2-CSP%2FCSP-4-Scheduling.ipynb> a cursus:Notebook ;
     rdfs:label "CSP-4-Scheduling : Problèmes d'Ordonnancement"@fr ;
     dct:identifier "Search/Part2-CSP/CSP-4-Scheduling.ipynb" ;
@@ -14484,6 +14746,18 @@
 <https://github.com/jsboige/CoursIA/cursus/notebook/Search%2FPart3-Cas-pratiques%2FApp-02-GraphColoring-Python.ipynb> a cursus:Notebook ;
     rdfs:label "App-2 : Coloration de Graphes"@fr ;
     dct:identifier "Search/Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Search> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/Search%2FPart3-Cas-pratiques> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/Search%2FPart3-Cas-pratiques%2FApp-02-GraphColoring-Statistical-Validity-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "Coloration de graphes — validité statistique d'une comparaison de stratégies"@fr ;
+    dct:identifier "Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-CSharp.ipynb" ;
     cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Search> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/Search%2FPart3-Cas-pratiques> ;
@@ -14878,7 +15152,7 @@
     cursus:status "READY"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/notebook/Search%2FPart3-Cas-pratiques%2FApp-18-HyperparameterTuning-CSharp.ipynb> a cursus:Notebook ;
-    rdfs:label "App-18-CSharp : Optimisation d'Hyperparametres - Jumeau C#"@fr ;
+    rdfs:label "App-18-CSharp : Optimisation d'Hyperparamètres - Jumeau C#"@fr ;
     dct:identifier "Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb" ;
     cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Search> ;
@@ -15669,6 +15943,18 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/Search%2FPart5-Frontieres%2FFrontieres-13-Approximation-Guarantee-Audit-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Frontières-13 — Audit de garanties d'approximation : le prix de la rapidité"@fr ;
+    dct:identifier "Search/Part5-Frontieres/Frontieres-13-Approximation-Guarantee-Audit-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Search> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/Search%2FPart5-Frontieres> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/Sudoku%2FSudoku-00-Environment-CSharp.ipynb> a cursus:Notebook ;
     rdfs:label "Sudoku-00 : Environnement et Classes de Base (C#)"@fr ;
     dct:identifier "Sudoku/Sudoku-00-Environment-CSharp.ipynb" ;
@@ -16076,6 +16362,17 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/Sudoku%2FSudoku-18-Comparison-Rust.ipynb> a cursus:Notebook ;
+    rdfs:label "Sudoku-Rust-Comparison : Comparaison des Solveurs de Sudoku (Rust)"@fr ;
+    dct:identifier "Sudoku/Sudoku-18-Comparison-Rust.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Sudoku> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/Sudoku%2FSudoku-18b-Statistical-Comparison-CSharp.ipynb> a cursus:Notebook ;
     rdfs:label "Sudoku-18b — Comparaison statistique honnête de solveurs"@fr ;
     dct:identifier "Sudoku/Sudoku-18b-Statistical-Comparison-CSharp.ipynb" ;
@@ -16123,6 +16420,17 @@
 <https://github.com/jsboige/CoursIA/cursus/notebook/Sudoku%2FSudoku-20-CorpusAudit-Python.ipynb> a cursus:Notebook ;
     rdfs:label "Sudoku-20 : La hiérarchie de difficulté des corpus, mesurée"@fr ;
     dct:identifier "Sudoku/Sudoku-20-CorpusAudit-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Sudoku> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/Sudoku%2FSudoku-21-DifficultyMeasures-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Mesures de difficulté reproductibles sur le corpus stratifié"@fr ;
+    dct:identifier "Sudoku/Sudoku-21-DifficultyMeasures-Python.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/Sudoku> ;
     cursus:requiresAPI false ;
@@ -16354,6 +16662,18 @@
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FArgumentAnalysis> ;
     cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FArgumentAnalysis%2FArgumentation-06d-Complaisance-Auditee-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Complaisance auditée : une réponse change-t-elle pour une bonne raison ?"@fr ;
+    dct:identifier "SymbolicAI/ArgumentAnalysis/Argumentation-06d-Complaisance-Auditee-Python.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FArgumentAnalysis> ;
+    cursus:requiresAPI true ;
     cursus:requiresCloud false ;
     cursus:requiresGPU false ;
     cursus:requiresWSL false ;
@@ -17031,6 +17351,18 @@
     cursus:requiresWSL true ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FLean%2FGOL%2FGOL-11-Vie-dans-la-vie.ipynb> a cursus:Notebook ;
+    rdfs:label "GOL-11 : Vie dans la vie — l'émergence mesurée du Jeu de la Vie"@fr ;
+    dct:identifier "SymbolicAI/Lean/GOL/GOL-11-Vie-dans-la-vie.ipynb" ;
+    cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FGOL> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL true ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FLean%2FGROTH%2FGROTH-01-Categories-Mathlib-Lean.ipynb> a cursus:Notebook ;
     rdfs:label "GROTH-01 : théorie des catégories en Mathlib — la marche manquante"@fr ;
     dct:identifier "SymbolicAI/Lean/GROTH/GROTH-01-Categories-Mathlib-Lean.ipynb" ;
@@ -17238,6 +17570,18 @@
 <https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FLean%2FKNOTS%2FKNOTS-04-Geometrie-Hyperbolique-Python.ipynb> a cursus:Notebook ;
     rdfs:label "KNOTS-04 — Géométrie hyperbolique : tétraèdres idéaux, chirurgie de Dehn, rigidité de Mostow"@fr ;
     dct:identifier "SymbolicAI/Lean/KNOTS/KNOTS-04-Geometrie-Hyperbolique-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FKNOTS> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL true ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FLean%2FKNOTS%2FKNOTS-05-Dynamique-Tresses-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "KNOTS-05 — Dynamique des tresses : action d'Artin, croissance des longueurs, spectre de Perron"@fr ;
+    dct:identifier "SymbolicAI/Lean/KNOTS/KNOTS-05-Dynamique-Tresses-CSharp.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FKNOTS> ;
@@ -19097,7 +19441,7 @@
 <https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FSMT%2FZ3-API%2FZ3-09-Enigme-Einstein-Python.ipynb> a cursus:Notebook ;
     rdfs:label "Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle)"@fr ;
     dct:identifier "SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb" ;
-    cursus:estimatedDuration "15min"@fr ;
+    cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSMT%2FZ3-API> ;
     cursus:requiresAPI false ;
@@ -19142,9 +19486,33 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FSMT%2FZ3-API%2FZ3-12-Real-Arithmetic-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "12. Arithmetique reelle : raisonner sur les irrationnels exacts"@fr ;
+    dct:identifier "SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-CSharp.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSMT%2FZ3-API> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FSMT%2FZ3-API%2FZ3-12-Real-Arithmetic-Python.ipynb> a cursus:Notebook ;
     rdfs:label "12. Arithmetique reelle : raisonner sur les irrationnels exacts"@fr ;
     dct:identifier "SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb" ;
+    cursus:estimatedDuration "30min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSMT%2FZ3-API> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FSMT%2FZ3-API%2FZ3-13-UnsatCores-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "13. UNSAT cores : expliquer l'insatisfiabilite (le ' pourquoi ')"@fr ;
+    dct:identifier "SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-CSharp.ipynb" ;
     cursus:estimatedDuration "30min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSMT%2FZ3-API> ;
@@ -19182,6 +19550,18 @@
     rdfs:label "Z3-Python-13b — UNSAT cores : le MUS (sous-ensemble irréductible)"@fr ;
     dct:identifier "SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb" ;
     cursus:estimatedDuration "15min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSMT%2FZ3-API> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FSMT%2FZ3-API%2FZ3-14-BitVectors-Overflow-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "14. Bit-vectors : verifier le debordement arithmetique"@fr ;
+    dct:identifier "SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
     cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
     cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSMT%2FZ3-API> ;
     cursus:requiresAPI false ;
@@ -20402,6 +20782,18 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FSymbolicLearning%2FSL-12b-SpectralLogicSynthesis-CSharp.ipynb> a cursus:Notebook ;
+    rdfs:label "SL-12b — Synthèse logique spectrale en C#"@fr ;
+    dct:identifier "SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-CSharp.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSymbolicLearning> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU false ;
+    cursus:requiresWSL false ;
+    cursus:status "READY"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/SymbolicAI%2FSymbolicLearning%2FSL-12b-SpectralLogicSynthesis.ipynb> a cursus:Notebook ;
     rdfs:label "SL-12b : Synthèse logique spectrale — Fourier booléen et poids ternaires"@fr ;
     dct:identifier "SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb" ;
@@ -21110,6 +21502,18 @@
     cursus:requiresWSL false ;
     cursus:status "READY"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/notebook/cross-series%2FAgentSystems%2FAgentSystems-01-Perception-Vers-Action-Python.ipynb> a cursus:Notebook ;
+    rdfs:label "Systèmes agentiques composables — Perception Action"@fr ;
+    dct:identifier "cross-series/AgentSystems/AgentSystems-01-Perception-Vers-Action-Python.ipynb" ;
+    cursus:estimatedDuration "45min"@fr ;
+    cursus:inSeries <https://github.com/jsboige/CoursIA/cursus/serie/cross-series> ;
+    cursus:inSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/cross-series%2FAgentSystems> ;
+    cursus:requiresAPI false ;
+    cursus:requiresCloud false ;
+    cursus:requiresGPU true ;
+    cursus:requiresWSL false ;
+    cursus:status "DEMO"@fr .
+
 <https://github.com/jsboige/CoursIA/cursus/notebook/cross-series%2FAgentSystems%2FAgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb> a cursus:Notebook ;
     rdfs:label "AgentSystems-02 — Perception active : la valeur d'information"@fr ;
     dct:identifier "cross-series/AgentSystems/AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb" ;
@@ -21176,11 +21580,6 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/CaseStudies%2FReseau-Electrique-Intelligent> ;
     cursus:subseriesPath "Reseau-Electrique-Intelligent/student" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/Compression%2FCompression_lean> a cursus:Subseries ;
-    rdfs:label "Compression_lean"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/Compression> ;
-    cursus:subseriesPath "Compression_lean" .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2Fgateway> a cursus:Subseries ;
     rdfs:label "gateway"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
@@ -21200,6 +21599,11 @@
     rdfs:label "HumorDetection"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
     cursus:subseriesPath "HumorDetection" .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FIntegrations-DotNet%2FCSharpRepl> a cursus:Subseries ;
+    rdfs:label "CSharpRepl"@fr ;
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FIntegrations-DotNet> ;
+    cursus:subseriesPath "Integrations-DotNet/CSharpRepl" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FIntegrations-DotNet%2FCopilotSDK> a cursus:Subseries ;
     rdfs:label "CopilotSDK"@fr ;
@@ -21256,6 +21660,11 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FPlateformes-Conversationnelles%2FOpen-WebUI%2FPlaywright-OWUI> ;
     cursus:subseriesPath "Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/06-nouveautes-v0.10" .
 
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity%2FCapability> a cursus:Subseries ;
+    rdfs:label "Capability"@fr ;
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity> ;
+    cursus:subseriesPath "Security/Capability" .
+
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity%2FControl> a cursus:Subseries ;
     rdfs:label "Control"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity> ;
@@ -21291,65 +21700,65 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVibe-Coding> ;
     cursus:subseriesPath "Vibe-Coding/analyzers" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVibe-Coding%2Fdocs> a cursus:Subseries ;
-    rdfs:label "docs"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVibe-Coding> ;
-    cursus:subseriesPath "Vibe-Coding/docs" .
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression%2FCompression_lean> a cursus:Subseries ;
+    rdfs:label "Compression_lean"@fr ;
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> ;
+    cursus:subseriesPath "Compression/Compression_lean" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F01-Python-For-Data-Science> a cursus:Subseries ;
     rdfs:label "01-Python-For-Data-Science"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents> ;
     cursus:subseriesPath "DataScienceWithAgents/01-Python-For-Data-Science" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay1-Foundations> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay1-Foundations> a cursus:Subseries ;
     rdfs:label "Day1-Foundations"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day1-Foundations" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day1-Foundations" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay1-Foundations%2FLabs> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay1-Foundations%2FLabs> a cursus:Subseries ;
     rdfs:label "Labs"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay1-Foundations> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day1-Foundations/Labs" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay1-Foundations> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day1-Foundations/Labs" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents> a cursus:Subseries ;
     rdfs:label "Day2-Document-Agents"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day2-Document-Agents" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day2-Document-Agents" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents%2FLabs%2FLab2-RFP-Analysis> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents%2FLabs%2FLab2-RFP-Analysis> a cursus:Subseries ;
     rdfs:label "Lab2-RFP-Analysis"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents%2FLabs> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day2-Document-Agents/Labs/Lab2-RFP-Analysis" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents%2FLabs> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day2-Document-Agents/Labs/Lab2-RFP-Analysis" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents%2FLabs%2FLab3-CV-Screening> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents%2FLabs%2FLab3-CV-Screening> a cursus:Subseries ;
     rdfs:label "Lab3-CV-Screening"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents%2FLabs> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day2-Document-Agents/Labs/Lab3-CV-Screening" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents%2FLabs> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day2-Document-Agents/Labs/Lab3-CV-Screening" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents> a cursus:Subseries ;
     rdfs:label "Day3-Data-Agents"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab4-DataWrangling> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab4-DataWrangling> a cursus:Subseries ;
     rdfs:label "Lab4-DataWrangling"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab4-DataWrangling" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab5-Viz-ML> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab5-Viz-ML> a cursus:Subseries ;
     rdfs:label "Lab5-Viz-ML"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab5-Viz-ML" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab6-First-Agent> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab6-First-Agent> a cursus:Subseries ;
     rdfs:label "Lab6-First-Agent"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab6-First-Agent" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs%2FLab7-Data-Analysis-Agent> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs%2FLab7-Data-Analysis-Agent> a cursus:Subseries ;
     rdfs:label "Lab7-Data-Analysis-Agent"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/Physique%2FConstructeur> a cursus:Subseries ;
     rdfs:label "Constructeur"@fr ;
@@ -21631,11 +22040,6 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FTweety> ;
     cursus:subseriesPath "Tweety/_probes" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/cross-series%2FAgentSystems> a cursus:Subseries ;
-    rdfs:label "AgentSystems"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/cross-series> ;
-    cursus:subseriesPath "AgentSystems" .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/CaseStudies%2FDiagnostic-Medical> a cursus:Subseries ;
     rdfs:label "Diagnostic-Medical"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/CaseStudies> ;
@@ -21676,20 +22080,25 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FPlateformes-Conversationnelles%2FAI-Engine-WordPress%2F03-Functional> ;
     cursus:subseriesPath "Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-3-RAG-et-Embeddings" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents%2FLabs> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FInformationTheory> a cursus:Subseries ;
+    rdfs:label "InformationTheory"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:subseriesPath "InformationTheory" .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents%2FLabs> a cursus:Subseries ;
     rdfs:label "Labs"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay2-Document-Agents> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day2-Document-Agents/Labs" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay2-Document-Agents> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day2-Document-Agents/Labs" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay4-Foundations> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay4-Foundations> a cursus:Subseries ;
     rdfs:label "Day4-Foundations"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration> ;
-    cursus:subseriesPath "DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents> ;
+    cursus:subseriesPath "DataScienceWithAgents/07-Orchestration-d-Agents/Day4-Foundations" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay7-Production> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay7-Production> a cursus:Subseries ;
     rdfs:label "Day7-Production"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration> ;
-    cursus:subseriesPath "DataScienceWithAgents/07-Agent-Orchestration/Day7-Production" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents> ;
+    cursus:subseriesPath "DataScienceWithAgents/07-Orchestration-d-Agents/Day7-Production" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/Physique%2FNumerique> a cursus:Subseries ;
     rdfs:label "Numerique"@fr ;
@@ -21700,6 +22109,11 @@
     rdfs:label "SMT"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
     cursus:subseriesPath "SMT" .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/cross-series%2FAgentSystems> a cursus:Subseries ;
+    rdfs:label "AgentSystems"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/cross-series> ;
+    cursus:subseriesPath "AgentSystems" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/cross-series%2Fsocle-metadata-driven> a cursus:Subseries ;
     rdfs:label "socle-metadata-driven"@fr ;
@@ -21731,6 +22145,11 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FPlateformes-Conversationnelles%2FAI-Engine-WordPress%2F03-Functional> ;
     cursus:subseriesPath "Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-5-Multi-Provider" .
 
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVibe-Coding> a cursus:Subseries ;
+    rdfs:label "Vibe-Coding"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
+    cursus:subseriesPath "Vibe-Coding" .
+
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVideo%2F03-Orchestration> a cursus:Subseries ;
     rdfs:label "03-Orchestration"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVideo> ;
@@ -21751,15 +22170,15 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/IIT%2FICT-Series> ;
     cursus:subseriesPath "ICT-Series/ICT-17-EpsilonMachine" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents> a cursus:Subseries ;
-    rdfs:label "06-Data-Agents"@fr ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees> a cursus:Subseries ;
+    rdfs:label "06-Agents-de-Donnees"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents" .
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay6-MLE-Star> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay6-MLE-Star> a cursus:Subseries ;
     rdfs:label "Day6-MLE-Star"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration> ;
-    cursus:subseriesPath "DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents> ;
+    cursus:subseriesPath "DataScienceWithAgents/07-Orchestration-d-Agents/Day6-MLE-Star" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSmartContracts%2F03-Foundry-Testing> a cursus:Subseries ;
     rdfs:label "03-Foundry-Testing"@fr ;
@@ -21770,11 +22189,6 @@
     rdfs:label "04-Privacy-Cryptography"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSmartContracts> ;
     cursus:subseriesPath "SmartContracts/04-Privacy-Cryptography" .
-
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio%2F03-Orchestration> a cursus:Subseries ;
-    rdfs:label "03-Orchestration"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio> ;
-    cursus:subseriesPath "Audio/03-Orchestration" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FCaseStudies> a cursus:Subseries ;
     rdfs:label "CaseStudies"@fr ;
@@ -21796,30 +22210,20 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FPlateformes-Conversationnelles%2FAI-Engine-WordPress%2F03-Functional> ;
     cursus:subseriesPath "Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-4-MCP-Server" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity> a cursus:Subseries ;
-    rdfs:label "Security"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
-    cursus:subseriesPath "Security" .
-
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVibe-Coding> a cursus:Subseries ;
-    rdfs:label "Vibe-Coding"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
-    cursus:subseriesPath "Vibe-Coding" .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVideo> a cursus:Subseries ;
     rdfs:label "Video"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
     cursus:subseriesPath "Video" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents%2FLabs> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents%2FLabs> a cursus:Subseries ;
     rdfs:label "Labs"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Data-Agents%2FDay3-Data-Agents> ;
-    cursus:subseriesPath "DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F06-Agents-de-Donnees%2FDay3-Data-Agents> ;
+    cursus:subseriesPath "DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration> a cursus:Subseries ;
-    rdfs:label "07-Agent-Orchestration"@fr ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents> a cursus:Subseries ;
+    rdfs:label "07-Orchestration-d-Agents"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents> ;
-    cursus:subseriesPath "DataScienceWithAgents/07-Agent-Orchestration" .
+    cursus:subseriesPath "DataScienceWithAgents/07-Orchestration-d-Agents" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/Physique%2FIntegrales> a cursus:Subseries ;
     rdfs:label "Integrales"@fr ;
@@ -21866,9 +22270,6 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSmartContracts> ;
     cursus:subseriesPath "SmartContracts/01-Solidity-Foundation" .
 
-<https://github.com/jsboige/CoursIA/cursus/serie/cross-series> a cursus:Series ;
-    rdfs:label "cross-series"@fr .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FCoalitions> a cursus:Subseries ;
     rdfs:label "Coalitions"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
@@ -21878,6 +22279,11 @@
     rdfs:label "01-Foundation"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio> ;
     cursus:subseriesPath "Audio/01-Foundation" .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio%2F03-Orchestration> a cursus:Subseries ;
+    rdfs:label "03-Orchestration"@fr ;
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio> ;
+    cursus:subseriesPath "Audio/03-Orchestration" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FFallacyDetection> a cursus:Subseries ;
     rdfs:label "FallacyDetection"@fr ;
@@ -21894,15 +22300,15 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FImage> ;
     cursus:subseriesPath "Image/02-Advanced" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FIntegrations-DotNet> a cursus:Subseries ;
-    rdfs:label "Integrations-DotNet"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
-    cursus:subseriesPath "Integrations-DotNet" .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FPlateformes-Conversationnelles%2FAI-Engine-WordPress%2F03-Functional> a cursus:Subseries ;
     rdfs:label "03-Functional"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FPlateformes-Conversationnelles%2FAI-Engine-WordPress> ;
     cursus:subseriesPath "Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional" .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity> a cursus:Subseries ;
+    rdfs:label "Security"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
+    cursus:subseriesPath "Security" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVibe-Coding%2FClaude-Code%2Fnotebooks> a cursus:Subseries ;
     rdfs:label "notebooks"@fr ;
@@ -21924,11 +22330,6 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/Probas%2FDecisionTheory> ;
     cursus:subseriesPath "DecisionTheory/Actuariat" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FKNOTS> a cursus:Subseries ;
-    rdfs:label "KNOTS"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean> ;
-    cursus:subseriesPath "Lean/KNOTS" .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FPlanners> a cursus:Subseries ;
     rdfs:label "Planners"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
@@ -21943,6 +22344,9 @@
     rdfs:label "06-Real-World"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSmartContracts> ;
     cursus:subseriesPath "SmartContracts/06-Real-World" .
+
+<https://github.com/jsboige/CoursIA/cursus/serie/cross-series> a cursus:Series ;
+    rdfs:label "cross-series"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio> a cursus:Subseries ;
     rdfs:label "Audio"@fr ;
@@ -21964,10 +22368,10 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FImage> ;
     cursus:subseriesPath "Image/04-Applications" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity%2FOversight> a cursus:Subseries ;
-    rdfs:label "Oversight"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity> ;
-    cursus:subseriesPath "Security/Oversight" .
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FIntegrations-DotNet> a cursus:Subseries ;
+    rdfs:label "Integrations-DotNet"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
+    cursus:subseriesPath "Integrations-DotNet" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FVideo%2F01-Foundation> a cursus:Subseries ;
     rdfs:label "01-Foundation"@fr ;
@@ -22004,15 +22408,15 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean> ;
     cursus:subseriesPath "Lean/GROTH" .
 
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FKNOTS> a cursus:Subseries ;
+    rdfs:label "KNOTS"@fr ;
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean> ;
+    cursus:subseriesPath "Lean/KNOTS" .
+
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FPlanners%2F01-Foundation> a cursus:Subseries ;
     rdfs:label "01-Foundation"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FPlanners> ;
     cursus:subseriesPath "Planners/01-Foundation" .
-
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FMetajeux> a cursus:Subseries ;
-    rdfs:label "Metajeux"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
-    cursus:subseriesPath "Metajeux" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2F00-GenAI-Environment> a cursus:Subseries ;
     rdfs:label "00-GenAI-Environment"@fr ;
@@ -22029,6 +22433,11 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FPlateformes-Conversationnelles%2FOpen-WebUI> ;
     cursus:subseriesPath "Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI" .
 
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity%2FOversight> a cursus:Subseries ;
+    rdfs:label "Oversight"@fr ;
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FSecurity> ;
+    cursus:subseriesPath "Security/Oversight" .
+
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FTexte%2FTransformerVariants> a cursus:Subseries ;
     rdfs:label "TransformerVariants"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FTexte> ;
@@ -22039,10 +22448,10 @@
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
     cursus:subseriesPath "DataScienceWithAgents" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration%2FDay5-DS-Star> a cursus:Subseries ;
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents%2FDay5-DS-Star> a cursus:Subseries ;
     rdfs:label "Day5-DS-Star"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Agent-Orchestration> ;
-    cursus:subseriesPath "DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star" .
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F07-Orchestration-d-Agents> ;
+    cursus:subseriesPath "DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FLanglands> a cursus:Subseries ;
     rdfs:label "Langlands"@fr ;
@@ -22097,6 +22506,11 @@
 <https://github.com/jsboige/CoursIA/cursus/serie/CaseStudies> a cursus:Series ;
     rdfs:label "CaseStudies"@fr .
 
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FMetajeux> a cursus:Subseries ;
+    rdfs:label "Metajeux"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
+    cursus:subseriesPath "Metajeux" .
+
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2F3D> a cursus:Subseries ;
     rdfs:label "3D"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
@@ -22122,16 +22536,6 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FIntegrations-DotNet> ;
     cursus:subseriesPath "Integrations-DotNet/Aspire" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/Physique%2FChaines> a cursus:Subseries ;
-    rdfs:label "Chaines"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/Physique> ;
-    cursus:subseriesPath "Chaines" .
-
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FGOL> a cursus:Subseries ;
-    rdfs:label "GOL"@fr ;
-    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean> ;
-    cursus:subseriesPath "Lean/GOL" .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio%2F02-Advanced> a cursus:Subseries ;
     rdfs:label "02-Advanced"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FAudio> ;
@@ -22141,6 +22545,11 @@
     rdfs:label "ICT-15-IntegratedComplexity"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/IIT%2FICT-Series> ;
     cursus:subseriesPath "ICT-Series/ICT-15-IntegratedComplexity" .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/Physique%2FChaines> a cursus:Subseries ;
+    rdfs:label "Chaines"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/Physique> ;
+    cursus:subseriesPath "Chaines" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/Probas%2FCausalite> a cursus:Subseries ;
     rdfs:label "Causalite"@fr ;
@@ -22157,38 +22566,45 @@
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/RL> ;
     cursus:subseriesPath "PostTraining" .
 
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FGOL> a cursus:Subseries ;
+    rdfs:label "GOL"@fr ;
+    cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean> ;
+    cursus:subseriesPath "Lean/GOL" .
+
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FRiemann200> a cursus:Subseries ;
     rdfs:label "Riemann200"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean> ;
     cursus:subseriesPath "Lean/Riemann200" .
-
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/Search%2FPart5-Frontieres> a cursus:Subseries ;
-    rdfs:label "Part5-Frontieres"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/Search> ;
-    cursus:subseriesPath "Part5-Frontieres" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F04-Vision> a cursus:Subseries ;
     rdfs:label "04-Vision"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents> ;
     cursus:subseriesPath "DataScienceWithAgents/04-Vision" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FDynamics> a cursus:Subseries ;
-    rdfs:label "Dynamics"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
-    cursus:subseriesPath "Dynamics" .
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/Search%2FPart5-Frontieres> a cursus:Subseries ;
+    rdfs:label "Part5-Frontieres"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/Search> ;
+    cursus:subseriesPath "Part5-Frontieres" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FSocialChoice> a cursus:Subseries ;
     rdfs:label "SocialChoice"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
     cursus:subseriesPath "SocialChoice" .
 
-<https://github.com/jsboige/CoursIA/cursus/serie/Compression> a cursus:Series ;
-    rdfs:label "Compression"@fr .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FRAG-et-Memoire-Semantique> a cursus:Subseries ;
     rdfs:label "RAG-et-Memoire-Semantique"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GenAI> ;
     cursus:subseriesPath "RAG-et-Memoire-Semantique" .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FCompression> a cursus:Subseries ;
+    rdfs:label "Compression"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:subseriesPath "Compression" .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/GameTheory%2FDynamics> a cursus:Subseries ;
+    rdfs:label "Dynamics"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/GameTheory> ;
+    cursus:subseriesPath "Dynamics" .
 
 <https://github.com/jsboige/CoursIA/cursus/serie/NLP> a cursus:Series ;
     rdfs:label "NLP"@fr .
@@ -22203,11 +22619,6 @@
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/Probas> ;
     cursus:subseriesPath "PyMC" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/Search%2FPart2-CSP> a cursus:Subseries ;
-    rdfs:label "Part2-CSP"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/Search> ;
-    cursus:subseriesPath "Part2-CSP" .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSMT%2FZ3-Linq2Z3> a cursus:Subseries ;
     rdfs:label "Z3-Linq2Z3"@fr ;
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSMT> ;
@@ -22217,6 +22628,11 @@
     rdfs:label "Infer"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/Probas> ;
     cursus:subseriesPath "Infer" .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/Search%2FPart2-CSP> a cursus:Subseries ;
+    rdfs:label "Part2-CSP"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/Search> ;
+    cursus:subseriesPath "Part2-CSP" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FLean%2FANALYSE> a cursus:Subseries ;
     rdfs:label "ANALYSE"@fr ;
@@ -22243,9 +22659,6 @@
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
     cursus:subseriesPath "SymbolicLearning" .
 
-<https://github.com/jsboige/CoursIA/cursus/serie/Physique> a cursus:Series ;
-    rdfs:label "Physique"@fr .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FML.Net> a cursus:Subseries ;
     rdfs:label "ML.Net"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/ML> ;
@@ -22255,6 +22668,9 @@
     rdfs:label "SemanticWeb"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
     cursus:subseriesPath "SemanticWeb" .
+
+<https://github.com/jsboige/CoursIA/cursus/serie/Physique> a cursus:Series ;
+    rdfs:label "Physique"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/ML%2FDataScienceWithAgents%2F03-Deep-Learning> a cursus:Subseries ;
     rdfs:label "03-Deep-Learning"@fr ;
@@ -22271,24 +22687,26 @@
     cursus:partOfSubseries <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FSMT> ;
     cursus:subseriesPath "SMT/Z3-API" .
 
-<https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FArgumentAnalysis> a cursus:Subseries ;
-    rdfs:label "ArgumentAnalysis"@fr ;
-    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
-    cursus:subseriesPath "ArgumentAnalysis" .
-
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FTweety> a cursus:Subseries ;
     rdfs:label "Tweety"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
     cursus:subseriesPath "Tweety" .
 
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/SymbolicAI%2FArgumentAnalysis> a cursus:Subseries ;
+    rdfs:label "ArgumentAnalysis"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/SymbolicAI> ;
+    cursus:subseriesPath "ArgumentAnalysis" .
+
 <https://github.com/jsboige/CoursIA/cursus/serie/Sudoku> a cursus:Series ;
     rdfs:label "Sudoku"@fr .
 
-<https://github.com/jsboige/CoursIA/cursus/serie/Complexity> a cursus:Series ;
-    rdfs:label "Complexity"@fr .
-
 <https://github.com/jsboige/CoursIA/cursus/serie/RL> a cursus:Series ;
     rdfs:label "RL"@fr .
+
+<https://github.com/jsboige/CoursIA/cursus/sous-serie/InformationCalcul%2FComplexity> a cursus:Subseries ;
+    rdfs:label "Complexity"@fr ;
+    cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> ;
+    cursus:subseriesPath "Complexity" .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/GenAI%2FTexte> a cursus:Subseries ;
     rdfs:label "Texte"@fr ;
@@ -22324,6 +22742,9 @@
     rdfs:label "Python"@fr ;
     cursus:partOfSeries <https://github.com/jsboige/CoursIA/cursus/serie/QuantConnect> ;
     cursus:subseriesPath "Python" .
+
+<https://github.com/jsboige/CoursIA/cursus/serie/InformationCalcul> a cursus:Series ;
+    rdfs:label "InformationCalcul"@fr .
 
 <https://github.com/jsboige/CoursIA/cursus/sous-serie/IIT%2FICT-Series> a cursus:Subseries ;
     rdfs:label "ICT-Series"@fr ;

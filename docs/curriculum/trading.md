@@ -22,8 +22,8 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |----------|--------|
 | Notebooks | 340 |
 | PRODUCTION | 0 |
-| BETA | 329 |
-| ALPHA | 11 |
+| BETA | 330 |
+| ALPHA | 10 |
 
 ## ML/DataScienceWithAgents (124 notebooks)
 
@@ -66,7 +66,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 35 | [2.5b — Calibration des probabilités : reliability…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb) | BETA | Oui |
 | 36 | [2.5c — C# — Equite par sous-groupe : compromis…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes-CSharp.ipynb) | BETA | Oui |
 | 37 | [2.5c — Equite par sous-groupe : compromis…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | BETA | Oui |
-| 38 | [2.5d — Dérive de distribution au déploiement :…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5d-Derive-Distribution-Deploiement.ipynb) | ALPHA | Oui |
+| 38 | [2.5d — Dérive de distribution au déploiement :…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5d-Derive-Distribution-Deploiement.ipynb) | BETA | Oui |
 | 39 | [2.6 — Clustering (KMeans) et réduction de dimension…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | BETA | Oui |
 | 40 | [2.7 — Modèles non paramétriques : SVM et k plus proches…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | BETA | Oui |
 | 41 | [2.7b — SMO : SVM à marge souple, KKT et dualité](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7b-SMO-From-Scratch-CSharp.ipynb) | BETA | Oui |
@@ -168,7 +168,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 8 | [ML-04 : Évaluation des modèles (Python / sklearn)](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb) | BETA | Oui |
 | 9 | [ML-04b : validité statistique des comparaisons de…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-CSharp.ipynb) | BETA | Oui |
 | 10 | [ML-04b : Validité statistique des comparaisons de…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb) | BETA | Oui |
-| 11 | [ML-05 : Time Series Forecasting avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb) | ALPHA | Oui |
+| 11 | [ML-05 : Time Series Forecasting avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb) | BETA | Oui |
 | 12 | [ML-05 (Python) : Prévision de séries temporelles (STL +…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb) | BETA | Oui |
 | 13 | [ML-05b (C#) : Séries temporelles classiques —…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-CSharp.ipynb) | BETA | Oui |
 | 14 | [ML-05b (Python) : Séries temporelles classiques —…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb) | BETA | Oui |
@@ -388,7 +388,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 3 | [Alpha Correlation Analysis](../../MyIA.AI.Notebooks/QuantConnect/projects/Alpha-Correlation-Analysis/quantbook.ipynb) | BETA | Non |
 | 4 | [Research QuantBook: BTC ML Enhanced](../../MyIA.AI.Notebooks/QuantConnect/projects/BTC-ML/quantbook.ipynb) | BETA | Non |
 | 5 | [Research QuantBook: Multi-Channel ZigZag Crypto](../../MyIA.AI.Notebooks/QuantConnect/projects/Crypto-MultiCanal/quantbook.ipynb) | BETA | Non |
-| 6 | [Research QuantBook: Deep Learning LSTM pour SPY](../../MyIA.AI.Notebooks/QuantConnect/projects/DL-LSTM/quantbook.ipynb) | BETA | Non |
+| 6 | [Research QuantBook : LSTM pour SPY](../../MyIA.AI.Notebooks/QuantConnect/projects/DL-LSTM/quantbook.ipynb) | BETA | Non |
 | 7 | [Research QuantBook: DualMomentum (Antonacci)](../../MyIA.AI.Notebooks/QuantConnect/projects/DualMomentum/quantbook.ipynb) | BETA | Non |
 | 8 | [Research QuantBook: Dual Momentum No TLT](../../MyIA.AI.Notebooks/QuantConnect/projects/DualMomentumNoTLT/quantbook.ipynb) | BETA | Non |
 | 9 | [Research QuantBook: EMA-Cross Alpha Model](../../MyIA.AI.Notebooks/QuantConnect/projects/EMA-Cross-Alpha/quantbook.ipynb) | BETA | Non |
@@ -411,7 +411,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 26 | [ML Random Forest - Classification pour Trading](../../MyIA.AI.Notebooks/QuantConnect/projects/ML-RandomForest/quantbook.ipynb) | ALPHA | Non |
 | 27 | [Research QuantBook: ML Regression](../../MyIA.AI.Notebooks/QuantConnect/projects/ML-Regression/quantbook.ipynb) | BETA | Non |
 | 28 | [ML SVM - Support Vector Machine pour Trading](../../MyIA.AI.Notebooks/QuantConnect/projects/ML-SVM/quantbook.ipynb) | ALPHA | Non |
-| 29 | [ML Text Classification for Trading](../../MyIA.AI.Notebooks/QuantConnect/projects/ML-TextClassification/quantbook.ipynb) | BETA | Non |
+| 29 | [ML Text Classification for Trading](../../MyIA.AI.Notebooks/QuantConnect/projects/ML-TextClassification/quantbook.ipynb) | ALPHA | Non |
 | 30 | [ML XGBoost - Gradient Boosting pour Trading](../../MyIA.AI.Notebooks/QuantConnect/projects/ML-XGBoost/quantbook.ipynb) | BETA | Non |
 | 31 | [Research QuantBook: Mean Reversion (Sector ETFs)](../../MyIA.AI.Notebooks/QuantConnect/projects/MeanReversion/quantbook.ipynb) | BETA | Non |
 | 32 | [Research QuantBook: MomentumStrategy (Sector ETF…](../../MyIA.AI.Notebooks/QuantConnect/projects/MomentumStrategy/quantbook.ipynb) | BETA | Non |
