@@ -1,0 +1,174 @@
+# Conformite differentielle du triplet ANALYSE-02b-Entropie-Shannon (Pli Rust std, issue #27841).
+#
+# Portage evcxr `std` seul (aucune crate, aucun :dep) du carnet Python :
+# memes 24 cellules, memes indices de cellules code (2, 3, 6, 9, 12, 15, 18,
+# 20, 22) sur les trois cotes. Carnet deterministe (aucun appel aleatoire) :
+# toutes les sorties sont arrondies a l'affichage, la comparaison de reference
+# est l'egalite stricte du texte (tolerance 0, transform text) -- verifiee
+# cellule par cellule lors du portage contre les sorties commitees Python.
+#
+# Pivots retenus : le facteur ln(2) (cellule 2), les temoins du zero negatif
+# (`Piece certaine`, H(Y|X) a q=1.0, H2(1.0) -- le `+ 0.0` final d'entropy_bits
+# est ce qui les tient a +0.0), l'egalite de renommage (cellule 6), et les
+# valeurs pivots des cellules 12 et 15. Le cote C# imprime les memes valeurs
+# aux memes lignes ; seule la ligne des noms d'helpers different en cellule 2
+# (`Entropie.Bits` vs `entropy_bits`), hors perimetre des mesures.
+- name: "ANALYSE-02b Entropie-Shannon"
+  family: SymbolicAI/Lean-ANALYSE
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-Rust.ipynb
+  measures:
+    - id: facteur_ln2
+      description: "Facteur bits -> nats ln(2) imprime a 6 decimales (cellule 2)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "ln\\(2\\) = ([0-9.]+)"
+          transform: float
+        csharp:
+          cell: 2
+          pattern: "ln\\(2\\) = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 2
+          pattern: "ln\\(2\\) = ([0-9.]+)"
+          transform: float
+    - id: piece_equilibree
+      description: "H de la piece equilibree imprimee brute (cellule 3, attendu 1.0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Piece equilibree : H = ([0-9.]+) bit"
+          transform: text
+        csharp:
+          cell: 3
+          pattern: "Piece equilibree : H = ([0-9.]+) bit"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "Piece equilibree : H = ([0-9.]+) bit"
+          transform: text
+    - id: piece_certaine_zero_negatif
+      description: "H de la piece certaine (cellule 3) -- temoin du zero negatif : sans le + 0.0 final, Rust imprime -0.0"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Piece certaine\\s+: H = (-?[0-9.]+) bit"
+          transform: text
+        csharp:
+          cell: 3
+          pattern: "Piece certaine\\s+: H = (-?[0-9.]+) bit"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "Piece certaine\\s+: H = (-?[0-9.]+) bit"
+          transform: text
+    - id: renommage_egalite
+      description: "Entropie de la loi renommee {0,1,2} -> {alpha,beta,gamma} (cellule 6, attendu 1.5)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Renommage.*: ([0-9.]+) == [0-9.]+"
+          transform: text
+        csharp:
+          cell: 6
+          pattern: "Renommage.*: ([0-9.]+) == [0-9.]+"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "Renommage.*: ([0-9.]+) == [0-9.]+"
+          transform: text
+    - id: hy_cond_q10_zero_negatif
+      description: "H(Y|X) a q=1.0 (cellule 9) -- second temoin du zero negatif"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "1\\.0\\s+1\\.0000\\s+1\\.0000\\s+1\\.0000\\s+(-?[0-9.]+)"
+          transform: text
+        csharp:
+          cell: 9
+          pattern: "1\\.0\\s+1\\.0000\\s+1\\.0000\\s+1\\.0000\\s+(-?[0-9.]+)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "1\\.0\\s+1\\.0000\\s+1\\.0000\\s+1\\.0000\\s+(-?[0-9.]+)"
+          transform: text
+    - id: h2_q09
+      description: "H2(0.9) en bits (cellule 9, attendu 0.4690)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "q = 0\\.9: H2 = ([0-9.]+)"
+          transform: text
+        csharp:
+          cell: 9
+          pattern: "q = 0\\.9: H2 = ([0-9.]+)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "q = 0\\.9: H2 = ([0-9.]+)"
+          transform: text
+    - id: h2_q10_zero_negatif
+      description: "H2(1.0) en bits (cellule 9) -- troisieme temoin du zero negatif"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "q = 1\\.0: H2 = (-?[0-9.]+)"
+          transform: text
+        csharp:
+          cell: 9
+          pattern: "q = 1\\.0: H2 = (-?[0-9.]+)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "q = 1\\.0: H2 = (-?[0-9.]+)"
+          transform: text
+    - id: exces_sous_modularite
+      description: "Exces H(X,Z)+H(Y,Z)-H(X,Y,Z)-H(Z) du canal q=0.9 avec Z = X xor Y (cellule 12, attendu 1.0000)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "exces = (-?[0-9.]+) bit"
+          transform: text
+        csharp:
+          cell: 12
+          pattern: "exces = (-?[0-9.]+) bit"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "exces = (-?[0-9.]+) bit"
+          transform: text
+    - id: h_somme_trois_elements
+      description: "H(X+X') pour A = [0, 1, 2] dans Z/8Z (cellule 15, attendu 2.1972)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "H\\(X\\+X'\\) = ([0-9.]+)"
+          transform: text
+        csharp:
+          cell: 15
+          pattern: "H\\(X\\+X'\\) = ([0-9.]+)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "H\\(X\\+X'\\) = ([0-9.]+)"
+          transform: text
