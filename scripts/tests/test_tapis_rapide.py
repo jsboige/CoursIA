@@ -191,6 +191,50 @@ def test_relachee_trois_jours_puis_resservie():
     assert etat(lec, 6).ecart == "RELACHEE"    # un conteneur rendu aussi
 
 
+def test_pause_explicite_ecarte_sans_delai():
+    """#27726 : un [RELEASED] qui porte `attend: #N` ecarte le grain SANS
+    delai. Au-dela des 3 jours de RELACHEE, la condition tient encore : la
+    cible citee (#27553) est ouverte."""
+    pause = com(24 * 5, f"[RELEASED] lane {AUTRE} -- en attente du GO\nattend: #27553")
+    lec = lecture([issue(1, comments=[pause]), issue(27553),
+                   issue(2, comments=[com(24 * 5,
+                                          f"[RELEASED] lane {AUTRE} -- attente\nattend: Q-c.2344a")])])
+    e1 = etat(lec, 1)
+    assert e1.ecart == "PAUSE"
+    assert "attend #27553" in e1.motif      # le motif nomme la condition
+    assert etat(lec, 2).ecart == "PAUSE"    # une question user : meme code
+
+
+def test_pause_levee_et_reprise_par_un_marqueur_posterieur():
+    """La condition se leve quand la cible citee est fermee ; un marqueur
+    posterieur rend le grain de nouveau servable."""
+    pause = com(24 * 5, f"[RELEASED] lane {AUTRE} -- attente\nattend: #27553")
+    # la cible (#27553) n'est plus dans la lecture : elle est fermee -> levee
+    assert etat(lecture([issue(1, comments=[pause])]), 1).ecart is None
+    # la cible est ouverte -> la pause tient
+    lec = lecture([issue(1, comments=[pause]), issue(27553)])
+    assert etat(lec, 1).ecart == "PAUSE"
+    # un marqueur posterieur : l'issue redevient servable
+    lec = lecture([issue(1, comments=[pause, com(2, f"[CLAIMED] lane {AUTRE} -- je reprends")]),
+                   issue(27553)])
+    assert etat(lec, 1).ecart == "RECLAMEE"
+
+
+def test_pause_une_pr_ciblee_et_le_role_d_attente():
+    """La cible peut etre une PR ouverte ; le role du code PAUSE est
+    l'attente (visit_coverage), pas un role de service."""
+    from coordination import visit_coverage as vc
+    pause = com(24 * 5, f"[RELEASED] lane {AUTRE} -- attente du merge\nattend: #27900")
+    prs = [{"number": 27900, "title": "Fix(x,#1): y", "body": f"Grain: x -- lane {AUTRE}"}]
+    lec = lecture([issue(1, comments=[pause])], prs=prs)
+    assert etat(lec, 1).ecart == "PAUSE"     # la PR citee est encore ouverte
+    assert etat(lecture([issue(1, comments=[pause])]), 1).ecart is None  # fermee -> levee
+    e = tr.Etat(numero=1, titre="Grain", labels=[], cree_le="2026-10-01T00:00:00Z",
+                 parent=None, famille=1, conteneur=False, consolidation=False,
+                 ecart="PAUSE", motif="pause de x il y a 5.0 j : attend #27900")
+    assert vc.role(e) == "attente"
+
+
 def test_livree_info_avec_lane_avant_le_mot():
     """Forme de #20603 (13/11) : le mot vient apres `lane X --` sur la ligne du tag."""
     lec = lecture([
