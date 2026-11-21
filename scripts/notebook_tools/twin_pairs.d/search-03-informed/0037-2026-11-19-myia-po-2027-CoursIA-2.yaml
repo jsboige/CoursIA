@@ -1,0 +1,8 @@
+date: '2026-11-19'
+by: myia-po-2027:CoursIA-2
+python_sha: 5825efcb8742fc4735c7734b87922a325a603a66
+csharp_sha: 5b5b1c5f5223668bee8b5bbf75e0d5be52304f7e
+content_python_sha: f692db5be44922ccb73d107cde32266795001d2d08b833b75e037858f247180f
+content_csharp_sha: 20ba8536a810f46fe5239bf07fc8129a95adecb7517dad456254260b7ca1498e
+known_differences:
+  - "Contrôle de consistance h(u) <= w(u,v) + h(v) sur chaque arc x but (432 arcs, 0 violation) ajouté côté Python seulement ; non porté au jumeau C# — asymétrie pédagogique (review #27360, réserve coordinateur)"

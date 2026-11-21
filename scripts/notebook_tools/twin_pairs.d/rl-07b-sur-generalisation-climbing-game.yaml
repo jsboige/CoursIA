@@ -1,0 +1,10 @@
+- name: "RL-07b Sur Generalisation Climbing Game"
+  family: RL
+  python: MyIA.AI.Notebooks/RL/RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb
+  csharp: MyIA.AI.Notebooks/RL/RL-07b-Sur-Generalisation-Climbing-Game-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Agent tabulaire et statistiques from scratch dans le source ; la BCL calcule ces memes objets sans moteur RL externe omis."
+  known_differences:
+    - "PRNG NumPy et System.Random distincts ; les resultats stochastiques sont mesures independamment, pas forces identiques."
+    - "Matplotlib Python et SVG opaque C# ; toutes les 11701 positions de la courbe et ses quantiles sont conserves."

@@ -71,8 +71,8 @@ Quatre notebooks autour du Puissance 4 — deux Python et deux C# — forment un
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-12b-ConnectFour-Python](App-12b-ConnectFour-Python.ipynb) — jumeau [C#](App-12c-ConnectFour-CSharp.ipynb) | Puissance 4 : construire les joueurs — aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin. Le jumeau C# refait Minimax, Alpha-Beta, MCTS (UCB1), glouton et iterative deepening *from-scratch*, avec l'heuristique de fenêtres et le même tournoi (parité #4956) | Découverte | — |
-| 2 | [App-14-ConnectFour-Adversarial-Python](App-14-ConnectFour-Adversarial-Python.ipynb) — jumeau [C#](App-14-ConnectFour-CSharp.ipynb) | Benchmark adversarial : Minimax, Alpha-Beta et MCTS comparés systématiquement. Le jumeau C# refait les trois *from-scratch*, mesure les nœuds explorés et rejoue le tournoi round-robin (parité #4956) | Licence | — |
+| 1 | [App-12b-ConnectFour-Python](App-12b-ConnectFour-Python.ipynb) — jumeau [C#](App-12b-ConnectFour-CSharp.ipynb) | Puissance 4 : construire les joueurs — aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin. Le jumeau C# refait Minimax, Alpha-Beta, MCTS (UCB1), glouton et iterative deepening *from-scratch*, avec l'heuristique de fenêtres et le même tournoi (parité #4956) | Découverte | — |
+| 2 | [App-14-ConnectFour-Adversarial-Python](App-14-ConnectFour-Adversarial-Python.ipynb) — jumeau [C#](App-14-ConnectFour-Adversarial-CSharp.ipynb) | Benchmark adversarial : Minimax, Alpha-Beta et MCTS comparés systématiquement. Le jumeau C# refait les trois *from-scratch*, mesure les nœuds explorés et rejoue le tournoi round-robin (parité #4956) | Licence | — |
 
 ---
 
@@ -177,8 +177,8 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 |----------|--------------------|
 | App-12b ConnectFour | Search-3 (A*), Search-4 (LocalSearch) |
 | App-14 ConnectFour-Adversarial | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
-| App-14-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
-| App-12c-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
+| App-14-Adversarial-CSharp | Search-3 (Heuristiques), Search-6 (AdversarialSearch) |
+| App-12b-CSharp | Search-6 (AdversarialSearch), Search-7 (MCTS) |
 
 ### Cas pratiques CSP
 
@@ -313,3 +313,7 @@ Le pont entre les deux cultures de la recherche s'exprime dans les notebooks Hyb
 ## Navigation
 
 [← Partie 2 : CSP](../Part2-CSP/README.md) | [↑ Série Search](../README.md) | [Partie 4 : Métaheuristiques →](../Part4-Metaheuristics/README.md)
+
+## Comparaison statistique de colorations
+
+Le compagnon [Python](App-02-GraphColoring-Statistical-Validity-Python.ipynb) et son [jumeau C#](App-02-GraphColoring-Statistical-Validity-CSharp.ipynb) comparent des colorations sur plusieurs graphes, avec bootstrap, tests appariés et balayage de densité. Le C# appelle CP-SAT natif et les références NetworkX et SciPy par Python.NET ; les générateurs de graines diffèrent et les résultats numériques peuvent varier. Les résolutions CP-SAT sans solution sont exclues des mesures du solveur.

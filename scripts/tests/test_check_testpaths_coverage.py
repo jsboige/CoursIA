@@ -397,13 +397,16 @@ def test_run_inventory_un_testpath_declare_couvre_ses_sous_dossiers(
 
 
 def test_run_inventory_est_advisory_par_defaut(tmp_path: Path) -> None:
-    """Sans `--strict`, un trou d'inventaire n'est pas un echec : il est liste."""
+    """Sans `--strict`, un trou d'inventaire n'est pas un echec : il est
+    liste. Depuis T4 (#25366), le RETOUR porte la liste dans les deux
+    modes — le drapeau ne change que l'impression (INFO vs FAIL) et le
+    verdict, portés par main()."""
     from check_testpaths_coverage import run_inventory
 
     (tmp_path / "scripts" / "beta" / "tests").mkdir(parents=True)
     (tmp_path / "scripts" / "beta" / "tests" / "test_b.py").write_text("", encoding="utf-8")
 
-    assert run_inventory(tmp_path, [], {}, strict=False) == []
+    assert run_inventory(tmp_path, [], {}, strict=False) == ["scripts/beta/tests"]
     assert run_inventory(tmp_path, [], {}, strict=True) == ["scripts/beta/tests"]
 
 
@@ -752,17 +755,24 @@ def test_duplicate_basenames_ne_compte_que_les_enfants_directs(
 def test_duplicate_basenames_plafond_sur_main_actuel() -> None:
     """Contrôle positif sur le dépôt réel : le sens voit la dette connue.
 
-    30 basenames après les tranches de dédoublonnage (#25366 ; T2 #26137 a
-    retiré `tests/test_batch_reexecute.py` racine). Le plafond est un
-    cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
-    T2 en supprime — jamais l'inverse.
+    1 basename restant sur cet arbre, mesuré après la fusion des deux tranches
+    (#25366 ; T2 #26137 a retiré `tests/test_batch_reexecute.py` racine ;
+    T2 #26541 a préfixé 10 basenames génériques ; T2-residu #27066 a renommé
+    les copies stratégiques, retire `test_check_cell_source_parses.py` et
+    `test_check_public_anchor.py` ; T2 ICT a préfixé les 16 paires du hub
+    série ICT). Chaque tranche abaisse le plafond de son propre côté ; le
+    survivant `test_utils.py` est porté par deux projets-exemples Vibe-Coding,
+    qui sont des données de démonstration et non des suites du dépôt. Le
+    plafond est un cliquet inversé : il rougit sur un doublon NOUVEAU, verdit
+    quand T2 en supprime — jamais l'inverse.
     """
     from check_testpaths_coverage import duplicate_basenames
 
     dupes = duplicate_basenames(REPO_ROOT)
-    assert len(dupes) <= 30, f"dette de doublons en hausse : {len(dupes)} > 30"
-    assert "test_check_cell_source_parses.py" in dupes
-    assert len(dupes["test_check_cell_source_parses.py"]) == 2
+    assert len(dupes) <= 1, f"dette de doublons en hausse : {len(dupes)} > 1"
+    assert "test_check_cell_source_parses.py" not in dupes
+    assert "test_utils.py" in dupes
+    assert len(dupes["test_utils.py"]) == 2
 
 
 def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:
@@ -854,6 +864,106 @@ def test_cli_inventory_advisory_est_vert_sur_main() -> None:
     assert proc.returncode == 0, proc.stdout
     assert "\n  INFO tests\n" not in proc.stdout
     assert "FAIL" not in proc.stdout
+
+
+# --- #25366 T4 : le ratchet — dette connue tolérée, NOUVEAU refusé ---
+
+
+def test_write_load_baseline_roundtrip(tmp_path: Path) -> None:
+    """Baseline : écriture/relecture fidèles, absente ou mal formée = SystemExit."""
+    import pytest
+
+    from check_testpaths_coverage import (
+        load_inventory_baseline,
+        write_inventory_baseline,
+    )
+
+    bl = tmp_path / "baseline.json"
+    write_inventory_baseline(
+        bl,
+        ["a/tests"],
+        {"t.py": ["a/tests", "b/tests"]},
+        ["old/tests/test_a.py"],
+    )
+    data = load_inventory_baseline(bl)
+    assert data["unwatched"] == ["a/tests"]
+    assert data["duplicate_basenames"] == {"t.py": ["a/tests", "b/tests"]}
+    assert data["unplayed"] == ["old/tests/test_a.py"]
+
+    with pytest.raises(SystemExit):
+        load_inventory_baseline(tmp_path / "absente.json")
+    (tmp_path / "malformee.json").write_text('{"unwatched": 3}', encoding="utf-8")
+    with pytest.raises(SystemExit):
+        load_inventory_baseline(tmp_path / "malformee.json")
+
+
+def _baseline_dette_connue() -> dict:
+    return {
+        "unwatched": ["orphan/tests"],
+        "duplicate_basenames": {"t.py": ["a/tests", "b/tests"]},
+        "unplayed": ["old/tests/test_a.py"],
+    }
+
+
+def test_judge_tolere_la_dette_connue() -> None:
+    """Findings strictement égaux à la baseline : zéro échec."""
+    from check_testpaths_coverage import judge_inventory_against_baseline
+
+    assert (
+        judge_inventory_against_baseline(
+            ["orphan/tests"],
+            {"t.py": ["a/tests", "b/tests"]},
+            ["old/tests/test_a.py"],
+            _baseline_dette_connue(),
+        )
+        == []
+    )
+
+
+def test_judge_rougit_sur_doublon_nouveau() -> None:
+    from check_testpaths_coverage import judge_inventory_against_baseline
+
+    failures = judge_inventory_against_baseline(
+        [],
+        {"new.py": ["x/tests", "y/tests"]},
+        [],
+        _baseline_dette_connue(),
+    )
+    assert any("NOUVEAU" in f and "new.py" in f for f in failures)
+
+
+def test_judge_rougit_sur_croissance_laterale() -> None:
+    """Un TROISIÈME répertoire sur un doublon connu rougit — le simple compte
+    de basenames (plafond T0) ne le voyait pas : la dette restait à 30."""
+    from check_testpaths_coverage import judge_inventory_against_baseline
+
+    failures = judge_inventory_against_baseline(
+        [],
+        {"t.py": ["a/tests", "b/tests", "c/tests"]},
+        [],
+        _baseline_dette_connue(),
+    )
+    assert any("CROISSANCE" in f and "c/tests" in f for f in failures)
+
+
+def test_judge_rougit_sur_dossier_non_trie_nouveau() -> None:
+    from check_testpaths_coverage import judge_inventory_against_baseline
+
+    failures = judge_inventory_against_baseline(
+        ["orphan/tests", "newcomer/tests"], {}, [], _baseline_dette_connue()
+    )
+    assert any("non trié" in f and "newcomer/tests" in f for f in failures)
+    assert not any("orphan/tests" in f for f in failures)
+
+
+def test_judge_tolere_le_retrait_partiel() -> None:
+    """T2 en cours : retirer une copie d'un doublon connu verdit (sous-ensemble)."""
+    from check_testpaths_coverage import judge_inventory_against_baseline
+
+    failures = judge_inventory_against_baseline(
+        [], {"t.py": ["a/tests"]}, [], _baseline_dette_connue()
+    )
+    assert failures == []
 
 
 # ---------------------------------------------------------------------------
@@ -1052,3 +1162,111 @@ def test_invocation_simple_reste_verte_sur_le_depot_reel() -> None:
     )
     assert proc.returncode == 0, proc.stdout
     assert "Population CI-EXCLUDED" in proc.stdout
+
+
+def test_judge_rougit_sur_fichier_non_collecte_nouveau() -> None:
+    """#26759 rend le sens fichier strict sous --inventory : depuis cette
+    PR, le juge T4 couvre aussi ce sens — un fichier de test que la
+    baseline ne connaît pas rougit, un fichier connu est toléré."""
+    from check_testpaths_coverage import judge_inventory_against_baseline
+
+    failures = judge_inventory_against_baseline(
+        [],
+        {},
+        ["old/tests/test_a.py", "fresh/tests/test_new.py"],
+        _baseline_dette_connue(),
+    )
+    assert any(
+        "NOUVEAU" in f and "fresh/tests/test_new.py" in f for f in failures
+    )
+    assert not any("old/tests/test_a.py" in f for f in failures)
+
+
+def test_cli_ratchet_vert_sur_main_avec_baseline() -> None:
+    """Contrôle sur le dépôt réel : la dette committée est tolérée (rc 0).
+
+    C'est l'invocation exacte que la fast lane rend (T4 #25366). Si ce test
+    rougit sur une PR, l'arbre porte un finding NOUVEAU — ou, sur main, une
+    baseline périmée qu'une tranche T1/T2 a fait rétrécir sans la régénérer.
+    """
+    import subprocess
+
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+         "--repo-root", str(REPO_ROOT), "--inventory",
+         "--baseline", "scripts/tests/baseline_testpaths_inventory.json"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(REPO_ROOT),
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+
+def test_cli_ratchet_baseline_manquante_est_rouge() -> None:
+    """Une baseline absente ne rend jamais la garde muette : rouge explicite."""
+    import subprocess
+
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+         "--repo-root", str(REPO_ROOT), "--inventory",
+         "--baseline", "scripts/tests/inexistante.json"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        cwd=str(REPO_ROOT),
+    )
+    assert proc.returncode != 0
+    assert "baseline ratchet introuvable" in (proc.stdout + proc.stderr)
+
+
+def test_cli_ratchet_rougit_sur_un_doublon_nouveau(tmp_path: Path) -> None:
+    """Contrôle positif bout-en-bout : doublon ajouté après baseline -> rouge."""
+    import subprocess
+
+    (tmp_path / "scripts" / "alpha" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "alpha" / "tests" / "test_shared.py").write_text(
+        "", encoding="utf-8"
+    )
+    (tmp_path / "scripts" / "gamma" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "gamma" / "tests" / "test_shared.py").write_text(
+        "", encoding="utf-8"
+    )
+    (tmp_path / "pytest.ini").write_text(
+        "[pytest]\ntestpaths =\n    scripts/alpha/tests\n", encoding="utf-8"
+    )
+    bl = tmp_path / "baseline.json"
+
+    def _run() -> "subprocess.CompletedProcess[str]":
+        return subprocess.run(
+            [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+             "--repo-root", str(tmp_path), "--inventory",
+             "--baseline", str(bl)],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+
+    write = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+         "--repo-root", str(tmp_path), "--inventory", "--write-baseline", str(bl)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert write.returncode == 0, write.stdout + write.stderr
+    # Le rc du run intermediaire n'est pas l'objet : sur un depot minimal,
+    # les QUATRE SENS HISTORIQUES rougissent aussi (testpath non couvert,
+    # option namespace absente). Ce que T4 garantit ici, c'est la section
+    # ratchet : la dette enregistree est toleree, aucun finding nouveau.
+    green = _run()
+    assert "aucun finding nouveau" in green.stdout
+    assert "NOUVEAU" not in green.stdout
+
+    (tmp_path / "scripts" / "d1" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "d1" / "tests" / "test_brand.py").write_text(
+        "", encoding="utf-8"
+    )
+    (tmp_path / "scripts" / "d2" / "tests").mkdir(parents=True)
+    (tmp_path / "scripts" / "d2" / "tests" / "test_brand.py").write_text(
+        "", encoding="utf-8"
+    )
+    red = _run()
+    assert red.returncode == 1
+    # Sous-chaines ASCII uniquement : le stdout capture depend de l'encodage
+    # console de l'enfant (cp1252 sur ce siege, utf-8 sur le runner), les
+    # accents ne traversent pas les deux mondes de facon stable.
+    assert "NOUVEAU" in red.stdout
+    assert "test_brand.py" in red.stdout
+    assert "d1/tests" in red.stdout and "d2/tests" in red.stdout
