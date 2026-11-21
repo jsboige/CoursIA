@@ -500,6 +500,30 @@ def verdict(cond_conf: bool, cond_ref: bool) -> str:
     return "NON_CONCLUANTE"
 
 
+def global_verdict(vs: Dict[str, str], base_fit: Dict[str, float]) -> str:
+    """Verdict global du cas (convention ``verdicts.global`` des cas soeurs,
+    cf. ``assembly_index_results.json``). Promis par la section Analyse du
+    pre-enregistrement ; derive uniquement des verdicts par hypothese, jamais
+    re-ajuste a la main : H1-H3 = instrument (identites exactes du papier),
+    H4-H6 = loi d'echelle (Fig. 14), H7 = plafond Phi.
+    """
+    instrument_ok = all(vs[k] == "CONFIRMEE" for k in (
+        "H1_delta_h", "H2_fidelite_dirichlet", "H3_entropie_eq81"))
+    if not instrument_ok:
+        return "INSTRUMENT_SUSPECT"
+    laws = [vs["H4_decroissance_2^-4b"], vs["H5_autonomie_2^3b"], vs["H6_genericite_seeds"]]
+    laws_refuted = sum(v == "REFUTEE" for v in laws)
+    if laws_refuted == 0 and all(v == "CONFIRMEE" for v in laws) \
+            and vs["H7_plafond_phi_02516"] == "CONFIRMEE":
+        return "CONFIRMEE"
+    if laws_refuted:
+        return (f"PARTIEL — identites exactes et plafond Phi ("
+                f"{vs['H7_plafond_phi_02516']}) tenus, loi d'echelle refutee "
+                f"({laws_refuted}/3) : pente log2 S_lin(T) = "
+                f"{base_fit['slope_log2_s_lin_T']:+.2f} au lieu de -4 (Fig. 14)")
+    return "NON_CONCLUANTE"
+
+
 def run_all(output_path: Optional[str] = None) -> Dict[str, object]:
     """Banc complet + verdicts ; ecrit le JSON de resultats si ``output_path``."""
     print("[1/6] validations H1/H2 (identites exactes)...", flush=True)
@@ -569,6 +593,12 @@ def run_all(output_path: Optional[str] = None) -> Dict[str, object]:
             "H5_autonomie_2^3b": v_h5,
             "H6_genericite_seeds": v_h6,
             "H7_plafond_phi_02516": v_h7,
+            "global": global_verdict(
+                {"H1_delta_h": v_h1, "H2_fidelite_dirichlet": v_h2,
+                 "H3_entropie_eq81": v_h3, "H4_decroissance_2^-4b": v_h4,
+                 "H5_autonomie_2^3b": v_h5, "H6_genericite_seeds": v_h6,
+                 "H7_plafond_phi_02516": v_h7},
+                fits["base"]),
         },
         "timestamps_utc": _dt.datetime.now(_dt.timezone.utc).isoformat(),
     }

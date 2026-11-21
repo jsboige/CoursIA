@@ -1,0 +1,734 @@
+{
+  "case": "27-tegmark-perceptronium",
+  "sealed_prereg_commit": "6d9d793b57bb",
+  "prereg": "docs/ict/perceptronium-pre-enregistrement.md",
+  "source": "Tegmark 2015, Chaos Solitons & Fractals 76:238-270, arXiv:1401.1219v3 (copie archivee au gisement)",
+  "units": "hbar = omega = 1 ; T = 2.pi ; potentiel de base sin(2.pi.x/n)",
+  "seeds": [
+    0,
+    1,
+    7,
+    42,
+    99
+  ],
+  "validations": {
+    "H1": {
+      "max_rel_err": 2.7194799110210365e-16,
+      "worst_n": 3
+    },
+    "H2": {
+      "max_abs_err": 8.409072049797572e-16,
+      "worst_n": 56,
+      "max_zero_val": 8.115048660761455e-15,
+      "worst_zero_n": 55
+    },
+    "H3": {
+      "max_first_deriv": 2.220446049250313e-12,
+      "max_residu_eq81": 2.7944367610612083e-16,
+      "quartic_ratios": [
+        3.998367760786632,
+        4.018519821823633,
+        4.004446283193355,
+        3.9507117467245223,
+        3.7562023883254265
+      ],
+      "quartic_skipped": 0,
+      "note": "validation 3 points (amend. A2/A3) : derivee premiere, residu exact + 4.Var(V), ordre dt^2"
+    }
+  },
+  "banc": {
+    "per_potential": {
+      "base": {
+        "2": {
+          "n": 4,
+          "delta_h": 1.118033988749895,
+          "delta_h_formula": 1.118033988749895,
+          "s_lin_T": 0.4061554855877708,
+          "s_ddot_eq81": -1.499759782661858e-32,
+          "s_ddot_finite": -7.105427357601002e-07,
+          "tau_dyn": 0.8944271909999159,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 7.79423894044843
+        },
+        "3": {
+          "n": 8,
+          "delta_h": 2.29128784747792,
+          "delta_h_formula": 2.29128784747792,
+          "s_lin_T": 0.2100102614894933,
+          "s_ddot_eq81": 1.6464553374394178e-16,
+          "s_ddot_finite": 0.0,
+          "tau_dyn": 0.4364357804719848,
+          "tau_ind": 77933651.08876002,
+          "autonomy": 178568427.6492602,
+          "autonomy_effective": 22.21387196548414
+        },
+        "4": {
+          "n": 16,
+          "delta_h": 4.6097722286464435,
+          "delta_h_formula": 4.6097722286464435,
+          "s_lin_T": 0.08425860756226722,
+          "s_ddot_eq81": 8.628151976883843e-19,
+          "s_ddot_finite": -3.552713678800501e-07,
+          "tau_dyn": 0.21693045781865616,
+          "tau_ind": 1076567108.1930413,
+          "autonomy": 4962729157.622494,
+          "autonomy_effective": 70.55652755581217
+        },
+        "5": {
+          "n": 32,
+          "delta_h": 9.233092656309692,
+          "delta_h_formula": 9.233092656309694,
+          "s_lin_T": 0.03925671070995518,
+          "s_ddot_eq81": 7.265273756492405e-19,
+          "s_ddot_finite": 3.552713678800501e-07,
+          "tau_dyn": 0.10830607221477649,
+          "tau_ind": 1173205278.75785,
+          "autonomy": 10832313043.64287,
+          "autonomy_effective": 207.0404059709808
+        },
+        "6": {
+          "n": 64,
+          "delta_h": 18.472953201911167,
+          "delta_h_formula": 18.472953201911167,
+          "s_lin_T": 0.019684786907489316,
+          "s_ddot_eq81": -2.006308319621729e-18,
+          "s_ddot_finite": 2.6645352591003757e-07,
+          "tau_dyn": 0.05413319619607667,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 584.9730274595032
+        },
+        "7": {
+          "n": 128,
+          "delta_h": 36.94928957368463,
+          "delta_h_formula": 36.94928957368463,
+          "s_lin_T": 0.00996293421798422,
+          "s_ddot_eq81": 4.528557879096535e-19,
+          "s_ddot_finite": 7.993605777301127e-07,
+          "tau_dyn": 0.02706411981225756,
+          "tau_ind": 1486004205.8147192,
+          "autonomy": 54906799708.36132,
+          "autonomy_effective": 1644.6645508217557
+        },
+        "8": {
+          "n": 256,
+          "delta_h": 73.90027063549903,
+          "delta_h_formula": 73.90027063549903,
+          "s_lin_T": 0.005024964436242341,
+          "s_ddot_eq81": -3.2400335046763115e-20,
+          "s_ddot_finite": 1.1546319456101628e-06,
+          "tau_dyn": 0.013531750173586456,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 4631.742459727645
+        },
+        "9": {
+          "n": 512,
+          "delta_h": 147.80138700296422,
+          "delta_h_formula": 147.80138700296422,
+          "s_lin_T": 0.0025250165656063306,
+          "s_ddot_eq81": 3.7020346203136234e-20,
+          "s_ddot_finite": 2.220446049250313e-06,
+          "tau_dyn": 0.006765836371886987,
+          "tau_ind": 5197323648.162919,
+          "autonomy": 768171643901.7855,
+          "autonomy_effective": 13068.064347274403
+        }
+      },
+      "seed0": {
+        "2": {
+          "n": 4,
+          "delta_h": 1.118033988749895,
+          "delta_h_formula": 1.118033988749895,
+          "s_lin_T": 0.24653656756116538,
+          "s_ddot_eq81": -6.073093337362775e-33,
+          "s_ddot_finite": 2.6645352591003757e-07,
+          "tau_dyn": 0.8944271909999159,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 10.004127186361503
+        },
+        "3": {
+          "n": 8,
+          "delta_h": 2.29128784747792,
+          "delta_h_formula": 2.29128784747792,
+          "s_lin_T": 0.11299821437186963,
+          "s_ddot_eq81": 8.59665623168388e-17,
+          "s_ddot_finite": 1.7763568394002505e-07,
+          "tau_dyn": 0.4364357804719848,
+          "tau_ind": 107853742.56325859,
+          "autonomy": 247123969.6402065,
+          "autonomy_effective": 30.283685817147365
+        },
+        "4": {
+          "n": 16,
+          "delta_h": 4.6097722286464435,
+          "delta_h_formula": 4.6097722286464435,
+          "s_lin_T": 0.03238159601804269,
+          "s_ddot_eq81": -1.2127518978502488e-17,
+          "s_ddot_finite": 0.0,
+          "tau_dyn": 0.21693045781865616,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 113.81387568041279
+        },
+        "5": {
+          "n": 32,
+          "delta_h": 9.233092656309692,
+          "delta_h_formula": 9.233092656309694,
+          "s_lin_T": 0.011964514609517862,
+          "s_ddot_eq81": 2.0099869157242634e-20,
+          "s_ddot_finite": 2.6645352591003757e-07,
+          "tau_dyn": 0.10830607221477649,
+          "tau_ind": 7053479116.251617,
+          "autonomy": 65125426229.69659,
+          "autonomy_effective": 375.02871530968895
+        },
+        "6": {
+          "n": 64,
+          "delta_h": 18.472953201911167,
+          "delta_h_formula": 18.472953201911167,
+          "s_lin_T": 0.005699929170108309,
+          "s_ddot_eq81": 6.3790600575860215e-18,
+          "s_ddot_finite": 1.7763568394002505e-07,
+          "tau_dyn": 0.05413319619607667,
+          "tau_ind": 395932957.9948582,
+          "autonomy": 7314051004.133276,
+          "autonomy_effective": 1087.0924288388574
+        },
+        "7": {
+          "n": 128,
+          "delta_h": 36.94928957368463,
+          "delta_h_formula": 36.94928957368463,
+          "s_lin_T": 0.0028092068174675466,
+          "s_ddot_eq81": -6.994173473809682e-18,
+          "s_ddot_finite": 5.329070518200751e-07,
+          "tau_dyn": 0.02706411981225756,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 3097.2702872796026
+        },
+        "8": {
+          "n": 256,
+          "delta_h": 73.90027063549903,
+          "delta_h_formula": 73.90027063549903,
+          "s_lin_T": 0.0014014668264359376,
+          "s_ddot_eq81": -1.302476050737404e-18,
+          "s_ddot_finite": 1.3322676295501878e-06,
+          "tau_dyn": 0.013531750173586456,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 8770.401760594146
+        },
+        "9": {
+          "n": 512,
+          "delta_h": 147.80138700296422,
+          "delta_h_formula": 147.80138700296422,
+          "s_lin_T": 0.0007002879409069296,
+          "s_ddot_eq81": 6.506253531660252e-18,
+          "s_ddot_finite": 2.220446049250313e-06,
+          "tau_dyn": 0.006765836371886987,
+          "tau_ind": 392043726.5482286,
+          "autonomy": 57944606549.63902,
+          "autonomy_effective": 24814.472998883088
+        }
+      },
+      "seed1": {
+        "2": {
+          "n": 4,
+          "delta_h": 1.118033988749895,
+          "delta_h_formula": 1.118033988749895,
+          "s_lin_T": 0.19317983578675513,
+          "s_ddot_eq81": -1.3877787807814463e-17,
+          "s_ddot_finite": 4.440892098500626e-07,
+          "tau_dyn": 0.8944271909999159,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 11.301575241762885
+        },
+        "3": {
+          "n": 8,
+          "delta_h": 2.29128784747792,
+          "delta_h_formula": 2.29128784747792,
+          "s_lin_T": 0.0051000075361935515,
+          "s_ddot_eq81": -7.657439894623803e-18,
+          "s_ddot_finite": 7.105427357601002e-07,
+          "tau_dyn": 0.4364357804719848,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 142.5473385958782
+        },
+        "4": {
+          "n": 16,
+          "delta_h": 4.6097722286464435,
+          "delta_h_formula": 4.6097722286464435,
+          "s_lin_T": 0.0018287345147659506,
+          "s_ddot_eq81": -1.2020346304472887e-17,
+          "s_ddot_finite": 2.6645352591003757e-07,
+          "tau_dyn": 0.21693045781865616,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 478.9266530252018
+        },
+        "5": {
+          "n": 32,
+          "delta_h": 9.233092656309692,
+          "delta_h_formula": 9.233092656309694,
+          "s_lin_T": 0.0011053491538958182,
+          "s_ddot_eq81": -5.080123743775269e-17,
+          "s_ddot_finite": 0.0,
+          "tau_dyn": 0.10830607221477649,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 1233.8498788645134
+        },
+        "6": {
+          "n": 64,
+          "delta_h": 18.472953201911167,
+          "delta_h_formula": 18.472953201911167,
+          "s_lin_T": 0.0005936620844919638,
+          "s_ddot_eq81": 2.9557007300861706e-19,
+          "s_ddot_finite": 4.440892098500626e-07,
+          "tau_dyn": 0.05413319619607667,
+          "tau_ind": 1839372844.746377,
+          "autonomy": 33978648481.86604,
+          "autonomy_effective": 3368.461161013261
+        },
+        "7": {
+          "n": 128,
+          "delta_h": 36.94928957368463,
+          "delta_h_formula": 36.94928957368463,
+          "s_lin_T": 0.00030961306619026185,
+          "s_ddot_eq81": -4.679543638502688e-18,
+          "s_ddot_finite": 2.6645352591003757e-07,
+          "tau_dyn": 0.02706411981225756,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 9329.563456203534
+        },
+        "8": {
+          "n": 256,
+          "delta_h": 73.90027063549903,
+          "delta_h_formula": 73.90027063549903,
+          "s_lin_T": 0.00015743871959439382,
+          "s_ddot_eq81": -2.7724398623077562e-17,
+          "s_ddot_finite": 1.1546319456101628e-06,
+          "tau_dyn": 0.013531750173586456,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 26167.07172549176
+        },
+        "9": {
+          "n": 512,
+          "delta_h": 147.80138700296422,
+          "delta_h_formula": 147.80138700296422,
+          "s_lin_T": 7.948626682785509e-05,
+          "s_ddot_eq81": 3.8633337287683845e-17,
+          "s_ddot_finite": 1.9539925233402755e-06,
+          "tau_dyn": 0.006765836371886987,
+          "tau_ind": 160886234.46227476,
+          "autonomy": 23779208603.208313,
+          "autonomy_effective": 73654.16832472784
+        }
+      },
+      "seed7": {
+        "2": {
+          "n": 4,
+          "delta_h": 1.118033988749895,
+          "delta_h_formula": 1.118033988749895,
+          "s_lin_T": 0.45142666758848626,
+          "s_ddot_eq81": -2.7755575615628914e-17,
+          "s_ddot_finite": -3.552713678800501e-07,
+          "tau_dyn": 0.8944271909999159,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 7.393094739150689
+        },
+        "3": {
+          "n": 8,
+          "delta_h": 2.29128784747792,
+          "delta_h_formula": 2.29128784747792,
+          "s_lin_T": 0.01655370188295091,
+          "s_ddot_eq81": -9.181706122514118e-18,
+          "s_ddot_finite": 4.440892098500626e-07,
+          "tau_dyn": 0.4364357804719848,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 79.12194549280629
+        },
+        "4": {
+          "n": 16,
+          "delta_h": 4.6097722286464435,
+          "delta_h_formula": 4.6097722286464435,
+          "s_lin_T": 0.011382085978450363,
+          "s_ddot_eq81": 1.0251223367757948e-16,
+          "s_ddot_finite": 5.329070518200751e-07,
+          "tau_dyn": 0.21693045781865616,
+          "tau_ind": 98767065.77038735,
+          "autonomy": 455293676.8932284,
+          "autonomy_effective": 191.97001851775485
+        },
+        "5": {
+          "n": 32,
+          "delta_h": 9.233092656309692,
+          "delta_h_formula": 9.233092656309694,
+          "s_lin_T": 0.0048890483965923215,
+          "s_ddot_eq81": 3.2533667242218487e-18,
+          "s_ddot_finite": 0.0,
+          "tau_dyn": 0.10830607221477649,
+          "tau_ind": 554413108.0880429,
+          "autonomy": 5118947596.84954,
+          "autonomy_effective": 586.678126153494
+        },
+        "6": {
+          "n": 64,
+          "delta_h": 18.472953201911167,
+          "delta_h_formula": 18.472953201911167,
+          "s_lin_T": 0.002471706899988879,
+          "s_ddot_eq81": -4.397992594002144e-18,
+          "s_ddot_finite": 3.552713678800501e-07,
+          "tau_dyn": 0.05413319619607667,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 1650.8313798463003
+        },
+        "7": {
+          "n": 128,
+          "delta_h": 36.94928957368463,
+          "delta_h_formula": 36.94928957368463,
+          "s_lin_T": 0.0011939879769340411,
+          "s_ddot_eq81": 7.170780023896049e-17,
+          "s_ddot_finite": 6.217248937900877e-07,
+          "tau_dyn": 0.02706411981225756,
+          "tau_ind": 118090999.9375587,
+          "autonomy": 4363378552.738831,
+          "autonomy_effective": 4750.846365950419
+        },
+        "8": {
+          "n": 256,
+          "delta_h": 73.90027063549903,
+          "delta_h_formula": 73.90027063549903,
+          "s_lin_T": 0.0005929349606198508,
+          "s_ddot_eq81": 2.3608646205348304e-17,
+          "s_ddot_finite": 8.881784197001252e-07,
+          "tau_dyn": 0.013531750173586456,
+          "tau_ind": 205809045.27285057,
+          "autonomy": 15209344144.897327,
+          "autonomy_effective": 13483.646881237162
+        },
+        "9": {
+          "n": 512,
+          "delta_h": 147.80138700296422,
+          "delta_h_formula": 147.80138700296422,
+          "s_lin_T": 0.00029523886753046735,
+          "s_ddot_eq81": -1.0111685607157673e-16,
+          "s_ddot_finite": 1.687538997430238e-06,
+          "tau_dyn": 0.006765836371886987,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 38217.00197043722
+        }
+      },
+      "seed42": {
+        "2": {
+          "n": 4,
+          "delta_h": 1.118033988749895,
+          "delta_h_formula": 1.118033988749895,
+          "s_lin_T": 0.22101067041776,
+          "s_ddot_eq81": 1.52655665885959e-16,
+          "s_ddot_finite": 4.440892098500626e-07,
+          "tau_dyn": 0.8944271909999159,
+          "tau_ind": 80936335.27090512,
+          "autonomy": 90489573.75772886,
+          "autonomy_effective": 10.566064464870145
+        },
+        "3": {
+          "n": 8,
+          "delta_h": 2.29128784747792,
+          "delta_h_formula": 2.29128784747792,
+          "s_lin_T": 0.03267930735815172,
+          "s_ddot_eq81": -8.424086602965533e-18,
+          "s_ddot_finite": 2.6645352591003757e-07,
+          "tau_dyn": 0.4364357804719848,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 56.312926906993496
+        },
+        "4": {
+          "n": 16,
+          "delta_h": 4.6097722286464435,
+          "delta_h_formula": 4.6097722286464435,
+          "s_lin_T": 0.006083308693146772,
+          "s_ddot_eq81": -2.2679503067117648e-17,
+          "s_ddot_finite": 8.881784197001252e-08,
+          "tau_dyn": 0.21693045781865616,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 262.587718742982
+        },
+        "5": {
+          "n": 32,
+          "delta_h": 9.233092656309692,
+          "delta_h_formula": 9.233092656309694,
+          "s_lin_T": 0.0036561665099336116,
+          "s_ddot_eq81": -2.3605058092198503e-18,
+          "s_ddot_finite": 1.7763568394002505e-07,
+          "tau_dyn": 0.10830607221477649,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 678.4206852746722
+        },
+        "6": {
+          "n": 64,
+          "delta_h": 18.472953201911167,
+          "delta_h_formula": 18.472953201911167,
+          "s_lin_T": 0.00191070319915565,
+          "s_ddot_eq81": 1.9173448108296056e-17,
+          "s_ddot_finite": 2.6645352591003757e-07,
+          "tau_dyn": 0.05413319619607667,
+          "tau_ind": 228375698.56187117,
+          "autonomy": 4218773591.987218,
+          "autonomy_effective": 1877.6065221061158
+        },
+        "7": {
+          "n": 128,
+          "delta_h": 36.94928957368463,
+          "delta_h_formula": 36.94928957368463,
+          "s_lin_T": 0.001037310286824411,
+          "s_ddot_eq81": 7.811459095107954e-18,
+          "s_ddot_finite": 7.105427357601002e-07,
+          "tau_dyn": 0.02706411981225756,
+          "tau_ind": 357794712.73103327,
+          "autonomy": 13220260448.632256,
+          "autonomy_effective": 5097.023322048164
+        },
+        "8": {
+          "n": 256,
+          "delta_h": 73.90027063549903,
+          "delta_h_formula": 73.90027063549903,
+          "s_lin_T": 0.0005399709148686815,
+          "s_ddot_eq81": -7.069942147603539e-17,
+          "s_ddot_finite": 1.7763568394002505e-06,
+          "tau_dyn": 0.013531750173586456,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 14129.464923832456
+        },
+        "9": {
+          "n": 512,
+          "delta_h": 147.80138700296422,
+          "delta_h_formula": 147.80138700296422,
+          "s_lin_T": 0.0002747780270334621,
+          "s_ddot_eq81": 2.878833601877713e-17,
+          "s_ddot_finite": 4.085620730620576e-06,
+          "tau_dyn": 0.006765836371886987,
+          "tau_ind": 186376743.17678586,
+          "autonomy": 27546741146.6242,
+          "autonomy_effective": 39614.335893936535
+        }
+      },
+      "seed99": {
+        "2": {
+          "n": 4,
+          "delta_h": 1.118033988749895,
+          "delta_h_formula": 1.118033988749895,
+          "s_lin_T": 0.28435633421865547,
+          "s_ddot_eq81": -2.8529328992762265e-33,
+          "s_ddot_finite": -1.7763568394002505e-07,
+          "tau_dyn": 0.8944271909999159,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 9.315119348314612
+        },
+        "3": {
+          "n": 8,
+          "delta_h": 2.29128784747792,
+          "delta_h_formula": 2.29128784747792,
+          "s_lin_T": 0.007404753474070769,
+          "s_ddot_eq81": 6.367294068448368e-18,
+          "s_ddot_finite": 5.329070518200751e-07,
+          "tau_dyn": 0.4364357804719848,
+          "tau_ind": 396298607.2575713,
+          "autonomy": 908034182.7816981,
+          "autonomy_effective": 118.3012191191574
+        },
+        "4": {
+          "n": 16,
+          "delta_h": 4.6097722286464435,
+          "delta_h_formula": 4.6097722286464435,
+          "s_lin_T": 0.0020058257484465436,
+          "s_ddot_eq81": -5.2519919986097266e-17,
+          "s_ddot_finite": 4.440892098500626e-07,
+          "tau_dyn": 0.21693045781865616,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 457.2963518346876
+        },
+        "5": {
+          "n": 32,
+          "delta_h": 9.233092656309692,
+          "delta_h_formula": 9.233092656309694,
+          "s_lin_T": 0.0013402597081269008,
+          "s_ddot_eq81": -4.54624281204036e-17,
+          "s_ddot_finite": 2.6645352591003757e-07,
+          "tau_dyn": 0.10830607221477649,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 1120.5147647598585
+        },
+        "6": {
+          "n": 64,
+          "delta_h": 18.472953201911167,
+          "delta_h_formula": 18.472953201911167,
+          "s_lin_T": 0.0006933338607943984,
+          "s_ddot_eq81": 3.168725293797112e-17,
+          "s_ddot_finite": 2.6645352591003757e-07,
+          "tau_dyn": 0.05413319619607667,
+          "tau_ind": 177646929.21647352,
+          "autonomy": 3281663409.8791413,
+          "autonomy_effective": 3116.951145147335
+        },
+        "7": {
+          "n": 128,
+          "delta_h": 36.94928957368463,
+          "delta_h_formula": 36.94928957368463,
+          "s_lin_T": 0.000335233161995685,
+          "s_ddot_eq81": 4.5314156304248615e-18,
+          "s_ddot_finite": 6.217248937900877e-07,
+          "tau_dyn": 0.02706411981225756,
+          "tau_ind": 469767590.00133467,
+          "autonomy": 17357578715.29127,
+          "autonomy_effective": 8965.974026172187
+        },
+        "8": {
+          "n": 256,
+          "delta_h": 73.90027063549903,
+          "delta_h_formula": 73.90027063549903,
+          "s_lin_T": 0.00016684262385402437,
+          "s_ddot_eq81": 2.9057032195429823e-17,
+          "s_ddot_finite": 1.509903313490213e-06,
+          "tau_dyn": 0.013531750173586456,
+          "tau_ind": 185513010.2885791,
+          "autonomy": 13709461666.732111,
+          "autonomy_effective": 25418.937530115247
+        },
+        "9": {
+          "n": 512,
+          "delta_h": 147.80138700296422,
+          "delta_h_formula": 147.80138700296422,
+          "s_lin_T": 8.316704965782851e-05,
+          "s_ddot_eq81": -1.4841784613386318e-17,
+          "s_ddot_finite": 2.7533531010703882e-06,
+          "tau_dyn": 0.006765836371886987,
+          "tau_ind": Infinity,
+          "autonomy": Infinity,
+          "autonomy_effective": 72005.84189204464
+        }
+      }
+    },
+    "control_H3_zero": {
+      "3": 8.881784197001252e-16,
+      "6": 4.440892098500626e-16
+    }
+  },
+  "fits": {
+    "base": {
+      "b_fitted": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "slope_log2_s_lin_T": -0.9887044879375674,
+      "slope_log2_autonomy": 1.494509163124936
+    },
+    "seed0": {
+      "b_fitted": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "slope_log2_s_lin_T": -1.0213346025867176,
+      "slope_log2_autonomy": 1.5108242204495101
+    },
+    "seed1": {
+      "b_fitted": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "slope_log2_s_lin_T": -0.9510157029262193,
+      "slope_log2_autonomy": 1.4756647706192625
+    },
+    "seed7": {
+      "b_fitted": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "slope_log2_s_lin_T": -1.0158760147312202,
+      "slope_log2_autonomy": 1.5080949265217627
+    },
+    "seed42": {
+      "b_fitted": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "slope_log2_s_lin_T": -0.9291136545458882,
+      "slope_log2_autonomy": 1.4647137464290965
+    },
+    "seed99": {
+      "b_fitted": [
+        5,
+        6,
+        7,
+        8,
+        9
+      ],
+      "slope_log2_s_lin_T": -1.0075775757091703,
+      "slope_log2_autonomy": 1.503945707010737
+    }
+  },
+  "integration": {
+    "phi_opt_theory": 0.25162916738782287,
+    "phi_opt_measured": 0.25162916738782304,
+    "phi_k2": 0.0,
+    "phi_pure": 0.0,
+    "max_random_dirichlet": 0.235570899391083,
+    "worst_random_spectrum": [
+      0.33791874389756527,
+      0.3222142377106682,
+      0.33860120748960865,
+      0.001265810902157836
+    ],
+    "per_seed_max": {
+      "0": 0.2208044674561429,
+      "1": 0.235570899391083,
+      "7": 0.2131513136737473,
+      "42": 0.22493871853129166,
+      "99": 0.22884385986275424
+    }
+  },
+  "verdicts": {
+    "H1_delta_h": "CONFIRMEE",
+    "H2_fidelite_dirichlet": "CONFIRMEE",
+    "H3_entropie_eq81": "CONFIRMEE",
+    "H4_decroissance_2^-4b": "REFUTEE",
+    "H5_autonomie_2^3b": "NON_CONCLUANTE",
+    "H6_genericite_seeds": "REFUTEE",
+    "H7_plafond_phi_02516": "CONFIRMEE",
+    "global": "PARTIEL — identites exactes et plafond Phi (CONFIRMEE) tenus, loi d'echelle refutee (2/3) : pente log2 S_lin(T) = -0.99 au lieu de -4 (Fig. 14)"
+  },
+  "timestamps_utc": "2026-11-21T19:34:57.847171+00:00"
+}
