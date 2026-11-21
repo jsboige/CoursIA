@@ -2,7 +2,7 @@
 
 > **Grade C explicite.** Ce document **scelle** le protocole de la tranche « émergence causale / information effective » de la veille [#8182](https://github.com/jsboige/CoursIA/issues/8182) **AVANT toute écriture du banc de mesure** — héritage direct des tranches Assembly Theory (case 20), Penrose Orch-OR (case 24) et sœurs : source primaire lue et archivée, pré-enregistrement commité avant l'implémentation et la mesure, verdict borné.
 >
-> **Cycle du 2026-11-21**, lane `myia-po-2024:CoursIA`. Claims : [c.7065272596](https://github.com/jsboige/CoursIA/issues/8182#issuecomment-7065272596) puis [CLAIMED-AMEND c.7065291344](https://github.com/jsboige/CoursIA/issues/8182#issuecomment-7065291344) (périmètre rétréint aux 4 fichiers du case ; README série et matrice reportés après résolution des PRs ouvertes #27470/#26601). Correction de citation : [c.7065771004](https://github.com/jsboige/CoursIA/issues/8182#issuecomment-7065771004).
+> **Cycle du 2026-11-21**, lane `myia-po-2024:CoursIA`. Claims : [c.7065272596](https://github.com/jsboige/CoursIA/issues/8182#issuecomment-7065272596) puis [CLAIMED-AMEND c.7065291344](https://github.com/jsboige/CoursIA/issues/8182#issuecomment-7065291344) (périmètre rétréint aux fichiers du case listés au CLAIMED-AMEND ; README série et matrice reportés après résolution des PRs ouvertes #27470/#26601). Correction de citation : [c.7065771004](https://github.com/jsboige/CoursIA/issues/8182#issuecomment-7065771004).
 
 ## 1. Source primaire et archivage
 
