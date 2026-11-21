@@ -1,7 +1,7 @@
 # Datasets du pipeline audiobook (EPIC #1028, passe P7)
 
 Livrables de la passe P7 : des textes sources **arbitraires** pour valider le
-contrat « livre arbitraire » du pipeline (P6, `scripts/audiobook_pipeline.py --book`)
+contrat « livre arbitraire » du pipeline (P6, `scripts/genai/audiobook_pipeline.py --book`)
 sans dépendre du seul texte de développement (Boule de Suif).
 
 ## Contenu
@@ -31,7 +31,7 @@ sans dépendre du seul texte de développement (Boule de Suif).
 
 ```bash
 # Segmentation déterministe réelle (aucun service appelé)
-python scripts/audiobook_pipeline.py --dry-run \
+python scripts/genai/audiobook_pipeline.py --dry-run \
     --book MyIA.AI.Notebooks/GenAI/Audio/04-Applications/datasets/le_horla_1887.txt
 
 # Mesuré au 2026-08-22 : le_horla_1887 -> 1503 paragraphes, 251 chunks

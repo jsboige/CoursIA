@@ -56,6 +56,43 @@ services:
     # Override with: docker-compose run -e EXECUTION_TIMEOUT=600 notebook-runner ...
     command: ["--help"]
 
+  # Image d'APPRENTISSAGE (pli 1.2 de l'Epic #27543, #27545) : une image
+  # unique qui demarre JupyterLab avec les noyaux canoniques du depot
+  # (python3, global-3.13, .net-csharp/.net-fsharp/.net-powershell, lean4,
+  # rust). Elle REBUILT les etages du notebook-runner au lieu de les
+  # dupliquer : meme Dockerfile, cible `learning`.
+  #
+  # `additional_contexts` fournit le wrapper canonique du noyau Lean depuis
+  # le depot (MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py)
+  # : il n'est ni recopie ni reecrit dans le contexte Docker. Sans ce
+  # contexte, la construction echoue (fail-closed).
+  learning:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: learning
+      additional_contexts:
+        lean_scripts: ../../MyIA.AI.Notebooks/SymbolicAI/Lean/scripts
+    image: coursia/learning:latest
+    container_name: coursia-learning
+    ports:
+      - "8888:8888"
+    volumes:
+      - type: bind
+        source: ../../MyIA.AI.Notebooks
+        target: /notebooks
+        read_only: false
+      - type: bind
+        source: ../../scripts
+        target: /scripts-repo
+        read_only: true
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - LANG=C.UTF-8
+    command: ["jupyterlab", "--ip=0.0.0.0", "--port=8888", "--no-browser", "--allow-root"]
+
 networks:
   default:
     name: coursia-notebook-network
+

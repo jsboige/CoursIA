@@ -114,7 +114,17 @@ omit [L.DecidableEq] [Diagonalization T₀] in
 l'adversaire coopère. L'hypothèse de Kreisel (`T ⊢ 𝔅 σ → T ⊢ σ`) est la
 contrepartie syntaxique de la fiabilité locale `box r → r` de L2 ; pour la
 prouvabilité standard, elle découle de la correction de `T` sur les énoncés
-𝚺₁. -/
+𝚺₁.
+Preuve alternative déclarée (formulation différente) :
+`game_theory_lean/ProgramGames/FairBot.lean` (maison canonique de l'agent
+FairBot — le duel opérationnel y vit) déclare un théorème du même nom en
+lecture sémantique : sur un `FairBotDuel box`, la fiabilité locale
+`box r → r` de la clause adverse exclut le profil d'actions (C, D).
+Comparaison : ici l'hypothèse de Kreisel gouverne toute théorie `T` et la
+conclusion est une prouvabilité — cadre plus général, objet plus abstrait ;
+là, le duel concret fixe les actions — cadre plus étroit, conclusion plus
+opératoire. Cadres non transportables terme à terme, chaque preuve est
+canonique dans le sien. Axiomes atteints : propext, Classical.choice, Quot.sound. -/
 theorem fairBot_unexploitable [𝔅.Kreisel] {p q : Sentence L}
     (hp : T₀ ⊢ p 🡘 𝔅 q) (h : T ⊢ p) : T ⊢ q :=
   𝔅.KR ((WeakerThan.pbl (K_left hp)) ⨀ h)
@@ -127,7 +137,16 @@ theorem fairBot_vs_cooperateBot {p : Sentence L} (hp : T₀ ⊢ p 🡘 𝔅 ⊤)
 
 omit [L.DecidableEq] [Diagonalization T₀] in
 /-- FairBot contre DefectBot (la phrase `⊥`) : si `T` est cohérente et
-satisfait Kreisel, `T` ne prouve pas que FairBot coopère. -/
+satisfait Kreisel, `T` ne prouve pas que FairBot coopère.
+Preuve alternative déclarée (formulation différente) :
+`game_theory_lean/ProgramGames/FairBot.lean` (maison canonique de l'agent
+FairBot) déclare un théorème du même nom sous cohérence `¬ box False` et
+conclut à l'égalité d'action `fairBotAction box False = defect`.
+Comparaison : ici la conclusion est une non-prouvabilité (`T ⊬ p`) —
+l'information épistémique ; là, une égalité d'action — le comportement du
+duel déterminé. Deux forces distinctes, aucune ne contient l'autre : ce
+côté sait pourquoi la coopération est improuvable, l'autre sait ce que
+l'agent fait. Axiomes atteints : propext, Classical.choice, Quot.sound. -/
 theorem fairBot_vs_defectBot [Consistent T] [𝔅.Kreisel] {p : Sentence L}
     (hp : T₀ ⊢ p 🡘 𝔅 ⊥) : T ⊬ p := by
   intro h
