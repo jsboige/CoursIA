@@ -33,11 +33,12 @@ Chaque section suit le même rythme :
 > contre une **instance réelle** avec un **compte non-administrateur**, sur des
 > **données fictives ou fraîches**, et avec le **masquage** (`mask`) des zones
 > sensibles. Chaque image passe une **revue anti-fuite** avant d'être commitée.
-> Les captures de surfaces qui exposeraient du contenu réel d'un établissement
-> (listes de modèles ou de bases internes, canaux) restent volontairement
-> indiquées par `📷 Capture à venir` et **schématisées** dans
-> [`architecture.md`](architecture.md). **Aucune capture ne montre d'URL réelle de
-> tenant, d'e-mail nominatif, de clé ni de jeton.**
+> Les surfaces qui exposeraient du contenu réel d'un établissement (listes de
+> modèles ou de bases internes, canaux) ne sont volontairement pas capturées :
+> le tour les signale par la mention **Surface non capturée**, et
+> [`architecture.md`](architecture.md) schématise le déploiement, le contrôle
+> d'accès et le flux RAG qui les sous-tendent. **Aucune capture ne montre d'URL
+> réelle de tenant, d'e-mail nominatif, de clé ni de jeton.**
 
 ---
 
@@ -81,13 +82,14 @@ puis l'espace de conversation où tout se passe.
 3. Vous arrivez sur l'écran de chat : une zone de saisie au centre, l'historique
    des conversations à gauche, le sélecteur de modèle en haut.
 
-![Capture de la page de connexion Open WebUI 0.11.0 : formulaire rendu (champs « E-mail » et « Mot de passe » vides, bouton « Connexion », lien d'inscription) — aucune donnée saisie, aucun compte identifiable (capture vérifiée vision, voir MANIFEST).](assets/01-connexion.png)
+![Capture de la page de connexion Open WebUI 0.11.0 : formulaire rendu (champs « E-mail » et « Mot de passe » vides, bouton « Connexion », lien d'inscription) — aucune donnée saisie, aucun compte identifiable.](assets/01-connexion.png)
 
 *Page de connexion (formulaire vide — aucune donnée saisie).*
 
-> ![Capture de la première vue post-connexion Open WebUI 0.11.0 : l'écran de chat de départ, sur un compte de capture non-admin (aucune donnée d'établissement).](assets/01-premiere-vue.png)
+> ![Capture de la première vue post-connexion Open WebUI 0.11.0 : l'écran de chat de départ sur un compte de capture non-admin — nom et description de l'assistant sélectionné, zone de saisie, suggestions d'invites, panneau « Fichiers » ouvert à droite ; zones d'identité masquées.](assets/01-premiere-vue.png)
 
-> *Première vue après connexion (compte de capture neuf, aucun contenu réel).*
+> *Première vue après connexion (compte de capture neuf : aucune conversation,
+> identité masquée ; le nom de l'assistant sélectionné reste lisible).*
 
 ---
 
@@ -127,9 +129,11 @@ fil ni provoquer d'erreur de dépassement de contexte.
 *Réponse d'un tuteur sur une invite fictive (aucun contenu propriétaire) : le
 poème, puis l'analyse de prompt que le tuteur ajoute par conception.*
 
-> 📷 Capture à venir — `02-selecteur-modele.png` (liste des modèles) et le
-> raisonnement affiché en direct (« thinking »), qui nécessitent un modèle de
-> raisonnement configuré pour la capture ; masquage du nom d'utilisateur.
+> **Surfaces non capturées.** La liste des modèles (`02-selecteur-modele.png`)
+> porte les noms des modèles de l'instance : le script ne la capture que sur une
+> instance à données fictives. Le raisonnement affiché en direct
+> (`02-raisonnement-direct.png`) demande qu'un modèle de raisonnement soit
+> désigné au script.
 
 ### Exercice 1 — Prendre le chat en main
 
@@ -168,13 +172,14 @@ outils, et constituer des bases de connaissances interrogeables (RAG).
   s'appuie sur le même modèle d'octroi d'accès que les modèles et les bases (voir
   le [modèle RBAC](architecture.md)).
 
-![Capture Open WebUI 0.11.0 d'un dossier d'équipe créé dans la sidebar (compte neuf : aucun dossier réel).](assets/03-dossier-equipe.png)
-
-*Dossier d'équipe partageable **(v0.10)** : on regroupe des conversations et on
-partage le dossier avec un groupe.*
-
-> 📷 Capture à venir — `03-workspace-modele.png`, `03-base-connaissances.png`
-> (données fictives uniquement).
+> **Surfaces non capturées.** Le modèle personnalisé (`03-workspace-modele.png`)
+> et la base de connaissances (`03-base-connaissances.png`) exposeraient le
+> contenu d'un établissement : le script ne les capture que sur une instance à
+> données fictives. Le dossier d'équipe n'est pas illustré non plus : la capture
+> `03-dossier-equipe.png` du dossier [`assets/`](assets/README.md) montre la
+> création d'un dossier dans le panneau « Fichiers », pas un dossier de
+> conversations partagé avec un groupe. Le [schéma du contrôle d'accès](architecture.md)
+> situe ces trois ressources.
 
 ### Exercice 2 — Créer un assistant RAG
 
@@ -203,8 +208,9 @@ commun.
 3. Mentionnez un bot configuré pour lui poser une question : il répond dans le
    canal, visible de tous.
 
-> 📷 Capture à venir — `04-canal.png` (fil de discussion, avatars et noms
-> masqués).
+> **Surface non capturée.** Le fil d'un canal (`04-canal.png`) montre les noms
+> et les messages de ses membres : le script ne le capture que sur une instance
+> à données fictives.
 
 ---
 
@@ -315,7 +321,6 @@ et l'URL de capture vivent dans un `.env` **non commité** ; seuls les
 
 ---
 
-*Tour de la plateforme — parcours découverte (Epic #4433, fermée — parcours livré ; parent #4427). FR-first.
-Édition **v0.10** (contenu validé contre Open WebUI 0.10.2, juillet 2026).
-Statut : narratif complet ; script de capture reproductible prêt (voir la
-[note sur les captures](#comment-lire-ce-tour)).*
+*Tour de la plateforme — parcours découverte. Édition **v0.10** : contenu validé
+contre Open WebUI 0.10.2 (juillet 2026), captures prises sur la version 0.11.0
+(voir la [note sur les captures](#comment-lire-ce-tour)).*

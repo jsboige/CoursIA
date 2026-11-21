@@ -249,6 +249,6 @@ de l'instance vivent dans un `.env` **non commité** ; seuls les
 
 ---
 
-*Tour de la plateforme AI Engine — parcours découverte (issue #12127,
-tranche 1). FR-first. Captures rejouables via `capturer-le-tour.py` contre
-l'instance jetable « Maison Valmont » (AI Engine 3.7.0, licence Free).*
+*Tour de la plateforme AI Engine — parcours découverte. Captures rejouables
+via `capturer-le-tour.py` contre l'instance jetable « Maison Valmont »
+(AI Engine 3.7.0, licence Free).*

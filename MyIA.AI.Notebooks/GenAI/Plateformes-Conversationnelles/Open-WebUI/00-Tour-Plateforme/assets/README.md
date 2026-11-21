@@ -1,51 +1,56 @@
 # Captures du Tour de la plateforme
 
-[← Tour de la plateforme](../README.md)
+[← Tour de la plateforme](../README.md) | [Script de capture →](../capture/README.md)
 
-Ce dossier accueille les **captures d'écran annotées** du
-[tour](../README.md), générées de façon reproductible par le script
-[`../capture/tour-captures.spec.ts`](../capture/).
+Ce dossier contient les **captures d'écran** du [tour](../README.md). Elles sont
+produites de façon reproductible par le script
+[`tour-captures.spec.ts`](../capture/README.md), contre une instance réelle,
+avec un **compte non-administrateur neuf** et le **masquage** des zones
+d'identité. Chaque image est relue avant d'être versionnée.
 
-> **Statut.** Les captures sont produites contre une **instance réelle** via un
-> **compte non-administrateur neuf**, avec **masquage** des zones sensibles et
-> **revue anti-fuite de chaque image**. Les surfaces qui exposeraient du contenu
-> réel d'un établissement (listes de modèles/bases internes, canaux) restent
-> volontairement **schématisées** dans [`../architecture.md`](../architecture.md)
-> et signalées `📷 Capture à venir` dans le tour.
->
-> **Sous-ensemble sûr livré** (2026-07, contre une instance v0.10.2) : les trois
-> captures **sans contenu réel** — `01-connexion.png`, `02-raisonnement-direct.png`
-> *(v0.10)* et `05-memoire.png` *(v0.10)* — sont présentes et relues. Les entrées
-> ⚠️ restent en attente d'un jeu de données fictives.
+## Captures présentes
 
-## Fichiers attendus
+| Fichier | Section du tour | Ce que l'image montre |
+|---------|-----------------|-----------------------|
+| `01-connexion.png` | 1 — Connexion & première vue | Le formulaire de connexion, champs vides |
+| `01-premiere-vue.png` | 1 — Connexion & première vue | L'écran de départ d'une conversation : assistant sélectionné, zone de saisie, suggestions d'invites, panneau « Fichiers » ouvert à droite |
+| `02-chat-streaming.png` | 2 — Le chat IA | La réponse d'un assistant à une invite fictive, un court poème suivi de son commentaire |
+| `05-parametres.png` | 5 — Notes & autres surfaces | Les réglages personnels, onglet « Général » |
+| `05-memoire.png` | 5 — Notes & autres surfaces | L'onglet « Personnalisation » des réglages : mémoire activée, aucun souvenir enregistré |
+| `03-dossier-equipe.png` | Aucune : le tour ne l'affiche pas | L'écran de départ d'une conversation, avec le champ « Nom du dossier » du panneau « Fichiers » |
 
-| Fichier | Section du tour | Peut être capturé sans contenu réel ? |
-|---------|-----------------|:---:|
-| `01-connexion.png` | 1 — page de connexion (champs masqués) | ✅ (pré-auth) |
-| `01-premiere-vue.png` | 1 — écran de chat vide | ✅ (compte neuf) |
-| `02-selecteur-modele.png` | 2 — liste des modèles | ⚠️ (noms de modèles) |
-| `02-chat-streaming.png` | 2 — réponse en streaming (invite fictive) | ✅ |
-| `02-raisonnement-direct.png` | 2 — raisonnement en direct *(v0.10)* | ✅ (invite fictive) |
-| `03-workspace-modele.png` | 3 — modèle personnalisé | ⚠️ (contenu établissement) |
-| `03-base-connaissances.png` | 3 — base de connaissances (RAG) | ⚠️ (contenu établissement) |
-| `03-dossier-equipe.png` | 3 — dossier d'équipe *(v0.10)* | ✅ (compte neuf) |
-| `04-canal.png` | 4 — fil de discussion d'un canal | ⚠️ (contenu établissement) |
-| `05-parametres.png` | 5 — paramètres personnels | ✅ (identité masquée) |
-| `05-memoire.png` | 5 — gestion de la mémoire *(v0.10)* | ✅ (compte neuf, vide) |
+Deux précisions de lecture.
 
-Les entrées ⚠️ exposent du contenu réel d'un établissement : elles restent
-schématisées dans [`../architecture.md`](../architecture.md) tant qu'un jeu de
-**données fictives** dédié n'est pas disponible.
+- **`03-dossier-equipe.png` ne montre pas un dossier d'équipe.** Le script
+  clique le premier bouton de création de dossier qu'il trouve sur la page, et
+  c'est celui du panneau « Fichiers » qui répond. Le dossier de conversations
+  partagé avec un groupe, que décrit la section 3 du tour, reste donc à
+  capturer.
+- **Le nom de l'assistant sélectionné reste lisible** sur les images prises à
+  l'écran de conversation. Ce que le script ne capture pas par défaut, c'est la
+  liste complète des modèles de l'instance.
+
+## Surfaces non capturées
+
+Le script saute ces captures tant que la condition n'est pas remplie ; le tour
+les signale par la mention **Surface non capturée**.
+
+| Fichier attendu | Section du tour | Condition de capture |
+|-----------------|-----------------|----------------------|
+| `02-selecteur-modele.png` | 2 — liste des modèles | `DEMO_OWUI_CAPTURE_REAL_CONTENT=1`, sur une instance à données fictives : la liste porte les noms des modèles de l'instance |
+| `02-raisonnement-direct.png` | 2 — raisonnement affiché en direct | `DEMO_OWUI_REASONING_MODEL` renseigné avec le nom d'un modèle de raisonnement |
+| `03-workspace-modele.png` | 3 — modèle personnalisé | `DEMO_OWUI_CAPTURE_REAL_CONTENT=1`, sur une instance à données fictives |
+| `03-base-connaissances.png` | 3 — base de connaissances | `DEMO_OWUI_CAPTURE_REAL_CONTENT=1`, sur une instance à données fictives |
+| `04-canal.png` | 4 — fil de discussion d'un canal | `DEMO_OWUI_CAPTURE_REAL_CONTENT=1`, sur une instance à données fictives |
+
+Les variables se renseignent dans le fichier `.env` du dossier
+[`capture/`](../capture/README.md), qui n'est jamais versionné.
 
 ## Règles
 
 - **Aucune** capture ne doit montrer d'URL de tenant réel, d'e-mail nominatif, de
   clé d'API, de jeton ni de mot de passe.
-- Chaque PNG est **relu en revue de PR** avant fusion.
+- Chaque image est **relue** avant d'être versionnée, puis en revue de
+  contribution.
 - Régénérer les images après toute montée de version de l'interface (voir
   [`../capture/README.md`](../capture/README.md)).
-
----
-
-*Assets — Tour de la plateforme (Epic #4433, fermée — parcours livré ; parent #4427). FR-first.*

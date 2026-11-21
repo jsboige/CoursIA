@@ -1,7 +1,7 @@
 - name: Complexity-05 Permanente
   family: Complexity
-  python: MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-05-CountingHarder-Permanent-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: 'NumPy et MathNet.Numerics effectuent les factorisations LU réelles ; la permanente par définition est volontairement pédagogique dans les deux langages.'
