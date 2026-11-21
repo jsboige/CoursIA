@@ -200,3 +200,157 @@ def test_coverage_by_stratum_is_measured():
     hard_rate = sum(r.solved_by_inference for r in hard) / len(hard)
     assert easy_rate == 1.0, "facile : entierement resolu par inference pure"
     assert hard_rate < easy_rate, "la couverture chute sur le corpus difficile"
+
+
+# ---------------------------------------------------------------------------
+# 5. Lot 2 (#27533) : tuples nus/caches d'ordre 2 a 4 + candidats verrouilles
+#
+# Les motifs sont sculptes sur une grille vide a candidats pleins (les tests
+# visent la logique du chercheur, independamment de l'ordre de resolution) ;
+# la garde oracle sur le corpus reel est le test d'integration du lot.
+# ---------------------------------------------------------------------------
+
+
+def _blank_solver() -> InferenceSolver:
+    """Solveur sur grille vide a candidats pleins, pour sculpter des motifs."""
+    solver = InferenceSolver(EASY)
+    solver.grid = [[0] * 9 for _ in range(9)]
+    solver.cands = [[set(range(1, 10)) for _ in range(9)] for _ in range(9)]
+    return solver
+
+
+def test_naked_triple_eliminates_union_from_other_cells():
+    solver = _blank_solver()
+    solver.cands[0][0] = {1, 2, 3}
+    solver.cands[0][1] = {1, 2}
+    solver.cands[0][2] = {2, 3}
+    solver.cands[0][4] = {1, 9}
+    step = solver._naked_triple()
+    assert step is not None and step.rule == "naked_triple"
+    assert (0, 4, 1) in step.eliminations
+    assert (0, 4, 9) not in step.eliminations
+    assert 9 in solver.cands[0][4], "9 hors du tuple reste candidat"
+
+
+def test_naked_triple_silent_when_union_exceeds_n():
+    solver = _blank_solver()
+    solver.cands[0][0] = {1, 2, 3}
+    solver.cands[0][1] = {1, 2}
+    solver.cands[0][2] = {3, 4}  # union {1,2,3,4} : ordre 4, pas 3
+    assert solver._naked_triple() is None
+
+
+def test_naked_quad_eliminates_union_from_other_cells():
+    solver = _blank_solver()
+    solver.cands[0][0] = {1, 2, 3, 4}
+    solver.cands[0][1] = {1, 2}
+    solver.cands[0][2] = {3, 4}
+    solver.cands[0][3] = {2, 3}
+    solver.cands[0][5] = {4, 9}
+    step = solver._naked_quad()
+    assert step is not None and step.rule == "naked_quad"
+    assert (0, 5, 4) in step.eliminations
+    assert (0, 5, 9) not in step.eliminations
+
+
+def test_hidden_pair_confines_two_digits_to_two_cells():
+    solver = _blank_solver()
+    # dans la ligne 0, les valeurs 7 et 8 ne peuvent aller qu'en (0,0)/(0,1)
+    for c in range(9):
+        for v in (7, 8):
+            solver.cands[0][c].discard(v)
+    solver.cands[0][0] |= {7, 8}
+    solver.cands[0][1] |= {7, 8}
+    step = solver._hidden_pair()
+    assert step is not None and step.rule == "hidden_pair"
+    # tout autre candidat des deux cases est elimine
+    assert solver.cands[0][0] == {7, 8}
+    assert solver.cands[0][1] == {7, 8}
+
+
+def test_hidden_pair_silent_when_digits_escape_the_two_cells():
+    solver = _blank_solver()
+    for c in range(9):
+        for v in (7, 8):
+            solver.cands[0][c].discard(v)
+    solver.cands[0][0] |= {7, 8}
+    solver.cands[0][1] |= {7}
+    solver.cands[0][2] |= {8}  # union de 3 cases : pas une paire cachee
+    assert solver._hidden_pair() is None
+    assert 8 in solver.cands[0][2], "aucune elimination ne doit survenir"
+
+
+def test_hidden_triple_removes_outsider_candidates():
+    solver = _blank_solver()
+    for c in range(9):
+        for v in (7, 8, 9):
+            solver.cands[0][c].discard(v)
+    solver.cands[0][0] |= {7}
+    solver.cands[0][1] |= {8}
+    solver.cands[0][2] |= {7, 8, 9}
+    step = solver._hidden_triple()
+    assert step is not None and step.rule == "hidden_triple"
+    assert solver.cands[0][0] == {7}
+    assert solver.cands[0][1] == {8}
+    assert solver.cands[0][2] == {7, 8, 9}
+
+
+def test_hidden_quad_removes_outsider_candidates():
+    solver = _blank_solver()
+    for c in range(9):
+        for v in (6, 7, 8, 9):
+            solver.cands[0][c].discard(v)
+    solver.cands[0][0] |= {6, 7}
+    solver.cands[0][1] |= {8}
+    solver.cands[0][2] |= {6, 9}
+    solver.cands[0][3] |= {7, 8, 9}
+    step = solver._hidden_quad()
+    assert step is not None and step.rule == "hidden_quad"
+    assert solver.cands[0][0] == {6, 7}
+    assert solver.cands[0][1] == {8}
+    assert solver.cands[0][2] == {6, 9}
+    assert solver.cands[0][3] == {7, 8, 9}
+
+
+def test_locked_claiming_removes_value_from_rest_of_block():
+    solver = _blank_solver()
+    # valeur 5 de la colonne 0 confinee au bloc (0,0)
+    for r in range(9):
+        solver.cands[r][0].discard(5)
+    solver.cands[0][0] |= {5}
+    solver.cands[1][0] |= {5}
+    step = solver._locked_claiming()
+    assert step is not None and step.rule == "locked_claiming"
+    for (r, c) in [(0, 1), (0, 2), (1, 1), (1, 2), (2, 1), (2, 2)]:
+        assert (r, c, 5) in step.eliminations, f"5 doit partir de ({r},{c})"
+    assert 5 not in solver.cands[2][2]
+    assert 5 in solver.cands[0][0] and 5 in solver.cands[1][0]
+
+
+def test_locked_claiming_silent_when_spans_two_blocks():
+    solver = _blank_solver()
+    # valeur 5 de la ligne 0 presente dans deux blocs differents
+    for c in range(9):
+        solver.cands[0][c].discard(5)
+    solver.cands[0][0] |= {5}
+    solver.cands[0][4] |= {5}
+    assert solver._locked_claiming() is None
+    assert 5 in solver.cands[2][2], "aucune elimination ne doit survenir"
+
+
+def test_lot2_corpus_all_accepted_and_progress_measured():
+    """Garde d'integration du lot 2 : toutes les traces du corpus restent
+    acceptees par l'oracle, les nouvelles regles tirent, et la couverture
+    moyenne progresse (4/10 a l'organe a 5 regles, mesure #27533 lot 2)."""
+    fired: set = set()
+    for name in ("Sudoku_gen_moyen.txt", "Sudoku_gen_difficile.txt"):
+        rows = measure_coverage(_load(name, 10))
+        assert all(r.trace_accepted for r in rows), (
+            f"{name} : etape(s) invalide(s) apres le lot 2")
+        for r in rows:
+            fired |= set(r.rules_used)
+    assert {"naked_triple", "locked_claiming"} <= fired, (
+        "les regles du lot 2 doivent tirer sur le corpus moyen/difficile")
+    rows = measure_coverage(_load("Sudoku_gen_moyen.txt", 10))
+    solved = sum(r.solved_by_inference for r in rows)
+    assert solved >= 5, "couverture moyenne attendue : >= 5/10 apres le lot 2"
