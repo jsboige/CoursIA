@@ -43,4 +43,5 @@ lean_lib «DifferentialTour» where
   -- son `#print axioms` ne prouve rien.
   globs := #[
     `DifferentialTour, `DifferentialTour_en,
-    `Poincare, `Poincare_en]
+    `Poincare, `Poincare_en,
+    `PoincareChain, `PoincareChain_en]
