@@ -269,7 +269,7 @@ Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [j
 
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
-| 09b | [Engagement et Stackelberg](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) | L'engagement contraignant qui transforme la meilleure réponse d'autrui, l'annonce révocable dissoute par induction arrière, le seuil de crédibilité | Python | Licence |
+| 09b | [Engagement et Stackelberg](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) · [C#](GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb) · [Rust](GameTheory-09b-Commitment-Stackelberg-Rust.ipynb) | L'engagement contraignant qui transforme la meilleure réponse d'autrui, l'annonce révocable dissoute par induction arrière, le seuil de crédibilité | Python · C# · Rust | Licence |
 | 09c | Security game — [Python](GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) · [C#](GameTheory-09c-Stackelberg-SecurityGame-CSharp.ipynb) | Patrouille engagée observable, capteur imparfait et départage SSE ; énumération exacte des allocations | Python · C# | Licence |
 | 09d | [Stackelberg PPO et co-design](GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) | Le concepteur anticipe l'adaptation du contrôleur : gradient implicite de Stackelberg, théorème 1 de Dai et al. (ICLR 2026) vérifié, PPO ordinaire piégé dans un équilibre de Nash | Python | Recherche |
 
