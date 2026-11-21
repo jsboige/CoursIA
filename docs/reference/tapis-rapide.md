@@ -554,3 +554,27 @@ les 12 derniers commentaires lus (fil tronqué), et `[INFO] candidate-delivered`
 le tapis mais pas retenu comme preuve d'avancée. Le test de propriété (`scripts/tests/test_visit_coverage.py`)
 simule 30 servables et 120 pas de service : la tête de `tapis_equilibre.ordre` garde le niveau minimal du
 pool, donc aucune issue n'atteint deux visites tant qu'une autre est à zéro.
+
+## Réviser ce document
+
+Ce fichier est un document `REFERENCE — vivante` : son en-tête (`dernière révision <date>`) n'est pas une
+mention décorative. `scripts/check_docs_reference_lane.py` le compare — **en mode PR** — à la date du
+dernier commit **ordinaire** qui touche `docs/` :
+
+```
+git log <base>..HEAD --no-merges --name-only -- docs/
+```
+
+Trois points mesurés le 21/11 sur ce fichier (PR #27242), qui valent pour tout document `REFERENCE` :
+
+- **une fusion ne compte pas.** Résoudre un conflit dans une fusion modifie réellement le document, son
+  en-tête compris ; mais `--no-merges` exclut la fusion de la lecture. Le garde continue donc de lire la
+  date du dernier commit ordinaire et signale `STALE_DATE` sur un document dont l'en-tête est à jour ;
+- **remettre l'en-tête à la date d'hier ne résout rien** : le commit qui porte la correction est daté
+  d'aujourd'hui, c'est donc l'en-tête d'aujourd'hui qui doit être écrit ;
+- **le remède est un commit ordinaire qui revise réellement le document.** L'organe ne juge que la date :
+  une retouche cosmétique le fait passer sans rien prouver sur le fond — la révision de contenu reste
+  une obligation de la lane, pas de l'organe.
+
+Le défaut d'organe qui rend ce détour obligatoire (une fusion conflictuelle sur `docs/` est invisible au
+garde) est suivi à part : #27861.
