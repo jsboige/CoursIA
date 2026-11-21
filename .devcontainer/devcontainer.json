@@ -1,0 +1,21 @@
+{
+  "name": "CoursIA - image d'apprentissage (7 noyaux canoniques)",
+  "image": "ghcr.io/jsboige/coursia-learning:latest",
+  "hostRequirements": {
+    "cpus": 4,
+    "memory": "16gb"
+  },
+  "forwardPorts": [8888],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-toolsai.jupyter",
+        "ms-python.python",
+        "ms-dotnettools.dotnet-interactive-vscode",
+        "leanprover.lean4",
+        "rust-lang.rust-analyzer"
+      ]
+    }
+  },
+  "postCreateCommand": "jupyter kernelspec list"
+}
