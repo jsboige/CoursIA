@@ -37,8 +37,10 @@ le dépôt n'est pas touché.
 La sortie donne, dans l'ordre : l'en-tête (issues, servables, familles, durée, appels, cache, âge de
 `origin/main`), **vos PRs ouvertes** (leurs nits d'abord ; une PR verte qui n'attend que la review ne se touche pas), les grains
 numérotés avec la commande `python scripts/check_lane_claim.py N --lane <lane>` à jouer **avant d'éditer**
-(les grains d'abord, les conteneurs ensuite, voir plus bas), puis le compte des écartées par code. `--json` rend les mêmes données (`grains`, `vos_prs`, `ecartees`,
-`lecture`).
+(les grains d'abord, les conteneurs ensuite, voir plus bas), puis le compte des écartées par code, puis — s'il y en a — la
+**liste des items éteints** (les deux barrières de fond, `EPAISSE` et `SATURE`) : c'est la sortie que consomme
+l'urne de clôture, un item éteint ne revenant plus jamais dans le pool. `--json` rend les mêmes données (`grains`, `vos_prs`, `ecartees`,
+`eteints`, `lecture`).
 
 Codes de sortie : `0` grains servis, ou pool réellement vide dit en clair ; `3` lecture incomplète (502/504
 répétés à toutes les tailles de page, panne `gh` ou `git`) **et** aucune lecture de secours : rien n'est
@@ -73,6 +75,8 @@ groupée, sans sonde par issue.
 | --- | --- |
 | `LABEL` | label `candidate-delivered` : l'urne de clôture appartient au coordinateur et à l'adjoint |
 | `GEL` | parapluie gelé en dur (`frozen_campaigns.py`) ou l'un de ses descendants ; ligne `[FROZEN]` dans le body ; en-tête `[FROZEN]` du fil non suivi d'un `[UNFROZEN]` de `myia-ai-01:CoursIA` ou `myia-po-2025:CoursIA-2` |
+| `EPAISSE` | le **fil** déclare que la part délégable de l'item est épuisée : attestation `[INFO] candidate-delivered` du conteneur, ou dernier marqueur de fin de tour `[RELEASED]` qui le dit (forme de #18258). Le fil est l'autorité : c'est lui qui dit ce qu'il reste à faire dedans. La mesure ne vaut pas pour un `[CLAIMED]` postérieur — une reprise n'annule pas un épuisement |
+| `SATURE` | conteneur dont **tous** les enfants déclarés sont fermés : il n'y a plus de grain à prendre dedans (cas #11698). Mesuré en post-passe, sur les seuls conteneurs de la file, et fail-OPEN : une mesure impossible n'écarte rien |
 | `LIVREE` | dernier commentaire `[INFO] candidate-delivered`, le mot pouvant suivre `lane X —` sur la ligne du tag (forme de #20603), sauf s'il est nié juste avant (`pas`, `non`, `not`) ; ou, hors conteneur et hors consolidation, `[DELIVERED]` sans clause `paths:` que rien ne rouvre ensuite |
 | `MERGEE` | hors conteneur et hors consolidation : un commit de `origin/main` la **ferme** depuis moins de `--jours` jours (mot de fermeture devant `#N`, ou `#N` dans la portée du sujet `type(zone,#N):` ; un `See #N` ou `Part of #N` compte comme une visite, pas comme une livraison), et aucun `[NOT-DELIVERED]`, `[RELEASED]`, `[CLAIMED]`, `[CLAIMED-AMEND]` ou `[CLOSURE REVIEW] verdict: KEEP` postérieur ne la rouvre |
 | `COUVERTE` | hors conteneur : une PR ouverte (brouillons compris) cite `#N` ; si la PR porte `lane <votre lane>`, le motif dit « votre PR » |
@@ -103,6 +107,28 @@ tranche ; il ne passe donc jamais devant un grain (vos claims restent en tête).
   vérifier par `--paths`, poser `[CLAIMED] … -- paths: …`) ;
 - les **chemins occupés**, en entier, lane par lane (`chemins_occupes` en JSON), et les PRs ouvertes qui le
   citent (`prs_ouvertes`).
+
+## Les items éteints — l'urne de clôture (#26973)
+
+Deux écarts ne sont pas des écarts : ce sont des **extinctions**. Un `GEL` se résorbe (l'item
+revient au tour suivant), un `RECLAMEE` aussi ; mais un item `EPAISSE` (le fil déclare sa part
+délégable épuisée) ou `SATURE` (tous les enfants du conteneur sont fermés) **ne revient pas** dans
+le pool. Écarté en silence, il restait ouvert pour toujours — c'est ce que le coordinateur a demandé
+de voir (décision du 17/11 sur #26989) : « le tapis doit produire une *liste* des items éteints
+pour l'urne de clôture, au lieu de les écarter en silence ».
+
+La sortie porte donc une section dédiée :
+
+```text
+Items eteints (2) -- urne de cloture (coordinateur, adjoint) : un item eteint ne revient pas dans le pool, il faut le fermer ou lui donner une tranche.
+  #18258  EPAISSE  le fil declare la part deleguable epuisee ([RELEASED] ... epuise)
+  #11698  SATURE   tous les enfants sont fermes (25 enfant(s) declare(s), aucun ouvert) : plus rien a prendre dedans
+```
+
+Chaque ligne porte le numéro, le code et le **motif** de l'extinction : l'urne n'a pas à refaire
+la mesure, elle décide (fermer, ou donner une tranche). Les deux mesures sont fail-OPEN — une
+panne n'éteint rien, donc une panne ne fait pas disparaître un item de la liste. Le `--json`
+expose la même liste sous `eteints`.
 
 ## La re-décision des fils tronqués (#27179)
 
