@@ -22,6 +22,13 @@ docker compose up -d
 docker compose --profile planners up -d
 ```
 
+Le conteneur de la pile s'appelle `coursia-learning-pile` : le compose
+[notebook-runner](../notebook-runner/) définit lui aussi un service
+`learning` (conteneur `coursia-learning`, même image). La définition de **cette
+pile** fait foi pour l'apprentissage (boucle locale, healthcheck, profils) ;
+les noms distincts évitent la collision de conteneurs, mais les deux services
+bindent le port 8888 — remapper avec `LEARNING_PORT` si les deux tournent.
+
 Les carnets Python de Planners appellent Fast Downward via
 [`fast_downward_backend.py`](../../MyIA.AI.Notebooks/SymbolicAI/Planners/fast_downward_backend.py) :
 le service Docker d'abord (`FAST_DOWNWARD_URL`, par défaut
@@ -88,7 +95,11 @@ demandent elles aussi un device nvidia (`WHISPER_DEVICE=cuda`, etc.) : elles
 restent GPU. Les `idle-monitor` sont des sidecars CPU, pas des services
 d'apprentissage.
 
-**Seul `planners-fast-downward` est câblé dans cette pile** : c'est le seul
-service CPU dont les carnets consommateurs s'exécutent sans GPU. Les services
-GPU se lancent depuis leur dossier `services/<nom>/` sur une machine GPU ;
-leurs carnets consommateurs sont listés ci-dessus.
+**Seul `planners-fast-downward` est câblé dans cette pile** : parmi les
+services CPU du tableau, c'est le seul dont la chaîne complète — service et
+carnets consommateurs — se sert sans GPU. `tts-gateway` est bien classé CPU
+(aucun device réservé) mais ses backends kokoro/tada/qwen réservent un device
+nvidia (mesuré dans le compose `tts-multi`) : ses carnets consommateurs
+exigent une machine GPU, il n'a pas sa place dans cette pile. Les services GPU
+se lancent depuis leur dossier `services/<nom>/` sur une machine GPU ; leurs
+carnets consommateurs sont listés ci-dessus.
