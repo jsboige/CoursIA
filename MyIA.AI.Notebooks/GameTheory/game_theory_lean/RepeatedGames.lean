@@ -13,9 +13,11 @@
   d'actualisation vérifie δ ≥ (T−R)/(T−P).
 
   Cette équivalence formalise la condition d'incitation algébrique du grim
-  trigger. Le module prouve aussi que son état de punition est absorbant. Il
-  ne formalise pas encore les historiques et profils de stratégies requis
-  pour conclure à un équilibre de Nash parfait en sous-jeux.
+  trigger. Le module prouve aussi que son état de punition est absorbant.
+  Les historiques, profils de stratégies et l'équilibre parfait en
+  sous-jeux — dont le principe de déviation unique — sont formalisés dans
+  `RepeatedGames.Perfect` : `grim_isSPE_iff` y établit que le profil grim
+  trigger est un équilibre parfait en sous-jeux ssi δ ≥ (T−R)/(T−P).
 
   ## Structure
 
@@ -26,7 +28,12 @@
     (cible prover BG).
   - `RepeatedGames.GrimTrigger` — transition grim (la punition est absorbante)
     et condition d'incitation `grim_trigger_sustains_iff` sur les deux flux
-    actualisés. Une sémantique complète des stratégies/SPNE reste hors module.
+    actualisés.
+  - `RepeatedGames.Perfect` — historiques, stratégies comportementales et
+    équilibre parfait en sous-jeux : principe de déviation unique
+    (`oneShotDeviationPrinciple`, hypothèses (H1) gains de stage bornés,
+    (H2) δ < 1) puis `grim_isSPE_iff` (grim trigger est SPE ssi
+    δ ≥ (T−R)/(T−P)).
   - `RepeatedGames.Folk` (STRETCH) — théorème de Folk actualisé (Fudenberg–
     Maskin 1986), `sorry` accepté dans le scope stretch du companion.
 
@@ -47,7 +54,8 @@
   (cf `code-style.md` §Lean i18n, ligne 35 ; Option B rejetée : coût double
   + drift FR/EN + biais qualité). Les modules substantiels
   (`RepeatedGames.Stage`, `RepeatedGames.Discounting`,
-  `RepeatedGames.GrimTrigger`, `RepeatedGames.Folk`) vivent dans des
+  `RepeatedGames.GrimTrigger`, `RepeatedGames.Perfect`,
+  `RepeatedGames.Folk`) vivent dans des
   fichiers siblings `_en.lean` séparés, auto-découverts par le
   `globs := #[`RepeatedGames.*]` du lakefile.
 -/
@@ -55,4 +63,5 @@
 import RepeatedGames.Stage
 import RepeatedGames.Discounting
 import RepeatedGames.GrimTrigger
+import RepeatedGames.Perfect
 import RepeatedGames.Folk
