@@ -297,6 +297,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/aima-mapping/README.md](curriculum/aima-mapping/README.md) | AIMA : tables des matières 3e et 4e en données (ancre PDF par ligne), correspondance section → phase → carnets → compétences, sections sans couverture, ce qui dépasse le livre, et écarts de découpage entre les deux éditions |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
 | [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
+| [curriculum/grille-intuition-avant-formalisme.md](curriculum/grille-intuition-avant-formalisme.md) | Grille de rédaction « intuition avant formalisme » — cinq règles d'ouverture de carnet, ce que #15806 a établi et ce qu'elle y ajoute, pilote sur la série SMT/Z3-API |
 | [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations) + Planners (cœur classique) + IIT (cœur) + Z3-Linq2Z3, avec export SKOS/OWL et validation globale `--all` |
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |

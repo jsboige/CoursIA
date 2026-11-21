@@ -6,7 +6,11 @@ Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scrip
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
 le 2026-11-14 pour tenir le plafond de lignes), `scripts/coordination/tapis_service.py` (la forme du service :
 commande, procédure de conteneur, lecture de secours, sortie texte), `scripts/coordination/tapis_origami.py`
-(parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179)
+(parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179),
+`scripts/coordination/tapis_seance.py` (les séances de marqueurs : une livraison en ouvre une neuve,
+#27338), `scripts/coordination/tapis_citations.py` (les citations des PRs ouvertes : le travail en cours
+compte comme une visite, #27338), `scripts/coordination/belt_equite.py` (l'équité du dispatch : un grain
+déjà servi ne passe pas devant les premières visites, #27338)
 et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
 Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
@@ -167,6 +171,43 @@ particulier ne devraient pas recevoir plus de visites que les anciennes. » Le m
 lane à moins de 24 h d'intervalle (`SEANCE_H`) font une seule visite. Les commits de `origin/main` qui
 citent l'issue forment des séances sans lane. Le compte retenu est le plus grand des deux : un claim puis le
 merge de sa PR comptent une fois.
+
+**Où vivent les règles.** Les séances de **marqueurs** sont dans
+`scripts/coordination/tapis_seance.py` (`par_lane`) ; les séances d'**instants** (les commits cités, sans
+lane) sont dans `scripts/coordination/tapis_dernier_grain.py` (`seances`). Un écart d'heures ne dit pas si
+un marqueur a fermé une séance : ce sont deux règles, et chacune a son module.
+
+**Une livraison ouvre une séance neuve** (19/11, famine de l'umbrella #27338). Sans cela, une lane qui
+enchaîne plusieurs grains du même umbrella le jour même n'y compte qu'**une** visite — et l'issue reste en
+tête de classement, servie sept fois dans la journée pendant que des issues anciennes n'attendaient
+aucune PR. La séance se ferme sur la livraison (ou la release) ; la suite ouvre une séance neuve. Mesure
+sur l'issue réelle : avant correction, 2 visites sur 8 livraisons ; après, 8. La règle est appliquée par
+les **deux** chemins : le classement (`tapis_dernier_grain.compter_grains`) et la voie légère
+(`tapis_equilibre.compter`) appellent le même `par_lane` — un seul organe, aucune règle réimplémentée.
+
+**Les PRs ouvertes comptent le travail en cours** (19/11, même famine). Le classement léger ne voyait que
+les commits **mergés** : une issue sur laquelle huit PRs sont ouvertes — pas encore mergées — restait à
+`visites = 0`, donc en tête de rotation. `scripts/coordination/tapis_citations.py` extrait les citations des
+PRs ouvertes avec la même règle que les commits mergés (une mention `#N` dans le corps, auto-référence
+exclue) ; chacune compte **une** visite, à la date de la dernière activité de la PR : une PR abandonnée
+depuis trois mois ne tient pas une issue en tête. C'est le classement **léger** qui est concerné par les
+PRs ouvertes ; la voie rapide lit les marqueurs du fil, qui portent la même information (une livraison
+ouvre une séance neuve, dans les deux chemins).
+
+**La mesure qui prouve l'inversion** (19/11, même famine). Le témoin d'**ordre** ne discriminait pas le
+correctif : à niveau égal, l'ordre de création mettait déjà les anciennes devant. Ce qui change, c'est le
+**niveau**. Pool de 14 issues (12 anciennes à zéro visite, une issue à une visite, l'umbrella #27338 à huit
+livraisons) :
+
+| | visites de #27338 | niveau de #27338 | niveau de l'issue à 1 visite | rang de #27338 |
+| --- | --- | --- | --- | --- |
+| avant (les PRs ouvertes ne comptent pas) | 0 | 0 | 0,5 | **devant** elle |
+| après | 8 | 8 | 0,5 | **derrière** elle |
+
+Avant correction, une racine servie huit fois passait **devant** une issue qui avait déjà reçu sa visite : le
+contre-sens exact du mandat du 16/11 (« toute issue doit être visitée au moins une fois avant qu'une autre le
+soit deux fois »). Le témoin `scripts/tests/test_tapis_citations.py` rejoue les deux colonnes : il échoue si la
+correction disparaît, et il échoue aussi si l'inversion ne se reproduit plus.
 
 **Le niveau compte les visites du tour, pas celles de toute la vie de l'issue.** Le tour vaut
 `FENETRE_J` = 7 jours. Mesure du 16/11 sur la lecture de 13:27Z : environ 47 séances par jour pour 395

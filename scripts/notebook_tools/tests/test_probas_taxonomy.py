@@ -16,7 +16,8 @@ def test_probas_infer_slice_is_valid_and_covers_its_notebooks():
     # cell_id is checked for real and every declared notebook must be cited.
     data = load_taxonomy(PROBAS_DATA)
     assert data["series"] == "Probas"
-    assert len(data["notebooks"]) == 6
+    # The perimeter grows series by series (#26646): a floor, never an exact count.
+    assert len(data["notebooks"]) >= 32
     assert len(data["concepts"]) >= 20
     cited = {citation["notebook"] for concept in data["concepts"] for citation in concept["citations"]}
     assert cited == set(data["notebooks"])
