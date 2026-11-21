@@ -448,7 +448,7 @@ suppose d'énumérer ses chemins, pas de relire ses champs.
 > l'instance jetable, et **mesure la frontière gratuite/Pro** : sur la
 > version gratuite, le formulaire publié rend du contenu (paragraphes, zéro
 > `<input>`) — les champs dynamiques pilotés par l'IA du Parcours 4 vivent
-> dans la version Pro. Le contraste avec les chatbots (grain 2 : liste
+> dans la version Pro. Le contraste avec les chatbots (carnet chatbots : liste
 > globale remplacée en bloc) porte la leçon d'architecture : deux
 > fonctionnalités, deux styles d'API, deux modèles mentaux.
 

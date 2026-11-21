@@ -211,6 +211,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "linux-self-hosted-tests.yml",
     "banner-guard.yml",
     "prose-counts-guard.yml",
+    # prose-output-numbers-sweep.yml (#27231) : balayage cron hebdomadaire
+    #   (schedule + workflow_dispatch) pur-Python stdlib, exit 0 PAR
+    #   CONSTRUCTION, GITHUB_TOKEN absent (contents: read seul). Aucun
+    #   trigger pull_request -> aucune garde same-repo requise (tranche 4
+    #   #14283, meme profil que grain-orphans-sweep). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "prose-output-numbers-sweep.yml",
     "notebook-interp-positioning.yml",
     "cell-order-gate.yml",
     "pip-leak-guard.yml",
@@ -1190,6 +1197,17 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
         "socket manque au pool conteneur (uid 1001, no-new-privileges) ; la "
         "jambe self-hosted voisine couvre les runs du depot"
     ),
+    "learning-image-ghcr.yml": (
+        "#27546 (pli 1.3) : le job `construire-temoins` BUILDE l'image "
+        "d'apprentissage (docker buildx, contexte `lean_scripts`) puis y "
+        "execute les 7 carnets temoins ; le job `publier` ne s'execute jamais "
+        "sur une PR (`if:` + `needs:`), mais le cliquet voit le workflow. Le "
+        "pool conteneur ne peut pas porter ces jobs : le socket Docker y "
+        "manque (uid 1001, no-new-privileges -- meme motif que "
+        "secret-scan.yml) et buildx n'y est pas disponible ; le runner "
+        "heberge est donc le seul porteur. Exception ajoutee sur decision de "
+        "review du coordinateur (20/11, revue #27628)"
+    ),
 }
 
 # Figee a la creation du cliquet (#23053, 2026-10-28) a 21 entrees, puis
@@ -1209,8 +1227,15 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
 # liste NE S'ELARGIT PAS -- seule une decision de review peut le faire, et la
 # PR qui nomme une nouvelle exception retire au moins autant d'entrees dans le
 # meme commit.
+# Le 2026-11-20, une exception est ajoutee : `learning-image-ghcr.yml`
+# (#27546, pli 1.3), sur decision de review explicite du coordinateur
+# (revue #27628) -- le job construit l'image avec docker buildx et execute
+# les 7 carnets temoins dans le conteneur ; le pool conteneur local n'a ni
+# socket Docker ni buildx, le runner heberge est son seul porteur. La
+# baseline est etendue dans le meme commit, comme l'exige l'invariant 2.
 HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
     "codeql.yml",
+    "learning-image-ghcr.yml",
     "ml-tests.yml",
     "perimeter-review-guard.yml",
     "quarto-pages-deploy.yml",

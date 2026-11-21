@@ -177,7 +177,7 @@ def test_organe_install_et_watchdog_forcent_pleine_suite():
 
 
 def test_registre_arxiv_selectionne_la_suite_generique():
-    mode, suites, _ = _scope("pull_request", ["arxiv_attributions_registry.yaml"])
+    mode, suites, _ = _scope("pull_request", ["docs/reference/arxiv_attributions_registry.yaml"])
     assert mode == "restricted"
     assert suites == ["scripts/tests"]
 
@@ -324,7 +324,7 @@ def test_watch_areas_derivation_parent():
     # additionnels (registre #17850, prosody_lab relu via ancres __file__,
     # arete #25360 setup_wsl_lean4.sh, arete #26269 carnet ChoixSocial 08).
     assert mod.watch_areas("scripts/tests") == (
-        "scripts/", "arxiv_attributions_registry.yaml",
+        "scripts/", "docs/reference/arxiv_attributions_registry.yaml",
         "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/",
         "MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh",
         "MyIA.AI.Notebooks/GameTheory/SocialChoice/"
