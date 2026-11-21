@@ -1178,6 +1178,7 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-09-Committees-STV-Monroe-ChamberlinCourant-Python.ipynb"
+    - "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-10-Manipulation-Strategique-MultiWinner-CSharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-1-Environment-Setup.ipynb"
     - "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb"
