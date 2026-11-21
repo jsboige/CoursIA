@@ -18,6 +18,9 @@ porte un **echantillon auditable** de ses completions (`records_sample` tete +
 declare son **protocole** (`max_completion_length`, `seeds`, `steps`) : sans ces
 trois champs, les agregats publies ne sont recalculables par personne et Gate 21
 (« rewardspy rend-il le meme verdict N/I ? ») n'a aucune trace a examiner (#5105).
+Il declare aussi son **environnement** (versions des paquets, SHA du depot,
+empreinte SHA-256 du pilote), fige avant le premier appel CUDA : le controle
+0.8B ne se lit comme intra-famille que s'il partage cet environnement.
 Une graine reprise d'un artefact anterieur garde les champs de l'epoque ou elle
 a ete produite : une fenetre absente signale une graine ancienne, pas une panne.
 
@@ -60,8 +63,8 @@ from peft import LoraConfig, TaskType  # noqa: E402
 # Organe des records (#22078), partage avec `ict25_arms.py` : fenetres
 # d'echantillon, agregats recalcules, protocole, et le record par completion
 # que lit l'audit offline (Gate 21).
-from ict25_records import (hackable_record, protocol_block,  # noqa: E402
-                           record_windows)
+from ict25_records import (environment_block, hackable_record,  # noqa: E402
+                           protocol_block, record_windows)
 
 MAGIC_TOKEN = "HACK"
 
@@ -212,6 +215,14 @@ def main():
     ap.add_argument("--out", required=True)
     args = ap.parse_args()
 
+    # Environnement fige AVANT tout appel CUDA : c'est lui qui rend le
+    # controle 0.8B comparable au 2B (memes versions, meme pilote, meme
+    # SHA du depot). Il est reecrit dans l'artefact a chaque checkpoint.
+    env = environment_block()
+    print(f"[ict25a] environnement fige au {env['captured_at_utc']} | "
+          f"torch={env['packages'].get('torch')} | git={env['git']['sha'][:12]} | "
+          f"device={env['cuda']['device_name']}")
+
     if not torch.cuda.is_available():
         print("REFUS: aucun GPU visible. Ce runner ne simule pas.")
         return 2
@@ -244,6 +255,7 @@ def main():
                    "gpu": dev,
                    "protocol": protocol_block(max_completion_length=MAX_COMPLETION_LENGTH,
                                               seeds=seeds, steps=args.steps),
+                   "env": env,
                    "seeds": [done[k] for k in sorted(done)]}
         out.write_text(json.dumps(payload, indent=2), encoding="utf-8")
         print(f"[ict25a] checkpoint ecrit -> {out} ({len(done)}/{len(seeds)} graines)", flush=True)

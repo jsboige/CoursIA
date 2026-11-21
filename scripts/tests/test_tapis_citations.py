@@ -19,15 +19,17 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import tapis_citations
+from coordination import tapis_equilibre
 from coordination import tapis_universel as tu
 
 NOW = datetime(2026, 11, 19, 12, 0, tzinfo=UTC)
 LANE = "myia-ai-01:CoursIA-2"
 
 
-def _meta(n: int, titre: str = "Grain") -> dict:
+def _meta(n: int, titre: str = "Grain",
+          cree: str = "2026-01-01T00:00:00Z") -> dict:
     return {"number": n, "title": titre, "labels": [],
-            "created_at": "2026-01-01T00:00:00Z"}
+            "created_at": cree}
 
 
 def _pr(n: int, corps: str, jour: str = "2026-11-19T09:00:00Z") -> dict:
@@ -81,3 +83,57 @@ def test_une_pr_abandonnee_ne_tient_pas_une_issue_en_tete():
     par_num = {e.numero: e for e in etats}
     assert par_num[2].visites == 0, "hors fenetre du tour"
     assert par_num[2].visites_total == 1, "mais elle reste comptee au total"
+
+
+def test_la_racine_servie_plusieurs_fois_passe_derriere_une_issue_servie_une_fois():
+    """Le temoin DISCRIMINANT de la famine #27338.
+
+    Le temoin d'ordre precedent ne discriminait pas le correctif : a niveau
+    egal, l'ordre de creation mettait deja les anciennes devant. Ce qui change
+    avec le correctif, c'est le **niveau** : la racine servie huit fois passe
+    de 0 a 8 visites, donc derriere une issue qui a deja recu **une** visite.
+
+    Mesure (pool de 14, NOW = 19/11 12:00) :
+
+    - sans les PRs ouvertes : 27338 a 0 visite (niveau 0), l'issue a une
+      visite a un niveau de 0,5 -> **la racine passe devant** ;
+    - avec : 27338 a 8 visites (niveau 8) -> **la racine passe derriere**.
+
+    C'est l'inversion du mandat du 16/11 (toute issue doit etre visitee au
+    moins une fois avant qu'une autre le soit deux fois) : elle etait
+    invisible parce que le compteur ne voyait pas le travail en cours.
+
+    Porte depuis scripts/tests/test_tapis_public.py (branche de #27368) :
+    le temoin ne depend que du classement leger et de l'equilibre.
+
+    Note de fusion (21/11) : la 4e argument de `etats_leger` est la liste
+    **brute** des PRs -- la conversion en citations se fait dans la fonction
+    (`tapis_citations.des_prs_ouvertes`), pas chez l'appelant.
+    """
+    anciennes = [11698, 11703, 14528, 14529, 14769, 14926, 15002, 15293,
+                 17845, 19280, 4362, 4427]
+    metas = [_meta(n, "Ancienne issue", cree="2026-02-01T00:00:00Z")
+             for n in anciennes]
+    metas.append(_meta(27338, "Umbrella des passages",
+                       cree="2026-11-19T05:41:02Z"))
+    metas.append(_meta(27399, "Issue deja servie une fois",
+                       cree="2026-02-01T00:00:00Z"))
+    cite_merges = {27399: [{"sha": "abc1234", "date": "2026-11-18T09:00:00Z",
+                             "sujet": "Fix(...): #27399", "ferme": True}]}
+    prs = [{"number": 900 + k, "title": "PR", "body": "Part of #27338",
+            "created_at": "2026-11-19T06:00:00Z",
+            "updated_at": "2026-11-19T12:00:00Z"} for k in range(8)]
+
+    def _rangs(cites_ouvertes):
+        etats = tu.etats_leger(metas, cite_merges, NOW, cites_ouvertes)
+        ordre = tapis_equilibre.ordre(etats, etats, "g", NOW)
+        nums = [e.numero for e in ordre]
+        return nums.index(27338), nums.index(27399)
+
+    avant_racine, avant_servie = _rangs([])
+    assert avant_racine < avant_servie, \
+        "le temoin ne reproduit plus l'inversion : il ne prouve plus rien"
+
+    apres_racine, apres_servie = _rangs(prs)
+    assert apres_servie < apres_racine, \
+        "la racine servie huit fois repasse devant une issue servie une fois"

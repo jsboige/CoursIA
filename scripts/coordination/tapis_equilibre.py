@@ -2,31 +2,23 @@
 """Equilibrage des visites du tapis rapide (mandat user du 2026-11-16).
 
 Verbatim : « Toute issue doit etre visitee au moins une fois avant qu'une
-autre le soit deux fois, a l'exception de quelques issues anciennes de
-consolidation qui peuvent recevoir plusieurs visites, et des marathon csharp
-et Rust qui recevront le fruit du travail du nouveau harnais. Les issues
-recentes en particulier ne devraient pas recevoir plus de visites que les
-anciennes. »
+autre le soit deux fois ... Les issues recentes en particulier ne devraient pas
+recevoir plus de visites que les anciennes. »
 
-Le tapis range les servables par **CLE DE SERVICE** (19/11, mandat
+Le tapis range les servables par **NIVEAU** : les visites du tour moins le
+bonus leger (age, consolidation). Le bonus est borne a 0,9 visite, donc une
+issue **jamais visitee** (niveau negatif) passe devant toute issue visitee :
+c'est l'equite du 16/11, et l'invariant de couverture du 21/11 (#27590).
+
+Dans un niveau, l'ordre est la **CLE DE SERVICE** (19/11, mandat
 `20261119-picker-date-pr-parent`) : la date de la derniere PR qui **couvre**
-le grain (`coordination.tapis_cle`), et, sans PR, la creation du grain. Le
-departage a egalite est **uniforme** (le numero). Ni le nombre de visites, ni
-le bonus d'age, ni le bonus de consolidation n'ordonnent plus : une voix par
-issue.
+le grain (`coordination.tapis_cle`), sans PR la creation du grain. L'etat de
+grain passe avant (`tapis_dernier_grain.cle_tri`) : une absence etablie
+devant un simple passage Git. Le numero departage a egalite.
 
-Ce qui **reste** mesure : les visites se comptent en seances
-(`coordination.tapis_seance`), et une livraison en ouvre une neuve (19/11) --
-sans cela, sept livraisons d'une meme journee sur un umbrella n'y comptent
-qu'une visite. Ces visites **informent** le rapport et l'organe d'equite du
-dispatch (`coordination.belt_equite`) ; elles n'ordonnent plus.
-
-
-L'equite du 16/11 tient dans la cle : une issue jamais servie porte la date de
-sa **creation**, une issue servie porte la date de son dernier travail.
-
-Une exception reste : les marathons de parite C# (#26070) et Rust (#26510) sortent
-de l'equilibrage : c'est le harnais sk-agent qui les servira.
+Les visites se comptent en seances (`coordination.tapis_seance`), et une
+livraison en ouvre une neuve (19/11). Les marathons de parite C# (#26070) et
+Rust (#26510) sortent de l'equilibrage : c'est le harnais sk-agent qui les sert.
 """
 from __future__ import annotations
 
@@ -36,6 +28,7 @@ import re
 from datetime import datetime, timedelta
 
 from coordination import tapis_avantages, tapis_seance
+from coordination.tapis_dernier_grain import cle_tri, seances  # les INSTANTS
 from coordination.tapis_marqueurs import FERME, VISITE, Evt, _dt, _iso
 
 FENETRE_J = 7  # le tour : un tour de flotte complet mesure en 4 a 8 jours (16/11)
@@ -49,9 +42,8 @@ def compter(evts: list[Evt], citations: list[dict],
             maintenant: datetime) -> tuple[str | None, int, int]:
     """La derniere visite (ISO), les visites au total, celles du tour.
 
-    Les citations des PRs **ouvertes** (marquees `ouvert`) comptent UNE
-    visite chacune : elles ne sont pas encore mergees, elles ne se fondent
-    donc pas dans les seances de commits.
+    Les citations des PRs **ouvertes** comptent UNE visite chacune : elles ne
+    sont pas encore mergees, elles ne se fondent pas dans les seances.
     """
     par_lane: dict[str, list[Evt]] = {}
     visites: list[datetime] = []
@@ -69,8 +61,7 @@ def compter(evts: list[Evt], citations: list[dict],
     def compte(depuis: datetime | None) -> int:
         marques = sum(tapis_seance.par_lane(evs, depuis) for evs in par_lane.values())
         fen = [d for d in en_cours if depuis is None or d >= depuis]
-        return (max(marques, tapis_seance.par_instants(commits, depuis))
-                + len(fen))
+        return max(marques, seances(commits, depuis)) + len(fen)
 
     return ((_iso(max(tous)) if tous else None), compte(None),
             compte(maintenant - timedelta(days=FENETRE_J)))
@@ -88,9 +79,8 @@ def familles_consolidation(etats_) -> set[int]:
 def niveau(e, conso: set[int], maintenant: datetime) -> float:
     """Le niveau de service : les visites du tour moins le bonus leger.
 
-    Il **ne classe plus** (mandat du 19/11 : une voix par issue, la cle de
-    service). Il reste une MESURE, pour l'observation -- et l'equite du 16/11
-    se lit desormais dans la cle, pas dans le niveau."""
+    Il **classe** (equite du 16/11 : une issue jamais visitee passe devant
+    une issue visitee) ; dans un niveau, la **cle de service** ordonne."""
     if est_marathon(e):
         return math.inf
     return e.visites - tapis_avantages.bonus(e, conso, maintenant)[0]
@@ -100,13 +90,11 @@ def raisons(e, conso: set[int], maintenant: datetime,
             densite: int | None = None) -> list[str]:
     """Ce que le rapport dit du rang d'un grain.
 
-    Depuis le 19/11, le rang ne se lit plus dans un **niveau** (visites moins
-    bonus) : il se lit dans la **cle de service**. Le nombre de visites
-    reste informe ; le bonus n'est plus une priorite et n'est donc plus annonce.
-
-    La **densite** (nombre d'enfants REELS d'un hub) est annoncee quand elle
-    existe : elle se LIT au moment de la visite du hub -- elle ne classe
-    rien, et ne declenche aucune creation de ticket.
+    Le rang se lit dans le **niveau** et, a niveau egal, dans la **cle de
+    service** : la date de la derniere PR qui **couvre** le grain, sans PR
+    la creation. La **densite** (enfants REELS d'un hub) est annoncee quand
+    elle existe : elle se LIT au moment de la visite du hub -- elle ne
+    classe rien, et ne declenche aucune creation de ticket.
     """
     if est_marathon(e):
         return ["marathon : hors equilibrage (harnais sk-agent)"]
@@ -139,22 +127,34 @@ def _decaler(tour: list, graine: str, cle: float) -> list:
     return tete + list(tour[TETE:])
 
 
+def _cle(e) -> tuple:
+    """L'ordre DANS un niveau : l'etat de grain, puis la cle de service.
+
+    L'etat de grain passe avant : une absence etablie devant un passage Git.
+    Dans un etat, la **cle de service** decide : la date de la derniere PR
+    qui couvre le grain, sinon la creation du grain.
+    """
+    return (cle_tri(e)[0], e.cle_service or e.cree_le or "", e.numero)
+
+
 def ordre(etats_, servables, graine: str, maintenant: datetime,
           rotation: bool = True) -> list:
-    """Cle de service croissante, departage **uniforme** a egalite.
+    """Niveau croissant ; dans un niveau, l'etat de grain puis la CLE DE
+    SERVICE ; les familles servies a tour de role.
 
-    Mandat du 19/11 (`20261119-picker-date-pr-parent`) : une voix par issue.
-    Ni le nombre de visites, ni le bonus d'age, ni le bonus de consolidation
-    n'ordonnent plus le tirage -- la cle est la date de la derniere PR qui
-    **couvre** le grain (`coordination.tapis_cle`), et, sans PR, la creation
-    du grain. Le hub suit son enfant ; ses freres ne bougent pas.
-
-    `rotation=False` : l'ordre **fair**, sans rotation de tete par lane
-    (la fenetre qui avance decide de la rotation, pas le pool)."""
-
-    def cle(e):
-        return (e.cle_service or e.cree_le or "", e.numero)
-
-    tour = sorted((e for e in servables if not est_marathon(e)), key=cle)
-    tour += [e for e in servables if est_marathon(e)]
-    return _decaler(tour, graine, cle(tour[0])[0]) if rotation and tour else tour
+    Le niveau porte l'equite du 16/11 (jamais visitee avant visitee) ; la cle
+    de service porte le mandat du 19/11 (une voix par issue). `rotation=False`
+    : pas de rotation de tete par lane (la fenetre decide, pas le pool).
+    """
+    conso = familles_consolidation(etats_)
+    niveaux: dict[float, dict[int, list]] = {}
+    for e in sorted(servables, key=_cle):
+        niveaux.setdefault(niveau(e, conso, maintenant), {}).setdefault(e.famille, []).append(e)
+    tour: list = []
+    for n in sorted(niveaux):
+        listes, rr, rang = list(niveaux[n].values()), [], 0
+        while any(rang < len(lst) for lst in listes):
+            rr.extend(lst[rang] for lst in listes if rang < len(lst))
+            rang += 1
+        tour += _decaler(rr, graine, n) if rotation else rr
+    return tour

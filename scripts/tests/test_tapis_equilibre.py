@@ -18,6 +18,7 @@ from coordination import tapis_avantages
 from coordination import tapis_equilibre as te
 from coordination import tapis_seance
 from coordination import tapis_rapide as tr
+from coordination.tapis_marqueurs import Evt
 
 # Les fabriques de test_tapis_rapide.py, chargees par chemin : sous
 # `--import-mode importlib`, `tests.` designe le premier paquet `tests` collecte
@@ -87,13 +88,39 @@ def test_une_livraison_par_grain_compte_une_visite():
     assert etat(lecture([issue(2, comments=un)]), 2).visites == 1,         "les amendements d'un meme grain ne comptent pas une fois de plus"
 
 
+def _evt(marque: str, heures: float, lane: str = AUTRE) -> Evt:
+    """Un marqueur pose a NOW - `heures` heures."""
+    return Evt(NOW - timedelta(hours=heures), marque, lane, None, "")
+
+
+def test_la_voie_legere_compte_comme_le_classement():
+    """UNE SEULE REGLE DE SEANCE (#27338) : la voie legere appelle l'organe
+    natif (`tapis_seance.par_lane`), elle ne le reimplemente pas. Sept
+    livraisons dans la journee : sept visites, dans les deux voies."""
+    evts = []
+    for h in (100, 90, 80, 70, 60, 50, 40):
+        evts += [_evt("CLAIMED", h), _evt("DELIVERED", h - 1)]
+    _d, total, _v = te.compter(evts, [], NOW)
+    assert total == 7, "sept livraisons dans la journee : sept visites"
+
+
 def test_les_commits_ne_doublent_pas_la_seance_de_leur_claim():
+    """Une citation Git n'est PAS une visite : le classement ne la compte
+    plus (c3274). Le compte HISTORIQUE -- marqueurs et citations -- reste
+    disponible pour la voie legere, qui ne lit pas le fil."""
     # un claim, puis le merge de sa PR le lendemain : une visite, pas deux
     lec = lecture([issue(1, comments=[claim(40)])], citations={1: [commit("a" * 12, 20)]})
     assert etat(lec, 1).visites == 1
-    # des commits sans marqueur comptent : trois jours distincts, trois visites
+    # des commits SANS marqueur : un PASSAGE (activite autour de l'issue),
+    # pas des visites de l'issue
     lec = lecture([issue(2)], citations={2: [commit("b" * 12, h) for h in (10, 80, 150)]})
-    assert etat(lec, 2).visites == 3
+    e2 = etat(lec, 2)
+    assert e2.visites == 0, "une citation Git n'est pas une visite"
+    assert e2.etat_grain == "passage_seul"
+    # le compte historique garde l'ancien comportement
+    cites = [commit("b" * 12, h) for h in (10, 80, 150)]
+    _d, total, _v = te.compter([], cites, NOW)
+    assert total == 3, "le compte historique compte les citations"
 
 
 # --- le niveau strict et l'anciennete ---------------------------------------
@@ -113,17 +140,22 @@ def test_la_cle_de_service_prime_l_anciennete():
     assert _servis(issues, citations=cites) == [2, 1, 3]
 
 
-def test_le_compte_des_visites_ne_classe_plus():
-    """Les visites se comptent toujours (et s'informent), mais elles ne
-    **classent plus** : quatre visites sur une issue ancienne ne la placent
-    pas devant une issue jamais servie. C'est le mandat du 19/11 : une voix
-    par issue, la cle de service."""
+def test_le_compte_des_visites_du_tour_classe_la_cle_decide():
+    """Les visites **du tour** classent : une issue jamais visitée ne cède
+    jamais sa place à une issue deja visitée (invariant de couverture du
+    21/11, #27590). A niveau egal, la **cle de service** decide (19/11) :
+    ni l'age, ni la consolidation, ni le nombre de visites n'ordonnent seuls.
+
+    Les quatre visites de #1 sont **hors du tour** (7 jours) : elles ne la
+    placent donc pas devant une issue jamais visitée du tour -- mais sa
+    creation ancienne lui donne le plus fort bonus d'age.
+    """
     vieilles = [claim(h, lane=lane) for h, lane in
                 ((700, AUTRE), (500, TROISIEME), (400, AUTRE), (300, TROISIEME))]
     issues = [issue(1, cree="2026-03-01T00:00:00Z", comments=vieilles),
               issue(2, cree="2026-11-10T00:00:00Z", comments=[claim(55)]),
               issue(3, cree="2026-11-12T00:00:00Z")]
-    assert _servis(issues) == [1, 2, 3]  # par creation : la cle n'est pas une PR
+    assert _servis(issues) == [1, 3, 2]  # jamais visitees du tour d'abord
     e1 = etat(lecture(issues), 1)
     assert (e1.visites, e1.visites_total) == (0, 4)
 
@@ -163,7 +195,9 @@ def test_la_consolidation_est_mesuree_mais_ne_classe_plus():
               issue(2, labels=["consolidation"], cree="2026-11-01T00:00:00Z", comments=deux),
               issue(3, cree="2026-08-01T00:00:00Z", comments=[claim(50)])]
     # sans PR, la cle est la creation : #1 (juin), #3 (aout), #2 (novembre)
-    assert _servis(issues) == [1, 3, 2]
+    # -- mais #3 n'a qu'une visite et #1/#2 en ont deux : l'invariant de
+    # couverture (21/11) passe les jamais visitees du tour devant.
+    assert _servis(issues) == [3, 1, 2]
     lec = lecture(issues)
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     assert te.raisons(etat(lec, 1), conso, NOW) == [
@@ -216,9 +250,9 @@ def test_le_rapport_porte_les_raisons_du_rang():
     etats_ = tr.etats(lec, LANE, NOW)
     r = tr.rapport(lec, etats_, tr.ordonner(etats_, LANE, NOW, 8), LANE, NOW, "g")
     assert [(g["numero"], g["priorite"]) for g in r["grains"]] == [
-        (1, ["1 visite(s) en 7 j (1 au total)",
-             "cle de service : aucune PR -- creation 2026-10-01T00:00:00Z"]),
         (2, ["0 visite(s) en 7 j (0 au total)",
+             "cle de service : aucune PR -- creation 2026-10-01T00:00:00Z"]),
+        (1, ["1 visite(s) en 7 j (1 au total)",
              "cle de service : aucune PR -- creation 2026-10-01T00:00:00Z"])]
     assert r["lecture"]["familles"] == 2
 

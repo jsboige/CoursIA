@@ -124,7 +124,12 @@ def test_mergee_epargne_la_consolidation_et_les_simples_citations():
     lec = lecture([issue(1, labels=["consolidation"]), issue(2), issue(3)], citations=citations)
     assert etat(lec, 1).ecart is None  # une tranche de consolidation ne la livre pas
     e2 = etat(lec, 2)
-    assert e2.ecart is None and e2.derniere_visite == _h(5)  # citee : une visite, pas une livraison
+    # Raccord du classement (c3274) : une citation Git est un PASSAGE, pas
+    # une visite -- elle ne rajeunit plus le dernier grain. L'ecart reste
+    # nul : une citation n'a toujours ete ni une livraison ni une exclusion.
+    assert e2.ecart is None
+    assert e2.derniere_visite is None
+    assert e2.etat_grain == "passage_seul"
     assert etat(lec, 3).motif == "livraison probable, commit def5678"
 
 
@@ -313,7 +318,11 @@ def test_parent_famille_conteneur_et_derniere_visite():
     assert (e13.parent, e13.famille) == (12, 10)
     assert etat(lec, 10).conteneur and etat(lec, 14).conteneur
     assert not etat(lec, 13).conteneur
-    assert e13.derniere_visite == _h(10)  # le commit est plus recent que le marqueur
+    # Raccord du classement (c3274) : la derniere visite est le dernier
+    # GRAIN -- ici le marqueur de livraison. Le commit, plus recent, n'est
+    # qu'un passage : il ne rajeunit pas le grain.
+    assert e13.derniere_visite == _h(30)
+    assert e13.etat_grain == "grain"
     assert etat(lec, 14).derniere_visite is None
 
 
@@ -348,11 +357,13 @@ def test_une_seule_famille_garde_ses_invariants():
     # les grains de la famille d'abord ; le conteneur, meme jamais visite, en
     # dernier : il demande une lecture et un --paths (#26926)
     assert set(ordre[:4]) == {2, 3, 4, 5} and ordre[4] == 1
-    # l'ordre des grains est celui de la CLE (creation, sans PR qui couvre) :
-    # #2 et #3 avant #4 et #5 -- les visites ne classent plus (mandat du 19/11)
+    # l'ordre des grains est celui du NIVEAU puis de la CLE (creation, sans PR
+    # qui couvre) : #5 est claim il y a 12,5 j -- **hors du tour** de 7 jours --
+    # donc jamais visitee du tour, et l'invariant de couverture (21/11) la place
+    # devant #4, claim il y a 4 j.
     grains_ = [e for e in etats_ if not e.conteneur]
     fair = tapis_equilibre.ordre(etats_, grains_, "g", NOW, rotation=False)
-    assert [e.numero for e in fair] == [2, 3, 4, 5]
+    assert [e.numero for e in fair] == [2, 3, 5, 4]
 
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
