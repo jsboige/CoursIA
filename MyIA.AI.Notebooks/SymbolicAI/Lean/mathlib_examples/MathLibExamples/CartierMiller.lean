@@ -91,8 +91,8 @@ brique.
 /-- La courbe de Weierstrass courte `y^2 = x^3 + x` (coefficient `a_4 = 1`).
 Les cinq coefficients de Weierstrass sont `a₁ a₂ a₃ a₄ a₆` ; ici `a₄ = 1`
 et les autres sont nuls. -/
-abbrev E1728 (K : Type*) [Field K] : Type :=
-  WeierstrassCurve K ⟨(0 : K), (0 : K), (0 : K), (1 : K), (0 : K)⟩
+abbrev E1728 (K : Type*) [Field K] : WeierstrassCurve K :=
+  ⟨(0 : K), (0 : K), (0 : K), (1 : K), (0 : K)⟩
 
 /-- L'invariant j de la courbe `y^2 = x^3 + x` vaut 1728.
 Pour `y^2 = x^3 + A x + B`, `c₄ = -48·A` et `Δ = -16·(4·A^3 + 27·B^2)` ;
@@ -108,7 +108,7 @@ theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K] :
       simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
         WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
       norm_num
-    exact (Field.isUnit_iff_ne_zero).mpr hne⟩
+    exact isUnit_iff_ne_zero.mpr hne⟩
   have hc₄ : W.c₄ = -48 := by
     simp only [E1728, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
       WeierstrassCurve.b₄]
@@ -117,7 +117,7 @@ theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K] :
     simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
       WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
     norm_num
-  simp only [WeierstrassCurve.j, Units.coe_inv, coe_Δ', hΔ, hc₄]
+  simp [WeierstrassCurve.j, WeierstrassCurve.coe_Δ', hΔ, hc₄]
   norm_num
 
 instance : Fact (Nat.Prime 97) := ⟨by decide⟩
