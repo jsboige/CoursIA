@@ -9,12 +9,32 @@
     "exercise"
   ],
   "notebooks": [
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb"
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb"
   ],
   "notebook_tree": [
     {
@@ -37,6 +57,27 @@
       "decimal_path": "1.2",
       "depth": 1,
       "label_fr": "Planification classique (Fast Downward, heuristiques, domaines)"
+    },
+    {
+      "level": "subseries",
+      "path": "Planners/03-Advanced",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Planification avancée (contraintes, temps, hiérarchie, mesure)"
+    },
+    {
+      "level": "subseries",
+      "path": "Planners/04-NeuroSymbolic",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Planification neuro-symbolique (LLM, unified-planning, apprentissage)"
+    },
+    {
+      "level": "subseries",
+      "path": "Planners/00-Environment",
+      "decimal_path": "1.5",
+      "depth": 1,
+      "label_fr": "Environnement de travail"
     },
     {
       "level": "notebook",
@@ -64,6 +105,30 @@
     },
     {
       "level": "notebook",
+      "path": "Planners/01-Foundation/01-csharp",
+      "decimal_path": "1.1.4",
+      "depth": 2,
+      "label_fr": "Introduction à la planification (jumeau C#)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/01-Foundation/02-csharp",
+      "decimal_path": "1.1.5",
+      "depth": 2,
+      "label_fr": "PDDL : bases (jumeau C#)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/01-Foundation/03-csharp",
+      "decimal_path": "1.1.6",
+      "depth": 2,
+      "label_fr": "Recherche dans l'espace d'états (jumeau C#)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
       "path": "Planners/02-Classical/04",
       "decimal_path": "1.2.1",
       "depth": 2,
@@ -85,6 +150,142 @@
       "depth": 2,
       "label_fr": "Domaines classiques",
       "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/02-Classical/04-csharp",
+      "decimal_path": "1.2.4",
+      "depth": 2,
+      "label_fr": "Fast Downward (jumeau C#)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/02-Classical/05-csharp",
+      "decimal_path": "1.2.5",
+      "depth": 2,
+      "label_fr": "Heuristiques de planification (jumeau C#)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/02-Classical/06-csharp",
+      "decimal_path": "1.2.6",
+      "depth": 2,
+      "label_fr": "Domaines classiques (jumeau C#)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/02-Classical/05b",
+      "decimal_path": "1.2.7",
+      "depth": 2,
+      "label_fr": "Admissibilité de la relaxation sans retraits (Lean)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/02-Classical/05c",
+      "decimal_path": "1.2.8",
+      "depth": 2,
+      "label_fr": "Différentiel d'atteignabilité",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/03-Advanced/07",
+      "decimal_path": "1.3.1",
+      "depth": 2,
+      "label_fr": "Programmation par contraintes avec OR-Tools",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/03-Advanced/07-csharp",
+      "decimal_path": "1.3.2",
+      "depth": 2,
+      "label_fr": "Programmation par contraintes (jumeau C#)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/03-Advanced/08",
+      "decimal_path": "1.3.3",
+      "depth": 2,
+      "label_fr": "Planification temporelle",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/03-Advanced/08-csharp",
+      "decimal_path": "1.3.4",
+      "depth": 2,
+      "label_fr": "Planification temporelle (jumeau C#)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/03-Advanced/09",
+      "decimal_path": "1.3.5",
+      "depth": 2,
+      "label_fr": "Planification hiérarchique (HTN)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/03-Advanced/09-csharp",
+      "decimal_path": "1.3.6",
+      "depth": 2,
+      "label_fr": "Planification hiérarchique (jumeau C#)",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/03-Advanced/13",
+      "decimal_path": "1.3.7",
+      "depth": 2,
+      "label_fr": "Mesurer la qualité des plans",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/04-NeuroSymbolic/10",
+      "decimal_path": "1.4.1",
+      "depth": 2,
+      "label_fr": "LLM pour la planification",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/04-NeuroSymbolic/10b",
+      "decimal_path": "1.4.2",
+      "depth": 2,
+      "label_fr": "Le LLM comme réducteur d'espace de recherche",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/04-NeuroSymbolic/11",
+      "decimal_path": "1.4.3",
+      "depth": 2,
+      "label_fr": "Unified Planning",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/04-NeuroSymbolic/12",
+      "decimal_path": "1.4.4",
+      "depth": 2,
+      "label_fr": "Apprendre à planifier",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Planners/00-Environment/00",
+      "decimal_path": "1.5.1",
+      "depth": 2,
+      "label_fr": "Mise en place de l'environnement",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb"
     }
   ],
   "concepts": [
@@ -100,7 +301,15 @@
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
           "cell_id": "cell-4"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "e868c323"
         }
       ],
       "prerequisites": []
@@ -112,12 +321,40 @@
       "depth": 1,
       "label_fr": "Modélisation avec unified-planning",
       "label_en": "Modeling with unified-planning",
-      "definition_fr": "Bibliothèque Python (unified-planning) pour déclarer un domaine et un problème, et invoquer des planificateurs ; porte la formalisation du problème de l'interrupteur.",
-      "definition_en": "Python library (unified-planning) to declare a domain and problem and invoke planners; carries the switch-problem formalization.",
+      "definition_fr": "Bibliothèque Python qui sépare la modélisation (types, fluents, actions, problème) du moteur de résolution : le même modèle est confié à pyperplan, à Fast Downward ou à un autre planificateur.",
+      "definition_en": "Python library that separates modelling (types, fluents, actions, problem) from the solving engine: the same model is handed to pyperplan, Fast Downward or another planner.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
-          "cell_id": "cell-7"
+          "cell_id": "cell-9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "4381b51c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "43273863"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-24"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "f2e3a605"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "0c539d91"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-intro-unified"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-api-interpretation"
         }
       ],
       "prerequisites": [
@@ -131,12 +368,28 @@
       "depth": 1,
       "label_fr": "Explosion combinatoire",
       "label_en": "Combinatorial explosion",
-      "definition_fr": "L'empreinte computationnelle de la planification : l'espace d'états croît exponentiellement, d'où le besoin d'heuristiques et d'abstractions.",
-      "definition_en": "The computational footprint of planning: the state space grows exponentially, hence the need for heuristics and abstractions.",
+      "definition_fr": "Le nombre d'états atteignables croît exponentiellement avec la taille du problème ; c'est ce qui rend la recherche aveugle impraticable et motive les heuristiques.",
+      "definition_en": "The number of reachable states grows exponentially with problem size; this makes blind search impractical and motivates heuristics.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-17"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
           "cell_id": "00811572"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "904a4deb"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "e0dc89a7"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-39"
         }
       ],
       "prerequisites": [
@@ -144,18 +397,225 @@
       ]
     },
     {
+      "id": "9b147864-61db-421b-85e9-b19b85276a12",
+      "path": "planners/formulation/strips",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Modèle STRIPS",
+      "label_en": "STRIPS model",
+      "definition_fr": "Dans le modèle STRIPS, un état est l'ensemble des faits vrais et une action se décrit par ses préconditions, ses ajouts et ses retraits : elle s'applique si ses préconditions sont incluses dans l'état, et produit l'état privé des retraits puis augmenté des ajouts.",
+      "definition_en": "In the STRIPS model a state is the set of true facts and an action is described by its preconditions, add list and delete list: it applies when its preconditions are included in the state, and yields the state minus the deletes plus the adds.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-4"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "81beaf48"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "c0a5c9b7"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "61da6810"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "1926d390"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "7df45571"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "7806f6c4"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c01"
+        }
+      ],
+      "prerequisites": [
+        "a2a639d4-7836-46cd-8539-93f2916d1e52"
+      ]
+    },
+    {
+      "id": "00e8e490-24e6-4463-9436-fd5795a3c42c",
+      "path": "planners/formulation/hypotheses-classiques",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Hypothèses de la planification classique",
+      "label_en": "Classical planning assumptions",
+      "definition_fr": "La planification classique suppose un environnement statique et discret, un état entièrement observable et des actions déterministes et instantanées ; lever l'une de ces hypothèses mène aux planifications temporelle, numérique ou probabiliste.",
+      "definition_en": "Classical planning assumes a static and discrete environment, a fully observable state, and deterministic, instantaneous actions; lifting one of these assumptions leads to temporal, numeric or probabilistic planning.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "318fe463"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-1"
+        }
+      ],
+      "prerequisites": [
+        "a2a639d4-7836-46cd-8539-93f2916d1e52",
+        "9b147864-61db-421b-85e9-b19b85276a12"
+      ]
+    },
+    {
+      "id": "8052cba4-f88e-444b-8cf2-b89369993d54",
+      "path": "planners/formulation/paradigmes",
+      "decimal_path": "1.5",
+      "depth": 1,
+      "label_fr": "Paradigmes de planification",
+      "label_en": "Planning paradigms",
+      "definition_fr": "Familles de planification distinguées par ce que le modèle représente : classique, temporelle, numérique, hiérarchique (HTN) et probabiliste (MDP, POMDP).",
+      "definition_en": "Families of planning distinguished by what the model represents: classical, temporal, numeric, hierarchical (HTN) and probabilistic (MDP, POMDP).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-13"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-14"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "af408776"
+        }
+      ],
+      "prerequisites": [
+        "a2a639d4-7836-46cd-8539-93f2916d1e52",
+        "00e8e490-24e6-4463-9436-fd5795a3c42c"
+      ]
+    },
+    {
+      "id": "ab09312f-11f8-493f-9631-abf10e148e10",
+      "path": "planners/formulation/plan-valide",
+      "decimal_path": "1.6",
+      "depth": 1,
+      "label_fr": "Plan solution et validation d'un plan",
+      "label_en": "Solution plan and plan validation",
+      "definition_fr": "Un plan est une séquence d'actions ; il est valide si chaque action est applicable dans l'état où elle s'exécute et si l'état final satisfait le but. Un validateur rejoue le plan pour le vérifier.",
+      "definition_en": "A plan is a sequence of actions; it is valid if each action is applicable in the state where it runs and the final state satisfies the goal. A validator replays the plan to check it.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-27"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-15"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "up-resolution"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "c0k81u0utji"
+        }
+      ],
+      "prerequisites": [
+        "a2a639d4-7836-46cd-8539-93f2916d1e52",
+        "9b147864-61db-421b-85e9-b19b85276a12"
+      ]
+    },
+    {
+      "id": "a734dd7b-4c17-49ec-b870-6ccc6a65ab8f",
+      "path": "planners/formulation/fluents-numeriques",
+      "decimal_path": "1.7",
+      "depth": 1,
+      "label_fr": "Fluents numériques",
+      "label_en": "Numeric fluents",
+      "definition_fr": "Variables d'état à valeur numérique que les actions testent dans leurs préconditions et modifient par des effets d'augmentation ou de diminution.",
+      "definition_en": "Numeric-valued state variables that actions test in their preconditions and change through increase or decrease effects.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-numeric-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-numeric-code"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "e58b9419"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cd4d5cf3"
+        }
+      ],
+      "prerequisites": [
+        "a2a639d4-7836-46cd-8539-93f2916d1e52",
+        "a61c24d9-246d-41d3-a300-497d650960aa"
+      ]
+    },
+    {
+      "id": "c39bd9d6-a531-4787-a3ea-7dbad9bc03ed",
+      "path": "planners/formulation/metrique-qualite",
+      "decimal_path": "1.8",
+      "depth": 1,
+      "label_fr": "Métrique de qualité d'un plan",
+      "label_en": "Plan quality metric",
+      "definition_fr": "Critère à optimiser déclaré avec le problème, par exemple le coût total des actions ; le moteur choisi doit alors savoir optimiser, et non seulement trouver un plan.",
+      "definition_en": "Criterion to optimise declared with the problem, for instance the total action cost; the chosen engine must then be able to optimise, not merely find a plan.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "planners-optimization-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "planners-optimization-demo"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "planners-optimization-interp"
+        }
+      ],
+      "prerequisites": [
+        "a2a639d4-7836-46cd-8539-93f2916d1e52",
+        "a61c24d9-246d-41d3-a300-497d650960aa"
+      ]
+    },
+    {
       "id": "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f",
       "path": "planners/pddl",
       "decimal_path": "2",
       "depth": 0,
-      "label_fr": "PDDL (Plan Domain Definition Language)",
-      "label_en": "PDDL (Plan Domain Definition Language)",
+      "label_fr": "PDDL (Planning Domain Definition Language)",
+      "label_en": "PDDL (Planning Domain Definition Language)",
       "definition_fr": "Langage formel décrivant un domaine (types, prédicats, actions) et une instance (objets, état initial, but) ; STRIPS en est le noyau. Cf. AIMA ch. 10.",
       "definition_en": "Formal language describing a domain (types, predicates, actions) and an instance (objects, initial state, goal); STRIPS is its core. See AIMA ch. 10.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "c4e8063c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
           "cell_id": "61da6810"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "1926d390"
         }
       ],
       "prerequisites": [
@@ -169,12 +629,40 @@
       "depth": 1,
       "label_fr": "Déclaration d'un domaine PDDL",
       "label_en": "PDDL domain declaration",
-      "definition_fr": "En-tête, requirements, types d'objets et prédicats d'un domaine PDDL.",
-      "definition_en": "Header, requirements, object types and predicates of a PDDL domain.",
+      "definition_fr": "Fichier qui décrit ce qui est commun à tous les problèmes d'un même monde : en-tête et requirements, types d'objets, prédicats et actions.",
+      "definition_en": "File describing what is common to every problem of the same world: header and requirements, object types, predicates and actions.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "9d73442c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
           "cell_id": "c3f7db7c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-19"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-20"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "983bab2b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "ca92eee1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "59fb7ef4"
         }
       ],
       "prerequisites": [
@@ -188,16 +676,29 @@
       "depth": 1,
       "label_fr": "Actions PDDL (préconditions, effets)",
       "label_en": "PDDL actions (preconditions, effects)",
-      "definition_fr": "Déclaration d'actions PDDL : paramètres, préconditions et effets additifs/soustractifs.",
-      "definition_en": "PDDL action declaration: parameters, preconditions, and additive/removal effects.",
+      "definition_fr": "Schéma d'action PDDL : des paramètres typés, une précondition et un effet qui ajoute ou retire des faits.",
+      "definition_en": "PDDL action schema: typed parameters, a precondition, and an effect that adds or removes facts.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
           "cell_id": "85660f8a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "50d4579c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-actions-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-actions-code"
         }
       ],
       "prerequisites": [
-        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f"
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f",
+        "9b147864-61db-421b-85e9-b19b85276a12"
       ]
     },
     {
@@ -213,6 +714,38 @@
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
           "cell_id": "0903d59e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "8c7c0b5b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "d3736c14"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-21"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-22"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "e013bfde"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "256d0c4c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "331cb66f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-problem-def"
         }
       ],
       "prerequisites": [
@@ -232,10 +765,206 @@
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
           "cell_id": "48c1ac50"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "133f8392"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "1591814d"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "c8183f7b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "6c432c7c"
         }
       ],
       "prerequisites": [
         "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f"
+      ]
+    },
+    {
+      "id": "2a80f65d-40e4-4e52-bdd6-95c6991f68e7",
+      "path": "planners/pddl/typage",
+      "decimal_path": "2.5",
+      "depth": 1,
+      "label_fr": "Typage des objets",
+      "label_en": "Object typing",
+      "definition_fr": "Types déclarés dans le domaine, éventuellement hiérarchisés ; ils restreignent les objets admissibles pour chaque paramètre de prédicat ou d'action.",
+      "definition_en": "Types declared in the domain, possibly in a hierarchy; they restrict which objects are admissible for each predicate or action parameter.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "16fb8924"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "99117f74"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "c209a094"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "fbdaf508"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-types-fluents"
+        }
+      ],
+      "prerequisites": [
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f"
+      ]
+    },
+    {
+      "id": "e17005e0-d735-4d41-a77f-93182e007967",
+      "path": "planners/pddl/predicats",
+      "decimal_path": "2.6",
+      "depth": 1,
+      "label_fr": "Prédicats et fluents",
+      "label_en": "Predicates and fluents",
+      "definition_fr": "Relations paramétrées dont la valeur de vérité décrit l'état du monde ; un état est l'ensemble des prédicats instanciés tenus pour vrais.",
+      "definition_en": "Parameterised relations whose truth value describes the state of the world; a state is the set of ground predicates held true.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "f1a412c5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "a921b736-546d-4121-8652-01facd716b15"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-types-fluents"
+        }
+      ],
+      "prerequisites": [
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f"
+      ]
+    },
+    {
+      "id": "f7b14893-a946-4fda-85c6-9bee5735dd43",
+      "path": "planners/pddl/monde-clos",
+      "decimal_path": "2.7",
+      "depth": 1,
+      "label_fr": "Hypothèse du monde fermé",
+      "label_en": "Closed-world assumption",
+      "definition_fr": "Dans l'état initial, tout fait qui n'est pas listé est tenu pour faux.",
+      "definition_en": "In the initial state, every fact that is not listed is held false.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "107f350f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "256d0c4c"
+        }
+      ],
+      "prerequisites": [
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f",
+        "40f21481-cb2e-4fd8-bd88-32d525af46a9"
+      ]
+    },
+    {
+      "id": "79f88cf7-07b1-444a-8eb4-bd28e1892edd",
+      "path": "planners/pddl/grounding",
+      "decimal_path": "2.8",
+      "depth": 1,
+      "label_fr": "Instanciation des actions (grounding)",
+      "label_en": "Action grounding",
+      "definition_fr": "Remplacement des paramètres d'un schéma d'action par tous les objets compatibles, ce qui produit les actions concrètes que la recherche applique aux états.",
+      "definition_en": "Replacing the parameters of an action schema with every compatible object, which produces the concrete actions that search applies to states.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "48b0f4a7"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "1b715aa7"
+        }
+      ],
+      "prerequisites": [
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f",
+        "4f2d9245-79af-457b-bc4f-2c3777694bf7",
+        "2a80f65d-40e4-4e52-bdd6-95c6991f68e7"
+      ]
+    },
+    {
+      "id": "60a9b4c3-b934-4d13-aa1d-2f300d5f3e45",
+      "path": "planners/pddl/interoperabilite",
+      "decimal_path": "2.9",
+      "depth": 1,
+      "label_fr": "Import et export PDDL",
+      "label_en": "PDDL import and export",
+      "definition_fr": "Passage d'un modèle construit par programme à des fichiers PDDL, et inversement, pour échanger un problème entre outils et planificateurs.",
+      "definition_en": "Moving from a programmatically built model to PDDL files and back, to exchange a problem between tools and planners.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-pddl-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-pddl-export"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-pddl-import"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-pddl-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f",
+        "a61c24d9-246d-41d3-a300-497d650960aa"
+      ]
+    },
+    {
+      "id": "d7740b63-2f62-4a08-a9df-1941cdb4ca32",
+      "path": "planners/pddl/modelisation",
+      "decimal_path": "2.10",
+      "depth": 1,
+      "label_fr": "Bonnes pratiques de modélisation d'un domaine",
+      "label_en": "Domain modelling good practice",
+      "definition_fr": "Recommandations pour écrire un domaine : typer les paramètres, limiter le nombre de prédicats, et éviter les erreurs courantes, comme l'oubli d'un retrait dans les effets qui laisse un objet à deux endroits à la fois.",
+      "definition_en": "Recommendations for writing a domain: type the parameters, keep the number of predicates low, and avoid common mistakes such as a forgotten delete effect that leaves an object in two places at once.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-42"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "04b94323"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-44"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "9595f71c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-46"
+        }
+      ],
+      "prerequisites": [
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f",
+        "e62273bb-01ca-4d0f-9ece-8b3ca76ff9ef",
+        "40f21481-cb2e-4fd8-bd88-32d525af46a9"
       ]
     },
     {
@@ -245,12 +974,28 @@
       "depth": 0,
       "label_fr": "Planification comme recherche d'états",
       "label_en": "Planning as state search",
-      "definition_fr": "La planification classique se ramène à une recherche dans le graphe des états atteignables ; BFS, DFS et A* s'y appliquent. Cf. AIMA ch. 10.",
-      "definition_en": "Classical planning reduces to a search in the graph of reachable states; BFS, DFS and A* apply. See AIMA ch. 10.",
+      "definition_fr": "La planification classique se ramène à une recherche dans le graphe des états atteignables : les nœuds sont les états, les arcs les actions applicables, et un plan est un chemin de l'état initial à un état but. Cf. AIMA ch. 10.",
+      "definition_en": "Classical planning reduces to a search in the graph of reachable states: nodes are states, arcs are applicable actions, and a plan is a path from the initial state to a goal state. See AIMA ch. 10.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
-          "cell_id": "cell-4"
+          "cell_id": "cell-1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-7"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-16"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "84c1ff43"
         }
       ],
       "prerequisites": [
@@ -262,14 +1007,22 @@
       "path": "planners/etats-recherche/bfs-dfs",
       "decimal_path": "3.1",
       "depth": 1,
-      "label_fr": "BFS / DFS dans l'espace d'états",
-      "label_en": "BFS / DFS in the state space",
-      "definition_fr": "Recherche en largeur (optimale en nombre de pas, complète) et en profondeur (sobriété mémoire, non optimale) sur le graphe d'états.",
-      "definition_en": "Breadth-first (optimal in step count, complete) and depth-first (memory-frugal, non-optimal) search on the state graph.",
+      "label_fr": "Recherche non informée",
+      "label_en": "Uninformed search",
+      "definition_fr": "Recherche qui explore l'espace d'états sans estimation de la distance au but, en largeur (BFS) ou en profondeur (DFS) ; seul l'ordre de développement des nœuds distingue les deux.",
+      "definition_en": "Search that explores the state space with no estimate of the distance to the goal, breadth-first (BFS) or depth-first (DFS); only the node expansion order tells the two apart.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-10"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
           "cell_id": "cell-11"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-14"
         }
       ],
       "prerequisites": [
@@ -281,18 +1034,59 @@
       "path": "planners/etats-recherche/astar",
       "decimal_path": "3.2",
       "depth": 1,
-      "label_fr": "A* et heuristiques admissibles",
-      "label_en": "A* and admissible heuristics",
-      "definition_fr": "A* guide la recherche d'états par une heuristique admissible (ex. distance de Manhattan) ; l'optimalité en découle.",
-      "definition_en": "A* guides state search by an admissible heuristic (e.g. Manhattan distance); optimality follows.",
+      "label_fr": "Recherche A*",
+      "label_en": "A* search",
+      "definition_fr": "Développe le nœud de plus petit f(n) = g(n) + h(n), somme du coût déjà payé et de l'estimation du coût restant ; avec une heuristique admissible, le plan trouvé est optimal.",
+      "definition_en": "Expands the node with the smallest f(n) = g(n) + h(n), the cost already paid plus the estimated remaining cost; with an admissible heuristic the plan found is optimal.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
           "cell_id": "cell-20"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-21"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-22"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "c813a1ab"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "26192bce"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "interp-astar"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-17"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-19"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "33e308f0"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "9dae61ce"
         }
       ],
       "prerequisites": [
-        "4d3852cf-8f62-4b38-b720-24315d402cfb"
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "0f0d77aa-0d25-48af-8408-4e3c258ea0e3"
       ]
     },
     {
@@ -302,16 +1096,433 @@
       "depth": 1,
       "label_fr": "Recherche en arrière (régression)",
       "label_en": "Backward search (regression)",
-      "definition_fr": "Recherche depuis le but vers l'état initial en régressant les préconditions ; exploite la structure du but partiel.",
-      "definition_en": "Search from the goal back to the initial state by regressing preconditions; exploits the partial-goal structure.",
+      "definition_fr": "Recherche depuis le but vers l'état initial : le but est régressé à travers les actions qui le produisent, jusqu'à obtenir un sous-but satisfait par l'état initial.",
+      "definition_en": "Search from the goal back to the initial state: the goal is regressed through the actions that achieve it, until a subgoal satisfied by the initial state is reached.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
           "cell_id": "7f5d207b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "c48091c7"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "2b96b844"
         }
       ],
       "prerequisites": [
         "4d3852cf-8f62-4b38-b720-24315d402cfb"
+      ]
+    },
+    {
+      "id": "93058ae7-a5f0-4408-9ac0-9452b288e5f9",
+      "path": "planners/etats-recherche/bfs",
+      "decimal_path": "3.4",
+      "depth": 1,
+      "label_fr": "Recherche en largeur (BFS)",
+      "label_en": "Breadth-first search (BFS)",
+      "definition_fr": "Explore les états par nombre d'actions croissant, avec une file ; complète, et optimale en nombre d'actions quand tous les coûts sont égaux.",
+      "definition_en": "Explores states by increasing number of actions, with a queue; complete, and optimal in number of actions when all costs are equal.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-10"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-11"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "1e5261cd"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "3c860517"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "6afbde6f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "interp-bfs"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "c896af4e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "0f7e534b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "6e38d7ea"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "2fda0bbd"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "d04350f7-bfb1-46b3-bcc9-7cec0274897f"
+      ]
+    },
+    {
+      "id": "df58fc1f-69ec-4858-9e0b-d749187dbf0c",
+      "path": "planners/etats-recherche/dfs",
+      "decimal_path": "3.5",
+      "depth": 1,
+      "label_fr": "Recherche en profondeur (DFS)",
+      "label_en": "Depth-first search (DFS)",
+      "definition_fr": "Suit une branche jusqu'au bout avant de revenir en arrière, avec une pile ; économe en mémoire, mais le plan trouvé n'est pas le plus court en général.",
+      "definition_en": "Follows one branch to the end before backtracking, with a stack; memory-frugal, but the plan found is not the shortest in general.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-12"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-13"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-14"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "2ffde62f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "8d398b7d"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "interp-dfs"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "d04350f7-bfb1-46b3-bcc9-7cec0274897f"
+      ]
+    },
+    {
+      "id": "0f0d77aa-0d25-48af-8408-4e3c258ea0e3",
+      "path": "planners/etats-recherche/informee",
+      "decimal_path": "3.6",
+      "depth": 1,
+      "label_fr": "Recherche informée",
+      "label_en": "Informed search",
+      "definition_fr": "Recherche guidée par une heuristique h(n) qui estime le coût restant jusqu'au but, afin de développer d'abord les nœuds les plus prometteurs.",
+      "definition_en": "Search guided by a heuristic h(n) that estimates the remaining cost to the goal, so that the most promising nodes are expanded first.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-16"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-22"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb",
+          "cell_id": "cell-18"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "d04350f7-bfb1-46b3-bcc9-7cec0274897f"
+      ]
+    },
+    {
+      "id": "9c4eebff-d62f-4daf-aeac-2f606a9eb1d2",
+      "path": "planners/etats-recherche/greedy",
+      "decimal_path": "3.7",
+      "depth": 1,
+      "label_fr": "Recherche gloutonne (Best-First)",
+      "label_en": "Greedy best-first search",
+      "definition_fr": "Développe toujours le nœud de plus petite heuristique h(n), sans tenir compte du coût déjà payé ; rapide, mais sans garantie d'optimalité.",
+      "definition_en": "Always expands the node with the smallest heuristic h(n), ignoring the cost already paid; fast, but with no optimality guarantee.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-19"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "a19716d6"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "668e5d32"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "interp-greedy"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-20"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-21"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "9cbfe0ee"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "1dcac91d"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "0f0d77aa-0d25-48af-8408-4e3c258ea0e3"
+      ]
+    },
+    {
+      "id": "47d6c65e-5adf-4af5-9b0b-20ba2f24a62e",
+      "path": "planners/etats-recherche/admissibilite",
+      "decimal_path": "3.8",
+      "depth": 1,
+      "label_fr": "Admissibilité et consistance des heuristiques",
+      "label_en": "Admissibility and consistency of heuristics",
+      "definition_fr": "Une heuristique est admissible si elle ne surestime jamais le coût restant, et consistante si h(n) ≤ c(n, n') + h(n') pour toute transition ; l'admissibilité garantit l'optimalité de A*.",
+      "definition_en": "A heuristic is admissible if it never overestimates the remaining cost, and consistent if h(n) ≤ c(n, n') + h(n') for every transition; admissibility guarantees the optimality of A*.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-23"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-24"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-25"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-26"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "b7a761cb"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-27"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-28"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "84b24b6e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "f350db4b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "59a4be4c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "interp-consistance"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "properties-section"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "9eda6e4e"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "bc67b8ba-1221-46ab-bcad-d7a0600b19d6"
+      ]
+    },
+    {
+      "id": "2d2f0f27-eb4b-43ff-aa17-b4fd3c597956",
+      "path": "planners/etats-recherche/manhattan",
+      "decimal_path": "3.9",
+      "depth": 1,
+      "label_fr": "Distance de Manhattan",
+      "label_en": "Manhattan distance",
+      "definition_fr": "Heuristique de grille : somme des écarts en ligne et en colonne jusqu'au but ; admissible quand les déplacements sont orthogonaux et de coût au moins un.",
+      "definition_en": "Grid heuristic: sum of the row and column offsets to the goal; admissible when moves are orthogonal and cost at least one.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-16"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-17"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "fd8be130"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "0f0d77aa-0d25-48af-8408-4e3c258ea0e3"
+      ]
+    },
+    {
+      "id": "1b42db00-3ce4-4e4b-8897-a4314779ca8b",
+      "path": "planners/etats-recherche/cout-chemin",
+      "decimal_path": "3.10",
+      "depth": 1,
+      "label_fr": "Coûts d'action et plan de coût minimal",
+      "label_en": "Action costs and minimum-cost plan",
+      "definition_fr": "Quand les actions ont des coûts différents, le plan le plus court en nombre d'actions n'est plus le moins coûteux : BFS et la recherche gloutonne minimisent les pas, A* minimise le coût total.",
+      "definition_en": "When actions have different costs, the plan with the fewest actions is no longer the cheapest: BFS and greedy search minimise steps, A* minimises total cost.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "a9e53547"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "3f7c5620"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "ef4f71d1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "6bc8a095"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "e658a8a5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "interp-prongb"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "bc67b8ba-1221-46ab-bcad-d7a0600b19d6"
+      ]
+    },
+    {
+      "id": "2a45c995-4c38-46f3-ae59-ef59e17e08dc",
+      "path": "planners/etats-recherche/ucs",
+      "decimal_path": "3.11",
+      "depth": 1,
+      "label_fr": "Recherche à coût uniforme (UCS)",
+      "label_en": "Uniform-cost search (UCS)",
+      "definition_fr": "Développe les nœuds par coût accumulé croissant, sans heuristique ; c'est A* avec h = 0, la recherche aveugle qui sert de référence pour mesurer l'apport d'une heuristique.",
+      "definition_en": "Expands nodes by increasing accumulated cost, with no heuristic; it is A* with h = 0, the blind search used as a baseline to measure what a heuristic brings.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hs-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hs-code"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hs-interp"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "hcs-code"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "5736a4d3"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "1b42db00-3ce4-4e4b-8897-a4314779ca8b"
+      ]
+    },
+    {
+      "id": "325a2a39-3ffe-42ed-bea9-844f63e6b4bd",
+      "path": "planners/etats-recherche/ehc",
+      "decimal_path": "3.12",
+      "depth": 1,
+      "label_fr": "Enforced Hill Climbing (EHC)",
+      "label_en": "Enforced hill climbing (EHC)",
+      "definition_fr": "Recherche locale qui n'accepte qu'un successeur de valeur heuristique strictement meilleure ; faute d'amélioration immédiate, une recherche en largeur cherche un état améliorant. Rapide, mais incomplète et sans garantie d'optimalité.",
+      "definition_en": "Local search that only accepts a successor with a strictly better heuristic value; when no immediate improvement exists, a breadth-first search looks for an improving state. Fast, but incomplete and with no optimality guarantee.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-22"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "69e1146e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "6cf1bbb8"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "0f0d77aa-0d25-48af-8408-4e3c258ea0e3"
+      ]
+    },
+    {
+      "id": "cc024559-96d3-4675-b318-42e65a53918c",
+      "path": "planners/etats-recherche/taquin",
+      "decimal_path": "3.13",
+      "depth": 1,
+      "label_fr": "Taquin (8-puzzle) comme espace d'états",
+      "label_en": "8-puzzle as a state space",
+      "definition_fr": "Problème de référence de la recherche heuristique : un état est une configuration de la grille, une action glisse une tuile dans la case vide, et la distance de Manhattan fournit une heuristique admissible.",
+      "definition_en": "Reference problem of heuristic search: a state is a grid configuration, an action slides a tile into the blank, and Manhattan distance gives an admissible heuristic.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-29"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-30"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb",
+          "cell_id": "cell-31"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "e5ccbdcf"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "bc67b8ba-1221-46ab-bcad-d7a0600b19d6",
+        "2d2f0f27-eb4b-43ff-aa17-b4fd3c597956"
       ]
     },
     {
@@ -321,12 +1532,20 @@
       "depth": 0,
       "label_fr": "Fast Downward",
       "label_en": "Fast Downward",
-      "definition_fr": "Planificateur classique de référence : abstraction, graphe de planification et recherche guidée par heuristiques (LM-cut) ; modes satisficing et optimal.",
-      "definition_en": "Reference classical planner: abstraction, planning graph and heuristic-guided search (LM-cut); satisficing and optimal modes.",
+      "definition_fr": "Planificateur classique de référence, organisé en étapes : traduction du PDDL en variables multi-valuées, prétraitement, puis recherche configurable par algorithme et par heuristique, en mode optimal ou satisficing.",
+      "definition_en": "Reference classical planner, organised in stages: translation of PDDL into multi-valued variables, preprocessing, then a search configurable by algorithm and heuristic, in optimal or satisficing mode.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
           "cell_id": "cell-3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "fd2a1001"
         }
       ],
       "prerequisites": [
@@ -340,16 +1559,21 @@
       "depth": 1,
       "label_fr": "Graphe de planification",
       "label_en": "Planning graph",
-      "definition_fr": "Structure qui compresse l'espace d'états en couches d'états et d'actions, base de l'heuristique de Fast Downward.",
-      "definition_en": "Structure compressing the state space into layers of states and actions, the basis of Fast Downward's heuristic.",
+      "definition_fr": "Graphe en couches alternées de faits et d'actions, construit en ignorant les retraits ; il sert de support au calcul des heuristiques de relaxation.",
+      "definition_en": "Graph of alternating fact and action layers, built while ignoring delete effects; it supports the computation of relaxation heuristics.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
           "cell_id": "cd0d1805"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "3b745c48"
         }
       ],
       "prerequisites": [
-        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd"
+        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd",
+        "45914c2a-80a5-4097-abe2-fd348d114750"
       ]
     },
     {
@@ -359,16 +1583,26 @@
       "depth": 1,
       "label_fr": "LM-cut",
       "label_en": "LM-cut",
-      "definition_fr": "Heuristique admissible qui, à chaque couche du graphe de planification, coupe le minimum de landmarks pour atteindre le but.",
-      "definition_en": "Admissible heuristic that, at each planning-graph layer, cuts the minimum set of landmarks to reach the goal.",
+      "definition_fr": "Heuristique admissible qui additionne les coûts de coupes successives : chaque coupe est un ensemble d'actions dont l'une au moins figure dans tout plan relâché, et son coût minimal est retiré avant de chercher la suivante.",
+      "definition_en": "Admissible heuristic that sums the costs of successive cuts: each cut is a set of actions at least one of which occurs in every relaxed plan, and its minimal cost is subtracted before the next cut is sought.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
           "cell_id": "7ec8e155"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "lmcut-section"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "a1c61a45"
         }
       ],
       "prerequisites": [
-        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd"
+        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd",
+        "ef249126-d529-4d6d-a955-06984b5045f3",
+        "47d6c65e-5adf-4af5-9b0b-20ba2f24a62e"
       ]
     },
     {
@@ -378,16 +1612,107 @@
       "depth": 1,
       "label_fr": "Satisficing vs optimal",
       "label_en": "Satisficing vs optimal",
-      "definition_fr": "Choisir un plan suffisant (sous-optimal, rapide) plutôt que le meilleur : EHC, greedy, et le critère de ce compromis.",
-      "definition_en": "Choosing a sufficient (sub-optimal, fast) plan over the best one: EHC, greedy, and the criterion of this trade-off.",
+      "definition_fr": "Compromis entre qualité et temps : la planification optimale exige A* et une heuristique admissible, la planification satisficing accepte un plan sous-optimal obtenu vite par recherche gloutonne ou par EHC.",
+      "definition_en": "Trade-off between quality and time: optimal planning requires A* with an admissible heuristic, satisficing planning accepts a sub-optimal plan obtained quickly by greedy search or EHC.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
           "cell_id": "5b418acb"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-24"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "4838a41a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "262efac2"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "planners-optimization-interp"
         }
       ],
       "prerequisites": [
-        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd"
+        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd",
+        "bc67b8ba-1221-46ab-bcad-d7a0600b19d6",
+        "9c4eebff-d62f-4daf-aeac-2f606a9eb1d2",
+        "325a2a39-3ffe-42ed-bea9-844f63e6b4bd"
+      ]
+    },
+    {
+      "id": "6846b47e-08b3-4a47-a98e-50571235b637",
+      "path": "planners/fast-downward/sas-plus",
+      "decimal_path": "4.4",
+      "depth": 1,
+      "label_fr": "Représentation SAS+ (variables multi-valuées)",
+      "label_en": "SAS+ representation (multi-valued variables)",
+      "definition_fr": "Reformulation du problème où des faits mutuellement exclusifs deviennent une seule variable à domaine fini ; c'est la forme sur laquelle Fast Downward effectue sa recherche.",
+      "definition_en": "Reformulation of the problem in which mutually exclusive facts become a single finite-domain variable; it is the form Fast Downward searches on.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-13"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "3b99f00d"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "9bf43932"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "ee675613"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "19cfe0d3"
+        }
+      ],
+      "prerequisites": [
+        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd",
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f"
+      ]
+    },
+    {
+      "id": "12a35851-9bf5-4ec9-9540-eecf1c33a6c4",
+      "path": "planners/fast-downward/service-conteneur",
+      "decimal_path": "4.5",
+      "depth": 1,
+      "label_fr": "Fast Downward en service (conteneur et API HTTP)",
+      "label_en": "Fast Downward as a service (container and HTTP API)",
+      "definition_fr": "Mise à disposition du planificateur dans un conteneur interrogé par HTTP : le client envoie le domaine et le problème PDDL et reçoit le plan, sans installation locale du moteur.",
+      "definition_en": "The planner made available in a container queried over HTTP: the client sends the PDDL domain and problem and receives the plan, with no local installation of the engine.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-10"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-12"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-14"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-15"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "d96f201c"
+        }
+      ],
+      "prerequisites": [
+        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd",
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f"
       ]
     },
     {
@@ -397,16 +1722,29 @@
       "depth": 0,
       "label_fr": "Heuristiques de planification",
       "label_en": "Planning heuristics",
-      "definition_fr": "Fonctions estimant la distance au but sur le problème relaxé : goalcount, h^max, h^add, FF, landmarks ; l'admissibilité conditionne l'optimalité. Cf. AIMA ch. 10.",
-      "definition_en": "Functions estimating the distance to the goal on the relaxed problem: goalcount, h^max, h^add, FF, landmarks; admissibility conditions optimality. See AIMA ch. 10.",
+      "definition_fr": "Fonctions qui estiment le coût restant d'un état jusqu'au but en résolvant un problème relâché : h^max, h^add, FF, landmarks ; leur admissibilité conditionne l'optimalité. Cf. AIMA ch. 10.",
+      "definition_en": "Functions that estimate the remaining cost from a state to the goal by solving a relaxed problem: h^max, h^add, FF, landmarks; their admissibility conditions optimality. See AIMA ch. 10.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
-          "cell_id": "hmax-implementation"
+          "cell_id": "intro-section"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "5736a4d3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-25"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "f571d8b2"
         }
       ],
       "prerequisites": [
-        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd"
+        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd",
+        "47d6c65e-5adf-4af5-9b0b-20ba2f24a62e"
       ]
     },
     {
@@ -416,16 +1754,45 @@
       "depth": 1,
       "label_fr": "h^max",
       "label_en": "h^max",
-      "definition_fr": "Heuristique du problème relaxé : maximum, sur les faits du but, de leur coût minimal d'atteinte dans la relaxation ; admissible, faible résolution.",
-      "definition_en": "Relaxed-problem heuristic: maximum, over the goal facts, of their minimal reach cost in the relaxation; admissible, low resolution.",
+      "definition_fr": "Heuristique du problème relâché : maximum, sur les faits du but, de leur coût minimal d'atteinte dans la relaxation ; admissible, mais peu informative.",
+      "definition_en": "Relaxed-problem heuristic: maximum, over the goal facts, of their minimal reach cost in the relaxation; admissible, but weakly informative.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
           "cell_id": "hmax-implementation"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hmax-example"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "b500d2eb"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "0324a371"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "f63d96a4"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "328ef2b4"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "0d747276"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c10"
         }
       ],
       "prerequisites": [
-        "8fa1985d-f33a-4a58-9491-ae389fad736c"
+        "8fa1985d-f33a-4a58-9491-ae389fad736c",
+        "45914c2a-80a5-4097-abe2-fd348d114750"
       ]
     },
     {
@@ -435,16 +1802,46 @@
       "depth": 1,
       "label_fr": "h^add (additive)",
       "label_en": "h^add (additive)",
-      "definition_fr": "Somme des coûts des sous-buts restants dans le problème relaxé ; plus informative que h^max mais non admissible en général.",
-      "definition_en": "Sum of the costs of the remaining subgoals in the relaxed problem; more informative than h^max but generally not admissible.",
+      "definition_fr": "Somme des coûts des sous-buts restants dans le problème relâché ; plus informative que h^max mais non admissible, car une action utile à plusieurs sous-buts est comptée plusieurs fois.",
+      "definition_en": "Sum of the costs of the remaining subgoals in the relaxed problem; more informative than h^max but not admissible, since an action useful to several subgoals is counted several times.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
           "cell_id": "hadd-section"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hadd-implementation"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hadd-inadmissible-demo-md"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hadd-inadmissible-demo-code"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hadd-inadmissible-demo-interp"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "421a8ea3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "f8111015"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "67483724"
         }
       ],
       "prerequisites": [
-        "8fa1985d-f33a-4a58-9491-ae389fad736c"
+        "8fa1985d-f33a-4a58-9491-ae389fad736c",
+        "45914c2a-80a5-4097-abe2-fd348d114750",
+        "1b476e2d-1c9f-47c2-a6c3-d462e688b3ac"
       ]
     },
     {
@@ -454,16 +1851,42 @@
       "depth": 1,
       "label_fr": "FF (Fast Forward)",
       "label_en": "FF (Fast Forward)",
-      "definition_fr": "Compte les actions en parcourant le graphe de planification sans double-compter les actions partagées ; non admissible.",
-      "definition_en": "Counts actions by walking the planning graph without double-counting shared actions; not admissible.",
+      "definition_fr": "Longueur d'un plan relâché extrait du graphe de planification en remontant depuis le but ; chaque action n'y est comptée qu'une fois, ce qui corrige le surcompte de h^add sans rendre l'heuristique admissible.",
+      "definition_en": "Length of a relaxed plan extracted from the planning graph by working back from the goal; each action is counted once, which corrects the overcount of h^add without making the heuristic admissible.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "ff-section"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
           "cell_id": "ff-implementation"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "f6e7d751"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "09f5f325"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "e9c02272"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "7ca7d946"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "3b745c48"
         }
       ],
       "prerequisites": [
-        "8fa1985d-f33a-4a58-9491-ae389fad736c"
+        "8fa1985d-f33a-4a58-9491-ae389fad736c",
+        "45914c2a-80a5-4097-abe2-fd348d114750",
+        "e9e93f12-4544-4322-8bf6-9046d3c978d7"
       ]
     },
     {
@@ -478,11 +1901,204 @@
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "landmark-section"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
           "cell_id": "landmark-extraction"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "landmark-guard-md"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "d7a5928e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "33038e62"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "landmark-guard-cs-md"
         }
       ],
       "prerequisites": [
         "8fa1985d-f33a-4a58-9491-ae389fad736c"
+      ]
+    },
+    {
+      "id": "45914c2a-80a5-4097-abe2-fd348d114750",
+      "path": "planners/heuristiques/relaxation",
+      "decimal_path": "5.5",
+      "depth": 1,
+      "label_fr": "Relaxation par suppression (delete relaxation)",
+      "label_en": "Delete relaxation",
+      "definition_fr": "Problème simplifié obtenu en ignorant les retraits des actions : un fait acquis le reste. Il se résout plus facilement, et le coût de sa solution optimale minore celui du problème d'origine.",
+      "definition_en": "Simplified problem obtained by ignoring the delete effects of actions: a fact once reached stays true. It is easier to solve, and the cost of its optimal solution is a lower bound on that of the original problem.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "relaxation-section"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "0324a371"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cd0d1805"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "92df76f5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c02b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c09"
+        }
+      ],
+      "prerequisites": [
+        "8fa1985d-f33a-4a58-9491-ae389fad736c",
+        "9b147864-61db-421b-85e9-b19b85276a12"
+      ]
+    },
+    {
+      "id": "ab98b367-af99-43b6-bc0f-115151c98f24",
+      "path": "planners/heuristiques/operateurs-preferes",
+      "decimal_path": "5.6",
+      "depth": 1,
+      "label_fr": "Opérateurs préférés (helpful actions)",
+      "label_en": "Preferred operators (helpful actions)",
+      "definition_fr": "Actions du plan relâché applicables dans l'état courant ; la recherche les essaie en priorité.",
+      "definition_en": "Actions of the relaxed plan that are applicable in the current state; search tries them first.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "ff-explanation"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "eb7ce407"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "6f2dcee2"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "55e527da"
+        }
+      ],
+      "prerequisites": [
+        "8fa1985d-f33a-4a58-9491-ae389fad736c",
+        "2817c8c7-7475-4eaf-9a0c-c9a228473bb5"
+      ]
+    },
+    {
+      "id": "b2db11c7-c7b5-4c8b-b4c7-d9fd1653dd22",
+      "path": "planners/heuristiques/execution-relaxee",
+      "decimal_path": "5.7",
+      "depth": 1,
+      "label_fr": "Exécution relâchée et monotonie",
+      "label_en": "Relaxed execution and monotonicity",
+      "definition_fr": "Sémantique où appliquer une action ne retire rien : l'ensemble des faits ne fait que croître, et l'état relâché contient toujours l'état réel atteint par les mêmes actions.",
+      "definition_en": "Semantics in which applying an action deletes nothing: the set of facts only grows, and the relaxed state always contains the real state reached by the same actions.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "a333f8aa"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "53aa3779"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "b6577488"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "60efafcd"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "42b2f149"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "6ded94d2"
+        }
+      ],
+      "prerequisites": [
+        "8fa1985d-f33a-4a58-9491-ae389fad736c",
+        "45914c2a-80a5-4097-abe2-fd348d114750"
+      ]
+    },
+    {
+      "id": "72821b9a-70de-4eb4-a8c1-bf991a3f0839",
+      "path": "planners/heuristiques/admissibilite-prouvee",
+      "decimal_path": "5.8",
+      "depth": 1,
+      "label_fr": "Admissibilité prouvée de la relaxation (Lean)",
+      "label_en": "Proved admissibility of the relaxation (Lean)",
+      "definition_fr": "Théorème vérifié en Lean : tout plan du problème d'origine reste un plan du problème relâché, donc le coût optimal relâché ne dépasse jamais le coût optimal réel.",
+      "definition_en": "Theorem checked in Lean: every plan of the original problem remains a plan of the relaxed problem, so the optimal relaxed cost never exceeds the real optimal cost.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "c8cb2b1d"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "435067b5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "c65d6fcf"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c09"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c10"
+        }
+      ],
+      "prerequisites": [
+        "8fa1985d-f33a-4a58-9491-ae389fad736c",
+        "b2db11c7-c7b5-4c8b-b4c7-d9fd1653dd22",
+        "47d6c65e-5adf-4af5-9b0b-20ba2f24a62e"
+      ]
+    },
+    {
+      "id": "5b9e9c79-e926-46ee-ab0c-fc3890fbbebc",
+      "path": "planners/heuristiques/audit-axiomes",
+      "decimal_path": "5.9",
+      "depth": 1,
+      "label_fr": "Audit des axiomes d'une preuve",
+      "label_en": "Auditing the axioms of a proof",
+      "definition_fr": "La commande Lean `#print axioms` liste les axiomes dont dépend un théorème ; elle permet de vérifier qu'aucune hypothèse non prouvée n'entre dans la preuve.",
+      "definition_en": "The Lean command `#print axioms` lists the axioms a theorem depends on; it lets one check that no unproved assumption enters the proof.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "934d95ae"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+          "cell_id": "0fd50058"
+        }
+      ],
+      "prerequisites": [
+        "8fa1985d-f33a-4a58-9491-ae389fad736c",
+        "72821b9a-70de-4eb4-a8c1-bf991a3f0839"
       ]
     },
     {
@@ -492,12 +2108,20 @@
       "depth": 0,
       "label_fr": "Domaines classiques de planification",
       "label_en": "Classical planning domains",
-      "definition_fr": "Batterie de domaines de référence (Blocks, Logistics, Gripper, Ferry, Hanoi) pour comparer planificateurs et heuristiques.",
-      "definition_en": "Reference set of domains (Blocks, Logistics, Gripper, Ferry, Hanoi) to compare planners and heuristics.",
+      "definition_fr": "Batterie de domaines de référence (Blocks World, Logistics, Gripper, Ferry, Hanoï) pour comparer planificateurs et heuristiques.",
+      "definition_en": "Reference set of domains (Blocks World, Logistics, Gripper, Ferry, Hanoi) to compare planners and heuristics.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
           "cell_id": "cell-2"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-48"
         }
       ],
       "prerequisites": [
@@ -511,12 +2135,44 @@
       "depth": 1,
       "label_fr": "Blocks World",
       "label_en": "Blocks World",
-      "definition_fr": "Domaine STRIPS canonique : blocs, table, actions grasp/stack ; base des benchmarks.",
-      "definition_en": "Canonical STRIPS domain: blocks, table, grasp/stack actions; basis of benchmarks.",
+      "definition_fr": "Domaine STRIPS canonique : des blocs empilés sur une table, déplacés un à un par un bras qui prend, pose, empile et dépile.",
+      "definition_en": "Canonical STRIPS domain: blocks stacked on a table, moved one at a time by an arm that picks up, puts down, stacks and unstacks.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
-          "cell_id": "cell-7"
+          "cell_id": "cell-6"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-8"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "8bca8d96"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "cell-18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb",
+          "cell_id": "983bab2b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "543ceee5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "interp-blocks-tower"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "15779315"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "df114340"
         }
       ],
       "prerequisites": [
@@ -530,12 +2186,60 @@
       "depth": 1,
       "label_fr": "Logistics",
       "label_en": "Logistics",
-      "definition_fr": "Domaine à typage : colis, véhicules, localisations ; transport multi-ville.",
-      "definition_en": "Typed domain: parcels, vehicles, locations; multi-city transport.",
+      "definition_fr": "Domaine typé de transport : des colis sont chargés, acheminés entre lieux puis déchargés par des camions, auxquels la version complète ajoute des avions entre villes.",
+      "definition_en": "Typed transport domain: packages are loaded, carried between locations and unloaded by trucks, to which the full version adds airplanes between cities.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-16"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-17"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-19"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "528a4dfd"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "ab0044f0"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "05021c5b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "e955d826"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "b56df42e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "fbdaf508"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "6cbb2cf2"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "8eeda23c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
           "cell_id": "cell-18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "8514a849-1b40-401b-a5e4-9f373432fd65"
         }
       ],
       "prerequisites": [
@@ -549,12 +2253,56 @@
       "depth": 1,
       "label_fr": "Gripper",
       "label_en": "Gripper",
-      "definition_fr": "Domaine typé des manipulateurs : robots, pièces, salles ; actions pick/drop/move.",
-      "definition_en": "Typed gripper domain: robots, parts, rooms; pick/drop/move actions.",
+      "definition_fr": "Domaine où un robot muni de deux pinces transporte des balles d'une salle à l'autre : prendre, se déplacer, déposer.",
+      "definition_en": "Domain in which a robot with two grippers carries balls from one room to another: pick, move, drop.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
           "cell_id": "cell-28"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-29"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "bad66153"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "17228801"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "afb01cef"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "9e82c6fd"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "7a4db137"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb",
+          "cell_id": "22d8bf02"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "ff8958ba"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "d1adcb66"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "9962c1a5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "interp-gripper"
         }
       ],
       "prerequisites": [
@@ -568,16 +2316,1985 @@
       "depth": 1,
       "label_fr": "Ferry et Tours de Hanoi",
       "label_en": "Ferry and Towers of Hanoi",
-      "definition_fr": "Domaines contraints (capacité du ferry, règle des disques) illustrant les limites des planificateurs classiques.",
-      "definition_en": "Constrained domains (ferry capacity, disk rule) illustrating the limits of classical planners.",
+      "definition_fr": "Ferry : un bac transporte une voiture à la fois d'une rive à l'autre. Tours de Hanoï : déplacer n disques sans jamais poser un grand sur un petit demande 2^n − 1 mouvements.",
+      "definition_en": "Ferry: a boat carries one car at a time from one shore to the other. Towers of Hanoi: moving n disks without ever placing a larger one on a smaller one takes 2^n − 1 moves.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
           "cell_id": "cell-30"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-31"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "5d35b89f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-32"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-33"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "55b0f01e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "16cebaac"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "d6d76b25"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "aa93a5d6"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "512a03ff"
         }
       ],
       "prerequisites": [
         "28bd3088-a881-4f87-a7e2-edb4659905a9"
+      ]
+    },
+    {
+      "id": "1c758df0-94ae-414d-96ae-5a0dda149cdc",
+      "path": "planners/domaines/structure-difficulte",
+      "decimal_path": "6.5",
+      "depth": 1,
+      "label_fr": "Structure d'un domaine et difficulté de résolution",
+      "label_en": "Domain structure and solving difficulty",
+      "definition_fr": "La difficulté d'un problème tient à la structure de son domaine (interactions entre sous-buts, longueur des plans) autant qu'à sa taille ; elle se mesure au nombre de nœuds développés.",
+      "definition_en": "The difficulty of a problem stems from the structure of its domain (interactions between subgoals, plan length) as much as from its size; it is measured by the number of expanded nodes.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-34"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-36"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "612add71"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "cell-38"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb",
+          "cell_id": "24a6f858"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "7dcb0307"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "d81d2045"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "interp-comparative"
+        }
+      ],
+      "prerequisites": [
+        "28bd3088-a881-4f87-a7e2-edb4659905a9",
+        "6148f021-ea09-4c61-9962-9f20d06436df"
+      ]
+    },
+    {
+      "id": "fce35b32-d2e7-42a6-9729-9c1a98709c8b",
+      "path": "planners/contraintes",
+      "decimal_path": "7",
+      "depth": 0,
+      "label_fr": "Planification par contraintes (CP)",
+      "label_en": "Constraint-based planning (CP)",
+      "definition_fr": "Approche où le problème est posé comme un ensemble de variables, de domaines et de contraintes confié à un solveur, plutôt que comme des actions à enchaîner ; elle convient à l'ordonnancement et à l'affectation de ressources.",
+      "definition_en": "Approach in which the problem is stated as variables, domains and constraints handed to a solver, rather than as actions to chain; it suits scheduling and resource assignment.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-cp-vs-pddl"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-comparison-table"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-decision-guide"
+        }
+      ],
+      "prerequisites": [
+        "a2a639d4-7836-46cd-8539-93f2916d1e52"
+      ]
+    },
+    {
+      "id": "eb72e575-0784-4249-896f-af818cb93c4e",
+      "path": "planners/contraintes/modele-cp",
+      "decimal_path": "7.1",
+      "depth": 1,
+      "label_fr": "Modèle CSP : variables, domaines, contraintes",
+      "label_en": "CSP model: variables, domains, constraints",
+      "definition_fr": "Un problème de satisfaction de contraintes se déclare par des variables, le domaine fini de chacune et les contraintes qui lient leurs valeurs ; une solution affecte toutes les variables sans violer de contrainte.",
+      "definition_en": "A constraint satisfaction problem is declared by variables, the finite domain of each and the constraints linking their values; a solution assigns every variable without violating a constraint.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-cp-model-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-first-example"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "24bc9869"
+        }
+      ],
+      "prerequisites": [
+        "fce35b32-d2e7-42a6-9729-9c1a98709c8b"
+      ]
+    },
+    {
+      "id": "fa03681a-a338-4b9c-9192-72f6e2e44e12",
+      "path": "planners/contraintes/cp-sat",
+      "decimal_path": "7.2",
+      "depth": 1,
+      "label_fr": "Solveur CP-SAT (OR-Tools)",
+      "label_en": "CP-SAT solver (OR-Tools)",
+      "definition_fr": "Solveur de programmation par contraintes d'OR-Tools sur variables entières : il énumère les solutions ou optimise un objectif, et indique si la solution rendue est prouvée optimale.",
+      "definition_en": "OR-Tools constraint programming solver over integer variables: it enumerates solutions or optimises an objective, and reports whether the returned solution is proved optimal.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-ortools-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "5ca01359"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "a385a2e9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-20"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-21"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "432015dd"
+        }
+      ],
+      "prerequisites": [
+        "fce35b32-d2e7-42a6-9729-9c1a98709c8b",
+        "eb72e575-0784-4249-896f-af818cb93c4e"
+      ]
+    },
+    {
+      "id": "4aae8886-1c27-4720-a07c-a2fec104f589",
+      "path": "planners/contraintes/propagation-retour-arriere",
+      "decimal_path": "7.3",
+      "depth": 1,
+      "label_fr": "Propagation de contraintes et retour arrière",
+      "label_en": "Constraint propagation and backtracking",
+      "definition_fr": "Deux mécanismes de résolution d'un CSP : la recherche avec retour arrière énumère les choix et abandonne ceux qui violent une contrainte, la propagation déduit ce que les contraintes imposent (ici les dates au plus tôt issues des précédences). Leur combinaison est exhaustive, donc optimale, mais son coût explose avec la taille de l'instance.",
+      "definition_en": "Two mechanisms for solving a CSP: backtracking search enumerates choices and drops those that violate a constraint, propagation derives what the constraints impose (here the earliest start dates implied by precedences). Their combination is exhaustive, hence optimal, but its cost explodes with instance size.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "24bc9869"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "9dd0ff3e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "1cddf928"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "28a105c9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "43666cbf"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "b356e340"
+        }
+      ],
+      "prerequisites": [
+        "fce35b32-d2e7-42a6-9729-9c1a98709c8b",
+        "eb72e575-0784-4249-896f-af818cb93c4e"
+      ]
+    },
+    {
+      "id": "23d93818-4eaa-454e-b226-c81d0f4067b7",
+      "path": "planners/contraintes/contraintes-globales",
+      "decimal_path": "7.4",
+      "depth": 1,
+      "label_fr": "Contraintes globales",
+      "label_en": "Global constraints",
+      "definition_fr": "Contraintes portant sur un groupe de variables, comme AllDifferent, NoOverlap ou Cumulative ; elles expriment en une ligne une structure fréquente (valeurs toutes différentes, non-chevauchement, capacité d'une ressource) et donnent au solveur une propagation dédiée.",
+      "definition_en": "Constraints over a group of variables, such as AllDifferent, NoOverlap or Cumulative; they state a frequent structure in one line (all-different values, no overlap, resource capacity) and give the solver a dedicated propagation.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-cp-sat-features"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-jss-model-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-jss-model"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "9b2d8208"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "0e3fcafe"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cfdaec9e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "432015dd"
+        }
+      ],
+      "prerequisites": [
+        "fce35b32-d2e7-42a6-9729-9c1a98709c8b",
+        "eb72e575-0784-4249-896f-af818cb93c4e"
+      ]
+    },
+    {
+      "id": "3fcd56b2-112b-406e-8202-de042268aecd",
+      "path": "planners/contraintes/job-shop",
+      "decimal_path": "7.5",
+      "depth": 1,
+      "label_fr": "Ordonnancement d'atelier (Job-Shop)",
+      "label_en": "Job-shop scheduling",
+      "definition_fr": "Chaque tâche est une suite ordonnée d'opérations sur des machines qui n'en traitent qu'une à la fois ; on cherche les dates de début qui minimisent la date de fin de la dernière opération (makespan).",
+      "definition_en": "Each job is an ordered sequence of operations on machines that process one at a time; the start dates minimising the end of the last operation (makespan) are sought.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-jss-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-jss-definition"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-jss-model"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-jss-solve"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-jss-interpretation"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "36a2b4a9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "350a2024"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "1cddf928"
+        }
+      ],
+      "prerequisites": [
+        "fce35b32-d2e7-42a6-9729-9c1a98709c8b",
+        "eb72e575-0784-4249-896f-af818cb93c4e"
+      ]
+    },
+    {
+      "id": "ee9bf889-af24-4088-b8b0-d186bd7caca4",
+      "path": "planners/contraintes/vrp",
+      "decimal_path": "7.6",
+      "depth": 1,
+      "label_fr": "Tournées de véhicules (VRP)",
+      "label_en": "Vehicle routing (VRP)",
+      "definition_fr": "Affecter des clients à des véhicules partant d'un dépôt et ordonner leurs visites pour minimiser la distance parcourue ; le solveur de routage d'OR-Tools combine une première solution et une recherche locale guidée.",
+      "definition_en": "Assigning customers to vehicles leaving a depot and ordering their visits to minimise travelled distance; the OR-Tools routing solver combines a first solution with a guided local search.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-vrp-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-vrp-definition"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-vrp-solve"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-vrp-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "fce35b32-d2e7-42a6-9729-9c1a98709c8b"
+      ]
+    },
+    {
+      "id": "1d81889d-1ed6-4cb9-b9e4-08a8af7b3bb1",
+      "path": "planners/contraintes/planification-sat",
+      "decimal_path": "7.7",
+      "depth": 1,
+      "label_fr": "Planification comme satisfaction (encodage à horizon borné)",
+      "label_en": "Planning as satisfiability (bounded-horizon encoding)",
+      "definition_fr": "Encodage d'un problème de planification en variables booléennes indexées par le pas de temps (faits et actions) : un plan de longueur donnée existe si et seulement si les contraintes sont satisfiables.",
+      "definition_en": "Encoding of a planning problem into Boolean variables indexed by time step (facts and actions): a plan of a given length exists if and only if the constraints are satisfiable.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-sat-planning-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-sat-encoding"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-sat-example"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "cell-sat-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "fce35b32-d2e7-42a6-9729-9c1a98709c8b",
+        "9b147864-61db-421b-85e9-b19b85276a12",
+        "fa03681a-a338-4b9c-9192-72f6e2e44e12"
+      ]
+    },
+    {
+      "id": "bda1016d-3fc6-43f8-a778-da27e1f81cc3",
+      "path": "planners/contraintes/n-reines",
+      "decimal_path": "7.8",
+      "depth": 1,
+      "label_fr": "Problème des N-Reines",
+      "label_en": "N-Queens problem",
+      "definition_fr": "Placer N reines sur un échiquier N × N sans que deux d'entre elles se menacent ; problème type de satisfaction de contraintes, résolu ici par retour arrière et par CP-SAT.",
+      "definition_en": "Placing N queens on an N × N board so that no two attack each other; a typical constraint satisfaction problem, solved here by backtracking and by CP-SAT.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "573f9150"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "9b2d8208"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb",
+          "cell_id": "0e3fcafe"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "43666cbf"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "b356e340"
+        }
+      ],
+      "prerequisites": [
+        "fce35b32-d2e7-42a6-9729-9c1a98709c8b",
+        "eb72e575-0784-4249-896f-af818cb93c4e"
+      ]
+    },
+    {
+      "id": "9bbdaca0-2c19-4a16-b026-6b828b4de84b",
+      "path": "planners/temporel",
+      "decimal_path": "8",
+      "depth": 0,
+      "label_fr": "Planification temporelle",
+      "label_en": "Temporal planning",
+      "definition_fr": "Planification où le temps est explicite : les actions durent, peuvent se chevaucher, et la qualité d'un plan se mesure à sa durée totale.",
+      "definition_en": "Planning in which time is explicit: actions have durations, may overlap, and plan quality is measured by total duration.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-2"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "bf25f895-098a-4f89-8216-3775863fa4fc"
+        }
+      ],
+      "prerequisites": [
+        "00e8e490-24e6-4463-9436-fd5795a3c42c"
+      ]
+    },
+    {
+      "id": "b1f569b1-2db1-48ea-8024-4dd1ef3fe18e",
+      "path": "planners/temporel/action-durative",
+      "decimal_path": "8.1",
+      "depth": 1,
+      "label_fr": "Actions duratives",
+      "label_en": "Durative actions",
+      "definition_fr": "Action dotée d'une durée, dont les conditions et les effets sont attachés au début, à la fin ou à tout l'intervalle d'exécution.",
+      "definition_en": "Action with a duration, whose conditions and effects are attached to its start, its end or its whole execution interval.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-6"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-14"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-15"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "9d61498b-98bb-4d28-8fba-26538ce08071"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "be120d1c-f4ea-446e-90d9-61fec5228b66"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-durative-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-durative-code"
+        }
+      ],
+      "prerequisites": [
+        "9bbdaca0-2c19-4a16-b026-6b828b4de84b",
+        "4f2d9245-79af-457b-bc4f-2c3777694bf7"
+      ]
+    },
+    {
+      "id": "bcc3f7d6-d277-472d-916e-6e62664a72f2",
+      "path": "planners/temporel/conflits",
+      "decimal_path": "8.2",
+      "depth": 1,
+      "label_fr": "Concurrence et conflits de ressources",
+      "label_en": "Concurrency and resource conflicts",
+      "definition_fr": "Deux actions peuvent s'exécuter en parallèle tant qu'elles ne réclament pas la même ressource au même moment ; un conflit impose de les séquencer.",
+      "definition_en": "Two actions may run in parallel as long as they do not claim the same resource at the same time; a conflict forces them to be sequenced.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-7"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-8"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "a989637d-fde9-4593-a12d-f66457f1dc92"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "34a87be1-8984-42a0-8480-6042abdbeb11"
+        }
+      ],
+      "prerequisites": [
+        "9bbdaca0-2c19-4a16-b026-6b828b4de84b",
+        "b1f569b1-2db1-48ea-8024-4dd1ef3fe18e"
+      ]
+    },
+    {
+      "id": "0a2f7896-a8ae-4535-9fb7-f64092976bab",
+      "path": "planners/temporel/allen",
+      "decimal_path": "8.3",
+      "depth": 1,
+      "label_fr": "Relations d'Allen entre intervalles",
+      "label_en": "Allen's interval relations",
+      "definition_fr": "Les treize relations qualitatives possibles entre deux intervalles de temps (avant, rencontre, chevauche, pendant, égal, et leurs inverses).",
+      "definition_en": "The thirteen possible qualitative relations between two time intervals (before, meets, overlaps, during, equals, and their inverses).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "a286df0e-86f2-4441-ae36-16f1508ffc62"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "c8dd5548-0705-46b5-a2fb-3ae93b8358a2"
+        }
+      ],
+      "prerequisites": [
+        "9bbdaca0-2c19-4a16-b026-6b828b4de84b",
+        "b1f569b1-2db1-48ea-8024-4dd1ef3fe18e"
+      ]
+    },
+    {
+      "id": "88c0009d-66e8-414e-8341-252a6f91d78a",
+      "path": "planners/temporel/stn",
+      "decimal_path": "8.4",
+      "depth": 1,
+      "label_fr": "Réseau temporel simple (STN)",
+      "label_en": "Simple temporal network (STN)",
+      "definition_fr": "Graphe de contraintes de distance entre instants ; il est cohérent si et seulement si son graphe de distances n'a pas de cycle négatif, ce que détecte l'algorithme de Floyd-Warshall.",
+      "definition_en": "Graph of distance constraints between time points; it is consistent if and only if its distance graph has no negative cycle, which the Floyd-Warshall algorithm detects.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "9ad7e450-ea3e-4323-8fea-f475854ecedd"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "7daf4e07-9ed7-421d-aae6-cef76930f3d2"
+        }
+      ],
+      "prerequisites": [
+        "9bbdaca0-2c19-4a16-b026-6b828b4de84b",
+        "0a2f7896-a8ae-4535-9fb7-f64092976bab"
+      ]
+    },
+    {
+      "id": "38f5a994-e4be-4b69-be06-18feca3e6aa4",
+      "path": "planners/temporel/ordonnancement-ressources",
+      "decimal_path": "8.5",
+      "depth": 1,
+      "label_fr": "Ordonnancement sous ressources (makespan, chemin critique)",
+      "label_en": "Resource-constrained scheduling (makespan, critical path)",
+      "definition_fr": "Placer dans le temps des tâches liées par des précédences et consommant des ressources limitées, pour minimiser la durée totale ; le chemin critique en donne une borne inférieure que les ressources empêchent parfois d'atteindre.",
+      "definition_en": "Placing in time tasks linked by precedences and consuming limited resources, to minimise total duration; the critical path gives a lower bound that resources sometimes prevent from being reached.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-17"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-19"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-22"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-23"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-24"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "7969390e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "0af6f97a-e55e-4e85-8257-007530743e45"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "91dd4758-156c-4ccc-80ff-eb99121ca072"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "7b296434-9a72-4785-b7da-36bca150d488"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "c34c1746"
+        }
+      ],
+      "prerequisites": [
+        "9bbdaca0-2c19-4a16-b026-6b828b4de84b",
+        "bcc3f7d6-d277-472d-916e-6e62664a72f2",
+        "fa03681a-a338-4b9c-9192-72f6e2e44e12"
+      ]
+    },
+    {
+      "id": "a31b41c4-61d7-4190-9aaf-7f1b2339f676",
+      "path": "planners/temporel/planification-vs-cp",
+      "decimal_path": "8.6",
+      "depth": 1,
+      "label_fr": "Planificateur temporel ou solveur de contraintes",
+      "label_en": "Temporal planner or constraint solver",
+      "definition_fr": "Critères de choix entre les deux outils : le planificateur décide quelles actions exécuter, le solveur de contraintes ordonne au mieux des tâches déjà connues.",
+      "definition_en": "Criteria for choosing between the two tools: the planner decides which actions to perform, the constraint solver best orders tasks that are already known.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-25"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-Python.ipynb",
+          "cell_id": "cell-26"
+        }
+      ],
+      "prerequisites": [
+        "9bbdaca0-2c19-4a16-b026-6b828b4de84b",
+        "38f5a994-e4be-4b69-be06-18feca3e6aa4",
+        "fce35b32-d2e7-42a6-9729-9c1a98709c8b"
+      ]
+    },
+    {
+      "id": "d989df2d-84ec-4a14-9866-26c3451cf9d9",
+      "path": "planners/htn",
+      "decimal_path": "9",
+      "depth": 0,
+      "label_fr": "Planification hiérarchique (HTN)",
+      "label_en": "Hierarchical planning (HTN)",
+      "definition_fr": "Planification par décomposition : au lieu de chercher une suite d'actions atteignant un but, on raffine des tâches abstraites en sous-tâches jusqu'à n'obtenir que des actions exécutables.",
+      "definition_en": "Planning by decomposition: instead of searching for an action sequence reaching a goal, abstract tasks are refined into subtasks until only executable actions remain.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-2"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-4"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "714647de-9b71-463b-a1c2-adfec91b4814"
+        }
+      ],
+      "prerequisites": [
+        "9b147864-61db-421b-85e9-b19b85276a12"
+      ]
+    },
+    {
+      "id": "65385f5e-8452-48be-9ef8-72df8fa4de67",
+      "path": "planners/htn/taches",
+      "decimal_path": "9.1",
+      "depth": 1,
+      "label_fr": "Tâches primitives et tâches composées",
+      "label_en": "Primitive and compound tasks",
+      "definition_fr": "Une tâche primitive correspond à une action exécutable ; une tâche composée est abstraite et doit être décomposée.",
+      "definition_en": "A primitive task corresponds to an executable action; a compound task is abstract and must be decomposed.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "f0315310-5c54-40fd-98e8-464377800273"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "af384f44-383e-442e-97fa-ab222cdd96e9"
+        }
+      ],
+      "prerequisites": [
+        "d989df2d-84ec-4a14-9866-26c3451cf9d9"
+      ]
+    },
+    {
+      "id": "ebbcea21-c995-4e34-b937-cd2523840de8",
+      "path": "planners/htn/methodes",
+      "decimal_path": "9.2",
+      "depth": 1,
+      "label_fr": "Méthodes de décomposition",
+      "label_en": "Decomposition methods",
+      "definition_fr": "Une méthode dit comment réaliser une tâche composée : une précondition et une liste ordonnée de sous-tâches ; plusieurs méthodes peuvent concurrencer pour la même tâche.",
+      "definition_en": "A method tells how to achieve a compound task: a precondition and an ordered list of subtasks; several methods may compete for the same task.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-6"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "f0315310-5c54-40fd-98e8-464377800273"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "8514a849-1b40-401b-a5e4-9f373432fd65"
+        }
+      ],
+      "prerequisites": [
+        "d989df2d-84ec-4a14-9866-26c3451cf9d9",
+        "65385f5e-8452-48be-9ef8-72df8fa4de67"
+      ]
+    },
+    {
+      "id": "1c38a43d-cf0d-416c-a107-93622706b1f1",
+      "path": "planners/htn/reseau-taches",
+      "decimal_path": "9.3",
+      "depth": 1,
+      "label_fr": "Réseau de tâches",
+      "label_en": "Task network",
+      "definition_fr": "Ensemble de tâches à accomplir muni de contraintes d'ordre ; le problème HTN part d'un réseau initial au lieu d'un but.",
+      "definition_en": "Set of tasks to accomplish together with ordering constraints; the HTN problem starts from an initial network instead of a goal.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-7"
+        }
+      ],
+      "prerequisites": [
+        "d989df2d-84ec-4a14-9866-26c3451cf9d9",
+        "65385f5e-8452-48be-9ef8-72df8fa4de67"
+      ]
+    },
+    {
+      "id": "5e5d38c5-666b-4a47-bfb3-dfe253cf4f41",
+      "path": "planners/htn/hddl",
+      "decimal_path": "9.4",
+      "depth": 1,
+      "label_fr": "Langage HDDL",
+      "label_en": "HDDL language",
+      "definition_fr": "Extension de PDDL pour la planification hiérarchique : elle ajoute la déclaration des tâches, des méthodes et du réseau de tâches initial.",
+      "definition_en": "Extension of PDDL for hierarchical planning: it adds the declaration of tasks, methods and the initial task network.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-8"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-10"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "ffa51bad"
+        }
+      ],
+      "prerequisites": [
+        "d989df2d-84ec-4a14-9866-26c3451cf9d9",
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f",
+        "ebbcea21-c995-4e34-b937-cd2523840de8"
+      ]
+    },
+    {
+      "id": "640b074f-9cf2-4c3d-a9b8-91dcbcf6cefe",
+      "path": "planners/htn/decomposition",
+      "decimal_path": "9.5",
+      "depth": 1,
+      "label_fr": "Décomposition avec retour arrière",
+      "label_en": "Decomposition with backtracking",
+      "definition_fr": "Algorithme HTN en avant : il traite les tâches dans l'ordre, applique une action si la tâche est primitive, sinon essaie une méthode applicable et revient en arrière si la décomposition échoue.",
+      "definition_en": "Forward HTN algorithm: it processes tasks in order, applies an action when the task is primitive, otherwise tries an applicable method and backtracks if the decomposition fails.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-15"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-16"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "32a84037"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-21"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-22"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-23"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "p9-methodsel-lead"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "p9-methodsel-interp"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "d7c5cf9d-c4cb-45c2-8e12-d41b09c2bf77"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "90c0ec0b-ab76-4bbc-9cb4-7ef63c6cd56b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "a55a7abe-1911-4d64-950d-708acaeb4ba3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "1d0cf867-686f-43a1-b135-6059f0110550"
+        }
+      ],
+      "prerequisites": [
+        "d989df2d-84ec-4a14-9866-26c3451cf9d9",
+        "ebbcea21-c995-4e34-b937-cd2523840de8",
+        "df58fc1f-69ec-4858-9e0b-d749187dbf0c"
+      ]
+    },
+    {
+      "id": "46fea2da-b835-4c7c-8b18-2d73d5fa8194",
+      "path": "planners/htn/htn-vs-classique",
+      "decimal_path": "9.6",
+      "depth": 1,
+      "label_fr": "HTN ou planification classique",
+      "label_en": "HTN versus classical planning",
+      "definition_fr": "L'HTN encode l'expertise du domaine dans ses méthodes : la décomposition guide la recherche vers des plans conformes à cette expertise, plus vite que l'exploration de l'espace d'états, mais elle ne trouve que les plans que les méthodes prévoient.",
+      "definition_en": "HTN encodes domain expertise in its methods: decomposition steers the search towards plans that follow this expertise, faster than exploring the state space, but it only finds the plans the methods allow.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-24"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "cell-25"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "e0e4572b"
+        }
+      ],
+      "prerequisites": [
+        "d989df2d-84ec-4a14-9866-26c3451cf9d9",
+        "640b074f-9cf2-4c3d-a9b8-91dcbcf6cefe",
+        "4d3852cf-8f62-4b38-b720-24315d402cfb"
+      ]
+    },
+    {
+      "id": "36759437-891a-4ea9-9f45-8c51c259a670",
+      "path": "planners/htn/moteur-aries",
+      "decimal_path": "9.7",
+      "depth": 1,
+      "label_fr": "Résolution HTN par un moteur dédié",
+      "label_en": "HTN solving with a dedicated engine",
+      "definition_fr": "Le même problème hiérarchique, déclaré avec unified-planning, est confié à un planificateur HTN qui rend le plan d'actions primitives.",
+      "definition_en": "The same hierarchical problem, declared with unified-planning, is handed to an HTN planner that returns the plan of primitive actions.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "htn-aries-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "htn-aries-solve"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb",
+          "cell_id": "htn-aries-interp"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "9cb9cb29"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "aa984523"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "12d701f7"
+        }
+      ],
+      "prerequisites": [
+        "d989df2d-84ec-4a14-9866-26c3451cf9d9",
+        "640b074f-9cf2-4c3d-a9b8-91dcbcf6cefe",
+        "a61c24d9-246d-41d3-a300-497d650960aa"
+      ]
+    },
+    {
+      "id": "6ddd457f-98b7-4485-9c11-62855eae5f6d",
+      "path": "planners/llm-planification",
+      "decimal_path": "10",
+      "depth": 0,
+      "label_fr": "Planification neuro-symbolique avec LLM",
+      "label_en": "Neuro-symbolic planning with LLMs",
+      "definition_fr": "Combinaison d'un modèle de langue et d'un planificateur symbolique : le modèle traduit, propose ou guide, le planificateur et le validateur apportent les garanties formelles que le modèle seul n'offre pas.",
+      "definition_en": "Combination of a language model and a symbolic planner: the model translates, proposes or guides, while the planner and the validator bring the formal guarantees the model alone lacks.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "ef5407b1"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "d773ce77"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "426be437"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-03"
+        }
+      ],
+      "prerequisites": [
+        "a2a639d4-7836-46cd-8539-93f2916d1e52",
+        "cb6b93d9-95a4-4bb9-b766-b8cd93dda25f"
+      ]
+    },
+    {
+      "id": "3bd80f37-ff5b-488d-9512-84e6d36f9f2f",
+      "path": "planners/llm-planification/llm-direct",
+      "decimal_path": "10.1",
+      "depth": 1,
+      "label_fr": "Planification directe par LLM et ses limites",
+      "label_en": "Direct LLM planning and its limits",
+      "definition_fr": "Demander le plan au modèle par une simple consigne : le plan produit est plausible mais sans garantie de validité, le modèle peut inventer des actions, et la qualité se dégrade quand le problème grandit.",
+      "definition_en": "Asking the model for the plan with a plain prompt: the plan produced is plausible but carries no validity guarantee, the model may invent actions, and quality degrades as the problem grows.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "58885d01"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "99cd77aa"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "0dd0d8b0"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "ef0bf497"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "c85f7f12"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-14"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-16"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "eb226b94"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d"
+      ]
+    },
+    {
+      "id": "a871d919-e5d4-4a74-95d0-ff34a70baf36",
+      "path": "planners/llm-planification/chain-of-thought",
+      "decimal_path": "10.2",
+      "depth": 1,
+      "label_fr": "Raisonnement pas à pas (Chain-of-Thought)",
+      "label_en": "Chain-of-thought reasoning",
+      "definition_fr": "Deux appels au modèle : le premier lui fait dérouler un raisonnement étape par étape (écarts entre l'état et le but, actions qui les comblent, dépendances entre actions), le second produit le plan en suivant ce raisonnement.",
+      "definition_en": "Two calls to the model: the first makes it unfold a step-by-step reasoning (gaps between the state and the goal, actions that close them, dependencies between actions), the second produces the plan by following that reasoning.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "03a9a0cf"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "e3bf2623"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d",
+        "3bd80f37-ff5b-488d-9512-84e6d36f9f2f"
+      ]
+    },
+    {
+      "id": "54c53107-d140-4022-bcd6-a8da9d66164f",
+      "path": "planners/llm-planification/tree-of-thought",
+      "decimal_path": "10.3",
+      "depth": 1,
+      "label_fr": "Arbre de pensées (Tree-of-Thought)",
+      "label_en": "Tree-of-thought",
+      "definition_fr": "Génération de plusieurs plans candidats, un par branche, notés par une fonction de score qui favorise les plans courts couvrant le but ; le meilleur est retenu, au lieu d'une seule chaîne de raisonnement.",
+      "definition_en": "Generation of several candidate plans, one per branch, scored by a function that favours short plans covering the goal; the best one is kept, instead of a single chain of reasoning.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "akalpwcqg8i"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "1fc7c73f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "e3bf2623"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d",
+        "a871d919-e5d4-4a74-95d0-ff34a70baf36",
+        "4d3852cf-8f62-4b38-b720-24315d402cfb"
+      ]
+    },
+    {
+      "id": "1e87134e-0469-4a25-a5c0-4e63039b31b0",
+      "path": "planners/llm-planification/nl-vers-pddl",
+      "decimal_path": "10.4",
+      "depth": 1,
+      "label_fr": "Traduction du langage naturel vers PDDL",
+      "label_en": "Natural language to PDDL translation",
+      "definition_fr": "Le modèle ne planifie pas : il traduit la description en langage naturel en un domaine et un problème PDDL, qu'un planificateur classique résout ensuite.",
+      "definition_en": "The model does not plan: it translates the natural-language description into a PDDL domain and problem, which a classical planner then solves.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "2bcb8964"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "b7dbc7df"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "3f111a44"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "0fc6c205"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "8f60f6a0"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d",
+        "e62273bb-01ca-4d0f-9ece-8b3ca76ff9ef",
+        "40f21481-cb2e-4fd8-bd88-32d525af46a9"
+      ]
+    },
+    {
+      "id": "470a6255-6b67-4af0-bc51-24c4d29e7b39",
+      "path": "planners/llm-planification/validation-reparation",
+      "decimal_path": "10.5",
+      "depth": 1,
+      "label_fr": "Validation et réparation du PDDL et des plans générés",
+      "label_en": "Validating and repairing generated PDDL and plans",
+      "definition_fr": "Boucle de contrôle : le PDDL ou le plan produit par le modèle passe par un validateur (syntaxe, prédicats déclarés, applicabilité des actions), et un plan qui échoue est renvoyé au modèle avec le point et la raison de l'échec pour réparation.",
+      "definition_en": "Control loop: the PDDL or the plan produced by the model goes through a validator (syntax, declared predicates, action applicability), and a failing plan is sent back to the model with the failure point and reason for repair.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "a6442f2e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "b53ae144"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "f9d2d944"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "70bb1912"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "y1zezpybwo9"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "c0k81u0utji"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "a2dd3e4e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "5a76dd94"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d",
+        "1e87134e-0469-4a25-a5c0-4e63039b31b0",
+        "ab09312f-11f8-493f-9631-abf10e148e10"
+      ]
+    },
+    {
+      "id": "84b191eb-0a93-49c4-83de-ee045d9b9105",
+      "path": "planners/llm-planification/llm-heuristique",
+      "decimal_path": "10.6",
+      "depth": 1,
+      "label_fr": "LLM comme heuristique de recherche",
+      "label_en": "LLM as a search heuristic",
+      "definition_fr": "Le modèle estime la distance au but d'un état ; une recherche classique s'en sert comme heuristique et conserve ses garanties de correction et de complétude, au prix d'appels coûteux et d'estimations variables.",
+      "definition_en": "The model estimates the distance from a state to the goal; a classical search uses it as a heuristic and keeps its soundness and completeness guarantees, at the price of costly calls and variable estimates.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "df3ee64e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "23b37e55"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "25a34715"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "ceae3028"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb",
+          "cell_id": "b4510646"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d",
+        "0f0d77aa-0d25-48af-8408-4e3c258ea0e3"
+      ]
+    },
+    {
+      "id": "2b81931a-dc79-4dba-b66a-38af2803ac71",
+      "path": "planners/llm-planification/llm-reducteur",
+      "decimal_path": "10.7",
+      "depth": 1,
+      "label_fr": "LLM comme réducteur d'espace de recherche",
+      "label_en": "LLM as a search-space reducer",
+      "definition_fr": "Le modèle ne donne pas la solution : il désigne les primitives pertinentes, et une recherche exhaustive bornée sur cet espace réduit trouve et vérifie le programme.",
+      "definition_en": "The model does not give the solution: it names the relevant primitives, and a bounded exhaustive search over that reduced space finds and checks the program.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-03"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-17"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-18"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "edb1f83e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-21"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d",
+        "3bd80f37-ff5b-488d-9512-84e6d36f9f2f",
+        "6148f021-ea09-4c61-9962-9f20d06436df"
+      ]
+    },
+    {
+      "id": "2f0102b1-155d-49ac-83df-9fe8c680510e",
+      "path": "planners/llm-planification/dsl-primitives",
+      "decimal_path": "10.8",
+      "depth": 1,
+      "label_fr": "Langage dédié de primitives",
+      "label_en": "Domain-specific language of primitives",
+      "definition_fr": "Petit ensemble de transformations élémentaires composables ; une solution est un programme, c'est-à-dire une suite de primitives.",
+      "definition_en": "Small set of composable elementary transformations; a solution is a program, that is, a sequence of primitives.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-05"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-06"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "72bd3791"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-07"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "c749e649"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d"
+      ]
+    },
+    {
+      "id": "18d903f7-f8ec-485f-b9bd-aac38907755d",
+      "path": "planners/llm-planification/recherche-bornee",
+      "decimal_path": "10.9",
+      "depth": 1,
+      "label_fr": "Recherche exhaustive bornée en profondeur",
+      "label_en": "Depth-bounded exhaustive search",
+      "definition_fr": "Énumération de tous les programmes jusqu'à une longueur donnée ; son coût croît comme le nombre d'instances de primitives élevé à la profondeur.",
+      "definition_en": "Enumeration of every program up to a given length; its cost grows as the number of primitive instances raised to the depth.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-11"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-12"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "6daa609a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-13"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "5072c99a"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d",
+        "2f0102b1-155d-49ac-83df-9fe8c680510e",
+        "6148f021-ea09-4c61-9962-9f20d06436df"
+      ]
+    },
+    {
+      "id": "cfd290eb-fd5d-4720-a8ec-5bc185ffb6e8",
+      "path": "planners/llm-planification/oracle-verification",
+      "decimal_path": "10.10",
+      "depth": 1,
+      "label_fr": "Vérification par oracle d'exemples",
+      "label_en": "Verification by an example oracle",
+      "definition_fr": "Un programme candidat est accepté seulement s'il reproduit exactement la sortie attendue sur tous les exemples fournis.",
+      "definition_en": "A candidate program is accepted only if it reproduces exactly the expected output on every provided example.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "cell-10"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb",
+          "cell_id": "94005d7b"
+        }
+      ],
+      "prerequisites": [
+        "6ddd457f-98b7-4485-9c11-62855eae5f6d",
+        "2f0102b1-155d-49ac-83df-9fe8c680510e"
+      ]
+    },
+    {
+      "id": "53e4e5a1-b79d-4988-9468-06277b242391",
+      "path": "planners/apprentissage",
+      "decimal_path": "11",
+      "depth": 0,
+      "label_fr": "Apprendre à planifier",
+      "label_en": "Learning to plan",
+      "definition_fr": "Entraîner un modèle sur des problèmes résolus pour qu'il guide ou remplace la recherche sur de nouveaux problèmes du même domaine.",
+      "definition_en": "Training a model on solved problems so that it guides or replaces search on new problems of the same domain.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-intro-ltp"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-problem-motivation"
+        }
+      ],
+      "prerequisites": [
+        "8fa1985d-f33a-4a58-9491-ae389fad736c"
+      ]
+    },
+    {
+      "id": "e4b33ccd-0336-49d9-9b70-629e300782f1",
+      "path": "planners/apprentissage/heuristique-apprise",
+      "decimal_path": "11.1",
+      "depth": 1,
+      "label_fr": "Heuristique apprise ou heuristique classique",
+      "label_en": "Learned versus classical heuristic",
+      "definition_fr": "Une heuristique classique est conçue à la main, rapide à calculer et parfois admissible ; une heuristique apprise est ajustée sur des instances résolues pour approcher la distance réelle au but, sans aucune garantie.",
+      "definition_en": "A classical heuristic is hand-designed, fast to compute and sometimes admissible; a learned heuristic is fitted on solved instances to approximate the true distance to the goal, with no guarantee at all.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-classical-vs-learned"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-key-insight"
+        }
+      ],
+      "prerequisites": [
+        "53e4e5a1-b79d-4988-9468-06277b242391",
+        "47d6c65e-5adf-4af5-9b0b-20ba2f24a62e"
+      ]
+    },
+    {
+      "id": "edeb5c66-03b0-45b2-89c8-1320f5d6ca1d",
+      "path": "planners/apprentissage/politique-valeur",
+      "decimal_path": "11.2",
+      "depth": 1,
+      "label_fr": "Réseau à tête de politique et tête de valeur",
+      "label_en": "Network with policy and value heads",
+      "definition_fr": "Réseau qui, pour un état encodé, produit à la fois une distribution sur les actions (politique) et une estimation de la distance au but (valeur).",
+      "definition_en": "Network that, for an encoded state, outputs both a distribution over actions (policy) and an estimate of the distance to the goal (value).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-loop-architecture"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-loop-components"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-planner-network"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-network-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "53e4e5a1-b79d-4988-9468-06277b242391",
+        "f2ca13c7-5a4e-40e9-95bf-68f757873251"
+      ]
+    },
+    {
+      "id": "b1310060-4765-47f7-b5c1-0b3f703b2fa4",
+      "path": "planners/apprentissage/imitation",
+      "decimal_path": "11.3",
+      "depth": 1,
+      "label_fr": "Apprentissage par imitation de plans experts",
+      "label_en": "Imitation learning from expert plans",
+      "definition_fr": "Entraînement supervisé où chaque état d'un plan produit par un planificateur classique fournit l'action à imiter et la distance restante à prédire.",
+      "definition_en": "Supervised training in which each state of a plan produced by a classical planner provides the action to imitate and the remaining distance to predict.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-training-paradigm"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-training-data"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-training-functions"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-training-loop"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-training-interpretation"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "1dfa7e69"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "64a95a15"
+        }
+      ],
+      "prerequisites": [
+        "53e4e5a1-b79d-4988-9468-06277b242391",
+        "edeb5c66-03b0-45b2-89c8-1320f5d6ca1d"
+      ]
+    },
+    {
+      "id": "f2ca13c7-5a4e-40e9-95bf-68f757873251",
+      "path": "planners/apprentissage/encodage-etats",
+      "decimal_path": "11.4",
+      "depth": 1,
+      "label_fr": "Encodage vectoriel des états",
+      "label_en": "Vector encoding of states",
+      "definition_fr": "Transformation d'un état symbolique (ensemble de faits) en vecteur de taille fixe exploitable par un réseau de neurones.",
+      "definition_en": "Transformation of a symbolic state (a set of facts) into a fixed-size vector usable by a neural network.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-encoding-challenges"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-encoding-approaches"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-state-encoder"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-encoder-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "53e4e5a1-b79d-4988-9468-06277b242391",
+        "e17005e0-d735-4d41-a77f-93182e007967"
+      ]
+    },
+    {
+      "id": "db6496f4-e7fe-4801-b409-c5a0415c882a",
+      "path": "planners/apprentissage/encodeur-gnn",
+      "decimal_path": "11.5",
+      "depth": 1,
+      "label_fr": "Encodage par réseau de neurones sur graphe",
+      "label_en": "Graph neural network encoding",
+      "definition_fr": "L'état est vu comme un graphe d'objets reliés par leurs prédicats ; un réseau de neurones sur graphe en tire une représentation indépendante du nombre d'objets.",
+      "definition_en": "The state is seen as a graph of objects linked by their predicates; a graph neural network derives from it a representation independent of the number of objects.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-gnn-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-gnn-encoder"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-gnn-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "53e4e5a1-b79d-4988-9468-06277b242391",
+        "f2ca13c7-5a4e-40e9-95bf-68f757873251"
+      ]
+    },
+    {
+      "id": "e365914a-ef68-454f-a0c8-ebb2e68f6ae7",
+      "path": "planners/apprentissage/couverture-qualite",
+      "decimal_path": "11.6",
+      "depth": 1,
+      "label_fr": "Couverture et qualité des plans appris",
+      "label_en": "Coverage and quality of learned plans",
+      "definition_fr": "Mesures d'un planificateur appris : proportion de problèmes résolus (couverture) et longueur des plans rapportée à celle d'un planificateur de référence.",
+      "definition_en": "Measures of a learned planner: share of problems solved (coverage) and plan length relative to a reference planner.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-metrics-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-evaluation"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-benchmark-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "53e4e5a1-b79d-4988-9468-06277b242391",
+        "b1310060-4765-47f7-b5c1-0b3f703b2fa4"
+      ]
+    },
+    {
+      "id": "2db6a678-7cb2-4943-9aef-5d985c37b040",
+      "path": "planners/apprentissage/noyaux-etats",
+      "decimal_path": "11.7",
+      "depth": 1,
+      "label_fr": "Noyaux sur les états pour l'apprentissage",
+      "label_en": "State kernels for learning",
+      "definition_fr": "Fonction de similarité entre deux états encodés (noyau RBF, noyau de Hamming) ; la valeur d'un état s'estime par une somme pondérée de ses similarités avec des états connus, sans réseau de neurones.",
+      "definition_en": "Similarity function between two encoded states (RBF kernel, Hamming kernel); the value of a state is estimated as a weighted sum of its similarities to known states, without a neural network.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "cell-krcl-description"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "6d8asahj4ck"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb",
+          "cell_id": "fed5aa46"
+        }
+      ],
+      "prerequisites": [
+        "53e4e5a1-b79d-4988-9468-06277b242391",
+        "f2ca13c7-5a4e-40e9-95bf-68f757873251"
+      ]
+    },
+    {
+      "id": "b0211ac0-5809-438f-a2f8-02bcf5257e8c",
+      "path": "planners/mesure",
+      "decimal_path": "12",
+      "depth": 0,
+      "label_fr": "Mesurer la qualité des plans et de la recherche",
+      "label_en": "Measuring plan and search quality",
+      "definition_fr": "Comparer des planificateurs demande des mesures définies : coût et longueur du plan, nœuds développés et temps, relevés sur des problèmes où ces mesures peuvent différer.",
+      "definition_en": "Comparing planners requires defined measures: plan cost and length, expanded nodes and time, collected on problems where those measures can differ.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "aebb02fc"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "2dc8bd17"
+        }
+      ],
+      "prerequisites": [
+        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd"
+      ]
+    },
+    {
+      "id": "2d561111-6386-4d7f-a18c-faaae81062ad",
+      "path": "planners/mesure/metriques-recherche",
+      "decimal_path": "12.1",
+      "depth": 1,
+      "label_fr": "Métriques de recherche",
+      "label_en": "Search metrics",
+      "definition_fr": "Grandeurs relevées par exécution : succès, longueur et coût du plan, nombre d'états évalués ou développés, temps de recherche.",
+      "definition_en": "Quantities collected per run: success, plan length and cost, number of evaluated or expanded states, search time.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "2dc8bd17"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "6f335adf"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-16"
+        }
+      ],
+      "prerequisites": [
+        "b0211ac0-5809-438f-a2f8-02bcf5257e8c"
+      ]
+    },
+    {
+      "id": "92d1110a-8a7d-4847-96ed-d90e15e6cfc6",
+      "path": "planners/mesure/cas-degenere",
+      "decimal_path": "12.2",
+      "depth": 1,
+      "label_fr": "Problème dégénéré et banc d'essai significatif",
+      "label_en": "Degenerate problem and meaningful benchmark",
+      "definition_fr": "Un problème trop simple fait trouver le même plan à tous les algorithmes et ne mesure rien ; un banc d'essai doit être assez difficile pour séparer les configurations.",
+      "definition_en": "A problem that is too simple makes every algorithm find the same plan and measures nothing; a benchmark must be hard enough to separate configurations.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "aebb02fc"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "15779315"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "d7a0c608"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "827d081f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "5585495d"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "interp-sanity"
+        }
+      ],
+      "prerequisites": [
+        "b0211ac0-5809-438f-a2f8-02bcf5257e8c",
+        "2d561111-6386-4d7f-a18c-faaae81062ad"
+      ]
+    },
+    {
+      "id": "87659bd0-e974-493b-9d5d-036755e04c69",
+      "path": "planners/mesure/comparaison-configurations",
+      "decimal_path": "12.3",
+      "depth": 1,
+      "label_fr": "Comparaison de configurations de recherche",
+      "label_en": "Comparing search configurations",
+      "definition_fr": "Exécuter le même problème avec plusieurs couples algorithme-heuristique et lire côte à côte coût du plan et effort de recherche.",
+      "definition_en": "Running the same problem with several algorithm-heuristic pairs and reading plan cost and search effort side by side.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "6fd54da0"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-26"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb",
+          "cell_id": "cell-27"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "dba4f5b7"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "29901bcc"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb",
+          "cell_id": "10ae6cfe"
+        }
+      ],
+      "prerequisites": [
+        "b0211ac0-5809-438f-a2f8-02bcf5257e8c",
+        "2d561111-6386-4d7f-a18c-faaae81062ad",
+        "17aeee09-b2a3-4c7b-8f59-64f82dff8c19"
+      ]
+    },
+    {
+      "id": "723caf7c-07cd-4d0c-8736-5bfb6b8731b7",
+      "path": "planners/mesure/noeuds-developpes",
+      "decimal_path": "12.4",
+      "depth": 1,
+      "label_fr": "Nœuds développés comme mesure d'une heuristique",
+      "label_en": "Expanded nodes as a measure of a heuristic",
+      "definition_fr": "À algorithme fixé, le nombre de nœuds développés mesure ce qu'apporte une heuristique : plus elle est informative, moins la recherche développe de nœuds par rapport à la recherche aveugle.",
+      "definition_en": "With the algorithm fixed, the number of expanded nodes measures what a heuristic brings: the more informative it is, the fewer nodes search expands compared with blind search.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hs-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
+          "cell_id": "hs-interp"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "hcs-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "hcs-interp"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "d6504e93"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb",
+          "cell_id": "d3a1b21f"
+        }
+      ],
+      "prerequisites": [
+        "b0211ac0-5809-438f-a2f8-02bcf5257e8c",
+        "2d561111-6386-4d7f-a18c-faaae81062ad",
+        "8fa1985d-f33a-4a58-9491-ae389fad736c"
+      ]
+    },
+    {
+      "id": "183e40af-8feb-4d6b-96e4-4ec848701a25",
+      "path": "planners/mesure/moteur-reference",
+      "decimal_path": "12.5",
+      "depth": 1,
+      "label_fr": "Validation d'une implémentation pédagogique par un moteur de référence",
+      "label_en": "Validating a teaching implementation against a reference engine",
+      "definition_fr": "Le résultat d'un algorithme écrit à la main est confronté à celui d'un moteur éprouvé sur le même problème : même coût de plan attendu, écarts de nœuds développés expliqués.",
+      "definition_en": "The result of a hand-written algorithm is checked against that of a proven engine on the same problem: the same plan cost is expected, and gaps in expanded nodes are explained.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb",
+          "cell_id": "fd2a1007"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "t2-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb",
+          "cell_id": "t2-interp"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "2d42918e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb",
+          "cell_id": "907b4bd6"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "e4ea329b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-CSharp.ipynb",
+          "cell_id": "3d2a4092"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "t6-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "t6-interp"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-CSharp.ipynb",
+          "cell_id": "c6c1fad4"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-CSharp.ipynb",
+          "cell_id": "d73caa57"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-08-Temporal-CSharp.ipynb",
+          "cell_id": "f7ab8cd8-fb7a-4167-8dcc-4e5b95d0a60c"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-CSharp.ipynb",
+          "cell_id": "12d701f7"
+        }
+      ],
+      "prerequisites": [
+        "b0211ac0-5809-438f-a2f8-02bcf5257e8c",
+        "5b25f0ac-7cf5-45de-90c8-fbc3c8a4b1fd"
+      ]
+    },
+    {
+      "id": "5668dc06-67d4-4253-8d84-dc657f6cb2c2",
+      "path": "planners/mesure/comparaison-planificateurs",
+      "decimal_path": "12.6",
+      "depth": 1,
+      "label_fr": "Comparaison de planificateurs sur un même modèle",
+      "label_en": "Comparing planners on the same model",
+      "definition_fr": "Un modèle unique est soumis à plusieurs moteurs ; on compare leur capacité à le résoudre, la longueur du plan et le temps de calcul.",
+      "definition_en": "A single model is submitted to several engines; their ability to solve it, plan length and computing time are compared.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-multi-solver-intro"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-compare-solvers"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "c0e2d58f"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-comparison-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "b0211ac0-5809-438f-a2f8-02bcf5257e8c",
+        "a61c24d9-246d-41d3-a300-497d650960aa"
+      ]
+    },
+    {
+      "id": "6894858b-8ade-4f49-ab86-779bacecf1a8",
+      "path": "planners/mesure/selection-planificateur",
+      "decimal_path": "12.7",
+      "depth": 1,
+      "label_fr": "Choix d'un planificateur selon le problème",
+      "label_en": "Choosing a planner for the problem",
+      "definition_fr": "Les traits du problème (actions duratives, fluents numériques, hiérarchie, métrique à optimiser) déterminent les moteurs capables de le traiter.",
+      "definition_en": "The features of the problem (durative actions, numeric fluents, hierarchy, metric to optimise) determine which engines can handle it.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-best-practices"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "cell-best-practices-code"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb",
+          "cell_id": "3d167717"
+        }
+      ],
+      "prerequisites": [
+        "b0211ac0-5809-438f-a2f8-02bcf5257e8c",
+        "5668dc06-67d4-4253-8d84-dc657f6cb2c2",
+        "8052cba4-f88e-444b-8cf2-b89369993d54"
+      ]
+    },
+    {
+      "id": "3ca9ee3d-7661-4f66-b43a-a92a3c35d221",
+      "path": "planners/atteignabilite",
+      "decimal_path": "13",
+      "depth": 0,
+      "label_fr": "Différentiel d'atteignabilité",
+      "label_en": "Reachability differential",
+      "definition_fr": "Comparaison de l'ensemble des états atteignables avant et après l'ajout d'une action au domaine : ce que la nouvelle primitive rend possible se lit dans les états gagnés.",
+      "definition_en": "Comparison of the set of reachable states before and after adding an action to the domain: what the new primitive makes possible is read in the states gained.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c13"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c14"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c15"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c17"
+        }
+      ],
+      "prerequisites": [
+        "4d3852cf-8f62-4b38-b720-24315d402cfb",
+        "9b147864-61db-421b-85e9-b19b85276a12"
+      ]
+    },
+    {
+      "id": "ce5f410e-a536-4b2f-a602-f9d4eadf63dc",
+      "path": "planners/atteignabilite/certificat",
+      "decimal_path": "13.1",
+      "depth": 1,
+      "label_fr": "Certificat d'inatteignabilité",
+      "label_en": "Unreachability certificate",
+      "definition_fr": "Énumération exhaustive des états atteignables : un but absent de l'ensemble clos est prouvé inatteignable, quel que soit l'effort de recherche.",
+      "definition_en": "Exhaustive enumeration of the reachable states: a goal absent from the closed set is proved unreachable, whatever the search effort.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c05"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c06"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c06b"
+        }
+      ],
+      "prerequisites": [
+        "3ca9ee3d-7661-4f66-b43a-a92a3c35d221"
+      ]
+    },
+    {
+      "id": "0bf7e233-dbb8-4548-a80b-b57bb8be8b48",
+      "path": "planners/atteignabilite/controle-effort",
+      "decimal_path": "13.2",
+      "depth": 1,
+      "label_fr": "Contrôle par l'effort de recherche",
+      "label_en": "Control by search effort",
+      "definition_fr": "Changer d'algorithme ou d'heuristique modifie le nombre de nœuds développés, jamais l'ensemble des buts atteignables.",
+      "definition_en": "Changing the algorithm or the heuristic alters the number of expanded nodes, never the set of reachable goals.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c07"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c08"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c08b"
+        }
+      ],
+      "prerequisites": [
+        "3ca9ee3d-7661-4f66-b43a-a92a3c35d221",
+        "ce5f410e-a536-4b2f-a602-f9d4eadf63dc",
+        "bc67b8ba-1221-46ab-bcad-d7a0600b19d6"
+      ]
+    },
+    {
+      "id": "512ca41f-a15b-449c-a14e-233f543321e0",
+      "path": "planners/atteignabilite/primitive",
+      "decimal_path": "13.3",
+      "depth": 1,
+      "label_fr": "Ajout d'une primitive au domaine",
+      "label_en": "Adding a primitive to the domain",
+      "definition_fr": "Une action nouvelle étend le domaine : elle ajoute des opérateurs instanciés et, par eux, des états jusque-là inatteignables.",
+      "definition_en": "A new action extends the domain: it adds ground operators and, through them, states that were unreachable until then.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c11"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb",
+          "cell_id": "pl13c12"
+        }
+      ],
+      "prerequisites": [
+        "3ca9ee3d-7661-4f66-b43a-a92a3c35d221",
+        "ce5f410e-a536-4b2f-a602-f9d4eadf63dc",
+        "79f88cf7-07b1-444a-8eb4-bd28e1892edd"
       ]
     }
   ]

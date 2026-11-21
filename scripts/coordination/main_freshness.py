@@ -67,7 +67,9 @@ from pathlib import Path
 ORGANES = (
     "scripts/coordination/tapis_rapide.py",
     "scripts/coordination/tapis_marqueurs.py",
+    "scripts/coordination/tapis_sature.py",
     "scripts/coordination/gh_bulk.py",
+    "scripts/coordination/gh_recherche.py",
     "scripts/coordination/frozen_campaigns.py",
     "scripts/coordination/main_freshness.py",
 )

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 16
-breakdown: SocialChoice=16
-maturity: BETA=14, ALPHA=2
+pedagogical_count: 17
+breakdown: SocialChoice=17
+maturity: BETA=15, ALPHA=2
 -->
 
 [↑ GameTheory](../README.md) · [Entrée : 01 — le théorème d'Arrow](ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb)
@@ -49,7 +49,7 @@ Le fil commun consiste à ne jamais se contenter de l'énoncé d'un théorème :
 | 07 | [Élections de comité par approbation : le core](ChoixSocial-07-Committees-Core-Python.ipynb) | Élire un comité sur bulletins d'approbation : le core existe toujours (Becker, Greger & Peters) — quotas Hare/Droop, coalition bloquante exhibée, certificat de paiement, comparaison des règles AV, PAV et entropie harmonique sur instances. | 40 min | Python (scipy en sus). | Règles sur profils ordonnés : [09](ChoixSocial-09-Committees-STV-Monroe-ChamberlinCourant-Python.ipynb) |
 | 08 | [Kemeny, Ranked Pairs et Dodgson](ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb) | Trois règles computationnellement dures : score de Kemeny par énumération des classements (sur le cycle de Condorcet, score maximum 5 et trois classements optimaux), graphe de Tideman, score de Dodgson par échanges adjacents — et pourquoi déterminer le gagnant est NP-dur. | 40 min | Python (numpy). | Formulation par optimisation (section 4 du carnet) |
 | 09 | [Comités multi-vainqueurs : STV, Monroe, Chamberlin-Courant](ChoixSocial-09-Committees-STV-Monroe-ChamberlinCourant-Python.ipynb) | Comparer une règle polynomiale (STV, quota de Droop) à deux règles NP-dures (Monroe, Chamberlin-Courant), résolues d'abord par énumération puis par optimisation entière sous Z3. | 40 min | Python ; z3-solver. | Confrontation au [core](ChoixSocial-07-Committees-Core-Python.ipynb) |
-| 10 | [Manipulation stratégique sous règles à comité](ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb) | Mesurer la manipulation : détecteur de déviation gagnante, branches du théorème de Gibbard-Satterthwaite vérifiées sur l'espace exhaustif des profils, fréquence par énumération, encodage Z3 confronté à l'énumération brute. | 35 min | Python ; z3-solver. | Exercices proposés dans le carnet |
+| 10 | [Manipulation stratégique sous règles à comité](ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb) · [jumeau C#](ChoixSocial-10-Manipulation-Strategique-MultiWinner-CSharp.ipynb) | Mesurer la manipulation : détecteur de déviation gagnante, branches du théorème de Gibbard-Satterthwaite vérifiées sur l'espace exhaustif des profils, fréquence par énumération, encodage Z3 confronté à l'énumération brute. | 35 min | Python ; z3-solver. | Exercices proposés dans le carnet |
 
 **Durée totale du parcours principal** : ~6h25 (385 min pour les dix carnets ; ajouter 80 min pour le carnet 01b en Lean 4 et 40 min pour le 06b).
 
@@ -69,7 +69,7 @@ Chaque carnet aboutit à une sortie qui matérialise son résultat — c'est ell
 - **10 — la manipulation mesurée, pas devinée.** Sur l'Exemple 6.1 du *Handbook of Computational Social Choice* (ch. 6, p. 127), le détecteur automatise la recherche de toute déviation gagnante et en restitue **quatre** quand le manuel n'en cite qu'une ; la vérification exhaustive (3 votants, 3 candidats) force la troisième branche de Gibbard-Satterthwaite. Le résultat central : une fréquence mesurée n'est pas une propriété de la règle — Chamberlin-Courant ne présente aucun profil manipulable à trois candidats mais une part notable dès quatre — et le classement des règles s'inverse : celles qui maximisent une satisfaction agrégée (Chamberlin-Courant, Monroe) sont les plus manipulables, parce qu'un optimum est instable.
 
 
-**Jumeaux C# — parité .NET.** Les carnets [01](ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb), [02](ChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb), [03](ChoixSocial-03-Voting-Methods-CSharp.ipynb), [04](ChoixSocial-04-Computational-Aggregation-SAT-Z3-CSharp.ipynb), [06](ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-CSharp.ipynb) existent aussi en miroirs C# (.NET Interactive) : mêmes algorithmes implémentés from-scratch, sans dépendance NuGet externe — marathon parité .NET ⇄ Python (#4956), étendu au mariage stable en 02 (#19681). Ils partagent la ligne de leur carnet d'origine dans la table ci-dessus ; ils sont comptés dans le `pedagogical_count` de la sous-série et arborent le statut PARITÉ dans le catalogue pour les distinguer des notebooks d'origine dont ils sont les retranscriptions .NET.
+**Jumeaux C# — parité .NET.** Les carnets [01](ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb), [02](ChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb), [03](ChoixSocial-03-Voting-Methods-CSharp.ipynb), [04](ChoixSocial-04-Computational-Aggregation-SAT-Z3-CSharp.ipynb), [06](ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-CSharp.ipynb) et [10](ChoixSocial-10-Manipulation-Strategique-MultiWinner-CSharp.ipynb) existent aussi en miroirs C# (.NET Interactive) : mêmes algorithmes implémentés from-scratch — les cinq premiers sans dépendance NuGet externe, le dixième via le paquet `Microsoft.Z3` — marathon parité .NET ⇄ Python (#4956), étendu au mariage stable en 02 (#19681), à la décomposition de Möbius en 06, puis à la manipulation multi-vainqueurs en 10 (#27108). Ils partagent la ligne de leur carnet d'origine dans la table ci-dessus ; ils sont comptés dans le `pedagogical_count` de la sous-série et arborent le statut PARITÉ dans le catalogue pour les distinguer des notebooks d'origine dont ils sont les retranscriptions .NET.
 
 La structure de la série se lit d'un coup d'œil :
 
@@ -127,9 +127,11 @@ Provenance, dimensions et poids de chaque figure : [`assets/readme/MANIFEST.md`]
 
 ## Approfondissements — Licence et lectures avancées
 
-### Autour de 01 — la preuve formelle en Lean
+### Autour de 01 — la preuve formelle et le paradoxe de non-participation
 
 **[01b — Choix social formel en Lean 4](ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb).** Ce que le carnet 01 échantillonne par simulation, 01b le couvre en entier : préférences, axiomes d'Arrow et de Sen, théorème de l'électeur médian formalisés et prouvés en Lean 4, avec un tour de la librairie SocialChoiceLean de DominikPeters (douze règles de vote, Gibbard-Satterthwaite, Split Cycle, Duggan-Schwartz). Les définitions sont compatibles avec le lake `game_theory_lean/SocialChoice/` — voir [Formalisations Lean](#formalisations-lean). Prérequis en plus : Lean 4 et le kernel WSL (instructions dans le [README parent](../README.md)).
+
+**[01c — Le paradoxe de la non-participation (no-show)](ChoixSocial-01c-Paradoxe-NonParticipation-NoShow-Python.ipynb).** À côté d'Arrow, le **critère de participation** : un électeur est-il mieux servi en s'abstenant qu'en votant sincèrement ? 01c le rend *visible* par l'expérience — Borda en est structurellement immunisé (recherche exhaustive, ~2,8 M de profils, zéro no-show) tandis que le vote instantané (IRV) l'exhibite sur un profil à 5 votants, et le théorème de Moulin (1988) montre que la contradiction est générale dès que la règle élit toujours le vainqueur de Condorcet.
 
 ### Autour de 06 — Möbius côté Lean
 
@@ -142,6 +144,7 @@ Provenance, dimensions et poids de chaque figure : [`assets/readme/MANIFEST.md`]
 | **Théorème d'Arrow** | Aucune règle d'agrégation avec trois alternatives ou plus ne peut satisfaire simultanément Pareto, IIA et non-dictature (01, 01b, 04) |
 | **Théorème de Sen** | Liberté minimale, Pareto et transitivité sont incompatibles (01b, 03) |
 | **Paradoxe de Condorcet** | Les préférences majoritaires peuvent être cycliques — A bat B bat C bat A (03) |
+| **Paradoxe de la non-participation** | Un électeur peut être mieux servi en s'abstenant qu'en votant sincèrement — IRV l'exhibite, Borda en est immunisé, et c'est inévitable dès que la règle élit toujours le vainqueur de Condorcet (Moulin 1988) (01c) |
 | **Électeur médian** | Avec des préférences unimodales, le vainqueur de Condorcet existe (03) |
 | **IIA** | Le classement social entre deux alternatives ne dépend que des préférences individuelles sur cette paire (01) |
 | **Gibbard-Satterthwaite** | Toute règle non-dictatoriale est manipulable dès trois candidats (05, 10) |
@@ -194,7 +197,7 @@ Le lake [`social_choice_lean_peters/`](social_choice_lean_peters/README.md), por
 | Arrow, *Social Choice and Individual Values* (1951) | Théorème d'impossibilité (01) |
 | Sen, *Collective Choice and Social Welfare* (1970) | Paradoxe libéral (01b, 03) |
 | Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | Preuve suivie dans les carnets 01 et 01b |
-| Moulin, "Condorcet's Principle Implies the No Show Paradox" (1988) | Paradoxe de la non-participation |
+| Moulin, "Condorcet's Principle Implies the No Show Paradox" (1988) | Paradoxe de la non-participation (01c) |
 | Holliday & Pacuit, "Split Cycle" (2023) | Règle de vote optimale (01b) |
 | Peters, [SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) | Formalisation Lean 4 de douze règles et plusieurs théorèmes (01b) |
 | Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (05, 10) |

@@ -4,9 +4,9 @@ pagetitle: "Sudoku — comparer les méthodes de résolution"
 
 <!-- CATALOG-STATUS
 series: Sudoku
-pedagogical_count: 41
-breakdown: root=41
-maturity: BETA=41
+pedagogical_count: 42
+breakdown: root=42
+maturity: BETA=42
 -->
 
 [↑ Parcours de notebooks](../README.md) · [Search : recherche et contraintes](../Search/README.md)
@@ -79,9 +79,10 @@ Le public indiqué reprend la profondeur des contenus : les preuves du palier 19
 | 15 | Infer ↔ NumPyro — [C#](Sudoku-15-Infer-CSharp.ipynb) · [Python](Sudoku-15-Infer-Python.ipynb) | Modéliser une distribution sur les cases avec Infer.NET en C# ou NumPyro/JAX en Python ; examiner sa relation à la validité. | Licence | — |
 | 16 | Neural Network — [Python](Sudoku-16-NeuralNetwork-Python.ipynb) | Comparer réseaux directs et itératifs ; distinguer précision par case et résolution complète d'une grille. | Licence | — |
 | 17 | LLM — [Python](Sudoku-17-LLM-Python.ipynb) | Comparer résolution par prompt et utilisation de code ; vérifier les grilles produites par un modèle de langage. | Licence | — |
-| 18 | Comparison — [C#](Sudoku-18-Comparison-CSharp.ipynb) · [Python](Sudoku-18-Comparison-Python.ipynb) | Construire un protocole comparatif de solveurs et interpréter temps, succès et coût de recherche. | Licence | [18b](#autour-de-18--comparer-statistiquement-recherche). |
+| 18 | Comparison — [C#](Sudoku-18-Comparison-CSharp.ipynb) · [Python](Sudoku-18-Comparison-Python.ipynb) · [Rust](Sudoku-18-Comparison-Rust.ipynb) | Construire un protocole comparatif de solveurs et interpréter temps, succès et coût de recherche. | Licence | [18b](#autour-de-18--comparer-statistiquement-recherche). |
 | 19 | Lean Propagation — [Lean](Sudoku-19-Lean-Propagation-Lean.ipynb) | Lire des preuves Lean de correction de la propagation : une élimination justifiée conserve les solutions possibles. | Recherche | — |
 | 20 | Corpus Audit — [Python](Sudoku-20-CorpusAudit-Python.ipynb) | Auditer un corpus de puzzles : validité, unicité, propagation seule, effort de recherche et indices redondants. | Recherche | — |
+| 21 | Difficulty Measures — [Python](Sudoku-21-DifficultyMeasures-Python.ipynb) | Mesurer la difficulté par quatre axes distincts (propagation, recherche, indices, répartition) sur les six corpus et comparer les échelles héritées et générées. | Recherche | — |
 
 ## Approfondissements — Licence et Recherche
 
@@ -240,6 +241,8 @@ Dans 18b, les répétitions de chronométrage sont regroupées par puzzle : rép
 L'audit ne trouve pas de grille invalide ou non unique dans ces corpus. Leur difficulté dépend ici du solveur et de la mesure retenue : le nom « hardest » ne prédit pas le classement observé. Une expérience utile consiste à supprimer un indice d'une grille, puis à mesurer séparément l'unicité et l'effort de résolution. Une grille encore soluble peut avoir plusieurs solutions ; son nombre d'indices ne constitue pas à lui seul une échelle de difficulté.
 
 Les corpus hérités sont des ensembles reçus, non construits. Le script [`scripts/generate_certified_corpus.py`](scripts/generate_certified_corpus.py) génère à l'inverse un corpus **équilibré par construction** : chaque grille est creusée depuis une solution complète aléatoire, son unicité est **prouvée par dénombrement certifié** (le moteur DLX de la série, arrêt « exhausted » avec exactement une solution — jamais un plafond atteint), et son palier est fixé par la difficulté **mesurée** (décisions de retour arrière, propagation seule), pas par un compte de cases vides. La bande `facile` exige zéro décision, `moyen` se tient entre 1 et 9, `difficile` au-delà — bornes calibrées sur les corpus hérités : le palier `difficile` généré égale la bande de `hardest` (pire observé autour d'une vingtaine de décisions), il ne prétend pas aux sommets de `top95`, corpus trié à la main. La notation est homogène : 81 caractères par ligne, chiffre `0` pour une case vide. Le **cardinal d'irréductibilité** de chaque grille est documenté par le même organe que Sudoku-20 (`minimal_clue_set`, retrait glouton sous unicité) : sur la génération livrée, la médiane est de 25 indices conservés pour `facile` et `moyen`, 26 pour `difficile` — une grille sur trois environ est déjà irrédundante, le reste porte un à cinq indices redondants (le creusage s'arrête à sa cible de difficulté, pas à l'irréductibilité). La génération est déterministe sous sa graine (`--seed`), et rejouer `Sudoku-20` sur ces fichiers en vérifie chaque grille avec les mêmes instruments que le tableau ci-dessus.
+
+[21 — Mesures de difficulté](Sudoku-21-DifficultyMeasures-Python.ipynb) pousse l'audit de [20](Sudoku-20-CorpusAudit-Python.ipynb) à **six corpus** — les trois hérités et les trois générés — et sépare **quatre mesures** que 20 agrégeait : la force de propagation, les décisions de recherche, le nombre d'indices et leur répartition par bloc. Le carnet compare les **échelles héritées** (libellées, « hypothèse non sourcée ») et **générées** (mesurées, bornes et graine citées) et rapporte leurs **désaccords** : le nom « hardest » n'est pas le sommet de l'axe des décisions (max 21 contre 446 pour `top95`), et le nombre d'indices ne prédit pas l'effort (intervalles `[22,45]`, `[22,28]`, `[17,26]` qui se recouvrent). L'unicité y est croisée par **deux organes indépendants** — la recherche MRV de `corpus` et le dénombrement DLX de `dlx_certificates` (18/18 coïncidences) — et un **témoin négatif** (propagation seule ⇒ zéro décision ⇒ 81/81 cases) en atteste le calage.
 
 ### Réseaux relationnels récurrents
 
