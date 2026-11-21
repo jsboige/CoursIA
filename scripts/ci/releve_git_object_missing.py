@@ -34,12 +34,12 @@ import argparse
 import json
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from classify_job_deaths import (  # noqa: E402
+from classify_job_deaths import (
     GIT_OBJECT_MISSING_NEEDLES,
     GIT_OBJECT_READ_RE,
     fetch_annotations,
@@ -69,7 +69,7 @@ def _borne(texte: str, fin: bool) -> datetime:
     23:59:59Z pour la fin.
     """
     if len(texte) == 10:
-        jour = datetime.strptime(texte, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        jour = datetime.strptime(texte, "%Y-%m-%d").replace(tzinfo=UTC)
         return jour.replace(hour=23, minute=59, second=59) if fin else jour
     return datetime.strptime(texte.replace("Z", "+0000"), "%Y-%m-%dT%H:%M:%S%z")
 
@@ -272,7 +272,7 @@ def verdict(releve: dict, seuil: int = SEUIL_CRITERE) -> dict:
 
 def fenetre_heures(heures: int) -> tuple[str, str]:
     """Bornes ISO d'une fenetre glissante, en UTC."""
-    fin = datetime.now(timezone.utc)
+    fin = datetime.now(UTC)
     debut = fin - timedelta(hours=heures)
     return debut.strftime("%Y-%m-%dT%H:%M:%SZ"), fin.strftime("%Y-%m-%dT%H:%M:%SZ")
 
@@ -285,8 +285,8 @@ def rendre_markdown(releve: dict, fenetre: dict) -> str:
         f"- fenetre : {fenetre['depuis']} -> {fenetre['jusqu']}",
         f"- runs : {fenetre['runs']}{' (TRONQUE)' if fenetre['tronque'] else ''}",
         f"- jobs vus : {releve['jobs']}",
-        f"- **executions ayant franchi le checkout** : {releve['executions_reelles']}"
-        f" (dont {releve['executions_self_hosted']} sur runner self-hosted)",
+        (f"- **executions ayant franchi le checkout** : {releve['executions_reelles']}"
+         f" (dont {releve['executions_self_hosted']} sur runner self-hosted)"),
         f"- **occurrences GIT_OBJECT_MISSING** : {releve['occurrences']}",
         f"- lectures en erreur (quota API, job illisible) : {releve.get('lectures_en_erreur', 0)}",
         "",
@@ -345,10 +345,8 @@ def main() -> int:
             if erreur:
                 runs_illisibles += 1
 
-    analyses: list[dict] = []
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        for analysis in pool.map(lambda paire: analyser_job(paire[1], paire[0]), paires):
-            analyses.append(analysis)
+        analyses = list(pool.map(lambda paire: analyser_job(paire[1], paire[0]), paires))
 
     releve = agreger(analyses)
     releve["lectures_en_erreur"] += runs_illisibles
