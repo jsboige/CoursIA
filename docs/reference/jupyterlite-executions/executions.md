@@ -10,17 +10,18 @@ de `[ ]:` a `[n]:`.
 
 | Carnet | Cellules code | Cellules executees | Cellules avec sortie | Erreurs | Duree (s) | Premier resultat (s) | Verdict |
 |---|---:|---:|---:|---:|---:|---:|---|
-| `10-SIG-3D-Tiles-Python.ipynb` | 6 | 6 | 6 | 0 | 23.6 | 7.0 | **succes** |
-| `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 3 | 0 | 15.8 | 6.8 | **succes** |
-| `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 9 | 0 | 21.9 | 8.3 | **succes** |
-| `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 7 | 0 | 16.0 | 6.9 | **succes** |
-| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 1 | 0 | 15.7 | 6.7 | **succes** |
-| `Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb` | 8 | 8 | 7 | 0 | 16.0 | 6.9 | **succes** |
-| `Coalitions-04-Munkres-Affectation-Python.ipynb` | 10 | 10 | 10 | 0 | 41.6 | 6.9 | **succes** |
+| `10-SIG-3D-Tiles-Python.ipynb` | 6 | 6 | 6 | 0 | 29.6 | 9.9 | **succes** |
+| `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 3 | 0 | 15.8 | 6.7 | **succes** |
+| `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 9 | 0 | 20.4 | 6.8 | **succes** |
+| `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 7 | 0 | 14.4 | 6.8 | **succes** |
+| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 1 | 0 | 14.1 | 6.6 | **succes** |
+| `Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb` | 10 | 10 | 5 | 0 | 20.4 | 6.8 | **succes** |
+| `Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb` | 8 | 8 | 7 | 0 | 17.5 | 6.9 | **succes** |
+| `Coalitions-04-Munkres-Affectation-Python.ipynb` | 10 | 10 | 10 | 0 | 34.0 | 6.8 | **succes** |
 
 ## `10-SIG-3D-Tiles-Python.ipynb`
 
-Verdict : **succes** · cellules executees 6/6 · duree 23.6 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 6/6 · duree 29.6 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 1 (`[1]:`)
 
@@ -99,7 +100,7 @@ POLITIQUE NAIVE
 
 ## `Quotients-Fibres-Recollement-Python.ipynb`
 
-Verdict : **succes** · cellules executees 9/9 · duree 21.9 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 9/9 · duree 20.4 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 2 (`[1]:`)
 
@@ -193,7 +194,7 @@ Exercice 3 a completer : voir la cellule precedente pour les etapes
 
 ## `Argumentation-01-Toulmin-Model-Python.ipynb`
 
-Verdict : **succes** · cellules executees 7/7 · duree 16.0 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 7/7 · duree 14.4 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 3 (`[1]:`)
 
@@ -292,7 +293,7 @@ Exercice 3 a completer.
 
 ## `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb`
 
-Verdict : **succes** · cellules executees 1/1 · duree 15.7 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 1/1 · duree 14.1 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 8 (`[1]:`)
 
@@ -322,9 +323,91 @@ Notes :
  - Le facteur ~59x d abstraction de B.4 vs A.1 documente la barriere du SO
 ```
 
+## `Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb`
+
+Verdict : **succes** · cellules executees 10/10 · duree 20.4 s · declenchement : `menu Run > Run All Cells`
+
+### Cellule 4 (`[1]:`)
+
+```
+Taux de cholera par quartier (DGP illustre) :
+  Soho (pompe Broad)                  : 9.10 %
+  Bloomsbury (autre pompe)            : 0.40 %
+  Westminster (riviere)               : 0.90 %
+  Camden (puits profond)              : 0.10 %
+```
+
+### Cellule 6 (`[2]:`)
+
+```
+Aretes du DAG : [('Z', 'X'), ('Z', 'Y'), ('X', 'M'), ('M', 'Y')]
+```
+
+### Cellule 8 (`[3]:`)
+
+```
+P(Y = 1 | X = 1) = 0.7078  (sur 44,050 unites traitees)
+P(Y = 1 | X = 0) = 0.3221  (sur 55,950 unites non traitees)
+Association observee (difference) : +0.3857
+
+Note : Z est distribue differemment dans les deux groupes.
+  E[Z | X = 1] = +0.5239  (les traites sont plus aptes)
+  E[Z | X = 0] = -0.4201  (les non-traites sont moins aptes)
+  => P(Y | X) reflete a la fois l'effet causal et le biais de selection par Z.
+
+Bruits exogenes conserves (requis par le contrefactuel individuel, cellule a9c3e450) :
+  eps_M : N(0, 0.5^2)   -- 100,000 tirages
+  U_Y   : Uniform(0, 1) -- 100,000 tirages
+```
+
+### Cellule 10 (`[4]:`)
+
+```
+P(Y = 1 | do(X = 1)) = 0.6063  (backdoor adjustment sur Z)
+P(Y = 1 | do(X = 0)) = 0.4039
+Effet causal (difference) : +0.2024
+
+Comparaison :
+  P(Y | X = 1) - P(Y | X = 0)  = +0.3857  (biaise par Z)
+  P(Y | do(X=1)) - P(Y | do(X=0)) = +0.2024  (effet causal ajuste)
+
+L'association naive surestime (ou sous-estime) l'effet causal selon la direction du confounding.
+Le backdoor adjustment par Z neutralise ce biais.
+```
+
+### Cellule 12 (`[5]:`)
+
+```
+Pool d'Alice-like (X=0, Y=1) : 18,024 unites (sur 55,950 avec X=0)
+
+Abduction : bruits exogenes conserves pour 18,024 Alice-like (Z, eps_M, U_Y)
+  Factuel (X=0) : Y0 = 1.0000  (doit valoir 1.0 -- selection sur Y == 1)
+Action    : do(X=1) -- meme eps_M, meme U_Y, X force a 1
+Prediction: P(Y_1=1 | X=0, Y=1) = 1.0000  (contrefactuel individuel)
+
+Temoin monotone (algebrique, propre a CE SCM) :
+  M_1 - M_0 = 0.7 * (1 - 0) = 0.7  =>  logit_1 - logit_0 = 1.5 * 0.7 = 1.05
+  (mesure : min 1.0500, max 1.0500 -- constant)
+  sigmoid croissante => sigmoid(logit_0 + 1.05) > sigmoid(logit_0) > U_Y pour toute
+  Alice-like (Y_0 = 1 signifie precisement U_Y < sigmoid(logit_0)).
+  => Y_1 = 1 pour CHAQUE unite observee Y_0 = 1 : P(Y_1=1 | X=0, Y=1) = 1 exactement.
+
+Lecture : le contrefactuel individuel n'est PAS la prediction moyenne P(Y | do(X=1)).
+  L'effet est monotone et positif : toute Alice ayant reussi sans mentorat reussit
+  encore avec. La question 'aurait-elle reussi ?' a donc la reponse 100%, pas une
+  moyenne de probabilites sur des unites fraiches. L'ecart entre les deux lectures
+  est precisement ce que le 3e echelon de Pearl ajoute : l'information que porte
+  l'observation Y_0 = 1 sur le bruit U_Y de CETTE unite.
+
+Note SCM : ce resultat a 100% est une CONSEQUENCE DE LA STRUCTURE DU SCM choisi
+  (logit monotone, pas d'effet heterogene, bruit U_Y conserve au niveau de l'unite).
+  Pas une decouverte EMPIRIQUE sur les effets reels du mentorat, qui pourraient
+  etre heterogenes dans la
+```
+
 ## `Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb`
 
-Verdict : **succes** · cellules executees 8/8 · duree 16.0 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 8/8 · duree 17.5 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 4 (`[2]:`)
 
@@ -389,7 +472,7 @@ Exercice a completer
 
 ## `Coalitions-04-Munkres-Affectation-Python.ipynb`
 
-Verdict : **succes** · cellules executees 10/10 · duree 41.6 s · declenchement : `menu Run > Run All Cells`
+Verdict : **succes** · cellules executees 10/10 · duree 34.0 s · declenchement : `menu Run > Run All Cells`
 
 ### Cellule 2 (`[1]:`)
 

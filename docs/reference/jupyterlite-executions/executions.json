@@ -109,10 +109,10 @@
     "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 23.6,
+   "duree_s": 29.6,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 7.0,
+   "temps_premier_resultat_s": 9.9,
    "url": "/lab/index.html?path=10-SIG-3D-Tiles-Python.ipynb"
   },
   {
@@ -239,7 +239,7 @@
    "duree_s": 15.8,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 6.8,
+   "temps_premier_resultat_s": 6.7,
    "url": "/lab/index.html?path=AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb"
   },
   {
@@ -405,10 +405,10 @@
     "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 21.9,
+   "duree_s": 20.4,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 8.3,
+   "temps_premier_resultat_s": 6.8,
    "url": "/lab/index.html?path=Quotients-Fibres-Recollement-Python.ipynb"
   },
   {
@@ -538,10 +538,10 @@
     "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 16.0,
+   "duree_s": 14.4,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 6.9,
+   "temps_premier_resultat_s": 6.8,
    "url": "/lab/index.html?path=Argumentation-01-Toulmin-Model-Python.ipynb"
   },
   {
@@ -659,11 +659,168 @@
     "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 15.7,
+   "duree_s": 14.1,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 6.7,
+   "temps_premier_resultat_s": 6.6,
    "url": "/lab/index.html?path=06-3-AudioDiffusion-Comparison-A-vs-B.ipynb"
+  },
+  {
+   "carnet": "Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb",
+   "cellules": [
+    {
+     "erreur": false,
+     "index": 0,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 1,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 2,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 3,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 4,
+     "prompt": "[1]:",
+     "sortie": "Taux de cholera par quartier (DGP illustre) :\n  Soho (pompe Broad)                  : 9.10 %\n  Bloomsbury (autre pompe)            : 0.40 %\n  Westminster (riviere)               : 0.90 %\n  Camden (puits profond)              : 0.10 %"
+    },
+    {
+     "erreur": false,
+     "index": 5,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 6,
+     "prompt": "[2]:",
+     "sortie": "Aretes du DAG : [('Z', 'X'), ('Z', 'Y'), ('X', 'M'), ('M', 'Y')]"
+    },
+    {
+     "erreur": false,
+     "index": 7,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 8,
+     "prompt": "[3]:",
+     "sortie": "P(Y = 1 | X = 1) = 0.7078  (sur 44,050 unites traitees)\nP(Y = 1 | X = 0) = 0.3221  (sur 55,950 unites non traitees)\nAssociation observee (difference) : +0.3857\n\nNote : Z est distribue differemment dans les deux groupes.\n  E[Z | X = 1] = +0.5239  (les traites sont plus aptes)\n  E[Z | X = 0] = -0.4201  (les non-traites sont moins aptes)\n  => P(Y | X) reflete a la fois l'effet causal et le biais de selection par Z.\n\nBruits exogenes conserves (requis par le contrefactuel individuel, cellule a9c3e450) :\n  eps_M : N(0, 0.5^2)   -- 100,000 tirages\n  U_Y   : Uniform(0, 1) -- 100,000 tirages"
+    },
+    {
+     "erreur": false,
+     "index": 9,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 10,
+     "prompt": "[4]:",
+     "sortie": "P(Y = 1 | do(X = 1)) = 0.6063  (backdoor adjustment sur Z)\nP(Y = 1 | do(X = 0)) = 0.4039\nEffet causal (difference) : +0.2024\n\nComparaison :\n  P(Y | X = 1) - P(Y | X = 0)  = +0.3857  (biaise par Z)\n  P(Y | do(X=1)) - P(Y | do(X=0)) = +0.2024  (effet causal ajuste)\n\nL'association naive surestime (ou sous-estime) l'effet causal selon la direction du confounding.\nLe backdoor adjustment par Z neutralise ce biais."
+    },
+    {
+     "erreur": false,
+     "index": 11,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 12,
+     "prompt": "[5]:",
+     "sortie": "Pool d'Alice-like (X=0, Y=1) : 18,024 unites (sur 55,950 avec X=0)\n\nAbduction : bruits exogenes conserves pour 18,024 Alice-like (Z, eps_M, U_Y)\n  Factuel (X=0) : Y0 = 1.0000  (doit valoir 1.0 -- selection sur Y == 1)\nAction    : do(X=1) -- meme eps_M, meme U_Y, X force a 1\nPrediction: P(Y_1=1 | X=0, Y=1) = 1.0000  (contrefactuel individuel)\n\nTemoin monotone (algebrique, propre a CE SCM) :\n  M_1 - M_0 = 0.7 * (1 - 0) = 0.7  =>  logit_1 - logit_0 = 1.5 * 0.7 = 1.05\n  (mesure : min 1.0500, max 1.0500 -- constant)\n  sigmoid croissante => sigmoid(logit_0 + 1.05) > sigmoid(logit_0) > U_Y pour toute\n  Alice-like (Y_0 = 1 signifie precisement U_Y < sigmoid(logit_0)).\n  => Y_1 = 1 pour CHAQUE unite observee Y_0 = 1 : P(Y_1=1 | X=0, Y=1) = 1 exactement.\n\nLecture : le contrefactuel individuel n'est PAS la prediction moyenne P(Y | do(X=1)).\n  L'effet est monotone et positif : toute Alice ayant reussi sans mentorat reussit\n  encore avec. La question 'aurait-elle reussi ?' a donc la reponse 100%, pas une\n  moyenne de probabilites sur des unites fraiches. L'ecart entre les deux lectures\n  est precisement ce que le 3e echelon de Pearl ajoute : l'information que porte\n  l'observation Y_0 = 1 sur le bruit U_Y de CETTE unite.\n\nNote SCM : ce resultat a 100% est une CONSEQUENCE DE LA STRUCTURE DU SCM choisi\n  (logit monotone, pas d'effet heterogene, bruit U_Y conserve au niveau de l'unite).\n  Pas une decouverte EMPIRIQUE sur les effets reels du mentorat, qui pourraient\n  etre heterogenes dans la realite (les conseils d'un mentor peuvent etre plus\n  utiles pour certains profils que pour d'autres -- ce SCM-ci les traite tous pareil)."
+    },
+    {
+     "erreur": false,
+     "index": 13,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 14,
+     "prompt": "[6]:",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 15,
+     "prompt": "[7]:",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 16,
+     "prompt": "[8]:",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 17,
+     "prompt": "[9]:",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 18,
+     "prompt": "[10]:",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 19,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 20,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 21,
+     "prompt": "",
+     "sortie": ""
+    },
+    {
+     "erreur": false,
+     "index": 22,
+     "prompt": "",
+     "sortie": ""
+    }
+   ],
+   "cellules_avec_sortie": 5,
+   "cellules_code": 10,
+   "cellules_executees": 10,
+   "cellules_rendues": 23,
+   "console": [
+    "warning: Disabling terminals plugin because they are not available on the server",
+    "warning: No exact match found for python, using kernel python that matches language=python"
+   ],
+   "declenchement": "menu Run > Run All Cells",
+   "duree_s": 20.4,
+   "erreurs": [],
+   "succes": true,
+   "temps_premier_resultat_s": 6.8,
+   "url": "/lab/index.html?path=Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb"
   },
   {
    "carnet": "Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb",
@@ -846,7 +1003,7 @@
     "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 16.0,
+   "duree_s": 17.5,
    "erreurs": [],
    "succes": true,
    "temps_premier_resultat_s": 6.9,
@@ -1033,16 +1190,16 @@
     "warning: No exact match found for python, using kernel python that matches language=python"
    ],
    "declenchement": "menu Run > Run All Cells",
-   "duree_s": 41.6,
+   "duree_s": 34.0,
    "erreurs": [],
    "succes": true,
-   "temps_premier_resultat_s": 6.9,
+   "temps_premier_resultat_s": 6.8,
    "url": "/lab/index.html?path=Coalitions-04-Munkres-Affectation-Python.ipynb"
   }
  ],
  "navigateur": "chromium (playwright, headless)",
  "noyau": "pyodide (jupyterlite)",
- "site": "CoursIA-2/.tmp/jlite-site/_output",
- "succes": 7,
- "total": 7
+ "site": "_output",
+ "succes": 8,
+ "total": 8
 }

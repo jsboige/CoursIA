@@ -194,7 +194,7 @@ la duree totale.
 
 <!-- MESURES-LOCALES -->
 
-### Mesure relevee (lot de sept carnets publies)
+### Mesure relevee (lot de huit carnets publies)
 
 Site construit **en local** (JupyterLite 0.8.7, noyau Pyodide 314.0.6),
 carnets servis par le site lui-meme, execution reelle dans Chromium
@@ -204,19 +204,28 @@ demande le critere d'acceptation.
 
 | Carnet | Cellules code | Executees | Erreurs | Duree (s) | Premier resultat (s) |
 |---|---:|---:|---:|---:|---:|
-| `10-SIG-3D-Tiles-Python.ipynb` | 6 | 6 | 0 | 23,6 | 7,0 |
-| `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 0 | 15,8 | 6,8 |
-| `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 0 | 21,9 | 8,3 |
-| `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 0 | 16,0 | 6,9 |
-| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 0 | 15,7 | 6,7 |
-| `Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb` | 8 | 8 | 0 | 16,0 | 6,9 |
-| `Coalitions-04-Munkres-Affectation-Python.ipynb` | 10 | 10 | 0 | 41,6 | 6,9 |
+| `10-SIG-3D-Tiles-Python.ipynb` | 6 | 6 | 0 | 29,6 | 9,9 |
+| `AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb` | 6 | 6 | 0 | 15,8 | 6,7 |
+| `Quotients-Fibres-Recollement-Python.ipynb` | 9 | 9 | 0 | 20,4 | 6,8 |
+| `Argumentation-01-Toulmin-Model-Python.ipynb` | 7 | 7 | 0 | 14,4 | 6,8 |
+| `06-3-AudioDiffusion-Comparison-A-vs-B.ipynb` | 1 | 1 | 0 | 14,1 | 6,6 |
+| `Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb` | 10 | 10 | 0 | 20,4 | 6,8 |
+| `Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb` | 8 | 8 | 0 | 17,5 | 6,9 |
+| `Coalitions-04-Munkres-Affectation-Python.ipynb` | 10 | 10 | 0 | 34,0 | 6,8 |
 
-**Sept carnets sur sept s'executent sans erreur.** Le temps jusqu'au premier
-resultat est de **6,7 a 8,3 s** ; il est dominé par le demarrage du noyau
+**Huit carnets sur huit s'executent sans erreur.** Le temps jusqu'au premier
+resultat est de **6,6 a 9,9 s** ; il est dominé par le demarrage du noyau
 Pyodide, non par le carnet lui-meme -- c'est aussi pourquoi la duree totale
-monte a 41,6 s sur le carnet le plus long (dix cellules) sans que le premier
+monte a 34,0 s sur le carnet le plus long (dix cellules) sans que le premier
 resultat bouge.
+
+Le huitieme carnet, `Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb`,
+echouait auparavant sur sa premiere cellule : la magic IPython
+`%matplotlib inline` declenchait un `import matplotlib` **synchrone**, que
+Pyodide ne peut pas attendre (son chargement de paquets est **asynchrone**).
+L'echec etait **deterministe** (306,3 s au premier passage, 426,9 s en
+re-execution isolee sur une page neuve). La magic a ete retiree du carnet
+(PR #27715) ; le carnet s'execute alors sans erreur en 20,4 s.
 
 Les sorties relevees sont bien celles d'une **execution reelle** et non
 celles committes : le carnet `10-SIG-3D-Tiles` affiche `NumPy 2.4.6` a
@@ -227,6 +236,14 @@ La preuve complete (sorties de chaque cellule) est versionnee dans
 
 ## Limites connues
 
+- **Le site n'embarque pas la distribution Pyodide.** La construction ne pose
+  que des **fichiers** : le noyau Pyodide (et ses paquets) est telecharge au
+  premier usage. Mesure : la construction ne produit aucun repertoire
+  `pyodide/`, et l'index piplite local ne contient que les roues du noyau
+  (`ipykernel`, `piplite`, `pyodide-kernel`, `widgetsnbextension`). Une
+  execution depend donc du **reseau** ; un echec de telechargement se lit
+  comme un `ModuleNotFoundError` sur le paquet manquant, apres plusieurs
+  centaines de secondes.
 - **Le lot bouge avec le critere.** Le manifeste d'une construction n'a de
   sens que pour cette construction : le garde compare le manifeste **publie**
   aux URL repondantes, jamais a une liste du depot.
