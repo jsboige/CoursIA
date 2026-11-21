@@ -43,24 +43,16 @@ from typing import Dict, List, Optional, Sequence, Set, Tuple
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pyodide_eligibility import (  # noqa: E402
-    GPU_MODULES,
-    GPU_PACKAGES,
-    MODULE_TO_PACKAGE,
-    NETWORK_MODULES,
     NotebookVerdict,
     analyse_notebook,
-    collect_imports,
     git_ls_files,
     is_active_notebook,
     is_python_notebook,
     load_pyodide_lock,
     load_wheel_cache,
-    local_modules,
-    notebook_sources,
-    series_of,
-    top_level_module,
 )
 from pyodide_eligibility_report import select_lot  # noqa: E402
+from pyodide_suffisance import roue_pure, suffisance_carnet  # noqa: E402
 
 #: Racine du site JupyterLite dans le site Quarto publie.
 SOUS_DOSSIER = "jupyterlite"
@@ -129,261 +121,48 @@ def lot(root: Path,
 
 
 # ---------------------------------------------------------------------------
-# Modules locaux de la serie (a embarquer avec le carnet)
+# Suffisance au bundle (organe natif : le critere de 2.1)
 # ---------------------------------------------------------------------------
-
-#: Dossiers ignores dans la recherche des modules locaux.
-_SKIP_DIRS = {".git", ".tmp", "node_modules", "__pycache__", ".venv", "venv",
-              ".pytest_cache", ".mypy_cache", "build", "dist", ".claude"}
-
-
-def _dossiers_candidats(dossier: Path, series_root: Path, root: Path) -> List[Path]:
-    """Dossiers ou peut se trouver un module local, du plus proche au plus lointain.
-
-    La montee est **bornee** : elle s'arrete a la racine de la serie, et au
-    pire a la racine du depot. Sans cette borne, un carnet pose directement
-    sous la racine de sa serie fait monter la recherche jusqu'a la racine du
-    systeme de fichiers -- et la construction y passe des heures.
-    """
-    candidats: List[Path] = [dossier]
-    for parent in dossier.parents:
-        candidats.append(parent)
-        if parent == series_root or parent == root:
-            break
-    return candidats
-
-
-def _chercher_module(dossier: Path, nom: str) -> Optional[Tuple[Path, bool]]:
-    """Cherche le module `nom` dans `dossier` : (chemin, est_paquet)."""
-    direct = dossier / (nom + ".py")
-    if direct.is_file():
-        return direct, False
-    paquet = dossier / nom
-    if (paquet / "__init__.py").is_file():
-        return paquet, True
-    trouves: List[Tuple[int, Path, bool]] = []
-    for base, dirs, files in os.walk(dossier):
-        dirs[:] = [d for d in dirs if d not in _SKIP_DIRS and not d.startswith(".")]
-        profondeur = len(Path(base).relative_to(dossier).parts)
-        for nom_fichier in files:
-            if nom_fichier == nom + ".py":
-                trouves.append((profondeur, Path(base) / nom_fichier, False))
-        for d in dirs:
-            if d == nom and (Path(base) / d / "__init__.py").is_file():
-                trouves.append((profondeur, Path(base) / d, True))
-    if not trouves:
-        return None
-    trouves.sort(key=lambda entree: entree[0])
-    return trouves[0][1], trouves[0][2]
-
-
-def _source_du_module(root: Path, rel_path: str, nom: str) -> Optional[Tuple[Path, bool]]:
-    """Emplacement du module local `nom` pour le carnet `rel_path`.
-
-    La recherche est limitee a la **serie** du carnet : c'est la seule
-    partie du depot que le bundle publie (avec le carnet).
-    """
-    path = root / rel_path
-    series_root = root / "MyIA.AI.Notebooks" / series_of(rel_path)
-    for dossier in _dossiers_candidats(path.parent, series_root, root):
-        trouve = _chercher_module(dossier, nom)
-        if trouve is not None:
-            return trouve
-    return None
-
-
-#: Installation d'un paquet **par le carnet lui-meme** : le bundle n'installe
-#: rien, mais un carnet peut installer une roue pure a l'execution
-#: (`micropip.install("...")`, `%pip install ...`, `!pip install ...`).
-_INSTALL_RE = re.compile(
-    r"micropip\.install\s*\(\s*[\"']([A-Za-z0-9_.\-]+)[\"']"
-    r"|%\s*pip\s+install\s+([A-Za-z0-9_.\-]+)"
-    r"|!\s*pip\s+install\s+([A-Za-z0-9_.\-]+)",
-    re.IGNORECASE)
-
-
-def _normalise(nom: str) -> str:
-    """Nom de paquet normalise (PyPI accepte `scikit-learn` et `sklearn`)."""
-    return nom.replace("-", "_").lower()
-
-
-def paquets_installes_par_le_carnet(sources: Sequence[str]) -> Set[str]:
-    """Paquets que le carnet installe lui-meme au moment de l'execution.
-
-    C'est la seule voie par laquelle une roue pure absente de la
-    distribution peut devenir disponible dans le bundle : le carnet
-    l'installe. Sans cette trace, la dependance est **absente** -- le
-    bundle ne l'installera pas a la place du carnet.
-    """
-    installs: Set[str] = set()
-    for texte in sources:
-        for trouve in _INSTALL_RE.finditer(texte):
-            nom = trouve.group(1) or trouve.group(2) or trouve.group(3)
-            if nom:
-                installs.add(nom.replace("-", "_").lower())
-    return installs
-
-
-def imports_non_satisfaits(source: Path, pyodide_packages: Dict[str, str],
-                            stdlib_names: Set[str], resolver, vus: Set[str],
-                            chaine: Tuple[str, ...] = (),
-                            installs: Optional[Set[str]] = None) -> List[str]:
-    """Imports d'un module local que la distribution Pyodide ne fournit pas.
-
-    Le bundle publie des **fichiers**, il n'installe rien : une dependance
-    d'un module local embarque doit donc faire partie de la **distribution**
-    (verrou Pyodide), et non etre une roue pure que le carnet installerait
-    lui-meme.
-
-    Mesure : le carnet `Causalite-06` importe `dowhy_iv_organs`, qui importe
-    `dowhy` ; `dowhy` n'est pas dans la distribution -> le carnet echoue en
-    navigation (`ModuleNotFoundError: No module named 'dowhy'`), meme une
-    fois le module embarque.
-
-    `installs` porte les paquets que le carnet installe lui-meme : ils sont
-    disponibles a l'execution, donc ils satisfont la dependance.
-    """
-    problemes: List[str] = []
-    cle = str(source)
-    if cle in vus:
-        return problemes
-    vus.add(cle)
-    installs = installs or set()
-    fichier = source / "__init__.py" if source.is_dir() else source
-    if not fichier.is_file():
-        return problemes
-    texte = fichier.read_text(encoding="utf-8", errors="replace")
-    for module in sorted(collect_imports([texte])):
-        top = top_level_module(module)
-        if top in stdlib_names:
-            continue
-        if top in GPU_MODULES or top in GPU_PACKAGES:
-            problemes.append("%s : GPU" % (" -> ".join(chaine + (module,))))
-            continue
-        if top in NETWORK_MODULES:
-            problemes.append("%s : reseau" % (" -> ".join(chaine + (module,))))
-            continue
-        package = MODULE_TO_PACKAGE.get(top, top)
-        if package in pyodide_packages:
-            continue
-        if _normalise(package) in installs or _normalise(top) in installs:
-            continue
-        local = resolver(top)
-        if local is None:
-            problemes.append("%s : absent de la distribution"
-                              % " -> ".join(chaine + (module,)))
-            continue
-        problemes.extend(imports_non_satisfaits(
-            local[0], pyodide_packages, stdlib_names, resolver, vus,
-            chaine + (module,), installs))
-    return problemes
-
-
-def modules_et_problemes(root: Path, rel_path: str,
-                          pyodide_packages: Dict[str, str],
-                          stdlib_names: Set[str]) -> Tuple[List[Tuple[str, str, bool]],
-                                                           List[str]]:
-    """Modules locaux que le carnet importe, et dependances non satisfaites.
-
-    Le critere d'eligibilite (pli 2.1) considere qu'un module Python de la
-    serie du carnet est **embarquable** dans le bundle JupyterLite : ce n'est
-    pas un motif de refus. Le deploiement doit donc l'embarquer pour de
-    vrai -- sinon le carnet publie echoue a l'import. Mesure : le carnet
-    `Causalite-06` du lot echoue en navigation
-    (`ModuleNotFoundError: dowhy_iv_organs`), parce que seul le carnet etait
-    pose dans le site.
-
-    La meme regle s'applique aux **imports du carnet lui-meme** : le bundle
-    publie des fichiers et n'installe rien, donc un import qui n'est ni dans
-    la distribution, ni installe par le carnet, n'est pas satisfait. Le
-    critere, lui, accepte une roue pure presente dans son cache : le
-    deploiement est plus strict, et c'est lui qui publie. L'alignement des
-    deux est porte par l'Epic (le critere doit dire ce que le bundle livre).
-
-    Rende le couple `([(nom, chemin relatif, est_paquet)], [raisons])`.
-    """
-    path = root / rel_path
-    with path.open(encoding="utf-8") as fh:
-        nb = json.load(fh)
-    sources = notebook_sources(nb)
-    imports = collect_imports(sources)
-    series_root = root / "MyIA.AI.Notebooks" / series_of(rel_path)
-    local, elsewhere = local_modules(root, path, series_root)
-    installs = paquets_installes_par_le_carnet(sources)
-
-    modules: List[Tuple[str, str, bool]] = []
-    problemes: List[str] = []
-    vus: Set[str] = set()
-
-    def resolver(nom: str):
-        return _source_du_module(root, rel_path, nom)
-
-    for module in sorted(set(imports)):
-        top = top_level_module(module)
-        if top in stdlib_names:
-            continue
-        if top in GPU_MODULES or top in GPU_PACKAGES:
-            problemes.append("%s : GPU" % module)
-            continue
-        if top in NETWORK_MODULES:
-            problemes.append("%s : reseau" % module)
-            continue
-        package = MODULE_TO_PACKAGE.get(top, top)
-        if package in pyodide_packages:
-            continue
-        if _normalise(package) in installs or _normalise(top) in installs:
-            # Le carnet installe lui-meme la roue : elle sera disponible.
-            continue
-        if top in local or module in local:
-            nom = top if top in local else module
-            emplacement = resolver(nom)
-            if emplacement is None:
-                problemes.append("%s : module local introuvable" % nom)
-                continue
-            source, est_paquet = emplacement
-            modules.append((nom, source.relative_to(root).as_posix(), est_paquet))
-            problemes.extend(imports_non_satisfaits(
-                source, pyodide_packages, stdlib_names, resolver, vus, (nom,),
-                installs))
-            continue
-        if top in elsewhere:
-            # Le bundle ne livre que la serie du carnet : un module d'une
-            # autre serie ne sera pas dans le site -> l'import echoue.
-            problemes.append("%s : module hors serie non livre par le bundle"
-                              % module)
-            continue
-        problemes.append("%s : absent de la distribution" % module)
-    return modules, problemes
 
 
 def suffisance(root: Path, lot_notebooks: Sequence[NotebookVerdict],
                 pyodide_packages: Dict[str, str],
-                stdlib_names: Set[str]) -> Tuple[List[Tuple[NotebookVerdict, List]],
-                                                 List[Tuple[str, List[str]]]]:
+                stdlib_names: Set[str],
+                wheel_cache: Optional[Dict[str, Dict[str, object]]] = None
+                ) -> Tuple[List[Tuple[NotebookVerdict, List]],
+                           List[Tuple[str, List[str]]]]:
     """Repartit le lot du critere en **lot publie** et refus motives.
 
-    Le critere d'eligibilite (pli 2.1) dit quels carnets sont candidats : un
-    carnet qui importe un module de sa serie est candidat. Le deploiement, lui,
-    doit garantir que tout carnet **publie** s'execute : il verifie donc que
-    chaque import du carnet -- et chaque dependance des modules locaux
-    qu'il embarque -- est bien fourni par la distribution Pyodide (ou
-    installe par le carnet lui-meme). Un carnet qui echoue a cette
-    verification n'est pas publie -- et le motif est inscrit dans le
-    manifeste.
+    La regle est celle du critere (pli 2.1) : le deploiement ne la reecrit
+    pas, il **l'importe** (`pyodide_suffisance`). Le bundle publie des
+    fichiers et n'installe rien : un import n'est fourni que par la
+    distribution Pyodide, par une installation du carnet lui-meme, ou par un
+    module de la serie livre avec le carnet -- dont les propres dependances
+    sont satisfaites.
+
+    Ce que le deploiement ajoute au critere n'est pas une regle : c'est la
+    **consequence** de la regle. Le critere refuse un carnet insuffisant
+    (motif `suffisance`) ; le deploiement, qui doit garantir que tout carnet
+    publie s'execute, refuse le meme carnet et **pose les modules locaux**
+    qu'il embarque -- le critere les declare embarquables, le deploiement les
+    pose.
 
     Rend `(publie, refus)` : `publie` porte `(verdict, modules)`, `refus`
     porte `(chemin, [raisons])`.
     """
     publie: List[Tuple[NotebookVerdict, List]] = []
     refus: List[Tuple[str, List[str]]] = []
+    cache = wheel_cache or {}
     for verdict in lot_notebooks:
         rel = verdict.path.replace("\\", "/")
-        modules, problemes = modules_et_problemes(root, rel, pyodide_packages,
-                                                   stdlib_names)
+        suff = suffisance_carnet(
+            root, rel, pyodide_packages, stdlib_names,
+            est_roie_pure=lambda pack: roue_pure(pack, cache, False))
+        problemes = [p.detail for p in suff.problemes]
         if problemes:
             refus.append((rel, problemes))
         else:
-            publie.append((verdict, modules))
+            publie.append((verdict, suff.modules))
     return publie, refus
 
 
@@ -688,8 +467,10 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     # distribution Pyodide n'est pas publie ; le motif est inscrit dans le
     # manifeste (rien n'est ecarte en silence).
     pyodide_packages, _lock_info = load_pyodide_lock(lock_path)
+    wheel_cache = load_wheel_cache(cache_path)
     stdlib_names = set(sys.stdlib_module_names)
-    publie, refus = suffisance(root, lot_notebooks, pyodide_packages, stdlib_names)
+    publie, refus = suffisance(root, lot_notebooks, pyodide_packages,
+                               stdlib_names, wheel_cache)
 
     poses = stage(root, publie, source_dir)
     try:

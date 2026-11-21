@@ -62,8 +62,9 @@ local embarque doit donc faire partie de la **distribution** Pyodide (le
 verrou `pyodide-lock.json`), et non etre une roue pure que le carnet
 installerait lui-meme.
 
-Le deploiement applique donc une regle de suffisance **au-dessus** du
-critere : pour chaque candidat du lot, il resout
+Le deploiement applique donc la regle de suffisance **du critere** (pli 2.1,
+`scripts/notebook_tools/pyodide_suffisance.py`) : il l'**importe**, il ne la
+reecrit pas. Pour chaque candidat du lot, la regle resout
 
 1. les imports **du carnet lui-meme** ;
 2. puis ceux des **modules locaux** que le carnet importe, recursivement.
@@ -73,38 +74,32 @@ Un import n'est satisfait que s'il est :
 - dans la **stdlib** ;
 - dans la **distribution** Pyodide (le verrou `pyodide-lock.json`) ;
 - **installe par le carnet lui-meme** (`micropip.install`, `%pip install`,
-  `!pip install` -- le deploiement lit ces appels dans les sources) ;
+  `!pip install` -- la regle lit ces appels dans les sources) ;
 - fourni par un **module local** que le carnet embarque (et dont les
   dependances sont, elles aussi, satisfaites) ;
 - un module **d'une autre serie** : refuse, car le bundle ne livre que la
   serie du carnet (`module hors serie non livre par le bundle`).
 
-Un carnet dont une dependance manque est **ecarte du lot**, avec le motif
-ecrit dans le manifeste (`refuses`) et sur la sortie de la construction.
-Rien n'est silencieusement retire.
+**L'ecart entre le critere et ce que le bundle livre est ferme** (#27583) :
+la condition 4 du critere est desormais « tous les imports **satisfaits par
+le bundle** ». Le deploiement n'ajoute plus de regle -- il en herite, et pose
+les modules locaux que le critere declare embarquables.
 
-Mesure (lot de huit candidats) : `Causalite-06-DoWhy-Instrument-Faible-Python.ipynb`
-importe son organe de serie `dowhy_iv_organs`, qui importe `dowhy` --
-absent de la distribution. Le carnet est ecarte :
+Consequence mesuree : le lot passe de **sept carnets publies sur huit
+candidats** a **huit sur huit**. Le huitieme candidat n'est plus
+`Causalite-06-DoWhy-Instrument-Faible-Python.ipynb` (ecarte pour
+`dowhy_iv_organs -> dowhy : absent de la distribution`) : le critere ne le
+selectionne plus, donc le slot Causalite est pris par
+`Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb`, dont les dependances
+sont satisfaites.
 
-```text
-REFUS MyIA.AI.Notebooks/Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb
-       : dowhy_iv_organs -> dowhy : absent de la distribution
-```
-
-Le lot publie compte alors **sept carnets** sur huit candidats.
-
-C'est un **ecart entre le critere et ce que le bundle livre**. Sur le
-`main` courant, le critere compte 753 carnets Python eligibles ; parmi
-eux, 20 ont un module de serie dont une dependance est absente de la
-distribution, 23 importent un module d'une autre serie, et 138 s'appuient
-sur une **roue pure** du cache sans que le carnet l'installe lui-meme --
-une promesse que le bundle, qui n'installe rien, ne peut pas tenir.
-
-Le deploiement refuse donc ce que le bundle ne peut pas servir ; le
-critere (pli 2.1) doit dire la meme chose, et son alignement est porte
-par l'Epic. Tant que le critere n'a pas bouge, c'est le deploiement qui
-refuse, et qui dit pourquoi.
+Le decompte de l'ecart, mesure par l'organe sur la population que le critere
+acceptait avant l'alignement : `dependance_locale` 18, `hors_serie` 23,
+`absent_distribution` 171 (carnets eligibles 758 -> 554). Les comptes
+20 / 23 / 138 que ce document portait venaient d'une **mesure a la main** :
+ils ne se reproduisent pas avec le lock et le cache commites. La regle du
+deploiement, rejouee sur la meme population, rend les memes comptes que
+l'organe -- il n'y a plus qu'un seul chiffre, produit par un seul code.
 
 ## Les modules locaux voyagent avec le carnet
 
@@ -112,7 +107,7 @@ Le critere d'eligibilite (pli 2.1) considere qu'un module Python **de la
 serie** du carnet est *embarquable* dans le bundle JupyterLite : ce n'est
 pas un motif de refus. Le deploiement doit donc l'embarquer pour de vrai.
 
-Mesure (premiere passe d'execution du lot, 8 carnets) : le carnet
+Mesure (premiere passe d'execution du lot) : le carnet
 `Causalite-06-DoWhy-Instrument-Faible-Python.ipynb` echoue a l'import en
 navigation --
 

@@ -321,6 +321,33 @@ def test_un_module_hors_serie_refuse_le_carnet(tmp_path):
     assert any("hors serie" in motif for motif in refus[0][1])
 
 
+def test_le_deploiement_dit_la_meme_chose_que_le_critere(tmp_path):
+    """Le deploiement n'a pas sa propre regle : il **importe** celle du critere.
+
+    Le meme carnet passe par le critere (organe de 2.1) et par le deploiement
+    (2.2) : meme verdict, memes motifs, dans le meme ordre. C'est ce qui rend
+    impossible un ecart entre ce que le critere accepte et ce que le
+    deploiement publie -- les deux sharing la meme fonction.
+    """
+    from pyodide_eligibility import analyse_notebook
+
+    root = tmp_path / "depot"
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb", _nb(["import nashpy"]))
+    cache = {"nashpy": {"pure_wheel": True, "version": "1.0"}}
+
+    verdict = analyse_notebook(root, "MyIA.AI.Notebooks/SerieA/a.ipynb",
+                               {}, cache, set(), False)
+    assert "suffisance" in verdict.motifs
+    assert verdict.eligible is False
+
+    publie, refus = bjs.suffisance(root, [verdict], {}, set(), cache)
+    assert publie == []
+    assert len(refus) == 1
+    assert refus[0][0] == "MyIA.AI.Notebooks/SerieA/a.ipynb"
+    assert refus[0][1] == [p["detail"] for p in verdict.to_dict()["problemes"]]
+
+
 def test_un_import_inconnu_ne_stage_aucun_module(tmp_path):
     """Un import qui n'est pas un module de la serie n'embarque rien.
 
