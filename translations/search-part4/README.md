@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`search-part4.csv`](search-part4.csv) | `Search/Part4-Metaheuristics/` | 19 (MGS-1-Introduction → MGS-19-MetropolisReinsertion, métaheuristiques GenetiqueSharp : introduction/compositions/eukaryote/islands/compound/benchmarks/TSP/landscape/relief/center-bias/island-synergy/axis-alignment/debias/landscape-foundations/algorithm-selection/parameter-control/CeC-banc/recuit-simulé) | 432 (header + 7 227 lignes CSV-escaped, 20 colonnes) |
+| [`search-part4.csv`](search-part4.csv) | `Search/Part4-Metaheuristics/` | 18 au seed 2026-07-09 (MGS-1-Introduction → MGS-19-MetropolisReinsertion, numérotation sans MGS-2, métaheuristiques GenetiqueSharp : introduction/eukaryote/islands/compound/benchmarks/TSP/landscape/relief/center-bias/island-synergy/axis-alignment/debias/landscape-foundations/algorithm-selection/parameter-control/CeC-banc/recuit-simulé — le compte courant vit dans le CSV) | 432 au seed 2026-07-09 (markdown + code, 21 colonnes ; lignes CSV-escaped comptées à l'époque : 7 227 — compte courant mesurable dans le CSV) |
 
 **Note owner-lane strict** : la série Search/Part4-Metaheuristics = **owner po-2025 strict** (PRs récentes #5324 #5193 #5160 #5154 #5060 #4748 #4693 #4686 #4683 #4603 = `Jean-Sylvain Boige`). L'extraction i18n est **safe owner-lane** (L143 SAFE : artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
@@ -37,7 +37,7 @@ Sortie = JSON `{"csvs_checked": 1, "anomalies": [], "anomaly_count": 0}` (IN_SYN
 
 ## Acceptance #4957 Phase 2
 
-- [x] T1 extraction OK : 432 cellules / 19 notebooks Search/Part4-Metaheuristics (métaheuristiques GenetiqueSharp : MGS-1 → MGS-19)
+- [x] T1 extraction OK au seed 2026-07-09 : cellules extraites 432, notebooks couverts 18 Search/Part4-Metaheuristics (métaheuristiques GenetiqueSharp : MGS-1 → MGS-19, sans MGS-2 — comptes courants mesurables dans le CSV)
 - [x] T2 round-trip IN_SYNC : 0 anomaly
 - [x] Script T1+T2 inchangés (Phase 1 INFRA #5657 réutilisée telle quelle)
 - [x] Workflow CI `.github/workflows/translation-drift.yml` non touché

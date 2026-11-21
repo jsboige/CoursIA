@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`casestudies.csv`](casestudies.csv) | `CaseStudies/` | 6 (3 études de cas × variantes solution/student : Diagnostic-Medical-Python, Planification-Oncologie-Python, Reseau-Electrique-Intelligent) | 146 (21 colonnes) |
+| [`casestudies.csv`](casestudies.csv) | `CaseStudies/` | 6 au seed 2026-07-10 (3 études de cas × variantes solution/student : Diagnostic-Medical-Python, Planification-Oncologie-Python, Reseau-Electrique-Intelligent — le compte courant vit dans le CSV) | 146 au seed 2026-07-10 (21 colonnes — compte courant mesurable dans le CSV) |
 
 **Note owner-lane** : l'extraction i18n est **safe owner-lane** (artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
