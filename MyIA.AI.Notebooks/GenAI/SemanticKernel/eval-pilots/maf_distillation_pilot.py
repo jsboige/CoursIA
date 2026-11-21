@@ -34,10 +34,17 @@ from agent_framework_openai import OpenAIChatCompletionClient
 HERE = Path(__file__).resolve().parent
 MASTER_ENV = HERE.parents[3] / ".secrets" / "master.env"
 FIXTURE = HERE / "distill_charge_fixture.md"
-OPENAI_BASE = "https://api.openai.com/v1"  # epingle : l'env du poste pointe vers un proxy local
+# Endpoint et modele : EPINGLES, jamais choisis a l'execution par une sonde qui
+# bascule (doctrine du README). Un re-pinning passe par l'environnement : c'est
+# un re-pinning DECLARE, pas un repli -- le pilote imprime l'endpoint et le
+# modele effectifs, donc la trace est auto-portante.
+OPENAI_BASE = os.environ.get("PILOT_BASE_URL", "https://api.openai.com/v1")
 BUDGET = 16
-MODEL_ID = "gpt-4o-mini"
-MAX_TOKENS = 400
+MODEL_ID = os.environ.get("PILOT_MODEL", "gpt-4o-mini")
+MAX_TOKENS = int(os.environ.get("PILOT_MAX_TOKENS", "400"))
+PROBE_TOKENS = int(os.environ.get("PILOT_PROBE_TOKENS", "16"))
+SEED = os.environ.get("PILOT_SEED")
+CHARGE_PATH = Path(os.environ.get("PILOT_CHARGE", str(FIXTURE)))
 MAX_TOURS = 2
 
 PRODUCTEUR = "producteur"
@@ -59,7 +66,10 @@ def maf_versions() -> str:
 
 
 def load_api_key() -> str:
-    """Lit OPENAI_API_KEY dans master.env (repli : variable d'environnement)."""
+    """Cle d'acces : `PILOT_API_KEY` (endpoint local) d'abord, puis
+    `OPENAI_API_KEY` de l'environnement, puis master.env."""
+    if os.getenv("PILOT_API_KEY"):
+        return os.environ["PILOT_API_KEY"]
     if not MASTER_ENV.is_file():
         if os.getenv("OPENAI_API_KEY"):
             return os.environ["OPENAI_API_KEY"]
@@ -141,6 +151,26 @@ def _texte(message) -> str:
 
 def _auteur(message) -> str:
     return getattr(message, "author_name", None) or getattr(message, "name", None) or "?"
+
+
+def _somme_usage(cle: str) -> str:
+    """Somme d'un champ d'usage sur les appels mesures, ou 'n/d'.
+
+    'n/d' est une MESURE : un moteur qui n'expose pas les jetons le dit ainsi,
+    et cette difference entre moteurs est une part du comparatif.
+    """
+    total = 0
+    trouve = False
+    for entry in call_log:
+        usage = entry.get("usage")
+        if isinstance(usage, dict) and usage.get(cle) is not None:
+            total += int(usage[cle])
+            trouve = True
+    return str(total) if trouve else "n/d"
+
+
+def _somme_latence() -> str:
+    return str(round(sum(float(e["latency_s"]) for e in call_log), 2)) if call_log else "n/d"
 
 
 def selection_distillation(etat) -> str:
@@ -310,8 +340,10 @@ async def main() -> int:
         print("Sonde d'echec non concluante : le faux modele n'a pas leve d'erreur (exit 3).")
         return 3
 
-    charge = FIXTURE.read_text(encoding="utf-8")
-    print(f"charge: {FIXTURE.name} ({len(charge)} caracteres, fixture figee)")
+    charge = CHARGE_PATH.read_text(encoding="utf-8")
+    nature = "charge reelle" if CHARGE_PATH != FIXTURE else "fixture figee"
+    print(f"charge: {CHARGE_PATH.name} ({len(charge)} caracteres, {nature})")
+    print(f"endpoint: {OPENAI_BASE} | modele: {MODEL_ID} | temperature 0 | jetons max: {MAX_TOKENS}")
 
     client = make_client(MODEL_ID, api_key)
     options = ChatOptions(temperature=0.0, max_tokens=MAX_TOKENS)
@@ -351,6 +383,13 @@ async def main() -> int:
     print(f"DETERMINISME (tours, decision, tour d'arbitrage): {'OK' if deterministic else 'FAIL'} {struct1} vs {struct2}")
     print(f"LLM CALLS: {llm_calls}/{BUDGET}")
     print(f"LOC PILOT: {len(Path(__file__).read_text(encoding='utf-8').splitlines())} lignes")
+    # Bloc MESURES : schema commun aux trois moteurs, pour un comparatif lisible
+    # sans relire trois traces. Meme cles, meme ordre, memes unites.
+    print(f"MESURES: moteur=maf modele={MODEL_ID} endpoint={OPENAI_BASE} charge={CHARGE_PATH.name} "
+          f"carac={len(charge)} appels={llm_calls} jetons_in={_somme_usage('prompt_tokens')} "
+          f"jetons_out={_somme_usage('completion_tokens')} latence_appels_s={_somme_latence()} "
+          f"tours={runs[-1]['tours']} decision={runs[-1]['decision'][:48]} "
+          f"determinisme={'OK' if deterministic else 'FAIL'}")
     verdict_final = "PILOT OK" if deterministic else "PILOT FAIL"
     print(f"{verdict_final} orchestration=GroupChat(selection_func) charge=distillation")
     return 0 if deterministic else 1

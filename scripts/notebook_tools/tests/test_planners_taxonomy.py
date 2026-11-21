@@ -19,8 +19,10 @@ def test_planners_spine_is_valid_and_covers_its_notebooks():
     # cell_id is checked for real and every declared notebook must be cited.
     data = load_taxonomy(PLANNERS_DATA)
     assert data["series"] == "Planners"
-    assert len(data["notebooks"]) == 6
-    assert len(data["concepts"]) >= 20
+    # Floors, not pins: the series directory holds 26 notebooks (C# twins included)
+    # and the dense taxonomy must not shrink back to the six-notebook spine.
+    assert len(data["notebooks"]) >= 26
+    assert len(data["concepts"]) >= 100
     cited = {citation["notebook"] for concept in data["concepts"] for citation in concept["citations"]}
     assert cited == set(data["notebooks"])
 
@@ -41,6 +43,7 @@ def test_planners_export_writes_parseable_skos_and_owl(tmp_path):
     owl_graph = Graph().parse(owl_path, format="xml")
     assert (None, RDF.type, SKOS.Concept) in skos_graph
     assert (None, RDF.type, OWL.Ontology) in owl_graph
-    # The README/CI claim for the tranche: 26 concepts.
+    # Every declared concept is exported, none is dropped or duplicated.
+    declared = json.loads(PLANNERS_DATA.read_text(encoding="utf-8"))["concepts"]
     concepts = set(skos_graph.subjects(RDF.type, SKOS.Concept))
-    assert len(concepts) == 26
+    assert len(concepts) == len(declared)

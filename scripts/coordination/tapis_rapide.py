@@ -26,12 +26,14 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import frozen_campaigns, gh_bulk, tapis_equilibre, tapis_origami, tapis_service
+from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_dernier_grain,
+                         tapis_equilibre, tapis_origami, tapis_sature, tapis_service)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
 from coordination.tapis_hors_flotte import ecart_hors_flotte
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
+from coordination.tapis_visites import evenements_info
 
 # Part au plus des conteneurs (EPIC, parapluie) dans la liste : la lane recoit des grains,
 # pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains,
@@ -49,10 +51,11 @@ LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-# Main a sorti les textes de service dans tapis_service (#26926) : REPLI et VERIF
-# n'ont plus d'usage ici, seul le code d'ecart HORSFLOTTE reste a cabler.
-CODES = ("HORSFLOTTE", "LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE",
-         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE")
+# Les textes de service sont dans tapis_service (#26926) : REPLI et VERIF
+# n'ont plus d'usage ici.
+# EPAISSE et SATURE : les deux barrieres de FOND d'un CONTENEUR (#26973).
+CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "LIVREE", "MERGEE", "COUVERTE",
+         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
 
 _CITE_RE = re.compile(r"#(\d+)\b")
 _PART_OF_RE = re.compile(r"\bpart\s+of\s*:?\s*#(\d+)\b", re.IGNORECASE)
@@ -81,6 +84,10 @@ class Etat:
     notes: list[str] = field(default_factory=list)
     mon_claim: bool = False
     occupes: list[tuple[str, str]] = field(default_factory=list)  # (lane, paths) bornes
+    #: L'etat de grain (raccord du classement, c3274) : `grain`,
+    #: `passage_seul`, `jamais_servie` ou `non_measurable`. `None` = inconnu
+    #: (la voie legere ne lit pas le fil : elle ne peut pas le dire).
+    etat_grain: str | None = None
 
 
 def parent_de(it: dict) -> int | None:
@@ -169,7 +176,15 @@ def _plafond(e: Etat, evts: list[Evt], naissances: list[tuple[int, str | None]],
              lane: str, maintenant: datetime) -> str | None:
     """Plafond hebdo des conteneurs hors consolidation (#22500 point 3) : le
     tapis ne sert pas un EPIC que le gate L898 refuserait. Une visite = un
-    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte."""
+    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte.
+
+    **Effet declare** (#27590, revue du 21/11) : l'ensemble lu ici est
+    `VISITE` -- une **lecture** d'une autre lane (`VISITE-INFO`) y compte donc
+    aussi. Un conteneur recemment regarde par une autre lane est un
+    conteneur chaud : l'ecarter pendant la fenetre du plafond est le meme
+    geste que l'ecarter pour un claim vivant. Ce comportement est couvert par
+    un test (`test_un_info_visite_ecarte_le_conteneur_chaud`).
+    """
     if not e.conteneur or e.consolidation:
         return None
     limite = maintenant - timedelta(days=PLAFOND_EPIC_J)
@@ -219,6 +234,7 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LABEL", lambda: "label candidate-delivered : urne de cloture (coordinateur, adjoint)"
          if any(lab.strip().lower() == LABEL_LIVRE for lab in e.labels) else None),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
+        ("EPAISSE", lambda: tapis_sature.epuise(e, it.get("comments") or [])),
         ("LIVREE", lambda: _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
@@ -244,12 +260,12 @@ def _prs_par_issue(prs: list[dict]) -> dict[int, list[dict]]:
     return index
 
 
-def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
-          jours: int = 45) -> list[Etat]:
-    """Un `Etat` par issue ouverte, decide sur la seule lecture."""
+def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
+              jours: int = 45):
+    """Issues ouvertes, parents, naissances et contexte de decision -- partages
+    par `etats` et la re-decision sur fil complet (#27179)."""
     ouvertes = {it["number"]: it for it in lecture.issues}
     parents = {n: parent_de(it) for n, it in ouvertes.items()}
-    nommes = {p for p in parents.values() if p is not None}
     # Naissances des filles ouvertes par conteneur : une visite du parent (#22500).
     filles: dict[int, list[tuple[int, str | None]]] = {}
     for n, p in parents.items():
@@ -258,18 +274,39 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
            "limite": maintenant - timedelta(days=jours), "filles": filles,
            "prs_par_issue": _prs_par_issue(lecture.prs)}
+    return ouvertes, parents, filles, ctx
+
+
+def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
+          jours: int = 45) -> list[Etat]:
+    """Un `Etat` par issue ouverte, decide sur la seule lecture."""
+    ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours)
+    nommes = {p for p in parents.values() if p is not None}
     resultat = []
+    depuis = maintenant - timedelta(days=tapis_equilibre.FENETRE_J)
     for n, it in ouvertes.items():
         ancetres, famille = _ancetres(n, parents)
         labels = list(it.get("labels") or [])
         e = Etat(n, it.get("title") or "", labels, it.get("created_at") or "", parents[n],
                  famille, n in nommes or _conteneur_propre(it),
                  any(lab.strip().lower() == LABEL_CONSOLIDATION for lab in labels))
-        evts = evenements(it.get("comments") or [])
-        e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
-            evts, lecture.citations.get(n, []), maintenant)
-        _decider(e, it, evts, ancetres, ctx)
+        comments = it.get("comments") or []
+        # Les formes `[INFO] Visite` comptent comme visite : l'union des deux
+        # familles d'evenements, triee par date.
+        evts = sorted(evenements(comments) + evenements_info(comments),
+                      key=lambda e: e.quand)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
+        # Raccord du classement (c3274) : une prise en charge nominative est
+        # une visite, une citation Git n'en est pas une. L'etat de grain
+        # distingue l'absence ETABLIE de l'absence NON MESURABLE (fil
+        # partiel) : sans cette distinction, une issue dont le fil n'a pas
+        # ete lu en entier se lit comme une issue jamais servie.
+        e.etat_grain = tapis_dernier_grain.depuis_evenements(
+            evts, lecture.citations.get(n, []), numero=n,
+            fil_complet=(total <= lus), depuis=depuis).etat
+        e.derniere_visite, e.visites_total, e.visites = tapis_dernier_grain.compter_grains(
+            evts, depuis)
+        _decider(e, it, evts, ancetres, ctx)
         if e.ecart is None and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
         resultat.append(e)
@@ -293,21 +330,66 @@ def graine_defaut(lane: str, maintenant: datetime) -> str:
     return f"{lane}|{m:%Y-%m-%d}|{m.hour // 4}"
 
 
+def _servable(e: Etat) -> bool:
+    """Une issue que le tapis peut servir.
+
+    Le #27059 elargit cette notion aux ecarts de recul (COUVERTE, RELACHEE,
+    MERGEE), servis apres les autres : quand sa definition est presente, on la
+    suit ; sinon on garde celle d'avant (aucun ecart dur). Sans cette
+    compatibilite, le filtre de `ordonner` ecarterait du tour des issues que
+    le tirage du #27059 entend servir.
+    """
+    f = globals().get("servable")
+    return f(e) if f is not None else e.ecart is None
+
+
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
              graine: str | None = None) -> list[Etat]:
     """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`) :
-    le niveau le moins visite d'abord, la plus ancienne issue d'abord."""
+    le niveau le moins visite d'abord, la plus ancienne issue d'abord.
+
+    Invariant de couverture (#27590, dispatch `c0013-tapis-coverage-20`) : une
+    issue **jamais visitée** ne cède jamais sa place a une issue deja visitée.
+    Mesure du 21/11 sur le pool reel : 20 issues worker a 0 visite, dont 14
+    conteneurs hors du tour de 8 -- deux issues deja visitees prenaient leurs
+    places (le quota de conteneurs ecartait les conteneurs jamais visites, et
+    le tri final plaçait les grains d'abord, #26926). Le mandat du 16/11
+    (« toute issue visitée au moins une fois avant qu'une autre le soit deux
+    fois ») etait donc structurellement violable. Les conteneurs jamais
+    visités que le quota ecarte passent desormais en second temps, quand la
+    place ne peut pas etre prise par une issue deja visitée. Le quota et
+    l'ordre final (les grains d'abord) restent inchangés.
+    """
     graine = graine or graine_defaut(lane, maintenant)
-    servables = [e for e in etats_ if e.ecart is None]
+    servables = [e for e in etats_ if _servable(e)]
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
+    pris = {e.numero for e in file}
+    # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute pas la
+    # place d'une issue du pool, et il ne bloque pas une issue deja visitee --
+    # sinon un marathon jamais visite passerait devant le grain equilibre.
+    jamais = {e.numero for e in servables
+              if e.visites == 0 and not tapis_equilibre.est_marathon(e)}
     tour = tapis_equilibre.ordre(etats_, [e for e in servables if not e.mon_claim],
                                  graine, maintenant)
-    quota, pris = max(1, int(grains * PART_CONTENEURS)), set()
+    quota = max(1, int(grains * PART_CONTENEURS))
+    reportes: list[Etat] = []
     for e in tour:  # un conteneur ne passe que dans son quota
-        if len(file) < grains and (not e.conteneur or quota > 0):
-            quota -= e.conteneur
-            file.append(e)
-            pris.add(e.numero)
+        if len(file) >= grains:
+            break
+        if e.visites > 0 and (jamais - pris):
+            # Une issue deja visitée ne prend pas la place d'une jamais visitée.
+            continue
+        if e.conteneur and quota <= 0:
+            reportes.append(e)  # jamais visitée : elle passe en second temps
+            continue
+        quota -= e.conteneur
+        file.append(e)
+        pris.add(e.numero)
+    for e in reportes:  # second temps : les conteneurs jamais visités
+        if len(file) >= grains:
+            break
+        file.append(e)
+        pris.add(e.numero)
     file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
     # Vos claims, puis les grains, puis les conteneurs (#26926) : un conteneur
     # demande une lecture et un --paths, il ne passe jamais devant un grain.
@@ -337,6 +419,8 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
         "grains": [tapis_service.grain_servi(
             i, e, lane, tapis_equilibre.raisons(e, conso, maintenant), prs_par) for i, e in enumerate(file, 1)],
         "ecartees": ecartees,
+        # Les items ETEINTS (barrieres de fond) sont nommes pour l'urne.
+        "eteints": tapis_sature.eteints(ecartees),
     }
 
 
@@ -355,8 +439,43 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
+def _ecarts_de_fond(tous: list, file: list, args, lecture, run, maintenant,
+                    graine: str, lire_fils) -> tuple[list, dict | None]:
+    """Les deux ecarteurs de FOND, dans l'ordre qui les rend cumulatifs.
+
+    1. la **re-decision** (#27179) : un grain servi au fil tronque se re-decide
+       sur son fil complet ; hors ligne ou cache, la fenetre reste la fenetre ;
+    2. l'**ecart de saturation** (#26973) : les conteneurs dont tous les
+       enfants sont fermes sortent de la file, et le tirage est refait pour
+       les remplacer par un grain reel. La mesure porte sur les seuls
+       conteneurs de la file, et elle est fail-OPEN : une panne n'ecarte rien.
+       Un rejeu `--lecture` est hors ligne : rien n'est mesure, rien n'est
+       ecarte.
+
+    **ORDRE** : la re-decision passe AVANT la saturation. Les deux marquent le
+    meme objet (`e.ecart`) et la saturation est la seule des deux a ne JAMAIS
+    effacer une marque etrangere : la re-decision, elle, RECALCULE `e.ecart`
+    depuis le fil complet -- appliquee apres, elle pourrait rendre servable un
+    conteneur qui vient d'etre mesure sature. Dans cet ordre les deux
+    exclusions subsistent : `ordonner` ne garde que les items dont
+    `e.ecart is None`.
+    """
+    reverif = None
+    if not args.lecture and not lecture.depuis_cache:
+        from coordination import tapis_reverif
+        file, reverif = tapis_reverif.passer(
+            tous, file, args.grains, args.lane, maintenant, args.jours, graine,
+            lecture, lire_fils)
+    if not args.lecture:
+        file = tapis_sature.ecarter_satures(
+            tous, file,
+            lambda n: gh_recherche.chercher_enfants(run, gh_bulk.DEPOT_GH, n),
+            lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
+    return file, reverif
+
+
 def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None) -> int:
+         maintenant: datetime | None = None, lire_fils: object = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
     # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
@@ -396,8 +515,12 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
+    file, reverif = _ecarts_de_fond(tous, file, args, lecture, run, maintenant,
+                                     graine, lire_fils)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
+    if reverif is not None:
+        r["reverif_fils"] = reverif
     if fraicheur is not None:
         r["fraicheur"] = fraicheur  # le depassement --allow-stale se LIT dans le JSON
     source = f"dossier {args.lecture}" if args.lecture else "GitHub + origin/main local"

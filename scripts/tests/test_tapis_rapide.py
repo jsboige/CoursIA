@@ -123,7 +123,12 @@ def test_mergee_epargne_la_consolidation_et_les_simples_citations():
     lec = lecture([issue(1, labels=["consolidation"]), issue(2), issue(3)], citations=citations)
     assert etat(lec, 1).ecart is None  # une tranche de consolidation ne la livre pas
     e2 = etat(lec, 2)
-    assert e2.ecart is None and e2.derniere_visite == _h(5)  # citee : une visite, pas une livraison
+    # Raccord du classement (c3274) : une citation Git est un PASSAGE, pas
+    # une visite -- elle ne rajeunit plus le dernier grain. L'ecart reste
+    # nul : une citation n'a toujours ete ni une livraison ni une exclusion.
+    assert e2.ecart is None
+    assert e2.derniere_visite is None
+    assert e2.etat_grain == "passage_seul"
     assert etat(lec, 3).motif == "livraison probable, commit def5678"
 
 
@@ -312,7 +317,11 @@ def test_parent_famille_conteneur_et_derniere_visite():
     assert (e13.parent, e13.famille) == (12, 10)
     assert etat(lec, 10).conteneur and etat(lec, 14).conteneur
     assert not etat(lec, 13).conteneur
-    assert e13.derniere_visite == _h(10)  # le commit est plus recent que le marqueur
+    # Raccord du classement (c3274) : la derniere visite est le dernier
+    # GRAIN -- ici le marqueur de livraison. Le commit, plus recent, n'est
+    # qu'un passage : il ne rajeunit pas le grain.
+    assert e13.derniere_visite == _h(30)
+    assert e13.etat_grain == "grain"
     assert etat(lec, 14).derniere_visite is None
 
 
@@ -353,14 +362,21 @@ def test_une_seule_famille_garde_ses_invariants():
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
     """Mesure du 14/11 : deux sieges ont recu les memes grains, parce que
-    l'ordre des membres d'une famille ne dependait pas de la lane."""
+    l'ordre des membres d'une famille ne dependait pas de la lane.
+
+    La tete d'un niveau tourne d'une lane a l'autre (le decalage depend de la
+    graine, donc de la lane). Deux lanes particularieres peuvent colliding par
+    hasard -- la tete est une FONCTION de la graine, pas un tirage sans
+    rappel : l'assertion porte donc sur l'ensemble des lanes, ou la
+    diversification est une consequence et non une chance."""
     lec = lecture([issue(1, titre="[EPIC] Racine", cree="2026-01-01T00:00:00Z")]
                   + [issue(k, body="Part of #1", cree=f"2026-02-0{k - 1}T00:00:00Z")
                      for k in (2, 3, 4, 5)])
     etats_ = tr.etats(lec, LANE, NOW)
-    tetes = {lane: tr.ordonner(etats_, lane, NOW, 8)[0].numero
-             for lane in (LANE, AUTRE)}
-    assert len(set(tetes.values())) == 2, tetes
+    lanes = (LANE, AUTRE, "myia-po-2025:CoursIA-2", "myia-po-2026:CoursIA",
+             "myia-po-2028:CoursIA", "myia-po-2023:CoursIA", "myia-po-2024:CoursIA")
+    tetes = {lane: tr.ordonner(etats_, lane, NOW, 8)[0].numero for lane in lanes}
+    assert len(set(tetes.values())) > 1, tetes
 
 
 def test_le_decalage_est_deterministe_pour_une_lane_et_une_tranche():
@@ -581,7 +597,8 @@ def _violations(source: str) -> list[str]:
 
 def test_tapis_rapide_ne_lance_aucun_processus():
     for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "tapis_hors_flotte.py",
-                "gh_cache.py", "gh_cache_fichier.py", "tapis_service.py"):
+                "gh_cache.py", "gh_cache_fichier.py", "tapis_service.py",
+                "tapis_reverif.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -595,13 +612,31 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # atomiquement -- extraction demandee par les replis de la review Hermes,
 # #22630, 14/11 : le protocole a grandi de 41 lignes) ; tapis_service.py la
 # quatrieme (ce que le tapis sert : procedure des conteneurs, secours, sortie
-# texte, #26926, 16/11).
+# texte, #26926, 16/11) ; gh_selection.py la cinquieme (le chemin de selection
+# leger : metadonnees seules, budget global, #27223, 18/11) ; tapis_avantages.py
+# la sixieme (les deux priorites legeres du mandat du 18/11) ; tapis_universel.py
+# la septieme (la rotation universelle, #27223) ; tapis_reverif.py la huitieme
+# (re-decision des grains servis au fil tronque sur leur fil complet, #27179,
+# 18/11) ; tapis_dernier_grain.py la neuvieme (le DERNIER GRAIN d'une issue --
+# grain, passage, absence etablie ou non mesurable -- et la regle des SEANCES,
+# extraite de tapis_equilibre.py pour que le module du classement tienne son
+# plafond, #27242, 19/11) ; tapis_citations.py la dixieme (les citations des
+# PRs OUVERTES : le travail en cours compte comme une visite, #27338) ;
+# belt_equite.py la onzieme (l'equite du dispatch : un grain deja servi ne
+# passe pas devant les premieres visites, #27338).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
                                               ("gh_cache.py", 130),
                                               ("gh_cache_fichier.py", 60),
-                                              ("tapis_service.py", 140)])
+                                              ("tapis_service.py", 140),
+                                              ("gh_selection.py", 140),
+                                              ("tapis_avantages.py", 80),
+                                              ("tapis_universel.py", 160),
+                                              ("tapis_reverif.py", 120),
+                                              ("tapis_dernier_grain.py", 260),
+                                              ("tapis_citations.py", 40),
+                                              ("belt_equite.py", 110)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
