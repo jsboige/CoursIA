@@ -27,7 +27,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_dernier_grain,
-                         tapis_equilibre, tapis_origami, tapis_sature, tapis_service)
+                         tapis_ecarts_fond, tapis_equilibre, tapis_origami,
+                         tapis_sature, tapis_service, tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -436,65 +437,9 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
-def _ecarts_de_fond(tous: list, file: list, args, lecture, run, maintenant,
-                    graine: str, lire_fils) -> tuple[list, dict | None]:
-    """Les deux ecarteurs de FOND, dans l'ordre qui les rend cumulatifs.
-
-    1. la **re-decision** (#27179) : un grain servi au fil tronque se re-decide
-       sur son fil complet ; hors ligne ou cache, la fenetre reste la fenetre ;
-    2. l'**ecart de saturation** (#26973) : les conteneurs dont tous les
-       enfants sont fermes sortent de la file, et le tirage est refait pour
-       les remplacer par un grain reel. La mesure porte sur les seuls
-       conteneurs de la file, et elle est fail-OPEN : une panne n'ecarte rien.
-       Un rejeu `--lecture` est hors ligne : rien n'est mesure, rien n'est
-       ecarte.
-
-    **ORDRE** : la re-decision passe AVANT la saturation. Les deux marquent le
-    meme objet (`e.ecart`) et la saturation est la seule des deux a ne JAMAIS
-    effacer une marque etrangere : la re-decision, elle, RECALCULE `e.ecart`
-    depuis le fil complet -- appliquee apres, elle pourrait rendre servable un
-    conteneur qui vient d'etre mesure sature. Dans cet ordre les deux
-    exclusions subsistent : `ordonner` ne garde que les items dont
-    `e.ecart is None`.
-    """
-    reverif = None
-    if not args.lecture and not lecture.depuis_cache:
-        from coordination import tapis_reverif
-        file, reverif = tapis_reverif.passer(
-            tous, file, args.grains, args.lane, maintenant, args.jours, graine,
-            lecture, lire_fils)
-    if not args.lecture:
-        file = tapis_sature.ecarter_satures(
-            tous, file,
-            lambda n: gh_recherche.chercher_enfants(run, gh_bulk.DEPOT_GH, n),
-            lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
-    return file, reverif
 
 
 
-def _voie_leger(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
-                fraicheur: dict | None) -> int:
-    """La voie LEGERE : classement sur metadonnees, qualification sur fil complet.
-
-    Le classement ne lit que les metadonnees du pool ; ce qui exige le corps et
-    le fil se decide sur le grain servi, sur son **fil complet** (organe REST
-    `gh_snapshot`), jamais sur la fenetre des 12 derniers commentaires.
-    """
-    from coordination import tapis_leger
-    maintenant = maintenant or datetime.now(UTC)
-    graine = args.graine or graine_defaut(args.lane, maintenant)
-    try:
-        r, code = tapis_leger.tirage(args.lane, args.grains, maintenant,
-                                     args.jours, graine, depot, run)
-    except gh_bulk.LectureIncomplete as exc:
-        print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
-              file=sys.stderr)
-        return 3
-    r["fraicheur"] = fraicheur
-    out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else \
-        tapis_leger.texte(r)
-    sys.stdout.buffer.write((out + "\n").encode("utf-8"))
-    return code
 
 
 
@@ -529,8 +474,9 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
-    file, reverif = _ecarts_de_fond(tous, file, args, lecture, run, maintenant,
-                                     graine, lire_fils)
+    file, reverif = tapis_ecarts_fond.ecarts_de_fond(
+        tous, file, args, lecture, run, maintenant, graine, lire_fils,
+        lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
     if reverif is not None:
@@ -561,7 +507,12 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     # --lecture est hors ligne : il reste sur la voie lourde, seule voie qui
     # sait relire un dossier de lecture.
     if args.voie == "leger" and not args.lecture:
-        return _voie_leger(args, depot, run, maintenant, fraicheur)
+        # La graine est calculee ICI : elle depend de la tranche de 4 h, et la
+        # calculer des deux cotes ouvrirait une course au passage d'une tranche.
+        maintenant = maintenant or datetime.now(UTC)
+        graine = args.graine or graine_defaut(args.lane, maintenant)
+        return tapis_voie_leger.servir(args, depot, run, maintenant, graine,
+                                       fraicheur)
     return _voie_lourde(args, depot, run, maintenant, fraicheur, lire_fils)
 
 

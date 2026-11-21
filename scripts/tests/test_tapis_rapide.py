@@ -682,7 +682,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_dernier_grain.py", 260),
                                               ("tapis_citations.py", 40),
                                               ("belt_equite.py", 110),
-                                              ("tapis_preuve.py", 110)])
+                                              ("tapis_preuve.py", 110),
+                                              ("tapis_ecarts_fond.py", 50),
+                                              ("tapis_voie_leger.py", 40)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
