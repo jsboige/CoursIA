@@ -12,7 +12,11 @@ Ce que ces tests verrouillent :
    plutot que de publier l'un sous le nom de l'autre ;
 3. **le site construit publie exactement le lot** -- un carnet manquant, un
    carnet en trop, un carnetrange dans un sous-repertoire sont signales ;
-4. **les URLs publiques sont bien formees** -- `lab` ouvre le carnet,
+4. **les modules locaux de la serie voyagent avec le carnet** -- un carnet
+   qui importe un module de sa serie le voit poser a cote de lui (sans lui,
+   le carnet publie echoue a l'import en navigation) ; deux modules
+   homonymes de series differentes font echouer la construction ;
+5. **les URLs publiques sont bien formees** -- `lab` ouvre le carnet,
    `files` sert le carnet brut, les deux sous le prefixe du site.
 
 Aucun test ne construit de site JupyterLite (cela demande l'outillage
@@ -138,7 +142,7 @@ def test_la_pose_met_a_zero_le_repertoire_de_contenus(tmp_path):
     (source / "files").mkdir(parents=True)
     (source / "files" / "ancien.ipynb").write_text("{}", encoding="utf-8")
     poses = bjs.stage(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")], source)
-    assert poses == ["a.ipynb"]
+    assert poses["carnets"] == ["a.ipynb"]
     assert (source / "files" / "a.ipynb").is_file()
     assert not (source / "files" / "ancien.ipynb").exists()
 
@@ -208,7 +212,81 @@ def test_un_site_sans_repertoire_de_contenus_est_signale(tmp_path):
     assert "files/" in anomalies[0]
 
 
-# --- 4. les URLs publiques --------------------------------------------------
+# --- 4. les modules locaux de la serie voyagent avec le carnet ---------------
+
+def test_un_module_local_de_la_serie_est_embarque_avec_le_carnet(tmp_path):
+    """Un carnet qui importe un module de sa serie ne doit pas etre publie
+    seul : sans le module, le carnet echoue a l'import en navigation
+    (mesure : `ModuleNotFoundError: dowhy_iv_organs`).
+
+    Le critere d'eligibilite declare ces modules **embarquables** : le
+    deploiement doit les embarquer pour de vrai.
+    """
+    root = tmp_path / "depot"
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb",
+           _nb(["import mon_organe", "print(mon_organe.VALEUR)"]))
+    (root / "MyIA.AI.Notebooks" / "SerieA" / "mon_organe.py").write_text(
+        "VALEUR = 1\n", encoding="utf-8")
+    source = tmp_path / "site"
+    poses = bjs.stage(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")], source)
+    assert poses["modules"] == {"mon_organe.py": "MyIA.AI.Notebooks/SerieA/mon_organe.py"}
+    assert (source / "files" / "mon_organe.py").is_file()
+    assert poses["modules_par_carnet"]["MyIA.AI.Notebooks/SerieA/a.ipynb"] == \
+        ["mon_organe.py"]
+
+
+def test_un_import_inconnu_ne_stage_aucun_module(tmp_path):
+    """Un import qui n'est pas un module de la serie n'embarque rien.
+
+    C'est le critere d'eligibilite qui refuse un tel carnet (import absent) ;
+    le deploiement, lui, n'a rien a poser.
+    """
+    root = tmp_path / "depot"
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb", _nb(["import paquet_absent_xyz"]))
+    poses = bjs.stage(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                      tmp_path / "site")
+    assert poses["modules"] == {}
+
+
+def test_deux_modules_locaux_homonymes_dans_le_lot_font_echouer(tmp_path):
+    """Deux series qui fournissent le meme nom de module : on ne publie pas
+    l'un des deux sous le nom de l'autre."""
+    root = tmp_path / "depot"
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    (root / "MyIA.AI.Notebooks" / "SerieB").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb", _nb(["import mon_organe"]))
+    _write(root, "MyIA.AI.Notebooks/SerieB/b.ipynb", _nb(["import mon_organe"]))
+    (root / "MyIA.AI.Notebooks" / "SerieA" / "mon_organe.py").write_text(
+        "VALEUR = 1\n", encoding="utf-8")
+    (root / "MyIA.AI.Notebooks" / "SerieB" / "mon_organe.py").write_text(
+        "VALEUR = 2\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        bjs.stage(root, [_verdict("MyIA.AI.Notebooks/SerieA/a.ipynb", "SerieA"),
+                         _verdict("MyIA.AI.Notebooks/SerieB/b.ipynb", "SerieB")],
+                  tmp_path / "site")
+
+
+def test_un_module_local_absent_du_site_construit_est_signale(tmp_path):
+    """Le module embarque doit se retrouver dans le site construit."""
+    output = tmp_path / "_output"
+    (output / "files").mkdir(parents=True)
+    (output / "files" / "a.ipynb").write_text("{}", encoding="utf-8")
+    anomalies = bjs.verifier_contenu(output, ["a.ipynb"], {"mon_organe.py": "x.py"})
+    assert len(anomalies) == 1
+    assert "mon_organe.py" in anomalies[0]
+
+
+def test_le_manifeste_nomme_les_modules_embarques(tmp_path):
+    """Le manifeste dit quel module est livre avec quel carnet."""
+    data = bjs.manifeste([_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                         "/CoursIA",
+                         {"MyIA.AI.Notebooks/SerieA/a.ipynb": ["mon_organe.py"]})
+    assert data["carnets"][0]["modules_locaux"] == ["mon_organe.py"]
+
+
+# --- 5. les URLs publiques --------------------------------------------------
 
 def test_les_urls_publiques_portent_le_prefixe_du_site():
     """Les deux URLs sont relatives au prefixe du site publie."""

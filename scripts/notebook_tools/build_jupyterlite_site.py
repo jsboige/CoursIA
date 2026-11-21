@@ -7,10 +7,11 @@ verite). Ce script :
 1. recalcule les verdicts puis le lot (`select_lot`) ;
 2. stage chaque carnet du lot dans `files/` du site source (le repertoire
    de contenus), par nom de fichier -- la convention du site mesure au pli
-   2.1 ; le chemin d'origine est conserve dans le manifeste ;
+   2.1 ; le chemin d'origine est conserve dans le manifeste ; les **modules
+   locaux de la serie** importes par un carnet sont poses a cote de lui ;
 3. lance `jupyter lite build` (le site est un artefact, jamais une version) ;
 4. verifie que le site construit publie **exactement** le lot (ni carnet
-   manquant, ni carnet etranger) ;
+   manquant, ni carnet etranger, ni module local absent) ;
 5. ecrit `manifest.json` : pour chaque carnet du lot, son chemin dans le
    depot, sa serie et ses URLs publiques -- `lab` (ouverture et execution
    dans le navigateur) et `files` (le carnet brut, verifiable par HTTP).
@@ -31,22 +32,28 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from pyodide_eligibility import (  # noqa: E402
     NotebookVerdict,
     analyse_notebook,
+    collect_imports,
     git_ls_files,
     is_active_notebook,
     is_python_notebook,
     load_pyodide_lock,
     load_wheel_cache,
+    local_modules,
+    notebook_sources,
+    series_of,
+    top_level_module,
 )
 from pyodide_eligibility_report import select_lot  # noqa: E402
 
@@ -117,13 +124,105 @@ def lot(root: Path,
 
 
 # ---------------------------------------------------------------------------
+# Modules locaux de la serie (a embarquer avec le carnet)
+# ---------------------------------------------------------------------------
+
+#: Dossiers ignores dans la recherche des modules locaux.
+_SKIP_DIRS = {".git", ".tmp", "node_modules", "__pycache__", ".venv", "venv",
+              ".pytest_cache", ".mypy_cache", "build", "dist", ".claude"}
+
+
+def _dossiers_candidats(dossier: Path, series_root: Path) -> List[Path]:
+    """Dossiers ou peut se trouver un module local, du plus proche au plus lointain."""
+    candidats: List[Path] = [dossier]
+    for parent in dossier.parents:
+        candidats.append(parent)
+        if parent == series_root:
+            break
+    if not candidats or candidats[-1] != series_root:
+        candidats.append(series_root)
+    return candidats
+
+
+def _chercher_module(dossier: Path, nom: str) -> Optional[Tuple[Path, bool]]:
+    """Cherche le module `nom` dans `dossier` : (chemin, est_paquet)."""
+    direct = dossier / (nom + ".py")
+    if direct.is_file():
+        return direct, False
+    paquet = dossier / nom
+    if (paquet / "__init__.py").is_file():
+        return paquet, True
+    trouves: List[Tuple[int, Path, bool]] = []
+    for base, dirs, files in os.walk(dossier):
+        dirs[:] = [d for d in dirs if d not in _SKIP_DIRS and not d.startswith(".")]
+        profondeur = len(Path(base).relative_to(dossier).parts)
+        for nom_fichier in files:
+            if nom_fichier == nom + ".py":
+                trouves.append((profondeur, Path(base) / nom_fichier, False))
+        for d in dirs:
+            if d == nom and (Path(base) / d / "__init__.py").is_file():
+                trouves.append((profondeur, Path(base) / d, True))
+    if not trouves:
+        return None
+    trouves.sort(key=lambda entree: entree[0])
+    return trouves[0][1], trouves[0][2]
+
+
+def modules_pour_carnet(root: Path, rel_path: str) -> List[Tuple[str, str, bool]]:
+    """Modules locaux (de la serie) que le carnet importe.
+
+    Le critere d'eligibilite (pli 2.1) considere qu'un module Python de la
+    serie du carnet est **embarquable** dans le bundle JupyterLite : ce n'est
+    pas un motif de refus. Le deploiement doit donc l'embarquer pour de
+    vrai -- sinon le carnet publie echoue a l'import. Mesure : le carnet
+    `Causalite-06` du lot echoue en navigation
+    (`ModuleNotFoundError: dowhy_iv_organs`), parce que seul le carnet etait
+    pose dans le site.
+
+    Rend la liste `(nom, chemin relatif dans le depot, est_paquet)`.
+    """
+    path = root / rel_path
+    with path.open(encoding="utf-8") as fh:
+        nb = json.load(fh)
+    imports = collect_imports(notebook_sources(nb))
+    series_root = root / "MyIA.AI.Notebooks" / series_of(rel_path)
+    local, _elsewhere = local_modules(root, path, series_root)
+
+    trouves: List[Tuple[str, str, bool]] = []
+    vus: set = set()
+    for module in sorted(set(imports)):
+        top = top_level_module(module)
+        if top in local:
+            nom = top
+        elif module in local:
+            nom = module
+        else:
+            continue
+        if nom in vus:
+            continue
+        emplacement = None
+        for dossier in _dossiers_candidats(path.parent, series_root):
+            emplacement = _chercher_module(dossier, nom)
+            if emplacement is not None:
+                break
+        if emplacement is None:
+            raise FileNotFoundError(
+                "module local '%s' importe par %s : introuvable dans sa serie"
+                % (nom, rel_path))
+        source, est_paquet = emplacement
+        vus.add(nom)
+        trouves.append((nom, source.relative_to(root).as_posix(), est_paquet))
+    return trouves
+
+
+# ---------------------------------------------------------------------------
 # Mise en place du site source
 # ---------------------------------------------------------------------------
 
 
 def stage(root: Path, lot_notebooks: Sequence[NotebookVerdict],
-          source_dir: Path) -> List[str]:
-    """Copie chaque carnet du lot dans `files/` (le repertoire de contenus).
+          source_dir: Path) -> Dict[str, object]:
+    """Copie dans `files/` (le repertoire de contenus) le lot et ses modules.
 
     Chez JupyterLite, le repertoire `files/` du site source EST le repertoire
     de contenus : la construction le recopie tel quel dans `files/` du site
@@ -138,12 +237,19 @@ def stage(root: Path, lot_notebooks: Sequence[NotebookVerdict],
     dans le lot : la construction echoue plutot que de publier l'un des deux
     sous le nom de l'autre.
 
+    Les **modules locaux de la serie** importes par un carnet du lot sont
+    poses a plat, a cote du carnet : le carnet les cherche lui-meme dans son
+    repertoire (`sys.path.insert` sur le dossier du module trouve). Sans eux,
+    le carnet publie echoue a l'import -- le critere les declare
+    embarquables, le deploiement doit les embarquer.
+
     `files/` est **remis a zero** avant la pose : un site reconstruit doit
     publier exactement le lot, pas le lot plus les restes d'une construction
     anterieure (un carnet sorti du lot resterait en ligne sans etre dans le
     manifeste -- le garde ne le verrait pas).
 
-    Rend la liste des noms de fichier deposes (ordre du lot).
+    Rend un dictionnaire : `carnets` (noms de fichier poses), `modules`
+    (nom pose -> chemin relatif source), `modules_par_carnet`.
     """
     source_dir.mkdir(parents=True, exist_ok=True)
     ancien = source_dir / "files"
@@ -151,6 +257,8 @@ def stage(root: Path, lot_notebooks: Sequence[NotebookVerdict],
         shutil.rmtree(ancien)
     poses: List[str] = []
     vus: Dict[str, str] = {}
+    modules: Dict[str, str] = {}
+    modules_par_carnet: Dict[str, List[str]] = {}
     for verdict in lot_notebooks:
         rel = verdict.path.replace("\\", "/")
         source = root / rel
@@ -165,16 +273,39 @@ def stage(root: Path, lot_notebooks: Sequence[NotebookVerdict],
         cible.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source, cible)
         poses.append(nom)
-    return poses
+
+        embarques: List[str] = []
+        for nom_module, chemin_module, est_paquet in modules_pour_carnet(root, rel):
+            cle = nom_module if est_paquet else nom_module + ".py"
+            if cle in modules:
+                if modules[cle] != chemin_module:
+                    raise ValueError(
+                        "deux modules locaux homonymes dans le lot (%s) : %s et %s"
+                        % (cle, modules[cle], chemin_module))
+                embarques.append(cle)
+                continue
+            source_module = root / chemin_module
+            cible_module = source_dir / "files" / cle
+            if est_paquet:
+                shutil.copytree(source_module, cible_module)
+            else:
+                shutil.copy2(source_module, cible_module)
+            modules[cle] = chemin_module
+            embarques.append(cle)
+        modules_par_carnet[rel] = embarques
+    return {"carnets": poses, "modules": modules,
+            "modules_par_carnet": modules_par_carnet}
 
 
-def verifier_contenu(output_dir: Path, poses: Sequence[str]) -> List[str]:
+def verifier_contenu(output_dir: Path, poses: Sequence[str],
+                     modules: Optional[Dict[str, str]] = None) -> List[str]:
     """Verifie que le site construit publie **exactement** le lot.
 
     Ecarts signales : un carnet du lot absent du site construit, un carnet
-    en trop (un reste d'une construction anterieure). Sans cette
-    verification, un site « correct » peut cacher un carnet etranger -- et le
-    manifeste, seul verifie par le garde, ne le verrait pas.
+    en trop (un reste d'une construction anterieure), un module local
+    embarque absent. Sans cette verification, un site « correct » peut cacher
+    un carnet etranger -- et le manifeste, seul verifie par le garde, ne le
+    verrait pas.
     """
     anomalies: List[str] = []
     publie = output_dir / "files"
@@ -186,6 +317,9 @@ def verifier_contenu(output_dir: Path, poses: Sequence[str]) -> List[str]:
         anomalies.append("carnet du lot absent du site construit : %s" % manquant)
     for en_trop in sorted(presents - attendus):
         anomalies.append("carnet hors lot present dans le site construit : %s" % en_trop)
+    for cle in sorted(modules or {}):
+        if not (publie / cle).exists():
+            anomalies.append("module local embarque absent du site construit : %s" % cle)
     return anomalies
 
 
@@ -204,8 +338,10 @@ def urls(base: str, nom: str) -> Dict[str, str]:
 
 
 def manifeste(lot_notebooks: Sequence[NotebookVerdict], base: str,
+              modules_par_carnet: Optional[Dict[str, List[str]]] = None,
               source: str = "critere-pyodide-2.1") -> Dict[str, object]:
     """Construit le manifeste du deploiement (artefact de verite du garde)."""
+    modules_par_carnet = modules_par_carnet or {}
     carnets = []
     for verdict in lot_notebooks:
         rel = verdict.path.replace("\\", "/")
@@ -218,6 +354,7 @@ def manifeste(lot_notebooks: Sequence[NotebookVerdict], base: str,
             "noyau": verdict.kernel,
             "cellules_code": verdict.code_cells,
             "paquets_pyodide": sorted({p.split("==")[0] for p in verdict.pyodide_packages}),
+            "modules_locaux": sorted(modules_par_carnet.get(rel, [])),
             **urls(base, nom),
         })
     return {
@@ -347,7 +484,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 1
 
     poses = stage(root, lot_notebooks, source_dir)
-    data = manifeste(lot_notebooks, args.base_url)
+    data = manifeste(lot_notebooks, args.base_url,
+                      poses["modules_par_carnet"])
 
     if args.sans_build:
         manifeste_path = output_dir / NOM_MANIFESTE
@@ -358,7 +496,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         return 0
 
     journal = construire(source_dir, output_dir, args.python)
-    anomalies = verifier_contenu(output_dir, poses)
+    anomalies = verifier_contenu(output_dir, poses["carnets"], poses["modules"])
     if anomalies:
         for anomalie in anomalies:
             print("ANOMALIE %s" % anomalie, file=sys.stderr)
@@ -370,6 +508,8 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     print("lot : %d carnets -- site construit dans %s" % (len(lot_notebooks), output_dir))
     for c in data["carnets"]:
         print("  - %s [%s] %s" % (c["chemin"], c["serie"], c["lab"]))
+        for cle in c["modules_locaux"]:
+            print("      module local embarque : %s" % cle)
     print("manifeste : %s" % manifeste_path)
     if journal:
         print("--- journal de construction (5 dernieres lignes) ---")

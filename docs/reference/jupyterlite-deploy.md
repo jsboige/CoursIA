@@ -33,17 +33,45 @@ construction -- et il est verifie sur le site publie, jamais dans le depot.
    site mesure au pli 2.1 (`?path=<fichier>.ipynb`). Deux carnets de series
    differentes qui porteraient le meme nom font echouer la construction :
    on ne publie pas l'un des deux sous le nom de l'autre.
-3. **Le manifeste** (`manifest.json`, a la racine du site construit) : pour
-   chaque carnet, son chemin dans le depot, sa serie, et ses deux URLs
-   publiques -- `files` (carnet brut) et `lab` (ouverture et execution).
+3. **Les modules locaux de la serie** que le carnet importe, poses a plat a
+   cote de lui (voir « Les modules locaux voyagent avec le carnet »).
+4. **Le manifeste** (`manifest.json`, a la racine du site construit) : pour
+   chaque carnet, son chemin dans le depot, sa serie, ses deux URLs
+   publiques -- `files` (carnet brut) et `lab` (ouverture et execution) --
+   et les modules locaux embarques avec lui.
 
-Deux verifications ne laissent pas passer un site faux :
+Trois verifications ne laissent pas passer un site faux :
 
 - le repertoire de contenus est **remis a zero** avant la pose et avant la
   construction (un reste de construction anterieure ne doit pas rester en
   ligne) ;
 - apres la construction, le site est compare au lot : **ni carnet manquant,
-  ni carnet en trop** -- l'ecart fait echouer la construction.
+  ni carnet en trop** -- l'ecart fait echouer la construction ;
+- chaque module local embarque est present dans le site construit.
+
+## Les modules locaux voyagent avec le carnet
+
+Le critere d'eligibilite (pli 2.1) considere qu'un module Python **de la
+serie** du carnet est *embarquable* dans le bundle JupyterLite : ce n'est
+pas un motif de refus. Le deploiement doit donc l'embarquer pour de vrai.
+
+Mesure (premiere passe d'execution du lot, 8 carnets) : le carnet
+`Causalite-06-DoWhy-Instrument-Faible-Python.ipynb` echoue a l'import en
+navigation --
+
+```
+ModuleNotFoundError: No module named 'dowhy_iv_organs'
+```
+
+-- parce que le carnet cherche son organe de serie
+(`dowhy_iv_organs.py`, a cote de lui dans le depot) et que la pose a plat
+ne l'avait pas embarque. La construction le pose desormais, au meme niveau
+que le carnet, ce qui laisse au carnet sa propre decouverte (`sys.path`
+sur le dossier du module trouve).
+
+Un module homonyme fourni par deux series du lot fait echouer la
+construction, comme pour les carnets : on ne publie pas l'un des deux sous
+le nom de l'autre.
 
 ## Construction locale
 
