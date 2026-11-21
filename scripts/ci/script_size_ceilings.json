@@ -72,6 +72,10 @@
     "scripts/pr_gate.py": {
       "lines": 2846,
       "note": "Porte de fusion : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 195 lignes depuis la mesure du 13/11 (2650 -> 2845), puis de 1 ligne(s) au 20/11 (2845 -> 2846) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee"
+    },
+    "scripts/notebook_tools/check_prose_output_numbers.py": {
+      "lines": 810,
+      "note": "Nombres de prose contre sorties : epingle au passage du plafond des scripts neufs (800) par #27352 -- l'organe y apprend a lire les sorties HTML riches (.NET Interactive data.text/html) et a retirer les blocs invisibles <style>/<script> (reserve ai-01 fournee 8 ML-04 ; sonde #27233), 710 -> 810 (+107/-7). Pas de tranche de refonte planned : le cliquet le fera BAISSER."
     }
   },
   "known_large": [

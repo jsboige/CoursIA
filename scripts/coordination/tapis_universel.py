@@ -31,6 +31,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from coordination import gh_bulk, gh_selection, tapis_equilibre, tapis_marqueurs
+from coordination import tapis_citations
 from coordination.tapis_rapide import Etat, graine_defaut, ordonner
 
 
@@ -48,10 +49,12 @@ def _parent_de_titre(titre: str) -> int | None:
 
 
 def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
-                maintenant: datetime) -> list[Etat]:
+                maintenant: datetime,
+                citations_ouvertes: dict[int, list[dict]] | None = None) -> list[Etat]:
     """Un etat par issue ouverte, sur les metadonnees seules.
 
-    Les visites comptent le **travail reel** : les commits qui citent l'issue.
+    Les visites comptent le **travail reel** : les commits qui citent l'issue,
+    et les PRs **ouvertes** qui la citent (le travail en cours compte aussi).
     Les marqueurs de visite vivent dans les commentaires -- ils sont lus a la
     prise en charge, pas au classement."""
     etats = []
@@ -62,8 +65,9 @@ def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
         e = Etat(n, it.get("title") or "", labels, it.get("created_at") or "",
                  parent, parent or n, False,
                  any(lab.strip().lower() == "consolidation" for lab in labels))
+        cites = citations.get(n, []) + (citations_ouvertes or {}).get(n, [])
         e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
-            [], citations.get(n, []), maintenant)
+            [], cites, maintenant)
         etats.append(e)
     return etats
 
@@ -122,11 +126,13 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
         metas, duree = gh_selection.lire_metadonnees_issues(
             run, budget_s=args.budget_s)
         citations = gh_bulk.lire_citations_mergees(depot, args.jours, run)
+        prs = gh_bulk.lire_prs_ouvertes(run)
     except gh_bulk.LectureIncomplete as exc:
         print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
               file=sys.stderr)
         return 3
-    etats_ = etats_leger(metas, citations, maintenant)
+    etats_ = etats_leger(metas, citations, maintenant,
+                          tapis_citations.des_prs_ouvertes(prs))
     file = rotation_universelle(etats_, args.lane, maintenant, args.grains,
                                 graine_defaut(args.lane, maintenant))
     r = rapport(etats_, file, args.lane, maintenant,
