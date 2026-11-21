@@ -57,7 +57,7 @@ def _portable_repo_rel():
 _repo_rel = _portable_repo_rel()
 print(f""Repertoire de travail: {_repo_rel}"")
 print(f""Executable Python: {Path(sys.executable).name}"")",,,,,,,,e6f4aca8000c2333,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb,59f7c0df,markdown,fr,8684dd1e55c7bbfa,"### Interpretation : Detection de l'environnement
+MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb,59f7c0df,markdown,fr,f003aefb4c82517d,"### Interpretation : Detection de l'environnement
 
 **Sortie obtenue** : le système est Windows, et la cellule imprime la version
 Python détectée.
@@ -71,14 +71,14 @@ Python détectée.
 Le **pre-requis** (`3.9+`) est ce qui a une valeur pédagogique : il ne bouge
 pas d'une machine a l'autre. La **version detectee**, elle, change a chaque
 montee de version — la recopier ici la mettrait en contradiction avec la
-sortie d'a-cote des le prochain bump (#9434).
+sortie d'a-cote des le prochain bump.
 
 **Points clés** :
 1. La version detectee satisfait le pre-requis `3.9+` : toutes les bibliotheques de planification de la serie sont compatibles
 2. Windows necessite une attention particuliere pour les chemins Docker (`C:\` → `/c/`)
 3. Le repertoire de travail est correctement positionne dans la serie Planners
 
-> **Note technique** : La detection automatique de l'OS permet d'adapter les commandes Docker (conversion des chemins Windows vers WSL/Git Bash).",,,,,,,,8684dd1e55c7bbfa,,,,,,,,,,,,,,,
+> **Note technique** : La detection automatique de l'OS permet d'adapter les commandes Docker (conversion des chemins Windows vers WSL/Git Bash).",,,,,,,,f003aefb4c82517d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb,cell-3,markdown,fr,8eba7a0e7b3841a9,"***
 
 ## 2. Technologies de planification
@@ -935,13 +935,13 @@ print(f""unified-planning version : {up.__version__}"")
 #     print(f""Plan   : {result.plan}"")
 
 pass  # Remplacer par votre implementation",,,,,,,,c452d33324feb027,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,79014e5f,markdown,fr,f65c2bee9319f55f,"# Planners-01-Introduction-CSharp : la planification automatique from-scratch, puis moteur SOTA
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,79014e5f,markdown,fr,992cba395de519d4,"# Planners-01-Introduction-CSharp : la planification automatique from-scratch, puis moteur SOTA
 
 **Navigation** : [<< Setup](../00-Environment/Planners-00-Setup-Python.ipynb) | [Twin Python unified-planning](Planners-01-Introduction-Python.ipynb) | [PDDL Basics >>](Planners-02-PDDL-Basics-Python.ipynb)
 
 **Twin C#** du notebook Python [Planners-01-Introduction-Python](Planners-01-Introduction-Python.ipynb) (Python + lib `unified-planning`). **Partie 1 = les fondations** : le modèle **STRIPS** (Fikes & Nilsson, 1971), l'espace d'états, et un **planificateur BFS from-scratch** qui resout le problème canonique de l'interrupteur. Implementation **BCL .NET seule, 0 NuGet**. **Partie 2 = le moteur de production** : les mêmes problèmes (plus la livraison du jumeau Python) délégués au vrai **Fast Downward** via son API Docker, en PDDL standard.
 
-## Complementarite (#3801 Prong B)
+## Complementarite
 
 | Twin | Outil | Valeur |
 |------|-------|--------|
@@ -951,7 +951,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSh
 
 Pas d'équivalent NuGet maintenu et didactique a `unified-planning` en .NET → la Partie 1 from-scratch porte la valeur pédagogique (on code chaque brique), la Partie 2 porte la parité d'outil (le même moteur de production que le jumeau Python enveloppe, cf [Planners-04-Fast-Downward-CSharp](../02-Classical/Planners-04-Fast-Downward-CSharp.ipynb)).
 
-**Stack technique** : BCL .NET seule + Fast Downward par `FastDownwardBackend.cs` (Partie 2) : service Docker ou paquet Python `up-fast-downward`. Kernel `.net-csharp` (.NET Interactive).",,,,,,,,f65c2bee9319f55f,,,,,,,,,,,,,,,
+**Stack technique** : BCL .NET seule + Fast Downward par `FastDownwardBackend.cs` (Partie 2) : service Docker ou paquet Python `up-fast-downward`. Kernel `.net-csharp` (.NET Interactive).",,,,,,,,992cba395de519d4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,e868c323,markdown,fr,fe866e51886524d7,"## 1. Qu'est-ce que la planification ?
 
 La **planification automatique** est la branche de l'IA qui genere des **sequences d'actions** pour atteindre un objectif. Etant donne :
@@ -1278,7 +1278,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSh
 // TODO etudiant : etat initial sans lampe_fonctionne, but lampe_allumee, observez null.
 Console.WriteLine(""Exercice 3 a completer : probleme non-realisable + detection statique."");
 ",,,,,,,,89733c9e4e314ae0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,55c58a24,markdown,fr,21cc8d790ce9322c,"## Conclusion — Parties 1 et 2
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSharp.ipynb,55c58a24,markdown,fr,0f6eaa9bc0b573ff,"## Conclusion — Parties 1 et 2
 
 **Ce que nous avons appris** :
 
@@ -1297,7 +1297,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSh
 
 ***
 
-*Partie 1 from-scratch (BCL .NET seule, 0 NuGet) + Partie 2 Fast Downward (service Docker ou plugin local). Twin du notebook Python unified-planning [Planners-01-Introduction-Python](Planners-01-Introduction-Python.ipynb). Marathon #4956, parité lib-vs-lib Epic #10382.*",,,,,,,,21cc8d790ce9322c,,,,,,,,,,,,,,,
+*Partie 1 from-scratch (BCL .NET seule, 0 NuGet) + Partie 2 Fast Downward (service Docker ou plugin local). Twin du notebook Python unified-planning [Planners-01-Introduction-Python](Planners-01-Introduction-Python.ipynb). Marathon parité lib-vs-lib.*",,,,,,,,0f6eaa9bc0b573ff,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb,cell-0,markdown,fr,b06623e012d1d25d,"# Planners-01-Introduction-Python a la Planification Automatique
 
 **Navigation** : [Index](../../README.md) | [<< Setup](../00-Environment/Planners-00-Setup-Python.ipynb) | [PDDL Basics >>](Planners-02-PDDL-Basics-Python.ipynb)
@@ -2095,7 +2095,7 @@ Dans les notebooks suivants, nous approfondirons :
 ***
 
 **Notebook suivant** : [Planners-02-PDDL-Basics-Python](Planners-02-PDDL-Basics-Python.ipynb)",,,,,,,,8a82845228b8e372,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,32f61567,markdown,fr,db0f6453af9f942b,"# Planners-02-PDDL-Basics-CSharp
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,32f61567,markdown,fr,c132134692aa94ea,"# Planners-02-PDDL-Basics-CSharp
 
 **Navigation** : [Index](../../README.md) | [<< Introduction C#](Planners-01-Introduction-CSharp.ipynb) | [State Space C# >>](Planners-03-State-Space-CSharp.ipynb) |
 
@@ -2109,8 +2109,8 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSha
 4. **Résoudre** un problème PDDL par **recherche BFS forward** dans l'espace d'états, et retourner un plan.
 5. **Comprendre** la mécanique interne qu'une bibliothèque comme `unified-planning` (côté Python) cache derrière un appel `solve()`.
 
-> **Parité .NET (#4956).** Ce notebook est le **jumeau C#** de [Planners-02-PDDL-Basics-Python.ipynb](Planners-02-PDDL-Basics-Python.ipynb). Le notebook Python définit les domaines PDDL en texte puis invoque la bibliothèque `unified-planning` qui grounde et solve. Ici, **tout est déroulé à la main** (.NET 9, 0 NuGet) : on construit le modèle STRIPS, on grounde les actions et on code la recherche. C'est la complémentarité *axe-2 SOTA* ([#3801](https://github.com/jsboige/CoursIA/issues/3801)) : la lib utilitaire d'un côté, la compréhension des internes de l'autre.
-",,,,,,,,db0f6453af9f942b,,,,,,,,,,,,,,,
+> **Parité .NET.** Ce notebook est le **jumeau C#** de [Planners-02-PDDL-Basics-Python.ipynb](Planners-02-PDDL-Basics-Python.ipynb). Le notebook Python définit les domaines PDDL en texte puis invoque la bibliothèque `unified-planning` qui grounde et solve. Ici, **tout est déroulé à la main** (.NET 9, 0 NuGet) : on construit le modèle STRIPS, on grounde les actions et on code la recherche. C'est la complémentarité *axe-2 SOTA* : la lib utilitaire d'un côté, la compréhension des internes de l'autre.
+",,,,,,,,c132134692aa94ea,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,1926d390,markdown,fr,48bf45e93f414b4a,"***
 
 ## 1. Introduction : PDDL et le modèle STRIPS
@@ -3882,7 +3882,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Pyth
 ***
 
 **Notebook suivant** : [Planners-03-State-Space-Python](Planners-03-State-Space-Python.ipynb)",,,,,,,,19abd151b6da07a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,483916e0,markdown,fr,2be1b4420cb472c6,"***
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,483916e0,markdown,fr,9fdcdbc4b31b70df,"***
 
 **Navigation** : [<< PDDL Basics C#](Planners-02-PDDL-Basics-CSharp.ipynb) | [Index](../../README.md) | [Fast Downward C# >>](../02-Classical/Planners-04-Fast-Downward-CSharp.ipynb)
 
@@ -3890,9 +3890,9 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSha
 
 # Planners-3 : Recherche dans l'Espace d'États — twin C# (BFS / DFS / Greedy / A*)
 
-> **Twin C#** de [Planners-03-State-Space-Python](Planners-03-State-Space-Python.ipynb) (Python + networkx). **Tranche 2** du marathon Planners (#4956) : après Planners-1 (STRIPS + BFS), la progression **search nu -> A*** avec heuristiques, admissibilité et coherence.
+> **Twin C#** de [Planners-03-State-Space-Python](Planners-03-State-Space-Python.ipynb) (Python + networkx). **Tranche 2** du marathon Planners : après Planners-1 (STRIPS + BFS), la progression **search nu -> A*** avec heuristiques, admissibilité et coherence.
 
-## Complementarite (#3801 Prong B)
+## Complementarite
 
 | Twin | Outil | Valeur |
 |------|-------|--------|
@@ -3901,7 +3901,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSha
 
 Pas d'équivalent NuGet didactique idiomatique pour ce niveau -> from-scratch = la valeur. BCL .NET seule, 0 NuGet.
 
-**Le point cle (#3801 Prong B, cas non-degenere)** : sur un terrain uniforme BFS = A*. Sur un **terrain pondere**, A* trouve un chemin **plus long en étapes mais moins couteux** que BFS — c'est la ou A* discrimine vraiment. Le twin Python le demontre visuellement (heatmap) ; le twin C# le demontre **numeriquement** (table Pas/Coût/Nœuds).",,,,,,,,2be1b4420cb472c6,,,,,,,,,,,,,,,
+**Le point cle (cas non-degenere)** : sur un terrain uniforme BFS = A*. Sur un **terrain pondere**, A* trouve un chemin **plus long en étapes mais moins couteux** que BFS — c'est la ou A* discrimine vraiment. Le twin Python le demontre visuellement (heatmap) ; le twin C# le demontre **numeriquement** (table Pas/Coût/Nœuds).",,,,,,,,9fdcdbc4b31b70df,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,337fe2e8,markdown,fr,798e928f2645483c,"## Objectifs d'apprentissage
 
 A la fin de ce notebook, vous saurez :
@@ -4102,13 +4102,13 @@ Console.WriteLine($""  BFS : {bfsPath.Count - 1} pas, {bfsNodes} nœuds explores
 Console.WriteLine($""  A*  : {astarPath.Count - 1} pas, cout {astarCost}, {astarNodes} nœuds explores."");
 Console.WriteLine(""  (sans poids, pas de discrimination entre BFS et A* — c'est normal)"");
 ",,,,,,,,dcfd7eddd41a4337,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,6bc8a095,markdown,fr,11bbcf2d2960b8ee,"## 7. LE point cle (#3801 Prong B) — terrain pondere
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,6bc8a095,markdown,fr,5e855d57c20674b7,"## 7. LE point cle — terrain pondere
 
 Maintenant le **terrain pondere** : un marais central (coût 10) au milieu de la grille (coût 1). Le départ et le but sont alignes **de part et d'autre du marais**. C'est ici que les algorithmes se **differencient** :
 - **BFS / Greedy** minimisent le nombre de PAS -> traversent le marais tout droit (10 pas mais coût eleve).
 - **A*** minimise le COÛT réel -> contourne le marais (plus de pas mais coût faible).
 
-C'est le cas **non-degenere** ou A* prouve sa valeur (sur terrain uniforme, A* = BFS).",,,,,,,,11bbcf2d2960b8ee,,,,,,,,,,,,,,,
+C'est le cas **non-degenere** ou A* prouve sa valeur (sur terrain uniforme, A* = BFS).",,,,,,,,5e855d57c20674b7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,e658a8a5,code,fr,64ab4bc2894ccbcf,"// PRONG B : terrain pondere. Marais central cout 10 (sinon 1). Depart/but alignes a travers le marais.
 // BFS/Greedy traversent (peu de pas, cout eleve). A* contourne (plus de pas, cout faible).
 var marais = new HashSet<GridState>(
@@ -4215,7 +4215,7 @@ foreach (int c in new[] { 2, 3, 4, 5, 10, 20 })
     Console.WriteLine($""  cout_marais={c,2} -> (etudiant : A* fait combien de pas ?)"");
 }
 ",,,,,,,,fcccc893793c63ee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,c6f67abc,markdown,fr,3422caf9aaddc2b7,"## Conclusion — du search nu a A*
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,c6f67abc,markdown,fr,04447fc3effaa31d,"## Conclusion — du search nu a A*
 
 Ce twin C# parcourt la même progression que le twin Python :
 - **BFS** : optimal en PAS (coût uniforme), explore beaucoup.
@@ -4223,9 +4223,9 @@ Ce twin C# parcourt la même progression que le twin Python :
 - **Greedy Best-First** : guide par h seul, rapide mais non optimal.
 - **A*** : `f = g + h`, optimal en COÛT si h admissible (Manhattan).
 
-**Le point cle (#3801 Prong B)** : sur terrain uniforme, BFS = A* (cas degenere). Sur **terrain pondere**, seul A* minimise le coût réel (16 pas / coût 16 en contournant le marais, vs BFS 10 pas / coût 55 en traversant). C'est la ou la capacité d'A* est visible dans la sortie — pas un exemple trivial.
+**Le point cle** : sur terrain uniforme, BFS = A* (cas degenere). Sur **terrain pondere**, seul A* minimise le coût réel (16 pas / coût 16 en contournant le marais, vs BFS 10 pas / coût 55 en traversant). C'est la ou la capacité d'A* est visible dans la sortie — pas un exemple trivial.
 
-> Retour au [twin Python](Planners-03-State-Space-Python.ipynb) — qui demontre la même chose visuellement (heatmap + chemins superposes).",,,,,,,,3422caf9aaddc2b7,,,,,,,,,,,,,,,
+> Retour au [twin Python](Planners-03-State-Space-Python.ipynb) — qui demontre la même chose visuellement (heatmap + chemins superposes).",,,,,,,,04447fc3effaa31d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb,cell-0,markdown,fr,351011f7029c87b4,"# Planners-03-State-Space-Python - Recherche dans l'Espace d'États
 
 **Navigation** : [Index](../../README.md) | [<< PDDL Basics](Planners-02-PDDL-Basics-Python.ipynb) | [Fast Downward >>](../02-Classical/Planners-04-Fast-Downward-Python.ipynb)
@@ -5244,13 +5244,13 @@ Dans le prochain notebook **Planners-04-Fast-Downward-Python**, nous explorerons
 ***
 
 **Notebook suivant** : [Planners-04-Fast-Downward-Python](../02-Classical/Planners-04-Fast-Downward-Python.ipynb)",,,,,,,,e1f4b2750b6419f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,f4bc7eae,markdown,fr,38faad2f0418c64c,"# Planners-04-Fast-Downward-Python (C#)
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,f4bc7eae,markdown,fr,6cd495cc738ccf2a,"# Planners-04-Fast-Downward-Python (C#)
 
 ## Architecture Fast Downward, SAS+, A\*, GBFS et Enforced Hill Climbing
 
 **Navigation** : [<< Planners-3 State-Space (C#)](../01-Foundation/Planners-03-State-Space-CSharp.ipynb) | [Index](../README.md) | [Planners-5 Heuristics (C#) >>](Planners-05-Heuristics-CSharp.ipynb)
 
-**Twin C# (.NET Interactive)** de [Planners-04-Fast-Downward-Python.ipynb](Planners-04-Fast-Downward-Python.ipynb) — marathon **#4956** (parite .NET <-> Python).
+**Twin C# (.NET Interactive)** de [Planners-04-Fast-Downward-Python.ipynb](Planners-04-Fast-Downward-Python.ipynb) — marathon parite .NET <-> Python.
 
 [Fast Downward](https://www.fast-downward.org/) (Helmert 2006, gagnant a plusieurs reprises de l'IPC) est le planificateur de reference de la planification classique. Son architecture se decompose en trois étapes : un **translator** (PDDL -> **SAS+**), un preprocessor C++ et un **moteur de recherche** C++. Ce twin C# **rend visibles les internes** que le binaire Fast Downward cache : la représentation **SAS+** (variables multi-valuees), les opérateurs a **prevail/précondition/effect**, le **graphe de plan relaxation** (RPG) pour l'heuristique h^FF, et les trois stratégies de recherche **A\***, **Greedy Best-First** et **Enforced Hill Climbing**.
 
@@ -5271,7 +5271,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Durée estimee : 45 minutes
 
-> **Verdict SOTA (#3801 Prong A).** Ce twin C# est un **planificateur SAS+ pédagogique from-scratch** (SOTA-OK pour le concept du moteur). Le notebook Python [Planners-04-Fast-Downward-Python](Planners-04-Fast-Downward-Python.ipynb) invoque le **vrai Fast Downward** (IPC winner, Helmert 2006) (service Docker ou plugin local `up-fast-downward`) + `unified-planning` ; la Tranche 2 de ce twin l'appelle aussi depuis .NET. Le twin from-scratch rend visibles les internes (représentation SAS+, opérateurs prevail/pre/eff, RPG, EHC) que Fast Downward cache dans son binaire C++ — compagnon pédagogique intentionnel, même pattern que le twin [App-19 WFC C#](../../../Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb). Implementation en BCL .NET 9 **pure, 0 NuGet**.",,,,,,,,38faad2f0418c64c,,,,,,,,,,,,,,,
+> **Verdict SOTA.** Ce twin C# est un **planificateur SAS+ pédagogique from-scratch** (SOTA-OK pour le concept du moteur). Le notebook Python [Planners-04-Fast-Downward-Python](Planners-04-Fast-Downward-Python.ipynb) invoque le **vrai Fast Downward** (IPC winner, Helmert 2006) (service Docker ou plugin local `up-fast-downward`) + `unified-planning` ; la Tranche 2 de ce twin l'appelle aussi depuis .NET. Le twin from-scratch rend visibles les internes (représentation SAS+, opérateurs prevail/pre/eff, RPG, EHC) que Fast Downward cache dans son binaire C++ — compagnon pédagogique intentionnel, même pattern que le twin [App-19 WFC C#](../../../Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb). Implementation en BCL .NET 9 **pure, 0 NuGet**.",,,,,,,,6cd495cc738ccf2a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,3b99f00d,markdown,fr,e9e0bcc05b0b35dc,"## 1. Pourquoi SAS+ ? L'apport cle de Fast Downward
 
 Le **translator** de Fast Downward convertit un problème PDDL (prédicats booléens) en une représentation **SAS+** (Simplified Action Structures) ou l'état est un vecteur de **variables multi-valuees**. C'est le changement de représentation fondateur du planificateur.
@@ -5925,7 +5925,7 @@ public static (int nodesHMax, int nodesHFF, int costHMax, int costHFF) CompareAS
 
 ""Exercice 3 (h^max vs h^FF en A*) a completer."".Display();
 ",,,,,,,,766b814d29527a87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,856e1d0f,markdown,fr,754c21eee9c32c68,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,856e1d0f,markdown,fr,cf2cbc2eecc4d896,"## Conclusion
 
 ### Ce que vous avez appris
 
@@ -5961,8 +5961,8 @@ Le notebook Python [Planners-04-Fast-Downward-Python](Planners-04-Fast-Downward-
 - Bonet & Geffner (2001), *Planning as heuristic search*, AIJ.
 
 ***
-*Marathon #4956 (parite .NET <-> Python). Twin C# du notebook Python [Planners-04-Fast-Downward-Python.ipynb](Planners-04-Fast-Downward-Python.ipynb). Regitre SOTA : EPIC #3801.*
-",,,,,,,,754c21eee9c32c68,,,,,,,,,,,,,,,
+*Marathon parite .NET <-> Python. Twin C# du notebook Python [Planners-04-Fast-Downward-Python.ipynb](Planners-04-Fast-Downward-Python.ipynb).*
+",,,,,,,,cf2cbc2eecc4d896,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb,cell-0,markdown,fr,22d3feec11efd0f3,"# Planners-04-Fast-Downward-Python - Planificateur Classique
 
 **Navigation** : [Index](../../README.md) | [<< State-Space](../01-Foundation/Planners-03-State-Space-Python.ipynb) | [Heuristics >>](Planners-05-Heuristics-Python.ipynb)
@@ -20307,9 +20307,9 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-CSh
 - **Mêmes verdicts, deux moteurs** : interrupteur (1 action), multi-interrupteurs (4 actions, maitresse en premier) — Fast Downward retrouve exactement les plans de notre BFS from-scratch ; sur la livraison, le même plan optimal 3 actions que le jumeau Python.
 - **Ce que le moteur apporte en plus** : un nouveau domaine (livraison) = un texte PDDL, zéro classe C# ; `lmcut` heuristique admissible → plan **optimal** garanti ; le log expose des métriques (heuristique initiale, états expansés) qui deviennent décisives quand l'espace d'états explose (cf section 8).
 - **Ce que la Partie 1 garde** : la compréhension — on sait *exactement* ce que Fast Downward fait sous le capot (traduire PDDL, ground, chercher), parce qu'on l'a construit à la main.",,,,,,,,e6c5cdfb368c1fcb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,t2-intro,markdown,fr,88e3fec9f95ae9fb,"### Tranche 2 (#10382) : le vrai planificateur Fast Downward
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,t2-intro,markdown,fr,acf38402b656a686,"### Tranche 2 : le vrai planificateur Fast Downward
 
-La §1–8 ci-dessus réimplémente un planificateur STRIPS **from-scratch** (grounding + BFS forward, 0 NuGet) — la brique pédagogique qui rend visible ce que `unified-planning` (côté Python) cache. La **Tranche 2** branche le **même moteur production** que le jumeau Python — **Fast Downward** (Helmert ; A* + heuristique landmark-cut `lmcut`) — atteint par le service Docker `coursia-fast-downward` (port 8200) s'il répond, sinon le pilote local du paquet Python `up-fast-downward` (wheels compilées pour Linux, macOS et Windows), par [`FastDownwardBackend.cs`](../FastDownwardBackend.cs). Mêmes domaines PDDL (Logistics + Gripper), mêmes instances → on confronte le BFS pédagogique au solveur SOTA.",,,,,,,,88e3fec9f95ae9fb,,,,,,,,,,,,,,,
+La §1–8 ci-dessus réimplémente un planificateur STRIPS **from-scratch** (grounding + BFS forward, 0 NuGet) — la brique pédagogique qui rend visible ce que `unified-planning` (côté Python) cache. La **Tranche 2** branche le **même moteur production** que le jumeau Python — **Fast Downward** (Helmert ; A* + heuristique landmark-cut `lmcut`) — atteint par le service Docker `coursia-fast-downward` (port 8200) s'il répond, sinon le pilote local du paquet Python `up-fast-downward` (wheels compilées pour Linux, macOS et Windows), par [`FastDownwardBackend.cs`](../FastDownwardBackend.cs). Mêmes domaines PDDL (Logistics + Gripper), mêmes instances → on confronte le BFS pédagogique au solveur SOTA.",,,,,,,,acf38402b656a686,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,t2-fd,code,fr,601fe5dbaed629d3,"#load ""../FastDownwardBackend.cs""
 // === Tranche 2 (#10382) : Fast Downward (vrai planificateur SOTA) ===
 // FastDownwardBackend.cs choisit le moteur : service Docker coursia-fast-downward (port 8200)
@@ -20397,7 +20397,7 @@ Console.WriteLine(""Moteur : "" + FastDownwardBackend.Description);
 Console.WriteLine();
 Console.WriteLine(ReportFD(""Logistics"", SolveFD(DOMAIN_LOG, PROB_LOG, ""astar(lmcut())""), 7));
 Console.WriteLine(ReportFD(""Gripper"", SolveFD(DOMAIN_GRIP, PROB_GRIP, ""astar(lmcut())""), 5));",,,,,,,,601fe5dbaed629d3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,t2-interp,markdown,fr,e367a52985825485,"### Interprétation : parité lib-vs-lib, scalabilité du SOTA
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSharp.ipynb,t2-interp,markdown,fr,2334178a7acfd13a,"### Interprétation : parité lib-vs-lib, scalabilité du SOTA
 
 | Domaine | BFS from-scratch (§4) | Fast Downward `lmcut` | États expansés (FD) |
 |---|---|---|---|
@@ -20408,7 +20408,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-CSha
 
 **La nuance n'est pas le résultat, c'est le coût de recherche.** Sur ces instances minuscules, BFS (forward, en aveugle) et A*+lmcut trouvent l'optimum ; mais le BFS explore aveuglément (coût uniforme, aucune heuristic), tandis que `lmcut` (heuristique landmark-cut de Helmert & Domshlak 2009) **focalise** la recherche vers le but. Sur une instance plus grande (Logistics à 10 colis), le BFS exploserait exponentiellement quand FD reste polynomial-grâce-à-l'heuristique. Le from-scratch rend visible *ce que fait un planificateur* (grounding + search) ; le moteur SOTA montre *pourquoi l'heuristique compte*.
 
-**Verdict `SOTA-OK` (#3801).** Le moteur réel Fast Downward est invoqué (service Docker ou plugin local, `returncode=0`), produit les vrais plans optimaux. Tranche 1 from-scratch préservée intacte. Niveau de parité `native-both` : le jumeau Python invoque `unified-planning` (qui wrap Fast Downward), le jumeau C# invoque le même engine par `FastDownwardBackend.cs` (la version exécutée est imprimée en tête de sortie).",,,,,,,,e367a52985825485,,,,,,,,,,,,,,,
+**Verdict `SOTA-OK`.** Le moteur réel Fast Downward est invoqué (service Docker ou plugin local, `returncode=0`), produit les vrais plans optimaux. Tranche 1 from-scratch préservée intacte. Niveau de parité `native-both` : le jumeau Python invoque `unified-planning` (qui wrap Fast Downward), le jumeau C# invoque le même engine par `FastDownwardBackend.cs` (la version exécutée est imprimée en tête de sortie).",,,,,,,,2334178a7acfd13a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-CSharp.ipynb,2d42918e,markdown,fr,e841afebfa8a9d2d,"## 10. Tranche 2 : la recherche d'état via QuikGraph + Fast Downward (parité lib-vs-lib #10382)
 
 La Tranche 1 (cells 2-16) implémente **from-scratch** la recherche dans un espace d'états sur grille : BFS, Greedy, A* avec heuristique Manhattan, terrain uniforme et pondéré. C'est volontairement pédagogique — on voit chaque rouage. En **production**, on délègue à des **moteurs SOTA** de l'écosystème .NET et du planning classique :
