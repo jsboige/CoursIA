@@ -151,10 +151,26 @@ def _postcondition(text: str, start: int, original: str, original_start: int, or
     """
     before = text[start - 1:start]
     after = text[start:start + 2]
-    if before == "[" and after.startswith("]("):
+    removed = original[original_start:original_end]
+    left = original[max(0, original_start - POSTCOND_WINDOW):original_start]
+    right = original[original_end:original_end + POSTCOND_WINDOW]
+    if re.search(r"\[\s*$", left) and re.match(r"\s*\]\(", right):
         raise ValueError("texte de lien vide apres retrait -- ecriture refusee")
-    if before == "*" and after[:1] in (",", ";", ":"):
+    if re.search(r"\*\s*$", left) and re.match(r"\s*[,;:]", right) and re.match(r"\*?EPIC\b", removed, re.IGNORECASE):
         raise ValueError("accentuation videe apres retrait -- ecriture refusee")
+    if re.match(r"\s*l['’]\s*EPIC\b", removed, re.IGNORECASE):
+        raise ValueError("elision orpheline apres retrait -- ecriture refusee")
+    if re.search(r"\b(?:relève|releve|dépend|depend|provient|résulte|resulte)\s*$", left, re.IGNORECASE) and re.match(
+        r"\s+(?:de|du|des|d['’]|à|au|aux)\b", removed, re.IGNORECASE
+    ):
+        raise ValueError("preposition orpheline : complement requis supprime avec la reference -- ecriture refusee")
+    seam = text[max(0, start - 1):start + 4]
+    if _SEP_RUN.search(seam):
+        raise ValueError("separateurs orphelins a la couture -- ecriture refusee")
+    if _PREP_ORPHAN_RE.search(seam):
+        raise ValueError("preposition orpheline apres retrait -- ecriture refusee")
+    if re.search(r"\b(?:relève|releve|dépend|depend|provient|résulte|resulte)\s+de\s*,", seam, re.IGNORECASE):
+        raise ValueError("preposition orpheline apres retrait -- ecriture refusee")
     if before in ",;:" and after[:1] == "]":
         raise ValueError("separateur colle a une fermante -- ecriture refusee")
     if before in ",;:/—–" and after[:1] == ")":
