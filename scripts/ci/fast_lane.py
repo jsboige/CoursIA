@@ -66,6 +66,13 @@ import advisory_sticky  # noqa: E402  # organe partage (#24514, comme #24441)
 # isolee fusionne sans conflit.
 from fast_lane_registry import TRANCHE53  # noqa: E402
 
+# #27676 : la tranche 55 (cliquet de longueur de chemin) est importee par une
+# ligne a part, eloignee du bloc d'import et de la chaine d'agregation -- les
+# tranches voisines sont modifiees par d'autres PRs en vol, et une ligne
+# isolee fusionne sans conflit. La 54 est deja prise par #27611 sur `main` :
+# d'ou la renumerotation 54 -> 55 au rebase.
+from fast_lane_registry import TRANCHE55  # noqa: E402
+
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
 # T-H (#25510) : pause avant la SEULE relance d'une publication refusee par
@@ -910,7 +917,10 @@ def main(argv: list[str] | None = None) -> int:
               # #27611 : tranche 54 ajoutee sur la meme ligne que la 51 (ligne
               # isolee de la chaine ci-dessous, qui est modifiee par d'autres
               # PRs en vol).
+              # #27676 : tranche 55 (cliquet de longueur de chemin) -- meme
+              # motif que la 53, ligne isolee de la chaine ci-dessous.
               + TRANCHE54
+              + TRANCHE55
               + TRANCHE1 + TRANCHE2 + TRANCHE3 + TRANCHE4
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
