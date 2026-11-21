@@ -104,6 +104,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 10b | [Lean-10b-LeanDojo-v2-Pantograph-Lean-Python](Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb) | LeanDojo-**v2** : base dynamique (`DynamicDatabase`, curriculum random/novel_premises), serveur RPC **Pantograph** (but → tactique → état, pas à pas et preuve entière `check_compile`), pipeline « tracage → politique → vérification Lean » qui réalise l'exercice 3 de Lean-10 - See #18430 | 40 min |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | TorchLean: réseaux de neurones vérifiés, IBP, CROWN | 1h30-2h |
 | 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | Implémentation Python des algorithmes de vérification (IBP, CROWN) | 1h30-2h |
+| 11c | [Lean-11c-Escalier-Algebre-Lineaire](Lean-11c-Escalier-Algebre-Lineaire.ipynb) | Capstone escalier vers la sous-série [LINEAR](LINEAR/README.md) : le socle d'algèbre linéaire d'Axler interrogé en kernel natif (dépendance 2.19, Grassmann 2.43, théorème du rang 3.21), empreinte `#print axioms` honnête — théorèmes du texte vs 4 sorry-cibles de la baseline CI du lac `linear_lean` - Fille 3.2 de l'Epic [#24838](https://github.com/jsboige/CoursIA/issues/24838) | 25 min |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | théorème de sensibilité (Huang 2019), hypercube, signing matrix, port Lean 4 | 60 min |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Huang dans le lake `sensitivity_lean`, `#check` + `#print axioms` rendus in-kernel (UNLOCK c.127, jonction Mathlib #2611) | 45 min |
 | 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | Companion **natif** (kernel Lean) : l'algèbre TPR du lake `sensitivity_lean` exécutée in-kernel — quatre théorèmes de `Sensitivity.TPR` (unbinding exact `tprUnbind_bind`, chirurgie de constituant `tprSurgery`, lecture par le décodeur `tprSurgery_readout`, stabilité sous approximation `tprUnbind_approx`), `#print axioms` sans `sorryAx`, frontière épistémique prouvé/hypothèse, jumeau empirique [SL-13 — DISCOVER/TPR](../SymbolicLearning/SL-13-Discover-TPR.ipynb) et 3 exercices (certificats entiers) | 35 min |
@@ -280,6 +281,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 10b | [Lean-10b-LeanDojo-v2-Pantograph-Lean-Python](Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb) | 14 | 0 | **NOUVEAU** (kernel `leandojo-v2`) |
 | 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | 13 | 3 | **COMPLET** |
 | 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | 19 | 3 | **COMPLET** |
+| 11c | [Lean-11c-Escalier-Algebre-Lineaire](Lean-11c-Escalier-Algebre-Lineaire.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl-linear`, lac `linear_lean`, Fille 3.2 #24838) |
 | 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | 14 | 3 | **NOUVEAU** |
 | 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
 | 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | 10 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
@@ -526,6 +528,7 @@ Lean/
 ├── Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb # Python kernel (WSL venv leandojo-v2) - LeanDojo-v2 : DynamicDatabase + serveur RPC Pantograph (See #18430)
 ├── Lean-11-TorchLean.ipynb         # Lean4 kernel - NN verification
 ├── Lean-11b-TorchLean-Python.ipynb  # Python kernel - Implémentation algorithmes
+├── Lean-11c-Escalier-Algebre-Lineaire.ipynb  # Lean4 (WSL) kernel - capstone escalier vers la sous-série LINEAR (Axler ch. 1-3, lac linear_lean)
 ├── Lean-12-Sensitivity-Theorem.ipynb # Python kernel - théorème de sensibilité (Huang 2019, hypercube, signing matrix)
 ├── Lean-12b-Lean-Sensitivity-Theorem.ipynb # Lean4 (WSL) kernel - companion natif du théorème de sensibilité (preuve 0-sorry du lake sensitivity_lean)
 ├── Lean-12c-Tensor-Product-Representations-Lean.ipynb # Lean4 (WSL) kernel - algèbre TPR : binding, unbinding, constituent surgery (jumeau empirique SL-13 SymbolicLearning)

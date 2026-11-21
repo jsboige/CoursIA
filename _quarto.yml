@@ -2564,6 +2564,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11-TorchLean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11b-TorchLean-Python.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11c-Escalier-Algebre-Lineaire.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12b-Lean-Sensitivity-Theorem.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12c-Tensor-Product-Representations-Lean.ipynb"
