@@ -27,6 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import frozen_campaigns, gh_bulk, tapis_equilibre, tapis_origami, tapis_service
+from coordination import tapis_dernier_grain
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -81,6 +82,10 @@ class Etat:
     notes: list[str] = field(default_factory=list)
     mon_claim: bool = False
     occupes: list[tuple[str, str]] = field(default_factory=list)  # (lane, paths) bornes
+    #: L'etat de grain (raccord du classement, c3274) : `grain`,
+    #: `passage_seul`, `jamais_servie` ou `non_measurable`. `None` = inconnu
+    #: (la voie legere ne lit pas le fil : elle ne peut pas le dire).
+    etat_grain: str | None = None
 
 
 def parent_de(it: dict) -> int | None:
@@ -267,6 +272,7 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours)
     nommes = {p for p in parents.values() if p is not None}
     resultat = []
+    depuis = maintenant - timedelta(days=tapis_equilibre.FENETRE_J)
     for n, it in ouvertes.items():
         ancetres, famille = _ancetres(n, parents)
         labels = list(it.get("labels") or [])
@@ -274,10 +280,18 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
                  famille, n in nommes or _conteneur_propre(it),
                  any(lab.strip().lower() == LABEL_CONSOLIDATION for lab in labels))
         evts = evenements(it.get("comments") or [])
-        e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
-            evts, lecture.citations.get(n, []), maintenant)
-        _decider(e, it, evts, ancetres, ctx)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
+        # Raccord du classement (c3274) : une prise en charge nominative est
+        # une visite, une citation Git n'en est pas une. L'etat de grain
+        # distingue l'absence ETABLIE de l'absence NON MESURABLE (fil
+        # partiel) : sans cette distinction, une issue dont le fil n'a pas
+        # ete lu en entier se lit comme une issue jamais servie.
+        e.etat_grain = tapis_dernier_grain.depuis_evenements(
+            evts, lecture.citations.get(n, []), numero=n,
+            fil_complet=(total <= lus), depuis=depuis).etat
+        e.derniere_visite, e.visites_total, e.visites = tapis_dernier_grain.compter_grains(
+            evts, depuis)
+        _decider(e, it, evts, ancetres, ctx)
         if e.ecart is None and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
         resultat.append(e)
