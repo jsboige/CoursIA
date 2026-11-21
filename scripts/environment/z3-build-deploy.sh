@@ -140,8 +140,10 @@ fi
 Z3_MANAGED="$NUGET_ROOT/microsoft.z3/$Z3_VERSION/lib/netstandard2.0/Microsoft.Z3.dll"
 EXPR_UTILS="$NUGET_ROOT/miaplaza.expressionutils/1.2.0/lib/netstandard2.0/ExpressionUtils.dll"
 
-for dep in "$Z3_MANAGED:Microsoft.Z3.dll" "$EXPR_UTILS:ExpressionUtils.dll"; do
-    src="${dep%%:*}"; name="${dep##*:}"
+# Les chemins se parcourent tels quels : pas de separateur ':' arbitraire,
+# qui couperait un chemin Windows au deux-points du lecteur (C:).
+for src in "$Z3_MANAGED" "$EXPR_UTILS"; do
+    name="$(basename "$src")"
     if [[ -f "$src" ]]; then
         cp "$src" "$STAGE_DIR/$name"
     else

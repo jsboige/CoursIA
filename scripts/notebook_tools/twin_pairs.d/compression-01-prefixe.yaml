@@ -1,7 +1,7 @@
 - name: "Compression-01 Prefixe"
   family: Compression
-  python: MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Le sujet est solver-free by design : Shannon-Fano, Huffman, Kraft, entropie et la génération Dirichlet sont implémentés avec Python/NumPy et la BCL .NET, sans moteur externe pertinent omis."

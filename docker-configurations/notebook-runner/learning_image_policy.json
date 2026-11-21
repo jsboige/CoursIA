@@ -1,0 +1,54 @@
+{
+  "_role": "Politique DECLAREE de l'image d'apprentissage (pli 1.2, #27545). Ce fichier est la partie DECLAREE du dossier : il ne remplace pas la mesure. La partie MESUREE est le manifeste `docs/curriculum/manifeste-dependances.json` (pli 1.1, #27544), dont ce fichier ne fait que trancher les exclusions et les extras que le manifeste ne peut pas porter.",
+  "_rule": "Toute exclusion porte un motif ET une source. Une exclusion sans motif n'est pas une exclusion, c'est une omission. Un motif mesure par un outil (pip, un build) vaut mieux qu'un motif declare ici : la source designe la mesure qui le confirme.",
+  "_source": "docker-configurations/notebook-runner/learning_image_policy.json",
+  "target": {
+    "interpreter": "python3 (interpreteur systeme de l'image, /usr/bin/python3)",
+    "version": "3.12.3",
+    "source": "MESURE dans l'image construite (2026-11-20) : `cat /etc/os-release` -> Ubuntu 24.04.5 LTS ; `python3 --version` -> Python 3.12.3 ; `which python3` -> /usr/bin/python3. Le tag `dotnet/sdk:10.0` est base sur Ubuntu 24.04, PAS sur Debian bookworm -- le commentaire anterieur du Dockerfile annoncait bookworm/3.11, c'etait faux.",
+    "_why_not_313": "Le manifeste declare `numpy>=1.24,<2.0` et le canon `canonical_python_by_kernelspec` du pli 1.1 associe `python3` a 3.13. Les deux sont incompatibles : numpy 1.26.x (la derniere serie <2) ne publie pas de roue cp313 et ne se compile pas sous 3.13. L'image installe donc les paquets du manifeste sous 3.12, le dernier interpreteur ou la borne numpy tient (numpy 1.26.4 y publie une roue cp312). Constat transmis au pli 1.1 : le canon 3.13 et la borne numpy<2 ne peuvent pas tenir ensemble. Consequence a assumer : le noyau `global-3.13` (Python 3.13.18, mesure) est le interpreteur canonique 3.13, mais il ne porte PAS les paquets du manifeste ; ceux-ci vivent sous `python3` (3.12.3)."
+  },
+  "exclude": [
+    {
+      "package": "pyphi",
+      "motif": "pyphi 1.2.0 declare `requires-python >=3.9,<3.10` (il utilise `collections.Iterable`, retire en 3.10) : pip refuse l'installation sur l'interpreteur 3.12 de l'image. Le paquet est installe par l'env dedie `pyphi` / `ict-py39` (Python 3.9), pas par l'image.",
+      "source": "docs/reference/kernels-runtime.md, section « Serie IIT/ICT -- env canonique `pyphi` » ; contrainte declaree dans MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml (requires-python = \">=3.9,<3.10\")"
+    },
+    {
+      "package": "pyemd",
+      "motif": "pyemd 0.5.1 n'a pas de roue cp312 (les roues known-good du depot sont cp39) ; sa sdist se compile contre numpy 2.x et echoue a l'import sous numpy 1.x. Paquet installe par l'env dedie `pyphi` / `ict-py39` (numpy 1.26), pas par l'image.",
+      "source": "docs/reference/kernels-runtime.md, section « Serie IIT/ICT -- env canonique `pyphi` » (pyemd 0.5.1 = wheel cp39 known-good avec numpy 1.26)"
+    }
+  ],
+  "extras": {
+    "eth-tester": [
+      "py-evm"
+    ]
+  },
+  "pip_installed": [
+    {
+      "package": "python-constraint",
+      "motif": "Son sdist PyPI s'appelle `python-constraint-1.4.0.tar.gz` : le nom n'est pas PEP 625 (separateur `_`), donc le resolveur `uv` refuse de le resoudre (« non-PEP 625-compliant source distribution filename »). pip l'accepte : l'image le construit en roue locale (`pip wheel`) et l'installe avec pip, hors du verrou uv.",
+      "source": "mesure : `uv pip compile` sur le projection complete du manifeste echoue sur ce seul paquet (cause nommee par uv) ; `pip wheel python-constraint==1.4.0` produit une roue `py2.py3-none-any` installable."
+    }
+  ],
+  "_pip_installed_rule": "Ces paquets restent dans `requirements-learning.txt` (la source de record est la projection complete du manifeste) mais sont absents du verrou uv : le verrou est genere depuis l'entree uv (`--uv-input`), qui les retire. Chaque ecart porte son motif et sa source ici.",
+  "_extras_rule": "Le manifeste consolide porte des noms normalises (PEP 503) : un extra n'y survit pas. Les extras sont donc declares ici, avec la source du besoin. `eth-tester[py-evm]` est le backend EthereumTester local utilise par la serie SmartContracts SC-11 ; le paquet `py-evm` est lui aussi dans le manifeste.",
+  "pip_options": {
+    "extra_index_url": "https://download.pytorch.org/whl/cpu",
+    "_why": "La famille GPU est exclue du manifeste (motif `gpu`), mais `torchlens` -- qui fait partie des groupes inclus -- declare `torch>=2.0` comme dependance. Sur linux, la roue PyPI de torch embarque les bibliotheques CUDA (nvidia-*) : plusieurs Go pour une image CPU. L'index CPU de PyTorch publie la meme version avec le suffixe `+cpu`, que PEP 440 classe **au-dessus** de la version nue : le resolver pip retient donc la roue CPU sans qu'aucune contrainte supplementaire soit necessaire.",
+    "_measured": "Le tire de torch n'est pas une hypothese : l'image mesure le paquet installe (`pip show torch`) et sa taille ; le journal de construction est joint a la PR."
+  },
+  "not_installed_by_design": [
+    {
+      "item": "torch (famille GPU)",
+      "motif": "Exclu par le manifeste lui-meme : conflit de pins sans version commune (`==2.14.0`, `>=2.0`, `>=2.0,<2.12`, `>=2.1.0`, `>=2.13`) -> « aucune version commune : le paquet est ecarte du manifeste consolide ». L'image est une image CPU.",
+      "source": "docs/curriculum/manifeste-dependances.json, conflicts[] (classe `incompatible`, paquet `torch`)"
+    },
+    {
+      "item": "Services GenAI locaux (ComfyUI, vLLM, Whisper, TTS)",
+      "motif": "Services optionnels : ils ne sont pas des paquets Python mais des images de service, avec leurs propres ports et leurs cles d'API. L'image d'apprentissage n'en a pas besoin ; les carnets correspondants declarent un endpoint externe.",
+      "source": "docker-configurations/services/*/docker-compose*.yml (ports declares) ; docs/curriculum/manifeste-dependances.json, section « Besoins » (api_key_count, local_endpoints)"
+    }
+  ]
+}
