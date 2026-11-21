@@ -199,10 +199,11 @@ def _family(language: str) -> str:
 
     Un noyau inconnu (``?``, ``ict-py313``, ``py310-gpu``) tombe sur Python :
     c'est le defaut du depot, et se tromper dans ce sens signale une cellule
-    au lieu d'en blanchir une.
+    au lieu d'en blanchir une. ``rust`` rejoint la famille C# : memes
+    marqueurs de commentaire (``//`` et ``/* */``), litteraux C-style.
     """
     key = (language or "").strip().lower()
-    if key.startswith(("csharp", "c#", ".net-csharp")):
+    if key.startswith(("csharp", "c#", ".net-csharp", "rust")):
         return "csharp"
     if key.startswith("lean"):
         return "lean"
