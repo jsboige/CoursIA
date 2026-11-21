@@ -52,6 +52,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + vérification CI) |
 | [reference/lib-versions.md](reference/lib-versions.md) | Organe des versions de bibliothèques des carnets (#23073) : manifeste canonique, recensement `--census`, garde advisory sur les carnets modifiés |
 | [reference/rust-ecosystem-map.md](reference/rust-ecosystem-map.md) | Carte de l'écosystème Rust (Pli 1 de l'Epic #26510) : correspondance bibliothèques Python/C# en usage → crate Rust, série par série ; socle mesuré par `rust_ecosystem_census.py` |
+| [reference/rust-porting-spec.md](reference/rust-porting-spec.md) | Gabarit de spécification de portage Rust (Pli 3 de l'Epic #26510, #27098) : une page par carnet, remplie avant l'implémentation ; un seul format pour les deux producteurs de specs (harnais `nb_coder` et portage Rust) |
 | [reference/audit-reassessment-findings.md → transients/2026-05-17-…](transients/2026-05-17-reference-audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) — déplacé en lane transiente (tranche 3b #14623) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
@@ -64,6 +65,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/argumentation-capacites-dedup.md](reference/argumentation-capacites-dedup.md) | Déduplication + exposition licence de l'Argumentation EPITA 2025 — rapport reproductible de `scripts/research/argumentation_capacity_dedup.py` : capacités vendorisées, modules dupliqués, binaires GPL sans fichier de licence (Axe 2 de #16457) |
 | [reference/gorard-lanyonai-etape3.md](reference/gorard-lanyonai-etape3.md) | Dépôts lanyonai mesurés sur l'amont — licences, absence de `lean-toolchain`, ce que leurs preuves Lean établissent exactement (et ce qu'elles n'établissent pas) ; support de la décision de consommation par la série Gorard (#19741, étape 3) |
 | [reference/epita2025-argumentation-capacites.md](reference/epita2025-argumentation-capacites.md) | Traçabilité par capacité de l'Argumentation EPITA 2025 (sujet → implémentation réelle → portabilité) — 1re charte de distillation-outil, Axe 2 de #16457 ; registre `CapabilityRegistry` sans champ provenance, blocage licence des prouveurs `ext_tools/`, friction de notation des numéros de projet |
+| [reference/pyodide-executions/](reference/pyodide-executions/executions.md) | Preuves d'exécution réelle de carnets Python sous JupyterLite (noyau Pyodide, navigateur) — sorties verbatim, données brutes et captures d'écran ; socle mesuré par `scripts/notebook_tools/pyodide_browser_run.py`, lot d'entrée : `reference/pyodide-lot.json` (pli 2.1 de l'Epic #27543) |
 
 ### Règles détaillées (docs/reference/)
 
@@ -296,6 +298,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/aima-mapping/README.md](curriculum/aima-mapping/README.md) | AIMA : tables des matières 3e et 4e en données (ancre PDF par ligne), correspondance section → phase → carnets → compétences, sections sans couverture, ce qui dépasse le livre, et écarts de découpage entre les deux éditions |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
 | [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
+| [curriculum/grille-intuition-avant-formalisme.md](curriculum/grille-intuition-avant-formalisme.md) | Grille de rédaction « intuition avant formalisme » — cinq règles d'ouverture de carnet, ce que #15806 a établi et ce qu'elle y ajoute, pilote sur la série SMT/Z3-API |
 | [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations) + Planners (cœur classique) + IIT (cœur) + Z3-Linq2Z3, avec export SKOS/OWL et validation globale `--all` |
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |

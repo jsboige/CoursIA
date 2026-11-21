@@ -14,6 +14,16 @@ Les notebooks utilisent Python, C# avec .NET Interactive et Lean 4. De nombreux 
 
 ## Commencer ici
 
+### Démarrer sans rien installer
+
+[![Ouvrir dans GitHub Codespaces](https://github.com/codespaces/badge/svg)](https://github.com/codespaces/new?hide_repo_select=true&repo=jsboige%2FCoursIA&ref=main&machine=basicLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+
+Le bouton ci-dessus ouvre un Codespace déjà porteur des **sept noyaux canoniques** du dépôt (`python3`, `global-3.13`, `.net-csharp`, `.net-fsharp`, `.net-powershell`, `lean4`, `rust`) : le [`devcontainer`](.devcontainer/devcontainer.json) utilise l'image d'apprentissage publiée sur GHCR — rien à construire, un carnet Python ou C# s'exécute dès l'ouverture. **Le quota Codespaces consommé est celui de votre compte** (les heures gratuites du plan GitHub personnel, puis facturation) — fermez le Codespace quand vous ne l'utilisez plus. Sans compte ou sans quota, le repli local est une seule commande ([sous-issue 1.3](docker-configurations/notebook-runner/README.md)) :
+
+```bash
+docker run -p 8888:8888 ghcr.io/jsboige/coursia-learning:latest
+```
+
 ### Choisir sa vitesse de lecture
 
 Une série ne se lit pas comme une liste de fichiers à parcourir en entier. La numérotation de ses notebooks distingue **trois vitesses de lecture**, et chacun choisit la sienne, série par série :
