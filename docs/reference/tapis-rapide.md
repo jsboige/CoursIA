@@ -1,12 +1,16 @@
 # Tapis rapide — la voie légère du tirage des grains
 
-> REFERENCE — vivante — dernière révision 2026-11-20
+> REFERENCE — vivante — dernière révision 2026-11-21
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
 le 2026-11-14 pour tenir le plafond de lignes), `scripts/coordination/tapis_service.py` (la forme du service :
 commande, procédure de conteneur, lecture de secours, sortie texte), `scripts/coordination/tapis_origami.py`
-(parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179)
+(parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179),
+`scripts/coordination/tapis_seance.py` (les séances de marqueurs : une livraison en ouvre une neuve,
+#27338), `scripts/coordination/tapis_citations.py` (les citations des PRs ouvertes : le travail en cours
+compte comme une visite, #27338), `scripts/coordination/belt_equite.py` (l'équité du dispatch : un grain
+déjà servi ne passe pas devant les premières visites, #27338)
 et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
 Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
@@ -168,6 +172,43 @@ lane à moins de 24 h d'intervalle (`SEANCE_H`) font une seule visite. Les commi
 citent l'issue forment des séances sans lane. Le compte retenu est le plus grand des deux : un claim puis le
 merge de sa PR comptent une fois.
 
+**Où vivent les règles.** Les séances de **marqueurs** sont dans
+`scripts/coordination/tapis_seance.py` (`par_lane`) ; les séances d'**instants** (les commits cités, sans
+lane) sont dans `scripts/coordination/tapis_dernier_grain.py` (`seances`). Un écart d'heures ne dit pas si
+un marqueur a fermé une séance : ce sont deux règles, et chacune a son module.
+
+**Une livraison ouvre une séance neuve** (19/11, famine de l'umbrella #27338). Sans cela, une lane qui
+enchaîne plusieurs grains du même umbrella le jour même n'y compte qu'**une** visite — et l'issue reste en
+tête de classement, servie sept fois dans la journée pendant que des issues anciennes n'attendaient
+aucune PR. La séance se ferme sur la livraison (ou la release) ; la suite ouvre une séance neuve. Mesure
+sur l'issue réelle : avant correction, 2 visites sur 8 livraisons ; après, 8. La règle est appliquée par
+les **deux** chemins : le classement (`tapis_dernier_grain.compter_grains`) et la voie légère
+(`tapis_equilibre.compter`) appellent le même `par_lane` — un seul organe, aucune règle réimplémentée.
+
+**Les PRs ouvertes comptent le travail en cours** (19/11, même famine). Le classement léger ne voyait que
+les commits **mergés** : une issue sur laquelle huit PRs sont ouvertes — pas encore mergées — restait à
+`visites = 0`, donc en tête de rotation. `scripts/coordination/tapis_citations.py` extrait les citations des
+PRs ouvertes avec la même règle que les commits mergés (une mention `#N` dans le corps, auto-référence
+exclue) ; chacune compte **une** visite, à la date de la dernière activité de la PR : une PR abandonnée
+depuis trois mois ne tient pas une issue en tête. C'est le classement **léger** qui est concerné par les
+PRs ouvertes ; la voie rapide lit les marqueurs du fil, qui portent la même information (une livraison
+ouvre une séance neuve, dans les deux chemins).
+
+**La mesure qui prouve l'inversion** (19/11, même famine). Le témoin d'**ordre** ne discriminait pas le
+correctif : à niveau égal, l'ordre de création mettait déjà les anciennes devant. Ce qui change, c'est le
+**niveau**. Pool de 14 issues (12 anciennes à zéro visite, une issue à une visite, l'umbrella #27338 à huit
+livraisons) :
+
+| | visites de #27338 | niveau de #27338 | niveau de l'issue à 1 visite | rang de #27338 |
+| --- | --- | --- | --- | --- |
+| avant (les PRs ouvertes ne comptent pas) | 0 | 0 | 0,5 | **devant** elle |
+| après | 8 | 8 | 0,5 | **derrière** elle |
+
+Avant correction, une racine servie huit fois passait **devant** une issue qui avait déjà reçu sa visite : le
+contre-sens exact du mandat du 16/11 (« toute issue doit être visitée au moins une fois avant qu'une autre le
+soit deux fois »). Le témoin `scripts/tests/test_tapis_citations.py` rejoue les deux colonnes : il échoue si la
+correction disparaît, et il échoue aussi si l'inversion ne se reproduit plus.
+
 **Le niveau compte les visites du tour, pas celles de toute la vie de l'issue.** Le tour vaut
 `FENETRE_J` = 7 jours. Mesure du 16/11 sur la lecture de 13:27Z : environ 47 séances par jour pour 395
 issues ouvertes, soit un tour complet de la flotte en 4 à 8 jours. Un compte sur la vie entière aurait l'effet
@@ -225,6 +266,30 @@ visités et 300 graines, où les huit grains servis viennent toujours des 24 plu
 Les grains restent servis avant les conteneurs (#26926), même quand le conteneur est à un niveau plus bas : un
 conteneur demande une lecture et un `--paths`.
 
+**L'équité du 16/11 — une issue jamais visitée ne cède pas sa place** (#27590, dispatch `c0013-tapis-coverage-20`).
+Le mandat du 16/11 : « toute issue doit être visitée au moins une fois avant qu'une autre le soit deux fois ».
+Mesure du 21/11 sur le pool réel (lecture du 01:47Z, 51 issues servables, 21 à 0 visite) : le tour de 8 grains
+servait **deux issues déjà visitées** pendant que 14 issues jamais visitées restaient dehors — le quota de
+conteneurs (25 %) écartait les conteneurs jamais visités, et le tri final plaçait les grains d'abord. Deux
+corrections :
+
+- dans `tapis_rapide.ordonner`, une issue **déjà visitée** ne prend plus la place d'une issue jamais visitée
+  encore au tour ; le conteneur jamais visité que le quota écarte passe en **second temps**, quand la place ne
+  peut plus être prise par une issue déjà visitée. Le quota et l'ordre final (les grains d'abord) ne changent pas ;
+- dans `visit_coverage`, le **parcage Origami** est appliqué comme dans le tirage : sans lui, l'organe comptait
+  en rôle « worker » cinq EPIC Origami que le tapis ne sert jamais (leur dépliage est réservé au coordinateur).
+
+Effet mesuré sur la même lecture : le tour de 8 sert 8 issues **jamais visitées** (avant : 6, dont 2 déjà
+visitées), et les 16 issues « worker » à 0 visite sont toutes servies en **2 tours**. L'organe
+`visit_coverage.atteignable` mesure cette garantie (`tours`, `equite`) et la porte en **rouge** si une issue
+déjà visitée est servie pendant qu'une autre attend ; son test d'invariant est dans
+`scripts/tests/test_tapis_couverture_invariant.py` (contrôle positif et contrôle négatif).
+
+Ce que la garantie **ne** corrige pas : le quota de conteneurs reste une part de la liste (les conteneurs
+jamais visités occupent la place d'autres grains quand ils remplissent le tour), et une issue écartée par un
+code — `ORIGAMI`, `PLAFOND`, `RECLAMEE`, `LIVREE` — reste hors du tapis, par construction. L'organe compte
+désormais les issues dont le fil est tronqué et que le tirage re-décidera au service (`redecider_au_service`).
+
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 
 - Le **bandit de fermeture par zone** : la variété vient du tour de rôle par famille dans un niveau et du décalage par lane.
@@ -275,6 +340,15 @@ de `origin/main` qui la cite (`lecture.citations`). Le bilan donne par rôle le 
 visite et celles visitées sans avancer, l'invariant du 16/11 sur le pool servable (hors claim propre et hors
 marathon) et les jamais visitées. Mesure du 20/11 sur la lecture de 13:35Z : 443 issues hors marathons, 87 à
 zéro visite, dont 59 d'urne et 12 de revue.
+
+Le bilan porte en outre deux mesures neuves (21/11) :
+
+- `redecider_au_service` — les issues « worker » à 0 visite dont le **fil est tronqué** (la lecture groupée ne
+  voit que les 12 derniers commentaires) : le tirage les re-décide sur le fil complet au moment du service, donc
+  l'écart peut changer après le bilan ;
+- `atteignable` — la simulation du tapis (`tapis_rapide.ordonner`) sur la même lecture : combien de tours pour
+  servir toutes les issues jamais visitées, et **équité** — la liste des issues déjà visitées qui seraient
+  servies pendant qu'une autre attend. Une équité non vide est un **rouge** (code de sortie 1).
 
 ```bash
 python scripts/coordination/visit_coverage.py [--json] [--dashboard-line]
