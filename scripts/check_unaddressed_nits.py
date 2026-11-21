@@ -5264,7 +5264,8 @@ def _scope_lifted_sentence(body: str, needle_re) -> bool:
     return False
 
 
-def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
+def _override_scopes_reserve(lift_body: str, nit_author: str,
+                              nit_body: str | None = None) -> bool:
     """#14216 — un OVERRIDE coordinateur nomme-t-il LA reserve qu'il leve ?
 
     La trappe #11639 agissait par PR, jamais par reserve : un seul
@@ -5291,6 +5292,21 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
     (branche self de ``_lift_eligible``). Un nit d'auteur inconnu (compte
     supprime) reste levable : un scope ne peut pas nommer ce qui n'a pas
     de nom.
+
+    #27873 — la forme 2 discriminait sur le SEUL LOGIN : toute reserve
+    postee sous `jsboige` (login de poussee partage, cf #13316) etait
+    traitee comme une reserve de persona. C'est faux pour une reserve USER
+    (voix nue du mainteneur, meme login) : un override qui ne nomme qu'une
+    reserve de persona éteignait aussi le Concern du mainteneur. Mesure
+    sur PR #27153 : l'override `myia-ai-01` du 21/11 20:54Z (« Je leve la
+    reserve de clusterManager-Myia (review NanoClaw ...) … ; Le Concern du
+    mainteneur … attend son arbitrage ») rendait `rc=0` en eteignant le
+    `Concern:` du 17/11 18:53Z — contre l'intention explicite de l'override.
+    La discrimination passe donc par la NATURE de la reserve : la mention
+    de persona ne la scope que si la reserve ELLE-MEME porte le marqueur
+    de persona (le self-bot qui la porte). Une reserve user sans marqueur
+    n'est plus scopee par une mention « Hermes/NanoClaw » qui qualifie une
+    AUTRE reserve nommee dans la meme phrase.
     """
     if not nit_author:
         return True
@@ -5305,7 +5321,18 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
                            + r"(?![A-Za-z0-9_-])")
     if _scope_lifted_sentence(body, author_re):
         return True
-    if nit_author in PERSONA_ALIAS_LOGINS or nit_author == "jsboige":
+    if nit_author in PERSONA_ALIAS_LOGINS:
+        return _scope_lifted_sentence(
+            body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
+    if nit_author == "jsboige":
+        # #27873 — la mention de persona ne vaut QUE pour une reserve de
+        # persona (self-bot qui la porte : marqueur dans le corps). Une
+        # reserve user (voix nue) sous le meme login n'est pas scopee par
+        # elle. `nit_body is None` = appelant historique sans le corps :
+        # comportement d'avant preserve (fail-open sur l'absence d'info).
+        if nit_body is not None and not _PERSONA_MARKERS_RE.search(
+                _strip_quoted(nit_body)):
+            return False
         return _scope_lifted_sentence(
             body, re.compile(r"(?i)\b(?:hermes|nanoclaw)\b"))
     return False
@@ -5758,7 +5785,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # nomination de la reserve d'autrui (login ou persona Hermes), il ne
         # leve que les siennes. La trappe reste fermee a l'auteur de la PR
         # (garde ci-dessus) : le scope n'ouvre pas la porte d'auto-levee.
-        return _override_scopes_reserve(lift_body or "", nit_author)
+        # #27873 — le corps de la reserve est transmis : la discrimination
+        # persona/user se fait sur sa NATURE, pas sur le seul login.
+        return _override_scopes_reserve(lift_body or "", nit_author, nit_body)
 
     # Fenetre 2026-08-16 (#11222) : les temps plats ne suffisent pas pour un
     # CHANGES_REQUESTED. Une PHRASE explicite de levee (LIFT_MARKER non
@@ -6028,6 +6057,10 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                             f"review:{state}"))
 
     blocking = []
+    # #27873 — corps des réserves qui SURVIVENT (auteur -> corps). Sert à la
+    # discrimination persona/user du scope d'override : la nature de la
+    # réserve se lit dans son corps, pas dans son seul login.
+    surviving_reserve_bodies: dict[str, str] = {}
     for (when, kind, login, body, src) in signals:
         if when is None or when >= cutoff:
             continue
@@ -6126,6 +6159,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # deux nits de 11:07. Le push est reporté comme contexte, pas comme levée
         # — seule une réponse écrite (ou un thread résolu) lève une remarque.
         pushed_after = last_commit is not None and last_commit > when
+        surviving_reserve_bodies.setdefault(login, body)
         blocking.append({
             "kind": kind, "author": login, "src": src,
             "channel": "review" if src.startswith("review") else "comment",
@@ -6196,7 +6230,9 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         for login in sorted({b.get("author") for b in blocking
                              if b.get("author") not in ("", author)
                              and not _override_scopes_reserve(
-                                 body or "", b.get("author") or "")})
+                                 body or "", b.get("author") or "",
+                                 surviving_reserve_bodies.get(
+                                     b.get("author") or ""))})
     ] + [
         # Q185 — meme exigence de nomination pour la voix adjointe : un
         # override adjoint qui laisse survivre une reserve est nomme avec sa
