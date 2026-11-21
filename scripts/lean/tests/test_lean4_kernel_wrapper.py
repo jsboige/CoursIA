@@ -30,6 +30,67 @@ needs_symlink = pytest.mark.skipif(
     reason="le shim du wrapper exige os.symlink (indisponible ici)")
 
 
+GIT_USR_BIN = (
+    Path(os.environ.get("ProgramFiles", r"C:\Program Files"))
+    / "Git" / "usr" / "bin"
+)
+
+
+def _bash_argv():
+    """Arguments initiaux de la commande bash, deterministes.
+
+    Sous Windows, CreateProcess resout ``bash`` dans ``System32`` AVANT le
+    PATH : des que WSL est installe, c'est le bash WSL (Linux) qui tourne,
+    meme quand ``which("bash")`` rend Git-Bash (mesure #27492 : ``uname``
+    rend ``Linux`` au nez de ``which``) -- or la frontiere WSL ne laisse
+    passer ni les variables d'environnement de l'appelant (liste WSLENV),
+    ni l'environnement moque dont le test a besoin. Jouer explicitement le
+    Git-Bash natif quand il existe : ``env=`` et ``argv`` passent intacts.
+    Sinon, sauter explicitement : un test qui ne peut pas s'executer doit
+    le dire, pas echouer en 127."""
+    if os.name != "nt":
+        return ["bash"]
+    git_bash = GIT_USR_BIN / "bash.exe"
+    if git_bash.exists():
+        return [str(git_bash)]
+    pytest.skip(
+        "Git-Bash absent et le bash WSL ne laisse pas passer "
+        "l'environnement du test : verification impossible "
+        "sur ce siege (#27492)")
+
+
+def _bash_path(raw):
+    """bash n'avale pas les antislashs : un chemin Windows passe tel quel
+    devient ``D:CoursIA...`` et le script est introuvable (exit 127, #27492).
+    Convertir via le cygpath du Git-Bash joue par ``_bash_argv`` ; sauter
+    explicitement quand la conversion est impossible : un test qui ne peut
+    pas s'executer doit le dire, pas echouer en 127.
+
+    NB : ne PAS passer la conversion par ``bash -c 'cygpath -u "$1"'`` depuis
+    Python natif -- la frontiere native/MSYS deforme l'echappement des
+    guillemets et les arguments positionnels (mesure #27492 : ``$0`` tombe a
+    ``/bin/bash``, ``$1`` a vide). L'appel direct a ``cygpath`` (argv simple,
+    sans guillemet ni ``$``) traverse indemne."""
+    text = str(raw)
+    if os.name != "nt":
+        return text
+    cygpath = GIT_USR_BIN / "cygpath.exe"
+    if not cygpath.exists():
+        pytest.skip(
+            f"cygpath absent ({cygpath}) : chemin Windows "
+            f"non convertible (#27492)")
+    converted = subprocess.run(
+        [str(cygpath), "-u", text.replace("\\", "/")],
+        text=True, encoding="utf-8", errors="replace",
+        capture_output=True, check=False,
+    )
+    posix_path = converted.stdout.strip()
+    if converted.returncode != 0 or not posix_path:
+        pytest.skip(
+            f"cygpath -u a echoue : {converted.stderr.strip()} (#27492)")
+    return posix_path
+
+
 REPO_ROOT = Path(__file__).resolve().parents[3]
 WRAPPER_PATH = (
     REPO_ROOT
@@ -103,23 +164,43 @@ def test_native_installer_check_verifies_the_real_kernel_class(
     python_stub.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     python_stub.chmod(0o755)
     jupyter = mockbin / "jupyter"
-    jupyter.write_text(f'#!/bin/sh\ncat "{inventory}"\n', encoding="utf-8")
+    jupyter.write_text(
+        f'#!/bin/sh\ncat "{_bash_path(inventory)}"\n', encoding="utf-8")
     jupyter.chmod(0o755)
     inventory.write_text(json.dumps({"kernelspecs": {
         "lean4-wsl": {"spec": {"language": language, "argv": argv}}
     }}), encoding="utf-8")
 
+    # Sous Windows, le python3 natif qui execute la verification du
+    # kernelspec ne peut pas lancer le stub POSIX ci-dessus (CreateProcess
+    # exige un .exe) : le jupyter REEL repondait a la place de la maquette,
+    # verdict de machine et non de test (mesure #27492). Porter la maquette
+    # par le jupyter reel : JUPYTER_DATA_DIR designe un dossier de donnees
+    # dont il lit le kernel maquette -- le stub POSIX continue de servir la
+    # porte bash (command -v jupyter) et l'execution sous Linux.
+    mock_data_dir = tmp_path / "jupyter-data"
+    kernel_dir = mock_data_dir / "kernels" / "lean4-wsl"
+    kernel_dir.mkdir(parents=True)
+    (kernel_dir / "kernel.json").write_text(json.dumps({
+        "argv": argv,
+        "language": language,
+        "display_name": "lean4-wsl (maquette)",
+    }), encoding="utf-8")
+
     env = os.environ.copy()
     env.update({
-        "ELAN_HOME": str(elan_home),
-        "LEAN4_VENV": str(venv),
+        "ELAN_HOME": _bash_path(elan_home),
+        "LEAN4_VENV": _bash_path(venv),
         "PATH": str(mockbin) + os.pathsep + env["PATH"],
+        "JUPYTER_DATA_DIR": str(mock_data_dir),
     })
     result = subprocess.run(
-        ["bash", str(NATIVE_INSTALLER_PATH), "--check"],
+        _bash_argv() + [_bash_path(NATIVE_INSTALLER_PATH), "--check"],
         cwd=REPO_ROOT,
         env=env,
         text=True,
+        encoding="utf-8",
+        errors="replace",
         capture_output=True,
         check=False,
     )
