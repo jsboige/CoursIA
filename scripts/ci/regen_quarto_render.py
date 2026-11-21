@@ -92,7 +92,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/GameTheory/",            # tranche 2 #10923 (56)
     "MyIA.AI.Notebooks/Probas/",                # tranche 2 #10923 (58)
     "MyIA.AI.Notebooks/CaseStudies/",            # tranche 15 #10923 (6)
-    "MyIA.AI.Notebooks/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
+    "MyIA.AI.Notebooks/InformationCalcul/Complexity/",             # tranche 19 #18423 (9 notebooks, complexite computationnelle)
     "MyIA.AI.Notebooks/NLP/",                    # tranche 19 #18423 (5, TAL/TALN)
     "MyIA.AI.Notebooks/Physique/",                 # serie Physique numerique (EPIC #23161) -- Integrales deplaces de Probas/Applications/ (T1)
     "MyIA.AI.Notebooks/QuantConnect/",           # tranche 19 #18423 (203 rendus, 221 git-tracked - 18 sous /archive/ ; sous-familles : projects, Python, research, ML-Training-Pipeline, partner-course-quant-trading, kelly_lean)
@@ -128,7 +128,7 @@ NOTEBOOK_SUBTREES = (
     # (ex SymbolicAI/Geometry/, tranche 19 #18423).
     "MyIA.AI.Notebooks/SymbolicAI/Lean/",             # tranche 13 #10923 (33 notebooks .ipynb pedagogique Lean)
     "MyIA.AI.Notebooks/cross-series/",                # tranche 13 #10923 (1)
-    "MyIA.AI.Notebooks/Compression/",                 # tranche finale #18423 (1, codes prefixes Shannon-Fano -> Huffman)
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/",                 # tranche finale #18423 (1, codes prefixes Shannon-Fano -> Huffman)
     "MyIA.AI.Notebooks/Physique/",                     # serie Physique #23161 (Jauge : Noether, jauge U(1)/SU(2), reseau de Wilson)
     # Prefix famille : couvre OR-tools-Stiegler.ipynb au niveau racine de
     # SymbolicAI/ (38 cellules, pedagogique). Les sous-repertoires deja
