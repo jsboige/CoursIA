@@ -37,6 +37,7 @@ Une ligne par notebook, cinq colonnes : **Intention** (ce que le cadrage `ICT-0-
 | 17 | **Orphelins 2/8 : ICT-20 FeatureCatastrophes** (extension #11690) | un carnet — la calibration de méthode avant ICT-21 : EWS/CUSUM/hystérésis sur transitions anodines contrôlées (contrôle négatif où le verdict honnête est `no_signal`), et le témoin réel lens-agreement SAE/J-Lens rendu `chance` avec ses limites de puissance quantifiées | **LU** (strand 17, 2026-11-18) |
 | 18 | **Orphelins 3-4/8 : ICT-32 StratificationCausaleLife + ICT-34 BancRecollementLectures** (extension #11690) | deux carnets — l'apportionment de Hoel sur le GOL certifié (saturation par trajectoire vs dégénérescence par ensemble, le glouton re-dérivant seul la partition par destin) et le recollement disciplinaire d'ICT-15k transposé aux lectures (compatibilité écrite **et** mesurée, témoin de De Finetti qui fait payer, R3 oraculaire bornant la perte). `ICT-33` reporté : la PR #26864 (ouverte) réécrit le carnet | **LU** (strand 18, 2026-11-18) |
 | 19 | **Orphelins 5-6/8 : ICT-36f FLens-SpecParam + ICT-43 Calibration-MultiEchelle** (extension #11690) | deux carnets — l'instrument spectral du papier LSD monté et sanity-checké à vérité exacte (H1 conditionnel au moyennage, H2 où l'aire linéaire renverse le verdict, question pré-enregistrée tranchée : l'exposant apériodique, premier compteur croissant de la série) et la Phase 0 d'inventaire des SAE du Hub (tailles réelles mesurées contre l'annonce de l'issue, écarts rendus comme résultats qui redessinent le plan d'expérience). `ICT-40b` reporté : la PR #26584 (ouverte) retire l'activité de développement du carnet | **LU** (strand 19, 2026-11-18) |
+| 20 | **Jumeau C# de la greffe 2 : ICT-Greffe2-EspaceAtteignable-CSharp** (extension #11690) | un carnet — le portage C# du quadruplet (A, F, r, π) : parité exacte mesurée avec le jumeau Python sortie à sortie, coquille de transcription corrigée dans la fiche Python (« A_t : 54 »), premier fantôme daté du ledger (ICT-47b parti vers PostTraining) ; les 4 non couverts restants sont tous sous PR ouverte mesurée | **LU** (strand 20, 2026-11-21) |
 
 Les accrétions `-b/-c/-d` se tranchent dans le strand où elles tombent.
 
@@ -337,6 +338,32 @@ Les 4 carnets non couverts, recalculés :
 - **ICT-48** ×2 (Onset9B-Aggregate, WolframClasses)
 
 La série des orphelins couvre 6/8 (`17c`, `20`, `32`, `34`, `36f`, `43`) ; `ICT-33` et `ICT-40b` rejoignent la paire ICT-48 en attente de résolution de PRs ouvertes (`#26864` et `#26584` réécrivent les carnets ; `#26757` Move / `#27095` pour la paire) — la série des orphelins est close : tout carnet encore non couvert l'est **sous occupation mesurée**.
+### Recompte du 2026-11-21 (après le strand 20)
+
+Même méthode, rejouée à la tête `e3170e1b9595` de `origin/main`, une fois le strand 20 posé (jumeau C# de la greffe 2). Entre le strand 19 et cette mesure, deux des PRs d'occupation mesurées aux strands 15/19 ont mergé, et deux carnets sont arrivés :
+
+- **#26757 MERGÉ** (2026-11-20T01:01:28Z) : Onset9B-Aggregate part vers `PostTraining/` (PT_20/PT_21) **et ICT-47b sort du périmètre ICT** — le dénominateur perd 2, la couverture perd ICT-47b (couvert au strand 14) ;
+- **#27095 MERGÉ** (2026-11-20T09:59:17Z) : **ICT-49-JLensFideliteCrossTaille arrive** sur `main`, non couvert — et repris aussitôt sous occupation par #27783 (ouverte, « blocs de fin ») ;
+- **#27564 MERGÉ** (2026-11-21T09:27:48Z) : **ICT-Greffe2-EspaceAtteignable-CSharp** arrive (portage, #27528) — c'est le carnet du strand 20 ;
+- **ICT-48-WolframClasses** reste non couvert, désormais sous l'occupation de #27783 (ouverte, « blocs de fin »).
+
+| Mesure | 2026-11-18 (s17) | 2026-11-18 (s18) | 2026-11-18 (s19) | **2026-11-21 (s20)** |
+|---|---|---|---|---|
+| Carnets ICT sur `main` | 101 | 101 | 101 | **101** |
+| Sections de carnet au ledger | 93 | 95 | 97 | **98** |
+| Non couverts | 8 | 6 | 4 | **4** |
+| Taux de couverture | 92 % | 94 % | 96 % | **97 %** |
+
+**Premier fantôme du ledger, daté** : la section `ICT-47b-PainAxisInstrument` (strand 14) ne correspond plus à aucun carnet du `ls-tree` — le carnet vit désormais dans `PostTraining/` depuis le Move #26757. La section est conservée comme trace de lecture (réserve 2 : la péremption se date, elle ne s'efface pas) ; le compte se réconcilie ainsi : 98 sections = **97 vivantes + 1 fantôme**, et 97 + 4 non couverts = 101 carnets. L'invariant « zéro fantôme » devient « fantômes nommés et datés » — tout carnet qui quitte le périmètre laisse sa section avec sa date de départ.
+
+Les 4 carnets non couverts, recalculés — **tous sous occupation vive mesurée** :
+
+- **ICT-33** SoupCollisions (reporté : PR #26864 ouverte le réécrit)
+- **ICT-40b** AnalogCognitionWaves (reporté : PR #26584 ouverte retire son activité de développement)
+- **ICT-48-WolframClasses-ThermoSignature** (reporté : PR #27783 ouverte, « blocs de fin »)
+- **ICT-49-JLensFideliteCrossTaille** (arrivé le 2026-11-20 par #27095 : PR #27783 ouverte, « blocs de fin »)
+
+La projection du strand 15 s'est vérifiée au pair près (« si le Move merge, le recompte passe à 90/99 — un ICT-48 reste à traiter ») : aux arrivées près, la série est exactement dans l'état prédit. **La couverture est au plafond atteignable sans merger de PR** : chaque non couvert restant attend la résolution d'une PR ouverte, et le dénominateur continue de bouger (deux arrivées en trois jours) — le recompte se rejoue à chaque strand, il ne se recopie pas.
 
 ## Passe d'arbitrage du mainteneur — séance du 2026-10-11 (case 3 de l'acceptance)
 
@@ -743,7 +770,7 @@ Lecture complète (contenu ET `outputs`) des sept non-numérotés restants, 2026
 |---|---|
 | **Intention** | Le quadruplet (A, F, r, π) : rendre « élargir son espace » **testable** (critères #13568) — la greffe ICT sur le bras planification. |
 | **Contenu réel** | Socle STRIPS **« copie de Planners-5c », garanties du lake non re-dérivées** (la sortie organ-first #16778 utilisée à la lettre : la copie est déclarée, l'organe natif nommé) ; domaine deux rives/gouffre/radeau ; A différentiel système ; **contrôle négatif de la primitive stérile** ; F et r à budget ; le noyau (ce que la primitive rend inatteignable) ; cas 3 navigation (bras Planners-10b) ; synthèse ; limites ; 3 exercices C.1. |
-| **Résultat** | A_t : 54 états, **1/3 buts** → +raft : 60 états, **3/3 buts** → +discard : 78 états (Δ|A| décore, **Δ(buts) discrimine**) ; l'élargissement non contrôlé **contracte** la liberté résiduelle ; noyau non vide à budget fixe ; cas 3 : trois politiques π, **A et F inchangés par construction**, h* inchangé (39/33/8) — seul π bouge, l'espace ne triche pas. |
+| **Résultat** | A_t : **36** états, **1/3 buts** → +discard : 54 états, 1/3 → +raft : 60 états, **3/3 buts** → +raft+discard : 78 états (Δ|A| décore, **Δ(buts) discrimine**) ; l'élargissement non contrôlé **contracte** la liberté résiduelle ; noyau non vide à budget fixe ; cas 3 : trois politiques π, **A et F inchangés par construction**, h* inchangé (39/33/8) — seul π bouge, l'espace ne triche pas. *(Correction strand 20, 2026-11-21 : la version du strand 5 écrivait « A_t : 54 états », coquille de transcription — vérifié contre les outputs du Python et du jumeau C# à la tête `e3170e1b9595` : 36/54/60/78.)* |
 | **Critique** | Aucune — les 4 critères de #13568 sont démontrés un à un avec leur contrôle, et la déclaration de copie pédagogique du socle STRIPS est exactement le pattern que la règle organ-first (merge #16778) exige. |
 | **Verdict + action** | **SOLIDE**. Pas de rangée matrice — candidate (élargissement utile vs contractant). |
 
@@ -1691,3 +1718,25 @@ Cinquième strand de la série des orphelins, en duo : `ICT-40b` (AnalogCognitio
 2. **Une prédiction pré-enregistrée, confirmée et bornée dans le même geste** : la question k était écrite avant la mesure, avec sa prédiction falsifiable et son mécanisme ; la confirmation (premier compteur croissant de la série) vient **avec** sa condition de validité (SNR par canal croissant avec k dans ce montage) — le carnet interdit au lecteur de sur-étendre le résultat. Le pré-enregistrement, déjà standard des strates 15-17, prouve ici son utilisation la plus forte : il protège aussi le verdict positif.
 3. **L'inventaire de terrain est un résultat, pas un incident** : ICT-43 transforme « l'issue s'est trompée de tailles » en un résultat qui redessine le plan d'expérience — quelles tailles sont réellement comparables, à quelle expansion, avec quel mismatch base/instruct. C'est le pendant infrastructure du contrôle négatif : mesurer ce qui existe **avant** de comparer, exactement comme ICT-20 calibrait l'instrument avant la transition chargée (finding 4 du strand 17).
 4. **Le protocole comme condition de la mesure** : H1 n'est récupérable qu'au régime moyenné du papier — l'epoch unique rend le décalage beta de signe instable. Le moyennage sur des centaines d'epochs n'est pas un confort statistique mais ce qui rend la mesure **possible** ; le carnet le démontre en faisant varier le bruit, pas en l'affirmant.
+
+## Strand 20 — Le jumeau C# de la greffe 2 : ICT-Greffe2-EspaceAtteignable-CSharp (extension #11690)
+
+Au tirage de ce strand, le recompte frais (tête `e3170e1b9595`) ne laisse qu'un carnet actionnable. Les strands 16-19 avaient laissé quatre non couverts sous occupation ; deux des PRs mesurées (#26757, #27095) ont mergé le 2026-11-20, mais **ICT-48-WolframClasses** est aussitôt passé sous l'occupation de #27783 (ouverte, « blocs de fin »), et **ICT-49-JLensFideliteCrossTaille** est arrivé par #27095 lui-même, lui aussi repris sous #27783. Restait **ICT-Greffe2-EspaceAtteignable-CSharp**, portage du jumeau Python mergé le 2026-11-21 par #27564 (#27528, 33 cellules) : aucune PR ouverte n'en réécrit le contenu — seule #27816 (sweep, bandeau de bootstrap .NET Interactive sur 25 carnets) le touche mécaniquement, sans effet sur la lecture.
+
+### `ICT-Greffe2-EspaceAtteignable-CSharp.ipynb` (jumeau C# de la greffe 2) — 33 cellules (22 md, 11 code, 11/11 exécutées)
+
+| Colonne | Contenu |
+|---|---|
+| **Intention** | Celle du jumeau Python, portée en C# natif (#27528) : le quadruplet (A, F, r, π) rendant « élargir son espace » testable (critères #13568) — la greffe ICT sur le bras planification, exécutable sur le kernel .NET. |
+| **Contenu réel** | Portage intégral : socle STRIPS « copie déclarée de Planners-5c » (canonisation des états par `Key` triée — l'équivalent C# de la phase de normalisation Python), les trois garanties du lake `planning_lean` **citées et non re-dérivées** (`Relaxation.lean:56`, `Strips.lean:58`, `Admissibility.lean:41`) ; domaine deux rives/gouffre/radeau ; A différentiel système ; contrôle négatif de la primitive stérile ; F et r à budget (B ∈ {30, 60, 120}) ; le noyau à deux niveaux (système vide par monotonie / solveur non vide à budget) ; cas 3 navigation (trois politiques π) ; synthèse à trois signatures ; limites ; 3 exercices C.1. Les valeurs attendues sont **ancrées dans le code** (`attendusA = {36, 54, 60, 78}`) et chaque cellule de mesure affiche ses lignes `CONFORME` calcule/attendu — la parité se vérifie sans rouvrir le jumeau Python. |
+| **Résultat** | Parité exacte avec le jumeau Python, mesurée sortie à sortie : |A| = 36/54/60/78 ; buts 1/3 (['g3']) → 3/3 par `+raft`, `AUCUN` but nouveau par `+discard`, aucun perdu ; r à B=30 : 94,4 % → 66,7 % (A_t1) → 53,8 % (A_t1+discard), r = 100 % partout à B=120 (la contraction est une propriété du **budget**, pas du système) ; noyau : g1/g2 `None` sans raft, exp 39→50 (g1) et 33→42 (g2) avec discard, g3 = 8 partout ; π : `pi_pickup` améliore g2 (33→32) et g3 (8→7), h* inchangé (7/6/3). Exercices : sorties « Exercice a completer », valeurs `null`, 0 erreur — C.1 conforme, 11/11 exécutées. |
+| **Critique** | Aucune sur le contenu porté : la déclaration organ-first est reprise à l'identique (copie déclarée, garanties citées, BFS comme instrument de mesure — pas de réimplémentation interdite), le contrôle négatif est **exécuté** (pas hérité du Python), et l'ancrage CONFORME rend chaque chiffre auto-vérifié. La comparaison sortie à sortie a produit une correction au passage : la fiche du jumeau Python (strand 5, tranche 3) portait « A_t : 54 états », coquille de transcription — le Python mesure 36 (vérifié sur ses outputs à la tête `e3170e1b9595`) ; corrigée dans sa ligne, avec date. |
+| **Verdict + action** | **SOLIDE** — le jumeau C# hérite du verdict du Python (exemplaire organ-first) avec parité mesurée. Pas d'action propre ; l'action « corriger la coquille Python » est exécutée dans ce strand. |
+
+### Findings transverses du strand 20 (pour l'arbitrage user)
+
+1. **Premier fantôme daté du ledger** : la section `ICT-47b-PainAxisInstrument` (strand 14) ne correspond plus à aucun carnet du `ls-tree` depuis le Move #26757 (2026-11-20) — le carnet vit désormais dans `PostTraining/`. La section reste comme trace de lecture (réserve 2) ; le recompte du 2026-11-21 explicite la réconciliation (98 sections = 97 vivantes + 1 fantôme). L'invariant « zéro fantôme » devient « fantômes nommés et datés » : c'est la forme que prend la croissance de la série quand des carnets migrent vers d'autres séries.
+2. **La couverture est au plafond atteignable sans merger de PR** : les 4 non couverts restants sont tous sous PR ouverte mesurée (#26864, #26584, #27783 ×2). La projection du strand 15 (« si le Move merge, le recompte passe à 90/99 — un ICT-48 reste à traiter ») s'est vérifiée au pair près ; le prochain strand actionnable naîtra de la résolution de #26864, #26584 ou #27783 — ou d'une nouvelle arrivée sur `main`.
+3. **Le portage comme vecteur d'expansion du périmètre** : deux jours après la clôture des orphelins, les seules entrées non couvertes nouvelles sont un jumeau de portage (Greffe2-CSharp, mergé le matin même du strand) et un carnet amené par une PR déjà mesurée (ICT-49 par #27095). Le recompte ne peut pas se reposer sur « la série est close » : deux arrivées en trois jours, et la règle reste de le rejouer à chaque strand.
+4. **La coquille détectée par la comparaison, pas par la relecture** : l'erreur « A_t : 54 » du strand 5 vivait depuis le 2026-09-19 dans une fiche par ailleurs SOLIDE — c'est la mesure de parité sortie à sortie (le C# affiche 36 où la fiche disait 54) qui l'a fait sortir. La leçon de méthode : un jumeau qui arrive est une occasion de **re-vérifier** la fiche de son original, pas seulement de la recopier.
+5. **#27816 (sweep bandeau bootstrap .NET, ouverte) touche le jumeau C#** : strip mécanique de bandeau, sans effet de contenu — la présente lecture reste valable au bandeau près après son merge.
