@@ -524,6 +524,38 @@ Le bilan porte en outre deux mesures neuves (21/11) :
   servir toutes les issues jamais visitées, et **équité** — la liste des issues déjà visitées qui seraient
   servies pendant qu'une autre attend. Une équité non vide est un **rouge** (code de sortie 1).
 
+### Le tri « grains d'abord » et la garantie mesurée (#27690, fusionné le 21/11)
+
+Le tri final ne doit pas servir une issue **déjà visitée** pendant qu'une issue **jamais visitée**
+attend encore : c'est le mandat du 16/11 (« toute issue doit être visitée au moins une fois avant qu'une
+autre le soit deux fois »). La mesure du 21/11 sur le pool réel (lecture de 01:47Z, 51 issues servables
+dont 21 à zéro visite) montrait que le tour de 8 grains servait **deux issues déjà visitées pendant que
+14 issues jamais visitées restaient dehors** : le quota de conteneurs écartait les conteneurs jamais
+visités, et le tri final plaçait les grains d'abord. Deux corrections, dans le même PR :
+
+- `tapis_rapide.ordonner` : une issue déjà visitée ne prend plus la place d'une issue jamais visitée
+  encore au tour ; le conteneur jamais visité que le quota écarte passe en second temps. **Le quota et
+  l'ordre final (les grains d'abord) ne changent pas** ;
+- `visit_coverage` : le **parcage Origami** est appliqué comme dans le tirage — sans lui, l'organe
+  comptait en rôle « worker » cinq EPIC Origami que le tapis ne sert jamais.
+
+Effet mesuré sur la même lecture : le tour de 8 sert **8 issues jamais visitées** (avant : 6, dont 2
+déjà visitées) et les 16 issues « worker » à zéro visite sont servies en **2 tours**.
+
+Trois règles rendent la mesure `atteignable` capable de porter cette garantie — et chacune neutralise
+un faux rouge, pas un vrai :
+
+- les **états sont copiés** avant la simulation : la mesure ne modifie pas l'état qu'elle mesure ;
+- les **claims de la lane** sont exclus du contrôle d'équité — une lane sert d'abord ses propres claims,
+  et une issue qu'elle tient n'est pas une issue que le tapis « republie » ; sans cette exclusion,
+  l'organe rendrait `rc=1` sur le fonctionnement normal du tirage (le coordinateur tient des claims) et
+  masquerait les vraies violations ;
+- la simulation est **bornée à 50 tours** : au-delà, les issues restantes sont rendues telles quelles
+  (`restantes`), pas comme un verdict.
+
+L'invariant a son test (`scripts/tests/test_tapis_couverture_invariant.py`, contrôle positif **et**
+contrôle négatif).
+
 ```bash
 python scripts/coordination/visit_coverage.py [--json] [--dashboard-line]
        [--lecture <dossier>] [--cache-s 3600] [--jours 45] [--lane myia-ai-01:CoursIA]
