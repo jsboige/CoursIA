@@ -1,0 +1,130 @@
+# Deploiement JupyterLite du lot Python (pli 2.2 de l'Epic #27543)
+
+Ce document decrit le deploiement du lot de carnets Python **executes dans le
+navigateur** (noyau Pyodide) sous `/jupyterlite/` du site Quarto publie.
+
+Il ne decrit pas le critere d'eligibilite (pli 2.1) : celui-ci vit dans
+[pyodide-eligibilite.md](pyodide-eligibilite.md), et son code dans
+`scripts/notebook_tools/pyodide_eligibility.py`. Ici, le critere est une
+**source de verite** dont on se sert, pas une regle reecrite.
+
+## La chaine
+
+| Etape | Qui | Ou |
+|---|---|---|
+| Critere d'eligibilite (pli 2.1) | `pyodide_eligibility.py` + `pyodide_eligibility_report.py` | `docs/reference/pyodide-eligibilite.md` |
+| Selection du lot | `select_lot()` -- une serie par tour, series par ordre alphabetique, preference aux carnets sans roue pure a installer puis sans lecture de fichier du depot | meme module |
+| Construction du site | `scripts/notebook_tools/build_jupyterlite_site.py` | ce document |
+| Deploiement | job `build-jupyterlite` de `.github/workflows/quarto-pages-deploy.yml` | ce document |
+| Garde post-deploiement | `scripts/ci/check_jupyterlite_lot.py`, joue par `site-links-post-deploy.yml` | ce document |
+
+**Le lot n'est jamais une liste tenue a la main.** Il est recalcule a chaque
+construction par le critere du pli 2.1. Un carnet qui devient ineligible
+sort du lot a la construction suivante ; un carnet qui devient eligible y
+entre. Le seul artefact fige est le **manifeste**, produit par la
+construction -- et il est verifie sur le site publie, jamais dans le depot.
+
+## Ce que publie la construction
+
+1. **Le lot** : huit carnets eligibles, un par serie, choisis par
+   `select_lot()`.
+2. **Le site JupyterLite** : les carnets sont poses dans `files/` (le
+   repertoire de contenus de JupyterLite) **par nom de fichier**, comme le
+   site mesure au pli 2.1 (`?path=<fichier>.ipynb`). Deux carnets de series
+   differentes qui porteraient le meme nom font echouer la construction :
+   on ne publie pas l'un des deux sous le nom de l'autre.
+3. **Le manifeste** (`manifest.json`, a la racine du site construit) : pour
+   chaque carnet, son chemin dans le depot, sa serie, et ses deux URLs
+   publiques -- `files` (carnet brut) et `lab` (ouverture et execution).
+
+Deux verifications ne laissent pas passer un site faux :
+
+- le repertoire de contenus est **remis a zero** avant la pose et avant la
+  construction (un reste de construction anterieure ne doit pas rester en
+  ligne) ;
+- apres la construction, le site est compare au lot : **ni carnet manquant,
+  ni carnet en trop** -- l'ecart fait echouer la construction.
+
+## Construction locale
+
+```bash
+# environnement : jupyterlite-core et le noyau Pyodide, versions egales
+python -m pip install "jupyterlite-core==0.8.7" "jupyterlite-pyodide-kernel==0.8.7"
+
+python scripts/notebook_tools/build_jupyterlite_site.py \
+  --repo . \
+  --taille 8 \
+  --source-dir .tmp/jlite/site \
+  --output-dir .tmp/jlite/site/_output \
+  --base-url /CoursIA
+```
+
+Le script recalcule le lot, pose les carnets, lance `jupyter lite build`,
+verifie le contenu publie et ecrit le manifeste. Options utiles :
+
+- `--sans-build` : pose et manifeste sans construire (diagnostic) ;
+- `--probe-pypi` : sonde PyPI pour les paquets absents du lock (reseau ; sans
+  ce drapeau, aucun acces reseau n'est fait) ;
+- `--base-url` : prefixe du site publie. En local, `/CoursIA` reproduit le
+  chemin de Pages (`https://jsboige.github.io/CoursIA/`).
+
+Un point qui a cout une construction : **`--lite-dir` est explicite** dans la
+ligne de commande. Sans lui, la construction prend le repertoire courant
+comme racine du projet et le site construit ne contient aucun carnet
+(`contents: 0 files`, pas de `files/` dans la sortie).
+
+## Deploiement
+
+Le job `build-jupyterlite` (`.github/workflows/quarto-pages-deploy.yml`) :
+
+1. installe `jupyterlite-core` et `jupyterlite-pyodide-kernel` (versions
+   egales) ;
+2. appelle le script de construction avec `--base-url "/<nom-du-depot>"` ;
+3. publie un artifact `jupyterlite-dist` (le site construit).
+
+`assemble-pages` telecharge cet artifact dans `_site/jupyterlite/`, **en
+fail-soft** : si le job de construction echoue, le site part sans
+`/jupyterlite/` et un warning le dit. Le site Quarto n'est jamais tenu en
+otage par le lot.
+
+Le garde `scripts/ci/check_jupyterlite_lot.py` verifie ensuite, sur le site
+publie, que chaque URL du manifeste repond :
+
+```bash
+python scripts/ci/check_jupyterlite_lot.py --json
+```
+
+Sorties : `0` (lot en ligne, ou lot absent -- rien n'est annonce, donc rien
+n'est casse), `1` (une URL du lot est casse), `2` (instrument casse :
+manifeste illisible ou reseau indisponible -- ce n'est pas un lien casse).
+
+## Mesures
+
+Les executions reelles sous JupyterLite (noyau Pyodide, Chromium) sont
+produites par `scripts/notebook_tools/pyodide_browser_run.py` (pli 2.1), qui
+sert le site construit en local et pilote le carnet par le menu **Run > Run
+All Cells**. Il mesure, par carnet, le **temps jusqu'au premier resultat** et
+la duree totale.
+
+<!-- MESURES-LOCALES -->
+
+## Limites connues
+
+- **Le lot bouge avec le critere.** Le manifeste d'une construction n'a de
+  sens que pour cette construction : le garde compare le manifeste **publie**
+  aux URL repondantes, jamais a une liste du depot.
+- **Nommage a plat.** Les carnets sont servis par nom de fichier ; deux
+  carnets homonymes ne peuvent pas coexister dans le lot (la construction
+  echoue). Le chemin d'origine reste dans le manifeste.
+- **Taille de l'artifact.** Le site JupyterLite embarque la distribution
+  Pyodide : l'artifact est de l'ordre de 70 Mo, retention 3 jours.
+- **Le garde est advisory.** Il ne bloque aucune PR (workflow
+  `workflow_run`) ; un rouge se lit dans le run du workflow.
+
+## Voir aussi
+
+- [pyodide-eligibilite.md](pyodide-eligibilite.md) -- le critere (pli 2.1)
+- `scripts/notebook_tools/pyodide_eligibility.py` -- le critere, en code
+- `scripts/notebook_tools/build_jupyterlite_site.py` -- la construction
+- `scripts/ci/check_jupyterlite_lot.py` -- le garde post-deploiement
+- Issue #27550 (pli 2.2) et #27543 (Epic)

@@ -1,0 +1,246 @@
+"""Tests de `scripts/notebook_tools/build_jupyterlite_site.py` (pli 2.2).
+
+Ce que ces tests verrouillent :
+
+1. **le lot vient du critere, pas d'une liste** -- un depot temporaire avec
+   deux carnets eligibles et un carnet refuse (import absent) doit produire
+   un lot qui ne contient que les eligibles ; ajouter un carnet ineligible
+   ne doit rien changer au lot ;
+2. **la pose est propre** -- `files/` est remis a zero avant la pose (un
+   reste d'une construction anterieure ne doit pas rester en ligne), et deux
+   carnets homonymes de series differentes font echouer la construction
+   plutot que de publier l'un sous le nom de l'autre ;
+3. **le site construit publie exactement le lot** -- un carnet manquant, un
+   carnet en trop, un carnetrange dans un sous-repertoire sont signales ;
+4. **les URLs publiques sont bien formees** -- `lab` ouvre le carnet,
+   `files` sert le carnet brut, les deux sous le prefixe du site.
+
+Aucun test ne construit de site JupyterLite (cela demande l'outillage
+navigateur) ni ne touche le reseau.
+
+Issue #27550 (pli 2.2 de l'Epic #27543).
+"""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import build_jupyterlite_site as bjs  # noqa: E402
+from pyodide_eligibility import NotebookVerdict  # noqa: E402
+
+
+def _nb(cells_sources, kernel="python3", language="python"):
+    """Notebook minimal : cellules de code + metadonnees de noyau."""
+    return {
+        "cells": [
+            {"cell_type": "code", "source": [src], "metadata": {}, "outputs": [],
+             "execution_count": 1}
+            for src in cells_sources
+        ],
+        "metadata": {
+            "kernelspec": {"name": kernel, "display_name": kernel},
+            "language_info": {"name": language},
+        },
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+
+
+def _write(root: Path, rel: str, nb: dict) -> Path:
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(nb), encoding="utf-8")
+    return path
+
+
+def _verdict(path="MyIA.AI.Notebooks/SerieA/carnet.ipynb", series="SerieA",
+             eligible=True, code_cells=2):
+    return NotebookVerdict(
+        path=path, series=series, subseries=series, kernel="python3",
+        eligible=eligible, language="python", code_cells=code_cells)
+
+
+# --- 1. le lot vient du critere --------------------------------------------
+
+def _depot(tmp_path: Path, carnets):
+    """Depot git minimal contenant les carnets donnes (rel -> notebook)."""
+    root = tmp_path / "depot"
+    root.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True)
+    subprocess.run(["git", "config", "user.email", "t@t"], cwd=root, check=True)
+    subprocess.run(["git", "config", "user.name", "t"], cwd=root, check=True)
+    for rel, nb in carnets.items():
+        _write(root, rel, nb)
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-qm", "carnets"], cwd=root, check=True)
+    return root
+
+
+def test_le_lot_vient_du_critere_et_non_d_une_liste(tmp_path):
+    """Deux carnets eligibles et un carnet refuse (import absent).
+
+    Le lot contient les deux eligibles, pas le refuse : la selection passe
+    par le critere d'eligibilite, pas par une liste maintenue a la main.
+    """
+    root = _depot(tmp_path, {
+        "MyIA.AI.Notebooks/SerieA/a.ipynb": _nb(["import math", "print(math.pi)"]),
+        "MyIA.AI.Notebooks/SerieB/b.ipynb": _nb(["import json", "print(json.dumps({}))"]),
+        "MyIA.AI.Notebooks/SerieC/c.ipynb": _nb(["import paquet_inexistant_xyz"]),
+    })
+    lot = bjs.lot(root, 8)
+    chemins = sorted(v.path for v in lot)
+    assert chemins == ["MyIA.AI.Notebooks/SerieA/a.ipynb",
+                       "MyIA.AI.Notebooks/SerieB/b.ipynb"]
+
+
+def test_un_carnet_ineligible_ne_change_pas_le_lot(tmp_path):
+    """Ajouter un carnet refuse ne deplace aucun carnet du lot.
+
+    Le lot est une **selection**, pas un ordre : la regle de l'organe de
+    critere (une serie par tour, series par ordre alphabetique) tient
+    independamment de ce que le depot contient par ailleurs.
+    """
+    root = _depot(tmp_path, {
+        "MyIA.AI.Notebooks/SerieA/a.ipynb": _nb(["import math"]),
+    })
+    lot_avant = [v.path for v in bjs.lot(root, 8)]
+    _write(root, "MyIA.AI.Notebooks/SerieZ/z.ipynb", _nb(["import paquet_inexistant_xyz"]))
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True)
+    subprocess.run(["git", "commit", "-qm", "z"], cwd=root, check=True)
+    assert [v.path for v in bjs.lot(root, 8)] == lot_avant
+
+
+def test_un_carnet_hors_famille_python_n_entre_pas_dans_le_lot(tmp_path):
+    """La famille se lit sur `language_info.name` : un carnet .NET n'est pas
+    un candidat Pyodide, meme s'il n'a aucun import interdit."""
+    root = _depot(tmp_path, {
+        "MyIA.AI.Notebooks/SerieA/a.ipynb": _nb(["import math"]),
+        "MyIA.AI.Notebooks/SerieD/d.ipynb": _nb(["var x = 1;"], kernel="dotnet",
+                                                language="csharp"),
+    })
+    chemins = [v.path for v in bjs.lot(root, 8)]
+    assert chemins == ["MyIA.AI.Notebooks/SerieA/a.ipynb"]
+
+
+# --- 2. la pose est propre -------------------------------------------------
+
+def test_la_pose_met_a_zero_le_repertoire_de_contenus(tmp_path):
+    """Un reste de construction anterieure ne doit pas rester en ligne."""
+    root = tmp_path / "depot"
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/a.ipynb", _nb(["import math"]))
+    source = tmp_path / "site"
+    (source / "files").mkdir(parents=True)
+    (source / "files" / "ancien.ipynb").write_text("{}", encoding="utf-8")
+    poses = bjs.stage(root, [_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")], source)
+    assert poses == ["a.ipynb"]
+    assert (source / "files" / "a.ipynb").is_file()
+    assert not (source / "files" / "ancien.ipynb").exists()
+
+
+def test_deux_carnets_homonymes_font_echouer_la_construction(tmp_path):
+    """Deux carnets de series differentes, meme nom : la construction
+    echoue au lieu de publier l'un des deux sous le nom de l'autre."""
+    root = tmp_path / "depot"
+    root.mkdir()
+    (root / "MyIA.AI.Notebooks" / "SerieA").mkdir(parents=True)
+    (root / "MyIA.AI.Notebooks" / "SerieB").mkdir(parents=True)
+    _write(root, "MyIA.AI.Notebooks/SerieA/meme.ipynb", _nb(["import math"]))
+    _write(root, "MyIA.AI.Notebooks/SerieB/meme.ipynb", _nb(["import json"]))
+    source = tmp_path / "site"
+    with pytest.raises(ValueError):
+        bjs.stage(root, [_verdict("MyIA.AI.Notebooks/SerieA/meme.ipynb", "SerieA"),
+                         _verdict("MyIA.AI.Notebooks/SerieB/meme.ipynb", "SerieB")],
+                  source)
+
+
+def test_un_carnet_du_lot_absent_du_depot_est_signale(tmp_path):
+    """Un carnet annonce mais absent du depot est une erreur, pas un silence."""
+    root = tmp_path / "depot"
+    root.mkdir()
+    with pytest.raises(FileNotFoundError):
+        bjs.stage(root, [_verdict()], tmp_path / "site")
+
+
+# --- 3. le site construit publie exactement le lot --------------------------
+
+def test_le_site_construit_doit_publier_le_lot_entier(tmp_path):
+    """Un carnet du lot absent du site construit est signale."""
+    output = tmp_path / "_output"
+    (output / "files").mkdir(parents=True)
+    (output / "files" / "a.ipynb").write_text("{}", encoding="utf-8")
+    anomalies = bjs.verifier_contenu(output, ["a.ipynb", "b.ipynb"])
+    assert len(anomalies) == 1
+    assert "b.ipynb" in anomalies[0]
+
+
+def test_un_carnet_hors_lot_est_signale(tmp_path):
+    """Un carnet en trop -- reste d'une construction anterieure -- est signale."""
+    output = tmp_path / "_output"
+    (output / "files").mkdir(parents=True)
+    (output / "files" / "a.ipynb").write_text("{}", encoding="utf-8")
+    (output / "files" / "ancien.ipynb").write_text("{}", encoding="utf-8")
+    anomalies = bjs.verifier_contenu(output, ["a.ipynb"])
+    assert len(anomalies) == 1
+    assert "ancien.ipynb" in anomalies[0]
+
+
+def test_un_carnet_range_dans_un_sous_repertoire_est_signale(tmp_path):
+    """Meme nom de fichier, mais range : le site publie plus que le lot."""
+    output = tmp_path / "_output"
+    (output / "files" / "MyIA.AI.Notebooks").mkdir(parents=True)
+    (output / "files" / "a.ipynb").write_text("{}", encoding="utf-8")
+    (output / "files" / "MyIA.AI.Notebooks" / "a.ipynb").write_text("{}", encoding="utf-8")
+    anomalies = bjs.verifier_contenu(output, ["a.ipynb"])
+    assert len(anomalies) == 1
+    assert "MyIA.AI.Notebooks/a.ipynb" in anomalies[0]
+
+
+def test_un_site_sans_repertoire_de_contenus_est_signale(tmp_path):
+    """Pas de `files/` dans la sortie : rien n'est publie."""
+    anomalies = bjs.verifier_contenu(tmp_path / "_output", ["a.ipynb"])
+    assert len(anomalies) == 1
+    assert "files/" in anomalies[0]
+
+
+# --- 4. les URLs publiques --------------------------------------------------
+
+def test_les_urls_publiques_portent_le_prefixe_du_site():
+    """Les deux URLs sont relatives au prefixe du site publie."""
+    urls = bjs.urls("/CoursIA", "a.ipynb")
+    assert urls["lab"] == "/CoursIA/jupyterlite/lab/index.html?path=a.ipynb"
+    assert urls["files"] == "/CoursIA/jupyterlite/files/a.ipynb"
+
+
+def test_les_urls_sans_prefixe_ne_portent_pas_de_slash_final():
+    """Un prefixe vide donne une URL qui commence par le sous-dossier."""
+    urls = bjs.urls("", "a.ipynb")
+    assert urls["lab"] == "/jupyterlite/lab/index.html?path=a.ipynb"
+    assert bjs.urls("/CoursIA/", "a.ipynb")["files"] == "/CoursIA/jupyterlite/files/a.ipynb"
+
+
+def test_le_manifeste_porte_le_chemin_d_origine_et_les_urls():
+    """Le manifeste fait la correspondance nom de fichier -> carnet du depot."""
+    data = bjs.manifeste([_verdict(path="MyIA.AI.Notebooks/SerieA/a.ipynb")],
+                          "/CoursIA")
+    assert data["taille"] == 1
+    carnet = data["carnets"][0]
+    assert carnet["chemin"] == "MyIA.AI.Notebooks/SerieA/a.ipynb"
+    assert carnet["fichier"] == "a.ipynb"
+    assert carnet["serie"] == "SerieA"
+    assert carnet["files"].endswith("/CoursIA/jupyterlite/files/a.ipynb")
+    assert "path=a.ipynb" in carnet["lab"]
+    assert data["source"] == "critere-pyodide-2.1"
+
+
+def test_le_manifeste_est_ecrit_en_utf8_sans_bom(tmp_path):
+    """Le manifeste est lu par le garde post-deploiement : pas de BOM."""
+    chemin = bjs.ecrire_manifeste({"carnets": []}, tmp_path / "manifest.json")
+    octets = chemin.read_bytes()
+    assert not octets.startswith(b"\xef\xbb\xbf")
+    assert json.loads(octets.decode("utf-8")) == {"carnets": []}
