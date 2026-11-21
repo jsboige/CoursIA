@@ -5,9 +5,9 @@
 | Métrique | Valeur |
 |----------|--------|
 | Série source | `MyIA.AI.Notebooks/Probas/PyMC/` (programmation probabiliste bayésienne — PyMC, **Python**) |
-| Notebooks source | **19** (PyMC-1 installation → PyMC-19, suite pédagogique progressive) |
-| Cellules extraites | **567** (markdown + code tous kernels confondus, nbformat canonique, id stable) |
-| Taille CSV | ~0,6 MB (567 enregistrements × 21 colonnes) |
+| Notebooks source | **19 au seed 2026-07-11** (PyMC-1 installation → PyMC-19, suite pédagogique progressive — le compte courant vit dans le CSV) |
+| Cellules extraites | **567 au seed 2026-07-11** (markdown + code tous kernels confondus, nbformat canonique, id stable — compte courant mesurable dans `probas_pymc.csv`) |
+| Taille CSV | ~0,6 MB au seed (567 enregistrements × 21 colonnes à l'époque) — taille et schéma actuels mesurables directement dans [`probas_pymc.csv`](probas_pymc.csv) |
 | Langue pivot | **fr** (PIVOT_LANG = "fr", cf #1650 Phase 0.5) |
 | Langues cibles | **en, es, ar, fa, zh, ru, pt** (7 langues vivantes côté Argumentum) |
 | Date seed | 2026-07-11 |
