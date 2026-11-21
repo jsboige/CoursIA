@@ -1,0 +1,108 @@
+- name: "Chaines-07 Fonction de Wigner et signe a N corps"
+  family: Chaines
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-07-Fonction-Wigner-Signe-N-Corps-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-07-Fonction-Wigner-Signe-N-Corps-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Physique/Chaines/Chaines-07-Fonction-Wigner-Signe-N-Corps-Rust.ipynb
+  measures:
+    - id: s1_total
+      description: "Premiere puissance S1 de la double paire, somme des trois blocs (eq. 68)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "S1 total\\s+= (\\d+)"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "S1 total = (\\d+)"
+          transform: int
+        rust:
+          cell: 6
+          pattern: "S1 total\\s+= (\\d+)"
+          transform: int
+    - id: q_swap_double_paire
+      description: "Carre swap-face de la double paire (eq. 69)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Q_swap\\s+= (\\d+)"
+          transform: int
+        csharp:
+          cell: 8
+          pattern: "Q_swap = (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "Q_swap\\s+= (\\d+)"
+          transform: int
+    - id: q_swap_paire
+      description: "Carre swap-face de la toile paire, blocs 657/657/36 (eq. 71)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "Q_swap\\(paire\\)\\s+= (\\d+)"
+          transform: int
+        csharp:
+          cell: 11
+          pattern: "Q_swap\\(paire\\) = (\\d+)"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "Q_swap\\(paire\\)\\s+= (\\d+)"
+          transform: int
+    - id: premier_negatif_swap
+      description: "Premier N a somme de paire swap-face negative (eq. 72)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "Premier N negatif, swap-face\\s+: (\\d+)"
+          transform: int
+        csharp:
+          cell: 16
+          pattern: "Premier N negatif, swap-face\\s+: (\\d+)"
+          transform: int
+        rust:
+          cell: 16
+          pattern: "Premier N negatif, swap-face\\s+: (\\d+)"
+          transform: int
+    - id: coef_base1
+      description: "Coefficient de R_cl sur la base 1 (eq. 70, litteral a 21 chiffres)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "coefficient de 1\\s+: \\+(\\d+)"
+          transform: digits
+        csharp:
+          cell: 18
+          pattern: "coefficient de 1\\s+: \\+(\\d+)"
+          transform: digits
+        rust:
+          cell: 18
+          pattern: "coefficient de 1\\s+: \\+(\\d+)"
+          transform: digits
+    - id: nb_constats
+      description: "Constats du census ch. 46 qui tiennent, sur cinq"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "Constats qui tiennent : (\\d+) sur 5"
+          transform: int
+        csharp:
+          cell: 23
+          pattern: "Constats qui tiennent : (\\d+) sur 5"
+          transform: int
+        rust:
+          cell: 23
+          pattern: "Constats qui tiennent : (\\d+) sur 5"
+          transform: int
