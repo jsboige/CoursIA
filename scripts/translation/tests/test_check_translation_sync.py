@@ -96,6 +96,44 @@ def test_cell_hash_contract_identical_to_t1_extract_module():
         assert t.cell_hash(s) == t1.cell_hash(s), f"hash mismatch on {s!r}"
 
 
+def test_scrub_machine_paths_contract_identical_to_t1_extract_module():
+    """Le scrub ``/home/<user>`` -> ``<USER_HOME>`` porte le contrat T1/T2.
+
+    T1 dépose le pivot scrubbé ; T2 recalcule le hash courant sur le même
+    scrub. Si les deux regex divergent d'un caractère, toute cellule prose
+    portant un chemin machine rend un faux SRC_DRIFT — c'est exactement ce
+    que la fournée T1 #21490 a dû corriger. On verrouille les deux côtés.
+    """
+    import extract_cells_to_csv as t1  # noqa: E402 (même dir)
+    samples = [
+        "/home/jesse/depot/notebook.ipynb",
+        "wrapper `/home/jesse/.elan/bin/lake` codé en dur",
+        "pas de chemin ici",
+        "placeholder deja pose : /home/<user>/x et /home/{var}/y",
+        "/root/autre/chemin",
+    ]
+    for s in samples:
+        assert t._scrub_machine_paths(s) == t1._scrub_machine_paths(s), (
+            f"scrub mismatch on {s!r}"
+        )
+    assert t._scrub_machine_paths("/home/jesse/x") == "<USER_HOME>/x"
+    assert t._scrub_machine_paths("/root/x") == "/root/x"  # scope /home borne
+
+
+def test_scrub_machine_paths_jamais_applique_aux_cellules_code(tmp_path):
+    """Le scrub ne vaut que pour la prose : une cellule CODE qui construit un
+    chemin (``f"/home/{user}"``) reste intacte. Temoin positif ET negatif."""
+    nb = _nb([
+        {"id": "md", "type": "markdown", "source": ["chemin `/home/jesse/x`"]},
+        {"id": "cd", "type": "code", "source": ["p = f\"/home/{user}/x\"\n"]},
+    ])
+    path = tmp_path / "n.ipynb"
+    path.write_text(json.dumps(nb), encoding="utf-8")
+    cells = t.load_notebook_cell_texts(path)
+    assert cells["md"] == "chemin `<USER_HOME>/x`"
+    assert cells["cd"] == "p = f\"/home/{user}/x\"\n"
+
+
 # --------------------------------------------------------------------------
 # _has_expected_script — détection Unicode déterministe (WRONG_SCRIPT)
 # --------------------------------------------------------------------------
