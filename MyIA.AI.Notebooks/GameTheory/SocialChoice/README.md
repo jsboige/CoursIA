@@ -127,9 +127,11 @@ Provenance, dimensions et poids de chaque figure : [`assets/readme/MANIFEST.md`]
 
 ## Approfondissements — Licence et lectures avancées
 
-### Autour de 01 — la preuve formelle en Lean
+### Autour de 01 — la preuve formelle et le paradoxe de non-participation
 
 **[01b — Choix social formel en Lean 4](ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb).** Ce que le carnet 01 échantillonne par simulation, 01b le couvre en entier : préférences, axiomes d'Arrow et de Sen, théorème de l'électeur médian formalisés et prouvés en Lean 4, avec un tour de la librairie SocialChoiceLean de DominikPeters (douze règles de vote, Gibbard-Satterthwaite, Split Cycle, Duggan-Schwartz). Les définitions sont compatibles avec le lake `social_choice_core_lean/SocialChoice/` — voir [Formalisations Lean](#formalisations-lean). Prérequis en plus : Lean 4 et le kernel WSL (instructions dans le [README parent](../README.md)).
+
+**[01c — Le paradoxe de la non-participation (no-show)](ChoixSocial-01c-Paradoxe-NonParticipation-NoShow-Python.ipynb).** À côté d'Arrow, le **critère de participation** : un électeur est-il mieux servi en s'abstenant qu'en votant sincèrement ? 01c le rend *visible* par l'expérience — Borda en est structurellement immunisé (recherche exhaustive, ~2,8 M de profils, zéro no-show) tandis que le vote instantané (IRV) l'exhibite sur un profil à 5 votants, et le théorème de Moulin (1988) montre que la contradiction est générale dès que la règle élit toujours le vainqueur de Condorcet.
 
 ### Autour de 06 — Möbius côté Lean
 
@@ -142,6 +144,7 @@ Provenance, dimensions et poids de chaque figure : [`assets/readme/MANIFEST.md`]
 | **Théorème d'Arrow** | Aucune règle d'agrégation avec trois alternatives ou plus ne peut satisfaire simultanément Pareto, IIA et non-dictature (01, 01b, 04) |
 | **Théorème de Sen** | Liberté minimale, Pareto et transitivité sont incompatibles (01b, 03) |
 | **Paradoxe de Condorcet** | Les préférences majoritaires peuvent être cycliques — A bat B bat C bat A (03) |
+| **Paradoxe de la non-participation** | Un électeur peut être mieux servi en s'abstenant qu'en votant sincèrement — IRV l'exhibite, Borda en est immunisé, et c'est inévitable dès que la règle élit toujours le vainqueur de Condorcet (Moulin 1988) (01c) |
 | **Électeur médian** | Avec des préférences unimodales, le vainqueur de Condorcet existe (03) |
 | **IIA** | Le classement social entre deux alternatives ne dépend que des préférences individuelles sur cette paire (01) |
 | **Gibbard-Satterthwaite** | Toute règle non-dictatoriale est manipulable dès trois candidats (05, 10) |
@@ -194,7 +197,7 @@ Le lake [`social_choice_lean_peters/`](social_choice_lean_peters/README.md), por
 | Arrow, *Social Choice and Individual Values* (1951) | Théorème d'impossibilité (01) |
 | Sen, *Collective Choice and Social Welfare* (1970) | Paradoxe libéral (01b, 03) |
 | Geanakoplos, "Three Brief Proofs of Arrow's Impossibility Theorem" (2005) | Preuve suivie dans les carnets 01 et 01b |
-| Moulin, "Condorcet's Principle Implies the No Show Paradox" (1988) | Paradoxe de la non-participation |
+| Moulin, "Condorcet's Principle Implies the No Show Paradox" (1988) | Paradoxe de la non-participation (01c) |
 | Holliday & Pacuit, "Split Cycle" (2023) | Règle de vote optimale (01b) |
 | Peters, [SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) | Formalisation Lean 4 de douze règles et plusieurs théorèmes (01b) |
 | Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (05, 10) |

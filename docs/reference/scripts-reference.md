@@ -13,6 +13,9 @@ Les scripts `scripts/fix_*.py` / `scripts/recycle_*.py` à la racine sont des on
 | `notebook_helpers.py` | Helpers partagés (import, pas d'exécution directe) |
 | `extract_notebook_skeleton.py` | Extraire le squelette (structure cellules) d'un notebook |
 | `notebook_lint.py` | Lint structurel notebooks (+ `test_notebook_lint.py`) |
+| `pyodide_eligibility.py` | Eligibilite Pyodide/JupyterLite des carnets Python : critere en quatre conditions (aucun GPU, aucune cle, aucun service reseau, tous les imports resolus), famille Python lue sur `language_info.name` (le nom du kernelspec nomme un env, pas une langue), recensement par serie, sortie Markdown / JSON. Reference : `docs/reference/pyodide-eligibilite.md` |
+| `pyodide_eligibility_report.py` | Moitie « rendus » du precedent : tableau par serie, Markdown, TSV des refus, selection du lot. Separation calcule / met en forme (testee separement) |
+| `pyodide_suffisance.py` | Suffisance d'un carnet pour le bundle JupyterLite (publie des fichiers, n'installe rien) : un import n'est fourni que par la distribution, l'installation du carnet lui-meme, ou un module de sa serie livre avec le carnet. Trois classes d'ecart (`dependance_locale`, `hors_serie`, `absent_distribution`). **Organe natif** : le deploiement (#27699) l'importe, il ne le reimplemente pas |
 
 ### Conformite differentielle Rust
 | Script | Usage |
@@ -46,6 +49,7 @@ pas `0`.
 | `execute_qcpy_docker.py`, `qc_quantbook_execute.py` | Exécution QuantConnect (Quantbooks via Docker/QC Cloud) |
 | `merge_executed_outputs.py` | Fusion des sorties d'un carnet exécuté ailleurs (QC Cloud) dans le carnet de la branche, refus si le code diffère ([routes](../qc/quantbook-execution-routes.md)) |
 | `_exec_bdd_csharp.py` | **Archivé** 2026-10-01 (palier 1 #18153) — voir `scripts/notebook_tools/_archive/README.md` |
+| `pyodide_browser_run.py` | Exécution réelle d'un lot de carnets dans un site JupyterLite construit (noyau Pyodide) : pilote un navigateur, déclenche `Run All Cells` par clic réel, relève les sorties et les compteurs d'exécution, rend `executions.md` / `executions.json` et les captures. Preuves : `docs/reference/pyodide-executions/` |
 
 #### `kernel_gateway_service.py` — démarrer un notebook annoté
 
