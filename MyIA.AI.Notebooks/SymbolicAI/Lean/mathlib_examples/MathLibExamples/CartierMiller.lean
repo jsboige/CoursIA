@@ -94,21 +94,25 @@ et les autres sont nuls. -/
 abbrev E1728 (K : Type*) [Field K] : WeierstrassCurve K :=
   ⟨(0 : K), (0 : K), (0 : K), (1 : K), (0 : K)⟩
 
-/-- L'invariant j de la courbe `y^2 = x^3 + x` vaut 1728.
-Pour `y^2 = x^3 + A x + B`, `c₄ = -48·A` et `Δ = -16·(4·A^3 + 27·B^2)` ;
-avec `A = 1`, `B = 0`, `c₄ = -48` et `Δ = -64`, et
-`j = c₄^3 / Δ = (-48)^3 / (-64) = 1728`. -/
-theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K] :
-    (E1728 K).j = 1728 := by
-  let W : WeierstrassCurve K := E1728 K
-  -- La courbe est elliptique : Δ = -64 est une unité (non nulle) dans un
-  -- corps de caractéristique 0.
-  letI _ : W.IsElliptic := ⟨by
-    have hne : (W.Δ : K) ≠ 0 := by
+/-- La courbe `y^2 = x^3 + x` est elliptique : son discriminant `Δ = -64`
+est non nul, donc une unité, dans un corps de caractéristique 0. -/
+theorem e1728_is_elliptic {K : Type*} [Field K] [CharZero K] :
+    WeierstrassCurve.IsElliptic (E1728 K) :=
+  ⟨by
+    have hne : (E1728 K).Δ ≠ 0 := by
       simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
         WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
       norm_num
     exact isUnit_iff_ne_zero.mpr hne⟩
+
+/-- L'invariant j de la courbe `y^2 = x^3 + x` vaut 1728.
+Pour `y^2 = x^3 + A x + B`, `c₄ = -48·A` et `Δ = -16·(4·A^3 + 27·B^2)` ;
+avec `A = 1`, `B = 0`, `c₄ = -48` et `Δ = -64`, et
+`j = c₄^3 / Δ = (-48)^3 / (-64) = 1728`. -/
+theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K]
+    [WeierstrassCurve.IsElliptic (E1728 K)] :
+    (E1728 K).j = 1728 := by
+  let W : WeierstrassCurve K := E1728 K
   have hc₄ : W.c₄ = -48 := by
     simp only [E1728, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
       WeierstrassCurve.b₄]
