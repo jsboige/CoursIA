@@ -99,7 +99,7 @@ Traces par git, mais dans aucun dossier portant un `lakefile` : ils ne sont cons
 
 La doctrine demande qu'un lac vive dans le dossier de la (sous-)serie dont les carnets l'importent. La consommation se mesure sur le seul signal objectif disponible sans build : une ligne `import <Module>` d'un carnet, ou `<Module>` est un fichier `.lean` du lac. Les imports de paquets (`Mathlib`, `Batteries`) ne rattachent un carnet a aucun lac -- sans cette restriction, tout carnet Lean consommerait tous les lacs. Un carnet est « au site » quand il vit sous le dossier du lac, « hors site » sinon.
 
-30 lacs sur 41 sont consommes, dont 8 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
+30 lacs sur 42 sont consommes, dont 8 depuis un dossier hors site. Ce n'est pas un defaut en soi : c'est le fait que R1 rend arbitrable, et que la ligne nomme.
 
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean` — 4 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean` — 9 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
