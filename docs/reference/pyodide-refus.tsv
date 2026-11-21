@@ -270,7 +270,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-11b-TorchLean-Python.ipynb	Lean	gpu	gpu=t
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb	Lean	suffisance	suffisance=hors_serie:count_code_sorry : module hors serie non livre par le bundle
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb	Lean	import_absent	import_absent=Conway.Angel
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Conway-Bridge-to-Knots-Python.ipynb	Lean	import_absent	import_absent=snappy
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34-Calculabilite-et-Limites.ipynb	Lean	suffisance	suffisance=hors_serie:ict.godel_demonstration : module hors serie non livre par le bundle
+MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-06-Calculabilite-et-Limites.ipynb	Lean	suffisance	suffisance=hors_serie:ict.godel_demonstration : module hors serie non livre par le bundle
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-39-Capstone-GOL.ipynb	Lean	suffisance	suffisance=dependance_locale:hashlife -> lifeparsers : absent de la distribution;dependance_locale:hashlife -> render -> mistune : absent de la distribution;dependance_locale:hashlife -> render -> sync -> mistune : absent de la distribution
 MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb	Lean	import_absent,suffisance	import_absent=Converse,Lmmse;suffisance=absent_distribution:Objective : absent de la distribution
 MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/ML-Research-Template.ipynb	ML-Training-Pipeline	suffisance	suffisance=dependance_locale:train_classification -> catboost : absent de la distribution;dependance_locale:train_lstm -> checkpoint_utils -> torch : GPU;dependance_locale:train_lstm -> gpu_training -> torch : GPU;dependance_locale:train_lstm -> gpu_training -> torch.nn : GPU
