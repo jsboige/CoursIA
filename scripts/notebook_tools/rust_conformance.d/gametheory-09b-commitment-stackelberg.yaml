@@ -402,13 +402,11 @@
       sides:
         python:
           cell: 8
-          pattern: '(Exercice 1 à compléter : [^
-]*)'
+          pattern: '(Exercice 1 à compléter : [^\n]*)'
           transform: text
         rust:
           cell: 8
-          pattern: '(Exercice 1 à compléter : [^
-]*)'
+          pattern: '(Exercice 1 à compléter : [^\n]*)'
           transform: text
         csharp:
           absent: >-
@@ -731,13 +729,11 @@
       sides:
         python:
           cell: 19
-          pattern: '(Exercice 2 à compléter : [^
-]*)'
+          pattern: '(Exercice 2 à compléter : [^\n]*)'
           transform: text
         rust:
           cell: 19
-          pattern: '(Exercice 2 à compléter : [^
-]*)'
+          pattern: '(Exercice 2 à compléter : [^\n]*)'
           transform: text
         csharp:
           absent: >-
@@ -976,13 +972,11 @@
       sides:
         python:
           cell: 29
-          pattern: '(Exercice 3 à compléter : [^
-]*)'
+          pattern: '(Exercice 3 à compléter : [^\n]*)'
           transform: text
         rust:
           cell: 29
-          pattern: '(Exercice 3 à compléter : [^
-]*)'
+          pattern: '(Exercice 3 à compléter : [^\n]*)'
           transform: text
         csharp:
           absent: >-
