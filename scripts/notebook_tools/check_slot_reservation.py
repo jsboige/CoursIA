@@ -1049,12 +1049,17 @@ def scan_main_collisions(ref: str = "origin/main") -> list[dict]:
     # ET `-output.ipynb` (variante par defaut de papermill, tiret). Les
     # deux formes apparaissent dans le depot -- les ignorer toutes les
     # deux sinon le slot de la source parait occupe par sa propre
-    # sortie executee.
+    # sortie executee. Le suffixe de noyau peut suivre la marque
+    # (`...-output-Python.ipynb`, sweep de nomenclature) : la marque n'est
+    # alors plus terminale, on retire donc le suffixe avant de tester.
+    _KERNEL_SUFFIX_RE = re.compile(r"-(?:python|csharp|lean)$")
+
     def _is_source_ipynb(p: str) -> bool:
         low = p.lower()
         if not low.endswith(".ipynb"):
             return False
-        if low.endswith("_output.ipynb") or low.endswith("-output.ipynb"):
+        stem = _KERNEL_SUFFIX_RE.sub("", low[: -len(".ipynb")])
+        if stem.endswith("_output") or stem.endswith("-output"):
             return False
         return True
     notebooks = [p.strip() for p in raw if _is_source_ipynb(p)]
