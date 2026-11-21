@@ -107,13 +107,13 @@ Convention locale : suffixe kernel en **position finale** pour les fondations (`
 
 ### SymbolicAI/Planners — 9 paires, toutes alignées, toutes enregistrées (énumération **récursive** des sous-dossiers : la racine ne porte aucun `.ipynb`)
 
-`Planners-01-Introduction-Python` à `Planners-09-HTN-Python`, chaque `Planners-N-…` ↔ `Planners-N-…-Csharp` (suffixe local `-Csharp`, même graphie que SocialChoice).
+`Planners-01-Introduction-Python` à `Planners-09-HTN-Python`, chaque `Planners-N-…` ↔ `Planners-N-…-CSharp` (suffixe canonique `-CSharp` depuis le 2026-11-17, #12933 ; SocialChoice reste à renommer).
 
 ## 2. Cause structurelle — deux conventions de jumelage coexistent, toutes deux enregistrées
 
 - **Convention suffixe-terminal** : même numéro, même titre, suffixe kernel en fin (`Search-01` ↔ `Search-01-CSharp`). Appliquée intégralement par Sudoku, GameTheory racine, SocialChoice, Planners, Search Part1/Part2, SW-8..13, et par 5 carnets de Part3.
 - **Convention compagnon `b`** : le jumeau porte un `b`/`c` d'accrétion que la base n'a pas (`App-N` ↔ `App-Nb-CSharp`, `SW-N` ↔ `SW-Nb-Python`). Documentée **légitime** par `_schema.yaml` (`numbering_exception`) pour Part3 et SW-2..7, donc **attendue** — mais c'est une divergence au sens strict de la doctrine #12933 (« même préfixe, numéro, accrétion et titre ; seul le suffixe varie »), et elle n'est pas interne-cohérente : SW met le `b` côté **Python**, Part3 côté **CSharp**. **Etat au 2026-11-08** : Part3 est **éliminée** (13 paires renommées #25341, b retiré côté CSharp — trios/quatuor : des deux membres) ; SW-2..7 renommées de même (#25325, PR en cours de merge). La convention ne subsiste plus qu'à l'état de trace historique dans le ledger.
-- **Trois graphies de suffixe** coexistent : `-CSharp` (canonique), `-Csharp` (SocialChoice, Planners), et la position médiane SW. Relevé, non jugé ici.
+- **Graphies de suffixe** : `-CSharp` (canonique ; Planners aligné le 2026-11-17, #12933), `-Csharp` (SocialChoice à renommer ; découvert 2026-11-17 : SymbolicLearning/SL-1..6 la portent aussi, hors périmètre P2), et la position médiane SW. Relevé, non jugé ici.
 
 ## 3. Trous du registre — paires réelles sans entrée `twin_pairs.d` (grep NONE re-vérifié par la lane)
 
