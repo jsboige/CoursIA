@@ -408,6 +408,10 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
         "grains": [tapis_service.grain_servi(
             i, e, lane, tapis_equilibre.raisons(e, conso, maintenant), prs_par) for i, e in enumerate(file, 1)],
         "ecartees": ecartees,
+        # Les items ETEINTS (barrieres de fond) sont nommes pour l'urne de
+        # cloture : ecarte en silence, un item eteint ne revient jamais et
+        # personne ne le ferme (#26973).
+        "eteints": tapis_sature.eteints(ecartees),
     }
 
 

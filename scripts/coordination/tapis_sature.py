@@ -210,6 +210,28 @@ def epuise(e, comments: list[dict]) -> str | None:
     return None
 
 
+#: Les deux barrieres de **fond** : un item ecarte par l'une d'elles ne
+#: revient PLUS dans le pool. C'est ce qui distingue un ecart administratif
+#: (`GEL`, `RECLAMEE`, `LIVREE` -- l'item revient au tour suivant) d'une
+#: **extinction** : l'item eteint n'est plus servi, et personne ne le ferme
+#: s'il n'est pas nomme -- c'est ce que le tapis ecartait en silence.
+CODES_FOND = ("EPAISSE", "SATURE")
+
+
+def eteints(ecartees: dict) -> list[dict]:
+    """Les items **eteints** par une barriere de fond, pour l'urne de cloture.
+
+    Un ecart administratif se resorbe de lui-meme ; une barriere de fond est
+    **definitive**. L'urne de cloture (coordinateur, adjoint) a besoin de la
+    liste : un item eteint qui n'est pas nomme reste ouvert pour toujours.
+
+    Chaque entree porte son numero, son CODE et le MOTIF de son extinction.
+    """
+    return [{"numero": item["numero"], "code": code, "motif": item.get("motif") or ""}
+            for code in CODES_FOND
+            for item in (ecartees.get(code) or [])]
+
+
 def ecarter_satures(tous: list, file: list, mesure, rebuild, max_passes: int = 3) -> list:
     """Ecarte les conteneurs satures de la file, puis RETIRE le tirage.
 

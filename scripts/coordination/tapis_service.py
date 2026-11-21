@@ -117,6 +117,13 @@ def texte(r: dict, source: str) -> str:
     comptes = ", ".join(f"{code} {len(v)}" for code, v in r["ecartees"].items())
     total = sum(len(v) for v in r["ecartees"].values())
     lignes.append(f"\nEcartees sans sonde : {comptes} (total {total})")
+    eteints = r.get("eteints") or []
+    if eteints:
+        lignes.append(f"\nItems eteints ({len(eteints)}) -- urne de cloture "
+                      "(coordinateur, adjoint) : un item eteint ne revient pas "
+                      "dans le pool, il faut le fermer ou lui donner une tranche.")
+        for it in eteints:
+            lignes.append(f"  #{it['numero']}  {it['code']}  {it['motif']}")
     rev = r.get("reverif_fils")
     if rev:
         jetes = ", ".join(f"{j['code']} #{j['numero']}" for j in rev["jetes"]) or "aucun"

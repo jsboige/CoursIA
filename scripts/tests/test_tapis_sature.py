@@ -321,5 +321,56 @@ def test_le_transport_de_la_recherche_ne_lance_aucun_processus():
     assert "run_defaut" not in source
 
 
+# --- l'urne de cloture : les items ETEINTS sont nommes -----------------------
+
+def _rapport(lec, lane: str = LANE) -> dict:
+    tous = tr.etats(lec, lane, NOW)
+    return tr.rapport(lec, tous, [], lane, NOW, "graine")
+
+
+def test_le_rapport_nomme_les_items_eteints_et_rien_d_autre():
+    """Un item eteint par une barriere de FOND est nomme, avec son motif.
+
+    Les ecarts administratifs (gel, reclamee) ne sont PAS dans l'urne : ils se
+    resorbent, l'item revient au tour suivant."""
+    corps = ("[RELEASED] lane myia-po-2028:CoursIA-2 -- la part deleguable de "
+             "l'issue est epuisee")
+    lec = lecture([issue(1, labels=["EPIC"], comments=[com(3, corps)])])
+    epaisse = etat(lec, 1)
+    administratif = faux_etat()
+    administratif.ecart = "GEL"
+    administratif.motif = "un gel de sept jours"
+    r = tr.rapport(lec, [epaisse, administratif], [], LANE, NOW, "graine")
+    eteints = r["eteints"]
+    assert [e["numero"] for e in eteints] == [1]
+    assert eteints[0]["code"] == "EPAISSE"
+    assert "epuise" in eteints[0]["motif"]
+
+
+def test_un_conteneur_sature_eteint_parait_dans_l_urne():
+    conteneur = faux_etat()
+    mesure = lambda n: ([{"number": 1, "state": "closed", "body": "Part of #900",
+                           "pr": False}], True)
+    ts.ecarter_satures([conteneur], [conteneur], mesure, lambda: [])
+    r = tr.rapport(gh_bulk.Lecture(issues=[], prs=[], citations={}),
+                   [conteneur], [], LANE, NOW, "graine")
+    eteints = r["eteints"]
+    assert [e["code"] for e in eteints] == ["SATURE"]
+    assert eteints[0]["numero"] == 900
+    assert "enfant(s)" in eteints[0]["motif"]
+
+
+def test_la_sortie_texte_nomme_les_items_eteints():
+    """La liste n'est pas seulement dans le JSON : elle est DANS la sortie
+    texte -- c'est elle que le coordinateur lit."""
+    corps = ("[RELEASED] lane myia-po-2028:CoursIA-2 -- la part deleguable de "
+             "l'issue est epuisee")
+    lec = lecture([issue(1, labels=["EPIC"], comments=[com(3, corps)])])
+    sortie = tr.texte(_rapport(lec), "test")
+    assert "urne de cloture" in sortie
+    assert "#1" in sortie
+    assert "EPAISSE" in sortie
+
+
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(pytest.main([__file__, "-v"]))
