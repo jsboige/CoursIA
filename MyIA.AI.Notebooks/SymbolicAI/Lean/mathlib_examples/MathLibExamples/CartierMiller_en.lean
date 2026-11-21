@@ -120,7 +120,8 @@ theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K]
     simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
       WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
     norm_num
-  simp [WeierstrassCurve.j, WeierstrassCurve.coe_Δ', hΔ, hc₄]
+  simp only [WeierstrassCurve.j]
+  field_simp [WeierstrassCurve.coe_Δ', hΔ, hc₄]
   norm_num
 
 instance : Fact (Nat.Prime 97) := ⟨by decide⟩
