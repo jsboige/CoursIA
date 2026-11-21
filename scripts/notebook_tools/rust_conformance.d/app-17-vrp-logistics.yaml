@@ -20,11 +20,15 @@
           transform: text
         csharp:
           absent: >-
-            Le jumeau C# ne publie aucune sortie texte commitee (14 cellules
-            code, zero outputs texte) : ses mesures Nearest-Neighbor / 2-opt /
-            recuit ne sont pas comparables ici. Cote declare ABSENT, pas
-            mesure : la comparaison porte sur les deux cotes qui publient la
-            grandeur.
+            Le jumeau C# publie bien des sorties texte commitees (14 cellules
+            code, 65 outputs text/plain) mais sur SA PROPRE instance canonique
+            (15 clients, capacite 60, 6 vehicules, coordonnees distinctes) :
+            NN 595,83, Cheapest-Insertion 585,89, NN + 2-opt 583,03, recuit
+            569,24, OR-Tools GLS 510,59, plus le tableau final des methodes.
+            Les grandeurs de reference (glouton 417,49, 2-opt 414,49, exact
+            403,45 et la ligne "Solution valide") n'y figurent pas : ce n'est
+            pas la meme instance, donc pas la meme grandeur. Cote declare
+            ABSENT pour ces mesures-ci, pas faute de sorties.
     - id: distance_greedy
       description: "Distance totale de la tournee gloutonne sur l'instance de reference (deterministe : clients ASC, meilleur cout strict)"
       tolerance: 0
@@ -40,7 +44,8 @@
           transform: float
         csharp:
           absent: >-
-            Voir validite_greedy : aucune sortie texte commitee.
+            Voir validite_greedy : le C# publie ses propres mesures, sur une
+            autre instance (aucune des grandeurs de reference).
     - id: distance_2opt
       description: "Distance apres 2-opt deterministe (len>=3, i ascendant, j>=i+2, renversement [i+1..=j]) sur la tournee gloutonne"
       tolerance: 0
@@ -56,7 +61,8 @@
           transform: float
         csharp:
           absent: >-
-            Voir validite_greedy : aucune sortie texte commitee.
+            Voir validite_greedy : le C# publie ses propres mesures, sur une
+            autre instance (aucune des grandeurs de reference).
     - id: validite_milp
       description: "La solution exacte (MILP cote Rust/HiGHS, CP-SAT cote Python/OR-Tools) passe la verification capacite"
       tolerance: 0
@@ -73,7 +79,8 @@
           transform: text
         csharp:
           absent: >-
-            Voir validite_greedy : aucune sortie texte commitee.
+            Voir validite_greedy : le C# publie ses propres mesures, sur une
+            autre instance (aucune des grandeurs de reference).
     - id: distance_milp
       description: "Distance totale de la solution exacte. Solveurs differents (OR-Tools CP-SAT vs HiGHS MILP), tolerance relative ~1 pourcent"
       tolerance: 4.1
@@ -89,7 +96,8 @@
           transform: float
         csharp:
           absent: >-
-            Voir validite_greedy : aucune sortie texte commitee.
+            Voir validite_greedy : le C# publie ses propres mesures, sur une
+            autre instance (aucune des grandeurs de reference).
     - id: table_milp
       description: "Ligne solveur exact du tableau comparatif final (OR-Tools GLS cote Python, MILP HiGHS cote Rust) — tolerance relative ~1 pourcent"
       tolerance: 4.1
@@ -105,4 +113,5 @@
           transform: float
         csharp:
           absent: >-
-            Voir validite_greedy : aucune sortie texte commitee.
+            Voir validite_greedy : le C# publie ses propres mesures, sur une
+            autre instance (aucune des grandeurs de reference).
