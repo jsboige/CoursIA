@@ -510,14 +510,16 @@ def _registry():
     return registry
 
 
-def test_guard_is_registered_as_advisory():
-    """Le garde est enregistre, en advisory, et son nom porte la mention."""
+def test_guard_is_registered_as_blocking():
+    """Le garde est enregistre en bloquant depuis #27762, et son nom ne porte
+    plus `advisory` : `pr_gate` classe dans le seau advisory tout job dont le
+    nom contient ce mot, et un `failure` publie doit tenir le merge."""
     registry = _registry()
     guards = {g.name: g for g in registry.TRANCHE31}
-    guard = guards["Library versions guard (advisory, #23073)"]
-    assert guard.blocking is False
+    guard = guards["Library versions guard (#23073)"]
+    assert guard.blocking is True
     assert guard.needs_base is True
-    assert "advisory" in guard.name.lower()
+    assert "advisory" not in guard.name.lower()
     assert "scripts/notebook_tools/check_lib_versions.py" in " ".join(guard.argv)
 
 

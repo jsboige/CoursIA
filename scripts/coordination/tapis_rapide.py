@@ -26,13 +26,15 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import frozen_campaigns, gh_bulk, tapis_equilibre, tapis_origami, tapis_service
-from coordination import tapis_dernier_grain
+from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_dernier_grain,
+                         tapis_ecarts_fond, tapis_equilibre, tapis_origami,
+                         tapis_sature, tapis_service, tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
 from coordination.tapis_hors_flotte import ecart_hors_flotte
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
+from coordination.tapis_visites import evenements_info
 
 # Part au plus des conteneurs (EPIC, parapluie) dans la liste : la lane recoit des grains,
 # pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains,
@@ -50,10 +52,11 @@ LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-# Main a sorti les textes de service dans tapis_service (#26926) : REPLI et VERIF
-# n'ont plus d'usage ici, seul le code d'ecart HORSFLOTTE reste a cabler.
-CODES = ("HORSFLOTTE", "LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE",
-         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE")
+# Les textes de service sont dans tapis_service (#26926) : REPLI et VERIF
+# n'ont plus d'usage ici.
+# EPAISSE et SATURE : les deux barrieres de FOND d'un CONTENEUR (#26973).
+CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "LIVREE", "MERGEE", "COUVERTE",
+         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
 
 _CITE_RE = re.compile(r"#(\d+)\b")
 _PART_OF_RE = re.compile(r"\bpart\s+of\s*:?\s*#(\d+)\b", re.IGNORECASE)
@@ -181,7 +184,15 @@ def _plafond(e: Etat, evts: list[Evt], naissances: list[tuple[int, str | None]],
              lane: str, maintenant: datetime) -> str | None:
     """Plafond hebdo des conteneurs hors consolidation (#22500 point 3) : le
     tapis ne sert pas un EPIC que le gate L898 refuserait. Une visite = un
-    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte."""
+    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte.
+
+    **Effet declare** (#27590, revue du 21/11) : l'ensemble lu ici est
+    `VISITE` -- une **lecture** d'une autre lane (`VISITE-INFO`) y compte donc
+    aussi. Un conteneur recemment regarde par une autre lane est un
+    conteneur chaud : l'ecarter pendant la fenetre du plafond est le meme
+    geste que l'ecarter pour un claim vivant. Ce comportement est couvert par
+    un test (`test_un_info_visite_ecarte_le_conteneur_chaud`).
+    """
     if not e.conteneur or e.consolidation:
         return None
     limite = maintenant - timedelta(days=PLAFOND_EPIC_J)
@@ -231,6 +242,7 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LABEL", lambda: "label candidate-delivered : urne de cloture (coordinateur, adjoint)"
          if any(lab.strip().lower() == LABEL_LIVRE for lab in e.labels) else None),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
+        ("EPAISSE", lambda: tapis_sature.epuise(e, it.get("comments") or [])),
         ("LIVREE", lambda: _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
@@ -286,7 +298,11 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
         e = Etat(n, it.get("title") or "", labels, it.get("created_at") or "", parents[n],
                  famille, n in nommes or _conteneur_propre(it),
                  any(lab.strip().lower() == LABEL_CONSOLIDATION for lab in labels))
-        evts = evenements(it.get("comments") or [])
+        comments = it.get("comments") or []
+        # Les formes `[INFO] Visite` comptent comme visite : l'union des deux
+        # familles d'evenements, triee par date.
+        evts = sorted(evenements(comments) + evenements_info(comments),
+                      key=lambda e: e.quand)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
         # Raccord du classement (c3274) : une prise en charge nominative est
         # une visite, une citation Git n'en est pas une ; l'etat de grain
@@ -341,8 +357,9 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
     servables = [e for e in etats_ if _servable(e)]
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
     pris = {e.numero for e in file}
-    # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute ni ne
-    # bloque la place d'une issue du pool (sinon il passerait devant le grain).
+    # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute pas la
+    # place d'une issue du pool, et il ne bloque pas une issue deja visitee --
+    # sinon un marathon jamais visite passerait devant le grain equilibre.
     jamais = {e.numero for e in servables
               if e.visites == 0 and not tapis_equilibre.est_marathon(e)}
     tour = tapis_equilibre.ordre(etats_, [e for e in servables if not e.mon_claim],
@@ -395,6 +412,8 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
         "grains": [tapis_service.grain_servi(
             i, e, lane, tapis_equilibre.raisons(e, conso, maintenant), prs_par) for i, e in enumerate(file, 1)],
         "ecartees": ecartees,
+        # Les items ETEINTS (barrieres de fond) sont nommes pour l'urne.
+        "eteints": tapis_sature.eteints(ecartees),
     }
 
 
@@ -418,29 +437,10 @@ def _parser() -> argparse.ArgumentParser:
     return p
 
 
-def _voie_leger(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
-                fraicheur: dict | None) -> int:
-    """La voie LEGERE : classement sur metadonnees, qualification sur fil complet.
 
-    Le classement ne lit que les metadonnees du pool ; ce qui exige le corps et
-    le fil se decide sur le grain servi, sur son **fil complet** (organe REST
-    `gh_snapshot`), jamais sur la fenetre des 12 derniers commentaires.
-    """
-    from coordination import tapis_leger
-    maintenant = maintenant or datetime.now(UTC)
-    graine = args.graine or graine_defaut(args.lane, maintenant)
-    try:
-        r, code = tapis_leger.tirage(args.lane, args.grains, maintenant,
-                                     args.jours, graine, depot, run)
-    except gh_bulk.LectureIncomplete as exc:
-        print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
-              file=sys.stderr)
-        return 3
-    r["fraicheur"] = fraicheur
-    out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else \
-        tapis_leger.texte(r)
-    sys.stdout.buffer.write((out + "\n").encode("utf-8"))
-    return code
+
+
+
 
 
 def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
@@ -474,14 +474,9 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
-    # #27179 : un grain servi au fil tronque se re-decide sur son fil complet
-    # au moment du service ; hors ligne ou cache, la fenetre reste la fenetre.
-    reverif = None
-    if not args.lecture and not lecture.depuis_cache:
-        from coordination import tapis_reverif
-        file, reverif = tapis_reverif.passer(
-            tous, file, args.grains, args.lane, maintenant, args.jours, graine,
-            lecture, lire_fils)
+    file, reverif = tapis_ecarts_fond.ecarts_de_fond(
+        tous, file, args, lecture, run, maintenant, graine, lire_fils,
+        lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
     if reverif is not None:
@@ -512,7 +507,12 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     # --lecture est hors ligne : il reste sur la voie lourde, seule voie qui
     # sait relire un dossier de lecture.
     if args.voie == "leger" and not args.lecture:
-        return _voie_leger(args, depot, run, maintenant, fraicheur)
+        # La graine est calculee ICI : elle depend de la tranche de 4 h, et la
+        # calculer des deux cotes ouvrirait une course au passage d'une tranche.
+        maintenant = maintenant or datetime.now(UTC)
+        graine = args.graine or graine_defaut(args.lane, maintenant)
+        return tapis_voie_leger.servir(args, depot, run, maintenant, graine,
+                                       fraicheur)
     return _voie_lourde(args, depot, run, maintenant, fraicheur, lire_fils)
 
 
