@@ -1,0 +1,88 @@
+{
+  "chance": {
+    "interpretation": "bande du hasard : un kappa mesure au-dessus du p95 de cette distribution depasse l'accord que le hasard produirait",
+    "max": 1.0,
+    "mean": -0.0010526315789473654,
+    "n_draws": 200,
+    "p95": 0.5789473684210527,
+    "seed": 42
+  },
+  "corpus_sha256": "5b48647ebdf44a54f0a29c1011c5d397b013057111ed215a8382616f513ff884",
+  "dataset_license": "CC BY 4.0 (depot auteur IEEE Dataport, DOI 10.21227/fw8e-z983)",
+  "disambiguation_floor": 0.6,
+  "disambiguation_triggered": false,
+  "forme_kappa": 0.6666666666666667,
+  "forme_n": 10,
+  "generated_at": "2026-11-21T23:43:46.497922+00:00",
+  "intensite_kappa": 0.7692307692307692,
+  "intensite_n": 9,
+  "models": {
+    "claudish": {
+      "family": "GLM (claudish)",
+      "model": "glm-5.2"
+    },
+    "qwen": {
+      "family": "Qwen",
+      "model": "qwen3.6-35b-a3b"
+    }
+  },
+  "n_annotations": 60,
+  "n_disambiguation": 0,
+  "n_items": 10,
+  "parse_failures": {
+    "intensite": 1,
+    "roundtrip": 2
+  },
+  "publication_archive": "G:/Mon Drive/MyIA/IA/Bibliographie IA/MachineLearning/Computational Humor/2022 - Annamoradnejad and Zoghi - ColBERT Using BERT Sentence Embedding in Parallel Neural Networks for Computational Humor (arXiv 2004.12765).pdf",
+  "roundtrip_kappa": 1.0,
+  "roundtrip_n": 8,
+  "roundtrip_rates": {
+    "claudish": {
+      "measured": 8,
+      "rate": 1.0,
+      "same_label": 8,
+      "unparsed": 2
+    },
+    "qwen": {
+      "measured": 10,
+      "rate": 0.8,
+      "same_label": 8,
+      "unparsed": 0
+    }
+  },
+  "sample_item_ids": [
+    "colbert-006573",
+    "colbert-022678",
+    "colbert-029364",
+    "colbert-049603",
+    "colbert-072217",
+    "colbert-146910",
+    "colbert-165323",
+    "colbert-167438",
+    "colbert-182179",
+    "colbert-194348"
+  ],
+  "seed": 42,
+  "source_url": "https://raw.githubusercontent.com/Moradnejad/ColBERT-Using-BERT-Sentence-Embedding-for-Humor-Detection/master/Data/dataset.csv",
+  "token_cost": {
+    "mean_total_tokens_per_item": 173.43333333333334,
+    "per_annotator": {
+      "claudish": {
+        "completion_tokens": 311,
+        "items": 30,
+        "mean_total_tokens_per_item": 232.26666666666668,
+        "prompt_tokens": 6657,
+        "total_tokens": 6968
+      },
+      "qwen": {
+        "completion_tokens": 60,
+        "items": 30,
+        "mean_total_tokens_per_item": 114.6,
+        "prompt_tokens": 3378,
+        "total_tokens": 3438
+      }
+    },
+    "total_items": 60,
+    "total_tokens": 10406
+  }
+}

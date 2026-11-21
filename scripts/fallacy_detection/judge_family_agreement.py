@@ -74,6 +74,12 @@ Z_95 = 1.959963984540054  # quantile 0,975 normal : IC bilateral a 95 %
 # OpenAI, modele par defaut, variable d'environnement portant la cle. La cle ne
 # vit JAMAIS en litteral ici (hygiene des secrets) : absente => ``ValueError``.
 JUDGE_SPECS: dict[str, dict] = {
+    "claudish": {
+        "family": "GLM (claudish)",
+        "url": "https://models.myia.io/v1/chat/completions",
+        "model": "glm-5.2",
+        "api_key_env": "CLAUDISH_PROXY_KEY",
+    },
     "openai": {
         "family": "GPT (OpenAI)",
         "url": "https://api.openai.com/v1/chat/completions",
@@ -161,6 +167,7 @@ class OpenAIJudge:
             text=(message.get("content") or "").strip(),
             completion_tokens=int(usage.get("completion_tokens") or 0),
             finish_reason=str(choice.get("finish_reason") or ""),
+            prompt_tokens=int(usage.get("prompt_tokens") or 0),
         )
 
 

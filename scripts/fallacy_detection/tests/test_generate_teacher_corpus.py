@@ -663,7 +663,7 @@ def test_hub_teacher_porte_le_dialecte_vllm_et_le_retire_du_niveau_racine(monkey
         def read(self):
             return json.dumps({
                 "choices": [{"message": {"content": "ok"}, "finish_reason": "stop"}],
-                "usage": {"completion_tokens": 3},
+                "usage": {"completion_tokens": 3, "prompt_tokens": 7},
             }).encode()
 
     def fake_urlopen(request, timeout=None):
@@ -678,6 +678,7 @@ def test_hub_teacher_porte_le_dialecte_vllm_et_le_retire_du_niveau_racine(monkey
     assert "enable_thinking" not in captured["body"]
     assert reply.text == "ok" and reply.completion_tokens == 3
     assert reply.finish_reason == "stop"
+    assert reply.prompt_tokens == 7
 
 
 # --------------------------------------------------------------------------

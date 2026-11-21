@@ -229,7 +229,7 @@ def test_openai_judge_body_has_no_vllm_dialect(monkeypatch):
         def read(self):
             return json.dumps({"choices": [{"message": {"content": "B"},
                                             "finish_reason": "stop"}],
-                               "usage": {"completion_tokens": 1}}).encode()
+                               "usage": {"completion_tokens": 1, "prompt_tokens": 9}}).encode()
 
         def __enter__(self):
             return self
@@ -247,6 +247,7 @@ def test_openai_judge_body_has_no_vllm_dialect(monkeypatch):
                           model="gpt-test", api_key_env="OPENAI_API_KEY", api_key="k-test")
     reply = judge.complete("question", max_tokens=400, temperature=0.0)
     assert reply.text == "B"
+    assert reply.prompt_tokens == 9
     body = captured["body"]
     assert body["model"] == "gpt-test"
     assert body["temperature"] == 0.0
