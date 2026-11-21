@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1437** carnets Python, **549** eligibles, **888** refuses.
+Census : **1443** carnets Python, **554** eligibles, **889** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -72,7 +72,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | 3D | 9 | 2 | 7 | 7 | 0 | 1 | 0 | 2 |
 | AgentSystems | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Applications | 10 | 9 | 1 | 1 | 0 | 0 | 1 | 0 |
-| ArgumentAnalysis | 39 | 18 | 21 | 1 | 6 | 7 | 11 | 15 |
+| ArgumentAnalysis | 40 | 18 | 22 | 1 | 7 | 8 | 11 | 16 |
 | Audio | 48 | 1 | 47 | 26 | 21 | 18 | 18 | 45 |
 | CaseStudies | 4 | 0 | 4 | 0 | 4 | 0 | 0 | 4 |
 | Causalite | 12 | 2 | 10 | 1 | 0 | 1 | 0 | 9 |
@@ -90,14 +90,14 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | ICT-Series | 100 | 81 | 19 | 9 | 1 | 3 | 0 | 14 |
 | Image | 33 | 5 | 28 | 7 | 21 | 22 | 4 | 24 |
 | InformationQuantique | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
-| InformationTheory | 1 | 1 | 0 | 0 | 0 | 0 | 0 | 0 |
+| InformationTheory | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Integrales | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Jauge | 4 | 3 | 1 | 1 | 0 | 0 | 0 | 0 |
-| Lean | 125 | 98 | 27 | 1 | 5 | 4 | 11 | 18 |
+| Lean | 126 | 99 | 27 | 1 | 5 | 4 | 11 | 18 |
 | ML-Training-Pipeline | 18 | 11 | 7 | 0 | 0 | 0 | 1 | 7 |
 | ML.Net | 14 | 11 | 3 | 1 | 0 | 0 | 2 | 2 |
 | Metajeux | 7 | 5 | 2 | 1 | 0 | 0 | 1 | 0 |
-| MyIA.AI.Notebooks/Complexity | 26 | 22 | 4 | 0 | 0 | 0 | 1 | 3 |
+| MyIA.AI.Notebooks/Complexity | 27 | 23 | 4 | 0 | 0 | 0 | 1 | 3 |
 | MyIA.AI.Notebooks/Compression | 12 | 9 | 3 | 1 | 0 | 0 | 0 | 2 |
 | MyIA.AI.Notebooks/GameTheory | 70 | 48 | 22 | 2 | 3 | 3 | 8 | 11 |
 | MyIA.AI.Notebooks/IIT | 6 | 1 | 5 | 0 | 0 | 0 | 0 | 5 |
@@ -131,6 +131,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | Vibe-Coding | 6 | 5 | 1 | 0 | 0 | 0 | 0 | 1 |
 | Video | 23 | 3 | 20 | 16 | 11 | 14 | 6 | 19 |
 | _research | 1 | 0 | 1 | 1 | 1 | 1 | 0 | 1 |
+| docker-configurations/notebook-runner | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | gateway | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 1 |
 | kelly_lean | 5 | 5 | 0 | 0 | 0 | 0 | 0 | 0 |
 | partner-course-quant-trading | 7 | 0 | 7 | 0 | 0 | 0 | 5 | 4 |
@@ -159,7 +160,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 753 | 549 |
+| Carnets eligibles | 758 | 554 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -360,6 +361,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GenAI/Image/05-History/05-0f-Groupes-De-Frise-Python.ipynb` | Image | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Physique/InformationQuantique/InfoQuant-01-Intrication-Werner-PPT-Distillation-Python.ipynb` | InformationQuantique | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/InformationCalcul/InformationTheory/InformationTheory-03-Code-de-Hamming-Et-Decodage-Par-Syndrome.ipynb` | InformationTheory | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/InformationCalcul/InformationTheory/InformationTheory-08-Theorie-De-L-Information-Des-Reseaux.ipynb` | InformationTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Physique/Integrales/Integrales-01-Triangle-Scalaire-Python.ipynb` | Integrales | python3 | matplotlib==3.10.8, mpmath==1.4.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Physique/Integrales/Integrales-02-Sunrise-Masses-Egales-Python.ipynb` | Integrales | python3 | mpmath==1.4.1 | - |
 | `MyIA.AI.Notebooks/Physique/Integrales/Integrales-03-Bulle-Premiere-Divergence-Python.ipynb` | Integrales | python3 | mpmath==1.4.1, pandas==3.0.2 | - |
@@ -383,6 +385,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-08-Loi-II-Translateur-Life.ipynb` | Lean | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb` | Lean | python3 | pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-10-Fractran.ipynb` | Lean | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-11-Vie-dans-la-vie.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-01-From-Figure-To-Equation.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6, sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-03-Wu-Method-Python.ipynb` | Lean | python3 | sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/Geometry-03b-Ritt-Decomposition-Python.ipynb` | Lean | python3 | sympy==1.14.0 | - |
@@ -514,6 +517,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Complexity/Complexity-07-KolmogorovBornee-Sequences-Python.ipynb` | MyIA.AI.Notebooks/Complexity | coursia-ml-training | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-07b-LeTourDesGrandsNombres-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | - | - |
 | `MyIA.AI.Notebooks/Complexity/Complexity-07c-LeBilanMathocalypse-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | - | - |
+| `MyIA.AI.Notebooks/Complexity/Complexity-08d-IndependanceProuvee-BusyBeaver-Covering-Python.ipynb` | MyIA.AI.Notebooks/Complexity | python3 | - | - |
 | `MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb` | MyIA.AI.Notebooks/Compression | python3 | matplotlib==3.10.8 | - |
@@ -700,6 +704,8 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb` | Video | python3 | imageio==2.37.3, matplotlib==3.10.8, numpy==2.4.6, pillow==12.2.0 | - |
 | `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb` | Video | python3 | - | - |
 | `MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-8-PAN2-Modele-du-Monde-GLP.ipynb` | Video | python3 | - | - |
+| `docker-configurations/notebook-runner/witness/witness-global-313.ipynb` | docker-configurations/notebook-runner | global-3.13 | - | - |
+| `docker-configurations/notebook-runner/witness/witness-python3.ipynb` | docker-configurations/notebook-runner | python3 | numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion-Cotes-Dynamiques-Python.ipynb` | kelly_lean | - | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion-Fractional-Python.ipynb` | kelly_lean | - | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/QuantConnect/kelly_lean/Kelly_companion-Multi-Issue-Python.ipynb` | kelly_lean | - | matplotlib==3.10.8, numpy==2.4.6 | - |
