@@ -221,15 +221,15 @@ Vérifier qu'une solution est correcte, et en trouver une : la théorie de la co
 
 Les lettres ouvrent la recherche, chacune sur un résultat lu à la source : transition de phase de SAT, word RAM et conjectures de prétraitement, réductions lopsided du triangle, conjectures online tombées en 2026, BosonSampling, bornes de Kolmogorov, la réfutation annoncée d'ETH examinée pour ce qu'elle établit et ne prouve pas, jusqu'à la règle 30 de Wolfram et aux machines de Gödel. Chaque notion est confrontée au state de Mathlib -- aucune classe de complexité temporelle n'y est définie, et le dépôt l'écrit plutôt que de le contourner. La série tient ses ponts : Ryser réutilisé par Sudoku-15, la discrepancy de Search, la sensibilité reliée au théorème de Huang. Aucune dépendance externe : chaque objet est construit dans le carnet, et les paliers principaux existent en jumeaux C#/Python.
 
-Python et C# | [README détaillé](MyIA.AI.Notebooks/Complexity/README.md)
+Python et C# | [README détaillé](MyIA.AI.Notebooks/InformationCalcul/Complexity/README.md)
 
 ### Compression -- Représenter l'information à moindre coût
 
 Le pendant exact de la question précédente : là où Complexity mesure le coût de *calculer*, Compression mesure le coût de *représenter*. Le parcours principal reconstruit dans le carnet chaque codec fondateur -- Shannon-Fano et Huffman avec l'inégalité de Kraft, le Huffman canonique des formats réels, LZ77 à fenêtre glissante, puis les codes ANS modernes qui approchent l'entropie (environ 0,09 bit par symbole là où Huffman en consomme 1 sur une distribution 99 %/1 %). Le volet appris montre ensuite ce que la compression dit des modèles : quantification, élagage et distillation des poids, jusqu'à MDL -- et l'incompressibilité de Kolmogorov, non calculable, comme borne naturelle.
 
-La série va plus loin que les codecs. Le lake [`Compression_lean`](MyIA.AI.Notebooks/Compression/Compression_lean/) prouve l'optimalité de Huffman et l'inégalité de Kraft-McMillan en Lean 4 ; 04b trace les fronts de Pareto des codecs réels ; 05b construit un découvreur DSL neuro-symbolique de douze opcodes vérifié par SHA-256 ; 07 et 07b font trier des fichiers par un LLM local -- d'abord par appels d'outil opératoires, puis sous Semantic Kernel sur un corpus réel, avec un codec à dictionnaire partagé et son invariant de couverture prouvé, la comparaison publiée y compris quand elle est défavorable. Les paliers 01-04 existent en jumeaux C# en BCL pure.
+La série va plus loin que les codecs. Le lake [`Compression_lean`](MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/) prouve l'optimalité de Huffman et l'inégalité de Kraft-McMillan en Lean 4 ; 04b trace les fronts de Pareto des codecs réels ; 05b construit un découvreur DSL neuro-symbolique de douze opcodes vérifié par SHA-256 ; 07 et 07b font trier des fichiers par un LLM local -- d'abord par appels d'outil opératoires, puis sous Semantic Kernel sur un corpus réel, avec un codec à dictionnaire partagé et son invariant de couverture prouvé, la comparaison publiée y compris quand elle est défavorable. Les paliers 01-04 existent en jumeaux C# en BCL pure.
 
-Python, C# et Lean 4 | [README détaillé](MyIA.AI.Notebooks/Compression/README.md)
+Python, C# et Lean 4 | [README détaillé](MyIA.AI.Notebooks/InformationCalcul/Compression/README.md)
 
 ### SymbolicAI -- Raisonnement formel
 
