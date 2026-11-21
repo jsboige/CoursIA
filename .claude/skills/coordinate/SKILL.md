@@ -9,6 +9,12 @@ Cycle de coordination du cluster CoursIA. **Reserve au coordinateur ai-01** : un
 
 **Target**: `$ARGUMENTS`
 
+## Consommer la file préparée
+
+Une validation porte sur une PR et sa tête ; la file, elle, se traite par lot.
+Après une décision, passer à la prochaine tête préparée sans attendre le `mergedAt` de la précédente. Le secrétaire suit les conversions.
+Dans le bilan existant, distinguer les PR préparées, celles décidées et les fusions GitHub ; pour une perte entre deux étapes, nommer la première cause vérifiée.
+
 ## Arguments
 
 - (sans args) : cycle complet (briefing + merges + steers + reporting)
