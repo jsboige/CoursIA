@@ -1,7 +1,7 @@
 - name: "Complexity-04 OnlineAlgorithms"
   family: Complexity
-  python: MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04-OnlineAlgorithms-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Solver-free by design des deux côtés : les stratégies en ligne et leurs oracles de contrôle sont codés explicitement pour l'enseignement. Python utilise NumPy pour le générateur seedé ; C# conserve le travail avec Random/Fisher–Yates de la BCL et calcule les espérances par sommes discrètes. Aucun solveur ou outil externe de référence n'est omis."
