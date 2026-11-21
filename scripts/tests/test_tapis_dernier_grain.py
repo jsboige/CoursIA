@@ -211,6 +211,32 @@ def test_le_compteur_grain_ignore_les_citations():
     assert total_historique == 1, "le mode historique compte les citations"
 
 
+def test_une_livraison_par_grain_compte_une_visite():
+    """La famine de l'umbrella (#27338) : sept livraisons dans la journee
+    n'y comptent qu'UNE visite -> l'issue reste en tete de classement et la
+    lane la reprend le lendemain. Une livraison vaut une visite, et elle
+    ouvre une seance neuve.
+
+    Le temoin est ici, dans la suite de l'ORGANE qui porte la regle : c'est
+    `compter_grains` que le classement appelle, pas le compte historique de
+    la voie legere.
+    """
+    evts = []
+    for h in (100, 90, 80, 70, 60, 50, 40):
+        evts += [_evt("CLAIMED", "myia-po-2027:CoursIA-2",
+                      NOW - timedelta(hours=h)),
+                 _evt("DELIVERED", "myia-po-2027:CoursIA-2",
+                      NOW - timedelta(hours=h - 1))]
+    _d, total, visites = tdg.compter_grains(evts, NOW - timedelta(days=7))
+    assert (visites, total) == (7, 7), "sept livraisons dans la tour : sept visites"
+    # les amendements d'un meme grain restent dans la session de leur grain
+    un = [_evt("CLAIMED", "myia-po-2027:CoursIA-2", NOW - timedelta(hours=100)),
+          _evt("CLAIMED-AMEND", "myia-po-2027:CoursIA-2", NOW - timedelta(hours=99)),
+          _evt("DELIVERED", "myia-po-2027:CoursIA-2", NOW - timedelta(hours=98))]
+    _d, total, visites = tdg.compter_grains(un, NOW - timedelta(days=7))
+    assert visites == 1, "les amendements d'un meme grain ne comptent pas une fois de plus"
+
+
 def test_une_issue_servie_passe_en_derniere_du_classement():
     """La cle de tri tient compte de l'etat de grain quand il est connu."""
     from coordination.tapis_rapide import Etat

@@ -4,6 +4,7 @@
 import argparse
 import sys
 from collections import defaultdict
+from itertools import combinations
 from pathlib import Path
 from typing import Iterable
 
@@ -20,6 +21,10 @@ RESOURCE_PREDICATES = {
     "wsl": VOCAB.requiresWSL,
 }
 RESOURCE_LABELS = {"api": "API", "gpu": "GPU", "cloud": "cloud", "wsl": "WSL"}
+BLOB_PREFIX = "https://github.com/jsboige/CoursIA/blob/main/"
+NOTEBOOKS_ROOT = "MyIA.AI.Notebooks/"
+MATCH_FAMILIES = ((SKOS.exactMatch, "alignement exact"), (SKOS.closeMatch, "alignement close"))
+OUTSIDE = "hors des graphes chargés"
 
 
 def load_graph(paths: Iterable[Path]) -> Graph:
@@ -40,10 +45,28 @@ def _identifier(graph: Graph, notebook: URIRef) -> str:
 
 
 def _label(graph: Graph, subject: URIRef | BNode) -> str:
-    value = graph.value(subject, SKOS.prefLabel)
-    if value is None:
-        value = graph.value(subject, RDFS.label)
-    return str(value) if value is not None else str(subject)
+    """Libellé d'un nœud : `skos:prefLabel` puis `rdfs:label`, le français d'abord."""
+    for predicate in (SKOS.prefLabel, RDFS.label):
+        values = sorted(
+            graph.objects(subject, predicate),
+            key=lambda value: (getattr(value, "language", None) != "fr", str(value)),
+        )
+        if values:
+            return str(values[0])
+    return str(subject)
+
+
+def _taxonomy_of(graph: Graph, node: URIRef | BNode) -> str:
+    """Taxonomie d'un concept ou d'un carnet, telle que l'export la porte.
+
+    `rdfs:isDefinedBy` nomme le fichier de taxonomie. Un export qui ne le
+    porte pas retombe sur le schéma SKOS du concept ou la série du carnet.
+    """
+    for predicate in (RDFS.isDefinedBy, SKOS.inScheme, VOCAB.inSeries):
+        labels = sorted(_label(graph, owner) for owner in graph.objects(node, predicate))
+        if labels:
+            return labels[0]
+    return OUTSIDE
 
 
 def _boolean_value(value: Literal, predicate: URIRef) -> bool:
@@ -262,6 +285,83 @@ def concepts_for(graph: Graph, query: str | None = None, limit: int | None = Non
     return matches[:limit] if limit is not None else matches
 
 
+def concepts_of_notebook(
+    graph: Graph, path: str, query: str | None = None, limit: int | None = None
+) -> list[str]:
+    """Concepts qui citent un carnet : libellé, identifiant, taxonomie, cellules citées."""
+    identifier = path.replace("\\", "/").removeprefix(NOTEBOOKS_ROOT)
+    notebook = find_notebook(graph, identifier)
+    source = URIRef(BLOB_PREFIX + NOTEBOOKS_ROOT + identifier)
+    needle = query.casefold() if query else None
+    lines = []
+    for concept in graph.objects(notebook, VOCAB.concept):
+        if not isinstance(concept, (URIRef, BNode)):
+            if not needle or needle in str(concept).casefold():
+                lines.append(f"{concept}\t\t{OUTSIDE}\t")
+            continue
+        label = _label(graph, concept)
+        if needle and needle not in label.casefold():
+            continue
+        cells = sorted(
+            str(cell)
+            for citation in graph.objects(concept, VOCAB.hasCellCitation)
+            if (citation, DCTERMS.source, source) in graph
+            for cell in graph.objects(citation, VOCAB.cellId)
+        )
+        lines.append(
+            f"{label}\t{_identifier(graph, concept)}\t{_taxonomy_of(graph, concept)}\t{', '.join(cells)}"
+        )
+    lines.sort(key=str.casefold)
+    if not lines:
+        return ["Aucun concept lié à ce carnet dans l'export."]
+    return lines[:limit] if limit is not None else lines
+
+
+def bridges_for(graph: Graph, limit: int | None = None) -> list[str]:
+    """Ponts entre taxonomies lus dans l'export, une ligne par pont, triés par paire.
+
+    Trois familles : concept cité par des carnets de deux taxonomies,
+    prérequis qui vise le concept d'une autre taxonomie, alignement exact ou
+    close. Un alignement est symétrique : il compte une fois, quel que soit
+    le côté qui le déclare.
+    """
+    rows: set[tuple[str, str, str]] = set()
+
+    def pair_of(first: str, second: str) -> str:
+        return " <-> ".join(sorted((first, second), key=str.casefold))
+
+    citing: dict[URIRef | BNode, set[str]] = defaultdict(set)
+    for notebook, concept in graph.subject_objects(VOCAB.concept):
+        if isinstance(concept, (URIRef, BNode)):
+            citing[concept].add(_taxonomy_of(graph, notebook))
+    for concept, taxonomies in citing.items():
+        for first, second in combinations(sorted(taxonomies), 2):
+            rows.add((
+                pair_of(first, second), "concept partagé",
+                f"{_label(graph, concept)}\t{_identifier(graph, concept)}",
+            ))
+    for concept, required in graph.subject_objects(VOCAB.requiresConcept):
+        first, second = _taxonomy_of(graph, concept), _taxonomy_of(graph, required)
+        if first != second:
+            rows.add((
+                pair_of(first, second), "prérequis",
+                f"{_label(graph, concept)} requiert {_label(graph, required)}"
+                f"\t{_identifier(graph, concept)}\t{_identifier(graph, required)}",
+            ))
+    for predicate, family in MATCH_FAMILIES:
+        for subject, target in graph.subject_objects(predicate):
+            first, second = sorted((subject, target), key=lambda node: _identifier(graph, node))
+            rows.add((
+                pair_of(_taxonomy_of(graph, first), _taxonomy_of(graph, second)), family,
+                f"{_label(graph, first)} = {_label(graph, second)}"
+                f"\t{_identifier(graph, first)}\t{_identifier(graph, second)}",
+            ))
+    if not rows:
+        return ["Aucun pont entre taxonomies dans l'export."]
+    lines = ["\t".join(row) for row in sorted(rows, key=lambda row: tuple(part.casefold() for part in row))]
+    return lines[:limit] if limit is not None else lines
+
+
 def path_for(graph: Graph, path: str) -> list[str]:
     notebook = find_notebook(graph, path)
     return _path_labels(graph, notebook)
@@ -311,7 +411,14 @@ def main(argv: list[str] | None = None) -> int:
         "concepts", help="lister les concepts explicitement liés aux carnets"
     )
     concepts.add_argument("--query", help="filtrer le libellé du concept")
+    concepts.add_argument(
+        "--notebook", help="ne lister que les concepts qui citent ce carnet (chemin du dépôt)"
+    )
     concepts.add_argument("--limit", type=positive_int, help="nombre maximal de résultats")
+    bridges_cmd = commands.add_parser(
+        "bridges", help="lister les ponts entre taxonomies (concepts partagés, prérequis, alignements)"
+    )
+    bridges_cmd.add_argument("--limit", type=positive_int, help="nombre maximal de résultats")
     interfaces_cmd = commands.add_parser(
         "interfaces", help="lister les interfaces agentiques (CLI, MCP, bridges) de l'export"
     )
@@ -341,7 +448,12 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "prerequisites":
             _print_lines(prerequisites_for(graph, args.path))
         elif args.command == "concepts":
-            _print_lines(concepts_for(graph, args.query, args.limit))
+            if args.notebook:
+                _print_lines(concepts_of_notebook(graph, args.notebook, args.query, args.limit))
+            else:
+                _print_lines(concepts_for(graph, args.query, args.limit))
+        elif args.command == "bridges":
+            _print_lines(bridges_for(graph, args.limit))
         elif args.command == "interfaces":
             _print_lines(list_interfaces(graph, args.interface_class, args.limit))
         elif args.command == "path":
