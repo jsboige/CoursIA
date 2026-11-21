@@ -77,7 +77,7 @@ Usage
     python scripts/lean/check_added_axioms_cliquet.py --body-file <corps.md>
 
     # Restrict to specific paths (default: own lakes):
-    python scripts/lean/check_added_axioms_cliquet.py --paths 'MyIA.AI.Notebooks/Compression/Compression_lean/*.lean'
+    python scripts/lean/check_added_axioms_cliquet.py --paths 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/*.lean'
 
     # JSON for CI consumption:
     python scripts/lean/check_added_axioms_cliquet.py --json

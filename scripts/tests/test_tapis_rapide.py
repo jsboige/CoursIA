@@ -123,7 +123,12 @@ def test_mergee_epargne_la_consolidation_et_les_simples_citations():
     lec = lecture([issue(1, labels=["consolidation"]), issue(2), issue(3)], citations=citations)
     assert etat(lec, 1).ecart is None  # une tranche de consolidation ne la livre pas
     e2 = etat(lec, 2)
-    assert e2.ecart is None and e2.derniere_visite == _h(5)  # citee : une visite, pas une livraison
+    # Raccord du classement (c3274) : une citation Git est un PASSAGE, pas
+    # une visite -- elle ne rajeunit plus le dernier grain. L'ecart reste
+    # nul : une citation n'a toujours ete ni une livraison ni une exclusion.
+    assert e2.ecart is None
+    assert e2.derniere_visite is None
+    assert e2.etat_grain == "passage_seul"
     assert etat(lec, 3).motif == "livraison probable, commit def5678"
 
 
@@ -312,7 +317,11 @@ def test_parent_famille_conteneur_et_derniere_visite():
     assert (e13.parent, e13.famille) == (12, 10)
     assert etat(lec, 10).conteneur and etat(lec, 14).conteneur
     assert not etat(lec, 13).conteneur
-    assert e13.derniere_visite == _h(10)  # le commit est plus recent que le marqueur
+    # Raccord du classement (c3274) : la derniere visite est le dernier
+    # GRAIN -- ici le marqueur de livraison. Le commit, plus recent, n'est
+    # qu'un passage : il ne rajeunit pas le grain.
+    assert e13.derniere_visite == _h(30)
+    assert e13.etat_grain == "grain"
     assert etat(lec, 14).derniere_visite is None
 
 
@@ -633,6 +642,13 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # tenir le plafond, 19/11) ; gh_lecture.py la vingt-et-unieme (la LECTURE :
 # son conteneur, son echec et la mise a plat d'une issue -- extrait de
 # gh_bulk.py pour tenir le plafond, 19/11).
+# 18/11) ; tapis_dernier_grain.py la vingt-deuxieme (le DERNIER GRAIN d'une issue --
+# grain, passage, absence etablie ou non mesurable -- et la regle des SEANCES,
+# extraite de tapis_equilibre.py pour que le module du classement tienne son
+# plafond, #27242, 19/11) ; tapis_citations.py la vingt-troisieme (les citations des
+# PRs OUVERTES : le travail en cours compte comme une visite, #27338) ;
+# belt_equite.py la vingt-quatrieme (l'equite du dispatch : un grain deja servi ne
+# passe pas devant les premieres visites, #27338).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -663,6 +679,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("gh_lecture.py", 70),
                                               ("tapis_diff.py", 200),
                                               ("tapis_perimetre.py", 110),
+                                              ("tapis_dernier_grain.py", 260),
+                                              ("tapis_citations.py", 40),
+                                              ("belt_equite.py", 110),
                                               ("tapis_preuve.py", 110)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
