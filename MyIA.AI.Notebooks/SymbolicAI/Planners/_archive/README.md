@@ -29,7 +29,7 @@ relié à son devenir, preuve à l'appui.
 | Options avancées : portfolios (md 23, 59), adaptation des coûts (md 61), optimisation post-hoc (md 63), réduction des étiquettes (md 65), collections de motifs (md 67), compétitions (md 68) | Conservé comme référence — aucune section dédiée dans la série courante | grep sur l'ensemble de la série courante : `portfolio` ×1 (mention de passage, Planners-1), réduction d'étiquettes 0 |
 | Exercices stub `Console.WriteLine("Exercice a completer")` (code 46, 58) | Stubs historiques conformes C.1, jamais complétés — aucune reprise | `execution_count` 11 et 17, sorties d'origine |
 
-Le twin C# [`../02-Classical/Planners-04-Fast-Downward-Csharp.ipynb`](../02-Classical/Planners-04-Fast-Downward-Csharp.ipynb)
+Le twin C# [`../02-Classical/Planners-04-Fast-Downward-CSharp.ipynb`](../02-Classical/Planners-04-Fast-Downward-CSharp.ipynb)
 (PR #5591, 2026-07-07) n'est pas un port du monolithe : il conçoit son propre
 translateur SAS+ (A*/GBFS/EHC, h-FF) au lieu d'invoquer le vrai Fast Downward —
 approche distincte du runner auto-téléchargeur du monolithe.

@@ -1,0 +1,127 @@
+# Conformite differentielle du triplet CSP-4-Scheduling (Pli Rust, issue #27662).
+#
+# Le portage Rust (kernel evcxr, crate cp_sat 0.4.1) reprend les memes
+# instances et le meme fil que les jumeaux Python (ortools Python) et C#
+# (liaison .NET). Les grandeurs comparees ici sont les valeurs-pivots du
+# carnet : makespans prouves optimaux, charge du planning d'infirmiers,
+# ecart heuristique SPT vs preuve, et les bornes de l'instance dure
+# (graine 2026). Le portage MT19937 du carnet Rust calque le generateur
+# de CPython (ecart j/i documente dans la cellule) : les bornes sont
+# egales a l'unite pres, tolerance 0.
+#
+# Ecarts API declares (detail dans le carnet Rust et le body de la PR) :
+# NoOverlap -> disjonctions reifiees par paires ; AddCumulative -> cumul
+# temporel reifie par booleens de pas ; AddDecisionStrategy absent ->
+# deux configurations (defaut / hint) au lieu de trois ; callback absent
+# -> paliers de budget 1/2/4/6 s au lieu d'une courbe.
+- name: "CSP-4 Scheduling"
+  family: Search/CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-Rust.ipynb
+  measures:
+    - id: jssp_makespan
+      description: "Makespan optimal du Job-Shop 3x3 (preuve CP-SAT)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "Makespan optimal: (\\d+)"
+          transform: int
+        rust:
+          cell: 3
+          pattern: "Makespan optimal: (\\d+)"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "JSSP : Makespan optimal = (\\d+) unites"
+          transform: int
+    - id: rcpsp_makespan
+      description: "Makespan optimal du RCPSP a 6 taches (preuve CP-SAT)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "Makespan RCPSP: (\\d+)"
+          transform: int
+        rust:
+          cell: 7
+          pattern: "Makespan RCPSP: (\\d+)"
+          transform: int
+        csharp:
+          cell: 9
+          pattern: "RCPSP : Makespan optimal = (\\d+) unites"
+          transform: int
+    - id: nurse_shifts
+      description: "Gardes assignees par le planning d'infirmiers (6x7x3, plancher 42)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "Total shifts: (\\d+)"
+          transform: int
+        rust:
+          cell: 13
+          pattern: "Total shifts: (\\d+)"
+          transform: int
+        csharp:
+          cell: 12
+          pattern: "Shifts assignes = (\\d+)"
+          transform: int
+    - id: spt_gap
+      description: "Ecart relatif heuristique SPT vs optimal sur l'atelier 3x3 (pourcents)"
+      tolerance: 0.05
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "Gap: ([0-9.]+)%"
+          transform: float
+        rust:
+          cell: 17
+          pattern: "Gap: ([0-9.]+)%"
+          transform: float
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas la comparaison SPT dans ses sorties
+            commitees : sa section de guidage compare les liaisons .NET du
+            solveur, pas l'heuristique gloutonne contre la preuve. Cote
+            declare ABSENT, pas mesure.
+    - id: generator_lb
+      description: "Borne inferieure de l'instance dure 16x12 (charge du job le plus charge, graine 2026)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "Borne inferieure \\(charge du job le plus charge\\) : (\\d+)"
+          transform: int
+        rust:
+          cell: 20
+          pattern: "Borne inferieure \\(charge du job le plus charge\\) : (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne construit pas l'instance dure a graine fixee :
+            son banc de guidage tire une instance propre a chaque execution.
+            Cote declare ABSENT.
+    - id: spt_big_makespan
+      description: "Makespan de l'heuristique SPT seule sur l'instance dure (graine 2026)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "Makespan SPT \\(heuristique seule\\)\\s*: (\\d+)"
+          transform: int
+        rust:
+          cell: 20
+          pattern: "Makespan SPT \\(heuristique seule\\)\\s*: (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que generator_lb : l'instance dure a graine fixee
+            n'existe que cotes Python et Rust.

@@ -62,9 +62,9 @@
 .genai-temperature li:nth-child(1) { width: 51%; min-height: 155px; }
 .genai-temperature li:nth-child(2) { width: 41%; min-height: 100px; }
 .genai-temperature li:nth-child(3) { width: 41%; }
-.genai-temperature .genai-visual.visual-1 { left: 585px; top: 90px; width: 300px; height: 150px; }
-.genai-temperature .genai-visual.visual-2 { left: 445px; top: 270px; width: 490px; height: 195px; }
-.genai-temperature .genai-visual.visual-3 { left: 48px; top: 425px; width: 390px; height: 120px; }
+.genai-temperature .genai-visual.visual-1 { left: 535px; top: 80px; width: 355px; height: 125px; }
+.genai-temperature .genai-visual.visual-2 { left: 485px; top: 218px; width: 430px; height: 125px; }
+.genai-temperature .genai-visual.visual-3 { left: 537px; top: 359px; width: 355px; height: 132px; }
 
 /* Le système occupe l'espace commun aux deux paragraphes explicatifs. */
 .genai-system li:nth-child(1) { width: 100%; margin-bottom: 35px; }
@@ -82,7 +82,7 @@
 .genai-design .genai-visual { left: 700px; top: 95px; width: 210px; height: 155px; }
 
 .genai-companion li:nth-child(-n+2) { width: 63%; margin-bottom: 30px; }
-.genai-companion li:nth-child(3) { width: 100%; margin-top: 45px; }
+.genai-companion li:nth-child(3) { width: 63%; margin-top: 18px; }
 .genai-companion .genai-visual { left: 695px; top: 100px; width: 215px; height: 250px; }
 
 .genai-workplace li:nth-child(1) { width: 48%; min-height: 200px; }
@@ -105,11 +105,12 @@
 
 /* Écosystème modèles/APIs : OpenRouter face bullet 1 "APIs propriétaires",
    HF face bullet 2 "Modèles locaux" — même schéma que l'hébergement. */
-.genai-ecosystem-models li:nth-child(1) { width: 50%; min-height: 165px; }
-.genai-ecosystem-models li:nth-child(2) { width: 50%; min-height: 165px; }
-.genai-ecosystem-models li:nth-child(3) { width: 100%; margin-top: 18px; }
-.genai-ecosystem-models .openrouter-figure { left: 615px; top: 100px; width: 260px; height: 150px; }
-.genai-ecosystem-models .hf-figure { left: 615px; top: 300px; width: 260px; height: 150px; }
+.genai-ecosystem-models li:nth-child(1) { width: 58%; min-height: 138px; }
+.genai-ecosystem-models li:nth-child(2) { width: 58%; min-height: 138px; }
+.genai-ecosystem-models li:nth-child(3) { width: 100%; margin-top: 10px; }
+.genai-ecosystem-models .openrouter-figure { left: 640px; top: 92px; width: 240px; height: 128px; }
+.genai-ecosystem-models .hf-figure { left: 640px; top: 242px; width: 240px; height: 128px; }
+.genai-ecosystem-models p.notebook-reference { font-size: 0.8em; opacity: 0.92; margin-top: 14px; }
 
 /* Écosystème hébergement : bande Cloud (Groq + Vast.ai) face bullet 1,
    bande Local (vLLM + Ollama) face bullet 2. Boîtes absolues : aucun
@@ -118,8 +119,8 @@
 .genai-ecosystem-hosting li:nth-child(2) { width: 50%; min-height: 150px; }
 .genai-ecosystem-hosting .groq-figure { left: 545px; top: 100px; width: 185px; height: 145px; }
 .genai-ecosystem-hosting .vastai-figure { left: 745px; top: 100px; width: 185px; height: 145px; }
-.genai-ecosystem-hosting .vllm-figure { left: 545px; top: 305px; width: 185px; height: 145px; }
-.genai-ecosystem-hosting .ollama-figure { left: 745px; top: 305px; width: 185px; height: 145px; }
+.genai-ecosystem-hosting .vllm-figure { left: 545px; top: 255px; width: 185px; height: 110px; }
+.genai-ecosystem-hosting .ollama-figure { left: 745px; top: 255px; width: 185px; height: 110px; }
 /* c.1092 REPAIR footer-hors-clip (#15463 CHANGES_REQUESTED ai-01 21:38Z) :
    footer reference positionné absolute pour sortir du flux et garantir son placement
    dans le canvas (980x552 logique). z-index 3 passe au-dessus des visuels.
@@ -136,7 +137,7 @@
 .genai-ecosystem-hosting p.notebook-reference {
   position: absolute;
   bottom: 18px;
-  left: 48px;
+  left: 140px;
   z-index: 3;
   margin: 0;
   font-size: 0.85em;
@@ -188,7 +189,7 @@
 /* A — recherche hybride : les deux jambes convergent ; texte quasi pleine
        largeur, schéma large en BAS, référence dans une bande sous le schéma. */
 .slidev-layout.genai-hybrideretrieve .genai-level { width: 100%; line-height: 1.28; margin-bottom: 8px; padding-top: 6px; padding-bottom: 6px; }
-.genai-hybrideretrieve .notebook-reference { position: absolute; left: 40px; bottom: 12px; margin: 0; }
+.genai-hybrideretrieve .notebook-reference { position: absolute; left: 140px; bottom: 12px; margin: 0; }
 .genai-hybrideretrieve .genai-visual.genai-hybrideretrieve-viz { left: 48px; right: auto; bottom: 48px; top: auto; width: 90%; height: 145px; }
 
 /* B — GRPO : chaîne séquentielle verticale ; schéma à DROITE en colonne LARGE
@@ -200,7 +201,7 @@
 /* C — RLVR / reward hacking : chaîne linéaire + branche surveillance ; texte
        pleine largeur, schéma en BAS, référence dans une bande sous le schéma. */
 .slidev-layout.genai-rlvr .genai-level { margin-left: 0; width: 100%; line-height: 1.28; margin-bottom: 8px; padding-top: 6px; padding-bottom: 6px; }
-.genai-rlvr .notebook-reference { position: absolute; left: 40px; bottom: 12px; margin: 0; width: 900px; }
+.genai-rlvr .notebook-reference { position: absolute; left: 140px; bottom: 12px; margin: 0; width: 800px; }
 .genai-rlvr .genai-visual.genai-rlvr-viz { left: 48px; right: auto; top: auto; bottom: 48px; width: 90%; height: 145px; }
 
 /* D — évaluation trajectoires : schéma quasi carré à DROITE ; référence sur
@@ -208,3 +209,84 @@
 .slidev-layout.genai-aneval .genai-level { width: 49%; line-height: 1.28; margin-bottom: 8px; padding-top: 6px; padding-bottom: 6px; }
 .genai-aneval .notebook-reference { position: absolute; left: 512px; bottom: 16px; margin: 0; width: 420px; }
 .genai-aneval .genai-visual.genai-aneval-viz { left: auto; right: 48px; top: 104px; width: 420px; height: 350px; }
+
+.slidev-layout:has(p > a:only-child[href*=".ipynb"]):has(table) table { width: 100%; table-layout: fixed; border-spacing: 8px 0; border-collapse: separate; margin: 22px 0; }
+.slidev-layout:has(p > a:only-child[href*=".ipynb"]):has(table) :is(th,td) { padding: 10px 14px; background: #f0e9e5; text-align: left; vertical-align: top; }
+.slidev-layout:has(p > a:only-child[href*=".ipynb"]):has(table) th { color: #793329; background: #e7d8d3; }
+
+/* === nb-map / nb-concept : cartes de notebooks ===
+   nb-map     : carte d'une série (amorce, grille de cartes, question de séance).
+   nb-concept : un concept, deux ou trois cartes larges, encadré « À observer »,
+                référence au notebook en bande basse.
+   Aucune position absolue : le flux vertical porte tout.
+   Le corps de chaque planche est calibré par une classe nb-kNNN (facteur NNN/100
+   mesuré dans le navigateur : plus grand corps qui tient dans le canevas de 552 px). */
+.slidev-layout:is(.nb-map, .nb-concept) { display: flex; flex-direction: column; font-size: calc(18px * var(--nb-k, 1)); line-height: 1.32; padding-top: 26px; padding-bottom: 34px; }
+.slidev-layout:is(.nb-map, .nb-concept) h1 { font-size: 25.5px; margin-bottom: 10px; }
+.slidev-layout:is(.nb-map, .nb-concept) p { margin: 0; }
+.slidev-layout:is(.nb-map, .nb-concept) code { font-size: 0.9em; background: #efe6e2; padding: 0 4px; border-radius: 3px; }
+.slidev-layout:is(.nb-map, .nb-concept) p.nb-lead { font-size: 1em; line-height: 1.4; margin: 0 0 13px; }
+.nb-grid { display: grid; gap: 10px; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; flex: 1 1 auto; }
+.nb-grid.nb-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.nb-grid.nb-cols-4 { grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.nb-card { background: #f0e9e5; border-top: 3px solid #793329; padding: 9px 13px 10px; display: flex; flex-direction: column; min-width: 0; }
+.slidev-layout .nb-card p.nb-step { font-weight: 700; color: #793329; font-size: 0.96em; line-height: 1.25; margin: 0 0 4px; }
+.slidev-layout .nb-card p.nb-what { font-size: 0.84em; line-height: 1.36; margin: 0 0 6px; }
+.slidev-layout .nb-card p.nb-links { font-size: 0.74em; line-height: 1.4; margin: auto 0 0; overflow-wrap: anywhere; }
+.slidev-layout .nb-card p.nb-links a { text-decoration-thickness: 1px; text-underline-offset: 2px; }
+.slidev-layout:is(.nb-map, .nb-concept) p.nb-foot { font-size: 0.92em; line-height: 1.4; margin: 13px 0 0; border-left: 4px solid #793329; padding: 1px 0 1px 12px; }
+.slidev-layout:is(.nb-map, .nb-concept) p.notebook-reference { font-size: 14.5px; margin: 0; padding-top: 10px; opacity: 0.92; }
+
+/* 4 colonnes : cartes étroites, texte un cran plus petit. */
+.nb-grid.nb-cols-4 .nb-card { padding: 8px 10px 9px; }
+.slidev-layout .nb-cols-4 .nb-card p.nb-step { font-size: 0.9em; }
+.slidev-layout .nb-cols-4 .nb-card p.nb-what { font-size: 0.78em; line-height: 1.32; }
+.slidev-layout .nb-cols-4 .nb-card p.nb-links { font-size: 0.68em; }
+
+/* 2 colonnes : cartes larges, texte plus lisible. */
+.slidev-layout .nb-cols-2 .nb-card p.nb-step { font-size: 1.04em; }
+.slidev-layout .nb-cols-2 .nb-card p.nb-what { font-size: 0.94em; line-height: 1.4; }
+.slidev-layout .nb-cols-2 .nb-card p.nb-links { font-size: 0.8em; }
+
+/* Concept : peu de cartes, donc du corps et de l'air. */
+.slidev-layout.nb-concept p.nb-lead { font-size: 1.12em; line-height: 1.42; margin-bottom: 18px; }
+.slidev-layout.nb-concept .nb-grid { gap: 14px; }
+.slidev-layout.nb-concept .nb-card { padding: 14px 18px 16px; }
+.slidev-layout.nb-concept .nb-card p.nb-step { font-size: 1.1em; margin-bottom: 8px; }
+.slidev-layout.nb-concept .nb-card p.nb-what { font-size: 1.02em; line-height: 1.45; margin: 0; }
+.slidev-layout.nb-concept .nb-card p.nb-links { font-size: 0.84em; margin-top: 10px; }
+.slidev-layout.nb-concept p.nb-foot { font-size: 1.02em; line-height: 1.45; margin-top: 18px; background: #f7f2ef; padding: 12px 16px; }
+
+/* Centre : les cartes gardent leur hauteur ; l'espace libre se répartit
+   autour d'elles au lieu de les étirer. */
+.slidev-layout.nb-center .nb-grid { flex: 0 0 auto; margin: auto 0; }
+.slidev-layout.nb-center p.nb-foot { margin-top: 0; }
+.slidev-layout.nb-center p.notebook-reference { margin-top: auto; padding-top: 14px; }
+
+/* Facteurs de corps calibrés. */
+.slidev-layout.nb-k80 { --nb-k: 0.80; } .slidev-layout.nb-k82 { --nb-k: 0.82; } .slidev-layout.nb-k84 { --nb-k: 0.84; }
+.slidev-layout.nb-k86 { --nb-k: 0.86; } .slidev-layout.nb-k88 { --nb-k: 0.88; } .slidev-layout.nb-k90 { --nb-k: 0.90; }
+.slidev-layout.nb-k92 { --nb-k: 0.92; } .slidev-layout.nb-k94 { --nb-k: 0.94; } .slidev-layout.nb-k96 { --nb-k: 0.96; }
+.slidev-layout.nb-k98 { --nb-k: 0.98; } .slidev-layout.nb-k100 { --nb-k: 1.00; } .slidev-layout.nb-k102 { --nb-k: 1.02; }
+.slidev-layout.nb-k104 { --nb-k: 1.04; } .slidev-layout.nb-k106 { --nb-k: 1.06; } .slidev-layout.nb-k108 { --nb-k: 1.08; }
+.slidev-layout.nb-k110 { --nb-k: 1.10; } .slidev-layout.nb-k112 { --nb-k: 1.12; } .slidev-layout.nb-k114 { --nb-k: 1.14; }
+.slidev-layout.nb-k116 { --nb-k: 1.16; } .slidev-layout.nb-k118 { --nb-k: 1.18; } .slidev-layout.nb-k120 { --nb-k: 1.20; }
+.slidev-layout.nb-k122 { --nb-k: 1.22; } .slidev-layout.nb-k124 { --nb-k: 1.24; }
+
+/* Atlas : les sept planches du cas d'école. Markdown simple (citation, listes,
+   tableaux, bloc de code) porté à un corps lisible depuis la salle ; le bloc de
+   contenu se centre entre le titre et le bas du canevas. Même calibrage nb-kNNN. */
+.slidev-layout.atlas-case { display: flex; flex-direction: column; font-size: calc(21px * var(--nb-k, 1)); line-height: 1.42; padding-top: 26px; padding-bottom: 34px; --slidev-code-font-size: 0.82em; --slidev-code-line-height: 1.5; }
+.slidev-layout.atlas-case::after { font-size: 11.7px; }
+.slidev-layout.atlas-case h1 { font-size: 27px; margin-bottom: auto; }
+.slidev-layout.atlas-case > :is(p, ol, ul, table, blockquote, pre, div) { margin-top: 0.8em; margin-bottom: 0; }
+.slidev-layout.atlas-case > :last-child { margin-bottom: auto; }
+.slidev-layout.atlas-case blockquote { background: #f0e9e5; border-left: 4px solid #793329; padding: 0.6em 0.9em; font-style: normal; color: inherit; }
+.slidev-layout.atlas-case blockquote p { margin: 0; }
+.slidev-layout.atlas-case ol { padding-left: 1.5em; }
+.slidev-layout.atlas-case ol > li { margin-bottom: 0.4em; padding-left: 0.2em; }
+.slidev-layout.atlas-case ul > li { font-size: 1em; margin-bottom: 0.4em; }
+.slidev-layout.atlas-case table { font-size: 0.92em; width: 100%; }
+.slidev-layout.atlas-case :is(th, td) { padding: 0.45em 0.8em; }
+.slidev-layout.atlas-case ol { list-style: decimal outside; }
+.slidev-layout.atlas-case :is(th, td):last-child { white-space: nowrap; }
