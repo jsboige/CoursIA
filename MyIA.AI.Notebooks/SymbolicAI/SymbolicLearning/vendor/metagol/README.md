@@ -1,7 +1,7 @@
 # Metagol (vendored)
 
 `metagol.pl` est embarque ici (avec sa licence) pour que le notebook
-[SL-6 Moteurs ILP modernes](../../SL-6-ModernILP.ipynb) puisse executer le
+[SL-6 Moteurs ILP modernes](../../SL-06-ModernILP-Python.ipynb) puisse executer le
 **vrai** moteur Metagol sans dependance reseau a l'execution.
 
 ## Source

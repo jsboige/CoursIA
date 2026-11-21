@@ -23,7 +23,7 @@ c.6296125400) : 17/17 liens critiques en HTTP 200.
 Violation fondee le 2026-11-07 (audit visuel #25055) : la page catalogue
 exposait 45 liens `.ipynb` bruts, invisibles au garde parce que la page
 n'etait pas couverte ; le merge de #24283 laisse 1 residuel
-(SL-11-Capstone-NeuroSymbolic, 200 en JSON brut) -- le controle positif
+(SL-11-Capstone-NeuroSymbolic-Python, 200 en JSON brut) -- le controle positif
 de la classe structurelle.
 
 Exit codes :

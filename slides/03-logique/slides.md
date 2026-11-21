@@ -1171,7 +1171,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Comparer recursivement les termes
 - Remplacer les variables par des termes plus spécifiques
 
-*Notebooks : [SL-5-InverseResolution](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) (unification remontee a l'envers) · [SL-4-InductiveLogicProgramming](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) (apprendre des regles).*
+*Notebooks : [SL-05-InverseResolution-Python](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-05-InverseResolution-Python.ipynb) (unification remontee a l'envers) · [SL-04-InductiveLogicProgramming-Python](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-Python.ipynb) (apprendre des regles).*
 
 ---
 layout: default
@@ -1277,7 +1277,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Un LLM propose des regles plausibles mais **non garanties** ; l'ILP en etablit la coherence avec les exemples
 - La regle apprise reste un enonce de la base : elle est verifiable, pas seulement plausible
 
-*Notebooks : [SL-5-InverseResolution](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) (resolution remontee) · [SL-4-InductiveLogicProgramming](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) (ILP) · [SL-1-LogicalLearning](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb).*
+*Notebooks : [SL-05-InverseResolution-Python](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-05-InverseResolution-Python.ipynb) (resolution remontee) · [SL-04-InductiveLogicProgramming-Python](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-04-InductiveLogicProgramming-Python.ipynb) (ILP) · [SL-01-LogicalLearning-Python](../../MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-01-LogicalLearning-Python.ipynb).*
 
 ---
 layout: default

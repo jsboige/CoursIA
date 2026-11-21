@@ -705,7 +705,7 @@ def _is_yaml_block_open_no_close(lines, fenced: set[int]) -> bool:
     oversized setext heading. Reproduced 2026-08-18 on
     ``MyIA.AI.Notebooks/GenAI/FallacyDetection/02_fallacy_datasets_landscape.ipynb`` (descended into GenAI/ via tranche 1 of #13581; was ``MyIA.AI.Notebooks/FallacyDetection/`` pre-2026-08-30)
     pre-#11629 (8 cells ``---\\n### Dataset N -- ...``) AND on
-    ``SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb`` (15 cells
+    ``SymbolicAI/SymbolicLearning/SL-08-KnowledgeGraphs-ILP-Python.ipynb`` (15 cells
     ``---\\n\\n## Titre`` -- the SECOND outage, 20:27Z, after #11629).
 
     The earlier claim that a blank line after the opening ``---`` made it a
