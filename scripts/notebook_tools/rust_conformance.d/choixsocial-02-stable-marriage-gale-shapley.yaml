@@ -29,7 +29,7 @@
           pattern: "\\A\\s*(.*?)\\s*\\Z"
           transform: text
         csharp:
-          absent: "La cellule C# 2 diffère du texte Python (ligne 1 : « Configuration OK : SocialChoice 02 - Mariage Stable (Gale-Sh » contre « Configuration OK : SocialChoice 02 - Mariage Stable (Gale-Sh » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+          absent: "La cellule C# 2 diffère du texte Python (ligne 1 : « …Stable (Gale-Shapley, twin C# .NET 9) » contre « …Stable (Gale-Shapley) » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
     - id: c4_text
       description: "Sortie de la cellule 4, texte identique au jumeau Python"
       tolerance: 0
