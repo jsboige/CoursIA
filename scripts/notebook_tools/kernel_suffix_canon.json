@@ -23,6 +23,11 @@
       "path_glob": "MyIA.AI.Notebooks/Search/Part2-CSP/**",
       "note": "Serie convergee par renommage explicite (standardisation nomenclature #13751) : 9 '-Csharp' renommes en '-CSharp' dans cette serie, 0 divergence restante. Les occurrences en commentaires de cellules code restent a l'ancienne casse (re-execution .NET bloquee par l'env, cf l'issue de suivi dediee).",
       "measured": "2026-09-22, PR #13751 tranche Search (worktree e8d76767)"
+    },
+    {
+      "path_glob": "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/**",
+      "note": "Serie socle-metadata-driven convergee sur -CSharp : les 2 carnets de la serie renommes de -Csharp vers -CSharp (PR de renommage de la tranche PR-C, matrice c2044 du 2026-11-18, #12933), avec navlinks croises et references _quarto.yml/READMEs reparées. Adoption ciblee au seul dossier socle-metadata-driven : le reste de cross-series/ porte des suffixes minuscules assumes (Fort-Boyard, cf _no_wide_glob_please).",
+      "measured": "2026-11-21"
     }
   ],
   "exceptions": []
