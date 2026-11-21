@@ -232,7 +232,7 @@
           }
         },
         {
-          "path": "GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb",
+          "path": "GenAI/Audio/01-Foundation/01-5-TTS-Local-ONNX.ipynb",
           "title": "Kokoro TTS Local - Synthèse vocale légère",
           "duration_minutes": 60,
           "kernel": "Python 3",
@@ -946,7 +946,7 @@
           }
         },
         {
-          "path": "GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb",
+          "path": "GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb",
           "title": "LTX-Video - Generation Video Rapide et Legere",
           "duration_minutes": 45,
           "kernel": "Python 3",

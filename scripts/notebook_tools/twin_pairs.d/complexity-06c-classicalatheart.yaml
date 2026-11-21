@@ -1,7 +1,7 @@
 - name: "Complexity-06c ClassicalAtHeart"
   family: Complexity
-  python: MyIA.AI.Notebooks/Complexity/Complexity-06c-ClassicalAtHeart-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Complexity/Complexity-06c-ClassicalAtHeart-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-06c-ClassicalAtHeart-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-06c-ClassicalAtHeart-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Le propos du carnet est l'implementation classique de l'operation quantique : des deux cotes, l'etat cible est prepare par une permutation explicite des etats de base (numpy d'un cote, BCL de l'autre) et l'on mesure qu'une seule permutation suffit. Le moteur quantique n'est ni appele ni simule par un tiers -- le carnet le remplace volontairement par son equivalent classique, qui est l'objet de la demonstration. Aucun outil externe n'est omis ni presente a la place d'un autre."

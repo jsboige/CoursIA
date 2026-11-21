@@ -340,6 +340,53 @@ def test_outputs_from_execute_result_text_plain():
     assert _values(nb) == []
 
 
+def test_outputs_from_display_markdown_count_as_anchor():
+    """display(Markdown(...)) : la mesure vit dans text/markdown, le text/plain
+    est l'objet-repr sans nombre (App-18, Search -- 25 citations du stock)."""
+    nb = {
+        "cells": [
+            {"cell_type": "markdown", "source": ["### Lecture — le pic\n\nGA atteint **0.758**."]},
+            {
+                "cell_type": "code",
+                "source": ["display(Markdown(f'best = **{best:.3f}**'))"],
+                "outputs": [
+                    {
+                        "output_type": "display_data",
+                        "data": {
+                            "text/markdown": ["best = **0.758**"],
+                            "text/plain": ["<IPython.core.display.Markdown object>"],
+                        },
+                    }
+                ],
+            },
+        ]
+    }
+    assert _values(nb) == []
+
+
+def test_display_markdown_different_value_still_fires():
+    """L'ancrage text/markdown ne blanchit pas une valeur differente de la prose."""
+    nb = {
+        "cells": [
+            {"cell_type": "markdown", "source": ["### Lecture — le pic\n\nGA atteint **0.791**."]},
+            {
+                "cell_type": "code",
+                "source": ["display(Markdown(...))"],
+                "outputs": [
+                    {
+                        "output_type": "display_data",
+                        "data": {
+                            "text/markdown": ["best = **0.758**"],
+                            "text/plain": ["<IPython.core.display.Markdown object>"],
+                        },
+                    }
+                ],
+            },
+        ]
+    }
+    assert _values(nb) == ["0.791"]
+
+
 # --- Self-test embarque (pre-controle pre_argv) ----------------------------------
 
 
