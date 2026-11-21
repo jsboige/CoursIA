@@ -318,18 +318,51 @@ def graine_defaut(lane: str, maintenant: datetime) -> str:
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
              graine: str | None = None) -> list[Etat]:
     """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`) :
-    le niveau le moins visite d'abord, la plus ancienne issue d'abord."""
+    le niveau le moins visite d'abord, la plus ancienne issue d'abord.
+
+    Invariant de couverture (#27590, dispatch `c0013-tapis-coverage-20`) : une
+    issue **jamais visitée** ne cède jamais sa place a une issue deja visitée.
+    Mesure du 21/11 sur le pool reel : 20 issues worker a 0 visite, dont 14
+    conteneurs hors du tour de 8 -- deux issues deja visitees prenaient leurs
+    places (le quota de conteneurs ecartait les conteneurs jamais visites, et
+    le tri final plaçait les grains d'abord, #26926). Le mandat du 16/11
+    (« toute issue visitée au moins une fois avant qu'une autre le soit deux
+    fois ») etait donc structurellement violable. Les conteneurs jamais
+    visités que le quota ecarte passent desormais en second temps, quand la
+    place ne peut pas etre prise par une issue deja visitée. Le quota et
+    l'ordre final (les grains d'abord) restent inchangés.
+    """
     graine = graine or graine_defaut(lane, maintenant)
     servables = [e for e in etats_ if e.ecart is None]
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
+    pris = {e.numero for e in file}
+    # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute pas la
+    # place d'une issue du pool, et il ne bloque pas non plus une issue deja
+    # visitee -- sinon un marathon jamais visite passerait devant le grain
+    # equilibre du tour.
+    jamais = {e.numero for e in servables
+              if e.visites == 0 and not tapis_equilibre.est_marathon(e)}
     tour = tapis_equilibre.ordre(etats_, [e for e in servables if not e.mon_claim],
                                  graine, maintenant)
-    quota, pris = max(1, int(grains * PART_CONTENEURS)), set()
+    quota = max(1, int(grains * PART_CONTENEURS))
+    reportes: list[Etat] = []
     for e in tour:  # un conteneur ne passe que dans son quota
-        if len(file) < grains and (not e.conteneur or quota > 0):
-            quota -= e.conteneur
-            file.append(e)
-            pris.add(e.numero)
+        if len(file) >= grains:
+            break
+        if e.visites > 0 and (jamais - pris):
+            # Une issue deja visitée ne prend pas la place d'une jamais visitée.
+            continue
+        if e.conteneur and quota <= 0:
+            reportes.append(e)  # jamais visitée : elle passe en second temps
+            continue
+        quota -= e.conteneur
+        file.append(e)
+        pris.add(e.numero)
+    for e in reportes:  # second temps : les conteneurs jamais visités
+        if len(file) >= grains:
+            break
+        file.append(e)
+        pris.add(e.numero)
     file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
     # Vos claims, puis les grains, puis les conteneurs (#26926) : un conteneur
     # demande une lecture et un --paths, il ne passe jamais devant un grain.

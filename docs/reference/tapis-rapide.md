@@ -225,6 +225,30 @@ visités et 300 graines, où les huit grains servis viennent toujours des 24 plu
 Les grains restent servis avant les conteneurs (#26926), même quand le conteneur est à un niveau plus bas : un
 conteneur demande une lecture et un `--paths`.
 
+**L'équité du 16/11 — une issue jamais visitée ne cède pas sa place** (#27590, dispatch `c0013-tapis-coverage-20`).
+Le mandat du 16/11 : « toute issue doit être visitée au moins une fois avant qu'une autre le soit deux fois ».
+Mesure du 21/11 sur le pool réel (lecture du 01:47Z, 51 issues servables, 21 à 0 visite) : le tour de 8 grains
+servait **deux issues déjà visitées** pendant que 14 issues jamais visitées restaient dehors — le quota de
+conteneurs (25 %) écartait les conteneurs jamais visités, et le tri final plaçait les grains d'abord. Deux
+corrections :
+
+- dans `tapis_rapide.ordonner`, une issue **déjà visitée** ne prend plus la place d'une issue jamais visitée
+  encore au tour ; le conteneur jamais visité que le quota écarte passe en **second temps**, quand la place ne
+  peut plus être prise par une issue déjà visitée. Le quota et l'ordre final (les grains d'abord) ne changent pas ;
+- dans `visit_coverage`, le **parcage Origami** est appliqué comme dans le tirage : sans lui, l'organe comptait
+  en rôle « worker » cinq EPIC Origami que le tapis ne sert jamais (leur dépliage est réservé au coordinateur).
+
+Effet mesuré sur la même lecture : le tour de 8 sert 8 issues **jamais visitées** (avant : 6, dont 2 déjà
+visitées), et les 16 issues « worker » à 0 visite sont toutes servies en **2 tours**. L'organe
+`visit_coverage.atteignable` mesure cette garantie (`tours`, `equite`) et la porte en **rouge** si une issue
+déjà visitée est servie pendant qu'une autre attend ; son test d'invariant est dans
+`scripts/tests/test_tapis_couverture_invariant.py` (contrôle positif et contrôle négatif).
+
+Ce que la garantie **ne** corrige pas : le quota de conteneurs reste une part de la liste (les conteneurs
+jamais visités occupent la place d'autres grains quand ils remplissent le tour), et une issue écartée par un
+code — `ORIGAMI`, `PLAFOND`, `RECLAMEE`, `LIVREE` — reste hors du tapis, par construction. L'organe compte
+désormais les issues dont le fil est tronqué et que le tirage re-décidera au service (`redecider_au_service`).
+
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 
 - Le **bandit de fermeture par zone** : la variété vient du tour de rôle par famille dans un niveau et du décalage par lane.
@@ -275,6 +299,15 @@ de `origin/main` qui la cite (`lecture.citations`). Le bilan donne par rôle le 
 visite et celles visitées sans avancer, l'invariant du 16/11 sur le pool servable (hors claim propre et hors
 marathon) et les jamais visitées. Mesure du 20/11 sur la lecture de 13:35Z : 443 issues hors marathons, 87 à
 zéro visite, dont 59 d'urne et 12 de revue.
+
+Le bilan porte en outre deux mesures neuves (21/11) :
+
+- `redecider_au_service` — les issues « worker » à 0 visite dont le **fil est tronqué** (la lecture groupée ne
+  voit que les 12 derniers commentaires) : le tirage les re-décide sur le fil complet au moment du service, donc
+  l'écart peut changer après le bilan ;
+- `atteignable` — la simulation du tapis (`tapis_rapide.ordonner`) sur la même lecture : combien de tours pour
+  servir toutes les issues jamais visitées, et **équité** — la liste des issues déjà visitées qui seraient
+  servies pendant qu'une autre attend. Une équité non vide est un **rouge** (code de sortie 1).
 
 ```bash
 python scripts/coordination/visit_coverage.py [--json] [--dashboard-line]
