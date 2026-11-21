@@ -1,0 +1,225 @@
+name: Learning image (GHCR)
+
+# Pli 1.3 de l'Epic #27543 (#27546) : reconstruire l'image d'apprentissage
+# quand son Dockerfile, ses exigences, ses temoins ou le manifeste du pli 1.1
+# (#27544, docs/curriculum/manifeste-dependances.json) changent, executer un
+# carnet temoin par famille de noyau, puis publier sur GHCR.
+#
+# Le deploiement (push vers le registre) n'a lieu que sur push sur main ;
+# les PR executent construction + temoins SANS publication, ce qui prouve le
+# vert sans toucher au paquet.
+#
+# MOINDRE PRIVILEGE (revue du 20/11, deux points de securite) :
+#   1. deux jobs, un droit par job. Le job `construire-temoins` n'a que
+#      `contents: read` et tourne sur PR, push et dispatch -- il construit le
+#      Dockerfile d'une PR et y execute des carnets, il ne doit donc jamais
+#      pouvoir ecrire dans le registre. Le droit `packages: write` n'existe
+#      que dans le job `publier`, qui ne s'execute sur aucun evenement
+#      `pull_request`.
+#   2. `actions/checkout` recoit `persist-credentials: false` : le jeton du
+#      depot n'est pas conserve dans `.git/config` apres le checkout, alors
+#      que le job n'en a pas besoin apres cette etape.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'docker-configurations/notebook-runner/Dockerfile'
+      - 'docker-configurations/notebook-runner/docker-compose.yml'
+      - 'docker-configurations/notebook-runner/learning_image_policy.json'
+      - 'docker-configurations/notebook-runner/requirements-learning.txt'
+      - 'docker-configurations/notebook-runner/requirements-learning.lock.txt'
+      - 'docker-configurations/notebook-runner/witness/**'
+      - '.github/workflows/learning-image-ghcr.yml'
+      # Manifeste du pli 1.1 : le chemin est celui de la branche #27544 ;
+      # sur main, il ne declenche rien tant que #27572 n'est pas fusionne.
+      - 'docs/curriculum/manifeste-dependances.json'
+  pull_request:
+    paths:
+      - 'docker-configurations/notebook-runner/Dockerfile'
+      - 'docker-configurations/notebook-runner/docker-compose.yml'
+      - 'docker-configurations/notebook-runner/learning_image_policy.json'
+      - 'docker-configurations/notebook-runner/requirements-learning.txt'
+      - 'docker-configurations/notebook-runner/requirements-learning.lock.txt'
+      - 'docker-configurations/notebook-runner/witness/**'
+      - '.github/workflows/learning-image-ghcr.yml'
+  workflow_dispatch:
+    inputs:
+      pousser:
+        description: 'Publier vers GHCR (sinon : construction + temoins seulement)'
+        type: boolean
+        default: false
+
+# Aucun droit d'ecriture au niveau du workflow : chaque job declare le sien.
+permissions:
+  contents: read
+
+concurrency:
+  group: learning-image-ghcr-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  IMAGE: ghcr.io/${{ github.repository_owner }}/coursia-learning
+  DOCKERFILE: docker-configurations/notebook-runner/Dockerfile
+  CONTEXTE: docker-configurations/notebook-runner
+
+jobs:
+  construire-temoins:
+    name: Construire et executer les 7 temoins
+    # Runner heberge : build lourd (compilation du REPL Lean a froid), docker
+    # et buildx disponibles, aucune contention avec les machines de la flotte.
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    # Lecture seule : ce job construit le Dockerfile d'une pull_request et y
+    # execute des carnets temoins. Il ne doit jamais pouvoir ecrire dans le
+    # registre -- le droit `packages: write` est porte par le seul job
+    # `publier` (revue du 20/11).
+    permissions:
+      contents: read
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+        with:
+          # Le jeton n'est pas conserve dans `.git/config` apres le checkout :
+          # le job n'en a pas besoin ensuite.
+          persist-credentials: false
+
+      - name: Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Construction (mesuree, sans publication)
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.CONTEXTE }}
+          build-contexts: |
+            lean_scripts=MyIA.AI.Notebooks/SymbolicAI/Lean/scripts
+          file: ${{ env.DOCKERFILE }}
+          target: learning
+          load: true
+          tags: ${{ env.IMAGE }}:smoke
+          # Aucun cache de registre ici : ce job n'a pas le droit d'ecrire
+          # dans ghcr.io. Le cache de couches est ecrit et relu par le job
+          # `publier`, qui, lui, est authentifie. Consequence mesuree : la
+          # construction de ce job est toujours a froid (~4 min, mesure du run
+          # 44795615124) -- c'est aussi la mesure a froid que demande
+          # l'acceptance de #27546.
+
+      - name: Temoin par famille de noyau (7 sur 7 exigees)
+        run: |
+          set -uo pipefail
+          echo "debut: $(date -u +%FT%TZ)"
+          rc=0
+          mkdir -p .tmp-out
+          for temoin in witness-python3 witness-global-313 witness-net-csharp \
+                        witness-net-fsharp witness-net-powershell witness-rust \
+                        witness-lean4; do
+            echo "::group::temoin $temoin"
+            debut=$(date +%s)
+            if docker run --rm \
+                 -v "$PWD/${{ env.CONTEXTE }}/witness:/witness:ro" \
+                 -v "$PWD/.tmp-out:/out" \
+                 -w /witness \
+                 "${{ env.IMAGE }}:smoke" \
+                 jupyter nbconvert --to notebook --execute \
+                   --ExecutePreprocessor.timeout=600 \
+                   --output "/out/${temoin}.executed.ipynb" \
+                   "${temoin}.ipynb"; then
+              duree=$(( $(date +%s) - debut ))
+              echo "temoin $temoin : OK en ${duree}s"
+            else
+              rc=1
+              echo "::error::temoin $temoin ECHOUE — le workflow echoue (acceptance #27546)"
+            fi
+            echo "::endgroup::"
+          done
+          rm -rf .tmp-out
+          exit $rc
+
+      - name: Relever temps et taille
+        if: always()
+        run: |
+          set -uo pipefail
+          {
+            echo "## Image d'apprentissage — releve (construction + temoins)"
+            echo
+            echo "- evenement : ${{ github.event_name }}"
+            if docker image inspect "${{ env.IMAGE }}:smoke" >/dev/null 2>&1; then
+              taille="$(docker image inspect '${{ env.IMAGE }}:smoke' --format '{{.Size}}')"
+              echo "- taille : ${taille} octets ($(( taille / 1024 / 1024 / 1024 )) Gio)"
+            fi
+            echo "- publication : job `publier` (absent sur evenement pull_request)"
+            echo
+            echo "_Le temps de construction par etape est dans le journal du job ;_"
+            echo "_le premier run apres un changement du Dockerfile est la mesure a froid._"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  publier:
+    name: Publier (etiquettes date, sha, latest)
+    # Depend des temoins : on ne publie une image que si les 7 carnets
+    # temoins sont passes.
+    needs: construire-temoins
+    # Jamais sur une pull_request : c'est ici que vit le droit
+    # `packages: write`. Le dispatch exige en plus l'option `pousser`, sinon
+    # un run manuel se limite a la construction et aux temoins.
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.pousser)
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Recuperer le depot
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Connexion GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Etiquettes
+        id: tags
+        run: |
+          set -euo pipefail
+          date_tag="$(date -u +%Y%m%d-%H%M)"
+          sha_tag="sha-${GITHUB_SHA::12}"
+          echo "date_tag=$date_tag" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=$sha_tag" >> "$GITHUB_OUTPUT"
+
+      - name: Publication (etiquettes date, sha, latest)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ env.CONTEXTE }}
+          build-contexts: |
+            lean_scripts=MyIA.AI.Notebooks/SymbolicAI/Lean/scripts
+          file: ${{ env.DOCKERFILE }}
+          target: learning
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:${{ steps.tags.outputs.date_tag }}
+            ${{ env.IMAGE }}:${{ steps.tags.outputs.sha_tag }}
+          cache-from: type=registry,ref=${{ env.IMAGE }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE }}:buildcache,mode=max
+
+      - name: Relever la publication
+        if: always()
+        run: |
+          set -uo pipefail
+          {
+            echo "## Image d'apprentissage — publication"
+            echo
+            echo "- evenement : ${{ github.event_name }}"
+            echo "- etiquette date : \`${{ steps.tags.outputs.date_tag }}\`"
+            echo "- etiquette sha : \`${{ steps.tags.outputs.sha_tag }}\`"
+            echo "- cache de couches : registre \`${{ env.IMAGE }}:buildcache\` (mode=max)"
+            echo
+            echo "_Le temps de construction par etape est dans le journal du job ;_"
+          } >> "$GITHUB_STEP_SUMMARY"
