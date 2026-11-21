@@ -53,7 +53,7 @@ LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
 # Main a sorti les textes de service dans tapis_service (#26926) : REPLI et VERIF
 # n'ont plus d'usage ici, seul le code d'ecart HORSFLOTTE reste a cabler.
 CODES = ("HORSFLOTTE", "LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE",
-         "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE")
+         "PAUSE", "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE")
 
 _CITE_RE = re.compile(r"#(\d+)\b")
 _PART_OF_RE = re.compile(r"\bpart\s+of\s*:?\s*#(\d+)\b", re.IGNORECASE)
@@ -192,13 +192,32 @@ def _plafond(e: Etat, evts: list[Evt], naissances: list[tuple[int, str | None]],
 def _relachee(evts: list[Evt], maintenant: datetime) -> str | None:
     """Le dernier marqueur du fil est un [RELEASED] de moins de RELACHE_J jours,
     quelle que soit la lane : son motif (barriere, siege) vaut encore."""
-    if not evts or evts[-1].marque != "RELEASED":
-        return None
+    if not evts or evts[-1].marque != "RELEASED" or evts[-1].attend:
+        return None  # un [RELEASED] qui porte une condition est une PAUSE
     ev = evts[-1]
     age = round((maintenant - ev.quand).total_seconds() / 86400, 1)
     if age >= RELACHE_J:
         return None
     return f"rendue par {ev.lane or '?'} il y a {age} j (< {RELACHE_J} j) : lire son motif"
+
+
+def _pause(evts: list[Evt], ctx: dict) -> str | None:
+    """Une pause explicite (#27726) : le dernier marqueur est un [RELEASED]
+    qui porte une condition (`attend: #N` ou `attend: Q<id>`).
+
+    L'ecart ne porte aucun delai : il tient jusqu'a la levee de la condition
+    -- l'issue ou la PR citee fermee -- ou jusqu'a un marqueur posterieur,
+    qui rend l'issue de nouveau servable. Une condition sans numero (une
+    question user) n'est pas mesurable ici : elle tient jusqu'a un marqueur
+    posterieur."""
+    if not evts or evts[-1].marque != "RELEASED" or not evts[-1].attend:
+        return None
+    ev = evts[-1]
+    cites = [int(x) for x in _CITE_RE.findall(ev.attend)]
+    if cites and not any(n in ctx["ouverts"] for n in cites):
+        return None  # condition levee : l'issue redevient servable
+    age = round((ctx["maintenant"] - ev.quand).total_seconds() / 86400, 1)
+    return f"pause de {ev.lane or '?'} il y a {age} j : attend {ev.attend}"
 
 
 def _reclamee(e: Etat, evts: list[Evt], lane: str, maintenant: datetime) -> None:
@@ -227,6 +246,10 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("LIVREE", lambda: _livree(it, e, evts)),
         ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
+        # La pause passe AVANT les ecarts de recul (COUVERTE, RELACHEE) : une
+        # attente decisionnelle datee ne se ressert pas en second temps
+        # (#27059), ni sous couvert d'une PR qui cite l'issue (#27726).
+        ("PAUSE", lambda: _pause(evts, ctx)),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
         ("RELACHEE", lambda: _relachee(evts, ctx["maintenant"])),
@@ -262,7 +285,11 @@ def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
             filles.setdefault(p, []).append((n, ouvertes[n].get("created_at")))
     ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
            "limite": maintenant - timedelta(days=jours), "filles": filles,
-           "prs_par_issue": _prs_par_issue(lecture.prs)}
+           "prs_par_issue": _prs_par_issue(lecture.prs),
+           # Les numeros encore ouverts (issues ET PRs) : la levee d'une pause
+           # se mesure sur l'etat de la cible citee (#27726).
+           "ouverts": set(ouvertes) | {pr["number"] for pr in lecture.prs
+                                       if pr.get("number")}}
     return ouvertes, parents, filles, ctx
 
 

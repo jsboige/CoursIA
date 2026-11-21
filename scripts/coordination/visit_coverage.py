@@ -60,7 +60,8 @@ ROLES = ("worker", "urne", "revue", "harnais", "mainteneur", "attente",
          "hors-flotte", "autre")
 ROLE_PAR_ECART = {
     "RECLAMEE": "worker", "LIVREE": "urne", "MERGEE": "urne", "COUVERTE": "revue",
-    "GEL": "mainteneur", "RELACHEE": "attente", "PLAFOND": "attente",
+    "GEL": "mainteneur", "PAUSE": "attente", "RELACHEE": "attente",
+    "PLAFOND": "attente",
     "ORIGAMI": "attente", "HORSFLOTTE": "hors-flotte",
 }
 LIMITE_LISTE = 20  # numeros cites par role ; les comptes, eux, restent entiers
