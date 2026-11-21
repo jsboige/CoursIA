@@ -71,13 +71,13 @@ l'entropie mesuree vient bien de l'interaction, pas de la numerique.
 
 | # | Hypothese | CONFIRMEE si | REFUTEE si | Sinon |
 |---|---|---|---|---|
-| H1 | `delta_H(|x_1>) = sqrt((n^2-1)/12)` | erreur relative max < 1e-12 sur n dans {2..64} | erreur > 1e-6 | NON_CONCLUANT |
-| H2 | `\|<x_1|U(phi)\|x_1>\| = \|sin(n.phi)/(n.sin phi)\|` | erreur absolue max < 1e-12 sur n dans {2..64}, grille phi dans (0, pi), et zeros a k.pi/n a 1e-12 pres | erreur > 1e-6 | NON_CONCLUANT |
-| H3 | eq. 80-81 : derivee premiere nulle, derivee seconde exacte | `\|dS/dt(0)\| < 1e-12` et accord relatif eq. 81 vs differences finies < 1e-6 (a dt = 1e-4), pour b dans {2..6} | accord > 1e-3 | NON_CONCLUANT |
+| H1 | `delta_H` de l'etat `x_1` egal a `sqrt((n^2-1)/12)` | erreur relative max < 1e-12 sur n dans {2..64} | erreur > 1e-6 | NON_CONCLUANT |
+| H2 | module du recouvrement `<x_1/U(phi)/x_1>` egal a `sin(n.phi)/(n.sin phi)` en module | erreur absolue max < 1e-12 sur n dans {2..64}, grille phi dans (0, pi), et zeros a k.pi/n a 1e-12 pres | erreur > 1e-6 | NON_CONCLUANT |
+| H3 | eq. 80-81 : derivee premiere nulle, derivee seconde exacte | valeur absolue de dS/dt(0) < 1e-12 et accord relatif eq. 81 vs differences finies < 1e-6 (a dt = 1e-4), pour b dans {2..6} | accord > 1e-3 | NON_CONCLUANT |
 | H4 | `log2 S_lin,1(T)` decroit lineairement en b, pente asymptotique -4 | pente OLS sur b dans {5..9} dans [-5.0, -3.0] | pente > -2.0 (decroissance clairement plus faible) | NON_CONCLUANT |
 | H5 | `log2 A(b)` croit lineairement, pente asymptotique +3 | pente OLS sur b dans {5..9} dans [2.0, 4.0] | pente < 1.0 | NON_CONCLUANT |
 | H6 | Genercite : memes exposants sous potentiels aleatoires | les 5 seeds chacun dans les bandes H4 et H5 | >= 3 seeds hors bande (meme cote) | NON_CONCLUANT |
-| H7 | Plafond `Phi <= 0.2516 + eps` en n=4 ; optimum au spectre {1/3,1/3,1/3,0} | `\|Phi(opt) - 0.2516\| < 1e-6` ET max sur recherche aleatoire (5 seeds) <= 0.26 | un etat aleatoire depasse 0.26 bit | NON_CONCLUANT |
+| H7 | Plafond `Phi` a l'optimum du papier en n=4 ; optimum au spectre {1/3,1/3,1/3,0} | ecart absolu `Phi(opt) - log(27/16)/log 8` < 1e-6 ET max sur recherche aleatoire (5 seeds) <= 0.26 | un etat aleatoire depasse 0.26 bit | NON_CONCLUANT |
 
 H1, H2, H3 sont des validations d'implementation d'identites mathematiques exactes du papier
 (refutation = bug de banc, pas refutation de theorie). H4, H5, H6 testent les lois d'echelle
@@ -102,3 +102,46 @@ reajustes apres mesure** ; tout ecart sera rapporte tel quel.
 
 Chemins partages non touches : README de serie et `docs/ict/dissociations-matrix.md`
 (occupes par #27470/#26601) — la ligne de dissociation du cas 27 viendra apres, en PR separee.
+
+## Amendement pre-mesure (2026-11-21, declare avant toute execution du banc)
+
+Erreur de transcription detectee a l'ecriture des tests, AVANT toute mesure : la
+ligne H7 fixait « `|Phi(opt) - 0.2516| < 1e-6` », mais `0.2516` est l'arrondi a 4
+decimales du papier — la valeur close-form est `Phi_opt = log(27/16)/log(8) =
+0.2516292...` (egale a l'information mutuelle en bits `2.H(2/3) - log2(3)`,
+verifiee a la main). Le seuil tel que scelle rendait H7 NON_CONCLUANTE par
+construction. **Correction** : la cible devient l'expression close-form du papier
+`log(27/16)/log 8`, tolerance inchangee (1e-6) ; le plafond de refutation reste
+0.26 bit. Aucun autre seuil ne bouge. L'amendement est pre-mesure : aucune donnee
+du banc n'avait ete produite au moment de la correction (commit dedie).
+
+**A2 — H3, plancher de bruit de la difference centree.** Le seuil scelle
+« valeur absolue de dS/dt(0) < 1e-12 » est sous le plancher de bruit numerique
+de l'instrument lui-meme : la difference centree `(S(+eps)-S(-eps))/2.eps` porte
+un bruit ~ bruit(S)/eps ~ 1e-15/1e-3 ~ 1e-12, mesure a 1.6e-12..4.4e-12 dans les
+tests sur n = 4..32. Une derivee premiere reellement non nulle serait d'ordre
+`S''.eps ~ 1e-3` — huit ordres de grandeur au-dessus. **Correction** : seuil H3
+derivee premiere porte a **1e-10** ; la derivee seconde se valide en trois points
+(voir A3) : residu `|S''(0)| < 1e-12` (l'algebre predit 0 exactement — tout residu
+est un bug d'instrument), egalite au double calcul independant `4.Var(V)`, et
+**ordre de convergence quadratique** de la difference finie `fd(2dt)/fd(dt)` dans
+[3.5, 4.5] quand `fd` est au-dessus du bruit (signature du regime quartique : la
+comparaison directe eq81-vs-difference-finie dans le cas nul ne mesure que la
+troncature O(dt^2), pas un accord).
+
+**A3 — H5/H6, operacionalisation de tau_ind (finding pre-mesure).** Pour la
+construction scellee (etat initial propre de position, potentiel V diagonal en
+base de position), l'equation 81 se reduit algebriquement a
+`S''(0) = 4.Var_{x1}(V) = 0` exactement — la revendication du papier
+« S_lin(t) ~ S''(0).t^2/2 » ne peut pas etre litterale pour un etat propre de
+position ; l'entropie produite pendant l'orbite vient des excursions entre
+etats propres (Fig. 13 du papier), d'ordre superieur en t. En consequence
+`tau_ind = [S''(0)]^{-1/2}` serait infini pour TOUT potentiel diagonal, et
+l'autonomie H5 indefinie. **Operacionalisation** : autonomie effective
+`A_eff = tau_dyn^{-1... }` non — `A_eff = tau_ind_eff / tau_dyn` avec
+`tau_ind_eff = sqrt(T^2 / (2 S_lin,1(T)))` (courbure effective sur une orbite
+complete, celle que la Fig. 14 mesure). L'arithmetique du papier est
+preservee : si `S_lin(T) ~ 2^{-4b}` (H4) et `delta_H ~ 2^{b}` (H1), alors
+`log2 A_eff` a pente `1 + 4/2 = +3` — la bande H5 [2.0, 4.0] et la borne de
+refutation +1.0 restent celles scellees. `S''(0)` via eq. 81 reste mesure et
+rapporte (valeur attendue : 0 machine — temoin de l'identite A3).
