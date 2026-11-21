@@ -4,13 +4,19 @@ import Mathlib.Tactic.FieldSimp
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Nat.Choose.Basic
 import Mathlib.Algebra.BigOperators.Group.Finset.Basic
+import Mathlib.AlgebraicGeometry.EllipticCurve.Weierstrass
 
 /-!
 # Certificat algébrique du point de quart
 
 Cette couche déduit l'identité préfixe d'une récurrence locale.
 L'identification `tᵢ = (2i+1)aᵢ` est intégrée au terme sommé. Elle ne
-formalise ni les courbes elliptiques, ni Cartier, ni Frobenius.
+formalise ni Cartier, ni Frobenius.
+
+La brique P3+ (candidat 3 du P2) y ajoute la base j=1728 : la courbe de
+Weierstrass d'invariant `j = 1728` via `WeierstrassCurve`, invariant j établi
+formellement via `c4^3 / Δ`.
+
 -/
 
 namespace CartierMiller
@@ -71,6 +77,31 @@ theorem quarter_point_identity (a : ℕ → F) (h : F) (n : ℕ)
     _ = 4 * (∑ i ∈ range n, a i) + (-2 * (n : F) * (2 * (n : F) + 5)) * a n := by
       rw [hp]; ring
     _ = _ := by rw [hq]
+
+/-!
+## La base j=1728 (brique P3+, candidat 3 du P2)
+
+La congruence (36) se lit sur la courbe de Weierstrass d'invariant
+`j = 1728`. Cette base construit cette courbe et établit formellement son
+invariant j ; le branchement de la suite `a_n` sur la trace de Frobenius de
+cette courbe (et la preuve de la congruence sur elle) est la suite de la
+brique.
+-/
+
+/-- La courbe de Weierstrass courte `y^2 = x^3 + x` (coefficient `a_4 = 1`). -/
+abbrev E1728 (K : Type*) [Field K] : Type :=
+  WeierstrassCurve K 0 0 0 (1 : K) 0
+
+/-- L'invariant j de la courbe `y^2 = x^3 + x` vaut 1728.
+Pour `y^2 = x^3 + A x + B`, `c4 = -48·A` et `Δ = -16·(4·A^3 + 27·B^2)` ;
+avec `A = 1`, `B = 0`, `j = c4^3 / Δ = (-48)^3 / (-64) = 1728`. -/
+theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K] :
+    (E1728 K).j = 1728 := by
+  unfold E1728
+  simp only [WeierstrassCurve.j, WeierstrassCurve.c4, WeierstrassCurve.disc,
+    WeierstrassCurve.b2, WeierstrassCurve.b4, WeierstrassCurve.b6,
+    WeierstrassCurve.b8]
+  norm_num
 
 instance : Fact (Nat.Prime 97) := ⟨by decide⟩
 
