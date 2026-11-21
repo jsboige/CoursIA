@@ -6,5 +6,6 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "BFS, Dijkstra, 0-1 BFS, flot maximal et audit de potentiels sont les objets pedagogiques. Python utilise la stdlib et Matplotlib pour les figures ; C# utilise la BCL et des SVG statiques, sans solveur externe."
   known_differences:
+    - "Edition de prose 2026-11-20 (lecture ancree dans la cellule Carte du plateau, #27603 / PR #27640) : markdown seul cote C#, code et sorties byte-identiques ; attestation rebaselinee dans la meme PR (0005-2026-11-20-myia-po-2027-CoursIA)."
     - "Python et C# emploient les memes salles, couts et exemples guides ; affichage Matplotlib en Python et SVG opaque en C#."
     - "Le C# ajoute des oracles Bellman-Ford, tests negatifs de potentiels et controles executes des exercices non resolus."
