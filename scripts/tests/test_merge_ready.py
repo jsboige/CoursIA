@@ -254,6 +254,13 @@ class ScriptedRunner:
         # `main_red_view_rc` non nul simule une lecture ILLISIBLE.
         main_red_views: dict[int, dict | str] | None = None,
         main_red_view_rc: int = 0,
+        # #27684 : liste COMPLETE des fichiers d'une PR, lue en REST pagine
+        # (``/pulls/{n}/files``) quand la vue ``gh pr view --json files`` est
+        # tronquee (plafond de 100). Cle = numero de PR, valeur = la liste
+        # des chemins, dans l'ordre ; ``pr_files_rc`` non nul simule une
+        # lecture ILLISIBLE (quota, 5xx).
+        pr_files: dict[int, list[str]] | None = None,
+        pr_files_rc: int = 0,
     ):
         self.rest_reviews = list(rest_reviews or [])
         self.user_types = user_types or {}
@@ -316,6 +323,9 @@ class ScriptedRunner:
         # la commande pour tester le chemin ``unreadable``.
         self.base_search = base_search or {}
         self.base_search_rc = base_search_rc
+        # #27684 : fichiers d'une PR en REST pagine.
+        self.pr_files = pr_files or {}
+        self.pr_files_rc = pr_files_rc
         self.calls: list[tuple[list[str], dict | None]] = []
         self.sleeps: list[float] = []
 
@@ -369,6 +379,19 @@ class ScriptedRunner:
             pr = int(c[3])
             view = self.views.get(pr, default_view(pr=pr))
             return mr.RunResult(0, json.dumps(view), "")
+        if c[:2] == ["gh", "api"] and "/pulls/" in c[2] and "/files" in c[2]:
+            # #27684 : lecture paginee de la liste des fichiers d'une PR.
+            # Le REST nomme le champ `filename` (la vue gh nomme `path`).
+            if self.pr_files_rc != 0:
+                return mr.RunResult(self.pr_files_rc, "", "gh failed")
+            pr = int(c[2].split("/pulls/")[1].split("/")[0])
+            per_page = int(c[2].split("per_page=")[1].split("&")[0])
+            page = int(c[2].rsplit("page=", 1)[1].split("&")[0])
+            chemins = self.pr_files.get(pr, [])
+            tranche = chemins[(page - 1) * per_page: page * per_page]
+            return mr.RunResult(
+                0, json.dumps([{"filename": ch} for ch in tranche]), ""
+            )
         if c[:3] == ["gh", "pr", "merge"]:
             if self.merge_script:
                 rc, err = self.merge_script.pop(0)
@@ -590,6 +613,9 @@ def _mergeable_reads(runner: ScriptedRunner) -> list[list[str]]:
         if cmd[:2] == ["gh", "api"] and "/pulls/" in cmd[2]
         and "--jq" not in cmd
         and not cmd[2].split("?", 1)[0].endswith("/reviews")
+        # #27684 : la lecture paginee des FICHIERS (`/pulls/{n}/files`) n'est
+        # pas une lecture de mergeabilite.
+        and not cmd[2].split("?", 1)[0].endswith("/files")
     ]
 
 
@@ -1544,15 +1570,34 @@ def test_jeton_irresolu_exit_2(tmp_path):
 # --- garde de troncature de la liste de fichiers (revue ai-01) ----------------
 
 
-def test_skip_files_truncated_fail_closed(tmp_path):
-    # `gh pr view --json files` plafonne la liste : une PR plus grosse que ce
-    # que la vue montre pourrait cacher un fichier hors perimetre.
+def test_files_truncated_par_la_vue_puis_completes_par_le_rest(tmp_path):
+    # #27684 : `gh pr view --json files` plafonne a 100 fichiers. La troncature
+    # rendait la PR non mergeable (skip `files-truncated:1/150`) alors que le
+    # REST pagine la liste complete : la PR n'est plus bloquee, et le controle
+    # de perimetre porte sur la liste COMPLETE.
     view = default_view(files=("src/a.py",))
     view["changedFiles"] = 150
-    runner = ScriptedRunner(views={123: view})
+    runner = ScriptedRunner(
+        views={123: view},
+        pr_files={123: [f"src/f{i}.py" for i in range(150)]},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert not any(
+        str(line.get("reason") or "").startswith("files-truncated")
+        for line in lines
+    )
+    assert any("pulls/123/files" in flat for flat in runner.flat())
+
+
+def test_liste_des_fichiers_illisible_reste_fail_closed(tmp_path):
+    # Le controle de perimetre reste fail-closed : une liste ILLISIBLE
+    # (quota, 5xx) bloque la PR, mais le motif dit qu'il s'agit d'une lecture.
+    view = default_view(files=("src/a.py",))
+    view["changedFiles"] = 150
+    runner = ScriptedRunner(views={123: view}, pr_files_rc=1)
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "files-truncated:1/150"
+    assert lines[-1]["reason"] == "files-unreadable"
     assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
 
 
@@ -1561,7 +1606,7 @@ def test_skip_changed_files_absent_fail_closed(tmp_path):
     del view["changedFiles"]
     runner = ScriptedRunner(views={123: view})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
-    assert lines[-1]["reason"].startswith("files-truncated:")
+    assert lines[-1]["reason"] == "files-unknown-count"
 
 
 def test_wt_vibe_prefix_lifted_with_13410_reopening():
