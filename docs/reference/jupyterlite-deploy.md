@@ -93,13 +93,13 @@ selectionne plus, donc le slot Causalite est pris par
 `Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb`, dont les dependances
 sont satisfaites.
 
-Le decompte de l'ecart, mesure par l'organe sur la population que le critere
-acceptait avant l'alignement : `dependance_locale` 18, `hors_serie` 23,
-`absent_distribution` 171 (carnets eligibles 758 -> 554). Les comptes
-20 / 23 / 138 que ce document portait venaient d'une **mesure a la main** :
-ils ne se reproduisent pas avec le lock et le cache commites. La regle du
-deploiement, rejouee sur la meme population, rend les memes comptes que
-l'organe -- il n'y a plus qu'un seul chiffre, produit par un seul code.
+Le decompte de l'ecart est produit par l'organe, sur la population que le
+critere acceptait avant l'alignement ; les valeurs chiffrees sont dans le
+rapport de l'organe, pas dans cette prose. Les comptes que ce document
+portait venaient d'une **mesure a la main** : ils ne se reproduisent pas
+avec le lock et le cache commites. La regle du deploiement, rejouee sur la
+meme population, rend les memes comptes que l'organe -- il n'y a plus qu'un
+seul chiffre, produit par un seul code.
 
 ## Les modules locaux voyagent avec le carnet
 
@@ -157,7 +157,7 @@ verifie le contenu publie et ecrit le manifeste. Options utiles :
 Un point qui a cout une construction : **`--lite-dir` est explicite** dans la
 ligne de commande. Sans lui, la construction prend le repertoire courant
 comme racine du projet et le site construit ne contient aucun carnet
-(`contents: 0 files`, pas de `files/` dans la sortie).
+(`contents:` vide, pas de `files/` dans la sortie).
 
 ## Deploiement
 
