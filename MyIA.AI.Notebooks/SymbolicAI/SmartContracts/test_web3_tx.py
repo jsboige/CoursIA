@@ -38,6 +38,7 @@ GUARDED_NOTEBOOKS = [
     "02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb",
     "02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb",
     "02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb",
+    "05-Alternative-Chains/SC-18-Vyper-Python.ipynb",
     "06-Real-World/SC-27-Dette-Irreversibilite-Python.ipynb",
 ]
 

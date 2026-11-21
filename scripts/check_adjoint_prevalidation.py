@@ -156,7 +156,10 @@ try:
     import check_unaddressed_nits
     import grain_tag
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/ ; les deux
+    # autres modules restent a la racine de scripts/.
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity  # type: ignore[no-redef]
     import check_unaddressed_nits  # type: ignore[no-redef]
     import grain_tag  # type: ignore[no-redef]

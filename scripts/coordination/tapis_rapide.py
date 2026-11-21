@@ -27,6 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import frozen_campaigns, gh_bulk, tapis_equilibre, tapis_origami, tapis_service
+from coordination import tapis_dernier_grain
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -81,6 +82,10 @@ class Etat:
     notes: list[str] = field(default_factory=list)
     mon_claim: bool = False
     occupes: list[tuple[str, str]] = field(default_factory=list)  # (lane, paths) bornes
+    #: L'etat de grain (raccord du classement, c3274) : `grain`,
+    #: `passage_seul`, `jamais_servie` ou `non_measurable`. `None` = inconnu
+    #: (la voie legere ne lit pas le fil : elle ne peut pas le dire).
+    etat_grain: str | None = None
 
 
 def parent_de(it: dict) -> int | None:
@@ -244,12 +249,12 @@ def _prs_par_issue(prs: list[dict]) -> dict[int, list[dict]]:
     return index
 
 
-def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
-          jours: int = 45) -> list[Etat]:
-    """Un `Etat` par issue ouverte, decide sur la seule lecture."""
+def _contexte(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
+              jours: int = 45):
+    """Issues ouvertes, parents, naissances et contexte de decision -- partages
+    par `etats` et la re-decision sur fil complet (#27179)."""
     ouvertes = {it["number"]: it for it in lecture.issues}
     parents = {n: parent_de(it) for n, it in ouvertes.items()}
-    nommes = {p for p in parents.values() if p is not None}
     # Naissances des filles ouvertes par conteneur : une visite du parent (#22500).
     filles: dict[int, list[tuple[int, str | None]]] = {}
     for n, p in parents.items():
@@ -258,7 +263,16 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
            "limite": maintenant - timedelta(days=jours), "filles": filles,
            "prs_par_issue": _prs_par_issue(lecture.prs)}
+    return ouvertes, parents, filles, ctx
+
+
+def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
+          jours: int = 45) -> list[Etat]:
+    """Un `Etat` par issue ouverte, decide sur la seule lecture."""
+    ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours)
+    nommes = {p for p in parents.values() if p is not None}
     resultat = []
+    depuis = maintenant - timedelta(days=tapis_equilibre.FENETRE_J)
     for n, it in ouvertes.items():
         ancetres, famille = _ancetres(n, parents)
         labels = list(it.get("labels") or [])
@@ -266,10 +280,18 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
                  famille, n in nommes or _conteneur_propre(it),
                  any(lab.strip().lower() == LABEL_CONSOLIDATION for lab in labels))
         evts = evenements(it.get("comments") or [])
-        e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
-            evts, lecture.citations.get(n, []), maintenant)
-        _decider(e, it, evts, ancetres, ctx)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
+        # Raccord du classement (c3274) : une prise en charge nominative est
+        # une visite, une citation Git n'en est pas une. L'etat de grain
+        # distingue l'absence ETABLIE de l'absence NON MESURABLE (fil
+        # partiel) : sans cette distinction, une issue dont le fil n'a pas
+        # ete lu en entier se lit comme une issue jamais servie.
+        e.etat_grain = tapis_dernier_grain.depuis_evenements(
+            evts, lecture.citations.get(n, []), numero=n,
+            fil_complet=(total <= lus), depuis=depuis).etat
+        e.derniere_visite, e.visites_total, e.visites = tapis_dernier_grain.compter_grains(
+            evts, depuis)
+        _decider(e, it, evts, ancetres, ctx)
         if e.ecart is None and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
         resultat.append(e)
@@ -356,7 +378,7 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None) -> int:
+         maintenant: datetime | None = None, lire_fils: object = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
     # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
@@ -396,8 +418,18 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
+    # #27179 : un grain servi au fil tronque se re-decide sur son fil complet
+    # au moment du service ; hors ligne ou cache, la fenetre reste la fenetre.
+    reverif = None
+    if not args.lecture and not lecture.depuis_cache:
+        from coordination import tapis_reverif
+        file, reverif = tapis_reverif.passer(
+            tous, file, args.grains, args.lane, maintenant, args.jours, graine,
+            lecture, lire_fils)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
+    if reverif is not None:
+        r["reverif_fils"] = reverif
     if fraicheur is not None:
         r["fraicheur"] = fraicheur  # le depassement --allow-stale se LIT dans le JSON
     source = f"dossier {args.lecture}" if args.lecture else "GitHub + origin/main local"
