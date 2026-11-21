@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1443** carnets Python, **554** eligibles, **889** refuses.
+Census : **1444** carnets Python, **555** eligibles, **889** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -124,7 +124,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | SemanticKernel | 18 | 2 | 16 | 0 | 11 | 8 | 3 | 16 |
 | SemanticWeb | 15 | 1 | 14 | 0 | 1 | 5 | 3 | 13 |
 | SmartContracts | 31 | 10 | 21 | 0 | 3 | 17 | 19 | 17 |
-| SocialChoice | 11 | 5 | 6 | 0 | 0 | 0 | 5 | 1 |
+| SocialChoice | 12 | 6 | 6 | 0 | 0 | 0 | 5 | 1 |
 | SymbolicLearning | 20 | 7 | 13 | 7 | 2 | 2 | 6 | 6 |
 | Texte | 48 | 3 | 45 | 18 | 22 | 27 | 5 | 35 |
 | Tweety | 19 | 1 | 18 | 0 | 0 | 2 | 18 | 6 |
@@ -160,7 +160,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 758 | 554 |
+| Carnets eligibles | 759 | 555 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -244,18 +244,18 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6-Modeles-Generatifs.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.8-Representations-Contrastives.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb` | DataScienceWithAgents | python3 | pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab8-ADK-Introduction.ipynb` | DataScienceWithAgents | python3 | - | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab10-File-Analyzer.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb` | DataScienceWithAgents | python3 | - | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb` | DataScienceWithAgents | python3 | - | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12e-Session-Persistence.ipynb` | DataScienceWithAgents | python3 | - | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0, xgboost==2.1.4 | - |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production/Lab17-Final-Project.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Agents-de-Donnees/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb` | DataScienceWithAgents | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb` | DataScienceWithAgents | python3 | pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day4-Foundations/Lab8-ADK-Introduction.ipynb` | DataScienceWithAgents | python3 | - | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab10-File-Analyzer.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb` | DataScienceWithAgents | python3 | - | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb` | DataScienceWithAgents | python3 | - | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day5-DS-Star/Lab12e-Session-Persistence.ipynb` | DataScienceWithAgents | python3 | - | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2, scikit-learn==1.8.0, xgboost==2.1.4 | - |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day7-Production/Lab17-Final-Project.ipynb` | DataScienceWithAgents | python3 | numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-02-Freq-Sev-Hierarchique.ipynb` | DecisionTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb` | DecisionTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb` | Dynamics | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
@@ -680,6 +680,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-21-Move-Sui-Python.ipynb` | SmartContracts | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-22-Solana-Anchor-Python.ipynb` | SmartContracts | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-23-Cross-Chain-Python.ipynb` | SmartContracts | python3 | - | - |
+| `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01c-Paradoxe-NonParticipation-NoShow-Python.ipynb` | SocialChoice | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python.ipynb` | SocialChoice | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb` | SocialChoice | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb` | SocialChoice | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
