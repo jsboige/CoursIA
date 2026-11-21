@@ -71,8 +71,8 @@ DEFAULT_PAGES = (
     # recommence doit rougir ici, pas attendre la prochaine mesure a la
     # main).
     "/MyIA.AI.Notebooks/CaseStudies/README.html",
-    "/MyIA.AI.Notebooks/Complexity/README.html",
-    "/MyIA.AI.Notebooks/Compression/README.html",
+    "/MyIA.AI.Notebooks/InformationCalcul/Complexity/README.html",
+    "/MyIA.AI.Notebooks/InformationCalcul/Compression/README.html",
     "/MyIA.AI.Notebooks/cross-series/README.html",
     "/MyIA.AI.Notebooks/GameTheory/README.html",
     "/MyIA.AI.Notebooks/GenAI/README.html",

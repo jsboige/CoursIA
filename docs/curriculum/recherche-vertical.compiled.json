@@ -438,7 +438,7 @@
       "prerequisites": [],
       "notebooks": [
         {
-          "path": "Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb",
+          "path": "InformationCalcul/Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb",
           "title": "Complexity-02b — Le seuil du 3-SAT, mesuré contre la densité",
           "duration_minutes": 30,
           "kernel": "Python 3 (venv projet)",
@@ -451,7 +451,7 @@
           }
         },
         {
-          "path": "Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb",
+          "path": "InformationCalcul/Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb",
           "title": "Complexity-02c — La transition de phase sans mur : les systèmes linéaires aléatoires sur GF(2)",
           "duration_minutes": 45,
           "kernel": "Python 3.13 (coursia-py313)",
@@ -464,7 +464,7 @@
           }
         },
         {
-          "path": "Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb",
+          "path": "InformationCalcul/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb",
           "title": "Complexity-04 — Décider sans connaître la suite",
           "duration_minutes": 30,
           "kernel": "Python 3",
