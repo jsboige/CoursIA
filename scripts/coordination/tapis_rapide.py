@@ -33,6 +33,7 @@ from coordination.tapis_marqueurs import (
     claims_ouverts, evenements, lane_de_pr)
 from coordination.tapis_hors_flotte import ecart_hors_flotte
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
+from coordination.tapis_visites import evenements_info
 
 # Part au plus des conteneurs (EPIC, parapluie) dans la liste : la lane recoit des grains,
 # pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains,
@@ -174,7 +175,15 @@ def _plafond(e: Etat, evts: list[Evt], naissances: list[tuple[int, str | None]],
              lane: str, maintenant: datetime) -> str | None:
     """Plafond hebdo des conteneurs hors consolidation (#22500 point 3) : le
     tapis ne sert pas un EPIC que le gate L898 refuserait. Une visite = un
-    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte."""
+    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte.
+
+    **Effet declare** (#27590, revue du 21/11) : l'ensemble lu ici est
+    `VISITE` -- une **lecture** d'une autre lane (`VISITE-INFO`) y compte donc
+    aussi. Un conteneur recemment regarde par une autre lane est un
+    conteneur chaud : l'ecarter pendant la fenetre du plafond est le meme
+    geste que l'ecarter pour un claim vivant. Ce comportement est couvert par
+    un test (`test_un_info_visite_ecarte_le_conteneur_chaud`).
+    """
     if not e.conteneur or e.consolidation:
         return None
     limite = maintenant - timedelta(days=PLAFOND_EPIC_J)
@@ -279,7 +288,11 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
         e = Etat(n, it.get("title") or "", labels, it.get("created_at") or "", parents[n],
                  famille, n in nommes or _conteneur_propre(it),
                  any(lab.strip().lower() == LABEL_CONSOLIDATION for lab in labels))
-        evts = evenements(it.get("comments") or [])
+        comments = it.get("comments") or []
+        # Les formes `[INFO] Visite` comptent comme visite : l'union des deux
+        # familles d'evenements, triee par date.
+        evts = sorted(evenements(comments) + evenements_info(comments),
+                      key=lambda e: e.quand)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
         # Raccord du classement (c3274) : une prise en charge nominative est
         # une visite, une citation Git n'en est pas une. L'etat de grain
