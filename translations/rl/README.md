@@ -5,9 +5,9 @@
 | Métrique | Valeur |
 |----------|--------|
 | Série source | `MyIA.AI.Notebooks/RL/` (reinforcement learning — DQN, PPO, SAC, GRPO, multi-agent, Python) |
-| Notebooks source | **17** (RL-01 intro cartpole → RL-13 curiosity/exploration, + sous-séries RL-06b/6c/6d/6e) |
-| Cellules extraites | **486** (275 markdown + 211 code, nbformat canonique, 95 % avec id stable) |
-| Taille CSV | ~450 KB (486 enregistrements × 21 colonnes) |
+| Notebooks source | **17 au seed 2026-07-10** (RL-01 intro cartpole → RL-13 curiosity/exploration, + sous-séries RL-06b/6c/6d/6e — le compte courant vit dans le CSV) |
+| Cellules extraites | **486 au seed 2026-07-10** (275 markdown + 211 code, nbformat canonique, 95 % avec id stable — compte courant mesurable dans `rl.csv`) |
+| Taille CSV | ~450 KB au seed (486 enregistrements × 21 colonnes à l'époque) — taille et schéma actuels mesurables directement dans [`rl.csv`](rl.csv) |
 | Langue pivot | **fr** (PIVOT_LANG = "fr", cf #1650 Phase 0.5 / #4980 Lean i18n) |
 | Langues cibles | **en, es, ar, fa, zh, ru, pt** (7 langues vivantes côté Argumentum) |
 | Date seed | 2026-07-10 |
