@@ -223,7 +223,7 @@ Designated value: Δ(t) = 2t⁷ − t⁶ − t⁵ + t³. Classical check (coroll
 below): |Δ(−1)| = 3, the knot determinant reported by KnotInfo.
 -/
 
-/-- Control: the arc partition of the 11n102 PD code — 11 arcs covering the
+/-- Check: the arc partition of the 11n102 PD code — 11 arcs covering the
 22 edges (non-degeneracy condition of the Alexander minor: the guard
 `arcs'.length = rest.length + 1` of `alexanderPolynomialAux` goes through). -/
 theorem knot_11n102_arcPartition :

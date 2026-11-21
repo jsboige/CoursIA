@@ -2569,7 +2569,7 @@ What this section delivers:
    label of a well-formed diagram is at most `numEdges`;
 2. `no_verifyR1Fwd_renamed_pair` -- **no** renaming makes the
    witness/target pair acceptable to the connected verifier;
-3. `renamed_target_wf_identity` -- **non-vacuity control**: the renaming is
+3. `renamed_target_wf_identity` -- **non-vacuity check**: the renaming is
    not to blame (the renamed target is well formed for `π = id`); the
    obstruction is the **freshness**, not well-formedness.
 -/
@@ -2655,7 +2655,7 @@ theorem no_verifyR1Fwd_renamed_pair (π : Nat → Nat) :
     have hle : π 1 ≤ 2 := wf_edge_le hA hmem
     omega
 
-/-- **Non-vacuity control**: the renaming is not to blame. For `π = id`, the
+/-- **Non-vacuity check**: the renaming is not to blame. For `π = id`, the
     renamed target is **well formed** (`wf = true`) and its edge label `1`
     is indeed bounded by `numEdges = 2` -- it is therefore the freshness
     clause, and not well-formedness, that refuses the renamed pair. -/

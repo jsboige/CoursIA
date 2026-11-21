@@ -76,7 +76,7 @@ remains to be exhibited. This is the first lock of the tranche, before any
 reindexation argument.
 -/
 
-/-! ## 3. Control: the R3 witness's arc partition is preserved
+/-! ## 3. Check: the R3 witness's arc partition is preserved
 
 The witness is that of `reidemeister3Connected_satisfiable` (literals copied
 verbatim): both diagrams are well formed (`decide` on `wf` in the lake), and
@@ -89,7 +89,7 @@ positions) that justify it. The general form (on diagrams where the triangle's
 pairs differ) is established in section 5.
 -/
 
-/-- Control of tranche 3 (step 1): on the witness pair of the connected R3 move,
+/-- Check of tranche 3 (step 1): on the witness pair of the connected R3 move,
     the surgery preserves `arcPartition` — the triangle's `(e2,e4)` pairs
     coincide unordered, and the fold absorbs their orientation and position
     differences (`foldl_mergePair_swap`, `foldl_mergePair_permute_adjacent`).
@@ -108,7 +108,7 @@ theorem reidemeister3Connected_arcPartition_witness :
 /-! ## 4. Negative control: the designated minor collapses on the Y witness
 
 Section 3 establishes the **first premise** of the reindexation argument (the
-arc partition is preserved). The expected **conclusion** control — the signed
+arc partition is preserved). The expected **conclusion** check — the signed
 polynomial of the witness is the same on both sides — is **refuted on this
 witness**, and that is framing information, not a proof failure:
 
@@ -147,7 +147,7 @@ theorem det_four_aux (A : Matrix (Fin 4) (Fin 4) (Polynomial ℤ)) :
     Fin.succAbove]
   ring
 
-/-- Tranche 3 control: on the X side, the designated minor of the signed
+/-- Tranche 3 check: on the X side, the designated minor of the signed
     polynomial (all-positive chirality) equals `t³ - t²` — it is not
     degenerate. This is the positive counterpart of the negative control
     below: it is the surgery that collapses the minor, not a prior
@@ -618,7 +618,7 @@ hypothesis. Scope — what the refutation does not say:
   deleted (row, column) pair adaptive;
 * the matrix-level lift sketched at the end of section 5 does not repair the
   refutation: the counter-example already shares the **same** arc partition
-  on both sides (section 3 control), so the surgery plays on no columns
+  on both sides (section 3 check), so the surgery plays on no columns
   there — it is the rewritten **row** that aligns with the kink's.
 -/
 
