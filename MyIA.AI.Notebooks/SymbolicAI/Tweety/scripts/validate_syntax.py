@@ -19,7 +19,7 @@ TWEETY_NOTEBOOKS = [
     "Tweety-05-Abstract-Argumentation-Python.ipynb",
     "Tweety-06-Structured-Argumentation-Python.ipynb",
     "Tweety-7-Advanced-Argumentation.ipynb",
-    "Tweety-07a-Extended-Frameworks-Python.ipynb",
+    "Tweety-07-Extended-Frameworks-Python.ipynb",
     "Tweety-07b-Ranking-Probabilistic-Python.ipynb",
 ]
 
