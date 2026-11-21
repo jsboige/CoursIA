@@ -210,6 +210,13 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 
 La sous-série **[Riemann 200](Riemann200/README.md)** (bicentenaire de Bernhard Riemann, EPIC [#20403](https://github.com/jsboige/CoursIA/issues/20403)) s'ouvre par cette marche, sans escalier dédié pour l'instant : chaque texte fondateur y devient une **distillation calculée** — l'énoncé mesuré dans une sortie, démontrable en Lean quand Mathlib le permet, exerçable. Le versant preuves vit dans le lake compagnon [`riemann200_lean/`](Riemann200/riemann200_lean/) — le pôle en s = 1 et la divergence des inverses des premiers dans [`Memoire1859.lean`](Riemann200/riemann200_lean/Riemann200/Memoire1859.lean), la forme ε du liminf dans [`LiminfForme.lean`](Riemann200/riemann200_lean/Riemann200/LiminfForme.lean) — même maison que [`serre100_lean/`](Serre100/serre100_lean/). Le carnet capstone citant la sous-série depuis la racine reste à poser.
 
+### Partie 8 : Algèbre linéaire d'Axler (sous-série LINEAR)
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
+| LINEAR-01 | [LINEAR/LINEAR-01-Espaces-Vectoriels-Lean](LINEAR/LINEAR-01-Espaces-Vectoriels-Lean.ipynb) | La marche 1 du lac [`linear_lean`](LINEAR/linear_lean/README.md) exécutée nativement (kernel `lean4-wsl-linear`) : espaces vectoriels, sommes, sommes directes (Axler 1.31-1.45), dimension finie, bases, critères de bonne taille et Grassmann (2.19-2.43) — théorèmes du texte prouvés et délégués (empreinte `#print axioms` exécutée), exercices 1B.1-1B.2 résolus et quatre sorry-cibles documentées (baseline CI du lac, mandat 2026-11-03) - Fille 3.2 de l'Epic Origami [#24838](https://github.com/jsboige/CoursIA/issues/24838), sous-série gradation #17545 | 40 min |
+| LINEAR-02 | [LINEAR/LINEAR-02-Applications-Lineaires-Lean](LINEAR/LINEAR-02-Applications-Lineaires-Lean.ipynb) | La marche 2 en carnets natifs : espace des applications linéaires (Axler 3.5-3.10), composition, noyau/image (3.11-3.19), théorème du rang (3.21) et ses deux corollaires de dimension (3.22/3.24), inversibilité et isomorphismes (3.63-3.70) — 0 sorry dans la marche, `#check`/`#print axioms` exécutés in-kernel - Fille 3.2 de l'Epic [#24838](https://github.com/jsboige/CoursIA/issues/24838) | 35 min |
+
 > Numérotation : le notebook Confiance-Preuves-Native — initialement prévu en 35 — est livré en 24b (accrétion du palier 24 Calibration, décision #17545) par la PR #17530 (issue #17520) ; l'annexe A de Tegmark arrive donc en 36.
 
 **Durée totale** : le décompte par notebook vit dans le catalogue généré (`CATALOG-STATUS`) — il dérive à chaque ajout.
@@ -342,6 +349,8 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 38 | [Lean-38-Capstone-Geometry-Lean-Python](Lean-38-Capstone-Geometry-Lean-Python.ipynb) | 8 | 3 | **NOUVEAU** (kernel `python3`) |
 | 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | 4 | 3 | **NOUVEAU** (kernel `python3-lean`) |
 | 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | 9 | 3 | **NOUVEAU** (kernels `python3`, `rust`) |
+| LINEAR-01 | [LINEAR/LINEAR-01-Espaces-Vectoriels-Lean](LINEAR/LINEAR-01-Espaces-Vectoriels-Lean.ipynb) | 10 | 0 | **NOUVEAU** (kernel `lean4-wsl-linear`, lake `linear_lean`, Fille 3.2 #24838) |
+| LINEAR-02 | [LINEAR/LINEAR-02-Applications-Lineaires-Lean](LINEAR/LINEAR-02-Applications-Lineaires-Lean.ipynb) | 9 | 0 | **NOUVEAU** (kernel `lean4-wsl-linear`, lake `linear_lean`) |
 | 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | 3 | 0 | **NOUVEAU** (kernel `python3`) |
 
 Conventions de la série — l'état réel de chaque carnet se lit dans la table
@@ -603,6 +612,11 @@ Lean/
 │   ├── GROTH-06-FormalGroups-Lean.ipynb # Lean4 (WSL) kernel - groupes formels multivariés natifs (lake formal_groups_lean, modules Basic/Hom/Additive/Iterates)
 │   ├── formal_groups_lean/         # Groupes formels multivariés (port de anthropics/fermats-last-theorem, Apache-2.0) - 0 sorry, Lake build ; companion GROTH-06
 │   ├── grothendieck_lean/         # Grothendieck tribute workspace (0 sorry, Lake build)
+│   └── README.md
+├── LINEAR/                        # Sous-série l'algèbre linéaire d'Axler en marches Lean (Fille 3.2 de l'Epic Origami #24838 ; marches .lean = Fille 3.1, capstone Lean-11c à la racine) — lake [linear_lean](LINEAR/linear_lean/README.md) : [README](LINEAR/README.md)
+│   ├── LINEAR-01-Espaces-Vectoriels-Lean.ipynb # Lean4 (WSL) kernel - espaces vectoriels, dimension finie, Grassmann (Axler ch. 1-2, 4 sorry-cibles documentées)
+│   ├── LINEAR-02-Applications-Lineaires-Lean.ipynb # Lean4 (WSL) kernel - applications linéaires, théorème du rang, isomorphismes (Axler ch. 3)
+│   ├── linear_lean/               # Les marches d'Axler (chapitres 1-3) - sorry-baseline 4 (exercices), théorèmes du texte 0 sorry, Lake build
 │   └── README.md
 ├── Langlands/                     # Sous-série formes modulaires et ponts (EPIC #17969) : [README](Langlands/README.md)
 │   ├── 01-formes-modulaires-sl2z-hecke.ipynb
