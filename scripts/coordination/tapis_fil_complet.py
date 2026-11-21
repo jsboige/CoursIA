@@ -2,27 +2,21 @@
 """Le FIL COMPLET des candidats retenus : lever le doute de la fenetre.
 
 La lecture groupee ne voit que les 12 derniers commentaires : le marqueur qui
-ecarte un grain peut etre plus ancien que la fenetre (constat de #27179, qui
-a produit l'organe `tapis_reverif`). Le fil complet est donc relu -- par
-l'organe REST `gh_snapshot` -- pour les **seuls** candidats que la fenetre
-RETIENT, et la decision est rejouee (`tapis_rapide._decider`, comme
-`tapis_reverif`).
+ecarte un grain peut etre plus ancien que la fenetre (#27179, qui a produit
+l'organe `tapis_reverif`). Le fil complet est donc relu -- par l'organe REST
+`gh_snapshot` -- pour les **seuls** candidats que la fenetre RETIENT.
 
-C'est la separation demandee : la rotation universelle est legere (metadonnees
-seules), la lecture complete n'intervient qu'**avant l'action**, sur le grain
-que la lane engage a prendre.
+La lecture complete n'intervient qu'**avant l'action**, sur le grain que la
+lane engage a prendre -- et c'est elle qui **releve** le fil lu (date,
+version, verdict : `coordination.tapis_releve`).
 
-Mesure du 2026-11-18 (pool de 440 issues) : relire le fil complet de TOUS les
-candidats coute 1 appel REST par candidat (48 appels, 59 s) ; relire d'abord
-la fenetre en un lot GraphQL (1 appel pour 50 candidats) et ne relire le fil
-complet que des candidats **retenus** coute 1 appel REST par candidat retenu.
+Mesure du 2026-11-18 (pool de 440 issues) : la fenetre en un lot GraphQL (1
+appel pour 50), puis le fil des seuls **retenus** : 1 appel REST par candidat.
 
 **fail-CLOSED.** Un candidat dont la decision n'a pas pu etre prise n'est PAS
 servi : le fil illisible (FIL_ILLISIBLE), le mur de lectures atteint
-(MUR_EPUISE) et l'echeance depassee (ECHEANCE) REFUSENT la prise en charge,
-chacun avec son code et son motif. Le temps d'action engage un grain dont le
-fil a ete lu et la decision prise -- le tapis propose, il ne fait pas
-autorite, et un grain non qualifie ne s'engage pas.
+(MUR_EPUISE) et l'echeance depassee (ECHEANCE) REFUSENT la prise en charge.
+Un refus n'ecrit **aucun releve** : un fil non lu reste inconnu.
 """
 from __future__ import annotations
 
@@ -33,7 +27,8 @@ from pathlib import Path
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, tapis_diff, tapis_fenetre, tapis_rapide, tapis_reverif
+from coordination import (gh_bulk, tapis_diff, tapis_fenetre, tapis_rapide,
+                         tapis_releve, tapis_reverif)
 
 #: Borne des lectures REST du fil complet (les candidats retenus).
 APPELS_MAX = 16
@@ -45,7 +40,8 @@ CODES_REFUS = ("FIL_ILLISIBLE", "MUR_EPUISE", "ECHEANCE")
 
 def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: int,
               echeance: float | None = None, horloge=time.monotonic,
-              appels_max: int = APPELS_MAX, preuve=None) -> tuple[list, list, list[int], int]:
+              appels_max: int = APPELS_MAX, preuve=None,
+              prs: list | None = None) -> tuple[list, list, list[int], int]:
     """Re-decide sur le fil complet les candidats RETENUS par la fenetre.
 
     Rend `(confirmes, rejetes, echecs, appels)`. Un candidat dont la fenetre
@@ -60,6 +56,8 @@ def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: in
     ouvertes, parents, _, ctx = tapis_rapide._contexte(lecture, lane,
                                                        maintenant, jours)
     confirmes, rejetes, echecs, appels = [], [], [], 0
+    par_pr = {int(pr.get("number") or 0): pr for pr in (prs or [])}
+
     for e in retenus:
         it = ouvertes.get(e.numero) or {}
         # La fenetre EST-elle le fil complet ? C'est l'organe canonique qui
@@ -67,6 +65,7 @@ def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: in
         # vaut pas 0 (19/11, DM du coordinateur) -- il vaut « la fenetre
         # n'est pas prouvee complete », donc le fil complet se lit.
         if tapis_fenetre.suffit(it):
+            tapis_releve.noter(e.numero, it.get("comments") or [], None, lane)
             confirmes.append(e)
             continue
         if appels >= appels_max:
@@ -93,6 +92,7 @@ def confirmer(retenus: list, lecture, lane: str, maintenant: datetime, jours: in
                                          tapis_rapide)
         if preuve is not None:
             code = tapis_diff.decider(e, fil, code, preuve)
+        tapis_releve.noter(e.numero, fil, code, lane, par_pr)
         if code is None:
             confirmes.append(e)
         else:

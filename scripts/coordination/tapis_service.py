@@ -35,6 +35,8 @@ def grain_servi(rang: int, e, lane: str, priorite: list[str],
     g = {"rang": rang, "numero": e.numero, "titre": e.titre, "famille": e.famille,
          "parent": e.parent, "conteneur": e.conteneur, "notes": e.notes,
          "consolidation": e.consolidation, "derniere_visite": e.derniere_visite,
+         "visites": e.visites, "visites_total": e.visites_total,
+         "cle_service": e.cle_service, "cle_origine": e.cle_origine,
          "priorite": priorite,
          "avant_d_editer": (VERIF_CONTENEUR if e.conteneur else VERIF).format(
              n=e.numero, lane=lane)}

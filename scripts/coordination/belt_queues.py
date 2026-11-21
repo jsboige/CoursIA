@@ -31,6 +31,13 @@ pour que le ``board`` suivant mesure les assiettes.
         --lanes myia-po-2023:CoursIA,myia-po-2027:CoursIA-2
     python scripts/coordination/belt_queues.py record --assignment files.json --belt-json belt.json
 
+**L'equite du dispatch est MESUREE** (19/11, ``equite_dispatch``) : la
+repartition est un jugement, mais l'organe nomme les grains **deja servis**
+qu'une file place devant des issues **jamais servies** -- le cas reel #27338
+(huit PRs dans la journee sur une issue creee le matin, pendant que des issues
+anciennes n'attendaient aucune PR). Deux exceptions, nommees : le mandat
+explicite d'une lane et le grain deja dans sa file (correction en cours).
+
 **Deux sources de tirage sont lues** (mesure du 2026-11-14) : le tapis lourd
 (``pick_idle_grain.py --belt --json``, cle ``picks``) et le tapis rapide
 (``tapis_rapide.py --json``, cle ``grains``). Le second ecarte les grains deja
@@ -59,6 +66,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
+import belt_equite as be  # noqa: E402
 import check_lane_claim as clc  # noqa: E402
 import grain_tag as gt  # noqa: E402
 import recette_due as rd  # noqa: E402
@@ -111,6 +119,10 @@ def normaliser_grains_tapis(belt: dict) -> list[dict]:
             "created_at": "",
             "tapis_famille": f"#{famille}" if famille else None,
             "derniere_visite": g.get("derniere_visite"),
+            "visites": g.get("visites"),
+            "visites_total": g.get("visites_total"),
+            "cle_service": g.get("cle_service"),
+            "cle_origine": g.get("cle_origine"),
             "consolidation": bool(g.get("consolidation")),
             "conteneur": bool(g.get("conteneur")),
             "klass": g.get("klass"),
@@ -163,14 +175,22 @@ def needs_of(pick: dict) -> list[str]:
 
 
 def visit_age_days(pick: dict, now: datetime) -> float | None:
-    """Jours depuis la derniere visite au sens du tapis : merge citant l'issue ou claim attribue.
+    """Jours depuis la derniere visite au sens du tapis : la CLE DE SERVICE.
+
+    La cle de service (`coordination.tapis_cle`) est la date de la derniere PR
+    qui **couvre** le grain ; a defaut, la creation du grain. C'est la meme
+    cle que le tirage et la reprise (mandat du 19/11) : le dispatch mesure le
+    meme temps que celui qui classe.
 
     Le champ ``idle`` du picker mesure l'activite quelconque (``updated_at``) : un commentaire
     de bot le remet a zero sans que personne ait servi l'issue. Ce n'est pas la cle du tapis.
     """
-    stamps = [s for s in (pick.get("last_delivery_stamp"), pick.get("last_claim_stamp"),
-                          pick.get("derniere_visite")) if s]
-    ref = max(stamps) if stamps else pick.get("created_at")
+    if pick.get("cle_service"):
+        ref = pick["cle_service"]
+    else:
+        stamps = [s for s in (pick.get("last_delivery_stamp"), pick.get("last_claim_stamp"),
+                              pick.get("derniere_visite")) if s]
+        ref = max(stamps) if stamps else pick.get("created_at")
     if not ref:
         return None
     return round((now - datetime.fromisoformat(ref.replace("Z", "+00:00"))).total_seconds() / 86400.0, 1)
@@ -526,6 +546,7 @@ def board(belt: dict, lanes: list[str], previous: dict | None, now: datetime,
     return {"drawn": len(grains), "families": group_picks(picks, now), "lanes": out_lanes,
             "previous_at": previous["assigned_at"] if previous else None,
             "adherence": adherence,
+            "equite_pool": be.etat_du_pool(grains),
             "origami_parked": parked,
             "origami_parking": {"measured": bool(origami.get("measured")),
                                 "reason": origami.get("reason"),
@@ -572,6 +593,19 @@ def render_board(b: dict) -> str:
                 f"(= {pct_txt} sur {adh.get('total')} PR(s))")
         elif adh and not adh.get("measured"):
             lines.append("      adherence : NON MESUREE")
+    # L'equite du pool : les issues jamais servies d'abord (19/11).
+    equite = b.get("equite_pool") or {}
+    if equite.get("mesure") == "visites":
+        jamais, servies = equite.get("jamais") or [], equite.get("servies") or []
+        lines += ["", "# Equite du pool -- les jamais servies d'abord"]
+        lines.append(f"  {len(jamais)} issue(s) jamais servie(s) sur {equite.get('total', 0)}")
+        if servies:
+            tete = ", ".join(f"#{i['number']} ({i['visites']}x)"
+                              for i in servies[:8])
+            lines.append(f"  deja servies : {tete}"
+                         + (" ..." if len(servies) > 8 else ""))
+    elif equite:
+        lines += ["", "# Equite du pool -- NON MESUREE"]
     # #24373 : ce qui attend le geste du coordinateur (depliage d'un pli).
     parked = b.get("origami_parked") or []
     origami = b.get("origami_parking") or {}
@@ -593,7 +627,24 @@ def render_board(b: dict) -> str:
     return "\n".join(lines)
 
 
-def record(assignment: dict, belt: dict | None, now: datetime) -> dict:
+def etat_de_visite(p: dict) -> str:
+    """L'etat de visite d'un grain : `servie`, `jamais`, `inconnu`.
+
+    Delegué a `belt_equite` (extraction du 19/11).
+    """
+    return be.etat_de_visite(p)
+
+
+def equite_dispatch(assignment: dict, belt: dict | None,
+                    previous: dict | None = None) -> dict:
+    """L'equite du DISPATCH : une racine deja servie ne passe pas devant les
+    premieres visites. Voir `belt_equite` (extraction du 19/11).
+    """
+    return be.equite_dispatch(assignment, grains_du_belt(belt), previous)
+
+
+def record(assignment: dict, belt: dict | None, now: datetime,
+           previous: dict | None = None) -> dict:
     """Valide et horodate la repartition decidee par le coordinateur.
 
     **Un grain ``delivered`` (label ``candidate-delivered``) n'entre pas dans la
@@ -625,7 +676,8 @@ def record(assignment: dict, belt: dict | None, now: datetime) -> dict:
                     f"({', '.join(sorted(LANES_URNE_DELIVERED))})")
             queue.append({"number": n, "title": p.get("title"), "family": family_of(p) if p else None})
         lanes[lane] = {"arc": info.get("arc"), "queue": queue}
-    return {"assigned_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "lanes": lanes}
+    return {"assigned_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "lanes": lanes,
+            "equite": equite_dispatch(assignment, belt, previous)}
 
 
 def _load_previous(arg: str | None) -> dict | None:
@@ -656,12 +708,15 @@ def main(argv: list[str] | None = None) -> int:
     r = sub.add_parser("record")
     r.add_argument("--assignment", required=True)
     r.add_argument("--belt-json")
+    r.add_argument("--previous", help="repartition precedente ('latest') : la file "
+                                         "en cours n'est pas penalisee")
     args = ap.parse_args(argv)
     now = datetime.now(timezone.utc)
 
     if args.cmd == "record":
         try:
-            result = record(_read_json(args.assignment), _read_json(args.belt_json), now)
+            result = record(_read_json(args.assignment), _read_json(args.belt_json),
+                            now, _load_previous(args.previous))
         except (ValueError, KeyError) as exc:
             print(f"REFUS: {exc}")
             return 1

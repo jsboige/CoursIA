@@ -16,6 +16,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk
+from coordination import tapis_equilibre
 from coordination import tapis_rapide as tr
 from coordination import tapis_hors_flotte as thf
 
@@ -123,7 +124,12 @@ def test_mergee_epargne_la_consolidation_et_les_simples_citations():
     lec = lecture([issue(1, labels=["consolidation"]), issue(2), issue(3)], citations=citations)
     assert etat(lec, 1).ecart is None  # une tranche de consolidation ne la livre pas
     e2 = etat(lec, 2)
-    assert e2.ecart is None and e2.derniere_visite == _h(5)  # citee : une visite, pas une livraison
+    # Raccord du classement (c3274) : une citation Git est un PASSAGE, pas
+    # une visite -- elle ne rajeunit plus le dernier grain. L'ecart reste
+    # nul : une citation n'a toujours ete ni une livraison ni une exclusion.
+    assert e2.ecart is None
+    assert e2.derniere_visite is None
+    assert e2.etat_grain == "passage_seul"
     assert etat(lec, 3).motif == "livraison probable, commit def5678"
 
 
@@ -312,7 +318,11 @@ def test_parent_famille_conteneur_et_derniere_visite():
     assert (e13.parent, e13.famille) == (12, 10)
     assert etat(lec, 10).conteneur and etat(lec, 14).conteneur
     assert not etat(lec, 13).conteneur
-    assert e13.derniere_visite == _h(10)  # le commit est plus recent que le marqueur
+    # Raccord du classement (c3274) : la derniere visite est le dernier
+    # GRAIN -- ici le marqueur de livraison. Le commit, plus recent, n'est
+    # qu'un passage : il ne rajeunit pas le grain.
+    assert e13.derniere_visite == _h(30)
+    assert e13.etat_grain == "grain"
     assert etat(lec, 14).derniere_visite is None
 
 
@@ -341,14 +351,19 @@ def test_une_seule_famille_garde_ses_invariants():
         issue(4, body="Part of #1", comments=[com(100, f"[CLAIMED] lane {AUTRE} -- paths: a")]),
         issue(5, body="Part of #1", comments=[com(300, f"[CLAIMED] lane {AUTRE} -- paths: b")]),
     ])
-    file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
+    etats_ = tr.etats(lec, LANE, NOW)
+    file = tr.ordonner(etats_, LANE, NOW, 8)
     ordre = [e.numero for e in file]
-    # parmi les grains, les jamais visites devant les visites (niveau 0, puis 1)
-    assert set(ordre[:2]) == {2, 3}
-    # les deux grains visites une fois forment le niveau 1, decale par lane
-    # comme le niveau 0 (tapis_equilibre) ; le conteneur, meme jamais visite,
-    # en dernier : il demande une lecture et un --paths (#26926)
-    assert set(ordre[2:4]) == {4, 5} and ordre[4] == 1
+    # les grains de la famille d'abord ; le conteneur, meme jamais visite, en
+    # dernier : il demande une lecture et un --paths (#26926)
+    assert set(ordre[:4]) == {2, 3, 4, 5} and ordre[4] == 1
+    # l'ordre des grains est celui du NIVEAU puis de la CLE (creation, sans PR
+    # qui couvre) : #5 est claim il y a 12,5 j -- **hors du tour** de 7 jours --
+    # donc jamais visitee du tour, et l'invariant de couverture (21/11) la place
+    # devant #4, claim il y a 4 j.
+    grains_ = [e for e in etats_ if not e.conteneur]
+    fair = tapis_equilibre.ordre(etats_, grains_, "g", NOW, rotation=False)
+    assert [e.numero for e in fair] == [2, 3, 5, 4]
 
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
@@ -640,7 +655,13 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # plafond, 19/11) ; tapis_etat_commit.py la vingt-quatrieme (le COMMIT qui a
 # ecrit l'etat : l'etat est lie au code qui l'a produit, 19/11) ;
 # tapis_entrelace.py la vingt-cinquieme (le LOT entrelace : primaire et
-# reprise alternes, la reprise passe devant un tour sur deux, 19/11).
+# reprise alternes, la reprise passe devant un tour sur deux, 19/11) ;
+# tapis_canon.py la vingt-sixieme (la FORME CANONIQUE : quelle PR couvre un
+# grain, extraite de tapis_cle.py pour tenir le plafond, 19/11) ;
+# tapis_releve.py la vingt-septieme (le RELEVE persistant par issue : la
+# lecture datee, et la livraison confirmee par le diff, 19/11) ;
+# tapis_controle.py la vingt-huitieme (le CONTROLE ISOLE d'une citation : le
+# couple de dates avant/apres sur le pool reel, 20/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -678,7 +699,13 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_perimetre.py", 110),
                                               ("tapis_preuve.py", 110),
                                               ("tapis_public.py", 40),
-                                              ("tapis_tete.py", 30)])
+                                              ("tapis_tete.py", 30),
+                                              ("tapis_citations.py", 40),
+                                              ("belt_equite.py", 110),
+                                              ("tapis_cle.py", 150),
+                                              ("tapis_canon.py", 70),
+                                              ("tapis_releve.py", 225),
+                                              ("tapis_controle.py", 140)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

@@ -4,6 +4,12 @@ Ce document sert de **portail d'entrée éditorial** vers le contenu pédagogiqu
 
 > **Catalogue à jour** — Pour l'inventaire exhaustif et toujours synchronisé (total à jour, comptes exacts par série, statuts, maturité, owner), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)** (en-tête « Total notebooks », régénéré automatiquement chaque jour par le workflow `catalog-cron.yml`). Le catalogue fait foi sur les chiffres et les statuts.
 
+## 🚀 Démarrer sans rien installer
+
+[![Ouvrir dans GitHub Codespaces](https://github.com/codespaces/badge/svg)](https://github.com/codespaces/new?hide_repo_select=true&repo=jsboige%2FCoursIA&ref=main&machine=basicLinux32gb&devcontainer_path=.devcontainer%2Fdevcontainer.json)
+
+Un clic, et le Codespace porte déjà les sept noyaux canoniques du dépôt (Python, .NET Interactive C#/F#/PowerShell, Lean 4, Rust) via l'image d'apprentissage publiée sur GHCR. **Le quota consommé est celui de votre compte GitHub** ; le repli local sans Codespace est une seule commande `docker run` — détail dans le [`README.md`](README.md#démarrer-sans-rien-installer).
+
 ## 🎯 Quatre niveaux de lecture
 
 - **Entrée** (le présent fichier, [`index.md`](index.md)) — portail éditorial : thématiques + parcours. Maintenance manuelle, modifications rares.

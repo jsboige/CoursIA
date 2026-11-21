@@ -2,25 +2,18 @@
 """La rotation UNIVERSELLE du tapis : toutes les issues, donnees legeres.
 
 Le tirage actuel (`coordination/tapis_rapide.py`) classe le pool entier, mais
-applique **neuf regles d'ecart avant la rotation** et lit le **corps, les
-commentaires et les PRs** de chaque issue ouverte. Pour classer 439 issues
-afin d'en servir quelques-unes, ce sont deux lectures qui ne servent a rien.
+applique **neuf regles d'ecart** et lit le **corps, les commentaires et les
+PRs** de chaque issue ouverte : deux lectures qui ne servent a rien.
 
 Ce module fait la rotation **sur les metadonnees seules** :
 
 - la lecture est **legere** (`coordination.gh_selection`) : numero, titre,
-  date, labels -- et le signal du **travail reel** (les commits de
-  `origin/main` qui citent l'issue). Une apparition dans une liste n'est pas
-  une visite ;
-- la rotation porte sur **toutes** les issues ouvertes, sans ecarter : ce
-  sont les verifications (claim, gel, contenu livre) qui se font **a la prise
-  en charge**, par le lecteur existant, sur le grain servi ;
-- chaque grain servi porte son **etat et l'action a faire**, jamais une
-  exclusion silencieuse.
-
-La bascule du tirage par defaut est la tranche suivante : elle suppose que la
-prise en charge qualifie le grain (le lecteur lourd cible), ce qui est un
-changement de protocole autant que de code.
+  date, labels -- et le **travail reel** (les commits de `origin/main` et les
+  PRs ouvertes qui couvrent l'issue). Une apparition n'est pas une visite ;
+- la rotation porte sur **toutes** les issues ouvertes, sans ecarter : les
+  verifications (claim, gel, contenu livre) se font **a la prise en charge** ;
+- chaque grain servi porte son **etat et l'action a faire**.
+L'ordre est la **cle de service** (`coordination.tapis_cle`) : la date de la derniere PR qui couvre le grain.
 """
 from __future__ import annotations
 
@@ -30,8 +23,9 @@ import sys
 from datetime import UTC, datetime
 from pathlib import Path
 
-from coordination import gh_bulk, gh_selection, tapis_equilibre, tapis_marqueurs
-from coordination import tapis_rapide
+from coordination import (gh_bulk, gh_selection, tapis_citations, tapis_cle,
+                         tapis_equilibre, tapis_marqueurs, tapis_releve)
+from coordination import tapis_citations, tapis_rapide
 from coordination.tapis_rapide import Etat, graine_defaut, ordonner
 
 
@@ -49,12 +43,18 @@ def _parent_de_titre(titre: str) -> int | None:
 
 
 def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
-                maintenant: datetime) -> list[Etat]:
+                maintenant: datetime, prs: list[dict] | None = None) -> list[Etat]:
     """Un etat par issue ouverte, sur les metadonnees seules.
 
-    Les visites comptent le **travail reel** : les commits qui citent l'issue.
+    Les visites comptent le **travail reel** : les commits qui citent l'issue,
+    et les PRs **ouvertes** qui la citent (le travail en cours compte aussi).
     Les marqueurs de visite vivent dans les commentaires -- ils sont lus a la
-    prise en charge, pas au classement."""
+    prise en charge, pas au classement.
+
+    La **cle de service** (`tapis_cle`) est posee en meme temps : c'est elle
+    qui ordonne le tirage, des les metadonnees seules."""
+    prs = list(prs or [])
+    cites_ouvertes = tapis_citations.des_prs_ouvertes(prs)
     etats = []
     for it in metas:
         n = int(it["number"])
@@ -64,9 +64,11 @@ def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
         e = Etat(n, titre, labels, it.get("created_at") or "",
                  parent, parent or n, tapis_rapide._conteneur_de(titre, labels),
                  any(lab.strip().lower() == "consolidation" for lab in labels))
+        cites = citations.get(n, []) + cites_ouvertes.get(n, [])
         e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
-            [], citations.get(n, []), maintenant)
+            [], cites, maintenant)
         etats.append(e)
+    tapis_cle.appliquer(etats, tapis_cle.des_prs_canoniques(prs), citations)
     return etats
 
 
@@ -102,13 +104,17 @@ def rapport(etats_: list[Etat], file: list[Etat], lane: str, maintenant: datetim
             lecture: dict) -> dict:
     """Le rapport du tirage universel : les grains, leur etat, l'action, la mesure."""
     conso = tapis_equilibre.familles_consolidation(etats_)
+    dens = tapis_cle.densites(etats_)
+    releves = tapis_releve.lire()[tapis_releve.RELEVE]
     return {
         "lane": lane, "maintenant": tapis_marqueurs._iso(maintenant),
         "lecture": lecture, "pool": len(etats_),
         "grains": [{"numero": e.numero, "titre": e.titre,
                     "visites": e.visites, "visites_total": e.visites_total,
                     "consolidation": e.consolidation,
-                    "priorite": tapis_equilibre.raisons(e, conso, maintenant),
+                    "priorite": tapis_equilibre.raisons(e, conso, maintenant,
+                                                        dens.get(e.numero)),
+                    "releve": tapis_releve.etat(releves, e.numero),
                     "action": action_de(e, lane)} for e in file],
     }
 
@@ -134,11 +140,12 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
         metas, duree = gh_selection.lire_metadonnees_issues(
             run, budget_s=args.budget_s)
         citations = gh_bulk.lire_citations_mergees(depot, args.jours, run)
+        prs = gh_bulk.lire_prs_ouvertes(run)
     except gh_bulk.LectureIncomplete as exc:
         print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
               file=sys.stderr)
         return 3
-    etats_ = etats_leger(metas, citations, maintenant)
+    etats_ = etats_leger(metas, citations, maintenant, prs)
     file = rotation_universelle(etats_, args.lane, maintenant, args.grains,
                                 graine_defaut(args.lane, maintenant))
     r = rapport(etats_, file, args.lane, maintenant,

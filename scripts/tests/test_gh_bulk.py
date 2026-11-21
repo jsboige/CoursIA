@@ -138,11 +138,17 @@ def test_citations_mergees_sur_git_log_simule():
     assert [c["sha"] for c in cit[1234]] == ["aaaaaaaaaaaa"]
     assert set(cit) == {123, 1234, 2001, 2002, 77}
     assert cit[77][0] == {"sha": "bbbbbbbbbbbb", "date": "2025-11-12T00:00:00Z",
-                          "sujet": "Add(y): autre (#2002)", "ferme": False}
+                          "sujet": "Add(y): autre (#2002)", "ferme": False,
+                          "canonique": True}
     # ferme : mot de fermeture (#1234) ou portee du sujet (#123) ; ni `See`, ni `Part of`,
     # ni le numero de la PR du squash
     assert {n: cit[n][0]["ferme"] for n in cit} == {
         123: True, 1234: True, 2001: False, 2002: False, 77: False}
+    # canonique : la forme canonique du depot (See/Part of/Closes/Fix(portee,#N))
+    # declare un travail SUR l'issue ; un numero de PR mentionne en prose ne
+    # couvre rien. 2001 et 2002 sont des numeros de PR de squash : non canoniques.
+    assert {n: cit[n][0]["canonique"] for n in cit} == {
+        123: True, 1234: True, 2001: False, 2002: False, 77: True}
     lecture = gh_bulk.Lecture(issues=[], prs=[], citations=cit)
     assert lecture.origin_main_le == "2025-11-13T00:00:00Z"
 

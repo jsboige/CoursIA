@@ -9,7 +9,8 @@ commande, procédure de conteneur, lecture de secours, sortie texte), `scripts/c
 (parcage Origami, #26523), `scripts/coordination/tapis_reverif.py` (re-décision des fils tronqués, #27179),
 `scripts/coordination/tapis_leger.py` (la voie légère du tirage, #27225), `scripts/coordination/tapis_fenetre.py`
 (la fenêtre du pool classé et celle du fil, #27225), `scripts/coordination/gh_issues.py`
-(la lecture ciblée des issues nommées, #27225) et `scripts/coordination/gh_bulk.py` (seul module qui lance
+(la lecture ciblée des issues nommées, #27225), `scripts/coordination/tapis_cle.py` (la clé de service, 19/11)
+et `scripts/coordination/gh_bulk.py` (seul module qui lance
 `gh` ou `git`).
 Elle **remplace** `scripts/pick_idle_grain.py --belt` pour le tirage : depuis #26926, aucune sortie du tapis rapide ni de `check_lane_claim.py` ne renvoie plus au tapis lourd (240 s, grains non vérifiés), qui reste un outil de diagnostic.
 
@@ -165,6 +166,11 @@ ligne ».
 
 ## L'ordre : l'équilibrage des visites
 
+> **L'ordre** est remplacé au 2026-11-19 par la **clé de service** (section suivante) : le niveau, le bonus
+> d'âge et le bonus de consolidation ne classent plus. Ce qui reste de cette section — la **mesure** des
+> visites (une séance, une livraison ouvre une séance neuve, les PRs ouvertes comptent le travail en cours)
+> — est valide et reste lu par le rapport et par l'organe d'équité du dispatch.
+
 Mandat user du 2026-11-16 : « Toute issue doit être visitée au moins une fois avant qu'une autre le soit
 deux fois, à l'exception de quelques issues anciennes de consolidation qui peuvent recevoir plusieurs visites,
 et des marathon csharp et Rust qui recevront le fruit du travail du nouveau harnais. Les issues récentes en
@@ -175,6 +181,35 @@ particulier ne devraient pas recevoir plus de visites que les anciennes. » Le m
 lane à moins de 24 h d'intervalle (`SEANCE_H`) font une seule visite. Les commits de `origin/main` qui
 citent l'issue forment des séances sans lane. Le compte retenu est le plus grand des deux : un claim puis le
 merge de sa PR comptent une fois.
+
+**Une livraison ouvre une séance neuve** (19/11, famine de l'umbrella #27338). Sans cela, une lane qui
+enchaîne plusieurs grains du même umbrella le jour même n'y compte qu'**une** visite — et l'issue reste en
+tête de classement, servie sept fois dans la journée pendant que des issues anciennes n'attendaient
+aucune PR. La séance se ferme sur la livraison (ou la release) ; la suite ouvre une séance neuve. Mesure
+sur l'issue réelle : avant correction, 2 visites sur 8 livraisons ; après, 8.
+
+**Les PRs ouvertes comptent le travail en cours** (19/11, même famine). Le classement léger ne voyait que
+les commits **mergés** : une issue sur laquelle huit PRs sont ouvertes — pas encore mergées — restait à
+`visites = 0`, donc en tête de rotation. `scripts/coordination/tapis_citations.py` extrait les citations des
+PRs ouvertes avec la même règle que les commits mergés (une mention `#N` dans le corps, auto-référence
+exclue) ; chacune compte **une** visite, à la date de la dernière activité de la PR : une PR abandonnée
+depuis trois mois ne tient pas une issue en tête. C'est le classement **léger** qui est concerné ; la voie
+rapide lit les marqueurs du fil, qui portent la même information.
+
+**La mesure qui prouve l'inversion** (19/11, même famine). Le témoin d'**ordre** ne discriminait pas le
+correctif : à niveau égal, l'ordre de création mettait déjà les anciennes devant. Ce qui change, c'est le
+**niveau**. Pool de 14 issues (12 anciennes à zéro visite, une issue à une visite, l'umbrella #27338 à huit
+livraisons) :
+
+| | visites de #27338 | niveau de #27338 | niveau de l'issue à 1 visite | rang de #27338 |
+| --- | --- | --- | --- | --- |
+| avant (les PRs ouvertes ne comptent pas) | 0 | 0 | 0,5 | **devant** elle |
+| après | 8 | 8 | 0,5 | **derrière** elle |
+
+Avant correction, une racine servie huit fois passait **devant** une issue qui avait déjà reçu sa visite : le
+contre-sens exact du mandat du 16/11 (« toute issue doit être visitée au moins une fois avant qu'une autre le
+soit deux fois »). Le témoin `scripts/tests/test_tapis_public.py` rejoue les deux colonnes : il échoue si la
+correction disparaît, et il échoue aussi si l'inversion ne se reproduit plus.
 
 **Le niveau compte les visites du tour, pas celles de toute la vie de l'issue.** Le tour vaut
 `FENETRE_J` = 7 jours. Mesure du 16/11 sur la lecture de 13:27Z : environ 47 séances par jour pour 395
@@ -232,6 +267,55 @@ visités et 300 graines, où les huit grains servis viennent toujours des 24 plu
 
 Les grains restent servis avant les conteneurs (#26926), même quand le conteneur est à un niveau plus bas : un
 conteneur demande une lecture et un `--paths`.
+
+## L'ordre : la clé de service (19/11)
+
+Mandat du coordinateur (DM `20261119-picker-date-pr-parent`, 19/11) : « Remplacer poids/bonus/séances par
+une voix par issue, ordre de la dernière PR dont le diff couvre le grain, départage uniforme à égalité ;
+sans PR, vieillissement depuis la création (pas d'ancienneté héritée). Une PR enfant remet aussi le hub en
+queue, pas les frères ; pas de nouveau service sur correction de PR existante. » Puis, en précision : « Pas
+de bonus Epic ni de séance 24 h pour ordonner. Même clé en tirage, reprise et dispatch. »
+
+Le module `scripts/coordination/tapis_cle.py` porte la clé ; `tapis_equilibre.ordre()` classe par elle.
+
+**Une voix par issue.** La clé est **une date** par grain, et le départage a égalité est **uniforme** (le
+numéro). Ne classent plus : le nombre de visites, le bonus d'âge, le bonus de consolidation, la séance de
+24 h. Les visites restent une **mesure** (rapport, équité du dispatch).
+
+**La clé est la dernière PR qui COUVRE le grain.** La couverture se lit dans le **corps** de la PR, en
+forme **canonique** : `See #N`, `Part of #N`, `Closes #N`, `Fix(portee,#N)`, le mot-clé a moins de
+30 caractères du numéro. Une PR qui **mentionne** l'issue en prose (`Sur #27338, ...`) ne la couvre pas :
+c'est la distinction qui manquait, et elle sépare la PR qui *parle* d'un grain de la PR qui le *sert*.
+
+**La date d'une PR est sa création.** Pousser une correction dans une PR ouverte ne la recrée pas : le
+grain ne revient donc pas en tête.
+
+**Le hub suit son enfant.** La clé d'un grain remonte à ses **ancêtres** (le hub), et **seulement** à eux :
+les **frères** gardent leur propre clé. Un pli **neuf** n'hérite pas de l'âge du hub : sans PR, sa clé est
+sa propre **création**.
+
+**La densité d'un hub est une mesure, jamais un bonus.** `tapis_cle.densites()` se lit au moment de la
+visite du hub ; elle ne classe rien et ne déclenche **aucune** création de ticket. Un pli encore sur son
+parent ne figure pas au tirage comme pli : il reste un pli.
+
+**Même clé partout.** La clé est posée par `tapis_cle.appliquer()` sur les états, et elle est lue par :
+
+| chemin | organe | usage |
+| --- | --- | --- |
+| tirage léger | `tapis_universel.etats_leger()` puis `tapis_equilibre.ordre()` | l'ordre du pool classé |
+| tirage lourd | `tapis_rapide.etats()` puis `tapis_equilibre.ordre()` | le même ordre, sur le fil complet |
+| reprise / fenêtre | `tapis_public.lot_public()` | le bloc servi est une tranche de cet ordre |
+| dispatch | `belt_queues.visit_age_days()` | l'âge de référence d'un grain dispatché |
+
+**Mesure sur le siège affecté** (19/11, `tapis_leger.py --lane myia-ai-01:CoursIA-2`) : pool de 466
+grains, dont **89 sans PR couvrante** (clé = création) et **48 jamais servis** ; l'umbrella **#27338**,
+couvert par une PR créée le 19/11, sort au **rang 436 sur 466** — il ne peut plus être servi sept fois
+dans la journée pendant que des issues anciennes n'attendent aucune PR. Les **29** grains dont la clé est
+du 19/11 occupent la queue.
+
+Ce que la clé ne fait pas : la fenêtre sert un **bloc** de l'ordre classe, et les **reprises** (les grains
+déjà servis, que la tranche rend au service) gardent leur propre ordre — la clé ordonne le pool, elle
+n'efface pas la memoire de la fenêtre.
 
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 
@@ -361,6 +445,8 @@ d'`origin/main`. Un nouveau module du tirage entre dans cette liste **avec** sa 
 | `scripts/coordination/tapis_leger.py` | la voie légère : rotation universelle sur les métadonnées, file de grains avec état et action |
 | `scripts/coordination/tapis_public.py` | le **lot public** : la proposition comprise (la tranche, les ancres) — la voie que les tests rejouent |
 | `scripts/coordination/tapis_tete.py` | la **tête** du lot : le numéro suivant le curseur, ahead de la priorité (famine du 19/11) |
+| `scripts/coordination/tapis_citations.py` | les **citations des PRs ouvertes** : le travail en cours compte comme une visite (famine du 19/11) |
+| `scripts/coordination/belt_equite.py` | l'**équité du dispatch** : les grains déjà servis qu'une file place devant les issues jamais servies (famine du 19/11) |
 | `scripts/coordination/tapis_fenetre.py` | la **fenêtre** : le bloc servi qui avance sur le pool classé, et la fenêtre du fil (12 derniers commentaires) |
 | `scripts/coordination/tapis_prise_en_charge.py` | le CLI de la **prise en charge** : qualifier un grain avant d'agir (le corps, le fil complet, les neuf règles) |
 | `scripts/coordination/tapis_qualification.py` | la qualification elle-même : le corps, la fenêtre, la re-décision des neuf règles |
@@ -427,3 +513,51 @@ Le cas que la voie légère ne peut plus voir est précisément `RELACHEE` : ell
 seules, elle ne voit donc plus les marqueurs du fil. La porte consumer les rejoue sur le fil complet.
 
 
+## Couverture des visites (#27590)
+
+L'équilibrage ci-dessus n'ordonne que les issues **servables** (30 sur 459 ouvertes à la mesure du 20/11) :
+une issue écartée par un code dépend d'un autre rôle — l'urne de clôture, la revue d'une PR, le mainteneur —
+et rien ne mesurait si ce rôle la visitait. `coordination/visit_coverage.py` attribue à chaque issue ouverte
+le rôle responsable de son prochain pas, sur la même lecture groupée (aucun appel réseau de plus) :
+
+| Rôle | Code d'écart | Prochain pas |
+| --- | --- | --- |
+| `harnais` | marathon (`tapis_equilibre.est_marathon`), écart ou non | harnais sk-agent ; tous les marathons sortent des agrégats |
+| `worker` | servable, `RECLAMEE` | le tapis, pour la lane qui la sert |
+| `urne` | `LIVREE`, `MERGEE`, `LABEL` (`candidate-delivered`) | clôture par le coordinateur, l'adjoint ou le secrétaire |
+| `revue` | `COUVERTE` | revue et fusion de la PR citée (son numéro est lu dans le motif) |
+| `mainteneur` | `GEL` | décision du mainteneur |
+| `attente` | `RELACHEE`, `PLAFOND`, `ORIGAMI` | attente bornée, puis le tapis |
+| `hors-flotte` | `HORSFLOTTE` | hors flotte |
+| `autre` | tout code non mappé | le motif est rapporté |
+
+Une issue **avance** dans la fenêtre du tour (7 jours) par un marqueur `[DELIVERED]` daté, ou par un commit
+de `origin/main` qui la cite (`lecture.citations`). Le bilan donne par rôle le nombre d'issues, celles à zéro
+visite et celles visitées sans avancer, l'invariant du 16/11 sur le pool servable (hors claim propre et hors
+marathon) et les jamais visitées. Mesure du 20/11 sur la lecture de 13:35Z : 443 issues hors marathons, 87 à
+zéro visite, dont 59 d'urne et 12 de revue.
+
+Le bilan porte en outre deux mesures neuves (21/11) :
+
+- `redecider_au_service` — les issues « worker » à 0 visite dont le **fil est tronqué** (la lecture groupée ne
+  voit que les 12 derniers commentaires) : le tirage les re-décide sur le fil complet au moment du service, donc
+  l'écart peut changer après le bilan ;
+- `atteignable` — la simulation du tapis (`tapis_rapide.ordonner`) sur la même lecture : combien de tours pour
+  servir toutes les issues jamais visitées, et **équité** — la liste des issues déjà visitées qui seraient
+  servies pendant qu'une autre attend. Une équité non vide est un **rouge** (code de sortie 1).
+
+```bash
+python scripts/coordination/visit_coverage.py [--json] [--dashboard-line]
+       [--lecture <dossier>] [--cache-s 3600] [--jours 45] [--lane myia-ai-01:CoursIA]
+```
+
+Codes de sortie : `0` tout est couvert ; `1` invariant violé, ou une issue d'urne ou de revue sans visite
+dans le tour alors qu'elle a plus de `FENETRE_J` jours ; `2` lecture incomplète sans secours (jamais un faux
+`0`). `--dashboard-line` rend une ligne de 200 caractères au plus, à poster sur le dashboard du secrétariat.
+
+**Ce que la mesure ne voit pas** : une fermeture (la lecture ne contient que les issues ouvertes), une PR
+fusionnée sans commit cité (le squash cite sa PR, pas forcément l'issue), un `[DELIVERED]` plus ancien que
+les 12 derniers commentaires lus (fil tronqué), et `[INFO] candidate-delivered`, reconnu comme livraison par
+le tapis mais pas retenu comme preuve d'avancée. Le test de propriété (`scripts/tests/test_visit_coverage.py`)
+simule 30 servables et 120 pas de service : la tête de `tapis_equilibre.ordre` garde le niveau minimal du
+pool, donc aucune issue n'atteint deux visites tant qu'une autre est à zéro.

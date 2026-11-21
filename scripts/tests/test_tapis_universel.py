@@ -174,13 +174,13 @@ def test_la_rotation_conserve_toutes_les_issues():
     """La rotation ne ecarte rien : le pool entier est classe, et sur des
     tours simules toutes les issues passent (pas de famine).
 
-    La simulation mesure ce que fait un tour reel : le grain servi compte une
-    VISITE (le travail reellement effectue), donc son niveau monte et il
-    laisse la tete de niveau au suivant. Sans cette montee, la fenetre de
-    tete (24) servirait toujours les memes issues -- ce n'est pas une famine
-    du classement, c'est l'absence de travail."""
+    La simulation mesure ce que fait un tour reel : le grain servi produit un
+    travail **canonique** (`Closes #N`), donc sa **cle de service** passe a la
+    date du jour et il laisse la tete. C'est ce recul -- et non un compteur de
+    visites -- qui fait avancer la couverture : le mandat du 19/11 remplace le
+    niveau par la cle de service."""
     metas = [gh_selection.metadonnee(_noeud(
-        100 + k, cree=(NOW - timedelta(days=200 - 5 * k)).strftime(
+        100 + k, cree=(NOW - timedelta(days=200 - 3 * k)).strftime(
             "%Y-%m-%dT%H:%M:%SZ"))) for k in range(60)]
     citations: dict[int, list[dict]] = {}
     vus: set[int] = set()
@@ -191,7 +191,7 @@ def test_la_rotation_conserve_toutes_les_issues():
             vus.add(e.numero)
             citations.setdefault(e.numero, []).append(
                 {"sha": f"{tour:040d}", "date": tapis_marqueurs._iso(NOW),
-                 "sujet": "Fix: x"})
+                 "sujet": f"Closes #{e.numero}", "canonique": True})
     assert len(vus) == 60, sorted(set(range(100, 160)) - vus)
 
 

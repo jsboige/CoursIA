@@ -121,7 +121,7 @@ def qualifier(candidats: list[int], lane: str, maintenant: datetime, jours: int,
         if not retenus:
             continue
         conf, rejet, rates, n = tapis_fil_complet.confirmer(
-            retenus, lec, lane, maintenant, jours, echeance, horloge, preuve=preuve)
+            retenus, lec, lane, maintenant, jours, echeance, horloge, preuve=preuve, prs=prs)
         appels += n
         echecs.extend(rates)
         for e in conf:

@@ -1,0 +1,10 @@
+- name: "Complexity-07c Bilan Mathocalypse"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-07c-LeBilanMathocalypse-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-07c-LeBilanMathocalypse-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Les calculs, les comparaisons d'exposants, les entiers BigInteger et les deux algorithmes 3SUM sont natifs en C#.
+  known_differences:
+    - "Les générateurs aléatoires et les temps mesurés diffèrent ; les résultats de recherche sont rapportés par le Python, sans vérification nouvelle des preuves."

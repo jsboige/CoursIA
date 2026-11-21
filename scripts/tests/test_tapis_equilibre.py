@@ -14,8 +14,11 @@ from datetime import timedelta
 from pathlib import Path
 
 import pytest
+from coordination import tapis_avantages
 from coordination import tapis_equilibre as te
+from coordination import tapis_seance
 from coordination import tapis_rapide as tr
+from coordination.tapis_marqueurs import Evt
 
 # Les fabriques de test_tapis_rapide.py, chargees par chemin : sous
 # `--import-mode importlib`, `tests.` designe le premier paquet `tests` collecte
@@ -36,9 +39,19 @@ def claim(heures: float, lane: str = AUTRE, marque: str = "CLAIMED") -> dict:
     return com(heures, f"[{marque}] lane {lane} -- paths: x")
 
 
-def _servis(issues, grains: int = 8, lane: str = LANE, citations=None) -> list[int]:
-    lec = lecture(issues, citations=citations)
-    return [e.numero for e in tr.ordonner(tr.etats(lec, lane, NOW), lane, NOW, grains)]
+def _servis(issues, grains: int = 8, lane: str = LANE, citations=None,
+            prs=()) -> list[int]:
+    """L'ordre **fair** (la cle de service), sans la rotation de tete par lane.
+
+    La rotation (`tr.ordonner`) fait tourner la tete du premier groupe pour
+    que deux lanes divergent : elle ne se teste pas ici, elle se teste
+    ailleurs -- ici on teste la CLE.
+    """
+    lec = lecture(issues, prs=prs, citations=citations)
+    etats_ = tr.etats(lec, lane, NOW)
+    servables = [e for e in etats_ if e.ecart is None]
+    return [e.numero for e in te.ordre(etats_, servables, "graine", NOW,
+                                        rotation=False)]
 
 
 # --- le compte des visites ---------------------------------------------------
@@ -57,59 +70,109 @@ def test_une_seance_par_lane_et_par_jour():
     assert (e4.visites, e4.derniere_visite) == (0, None)
 
 
+def test_une_livraison_par_grain_compte_une_visite():
+    """Une lane qui enchaîne plusieurs grains du meme umbrella les compte.
+
+    Mesure du 19/11 (#27338) : sept livraisons dans la journee, comptees
+    UNE visite -> l'issue reste en tete de classement, et la lane la
+    reprend le lendemain. Une livraison vaut une visite.
+    """
+    marques = []
+    for h in (100, 90, 80, 70, 60, 50, 40):
+        marques += [claim(h, marque="CLAIMED"), claim(h - 1, marque="DELIVERED")]
+    e1 = etat(lecture([issue(1, comments=marques)]), 1)
+    assert (e1.visites, e1.visites_total) == (7, 7),         "sept livraisons dans le tour : sept visites"
+    # les amendements d'un meme grain ne comptent pas une fois de plus
+    un = [claim(100, marque="CLAIMED"), claim(99, marque="CLAIMED-AMEND"),
+          claim(98, marque="DELIVERED")]
+    assert etat(lecture([issue(2, comments=un)]), 2).visites == 1,         "les amendements d'un meme grain ne comptent pas une fois de plus"
+
+
+def _evt(marque: str, heures: float, lane: str = AUTRE) -> Evt:
+    """Un marqueur pose a NOW - `heures` heures."""
+    return Evt(NOW - timedelta(hours=heures), marque, lane, None, "")
+
+
+def test_la_voie_legere_compte_comme_le_classement():
+    """UNE SEULE REGLE DE SEANCE (#27338) : la voie legere appelle l'organe
+    natif (`tapis_seance.par_lane`), elle ne le reimplemente pas. Sept
+    livraisons dans la journee : sept visites, dans les deux voies."""
+    evts = []
+    for h in (100, 90, 80, 70, 60, 50, 40):
+        evts += [_evt("CLAIMED", h), _evt("DELIVERED", h - 1)]
+    _d, total, _v = te.compter(evts, [], NOW)
+    assert total == 7, "sept livraisons dans la journee : sept visites"
+
+
 def test_les_commits_ne_doublent_pas_la_seance_de_leur_claim():
+    """Une citation Git n'est PAS une visite : le classement ne la compte
+    plus (c3274). Le compte HISTORIQUE -- marqueurs et citations -- reste
+    disponible pour la voie legere, qui ne lit pas le fil."""
     # un claim, puis le merge de sa PR le lendemain : une visite, pas deux
     lec = lecture([issue(1, comments=[claim(40)])], citations={1: [commit("a" * 12, 20)]})
     assert etat(lec, 1).visites == 1
-    # des commits sans marqueur comptent : trois jours distincts, trois visites
+    # des commits SANS marqueur : un PASSAGE (activite autour de l'issue),
+    # pas des visites de l'issue
     lec = lecture([issue(2)], citations={2: [commit("b" * 12, h) for h in (10, 80, 150)]})
-    assert etat(lec, 2).visites == 3
+    e2 = etat(lec, 2)
+    assert e2.visites == 0, "une citation Git n'est pas une visite"
+    assert e2.etat_grain == "passage_seul"
+    # le compte historique garde l'ancien comportement
+    cites = [commit("b" * 12, h) for h in (10, 80, 150)]
+    _d, total, _v = te.compter([], cites, NOW)
+    assert total == 3, "le compte historique compte les citations"
 
 
 # --- le niveau strict et l'anciennete ---------------------------------------
 
-def test_jamais_visitee_recente_devant_visitee_ancienne():
-    """« Toute issue doit etre visitee au moins une fois avant qu'une autre le
-    soit deux fois » : le niveau prime l'anciennete."""
-    issues = [issue(1, cree="2026-01-01T00:00:00Z", comments=[claim(150), claim(60)]),
-              issue(2, cree="2026-05-01T00:00:00Z", comments=[claim(100)]),
+def test_la_cle_de_service_prime_l_anciennete():
+    """Mandat du 19/11 : l'ordre est la date de la derniere PR qui **couvre**
+    le grain ; sans PR, la creation du grain. L'issue qui n'a jamais recu de
+    travail passe donc devant celle qui en a recu recemment."""
+    servie = issue(1, cree="2026-01-15T00:00:00Z")
+    issues = [servie, issue(2, cree="2026-05-01T00:00:00Z"),
               issue(3, cree="2026-11-10T00:00:00Z")]
-    assert _servis(issues) == [3, 2, 1]
+    # #1 a ete servie par une PR de mars : sa cle est mars, pas sa creation.
+    cites = {1: [{"sha": "a" * 12, "date": "2026-06-01T00:00:00Z",
+                  "sujet": "Closes #1", "ferme": True, "canonique": True}]}
+    # #1 a ete servie en juin : elle attend depuis juin, donc apres #2 (creee
+    # en mai, jamais servie) -- c'est l'equite du 16/11, lue dans la cle.
+    assert _servis(issues, citations=cites) == [2, 1, 3]
 
 
-def test_le_tour_et_non_la_vie_entiere():
-    """« Les issues recentes ne devraient pas recevoir plus de visites que les
-    anciennes » : le niveau compte les visites du tour (FENETRE_J jours). Une
-    ancienne visitee quatre fois il y a longtemps passe devant une recente
-    visitee hier ; une recente jamais visitee recoit d'abord sa premiere.
+def test_le_compte_des_visites_du_tour_classe_la_cle_decide():
+    """Les visites **du tour** classent : une issue jamais visitée ne cède
+    jamais sa place à une issue deja visitée (invariant de couverture du
+    21/11, #27590). A niveau egal, la **cle de service** decide (19/11) :
+    ni l'age, ni la consolidation, ni le nombre de visites n'ordonnent seuls.
 
-    Mandat du 18/11 : l'age est une priorite LEGERE. L'ancienne jamais
-    visitee du tour passe donc devant la recente jamais visitee -- mais la
-    visitee reste derriere les deux : l'equite du 16/11 tient."""
+    Les quatre visites de #1 sont **hors du tour** (7 jours) : elles ne la
+    placent donc pas devant une issue jamais visitée du tour -- mais sa
+    creation ancienne lui donne le plus fort bonus d'age.
+    """
     vieilles = [claim(h, lane=lane) for h, lane in
                 ((700, AUTRE), (500, TROISIEME), (400, AUTRE), (300, TROISIEME))]
     issues = [issue(1, cree="2026-03-01T00:00:00Z", comments=vieilles),
               issue(2, cree="2026-11-10T00:00:00Z", comments=[claim(55)]),
               issue(3, cree="2026-11-12T00:00:00Z")]
-    assert _servis(issues) == [1, 3, 2]
+    assert _servis(issues) == [1, 3, 2]  # jamais visitees du tour d'abord
     e1 = etat(lecture(issues), 1)
     assert (e1.visites, e1.visites_total) == (0, 4)
 
 
-def test_dans_un_niveau_les_recentes_attendent_les_anciennes():
-    """Trente grains jamais visites : le bonus d'age les range par bandes, et
-    les servis sont pris parmi les plus anciens. La bande est un multiple de
-    0,1 : les issues se regroupent par niveau (c'est ce qui fait tourner la
-    tete d'une lane a l'autre) et les plus recentes attendent que les
-    anciennes aient recu leur visite."""
+def test_la_cle_range_les_grains_par_creation_quand_aucune_pr_ne_couvre():
+    """Sans PR qui couvre, la cle est la **creation** du grain : les plus
+    anciens passent d'abord. Le decalage de tete par lane fait tourner la
+    fenetre sur les memes grains, jamais sur une liste apprise par coeur."""
     issues = [issue(100 + k, cree=(NOW - timedelta(days=200 - 5 * k)).strftime(
         "%Y-%m-%dT%H:%M:%SZ")) for k in range(30)]
     etats_ = tr.etats(lecture(issues), LANE, NOW)
     vus: Counter = Counter()
     for g in range(300):
         vus.update(e.numero for e in tr.ordonner(etats_, LANE, NOW, 8, graine=f"g{g}"))
-    # 5 issues de plus de 180 j (bande 0,5) puis 12 de 120 a 179 j (bande 0,4)
-    assert set(vus) == {100 + k for k in range(17)}
+    # les 8 plus anciens (200 j, 195 j, ... 165 j) : la cle est la creation
+    assert set(vus) <= {100 + k for k in range(24)}
+    assert {100 + k for k in range(8)} <= set(vus)
     assert min(vus.values()) > 0  # le decalage par lane couvre toute la fenetre
 
 
@@ -123,28 +186,32 @@ def test_deux_lanes_ne_recoivent_pas_la_meme_tete():
 
 # --- les exceptions du mandat -----------------------------------------------
 
-def test_la_consolidation_recoit_une_priorite_legere_a_tout_age():
+def test_la_consolidation_est_mesuree_mais_ne_classe_plus():
     """Mandat du 18/11 : « une autre legere priorite pour les issues de
-    consolidation ». Le bonus joue a TOUT age (la division par 3 des
-    consolidations de plus de 60 jours, plus forte qu'une priorite legere,
-    disparait) et il est borne : deux visites priment toujours sur lui."""
+    consolidation ». Mandat du 19/11 : le bonus **ne classe plus** -- il se
+    mesure et s'annonce. L'ordre est la cle de service."""
     deux = [claim(150), claim(60, lane=TROISIEME)]
     issues = [issue(1, labels=["consolidation"], cree="2026-06-01T00:00:00Z", comments=deux),
               issue(2, labels=["consolidation"], cree="2026-11-01T00:00:00Z", comments=deux),
               issue(3, cree="2026-08-01T00:00:00Z", comments=[claim(50)])]
-    # #3 (1 visite) passe devant #1 (2 visites) : le bonus ne vaut pas une visite
+    # sans PR, la cle est la creation : #1 (juin), #3 (aout), #2 (novembre)
+    # -- mais #3 n'a qu'une visite et #1/#2 en ont deux : l'invariant de
+    # couverture (21/11) passe les jamais visitees du tour devant.
     assert _servis(issues) == [3, 1, 2]
     lec = lecture(issues)
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     assert te.raisons(etat(lec, 1), conso, NOW) == [
-        "2 visite(s) en 7 j (2 au total)", "priorite d age : -0.4 visite",
-        "priorite de consolidation : -0.4 visite"]
+        "2 visite(s) en 7 j (2 au total)",
+        "cle de service : aucune PR -- creation 2026-06-01T00:00:00Z"]
     assert te.raisons(etat(lec, 2), conso, NOW) == [
-        "2 visite(s) en 7 j (2 au total)", "priorite d age : -0.1 visite",
-        "priorite de consolidation : -0.4 visite"]
+        "2 visite(s) en 7 j (2 au total)",
+        "cle de service : aucune PR -- creation 2026-11-01T00:00:00Z"]
 
 
-def test_la_fille_d_une_racine_de_consolidation_herite_la_priorite():
+def test_le_bonus_de_consolidation_se_calcule_encore_mais_ne_se_dit_plus():
+    """La fille herite toujours le bonus de sa racine -- il se calcule, il ne
+    se dit plus dans le rapport : le rapport annonce la CLE, pas une
+    priorite qui ne classe plus."""
     issues = [issue(10, titre="[EPIC] Padding", labels=["consolidation"],
                     cree="2026-03-01T00:00:00Z"),
               issue(11, body="Part of #10", cree="2026-04-01T00:00:00Z",
@@ -152,11 +219,9 @@ def test_la_fille_d_une_racine_de_consolidation_herite_la_priorite():
               issue(12, cree="2026-02-01T00:00:00Z", comments=[claim(50)])]
     lec = lecture(issues)
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
-    # la fille herite la priorite de consolidation de sa racine
-    assert "priorite de consolidation : -0.4 visite" in te.raisons(
-        etat(lec, 11), conso, NOW)
-    assert "priorite de consolidation : -0.4 visite" not in te.raisons(
-        etat(lec, 12), conso, NOW)
+    bonus = tapis_avantages.bonus(etat(lec, 11), conso, NOW)
+    assert any("consolidation" in m for m in bonus[1])
+    assert "priorite de consolidation" not in te.raisons(etat(lec, 11), conso, NOW)[1]
 
 
 def test_les_marathons_passent_apres_le_pool_equilibre():
@@ -171,7 +236,9 @@ def test_les_marathons_passent_apres_le_pool_equilibre():
               issue(5, titre="Fix(coordination): sert des issues Marathon II",
                     cree="2026-11-15T00:00:00Z", comments=trois)]
     servis = _servis(issues)
-    assert servis[0] == 5  # trois visites, mais equilibree : avant les marathons
+    # les marathons sortent de l'equilibrage : ils passent apres le pool
+    assert set(servis[-5:]) == {26070, 26510, 26604, 26700, 26701}
+    assert 5 in servis[:-5]
     lec = lecture(issues)
     assert te.raisons(etat(lec, 26604), set(), NOW) == [
         "marathon : hors equilibrage (harnais sk-agent)"]
@@ -183,8 +250,10 @@ def test_le_rapport_porte_les_raisons_du_rang():
     etats_ = tr.etats(lec, LANE, NOW)
     r = tr.rapport(lec, etats_, tr.ordonner(etats_, LANE, NOW, 8), LANE, NOW, "g")
     assert [(g["numero"], g["priorite"]) for g in r["grains"]] == [
-        (2, ["0 visite(s) en 7 j (0 au total)", "priorite d age : -0.2 visite"]),
-        (1, ["1 visite(s) en 7 j (1 au total)", "priorite d age : -0.2 visite"])]
+        (2, ["0 visite(s) en 7 j (0 au total)",
+             "cle de service : aucune PR -- creation 2026-10-01T00:00:00Z"]),
+        (1, ["1 visite(s) en 7 j (1 au total)",
+             "cle de service : aucune PR -- creation 2026-10-01T00:00:00Z"])]
     assert r["lecture"]["familles"] == 2
 
 
@@ -213,23 +282,20 @@ def test_les_deux_avantages_sont_distincts_et_cumulables():
     conso = te.familles_consolidation(tr.etats(lec, LANE, NOW))
     e = etat(lec, 1)
     assert te.raisons(e, conso, NOW) == [
-        "0 visite(s) en 7 j (0 au total)", "priorite d age : -0.5 visite",
-        "priorite de consolidation : -0.4 visite"]
+        "0 visite(s) en 7 j (0 au total)",
+        "cle de service : aucune PR -- creation 2026-01-01T00:00:00Z"]
     assert te.niveau(e, conso, NOW) == -0.9
 
 
 def test_l_age_est_compte_en_jours_pleins():
-    """La bande d'age ne doit pas changer au milieu d'une tranche de quatre
-    heures : l'age est compte en jours pleins, et les tranches ne franchissent
-    pas minuit."""
+    """La bande d'age ne classe plus (mandat du 19/11) : la cle est la date
+    de creation, elle ne bouge pas au milieu d'une tranche de quatre heures."""
     cree = "2026-08-25T23:30:00Z"  # 81 jours avant NOW (13/11 12:00)
     debut = NOW.replace(hour=12, minute=0)
     issues = [issue(1, cree=cree), issue(2, cree="2026-11-01T00:00:00Z")]
     un = _servis(issues)
-    lec = lecture(issues)
-    etats_ = tr.etats(lec, LANE, NOW)
-    autre = [e.numero for e in tr.ordonner(etats_, LANE, debut.replace(hour=15, minute=59), 8)]
-    assert un == autre
+    autre = _servis(issues)
+    assert un == autre == [1, 2]
 
 
 # --- structure ---------------------------------------------------------------
@@ -237,8 +303,9 @@ def test_l_age_est_compte_en_jours_pleins():
 def test_module_pur_et_borne():
     """Fonctions pures : aucun import de processus ni de reseau. Plafond releve
     a la livraison ; un depassement se paie en extrayant, pas en relevant."""
-    texte = (Path(te.__file__)).read_text(encoding="utf-8")
-    assert len(texte.splitlines()) <= 160
+    for module, plafond in ((te, 160), (tapis_seance, 60)):
+        texte = (Path(module.__file__)).read_text(encoding="utf-8")
+        assert len(texte.splitlines()) <= plafond
     arbre = ast.parse(texte)
     importes = {a.name for n in ast.walk(arbre) if isinstance(n, ast.Import) for a in n.names}
     importes |= {n.module or "" for n in ast.walk(arbre) if isinstance(n, ast.ImportFrom)}

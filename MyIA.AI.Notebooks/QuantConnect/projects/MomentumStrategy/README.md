@@ -66,7 +66,7 @@ Un recensement de cette variante ([#20264, c.6187771409](https://github.com/jsbo
 - l'arrêt à -10 % ne s'armait que sur les lignes achetées dans le mois, et son `FLAT` d'un jour était ignoré lui aussi ;
 - l'alpha gardait le défaut des demi-séances corrigé ci-dessus dans `main.py`.
 
-Le correctif émet les `FLAT` avec `weight=0`, pour la même durée qu'un insight mensuel (30 séances). Il arme l'arrêt sur toute ligne retenue : au prix courant pour une ligne neuve, au prix moyen de la position pour une ligne déjà détenue sans prix d'entrée. Il demande l'historique en double, comme `main.py`, et fixe le type de compte explicitement. Les tests de `tests/test_alpha_model.py` couvrent ces points sans Lean (`python -m pytest tests/test_alpha_model.py`, depuis ce dossier) ; contre l'ancien alpha, 7 des 10 échouent.
+Le correctif émet les `FLAT` avec `weight=0`, pour la même durée qu'un insight mensuel (30 séances). Il arme l'arrêt sur toute ligne retenue : au prix courant pour une ligne neuve, au prix moyen de la position pour une ligne déjà détenue sans prix d'entrée. Il demande l'historique en double, comme `main.py`, et fixe le type de compte explicitement. Les tests de `tests/test_momentum_strategy_alpha_model.py` couvrent ces points sans Lean (`python -m pytest tests/test_momentum_strategy_alpha_model.py`, depuis ce dossier) ; contre l'ancien alpha, 7 des 10 échouent.
 
 Mesure sur les nœuds QC, frais de courtage inclus, protocole fixé avant les backtests ([#20264, c.6215021287](https://github.com/jsboige/CoursIA/issues/20264#issuecomment-6215021287), résultat [c.6215340530](https://github.com/jsboige/CoursIA/issues/20264#issuecomment-6215340530)) :
 
@@ -114,7 +114,7 @@ MomentumStrategy/
 ├── config.json          # Config cloud
 ├── config_framework.json
 ├── tests/
-│   └── test_alpha_model.py  # Tests CPU de l'alpha (sans Lean)
+│   └── test_momentum_strategy_alpha_model.py  # Tests CPU de l'alpha (sans Lean)
 ├── research.ipynb       # Grid search (top_n, lookback, risk-off)
 ├── quantbook.ipynb
 ├── ARCHIVE.md           # Rapport d'archivage (plafond ~0.48)
