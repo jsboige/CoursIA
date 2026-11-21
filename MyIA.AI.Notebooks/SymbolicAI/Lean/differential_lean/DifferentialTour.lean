@@ -2,6 +2,12 @@
   Visite — trois petites fermetures de qinz1yang/differential-geometry v0.1.3
   ===========================================================================
 
+  Version canonique (français) ; le miroir anglais est le fichier sibling
+  `DifferentialTour_en.lean`, selon la convention i18n #4980 (modèle sibling
+  pair). Seuls les docstrings et les commentaires diffèrent ; le code Lean,
+  les imports et les commandes `#print axioms` sont identiques à l'octet au
+  miroir.
+
   Ce fichier ne reimplemente rien et ne recopie rien : il importe trois
   modules de l'amont — declare en dependance Lake dans lakefile.lean — et
   demande au noyau Lean la liste des axiomes dont depend un theoreme-tete de
