@@ -6,14 +6,15 @@ JupyterLite. Un carnet est eligible si, et seulement si :
 1. il ne demande aucun GPU ;
 2. il ne demande aucune cle d'API ;
 3. il ne demande aucun service reseau ;
-4. tous ses imports sont soit dans la bibliotheque standard, soit des modules
-   locaux du depot (fichier ``.py`` ou paquet porte par un ``__init__.py``),
-   soit des paquets Pyodide, soit des paquets PyPI qui existent en roue pure
-   (``py3-none-any``).
+4. tous ses imports sont **satisfaits par le bundle** : dans la bibliotheque
+   standard, dans la distribution Pyodide, installes par le carnet lui-meme,
+   ou fournis par un module de sa serie livre avec le carnet -- dont les
+   propres dependances sont satisfaites. Le bundle publie des fichiers et
+   n'installe rien : une roue pure que le carnet n'installe pas lui-meme
+   n'est pas fournie, et un module d'une autre serie n'est pas livre.
 
-Le critere est ecrit ici, en un seul endroit, pour etre relu a chaque
-regeneration du site : c'est le fichier qui fait foi, pas une liste maintenue
-a la main. Les rendus (Markdown, TSV, lot) vivent dans
+Le critere est ecrit ici, en un seul endroit : c'est le fichier qui fait foi,
+pas une liste maintenue a la main. Les rendus (Markdown, TSV, lot) vivent dans
 ``pyodide_eligibility_report.py`` : ce module calcule, l'autre met en forme.
 
 Sources utilisees, toutes locales sauf demande explicite :
@@ -51,6 +52,7 @@ from pyodide_eligibility_report import (
     sanitize_verdict,
     select_lot,
 )
+from pyodide_suffisance import CLASSES, Probleme, roue_pure, suffisance_carnet
 
 # ---------------------------------------------------------------------------
 # Regles du critere (source de verite unique)
@@ -276,6 +278,8 @@ class NotebookVerdict:
     local_files: List[str] = field(default_factory=list)
     code_cells: int = 0
     error: Optional[str] = None
+    #: Les dependances non satisfaites pour le bundle, classees.
+    problemes: List[Probleme] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, object]:
         return {
@@ -297,6 +301,8 @@ class NotebookVerdict:
             "local_hors_serie": sorted(set(self.local_hors_serie)),
             "local_files": sorted(set(self.local_files)),
             "code_cells": self.code_cells,
+            "problemes": [{"classe": p.classe, "detail": p.detail}
+                          for p in self.problemes],
             "error": self.error,
         }
 
@@ -577,6 +583,18 @@ def analyse_notebook(
         verdict.motifs.append("import_absent")
         verdict.missing_imports.append(module)
 
+    # Suffisance : le bundle publie des fichiers et n'installe rien. Un import
+    # n'est satisfait que s'il est dans la distribution, s'il est installe
+    # par le carnet lui-meme, ou s'il vient d'un module de la serie livre
+    # avec le carnet et dont les dependances sont satisfaites. Un module
+    # d'une autre serie n'est pas livre par le bundle.
+    suff = suffisance_carnet(
+        root, rel_path, pyodide_packages, stdlib_names, sources=sources,
+        est_roie_pure=lambda pack: roue_pure(pack, wheel_cache, probe))
+    verdict.problemes = [p for p in suff.problemes if p.classe in CLASSES]
+    if verdict.problemes:
+        verdict.motifs.append("suffisance")
+
     # GPU declenche aussi par le contenu des cellules.
     for text in sources:
         if "nvidia-smi" in text or "torch.cuda" in text:
@@ -699,7 +717,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
                 "aucun import GPU",
                 "aucune cle d'API",
                 "aucun service reseau",
-                "tous les imports resolvables (stdlib, local, paquet Pyodide, roue pure)",
+                "tous les imports satisfaits par le bundle (distribution, installation du carnet, module de la serie)",
             ],
         },
         "pyodide": lock_info,

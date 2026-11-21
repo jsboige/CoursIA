@@ -1,6 +1,6 @@
 """Tests for scripts/notebook_tools/pyodide_eligibility.py — critere et classification.
 
-Trois comportements a verrouiller, chacun ne d'une correction mesuree sur le
+Quatre comportements a verrouiller, chacun ne d'une correction mesuree sur le
 census initial :
 
 1. la famille Python se lit sur ``language_info.name`` d'abord (le nom du
@@ -9,9 +9,13 @@ census initial :
 2. un paquet local (dossier a ``__init__.py``) est un module local embarquable,
    pas un import absent ;
 3. le cache des sondes PyPI rend la colonne « roues pures » reproductible hors
-   reseau : sans sonde, aucun acces reseau n'est fait.
+   reseau : sans sonde, aucun acces reseau n'est fait ;
+4. la **suffisance** au bundle (#27583) : le bundle publie des fichiers et
+   n'installe rien, donc une roue pure que le carnet n'installe pas lui-meme,
+   un module d'une autre serie, ou une dependance absente de la distribution
+   ne sont pas fournis -- le carnet est alors refuse.
 
-Issue #27549.
+Issue #27549, alignement #27583.
 """
 
 import json
@@ -99,14 +103,22 @@ class TestPaquetLocal:
         assert "import_absent" not in v.motifs
 
     def test_module_hors_serie_signale_sans_refuser(self, tmp_path):
-        """Un module du depot hors serie est signale, pas refuse."""
+        """Un module du depot hors serie est signale, puis refuse (suffisance).
+
+        Le bundle ne livre que la serie du carnet : un module d'une autre
+        serie n'est pas fourni -- l'alignement (#27583) refuse donc le
+        carnet, sur le motif `suffisance`, en gardant la trace du module
+        signale comme hors serie.
+        """
         helper = tmp_path / "Outils" / "helper.py"
         helper.parent.mkdir(parents=True)
         helper.write_text("", encoding="utf-8")
         v = _verdict(tmp_path, "MyIA.AI.Notebooks/S/Test-01.ipynb",
                      _nb(["import helper"]))
-        assert v.eligible is True
         assert v.local_hors_serie == ["helper"]
+        assert "suffisance" in v.motifs
+        assert v.eligible is False
+        assert [p["classe"] for p in v.to_dict()["problemes"]] == ["hors_serie"]
 
 
 class TestCriteres:
@@ -149,12 +161,28 @@ class TestCriteres:
         assert v.missing_imports == ["paquetquinexistepas"]
 
     def test_roue_pure_connue_par_le_cache(self, tmp_path):
-        """Le cache versionne suffit : aucune sonde reseau n'est faite."""
+        """Le cache versionne suffit : aucune sonde reseau n'est faite.
+
+        La roue pure reste signalee comme telle, mais le carnet est refuse :
+        le bundle ne l'installe pas, et le carnet ne l'installe pas
+        lui-meme (alignement #27583, motif `suffisance`).
+        """
         cache = {"paquetroue": {"pure_wheel": True, "version": "1.0"}}
         v = _verdict(tmp_path, "MyIA.AI.Notebooks/S/Test-01.ipynb",
                      _nb(["import paquetroue"]), cache=cache, probe=False)
-        assert v.eligible is True
         assert v.pure_wheels == ["paquetroue"]
+        assert "suffisance" in v.motifs
+        assert v.eligible is False
+
+    def test_le_carnet_installe_la_roue_pure(self, tmp_path):
+        """Une roue pure que le carnet installe lui-meme est fournie."""
+        cache = {"paquetroue": {"pure_wheel": True, "version": "1.0"}}
+        v = _verdict(tmp_path, "MyIA.AI.Notebooks/S/Test-01.ipynb",
+                     _nb(["import micropip\nmicropip.install('paquetroue')",
+                          "import paquetroue"]), pyodide={"micropip": "0.10.0"},
+                     cache=cache, probe=False)
+        assert v.eligible is True
+        assert v.motifs == []
 
 
 class TestNePasPublierLesNoms:

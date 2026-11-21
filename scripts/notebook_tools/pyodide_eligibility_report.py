@@ -21,7 +21,17 @@ if TYPE_CHECKING:  # pragma: no cover - uniquement pour les annotations
     from pyodide_eligibility import NotebookVerdict
 
 #: Motifs d'exclusion, dans l'ordre de presentation du rapport.
-MOTIFS = ("gpu", "cle", "reseau", "import_absent")
+MOTIFS = ("gpu", "cle", "reseau", "import_absent", "suffisance")
+
+#: Les classes d'ecart de suffisance, dans l'ordre de presentation.
+CLASSES_SUFFISANCE = ("dependance_locale", "hors_serie", "absent_distribution")
+
+#: Ce que dit chaque classe d'ecart (une ligne par classe).
+LIBELLE_CLASSES = {
+    "dependance_locale": "un module de la serie a une dependance absente de la distribution",
+    "hors_serie": "le carnet importe un module d'une autre serie, non livre par le bundle",
+    "absent_distribution": "l'import est une roue pure que le carnet n'installe pas lui-meme",
+}
 
 #: Nom du fichier companion qui porte le detail carnet par carnet des refus.
 REFUS_TSV_NAME = "pyodide-refus.tsv"
@@ -58,6 +68,37 @@ def build_table(verdicts: Sequence["NotebookVerdict"]) -> Dict[str, object]:
                 pm = row["par_motif"]
                 pm[motif] = int(pm.get(motif, 0)) + 1
     return table
+
+
+def eligible_avant_suffisance(verdicts: Sequence["NotebookVerdict"]) -> int:
+    """Le nombre de carnets que le critere acceptait **avant** l'alignement.
+
+    C'est le verdict sans le motif `suffisance` : les autres motifs (GPU,
+    cle, reseau, import absent) sont anterieurs a l'alignement, un carnet
+    refuse pour un GPU l'a toujours ete. La comparaison avant/apres se lit
+    donc sur la meme population.
+    """
+    return sum(1 for v in verdicts
+               if not v.error and not [m for m in v.motifs if m != "suffisance"])
+
+
+def census_suffisance(verdicts: Sequence["NotebookVerdict"]) -> Dict[str, int]:
+    """Le nombre de carnets touches par chaque classe d'ecart.
+
+    Seuls les carnets que le critere **acceptait avant** l'alignement sont
+    comptes : c'est la population qui portait l'ecart. Un carnet compte
+    **une fois** par classe, meme s'il porte plusieurs dependances de cette
+    classe : le recensement est par carnet, comme le reste du rapport.
+    """
+    compte: Dict[str, int] = {classe: 0 for classe in CLASSES_SUFFISANCE}
+    for v in verdicts:
+        if v.error or [m for m in v.motifs if m != "suffisance"]:
+            continue
+        vues = {p.classe for p in (v.problemes or [])}
+        for classe in vues:
+            if classe in compte:
+                compte[classe] += 1
+    return compte
 
 
 def render_markdown(
@@ -119,13 +160,17 @@ def render_markdown(
     lines.append("   interactive de secret. Seuls les **noms** sont collectes, jamais les valeurs.")
     lines.append("3. **Aucun service reseau** : aucun appel a un hote distant (`http(s)://`), aucun port")
     lines.append("   local de service, aucun module client reseau (`requests`, `httpx`, `socket`, ...).")
-    lines.append("4. **Tous les imports resolus** : chaque import est soit dans la bibliotheque")
-    lines.append("   standard, soit un module local du depot (helper du carnet, **paquet inclus** :")
-    lines.append("   un dossier porteur d'un `__init__.py` compte comme un module local), soit un")
-    lines.append("   paquet present dans `pyodide-lock.json`, soit un paquet PyPI existant en roue")
-    lines.append("   pure (`py3-none-any`), installable par `micropip` dans le navigateur.")
+    lines.append("4. **Tous les imports satisfaits par le bundle** : chaque import est soit dans la")
+    lines.append("   bibliotheque standard, soit un paquet present dans `pyodide-lock.json`, soit")
+    lines.append("   installe par le carnet lui-meme (`micropip`, `%pip`, `!pip`), soit fourni par un")
+    lines.append("   module de la **serie** du carnet livre avec lui (helper du carnet, **paquet")
+    lines.append("   inclus** : un dossier porteur d'un `__init__.py` compte comme un module local)")
+    lines.append("   dont les propres dependances sont satisfaites. Le bundle publie des fichiers")
+    lines.append("   et n'installe rien : une roue pure que le carnet n'installe pas n'est pas")
+    lines.append("   fournie, et un module d'une autre serie n'est pas livre.")
     lines.append("")
-    lines.append("Le refus porte toujours un motif : `gpu`, `cle`, `reseau` ou `import_absent`.")
+    lines.append("Le refus porte toujours un motif : `gpu`, `cle`, `reseau`, `import_absent` ou")
+    lines.append("`suffisance` (une dependance que le bundle ne pourra pas fournir).")
     lines.append("")
     lines.append("Lock de reference : `%s` (%s, %s paquets)." % (
         os.path.basename(str(lock_info.get("lock"))),
@@ -141,14 +186,44 @@ def render_markdown(
 
     lines.append("## Table par serie")
     lines.append("")
-    lines.append("| Serie | Carnets Python | Eligibles | Refuses | dont GPU | dont cle | dont reseau | dont import absent |")
-    lines.append("|---|---:|---:|---:|---:|---:|---:|---:|")
+    lines.append("| Serie | Carnets Python | Eligibles | Refuses | dont GPU | dont cle | dont reseau | dont import absent | dont suffisance |")
+    lines.append("|---|---:|---:|---:|---:|---:|---:|---:|---:|")
     for serie in sorted(table):
         row = table[serie]
         pm = row["par_motif"]
-        lines.append("| %s | %d | %d | %d | %d | %d | %d | %d |" % (
+        lines.append("| %s | %d | %d | %d | %d | %d | %d | %d | %d |" % (
             serie, row["carnets"], row["eligibles"], row["refuses"],
-            pm.get("gpu", 0), pm.get("cle", 0), pm.get("reseau", 0), pm.get("import_absent", 0)))
+            pm.get("gpu", 0), pm.get("cle", 0), pm.get("reseau", 0),
+            pm.get("import_absent", 0), pm.get("suffisance", 0)))
+    lines.append("")
+
+    lines.append("## Classes d'ecart de suffisance")
+    lines.append("")
+    lines.append("Le bundle publie des fichiers et n'installe rien : un import n'est fourni que s'il")
+    lines.append("est dans la distribution, s'il est installe par le carnet, ou s'il vient d'un module")
+    lines.append("de la serie livre avec le carnet. Trois classes d'ecart separent alors le critere de")
+    lines.append("ce que le bundle livre -- chacune compte des **carnets**, un carnet compte une fois")
+    lines.append("par classe :")
+    lines.append("")
+    lines.append("| Classe | Ce qu'elle dit | Carnets |")
+    lines.append("|---|---|---:|")
+    census = census_suffisance(verdicts)
+    for classe in CLASSES_SUFFISANCE:
+        lines.append("| `%s` | %s | %d |" % (
+            classe, LIBELLE_CLASSES[classe], census.get(classe, 0)))
+    lines.append("")
+    lines.append("Ces trois classes sont mesurees sur la population que le critere acceptait")
+    lines.append("**avant** l'alignement -- un carnet deja refuse pour un GPU ou une cle n'y")
+    lines.append("figure pas : son ecart de suffisance ne changeait rien a ce que le critere")
+    lines.append("disait. Le comptage avant/apres est donc sur la meme population :")
+    lines.append("")
+    lines.append("| Mesure | Avant | Apres |")
+    lines.append("|---|---:|---:|")
+    lines.append("| Carnets eligibles | %d | %d |" % (
+        eligible_avant_suffisance(verdicts), len(eligibles)))
+    lines.append("")
+    lines.append("Le detail des dependances est dans le fichier `%s` (colonne `suffisance`)."
+                 % os.path.basename(REFUS_TSV_NAME))
     lines.append("")
 
     lines.append("## Carnets eligibles")
@@ -238,6 +313,9 @@ def render_refus_tsv(verdicts: Sequence["NotebookVerdict"],
             detail.append("reseau=%s" % ",".join(sorted(set(v.network_detail))[:4]))
         if v.missing_imports:
             detail.append("import_absent=%s" % ",".join(sorted(set(v.missing_imports))[:6]))
+        if v.problemes:
+            detail.append("suffisance=%s" % ";".join(
+                "%s:%s" % (p.classe, p.detail) for p in v.problemes[:4]))
         if v.error:
             detail.append("erreur=%s" % v.error[:120])
         lines.append("%s\t%s\t%s\t%s" % (
