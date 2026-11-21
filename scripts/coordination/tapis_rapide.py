@@ -10,10 +10,10 @@ Doc : docs/reference/tapis-rapide.md.
 
 Usage : tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json] [--jours 45]
     [--cache-s 300] [--graine S] [--lecture <dossier>] [--allow-stale]
-    (sorties : 0 tirage, y compris sur la lecture de secours du cache de moins
-     de 12 h ; 3 lecture incomplete sans secours ; 4 main perime ou organe
-     divergent. Aucune sortie ne renvoie au tapis lourd (#26926). Une mesure
-     Origami en echec ne bloque pas le tirage -- fail-OPEN)
+    (sorties : 0 tirage (aussi sur le cache de secours de moins de 12 h) ;
+     3 lecture incomplete sans secours ; 4 main perime ou organe divergent ;
+     aucune sortie ne renvoie au tapis lourd (#26926) ; une mesure Origami en
+     echec ne bloque pas le tirage -- fail-OPEN)
 """
 from __future__ import annotations
 
@@ -27,6 +27,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import frozen_campaigns, gh_bulk, tapis_equilibre, tapis_origami, tapis_service
+from coordination import tapis_dernier_grain
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -81,6 +82,9 @@ class Etat:
     notes: list[str] = field(default_factory=list)
     mon_claim: bool = False
     occupes: list[tuple[str, str]] = field(default_factory=list)  # (lane, paths) bornes
+    #: L'etat de grain (c3274) : `grain`, `passage_seul`, `jamais_servie` ou
+    #: `non_measurable`. `None` = inconnu (la voie legere ne lit pas le fil).
+    etat_grain: str | None = None
 
 
 def parent_de(it: dict) -> int | None:
@@ -98,9 +102,8 @@ def _conteneur_de(titre: str, labels: list[str]) -> bool:
     """Label EPIC/umbrella, ou titre `[EPIC...` qui ne nomme pas de parent
     (un `[EPIC #N] Phase 2` est une tranche).
 
-    C'est la meme regle sur les **metadonnees seules** (titre + labels) que sur
-    le corps complet : la voie legere doit classer un conteneur comme un
-    conteneur, sans attendre la lecture de son corps."""
+    Meme regle sur les **metadonnees seules** (titre + labels) que sur le corps
+    complet : la voie legere classe un conteneur sans lire son corps."""
     if any(lab.strip().lower() in LABELS_CONTENEUR for lab in labels):
         return True
     titre = titre or ""
@@ -276,6 +279,7 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     ouvertes, parents, filles, ctx = _contexte(lecture, lane, maintenant, jours)
     nommes = {p for p in parents.values() if p is not None}
     resultat = []
+    depuis = maintenant - timedelta(days=tapis_equilibre.FENETRE_J)
     for n, it in ouvertes.items():
         ancetres, famille = _ancetres(n, parents)
         labels = list(it.get("labels") or [])
@@ -283,10 +287,15 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
                  famille, n in nommes or _conteneur_propre(it),
                  any(lab.strip().lower() == LABEL_CONSOLIDATION for lab in labels))
         evts = evenements(it.get("comments") or [])
-        e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
-            evts, lecture.citations.get(n, []), maintenant)
-        _decider(e, it, evts, ancetres, ctx)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
+        # Raccord du classement (c3274) : une prise en charge nominative est
+        # une visite, une citation Git n'en est pas une ; l'etat de grain
+        # distingue l'absence ETABLIE de l'absence NON MESURABLE (fil partiel).
+        e.etat_grain = tapis_dernier_grain.depuis_evenements(
+            evts, lecture.citations.get(n, []), numero=n, fil_complet=(total <= lus),
+            depuis=depuis).etat
+        e.derniere_visite, e.visites_total, e.visites = tapis_dernier_grain.compter_grains(evts, depuis)
+        _decider(e, it, evts, ancetres, ctx)
         if e.ecart is None and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
         resultat.append(e)
@@ -296,9 +305,8 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
 def _parquer(tous: list[Etat], parcs: dict[int, str]) -> None:
     """Les EPICs Origami dont le pli suivant n'est pas deplie sortent du tirage.
 
-    Le parcage est applique **apres** les autres ecarts : celui qui gagne
-    reste le plus informatif pour la lane (un EPIC deja livre le reste livre).
-    """
+    Le parcage est applique **apres** les autres ecarts : celui qui gagne reste
+    le plus informatif pour la lane."""
     for e in tous:
         if e.numero in parcs and e.ecart is None:
             e.ecart, e.motif = "ORIGAMI", parcs[e.numero]
@@ -310,21 +318,54 @@ def graine_defaut(lane: str, maintenant: datetime) -> str:
     return f"{lane}|{m:%Y-%m-%d}|{m.hour // 4}"
 
 
+def _servable(e: Etat) -> bool:
+    """Une issue que le tapis peut servir.
+
+    Le #27059 elargit cette notion aux ecarts de recul (COUVERTE, RELACHEE,
+    MERGEE) : quand sa definition est presente, on la suit, sinon celle
+    d'avant (aucun ecart dur) -- sans quoi `ordonner` ecarterait du tour des
+    issues que le tirage du #27059 entend servir."""
+    f = globals().get("servable")
+    return f(e) if f is not None else e.ecart is None
+
+
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
              graine: str | None = None, rotation: bool = True) -> list[Etat]:
-    """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`) :
-    le niveau le moins visite d'abord, la plus ancienne issue d'abord."""
+    """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`).
+
+    Invariant de couverture (#27590, dispatch `c0013-tapis-coverage-20`) : une
+    issue **jamais visitée** ne cède jamais sa place à une issue deja visitée ;
+    le conteneur jamais visite que le quota ecarte passe en second temps.
+    """
     graine = graine or graine_defaut(lane, maintenant)
-    servables = [e for e in etats_ if e.ecart is None]
+    servables = [e for e in etats_ if _servable(e)]
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
+    pris = {e.numero for e in file}
+    # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute ni ne
+    # bloque la place d'une issue du pool (sinon il passerait devant le grain).
+    jamais = {e.numero for e in servables
+              if e.visites == 0 and not tapis_equilibre.est_marathon(e)}
     tour = tapis_equilibre.ordre(etats_, [e for e in servables if not e.mon_claim],
                                  graine, maintenant, rotation=rotation)
-    quota, pris = max(1, int(grains * PART_CONTENEURS)), set()
+    quota = max(1, int(grains * PART_CONTENEURS))
+    reportes: list[Etat] = []
     for e in tour:  # un conteneur ne passe que dans son quota
-        if len(file) < grains and (not e.conteneur or quota > 0):
-            quota -= e.conteneur
-            file.append(e)
-            pris.add(e.numero)
+        if len(file) >= grains:
+            break
+        if e.visites > 0 and (jamais - pris):
+            # Une issue deja visitée ne prend pas la place d'une jamais visitée.
+            continue
+        if e.conteneur and quota <= 0:
+            reportes.append(e)  # jamais visitée : elle passe en second temps
+            continue
+        quota -= e.conteneur
+        file.append(e)
+        pris.add(e.numero)
+    for e in reportes:  # second temps : les conteneurs jamais visités
+        if len(file) >= grains:
+            break
+        file.append(e)
+        pris.add(e.numero)
     file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
     # Vos claims, puis les grains, puis les conteneurs (#26926) : un conteneur
     # demande une lecture et un --paths, il ne passe jamais devant un grain.
