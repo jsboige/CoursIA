@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from coordination import gh_bulk, gh_cache_fichier
+from coordination import gh_bulk, gh_cache_fichier, tapis_sature
 
 VERIF = "python scripts/check_lane_claim.py {n} --lane {lane}"
 VERIF_CONTENEUR = VERIF + " --paths <vos chemins>"
@@ -35,6 +35,7 @@ def grain_servi(rang: int, e, lane: str, priorite: list[str],
     g = {"rang": rang, "numero": e.numero, "titre": e.titre, "famille": e.famille,
          "parent": e.parent, "conteneur": e.conteneur, "notes": e.notes,
          "consolidation": e.consolidation, "derniere_visite": e.derniere_visite,
+         "visites": e.visites, "visites_total": e.visites_total,
          "priorite": priorite,
          "avant_d_editer": (VERIF_CONTENEUR if e.conteneur else VERIF).format(
              n=e.numero, lane=lane)}
@@ -116,6 +117,8 @@ def texte(r: dict, source: str) -> str:
     comptes = ", ".join(f"{code} {len(v)}" for code, v in r["ecartees"].items())
     total = sum(len(v) for v in r["ecartees"].values())
     lignes.append(f"\nEcartees sans sonde : {comptes} (total {total})")
+    eteints = r.get("eteints") or []
+    lignes += tapis_sature.lignes_urne(eteints)
     rev = r.get("reverif_fils")
     if rev:
         jetes = ", ".join(f"{j['code']} #{j['numero']}" for j in rev["jetes"]) or "aucun"
