@@ -107,3 +107,25 @@ def test_page_vide_arrete_la_pagination():
     fichiers = mr.fetch_pr_files(runner, 123, _vue(1, changes=150), {})
     assert fichiers == [{"path": "src/a.py"}]
     assert len(runner.calls) == 1
+
+
+def test_ligne_rest_sans_nom_de_fichier_rend_none():
+    # Reserve 1 de NanoClaw (#27749) : une ligne REST sans `filename` ni
+    # `path` ne doit pas produire `{"path": ""}` — un chemin vide ne matche
+    # aucune exclusion de perimetre, la garde le lirait comme « hors
+    # harnais ». Fail-closed : la ligne est illisible, la liste entiere
+    # l'est aussi.
+    runner = RunnerFaux(
+        pages={123: [[{"filename": "src/a.py"}, {"sha": "abc123"}]]}
+    )
+    assert mr.fetch_pr_files(runner, 123, _vue(100, changes=150), {}) is None
+
+
+def test_ligne_rest_au_chemin_vide_rend_none():
+    runner = RunnerFaux(pages={123: [[{"filename": "src/a.py"}, {"filename": "  "}]]})
+    assert mr.fetch_pr_files(runner, 123, _vue(100, changes=150), {}) is None
+
+
+def test_ligne_rest_au_champ_path_non_chaine_rend_none():
+    runner = RunnerFaux(pages={123: [[{"filename": "src/a.py"}, {"filename": 42}]]})
+    assert mr.fetch_pr_files(runner, 123, _vue(100, changes=150), {}) is None

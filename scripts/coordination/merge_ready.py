@@ -1802,7 +1802,17 @@ def fetch_pr_files(
         for row in data:
             if not isinstance(row, dict):
                 return None
-            fichiers.append({"path": str(row.get("filename") or row.get("path") or "")})
+            chemin = row.get("filename") or row.get("path")
+            if not isinstance(chemin, str) or not chemin.strip():
+                # Fail-closed (reserve 1 de NanoClaw, #27749) : une ligne sans
+                # nom de fichier ne vaut pas « fichier hors perimetre » — un
+                # chemin vide ne matche aucune exclusion, donc la garde le
+                # lirait comme du hors harnais. La ligne est ILLISIBLE : on
+                # rend `None` comme pour une lecture impossible, et l'appelant
+                # bloque sur `files-unreadable` au lieu de trancher sur une
+                # liste incomplete.
+                return None
+            fichiers.append({"path": chemin})
         if len(data) < PR_FILES_PER_PAGE:
             break
         if isinstance(changed, int) and len(fichiers) >= changed:
