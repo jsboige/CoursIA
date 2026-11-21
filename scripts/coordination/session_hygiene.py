@@ -327,32 +327,50 @@ def check_branch(root: Path) -> list[Check]:
 
 
 def check_main_hostage(root: Path) -> list[Check]:
-    """``main`` detenu par un worktree secondaire = ``git checkout main`` echoue en silence."""
+    """``main`` detenu par un worktree qui n'est pas l'arbre principal = ``git checkout main`` echoue en silence.
+
+    L'arbre principal est la PREMIERE entree de ``git worktree list`` : c'est lui
+    qui heberge le depot commun, et c'est dans lui que ``git checkout main`` doit
+    aboutir. Mesure du 2026-11-21 (issue #27696) : lance depuis un worktree
+    secondaire, le predicat precedent prenait ``root`` pour l'arbre principal et
+    signalait l'arbre principal -- detenteur legitime de ``main`` -- comme
+    ravisseur, avec un remede destructeur (``git worktree remove`` sur l'arbre
+    partage).
+    """
     raw = git("worktree", "list", "--porcelain", cwd=root)
-    holder = None
-    current_path = None
+    entries: list[tuple[str, str]] = []
     for line in raw.splitlines():
         if line.startswith("worktree "):
-            current_path = line[len("worktree ") :].strip()
-        elif line.strip() in ("branch refs/heads/main", "branch refs/heads/master"):
-            if current_path and Path(current_path).resolve() != root.resolve():
-                holder = current_path
+            entries.append((line[len("worktree ") :].strip(), ""))
+        elif line.strip().startswith("branch ") and entries:
+            path, _ref = entries[-1]
+            entries[-1] = (path, line.strip()[len("branch ") :])
 
-    count = len([ln for ln in raw.splitlines() if ln.startswith("worktree ")])
+    principal = Path(entries[0][0]).resolve() if entries else None
+    holder = None
+    for path, ref in entries[1:]:
+        if ref in ("refs/heads/main", "refs/heads/master"):
+            holder = path
+
+    count = len(entries)
     checks = []
     if holder:
         checks.append(
             Check(
                 "main-otage",
                 RED,
-                f"'main' est detenu par le worktree {holder} — un `git checkout main` "
-                f"dans l'arbre principal ECHOUE, et son message se perd dans le bruit",
-                f"verifier qu'il est propre, puis: git worktree remove {holder}",
-                {"holder": holder},
+                f"'main' est detenu par le worktree secondaire {holder} — un "
+                f"`git checkout main` dans l'arbre principal ECHOUE, et son message "
+                f"se perd dans le bruit",
+                f"lui faire quitter main (git -C {holder} checkout <branche>) ou, "
+                f"s'il est propre et inutile, git worktree remove {holder}",
+                {"holder": holder, "principal": str(principal) if principal else None},
             )
         )
     else:
-        checks.append(Check("main-otage", GREEN, "aucun worktree ne detient main"))
+        checks.append(
+            Check("main-otage", GREEN, "main n'est detenu par aucun worktree secondaire")
+        )
 
     if count > 40:
         lvl = RED if count > 80 else AMBER

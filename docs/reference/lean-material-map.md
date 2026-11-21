@@ -16,8 +16,8 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 34 | 26 | declare | couverte | ok (1) | - | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 1 hors site (5 carnets) | - | 2026-06-25 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
-| `MyIA.AI.Notebooks/Compression/Compression_lean` | 15 | 2 | declare | couverte | ok (1) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | 15 | 14 | declare | couverte | ok (1) | - | 2026-06-10 |
+| `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean` | 15 | 2 | declare | couverte | ok (1) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | 15 | 14 | declare | couverte | ok (2) | - | 2026-10-02 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 12 | 10 | declare | couverte | ok (4) | - | 2026-05-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | 11 | 0 | declare | couverte | ok (1) | - | 2026-09-21 |
@@ -42,6 +42,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean` | 5 | 0 | declare | couverte | non consomme | - | 2026-11-13 |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 1 hors site (2 carnets) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean` | 4 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-08 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean` | 4 | 0 | declare | couverte | non consomme | - | 2026-11-16 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean` | 4 | 0 | declare | couverte | non consomme | - | 2026-10-18 |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean` | 4 | 3 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/IIT/iit_lean` | 3 | 1 | declare | couverte | ok (4) | - | 2026-10-24 |
@@ -56,11 +57,11 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 
 ## Ce que la carte etablit
 
-41 lacs propres, plus 2 dossier vendu. Les lacs hors CI sont listes ci-dessous : ce sont eux qui rendent une consolidation invisible depuis la matrice de build.
+42 lacs propres, plus 2 dossier vendu. Les lacs hors CI sont listes ci-dessous : ce sont eux qui rendent une consolidation invisible depuis la matrice de build.
 
 ### Reconciliation
 
-522 modules + 387 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 946 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
+526 modules + 387 miroirs attribues a un lac + 11 fichiers hors lac + 26 fichiers ecartes (dossier vendu, ou extension `.lean` portee par un fichier qui n'est pas du Lean) = 950 fichiers `.lean` traces, soit la population entiere de `git ls-files '*.lean'`. Un fichier qui n'apparait dans aucune de ces quatre colonnes a ete perdu en route : c'est le defaut que cette reconciliation rend visible.
 
 ### Lacs hors CI
 
