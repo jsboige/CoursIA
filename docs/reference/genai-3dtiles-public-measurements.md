@@ -6,7 +6,7 @@
 
 Cette note distingue deux observations qui ne doivent pas être confondues : le comportement d'un viewer public observé sur une scène publiée, et un prototype local construit pour tester une diffusion hiérarchique. Elles documentent un cas d'usage et un protocole de mesure ; elles ne certifient ni la précision géométrique, ni l'exactitude d'un modèle terrain, ni les performances d'un service en production.
 
-Le carnet pédagogique [3D-10 — SIG web : couches, repères et niveaux de détail](../MyIA.AI.Notebooks/GenAI/3D/10-SIG-3D-Tiles-Python.ipynb) reste volontairement autonome et synthétique : il compare des grilles et illustre les niveaux de détail, sans service distant, sans Cesium et sans mesure réseau. Les observations ci-dessous ne sont donc pas des sorties de ce carnet.
+Le carnet pédagogique [3D-10 — SIG web : couches, repères et niveaux de détail](../../MyIA.AI.Notebooks/GenAI/3D/10-SIG-3D-Tiles-Python.ipynb) reste volontairement autonome et synthétique : il compare des grilles et illustre les niveaux de détail, sans service distant, sans Cesium et sans mesure réseau. Les observations ci-dessous ne sont donc pas des sorties de ce carnet.
 
 ## 1. Viewer public — scène monolithique
 
@@ -32,4 +32,4 @@ Pour une comparaison reproductible, répéter chaque scénario avec cache froid 
 
 ## Référence pédagogique
 
-Le carnet [`3D-10-SIG-3D-Tiles-Python.ipynb`](../MyIA.AI.Notebooks/GenAI/3D/10-SIG-3D-Tiles-Python.ipynb) explique les rôles différents de WMS, WMTS, services de terrain et 3D Tiles, et montre le sous-échantillonnage d'une grille synthétique. Il indique explicitement que cette simulation n'est ni un format 3D Tiles ni une mesure réseau.
+Le carnet [`3D-10-SIG-3D-Tiles-Python.ipynb`](../../MyIA.AI.Notebooks/GenAI/3D/10-SIG-3D-Tiles-Python.ipynb) explique les rôles différents de WMS, WMTS, services de terrain et 3D Tiles, et montre le sous-échantillonnage d'une grille synthétique. Il indique explicitement que cette simulation n'est ni un format 3D Tiles ni une mesure réseau.
