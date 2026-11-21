@@ -88,7 +88,9 @@ def test_temoin_26534_le_grain_rendu_est_ejecte_et_remplace():
     ejecte = next(e for e in tous if e.numero == 26534)
     assert "rendue par" in ejecte.motif
     r = tr.rapport(lec, tous, file2, LANE, NOW, "g")
-    assert r["ecartees"]["RELACHEE"][0]["numero"] == 26534
+    # #22983 : RELACHEE est un ecart de recul -- le grain recule, il n'est pas jete
+    assert r["en_recul"]["RELACHEE"][0]["numero"] == 26534
+    assert "RELACHEE" not in r["ecartees"]
     r["reverif_fils"] = stats  # le main porte la passe dans le rapport
     sortie = tr.texte(r, "test")
     assert "re-decides sur fil complet" in sortie and "RELACHEE #26534" in sortie
@@ -190,7 +192,8 @@ def test_borne_d_appels_arrete_en_disant():
 
 def test_cli_json_en_ligne_porte_la_reverif(monkeypatch, capsysbinary):
     """En ligne (ni --lecture ni cache), la passe tourne au moment du service,
-    ejecte le temoin et se lit dans --json."""
+    ejecte le temoin de la tete et se lit dans --json ; RELACHEE etant un ecart
+    de recul (#22983), le temoin reste servi, derriere son remplacant."""
     it, complets = _temoin_26534()
     lec = lecture([it, issue(11, comments=[_visite(150)], cree="2026-02-01T00:00:00Z")])
     monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: lec)
@@ -201,9 +204,10 @@ def test_cli_json_en_ligne_porte_la_reverif(monkeypatch, capsysbinary):
                    lire_fils=lambda n: complets if n == 26534 else [])
     sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
     assert code == 0
-    assert 26534 not in [g["numero"] for g in sortie["grains"]]
+    servis = [g["numero"] for g in sortie["grains"]]
+    assert servis.index(11) < servis.index(26534)  # le remplacant passe devant
     assert sortie["reverif_fils"]["jetes"][0]["code"] == "RELACHEE"
-    assert sortie["ecartees"]["RELACHEE"][0]["numero"] == 26534
+    assert sortie["en_recul"]["RELACHEE"][0]["numero"] == 26534
 
 
 def test_rejeu_hors_ligne_ne_relit_rien(tmp_path, capsysbinary):

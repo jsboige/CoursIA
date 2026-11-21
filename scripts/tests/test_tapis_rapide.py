@@ -191,6 +191,51 @@ def test_relachee_trois_jours_puis_resservie():
     assert etat(lec, 6).ecart == "RELACHEE"    # un conteneur rendu aussi
 
 
+def test_le_recul_sert_apres_et_ne_franchit_aucun_verrou():
+    """Le tapis ne refuse jamais (continue.md P3) : COUVERTE, RELACHEE et MERGEE
+    servent l'issue APRES les autres. Un ecart dur (PLAFOND) l'emporte sur un
+    recul, et un claim vivant d'une autre lane verrouille une issue en recul."""
+    rendue = f"[RELEASED] lane {AUTRE} -- barriere reelle, mesuree"
+    prs = [{"number": 900, "title": "Fix(x,#2): y", "body": f"Grain: x -- lane {AUTRE}"},
+           {"number": 901, "title": "Fix(x,#4): y", "body": f"Grain: x -- lane {AUTRE}"}]
+    lec = lecture([
+        issue(1),
+        issue(2),                                         # COUVERTE : recul
+        issue(3, comments=[com(24, rendue)]),             # RELACHEE : recul
+        issue(4, comments=[com(2, f"[CLAIMED] lane {AUTRE} -- je prends")]),
+        issue(5, labels=["EPIC"], comments=[             # PLAFOND (dur) + RELACHEE
+            com(30, f"[CLAIMED] lane {AUTRE} -- paths: x/**"), com(24, rendue)]),
+    ], prs=prs)
+    tous = tr.etats(lec, LANE, NOW)
+    par = {e.numero: e for e in tous}
+    assert par[2].ecart == "COUVERTE" and tr.servable(par[2])
+    assert par[2].notes[-1].startswith("servie en recul (COUVERTE)")
+    assert par[3].ecart == "RELACHEE" and tr.servable(par[3])
+    assert par[4].ecart == "RECLAMEE" and not tr.servable(par[4])  # verrou tenu
+    assert par[5].ecart == "PLAFOND" and not tr.servable(par[5])   # le dur l'emporte
+    file = [e.numero for e in tr.ordonner(tous, LANE, NOW, 8)]
+    assert file[0] == 1 and sorted(file[1:]) == [2, 3]  # servies, apres l'issue libre
+
+
+def test_un_grain_en_recul_passe_devant_un_conteneur_hors_quota():
+    """#26926 : un conteneur ne passe jamais devant un grain, meme en recul.
+    Quatre places, quota conteneurs de 1 : le grain libre, un conteneur dans
+    son quota, puis les deux grains en recul -- les conteneurs hors quota ne
+    comblent que ce qui reste."""
+    rendue = f"[RELEASED] lane {AUTRE} -- barriere reelle, mesuree"
+    prs = [{"number": 900, "title": "Fix(x,#2): y", "body": f"Grain: x -- lane {AUTRE}"}]
+    lec = lecture([
+        issue(1),
+        issue(2),                                         # COUVERTE : recul
+        issue(3, comments=[com(24, rendue)]),             # RELACHEE : recul
+        issue(10, titre="[EPIC] a"), issue(11, titre="[EPIC] b"),
+        issue(12, titre="[EPIC] c"),
+    ], prs=prs)
+    file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 4)
+    assert sorted(e.numero for e in file if not e.conteneur) == [1, 2, 3]
+    assert sum(e.conteneur for e in file) == 1  # le seul conteneur du quota
+
+
 def test_livree_info_avec_lane_avant_le_mot():
     """Forme de #20603 (13/11) : le mot vient apres `lane X --` sur la ligne du tag."""
     lec = lecture([
@@ -537,12 +582,17 @@ def test_cli_json_sur_un_dossier(tmp_path, capsysbinary):
     code = tr.main(["--lane", LANE, "--lecture", str(dossier), "--json"],
                    run=lambda argv, timeout: "")
     sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
-    assert code == 0 and len(sortie["grains"]) == 6
+    # Le tapis ne refuse jamais : #1, citee par une PR ouverte, est SERVIE en
+    # recul, apres les trois grains sans ecart et avant les conteneurs.
+    assert code == 0 and len(sortie["grains"]) == 7
     assert sortie["vos_prs"] == [{"numero": 900, "titre": "Ma PR", "age_j": 1.2}]
-    assert sortie["ecartees"]["COUVERTE"] == [{"numero": 1, "motif":
+    assert "COUVERTE" not in sortie["ecartees"]
+    assert sortie["en_recul"]["COUVERTE"] == [{"numero": 1, "motif":
                                                "votre PR #900 la cite : portez-la au merge"}]
-    assert sortie["lecture"]["issues"] == 7 and sortie["maintenant"] == tr._iso(NOW)
-    assert set(sortie) >= {"grains", "vos_prs", "ecartees", "lecture"}
+    assert [g["numero"] for g in sortie["grains"]].index(1) == 3
+    assert sortie["lecture"]["issues"] == 7 and sortie["lecture"]["en_recul"] == 1
+    assert sortie["lecture"]["servables"] == 7 and sortie["maintenant"] == tr._iso(NOW)
+    assert set(sortie) >= {"grains", "vos_prs", "ecartees", "en_recul", "lecture"}
 
 
 def test_cli_pool_vide_dit_en_clair(tmp_path, capsysbinary):

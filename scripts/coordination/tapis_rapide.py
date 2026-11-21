@@ -54,6 +54,15 @@ LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
 # n'ont plus d'usage ici, seul le code d'ecart HORSFLOTTE reste a cabler.
 CODES = ("HORSFLOTTE", "LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE",
          "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE")
+# Mesure du 17/11 07:33Z, lane po-2028:CoursIA : 16 servables sur 400 lues,
+# dont 11 conteneurs ; COUVERTE 41, RELACHEE 47, MERGEE 79 ecartees.
+RECULS = frozenset({"COUVERTE", "RELACHEE", "MERGEE"})
+
+
+def servable(e: Etat) -> bool:
+    """Servie si aucun ecart, ou un ecart de recul (servie apres les autres)."""
+    return e.ecart is None or e.ecart in RECULS
+
 
 _CITE_RE = re.compile(r"#(\d+)\b")
 _PART_OF_RE = re.compile(r"\bpart\s+of\s*:?\s*#(\d+)\b", re.IGNORECASE)
@@ -213,12 +222,12 @@ def _reclamee(e: Etat, evts: list[Evt], lane: str, maintenant: datetime) -> None
         elif e.conteneur and ev.paths is not None:
             e.occupes.append((autre, ev.paths))  # servis en entier (#26926)
             e.notes.append(f"claim borne de {autre}")
-        elif e.ecart is None:
+        elif servable(e):  # un claim vivant verrouille aussi une issue en recul
             e.ecart, e.motif = "RECLAMEE", f"claim de {autre} du {_iso(ev.quand)[:16]}Z"
 
 
 def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict) -> None:
-    """Le premier ecart qui s'applique gagne ; chacun est decide localement."""
+    """Le premier ecart dur gagne ; sans lui, le premier recul (RECULS)."""
     regles = [
         ("HORSFLOTTE", lambda: ecart_hors_flotte(it.get("body") or "")),
         ("LABEL", lambda: "label candidate-delivered : urne de cloture (coordinateur, adjoint)"
@@ -233,10 +242,16 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
         ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
                                      ctx["lane"], ctx["maintenant"])),
     ]
+    recul = None
     for code, regle in regles:
         if motif := regle():
-            e.ecart, e.motif = code, motif
-            return
+            if code not in RECULS:  # un ecart dur l'emporte toujours sur un recul
+                e.ecart, e.motif = code, motif
+                return
+            recul = recul or (code, motif)
+    if recul:
+        e.ecart, e.motif = recul
+        e.notes.append(f"servie en recul ({recul[0]}) : {recul[1]}")
     _reclamee(e, evts, ctx["lane"], ctx["maintenant"])
 
 
@@ -292,7 +307,7 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
         e.derniere_visite, e.visites_total, e.visites = tapis_dernier_grain.compter_grains(
             evts, depuis)
         _decider(e, it, evts, ancetres, ctx)
-        if e.ecart is None and total > lus:
+        if servable(e) and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
         resultat.append(e)
     return resultat
@@ -305,7 +320,7 @@ def _parquer(tous: list[Etat], parcs: dict[int, str]) -> None:
     reste le plus informatif pour la lane (un EPIC deja livre le reste livre).
     """
     for e in tous:
-        if e.numero in parcs and e.ecart is None:
+        if e.numero in parcs and servable(e):
             e.ecart, e.motif = "ORIGAMI", parcs[e.numero]
 
 
@@ -315,17 +330,27 @@ def graine_defaut(lane: str, maintenant: datetime) -> str:
     return f"{lane}|{m:%Y-%m-%d}|{m.hour // 4}"
 
 
-def _servable(e: Etat) -> bool:
-    """Une issue que le tapis peut servir.
-
-    Le #27059 elargit cette notion aux ecarts de recul (COUVERTE, RELACHEE,
-    MERGEE), servis apres les autres : quand sa definition est presente, on la
-    suit ; sinon on garde celle d'avant (aucun ecart dur). Sans cette
-    compatibilite, le filtre de `ordonner` ecarterait du tour des issues que
-    le tirage du #27059 entend servir.
-    """
-    f = globals().get("servable")
-    return f(e) if f is not None else e.ecart is None
+def _palier_recul(etats_: list[Etat], file: list[Etat], pris: set[int],
+                  reportes: list[Etat], quota: int, grains: int, graine: str,
+                  maintenant: datetime) -> None:
+    """Les issues en recul (RECULS), apres le tour (#27059) ; un grain passe devant un
+    conteneur hors quota (#26926), une issue deja visitee jamais devant un reporte (#27590)."""
+    en_recul = [e for e in etats_ if e.ecart in RECULS]
+    recul_file = sorted((e for e in en_recul if e.mon_claim),
+                        key=lambda e: (e.cree_le, e.numero))
+    recul_file += tapis_equilibre.ordre(
+        etats_, [e for e in en_recul if not e.mon_claim], graine, maintenant)
+    attente = {e.numero for e in reportes if not tapis_equilibre.est_marathon(e)}
+    for e in recul_file:
+        if len(file) >= grains:
+            break
+        if e.visites > 0 and attente:
+            continue
+        if e.conteneur and quota <= 0:
+            continue
+        quota -= e.conteneur
+        file.append(e)
+        pris.add(e.numero)
 
 
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
@@ -346,7 +371,8 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
     l'ordre final (les grains d'abord) restent inchangés.
     """
     graine = graine or graine_defaut(lane, maintenant)
-    servables = [e for e in etats_ if _servable(e)]
+    # Le recul a son palier apres le tour (#27059), jamais devant les issues libres.
+    servables = [e for e in etats_ if e.ecart is None]
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
     pris = {e.numero for e in file}
     # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute pas la
@@ -371,6 +397,7 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
         quota -= e.conteneur
         file.append(e)
         pris.add(e.numero)
+    _palier_recul(etats_, file, pris, reportes, quota, grains, graine, maintenant)
     for e in reportes:  # second temps : les conteneurs jamais visités
         if len(file) >= grains:
             break
@@ -388,13 +415,16 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
     conso, prs_par = tapis_equilibre.familles_consolidation(etats_), _prs_par_issue(lecture.prs)
     vos = sorted((pr for pr in lecture.prs if lane_de_pr(pr) == lane),
                  key=lambda pr: pr.get("created_at") or "")
-    ecartees: dict[str, list[dict]] = {code: [] for code in CODES}
+    ecartees: dict[str, list[dict]] = {code: [] for code in CODES if code not in RECULS}
+    en_recul: dict[str, list[dict]] = {code: [] for code in CODES if code in RECULS}
     for e in etats_:
         if e.ecart:
-            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif})
+            (en_recul if e.ecart in RECULS else ecartees)[e.ecart].append(
+                {"numero": e.numero, "motif": e.motif})
     return {
         "lane": lane, "graine": graine, "maintenant": _iso(maintenant),
-        "lecture": {"issues": len(etats_), "servables": sum(e.ecart is None for e in etats_),
+        "lecture": {"issues": len(etats_), "servables": sum(servable(e) for e in etats_),
+                    "en_recul": sum(e.ecart in RECULS for e in etats_),
                     "familles": len({e.famille for e in etats_ if e.ecart is None}), "lu_a": lecture.lu_a, "appels": lecture.appels,
                     "secondes": lecture.secondes, "depuis_cache": lecture.depuis_cache,
                     "fetch_note": lecture.fetch_note,
@@ -405,6 +435,7 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
         "grains": [tapis_service.grain_servi(
             i, e, lane, tapis_equilibre.raisons(e, conso, maintenant), prs_par) for i, e in enumerate(file, 1)],
         "ecartees": ecartees,
+        "en_recul": en_recul,
     }
 
 
