@@ -116,11 +116,8 @@ def journaliser(
             mode=MODE,
             draw_id=draw_id,
             ts=ts,
-            extras={
-                "famille": g.get("famille"),
-                "consolidation": bool(g.get("consolidation")),
-                "rang": g.get("rang"),
-            },
+            extras={"famille": g.get("famille"), "consolidation": bool(g.get("consolidation")),
+                    "rang": g.get("rang"), "conteneur": bool(g.get("conteneur"))},
         )
         journal.log(record)
         ecrits += 1

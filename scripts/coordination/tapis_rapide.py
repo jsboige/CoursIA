@@ -391,10 +391,13 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
     ecartees: dict[str, list[dict]] = {code: [] for code in CODES}
     for e in etats_:
         if e.ecart:
-            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif})
+            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif,
+                                       "feuille": not e.conteneur})
     return {
         "lane": lane, "graine": graine, "maintenant": _iso(maintenant),
         "lecture": {"issues": len(etats_), "servables": sum(e.ecart is None for e in etats_),
+                    "servables_feuilles": sum(e.ecart is None and not e.conteneur for e in etats_),
+                    "servables_conteneurs": sum(e.ecart is None and e.conteneur for e in etats_),
                     "familles": len({e.famille for e in etats_ if e.ecart is None}), "lu_a": lecture.lu_a, "appels": lecture.appels,
                     "secondes": lecture.secondes, "depuis_cache": lecture.depuis_cache,
                     "fetch_note": lecture.fetch_note,
