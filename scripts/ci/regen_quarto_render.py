@@ -52,6 +52,12 @@ LANDING_PAGES = [
     # — la racine ne garde que index.qmd ; le glob "*.qmd" ci-dessus ne la
     # couvre plus, elle est listee explicitement.
     "docs/parcours.qmd",
+    # Carte des prerequis (#27556) : page GENERE par
+    # scripts/curriculum/generate_prereq_map.py depuis docs/curriculum/taxonomy/.
+    # Listee ici pour survivre a la regeneration de la liste de rendu (meme
+    # raison que docs/parcours.qmd : un ajout a la main dans _quarto.yml est
+    # ecrase par cette regeneration avant chaque rendu de deploiement).
+    "docs/curriculum/prerequis.qmd",
     # COURSE_CATALOG.generated.md est lie depuis index.qmd (L64) mais servi en
     # texte brut sinon : on le REND en HTML (verifie firsthand #10925 Q2 —
     # quarto render standalone -> HTML 176 Ko, exit 0, sans front-matter).

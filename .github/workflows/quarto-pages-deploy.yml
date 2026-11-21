@@ -202,6 +202,16 @@ jobs:
         # exclues (cf. scripts/ci/regen_quarto_render.py).
         run: python3 scripts/ci/regen_quarto_render.py
 
+      - name: Régénérer la carte des prérequis (#27556)
+        # docs/curriculum/prerequis.qmd est un ARTEFACT GÉNÉRÉ (même patron que
+        # COURSE_CATALOG.generated.md) : le script reconstruit la page depuis la
+        # taxonomie conceptuelle docs/curriculum/taxonomy/*.json. Le rejouer ici
+        # garantit que le site publié reflète la taxonomie de la tête, même quand
+        # un changement de taxonomie n'a pas régénéré la page dans sa PR.
+        # Idempotent (écrit seulement si le contenu change) ; `--check` mesure la
+        # fraîcheur de l'artefact commité sans rien écrire.
+        run: python3 scripts/curriculum/generate_prereq_map.py
+
       - name: Préparer et vérifier les titres README
         run: |
           python3 scripts/ci/quarto_readme_titles.py apply --backup "$RUNNER_TEMP/readme-titles.json"
