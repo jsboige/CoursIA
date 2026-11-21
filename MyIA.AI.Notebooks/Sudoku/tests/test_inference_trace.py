@@ -240,6 +240,28 @@ def test_naked_triple_silent_when_union_exceeds_n():
     assert solver._naked_triple() is None
 
 
+def test_naked_tuple_ignores_single_candidate_cells():
+    """Invariant d'ordre documente : dans la boucle, ``naked_single`` passe
+    toujours avant les tuples (RULE_ORDER + reprise au sommet), donc aucune
+    case a candidat unique ne devrait exister au scan. Ce test negatif prouve
+    que la correction ne DEPEND pas de cet ordre : appelee hors ordre, la
+    regle exclut structurellement les cases a candidat unique (filtre
+    ``2 <= len(cands) <= n``) et ne les touche pas."""
+    solver = _blank_solver()
+    solver.cands[0][0] = {5}  # candidat unique en attente (single non joue)
+    solver.cands[0][1] = {1, 2, 3}
+    solver.cands[0][2] = {1, 2}
+    solver.cands[0][3] = {2, 3}
+    solver.cands[0][4] = {1, 9}
+    step = solver._naked_triple()
+    # le tuple {(0,1),(0,2),(0,3)} est trouve malgre la case a candidat unique
+    assert step is not None and step.rule == "naked_triple"
+    assert (0, 4, 1) in step.eliminations
+    # la case a candidat unique n'est ni membre ni cible : son candidat survit
+    assert solver.cands[0][0] == {5}
+    assert all((0, 0, v) not in step.eliminations for v in range(1, 10))
+
+
 def test_naked_quad_eliminates_union_from_other_cells():
     solver = _blank_solver()
     solver.cands[0][0] = {1, 2, 3, 4}

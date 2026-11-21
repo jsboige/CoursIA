@@ -315,6 +315,16 @@ class InferenceSolver:
         """Tuple nu d'ordre n : n cases vides d'une unite dont l'union des
         candidats compte exactement n valeurs -- ces valeurs occupent ces n
         cases, donc elles sont eliminees des AUTRES cases de l'unite.
+
+        Couplage d'ordre (invariant) : dans la boucle de resolution, aucune
+        case a candidat unique n'existe au moment de ce scan, car
+        ``naked_single`` precede les tuples dans ``RULE_ORDER`` et chaque pas
+        reprend au sommet (une elimination peut reduire une case a un seul
+        candidat, aussitot consomme au tour suivant). Cet ordre n'est PAS une
+        condition de correction : le filtre ``2 <= len(cands) <= n`` exclut
+        structurellement les cases a candidat unique des combos, donc la
+        regle reste correcte meme appelee hors ordre (test negatif
+        ``test_naked_tuple_ignores_single_candidate_cells``).
         """
         for unit_type, cells in self._all_units():
             empty = [(r, c) for (r, c) in cells if self.grid[r][c] == 0]
