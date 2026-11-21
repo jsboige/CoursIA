@@ -99,7 +99,7 @@ theorem e1728_is_elliptic {K : Type*} [Field K] [CharZero K] :
     WeierstrassCurve.IsElliptic (E1728 K) :=
   ⟨by
     have hne : (E1728 K).Δ ≠ 0 := by
-      simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+      simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂,
         WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
       norm_num
     exact isUnit_iff_ne_zero.mpr hne⟩
@@ -111,17 +111,15 @@ with `A = 1`, `B = 0`, `c₄ = -48` and `Δ = -64`, and
 theorem e1728_j_is_1728 {K : Type*} [Field K] [CharZero K]
     [WeierstrassCurve.IsElliptic (E1728 K)] :
     (E1728 K).j = 1728 := by
-  let W : WeierstrassCurve K := E1728 K
-  have hc₄ : W.c₄ = -48 := by
-    simp only [E1728, WeierstrassCurve.c₄, WeierstrassCurve.b₂,
+  have hc₄ : (E1728 K).c₄ = -48 := by
+    simp only [WeierstrassCurve.c₄, WeierstrassCurve.b₂,
       WeierstrassCurve.b₄]
     norm_num
-  have hΔ : W.Δ = -64 := by
-    simp only [E1728, WeierstrassCurve.Δ, WeierstrassCurve.b₂,
+  have hΔ : (E1728 K).Δ = -64 := by
+    simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂,
       WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
     norm_num
-  simp only [WeierstrassCurve.j]
-  field_simp [WeierstrassCurve.coe_Δ', hΔ, hc₄]
+  simp [WeierstrassCurve.j, WeierstrassCurve.coe_Δ', hΔ, hc₄]
   norm_num
 
 instance : Fact (Nat.Prime 97) := ⟨by decide⟩
