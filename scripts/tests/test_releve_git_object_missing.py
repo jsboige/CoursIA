@@ -112,6 +112,14 @@ def test_verdict_exige_le_seuil_d_executions():
     assert verdict(avec_occurrence, seuil=50)["criter_atteint"] is False
 
 
+def test_verdict_refuse_un_acquittement_sur_lecture_incomplete():
+    releve = {"occurrences": 0, "executions_reelles": 731, "executions_self_hosted": 120,
+              "lectures_en_erreur": 3}
+    bilan = verdict(releve, seuil=50)
+    assert bilan["criter_atteint"] is False
+    assert bilan["lecture_complete"] is False
+
+
 def test_borne_date_seule_designe_la_journee_entiere():
     debut = _borne("2026-11-19", False)
     fin = _borne("2026-11-19", True)

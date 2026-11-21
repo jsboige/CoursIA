@@ -192,7 +192,15 @@ def analyser_job(job: dict, run: dict) -> dict:
         return resultat
     if job.get("conclusion") in ("success", "skipped"):
         return resultat
-    signature = preuve_signature(job, fetch_annotations(job_id))
+    try:
+        annotations = fetch_annotations(job_id)
+    except RuntimeError as exc:
+        # Une lecture impossible (quota API epuise, 5xx) ne doit pas disparaitre
+        # en silence : un releve qui perd des jobs sans le dire presenterait un
+        # denominateur partiel comme s'il etait complet.
+        resultat["erreur"] = f"annotations: {exc}"[:160]
+        return resultat
+    signature = preuve_signature(job, annotations)
     if signature is None:
         # Secours : le journal est la surface qui separe une mort de worker
         # d'un rouge de contenu quand l'annotation reste generique. On ne le
@@ -202,7 +210,12 @@ def analyser_job(job: dict, run: dict) -> dict:
         # rouge d'une semaine chargerait des centaines de Mo pour rien.
         checkout = etape_checkout(job)
         if checkout and checkout.get("conclusion") in ("failure", "cancelled", "timed_out"):
-            if git_object_missing_from_log(fetch_job_log(job_id)):
+            try:
+                log = fetch_job_log(job_id)
+            except RuntimeError as exc:
+                resultat["erreur"] = f"journal: {exc}"[:160]
+                return resultat
+            if git_object_missing_from_log(log):
                 signature = "fetch promisor interrompu (journal)"
     resultat["signature"] = signature
     return resultat
@@ -212,6 +225,7 @@ def agreger(analyses: list[dict]) -> dict:
     """Somme les analyses en un releve chiffre."""
     executions = [a for a in analyses if a["franchit_checkout"]]
     occurrences = [a for a in analyses if a["signature"]]
+    lectures_en_erreur = [a for a in analyses if a.get("erreur")]
     par_jour: dict[str, dict] = {}
     for analysis in analyses:
         bucket = par_jour.setdefault(
@@ -227,6 +241,7 @@ def agreger(analyses: list[dict]) -> dict:
         "executions_reelles": len(executions),
         "executions_self_hosted": sum(1 for a in executions if a["self_hosted"]),
         "occurrences": len(occurrences),
+        "lectures_en_erreur": len(lectures_en_erreur),
         "par_jour": par_jour,
         "preuves": occurrences,
     }
@@ -237,15 +252,21 @@ def verdict(releve: dict, seuil: int = SEUIL_CRITERE) -> dict:
 
     Acquittement = zero occurrence SUR un denominateur qui atteint le
     seuil d'executions reelles. Un zero sur un denominateur trop faible ne
-    prouve rien : c'est exactement le defaut du releve de #18312.
+    prouve rien : c'est exactement le defaut du releve de #18312. Une lecture
+    incomplete (quota API epuise, job illisible) ne vaut pas davantage : le
+    releve la declare et refuse alors d'acquitter.
     """
+    lecture_complete = releve.get("lectures_en_erreur", 0) == 0
     return {
         "criter_atteint": releve["occurrences"] == 0
-        and releve["executions_reelles"] >= seuil,
+        and releve["executions_reelles"] >= seuil
+        and lecture_complete,
         "seuil": seuil,
         "executions_reelles": releve["executions_reelles"],
         "executions_self_hosted": releve["executions_self_hosted"],
         "occurrences": releve["occurrences"],
+        "lectures_en_erreur": releve.get("lectures_en_erreur", 0),
+        "lecture_complete": lecture_complete,
     }
 
 
@@ -267,6 +288,7 @@ def rendre_markdown(releve: dict, fenetre: dict) -> str:
         f"- **executions ayant franchi le checkout** : {releve['executions_reelles']}"
         f" (dont {releve['executions_self_hosted']} sur runner self-hosted)",
         f"- **occurrences GIT_OBJECT_MISSING** : {releve['occurrences']}",
+        f"- lectures en erreur (quota API, job illisible) : {releve.get('lectures_en_erreur', 0)}",
         "",
     ]
     if releve["par_jour"]:
@@ -309,16 +331,19 @@ def main() -> int:
 
     runs, tronque = lister_runs(depuis, jusqu, args.max_runs)
 
-    def _paires(run: dict) -> list[tuple[dict, dict]]:
+    def _paires(run: dict) -> tuple[list[tuple[dict, dict]], str | None]:
         try:
-            return [(run, job) for job in fetch_run_jobs(run["id"])]
-        except RuntimeError:
-            return []
+            return [(run, job) for job in fetch_run_jobs(run["id"])], None
+        except RuntimeError as exc:
+            return [], f"{exc}"[:160]
 
     paires: list[tuple[dict, dict]] = []
+    runs_illisibles = 0
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        for lot in pool.map(_paires, runs):
+        for lot, erreur in pool.map(_paires, runs):
             paires.extend(lot)
+            if erreur:
+                runs_illisibles += 1
 
     analyses: list[dict] = []
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
@@ -326,7 +351,9 @@ def main() -> int:
             analyses.append(analysis)
 
     releve = agreger(analyses)
-    fenetre = {"depuis": depuis, "jusqu": jusqu, "runs": len(runs), "tronque": tronque}
+    releve["lectures_en_erreur"] += runs_illisibles
+    fenetre = {"depuis": depuis, "jusqu": jusqu, "runs": len(runs), "tronque": tronque,
+               "runs_illisibles": runs_illisibles}
     bilan = verdict(releve, args.seuil)
     bilan["fenetre"] = fenetre
     if args.json:
