@@ -119,9 +119,8 @@ pour l'urne de clôture, au lieu de les écarter en silence ».
 
 La sortie porte donc une section dédiée :
 
-```
-Items eteints (2) -- urne de cloture (coordinateur, adjoint) : un item eteint ne revient pas
-dans le pool, il faut le fermer ou lui donner une tranche.
+```text
+Items eteints (2) -- urne de cloture (coordinateur, adjoint) : un item eteint ne revient pas dans le pool, il faut le fermer ou lui donner une tranche.
   #18258  EPAISSE  le fil declare la part deleguable epuisee ([RELEASED] ... epuise)
   #11698  SATURE   tous les enfants sont fermes (25 enfant(s) declare(s), aucun ouvert) : plus rien a prendre dedans
 ```

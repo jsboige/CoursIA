@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from coordination import gh_bulk, gh_cache_fichier
+from coordination import gh_bulk, gh_cache_fichier, tapis_sature
 
 VERIF = "python scripts/check_lane_claim.py {n} --lane {lane}"
 VERIF_CONTENEUR = VERIF + " --paths <vos chemins>"
@@ -118,12 +118,7 @@ def texte(r: dict, source: str) -> str:
     total = sum(len(v) for v in r["ecartees"].values())
     lignes.append(f"\nEcartees sans sonde : {comptes} (total {total})")
     eteints = r.get("eteints") or []
-    if eteints:
-        lignes.append(f"\nItems eteints ({len(eteints)}) -- urne de cloture "
-                      "(coordinateur, adjoint) : un item eteint ne revient pas "
-                      "dans le pool, il faut le fermer ou lui donner une tranche.")
-        for it in eteints:
-            lignes.append(f"  #{it['numero']}  {it['code']}  {it['motif']}")
+    lignes += tapis_sature.lignes_urne(eteints)
     rev = r.get("reverif_fils")
     if rev:
         jetes = ", ".join(f"{j['code']} #{j['numero']}" for j in rev["jetes"]) or "aucun"

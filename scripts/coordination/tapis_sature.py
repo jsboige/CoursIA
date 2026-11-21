@@ -232,6 +232,21 @@ def eteints(ecartees: dict) -> list[dict]:
             for item in (ecartees.get(code) or [])]
 
 
+def lignes_urne(eteints: list[dict]) -> list[str]:
+    """Les lignes de la section « items eteints » de la sortie texte.
+
+    La section est ecrite ICI, dans le module qui decide de l'extinction :
+    le rendu (tapis_service) ne fait que l'ajouter a ses lignes.
+    """
+    if not eteints:
+        return []
+    lignes = [f"\nItems eteints ({len(eteints)}) -- urne de cloture "
+              "(coordinateur, adjoint) : un item eteint ne revient pas dans le "
+              "pool, il faut le fermer ou lui donner une tranche."]
+    lignes += [f"  #{i['numero']}  {i['code']}  {i['motif']}" for i in eteints]
+    return lignes
+
+
 def ecarter_satures(tous: list, file: list, mesure, rebuild, max_passes: int = 3) -> list:
     """Ecarte les conteneurs satures de la file, puis RETIRE le tirage.
 

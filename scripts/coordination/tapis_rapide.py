@@ -50,10 +50,9 @@ LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-# Main a sorti les textes de service dans tapis_service (#26926) : REPLI et VERIF
-# n'ont plus d'usage ici, seul le code d'ecart HORSFLOTTE reste a cabler.
-# EPAISSE et SATURE sont les deux barrieres de FOND d'un CONTENEUR (#26973) :
-# le fil declare l'epuisement, ou tous les enfants sont fermes.
+# Les textes de service sont dans tapis_service (#26926) : REPLI et VERIF
+# n'ont plus d'usage ici.
+# EPAISSE et SATURE : les deux barrieres de FOND d'un CONTENEUR (#26973).
 CODES = ("HORSFLOTTE", "LABEL", "GEL", "EPAISSE", "LIVREE", "MERGEE", "COUVERTE",
          "RELACHEE", "PLAFOND", "ORIGAMI", "RECLAMEE", "SATURE")
 
@@ -353,9 +352,8 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
     file = sorted((e for e in servables if e.mon_claim), key=lambda e: (e.cree_le, e.numero))
     pris = {e.numero for e in file}
     # Un marathon est hors equilibrage (harnais sk-agent) : il ne dispute pas la
-    # place d'une issue du pool, et il ne bloque pas non plus une issue deja
-    # visitee -- sinon un marathon jamais visite passerait devant le grain
-    # equilibre du tour.
+    # place d'une issue du pool, et il ne bloque pas une issue deja visitee --
+    # sinon un marathon jamais visite passerait devant le grain equilibre.
     jamais = {e.numero for e in servables
               if e.visites == 0 and not tapis_equilibre.est_marathon(e)}
     tour = tapis_equilibre.ordre(etats_, [e for e in servables if not e.mon_claim],
@@ -408,9 +406,7 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
         "grains": [tapis_service.grain_servi(
             i, e, lane, tapis_equilibre.raisons(e, conso, maintenant), prs_par) for i, e in enumerate(file, 1)],
         "ecartees": ecartees,
-        # Les items ETEINTS (barrieres de fond) sont nommes pour l'urne de
-        # cloture : ecarte en silence, un item eteint ne revient jamais et
-        # personne ne le ferme (#26973).
+        # Les items ETEINTS (barrieres de fond) sont nommes pour l'urne.
         "eteints": tapis_sature.eteints(ecartees),
     }
 
