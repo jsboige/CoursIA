@@ -39,7 +39,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import gh_bulk, tapis_equilibre, tapis_rapide, tapis_service
+from coordination import gh_bulk, tapis_equilibre, tapis_origami, tapis_rapide, tapis_service
 from coordination.tapis_equilibre import FENETRE_J
 from coordination.tapis_marqueurs import _dt, _iso, evenements
 from coordination.tapis_rapide import LABEL_LIVRE, Etat
@@ -135,6 +135,30 @@ def invariant(etats_: list[Etat], maintenant: datetime) -> dict:
     a_deux = [e.numero for e in sorted(pool, key=_cle_creation) if e.visites >= 2]
     return {"viole": bool(a_zero) and bool(a_deux), "maintenant": _iso(maintenant),
             "a_zero": a_zero, "a_deux": a_deux}
+
+
+def etats_parques(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
+                 jours: int = 45) -> list[Etat]:
+    """Les etats du tapis **parcage Origami compris**, comme le tireur.
+
+    Le tireur (`tapis_rapide.main`) parque les EPICs Origami dont le pli
+    suivant n'est pas annonce (`tapis_rapide._parquer`). La mesure, elle, ne le
+    faisait pas : une issue **volontairement parkee** comptait donc comme
+    « worker a zero visite », et l'invariant la rangeait dans le pool
+    servable -- une pool que le tireur ne sert jamais (dispatch
+    `c0013-tapis-coverage-20`, 20 worker a zero visite : 5 venaient de la).
+
+    La mesure reste **sans appel reseau** : le parcage est lu sur le cache
+    (`reseau=False`) et **fail-OPEN** (rien n'est parque si la mesure des plis
+    est absente), comme le tireur lui-meme (#26528).
+    """
+    etats_ = tapis_rapide.etats(lecture, lane, maintenant, jours)
+    try:
+        parcs, _etat = tapis_origami.mesurer(lecture, reseau=False)
+    except Exception:  # noqa: BLE001 - une mesure ne doit jamais casser le bilan
+        parcs = {}
+    tapis_rapide._parquer(etats_, parcs)
+    return etats_
 
 
 def bilan(etats_: list[Etat], lecture: gh_bulk.Lecture, maintenant: datetime) -> dict:
@@ -289,7 +313,7 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
         print(f"Bilan sur la lecture de secours du {lecture.lu_a}.", file=sys.stderr)
     # Un rejeu se mesure a l'instant de sa lecture : memes ages, meme fenetre.
     maintenant = maintenant or (args.lecture and _dt(lecture.lu_a)) or datetime.now(UTC)
-    etats_ = tapis_rapide.etats(lecture, args.lane, maintenant, args.jours)
+    etats_ = etats_parques(lecture, args.lane, maintenant, args.jours)
     r = bilan(etats_, lecture, maintenant)
     r["lecture"] = {"lu_a": lecture.lu_a, "issues": len(lecture.issues),
                     "prs": len(lecture.prs), "depuis_cache": lecture.depuis_cache,

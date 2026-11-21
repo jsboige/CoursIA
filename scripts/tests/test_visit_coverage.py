@@ -296,3 +296,61 @@ def test_propriete_du_tapis_une_visite_chacun_avant_deux():
 def test_propriete_du_tapis_autre_graine_et_deuxieme_lane():
     _servir(_pool(), f"{AUTRE}|2026-11-20|1")
     _servir(_pool(), "myia-po-2025:CoursIA-2|2026-11-20|5")
+
+
+# --- l'invariant d'atteignabilite : la MESURE voit le meme pool que le TIREUR -
+
+TITRE_EPIC_ORIGAMI = "[EPIC Origami] Le chantier long"
+MOTIF_PARQUE = ("tous les plis materialises sont termines (dernier pli 2) et le "
+                "pli 3 n'est pas annonce -- depliage reserve au coordinateur")
+
+
+def _parcage_faux(parcs: dict[int, str]):
+    """Un faux `tapis_origami.mesurer` : le verdict est injecte, le reseau jamais."""
+    def _mesurer(lecture, *, op=None, cache=True, reseau=True):
+        return parcs, {"measured": True, "active": True, "epics": len(parcs)}
+    return _mesurer
+
+
+def test_la_mesure_voit_le_parcage_du_tireur(monkeypatch):
+    """Une issue volontairement parkee n'est PAS un « worker a zero visite ».
+
+    Le tireur (`tapis_rapide.main`) parque les EPICs Origami dont le pli
+    suivant n'est pas annonce ; la mesure, sans le parcage, les comptait dans
+    le pool servable -- une pool que le tireur ne sert jamais (dispatch
+    `c0013-tapis-coverage-20`).
+    """
+    lec = lecture([issue(19309, titre=TITRE_EPIC_ORIGAMI),
+                   issue(7, titre="Grain ordinaire")])
+    monkeypatch.setattr(vc.tapis_origami, "mesurer",
+                         _parcage_faux({19309: MOTIF_PARQUE}))
+    mesure = vc.etats_parques(lec, LANE, NOW)
+    # le tireur, sur la meme lecture
+    tireur = tr.etats(lec, LANE, NOW)
+    tr._parquer(tireur, {19309: MOTIF_PARQUE})
+
+    m19309 = next(e for e in mesure if e.numero == 19309)
+    t19309 = next(e for e in tireur if e.numero == 19309)
+    # CONTROLE NEGATIF : la mesure et le tireur sont d'accord sur l'ecart
+    assert m19309.ecart == t19309.ecart == "ORIGAMI"
+    assert m19309.motif == t19309.motif
+    # l'issue parkee n'appartient pas au role « worker »
+    assert vc.role(m19309) == "attente"
+    bilan = vc.bilan(mesure, lec, NOW)
+    assert 19309 not in bilan["roles"]["worker"]["numeros_sans_visite"]
+
+    # CONTROLE POSITIF : le grain voisin reste servable, worker, dans le pool
+    m7 = next(e for e in mesure if e.numero == 7)
+    assert m7.ecart is None and vc.role(m7) == "worker"
+    assert 7 in bilan["roles"]["worker"]["numeros_sans_visite"]
+
+
+def test_un_parcage_indisponible_ne_casse_pas_la_mesure(monkeypatch):
+    """Fail-OPEN : si la mesure des plis est absente, rien n'est parque."""
+    def _panne(lecture, *, op=None, cache=True, reseau=True):
+        raise RuntimeError("cache des plis illisible")
+    monkeypatch.setattr(vc.tapis_origami, "mesurer", _panne)
+    lec = lecture([issue(19309, titre=TITRE_EPIC_ORIGAMI), issue(7)])
+    etats_ = vc.etats_parques(lec, LANE, NOW)
+    assert [e.ecart for e in etats_] == [None, None]
+    assert vc.role(etats_[0]) == "worker"
