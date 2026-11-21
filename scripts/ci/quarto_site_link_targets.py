@@ -46,7 +46,7 @@ Mesure du 2026-11-11 (organe ``check_site_links`` contre le site servi,
 repondent 404 -- ``.claude/rules/catalog-pr-hygiene.md``,
 ``.claude/rules/wsl-kernels.md``, ``.github/workflows/catalog-cron.yml``,
 ``GenAI/.env.example`` et
-``ML/DataScienceWithAgents/07-Agent-Orchestration/.env.example``. La passe
+``ML/DataScienceWithAgents/07-Orchestration-d-Agents/.env.example``. La passe
 les croyait servables parce que Quarto copie dans ``_site/`` les fichiers
 locaux lies depuis les README rendus -- copie que l'artefact ne publie
 jamais.

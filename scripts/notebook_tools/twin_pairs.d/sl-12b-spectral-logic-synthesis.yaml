@@ -1,0 +1,10 @@
+- name: SL-12b Spectral Logic Synthesis
+  family: SymbolicAI/SymbolicLearning
+  python: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12b-SpectralLogicSynthesis-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Les deux carnets implémentent les mécanismes pédagogiques de Walsh, Sinkhorn et recherche discrète avec les mêmes instances et budgets ; Math.NET effectue les moindres carrés du port C#.
+  known_differences:
+    - Les générateurs aléatoires Python et .NET diffèrent ; les résultats stochastiques ne coïncident pas nécessairement graine par graine.
+    - Le calcul naïf C# évalue les mêmes termes sans allouer la matrice complète ; les figures C# sont des SVG statiques.

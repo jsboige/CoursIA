@@ -39,7 +39,14 @@ theorem nim_winning_345 : isWinningNim [3, 4, 5] = true := by
 /-- Target D (P1): nimSum of a single heap equals the heap size.
     Requires Nat.xor_zero — the prover must discover this specific lemma.
     A naive simp without the right lemma will stall.
-    Expected iterations: 3-5 (unfold → simp naive → fail → discover Nat.xor_zero → close). -/
+    Expected iterations: 3-5 (unfold → simp naive → fail → discover Nat.xor_zero → close).
+    Declared alternative proof: `conway_lean` (`Conway/Nim_en.lean`, canonical
+    home of the statement — the theory of Nim lives there) declares the same
+    theorem and closes it with the pivot lemma `Nat.zero_xor` in one tactic.
+    Comparison: here the structural unfolding of the `foldl` exposes the fold
+    mechanics — that path IS the calibration target, short-circuited by the
+    pivot lemma on the conway side. Same statement, same generality
+    (`n : Nat` universal). Axioms used: propext, Quot.sound. -/
 theorem nimSum_single (n : Nat) : nimSum [n] = n := by
   unfold nimSum
   simp [List.foldl_cons, List.foldl_nil]
