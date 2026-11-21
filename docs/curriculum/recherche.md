@@ -20,12 +20,12 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 412 |
+| Notebooks | 420 |
 | PRODUCTION | 0 |
-| BETA | 408 |
+| BETA | 416 |
 | ALPHA | 4 |
 
-## GameTheory (119 notebooks)
+## GameTheory (121 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -64,90 +64,92 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 33 | [GameTheory-04i — Utilité espérée et aversion au risque](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb) | BETA | Oui |
 | 34 | [GameTheory-04j — Rationalisabilité : ce que la seule…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04j-Rationalisabilite-CSharp.ipynb) | BETA | Oui |
 | 35 | [GameTheory-04j — Rationalisabilité : ce que la seule…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04j-Rationalisabilite-Python.ipynb) | BETA | Oui |
-| 36 | [GT-04k — Équilibre corrélé (Aumann 1974) : le médiateur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04k-Equilibre-Correle-Python.ipynb) | BETA | Oui |
-| 37 | [GameTheory-05-ZeroSum-Minimax-Python (Twin C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-CSharp.ipynb) | BETA | Oui |
-| 38 | [GameTheory-05-ZeroSum-Minimax-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) | BETA | Oui |
-| 39 | [GameTheory-5b — Théorème minimax de von Neumann…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb) | BETA | Non |
-| 40 | [GameTheory-05c — Conditions KKT : la dualité…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb) | BETA | Oui |
-| 41 | [GameTheory-6 : Évolution et Confiance — Twin C#…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-CSharp.ipynb) | BETA | Oui |
-| 42 | [GameTheory-06-EvolutionTrust-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) | BETA | Oui |
-| 43 | [GameTheory-06i — Ensembles limites : Poincaré-Bendixson…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | BETA | Oui |
-| 44 | [GameTheory-07-ExtensiveForm-Python (Twin C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-CSharp.ipynb) | BETA | Oui |
-| 45 | [GameTheory-07-ExtensiveForm-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) | BETA | Oui |
-| 46 | [GameTheory 8 - Jeux Combinatoires (Twin C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-CSharp.ipynb) | BETA | Oui |
-| 47 | [GameTheory 8 - Jeux Combinatoires](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb) | BETA | Oui |
-| 48 | [GameTheory 8b - Jeux Combinatoires en Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) | BETA | Non |
-| 49 | [GameTheory 8c - Jeux Combinatoires : Approfondissement…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-CSharp.ipynb) | BETA | Oui |
-| 50 | [GameTheory 8c - Jeux Combinatoires : Approfondissement…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) | BETA | Oui |
-| 51 | [GameTheory 8d - Combinatorial Games natif : le lake…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Lean.ipynb) | BETA | Non |
-| 52 | [GameTheory-09-BackwardInduction-Python (C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-CSharp.ipynb) | BETA | Oui |
-| 53 | [GameTheory-09-BackwardInduction-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb) | BETA | Oui |
-| 54 | [Stackelberg : la performativité sans mystère](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb) | BETA | Oui |
-| 55 | [Stackelberg : la performativité sans mystère](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb) | BETA | Oui |
-| 56 | [GameTheory-09c : Stackelberg Security Game —…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-CSharp.ipynb) | BETA | Oui |
-| 57 | [GameTheory-09c : Stackelberg Security Game —…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) | BETA | Oui |
-| 58 | [GameTheory-09d : Stackelberg PPO — quand le concepteur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) | BETA | Oui |
-| 59 | [GameTheory-10 — Équilibres Parfaits de Sous-Jeux et…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-CSharp.ipynb) | BETA | Oui |
-| 60 | [GameTheory-10-ForwardInduction-SPE-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb) | BETA | Oui |
-| 61 | [GameTheory-11-BayesianGames-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-CSharp.ipynb) | BETA | Oui |
-| 62 | [GameTheory-11-BayesianGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) | BETA | Oui |
-| 63 | [GameTheory-11b — Jeux Bayésiens en Lean 4 (companion)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) | BETA | Non |
-| 64 | [GameTheory-11d-Raffinements-Sequentiels-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) | BETA | Oui |
-| 65 | [11e — Jeux globaux : la coordination avec information…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11e-Global-Games-Python.ipynb) | BETA | Oui |
-| 66 | [GameTheory-12 — Jeux de Réputation (twin C# du notebook…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-CSharp.ipynb) | BETA | Oui |
-| 67 | [GameTheory-12-ReputationGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb) | BETA | Oui |
-| 68 | [GameTheory-13 : Jeux a Information Imparfaite et CFR…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb) | BETA | Oui |
-| 69 | [GameTheory-13 : Jeux a Information Imparfaite et CFR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) | BETA | Non |
-| 70 | [GameTheory-13b : Safe Subgame Solving en C# — le twin…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) | BETA | Oui |
-| 71 | [GameTheory-13b : Safe Subgame Solving -- quand le…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) | BETA | Oui |
-| 72 | [GameTheory-13d : Optimistic Counterfactual Regret…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-CSharp.ipynb) | BETA | Oui |
-| 73 | [GameTheory-13d : Optimistic Counterfactual Regret…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb) | BETA | Oui |
-| 74 | [GameTheory-13e : Réviser un modèle d'adversaire --…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-CSharp.ipynb) | BETA | Oui |
-| 75 | [GameTheory-13e : Réviser un modèle d'adversaire --…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) | BETA | Oui |
-| 76 | [GameTheory-13f : Ataraxos — le patron en trois briques…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13f-Ataraxos-Patron-Python.ipynb) | BETA | Oui |
-| 77 | [Ataraxos en conditions reelles : l'organe natif a…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13g-Ataraxos-Organe-Natif.ipynb) | BETA | Oui |
-| 78 | [GameTheory-13h — La coordination dans le temps, mesuree…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-CSharp.ipynb) | BETA | Oui |
-| 79 | [GameTheory-13h — La coordination dans le temps, mesuree…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb) | BETA | Oui |
-| 80 | [GameTheory-14 : Jeux Differentiels et Equilibres de…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb) | BETA | Oui |
-| 81 | [GameTheory-14 : Jeux Differentiels et Equilibres de…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) | BETA | Oui |
-| 82 | [Jeux répétés : le tournoi et la fragilité de la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-CSharp.ipynb) | BETA | Oui |
-| 83 | [Jeux répétés : le tournoi et la fragilité de la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb) | BETA | Oui |
-| 84 | [GameTheory-14c — Jeux spatiaux (C#) : quand la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-CSharp.ipynb) | BETA | Oui |
-| 85 | [GameTheory-14c — Jeux spatiaux : la structure spatiale…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb) | BETA | Oui |
-| 86 | [GameTheory-15 — Jeux Coopératifs (Twin C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb) | BETA | Oui |
-| 87 | [GameTheory-15-CooperativeGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) | BETA | Oui |
-| 88 | [GameTheory 15b - Jeux Cooperatifs en Lean :…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) | BETA | Non |
-| 89 | [GameTheory 15c - Jeux Cooperatifs (C# / .NET)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-CSharp.ipynb) | BETA | Oui |
-| 90 | [GameTheory 15c - Jeux Cooperatifs Lean (Python)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Python.ipynb) | BETA | Oui |
-| 91 | [GameTheory 15d - Valeur de Shapley de groupe : évaluer…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb) | BETA | Oui |
-| 92 | [GameTheory-16-MechanismDesign-Python (C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-CSharp.ipynb) | BETA | Oui |
-| 93 | [GameTheory-16 : Théorie des Mécanismes et Principe de…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) | BETA | Oui |
-| 94 | [GameTheory-16b : Automated Mechanism Design (AMD)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) | BETA | Oui |
-| 95 | [GameTheory-16c : La dimension paiement que le designer…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb) | BETA | Oui |
-| 96 | [GameTheory-16c : La dimension paiement que le designer…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) | BETA | Oui |
-| 97 | [GameTheory-16d : Pilote — joueurs LLM hétérogènes sur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) | BETA | Non |
-| 98 | [GameTheory-16e : Populations Othman-Sandholm —…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16e-Populations-Othman-Sandholm-Python.ipynb) | BETA | Non |
-| 99 | [GameTheory-16h : Coopération LLM — protocole multi-seed…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16h-Cooperation-LLM-Python.ipynb) | BETA | Oui |
-| 100 | [Appariage stable — qui peut tricher dans Gale–Shapley ?](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-CSharp.ipynb) | BETA | Oui |
-| 101 | [Appariage stable — qui peut tricher dans Gale–Shapley ?](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) | BETA | Oui |
-| 102 | [GameTheory 16j — Screening et loyer d'information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-CSharp.ipynb) | BETA | Oui |
-| 103 | [GameTheory 16j — Screening et loyer d'information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Python.ipynb) | BETA | Oui |
-| 104 | [GameTheory 16k — Théorie des enchères : le prix mesuré…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-CSharp.ipynb) | BETA | Oui |
-| 105 | [GameTheory 16k — Théorie des enchères : le prix mesuré…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) | BETA | Oui |
-| 106 | [GameTheory-17 (C#) : Multi-Agent Reinforcement Learning…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb) | BETA | Oui |
-| 107 | [GameTheory-17 : Apprentissage par Renforcement…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb) | BETA | Oui |
-| 108 | [Information asymétrique : types privés, antisélection…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) | BETA | Oui |
-| 109 | [Le marché des lemons : le certificat formel exécuté](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) | BETA | Non |
-| 110 | [Screening, signal et anticipation : les trois réponses…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) | BETA | Non |
-| 111 | [Du marché au bilan : le pont théorie des jeux théorie…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) | BETA | Oui |
-| 112 | [GameTheory-18 : Capstone — ce qui survit au changement…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb) | BETA | Oui |
-| 113 | [GameTheory-18c : Banc de calibration — humour, forme…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb) | BETA | Non |
-| 114 | [GameTheory-19 : Capstone — la sous-série Dynamics en…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Capstone-Dynamics-Python.ipynb) | BETA | Oui |
-| 115 | [GameTheory-20 : Capstone — la sous-série Coalitions en…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20-Capstone-Coalitions-Python.ipynb) | BETA | Oui |
-| 116 | [GameTheory-21 : Capstone — la sous-série SocialChoice…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Python.ipynb) | BETA | Oui |
-| 117 | [GameTheory-22 — Jeux stochastiques : la valeur d’un jeu…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb) | BETA | Oui |
-| 118 | [GameTheory-22 : Jeux stochastiques — la valeur d'un jeu…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | BETA | Oui |
-| 119 | [GameTheory-23 : Trouver des failles légales — recherche…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb) | BETA | Non |
+| 36 | [GT-04k — Équilibre corrélé (Aumann 1974) : le médiateur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04k-Equilibre-Correle-CSharp.ipynb) | BETA | Oui |
+| 37 | [GT-04k — Équilibre corrélé (Aumann 1974) : le médiateur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04k-Equilibre-Correle-Python.ipynb) | BETA | Oui |
+| 38 | [GameTheory-05-ZeroSum-Minimax-Python (Twin C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-CSharp.ipynb) | BETA | Oui |
+| 39 | [GameTheory-05-ZeroSum-Minimax-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) | BETA | Oui |
+| 40 | [GameTheory-5b — Théorème minimax de von Neumann…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb) | BETA | Non |
+| 41 | [GameTheory-05c — Conditions KKT : la dualité…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb) | BETA | Oui |
+| 42 | [GameTheory-6 : Évolution et Confiance — Twin C#…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-CSharp.ipynb) | BETA | Oui |
+| 43 | [GameTheory-06-EvolutionTrust-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) | BETA | Oui |
+| 44 | [GameTheory-06i — Ensembles limites : Poincaré-Bendixson…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | BETA | Oui |
+| 45 | [GameTheory-07-ExtensiveForm-Python (Twin C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-CSharp.ipynb) | BETA | Oui |
+| 46 | [GameTheory-07-ExtensiveForm-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) | BETA | Oui |
+| 47 | [GameTheory 8 - Jeux Combinatoires (Twin C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-CSharp.ipynb) | BETA | Oui |
+| 48 | [GameTheory 8 - Jeux Combinatoires](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb) | BETA | Oui |
+| 49 | [GameTheory 8b - Jeux Combinatoires en Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) | BETA | Non |
+| 50 | [GameTheory 8c - Jeux Combinatoires : Approfondissement…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-CSharp.ipynb) | BETA | Oui |
+| 51 | [GameTheory 8c - Jeux Combinatoires : Approfondissement…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) | BETA | Oui |
+| 52 | [GameTheory 8d - Combinatorial Games natif : le lake…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Lean.ipynb) | BETA | Non |
+| 53 | [GameTheory-09-BackwardInduction-Python (C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-CSharp.ipynb) | BETA | Oui |
+| 54 | [GameTheory-09-BackwardInduction-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb) | BETA | Oui |
+| 55 | [Stackelberg : la performativité sans mystère](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb) | BETA | Oui |
+| 56 | [Stackelberg : la performativité sans mystère](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb) | BETA | Oui |
+| 57 | [GameTheory-09c : Stackelberg Security Game —…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-CSharp.ipynb) | BETA | Oui |
+| 58 | [GameTheory-09c : Stackelberg Security Game —…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) | BETA | Oui |
+| 59 | [GameTheory-09d : Stackelberg PPO — quand le concepteur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) | BETA | Oui |
+| 60 | [GameTheory-10 — Équilibres Parfaits de Sous-Jeux et…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-CSharp.ipynb) | BETA | Oui |
+| 61 | [GameTheory-10-ForwardInduction-SPE-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb) | BETA | Oui |
+| 62 | [GameTheory-11-BayesianGames-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-CSharp.ipynb) | BETA | Oui |
+| 63 | [GameTheory-11-BayesianGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) | BETA | Oui |
+| 64 | [GameTheory-11b — Jeux Bayésiens en Lean 4 (companion)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) | BETA | Non |
+| 65 | [GameTheory-11d-Raffinements-Sequentiels-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) | BETA | Oui |
+| 66 | [11e — Jeux globaux : la coordination avec information…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-11e-Global-Games-Python.ipynb) | BETA | Oui |
+| 67 | [GameTheory-12 — Jeux de Réputation (twin C# du notebook…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-CSharp.ipynb) | BETA | Oui |
+| 68 | [GameTheory-12-ReputationGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb) | BETA | Oui |
+| 69 | [GameTheory-13 : Jeux a Information Imparfaite et CFR…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb) | BETA | Oui |
+| 70 | [GameTheory-13 : Jeux a Information Imparfaite et CFR](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) | BETA | Non |
+| 71 | [GameTheory-13b : Safe Subgame Solving en C# — le twin…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) | BETA | Oui |
+| 72 | [GameTheory-13b : Safe Subgame Solving -- quand le…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) | BETA | Oui |
+| 73 | [GameTheory-13d : Optimistic Counterfactual Regret…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-CSharp.ipynb) | BETA | Oui |
+| 74 | [GameTheory-13d : Optimistic Counterfactual Regret…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb) | BETA | Oui |
+| 75 | [GameTheory-13e : Réviser un modèle d'adversaire --…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-CSharp.ipynb) | BETA | Oui |
+| 76 | [GameTheory-13e : Réviser un modèle d'adversaire --…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) | BETA | Oui |
+| 77 | [GameTheory-13f : Ataraxos — le patron en trois briques…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13f-Ataraxos-Patron-Python.ipynb) | BETA | Oui |
+| 78 | [Ataraxos en conditions reelles : l'organe natif a…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13g-Ataraxos-Organe-Natif.ipynb) | BETA | Oui |
+| 79 | [GameTheory-13h — La coordination dans le temps, mesuree…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-CSharp.ipynb) | BETA | Oui |
+| 80 | [GameTheory-13h — La coordination dans le temps, mesuree…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb) | BETA | Oui |
+| 81 | [GameTheory-14 : Jeux Differentiels et Equilibres de…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb) | BETA | Oui |
+| 82 | [GameTheory-14 : Jeux Differentiels et Equilibres de…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) | BETA | Oui |
+| 83 | [Jeux répétés : le tournoi et la fragilité de la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-CSharp.ipynb) | BETA | Oui |
+| 84 | [Jeux répétés : le tournoi et la fragilité de la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb) | BETA | Oui |
+| 85 | [GameTheory-14c — Jeux spatiaux (C#) : quand la…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-CSharp.ipynb) | BETA | Oui |
+| 86 | [GameTheory-14c — Jeux spatiaux : la structure spatiale…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb) | BETA | Oui |
+| 87 | [GameTheory-15 — Jeux Coopératifs (Twin C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb) | BETA | Oui |
+| 88 | [GameTheory-15-CooperativeGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) | BETA | Oui |
+| 89 | [GameTheory 15b - Jeux Cooperatifs en Lean :…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) | BETA | Non |
+| 90 | [GameTheory 15c - Jeux Cooperatifs (C# / .NET)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-CSharp.ipynb) | BETA | Oui |
+| 91 | [GameTheory 15c - Jeux Cooperatifs Lean (Python)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Python.ipynb) | BETA | Oui |
+| 92 | [GameTheory 15d - Valeur de Shapley de groupe : évaluer…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb) | BETA | Oui |
+| 93 | [GameTheory-16-MechanismDesign-Python (C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-CSharp.ipynb) | BETA | Oui |
+| 94 | [GameTheory-16 : Théorie des Mécanismes et Principe de…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) | BETA | Oui |
+| 95 | [GameTheory-16b : Automated Mechanism Design (AMD)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) | BETA | Oui |
+| 96 | [GameTheory-16c : La dimension paiement que le designer…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb) | BETA | Oui |
+| 97 | [GameTheory-16c : La dimension paiement que le designer…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) | BETA | Oui |
+| 98 | [GameTheory-16d : Pilote — joueurs LLM hétérogènes sur…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) | BETA | Non |
+| 99 | [GameTheory-16e : Populations Othman-Sandholm —…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16e-Populations-Othman-Sandholm-Python.ipynb) | BETA | Non |
+| 100 | [GameTheory-16h : Coopération LLM — protocole multi-seed…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16h-Cooperation-LLM-Python.ipynb) | BETA | Oui |
+| 101 | [Appariage stable — qui peut tricher dans Gale–Shapley ?](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-CSharp.ipynb) | BETA | Oui |
+| 102 | [Appariage stable — qui peut tricher dans Gale–Shapley ?](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) | BETA | Oui |
+| 103 | [GameTheory 16j — Screening et loyer d'information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-CSharp.ipynb) | BETA | Oui |
+| 104 | [GameTheory 16j — Screening et loyer d'information](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Python.ipynb) | BETA | Oui |
+| 105 | [GameTheory 16k — Théorie des enchères : le prix mesuré…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-CSharp.ipynb) | BETA | Oui |
+| 106 | [GameTheory 16k — Théorie des enchères : le prix mesuré…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) | BETA | Oui |
+| 107 | [GameTheory-17 (C#) : Multi-Agent Reinforcement Learning…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb) | BETA | Oui |
+| 108 | [GameTheory-17 : Apprentissage par Renforcement…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb) | BETA | Oui |
+| 109 | [Information asymétrique : types privés, antisélection…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) | BETA | Oui |
+| 110 | [Le marché des lemons : le certificat formel exécuté](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) | BETA | Non |
+| 111 | [Screening, signal et anticipation : les trois réponses…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) | BETA | Non |
+| 112 | [Du marché au bilan : le pont théorie des jeux théorie…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) | BETA | Oui |
+| 113 | [GameTheory-18 : Capstone — ce qui survit au changement…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Capstone-Metajeux-CSharp.ipynb) | BETA | Oui |
+| 114 | [GameTheory-18 : Capstone — ce qui survit au changement…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb) | BETA | Oui |
+| 115 | [GameTheory-18c : Banc de calibration — humour, forme…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb) | BETA | Non |
+| 116 | [GameTheory-19 : Capstone — la sous-série Dynamics en…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-19-Capstone-Dynamics-Python.ipynb) | BETA | Oui |
+| 117 | [GameTheory-20 : Capstone — la sous-série Coalitions en…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-20-Capstone-Coalitions-Python.ipynb) | BETA | Oui |
+| 118 | [GameTheory-21 : Capstone — la sous-série SocialChoice…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Python.ipynb) | BETA | Oui |
+| 119 | [GameTheory-22 — Jeux stochastiques : la valeur d’un jeu…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb) | BETA | Oui |
+| 120 | [GameTheory-22 : Jeux stochastiques — la valeur d'un jeu…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | BETA | Oui |
+| 121 | [GameTheory-23 : Trouver des failles légales — recherche…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb) | BETA | Non |
 
 ## GameTheory/Coalitions (5 notebooks)
 
@@ -159,7 +161,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 4 | [Coalitions-04 — L'algorithme de Kuhn-Munkres :…](../../MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb) | BETA | Oui |
 | 5 | [Coalitions-05 — Le lake assignment_lean par son…](../../MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-05-Lean-Affectation-Lean.ipynb) | BETA | Non |
 
-## GameTheory/Dynamics (17 notebooks)
+## GameTheory/Dynamics (19 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -168,52 +170,57 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 3 | [Dynamics 02 — Jeux répétés en Lean : le lake…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) | BETA | Non |
 | 4 | [Dynamics 03 — Sympathie contre engagement : la statique…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-CSharp.ipynb) | BETA | Oui |
 | 5 | [Dynamics 03 — Sympathie contre engagement : la statique…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) | BETA | Oui |
-| 6 | [Dynamics 04 — Transparence des programmes et issue du…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) | BETA | Oui |
-| 7 | [Dynamics 04b — FairBot par le théorème de Löb…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb) | BETA | Non |
-| 8 | [Dynamics 04c — Coopération payorienne : le FairBot qui…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-Python.ipynb) | BETA | Oui |
-| 9 | [Dynamics 05 — Agents-programmes à budget explicite :…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-CSharp.ipynb) | BETA | Oui |
-| 10 | [Dynamics 05 — Agents à budget explicite (companion Lean…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) | BETA | Non |
-| 11 | [Dynamics 05 — Agents-programmes à budget explicite :…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) | BETA | Oui |
-| 12 | [Dynamics 06 — Preuves bornées et coût du raisonnement…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) | BETA | Oui |
-| 13 | [Dynamics 07 — Équilibres de jeux-programmes fondés sur…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) | BETA | Oui |
-| 14 | [Dynamics 08 — Programmes transparents comme…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-CSharp.ipynb) | BETA | Oui |
-| 15 | [Dynamics 08 — Programmes transparents comme…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) | BETA | Oui |
-| 16 | [Dynamics 09 — Biens publics non-linéaires : plan de…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) | BETA | Oui |
-| 17 | [Dynamics-10 — Le joueur LLM dans le tableau périodique](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb) | BETA | Non |
+| 6 | [Dynamics 04 — Transparence des programmes et issue du…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-CSharp.ipynb) | BETA | Oui |
+| 7 | [Dynamics 04 — Transparence des programmes et issue du…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) | BETA | Oui |
+| 8 | [Dynamics 04b — FairBot par le théorème de Löb…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb) | BETA | Non |
+| 9 | [Dynamics 04c (C#) — Coopération payorienne : le FairBot…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-CSharp.ipynb) | BETA | Oui |
+| 10 | [Dynamics 04c — Coopération payorienne : le FairBot qui…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-Python.ipynb) | BETA | Oui |
+| 11 | [Dynamics 05 — Agents-programmes à budget explicite :…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-CSharp.ipynb) | BETA | Oui |
+| 12 | [Dynamics 05 — Agents à budget explicite (companion Lean…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) | BETA | Non |
+| 13 | [Dynamics 05 — Agents-programmes à budget explicite :…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) | BETA | Oui |
+| 14 | [Dynamics 06 — Preuves bornées et coût du raisonnement…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) | BETA | Oui |
+| 15 | [Dynamics 07 — Équilibres de jeux-programmes fondés sur…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) | BETA | Oui |
+| 16 | [Dynamics 08 — Programmes transparents comme…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-CSharp.ipynb) | BETA | Oui |
+| 17 | [Dynamics 08 — Programmes transparents comme…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) | BETA | Oui |
+| 18 | [Dynamics 09 — Biens publics non-linéaires : plan de…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) | BETA | Oui |
+| 19 | [Dynamics-10 — Le joueur LLM dans le tableau périodique](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb) | BETA | Non |
 
-## GameTheory/Metajeux (7 notebooks)
+## GameTheory/Metajeux (9 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [Metajeux-01 : Open Games et Lentilles -- la…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb) | BETA | Oui |
-| 2 | [Metajeux-02 : Casser la composition — où la meilleure…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb) | BETA | Oui |
-| 3 | [Metajeux-03 : L'abstraction a dette mesurable](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb) | BETA | Oui |
-| 4 | [Metajeux-03b : Co-design bilevel morphologie-controle…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03b-Bilevel-PPO-Python.ipynb) | BETA | Oui |
-| 5 | [Metajeux-04 : Le chemin minimal, témoin construit et…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | BETA | Oui |
-| 6 | [Metajeux-05 : Le temoin d'impossibilite](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb) | BETA | Oui |
-| 7 | [Metajeux-06 : Le chemin minimal sur un second substrat…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | BETA | Oui |
+| 1 | [Metajeux-01 : Open Games et Lentilles -- la…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-CSharp.ipynb) | BETA | Oui |
+| 2 | [Metajeux-01 : Open Games et Lentilles -- la…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb) | BETA | Oui |
+| 3 | [Metajeux-02 : Casser la composition — où la meilleure…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-CSharp.ipynb) | BETA | Oui |
+| 4 | [Metajeux-02 : Casser la composition — où la meilleure…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb) | BETA | Oui |
+| 5 | [Metajeux-03 : L'abstraction a dette mesurable](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb) | BETA | Oui |
+| 6 | [Metajeux-03b : Co-design bilevel morphologie-controle…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03b-Bilevel-PPO-Python.ipynb) | BETA | Oui |
+| 7 | [Metajeux-04 : Le chemin minimal, témoin construit et…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | BETA | Oui |
+| 8 | [Metajeux-05 : Le temoin d'impossibilite](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb) | BETA | Oui |
+| 9 | [Metajeux-06 : Le chemin minimal sur un second substrat…](../../MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | BETA | Oui |
 
-## GameTheory/SocialChoice (17 notebooks)
+## GameTheory/SocialChoice (18 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [SocialChoice 01 : Théorème d'impossibilité d'Arrow…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb) | BETA | Oui |
 | 2 | [SocialChoice 01 - Theoreme d'Arrow : Preuve Formelle et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) | BETA | Oui |
 | 3 | [SocialChoice 01b - Choix Social Formel en Lean 4](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb) | ALPHA | Non |
-| 4 | [SocialChoice 02 : Mariage Stable — Algorithme de…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb) | BETA | Oui |
-| 5 | [SocialChoice 02 - Mariage Stable : Algorithme de…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python.ipynb) | BETA | Oui |
-| 6 | [SocialChoice 03 : Méthodes de Vote et Paradoxes (twin…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-CSharp.ipynb) | ALPHA | Oui |
-| 7 | [SocialChoice 03 - Méthodes de Vote et Paradoxes](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) | BETA | Oui |
-| 8 | [SocialChoice 04 : Agregation Computationnelle - SAT et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-CSharp.ipynb) | BETA | Oui |
-| 9 | [SocialChoice 04 - Agrégation Computationnelle : SAT et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python.ipynb) | BETA | Oui |
-| 10 | [SocialChoice-05 : Gibbard-Satterthwaite sans mystere -…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb) | BETA | Oui |
-| 11 | [SocialChoice-06 (C#) : Mobius sur le treillis des…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-CSharp.ipynb) | BETA | Oui |
-| 12 | [SocialChoice-06 : Mobius sur le treillis des coalitions…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb) | BETA | Oui |
-| 13 | [SocialChoice 06b - La decomposition de Mobius sur le…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb) | BETA | Non |
-| 14 | [07 - Élections de comité par approbation : le core…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb) | BETA | Oui |
-| 15 | [SocialChoice 08 - Kemeny, Ranked Pairs et Dodgson :…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb) | BETA | Oui |
-| 16 | [09 - Comites multi-vainqueurs : STV, Monroe et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-09-Committees-STV-Monroe-ChamberlinCourant-Python.ipynb) | BETA | Oui |
-| 17 | [10 — Manipulation stratégique et règles à comité](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb) | BETA | Oui |
+| 4 | [SocialChoice 01c - Le paradoxe de la non-participation…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01c-Paradoxe-NonParticipation-NoShow-Python.ipynb) | BETA | Oui |
+| 5 | [SocialChoice 02 : Mariage Stable — Algorithme de…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb) | BETA | Oui |
+| 6 | [SocialChoice 02 - Mariage Stable : Algorithme de…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python.ipynb) | BETA | Oui |
+| 7 | [SocialChoice 03 : Méthodes de Vote et Paradoxes (twin…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-CSharp.ipynb) | ALPHA | Oui |
+| 8 | [SocialChoice 03 - Méthodes de Vote et Paradoxes](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) | BETA | Oui |
+| 9 | [SocialChoice 04 : Agregation Computationnelle - SAT et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-CSharp.ipynb) | BETA | Oui |
+| 10 | [SocialChoice 04 - Agrégation Computationnelle : SAT et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python.ipynb) | BETA | Oui |
+| 11 | [SocialChoice-05 : Gibbard-Satterthwaite sans mystere -…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb) | BETA | Oui |
+| 12 | [SocialChoice-06 (C#) : Mobius sur le treillis des…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-CSharp.ipynb) | BETA | Oui |
+| 13 | [SocialChoice-06 : Mobius sur le treillis des coalitions…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb) | BETA | Oui |
+| 14 | [SocialChoice 06b - La decomposition de Mobius sur le…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb) | BETA | Non |
+| 15 | [07 - Élections de comité par approbation : le core…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb) | BETA | Oui |
+| 16 | [SocialChoice 08 - Kemeny, Ranked Pairs et Dodgson :…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb) | BETA | Oui |
+| 17 | [09 - Comites multi-vainqueurs : STV, Monroe et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-09-Committees-STV-Monroe-ChamberlinCourant-Python.ipynb) | BETA | Oui |
+| 18 | [10 — Manipulation stratégique et règles à comité](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb) | BETA | Oui |
 
 ## IIT (10 notebooks)
 
@@ -230,7 +237,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 9 | [IIT-08b — Parité et broadcast : le couple qui a mordu…](../../MyIA.AI.Notebooks/IIT/IIT-08b-Parite-et-Broadcast-Lean.ipynb) | BETA | Oui |
 | 10 | [IIT-09 — Le capstone : intégré pour toute coupe,…](../../MyIA.AI.Notebooks/IIT/IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb) | BETA | Oui |
 
-## IIT/ICT-Series (98 notebooks)
+## IIT/ICT-Series (99 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -315,28 +322,24 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 79 | [ICT-46 — Strate 7 : freebits de second ordre, le banc…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb) | BETA | Oui |
 | 80 | [ICT-46b — Le banc unique de la strate 7 : six proxys,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46b-BancUnique-Strate7-Python.ipynb) | BETA | Oui |
 | 81 | [ICT-47 — L'axe douleur : une direction linéaire dans…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb) | BETA | Non |
-| 82 | [ICT-47b — L'instrument change-t-il la géométrie ?](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47b-PainAxisInstrument-Python.ipynb) | BETA | Non |
-| 83 | [ICT-48 — Onset/SAE Qwen3.5-9B-Base, agrégat de quatre…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb) | BETA | Oui |
-| 84 | [ICT-48 — Origami Wolfram, pli 2 : quatre classes, six…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | BETA | Oui |
-| 85 | [ICT-49 — Stabilité cross-taille de la fidélité J-Lens](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-JLensFideliteCrossTaille-Python.ipynb) | BETA | Oui |
-| 86 | [ICT-49 — Machines de Gödel : l'auto-amélioration…](../../MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb) | BETA | Oui |
-| 87 | [ICT-50 -- Origami Wolfram pli 2 : la regle 30 comme…](../../MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) | BETA | Oui |
-| 88 | [ICT-51 -- Origami Wolfram pli 4 : les combinateurs…](../../MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb) | BETA | Oui |
-| 89 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb) | BETA | Oui |
-| 90 | [ICT — Substrat argumentation : trajectoires de croyance…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb) | BETA | Oui |
-| 91 | [ICT — Argumentation et croyances : le capstone du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-Capstone-Python.ipynb) | BETA | Oui |
-| 92 | [Argumentation strate 6 — Acceptabilité QBF :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb) | BETA | Oui |
-| 93 | [ICT — Substrat argumentation : maintenance de la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb) | BETA | Oui |
-| 94 | [ICT -- Dissociation F2 Dehaene : le self-model…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) | BETA | Oui |
-| 95 | [Boucle auto-referentielle p_hat (case 2 / Epic #9533)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) | BETA | Oui |
-| 96 | [ICT -- Dissociation saillance / pregnance (case s ⟂ π)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) | BETA | Oui |
-| 97 | [ICT-Greffe2 — Le quadruplet $(A, F, r, \pi)$ : rendre «…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb) | BETA | Oui |
-| 98 | [ICT-Greffe4 — Le vote argumenté sur chaîne : fermer la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb) | BETA | Oui |
-| 99 | [ICT-Greffe5 -- Attribution causale de l'intervention…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb) | BETA | Oui |
-| 100 | [ICT-Life — Substrat de calibration certifié : le Jeu de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb) | BETA | Oui |
-| 101 | [ICT-MUH — Le texte où Tegmark cite Schmidhuber :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb) | BETA | Oui |
-| 102 | [Tete-a-tete SAE <-> J-space -- les deux lentilles du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb) | BETA | Non |
-| 103 | [ICT-Synthèse — un seul appareil de mesure, cinq…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb) | BETA | Non |
+| 82 | [ICT-48 — Origami Wolfram, pli 2 : quatre classes, six…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | BETA | Oui |
+| 83 | [ICT-49 — Stabilité cross-taille de la fidélité J-Lens](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-JLensFideliteCrossTaille-Python.ipynb) | BETA | Oui |
+| 84 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb) | BETA | Oui |
+| 85 | [ICT — Substrat argumentation : trajectoires de croyance…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb) | BETA | Oui |
+| 86 | [ICT — Argumentation et croyances : le capstone du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-Capstone-Python.ipynb) | BETA | Oui |
+| 87 | [Argumentation strate 6 — Acceptabilité QBF :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb) | BETA | Oui |
+| 88 | [ICT — Substrat argumentation : maintenance de la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb) | BETA | Oui |
+| 89 | [ICT -- Dissociation F2 Dehaene : le self-model…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) | BETA | Oui |
+| 90 | [Boucle auto-referentielle p_hat (case 2 / Epic #9533)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) | BETA | Oui |
+| 91 | [ICT -- Dissociation saillance / pregnance (case s ⟂ π)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) | BETA | Oui |
+| 92 | [ICT-Greffe2 — Le quadruplet $(A, F, r, \pi)$ : rendre «…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-CSharp.ipynb) | BETA | Oui |
+| 93 | [ICT-Greffe2 — Le quadruplet $(A, F, r, \pi)$ : rendre «…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb) | BETA | Oui |
+| 94 | [ICT-Greffe4 — Le vote argumenté sur chaîne : fermer la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb) | BETA | Oui |
+| 95 | [ICT-Greffe5 -- Attribution causale de l'intervention…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb) | BETA | Oui |
+| 96 | [ICT-Life — Substrat de calibration certifié : le Jeu de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb) | BETA | Oui |
+| 97 | [ICT-MUH — Le texte où Tegmark cite Schmidhuber :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb) | BETA | Oui |
+| 98 | [Tete-a-tete SAE <-> J-space -- les deux lentilles du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb) | BETA | Non |
+| 99 | [ICT-Synthèse — un seul appareil de mesure, cinq…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb) | BETA | Non |
 
 ## Probas (1 notebooks)
 

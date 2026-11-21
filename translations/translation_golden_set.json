@@ -1,36 +1,6 @@
 {
  "pairs": [
   {
-   "kind": "notebook",
-   "fr": "MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb",
-   "en": "MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb",
-   "sha1_fr": "52989898dd10c09e72cb570c1f29c968c7e304f4",
-   "sha1_en": "c0e2cac587ef6a151908c21c239453668355b386",
-   "sources_sha1_fr": "2ea39a7239fc9ab9af344009200a66ec5de66192",
-   "sources_sha1_en": "510ef36d1b3a9228bfe8708f68784748ecdae239"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/PrefixCodes.lean",
-   "en": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/PrefixCodes_en.lean",
-   "sha1_fr": "36a945b00622747b4ab95a08ff794d1d2439b608",
-   "sha1_en": "2ca1923add04b74f31188c7d2b47b310796e00cf"
-  },
-  {
-   "kind": "readme",
-   "fr": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/README.md",
-   "en": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/README.en.md",
-   "sha1_fr": "56f0f5a37ad48a222b320d23c74bb21fca96b359",
-   "sha1_en": "03a7496332f2b4630b4e68454e9e58913f2823c0"
-  },
-  {
-   "kind": "lean",
-   "fr": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/SymbolCodec.lean",
-   "en": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/SymbolCodec_en.lean",
-   "sha1_fr": "d7571f3b5082ddf236204a17ea537c6812c19c34",
-   "sha1_en": "3e5f535dd39dd7bdc8158e69f877f9fbddf11660"
-  },
-  {
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/ApprovalConsensus.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/ApprovalConsensus_en.lean",
@@ -230,8 +200,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/FairBot.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/ProgramGames/FairBot_en.lean",
-   "sha1_fr": "6698f649c7ff94b211b5bcf6c1f4805b36765300",
-   "sha1_en": "0f263aa41ec1cc79538f1009c1537fb26e2817ed"
+   "sha1_fr": "e78d41dd351c12f122ed4446ceecf79093a2c09a",
+   "sha1_en": "11bab90abd041b7eef7478b0480c3521551bec39"
   },
   {
    "kind": "lean",
@@ -678,6 +648,36 @@
    "en": "MyIA.AI.Notebooks/IIT/iit_lean/IIT/Integration_en.lean",
    "sha1_fr": "dff4846178a1d100f91284768aeaaaad8914e79e",
    "sha1_en": "59719de75189fdc6a79d810c1a471a75696db376"
+  },
+  {
+   "kind": "notebook",
+   "fr": "MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb",
+   "en": "MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb",
+   "sha1_fr": "1f0516b9d1a642233c0110978050e6cb9bf0153e",
+   "sha1_en": "713b9482a64700e62975b186952e9d302e96bf19",
+   "sources_sha1_fr": "a43776eb1462a134017cfbb9c644b1350b83ffd8",
+   "sources_sha1_en": "6b8b627f3969b3eef853a9251f7fdc50700e4e7d"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/PrefixCodes.lean",
+   "en": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/PrefixCodes_en.lean",
+   "sha1_fr": "36a945b00622747b4ab95a08ff794d1d2439b608",
+   "sha1_en": "2ca1923add04b74f31188c7d2b47b310796e00cf"
+  },
+  {
+   "kind": "readme",
+   "fr": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/README.md",
+   "en": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/README.en.md",
+   "sha1_fr": "56f0f5a37ad48a222b320d23c74bb21fca96b359",
+   "sha1_en": "03a7496332f2b4630b4e68454e9e58913f2823c0"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/SymbolCodec.lean",
+   "en": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/SymbolCodec_en.lean",
+   "sha1_fr": "d7571f3b5082ddf236204a17ea537c6812c19c34",
+   "sha1_en": "3e5f535dd39dd7bdc8158e69f877f9fbddf11660"
   },
   {
    "kind": "lean",
@@ -1918,9 +1918,9 @@
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python_en.ipynb",
-   "sha1_fr": "a1ecb03b1fd6b2d2a6c3e4b4f798c47df28aab09",
+   "sha1_fr": "3ebc3692d61c4197dd116a137bd1e4546a74c305",
    "sha1_en": "45d9e579924af64a42605e1ee7efa79cb77c60b5",
-   "sources_sha1_fr": "1fd36d268d99d98e96fe2a819ad75d85ec1f246d",
+   "sources_sha1_fr": "81a5be43852d17163f18b986f4d6a22f61a79399",
    "sources_sha1_en": "0e111abfd52abc2430ef28fb1d4d257e0f6f5513"
   },
   {
@@ -2056,8 +2056,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/DoomsdayLemmas.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/DoomsdayLemmas_en.lean",
-   "sha1_fr": "a64eeed02d7e5c352abb28713f1f66e37be76f31",
-   "sha1_en": "b56a158f1e54815c38c603625fe8dc9cbbae013c"
+   "sha1_fr": "4bce0a90aef23c380369bc21983430a8566c841a",
+   "sha1_en": "083d17e9b36e4a5791186ad2fee8b5b198e7df8a"
   },
   {
    "kind": "lean",
@@ -2161,8 +2161,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeMarginFragment.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeMarginFragment_en.lean",
-   "sha1_fr": "451cca67ed517c697ed4c6b4a2d44f6c53a5a6f6",
-   "sha1_en": "4386f0aa9976e9436980fd5be4dd08937f6c4bfa"
+   "sha1_fr": "f54ddd48ee2c22f33cc8462c49ca6fc990cc84cc",
+   "sha1_en": "531b7c590e5e60dd7419d12552300968360eef79"
   },
   {
    "kind": "lean",
@@ -2217,8 +2217,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Pillars.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Pillars_en.lean",
-   "sha1_fr": "a618101e0525089bf8fcc1718d3a3a428c9ca635",
-   "sha1_en": "c25eac32340b0490a2af70e29339637d9da96d4e"
+   "sha1_fr": "4b51f2cbf829bfcbf75261f44db3fefb6518e02b",
+   "sha1_en": "13b1096365a1d88e0eb67aee9ce2d5c7eced6d57"
   },
   {
    "kind": "lean",
@@ -2273,8 +2273,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Nim.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Nim_en.lean",
-   "sha1_fr": "5ce0c0ea6009a2bc57c2328fb418226d354939f8",
-   "sha1_en": "4ab744d4ae24fc6f3b8bf9cda24a676a826435d4"
+   "sha1_fr": "41bb849d85f2bcce89a8c3a8f70752d96898cb47",
+   "sha1_en": "7edb442d8de3a68987bf9bb52981d398af1f5617"
   },
   {
    "kind": "readme",
@@ -3316,8 +3316,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/Calibration/Doomsday.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/Calibration/Doomsday_en.lean",
-   "sha1_fr": "2aed79c5d2cf6896a8d065246d3f97e018d56896",
-   "sha1_en": "16e1729ee5cb9d1d966248cbb14dffb416724960"
+   "sha1_fr": "4eba2681445409a067651ef1b49ce51462704f96",
+   "sha1_en": "91cb062b6adf346b0eb2e2195fa41e367e697985"
   },
   {
    "kind": "lean",
@@ -3330,8 +3330,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/Calibration/Nim.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean/Calibration/Nim_en.lean",
-   "sha1_fr": "c2fde535671375a651fec1747b0f0d07a15568f3",
-   "sha1_en": "dfcaab8c228db5bca81e229e60248a2f8c6fa05c"
+   "sha1_fr": "fd7d95080cc9fce0eeff8fbb36d75a6245e039ce",
+   "sha1_en": "3fb5fe930278fb6e27dcc48ca5e5385af500e595"
   },
   {
    "kind": "readme",
@@ -3498,7 +3498,7 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/README.md",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/README.en.md",
-   "sha1_fr": "5897e1d1d606288521c290f5a484a56a49f4a667",
+   "sha1_fr": "4d145e5f4585616c754ca5323b9e353e41dadecf",
    "sha1_en": "5b9dfc5470c010498674c8ae84eb1df2127e0475"
   },
   {
@@ -3666,8 +3666,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/cross-series/README.md",
    "en": "MyIA.AI.Notebooks/cross-series/README.en.md",
-   "sha1_fr": "e1ff2e0989580c0871561f3016edb0a6639dc0f8",
-   "sha1_en": "491437394116f70ec1e338474294737837214ea1"
+   "sha1_fr": "695789554c5aea3b3b15e68b280761cf71b71343",
+   "sha1_en": "f0916ef6dad9d063a0bbca6b118039ed6db84b43"
   },
   {
    "kind": "readme",

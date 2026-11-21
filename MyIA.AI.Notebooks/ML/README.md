@@ -6,7 +6,7 @@ pagetitle: "Machine learning — données, modèles et agents"
 series: ML
 pedagogical_count: 157
 breakdown: DataScienceWithAgents=128, ML.Net=29
-maturity: BETA=150, DRAFT=4, ALPHA=3
+maturity: BETA=152, DRAFT=4, ALPHA=1
 -->
 
 [↑ Parcours de notebooks](../README.md) · [Cours et supports sur l'apprentissage](../../slides/06-apprentissage/)

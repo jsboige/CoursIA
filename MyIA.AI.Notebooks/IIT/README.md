@@ -602,7 +602,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 110
-breakdown: ICT-Series=100, root=10
-maturity: BETA=108, DRAFT=2
+pedagogical_count: 111
+breakdown: ICT-Series=101, root=10
+maturity: BETA=109, DRAFT=2
 -->
