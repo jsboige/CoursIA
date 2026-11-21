@@ -129,6 +129,7 @@ NOTEBOOK_SUBTREES = (
     # couverts par leurs entrees individuelles ci-dessus restent dedup
     # (precedent Integrations-DotNet/ <- Aspire/, tranche 18 #13581).
     "MyIA.AI.Notebooks/SymbolicAI/",                  # tranche finale #18423 (prefix famille, +1 racine)
+    "MyIA.AI.Notebooks/InformationCalcul/InformationTheory/",  # serie InformationTheory #27077 (codage de canal, sous la famille InformationCalcul)
 )
 
 # Notebook subtrees that must NOT render (archived families only — vendored
@@ -173,6 +174,17 @@ NOTEBOOKS_HORS_PERIMETRE = {
     # Sondes d'outillage : reproduction du bug .NET #17361, smoke runtime.
     "scripts/notebook_tools/probes/dotnet-restore-bug-17361.ipynb",
     "scripts/notebook_tools/verify_runtime_smoke.ipynb",
+    # Temoins d'integration de l'image d'apprentissage (#27545, pli 1.2) :
+    # executes par le workflow learning-image-ghcr (#27546) dans le
+    # conteneur pour prouver chaque famille de noyau, jamais rendus pour
+    # le site -- precedent sondes d'outillage ci-dessus.
+    "docker-configurations/notebook-runner/witness/witness-python3.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-global-313.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-net-csharp.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-net-fsharp.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-net-powershell.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-rust.ipynb",
+    "docker-configurations/notebook-runner/witness/witness-lean4.ipynb",
 }
 
 # Sous-arbres `docs/` dont les `*.md` non-README sont rendus en HTML par
