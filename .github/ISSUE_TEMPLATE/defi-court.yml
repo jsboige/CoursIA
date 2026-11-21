@@ -1,0 +1,78 @@
+name: Défi court (portée apprenant)
+description: Un défi de taille apprenant — énoncé, carnet de départ, critère de réussite vérifiable.
+title: "[Défi] "
+labels: ["good first issue"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Un **défi court** se réalise en une seule Pull Request, sur un seul carnet, sans
+        connaissance de l'infrastructure du dépôt. Il tient en trois parties : ce qu'on
+        demande, d'où l'on part, et ce qui prouve que c'est réussi.
+
+        Si l'une des trois parties manque, le défi n'est pas encore prêt : mieux vaut le
+        reformuler que le publier.
+
+  - type: textarea
+    id: enonce
+    attributes:
+      label: Énoncé
+      description: Ce qu'il faut faire, en un paragraphe. Dites le résultat attendu, pas la méthode.
+      placeholder: |
+        Complétez l'exercice 2 du carnet … : construire un jeu de vote à quatre joueurs
+        où le joueur 3 est un dictateur de fait, et vérifier ce que le solveur en déduit.
+    validations:
+      required: true
+
+  - type: input
+    id: depart
+    attributes:
+      label: Carnet de départ
+      description: Chemin du carnet depuis la racine du dépôt, puis la cellule (son identifiant si le carnet en a un, sinon son titre).
+      placeholder: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03f-….ipynb — cellule op6-ex4 (titre « Exercice 4 »)
+    validations:
+      required: true
+
+  - type: input
+    id: prerequis
+    attributes:
+      label: Prérequis
+      description: Ce qu'il faut avoir lu ou installé pour commencer. « Aucun » est une réponse valable.
+      placeholder: Savoir lancer un carnet Jupyter ; rien à installer (bibliothèque standard seule)
+    validations:
+      required: true
+
+  - type: textarea
+    id: reussite
+    attributes:
+      label: Critère de réussite vérifiable
+      description: |
+        Ce qui permet de dire « c'est réussi » sans jugement de goût : une commande et sa
+        sortie attendue, une valeur numérique, une propriété vérifiée par le code lui-même.
+        Évitez « le code est propre » ou « la solution est correcte ».
+      placeholder: |
+        Le carnet s'exécute de bout en bout ; la cellule complétée affiche le coût 7 ;
+        et `python scripts/notebook_tools/notebook_tools.py validate <carnet> --quick`
+        ne signale aucune erreur.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: duree
+    attributes:
+      label: Durée estimée
+      description: Ordre de grandeur pour une personne qui découvre le carnet.
+      options:
+        - Moins d'une heure
+        - Une demi-journée
+        - Une journée
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        **Ce que devient votre solution.** Une solution juste est intégrée comme
+        **exemple guidé crédité** (votre nom dans le carnet), et un nouvel exercice non
+        résolu est ajouté à sa place pour garder le carnet apprenant. C'est la règle
+        ordinaire du dépôt, rappelée dans `CONTRIBUTING.md`.
