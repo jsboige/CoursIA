@@ -852,7 +852,7 @@ if __name__ == "__main__":
 - [Safety Guidelines](https://openai.com/policies/usage-policies)
 
 ### Notebooks CoursIA
-- `01-1-OpenAI-DALL-E-3.ipynb` : Introduction pratique
+- `01-1-Generation-Image-Texte-API.ipynb` : Introduction pratique
 - `04-1-Educational-Content-Generation.ipynb` : Applications pédagogiques
 - `04-2-Creative-Workflows.ipynb` : Workflows créatifs
 

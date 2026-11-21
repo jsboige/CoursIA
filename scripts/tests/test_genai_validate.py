@@ -213,7 +213,7 @@ class TestFindNotebook:
 
     def test_fuzzy_match(self, tmp_path):
         """Finds notebook by partial name match."""
-        _write_nb(tmp_path / "01-1-OpenAI-DALL-E-3.ipynb")
+        _write_nb(tmp_path / "01-1-Generation-Image-Texte-API.ipynb")
         v = self._make_validator(tmp_path)
         result = v._find_notebook("DALL-E-3")
         assert result is not None

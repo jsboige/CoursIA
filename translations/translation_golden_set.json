@@ -656,8 +656,8 @@
   },
   {
    "kind": "notebook",
-   "fr": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb",
-   "en": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3_en.ipynb",
+   "fr": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb",
+   "en": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API_en.ipynb",
    "sha1_fr": "fa6bd0ccbbc6b25c411638d5b2c7111219e12e0a",
    "sha1_en": "b572e005c40335abb5d70dea4de9733baaf3045b",
    "sources_sha1_fr": "c5a74afd61ee0ccce325ff0a8a9107cab2b61d54",

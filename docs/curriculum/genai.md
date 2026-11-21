@@ -156,16 +156,16 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [OpenAI DALL-E 3 - Generation d'Images](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) | BETA | Non |
-| 2 | [OpenAI DALL-E 3 - Image Generation](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3_en.ipynb) | BETA | Non |
+| 1 | [OpenAI DALL-E 3 - Generation d'Images](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API.ipynb) | BETA | Non |
+| 2 | [OpenAI DALL-E 3 - Image Generation](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-Generation-Image-Texte-API_en.ipynb) | BETA | Non |
 | 3 | [Génération et analyse d'images par API multimodale](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb) | BETA | Non |
 | 4 | [Image Generation and Analysis via Multimodal API](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API_en.ipynb) | BETA | Non |
 | 5 | [Opérations de Base sur les Images](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb) | BETA | Non |
-| 6 | [Stable Diffusion Forge - SD XL Turbo](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) | BETA | Non |
+| 6 | [Stable Diffusion Forge - SD XL Turbo](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Generation-Image-Locale-Forge.ipynb) | BETA | Non |
 | 7 | [Qwen Image-Edit 2.5 - API ComfyUI](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb) | BETA | Non |
 | 8 | [Qwen Image Edit 2509 - Édition Avancée d'Images](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb) | BETA | Non |
-| 9 | [FLUX.1 - Génération d'Images Avancée](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb) | BETA | Non |
-| 10 | [Stable Diffusion 3.5 - Génération de Pointe](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb) | BETA | Non |
+| 9 | [FLUX.1 - Génération d'Images Avancée](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-Generation-Image-Haute-Qualite.ipynb) | BETA | Non |
+| 10 | [Stable Diffusion 3.5 - Génération de Pointe](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Generation-Image-MMDiT.ipynb) | BETA | Non |
 | 11 | [Z-Image (Lumina-2) : Generation Avancee avec ComfyUI](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb) | BETA | Non |
 | 12 | [Bonsai-Image : Generation Text-to-Image avec…](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb) | BETA | Non |
 | 13 | [02-6 - Modeles generatifs few-step : IMM et TVM](../../MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) | BETA | Non |
