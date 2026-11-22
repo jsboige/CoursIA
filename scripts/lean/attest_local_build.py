@@ -777,20 +777,10 @@ def manifest_at_head(repo: str, head: str) -> dict | None:
         repo,
         "repos/{}/contents/scripts/lean/ci_lakes.json?ref={}".format(repo, head),
     )
-    if not isinstance(payload, dict):
-        return None
-    content = payload.get("content")
-    if not isinstance(content, str):
-        return None
-    try:
-        raw = base64.b64decode(content).decode("utf-8")
-    except (ValueError, UnicodeDecodeError):
-        return None
-    try:
-        manifest = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
-    return manifest if isinstance(manifest, dict) else None
+    # Le decodage de la payload REST est PORTÉ par le module partage
+    # (`lean_build_attestation`) : la garde lit le meme manifeste par le meme
+    # decodeur -- une seule definition du "contenu illisible".
+    return attestation.manifest_from_api_payload(payload)
 
 
 def select_lakes(files: list[str], head_manifest: dict, base_manifest: dict | None) -> list[dict]:
@@ -1560,9 +1550,26 @@ def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
         },
     }
     if not lakes:
+        # #27875 : le cas frequent est un lake INTRODUIT par la PR et non
+        # declare au manifeste (l'entree arrive dans une PR empilee). Le
+        # message nomme le lake et le geste : sans cela, le blocage rendu
+        # par la garde est muet.
+        undeclared = attestation.undeclared_lakes(files, head_manifest)
+        if undeclared:
+            raise OrganError(
+                "le diff de #{} INTRODUIT le lake {} mais le manifeste "
+                "`scripts/lean/ci_lakes.json` ne le declare pas a la tete : "
+                "declarez-le (dans cette PR, ou dans une PR empilee mergee "
+                "d'abord), puis relancez l'attestation -- aucune attestation "
+                "ne peut couvrir un lake non declare.".format(
+                    pr, ", ".join(undeclared)
+                )
+            )
         raise OrganError(
             "aucun lake connu n'est touche par le diff de #{} -- rien a "
-            "construire (la garde ne bloquera pas cette PR)".format(pr)
+            "construire ; la garde Lean attend une attestation, qui ne peut "
+            "pas etre produite tant qu'aucun lake declare ne porte le "
+            "diff".format(pr)
         )
     if dry_run:
         result["dry_run"] = True
