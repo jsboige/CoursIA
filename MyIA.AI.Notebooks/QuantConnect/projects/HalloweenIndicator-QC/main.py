@@ -28,11 +28,12 @@ class HalloweenIndicatorAlgorithm(QCAlgorithm):
                 f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | inverse)"
             )
 
-        start = self.get_parameter("start_date", "2016-01-01")
-        end = self.get_parameter("end_date", "2026-07-01")
-        self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
-        self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))
+        start = datetime.strptime(self.get_parameter("start"), "%Y-%m-%d")
+        end = datetime.strptime(self.get_parameter("end"), "%Y-%m-%d")
+        self.set_start_date(start.year, start.month, start.day)
+        self.set_end_date(end.year, end.month, end.day)
         self.set_cash(100000)
+        self.start_value = 100000.0
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
         # Sans prix amorcé, la première séance planifiée voit un prix nul et
         # n'investit pas.
@@ -73,9 +74,11 @@ class HalloweenIndicatorAlgorithm(QCAlgorithm):
         )
 
         # Trace journalière `shadow` (contrat #18923) : valeur du portefeuille à
-        # l'ouverture de chaque séance de SPY, répartie sur e0..e4. Tous les modes
+        # l'ouverture de chaque séance de SPY, répartie sur e0..e4, plus les séries
+        # `fees` et `turnover` à chaque séance (contrat #27482). Tous les modes
         # la prennent au même instant, sur la clôture précédente.
         self._closes = 0
+        self.traded = 0.0
         self.schedule.on(
             self.date_rules.every_day(self._spy),
             self.time_rules.after_market_open(self._spy, 0),
@@ -111,9 +114,14 @@ class HalloweenIndicatorAlgorithm(QCAlgorithm):
 
     def _trace(self):
         self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)
+        self.plot("shadow", "turnover", self.traded)
         self._closes += 1
 
     def on_order_event(self, order_event):
+        if order_event.status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
+            self.traded += (abs(order_event.fill_quantity * order_event.fill_price)
+                            / self.portfolio.total_portfolio_value)
         if order_event.status == OrderStatus.INVALID:
             self._invalid_orders += 1
             self.set_runtime_statistic("invalid_orders", str(self._invalid_orders))

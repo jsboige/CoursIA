@@ -460,7 +460,7 @@ sont fournies GRATUITEMENT par `every_instance_boxes_everything` — le
 corollaire `cupod_cupod_mutual_defect_degenerate` ci-dessous établit le
 (D, D) sans aucune hypothèse. La lecture « sous hypothèses nommées »
 décrit la VRAIE prouvabilité : là, un système cohérent ne prouve pas
-l'absence de preuve (2ᵉ théorème de Gödel), et c'est la contre-intuition
+l'absence de preuve (second théorème de Gödel), et c'est la contre-intuition
 que signale Critch : « CUPOD seems the nicer robot, yet it defects
 against itself. »
 

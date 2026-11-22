@@ -43,7 +43,7 @@ lake build
 ## Témoin empirique
 
 Le carnet pédagogique
-[`Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb`](../../../Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb)
+[`Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb`](../../../InformationCalcul/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb)
 (section 6) mesure la confluence empiriquement (30 ordres de réduction
 aléatoires d'un même terme convergent vers la même forme normale) — le témoin
 que cette preuve formalise.

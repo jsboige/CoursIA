@@ -1,0 +1,1600 @@
+{
+ "Abstraction": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "2017.1.16.1534"
+ },
+ "AlgorithmImports": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Analysis": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.1.7"
+ },
+ "Appariement": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Argumentation": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.1.0"
+ },
+ "Assignment": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.3"
+ },
+ "Astar": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.1"
+ },
+ "AsymmetricInformation": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Bridge": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.4.0"
+ },
+ "CGTTour": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "CLIP_": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Calibration": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Coherence": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.6.6"
+ },
+ "CombinatorialGames": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "CongestionGames": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Converse": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.1a5"
+ },
+ "Conway": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.1"
+ },
+ "Decode": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2025.10.0"
+ },
+ "Descent": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.2.5"
+ },
+ "Descente": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "DeuxMinima": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Discrepancy": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "ERC20": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Echange": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "EffectiveTheory": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Expansion": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "FormalGroups": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Foundation": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.1.0a0.dev1"
+ },
+ "Galois": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.4.11"
+ },
+ "Generators": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "2020.4.27"
+ },
+ "GradientFlow": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Grothendieck": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Hecke": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Huffman": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.1.2"
+ },
+ "HuffmanOptimal": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "IIT": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Kelly": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.0"
+ },
+ "Lake": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.0.1"
+ },
+ "Lmmse": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "MIDI": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.2.3"
+ },
+ "MUH": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "MathUniverse": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Mathlib": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.6.0"
+ },
+ "McMillan": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Minimax": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.0.2"
+ },
+ "MutualGen": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "NN": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.1.1"
+ },
+ "NormTails": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Objective": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.0.13"
+ },
+ "Optimalite": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "PFR": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.5.14"
+ },
+ "PacLearning": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Perceptron": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.4.0"
+ },
+ "Percolation": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.2.dev0"
+ },
+ "Planning": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.0.1"
+ },
+ "Portfolio": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.1"
+ },
+ "PrefixCodes": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "ProgramGames": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "QuantConnect": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.1.0"
+ },
+ "Renaming": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.1.3"
+ },
+ "SPARQLWrapper": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.0.0"
+ },
+ "Sendov": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Sensitivity": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.2.8"
+ },
+ "Serre100": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Soeurs": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Sudoku": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.1"
+ },
+ "SymbolCodec": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "System": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "TTS": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.22.0"
+ },
+ "TorchLeanSerie": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "Utility": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.0"
+ },
+ "__main__": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "a2a": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.44"
+ },
+ "accelerate": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.16.0"
+ },
+ "acestep": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "aifeynman": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "2.0.7"
+ },
+ "alibi_detect": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.13.0"
+ },
+ "anthropic": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.12.0"
+ },
+ "antropy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.2.3"
+ },
+ "argumentation_analysis": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "arviz": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.3.0"
+ },
+ "audio_separator": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.48.0"
+ },
+ "audiocraft": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.3.0"
+ },
+ "automata": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.1.4"
+ },
+ "axelrod": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "4.14.0"
+ },
+ "basic_pitch": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.4.0"
+ },
+ "basicsr": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.4.2"
+ },
+ "bitcoin": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.1.42"
+ },
+ "bitsandbytes": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.50.2"
+ },
+ "cairosvg": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.9.1"
+ },
+ "calculate_metrics": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "chatterbox": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.0.0"
+ },
+ "clip": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.2.0"
+ },
+ "clr": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.0.3"
+ },
+ "cma": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "4.6.0"
+ },
+ "concrete": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "4.18.2"
+ },
+ "constraint": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.4.1"
+ },
+ "cvxpy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.9.3"
+ },
+ "datasets": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "5.2.0"
+ },
+ "dd": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.6.0"
+ },
+ "deap": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.4.4"
+ },
+ "decord": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.6.0"
+ },
+ "demucs": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "4.1.0"
+ },
+ "dia": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.1.8"
+ },
+ "dice_ml": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.12"
+ },
+ "diffprivlib": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.6.6"
+ },
+ "diffusers": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.43.0"
+ },
+ "dnnlib": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "dowhy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.14"
+ },
+ "dspy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "3.5.0"
+ },
+ "electionguard": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.4.0"
+ },
+ "eth_account": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.14.0"
+ },
+ "eth_tester": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.14.0b1"
+ },
+ "eth_utils": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "6.0.0"
+ },
+ "faiss": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.5.3"
+ },
+ "fallacy_detection": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "fastembed": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.9.1"
+ },
+ "faster_whisper": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.2.1"
+ },
+ "ffmpeg": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.4"
+ },
+ "fluidsynth": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.2"
+ },
+ "fooof": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.1.1"
+ },
+ "g2p_en": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.1.0"
+ },
+ "generate_images": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "google-api-python-client": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.202.0"
+ },
+ "gradio": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "6.32.0"
+ },
+ "graphviz": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.21"
+ },
+ "gsplat": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.5.3"
+ },
+ "guided_diffusion": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "gymnasium": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.4.0"
+ },
+ "highway_env": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.12.1"
+ },
+ "hmmlearn": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.3.3"
+ },
+ "huggingface_hub": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.4.0"
+ },
+ "humour_banc": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "imageio_ffmpeg": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.8.1"
+ },
+ "imblearn": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.0"
+ },
+ "inflect_nano": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "ipywidgets": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "8.1.9"
+ },
+ "janus_swi": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.5.3"
+ },
+ "java": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "jdk4py": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "25.0.5.0"
+ },
+ "jevlike": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "jpype": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.0"
+ },
+ "jupyter_ui_poll": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.1.0"
+ },
+ "kev": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.10.0"
+ },
+ "kglab": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.0.1"
+ },
+ "knowledge_storm": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.1.1"
+ },
+ "kokoro": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.9.4"
+ },
+ "kokoro_onnx": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.6.1"
+ },
+ "kymatio": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.3.0"
+ },
+ "langchain_community": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.4.2"
+ },
+ "langchain_core": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.8.4"
+ },
+ "langchain_experimental": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.4.2"
+ },
+ "langchain_huggingface": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.2.3"
+ },
+ "langchain_openai": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.8.5"
+ },
+ "langchain_text_splitters": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.1.3"
+ },
+ "langgraph": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.2.24"
+ },
+ "laya": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.5.0"
+ },
+ "lean4_jupyter": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.0.2"
+ },
+ "lean_dojo": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "4.20.0"
+ },
+ "lean_dojo_v2": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.0.9"
+ },
+ "lernd": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "libreyolo": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.8.0"
+ },
+ "librosa": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.0.1"
+ },
+ "lime": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.2.0.1"
+ },
+ "llmcompressor": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.15.0"
+ },
+ "lmformatenforcer": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "loguru": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.8.0"
+ },
+ "ltn": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.1"
+ },
+ "mcp": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.3.0"
+ },
+ "mealpy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "3.0.3"
+ },
+ "midi_model": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "midi_synthesizer": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "midi_tokenizer": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "minizinc": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.10.0"
+ },
+ "moviepy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.2.1"
+ },
+ "nashpy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.0.43"
+ },
+ "nbformat": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "5.11.1"
+ },
+ "nest_asyncio": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.6.0"
+ },
+ "numpyro": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.22.0"
+ },
+ "onnx": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.23.2"
+ },
+ "open_spiel": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "2.0.2"
+ },
+ "opentelemetry": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "optuna": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "5.1.0"
+ },
+ "org": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "ortools": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "9.15.6755"
+ },
+ "owlready2": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.51"
+ },
+ "owlrl": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "7.6.2"
+ },
+ "pantograph": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.1.0"
+ },
+ "papermill": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.7.0"
+ },
+ "parselmouth": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.1.1"
+ },
+ "peft": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.22.0"
+ },
+ "pettingzoo": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.27.0"
+ },
+ "pgvector": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.5.1"
+ },
+ "phe": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.5.0"
+ },
+ "pipecat": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.3.0"
+ },
+ "playwright": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.65.2"
+ },
+ "plotly": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "7.1.0"
+ },
+ "popper": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "2020.9.1"
+ },
+ "pretty_midi": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.2.11.post0"
+ },
+ "proglog": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.1.12"
+ },
+ "psutil": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "7.2.2"
+ },
+ "pulp": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "4.3.1"
+ },
+ "pychoco": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.4.0"
+ },
+ "pydiffvg": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "pydub": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.25.1"
+ },
+ "pygad": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "3.9.2"
+ },
+ "pymc": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "6.4.0"
+ },
+ "pymoo": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.6.2"
+ },
+ "pypdf": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "7.1.1"
+ },
+ "pypdfium2": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "5.15.2"
+ },
+ "pyphi": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.2.0"
+ },
+ "pyro": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "3.16"
+ },
+ "pysat": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "3.2.2"
+ },
+ "pyshacl": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.40.2"
+ },
+ "pyspiel": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "pytensor": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "3.3.8"
+ },
+ "python-dotenv": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.2.4"
+ },
+ "pythonnet": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "3.2.1"
+ },
+ "pyttsx3": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.99"
+ },
+ "pyvis": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.3.2"
+ },
+ "pywt": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "qdrant_client": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.20.0"
+ },
+ "qwen_vl_utils": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.0.14"
+ },
+ "rdflib": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "7.6.0"
+ },
+ "realesrgan": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.3.0"
+ },
+ "reasonable": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.4.4"
+ },
+ "reportlab": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "5.1.0"
+ },
+ "resemblyzer": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.1.4"
+ },
+ "rewardspy": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "rouge_score": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.1.2"
+ },
+ "rustuna": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.3.1"
+ },
+ "rvc_python": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.1.5"
+ },
+ "seaborn": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.13.2"
+ },
+ "semantic_kernel": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.47.0"
+ },
+ "sentence_transformers": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "6.3.0"
+ },
+ "seqeval": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.2.2"
+ },
+ "shap": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.54.1"
+ },
+ "simanneal": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.5.0"
+ },
+ "skl2onnx": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.20.0"
+ },
+ "sklearn_crfsuite": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.5.0"
+ },
+ "snappy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "3.3.2"
+ },
+ "solcx": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "spacy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "3.8.18"
+ },
+ "speechbrain": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.1.2"
+ },
+ "stable_baselines3": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "2.9.2"
+ },
+ "stim": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.16.0"
+ },
+ "stumpy": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.14.1"
+ },
+ "supriya": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "26.10b1"
+ },
+ "tenacity": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "9.2.1"
+ },
+ "tenseal": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.3.18"
+ },
+ "textblob": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.20.1"
+ },
+ "timesfm": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "3.0.2"
+ },
+ "tiny_tts": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.3.2"
+ },
+ "tokenizers": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.23.3"
+ },
+ "torch_utils": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.0.1"
+ },
+ "torchaudio": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "2.11.1"
+ },
+ "torchlens": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "3.0.3"
+ },
+ "torchmetrics": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.9.0"
+ },
+ "torchvision": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "0.29.2"
+ },
+ "transformers": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "5.23.0"
+ },
+ "trl": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.18.2"
+ },
+ "truststore": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.10.5"
+ },
+ "ultralytics": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "8.4.216"
+ },
+ "umap": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "unified_planning": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.3.0"
+ },
+ "up_fast_downward": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "1.0.0"
+ },
+ "uvicorn": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.54.0"
+ },
+ "vaderSentiment": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "3.3.2"
+ },
+ "von": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.1a0"
+ },
+ "vyper": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.4.3"
+ },
+ "web3": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "8.0.0"
+ },
+ "websockets": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "17.4"
+ },
+ "xformers": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "0.0.36"
+ },
+ "xrpl": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "yfinance": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": true,
+  "version": "1.8.0"
+ },
+ "yue2": {
+  "checked": "",
+  "error": "HTTP Error 404: Not Found",
+  "pure_wheel": false
+ },
+ "z3-solver": {
+  "checked": "",
+  "error": "",
+  "pure_wheel": false,
+  "version": "5.4.1.0"
+ }
+}
