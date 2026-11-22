@@ -268,10 +268,66 @@ def test_run_lance_l_organe_depuis_le_depot(tmp_path, monkeypatch):
     monkeypatch.setattr(imod, "sync_repo", lambda repo: (True, "origin/main"))
     seen = {}
 
-    def fake_run(cmd, **kw):
+    def fake_popen(cmd, **kw):
         seen.update(kw)
-        return subprocess.CompletedProcess(cmd, 0)
+        seen["cmd"] = cmd
+        return _FauxPopen(cmd)
 
-    monkeypatch.setattr(imod.subprocess, "run", fake_run)
+    monkeypatch.setattr(imod.subprocess, "Popen", fake_popen)
     assert imod.cmd_run(tmp_path) == 0
     assert seen.get("cwd") == str(tmp_path)
+
+
+class _FauxPopen:
+    """Enfant simule : `wait` leve `TimeoutExpired` une fois (battement de
+    coeur), puis rend. Le code de sortie est 0."""
+
+    def __init__(self, cmd, **kw):
+        self.cmd = cmd
+        self.kw = kw
+        self.returncode = 0
+        self.waits = 0
+
+    def wait(self, timeout=None):
+        self.waits += 1
+        if self.waits == 1:
+            raise subprocess.TimeoutExpired(cmd=self.cmd, timeout=timeout)
+        return self.returncode
+
+
+def test_l_enfant_est_lance_sans_buffer(tmp_path, monkeypatch):
+    # La sortie standard d'un process Python redirigee vers un FICHIER est
+    # bufferisee par blocs : sans `-u`, rien n'atteint le journal avant la
+    # sortie de l'enfant (mesure du 22/11 : 0 octet a 0,35 s, 27 a la fin ;
+    # avec `-u`, 18 octets a 0,35 s). Issue #28005.
+    _redirect_cablage(monkeypatch, tmp_path)
+    monkeypatch.setattr(imod, "sync_repo", lambda repo: (True, "origin/main"))
+    seen = {}
+
+    def fake_popen(cmd, **kw):
+        seen["cmd"] = cmd
+        return _FauxPopen(cmd)
+
+    monkeypatch.setattr(imod.subprocess, "Popen", fake_popen)
+    assert imod.cmd_run(tmp_path) == 0
+    assert "-u" in seen["cmd"]
+
+
+def test_le_journal_avance_pendant_la_passe(tmp_path, monkeypatch):
+    # Le controle d'hygiene lit l'AGE du journal : un journal muet pendant
+    # une passe de 4 h passe pour muet alors que la passe vit (mesure du
+    # 22/11 : « journal muet depuis 256 min », py-spy dans
+    # `mergeable_state_and_head` -> `sleep`). Le lanceur ecrit donc un
+    # battement de coeur, VIDE, tant que l'enfant tourne.
+    _redirect_cablage(monkeypatch, tmp_path)
+    monkeypatch.setattr(imod, "sync_repo", lambda repo: (True, "origin/main"))
+    monkeypatch.setattr(imod, "HEARTBEAT_S", 0.01)
+    monkeypatch.setattr(
+        imod.subprocess, "Popen", lambda cmd, **kw: _FauxPopen(cmd)
+    )
+    assert imod.cmd_run(tmp_path) == 0
+    texte = imod.log_path_for().read_text(encoding="utf-8")
+    assert "passe en cours" in texte
+    # La ligne de fin reste la DERNIERE : le controle d'hygiene la lit.
+    derniere = texte.rstrip().splitlines()[-1]
+    assert "run end rc=0" in derniere, derniere

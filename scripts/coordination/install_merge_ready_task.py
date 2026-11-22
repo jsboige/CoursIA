@@ -40,6 +40,12 @@ Journal de la tache : %LOCALAPPDATA%\CoursIA\merge_ready\logs\
 merge_ready_YYYYMMDD.log ; journal de l'organe :
 %LOCALAPPDATA%\CoursIA\merge_ready\journal.jsonl ; lanceur masque :
 %LOCALAPPDATA%\CoursIA\merge_ready\run_hidden.vbs.
+
+Pendant un tour, le journal de la tache **avance** : l'enfant est lance
+sans buffer (`-u`) et le lanceur ecrit un battement de coeur toutes les
+60 s (issue #28005) -- le controle d'hygiene lit l'AGE de ce journal, et un
+journal muet pendant une passe de 4 h passait pour muet alors que la passe
+vivait.
 """
 from __future__ import annotations
 
@@ -48,6 +54,7 @@ import datetime as _dt
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 TASK_NAME = r"CoursIA\merge_ready"
@@ -74,6 +81,20 @@ WSH_PATH = (
 # (voir sync_repo). Les autres machines passent --repo explicitement.
 DEFAULT_REPO = Path(r"D:\CoursIA-wt-merge-ready")
 INTERVAL_MINUTES = 20
+
+#: Cadence du BATTEMENT DE COEUR ecrit dans le journal texte de la tache
+#: pendant que l'enfant tourne (issue #28005).
+#:
+#: Le controle d'hygiene lit l'AGE du journal (`session_hygiene.py` :
+#: `last_log.stat().st_mtime`) : un journal qui n'ecrit rien pendant une passe
+#: de 4 h passe pour muet alors que la passe vit (mesure du 22/11 :
+#: « journal muet depuis 256 min » pendant que `py-spy` montrait la passe
+#: dans `mergeable_state_and_head` -> `sleep`).
+#:
+#: 60 s est assez court pour que l'age du journal reste sous le seuil
+#: d'alerte (3 x l'intervalle nominal de 20 min) et assez long pour ne pas
+#: ecrire 60 lignes par passe.
+HEARTBEAT_S = 60.0
 
 
 def _run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
@@ -309,12 +330,32 @@ def cmd_run(repo: Path) -> int:
         # chaque PR touchant un notebook etait sautee en
         # `slot-collision-unreadable` (mesure du 20/10 : #20434, #21008,
         # #21470, ~20 sauts par heure).
-        proc = subprocess.run(
-            [sys.executable, str(organ_path(repo)), "--apply"],
+        #
+        # `-u` : la sortie standard d'un process Python redirigee vers un
+        # FICHIER est bufferisee par blocs -- rien n'atteint le journal avant
+        # la sortie de l'enfant. Mesure du 22/11 (issue #28005) : sans `-u`,
+        # le journal faisait 0 octet au bout de 0,35 s et 27 octets a la fin ;
+        # avec `-u`, 18 octets a 0,35 s. Le journal du 22/11 est reste muet
+        # 256 min pendant que la passe vivait.
+        proc = subprocess.Popen(
+            [sys.executable, "-u", str(organ_path(repo)), "--apply"],
             stdout=fh,
             stderr=subprocess.STDOUT,
             cwd=str(repo),
         )
+        # Battement de coeur : tant que l'enfant tourne, le journal avance.
+        # La ligne dit ce qui est MESURE (la passe est vivante) et rien de
+        # plus -- le compte par PR reste dans `journal.jsonl`, que
+        # `merge_ready_pass_timing.py` lit.
+        started = time.monotonic()
+        while True:
+            try:
+                proc.wait(timeout=HEARTBEAT_S)
+                break
+            except subprocess.TimeoutExpired:
+                elapsed = int(time.monotonic() - started)
+                fh.write(f"=== passe en cours (elapsed {elapsed} s) ===\n")
+                fh.flush()
         fh.write(
             f"=== {_dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')} "
             f"run end rc={proc.returncode} ===\n"
