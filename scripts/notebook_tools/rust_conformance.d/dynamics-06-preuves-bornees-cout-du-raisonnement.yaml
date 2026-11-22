@@ -1,0 +1,286 @@
+# Triplet Dynamics-06 : jumeau Python + portage Rust (issue #27940, spec Rust portage).
+# Les deux carnets ont exactement la meme structure 38 cellules (memes indices de
+# cellules code : 2, 5, 8, 11, 14, 17, 20, 23, 26, 28, 30, 32) : les cotes se
+# correspondent par index. Cote Rust = evcxr, std seul (aucune crate externe ;
+# moteur simulate_payoff reproduit a l'identique -- budget fige, point fixe
+# a == b == prev.0, CUPOD partage sur les 5 epsilon = 15 pousses).
+# Le cote C# n'existe pas dans le depot au moment du portage (PR #27679 ouverte,
+# non fusionnee ; consigne spec #27940 : jumeau C# aucun, pas de lien -CSharp).
+- name: "Dynamics-06 Preuves Bornees Cout du Raisonnement"
+  family: "GameTheory (Dynamics)"
+  python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Rust.ipynb
+  measures:
+    - id: pd_param_t
+      description: "Parametre T de la matrice PD canonique (const, imprimee calculee)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "PD canonique OK : T=(\\d+)"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "PD canonique OK : T=(\\d+)"
+          transform: int
+    - id: bornes_max_depth
+      description: "Borne moteur MAX_DEPTH=3 (STEP_BUDGET=1000 en tandem sur la meme ligne)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "Bornes : MAX_DEPTH=(\\d+), STEP_BUDGET"
+          transform: int
+        rust:
+          cell: 2
+          pattern: "Bornes : MAX_DEPTH=(\\d+), STEP_BUDGET"
+          transform: int
+    - id: bots_charges_liste
+      description: "Les 5 bots charges, ordre d'insertion de la source (liste Python reconstruite)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Bots charges : \\[([^\\]]+)\\]"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "Bots charges : \\[([^\\]]+)\\]"
+          transform: text
+    - id: cost_factor_fairbot
+      description: "Facteur de cout de raisonnement FairBot (2.0, py_float)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Cost factors : \\{'CooperateBot_toy': 1.0, 'DefectBot_toy': 1.0, 'FairBot_toy': ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 5
+          pattern: "Cost factors : \\{'CooperateBot_toy': 1.0, 'DefectBot_toy': 1.0, 'FairBot_toy': ([\\d.]+)"
+          transform: float
+    - id: moteur_charge
+      description: "Ligne de chargement du moteur avec instrument (litteral)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "(Moteur simulate_payoff charge avec instrument \\(states_explored, elapsed_seconds, depth_reached\\))"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "(Moteur simulate_payoff charge avec instrument \\(states_explored, elapsed_seconds, depth_reached\\))"
+          transform: text
+    - id: run1_states_explored
+      description: "Etats explores du run 1 FairBot vs CooperateBot (6 : point fixe apres increment)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "Run 1 : a=C, b=C, payoff=\\(3, 3\\), status=ok, metrics=\\{'states_explored': (\\d+)"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "Run 1 : a=C, b=C, payoff=\\(3, 3\\), status=ok, metrics=\\{'states_explored': (\\d+)"
+          transform: int
+    - id: run1_depth_reached
+      description: "Profondeur atteinte du run 1 (3 = min(MAX_DEPTH, states/2))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "Run 1 .*?'depth_reached': (\\d+)"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "Run 1 .*?'depth_reached': (\\d+)"
+          transform: int
+    - id: verdict_etats_run1
+      description: "Etats du run 1 rappelles dans le verdict deterministe (elapsed exclus, presence seule)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "etats explores : (\\d+) \\(run 1\\)"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "etats explores : (\\d+) \\(run 1\\)"
+          transform: int
+    - id: dupoc_charge
+      description: "Ligne de chargement DUPOC_k_toy (litteral)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(DUPOC_k_toy charge)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(DUPOC_k_toy charge)"
+          transform: text
+    - id: seuil_dupoc_k
+      description: "Seuil : premier k ou DUPOC(k) bascule en C contre CooperateBot (calcule, 1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "premier k ou DUPOC bascule en C contre CooperateBot_toy = (\\d+)"
+          transform: int
+        rust:
+          cell: 17
+          pattern: "premier k ou DUPOC bascule en C contre CooperateBot_toy = (\\d+)"
+          transform: int
+    - id: k5_duc_mon_payoff
+      description: "Ligne k=5 : DUPOC reste en D, payoff (5, 0) contre CooperateBot (borne moteur)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "Variation de k :.*?   5 \\|    D \\|    C \\| +\\((\\d+), 0\\) \\| +ok"
+          transform: int
+        rust:
+          cell: 17
+          pattern: "Variation de k :.*?   5 \\|    D \\|    C \\| +\\((\\d+), 0\\) \\| +ok"
+          transform: int
+    - id: eps005_cd_self
+      description: "Payoff net C,D a epsilon=0.05 : forme longue shortest round-trip (-0.30000000000000004, calculee)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "0\\.05 \\| +\\(2\\.7, 2\\.7\\) \\| +\\((-?[\\d.]+), 4\\.7\\)"
+          transform: float
+        rust:
+          cell: 20
+          pattern: "0\\.05 \\| +\\(2\\.7, 2\\.7\\) \\| +\\((-?[\\d.]+), 4\\.7\\)"
+          transform: float
+    - id: eps010_dd_self
+      description: "Payoff net D,D a epsilon=0.10 : (0.3999999999999999, 0.3999999999999999) — ordre f64 epsilon * 1.0 * 6"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "\\(0\\.3999999999999999, (0\\.3999999999999999)\\)"
+          transform: float
+        rust:
+          cell: 20
+          pattern: "\\(0\\.3999999999999999, (0\\.3999999999999999)\\)"
+          transform: float
+    - id: eps050_pc_vers_uc
+      description: "Ligne 0.50 : P,C (2.0, -3.0) suivie de U,C (0.0, 0.0) — CUPOD partage reste cooperatif"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "\\(2\\.0, -3\\.0\\) \\| +\\(0\\.0, (0\\.0)\\)"
+          transform: float
+        rust:
+          cell: 20
+          pattern: "\\(2\\.0, -3\\.0\\) \\| +\\(0\\.0, (0\\.0)\\)"
+          transform: float
+    - id: eps100_cc_self
+      description: "Payoff net C,C a epsilon=1.00 : (-3.0, -3.0) — le cout inverse l equilibre"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "1\\.00 \\| +\\((-?[\\d.]+), -3\\.0\\) \\|"
+          transform: float
+        rust:
+          cell: 20
+          pattern: "1\\.00 \\| +\\((-?[\\d.]+), -3\\.0\\) \\|"
+          transform: float
+    - id: cas_nominal_status
+      description: "Controle negatif cas nominal : budget standard, issue cooperative (status calcule)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "CAS NOMINAL    \\(step_cap=1000\\): a=C, b=C, status=(\\w+)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "CAS NOMINAL    \\(step_cap=1000\\): a=C, b=C, status=(\\w+)"
+          transform: text
+    - id: cas_degrade_status
+      description: "Controle negatif budget serre step_cap=4 : SimulationTimeout declenchee (D, D, timeout)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "CAS DEGRADE B  \\(step_cap=4, budget serre\\): a=D, b=D, status=(\\w+)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "CAS DEGRADE B  \\(step_cap=4, budget serre\\): a=D, b=D, status=(\\w+)"
+          transform: text
+    - id: exo1_titre
+      description: "Ligne de titre du stub exercice 1 (C.1 : ligne fixe a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "(Exercice 1 : DUPOC avec reset inter-duels)"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "(Exercice 1 : DUPOC avec reset inter-duels)"
+          transform: text
+    - id: exo2_titre
+      description: "Ligne de titre du stub exercice 2 (reference cell 4 et post-Hermes conservees)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "(Exercice 2 : cout asymetrique par bot \\(corrige post-Hermes CONCERNS point 3\\))"
+          transform: text
+        rust:
+          cell: 28
+          pattern: "(Exercice 2 : cout asymetrique par bot \\(corrige post-Hermes CONCERNS point 3\\))"
+          transform: text
+    - id: exo3_titre
+      description: "Ligne de titre du stub exercice 3 (C.1 : ligne fixe a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "(Exercice 3 : Prong-B sur couples varies)"
+          transform: text
+        rust:
+          cell: 30
+          pattern: "(Exercice 3 : Prong-B sur couples varies)"
+          transform: text
+    - id: exo4_titre
+      description: "Ligne de titre du stub exercice 4 (em dash U+2014 conserve, x latin)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "(Exercice 4 : Open Problem 3 — DUPOC\\(k\\) x CUPOD\\(k\\))"
+          transform: text
+        rust:
+          cell: 32
+          pattern: "(Exercice 4 : Open Problem 3 — DUPOC\\(k\\) x CUPOD\\(k\\))"
+          transform: text
