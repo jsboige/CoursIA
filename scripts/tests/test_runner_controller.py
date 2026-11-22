@@ -125,6 +125,87 @@ def test_ensure_token_never_in_argv_and_popped_after(prof, monkeypatch):
         assert "S" * 48 not in " ".join(str(a) for a in argv)
 
 
+def _plant_stale_registration(prof) -> None:
+    prof.root.mkdir(parents=True, exist_ok=True)
+    (prof.root / ".runner").write_text("{}", encoding="utf-8")
+
+
+def _call_index(fake: FakeRun, needle: str) -> int:
+    for i, (argv, _) in enumerate(fake.calls):
+        if needle in " ".join(str(a) for a in argv):
+            return i
+    raise AssertionError(f"{needle} absent des appels enregistres")
+
+
+def test_ensure_cleans_stale_registration_before_re_registering(prof, monkeypatch):
+    """Residu ephemere (mesure 2026-11-19, po-2024) : runner absent cote GitHub
+    mais fichiers d'inscription locaux presents. apply_register refuse cet etat
+    a chaque tick -- 6 804 refus consecutifs, 0 re-enregistrement, exit 1
+    chaque minute : ensure doit retirer l'inscription stale AVANT de
+    re-enregistrer, dans le meme cycle."""
+    _plant_stale_registration(prof)
+    fake = FakeRun(runners=[])
+    monkeypatch.setenv(ctl.ACCOUNT_PASSWORD_ENV, "pw")
+    monkeypatch.setattr(ctl, "apply_register", lambda *a, **k: None)
+    monkeypatch.setattr(ctl, "apply_verify", lambda *a, **k: None)
+    result = ctl.apply_ensure(prof, fake)
+    assert result == {"action": "registered"}
+    assert argv_of(fake, "remove --unattended"), (
+        "le residu doit passer par config.cmd remove, pas par une suppression directe"
+    )
+    assert _call_index(fake, "remove-token") < _call_index(fake, "registration-token"), (
+        "le retrait du residu doit preceder la negociation du token d'enregistrement"
+    )
+
+
+def test_ensure_requires_password_before_teardown_of_residue(prof, monkeypatch):
+    """Fail-closed : le mot de passe du compte dedie doit manquer AVANT le
+    retrait du residu -- demolir l'inscription locale sans pouvoir la
+    reconstruire dans le meme cycle laisserait la machine sans runner."""
+    _plant_stale_registration(prof)
+    fake = FakeRun(runners=[])
+    monkeypatch.delenv(ctl.ACCOUNT_PASSWORD_ENV, raising=False)
+    with pytest.raises(ctl.Broken, match="COURSIA_RUNNER_ACCOUNT_PASSWORD"):
+        ctl.apply_ensure(prof, fake)
+    assert not argv_of(fake, "--method POST"), "aucun token ne se negocie sans mot de passe"
+    assert not argv_of(fake, "remove --unattended"), "aucun retrait ne part sans mot de passe"
+
+
+def test_ensure_online_never_tears_down_a_live_registration(prof, monkeypatch):
+    """Un runner online dont les fichiers locaux existent est une inscription
+    VIVANTE (c'est son etat nominal en ecoute) : le noop doit passer avant
+    toute consideration de residu, meme busy."""
+    _plant_stale_registration(prof)
+    fake = FakeRun(runners=[{"name": "test-fast-guards", "status": "online", "busy": True}])
+    monkeypatch.setenv(ctl.ACCOUNT_PASSWORD_ENV, "pw")
+    result = ctl.apply_ensure(prof, fake)
+    assert result == {"action": "noop", "reason": "runner already online"}
+    assert not argv_of(fake, "remove-token"), "une inscription vivante ne se retire jamais"
+    assert not argv_of(fake, "registration-token")
+
+
+def test_main_renders_refused_as_clean_json_not_traceback(prof, monkeypatch, capsys):
+    """Une Refused du gestionnaire est un verdict PREVU, pas un crash : sans
+    cette clause, elle remontait en traceback Python (exit 1, ~7 lignes de
+    stack par tick dans controller.log -- 3 401 tracebacks mesures le
+    2026-11-19 sur po-2024)."""
+    monkeypatch.setattr(ctl, "load_profile", lambda name, profiles: prof)
+    monkeypatch.setattr(
+        ctl, "plan_for",
+        lambda profile, run: {"planned_actions": ["fetch-registration-token", "register", "verify"]},
+    )
+
+    def refused(profile, run):
+        raise ctl.Refused("boom")
+
+    monkeypatch.setattr(ctl, "apply_ensure", refused)
+    rc = ctl.main(["ensure", "--profile", prof.name, "--apply"])
+    err = capsys.readouterr().err
+    assert rc == ctl.EXIT_REFUSED
+    assert json.loads(err) == {"ok": False, "error": "boom", "kind": "refused"}
+    assert "Traceback" not in err
+
+
 def test_deregister_noop_when_absent_everywhere(prof):
     fake = FakeRun(runners=[])
     result = ctl.apply_deregister(prof, fake)

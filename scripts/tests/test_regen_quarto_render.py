@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Tests for scripts/regen_quarto_render.py.
+"""Tests for scripts/ci/regen_quarto_render.py.
 
 Covers:
 - ``replace_render_block``: pure string-in / string-out replacement of the
@@ -1281,8 +1281,8 @@ def _run_check_step(tmp_path, scanner_rc: int):
     de la machine.
     """
     script = _check_step_script()
-    (tmp_path / "scripts").mkdir()
-    (tmp_path / "scripts" / "regen_quarto_render.py").write_text(
+    (tmp_path / "scripts" / "ci").mkdir(parents=True)
+    (tmp_path / "scripts" / "ci" / "regen_quarto_render.py").write_text(
         "import sys\n"
         'print("::error::liste perimee (bouchon)")\n'
         "sys.exit({})\n".format(scanner_rc),
