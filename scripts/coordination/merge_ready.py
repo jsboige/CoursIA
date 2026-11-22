@@ -1989,6 +1989,57 @@ def coordinator_approval_reason(
     return "coordinator-approval-stale"
 
 
+def _lean_manifest_at_head(
+    runner: Runner, gh_env: dict[str, str], head: str
+) -> dict | None:
+    """Le manifeste `ci_lakes.json` a la TETE de la PR, ou None.
+
+    La lecture est TOLERANTE : un manifeste illisible ne leve pas d'exception
+    dans la garde -- l'absence d'information laisse la decision au motif
+    generique (le blocage fail-closed est conserve).
+    """
+    path = "repos/{}/contents/{}?ref={}".format(
+        REPO, lean_build_attestation.LEAN_MANIFEST_RELATIVE, head
+    )
+    res = runner.run(["gh", "api", path], env=gh_env)
+    if res.returncode != 0:
+        return None
+    try:
+        payload = json.loads(res.stdout)
+    except json.JSONDecodeError:
+        return None
+    return lean_build_attestation.manifest_from_api_payload(payload)
+
+
+def lean_undeclared_lakes(
+    runner: Runner, gh_env: dict[str, str], head: str, touched: list[str]
+) -> list[str]:
+    """Les lakes INTRODUITS par le diff et non declares au manifeste (#27875).
+
+    Seule une PR qui touche un `lakefile.*` est concernee : les autres ne
+    paient aucune lecture.
+    """
+    if not any(lean_build_attestation.lake_root_of_path(p) for p in touched):
+        return []
+    manifest = _lean_manifest_at_head(runner, gh_env, head)
+    if manifest is None:
+        return []
+    return lean_build_attestation.undeclared_lakes(touched, manifest)
+
+
+def _lean_attestation_reason(undeclared: list[str]) -> str:
+    """Le motif rendu quand l'attestation manque ou est perimee.
+
+    Un lake INTRODUIT par la PR et non declare au manifeste rend le motif
+    generique muet (« pas d'attestation ») alors que le blocage est
+    STRUCTUREL : aucune attestation ne peut couvrir un lake que le manifeste
+    ne declare pas. On nomme donc le lake -- le motif porte le geste.
+    """
+    if undeclared:
+        return "lean:lake-not-declared:" + ",".join(undeclared)
+    return "lean:no-local-build-attestation"
+
+
 def lean_build_attestation_reason(
     view: dict, head: str, runner: Runner, gh_env: dict[str, str]
 ) -> str | None:
@@ -2013,7 +2064,10 @@ def lean_build_attestation_reason(
     commit de contenu posterior la perime.
 
     Motifs : ``lean:no-local-build-attestation`` (aucune attestation, ou
-    attestation perimee) et ``lean:local-build-attestation-unverifiable``
+    attestation perimee), ``lean:lake-not-declared:<racine>`` (la PR INTRODUIT
+    un lake que le manifeste ne declare pas : aucune attestation ne peut le
+    couvrir tant que la declaration n'est pas posee) et
+    ``lean:local-build-attestation-unverifiable``
     (preuve illisible : base absente, ou chaine de commits illisible).
     """
     touched = lean_build_attestation.lean_paths(
@@ -2021,11 +2075,14 @@ def lean_build_attestation_reason(
     )
     if not touched:
         return None
+    # #27875 : un lake INTRODUIT par la PR et non declare au manifeste rend
+    # le blocage muet -- on le nomme des la detection.
+    undeclared = lean_undeclared_lakes(runner, gh_env, head, touched)
     attestation = lean_build_attestation.attestation_from_comments(
         view.get("comments") or []
     )
     if attestation is None:
-        return "lean:no-local-build-attestation"
+        return _lean_attestation_reason(undeclared)
     attested = str(attestation.get("sha") or "")
     if attested == head:
         return None
@@ -2045,7 +2102,7 @@ def lean_build_attestation_reason(
         return "lean:local-build-attestation-unverifiable"
     if current == read:
         return None
-    return "lean:no-local-build-attestation"
+    return _lean_attestation_reason(undeclared)
 
 
 def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:

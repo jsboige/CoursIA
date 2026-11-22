@@ -10,10 +10,8 @@ Doc : docs/reference/tapis-rapide.md.
 
 Usage : tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json] [--jours 45]
     [--cache-s 300] [--graine S] [--lecture <dossier>] [--allow-stale]
-    (sorties : 0 tirage, y compris sur la lecture de secours du cache de moins
-     de 12 h ; 3 lecture incomplete sans secours ; 4 main perime ou organe
-     divergent. Aucune sortie ne renvoie au tapis lourd (#26926). Une mesure
-     Origami en echec ne bloque pas le tirage -- fail-OPEN)
+    (sorties : 0 tirage (aussi via le cache de secours de moins de 12 h) ; 3 lecture incomplete ;
+     4 main perime ; le tapis lourd n'est jamais appele (#26926) ; fail-OPEN)
 """
 from __future__ import annotations
 
@@ -26,8 +24,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_dernier_grain,
-                         tapis_equilibre, tapis_origami, tapis_sature, tapis_service)
+from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
+                         tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
+                         tapis_sature, tapis_service, tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -35,9 +34,8 @@ from coordination.tapis_hors_flotte import ecart_hors_flotte
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
 from coordination.tapis_visites import evenements_info
 
-# Part au plus des conteneurs (EPIC, parapluie) dans la liste : la lane recoit des grains,
-# pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains,
-# toujours APRES les grains, avec leur procedure --paths (#26926).
+# Part au plus des conteneurs (EPIC, parapluie) : la lane recoit des grains, pas des Epics ;
+# ils completent la liste apres les grains, avec leur procedure --paths (#26926).
 PART_CONTENEURS = 0.25
 CLAIM_VIVANT_H = 48  # au-dela, un claim est tenu pour abandonne (meme borne que l'organe)
 # Plafond EPIC (#22500) : meme fenetre que l'organe check_lane_claim.py epic_visit_cap.
@@ -84,9 +82,8 @@ class Etat:
     notes: list[str] = field(default_factory=list)
     mon_claim: bool = False
     occupes: list[tuple[str, str]] = field(default_factory=list)  # (lane, paths) bornes
-    #: L'etat de grain (raccord du classement, c3274) : `grain`,
-    #: `passage_seul`, `jamais_servie` ou `non_measurable`. `None` = inconnu
-    #: (la voie legere ne lit pas le fil : elle ne peut pas le dire).
+    #: L'etat de grain (c3274) : `grain`, `passage_seul`, `jamais_servie` ou
+    #: `non_measurable`. `None` = inconnu (la voie legere ne lit pas le fil).
     etat_grain: str | None = None
 
 
@@ -101,13 +98,21 @@ def parent_de(it: dict) -> int | None:
     return None
 
 
-def _conteneur_propre(it: dict) -> bool:
+def _conteneur_de(titre: str, labels: list[str]) -> bool:
     """Label EPIC/umbrella, ou titre `[EPIC...` qui ne nomme pas de parent
-    (un `[EPIC #N] Phase 2` est une tranche)."""
-    if any(lab.strip().lower() in LABELS_CONTENEUR for lab in it.get("labels") or []):
+    (un `[EPIC #N] Phase 2` est une tranche).
+
+    Meme regle sur les **metadonnees seules** (titre + labels) que sur le corps
+    complet : la voie legere classe un conteneur sans lire son corps."""
+    if any(lab.strip().lower() in LABELS_CONTENEUR for lab in labels):
         return True
-    titre = it.get("title") or ""
+    titre = titre or ""
     return titre.lstrip(" [").upper().startswith("EPIC") and not _TITRE_EPIC_RE.match(titre)
+
+
+def _conteneur_propre(it: dict) -> bool:
+    """Le conteneur, d'apres le titre et les labels de l'issue."""
+    return _conteneur_de(it.get("title") or "", list(it.get("labels") or []))
 
 
 def _ancetres(n: int, parents: dict[int, int | None]) -> tuple[list[int], int]:
@@ -297,15 +302,12 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
                       key=lambda e: e.quand)
         lus, total = len(it.get("comments") or []), it.get("comments_total") or 0
         # Raccord du classement (c3274) : une prise en charge nominative est
-        # une visite, une citation Git n'en est pas une. L'etat de grain
-        # distingue l'absence ETABLIE de l'absence NON MESURABLE (fil
-        # partiel) : sans cette distinction, une issue dont le fil n'a pas
-        # ete lu en entier se lit comme une issue jamais servie.
+        # une visite, une citation Git n'en est pas une ; l'etat de grain
+        # distingue l'absence ETABLIE de l'absence NON MESURABLE (fil partiel).
         e.etat_grain = tapis_dernier_grain.depuis_evenements(
-            evts, lecture.citations.get(n, []), numero=n,
-            fil_complet=(total <= lus), depuis=depuis).etat
-        e.derniere_visite, e.visites_total, e.visites = tapis_dernier_grain.compter_grains(
-            evts, depuis)
+            evts, lecture.citations.get(n, []), numero=n, fil_complet=(total <= lus),
+            depuis=depuis).etat
+        e.derniere_visite, e.visites_total, e.visites = tapis_dernier_grain.compter_grains(evts, depuis)
         _decider(e, it, evts, ancetres, ctx)
         if e.ecart is None and total > lus:
             e.notes.append(f"fil partiel ({lus}/{total} commentaires lus)")
@@ -316,9 +318,8 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
 def _parquer(tous: list[Etat], parcs: dict[int, str]) -> None:
     """Les EPICs Origami dont le pli suivant n'est pas deplie sortent du tirage.
 
-    Le parcage est applique **apres** les autres ecarts : celui qui gagne
-    reste le plus informatif pour la lane (un EPIC deja livre le reste livre).
-    """
+    Le parcage est applique **apres** les autres ecarts : celui qui gagne reste
+    le plus informatif pour la lane."""
     for e in tous:
         if e.numero in parcs and e.ecart is None:
             e.ecart, e.motif = "ORIGAMI", parcs[e.numero]
@@ -334,31 +335,20 @@ def _servable(e: Etat) -> bool:
     """Une issue que le tapis peut servir.
 
     Le #27059 elargit cette notion aux ecarts de recul (COUVERTE, RELACHEE,
-    MERGEE), servis apres les autres : quand sa definition est presente, on la
-    suit ; sinon on garde celle d'avant (aucun ecart dur). Sans cette
-    compatibilite, le filtre de `ordonner` ecarterait du tour des issues que
-    le tirage du #27059 entend servir.
-    """
+    MERGEE) : quand sa definition est presente, on la suit, sinon celle
+    d'avant (aucun ecart dur) -- sans quoi `ordonner` ecarterait du tour des
+    issues que le tirage du #27059 entend servir."""
     f = globals().get("servable")
     return f(e) if f is not None else e.ecart is None
 
 
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
-             graine: str | None = None) -> list[Etat]:
-    """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`) :
-    le niveau le moins visite d'abord, la plus ancienne issue d'abord.
+             graine: str | None = None, rotation: bool = True) -> list[Etat]:
+    """Vos claims en tete, puis l'equilibrage des visites (`tapis_equilibre`).
 
     Invariant de couverture (#27590, dispatch `c0013-tapis-coverage-20`) : une
-    issue **jamais visitée** ne cède jamais sa place a une issue deja visitée.
-    Mesure du 21/11 sur le pool reel : 20 issues worker a 0 visite, dont 14
-    conteneurs hors du tour de 8 -- deux issues deja visitees prenaient leurs
-    places (le quota de conteneurs ecartait les conteneurs jamais visites, et
-    le tri final plaçait les grains d'abord, #26926). Le mandat du 16/11
-    (« toute issue visitée au moins une fois avant qu'une autre le soit deux
-    fois ») etait donc structurellement violable. Les conteneurs jamais
-    visités que le quota ecarte passent desormais en second temps, quand la
-    place ne peut pas etre prise par une issue deja visitée. Le quota et
-    l'ordre final (les grains d'abord) restent inchangés.
+    issue **jamais visitée** ne cède jamais sa place à une issue deja visitée ;
+    le conteneur jamais visite que le quota ecarte passe en second temps.
     """
     graine = graine or graine_defaut(lane, maintenant)
     servables = [e for e in etats_ if _servable(e)]
@@ -370,7 +360,7 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
     jamais = {e.numero for e in servables
               if e.visites == 0 and not tapis_equilibre.est_marathon(e)}
     tour = tapis_equilibre.ordre(etats_, [e for e in servables if not e.mon_claim],
-                                 graine, maintenant)
+                                 graine, maintenant, rotation=rotation)
     quota = max(1, int(grains * PART_CONTENEURS))
     reportes: list[Etat] = []
     for e in tour:  # un conteneur ne passe que dans son quota
@@ -405,10 +395,13 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
     ecartees: dict[str, list[dict]] = {code: [] for code in CODES}
     for e in etats_:
         if e.ecart:
-            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif})
+            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif,
+                                       "feuille": not e.conteneur})
     return {
         "lane": lane, "graine": graine, "maintenant": _iso(maintenant),
         "lecture": {"issues": len(etats_), "servables": sum(e.ecart is None for e in etats_),
+                    "servables_feuilles": sum(e.ecart is None and not e.conteneur for e in etats_),
+                    "servables_conteneurs": sum(e.ecart is None and e.conteneur for e in etats_),
                     "familles": len({e.famille for e in etats_ if e.ecart is None}), "lu_a": lecture.lu_a, "appels": lecture.appels,
                     "secondes": lecture.secondes, "depuis_cache": lecture.depuis_cache,
                     "fetch_note": lecture.fetch_note,
@@ -436,62 +429,27 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--allow-stale", action="store_true",
                    help="outre-passer la garde de fraicheur (main local en retard "
                         "ou module du tirage divergent d'origin/main)")
+    p.add_argument("--voie", choices=("leger", "lourd"), default="leger",
+                   help="leger (defaut) : classement sur metadonnees, "
+                        "qualification du grain servi sur son FIL COMPLET ; "
+                        "lourd : l'ancienne lecture du pool entier (rejeu "
+                        "--lecture inclus)")
     return p
 
 
-def _ecarts_de_fond(tous: list, file: list, args, lecture, run, maintenant,
-                    graine: str, lire_fils) -> tuple[list, dict | None]:
-    """Les deux ecarteurs de FOND, dans l'ordre qui les rend cumulatifs.
-
-    1. la **re-decision** (#27179) : un grain servi au fil tronque se re-decide
-       sur son fil complet ; hors ligne ou cache, la fenetre reste la fenetre ;
-    2. l'**ecart de saturation** (#26973) : les conteneurs dont tous les
-       enfants sont fermes sortent de la file, et le tirage est refait pour
-       les remplacer par un grain reel. La mesure porte sur les seuls
-       conteneurs de la file, et elle est fail-OPEN : une panne n'ecarte rien.
-       Un rejeu `--lecture` est hors ligne : rien n'est mesure, rien n'est
-       ecarte.
-
-    **ORDRE** : la re-decision passe AVANT la saturation. Les deux marquent le
-    meme objet (`e.ecart`) et la saturation est la seule des deux a ne JAMAIS
-    effacer une marque etrangere : la re-decision, elle, RECALCULE `e.ecart`
-    depuis le fil complet -- appliquee apres, elle pourrait rendre servable un
-    conteneur qui vient d'etre mesure sature. Dans cet ordre les deux
-    exclusions subsistent : `ordonner` ne garde que les items dont
-    `e.ecart is None`.
-    """
-    reverif = None
-    if not args.lecture and not lecture.depuis_cache:
-        from coordination import tapis_reverif
-        file, reverif = tapis_reverif.passer(
-            tous, file, args.grains, args.lane, maintenant, args.jours, graine,
-            lecture, lire_fils)
-    if not args.lecture:
-        file = tapis_sature.ecarter_satures(
-            tous, file,
-            lambda n: gh_recherche.chercher_enfants(run, gh_bulk.DEPOT_GH, n),
-            lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
-    return file, reverif
 
 
-def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
-         maintenant: datetime | None = None, lire_fils: object = None) -> int:
-    args = _parser().parse_args(argv)
-    depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
-    # repli picker) sur un main local en retard ou un organe du tirage divergent
-    # d'origin/main ; un rejeu --lecture est hors ligne, pas de garde.
-    fraicheur = None
-    if not args.lecture:
-        from coordination import main_freshness
-        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale)
-        if fraicheur["refuse"]:
-            return 4  # pas le repli picker : il fait rejouer le meme incident
+
+
+
+
+def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | None,
+                 fraicheur: dict | None, lire_fils: object) -> int:
+    """La voie LOURDE : la lecture du pool entier (rejeu --lecture inclus)."""
     try:
-        if args.lecture:
-            lecture = gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
-        else:
-            lecture = gh_bulk.lire_tout(depot, args.cache_s, run, args.jours)
+        lecture = (gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
+                   if args.lecture else
+                   gh_bulk.lire_tout(depot, args.cache_s, run, args.jours))
     except gh_bulk.LectureIncomplete as exc:
         # Secours (#26926) : la derniere lecture COMPLETE du cache (< 12 h), jamais
         # le tapis lourd (240 s, grains non verifies). Un rejeu n'a pas de secours.
@@ -515,10 +473,12 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
-    file, reverif = _ecarts_de_fond(tous, file, args, lecture, run, maintenant,
-                                     graine, lire_fils)
+    file, reverif = tapis_ecarts_fond.ecarts_de_fond(
+        tous, file, args, lecture, run, maintenant, graine, lire_fils,
+        lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
+    r["journal_service"] = tapis_acceptance.journaliser_service(r, args.lane, args.lecture, run)
     if reverif is not None:
         r["reverif_fils"] = reverif
     if fraicheur is not None:
@@ -527,6 +487,33 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else texte(r, source)
     sys.stdout.buffer.write((out + "\n").encode("utf-8"))
     return 0
+
+
+def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
+         maintenant: datetime | None = None, lire_fils: object = None) -> int:
+    args = _parser().parse_args(argv)
+    depot = Path(__file__).resolve().parents[2]
+    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
+    # repli picker) sur un main local en retard ou un organe du tirage divergent
+    # d'origin/main ; un rejeu --lecture est hors ligne, pas de garde.
+    fraicheur = None
+    if not args.lecture:
+        from coordination import main_freshness
+        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale)
+        if fraicheur["refuse"]:
+            return 4  # pas le repli picker : il fait rejouer le meme incident
+    # Bascule (#27225) : le tirage par defaut est leger -- classement sur
+    # metadonnees, qualification du grain servi sur son FIL COMPLET. Le rejeu
+    # --lecture est hors ligne : il reste sur la voie lourde, seule voie qui
+    # sait relire un dossier de lecture.
+    if args.voie == "leger" and not args.lecture:
+        # La graine est calculee ICI : elle depend de la tranche de 4 h, et la
+        # calculer des deux cotes ouvrirait une course au passage d'une tranche.
+        maintenant = maintenant or datetime.now(UTC)
+        graine = args.graine or graine_defaut(args.lane, maintenant)
+        return tapis_voie_leger.servir(args, depot, run, maintenant, graine,
+                                       fraicheur)
+    return _voie_lourde(args, depot, run, maintenant, fraicheur, lire_fils)
 
 
 if __name__ == "__main__":
