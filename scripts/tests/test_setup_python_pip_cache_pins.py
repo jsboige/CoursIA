@@ -47,16 +47,15 @@ def _pip_cache_setup_steps(workflow: dict[str, Any]) -> list[dict[str, Any]]:
     return steps
 
 
-def test_cached_setup_python_specs_are_exact_available_patches() -> None:
-    """A minor-only selector recreates one pip cache per resolved patch."""
+def test_no_setup_python_step_carries_pip_cache() -> None:
+    """#27727: the pip cache migrated to actions/cache (main-only save)."""
     names = [*WORKFLOW_FILES, SCHEDULED_ONLY]
     for name in names:
         steps = _pip_cache_setup_steps(_load_workflow(name))
-        assert steps, f"{name} no longer has the expected pip-cache setup-python step"
-        assert all(
-            (step.get("with") or {}).get("python-version") == PYTHON_PIN
-            for step in steps
-        ), f"{name} must pin the source-observed Python {PYTHON_PIN} patch"
+        assert not steps, (
+            f"{name} still has a setup-python step with cache: pip "
+            "(migrated to actions/cache by #27727)"
+        )
 
 
 def test_path_scoped_workflow_triggers_and_cache_settings_remain_wired() -> None:

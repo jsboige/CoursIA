@@ -829,9 +829,12 @@ class TestDeclaredDemand(unittest.TestCase):
 
     def test_the_real_repository_yields_a_demand(self):
         # Fumigation : la derivation reste applicable sur les workflows reels.
+        # Depuis #27727 aucun workflow ne porte plus `cache: pip` sur
+        # setup-python (migration vers actions/cache main-only) : la liste
+        # est vide, ce qui n'est PAS l'echec de lecture (None).
         demand = eoc._declared_demand(os.path.join(_REPO, ".github", "workflows"))
         self.assertIsNotNone(demand)
-        self.assertTrue(demand)
+        self.assertIsInstance(demand, list)
         for d in demand:
             self.assertTrue(d.get("pm"))
 
