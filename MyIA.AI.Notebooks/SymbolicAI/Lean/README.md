@@ -351,9 +351,9 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 38 | [Lean-38-Capstone-Geometry-Lean-Python](Lean-38-Capstone-Geometry-Lean-Python.ipynb) | 8 | 3 | **NOUVEAU** (kernel `python3`) |
 | 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | 4 | 3 | **NOUVEAU** (kernel `python3-lean`) |
 | 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | 9 | 3 | **NOUVEAU** (kernels `python3`, `rust`) |
+| 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | 3 | 0 | **NOUVEAU** (kernel `python3`) |
 | LINEAR-01 | [LINEAR/LINEAR-01-Espaces-Vectoriels-Lean](LINEAR/LINEAR-01-Espaces-Vectoriels-Lean.ipynb) | 10 | 0 | **NOUVEAU** (kernel `lean4-wsl-linear`, lake `linear_lean`, Fille 3.2 #24838) |
 | LINEAR-02 | [LINEAR/LINEAR-02-Applications-Lineaires-Lean](LINEAR/LINEAR-02-Applications-Lineaires-Lean.ipynb) | 9 | 0 | **NOUVEAU** (kernel `lean4-wsl-linear`, lake `linear_lean`) |
-| 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | 3 | 0 | **NOUVEAU** (kernel `python3`) |
 
 Conventions de la série — l'état réel de chaque carnet se lit dans la table
 ci-dessus (colonnes mesurées par `scripts/lean/lean_series_maturity.py`,
