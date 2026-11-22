@@ -32,7 +32,7 @@ Au fil du parcours, vous apprendrez à construire et décoder un code, à justif
 | Notebook | Python | C# | Parité | Moteur et vérifications |
 |---|---|---|---|---|
 | 02 — Huffman canonique | [Notebook Python](Compression-02-HuffmanCanonique-Python.ipynb) | [Notebook C#](Compression-02-HuffmanCanonique-CSharp.ipynb) | Sémantique ; SOTA-OK, algorithme from-scratch des deux côtés | BCL .NET 9 côté C# ; même extrait binaire du Horla, arbre de Huffman, canonisation, table directe, aller-retour octet/hash. |
-| 07 — Triage par le LLM | [Notebook Python](Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb) | [Notebook C#](Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb) | Sémantique ; SOTA-OK, mêmes 34 cellules et même contrat de rejeu | Codecs réels des deux côtés (BCL `ZLibStream`, SharpZipLib, LZMA-SDK) ; même corpus rejouable, même function calling sur le Swift local, round-trip octet pour octet et MAC de recette vérifiés.
+| 07 — Triage par le LLM | [Notebook Python](Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb) | [Notebook C#](Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb) | Sémantique ; SOTA-OK, miroir complet et même contrat de rejeu | Codecs réels des deux côtés (BCL `ZLibStream`, SharpZipLib, LZMA-SDK) ; même corpus rejouable, même function calling sur le Swift local, round-trip octet pour octet et MAC de recette vérifiés.
 
 Les ex æquo de fréquence peuvent donner des arbres différents selon le départage ; la comparaison porte sur les fréquences, les longueurs et le coût optimal, pas sur une forme d’arbre imposée.
 
