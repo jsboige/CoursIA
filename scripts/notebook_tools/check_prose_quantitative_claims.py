@@ -1239,6 +1239,24 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "Fait passe figure."
         ),
     ),
+    # Parametre DEFINITOIRE de l'enonce de l'exercice exact-cover de
+    # Search-08 (review Hermes #28088, 22/11) : la grille de l'exercice EST
+    # 3x5 par construction -- le pavage par trominos se definit sur ces
+    # dimensions. Meme classe que le canon de Gosper ci-dessus : propriete
+    # du probleme enonce, pas un compteur d'etat du depot qui derive.
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/Search/Part1-Foundations/"
+            "Search-08-DancingLinks.ipynb"
+        ),
+        motif=re.compile(r"grille de 3 lignes par 5 colonnes"),
+        raison=(
+            "« 3 lignes par 5 colonnes » = dimensions de la grille de "
+            "l'exercice de couverture exacte (enonce) : parametre du probleme, "
+            "pas une mesure qui derive avec le depot. Les dimensions vivent "
+            "dans l'enonce ET dans la cellule de code de l'exercice."
+        ),
+    ),
     # Rapport de scan V3 (EPIC #4362, PR #27414) : les deux exemptions posees
     # initialement couvraient des ELISIONS ecrites a la main, pas des sorties
     # d'outil (review ai-01 du 2026-11-20 : ni le script de scan ni l'organe
