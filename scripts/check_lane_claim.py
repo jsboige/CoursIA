@@ -5655,6 +5655,14 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     return verdict
 
 
+def _qualification_grain(payload: dict, my_lane: str,
+                         now: datetime | None = None) -> tuple[str, str] | None:
+    """Shim : la qualification du grain est portee par
+    `coordination.tapis_qualification_fil` (module dedie)."""
+    from coordination import tapis_qualification_fil  # import tardif : pas de cycle
+    return tapis_qualification_fil.qualification_grain(payload, my_lane, now)
+
+
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                now: datetime | None = None,
                my_paths: list[str] | None = None,
@@ -5721,6 +5729,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             `my_lane` (#25443) pour exclure du plafond le propre marqueur de
             la lane qui interroge.
     """
+    # La QUALIFICATION, cote CONSOMMATEUR : un grain ecarte par la
+    # qualification n'est ni reclame ni edite. La decision vient du meme
+    # organe que le tirage (`tapis_rapide.etats`), applique au FIL COMPLET
+    # que cette lecture a deja rendu -- pas d'appel reseau supplementaire.
+    code_motif = _qualification_grain(payload, my_lane, now)
+    if code_motif:
+        code, motif = code_motif
+        print(f"[QUALIFICATION] {code} : {motif} -- grain non qualifie : "
+              f"ni reclame, ni edite (la qualification est prealable a "
+              f"l'action).", file=sys.stderr)
+        return 1
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
     # repo, in which case the empty-scope witness degrades to its pre-#10958
@@ -7633,6 +7652,30 @@ def _glob_parent_dir(glob: str) -> str:
     return prefix.rsplit("/", 1)[0]
 
 
+def _glob_carries_prose(glob: str) -> bool:
+    """True when a scope element carries PROSE instead of a path pattern.
+
+    #27162 -- the claim grammar splits the `paths:` clause on its annotation
+    separators (` -- `, ` — `, ` (...)`). A glob that STILL carries whitespace
+    after that split is a FRAGMENT of a mis-split clause, not a path: the
+    measured case is a coordinator claim that glued its rationale to the glob
+    (`MyIA.AI.Notebooks/Sudoku/** ; claim pose au dispatch par le
+    coordinateur`).
+
+    Such a scope matches zero tracked file. The #21431 creation relaxation
+    then read it as "a file to be created in an existing directory" -- the
+    parent directory of the polluted glob DOES exist, so the tracked tree
+    could not decide the disjointness question, the scope was compared BY
+    PATTERN, the pattern missed the caller's path, and the lane was dropped
+    from the blockers: a fail-open (measured case #27139).
+
+    The creation relaxation therefore REFUSES a scope that carries prose: a
+    creation scope names a path, and a path with a rationale glued to it is a
+    broken claim -- which keeps the #10958 epic-wide lift (fail-CLOSED).
+    """
+    return any(ch.isspace() for ch in glob) or ";" in glob
+
+
 def _scope_is_creation(scope: list[str] | None,
                        tracked: list[str] | None) -> bool:
     """True when every glob of `scope` names a file to be CREATED.
@@ -7655,6 +7698,12 @@ def _scope_is_creation(scope: list[str] | None,
           something else. This is the discriminator the issue leaves to
           the implementation, and it is the one that keeps every existing
           fail-safe test green.
+      (d) it does not carry PROSE (#27162) -- a glob with a rationale glued
+          to it is a broken claim, not a file to be created. Without this
+          condition the polluted glob of the measured case reads as a
+          creation scope (its parent directory exists), is compared BY
+          PATTERN, misses the caller's path and is dropped: the fail-open
+          of #27139.
     """
     if not scope or tracked is None:
         return False
@@ -7664,6 +7713,8 @@ def _scope_is_creation(scope: list[str] | None,
             return False          # (a) the file already exists
         if _unparseable_scope_in([glob], tracked):
             return False          # (b) prose residue -- a typo
+        if _glob_carries_prose(glob):
+            return False          # (d) prose glued to the glob -- a typo
         parent = _glob_parent_dir(glob)
         if parent and parent not in dirs:
             return False          # (c) the directory does not exist -- a typo

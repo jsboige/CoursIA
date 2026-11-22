@@ -102,6 +102,11 @@ the published Gemini self-replication completes in 33 699 586).
   hypothesis, see above); for
   Gemini/CPU the grids are still empty, where a negative would measure
   nothing real.
+  The OTCA and UnitCell **do** receive a negative witness, but of the
+  **dynamism** kind — `otca_not_stilllife` and `unitcell_not_stilllife`
+  (`step g ≠ g` via a birth site): a different property from the period,
+  which needs no positive partner, and whose negative witness is the
+  empty grid (`emptyGridIsStillLife`).
 - **Future** : the CPU (once its RLE is loaded by the same mechanism) — its
   border question remains to be settled by the same measurement method.
 
@@ -116,12 +121,14 @@ lists them **by name**, never by a wildcard.
 | `Conway.Life.Pillars` | 7 | 5 | `otca_initial_nonempty`, `unitcell_initial_nonempty` |
 | `Conway.Life.Pillars_en` | 7 | 5 | the two `_en` siblings |
 
-The 5 anchors **kept** per file are the **independent** kernel
+The 8 anchors **kept** per file are the **independent** kernel
 certifications: `pulsar_period3` (positive — period 3),
 `pulsar_period1_negative` and `pulsar_period2_negative` (paired
-negatives), `otca_initial_population` (64 691 cells) and
-`unitcell_initial_population` (4 761 cells) — each one carries a claim
-nothing else carries.
+negatives), `otca_initial_population` (64 691 cells),
+`unitcell_initial_population` (4 761 cells), the two birth-site
+bundles `otca_facts` / `unitcell_facts` (dynamism negative witness, this
+PR), and `turingmachine_facts` (the Turing machine witness, #17465) —
+each one carries a claim nothing else carries.
 
 The 2 removed declarations lose nothing: `otca_initial_nonempty` and
 `unitcell_initial_nonempty` are now **derived** from the measured
@@ -129,10 +136,14 @@ population (`omega` over the length). A theorem that depends on another
 anchor creates no new one — `#print axioms` is the authority, not the
 presence of a `native_decide` in the text.
 
-Measurement: 7 declarations per file before, **5 anchors measured by
-`#print axioms`** after (14 → 10 for the FR/`_en` pair), build
-`Build completed successfully (3014 jobs)` (`Conway.Life.Pillars`: 804 s,
-`Conway.Life.Pillars_en`: 803 s), pinned toolchain `v4.33.0`.
+Measurement of the #21833 slimming: 7 declarations per file before,
+**5 anchors measured by `#print axioms`** after (14 → 10 for the
+FR/`_en` pair), build `Build completed successfully (3014 jobs)`
+(`Conway.Life.Pillars`: 804 s, `Conway.Life.Pillars_en`: 803 s), pinned
+toolchain `v4.33.0`. Since then, #17465 added the `turingmachine_facts`
+anchor (6 per file); the two birth-site bundles added by this PR bring the
+total to **8 anchors per file** (16 for the FR/`_en` pair) — to be
+re-confirmed by the CI `#print axioms` gate.
 
 ### Why a separate file ?
 
@@ -332,6 +343,66 @@ theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
   simp only [List.length_nil] at hl
   omega
 
+/-! ## OTCA negative witness
+
+The period 35 328 is not provable here: it would require running the full
+evolution over 64 691 cells, beyond the reference engine (see above). What
+this formalisation proves in exchange — and this is the **negative witness**
+that #17465's criterion 2 asks for — is that the loaded grid is **not** a
+still life.
+
+The witness is a **birth site**: a dead cell with exactly three live Moore
+neighbours. Rule B3 makes it be born, so `step g ≠ g`. The proof is
+**local** (no full evolution), which is why it applies to a 64 691-cell
+pattern. The site `(4, 169)` is measured by direct Python count of the source
+RLE; the `(row, col)` convention of `RLE.parseRLE!` is validated on the Turing
+machine (site `(9, 256)`, below), which reproduces the three facts exactly. -/
+
+/-- **Measured facts** about the OTCA birth site, established by **a single**
+    `native_decide` evaluation.
+
+    The grouping is not cosmetic: every `native_decide` site re-evaluates
+    `RLE.parseRLE!`, reparsing the source RLE and retrieving the 64 691 cells
+    of the grid. One pass establishes the three site facts; the theorems
+    below are only projections, free at the kernel level. The population
+    (64 691) is not grouped here: it already carries its own anchor in
+    `otca_initial_population`. -/
+theorem otca_facts :
+    (4, 169) ∉ otcaInitial ∧
+    (4, 169) ∈ otcaInitial.flatMap mooreNeighbors ∧
+    liveNeighborCount otcaInitial (4, 169) = 3 := by
+  native_decide
+
+/-- The cell `(4, 169)` is **dead** in the loaded OTCA grid. -/
+theorem otca_birth_site_absent : (4, 169) ∉ otcaInitial :=
+  otca_facts.1
+
+/-- The cell `(4, 169)` is a Moore neighbour of at least one live cell of the
+    OTCA grid: it is therefore a **candidate** for the next step. -/
+theorem otca_birth_site_adjacent :
+    (4, 169) ∈ otcaInitial.flatMap mooreNeighbors :=
+  otca_facts.2.1
+
+/-- The cell `(4, 169)` has **exactly three** live Moore neighbours in the
+    OTCA grid: it is a **birth site** (rule B3). -/
+theorem otca_birth_site_count :
+    liveNeighborCount otcaInitial (4, 169) = 3 :=
+  otca_facts.2.2
+
+/-- **OTCA negative witness**: the loaded grid is **not** a fixed point of
+    the evolution — a cell is born at `(4, 169)`.
+
+    **Negative witness** in the sense of #17465: the neighbouring pattern
+    that does NOT satisfy the property is the empty grid —
+    `Conway.Life.emptyGridIsStillLife` shows `step [] = []`, so the empty
+    placeholder IS a fixed point. This control shows the witness above
+    **bites**: without it, nothing would distinguish the loaded OTCA from an
+    empty grid. -/
+theorem otca_not_stilllife :
+    step otcaInitial ≠ otcaInitial :=
+  birthSiteNotFixed otca_birth_site_absent
+    otca_birth_site_adjacent otca_birth_site_count
+
 /-- **UnitCell** — Nicolay Beluchenko 2011.
 
     A smaller OTCA-style metacell with period **5 760**, roughly 9× the speed
@@ -382,6 +453,53 @@ theorem unitcell_initial_nonempty : unitcellInitial ≠ ([] : Grid) := by
   have hl := congrArg List.length h
   simp only [List.length_nil] at hl
   omega
+
+/-! ## UnitCell negative witness
+
+As for the OTCA, the period 5 760 is not provable here (5 760 generations
+over 4 761 cells, beyond the reference engine), and the pattern is moreover
+an **open system** (escaping gliders). The proven negative witness is the
+same: the loaded grid is **not** a still life. The birth site `(14, 176)` is
+measured by direct Python count of the source RLE, at the same `(row, col)`
+convention validated on the Turing machine. -/
+
+/-- **Measured facts** about the UnitCell birth site, established by **a
+    single** `native_decide` evaluation. One pass establishes the three site
+    facts; the theorems below are only projections, free at the kernel level.
+    The population (4 761) already carries its own anchor in
+    `unitcell_initial_population`. -/
+theorem unitcell_facts :
+    (14, 176) ∉ unitcellInitial ∧
+    (14, 176) ∈ unitcellInitial.flatMap mooreNeighbors ∧
+    liveNeighborCount unitcellInitial (14, 176) = 3 := by
+  native_decide
+
+/-- The cell `(14, 176)` is **dead** in the loaded UnitCell grid. -/
+theorem unitcell_birth_site_absent : (14, 176) ∉ unitcellInitial :=
+  unitcell_facts.1
+
+/-- The cell `(14, 176)` is a Moore neighbour of at least one live cell of
+    the UnitCell grid: it is therefore a **candidate** for the next step. -/
+theorem unitcell_birth_site_adjacent :
+    (14, 176) ∈ unitcellInitial.flatMap mooreNeighbors :=
+  unitcell_facts.2.1
+
+/-- The cell `(14, 176)` has **exactly three** live Moore neighbours in the
+    UnitCell grid: it is a **birth site** (rule B3). -/
+theorem unitcell_birth_site_count :
+    liveNeighborCount unitcellInitial (14, 176) = 3 :=
+  unitcell_facts.2.2
+
+/-- **UnitCell negative witness**: the loaded grid is **not** a fixed point
+    of the evolution — a cell is born at `(14, 176)`.
+
+    **Negative witness** in the sense of #17465: the empty grid is, it, a
+    fixed point (`Conway.Life.emptyGridIsStillLife`) — the witness above
+    distinguishes it from the loaded UnitCell. -/
+theorem unitcell_not_stilllife :
+    step unitcellInitial ≠ unitcellInitial :=
+  birthSiteNotFixed unitcell_birth_site_absent
+    unitcell_birth_site_adjacent unitcell_birth_site_count
 
 /-! ## Turing machine witness
 

@@ -1,0 +1,10 @@
+date: '2026-11-19'
+by: 'myia-po-2024:CoursIA, PR #27410 tranche E #20844 : cote C# seul, markdown seul
+  -- chronologie de livraison interne retiree (refs #3801/#4956/#10382/#9434, verdicts
+  SOTA et parite conserves) ; 0 cellule de code, 0 sortie, 0 execution_count touches.
+  Jumeau Python inchange : parite native-both declaree inchangee, attestation et non
+  reparation. --update en DERNIERE operation (cf #8957).'
+python_sha: 15e6dd5918f008ddc32e47e8c2549ff443dda526
+csharp_sha: 42a9dd1728cea8036bb27c0b913faea9b017d8f9
+content_python_sha: ab96623e1d5058205f9eb781bd128ba36b5342c8c5e71d37696366e065a00e8c
+content_csharp_sha: cf9fda584f832b537403c2deaeafb15d29bb09de4e8a2d378db9353e6f47e176

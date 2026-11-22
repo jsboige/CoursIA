@@ -10,6 +10,7 @@ de git reel.
 """
 
 import importlib.util
+import base64
 import json
 import re
 import subprocess
@@ -180,6 +181,12 @@ class ScriptedRunner:
         # 0 = clear, 1 = collision, 2 = unreadable. Cf. SLOT_DOCUMENTED_RC.
         slot_rc: int = 0,
         slot_stdout: str = "",
+        # #27875 : reponse scriptee de la lecture du manifeste des lakes
+        # (`gh api repos/.../contents/scripts/lean/ci_lakes.json?ref=<tete>`).
+        # `None` (defaut) = 404 : manifeste non lu, la garde retombe sur son
+        # motif generique (fail-closed conserve). Une chaine = stdout BRUT
+        # (reponse malformee) ; un dict = payload JSON.
+        ci_lakes_payload: dict | str | None = None,
         commits: dict[str, dict] | None = None,
         auto_tree: str | None = None,
         base_search: dict[str, list[dict]] | None = None,
@@ -305,6 +312,7 @@ class ScriptedRunner:
         # convention que twin_rc/twin_stdout.
         self.slot_rc = slot_rc
         self.slot_stdout = slot_stdout
+        self.ci_lakes_payload = ci_lakes_payload
         # Remontee first-parent de merge_dwell (etape 2ter) : payloads de
         # ``repos/.../commits/<sha>`` et arbre rendu par ``git merge-tree``.
         self.commits = commits or {}
@@ -376,6 +384,16 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and "/contents/" in c[2]:
+            # #27875 : lecture du manifeste des lakes a la TETE de la PR
+            # (garde Lean). Defaut = 404 : un manifeste non lu laisse la
+            # garde sur son motif generique -- le fail-closed est conserve.
+            payload = self.ci_lakes_payload
+            if payload is None:
+                return mr.RunResult(1, "", "HTTP 404")
+            if isinstance(payload, str):
+                return mr.RunResult(0, payload, "")
+            return mr.RunResult(0, json.dumps(payload), "")
         if c[:2] == ["gh", "api"] and c[2].startswith("users/"):
             # #17437 : sonde d'identite App (``users/<login>[bot] --jq .type``).
             # Defaut = 404 (rc 1) : une sonde non scriptee est un login
@@ -3698,6 +3716,105 @@ def test_attestation_a_une_tete_anterieure_et_commit_de_contenu_donne_un_skip(tm
     _, lines, _ = run_organ(tmp_path, runner)
     assert lines[-1]["reason"] == "lean:no-local-build-attestation"
     assert lines[-1]["merged"] is False
+
+
+# --- #27875 : un lake INTRODUIT par la PR et non declare au manifeste -------
+#
+# Cas fondateur : PR #27587 (lake `busybeaver_lean`). L'entree de manifeste
+# `scripts/lean/ci_lakes.json` arrive dans une PR EMPILÉE (#27658) : tant
+# qu'elle n'est pas mergee, aucune attestation ne peut couvrir le lake, et le
+# motif generique « pas d'attestation » ne nomme ni le lake ni le geste. La
+# garde rend donc un motif NOMME.
+
+BUSYBEAVER = "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean"
+BUSYBEAVER_LAKEFILE = BUSYBEAVER + "/lakefile.lean"
+CONWAY_LAKEFILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean"
+
+#: Manifeste des lakes declares en CI : `conway` y est, `busybeaver` non.
+CI_LAKES_MANIFEST = {
+    "version": 1,
+    "lakes": [
+        {
+            "lake": "conway",
+            "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean",
+            "paths": [
+                "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean",
+            ],
+        }
+    ],
+}
+
+
+def _manifest_payload(manifest: dict) -> dict:
+    """Payload REST `contents` du manifeste (base64)."""
+    raw = json.dumps(manifest).encode("utf-8")
+    return {"content": base64.b64encode(raw).decode("ascii")}
+
+
+def test_lake_introduit_non_declare_donne_un_motif_nomme(tmp_path):
+    """#27875 -- la PR INTRODUIT un lake que le manifeste ne declare pas : le
+    motif nomme le lake (il nomme aussi le geste), au lieu du generique."""
+    view = default_view(
+        files=(BUSYBEAVER_LAKEFILE, BUSYBEAVER + "/BusyBeaver.lean")
+    )
+    runner = ScriptedRunner(
+        views={123: view},
+        ci_lakes_payload=_manifest_payload(CI_LAKES_MANIFEST),
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "lean:lake-not-declared:" + BUSYBEAVER
+    assert lines[-1]["merged"] is False
+
+
+def test_lake_declare_donne_le_motif_generique(tmp_path):
+    """Controle negatif : un lake DECLARE (son `lakefile` est touche) garde le
+    motif generique -- pas de faux positif sur les PRs Lean ordinaires."""
+    view = default_view(files=(CONWAY_LAKEFILE,))
+    runner = ScriptedRunner(
+        views={123: view},
+        ci_lakes_payload=_manifest_payload(CI_LAKES_MANIFEST),
+    )
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_sans_lakefile_aucune_lecture_de_manifeste(tmp_path):
+    """Controle negatif : une PR Lean sans `lakefile.*` ne paie AUCUNE lecture
+    de manifeste (le cout de la garde ne bouge pas)."""
+    view = default_view(files=(LEAN_FILE,))
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+    assert not [cmd for cmd in runner.cmds() if "/contents/" in " ".join(cmd)]
+
+
+def test_manifeste_illisible_laisse_le_motif_generique(tmp_path):
+    """Controle negatif : un manifeste illisible (404) laisse la garde sur son
+    motif generique -- le fail-closed est conserve, aucun motif nomme n'est
+    forge sur une absence d'information."""
+    view = default_view(files=(BUSYBEAVER_LAKEFILE,))
+    runner = ScriptedRunner(views={123: view})  # pas de payload : 404
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_attestation_valide_passe_meme_avec_un_lakefile(tmp_path):
+    """Non-regression : une attestation valide a la tete passe, meme sur une
+    PR qui touche un `lakefile.*` -- la detection ne bloque rien de plus que
+    la garde d'avant."""
+    view = default_view(
+        files=(BUSYBEAVER_LAKEFILE,),
+        comments=[_attestation_comment(HEAD)],
+    )
+    runner = ScriptedRunner(
+        views={123: view},
+        ci_lakes_payload=_manifest_payload(CI_LAKES_MANIFEST),
+    )
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
 
 
 def test_attestation_suivie_d_un_rafraichissement_seul_laisse_passer(tmp_path):

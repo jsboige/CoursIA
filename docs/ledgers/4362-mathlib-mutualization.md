@@ -26,7 +26,7 @@ Sortie du scan lu-seul (2026-10-26, po-2023, clone `CoursIA-2`) :
 === Projets Lake avec dependance mathlib (34) ===
 
 --- Groupe leanprover_lean4_v4.33.0-db584cd6 [MUTUALISABLE -- revision partagee par 3 groupes] : toolchain=leanprover/lean4:v4.33.0 mathlib=db584cd6 ---
-  MyIA.AI.Notebooks/Compression/Compression_lean                         JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
+  MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean                         JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
   MyIA.AI.Notebooks/GameTheory/assignment_lean                           checkout physique (0.51 GB)
   MyIA.AI.Notebooks/GameTheory/game_theory_lean                          JONCTION PERIMEE -> D:\Dev\CoursIA\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
   MyIA.AI.Notebooks/GameTheory/minimax_lean                              checkout physique (0.51 GB)
