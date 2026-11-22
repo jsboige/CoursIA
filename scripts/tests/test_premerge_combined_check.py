@@ -160,6 +160,40 @@ def test_parse_failed_dedupes_and_keeps_order():
     assert pc.parse_failed(out) == ["a::x", "b::y"]
 
 
+def test_le_detail_du_rouge_porte_la_raon():
+    """La section FAILURES de pytest : l'assertion, pas seulement l'id.
+
+    Le journal portait `FAILED <id>` : on en conclut qu'un test a rougi, pas
+    pourquoi. Un delai depasse et une valeur qui change se distinguent par
+    l'assertion.
+    """
+    out = (
+        "=== FAILURES ===\n"
+        "____ test_original_intact_under_all_faults ____\n"
+        "E   assert proc.returncode == 0\n"
+        "=== short test summary info ===\n"
+        "FAILED t/test_g.py::test_original_intact - AssertionError\n"
+    )
+    detail = pc.failure_detail(out)
+    assert "assert proc.returncode == 0" in detail
+    assert "test_original_intact" in detail
+
+
+def test_le_detail_du_rouge_replie_sur_le_resume_si_pas_de_section():
+    out = "FAILED t/test_g.py::test_x - AssertionError: boom\n"
+    assert "test_x" in pc.failure_detail(out)
+
+
+def test_le_detail_du_rouge_est_vide_sans_echec():
+    assert pc.failure_detail("88 passed in 12 s\n") == ""
+
+
+def test_le_detail_du_rouge_est_tronque():
+    out = "=== FAILURES ===\n" + ("E   ligne\n" * 5000)
+    detail = pc.failure_detail(out, limit=500)
+    assert len(detail) < 700 and "tronque" in detail
+
+
 def test_integrity_list_points_at_existing_files():
     root = HERE.parents[1]
     missing = [t for t in pc.INTEGRITY_TESTS

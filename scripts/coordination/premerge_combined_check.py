@@ -120,6 +120,37 @@ _COMMIT_ENV = {
 _FAILED_RE = re.compile(r"^(?:FAILED|ERROR) (\S+)")
 
 
+def failure_detail(output: str, limit: int = 4000) -> str:
+    """La section FAILURES de pytest : la RAISON du rouge, pas son identifiant.
+
+    Le journal portait `FAILED <id>` : on en conclut qu'un test a rougi, pas
+    POURQUOI. La section FAILURES porte l'assertion -- c'est elle qui
+    distingue un delai depasse d'une valeur qui change (mesure du 22/11 :
+    deux PRs approuvees ont ete sautees pour
+    `test_guard_gauntlet::test_original_intact_under_all_faults`, sans qu'on
+    puisse dire si c'etait un TIMEOUT du bac a sable ou une cible modifiee).
+
+    Le retour est tronque : le journal est une ligne par PR, pas un journal
+    de test complet.
+    """
+    lignes = output.splitlines()
+    debut = None
+    for i, ligne in enumerate(lignes):
+        # Le bandeau de pytest : `==== FAILURES ====`
+        if "FAILURES" in ligne and ligne.strip().startswith("="):
+            debut = i
+    if debut is None:
+        for i, ligne in enumerate(lignes):
+            if ligne.startswith("FAILED ") or ligne.startswith("ERROR "):
+                debut = i
+    if debut is None:
+        return ""
+    detail = "\n".join(lignes[debut:]).strip()
+    if len(detail) > limit:
+        detail = detail[:limit] + "\n[... tronque ...]"
+    return detail
+
+
 @dataclass
 class RunResult:
     returncode: int
@@ -156,6 +187,9 @@ class Verdict:
     failed: list[str] = field(default_factory=list)
     duration_s: float = 0.0
     worktree_left: str | None = None
+    #: La section FAILURES de pytest : la raison du rouge, lisible par
+    #: l'appelant (22/11). Vide quand le verdict n'est pas un rouge de test.
+    failure_detail: str = ""
 
     @property
     def exit_code(self) -> int:
@@ -296,15 +330,18 @@ def check(runner: Runner, repo: Path, *, base: str, head: str,
             output = res.stdout + "\n" + res.stderr
             if res.timed_out:
                 verdict.reason = "timeout"
+                verdict.failure_detail = failure_detail(output)
             elif res.returncode == 0:
                 verdict.verdict = "GREEN"
             elif res.returncode == 1:
                 verdict.verdict = "RED"
                 verdict.failed = parse_failed(output)
+                verdict.failure_detail = failure_detail(output)
                 verdict.reason = "tests-failed"
             else:
                 verdict.reason = f"pytest-rc-{res.returncode}"
                 verdict.failed = parse_failed(output)
+                verdict.failure_detail = failure_detail(output)
     finally:
         # Un worktree REPRIS n'est pas retire ici : il sert au candidat
         # suivant de la passe. Seul celui que l'organe a pose lui-meme est
@@ -403,6 +440,9 @@ def main(argv: list[str] | None = None) -> int:
               + f" -- {len(verdict.tests)} fichier(s), {verdict.duration_s} s")
         for test_id in verdict.failed:
             print(f"  FAILED {test_id}")
+        if verdict.failure_detail:
+            for ligne in verdict.failure_detail.splitlines():
+                print(f"  | {ligne}")
         if verdict.worktree_left:
             print(f"  worktree non retire : {verdict.worktree_left}")
     return verdict.exit_code

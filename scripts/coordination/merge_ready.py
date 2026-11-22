@@ -572,6 +572,10 @@ class PRVerdict:
     stack: str | None = None
     #: Incidents de mesure de la porte STACK, quand la porte en a publie.
     stack_incidents: tuple[str, ...] | None = None
+    #: La RAISON du rouge quand elle est mesurable (section FAILURES de
+    #: pytest, 22/11) : sans elle, le journal dit QUOI a rouge et force le
+    #: lecteur a DEVINER pourquoi.
+    detail: str | None = None
 
     def journal_dict(self) -> dict:
         row = {
@@ -586,6 +590,8 @@ class PRVerdict:
         }
         if self.stack_incidents:
             row["stack_incidents"] = list(self.stack_incidents)
+        if self.detail:
+            row["detail"] = self.detail
         return row
 
 
@@ -2568,17 +2574,25 @@ def combined_pass_context() -> CombinedPassContext | None:
 
 def combined_tree_reason(
     runner: Runner, pr: int, head: str, gh_env: dict[str, str]
-) -> str | None:
+) -> tuple[str | None, str | None]:
     """Etape 5quinquies : les tests d'integrite passent-ils sur ``main`` + tete ?
 
-    ``None`` si l'organe rend GREEN (exit 0). Sinon un motif de skip :
+    ``(None, None)`` si l'organe rend GREEN (exit 0). Sinon un motif de skip
+    et la RAISON du rouge :
     ``combined-tree-red:<premier test rouge>``, ``combined-tree-conflict``, ou
     ``combined-tree-unreadable:<etape>`` -- « je n'ai pas pu jouer les
     tests » n'est pas « ils passent ». ``MERGE_READY_COMBINED_CHECK=0``
     retire l'etape (rollback operateur, jamais un reglage de lane).
+
+    La raison (la section FAILURES de pytest) est rendue avec le motif : le
+    journal portait `FAILED <id>`, ce qui dit QUOI a rougi mais pas POURQUOI
+    -- et une PR approuvee sautee sur un test qui ne la concerne pas se
+    demande alors qu'on suppose au lieu de mesurer (22/11 : deux PRs
+    approuvees sautees sur `test_guard_gauntlet`, aucune ne touchant le
+    gauntlet).
     """
     if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
-        return None
+        return None, None
     argv = [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr),
             "--head", head, "--json"]
     ctx = COMBINED_CTX
@@ -2596,15 +2610,18 @@ def combined_tree_reason(
                 payload = parsed
         except ValueError:
             payload = {}
+    detail = payload.get("failure_detail") or None
     verdict = payload.get("verdict")
     if res.returncode == 0 and verdict == "GREEN":
-        return None
+        return None, None
     if res.returncode == 1 and verdict == "CONFLICT":
-        return "combined-tree-conflict"
+        return "combined-tree-conflict", detail
     if res.returncode == 1 and verdict == "RED":
         failed = payload.get("failed") or []
-        return f"combined-tree-red:{failed[0] if failed else 'unnamed'}"
-    return f"combined-tree-unreadable:{payload.get('reason') or 'rc-' + str(res.returncode)}"
+        return (f"combined-tree-red:{failed[0] if failed else 'unnamed'}",
+                detail)
+    return (f"combined-tree-unreadable:"
+            f"{payload.get('reason') or 'rc-' + str(res.returncode)}", detail)
 
 
 def stacked_parent_state(
@@ -2997,9 +3014,10 @@ def evaluate_pr(
     disposition = review_disposition(view, view_head)
 
     def skip(reason: str, stack: str | None = None,
-             stack_incidents: tuple[str, ...] | None = None) -> PRVerdict:
+             stack_incidents: tuple[str, ...] | None = None,
+             detail: str | None = None) -> PRVerdict:
         return PRVerdict(pr, view_head, "skipped", reason, False, disposition,
-                         stack, stack_incidents)
+                         stack, stack_incidents, detail)
 
     # 1. prefiltre bon marche.
     if view.get("isDraft"):
@@ -3158,9 +3176,9 @@ def evaluate_pr(
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
     # apres tous les autres controles bon marche (il coute ~1 min) et avant le
     # REST final, qui reste le dernier pour garder la fenetre de course courte.
-    reason = combined_tree_reason(runner, pr, view_head, gh_env)
+    reason, detail = combined_tree_reason(runner, pr, view_head, gh_env)
     if reason is not None:
-        return skip(reason, stack_state, stack_inc)
+        return skip(reason, stack_state, stack_inc, detail)
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(
         runner, pr, gh_env, retries=retries
@@ -3263,6 +3281,11 @@ def emit_output(
     print(f"== merge_ready ({mode}, max {args.max}) ==")
     for verdict in results:
         print(_describe(verdict))
+        # La raison du rouge, quand elle est mesurable : sans elle, le
+        # lecteur doit DEVINER pourquoi une PR approuvee a ete sautee (22/11).
+        if verdict.detail:
+            for ligne in verdict.detail.splitlines():
+                print(f"  | {ligne}")
     merged = sum(1 for v in results if v.merged)
     would = sum(1 for v in results if v.verdict == "would-merge")
     skipped = sum(1 for v in results if v.verdict == "skipped")

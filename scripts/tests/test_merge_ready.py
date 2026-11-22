@@ -3650,6 +3650,32 @@ def test_combined_red_skips_and_names_the_first_red_test(tmp_path):
     assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
 
 
+def test_combined_red_ecrit_la_raon_dans_le_journal(tmp_path):
+    """Le journal porte la RAISON du rouge, pas seulement son identifiant.
+
+    Deux PRs approuvees ont ete sautees sur un test qui ne les concernait
+    pas (22/11) : `FAILED <id>` obligeait a DEVINER la cause. La section
+    FAILURES de pytest la donne.
+    """
+    stdout = json.dumps({"verdict": "RED",
+                         "failed": ["scripts/x/test_a.py::test_u"],
+                         "failure_detail": "E   assert proc.returncode == 0\n"})
+    runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
+                            combined_stdout=stdout)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "combined-tree-red:scripts/x/test_a.py::test_u"
+    assert "assert proc.returncode == 0" in lines[-1]["detail"]
+
+
+def test_le_journal_dune_pr_sans_detail_ne_porte_pas_la_cle(tmp_path):
+    """Une ligne sans raison n'invente pas une cle vide."""
+    runner = ScriptedRunner(prs=(401,))
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert "detail" not in lines[0]
+
+
 def test_combined_conflict_skips(tmp_path):
     runner = ScriptedRunner(views={123: default_view()}, combined_rc=1,
                             combined_stdout='{"verdict": "CONFLICT"}')
