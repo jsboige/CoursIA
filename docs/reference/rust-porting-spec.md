@@ -1,6 +1,6 @@
 # Gabarit de spécification de portage Rust — un seul format, deux producteurs
 
-> REFERENCE — vivante — dernière révision 2026-11-20
+> REFERENCE — vivante — dernière révision 2026-11-21
 >
 > **Provenance** : [Epic #26510](https://github.com/jsboige/CoursIA/issues/26510) (Parité Rust), **Pli 3** [#27098](https://github.com/jsboige/CoursIA/issues/27098), point 4 (« le gabarit de spécification de portage »). Le pli 1 a livré la table de correspondance : [rust-ecosystem-map.md](rust-ecosystem-map.md). Le pli 0 a livré la chaîne d'outils : [kernels-runtime.md § Rust](kernels-runtime.md#rust-notebooks-rust-via-evcxr).
 
@@ -88,6 +88,25 @@ de conformité différentielle (`scripts/notebook_tools/rust_conformance.d/<slug
 - `<crate>` `<version épinglée>` — licence `<MIT/Apache-2.0/…>` — feature `<…>` — verdict `<natif/pont/brut>`
 - Précédent de série : <autre carnet qui l'utilise, ou « aucun »>
 - `:dep` de tête : `:dep <crate> = "<version>"` (+ `:dep <crate> = { version = "…", features = [...] }` si feature)
+- **Si le crate lie un moteur natif** (`cp_sat` → OR-Tools) : le prérequis système se **mesure
+  avant** d'écrire la page (en-têtes + bibliothèques du moteur, `protoc` si les bindings sont
+  générés, `libprotobuf` au link), et la page nomme **l'hôte d'exécution** et les variables
+  d'environnement. Recette mesurée le 2026-11-21 sur `cp_sat` 0.4.1 :
+  - **hôte** : OR-Tools ne publie **aucun binaire C++ pour Windows** (v9.2 → v9.15 ; le wheel
+    Python Windows ne livre que des DLL, sans en-têtes ni `.lib` d'import) → exécution sous
+    **WSL**, archive Linux officielle (`or-tools_amd64_ubuntu-22.04_cpp_v9.15.6755.tar.gz`)
+    dans `/opt/ortools` ;
+  - **variables** : `ORTOOLS_PREFIX=/opt/ortools` — **au pluriel**, c'est le nom que lit le
+    `build.rs` du crate (le commentaire de `lib.rs` écrit `ORTOOL_PREFIX` et est **erroné**) —
+    puis `RUSTFLAGS='-Clink-arg=-lprotobuf'` ;
+  - **noyau** : `evcxr_jupyter` n'est **pas sur PyPI** (404 sur six noms candidats) ; il se
+    construit depuis GitHub (`cargo install --git https://github.com/evcxr/evcxr
+    evcxr_jupyter`). `cargo install evcxr` n'installe que `testing_runtime` : il n'y a pas de
+    binaire `evcxr` à invoquer. `evcxr_jupyter` **écrase le kernelspec `rust`** à chaque
+    démarrage : l'environnement est à réappliquer après chaque démarrage ;
+  - **sortie parasite** : evcxr évalue la valeur de la dernière expression — une cellule code
+    enveloppée dans `{ … }` produit un `execute_result "()"` ; un `;` final après l'accolade
+    le supprime.
 
 ## Écueils de traduction
 
