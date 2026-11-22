@@ -234,7 +234,7 @@ on:
       # lac au manifeste, comme formal_groups.)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lake-manifest.json'
       # knot_lean (herite du wrapper lean-knot.yml supprime, #13751 : 35e lake.
       # sorry-baseline "8" = compte reel distinct_code_sorry mesure au
@@ -282,7 +282,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lake-manifest.json'
       # combinators_lean (lake dedie du pli 4 Origami #19742, grain B
       # #25061 -- confluence S/K/I par l'organe Relation.church_rosser,
@@ -510,7 +510,7 @@ on:
       # lac au manifeste, comme formal_groups.)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lake-manifest.json'
       # knot_lean (herite du wrapper lean-knot.yml supprime, #13751 : 35e lake.
       # sorry-baseline "8" = compte reel distinct_code_sorry mesure au
@@ -558,7 +558,7 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lake-manifest.json'
       # combinators_lean (lake dedie du pli 4 Origami #19742, grain B
       # #25061 -- confluence S/K/I par l'organe Relation.church_rosser,
