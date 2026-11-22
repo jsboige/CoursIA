@@ -3188,6 +3188,33 @@ TRANCHE32: list[Guard] = [
         needs_base=True,
         warn_rc=(2,),
     ),
+    Guard(
+        # Heritage d'execution entre carnets jumeaux : l'artefact COPIE
+        # (#27992, decouvert sur la PR #27872). Un carnet qui porte les
+        # horodatages d'execution d'un autre carnet de sa famille n'a pas ete
+        # execute : il a ete copie, et ses sorties ne sont pas les siennes.
+        # Le verdict est un DELTA borne au diff (seules les familles touchees
+        # par la PR sont examinees) : un rouge ne peut pas heriter de `main`.
+        name="twin-execution-heritage-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "scripts/notebook_tools/twin_pairs.d/**",
+            "scripts/notebook_tools/rust_conformance.d/**",
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_twin_execution_heritage.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_twin_execution_heritage.py",
+            "--diff", "{base_ref}...HEAD", "--gate",
+        ],
+        blocking=True,
+        absorbed=True,
+        needs_base=True,
+        diff_bounded=True,
+        warn_rc=(2,),
+    ),
 ]
 
 # ---------------------------------------------------------------------------
