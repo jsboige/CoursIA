@@ -14,9 +14,15 @@
   `cournotEquilibriumSym` (quantité de Cournot symétrique, point fixe) ;
   `stackelbergLeader` (forme close de la quantité du leader) ;
   `stackelbergFollower` (forme close du suiveur) ;
-  `stackelbergFollowerEqReaction` (l'invariant central : le suiveur
-  best-respond au leader) ; `firstMoverAdvantage` (qL > qF sous
-  coûts symétriques) ; `welfareAboveCournot` (qL + qF > 2·q*).
+  `stackelberg_follower_eq_reaction` (l'invariant central : le suiveur
+  best-respond au leader) ; et les cinq formes générales du grain
+  #24183 (réponse au constat ai-01 du 2026-11-11) :
+  `cournotSymmetric_eq_is_fixed_point`,
+  `stackelberg_follower_eq_reaction_clamped`,
+  `stackelberg_closed_form_expansion`, `first_mover_advantage_symmetric`
+  (qL > qF sous coûts symétriques), `welfare_above_cournot_symmetric`
+  (qL + qF > 2·q*) — les formes instanciées existantes en sont des
+  corollaires.
 
   Ce fichier existe parce que le `lean_lib StackelbergBilevel` du
   lakefile déclare `globs := #[`StackelbergBilevel.*]` : Lake résout
