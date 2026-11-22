@@ -1,0 +1,266 @@
+# Triplet GenAI 14b : jumeau C# existant + portage Rust std (issue #27968, lot Rust std #27967).
+# Les carnets Python et Rust ont exactement la meme structure 27 cellules (meme indices) :
+# les cotes se correspondent par index. Le cote C# en a 29 (exercices deplaces,
+# controles supplementaires) : la correspondance est exprimee par la cellule de
+# chaque mesure, sondage par cote a la generation.
+# Rust = evcxr, std seul (VecDeque, Rc, ptr_eq), zero dependance externe.
+# Les sorties Rust sont byte-exactes avec le Python (comparateur 9/9) ; le C#
+# reste idiomatique (accents, format de mesures condense) : les mesures communes
+# sont ancrees sur des fragments identiques, les autres ont un pattern par cote.
+- name: "GenAI 14b Memoire paginee"
+  family: "GenAI (Texte)"
+  python: MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Rust.ipynb
+  measures:
+    - id: imports_ok
+      description: "Banniere d'imports de la cellule d'entete (sans API, memoire pure)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "^Imports OK : (.+)$"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "^Imports OK : (.+)$"
+          transform: text
+        csharp:
+          absent: "La cellule C# 2 affiche une banniere Runtime .NET, pas de banniere d'imports Python : fragment sans equivalent, mesure restreinte a Python/Rust."
+    - id: total_evicques
+      description: "Fenetre glissante taille 4 apres 6 appends : total d'evictions sur la duree de vie (2)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Total evicques sur la duree de vie : (\\d+)"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "Total evicques sur la duree de vie : (\\d+)"
+          transform: int
+        csharp:
+          cell: 5
+          pattern: "Total évincés : (\\d+)"
+          transform: int
+    - id: fenetre_finale
+      description: "Contenu final de la fenetre taille 4 (messages #2 a #5, rôles alternes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "(?m)^(\\[user\\] message #2\\n\\[assistant\\] message #3\\n\\[user\\] message #4\\n\\[assistant\\] message #5)$"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "(?m)^(\\[user\\] message #2\\n\\[assistant\\] message #3\\n\\[user\\] message #4\\n\\[assistant\\] message #5)$"
+          transform: text
+        csharp:
+          cell: 5
+          pattern: "(?m)^(\\[user\\] message #2\\n\\[assistant\\] message #3\\n\\[user\\] message #4\\n\\[assistant\\] message #5)$"
+          transform: text
+    - id: resume_caracteres
+      description: "Resume cumulatif des 4 chunks evinces : caracteres stockes (358)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Resume cumulatif \\((\\d+) caracteres\\)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "Resume cumulatif \\((\\d+) caracteres\\)"
+          transform: int
+        csharp:
+          cell: 8
+          pattern: "\\((\\d+) caract.re(s)? stock"
+          transform: int
+    - id: plafond_2
+      description: "Limite de rendu 2 caracteres respecte le plafond (True)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "respecte le plafond : (True)\\."
+          transform: text
+        rust:
+          cell: 8
+          pattern: "respecte le plafond : (True)\\."
+          transform: text
+        csharp:
+          cell: 8
+          pattern: "respecte le plafond : (True)\\."
+          transform: text
+    - id: lru_apres_touch
+      description: "LRU taille 3 apres touch du message #2 : ordre #3, #4, #2 (promotion en MRU)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "(?m)^(\\[user\\] message #3\\n\\[user\\] message #4\\n\\[user\\] message #2)$"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "(?m)^(\\[user\\] message #3\\n\\[user\\] message #4\\n\\[user\\] message #2)$"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "(?m)^(\\[user\\] message #3\\n\\[user\\] message #4\\n\\[user\\] message #2)$"
+          transform: text
+    - id: evince_insertion_5
+      description: "Insertion de #5 dans la LRU taille 3 : victime d'eviction (message #3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "le message evince est : (message #\\d+)"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "le message evince est : (message #\\d+)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "vince (message #\\d+) ; contenu final"
+          transform: text
+    - id: importance_pensee_cle
+      description: "ImportanceMemory : la PENSEE-CLE d'importance 10 survit aux messages banals"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\(imp=10\\.00\\) (PENSEE-CLE : ne jamais committer un secret)"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\(imp=10\\.00\\) (PENSEE-CLE : ne jamais committer un secret)"
+          transform: text
+        csharp:
+          cell: 14
+          pattern: "\\(imp=10\\.00\\) (PENSEE-CLE : ne jamais committer un secret)"
+          transform: text
+    - id: controle_identite
+      description: "Controle LRU par identite : reinsertion sans doublon, eviction par valeur egale distincte, promotion par touch, touch absent sans effet"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "Controle LRU par identite : (reinsertion.*sans effet=True\\.)"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "Controle LRU par identite : (reinsertion.*sans effet=True\\.)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 14 resume ce controle en une ligne condensee differente (« LRU par identité : … = True. ») sans les quatre sous-verdicts : comparaison stricte restreinte a Python/Rust."
+    - id: pages_messages
+      description: "Memoire paginee : nombre de pages (3) et total de messages (7)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "pages, (\\d+) messages"
+          transform: int
+        rust:
+          cell: 14
+          pattern: "pages, (\\d+) messages"
+          transform: int
+        csharp:
+          cell: 20
+          pattern: "pages, (\\d+) messages"
+          transform: int
+    - id: swap_page_preferences
+      description: "Swap vers la page preferences : entete de rendu de la page (2 messages)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "(=== Page: preferences \\(2 msg\\) ===)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "(=== Page: preferences \\(2 msg\\) ===)"
+          transform: text
+        csharp:
+          cell: 20
+          pattern: "(=== Page: preferences \\(2 msg\\) ===)"
+          transform: text
+    - id: cout_100_non_bornee
+      description: "Cout memoire non bornee a 100 tours (606000 caracteres)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "100 tours : non bornee = +([\\d,]+)"
+          transform: digits
+        rust:
+          cell: 17
+          pattern: "100 tours : non bornee = +([\\d,]+)"
+          transform: digits
+        csharp:
+          cell: 26
+          pattern: "100 tours : non born.=([\\d,]+)"
+          transform: digits
+    - id: cout_1000_non_bornee
+      description: "Cout memoire non bornee a 1000 tours (60060000 caracteres, explosion quadratique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "1000 tours : non bornee = +([\\d,]+)"
+          transform: digits
+        rust:
+          cell: 17
+          pattern: "1000 tours : non bornee = +([\\d,]+)"
+          transform: digits
+        csharp:
+          cell: 26
+          pattern: "1000 tours : non born.=([\\d,]+)"
+          transform: digits
+    - id: gain_fenetre_1000
+      description: "Gain fenetre + resume a 1000 tours (facteur x43.0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "fenetre = +1,397,690 \\(x +(43\\.0)\\)"
+          transform: float
+        rust:
+          cell: 17
+          pattern: "fenetre = +1,397,690 \\(x +(43\\.0)\\)"
+          transform: float
+        csharp:
+          cell: 26
+          pattern: "1,397,690 \\(x(43\\.0)\\)"
+          transform: float
+    - id: gain_paging_1000
+      description: "Gain paging a 1000 tours (facteur x75.1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "paging = +800,000 \\(x +(75\\.1)\\)"
+          transform: float
+        rust:
+          cell: 17
+          pattern: "paging = +800,000 \\(x +(75\\.1)\\)"
+          transform: float
+        csharp:
+          cell: 26
+          pattern: "800,000 \\(x(75\\.1)\\)"
+          transform: float
