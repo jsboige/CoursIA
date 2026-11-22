@@ -541,8 +541,13 @@ def test_cli_json_sur_un_dossier(tmp_path, capsysbinary):
     assert code == 0 and len(sortie["grains"]) == 6
     assert sortie["vos_prs"] == [{"numero": 900, "titre": "Ma PR", "age_j": 1.2}]
     assert sortie["ecartees"]["COUVERTE"] == [{"numero": 1, "motif":
-                                               "votre PR #900 la cite : portez-la au merge"}]
+                                               "votre PR #900 la cite : portez-la au merge",
+                                               "feuille": True}]
     assert sortie["lecture"]["issues"] == 7 and sortie["maintenant"] == tr._iso(NOW)
+    # L'assiette (#25082) : le tirage dit combien de feuilles il sert.
+    assert (sortie["lecture"]["servables_feuilles"] + sortie["lecture"]["servables_conteneurs"]
+            == sortie["lecture"]["servables"])
+    assert sortie["lecture"]["servables_conteneurs"] == 3  # les 3 familles de l'EPIC
     assert set(sortie) >= {"grains", "vos_prs", "ecartees", "lecture"}
 
 
@@ -648,7 +653,14 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # plafond, #27242, 19/11) ; tapis_citations.py la vingt-troisieme (les citations des
 # PRs OUVERTES : le travail en cours compte comme une visite, #27338) ;
 # belt_equite.py la vingt-quatrieme (l'equite du dispatch : un grain deja servi ne
-# passe pas devant les premieres visites, #27338).
+# passe pas devant les premieres visites, #27338) ; tapis_acceptance.py la
+# vingt-cinquieme (les criteres d'acceptation de #25082 mesures sur le service
+# effectif, 20/11) ; tapis_assiette.py la vingt-sixieme (la composition du pool :
+# feuilles contre conteneurs, #25082, 21/11) ; tapis_leger_texte.py la
+# vingt-septieme (la SORTIE TEXTE de la voie leger -- extraite de
+# tapis_leger.py pour que la greffe du cap de livraisons tienne le plafond,
+# #21067, 22/11) ; tapis_cap_livraisons.py la vingt-huitieme (le CAP DE
+# LIVRAISONS EPIC rebranche sur la voie de tirage reelle, #21067, 22/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -684,7 +696,11 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("belt_equite.py", 110),
                                               ("tapis_preuve.py", 110),
                                               ("tapis_ecarts_fond.py", 50),
-                                              ("tapis_voie_leger.py", 40)])
+                                              ("tapis_voie_leger.py", 40),
+                                              ("tapis_acceptance.py", 300),
+                                              ("tapis_assiette.py", 200),
+                                              ("tapis_leger_texte.py", 80),
+                                              ("tapis_cap_livraisons.py", 160)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
