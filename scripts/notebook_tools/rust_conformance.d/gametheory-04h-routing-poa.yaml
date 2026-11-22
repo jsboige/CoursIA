@@ -1,0 +1,333 @@
+# Conformite differentielle du triplet GameTheory-04h (Routing / Price of Anarchy).
+#
+# Le carnet Rust (kernel `evcxr`, `std` seul — aucun `:dep`) rejoue exactement
+# la meme instance de Pigou que le jumeau Python (fractions + math) et que le
+# jumeau C# (liaison .NET). Les trois cotes n'ont pas la meme structure de
+# cellules : le Rust et le Python partagent les memes index de cellule (le
+# portage reprend le plan de la spec #27791), le C# a son propre decoupage.
+# La correspondance est donc ecrite par cote, comme l'impose le schema.
+#
+# Ecarts de forme declares (le contenu est le meme, la mise en forme change) :
+#   - le Rust affiche `True`/`False` via une fonction locale `py_bool`, le C#
+#     affiche `True`/`False` nativement et le Python son `bool` ;
+#   - le C# ecrit `x_A=0.500` (sans espaces autour de `=`), le Python et le
+#     Rust ecrivent `x_A = 0.500` ;
+#   - le jumeau C# ne publie ni la forme exacte (section 3bis) ni la
+#     generalisation polynomiale (section 5bis) : ces cotes sont declares
+#     ABSENTS, avec motif, et non mesures manquantes.
+#
+# Les valeurs comparees sont les grandeurs pivots du carnet : optimum social,
+# equilibrium de Wardrop, PoA et surcout, profil de sensibilite, forme
+# exacte, et le contre-exemple polynomial qui borne la validite de la borne
+# 4/3. Tolerance 0 partout : toutes ces grandeurs sont exactes en binaire
+# (0.5, 0.75, 1.0) ou affichees a precision fixe depuis les memes expressions.
+- name: "GameTheory-04h Routing / Price of Anarchy"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-Rust.ipynb
+  measures:
+    - id: optimum_xa
+      description: "Flux sur l'autoroute a l'optimum social (instance canonique alpha=D=1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Optimum social : x_A = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 3
+          pattern: "Optimum social : x_A = ([0-9.]+)"
+          transform: float
+        csharp:
+          cell: 3
+          pattern: "Optimum social : x_A=([0-9.]+)"
+          transform: float
+    - id: optimum_xb
+      description: "Flux sur la route locale a l'optimum social"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "x_B = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 3
+          pattern: "x_B = ([0-9.]+)"
+          transform: float
+        csharp:
+          cell: 3
+          pattern: "x_B=([0-9.]+)"
+          transform: float
+    - id: optimum_cost
+      description: "Cout total a l'optimum social"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "Cout total a l'optimum  = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 3
+          pattern: "Cout total a l'optimum  = ([0-9.]+)"
+          transform: float
+        csharp:
+          cell: 3
+          pattern: "cout=([0-9.]+)"
+          transform: float
+    - id: wardrop_xa
+      description: "Flux sur l'autoroute a l'equilibre de Wardrop"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Equilibre de Wardrop : x_A = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 5
+          pattern: "Equilibre de Wardrop : x_A = ([0-9.]+)"
+          transform: float
+        csharp:
+          cell: 5
+          pattern: "Equilibre de Wardrop : x_A=([0-9.]+)"
+          transform: float
+    - id: wardrop_cost
+      description: "Cout total a l'equilibre de Wardrop"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Cout total a l'equilibre = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 5
+          pattern: "Cout total a l'equilibre = ([0-9.]+)"
+          transform: float
+        csharp:
+          cell: 5
+          pattern: "cout=([0-9.]+)"
+          transform: float
+    - id: poa_value
+      description: "Price of Anarchy mesure (cout de Wardrop / cout optimum)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "Price of Anarchy = [0-9.]+ / [0-9.]+ = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 7
+          pattern: "Price of Anarchy = [0-9.]+ / [0-9.]+ = ([0-9.]+)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "Price of Anarchy = [0-9.]+ / [0-9.]+ = ([0-9.]+)"
+          transform: float
+    - id: surcout_pct
+      description: "Surcout social total de l'egarement interesse (pourcent)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "egarement interesse coute ([0-9.]+) %"
+          transform: float
+        rust:
+          cell: 7
+          pattern: "egarement interesse coute ([0-9.]+) %"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "Surcoût social total mesuré : ([0-9.]+) %"
+          transform: float
+    - id: sensitivity_poa_alpha1
+      description: "PoA de la table de sensibilite a alpha = 1 (cas d'egalite de la borne 4/3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "1\\.0 \\| +([0-9.]+) \\|"
+          transform: float
+        rust:
+          cell: 13
+          pattern: "1\\.0 \\| +([0-9.]+) \\|"
+          transform: float
+        csharp:
+          cell: 16
+          pattern: "1\\.0 \\| ([0-9.]+) \\|"
+          transform: float
+    - id: sensitivity_poa_alpha2
+      description: "PoA de la table de sensibilite a alpha = 2 (decroissance vers 1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "2\\.0 \\| +([0-9.]+) \\|"
+          transform: float
+        rust:
+          cell: 13
+          pattern: "2\\.0 \\| +([0-9.]+) \\|"
+          transform: float
+        csharp:
+          cell: 16
+          pattern: "2\\.0 \\| ([0-9.]+) \\|"
+          transform: float
+    - id: fixtures_count
+      description: "Nombre de fixtures de controle (standards, frontieres, extremes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "bornés : ([0-9]+) fixtures"
+          transform: int
+        rust:
+          cell: 13
+          pattern: "bornés : ([0-9]+) fixtures"
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# deploie son propre jeu de fixtures (8 entrees, avec
+            des mutants constants/NaN qui n'existent pas de ce cote) : le
+            compte n'est pas la meme grandeur. Cote declare ABSENT.
+    - id: poa_exact_fraction
+      description: "Forme exacte du PoA en arithmetique rationnelle (section 3bis)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "Price of Anarchy EXACT = [0-9/]+ / [0-9/]+ = ([0-9/]+)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "Price of Anarchy EXACT = [0-9/]+ / [0-9/]+ = ([0-9/]+)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas de forme exacte : il n'a pas de type
+            rationnel equivalent. Cote declare ABSENT.
+    - id: poa_exact_coherence
+      description: "Coherence entre la forme exacte rationnelle et le flottant mesure"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "coherence avec le flottant mesure : (True|False)"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "coherence avec le flottant mesure : (True|False)"
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que poa_exact_fraction : pas de forme exacte cote C#.
+            Cote declare ABSENT.
+    - id: polynomial_degree2_poa
+      description: "PoA du Pigou quadratique (degre 2) — le contre-exemple a la borne 4/3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "degre 2 [^\n]*PoA = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 16
+          pattern: "degre 2 [^\n]*PoA = ([0-9.]+)"
+          transform: float
+        csharp:
+          absent: >-
+            Le jumeau C# ne developpe pas la generalisation polynomiale (section
+            5bis) : il s'arrete au regime affine. Cote declare ABSENT.
+    - id: polynomial_xa_opt
+      description: "Flux optimal du Pigou quadratique (x_A* = 1/sqrt(3))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "x_A\\* = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 16
+          pattern: "x_A\\* = ([0-9.]+)"
+          transform: float
+        csharp:
+          absent: >-
+            Meme raison que polynomial_degree2_poa : cote declare ABSENT.
+    - id: polynomial_degree5_poa
+      description: "PoA du Pigou de degre 5 (la divergence croit avec le degre)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "5 \\| +([0-9.]+) \\|"
+          transform: float
+        rust:
+          cell: 16
+          pattern: "5 \\| +([0-9.]+) \\|"
+          transform: float
+        csharp:
+          absent: >-
+            Meme raison que polynomial_degree2_poa : cote declare ABSENT.
+    - id: stub_titre_exercice1
+      description: "Titre de la cellule stub de l'exercice 1 (le stub reste a completer)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "Exercice 1 : fonction Wardrop stub conservee\\."
+          transform: text
+        rust:
+          cell: 20
+          pattern: "Exercice 1 : fonction Wardrop stub conservee\\."
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# forge son stub d'exercice avec une ligne de controle
+            ("Exercice 1 : a completer; fixtures=4; ...") : le libelle n'est pas
+            la meme grandeur. Cote declare ABSENT.
+    - id: stub_titre_exercice2
+      description: "Titre de la cellule stub de l'exercice 2"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "Exercice 2 : fonction PoA stub conservee\\."
+          transform: text
+        rust:
+          cell: 22
+          pattern: "Exercice 2 : fonction PoA stub conservee\\."
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que stub_titre_exercice1 : cote declare ABSENT.
+    - id: stub_titre_exercice3
+      description: "Titre de la cellule stub de l'exercice 3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "Exercice 3 : calcul de sensibilite a completer\\."
+          transform: text
+        rust:
+          cell: 24
+          pattern: "Exercice 3 : calcul de sensibilite a completer\\."
+          transform: text
+        csharp:
+          absent: >-
+            Meme raison que stub_titre_exercice1 : cote declare ABSENT.
