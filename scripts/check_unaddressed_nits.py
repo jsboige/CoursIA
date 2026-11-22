@@ -118,6 +118,16 @@ except ImportError:  # meme shim que gh_identity (tests hors scripts/)
     sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_etag
 
+# #27881 — la grammaire des marqueurs (familles FORMELLE / PROSE, vocabulaire
+# des verdicts) et le predicate de signalement sont extraits dans
+# `scripts/ci/nit_markers.py` : l'organe ne doit pas grossir (cliquet de
+# taille `script_size_ceilings.json`).
+try:
+    import nit_markers
+except ImportError:  # meme shim que gh_identity (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import nit_markers
+
 REPO = "jsboige/CoursIA"
 
 # Les deux orthographes d'un meme bot : la lecture normalisee (voir
@@ -711,81 +721,14 @@ CONCERN_MARKERS = (
     "a changer",
 )
 
-# #12143 — Hermes severity glyphes (substance du premier PR #12148 fondateur).
-# Extrait en constante separee pour subordonner la levee par LIFT_MARKERS
-# (cf `classify` ci-dessous) : un glyphe est une EMISSION, et une emission
-# ne se laisse pas eteindre par un mot de levee pose ailleurs dans la meme
-# prose. Distribution scan 150 PRs mergees (35 reviews Hermes) :
-#   △ (U+25B3) : micro-nit non-bloquant, 23/35 (exclu de CONCERN_MARKERS).
-#   🟡 (U+1F7E1) : constat substantiel, 5/35. Promote car 4 leves par la suite,
-#     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
-#     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
-#   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
-# #15951 — contrat de vocabulaire (acceptance 1 de l'issue) : le jeu de
-# SEVERITE est FERME = {🟡, 🔴}. Les glyphes de NOUVEAUTE doctrinale des
-# lanes (ex. « ★ NEW fondateur », vocabulaire Tell de po-2024:CoursIA-2)
-# ne sont PAS des marqueurs de severite et ne le deviendront pas —
-# severite et nouveaute restent DISJOINTS. Cote emission, une lane qui
-# introduit un nouveau glyphe de severite doit le proposer ici avec une
-# mesure corpus ; cote filet, aucun glyphe hors de SEVERITY_GLYPHS n'est
-# lu comme alarme. Le defaut reel de #15762 c.1102 n'etait PAS le glyphe
-# mais le verdict litteral en narration de dissipation avec attribution
-# tell — cf `_MENTION_VERDICT_TELL` (Position K).
-# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
-# symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
-# ciblent l'ASCII formel et ignorent les glyphes ; la Position J
-# (`_strip_glyphe_mentions`, #14277) les neutralise en position de MENTION
-# (méta-nom sur la même ligne), l'émission en tête de ligne restant vive.
-SEVERITY_GLYPHS = (
-    "🟡",  # constat substantiel (fondateur #12059)
-    "🔴",  # bloquant strict
-)
-# Concatene pour que `live_concern` (has_live_marker sur CONCERN_MARKERS) capture
-# aussi les glyphes isoles — sans cette ligne, un body compose uniquement d'un
-# glyphe (pas de LIFT, pas de CONCERN_MARKERS textuel) retournerait None a tort.
+# Le vocabulaire des VERDICTS (glyphes de severite, verdicts de blocage, refus
+# d'approbation) est extrait dans `scripts/ci/nit_markers.py` : meme contrat
+# de vocabulaire, meme document de reference, un seul endroit a faire vivre.
+SEVERITY_GLYPHS = nit_markers.SEVERITY_GLYPHS
 CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
-
-# #12908 — le verdict de l'organe B.0 lui-même, en ses deux formes d'EMISSION :
-# le gras de revalidation (« classe encore cette PR **BLOCKED** », commentaire
-# fondateur 2026-08-25T04:45:30Z de #12798) et la sortie pastee de l'organe
-# (« BLOCKED  PR #N — ... », double espace). Ce commentaire fondateur
-# maintenait explicitement la reserve (« quatre réserves tierces actives »,
-# « réserve uniquement B.0/process ») tout en narrant le vocabulaire de levée
-# (« une levée explicite sur le head final ») : le LIFT_MARKER « levée » de la
-# narration absorbait la reserve vivante — le defaut exact que B.0 existe pour
-# traquer. Comme les glyphes : concatene pour que `live_concern` classe le
-# maintien BOT-CONCERN, ET subordonne la branche LIFT de `classify` via
-# `_formal_concern_precedes_lift` (un BLOCKED emis AVANT la narration de
-# levee garde la reserve vivante ; une levée suivie d'un BLOCKED narré au
-# passe reste une levée — la position decide, comme pour les verdicts
-# formels). Le mot NU « BLOCKED » n'est PAS matche : le tag de protocole
-# « [BLOCKED] lane ... » d'une lane et la negation « n'est plus BLOCKED »
-# restent hors du filet. Residuels assumes : un BLOCKED d'emission sans gras
-# ni paste d'organe ne matche pas ; une paste dans un bloc de code fence est
-# une mention (_strip_quoted), comme tout autre verdict backtinque.
-BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
+BLOCK_VERDICTS = nit_markers.BLOCK_VERDICTS
 CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
-
-# #14553 — le registre du REFUS d'approbation. Fondateur mesure : review
-# NanoClaw du 2026-09-03T23:50:16Z sur #14535 — trois demandes numerotees,
-# cloture « Donnees exactes, discipline de provenance en defaut — pas de
-# LGTM en l'etat » -> AUCUN des marqueurs existants ne vit -> classify None
-# -> gate vert. Un refus d'approbation est un verdict a part entiere (CLAUDE.md
-# B.0 : « un reviewer qui ecrit "je ne peux pas approuver seul sur ce
-# format" bloque ») ; aucun des 21 motifs ne couvrait cette famille. Casse
-# RELACHEE (defaut has_live_marker) : « Pas de LGTM » en tete de phrase doit
-# vivre. Garde-fou FP double : (1) la fenetre de citation (_is_cited) rend
-# morte l'occurrence d'un refus QUOTE dans une levee (« la reserve
-# « pas de LGTM » est adressee ») ; (2) « no LGTM » est word-bounded avec
-# lookahead anti-« no LGTM needed » (_WORD_BOUNDED_MARKERS). « sous reserve
-# de » est EXCLU : sa neutralite depend de la POSITION (verdict final vs
-# subordonnee conditionnelle), qu'un motif ne peut pas porter — residuel
-# documente sur l'issue.
-APPROVAL_REFUSALS = (
-    "pas de LGTM", "no LGTM",
-    "je ne peux pas approuver", "cannot approve", "not approving",
-    "ne pas merger en l'etat", "do not merge as is",
-)
+APPROVAL_REFUSALS = nit_markers.APPROVAL_REFUSALS
 CONCERN_MARKERS = CONCERN_MARKERS + APPROVAL_REFUSALS
 
 # La forme ETIQUETEE (« Concern: », « Concerns :», « **Concern 2 :** ») rejoint
@@ -820,50 +763,12 @@ CONCERN_MARKERS = CONCERN_MARKERS + ("concerns about", "concerns remain")
 CONCERN_MARKERS = CONCERN_MARKERS + (_EN_CONCERN_LABEL,)
 CONCERN_MARKERS = CONCERN_MARKERS + (_CONCERN_LABEL,)
 
-# #27881 — DEUX FAMILLES de marqueurs de reserve, a ne pas confondre.
-# Les marqueurs FORMELS sont des VERDICTS : « CHANGES_REQUESTED », le glyphe
-# 🟡/🔴, le refus d'approbation, la forme etiquetee « Concern: ». Les
-# marqueurs de PROSE sont des LOCUTIONS : « avant merge », « il va faudra »,
-# « a changer ». La PROSE sur-accuse d'un facteur 5 — c'est le motif meme
-# pour lequel #14682 a refuse d'ajouter des mots de prose « bloquante » au
-# filet (le contrat est cote EMISSION).
-#
-# Pourquoi la separation est necessaire ICI : un commentaire de SIGNALEMENT
-# agent (`[ACTION]` / `[DIAG]` / `[BASE-INHERITED]`) est, par construction,
-# un commentaire qui PORTE une action ou un constat — pas une reserve. Le
-# prefixe l'exempte deja de la classification (CLASSIFY_AGENT_PREFIXES, ligne
-# de `classify`), SAUF s'il « porte une reserve » — et cette exception ne
-# distinguait pas la PROSE du VERDICT. Consequence mesuree (PR #27368,
-# 2026-11-20) : le commentaire `[ACTION] lane myia-ai-01:CoursIA-2` de la
-# lane — qui dit « la PR merite un regard de taille avant merge » — est
-# classe BOT-CONCERN par le seul marqueur de prose `avant merge`, et la PR
-# est bloquee par SON PROPRE commentaire d'action (29 h). C'est le regime
-# absorbant decrit au founding incident #16381, en miroir : la LIFT
-# absorbait la reserve, ici c'est la PROSE qui transforme le signalement en
-# reserve — et personne ne peut lever une reserve que la lane a posee
-# elle-meme (B.0 : une reponse d'auteur ne leve pas une reserve de tiers).
-#
-# Le bouclage est donc : dans un commentaire de signalement, seule une
-# reserve FORMELLE reste un nit ; la PROSE seule ne bloque plus. Un verdict
-# formel l'emporte toujours (le tag n'est pas un passe-droit).
-PROSE_CONCERN_MARKERS = (
-    "avant merge", "avant de merger", "il va falloir", "a nuancer", "à nuancer",
-    "[BEFORE-MERGE]", "before merge", "a changer",
-    "concerns about", "concerns remain",
-)
-FORMAL_CONCERN_MARKERS = tuple(
-    m for m in CONCERN_MARKERS if m not in PROSE_CONCERN_MARKERS
-)
-# Les trois prefixes de SIGNALEMENT (et non l'ensemble des prefixes de
-# protocole) : ce sont ceux que #26364 a ajoutes precisement pour que le
-# signalement d'un agent ne bloque pas la PR qu'il documente.
-SIGNAL_COMMENT_PREFIXES = ("[ACTION", "[DIAG", "[BASE-INHERITED")
-# La forme STRICTE du tag (`[ACTION]` suivi d'un separateur), comme la
-# taxonomie COMMENT_TAG_RE : `[ACTIONNEEDED` n'est pas un tag.
-_SIGNAL_HEAD_RE = re.compile(r"\[(ACTION|DIAG|BASE-INHERITED)\](?=\s|$)")
-
-# Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
-
+# #27881 — la famille FORMELLE des marqueurs de reserve (la famille de
+# PROSE et le predicat de signalement vivent dans
+# `scripts/ci/nit_signal_markers.py`, extrait pour ne pas grossir
+# l'organe). La liste formelle est DERIVEE du registre vivant : elle ne
+# se recopie pas.
+FORMAL_CONCERN_MARKERS = nit_markers.formal_concern_markers(CONCERN_MARKERS)
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 # la resolution. Sans ce filtre, chaque « CHANGES_REQUESTED levée » est compte
 # comme une reserve ouverte (faux positif massif, mesure sur 400 PRs).
@@ -5126,8 +5031,7 @@ def classify(author: str, body: str) -> str | None:
     # un rapport de correction qui nomme le verdict qu'il corrige n'emet pas
     # de reserve. Uniquement pour CONCERN_MARKERS et l'etage lift (symetrie
     # #13083 ci-dessus) : VERDICT_POSITIVE garde le body brut.
-    concern_surface = _strip_mentioned_verdicts(_strip_quoted(body))
-    live_concern = has_live_marker(concern_surface, CONCERN_MARKERS)
+    live_concern = has_live_marker(_strip_mentioned_verdicts(_strip_quoted(body)), CONCERN_MARKERS)
     # #13938 — exemption de « comment-only Hermes » : quand un reviewer pose
     # `[Hermes] COMMENT_WITH_CONCERNS` (verdict de pure emission, force a
     # state:COMMENTED par #12311) ET que le corps declare explicitement
@@ -5154,14 +5058,12 @@ def classify(author: str, body: str) -> str | None:
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
     if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
-        if live_concern and _SIGNAL_HEAD_RE.match(stripped):
-            # #27881 — dans un commentaire de SIGNALEMENT, la PROSE seule ne
-            # fait pas une reserve : seule la mention « la PR merite un regard
-            # avant merge » dans un `[ACTION]` de la lane bloquait la PR par
-            # son propre commentaire d'action (cas #27368). Un VERDICT formel
-            # (CHANGES_REQUESTED, glyphe 🟡/🔴, refus d'approbation) reste un
-            # nit : le tag n'est pas un passe-droit.
-            live_concern = has_live_marker(concern_surface, FORMAL_CONCERN_MARKERS)
+        # #27881 — dans un commentaire de SIGNALEMENT, la PROSE seule ne fait
+        # pas une reserve : seule la famille FORMELLE reste un nit. Un VERDICT
+        # formel (CHANGES_REQUESTED, glyphe, refus d approbation) l emporte.
+        live_concern = nit_markers.signal_live_concern(
+            live_concern, stripped, _strip_mentioned_verdicts(_strip_quoted(body)),
+            FORMAL_CONCERN_MARKERS, has_live_marker)
         return "BOT-CONCERN" if live_concern else None
     # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
     # une reserve claire (live_concern) OU une structure de plainte UI web
