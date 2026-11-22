@@ -479,7 +479,8 @@ def _moved_successor(d: dict, gated_now: set[str], exists_at,
     # "One lake" is counted on the DISTINCT paths, not on the number of
     # `project-path:` lines: a dispatcher whose two gate jobs pass the SAME
     # lake gates ONE lake (measured 2026-11-15 : `lean-conway.yml` lists
-    # `.../Lean/GOL/conway_lean` twice). Counting the lines made that
+    # `.../Lean/GOL/conway_lean` twice -- that directory was renamed
+    # `JeuDeLaVie` on 2026-11-22, #26056). Counting the lines made that
     # dispatcher unprovable -- and its coverage was reported lost.
     distinct_old = sorted(set(old))
     if len(distinct_old) != 1 or len(names) != 1:

@@ -29,13 +29,15 @@ Le V2 (2026-09-13, conservé intégralement ci-dessous) mesurait **22 jonctions 
 
 | Résiduel | Mesure | Lecture |
 |---|---|---|
-| `GOL/conway_lean` | checkout **physique 0,98 GB, froid** (0 olean) | checkout reconstruit hors jonction pour les builds de #25262 (jamais purgé) — candidat purge **après** merge #25262, un `lake build` réel d'abord (prescription de l'organe) |
+| `GOL/conway_lean` (aujourd'hui `JeuDeLaVie/conway_lean`) | checkout **physique 0,98 GB, froid** (0 olean) | checkout reconstruit hors jonction pour les builds de #25262 (jamais purgé) — candidat purge **après** merge #25262, un `lake build` réel d'abord (prescription de l'organe) |
 | `formal_logic_lean` | checkout **physique 1,06 GB, froid** (groupe isolé `v4.33.1-0df444a3`) | physique car isolé ; les builds R4 de #25236 (po-2023) l'utilisent — ne pas toucher tant que #25236 est ouverte |
 | `discrepancy_lean`, `mimo_lean` | checkouts **physiques 0 GB** (coquilles vides) | répertoires vides hérités du V2 (poses manuelles d'opérateur) — purge triviale, non urgente |
 | `Compression_lean` | « pas de checkout local » dans le groupe mutualisable | jamais checkouté sur cette machine ; jonctionnable à la première demande de build |
 | `torchlean_lean` | groupe isolé `v4.35.0-56a00585`, « pas de checkout local » | confirme **mesuré** la ligne d'arbitrage de la carte (c55/c61 : groupe isolé sans place déclarée) — décision coordinateur, 0 checkout donc 0 urgence disque |
 
 ## Sortie verbatim du Scan V3 (rejeu intégral du 2026-11-20, arbre principal `D:\Dev\CoursIA`)
+
+> **Note de lecture (22/11, #26056).** La sortie ci-dessous est **verbatim** : elle reproduit les chemins tels que l'organe les a lus au scan du 19/11, et elle n'est pas réécrite. Depuis, les sous-répertoires de `MyIA.AI.Notebooks/SymbolicAI/Lean/` ont été renommés (`GROTH` → `Grothendieck`, `GOL` → `JeuDeLaVie`, `KNOTS` → `Noeuds`, `ANALYSE` → `Analyse`, `GALOIS` → `Galois`) : les chemins de ce relevé se lisent donc avec cette correspondance. Les **comptes** (24 jonctions, 8 322 oleans, 0 jonction pendante) ne sont pas affectés par le renommage.
 
 Sortie complète du listing (le bloc diagnostic « revision mathlib partagee » qui suit l'économie dans la sortie réelle n'est pas repris ici — il ne porte aucun compteur de jonction). La version initiale de ce rapport condensait ces lignes en une élision à la main ; elle est remplacée par la sortie intégrale, qui est la seule source des comptes.
 

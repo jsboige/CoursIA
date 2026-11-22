@@ -429,7 +429,8 @@ class TestClassifyDeleted:
         """Deux jobs de gate qui passent le MEME lake : c'est un lake, pas deux.
 
         Mesure 2026-11-15 : `lean-conway.yml` listait
-        `.../Lean/GOL/conway_lean` deux fois. Compter les LIGNES rendait le
+        `.../Lean/GOL/conway_lean` deux fois (repertoire renomme `JeuDeLaVie`
+        le 2026-11-22, #26056). Compter les LIGNES rendait le
         deplacement inprouvable, et la couverture d'un lake couvert etait
         declaree PERDUE. Le compte se fait sur les chemins DISTINCTS.
         """
