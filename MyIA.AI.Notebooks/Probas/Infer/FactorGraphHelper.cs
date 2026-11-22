@@ -7,6 +7,7 @@ using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+using Microsoft.DotNet.Interactive.Formatting;
 
 // Contexte nullable explicite : sans lui, chaque annotation "string?" du
 // helper emet un warning CS8632 au #load, et Roslyn y cite le chemin ABSOLU
@@ -277,6 +278,64 @@ public static class FactorGraphHelper
         }
 
         return FormatGraphUnavailable(0, modelScope, "gv");
+    }
+
+    /// <summary>
+    /// Sortie dual-mime d'un factor graph (fournée portabilité SVG #26783) :
+    /// le SVG nu sous <c>image/svg+xml</c> (la forme canonique que nbviewer,
+    /// les exports HTML et les diffs riches acceptent), la présentation HTML
+    /// (titre + cadre + défilement, cf. <see cref="GetSvgContentHtml"/>) sous
+    /// <c>text/html</c>. S'affiche par <c>.Display()</c> : une seule sortie
+    /// Jupyter porte les deux mimes.
+    /// </summary>
+    public sealed record FactorGraphDisplay(string? Svg, string Html)
+    {
+        static FactorGraphDisplay()
+        {
+            // Enregistrement idempotent (re-#load = simple écrasement d'entrée).
+            // Svg null (chemin de diagnostic : graphe absent, ambigu, Graphviz
+            // indisponible) : le mime SVG part vide, le diagnostic reste lisible
+            // sous text/html.
+            Formatter.Register(typeof(FactorGraphDisplay),
+                (obj, writer) => ((TextWriter)writer).Write(((FactorGraphDisplay)obj).Svg ?? string.Empty),
+                "image/svg+xml");
+            Formatter.Register(typeof(FactorGraphDisplay),
+                (obj, writer) => ((TextWriter)writer).Write(((FactorGraphDisplay)obj).Html),
+                "text/html");
+            Formatter.SetPreferredMimeTypesFor(typeof(FactorGraphDisplay),
+                new[] { "image/svg+xml", "text/html" });
+        }
+    }
+
+    /// <summary>
+    /// Variante dual-mime de <see cref="GetLatestFactorGraphHtml"/> : même
+    /// sélection d'artefacts, même HTML, plus le SVG nu pour le mime
+    /// <c>image/svg+xml</c>. Usage :
+    /// <c>FactorGraphHelper.GetLatestFactorGraphDisplay().Display();</c>
+    /// </summary>
+    public static FactorGraphDisplay GetLatestFactorGraphDisplay(int maxWidth = 800, string? modelScope = null)
+    {
+        var html = GetLatestFactorGraphHtml(maxWidth, modelScope);
+        return new FactorGraphDisplay(ExtractSvgFromHtml(html), html);
+    }
+
+    // Le HTML de ce helper n'interpole du SVG qu'à un seul endroit
+    // (GetSvgContentHtml) : extraire le bloc <svg>...</svg> du HTML produit est
+    // exact. Les chemins de diagnostic (graphe absent, sélection ambiguë,
+    // Graphviz indisponible) ne contiennent pas de <svg> et rendent null.
+    private static string? ExtractSvgFromHtml(string html)
+    {
+        int start = html.IndexOf("<svg", StringComparison.OrdinalIgnoreCase);
+        if (start < 0)
+        {
+            return null;
+        }
+        int end = html.LastIndexOf("</svg>", StringComparison.OrdinalIgnoreCase);
+        if (end < start)
+        {
+            return null;
+        }
+        return html.Substring(start, end + "</svg>".Length - start);
     }
 
     private static IEnumerable<string> SafeEnumerateFiles(string dir, string pattern)
