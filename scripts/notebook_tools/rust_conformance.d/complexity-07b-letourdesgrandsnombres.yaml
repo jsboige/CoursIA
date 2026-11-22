@@ -31,20 +31,20 @@
         csharp:
           absent: "La cellule C# 2 diffère du texte Python (ligne 1 : « googol : 101 chiffres » contre « googol = 10**100 : 101 chiffres (Mesure) » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
     - id: c5_text
-      description: "Sortie de la cellule 5, texte identique au jumeau Python"
+      description: "Sortie de la cellule 5, texte identique au jumeau Python (segment 1/1 ; durées murales en présence seule, valeurs jamais comparées)"
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 5
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "\\A\\s*(.*?)\\s*(?m:^A\\(3,8\\)\\ =\\ 2045\\ calculé\\ en\\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(Mesure,\\ ce\\ noyau\\)\\r?$)"
           transform: text
         rust:
           cell: 5
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          pattern: "\\A\\s*(.*?)\\s*(?m:^A\\(3,8\\)\\ =\\ 2045\\ calculé\\ en\\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(Mesure,\\ ce\\ noyau\\)\\r?$)"
           transform: text
         csharp:
-          absent: "La cellule C# 5 diffère du texte Python (ligne 1 : « m=0: 1, 2, 3, 4, 5 » contre « Table mesurée A(m,n) : » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+          absent: "La cellule C# 5 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
     - id: c8_text
       description: "Sortie de la cellule 8, texte identique au jumeau Python"
       tolerance: 0
