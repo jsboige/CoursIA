@@ -814,6 +814,7 @@ Trois opérations, trois contenus différents : (1) **fournir un vocabulaire** �
 | Dehaene (GNWT, F2) | 2 — prédiction dérivée | case F2 | CONFIRMÉ version faible (composante proprioceptive du self-model) |
 | Spekkens (epistemic view) | 3 — prédiction propre validée | case 10 | CONFIRMÉ dans le jouet (perturbation par mesure sans contextualité) |
 | Metzinger (MPE, pure awareness) | 3 — prédiction propre validée | case 16 | SUPPORTED (non-partition : amplification sans sélection — marge mince rapportée) |
+| Penrose & Hameroff (Orch-OR, DP) | 2 — prédiction dérivée | case 24 | SUPPORTED (régimes dissociés : Fermi N(τ/2)/N(τ) = 2.000 vs blob 1.415 ; couple τ/masquage lié par 1/(1+η) ; N(25 ms) = 4.34×10¹⁰ ≈ 2.17× « roughly 2×10¹⁰ », ratio 20:20 exact ; écart interne 10⁻¹⁰ eV vs ħ/25 ms documenté) |
 | Hoel (émergence causale) | 3 — validée en reproduction | ICT-5 | reproduit (established_external) |
 | Crutchfield (ε-machine, bosse MDL) | 3 — validée en reproduction | ICT-16 | reproduit (bosse complexité-entropie mesurée) |
 
