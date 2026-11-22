@@ -5925,19 +5925,20 @@ Dans cette représentation, les concepts sont sérialisés en `owl:Class` et les
 10. Ponts avec la serie
 
 **Série Argumentation** | | Précédent : [Obs-04-Recollement-Strate6-Python](./Argumentation-Obs-04-Recollement-Strate6-Python.ipynb) | Suivant : [Onto-02-CrossLinks-CSV-Python](./Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) | [↑ Série Argumentation](README.md)",,,,,,,,06545aba5ae971d6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-1,markdown,fr,4b2ad1ab739fd1d2,"## 1. Contexte : Argumentum, OWL2 et l'idiome annotation-space (#763)
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-1,markdown,fr,ab2525049007dff2,"## 1. Contexte : Argumentum, OWL2 et l'idiome annotation-space
 
 L'ontologie **Argumentum** (https://www.argumentum.games) encode une taxonomie des sophismes (fallacies) et des vertus argumentatives a destination du jeu serieux *Argumentum*. Le fichier `argumentum_fallacies.owl` est genere par le pipeline .NET (`OwlGeneratorConfig.cs`) a partir du CSV canonique.
 
-**Idiome du générateur (après PR #763, mergee 2026-07-10)** :
+**Idiome du générateur (version courante)** :
 
 - Chaque sophisme est une **`owl:Class`** (`<Declaration><Class IRI=""…#semanticAmbiguity""/></Declaration>`) — et non plus un `NamedIndividual` comme dans l'ancien générateur. Le modèle AIF (`RA-node`/`I-node`/`CA-node`/`Conflict`) apporte 4 classes supplementaires (namespace `arg.dundee.ac.uk/aif`).
 - **Toutes** les relations passent par **`AnnotationAssertion`** : `SKOSHelper` d'OWLSharp est casse sur cette version, donc le générateur emet la hiérarchie SKOS (`broader`/`narrower`/`inScheme`), les 8 verbes **crossLink** et les 2 colonnes **AIF attack** comme des annotations (resource pour un lien concept→concept, literal pour une valeur textuelle).
 - Les IRI sont serialises en **forme complete** (`IRI=""…""`), plus en `abbreviatedIRI=""skos:prefLabel""` — d'ou la reecriture des regex de ce notebook.
 
-**Pourquoi un parseur regex ?** rdflib echoue au parse (dialecte OWL2/XML + annotations resource non standard) et owlready2 charge le fichier mais **n'expose 0 classe** via son API Python. Le parseur regex tolerant reste le chemin fiable pour extraire la structure — c'est l'objet pedagogique de ce notebook.
+**Pourquoi un parseur regex ?** rdflib echoue au parse (dialecte OWL2/XML + annotations resource non standard) et owlready2 charge le fichier mais **expose 0 classe** via son API Python. Le parseur regex tolerant reste le chemin fiable pour extraire la structure — c'est l'objet pedagogique de ce notebook.
 
-> Le notebook frere `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` (PR-B) lit le **CSV canonique** ; les deux substances (OWL et CSV) ont ete **reconciliees par #763** (crossLink + AIF desormais emis dans l'OWL).",,,,,,,,4b2ad1ab739fd1d2,,,,,,,,,,,,,,,
+> Le notebook frere `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` (lecture CSV) lit le **CSV canonique** ; les deux substances (OWL et CSV) partagent desormais le meme jeu de relations — crossLink et AIF sont emis dans l'OWL.
+",,,,,,,,ab2525049007dff2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-2,markdown,fr,2c9a7e015e1def62,## 2. Charger l'ontologie : regex tolerant (rdflib echoue),,,,,,,,2c9a7e015e1def62,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-3,code,fr,e9e6406862d93bea,"# --- Imports + parseur regex maison de l'OWL2/XML ---
 from pathlib import Path
@@ -6175,21 +6176,21 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Pyt
 # un dict {local: [labels_matches]} sur les prefLabel fr/en. Bonus : croiser
 # avec AA_RES (predicat 'broader') pour afficher le parent de chaque match.
 print(""Exercice a completer"")",,,,,,,,c2585a668119ac2f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-23,markdown,fr,2ff7f4a345c0b2eb,"## 10. Ponts avec la serie
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,cell-23,markdown,fr,4e89caecc7acf9e6,"## 10. Ponts avec la serie
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
 | <-> ArgumentProfile | `Argumentation-08e-Argument-Profile-Python.ipynb` | Vue d'ensemble de la serie, introduction aux schemes |
-| <-> CrossLinks (PR-B) | `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` | Substance CSV canonique — **reconciliee avec cet OWL par #763** |
+| <-> CrossLinks (CSV) | `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb` | Substance CSV canonique — **reconciliee avec cet OWL** |
 | -> SemanticKernel | `SemanticKernel/*` | Exploitation des schemes pour l'analyse d'arguments |
 
 ### Honnetete methodologique
 
-1. **Parseur regex, pas un moteur RDF** : rdflib echoue au parse et owlready2 expose 0 classe via l'API Python. Le parseur regex est robuste pour *extraire* la structure mais ne fait **pas** de raisonnement (pas d'inference de subsomption, pas de fermeture transitive). Pour un raisonnement OWL complet, il faudrait corriger l'idiome de serialisation en amont (générateur Argumentum).
+1. **Parseur regex, pas un moteur RDF** : rdflib echoue au parse et owlready2 expose 0 classe via l'API Python. Le parseur regex est robuste pour *extraire* la structure mais ne fait **pas** de raisonnement (pas d'inference de subsomption, pas de fermeture transitive). Pour un raisonnement OWL complet, il faudrait corriger l'idiome de serialisation en amont (generateur Argumentum).
 
-2. **L'OWL utilise desormais l'AIF** (inversion de la version précédente de ce notebook) : 145 concepts portent `aifAttackedNode → RA/I/CA-node` (undercut→RA, undermine→I, rebut→CA, ratifie #707§4). La note historique « l'OWL n'utilise PAS l'AIF » est **obsolete**.
+2. **L'OWL utilise desormais l'AIF** (inversion de la version precedente de ce notebook) : 145 concepts portent `aifAttackedNode → RA/I/CA-node` (undercut→RA, undermine→I, rebut→CA, ratifie #707§4). La note historique « l'OWL n'utilise PAS l'AIF » est **obsolete**.
 
-3. **Les crossLink sont dans l'OWL** (inversion) : **735 `AnnotationAssertion`** à l'épingle courante (leverages/isRelatedTo/inverts/… ; 1 977 à l'état 30/08). La note historique « crossLink_* CSV-only, hors-repo » est **obsolete** — #763 a cable le chemin CSV→OWL.
+3. **Les crossLink sont dans l'OWL** (inversion) : **735 `AnnotationAssertion`** à l'épingle courante (leverages/isRelatedTo/inverts/… ; 1 977 à l'état 30/08). La note historique « crossLink_* CSV-only, hors-repo » est **obsolete** — le chemin CSV→OWL est cable.
 
 4. **Ontologie soeur presente** : `argumentum_virtues.owl` est desormais dans `ontologies/` (aux cotes de `argumentum_fallacies.owl`). La note historique « argumentum_virtues.owl absente » est **obsolete**.
 
@@ -6197,20 +6198,17 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Pyt
 
 ## Références et provenance
 
-**Cadre de production** : EPIC #4960, volet A, étape 1 (socle ontologique ArgumentAnalysis) ; issue source [#5721](https://github.com/jsboige/CoursIA/issues/5721).
+**Cadre amont** : EPIC #4960, volet A, étape 1 (socle ontologique ArgumentAnalysis) ; issue source [#5721](https://github.com/jsboige/CoursIA/issues/5721).
 
-**Évolution de la source amont** : l’idiome actuel de sérialisation a été introduit lors de la refondation du 10 juillet 2026 (Argumentum PR #763).
-",,,,,,,,2ff7f4a345c0b2eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fea709ae,markdown,fr,843f80b111e0eef6,"# Liens croisés crossLink et attaques AIF du CSV canonique Argumentum
+**Évolution de la source amont** : l’idiome actuel de sérialisation date de la refondation de juillet 2026.
+",,,,,,,,4e89caecc7acf9e6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fea709ae,markdown,fr,5f60b3e253ef49e2,"# Liens croisés crossLink et attaques AIF du CSV canonique Argumentum
 
-**Notebook pédagogique** : exploration du **CSV canonique Argumentum** (dédoublonné en sophismes canoniques), complémentaire à `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` (PR-A, OWL2/XML).
+**Notebook pédagogique** : exploration du **CSV canonique Argumentum** (dédoublonné en sophismes canoniques), complémentaire à `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` (OWL2/XML).
 
-> **⚠️ Mise à jour 2026-07-10 (Argumentum PR #763)** — l'intégration ontologique des Fallacies a été complétée en amont. Les 8 relations `crossLink_*` et les colonnes AIF attack (`AIF_attackType`/`AIF_attackedNode`), jusque-là **présentes uniquement dans le CSV**, sont désormais **émises dans l'OWL** (comme `AnnotationAssertion`). La couverture crossLink est passée de **1,5 % (22 relations)** à **59,9 % (1081 entrées / 844 sophismes)** après curation transverse (#141) + câblage du générateur (#763), puis la dé-curation #1247/#1286 l'a ramenée à **34,6 % (539 entrées / 487 sophismes)**. Ce notebook reflète l'état **à l'épingle datée en tête** (submodule `5cb4a75`, 2026-10-23), pas celui de #763.
+> **État de l'intégration ontologique** — l'intégration ontologique des Fallacies a été complétée en amont. Les 8 relations `crossLink_*` et les colonnes AIF attack (`AIF_attackType`/`AIF_attackedNode`), jusque-là **présentes uniquement dans le CSV**, ont été **émises dans l'OWL** (comme `AnnotationAssertion`) à l'époque de l'intégration ; la couche crossLink n'y est **plus émise** à l'épingle datée (§7, §8). La couverture crossLink est passée de **1,5 % (22 relations)** à **59,9 % (1081 entrées / 844 sophismes)** après curation transverse, puis la dé-curation l'a ramenée à **34,6 % (539 entrées / 487 sophismes)**. Ce notebook reflète l'état **à l'épingle datée** (sous-module Argumentum `33f25e8`, 2026-11-06 — voir « Références et provenance ») — pas celui de l'époque où l'OWL ne portait aucune relation transversale.
 
-**Filiation** :
-- EPIC parent : **#4960** ArgumentAnalysis v3 (submodule Argumentum)
-- PR-A : **#5721** (`Argumentation-Onto-01-AIF-OWL2-Python.ipynb`)
-- PR-B : **ce notebook** (CSV canonique + crossLink_* + AIF mappings)
+**Deux substances** : ce carnet lit le **CSV canonique** (crossLink et AIF mappings) ; le carnet frère `Argumentation-Onto-01-AIF-OWL2-Python.ipynb` lit la **substance OWL**. Les deux sont réconciliées (§8).
 
 **Objectifs d'apprentissage** :
 
@@ -6219,40 +6217,39 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-C
 3. Mesurer la **couverture multilingue** (8 langues : fr, en, ru, pt, ar, es, zh, fa) — 100 %.
 4. Analyser les **AIF mappings** (`AIF_skosDirectRef` + `AIF_skosExceptionRef` + `AIF_skosMappingType`) : 116 mappages vers 60 schemes Walton, **plus** les 2 colonnes AIF attack (145 sophismes typés RA/I/CA-node).
 5. Caractériser la **couverture des crossLink** : un tiers de couverture (34,6 %, soit 487 sophismes sur 1408).
-6. **Faire le pont** entre substance OWL (PR-A) et substance CSV (PR-B), et montrer que #763 a réconcilié les deux.
+6. **Faire le pont** entre substance OWL et substance CSV, et montrer que le pont est effectif.
 
 **Sommaire** :
 
-1. Contexte (PR-A → PR-B, mise à jour #763)
+1. Contexte (OWL et CSV)
 2. Loader CSV (pandas + utf-8-sig)
 3. Vue d'ensemble (1408 sophismes, 104 colonnes)
 4. Taxonomie : 8 familles × 9 niveaux
 5. Couverture multilingue (8 langues)
 6. AIF mappings : 116 mappages vers 60 schemes Walton
 7. CrossLink coverage : couverture 34,6 % des sophismes
-8. Pont OWL ↔ CSV : #763 a câblé crossLink + AIF dans l'OWL
+8. Pont OWL ↔ CSV : les deux couches AIF concordent dans l'OWL, la couche crossLink n'y est plus émise
 9. Pont avec Walton : 60 schemes uniques
 10. Honnêteté méthodologique
 11. Exercices (3 stubs #2161)
 12. Conclusion + Ponts
 
-**Verdict SOTA** : SOTA-OK (pandas + matplotlib natifs, pas de workaround dégradé).
+**Série Argumentation** | | Précédent : [Onto-01-AIF-OWL2-Python](./Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | Suivant : [Onto-03-Vertus-SKOS-Python](./Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | [↑ Série Argumentation](README.md)
+",,,,,,,,5f60b3e253ef49e2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,1d25090a,markdown,fr,25d8582a00f27a9b,"## 1. Contexte — De l'OWL au CSV
 
-**Série Argumentation** | | Précédent : [Onto-01-AIF-OWL2-Python](./Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | Suivant : [Onto-03-Vertus-SKOS-Python](./Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | [↑ Série Argumentation](README.md)",,,,,,,,843f80b111e0eef6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,1d25090a,markdown,fr,51fb551982f9b339,"## 1. Contexte — De PR-A à PR-B (mis à jour après #763)
+`Argumentation-Onto-01-AIF-OWL2-Python.ipynb` charge `ontologies/argumentum_fallacies.owl` (OWL2/XML) via un parseur regex tolérant (rdflib échoue sur le dialecte OWL/XML ; owlready2 charge mais n'expose rien via son API Python).
 
-`Argumentation-Onto-01-AIF-OWL2-Python.ipynb` (PR-A) charge `ontologies/argumentum_fallacies.owl` (OWL2/XML) via un parseur regex tolérant (rdflib échoue sur le dialecte OWL/XML ; owlready2 charge mais n'expose rien via son API Python).
-
-**Évolution majeure (Argumentum PR #763, mergée 2026-07-10)** : au moment de la première version de PR-A, l'OWL n'émettait **qu'une** des trois couches ontologiques du CSV (les mappings `AIF_skos*`). Les 8 relations `crossLink_*` et les colonnes `AIF_attackType`/`AIF_attackedNode` étaient **dans le CSV mais absentes de l'OWL** — le chemin de données CSV→OWL n'existait pas encore. #763 a :
+**Évolution majeure de l'amont** : avant l'intégration ontologique des Fallacies, l'OWL n'émettait **qu'une** des trois couches ontologiques du CSV (les mappings `AIF_skos*`). Les 8 relations `crossLink_*` et les colonnes `AIF_attackType`/`AIF_attackedNode` étaient **dans le CSV mais absentes de l'OWL** — le chemin de données CSV→OWL n'existait pas encore. L'intégration ontologique a :
 
 - ajouté le mapping des 10 colonnes dans l'entité `Fallacy` + le générateur OWL (2ᵉ passe d'émission) ;
-- curé la couche transverse (scan #141, transverse + confiance ≥ 0,6, 22 seeds manuels préservés) : **1,5 % → 59,9 %** de couverture crossLink ;
+- curé la couche transverse (scan transversal, transverse + confiance ≥ 0,6, 22 seeds manuels préservés) : **1,5 % → 59,9 %** de couverture crossLink ;
 - régénéré l'OWL, qui porte désormais **1977 `AnnotationAssertion` crossLink** + **93 typages AIF attack** (undercut/undermine/rebut → RA/I/CA-node).
 
-**PR-B** lit `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (le CSV canonique, source curée à la main, **1408 sophismes × 104 colonnes**) et expose la taxonomie, la couverture 8 langues, les AIF mappings et la couche crossLink — **désormais réconciliée avec l'OWL** (§8).
+**Ce carnet** lit `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` (le CSV canonique, source curée à la main, **1408 sophismes × 104 colonnes**) et expose la taxonomie, la couverture 8 langues, les AIF mappings et la couche crossLink — **désormais réconciliée avec l'OWL** (§8).
 
-**Troisième âge (05/09, #1247/#1286)** : dé-curation délibérée de la couche crossLink — retrait des liens *siblings* qui restataient l'arbre taxonomique : la matrice passe de 1081 à 539, couverture 59,9 % → 34,6 %. Lecture détaillée en §7.
-",,,,,,,,51fb551982f9b339,,,,,,,,,,,,,,,
+**Dé-curation (05/09)** : retrait délibéré des liens *siblings* qui restataient l'arbre taxonomique : la matrice passe de 1081 à 539, couverture 59,9 % → 34,6 %. Lecture détaillée en §7.
+",,,,,,,,25d8582a00f27a9b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,24cbc6fd,markdown,fr,926ee5e5076d1c3f,"## 2. Loader CSV — pandas + utf-8-sig
 
 Le CSV upstream `Argumentum Fallacies - Taxonomy.csv` est encodé en **UTF-8 avec BOM** (3 octets `\xEF\xBB\xBF` en tête), signature Microsoft Excel. Pandas exige `encoding='utf-8-sig'` pour ignorer ce BOM.
@@ -6467,24 +6464,24 @@ total_cells = 8 * len(df)
 print()
 print(f'TOTAL cellules: {total} / {total_cells} = {100*total/total_cells:.2f}% de densité')
 print(f'Couverture par sophisme: {cov_nodes} / {len(df)} = {cov_pct:.1f}%')",,,,,,,,da97d1c1061bd8bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,ac9eec91,markdown,fr,f6d22771e884e9c4,"## 8. Pont OWL ↔ CSV — #763 a câblé crossLink + AIF dans l'OWL
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,ac9eec91,markdown,fr,ac56b49845c9a207,"## 8. Pont OWL ↔ CSV — les deux couches AIF concordent dans l'OWL, la couche crossLink n'y est plus émise
 
-Historiquement, PR-A (OWL) et PR-B (CSV) exposaient des substances **disjointes** : l'OWL ne portait ni les crossLink, ni les colonnes AIF attack. **#763 a réconcilié les deux** en régénérant l'OWL depuis le CSV avec les 3 couches câblées :
+Historiquement, la substance OWL et la substance CSV exposaient des contenus **disjoints** : l'OWL ne portait ni les crossLink, ni les colonnes AIF attack. **L'intégration ontologique les a réconciliés** en régénérant l'OWL depuis le CSV avec les 3 couches câblées :
 
-> Tableau **daté de #763** (juillet 2026) : la colonne « CSV (PR-B) » y décrit le CSV tel qu'il était alors. Les deux lignes AIF ont crû depuis ; leur valeur à l'épingle en tête du carnet est rappelée sous le tableau, et c'est elle que mesure la cellule exécutée de cette section.
+> Tableau **daté** (juillet 2026) : la colonne « CSV, état de l'époque » y décrit le CSV tel qu'il était alors. Les deux lignes AIF ont crû depuis ; leur valeur à l'épingle datée du carnet est rappelée sous le tableau, et c'est elle que mesure la cellule exécutée de cette section.
 
-| Aspect | OWL avant #763 | OWL après #763 | CSV (PR-B), état à #763 |
+| Aspect | OWL avant l'intégration | OWL après l'intégration | CSV, état de l'époque |
 |--------|----------------|----------------|------------|
 | Concepts | `NamedIndividual` (ancien générateur) | **1509 `owl:Class`** (+ 4 classes AIF) | 1408 sophismes |
 | Relations hiérarchiques | `ObjectPropertyAssertion` | **`AnnotationAssertion`** (narrower/broader/inScheme) | `path` / `decimal_path` |
 | CrossLink | **0 (absent)** | **1977 `AnnotationAssertion`** | couverture 59,9 % |
-| AIF attack (RA/I/CA-node) | **0 (absent)** | **93 `aifAttackType` + 93 `aifAttackedNode`** | 93 typés (→ **145** à l'épingle en tête) |
-| AIF SKOS (Walton) | 70 (`skos:*Match`) | **70** (`broadMatch` 57 / `closeMatch` 10 / `narrowMatch` 3) | 70 (→ **116** : `broadMatch` 64 / `closeMatch` 33 / `narrowMatch` 19 à l'épingle en tête) |
+| AIF attack (RA/I/CA-node) | **0 (absent)** | **93 `aifAttackType` + 93 `aifAttackedNode`** | 93 typés (→ **145** à l'épingle datée) |
+| AIF SKOS (Walton) | 70 (`skos:*Match`) | **70** (`broadMatch` 57 / `closeMatch` 10 / `narrowMatch` 3) | 70 (→ **116** : `broadMatch` 64 / `closeMatch` 33 / `narrowMatch` 19 à l'épingle datée) |
 
-**Note structurelle** : #763 a aussi changé l'idiome du générateur — les concepts sont désormais des `owl:Class` (et non des `owl:NamedIndividual`), et **toutes** les relations passent par `AnnotationAssertion` (l'`ObjectPropertyAssertion` a disparu, `SKOSHelper` d'OWLSharp étant cassé sur cette version). Le notebook AIF (PR-A) a été re-fondé en conséquence (traversée annotation-space). Le gap historique « OWL 10 976 vs CSV 1408 » venait de l'ancien générateur qui matérialisait chaque label multilingue comme un `NamedIndividual` distinct ; le nouveau générateur modélise **1 `owl:Class` par sophisme** avec ses labels en annotations.
+**Note structurelle** : l'intégration a aussi changé l'idiome du générateur — les concepts sont désormais des `owl:Class` (et non des `owl:NamedIndividual`), et **toutes** les relations passent par `AnnotationAssertion` (l'`ObjectPropertyAssertion` a disparu, `SKOSHelper` d'OWLSharp étant cassé sur cette version). Le carnet AIF a été re-fondé en conséquence (traversée annotation-space). Le gap historique « OWL 10 976 vs CSV 1408 » venait de l'ancien générateur qui matérialisait chaque label multilingue comme un `NamedIndividual` distinct ; le nouveau générateur modélise **1 `owl:Class` par sophisme** avec ses labels en annotations.
 
-**À l'épingle datée en tête** : AIF attack 93 → **145** (87 undercut / 53 undermine / 5 rebut) et AIF SKOS 70 → **116** (64 broadMatch / 33 closeMatch / 19 narrowMatch) — les deux couches AIF ont continué de croître, côté CSV comme côté OWL (vérifié en §8). La couche crossLink, elle, n'est **plus émise** dans l'OWL à cette épingle (0 `AnnotationAssertion`, contre 1 977 à l'époque de #763) : elle ne vit plus que dans le CSV.
-",,,,,,,,f6d22771e884e9c4,,,,,,,,,,,,,,,
+**À l'épingle datée** : AIF attack 93 → **145** (87 undercut / 53 undermine / 5 rebut) et AIF SKOS 70 → **116** (64 broadMatch / 33 closeMatch / 19 narrowMatch) — les deux couches AIF ont continué de croître, côté CSV comme côté OWL (vérifié en §8). La couche crossLink, elle, n'est **plus émise** dans l'OWL à cette épingle (0 `AnnotationAssertion`, contre 1 977 à l'époque de l'intégration) : elle ne vit plus que dans le CSV.
+",,,,,,,,ac56b49845c9a207,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,a87dac2e,code,fr,6b84f1ff0754addd,"import matplotlib.pyplot as plt
 
 # Substance mesuree sur l'etat date en tete : les valeurs CSV sont recalculees depuis df,
@@ -6632,9 +6629,10 @@ print(f'  État validé:     {etat_count:>4} / {len(df)} ({100*etat_count/len(df
 print(f'  Image:           {image_count:>4} / {len(df)} ({100*image_count/len(df):.1f}%)')
 print(f'  Latin named:     {latin_count:>4} / {len(df)} ({100*latin_count/len(df):.1f}%)')
 ",,,,,,,,f76b93fd968d9bcc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fdaba1d0,markdown,fr,5f5a0a7f825af76e,"## 11. Exercices (3 stubs #2161)
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,fdaba1d0,markdown,fr,ad3ca4c88082f6ed,"## 11. Exercices (3 stubs #2161)
 
-Trois exercices pour explorer la substance PR-B. Chaque exercice = stub `print(""Exercice a completer"")` (règle C.1 : pas d'erreur volontaire). Le notebook s'exécute end-to-end même exercices non complétés.",,,,,,,,5f5a0a7f825af76e,,,,,,,,,,,,,,,
+Trois exercices pour explorer la substance CSV. Chaque exercice = stub `print(""Exercice a completer"")` (règle C.1 : pas d'erreur volontaire). Le notebook s'exécute end-to-end même exercices non complétés.
+",,,,,,,,ad3ca4c88082f6ed,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,95afa396,code,fr,12e54b45b74376ea,"# Exercice 1 : Distribution par famille × niveau (heatmap)
 #
 # TODO :
@@ -6676,24 +6674,25 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-C
 
 print(""Exercice a completer"")
 ",,,,,,,,41a6d78b09cf97d7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,92ac11fa,markdown,fr,2a75dff458855418,"## 12. Conclusion + Ponts
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,92ac11fa,markdown,fr,189b7e548626683d,"## 12. Conclusion + Ponts
 
-**Substance PR-B** : 1 408 sophismes canoniques, 8 langues (100% coverage), 8 familles, 9 niveaux, 116 AIF mappings vers 60 schemes Walton uniques, 539 entrées crossLink crossLink (couverture 34,6 % = 487/1 408 sophismes ; densité 4,8 % sur la matrice 8 × 1 408 = 11 264). Le CSV canonique Argumentum est la **source curée à la main** d'où l'OWL est probablement généré par script.
+**Substance CSV** : 1 408 sophismes canoniques, 8 langues (100% coverage), 8 familles, 9 niveaux, 116 AIF mappings vers 60 schemes Walton uniques, 539 entrées crossLink crossLink (couverture 34,6 % = 487/1 408 sophismes ; densité 4,8 % sur la matrice 8 × 1 408 = 11 264). Le CSV canonique Argumentum est la **source curée à la main** d'où l'OWL est probablement généré par script.
 
-**Complémentarité avec PR-A** :
-- PR-A expose la **substance OWL** (10 976 `NamedIndividual`, 4 183 `ObjectPropertyAssertion`, multilingue sparse).
-- PR-B expose la **substance CSV** (1 408 sophismes, multilingue dense, AIF mappings, crossLinks).
+**Complémentarité avec la substance OWL** :
+- La substance OWL **dans son état d'origine** expose 10 976 `NamedIndividual` et 4 183 `ObjectPropertyAssertion` (multilingue sparse) ; l'OWL re-fondé expose 1 `owl:Class` par sophisme (§8).
+- La substance CSV expose 1 408 sophismes, multilingue dense, AIF mappings, crossLinks.
 - Le pont se fait en §8 : le ratio × 7,8 = 1 `NamedIndividual` ≈ 7,8 labels multilingues, cohérent avec une projection RDF multi-labels par sophisme.
 
-**Pédagogie** : PR-B est **plus accessible** que PR-A pour un cours d'argumentation appliqué — le CSV est lisible par tableur, les crossLinks et AIF mappings sont directement enseignables. PR-A est plus technique (OWL, SKOS, RDF).
+**Pédagogie** : la substance CSV est **plus accessible** que la substance OWL pour un cours d'argumentation appliqué — le CSV est lisible par tableur, les crossLinks et AIF mappings sont directement enseignables. La substance OWL est plus technique (OWL, SKOS, RDF).
 
 **Ponts** :
-- **#4960** (EPIC ArgumentAnalysis v3) — PR-B ferme le volet substance CSV.
-- **#5721** (PR-A) — substance OWL complémentaire.
+- **#4960** (EPIC ArgumentAnalysis v3) — le volet substance CSV.
+- **#5721** — le volet substance OWL.
 - **Argumentum upstream** (`Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`) — source canonique.
 - **Walton, Reed & Macagno 2008** — Argumentation Schemes (60 schemes référencés).
 
-**Limitations disclosed** : AIF mapping 5% (tâche d'annotation lourde), crossLink 34,6 % de couverture (487/1 408 sophismes ; 65 % restants sans relation transversale, cf. §10), `argumentum_virtues.owl` désormais publié upstream (docs/ontology/), `AIF_skosOther` toujours vide (réservé usage futur).",,,,,,,,2a75dff458855418,,,,,,,,,,,,,,,
+**Limitations disclosed** : AIF mapping 5% (tâche d'annotation lourde), crossLink 34,6 % de couverture (487/1 408 sophismes ; 65 % restants sans relation transversale, cf. §10), `argumentum_virtues.owl` désormais publié upstream (docs/ontology/), `AIF_skosOther` toujours vide (réservé usage futur).
+",,,,,,,,189b7e548626683d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb,ea1ca9ca,markdown,fr,1202e6d8eea6c00d,"# Argumentation graduée — sémantiques de classement (h-Categoriser & fardeau)
 
 Dans le notebook compagnon [`Argument_Analysis_Dung_AF_Semantics`](Argumentation-03-Dung-AF-Semantics-Python.ipynb),
@@ -7657,14 +7656,15 @@ print(""Verdict du gate sur la sortie RÉELLE du LLM :"", rapport_reel.verdict.b
 print(""\n"" + ""="" * 78 + ""\n"")
 print(rapport_reel.markdown)
 ",,,,,,,,41bc8bcfe50b0380,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb,961da00a,markdown,fr,50df73078122eeb2,"Le rapport ci-dessus est produit par le **vrai** LLM sur l'evidence déterministe — plus aucun stand-in. Le
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb,961da00a,markdown,fr,e3227b2adda51407,"Le rapport ci-dessus est produit par le **vrai** LLM sur l'evidence déterministe — plus aucun stand-in. Le
 **verdict du gate** est calculé sur cette sortie réelle : s'il est `PASS`/`WARN`, la doctrine tient (prose
 tissée) ; s'il est `FAIL`, le rapport le **dit** au lieu de se prétendre lisible — l'honnêteté reste sous le
 contrôle du scaffold, jamais déléguée au LLM.
 
-**Verdict SOTA** : `SOTA-OK` — le vrai composant (SDK `openai`) est installé et invoqué, la sortie committée
-*est* sa vraie sortie. Sur une machine **sans** clé, le même code retombe honnêtement sur le fail-loud du §6
-(`RECOVERABLE-USER-HAND` : il suffit d'une clé dans `GenAI/.env`).",,,,,,,,50df73078122eeb2,,,,,,,,,,,,,,,
+**Composant réel** : le SDK `openai` est installé et invoqué, la sortie committée *est* sa vraie sortie. Sur
+une machine **sans** clé, le même code retombe honnêtement sur le fail-loud du §6 (il suffit d'une clé dans
+`GenAI/.env`).
+",,,,,,,,e3227b2adda51407,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb,133860b5,markdown,fr,9b428b11226506e6,"## 8. Exercices
 
 Trois exercices pour étendre le scaffold et la narration. Chaque cellule est un **stub** à compléter — le
@@ -7725,7 +7725,7 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Ac
     print(""Exercice 3 à completer : restituer un corpus inédit avec le vrai LLM."")
     return None
 ",,,,,,,,8d0df896e9969a7b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb,4a6124f1,markdown,fr,9b2aab230cd936a9,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb,4a6124f1,markdown,fr,aabbfbe937e13f55,"## Conclusion
 
 Ce notebook a distillé le **contrat de restitution honnête** de l'arc *anti-théâtre* de
 `2025-Epita-Intelligence-Symbolique`, **avec le vrai composant LLM branché** (pas de stand-in) :
@@ -7740,9 +7740,9 @@ Ce notebook a distillé le **contrat de restitution honnête** de l'arc *anti-th
 
 La leçon transférable : **la lisibilité d'un rapport peut être confiée à un LLM, mais son *honnêteté* doit
 rester sous le contrôle d'un scaffold déterministe.** Le LLM enrichit la prose ; il ne décide jamais de ce
-qui peut être affirmé, ni ne masque ce qui manque. Verdict SOTA : **SOTA-OK** sur les deux fronts — scaffold
-(pur Python = le bon outil pour un contrat structurel) **et** narration (vrai SDK `openai` installé et
-invoqué, la sortie committée *est* sa vraie sortie ; `RECOVERABLE-USER-HAND` sur une machine sans clé).
+qui peut être affirmé, ni ne masque ce qui manque. Les deux fronts sont couverts : scaffold (pur Python =
+le bon outil pour un contrat structurel) **et** narration (vrai SDK `openai` installé et invoqué, la sortie
+committée *est* sa vraie sortie ; sur une machine sans clé, c'est le fail-loud du §6 qui s'applique).
 
 **Pour aller plus loin** : voir `Argument_Analysis_Multi_Backend_Routing` (la sentinelle de contrat de
 livraison côté *solveurs*), `Agentic-3-orchestration` (le pipeline qui peuple le state lu ici) et
@@ -7760,7 +7760,7 @@ et `acts.py:30` (`RestitutionActs`) · `specialist_roles.py:50` (rôles probatoi
 `act3_conclusion_plugin.py:171-176` (axes de l'Acte III). Amont immédiat de cette distillation :
 `docs/coursia_contrib/restitution_evidential_roles.ipynb` — conception **#1914**, piste CI-5
 **#1943**, PR **#1948**.
-",,,,,,,,9b2aab230cd936a9,,,,,,,,,,,,,,,
+",,,,,,,,aabbfbe937e13f55,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08c-UI-Configuration-Python.ipynb,ccc3bb9d,markdown,fr,2a3eda6797301a64,"# Interface de configuration et préparation du texte
 
 
@@ -9069,14 +9069,14 @@ for b in block.findall(owl_text):
 print(f""Graphe SKOS construit : {len(g):,} triplets"")
 print(f""Concepts distincts (sujets) : {len(set(g.subjects())):,}"")
 ",,,,,,,,0bf9590f45b20ff7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,658ca1d2,markdown,fr,7daf6fb873a29e74,"**Lecture** : ni `rdflib` (parseur RDF/XML) ni `owlready2` (parseur OWL/XML) ne restituent
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,658ca1d2,markdown,fr,ccd2897304fe16c7,"**Lecture** : ni `rdflib` (parseur RDF/XML) ni `owlready2` (parseur OWL/XML) ne restituent
 le contenu de ce fichier -- le premier parce que la serialisation n'est pas du RDF/XML, le second
 parce que son parseur ne reconstruit pas les `AnnotationAssertion` de cette structure. Le pont
 extrait donc les assertions OWL/XML et les charge comme **vrais triplets RDF** dans un graphe
 `rdflib` : a partir de la, toutes les opérations (comptage, hiérarchie, langues) se font en
-**SPARQL sur le graphe**, c'est-a-dire avec l'outil SOTA. Verdict de portee : **SOTA-OK** -- le
-pont est une passerelle d'ingestion documentee, pas un contournement du moteur de requêtes.
-",,,,,,,,7daf6fb873a29e74,,,,,,,,,,,,,,,
+**SPARQL sur le graphe**, c'est-a-dire avec l'outil de requetes de reference. Le pont est **une
+passerelle d'ingestion documentee**, pas un contournement du moteur de requetes.
+",,,,,,,,ccd2897304fe16c7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,ad1c1e05,markdown,fr,d7d11c0adc7ac741,"## 3. Structure du thesaurus : inventaire des predicats SKOS
 
 Comptons chaque type de triplet pour cartographier l'ontologie et la comparer au pole sophismes.
@@ -12659,13 +12659,14 @@ Enfin, le harnais traite la graine comme un indice d'exécution, pas comme un pa
 d'échantillonnage de l'API : la reproductibilité stricte d'une exécution donnée n'est pas
 atteinte, et c'est visible dans la matrice par graine (campagnes 1 et 2 divergent sur trois
 couples).",,,,,,,,ec2cff88af8399a7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,94488b74,markdown,fr,02d1d06852e970fe,"> **Source Argumentum** — ce notebook lit l'OWL reellement commite
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,94488b74,markdown,fr,31bd87eed4284781,"> **Source Argumentum** — ce notebook lit l'OWL reellement commite
 > [`ontologies/argumentum_fallacies.owl`](ontologies/argumentum_fallacies.owl)
-> (idiome annotation-space #763). Le **CSV canonique** des cross-links et sa
+> (idiome annotation-space). Le **CSV canonique** des cross-links et sa
 > methode de recollement vivent dans le notebook frere
 > [`Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb`](Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) ;
 > les definitions officielles citees ci-dessous (predicats `definition` / `example`)
-> proviennent du meme OWL. EPIC source : #4960 (Volet A), issue #17557.",,,,,,,,02d1d06852e970fe,,,,,,,,,,,,,,,
+> proviennent du meme OWL.
+",,,,,,,,31bd87eed4284781,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,54657867,markdown,fr,0ba4600707284083,"## 4bis. La mindmap en un coup d'œil
 
 La promesse d'un notebook d'ontologie est de **montrer la carte**, pas seulement de la compter. Cette section montre **deux échelles de la même carte** : d'abord la **mindmap originale produite par le dépôt Argumentum** (ci-dessous, importée telle quelle — la vue complète de la taxonomie, issue de la chaîne de production amont décrite dans l'encadré **Source Argumentum** en fin de section), puis un **zoom pédagogique** restreint au noyau, lisible en un écran, avec les liens transverses colorés par famille de prédicat.
@@ -14478,26 +14479,24 @@ sys.path.insert(0, str(Path().resolve()))
 import fallacy_rules as fr
 
 fr.rule_counts()",,,,,,,,4f15127e49cf40ea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,refond-md-1,markdown,fr,77e81de8515b4a3c,"### Lecture des comptes
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,refond-md-1,markdown,fr,ed33d9ed7d31574c,"### Lecture des comptes
 
 L'organe porte **5 clés de règles couvrant 5 familles** de sophismes, **13 motifs**, **2 motifs
 de claim**, **2 motifs de prémisse** et **4 gabarits de justification**. Ces comptes sont
-**recomptés sur le fichier de l'organe**, et ce sont exactement ceux de la consolidation du cœur
-: la re-fondation a retiré les deux motifs d'autorité qui reposaient sur une simple paire
-sujet-verbe (`[NOUN] (le) dire`, `[PROPN] dire` — sans marqueur d'autorité), le motif de prémisse
-`les/des NOUN montrer/indiquer que`, et fusionné les deux clés d'autorité en une seule,
-`ARGUMENT_AUTORITE`.
+**recomptés sur le fichier de l'organe**. Deux motifs d'autorité qui reposaient sur une simple
+paire sujet-verbe (`[NOUN] (le) dire`, `[PROPN] dire` — sans marqueur d'autorité) ont été retirés,
+ainsi que le motif de prémisse `les/des NOUN montrer/indiquer que` ; les deux clés d'autorité ont
+été fusionnées en une seule, `ARGUMENT_AUTORITE`.
 
-Les identifiants sont désormais **non accentués** (`GENERALISATION_HATIVE`,
-`APPEL_A_LA_TRADITION`, `ARGUMENT_AUTORITE`), comme dans le cœur : un identifiant accentué est un
-risque de régression (re-fondation #4960, commit c411fcff87), et les clés du cœur font autorité de nommage depuis la
-re-fondation.
+Les identifiants sont **non accentués** (`GENERALISATION_HATIVE`,
+`APPEL_A_LA_TRADITION`, `ARGUMENT_AUTORITE`), comme dans le tronc EPITA : un identifiant accentué est un
+risque de régression, et ces clés font autorité de nommage.
 
 Chaque motif est un dictionnaire spaCy `Matcher` : une liste de specs de tokens (attributs
 `LOWER`, `LEMMA`, `POS`, `TEXT`…) avec des opérateurs `OP` (`*`, `?`, `+`). C'est cette forme
 déclarative qui rend l'étage distillable : les motifs sont des **données**, examinables,
 critiquables et extensibles sans toucher au moteur.
-",,,,,,,,77e81de8515b4a3c,,,,,,,,,,,,,,,
+",,,,,,,,ed33d9ed7d31574c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,30ae5fb0,code,fr,c4657f367328aeb4,"import spacy
 
 nlp = spacy.load(""fr_core_news_sm"")
@@ -14573,7 +14572,7 @@ argument = (""Je pense que la réforme est nécessaire, parce que les études mo
 minage = fr.mine_claims_premises(argument, nlp=nlp)
 print(""Claims   :"", [c[""excerpt""] for c in minage[""claims""]])
 print(""Premisses:"", [p[""excerpt""] for p in minage[""premises""]])",,,,,,,,68185f08b788d7bd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,refond-md-3,markdown,fr,9e6eb93b7e28f6a9,"### Lecture : géométrie du silence, puis minage propre
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,refond-md-3,markdown,fr,6446bf49d1e40c58,"### Lecture : géométrie du silence, puis minage propre
 
 La paire confirme le diagnostic : **les deux variantes échouent**, et pour des raisons qui se
 cumulent — la virgule pour les deux, l'adverbe `vraiment` (spec `ADV` absente du gabarit) en plus
@@ -14589,9 +14588,9 @@ est »…). L'organe déduplique en conservant **le plus long match par position
 sémantique du marqueur conservée, bruit d'affichage supprimé.
 
 Cette géométrie n'est pas une fatalité. Si la virgule casse un motif parce qu'un seul slot manque,
-alors **ajouter ce slot** répare le motif — c'est exactement le geste que la consolidation du cœur
+alors **ajouter ce slot** répare le motif — c'est exactement le geste que le tronc EPITA
 a fait sur deux d'entre eux, et la section suivante le mesure.
-",,,,,,,,9e6eb93b7e28f6a9,,,,,,,,,,,,,,,
+",,,,,,,,6446bf49d1e40c58,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,refond-code-0,code,fr,0ee0def49defceeb,"# Les deux motifs que la consolidation du cœur a restaurés en les corrigeant (#1186).
 cas_ad = ""Pierre est malhonnête, donc son argument est faux.""
 cas_gen = ""Sur la base de 5 exemples, il conclut que tout le monde ment.""
@@ -14698,19 +14697,19 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Sy
 Les cellules suivantes sont à compléter. Elles s'exécutent sans erreur sur des stubs —
 le notebook doit toujours tourner de bout en bout.
 ",,,,,,,,57f1fa982b34eb43,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,refond-md-6,markdown,fr,db0b31de80aa48a0,"### Exercice 1 — Réparer le motif ad hominem, une cause à la fois
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,refond-md-6,markdown,fr,32393b1c705e353c,"### Exercice 1 — Réparer le motif ad hominem, une cause à la fois
 
 La phrase « Vous êtes incompétent, donc votre argument est invalide. » échoue pour **trois**
 raisons cumulées, toutes visibles dans la cellule de diagnostic : la virgule (`PUNCT`) entre
 l'adjectif et le connecteur, l'étiquette `POS` de « incompétent » qui est **VERB** et non `ADJ`
 sous ce modèle, puis — dans la variante avec adverbe — l'adverbe entre être et l'adjectif.
 
-La consolidation du cœur a réparé cette **classe** d'obstruction sur deux autres motifs (section
-« deux motifs que la consolidation a rendus vivants ») ; ici, c'est le motif 0 d'`AD_HOMINEM_DIRECT`
+Le tronc EPITA a réparé cette **classe** d'obstruction sur deux autres motifs (section
+« deux motifs que le tronc a rendus vivants ») ; ici, c'est le motif 0 d'`AD_HOMINEM_DIRECT`
 qui est en cause. Ajoutez-lui un **nouveau motif** (sans modifier les existants) qui traite les
 trois causes. Vérifiez sur les DEUX phrases : elles doivent détecter toutes les deux. Étape de
 vérification : les trois phrases saines de l'exercice 3 ne doivent pas se mettre à détecter.
-",,,,,,,,db0b31de80aa48a0,,,,,,,,,,,,,,,
+",,,,,,,,32393b1c705e353c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,e3e99f21,code,fr,c4f09389e0ffc6f9,"# TODO etudiant : construire nouveau_motif (liste de specs de tokens) puis :
 # fr.FALLACY_RULES[""AD_HOMINEM_DIRECT""].append({""PATTERN"": nouveau_motif, ""FALLACY_TYPE"": ""Attaque personnelle (Ad Hominem)""})
 # puis re-executer fr.detect_fallacies sur les deux phrases et imprimer les resultats.
@@ -14740,25 +14739,25 @@ coupable et expliquez pourquoi le gabarit est trop large.",,,,,,,,28acd69ea2e251
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,52c87bcf,code,fr,d6bf772b02adca58,"# TODO etudiant : completer saines = [...] puis boucle de verification + commentaire.
 saines = []  # TODO etudiant
 print(""Exercice 3 a completer"")",,,,,,,,d6bf772b02adca58,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,refond-md-7,markdown,fr,76ac56d4b86a4fe9,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,refond-md-7,markdown,fr,94c99fbb7e31caa8,"## Conclusion
 
-Ce notebook a porté l'étage symbolique du détecteur de sophismes tel qu'il vit dans le cœur
+Ce notebook a porté l'étage symbolique du détecteur de sophismes tel qu'il vit dans le tronc
 EPITA : un organe déclaratif de **13 motifs** et **4 motifs de minage**, exécutable par le vrai
 moteur (spaCy), dont le comportement est **montré tel quel** — succès lexicaux, témoin négatif
-silencieux, angle mort mesuré de l'adverbe, et **deux réparations mesurées** que la consolidation
+silencieux, angle mort mesuré de l'adverbe, et **deux réparations mesurées** que le tronc EPITA
 a apportées aux motifs hérités du projet étudiant.
 
 La leçon la plus transférable est celle des deux sections centrales : un motif qui ne déclenche
 jamais est **invisible** — il ne lève rien, ne signale rien, et une règle morte ressemble
-exactement à une règle qui n'a rien à dire. Seul un banc annoté les distingue, et c'est pourquoi le
-cœur a attaché à ces deux réparations le numéro de l'incident (#1186) qui les a motivées.
+exactement à une règle qui n'a rien à dire. Seul un banc annoté les distingue, et c'est pourquoi
+ces deux réparations sont adossées à l'incident (#1186) qui les a motivées.
 
 La suite naturelle — banc précision/rappel sur un corpus labellisé, justification complète des cinq
-familles — reste ouverte, rangée en sous-grains dans le recensement de l'EPIC #4960.
-",,,,,,,,76ac56d4b86a4fe9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb,g17353-01,markdown,fr,79100f3422ef588d,"# Gouvernance multi-agents : scrutins, protocoles, choix social
+familles — reste ouverte, inscrite au recensement de l'EPIC #4960.
+",,,,,,,,94c99fbb7e31caa8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb,g17353-01,markdown,fr,0dd5ab3a9a46ba78,"# Gouvernance multi-agents : scrutins, protocoles, choix social
 
-> **[DISTILLATION / PÉDAGOGIE]** Comment un collectif d'agents décide-t-il ? Ce notebook distille la **consolidation du cœur EPITA** (tronc `argumentation_analysis/agents/core/governance/` + carnet sas `docs/coursia_contrib/governance_voting_methods.ipynb`) — *pas* le projet étudiant figé de juin 2025, dont le cœur a corrigé la doctrine.
+> **[DISTILLATION / PÉDAGOGIE]** Comment un collectif d'agents décide-t-il ? Ce notebook traite la gouvernance multi-agents à partir du tronc EPITA `argumentation_analysis/agents/core/governance/` (avec le carnet `docs/coursia_contrib/governance_voting_methods.ipynb`) — *pas* le prototype étudiant de juin 2025, dont la doctrine diffère.
 
 ## Une erreur de catégorie à défaire d'entrée : « 7 méthodes de vote » (#1981)
 
@@ -14770,9 +14769,10 @@ Le tronc l'interdit nommément : la surface consolidée n'est **pas** « 7 méth
 | **2 protocoles** | byzantine, raft | « comment décider quand une fraction des agents est défaillante ? » |
 | **8 fonctions de choix social** | approval, stv, copeland, kemeny_young(+safe), schulze, condorcet_winner, pairwise_matrix | « quel *classement collectif* minimise le désaccord sur un profil ? » |
 
-Un byzantin ou un Raft **ne se comparent pas à Borda** : ce sont des protocoles de tolérance aux pannes, pas des règles d'agrégation. Les confondre est l'erreur #1981, que le projet étudiant commettait et que le cœur a corrigée.
+Un byzantin ou un Raft **ne se comparent pas à Borda** : ce sont des protocoles de tolérance aux pannes, pas des règles d'agrégation. Les confondre est l'erreur #1981, que le prototype étudiant commettait et qui a été corrigée depuis.
 
-**Série Argumentation** | | Précédent : [Onto-03-Vertus-SKOS-Python](./Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | Suivant : [AA Fallacy_Rules_Symboliques](./Argument_Analysis_Fallacy_Rules_Symboliques.ipynb) | [↑ Série Argumentation](README.md)",,,,,,,,79100f3422ef588d,,,,,,,,,,,,,,,
+**Série Argumentation** | | Précédent : [Onto-03-Vertus-SKOS-Python](./Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | Suivant : [AA Fallacy_Rules_Symboliques](./Argument_Analysis_Fallacy_Rules_Symboliques.ipynb) | [↑ Série Argumentation](README.md)
+",,,,,,,,0dd5ab3a9a46ba78,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb,g17353-02,markdown,fr,a0b9cffa47e7a48c,"## §1 — L'organe et le scénario du club
 
 L'organe `governance_methods.py` (stdlib pure, déterministe) porte les 15 algorithmes + la classe `Agent` (personnalités, confiance, Q-learning) du tronc. Chargeons-le et vérifions la catégorisation.
@@ -15047,13 +15047,14 @@ stv_apres = None      # TODO etudiant
 maj_avant = None      # TODO etudiant : g.majority_voting(build_agents(), OPTIONS)
 maj_apres = None      # TODO etudiant
 print(""Exercice 3 a completer : STV rend-il le vote utile inutile ?"")",,,,,,,,e0f7460f0c801f99,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb,g17353-34,markdown,fr,2072c125176f52f2,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb,g17353-34,markdown,fr,13cf3e4ef97aeb84,"## Conclusion
 
 Ce notebook a mesuré, sur un même profil de préférences, ce que la théorie du choix social prédit : **le scrutin choisit le vainqueur autant que les électeurs**. La Pizza gagne la majorité et perd tous ses duels ; l'option de compromis gagne Borda, Condorcet, STV, Copeland, Schulze et la satisfaction moyenne ; la manipulation de Borda se retourne ; et les protocoles byzantins/Raft répondent à une autre question (tolérance aux pannes) que les scrutins ne posent pas.
 
-La leçon d'ingénierie est celle du cœur EPITA (#1981) : ne jamais additionner dans un même compteur des algorithmes qui répondent à des questions différentes. 15 algorithmes, trois familles, une seule discipline — nommer ce qu'on mesure.
+La leçon d'ingénierie est celle du tronc EPITA (#1981) : ne jamais additionner dans un même compteur des algorithmes qui répondent à des questions différentes. 15 algorithmes, trois familles, une seule discipline — nommer ce qu'on mesure.
 
-*Distillation de la consolidation du cœur EPITA (tronc `argumentation_analysis/agents/core/governance/` + sas `docs/coursia_contrib/governance_voting_methods.ipynb`), sous-grain 2 de l'EPIC #4960. Généalogie : `2.1.6_multiagent_governance_prototype` (projet étudiant, juin 2025).*",,,,,,,,2072c125176f52f2,,,,,,,,,,,,,,,
+*Sources : tronc EPITA `argumentation_analysis/agents/core/governance/` + carnet `docs/coursia_contrib/governance_voting_methods.ipynb`. Généalogie : `2.1.6_multiagent_governance_prototype` (prototype étudiant, juin 2025), dont la doctrine diffère de la surface mesurée ici.*
+",,,,,,,,13cf3e4ef97aeb84,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-01b-Schemes-Walton-Python.ipynb,20f0f342,markdown,fr,82ac0f7f1fabb12f,"# Reconnaître un schéma d'argumentation — la table de Walton et un classifieur déterministe
 
 **Notebook pédagogique — série ArgumentAnalysis.** Ce carnet porte l'essence d'un organe du dépôt EPITA (mandat Triple Distillation) : la table des **schémas d'argumentation** de Walton et son **classifieur lexical déterministe**. La série dispose déjà du modèle *structurel* de Toulmin (`Toulmin_Model` : claim/data/warrant) et du cadre *abstrait* de Dung (`Dung_AF_Semantics` : arguments qui s'attaquent). Ici, le niveau intermédiaire : les **schémas stéréotypés** — autorité, analogie, cause à effet, consensus... — chacun avec ses prémisses types, sa conclusion type et surtout ses **questions critiques**, le test qu'un opposant applique pour prendre l'argument en défaut.
@@ -21993,3 +21994,191 @@ Ce que le banc enseigne du pont théorie des jeux ↔ fusion de lectures : le re
 
 **Cadre de production et suites** : EPIC #12206 (chantier 3, strate 6), grain #13041. Suites liées : `ICT-34-BancRecollementLectures-Python.ipynb` (protocole, substance synthétique) et `Argumentation-Obs-03-Recollement-Lectures-Python.ipynb` (#12290, substance réelle mais pluralité dégénérée).
 ",,,,,,,,86f76a20a88951a6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,bloc-fin-a-retenir,markdown,fr,62fa5720f3a628f6,"## À retenir
+
+- **L'étage symbolique du tronc EPITA, exécutable** : 13 motifs de détection et 4 motifs de minage, branchés sur le vrai moteur (spaCy) — pas un lexer de démonstration.
+- **Le comportement est montré tel quel** : succès lexicaux, témoin négatif silencieux (phrases saines qui ne déclenchent rien), et l'angle mort mesuré de l'adverbe.
+- **Deux réparations mesurées, pas déclarées** : le tronc a rendu vivants des motifs hérités du projet étudiant, chaque réparation adossée à l'incident #1186.
+- **La leçon transférable** : un motif qui ne déclenche jamais est invisible — il ne lève rien, ne signale rien ; une règle morte ressemble exactement à une règle qui n'a rien à dire.
+- **Seul un banc annoté distingue règle morte et règle muette** — d'où la suite ouverte : banc précision/rappel sur corpus labellisé, inscrite au recensement de l'EPIC #4960.
+",,,,,,,,62fa5720f3a628f6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,bloc-fin-verifiez,markdown,fr,fd236258608f919a,"## Vérifiez votre compréhension
+
+1. Pourquoi le témoin négatif fait-il partie de la preuve, au même titre que les succès ? *(réponse : des phrases saines qui ne déclenchent rien certifient que les gabarits ne sont pas trop larges — sans lui, un détecteur ne prouve que la moitié de son comportement ; l'exercice 3 le construit)*
+2. Qu'est-ce qui rend une règle « morte » indiscernable d'une règle silencieuse ? *(réponse : les deux ne lèvent jamais rien — la morte parce que son gabarit ne matche aucun texte réel, la muette parce qu'il n'y a rien à dire ; seul un banc annoté avec vérité terrain sépare les deux)*
+3. Pourquoi brancher spaCy plutôt qu'un découpage maison ? *(réponse : l'étage symbolique doit être démontré par le vrai moteur qui vit en production — un substitut de démonstration validerait un monde que la production ne connaît pas)*
+4. Que documentent les deux réparations motivées par #1186 ? *(réponse : un motif réparé doit être re-mesuré sur le banc — la réparation se prouve par un avant/après de déclenchement, pas par l'affirmation qu'il fonctionne)*
+",,,,,,,,fd236258608f919a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,3d28ea30,markdown,fr,2a077fcc1252eac7,"## Références et provenance
+
+Les repères de fabrication de ce carnet sont réunis ici, une seule fois.
+
+- **EPIC** : [#4960](https://github.com/jsboige/CoursIA/issues/4960) — ArgumentAnalysis v3 ; l'état du tronc qui fait référence pour le nommage des règles.
+- **Incidents adossés** : [#1186](https://github.com/jsboige/CoursIA/issues/1186) — la mesure qui a motivé les deux réparations des motifs hérités.
+- **Épingle du tronc** : `argumentation_analysis/` — refonte des clés de règles (identifiants non accentués) ; commit de référence `c411fcff87`.
+",,,,,,,,2a077fcc1252eac7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb,bloc-fin-aller-plus-loin,markdown,fr,998b891dbd6b13e9,"## Pour aller plus loin
+
+- [Index de la sous-série ArgumentAnalysis](README.md) — la place de ce carnet dans le parcours.
+- [Index de la série SymbolicAI](../README.md) — le fil complet.
+
+- Le carnet [Gouvernance-Multi-Agents](./Argument_Analysis_Gouvernance_Multi_Agents.ipynb) — l'autre distillation du tronc EPITA : scrutins, protocoles et choix social mesurés sur un même profil.
+- L'incident [#1186](https://github.com/jsboige/CoursIA/issues/1186) — la mesure qui a motivé les deux réparations des motifs hérités.
+- L'EPIC [#4960](https://github.com/jsboige/CoursIA/issues/4960) — le recensement des suites ouvertes, dont le banc précision/rappel.
+- Le tronc `argumentation_analysis/` — là où ces règles vivent en production.
+",,,,,,,,998b891dbd6b13e9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb,bloc-fin-a-retenir,markdown,fr,cc1723e2dc7fcc99,"## À retenir
+
+- **15 algorithmes, trois familles** — comptés dans le carnet, pas devinés : 5 scrutins, 2 protocoles de défaillance, et le reste en méthodes formelles du choix social.
+- **Le scrutin choisit le vainqueur autant que les électeurs** : la Pizza gagne la majorité et perd tous ses duels ; l'option de compromis gagne Borda, Condorcet, STV, Copeland, Schulze — et la satisfaction moyenne.
+- **La manipulation se retourne** : enterrer son adversaire en Borda peut lui coûter la victoire à soi-même — le paradoxe de compromis et Gibbard-Satterthwaite ne sont pas des curiosités, ils se rejouent sur le profil du club.
+- **Byzantins et Raft ne sont pas des scrutins** : ils répondent à la tolérance aux pannes (et Raft dépend du leader tiré), une autre question que l'agrégation de préférences.
+- **La leçon du cœur EPITA (#1981)** : ne jamais additionner dans un même compteur des algorithmes qui répondent à des questions différentes — 15 algorithmes, une seule discipline : nommer ce qu'on mesure.
+",,,,,,,,cc1723e2dc7fcc99,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb,bloc-fin-verifiez,markdown,fr,7fb91df8958fdeef,"## Vérifiez votre compréhension
+
+1. Comment la Pizza peut-elle gagner la majorité et perdre tous ses duels ? *(réponse : ses électeurs sont nombreux mais concentrés — elle n'est jamais la préférée des autres ; en Condorcet elle perd face à chacun, la majorité simple ne voit que le premier choix)*
+2. Pourquoi l'option de compromis gagne-t-elle à peu près tout ? *(réponse : elle est seconde ou troisième partout — les méthodes qui regardent tout le classement (Borda, Condorcet, STV, Copeland, Schulze) la récompensent, seule la majorité à un tour la rate)*
+3. Que change STV au « vote utile » ? *(réponse : la voix se transfère si le favori est éliminé — voter son vrai choix coûte moins ; l'exercice 3 le simule : le vote utile peut même changer le vainqueur STV sans changer le vainqueur à la majorité)*
+4. Pourquoi Raft n'est-il pas « un meilleur scrutin » ? *(réponse : il résout la réplication en présence de pannes, pas l'agrégation de préférences — et son déroulé dépend du leader tiré ; l'ajouter au compteur des scrutins est la faute que le §1 compte)*
+",,,,,,,,7fb91df8958fdeef,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb,f0ffc3ce,markdown,fr,6097a61823daa53c,"## Références et provenance
+
+Les repères de fabrication de ce carnet sont réunis ici, une seule fois.
+
+- **EPIC** : [#4960](https://github.com/jsboige/CoursIA/issues/4960) — le chantier dont ce carnet est le volet gouvernance.
+- **Leçon d'origine** : [#1981](https://github.com/jsboige/CoursIA/issues/1981) — un compteur, une question.
+- **Sources mesurées** : tronc EPITA `argumentation_analysis/agents/core/governance/` + carnet `docs/coursia_contrib/governance_voting_methods.ipynb`.
+",,,,,,,,6097a61823daa53c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb,bloc-fin-aller-plus-loin,markdown,fr,882074d6ca449b12,"## Pour aller plus loin
+
+- [Index de la sous-série ArgumentAnalysis](README.md) — la place de ce carnet dans le parcours.
+- [Index de la série SymbolicAI](../README.md) — le fil complet.
+
+- Le carnet [Fallacy_Rules_Symboliques](./Argument_Analysis_Fallacy_Rules_Symboliques.ipynb) — l'autre distillation du tronc EPITA : l'étage symbolique de détection des sophismes.
+- L'issue [#1981](https://github.com/jsboige/CoursIA/issues/1981) — la leçon d'origine : un compteur, une question.
+- L'EPIC [#4960](https://github.com/jsboige/CoursIA/issues/4960) — le chantier dont ce carnet est le volet gouvernance.
+- Le prototype étudiant (`2.1.6_multiagent_governance_prototype`, juin 2025) — la généalogie que la distillation a mesurée plutôt que copiée.
+",,,,,,,,882074d6ca449b12,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb,bloc-fin-a-retenir,markdown,fr,95658ab51a6f9eca,"## À retenir
+
+| Point | Moteur | Ce qui est mesuré |
+|---|---|---|
+| Trois actes, un contrat | `RestitutionActs` (`ACT_TITLES`) | les titres sont des constantes, pas de la prose libre |
+| La bande de verdict est *gated* sur la couverture réelle | `compute_verdict_band` / `_BAND_CEILING` | un axe non couvert plafonne la bande au lieu d'afficher un score |
+| L'evidence ne sort que de ce qui est réellement dans l'état | `build_evidence` | rien n'est inféré hors du `state` |
+| Les rôles probatoires se dérivent, ils ne se déclarent pas | `classify_specialist_roles` (`ROLE_ORDER`) | décisif, contradictoire, corroborant, non-discriminant |
+| L'acte III classe par portance et se tait au-delà de cinq | `assess_conclusion_salience` (`_MAX_RANKED = 5`) | poids décisif, tension, accompagnement |
+| Un acte trop court est nommé manquant, jamais rendu | `render_report` (`_MIN_ACT_CHARS = 120`) | `_MISSING_WORDING` dit lequel des trois actes manque |
+| Le gate attrape l'acte redevenu liste plate | `ReadabilityGate` / `_DUMP_HEADING_RE` | titres « Sophisme N: », « Argument N: », « Dimension N », « Phase N » refusés |
+| Le LLM narre, il ne décide pas | `narrate_full_report` / `make_openai_callable` | la sortie **réelle** du LLM passe au gate ; sans clé, `fail-loud` |
+
+Le scaffold est **inchangé** : ce carnet le mesure, il ne le réécrit pas. Pour le pipeline qui peuple l'état lu ici, voir le rung [8b-Executor](./Argumentation-08b-Executor-Python.ipynb) ; pour la mesure de valeur qui s'applique en amont, le rung [8-Capstone](./Argumentation-08-Capstone-Python.ipynb).
+
+- L'honnêteté d'un rapport est portée par le **scaffold déterministe** : le LLM enrichit la prose, il ne décide jamais de ce qui peut être affirmé.
+- Un manque se dit : la bande plafonnée et `_MISSING_WORDING` rendent l'absence visible au lieu de la combler.
+- Le test décisif n'est pas « le rapport se lit bien », c'est « le gate s'exécute sur la sortie réelle du LLM et la juge ».
+",,,,,,,,95658ab51a6f9eca,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb,bloc-fin-verifiez,markdown,fr,b20e52ecc6030f8c,"## Vérifiez votre compréhension
+
+1. Pourquoi la bande de verdict est-elle plafonnée par la couverture plutôt que calculée sur les axes disponibles ? *(réponse : un score sur un axe non couvert mesurerait l'absence de donnée, pas la qualité — le plafond dit ce qui n'a pas été mesuré)*
+2. Que garantit `build_evidence` en n'acceptant que le « réel-en-état » ? *(réponse : qu'aucune evidence ne peut être inventée — elle existe dans le `state` ou elle n'est pas rendue)*
+3. Pourquoi `_MIN_ACT_CHARS = 120` est-il un gate et non une préférence de style ? *(réponse : sous ce seuil l'acte est déclaré manquant et `_MISSING_WORDING` le nomme — le rapport dit ce qui n'a pas pu être produit au lieu de rendre un acte creux)*
+4. Que fait le code quand aucune clé LLM n'est disponible ? *(réponse : il échoue bruyamment — jamais un template de repli ; la narration est facultative, l'honnêteté ne l'est pas)*
+5. Sur quelle sortie le gate s'exécute-t-il, et pourquoi est-ce le point décisif ? *(réponse : sur la sortie réelle du LLM, pas sur un échantillon — c'est le seul endroit où la doctrine est mesurée)*
+",,,,,,,,b20e52ecc6030f8c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb,bloc-fin-aller-plus-loin,markdown,fr,6ce3290f4df57e39,"## Pour aller plus loin
+
+- [Index de la sous-série ArgumentAnalysis](README.md) — la place de ce carnet dans le parcours.
+- [Index de la série SymbolicAI](../README.md) — le fil complet.
+
+- Le rung [8b-Executor](./Argumentation-08b-Executor-Python.ipynb) pour le pipeline qui produit l'état d'analyse restitué ici.
+- Le rung [5b-Multi-Backend-Routing](./Argumentation-05b-Multi-Backend-Routing-Python.ipynb) pour la sentinelle de contrat de livraison côté solveurs.
+- Le rung [6-JTMS](./Argumentation-06-JTMS-Python.ipynb) pour un autre moteur déterministe pur stdlib de la série.
+- Le dépôt EPITA (`2025-Epita-Intelligence-Symbolique`) : `argumentation_analysis/reporting/restitution/` — `acts.py`, `specialist_roles.py`, `conclusion_salience.py`, `renderer.py`, `readability_gate.py`.
+
+**Référence** — M. Ashley, T. Herrmann, Z. Friggstad et J. Schmidhuber (2024). « On Narrative Information and the Distillation of Stories for Transferring Narrative Arcs in Collections of Independent Media », IEEE TPAMI (arXiv:2211.12423) — la mesure de fidélité narrative dont dépend la section 7.5.
+",,,,,,,,6ce3290f4df57e39,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,bloc-fin-a-retenir,markdown,fr,b2f7244676aa2aa1,"## À retenir
+
+- **L'OWL Argumentum parle AIF** : 145 concepts portent `aifAttackedNode` vers les trois types de nœuds — undercut vers RA, undermine vers I, rebut vers CA (ratifié #707 §4).
+- **La couche transverse vit dans l'OWL** : 735 `AnnotationAssertion` crossLink à l'épingle courante (1 977 à l'état du 30/08) — les notes historiques « AIF absent » et « crossLink CSV-only » sont obsolètes depuis #763.
+- **La dé-curation #1286 a tenu sa promesse** : `mirrors` est passé de 720 triplets à la seule paire qui les méritait ; le verbe dominant est désormais `leverages` (327 arêtes).
+- **Aucun parseur direct ne lit ce fichier** : rdflib échoue au parse, owlready2 expose 0 classe — le parseur regex extrait la structure mais ne raisonne pas (ni subsomption, ni fermeture transitive).
+- **L'ontologie sœur est là** : `argumentum_virtues.owl` vit désormais dans `ontologies/` à côté de `argumentum_fallacies.owl` — le pôle vertus d'Onto-03 devient lisible depuis ce carnet.
+",,,,,,,,b2f7244676aa2aa1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,bloc-fin-verifiez,markdown,fr,31a4420f07cadbb1,"## Vérifiez votre compréhension
+
+1. Pourquoi un parseur regex plutôt que rdflib ou owlready2 ? *(réponse : la sérialisation OWL/XML fonctionnelle n'est lue par aucun des deux — rdflib échoue au parse, owlready2 recompose 0 classe ; le regex extrait, mais sans raisonnement : pas d'inférence de subsomption ni de fermeture transitive)*
+2. Undercut, undermine, rebut : qu'attaque chacun ? *(réponse : l'undercut attaque le lien inférentiel (nœud RA), l'undermine attaque une prémisse (nœud I), le rebut attaque la conclusion (nœud CA))*
+3. Que s'est-il passé entre 720 triplets `mirrors` et la paire survivante ? *(réponse : la dé-curation #1286 a retiré les fausses symétries — des paires reliées par ressemblance de nom plutôt que de sens — pour ne garder que la paire réellement miroir, lue en §5.1)*
+4. Que lit-on en croisant `leverages` avec la hiérarchie SKOS ? *(réponse : deux concepts reliés transversalement partagent quelque chose que `broader` ne capture pas — le lien transverse traverse l'arbre, il ne le suit pas, objet de l'exercice 5)*
+",,,,,,,,31a4420f07cadbb1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb,bloc-fin-aller-plus-loin,markdown,fr,e1dcc4d6a83a40aa,"## Pour aller plus loin
+
+- [Index de la sous-série ArgumentAnalysis](README.md) — la place de ce carnet dans le parcours.
+- [Index de la série SymbolicAI](../README.md) — le fil complet.
+
+- Le carnet [Onto-02-CrossLinks-CSV](./Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) — la substance CSV canonique, réconciliée avec cet OWL par #763.
+- Le carnet [Onto-03-Vertus-SKOS](./Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) — le pôle miroir : les vertus argumentatives en thesaurus SKOS.
+- Le rung [08e-Argument-Profile](./Argumentation-08e-Argument-Profile-Python.ipynb) — la vue d'ensemble de la série et l'introduction aux schemes.
+- Les issues [#763](https://github.com/jsboige/CoursIA/issues/763) (réconciliation OWL/CSV) et [#1286](https://github.com/jsboige/CoursIA/issues/1286) (dé-curation des mirrors).
+",,,,,,,,e1dcc4d6a83a40aa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,bloc-fin-a-retenir,markdown,fr,2cde960522fbbac0,"## À retenir
+
+- **La substance CSV en un chiffre chacun** : 1 408 sophismes canoniques, 104 colonnes, 8 familles × 9 niveaux de taxonomie, 8 langues à 100 % de couverture.
+- **Les deux ponts nommés** : 116 mappings AIF vers 60 schemes Walton uniques, et 539 entrées crossLink — couverture 34.6 % (487/1 408 sophismes), densité 4.8 % de la matrice 8 × 1 408 = 11 264.
+- **Le pont OWL/CSV se vérifie par le ratio × 7.8** : un `NamedIndividual` de l'OWL d'origine ≈ 7.8 labels multilingues (10 976 individus, 4 183 `ObjectPropertyAssertion`) — cohérent avec une projection RDF multi-labels par sophisme.
+- **Le CSV est la source curée à la main** dont l'OWL est probablement généré par script — le CSV enseigne le contenu, l'OWL la forme technique.
+- **Les limitations sont énoncées** : AIF mapping à 5 % (tâche d'annotation lourde), crossLink à 34.6 % — 65 % de la taxonomie reste sans relation transversale.
+",,,,,,,,2cde960522fbbac0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,bloc-fin-verifiez,markdown,fr,23700badbb7ec3c7,"## Vérifiez votre compréhension
+
+1. Couverture 34.6 % contre densité 4.8 % : quelle est la différence ? *(réponse : la couverture compte la part de sophismes ayant au moins un crossLink (487/1 408) ; la densité compte la part de cellules remplies dans la matrice cible (539/11 264) — beaucoup de sophismes touchés, peu de liens chacun)*
+2. Pourquoi le ratio × 7.8 entre la substance OWL d'origine et la substance CSV est-il une preuve de cohérence ? *(réponse : si l'OWL est généré depuis le CSV, chaque sophisme doit projeter ses ~8 labels de langues en individus RDF — le ratio mesuré sur l'OWL d'origine correspond exactement à une projection multi-labels par sophisme)*
+3. Que signifie « 60 schemes Walton uniques » pour 116 mappings ? *(réponse : plusieurs sophismes mappent vers le même scheme — le mapping est plus fin côté source que côté cible, et l'exercice 3 demande cette couverture conditionnelle par famille)*
+4. Pourquoi la substance CSV est-elle présentée comme plus accessible pédagogique ? *(réponse : le CSV se lit au tableur, crossLinks et AIF mappings s'enseignent directement ; la substance OWL exige OWL, SKOS et RDF)*
+",,,,,,,,23700badbb7ec3c7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,f4cfe065,markdown,fr,e5f3eb1eb91b487c,"## Références et provenance
+
+Les repères de fabrication de ce carnet sont réunis ici, une seule fois — le corps du carnet n'en parle plus.
+
+- **EPIC** : [#4960](https://github.com/jsboige/CoursIA/issues/4960) — ArgumentAnalysis v3 (volet substance CSV) ; [#5721](https://github.com/jsboige/CoursIA/issues/5721) — volet substance OWL.
+- **Intégration ontologique des Fallacies** : juillet 2026 — ajout du mapping des 10 colonnes dans l'entité `Fallacy`, curation transverse de la couche `crossLink` (#141), puis dé-curation (#1247/#1286, 05/09).
+- **Épingle** : sous-module Argumentum `33f25e8` (2026-11-06) — l'état des données que ce carnet mesure : c'est l'épingle qu'impriment les sorties commitées (« Submodule Argumentum : 33f25e8 »). Le gitlink du sous-module dans l'arbre a avancé depuis (`b56a546a`, 2026-11-16) : le carnet n'a pas été re-exécuté à cette épingle, et les valeurs qu'il affiche restent celles de `33f25e8`.
+",,,,,,,,e5f3eb1eb91b487c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb,bloc-fin-aller-plus-loin,markdown,fr,a03a6fb103d8cb7c,"## Pour aller plus loin
+
+- [Index de la sous-série ArgumentAnalysis](README.md) — la place de ce carnet dans le parcours.
+- [Index de la série SymbolicAI](../README.md) — le fil complet.
+
+- Le carnet [Onto-01-AIF-OWL2](./Argumentation-Onto-01-AIF-OWL2-Python.ipynb) — la substance OWL complémentaire, reliée ici par le ratio × 7.8.
+- Le carnet [Onto-03-Vertus-SKOS](./Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) — le pôle vertus et son pont `goodTenorOf` vers les mêmes schemes.
+- L'Epic [#4960](https://github.com/jsboige/CoursIA/issues/4960) (ArgumentAnalysis v3) — ce carnet y ferme le volet substance CSV ; [#5721](https://github.com/jsboige/CoursIA/issues/5721) porte le volet OWL.
+- **Référence** — Walton, Reed & Macagno (2008), *Argumentation Schemes* — les 60 schemes référencés par les mappings AIF.
+",,,,,,,,a03a6fb103d8cb7c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,bloc-fin-a-retenir,markdown,fr,d0c33b9451747d43,"## À retenir
+
+- **Un thesaurus intégral, compté** : 2 895 triplets, 225 concepts distincts, 223 avec `prefLabel` — et 446 `skos:definition` : exactement deux par concept, une par langue.
+- **Le bilinguisme est complet et mesuré** : 223 labels et 223 définitions en français, autant en anglais — couverture 100 % par langue, échantillon imprimé concept par concept.
+- **Le pont AIF côté vertus** : 222 `aif:goodTenorOf` relient chaque vertu aux schémas de Walton dont elle est le « bon tenor », avec la couche attack épinglée (142 `aifAttackType` + 142 provenances).
+- **La racine est un jugement** : le `topConcept` est `validArgument` (« Argument valable ») ; les têtes de familles les plus ramifiées sont `simpleInference` (8 enfants), `validArgument` (7), `thirdFigureSyllogism` (6).
+- **Aucun parseur direct ne lit ce fichier** : rdflib lève un TypeError (OWL/XML fonctionnel), owlready2 charge mais recompose 0 classe — le pont OWL/XML vers RDF est construit dans le carnet, et les deux pôles (sophismes/vertus) ne sont reliés par aucune propriété.
+",,,,,,,,d0c33b9451747d43,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,bloc-fin-verifiez,markdown,fr,cfad037c19a75a71,"## Vérifiez votre compréhension
+
+1. Pourquoi 446 définitions pour 223 concepts porteurs de label ? *(réponse : une définition par langue et par concept — 223 en français, 223 en anglais ; le thesaurus est bilingue intégral, labels et définitions)*
+2. Que relie exactement `aif:goodTenorOf` ? *(réponse : une vertu argumentative vers les schémas de Walton dont elle est le bon tenor — le pont AIF côté vertus, miroir des attaques côté sophismes ; l'exercice 3 le parcourt depuis un schéma donné)*
+3. Pourquoi le pont de lecture a-t-il dû être écrit à la main ? *(réponse : ni rdflib ni owlready2 ne restituent les AnnotationAssertion SKOS de cette sérialisation fonctionnelle — le pont extrait les triplets du XML directement, sans raisonnement)*
+4. En quoi ce thesaurus est-il le miroir du pôle sophismes ? *(réponse : l'Onto-01 est une ABox relationnelle (individus + attaques) ; ici un thesaurus SKOS (concepts + hiérarchie + langues) — aucun des 14 noms de schémas de vertus ne figure côté dérives : l'asymétrie est une leçon de modélisation, pas un oubli)*
+",,,,,,,,cfad037c19a75a71,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb,bloc-fin-aller-plus-loin,markdown,fr,ee80056aaafbc355,"## Pour aller plus loin
+
+- [Index de la sous-série ArgumentAnalysis](README.md) — la place de ce carnet dans le parcours.
+- [Index de la série SymbolicAI](../README.md) — le fil complet.
+
+- Le carnet [Onto-01-AIF-OWL2](./Argumentation-Onto-01-AIF-OWL2-Python.ipynb) — le pôle sophismes, même projet, paradigme opposé (ABox relationnelle).
+- Le carnet [Onto-02-CrossLinks-CSV](./Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) — les liens croisés du CSV canonique, l'autre vue de la même taxonomie.
+- Le carnet [08d-Restitution-3-Actes](./Argumentation-08d-Restitution-3-Actes-Python.ipynb) — la restitution pédagogique qui emploie ces substances.
+- L'exercice 3 de ce carnet — l'asymétrie vertus/sophismes vérifiée à la main : les deux pôles ne se rejoignent par aucune propriété.
+",,,,,,,,ee80056aaafbc355,,,,,,,,,,,,,,,
