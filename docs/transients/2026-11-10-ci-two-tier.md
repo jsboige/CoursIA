@@ -1,3 +1,5 @@
+> RAPPORT — 2026-11-10 — inventaire mesuré des workflows de CI (phase P0 du plan « CI à deux étages ») — figé
+
 # CI à deux étages - inventaire mesuré des workflows (phase P0)
 
 Plan : « CI à deux étages » (gardes et tests cibles à chaque push, suite lourde en lot quotidien sur l'arbre fusionné). Ce document est le livrable de la **phase P0** : quels workflows se déclenchent à chaque push de PR, combien ils coûtent, et lesquels sont lourds au sens du plan.
