@@ -1,0 +1,13 @@
+# TRANCHE50 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE50
+guards:
+  -
+    name: "Enrich-quality regression (base vs PR, advisory)"
+    argv: ["python", "scripts/notebook_tools/enrich_quality_delta.py", "--base-ref", "{base_ref}"]
+    source: "native"
+    paths: ["**.ipynb", "scripts/notebook_tools/enrich_quality_delta.py", "scripts/notebook_tools/enrich_quality_ci.py", "scripts/notebook_tools/scan_enrich_quality.py", "scripts/ci/filter_pr_introduced_notebooks.py"]
+    blocking: false
+    needs_base: true
+    diff_bounded: true
+    absorbed: false
+    pre_argv: ["python", "scripts/notebook_tools/enrich_quality_delta.py", "--self-test"]

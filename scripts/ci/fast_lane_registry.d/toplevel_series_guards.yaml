@@ -1,0 +1,15 @@
+# TOPLEVEL_SERIES_GUARDS -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TOPLEVEL_SERIES_GUARDS
+guards:
+  -
+    name: "toplevel-series-guard"
+    argv: ["python", "scripts/ci/check_toplevel_series.py", "--diff", "{base_ref}...HEAD"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/**", "scripts/ci/check_toplevel_series.py", "scripts/ci/toplevel_series_allowlist.txt", "scripts/ci/tests/test_check_toplevel_series.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    warn_rc:
+      -
+        2

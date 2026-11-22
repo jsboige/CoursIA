@@ -1,0 +1,11 @@
+# TRANCHE25 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE25
+guards:
+  -
+    name: "lean-added-axioms-cliquet"
+    argv: ["python", "scripts/lean/check_added_axioms_cliquet.py", "--base", "{base_ref}", "--head", "HEAD"]
+    source: "native"
+    paths: ["**/*.lean", "scripts/lean/check_added_axioms_cliquet.py", "scripts/lean/tests/test_check_added_axioms_cliquet.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true

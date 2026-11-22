@@ -1,0 +1,18 @@
+# TRANCHE20 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE20
+guards:
+  # Les SOURCES lues par les cellules live-read : derivees du
+  # registre (#22001). Sans elles, le garde ne se selectionne que
+  # sur une revision qui touche le CARNET -- la revision qui
+  # reecrit la SOURCE passe sans controle, et la sortie committée
+  # de la cellule devient un temoignage du passe (#21899). La
+  # derivation est LOCALISEE : un registre illisible ne rend pas le
+  # module inimportable, il elargit ce seul garde (#22041).
+  -
+    name: "Live-read freshness (committed output vs current source)"
+    argv: ["python", "scripts/notebook_tools/check_live_read_freshness.py"]
+    source: "native"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_live_read_freshness.py", "scripts/notebook_tools/live_read_registry.json", "scripts/notebook_tools/tests/test_live_read_freshness.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py", "scripts/tests/test_fast_lane.py", "$live_read_guard_paths"]
+    blocking: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_live_read_freshness.py", "--self-test"]

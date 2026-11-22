@@ -1,0 +1,15 @@
+# TRANCHE36 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE36
+guards:
+  -
+    name: "papermill machine paths (delta vs base)"
+    argv: ["python", "scripts/ci/check_papermill_machine_paths.py", "--base-ref", "{base_ref}"]
+    source: "native"
+    paths: ["$notebook_globs", "scripts/ci/check_papermill_machine_paths.py", "scripts/notebook_tools/scrub_papermill_paths.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    warn_rc:
+      -
+        2

@@ -1,0 +1,60 @@
+# TRANCHE42 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+# --- notebook-outputs-required -----------------------------------------
+# Recapitulatif collant de l'organe. Le VERDICT bloquant est porte par
+# TRANCHE10 (meme workflow, nom canonique) ; ce garde ne publie que la
+# section consultative, comme le faisait le workflow d'origine.
+group: TRANCHE42
+guards:
+  # Le verdict de ce garde est son commentaire : `argv` reste vide et
+  # le moteur execute `commenters` a sa place (cf fast_lane.main).
+  # --- notebook-cell-source-parses ---------------------------------------
+  -
+    name: "Detect notebook changes (outputs-required)"
+    argv: []
+    source: "notebook-outputs-required.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/check_notebook_outputs_required.py", ".github/workflows/notebook-outputs-required.yml", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    absorbed: true
+    commenters:
+      -
+        header: "notebook-outputs-required"
+        argv: ["python", "scripts/notebook_tools/check_notebook_outputs_required.py", "--pr-diff", "{base_ref}", "HEAD", "--json"]
+        body: "outputs_required"
+        paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+  # --- notebook-papermill-ratchet ----------------------------------------
+  -
+    name: "cell-source-parses"
+    argv: ["python", "scripts/notebook_tools/check_cell_source_parses.py", "--target-py", "3.12", "--pr-diff", "{base_ref}", "HEAD"]
+    source: "notebook-cell-source-parses.yml"
+    paths: ["**/*.ipynb", "scripts/notebook_tools/check_cell_source_parses.py", ".github/workflows/notebook-cell-source-parses.yml", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "-m", "unittest", "scripts.tests.test_notebook_tools_check_cell_source_parses", "-v"]
+  # --- notebook-cell-id-ratchet ------------------------------------------
+  -
+    name: "Papermill ratchet (base vs PR)"
+    argv: ["python", "scripts/notebook_tools/check_papermill_ratchet.py", "{base_ref}"]
+    source: "notebook-papermill-ratchet.yml"
+    paths: ["**/*.ipynb", "scripts/notebook_tools/check_papermill_ratchet.py", ".github/workflows/notebook-papermill-ratchet.yml", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "-m", "pytest", "-q", "scripts/notebook_tools/tests/test_check_papermill_ratchet.py"]
+  # --- bios-companion-coverage -------------------------------------------
+  -
+    name: "Cell ID ratchet (base vs PR)"
+    argv: ["python", "scripts/notebook_tools/check_cell_id_invalid_ratchet.py", "{base_ref}"]
+    source: "notebook-cell-id-ratchet.yml"
+    paths: ["**/*.ipynb", "scripts/notebook_tools/check_cell_id_invalid_ratchet.py", "scripts/notebook_tools/fix_cell_ids.py", "scripts/notebook_tools/tests/test_cell_id_schema.py", ".github/workflows/notebook-cell-id-ratchet.yml", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "-m", "pytest", "-q", "scripts/notebook_tools/tests/test_cell_id_schema.py"]
+  -
+    name: "Companion coverage (ps1/sh + Setup bi-OS)"
+    argv: ["python", "scripts/ci/check_companion_coverage.py"]
+    source: "bios-companion-coverage.yml"
+    paths: ["**/*.ps1", "**/*.sh", "**/README*.md", "**/*[Ss]etup*.ipynb", "scripts/ci/check_companion_coverage.py", ".github/workflows/bios-companion-coverage.yml", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    absorbed: true

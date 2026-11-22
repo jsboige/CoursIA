@@ -1,0 +1,12 @@
+# TRANCHE22 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE22
+guards:
+  -
+    name: "Markdown-cell schema ratchet (base vs PR, #24090)"
+    argv: ["python", "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py", "--base-ref", "{base_ref}", "{changed_paths}"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/fix_markdown_cell_schema.py", "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py", "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py", "scripts/notebook_tools/tests/test_check_markdown_cell_schema_ratchet.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    iterates_paths: true
+    absorbed: true
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]

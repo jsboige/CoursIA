@@ -1,0 +1,23 @@
+# TRANCHE17 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE17
+guards:
+  # `absorbed=True` (#19118, reserve de revue) : le job always-on lance
+  # `fast_lane.py --shadow`, et `effective_shadow = args.shadow and not
+  # guard.absorbed`. Sans absorption, ce garde emettait
+  # `fast-lane (ombre): twin-parity-guard` avec une conclusion neutre et
+  # n'entrait pas dans `blocking_failed` : `blocking=True` etait une
+  # declaration sans effet, et une PR de la forme #18844 (CODE_DRIFT
+  # d0d7a23d) serait passee. Meme convention que les autres gardes natifs
+  # absorbes (TRANCHE8/9/10/14) : un garde sans workflow d'origine n'a
+  # aucun autre emetteur de son nom de check-run.
+  -
+    name: "twin-parity-guard"
+    argv: ["python", "scripts/translation/check_twin_parity_changed.py", "--diff", "{base_ref}...HEAD"]
+    source: "native"
+    paths: ["**/*.ipynb", "scripts/translation/check_translation_parity.py", "scripts/translation/check_twin_parity_changed.py", "scripts/translation/tests/test_check_twin_parity_changed.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    warn_rc:
+      -
+        2

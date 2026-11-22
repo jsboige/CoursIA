@@ -1,0 +1,12 @@
+# TRANCHE13 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE13
+guards:
+  -
+    name: "Reading-anchor advisory (lecture sans output, #16695)"
+    argv: ["python", "scripts/notebook_tools/check_reading_anchor.py", "--base", "{base_ref}", "--head", "HEAD", "--fail", "--json"]
+    source: "native"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_reading_anchor.py", "scripts/notebook_tools/tests/test_check_reading_anchor.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_reading_anchor.py", "--self-test"]

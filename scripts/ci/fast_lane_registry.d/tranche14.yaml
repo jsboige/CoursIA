@@ -1,0 +1,12 @@
+# TRANCHE14 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE14
+guards:
+  -
+    name: "Split-reading ratchet (base vs PR)"
+    argv: ["python", "scripts/notebook_tools/check_split_reading_cells.py", "--base-ref", "{base_ref}", "--head", "HEAD", "--json", "--fail-on-findings"]
+    source: "split-reading-advisory.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/check_split_reading_cells.py", "scripts/tests/test_check_split_reading_cells.py", ".github/workflows/split-reading-advisory.yml"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_split_reading_cells.py", "--self-test"]

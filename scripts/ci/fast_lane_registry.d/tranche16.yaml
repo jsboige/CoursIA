@@ -1,0 +1,20 @@
+# TRANCHE16 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE16
+guards:
+  # `absorbed=True` (#19168) : mesure de l'issue sur la tete
+  # `34e045d3` de #19098 -- le check-run sortait sous
+  # `fast-lane (ombre): control-chars-in-cells-guard`, conclusion
+  # neutre, hors `blocking_failed`. Verifie vert sur `main` avant
+  # absorption (`--diff origin/main...HEAD` -> rc=0), donc l'absorption
+  # ne rougit aucune PR par dette heritee.
+  -
+    name: "control-chars-in-cells-guard"
+    argv: ["python", "scripts/ci/check_control_chars_in_cells.py", "--diff", "{base_ref}...HEAD"]
+    source: "native"
+    paths: ["**/*.ipynb", "scripts/ci/check_control_chars_in_cells.py", "scripts/tests/test_check_control_chars_in_cells.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    warn_rc:
+      -
+        2

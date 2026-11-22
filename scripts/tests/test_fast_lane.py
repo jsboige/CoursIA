@@ -266,6 +266,10 @@ def test_registre_absent_le_module_reste_importable(tmp_path):
     ci.mkdir(parents=True)
     (tmp_path / "scripts" / "notebook_tools").mkdir()
     shutil.copyfile(CI_DIR / "fast_lane_registry.py", ci / "fast_lane_registry.py")
+    # Depuis #28117 les gardes vivent en donnees a cote du module : un arbre
+    # reel embarque le repertoire -- c'est le registre LIVE-READ qui reste
+    # absent (c'est lui que la panne #22041 concerne), pas les donnees.
+    shutil.copytree(CI_DIR / "fast_lane_registry.d", ci / "fast_lane_registry.d")
     code = (
         "import json, sys\n"
         f"sys.path.insert(0, {str(ci)!r})\n"

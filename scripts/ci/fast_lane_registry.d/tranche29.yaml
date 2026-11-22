@@ -1,0 +1,10 @@
+# TRANCHE29 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE29
+guards:
+  -
+    name: "quant-doc-divergence advisory (non-blocking)"
+    argv: ["python", "scripts/genai-stack/check_quant_doc_divergence.py"]
+    source: "native"
+    paths: ["docs/genai/genai-services.md", "docker-configurations/services/**/docker-compose*.yml", "docker-configurations/services/**/docker-compose*.yaml", "scripts/genai-stack/check_quant_doc_divergence.py", "scripts/tests/test_check_quant_doc_divergence.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    absorbed: true

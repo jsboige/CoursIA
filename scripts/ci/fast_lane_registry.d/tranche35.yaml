@@ -1,0 +1,15 @@
+# TRANCHE35 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE35
+guards:
+  -
+    name: "encoding-corruption-guard"
+    argv: ["python", "scripts/notebook_tools/check_encoding_corruption.py", "--base", "{base_ref}"]
+    source: "native"
+    paths: ["**/*.ipynb", "scripts/notebook_tools/check_encoding_corruption.py"]
+    blocking: true
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    warn_rc:
+      -
+        2

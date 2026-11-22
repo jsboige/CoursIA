@@ -1,0 +1,13 @@
+# TRANCHE52 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE52
+guards:
+  -
+    name: "Prose-numbers vs outputs ratchet (base vs PR, advisory)"
+    argv: ["python", "scripts/notebook_tools/check_prose_output_numbers.py", "{base_ref}"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/check_prose_output_numbers.py", "scripts/notebook_tools/tests/test_check_prose_output_numbers.py"]
+    blocking: false
+    needs_base: true
+    diff_bounded: true
+    absorbed: false
+    pre_argv: ["python", "scripts/notebook_tools/check_prose_output_numbers.py", "--self-test"]

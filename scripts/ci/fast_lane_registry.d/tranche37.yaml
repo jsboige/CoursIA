@@ -1,0 +1,13 @@
+# TRANCHE37 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE37
+guards:
+  -
+    name: "Series-denominator advisory (denominateur d'en-tete, #23678)"
+    argv: ["python", "scripts/notebook_tools/check_series_denominator.py", "{changed_paths}"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/check_series_denominator.py", "scripts/tests/test_check_series_denominator.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    iterates_paths: true
+    absorbed: true
+    iterate_paths: ["MyIA.AI.Notebooks/**/*.ipynb"]
+    pre_argv: ["python", "scripts/tests/test_check_series_denominator.py"]

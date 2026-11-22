@@ -1,0 +1,26 @@
+# TRANCHE48 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE48
+guards:
+  # Pre-controle (lecon #11685/#12817) : un detecteur qui ne peut
+  # pas prouver qu'il tire est indiscernable d'un detecteur
+  # debranche.
+  -
+    name: "Comment-density ratchet (base vs PR)"
+    argv: ["python", "scripts/notebook_tools/check_code_comment_density.py", "{base_ref}"]
+    source: "native"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_code_comment_density.py", "scripts/notebook_tools/tests/test_check_code_comment_density.py", "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json"]
+    blocking: true
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_code_comment_density.py", "--self-test"]
+  -
+    name: "Comment-density readability (advisory)"
+    argv: ["python", "scripts/notebook_tools/check_code_comment_density.py", "--readability", "{base_ref}"]
+    source: "native"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_code_comment_density.py", "scripts/notebook_tools/tests/test_check_code_comment_density.py", "scripts/notebook_tools/tests/fixtures/z3_20_csharp_26613_sources_only.nb.json"]
+    blocking: false
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_code_comment_density.py", "--self-test"]

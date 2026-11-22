@@ -1,0 +1,26 @@
+# TRANCHE46 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE46
+guards:
+  # Les actifs d'abord : la mesure porte sur les carnets.
+  # L'organe de la mesure (appele, jamais reecrit) et
+  # l'adaptateur qui l'appelle.
+  # Le workflow source : une revision qui le touche rejoue le
+  # garde (convention des gardes voisins).
+  # `--base-ref {base_ref}` porte le BORNAGE : l'organe de
+  # bornage des gardes absorbées (`check_absorbed_argv_scope.py`)
+  # voit le jeton explicite et la valeur `{base_ref}` -- la base
+  # vient de la lane, elle n'est pas en dur.
+  # rc=2 : abstention (merge-base introuvable) ou erreur
+  # structurelle. Classe NEUTRE (« incident »), jamais un vert.
+  -
+    name: "Render volume delta (#11656 advisory)"
+    argv: ["python", "scripts/ci/run_render_volume_guard.py", "--base-ref", "{base_ref}"]
+    source: "render-volume-delta-advisory.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/check_render_volume_delta.py", "scripts/ci/run_render_volume_guard.py", ".github/workflows/render-volume-delta-advisory.yml"]
+    blocking: false
+    needs_base: true
+    diff_bounded: true
+    absorbed: true
+    warn_rc:
+      -
+        2

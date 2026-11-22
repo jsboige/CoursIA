@@ -1,0 +1,14 @@
+# TRANCHE32 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE32
+guards:
+  -
+    name: "twin-index-collision-guard"
+    argv: ["python", "scripts/notebook_tools/check_twin_index_collisions.py", "--base", "{base_ref}", "--head", "HEAD", "--gate"]
+    source: "native"
+    paths: ["scripts/notebook_tools/twin_pairs.d/**", "scripts/notebook_tools/check_twin_index_collisions.py", "scripts/notebook_tools/twin_open_claims.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    warn_rc:
+      -
+        2

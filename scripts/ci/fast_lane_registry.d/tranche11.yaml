@@ -1,0 +1,12 @@
+# TRANCHE11 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE11
+guards:
+  -
+    name: "Source-collapse ratchet (base vs PR, advisory)"
+    argv: ["python", "scripts/notebook_tools/check_source_collapse.py", "{base_ref}"]
+    source: "native"
+    paths: ["**.ipynb", "scripts/notebook_tools/check_source_collapse.py", "scripts/notebook_tools/tests/test_check_source_collapse.py", ".claude/rules/pr-review-discipline.md", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    needs_base: true
+    absorbed: true
+    pre_argv: ["python", "scripts/notebook_tools/check_source_collapse.py", "--self-test"]

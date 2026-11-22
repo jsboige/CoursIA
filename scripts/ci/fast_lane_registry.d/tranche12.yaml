@@ -1,0 +1,10 @@
+# TRANCHE12 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE12
+guards:
+  -
+    name: "Link-label agreement (per-notebook, advisory)"
+    argv: ["python", "scripts/notebook_tools/check_link_label_agreement.py", "--fail"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "MyIA.AI.Notebooks/**/README.md", "docs/**/*.md", "slides/**/slides.md", "scripts/notebook_tools/check_link_label_agreement.py", "scripts/notebook_tools/tests/test_check_link_label_agreement.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: false
+    absorbed: true

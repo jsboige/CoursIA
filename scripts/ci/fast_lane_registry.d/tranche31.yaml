@@ -1,0 +1,18 @@
+# TRANCHE31 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE31
+guards:
+  # rc=2 = incident d'entree (manifeste illisible, git en echec), pas une
+  # faute de la PR : il rend le check-run neutre, avec un titre distinct
+  # (forme hr-substitution-guard, #17941). Sans lui, une panne de l'org
+  # se lirait comme un verdict.
+  -
+    name: "Library versions guard (#23073)"
+    argv: ["python", "scripts/notebook_tools/check_lib_versions.py", "--changed", "{base_ref}...HEAD"]
+    source: "native"
+    paths: ["**/*.ipynb", "scripts/notebook_tools/check_lib_versions.py", "scripts/notebook_tools/lib_versions_manifest.json", "scripts/notebook_tools/tests/test_check_lib_versions.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    absorbed: true
+    warn_rc:
+      -
+        2

@@ -1,0 +1,18 @@
+# TRANCHE3 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+# ADVISORY report-only (axe-2 output-health) : neutral sur
+# sain->degrade, jamais bloquant. Source : regression-guard.yml
+# (job `guard`, check-run « No notebook health regression »).
+group: TRANCHE3
+guards:
+  -
+    name: "No notebook health regression"
+    argv: ["python", "scripts/notebook_tools/regression_scan.py", "--guard", "--base", "{base_ref}", "--head", "HEAD", "--paths", "{changed_paths}"]
+    source: "regression-guard.yml"
+    paths: ["MyIA.AI.Notebooks/**/*.ipynb", "scripts/notebook_tools/regression_scan.py", "scripts/notebook_tools/regression_allowlist.json", "scripts/notebook_tools/diagnose_broken.py", "scripts/notebook_tools/forensic_scan.py", ".github/workflows/regression-guard.yml"]
+    blocking: false
+    needs_base: true
+    iterates_paths: true
+    absorbed: true
+    warn_rc:
+      -
+        2

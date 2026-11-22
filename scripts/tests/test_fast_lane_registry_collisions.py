@@ -37,9 +37,12 @@ import ast
 from collections import Counter
 from pathlib import Path
 
+import yaml
+
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 REGISTRE = CI_DIR / "fast_lane_registry.py"
 MOTEUR = CI_DIR / "fast_lane.py"
+DONNEES = CI_DIR / "fast_lane_registry.d"
 
 
 # --- les quatre lecturers, purs : source en entree, liste en sortie ---------
@@ -65,18 +68,20 @@ def listes_de_gardes(source: str) -> list[str]:
     return noms
 
 
-def noms_de_garde(source: str) -> list[str]:
-    """Les `name=` des gardes du registre : ce sont les noms des check-runs."""
+def noms_de_garde(docs: list) -> list[str]:
+    """Les `name=` des gardes du registre : ce sont les noms des check-runs.
+
+    Depuis #28117 les gardes vivent en donnees (``fast_lane_registry.d/
+    <groupe>.yaml``) : le lecteur prend les documents YAML PARSES du
+    repertoire de donnees, un par fichier. Un lecteur qui resterait sur le
+    source .py ne verrait plus AUCUN ``Guard(`` et serait vert en silence --
+    exactement la panne muette que ce fichier existe pour empecher.
+    """
     noms: list[str] = []
-    for noeud in ast.walk(ast.parse(source)):
-        if not isinstance(noeud, ast.Call):
-            continue
-        nom = getattr(noeud.func, "id", "")
-        if nom != "Guard":
-            continue
-        for kw in noeud.keywords:
-            if kw.arg == "name" and isinstance(kw.value, ast.Constant):
-                noms.append(str(kw.value.value))
+    for doc in docs:
+        for garde in doc.get("guards", []):
+            if isinstance(garde, dict) and "name" in garde:
+                noms.append(str(garde["name"]))
     return noms
 
 
@@ -130,8 +135,13 @@ def test_le_registre_ne_declaire_pas_deux_listes_homonymes():
 
 
 def test_le_registre_ne_declaire_pas_deux_gardes_de_meme_nom():
-    """Collision (2) : deux gardes de meme `name=` -- un seul check-run publie."""
-    doubl = doublons(noms_de_garde(REGISTRE.read_text(encoding="utf-8")))
+    """Collision (2) : deux gardes de meme `name=` -- un seul check-run publie.
+
+    Depuis #28117 les noms se lisent dans les donnees YAML, pas dans le .py.
+    """
+    docs = [yaml.safe_load(p.read_text(encoding="utf-8"))
+            for p in sorted(DONNEES.glob("*.yaml"))]
+    doubl = doublons(noms_de_garde(docs))
     assert not doubl, (
         "deux gardes portent le meme nom de check-run : la deduplication de la "
         f"voie rapide se fait par nom, un seul verdict survive -- {doubl}")
@@ -196,9 +206,22 @@ def test_le_lecteur_de_listes_detecte_le_doublon():
     assert doubl == {"TRANCHE52": 2}
 
 
+DONNEES_SYNTHETIQUES = [
+    {"group": "TRANCHE52",
+     "guards": [{"name": "garde-a", "argv": ["python", "x"],
+                 "source": "(x)"}]},
+    {"group": "AUTRE",
+     "guards": [{"name": "garde-a", "argv": ["python", "y"],
+                 "source": "(y)"},
+                {"name": "garde-b", "argv": ["python", "z"],
+                 "source": "(z)"}]},
+]
+
+
 def test_le_lecteur_de_noms_detecte_le_doublon():
-    """Controle POSITIF du detecteur (2) : deux gardes de meme `name=`."""
-    doubl = doublons(noms_de_garde(REGISTRE_SYNTHETIQUE))
+    """Controle POSITIF du detecteur (2) : deux gardes de meme `name=`,
+    en donnees YAML depuis #28117."""
+    doubl = doublons(noms_de_garde(DONNEES_SYNTHETIQUES))
     assert doubl == {"garde-a": 2}
 
 

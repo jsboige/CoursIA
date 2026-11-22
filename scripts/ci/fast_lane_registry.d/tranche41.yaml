@@ -1,0 +1,15 @@
+# TRANCHE41 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE41
+guards:
+  # Toute definition nouvelle de la famille du PCM par poches est
+  # declencheuse : le motif `/**/` couvre ici la racine comme les
+  # sous-repertoires (semantique GitHub, cf path_matches).
+  # L'organe lui-meme : une revision qui change sa portee doit la
+  # rejouer (les 21 gardes natifs voisins declarent la meme paire).
+  -
+    name: "pcm-single-source-guard"
+    argv: ["python", "scripts/quantconnect/check_pcm_single_source.py"]
+    source: "native"
+    paths: ["MyIA.AI.Notebooks/QuantConnect/**/*.py", "scripts/quantconnect/check_pcm_single_source.py", "scripts/quantconnect/pcm_single_source.json", "scripts/quantconnect/tests/test_check_pcm_single_source.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    absorbed: true

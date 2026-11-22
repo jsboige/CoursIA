@@ -1,0 +1,18 @@
+# TRANCHE40 -- genere depuis scripts/ci/fast_lane_registry.py (#28117), ne pas editer a la main sans relire le chargeur.
+group: TRANCHE40
+guards:
+  # Le moteur et le registre sont dans le perimetre : une PR qui les
+  # touche peut casser la bascule base/tete dont ce garde depend, et
+  # doit donc le rejouer (meme convention que TRANCHE8).
+  -
+    name: "Harness autoloaded weight ratchet (base vs PR, bloquant)"
+    argv: ["python", "scripts/audit/measure_autoloaded_harness.py", "--json"]
+    source: "native"
+    paths: ["CLAUDE.md", ".claude/rules/**", "scripts/audit/measure_autoloaded_harness.py", "scripts/ci/check_harness_weight_delta.py", "scripts/tests/test_check_harness_weight_delta.py", "scripts/ci/fast_lane.py", "scripts/ci/fast_lane_registry.py"]
+    blocking: true
+    needs_base: true
+    diff_bounded: true
+    delta_argv: ["python", "scripts/ci/check_harness_weight_delta.py", "{base_json}", "{head_json}"]
+    swap_paths: ["CLAUDE.md", ".claude/rules"]
+    absorbed: true
+    pre_argv: ["python", "-m", "pytest", "-q", "scripts/tests/test_check_harness_weight_delta.py"]
