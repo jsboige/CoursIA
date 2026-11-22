@@ -81,40 +81,9 @@ Ce précis par domaine est une **vue** ; la commande fait foi : `grep -l '^paths
 
 #### B.0 — Aucun nit non levé ne survit à un merge (HARD, mandat user 2026-08-15)
 
-**Lire l'ÉTAT d'une review n'est pas lire la review.** Le champ `reviews[].state` est **structurellement aveugle** aux deux canaux qui portent le plus de substance sur ce dépôt :
+**Prescription complète** : [pr-review-context.md §Prescription B.0](docs/reference/pr-review-context.md) — trois surfaces (`comments[]`, `reviews[].body`, `reviewThreads`), trois voies de levée (réponse écrite, thread résolu, issue nommée avant merge), auteur et heure obligatoires.
 
-| Canal | Ce que `reviews[].state` en dit | Où le contenu vit réellement |
-|---|---|---|
-| **Nits du user** | *rien* — postés en issue comments, aucune entrée dans `reviews[]` | `comments[].body` |
-| **Réserves d'Hermes** | `COMMENTED` — le verdict est un **préfixe de body** (`[Hermes] COMMENT_WITH_CONCERNS`) | `reviews[].body` |
-| **Commentaires inline** | *rien* — absents de `gh pr view --json comments,reviews` | `reviewThreads` (GraphQL), champ `isResolved` |
-
-Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que chaque remarque postée après le dernier commit est **levée** par l'une de ces trois choses, et rien d'autre :
-
-1. une **réponse écrite** sur la PR qui nomme la remarque (traitée en code — en citant le commit — traitée en argument, ou refusée en le disant) ;
-2. un **thread inline résolu** (`isResolved: true`) ;
-3. une **issue de suivi ouverte et nommée AVANT le merge** (reportée sciemment) — le commentaire de merge peut la rappeler, il ne peut pas la créer.
-
-**Une levée porte un AUTEUR et une HEURE — sans les deux, ce n'est pas une levée.**
-
-- **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue.
-- **Sous le login partagé, seul le coordinateur lève par une phrase.** Toutes les lanes écrivent sous `jsboige` : sur une PR `jsboige`, une phrase de levée signée `jsboige` est indiscernable d'une auto-levée, et l'organe la refuse quelle que soit la lane qui l'a écrite (#13316, #13495). La levée par phrase se fait sous `myia-ai-01`, avec `[OVERRIDE] lane myia-ai-01:CoursIA` en tête de ligne, et **elle nomme l'auteur de la réserve par son login** (ou par la persona Hermes). Une lane qui a traité une réserve le dit sur la PR et le signale au coordinateur. Elle garde les voies 2 et 3 ci-dessus. Exception Q185 (user, 2026-11-13) : l'adjoint `myia-po-2025:CoursIA-2`, sous son App `coursia-lane-po-2025[bot]`, lève aussi par phrase les réserves de bot (Hermes, `clusterManager-Myia`, bots), `[OVERRIDE] lane myia-po-2025:CoursIA-2` en tête — jamais celles du coordinateur, du user ou d'une autre lane.
-- **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**.
-
-**Un commit poussé après la remarque ne la lève PAS à lui seul.** Un push muet est indiscernable d'un push qui répond : ce qui lève une remarque est **une phrase**, pas un SHA.
-
-L'écoulement du temps n'est **pas** une levée. `mergeStateStatus: CLEAN` n'est **pas** une levée. `state: COMMENTED` n'est **pas** une absence de réserve. Un reviewer qui écrit « je ne peux pas approuver seul sur ce format » **bloque** — c'est un refus d'approbation, pas un avis.
-
-**Organe** (la règle ne tient pas par la vigilance) :
-
-```bash
-python scripts/check_unaddressed_nits.py <PR>        # exit 1 = ne pas merger
-python scripts/check_unaddressed_nits.py --audit --limit 400
-```
-
-**`exit 0` répond « aucune phrase de levée ne manque » — et rien d'autre.** Il ne dit ni **qui** l'a écrite, ni **avant ou après le merge**, ni si la **substance** est traitée. Ces trois-là se lisent à la main, et la troisième exige d'**ouvrir les corps de review** : un `state: COMMENTED` de `jsboige` est un verdict Hermes dont le sens vit dans le préfixe du body. L'organe ne lit aussi que ses **marqueurs** : une réserve bloquante posée **sans** marqueur, en prose libre, rend `rc=0` — le contrat est côté **émission**, et les marqueurs ne s'élargissent pas à la prose ([pr-review-discipline.md](.claude/rules/pr-review-discipline.md)).
-
-**Incidents fondateurs** (#10761, #12798, #12347, #14658) : [pr-review-context.md](docs/reference/pr-review-context.md).
+**Précis** : avant tout `gh pr merge`, chaque remarque postée après le dernier commit doit être levée par une **phrase** (pas un SHA, pas l'écoulement du temps, pas `CLEAN`). L'auteur d'une PR ne lève pas la réserve d'un tiers ; une levée existe **avant** le merge, avec auteur et heure. **Sous le login partagé** (`jsboige`), seul le coordinateur lève par une phrase — `[OVERRIDE] lane myia-ai-01:CoursIA` en tête, login de l'auteur de la réserve nommé ; exception Q185 : l'adjoint `myia-po-2025:CoursIA-2` lève par phrase les réserves de bot, jamais celles du coordinateur, du user ou d'une autre lane. Trois négations : un commentaire de merge est un compte-rendu, **jamais une porte** ; `state: COMMENTED` n'est **pas** une absence de réserve (le verdict Hermes vit dans le préfixe du body) ; `exit 0` de l'organe dit seulement qu'aucune phrase de levée ne manque — qui, quand et la substance se lisent à la main. Organe : `python scripts/check_unaddressed_nits.py <PR>` (exit 1 = ne pas merger).
 
 #### Les 5 points
 
@@ -128,13 +97,7 @@ Avant tout merge (y compris ses propres PRs) :
 | 4 | **Exécution réelle** | Papermill ou Jupyter pour notebooks (CI = syntaxe seule). Slidev `?clicks=99` pour slides |
 | 5 | **Regression check** | Grep des symboles touchés dans le reste du dépôt |
 
-**Si un seul point n'est pas vérifié : ne pas merger.**
-
-**Preuves vérifiables, pas mots-clés** : « Papermill SUCCESS » / « tests passed » / « sorry count -1 » / « BEATS » / « FALSE POSITIVE » sans log/lien CI / `lake build SUCCESS` post-modif / multi-seed ≥4 + edge ≥2σ / 3 cellules-types vérifiées = **invalide**.
-
-**Honnêteté des rapports** : pas de « DONE »/« fixed »/« validated » sans validation post-fix relancée. Rapporter « 5/7, 2 restantes », pas « DONE ». Pas de markdown « RAPPORT »/« AUDIT » comme preuve sans code valide.
-
-**Reviewers (humains ET bots)** : critères CHANGES_REQUESTED par domaine → [pr-review-discipline.md](.claude/rules/pr-review-discipline.md) §A-H. **APPROVED malgré violation = complicité.**
+**Si un seul point n'est pas vérifié : ne pas merger.** Preuves vérifiables exigées (détail : [pr-review-context.md](docs/reference/pr-review-context.md)).
 
 ### C. Notebooks (3 règles user 2026-04-26)
 
@@ -220,7 +183,7 @@ Arborescence des séries de notebooks et des dossiers techniques : [README §Str
 
 **Collision** : sous-agents read-only en parallèle OK ; sous-agents **éditeurs = un seul à la fois par notebook/série**.
 
-**Modèle explicite obligatoire** : tout `Agent()` DOIT porter un modèle explicite. Pour la lecture en volume, c'est `subagent_type: "swift-reader"`, sans argument `model` : le fichier d'agent fixe Swift, le vLLM local, qui est gratuit (mandat user 2026-10-27). Sinon, `model: "sonnet"` ou `"haiku"`. `"opus"` **jamais sur les postes po-\***, sauf lane autorisée nommément (cf point 3, `myia-po-2024:CoursIA-3`) (mandat user 2026-10-10) — la tâche qui le justifierait remonte à ai-01 ; sur ai-01, justification écrite dans le prompt. Sous-agent sans `model` explicite = hérite d'opus = violation. Cf [model-delegation.md](.claude/rules/model-delegation.md).
+**Modèle explicite obligatoire** : tout `Agent()` DOIT porter un modèle explicite — `subagent_type: "swift-reader"` (lecture en volume, gratuit) sans argument `model`, sinon `model: "sonnet"` ou `"haiku"`. `"opus"` jamais sur po-* (mandat user 2026-10-10), sauf lane autorisée nommément (cf [model-delegation.md](.claude/rules/model-delegation.md) point 3).
 
 ---
 

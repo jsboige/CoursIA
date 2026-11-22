@@ -6,6 +6,7 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "DFS, Kosaraju, DPLL et la diagonalisation pedagogique sont les objets experimentaux du source ; aucun moteur externe n'est appele, le jumeau utilise la BCL seule."
   known_differences:
+    - "2026-11-21 (myia-po-2024:CoursIA, PR #27854) : navigation Markdown du jumeau Python vers le troisieme cote Rust Complexity-03c-ComplexityZoo-Navigation-Rust.ipynb (portage evcxr livre par la meme PR, precedents Sudoku-10/CSP-4) ; cote Python seul, 0 cellule code touchee, 0 sortie modifiee, 0 execution_count deplace. Jumeau C# et differences anterieures inchanges."
     - "System.Random et Python random engendrent des graphes et des instances SAT distincts pour une meme graine."
     - "Matplotlib en Python et SVG statique opaque en C#."
     - "Garde clause-vide en tete de recursion du DPLL presente en Python (review #26935 R3, necessaire et suffisante d'apres Hermes), absente du jumeau C# qui ne l'attrape que pendant la propagation d'unite."
