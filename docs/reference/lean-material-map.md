@@ -107,7 +107,7 @@ La doctrine demande qu'un lac vive dans le dossier de la (sous-)serie dont les c
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean` — 5 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Tweety`
 - `MyIA.AI.Notebooks/GameTheory/assignment_lean` — 3 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
-- `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
+- `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF`
 
 ## R4 — les doublons de theoreme, et leur declaration
 
