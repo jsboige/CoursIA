@@ -3645,7 +3645,7 @@ TRANCHE40: list[Guard] = [
 #
 # Le programme "tri de la CI" : un carnet pousse sur une PR declenche ~33
 # workflows, chacun avec son `actions/checkout` (82 % du temps d'execution
-# d'un garde, mesure du coordinateur dans docs/coordination/ci-two-tier.md).
+# d'un garde, mesure du coordinateur dans docs/transients/2026-11-10-ci-two-tier.md).
 # Ces gardes AUTONOMES ne regardent que la PR -- ils n'ont besoin ni du
 # corps de la PR, ni d'un artefact, ni d'une etiquette. La voie rapide les
 # execute dans UN checkout partage : c'est ce que cette tranche absorbe.
@@ -3816,7 +3816,7 @@ TRANCHE42: list[Guard] = [
 # POURQUOI CE GESTE (#25510, plan de tri de la CI) : une PR de carnet
 # declenchait 31 workflows, chacun avec son runner, son checkout et son
 # `setup-python` ; un garde de carnet median coute 1,2 min, dont 82 % de
-# checkout (`docs/coordination/ci-two-tier.md` §3.4). La voie rapide fait
+# checkout (`docs/transients/2026-11-10-ci-two-tier.md` §3.4). La voie rapide fait
 # tourner les gardes dans le checkout DEJA materialise de `always-on-guards`.
 #
 # SEMANTIQUE CONSERVEE, point par point :
@@ -3880,7 +3880,7 @@ TRANCHE43: list[Guard] = [
 # derive de traduction (`translation-drift.yml`).
 #
 # POURQUOI CE GESTE : un garde de carnet median coute 1,2 min, dont 82 % de
-# checkout (docs/coordination/ci-two-tier.md §3.4). Ce garde balayait les
+# checkout (docs/transients/2026-11-10-ci-two-tier.md §3.4). Ce garde balayait les
 # carnets touches par la PR dans son propre checkout ; la voie rapide le
 # rend dans le checkout DEJA materialise de `always-on-guards`.
 #

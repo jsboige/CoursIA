@@ -93,7 +93,7 @@ python scripts/translation/check_translation_sync.py   # 0 anomalie attendue
 
 **Application post-clôture textuelle #6949** : PR [#8431](https://github.com/jsboige/CoursIA/pull/8431) (2026-07-25) a zeroté 100 SRC_DRIFT sur Planners **après** la clôture textuelle (#7967, 2026-07-22). **Violation documentée** : le compteur `100 → 0` a été publié sans livraison de traduction. Cet incident **renforce** la doctrine (ne la renverse pas) et reste **ouvert** comme exemple pour les futurs agents qui évalueraient un resync.
 
-Voir le diagnostic de référence : [docs/translation/translations-root-diagnostic.md](../docs/translation/translations-root-diagnostic.md) (c.1252, 2026-08-06).
+Voir le diagnostic de référence : [docs/transients/2026-08-06-translations-root-diagnostic.md](../docs/transients/2026-08-06-translations-root-diagnostic.md) (c.1252, 2026-08-06).
 
 ## Voir aussi
 
@@ -101,4 +101,4 @@ Voir le diagnostic de référence : [docs/translation/translations-root-diagnost
 - Epic #1650 — traduction multilingue du dépôt
 - Issue #6949 — T3 moteur fork Argumentum (OUVERTE par décision coord)
 - `scripts/translation/README.md`
-- `docs/translation/translations-root-diagnostic.md` — diagnostic de l'état + options de disposition
+- `docs/transients/2026-08-06-translations-root-diagnostic.md` — diagnostic de l'état + options de disposition
