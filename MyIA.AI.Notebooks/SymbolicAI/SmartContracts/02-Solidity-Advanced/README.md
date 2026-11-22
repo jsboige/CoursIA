@@ -44,7 +44,7 @@ Un README de série se lit à plusieurs vitesses : le parcours principal par les
 
 Deux compagnons prolongent SC-7 vers la vérification formelle :
 
-- [SC-7b — vérification par compagnon](SC-7b-ERC20-Lean-Verification-Companion.ipynb) reprend l'invariant de conservation `Σ balances = totalSupply` du contrat de SC-7. Il rejoue des transitions `mint`, `transfer` et `burn` en Python, puis sur une simulation Monte-Carlo de 10 000 transitions, et confronte cette observation à la garantie prouvée dans le lake Lean `erc20_lean` (voir [Lean-23](../../Lean/Lean-23-ERC20-Invariant-Companion.ipynb)). Prérequis en plus : SC-7 complété, notions d'ERC-20 ; kernel `python3`, aucune chaîne locale.
+- [SC-7b — vérification par compagnon](SC-7b-ERC20-Lean-Verification-Companion.ipynb) reprend l'invariant de conservation `Σ balances = totalSupply` du contrat de SC-7. Il rejoue des transitions `mint`, `transfer` et `burn` en Python, puis sur une simulation Monte-Carlo de 10 000 transitions, et confronte cette observation à la garantie prouvée dans le lake Lean `erc20_lean` (voir [Lean-23](../../Lean/VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb)). Prérequis en plus : SC-7 complété, notions d'ERC-20 ; kernel `python3`, aucune chaîne locale.
 - [SC-07c — Lean natif](SC-07c-ERC20-Lean.ipynb) passe au noyau Lean lui-même (kernel `lean4-wsl`) : il évalue les signatures et les théorèmes du lake (`#check`, `#print axioms`, `#eval`) et liste les axiomes que ces preuves utilisent ; ses exercices demandent de compléter des preuves Lean. Prérequis en plus : SC-7b complété, Lean 4 via le kernel `lean4-wsl` (WSL), exécution depuis le répertoire du lake.
 
 ### Autour de 08 — l'économie du fournisseur de liquidité
