@@ -110,7 +110,9 @@ permissions:
   # pending) the script cancels ITS OWN run so the leg concludes CANCELLED
   # instead of FAILURE. The PR stays blocked (a cancelled required check is
   # not success) and pr-gate-stale-sweep re-drives cancelled gate legs
-  # exactly like supersession-cancels (#11862).
+  # exactly like supersession-cancels (#11862). The INCONCLUSIVE quota
+  # verdict (exit 3) takes the same rendering since #27768: unknown is not
+  # false, and a FAILED leg is not a sweep candidate.
   actions: write
 
 concurrency:

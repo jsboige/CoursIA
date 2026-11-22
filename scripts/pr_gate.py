@@ -99,7 +99,14 @@ exactly as before.
    failure) still exits 1 but cancels its own run, so the leg concludes
    CANCELLED -- the PR stays BLOCKED (never passes on unknown), yet the log
    does not claim a failure that never happened and the stale-sweep re-drives
-   it like any other cancelled gate leg (#11862).
+   it like any other cancelled gate leg (#11862). The INCONCLUSIVE quota
+   verdict (exit 3, #26542) gets the same rendering (#27768): unknown is not
+   false. `neutral` is deliberately NOT used for either -- the job's own
+   check-run takes its conclusion from the step's exit status (the runner
+   maps any non-zero exit to FAILURE; `continue-on-error` renders SUCCESS, a
+   false green), and our own readers count `neutral` as GREEN
+   (`check_run_state.GREEN`), so a neutral gate leg would merge PRs whose
+   checks were never read.
 2. **Latest run per workflow wins.** GitHub's concurrency groups cancel
    superseded runs, and re-runs leave the old attempt visible. Without
    de-duplication, one benign `cancelled` from a superseded run would block a
@@ -2439,7 +2446,8 @@ def main(argv: Iterable[str] | None = None) -> int:
         "--no-self-cancel",
         action="store_true",
         help=(
-            "On starvation, exit FAIL without cancelling the own run "
+            "On starvation or an INCONCLUSIVE quota verdict, exit non-zero "
+            "without cancelling the own run "
             "(escape hatch; also the implicit behaviour when no run id "
             "is resolvable, e.g. a local run)."
         ),
@@ -2596,38 +2604,58 @@ def main(argv: Iterable[str] | None = None) -> int:
             os.environ.get("GITHUB_RUN_ATTEMPT"),
         )
 
-    # #13510: render a starvation as CANCELLED, not FAILURE. The PR stays
+    # #13510 / #27768: render a verdict with NO ANSWER as CANCELLED, not
+    # FAILURE. Two verdicts land here: a starvation (nothing red, constituents
+    # still pending) and the INCONCLUSIVE quota verdict (#26542). The PR stays
     # BLOCKED (a cancelled required check is not success), but the leg no
     # longer claims a failure that never happened, and pr-gate-stale-sweep
     # already treats a cancelled gate leg as a re-run candidate (#11862) --
-    # the same recovery channel as a supersession-cancel. Workflow-run mode
-    # only: --post-check-run runs on the default branch as an operator
-    # harness whose own run is NOT the PR's gate leg, so it keeps POSTing
-    # the verdict instead of cancelling itself.
+    # the same recovery channel as a supersession-cancel. A FAILED leg, by
+    # contrast, is not a sweep candidate: it waits for its lane.
+    #
+    # `neutral` would be the natural conclusion for "unknown", but the job's
+    # own check-run cannot carry it: the runner maps every non-zero exit to
+    # FAILURE, and `continue-on-error` renders SUCCESS -- a false green
+    # (#27768). CANCELLED is the only reachable non-green, non-failure
+    # conclusion on the required leg.
+    #
+    # Workflow-run mode only: --post-check-run runs on the default branch as
+    # an operator harness whose own run is NOT the PR's gate leg, so it keeps
+    # POSTing (or skipping, on INCONCLUSIVE) instead of cancelling itself.
+    if code == QUOTA_INCONCLUSIVE_CODE:
+        self_cancel_kind = "INCONCLUSIVE"
+    elif code == 1 and message.startswith("STARVED"):
+        self_cancel_kind = "STARVED"
+    else:
+        self_cancel_kind = None
     if (
-        code == 1
-        and message.startswith("STARVED")
+        self_cancel_kind
         and not args.no_self_cancel
         and not args.post_check_run
     ):
         run_id = args.run_id or os.environ.get("GITHUB_RUN_ID")
         if run_id:
+            if self_cancel_kind == "INCONCLUSIVE":
+                why = ("installation quota exhausted, check state UNKNOWN -- "
+                       "not a defect of the PR")
+            else:
+                why = "constituents still pending, nothing red"
             print(
-                f"[pr-gate] STARVED -- constituents still pending, nothing "
-                f"red; cancelling own run {run_id} so the leg concludes "
-                "CANCELLED, not FAILURE (#13510). The PR stays blocked; "
+                f"[pr-gate] {self_cancel_kind} -- {why}; cancelling own run "
+                f"{run_id} so the leg concludes CANCELLED, not FAILURE "
+                "(#13510/#27768). The PR stays blocked; "
                 "pr-gate-stale-sweep will re-aggregate.",
                 flush=True,
             )
             if cancel_own_run(args.repo, run_id):
                 # Hold the step open so the cancel signal lands before we
-                # exit (see CANCEL_GRACE_SEC). Exit code stays 1: if the
-                # cancel lost the race, rule 1 still holds.
+                # exit (see CANCEL_GRACE_SEC). Exit code is unchanged: if
+                # the cancel lost the race, rule 1 still holds.
                 time.sleep(CANCEL_GRACE_SEC)
         else:
             print(
-                "[pr-gate] STARVED but no run id resolvable (local run) -- "
-                "FAIL per rule 1",
+                f"[pr-gate] {self_cancel_kind} but no run id resolvable "
+                "(local run) -- non-zero exit per rule 1",
                 flush=True,
             )
 

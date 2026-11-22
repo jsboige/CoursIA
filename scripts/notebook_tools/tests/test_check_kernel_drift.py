@@ -322,6 +322,44 @@ def test_diff_signatures_added_cell_printing_intervals_not_reported():
     ) == []
 
 
+def test_diff_signatures_common_cell_gaining_float_not_reported():
+    """#25413 etendu -- cas mesure PR #27915, cellule c371d193.
+
+    Une cellule COMMUNE (meme id base/tete) dont la sortie de base
+    EXISTAIT mais ne portait aucun texte float-array et qui en gagne une
+    a la tete est une addition de contenu : la PR ajoute un print de
+    marges mesurees a une cellule existante. Le partitionneur ne la
+    classait pas ``added`` (sa base avait des sorties non vides), elle
+    restait en derive bloquante alors que rien n'avait derive -- la
+    signature de base etait vide, il n'existait aucune valeur de
+    reference a faire deriver. Elle part desormais en advisory
+    ``output_added_cells``, comme la conversion exercice -> exemple de
+    #25413.
+    """
+    base = _nb_ids([("c-work", "sur 12 mondes : 3 victoires\n"),
+                    ("c-fig", "<Figure size 1100x400 with 2 Axes>\n")])
+    head = _nb_ids([("c-work", "sur 12 mondes : 3 victoires\n"
+                                "marge : [-0.2021, 0.2404]\n"),
+                    ("c-fig", "<Figure size 1100x400 with 2 Axes>\n")])
+    b_sig, h_sig = ckd.float_signatures(base), ckd.float_signatures(head)
+    assert ckd.diff_signatures(b_sig, h_sig, base_nb=base, head_nb=head) == []
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c-work"]
+
+
+def test_diff_signatures_common_cell_real_drift_still_reported():
+    """Controle positif du jumeau id-aligne : le fix ne rend pas l'organe aveugle.
+
+    Une cellule commune dont la base PORTAIT une signature float et dont
+    la valeur change reellement (au-dela de la tolerance 1 ULP) reste
+    une derive signalee.
+    """
+    assert _id_aligned_diffs(
+        [("c-work", "[1.0, 1.0]\n")],
+        [("c-work", "[2.0, 3.0]\n")],
+    ) == ["c-work"]
+
+
 # --- #25413 : une sortie qui APPARAIT dans une cellule vide a la base ------
 # n'est PAS une derive de signature : c'est une addition de contenu (la
 # conversion exercice -> exemple guide). Le guard ne la rapporte ni en
@@ -644,7 +682,7 @@ def test_canonical_transition_scoped_series_02ml_310_accepted():
     # elargissement, il ne fuit pas.
     assert ckd.accepted_canonical_transition(
         a, b,
-        nb_path=("MyIA.AI.Notebooks/Complexity/"
+        nb_path=("MyIA.AI.Notebooks/InformationCalcul/Complexity/"
                  "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb"),
     ) is False
 
@@ -664,7 +702,7 @@ def test_canonical_transition_scoped_series_does_not_leak_outside():
     # c'est le carnet jumeau ``GameTheory-annexe/`` qui garde la frontiere
     # du prefixe -- ``GameTheory-annexe/`` n'est pas ``GameTheory/``.
     for path in (
-        "MyIA.AI.Notebooks/Complexity/"
+        "MyIA.AI.Notebooks/InformationCalcul/Complexity/"
         "Complexity-07-KolmogorovBornee-Sequences-Python.ipynb",
         "MyIA.AI.Notebooks/GameTheory-annexe/x.ipynb",
         "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours-autre/x.ipynb",
