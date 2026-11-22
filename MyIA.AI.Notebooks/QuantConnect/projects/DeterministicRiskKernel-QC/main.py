@@ -90,11 +90,12 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
         self._rng = np.random.default_rng(self._seed)
         self._n_draws = 0
 
-        start = self.get_parameter("start_date", "2015-01-02")
-        end = self.get_parameter("end_date", "2026-07-31")
-        self.set_start_date(datetime.strptime(start, "%Y-%m-%d"))
-        self.set_end_date(datetime.strptime(end, "%Y-%m-%d"))
+        start = datetime.strptime(self.get_parameter("start"), "%Y-%m-%d")
+        end = datetime.strptime(self.get_parameter("end"), "%Y-%m-%d")
+        self.set_start_date(start.year, start.month, start.day)
+        self.set_end_date(end.year, end.month, end.day)
         self.set_cash(100000)
+        self.start_value = 100000.0
 
         self._spy = self.add_equity("SPY", Resolution.DAILY).symbol
         self.securities[self._spy].set_fee_model(ProportionalFeeModel())
@@ -148,8 +149,10 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
                          self.time_rules.before_market_open(self._spy, 60),
                          self._before_open)
         # Trace journaliere `shadow` (contrat #18923) : valeur du portefeuille a l'ouverture
-        # de chaque seance de SPY, repartie sur e0..e4.
+        # de chaque seance de SPY, repartie sur e0..e4, plus les series `fees` et
+        # `turnover` a chaque seance (contrat #27482).
         self._trace_count = 0
+        self.traded = 0.0
         self.schedule.on(self.date_rules.every_day(self._spy),
                          self.time_rules.after_market_open(self._spy, 0),
                          self._trace)
@@ -316,6 +319,9 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
     # ------------------------------------------------------------------ executions
 
     def on_order_event(self, order_event):
+        if order_event.status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
+            self.traded += (abs(order_event.fill_quantity * order_event.fill_price)
+                            / self.portfolio.total_portfolio_value)
         if order_event.status == OrderStatus.INVALID:
             self._n_invalid += 1
             return
@@ -364,6 +370,8 @@ class DeterministicRiskKernelAlgorithm(QCAlgorithm):
 
     def _trace(self):
         self.plot("shadow", f"e{self._trace_count % 5}", self.portfolio.total_portfolio_value)
+        self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)
+        self.plot("shadow", "turnover", self.traded)
         self._trace_count += 1
 
     def on_end_of_algorithm(self):

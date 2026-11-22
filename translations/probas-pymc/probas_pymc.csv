@@ -6504,15 +6504,23 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,f7337618,code,fr,74f2b
 # Resultat attendu : environ 8.7% (paradoxe de la prevalence)
 
 print(""Exercice a completer"")",,,,,,,,74f2b0aa89ddedfe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,185bb59c,markdown,fr,1ce706cd44d495f0,"## Conclusion
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,185bb59c,markdown,fr,2b950199b21342d3,"## À retenir
 
-Les graphes de facteurs offrent une représentation visuelle et algorithmique des modèles probabilistes, decomposant la distribution jointe en facteurs locaux.
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| Une évidence partielle déplace le posterior | `P(Scarlet) = 0.6` avant l'observation de l'arme, **0.176** après ; `P(Mustard)` passe de `0.3` à **0.797**, `P(Peacock)` de `0.1` à **0.028** |
+| Explaining away : l'évidence d'une cause baisse la probabilité de ses concurrentes | Mustard monte à `0.797`, donc Scarlet tombe de `0.6` à `0.176` et Peacock de `0.1` à `0.028` |
+| Sur un modèle discret, PyMC échantillonne au lieu de propager des messages | `CategoricalGibbsMetropolis: [coupable]`, 4 chaînes × 5 000 tirages, `pire r_hat = 1.000`, `ess_bulk min = 15310` |
+| Changer de porte double la probabilité de gagner | joueur sur la porte 0, Monty ouvre la porte 1 : garder **0.333**, changer **0.667**, porte ouverte **0.000** |
+| Le graphe de facteurs décompose la loi jointe en facteurs locaux | chaque facteur encode une dépendance locale (prior, vraisemblance, transition) ; le *sum-product* donne les marginales exactement sur un arbre, PyMC n'en donne qu'une approximation Monte-Carlo |
 
-### Points clés
-- Chaque facteur encode une dépendance locale (prior, vraisemblance, transition)
-- Sur ces modèles discrets, PyMC resout l'inference par **echantillonnage MCMC** (CategoricalGibbsMetropolis) : une approximation Monte-Carlo du calcul exact qu'un **passage de messages** (sum-product) realiserait directement sur le graphe de facteurs quand celui-ci est un arbre
-- Les graphes de facteurs generalisent les réseaux bayesiens et les chaînes de Markov
+Les graphes de facteurs généralisent les réseaux bayésiens et les chaînes de Markov.
 
+## En synthèse
+
+Les graphes de facteurs offrent une représentation visuelle et algorithmique des modèles probabilistes, décomposant la distribution jointe en facteurs locaux. Sur ces modèles discrets, PyMC résout l'inférence par **échantillonnage MCMC** (`CategoricalGibbsMetropolis`) : une approximation Monte-Carlo du calcul exact qu'un **passage de messages** (*sum-product*) réaliserait directement sur le graphe de facteurs quand celui-ci est un arbre.
+
+## Références et provenance
 
 > *Références.* Les graphes de facteurs et le passage de messages *sum-product* sont formalisés dans Kschischang, Frey & Loeliger (2001), *Factor Graphs and the Sum-Product Algorithm* (IEEE Transactions on Information Theory **47**(2):498-519), et exposés de référence dans Bishop (2006), *Pattern Recognition and Machine Learning* [PRML], §8.4. L'algorithme calcule les marginales *exactement* en temps fini sur un arbre de facteurs ; PyMC l'approche ici par échantillonnage MCMC (CategoricalGibbsMetropolis) — une approximation Monte-Carlo du même calcul, là où Infer.NET propage les messages analytiquement via Expectation Propagation (EP).
 
@@ -6520,7 +6528,7 @@ Les graphes de facteurs offrent une représentation visuelle et algorithmique de
 
 **Navigation** : [<< PyMC-2b (Debugging)](PyMC-02b-Debugging-Python.ipynb) | [PyMC-4 (Bayesian Networks) >>](PyMC-04-Bayesian-Networks.ipynb)
 
-**Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,1ce706cd44d495f0,,,,,,,,,,,,,,,
+**Retour au sommaire** : [Index Probas](../README.md)",,,,,,,,2b950199b21342d3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,6ddc2b96,markdown,fr,9e6dc976330ca62a,"# PyMC-4 : Reseaux Bayesiens
 
 **Navigation** : [Index](../README.md) | [<< PyMC-3](PyMC-03-Factor-Graphs.ipynb) | [PyMC-5 >>](PyMC-05-Causal-Inference.ipynb)
@@ -7399,7 +7407,22 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,1e976e5b,code,fr,03
 # Etape 2 : coder des CPT produisant un renversement
 # Etape 3 : montrer P(Y|X) agrege != P(Y|do(X)) et expliquer le mecanisme
 print(""Exercice 4 a completer : concevoir un paradoxe de Simpson (renversement agrege vs conditionnel)."")",,,,,,,,030fffe9429f6a57,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,c0961fd6,markdown,fr,b27de4fc29809c97,"## Synthese
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,c0961fd6,markdown,fr,d30944c3a152d638,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| Observer n'est pas agir | baromètre : conditionné à sa baisse, `P(tempete) = 0.656` ; sous `do(barometre baisse)`, **0.310** — la marginale, donc aucun effet |
+| `pm.do` est un opérateur natif de PyMC, pas une convention d'écriture | la même requête échantillonnée sous `pm.do` rend **0.307**, contre `0.310` par énumération exacte : l'intervention est une transformation de modèle |
+| Deux routes d'identification, un même nombre | backdoor `0.80 × 0.3 + 0.10 × 0.7 = 0.310`, égal au `do` direct `0.310` ; front-door `0.689`, égal à la mutilation `0.689`, sans jamais accéder au confondeur `U` |
+| L'agrégat peut mentir, le `do` rétablit | Simpson : agrégé `0.580` avec médicament contre `0.620` sans → il semble nuire ; par strate il aide (graves `0.50` contre `0.30`, légers `0.90` contre `0.70`) ; sous `do(Drug)`, `0.700` contre `0.500` → il aide causalement |
+| La médiation se décompose exactement | `TE = 0.320`, `NDE = 0.200`, `NIE = 0.120`, et `NDE + NIE = 0.320` : l'identité tombe sans reste |
+| Le contrefactuel est un nombre, pas une intuition | patient guéri sous traitement : abduction `0.690`, puis probabilité de guérison sous `do(NoDrug)` pour ce même patient = **0.424** |
+
+- **`P(Y|X) != P(Y|do(X))`** : l'observation est biaisée par les confondeurs. Conditionner (`pm.observe`) ne calcule **pas** l'effet causal — il faut **`pm.do`**, qui mutile le graphe.
+- **`pm.do` est un opérateur natif de PyMC** : là où Infer.NET demande une mutilation manuelle (forcer une variable sans parent), PyMC traite l'intervention comme une **transformation de modèle** de première classe. La différence visible entre observation et intervention (0.656 vs 0.310) prouve que le `do()` fait un travail structurel.
+- **Backdoor et front-door rendent l'effet causal identifiable** à partir de données observationnelles, sous conditions graphiques — formalisées par le do-calculus (Pearl 1995), complet (Shpitser & Pearl 2006).
+
+## En synthèse
 
 | Niveau | Question | Opérateur | Méthode PyMC |
 |--------|----------|-----------|--------------|
@@ -7410,31 +7433,7 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,c0961fd6,markdown,f
 | Adjustment | Quand | Formule |
 |------------|-------|---------|
 | **Backdoor** | Confondeur `U` **observe** | `P(Y\|do(X)) = Somme_u P(Y\|X,u)P(u)` |
-| **Front-door** | Confondeur non observe, mediateur `M` observe | `P(Y\|do(X)) = Somme_m P(M=m\|X) Somme_x' P(Y\|M=m,x')P(x')` |
-
-### Ce qu'il faut retenir
-
-- **`P(Y|X) != P(Y|do(X))`** : l'observation est biaisee par les confondeurs. Conditionner (`pm.observe`) ne calcule **pas** l'effet causal — il faut **`pm.do`**, qui mutile le graphe.
-- **`pm.do` est un opérateur natif de PyMC** : la ou Infer.NET demande une mutilation manuelle (forcer une variable sans parent), PyMC traite l'intervention comme une **transformation de modèle** de première classe. La différence visible entre observation et intervention (0.656 vs 0.310) prouve que le `do()` fait un travail structurel (Prong-B).
-- **Backdoor et front-door rendent l'effet causal identifiable** a partir de données observationnelles, sous conditions graphiques — formalisees par le do-calculus (Pearl 1995), complet (Shpitser & Pearl 2006).
-
-### Pour aller plus loin — le même do-calculus, d'autres paradigmes
-- **[Notebook-pont — du graphe causal au do-calculus](../Causalite/Causalite-01-Calcul-Do-Python.ipynb)** : l'armature formelle unifiee de Pearl (echelle + 3 règles) executee sur l'outil de reference `dowhy` (identification backdoor/front-door + estimation + refutation), qui relie cette serie a Tweety-11, Infer-5 et ICT-5.
-
-Ce notebook traite le `do()` en **probabiliste MCMC + enumeration exacte** (`pm.do`). Le **même opérateur** structure trois autres series du depot, chacune dans un paradigme différent :
-
-- **Symbolique (Java/Tweety)** : [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) — `do()` et contrefactuels par raisonnement **propositionnel** (`scm.intervene`), sans probabilites.
-- **Bayesien par message passing (Infer.NET)** : [Infer-05-Causal-Inference](../Infer/Infer-05-Causal-Inference.ipynb) — mêmes effets **calcules** par message passing (EP/VMP par defaut, Gibbs aussi disponible), avec mutilation du graphe. Ce message passing est *exact* sur ces reseaux discrets sans boucle, mais c'est une inference **approchee** en general — a la différence de l'enumeration exhaustive de ce notebook.
-- **Théorie de l'information / emergence (ICT)** : [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) — l'intervention `do(X_t = x)` devient une **distribution uniforme** `p(C)` sur les etats ; le do-calculus y mesure *a quelle echelle* la causalite est la plus effective (EI / CP).
-- **Pre-requis Python** : [PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) demontre la même distinction `P(Cloudy|Rain)` vs `P(Cloudy|do(Rain))`.
-
-> **Synthese transversale** : voir le [README IIT](../../IIT/README.md), section **« Ponts causaux : le do-calculus de Pearl a travers les paradigmes »**, qui aligne l'echelle de Pearl (association -> intervention -> contrefactuel) sur les quatre instanciations de l'opérateur `do`.
-
-- **References** : Pearl (2000) *Causality* ; Pearl, Glymour & Jewell (2016) *Causal Inference in Statistics : A Primer* ; Shpitser & Pearl (2006) *Identification of Conditional Interventional Distributions*.
-
-***
-
-[← PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) | [PyMC-07-Skills-IRT](PyMC-07-Skills-IRT.ipynb) | [Retour a la serie](README.md)",,,,,,,,b27de4fc29809c97,,,,,,,,,,,,,,,
+| **Front-door** | Confondeur non observe, mediateur `M` observe | `P(Y\|do(X)) = Somme_m P(M=m\|X) Somme_x' P(Y\|M=m,x')P(x')` |",,,,,,,,d30944c3a152d638,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,a09b80c5,markdown,fr,a4535bab84efa885,"# PyMC-02b-Debugging-Python : Troubleshooting et Bonnes Pratiques
 
 **Serie** : Programmation probabiliste avec PyMC (02b/20)  
@@ -7761,7 +7760,7 @@ $$\mu_{\text{post}} = \frac{\tau_{\text{prior}} \cdot \mu_{\text{prior}} + \tau_
 $$\sigma^2_{\text{post}} = \frac{1}{\tau_{\text{prior}} + \tau_{\text{likelihood}}} = \frac{1}{2} = 0.5$$
 
 Ou $\tau = 1/\sigma^2$ représente la precision. Le posterior est exactement a mi-chemin entre le prior (0) et l'observation (5), car les deux ont la même precision.",,,,,,,,4895265e5ac99d77,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,bcec3882,markdown,fr,f1a1e67a18ebd93c,"### 4.2 Visualisation des traces et diagnostics
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,bcec3882,markdown,fr,a7d3c602d4a8afcf,"### 4.2 Visualisation des traces et diagnostics
 
 ArviZ propose plusieurs visualisations essentielles :
 
@@ -7772,7 +7771,7 @@ ArviZ propose plusieurs visualisations essentielles :
 | `plot_rank()` | détecter les biais d'échantillonnage |
 | `plot_pair()` | identifier les corrélations entre paramètres |
 
-> **Cadre methodologique** : Ces visualisations s'inscrivent dans le *workflow bayesien* de Gabry, Simpson, Vehtari, Betancourt & Gelman (2019), *Visualization in Bayesian workflow*, JRSS C 68(2), doi:10.1111/rssc.12346, et de Gelman et al. (2020), *Bayesian Workflow*, arXiv:2011.01808. `plot_rank()` implemente les *rank plots* de Vehtari et al. (2021).",,,,,,,,f1a1e67a18ebd93c,,,,,,,,,,,,,,,
+> **Cadre methodologique** : Ces visualisations s'inscrivent dans le *workflow bayesien* de Gabry, Simpson, Vehtari, Betancourt & Gelman (2019), *Visualization in Bayesian Workflow*, JRSS A 182(2), doi:10.1111/rssa.12378, et de Gelman et al. (2020), *Bayesian Workflow*, arXiv:2011.01808. `plot_rank()` implemente les *rank plots* de Vehtari et al. (2021).",,,,,,,,a7d3c602d4a8afcf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,86a0797a,code,fr,1dc310a3b0ecaecd,"# Demonstration de la visualisation des diagnostics
 
 print(""=== Visualisation des diagnostics ==="")
@@ -8149,21 +8148,27 @@ Le contraste entre les deux exécutions est frappant :
 
 > **Lecon de debogage** : un prior trop concentre est un piege *silencieux*. Le sampler peut tourner sans divergence apparente, pourtant la posterior ignore la donnee. Le reflexe : **comparer la posterior a la donnee empirique** (et non se fier uniquement aux divergences / $\hat{R}$ / ESS, qui peuvent rester bonnes).
 ",,,,,,,,c287c1337b936395,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,c47c65da,markdown,fr,8207f098b97b1838,"### Points clés a retenir
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,c47c65da,markdown,fr,16e3140c7daa3ed9,"## À retenir
 
-> **stratégie de debugging en 3 étapes** :
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| Un prior trop étroit écrase la donnée | prior `Normal(0, sigma=0.01)` sur des données de moyenne **25.1** → posterior de la moyenne `m ~ 0.001` ; après correction, `moyenne ~ 25.1` |
+| 0 divergence ne vaut pas « modèle correct » | le modèle buggé ci-dessus rapporte **0 divergence** ; c'est l'écart entre posterior et donnée qui révèle le bug |
+| Les statistiques de convergence peuvent être vertes sur une géométrie pathologique | modèle hiérarchique à hyper-prior large : `r_hat 1.00`, `ess_bulk 2202` et `1430`, et pourtant **165 divergences after tuning** |
+| La reparamétrisation non centrée supprime les divergences de l'entonnoir | `v ~ Normal(0, 3)`, `x = x_offset * exp(v)` → **0 divergence sur 2000** |
+| ADVI sous-estime l'incertitude | même modèle, même donnée : NUTS `mean = 2.043, std = 0.1293` ; ADVI `mean = 2.046, std = 0.0991` |
+
+> **Stratégie de debugging en 3 étapes** :
 >
-> 1. **vérifier le support** : Les observations sont-elles probables sous le prior ?
-> 2. **vérifier les diagnostics** : R-hat < 1.01, ESS > 400, 0 divergences
-> 3. **vérifier les posteriors** : variance raisonnable ? Moyennes plausibles ?
+> 1. **Vérifier le support** : les observations sont-elles probables sous le prior ?
+> 2. **Vérifier les diagnostics** : R-hat < 1.01, ESS > 400, 0 divergences
+> 3. **Vérifier les posteriors** : variance raisonnable ? Moyennes plausibles ?
 
 La plupart des problèmes d'inférence proviennent de :
-- **Priors mal spécifiés** (trop etroits, mauvais support)
-- **Mauvaise parametrisation** (entonnoir, corrélations fortes)
-- **modèle trop complexe** (simplifier d'abord, complexifier ensuite)
-
-***",,,,,,,,8207f098b97b1838,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,de9bcce9,markdown,fr,c28204b5b26eef56,"## 8. Resume
+- **Priors mal spécifiés** (trop étroits, mauvais support)
+- **Mauvaise paramétrisation** (entonnoir, corrélations fortes)
+- **Modèle trop complexe** (simplifier d'abord, complexifier ensuite)",,,,,,,,16e3140c7daa3ed9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,de9bcce9,markdown,fr,fc4755aa4140c1d4,"## 8. Resume
 
 | problème | Symptome | Solution |
 |----------|----------|----------|
@@ -8183,13 +8188,13 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,de9bcce9,markdown,
 **Papiers fondateurs (diagnostics MCMC)** :
 - Vehtari, Gelman, Simpson, Carpenter & Burkner (2021), *Rank-normalization, folding, and localization: An improved R-hat*, Bayesian Analysis 16(2), doi:10.1214/20-BA1221
 - Betancourt (2017), *A conceptual introduction to Hamiltonian Monte Carlo*, arXiv:1701.02434
-- Gabry, Simpson, Vehtari, Betancourt & Gelman (2019), *Visualization in Bayesian workflow*, JRSS C 68(2), doi:10.1111/rssc.12346
+- Gabry, Simpson, Vehtari, Betancourt & Gelman (2019), *Visualization in Bayesian Workflow*, JRSS A 182(2), doi:10.1111/rssa.12378
 - Gelman et al. (2020), *Bayesian Workflow*, arXiv:2011.01808
 
 **Guides pratiques** :
 - [Guide de troubleshooting PyMC](https://www.pymc.io/projects/docs/en/stable/learn/core_notebooks/pymc_overview.html)
 
-***",,,,,,,,c28204b5b26eef56,,,,,,,,,,,,,,,
+***",,,,,,,,fc4755aa4140c1d4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,95970d75,markdown,fr,2bffc9b9b02bafc1,"## 9. Exercice : Deboguer un Modèle Hiérarchique
 
 Le modèle ci-dessous tente d'estimer les moyennes de performance de 3 groupes, mais il contient **3 erreurs**. Identifiez et corrigez chaque erreur.
@@ -13132,4 +13137,293 @@ MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,references,markdown,
 - ArviZ — [Diagnostics](https://python.arviz.org/) (R-hat, ESS, divergences).
 - [PyMC-12 — Modèles Hiérarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) — le modèle témoin : partial pooling, shrinkage, paramétrisation non centrée.
 - Série [Aspire/OTel (.NET)](../../GenAI/Integrations-DotNet/Aspire/README.md) — le miroir C#/.NET de ce carnet (Aspire, OTLP, dashboards).",,,,,,,,c06d16e6184ff52f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,retour,markdown,fr,a04e64629447dc9b,**Retour** : [Série PyMC](README.md) | [PyMC-12 — Modèles Hiérarchiques](PyMC-12-Modeles-Hierarchiques.ipynb),,,,,,,,a04e64629447dc9b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb,retour,markdown,fr,ed7f5b4d1bc84b1c,**Retour** : [Série PyMC](README.md) | [Série Probas](../README.md) | [PyMC-12 — Modèles Hiérarchiques](PyMC-12-Modeles-Hierarchiques.ipynb),,,,,,,,ed7f5b4d1bc84b1c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,9add88bf,markdown,fr,e21b9b226ecba6ce,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| La chaîne PyMC + ArviZ est vérifiable avant de modéliser | sortie de la cellule de contrôle : `PyMC version: 6.3.2`, `ArviZ version: 1.3.0` |
+| Un posterior ne se lit pas sans ses diagnostics | sur le modèle Beta-Binomial : `theta` de moyenne `0.668`, `sd 0.129`, HDI 94 % `[0.44, 0.9]`, `r_hat 1.00`, `ess_bulk 3449`, `ess_tail 4628`, `mcse_mean 0.0022` |
+| Le posterior n'est pas le MLE : il est tiré vers le prior | MLE bruts par pièce `[0.8 0.3 0.6 0.62 0.88 0.7]`, biais moyen observé `0.634` ; le modèle hiérarchique applique un shrinkage absolu par pièce de `[0.134 0.225 0.019 0.006 0.175 0.034]` |
+| La paramétrisation décide de la santé de l'échantillonneur | modèle hiérarchique **non centré** : `0` divergence — le non-centrage évite le funnel |
+
+**Ce que ce carnet ajoute à la série** : la norme de lecture. Avant de conclure quoi que ce soit d'un posterior, on regarde `r_hat`, l'ESS et les divergences ; le reste de la série suppose cette vérification faite.",,,,,,,,e21b9b226ecba6ce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,58d82fb0,markdown,fr,9d29c5f707ff61c1,"## Vérifiez votre compréhension
+
+**1. Le résumé du modèle Beta-Binomial affiche `r_hat 1.00`, `ess_bulk 3449`, `ess_tail 4628`. Que concluez-vous, et que se passerait-il si `r_hat` valait `1.08` ?**
+
+<details><summary>Réponse</summary>
+
+`r_hat` mesure l'écart entre la dispersion intra-chaîne et la dispersion inter-chaînes : à `1.00` (la règle de la série exige `< 1.01`), les quatre chaînes explorent la même loi. Les ESS de `3449` et `4628` disent que l'échantillon effectif reste grand malgré l'autocorrélation de NUTS. Un `r_hat` de `1.08` signalerait des chaînes qui ne sont pas encore mélangées : les moyennes postérieures seraient alors instables et ne devraient pas être rapportées — il faudrait allonger l'échauffement, revoir la paramétrisation, ou augmenter `target_accept`.
+
+</details>
+
+**2. Le MLE de la deuxième pièce vaut `0.3`, et le modèle hiérarchique lui applique un shrinkage absolu de `0.225` — le plus fort des six. Pourquoi précisément celle-là ?**
+
+<details><summary>Réponse</summary>
+
+Deux facteurs se multiplient, et il faut les deux pour lire le classement. Le *partial pooling* tire chaque probabilité vers la moyenne du groupe (`0.634`) selon une fraction qui décroît avec `n` : environ `0.81` pour `n=5`, `0.71` pour `n=8`, `0.67` pour `n=10`, `0.52` pour `n=30` et `0.43` pour `n=50`. La pièce 2 n'est donc **pas** la moins observée — `n=5` et `n=8` le sont davantage — mais c'est celle dont le MLE (`0.3`) s'écarte le plus de la moyenne du groupe, de `0.334`. Le déplacement absolu affiché dans `[0.134 0.225 0.019 0.006 0.175 0.034]` est ce produit, fraction fois écart : la pièce 6 (`n=30`, écart `0.066`) descend à `0.034` quand la pièce 2 monte à `0.225`. Une pièce peu observée mais proche du groupe — la pièce 1, `n=5`, écart `0.166` — n'est tirée que de `0.134`.
+
+</details>
+
+**3. Le carnet fait tourner un second modèle, hiérarchique, et rapporte `0` divergence. Est-ce un hasard de la graine ?**
+
+<details><summary>Réponse</summary>
+
+Non : la sortie associe explicitement ce zéro au **non-centrage** (`le non-centrage a bien evite le funnel`). Une paramétrisation centrée du même modèle produit une géométrie en entonnoir que NUTS parcourt mal, et les divergences y sont le symptôme visible. Le zéro est donc une propriété de la paramétrisation choisie, pas une graine favorable.
+
+</details>",,,,,,,,9d29c5f707ff61c1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb,664bf294,markdown,fr,fb01bff3e647a5a3,"## Pour aller plus loin
+
+- **Le carnet suivant de la série** : [PyMC-02-Gaussian-Mixtures](PyMC-02-Gaussian-Mixtures.ipynb) — le même geste (définir, échantillonner, diagnostiquer) appliqué à un mélange de gaussiennes, où le posterior devient multimodal et où l'initialisation se met à compter.
+- [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) — le traitement approfondi des cas difficiles : divergences, funnels, modèles qui ne convergent pas.
+- [PyMC-12-Modeles-Hierarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) — la paramétrisation non centrée rencontrée ici est reprise en détail, avec le funnel qu'elle évite.
+- **Lectures** : Salvatier, Wiecki & Fonnesbeck (2016), *Probabilistic programming in Python using PyMC3* ; Hoffman & Gelman (2014), *The No-U-Turn Sampler* — la référence de l'échantillonneur utilisé ici.
+- **Carnet voisin d'une autre série** : la série [Infer.NET](../../Probas/README.md) résout les mêmes modèles conjugués par passage de messages exact plutôt que par MCMC ; le tableau de comparaison de la section 7 donne le point de bascule entre les deux approches.",,,,,,,,fb01bff3e647a5a3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,6c9d8980,markdown,fr,4abdc9328790df60,"## À retenir
+
+| Leçon | Mesure dans ce carnet |
+|---|---|
+| Une gaussienne unique se diagnostique avant de se lire | `divergences=0`, pire `r_hat=1.001` (sur `mu`), `ess_bulk` minimal `9072` — les trois seuils de la série sont tenus |
+| Le posterior prédictif répond à la question posée, en probabilités | `P(trajet < 18 min) = 0.694`, `P(trajet > 25 min) = 0.016`, `P(14 < trajet < 20 min) = 0.557` |
+| Le contrôle prédictif est ce qui condamne un modèle, pas son ajustement | sur les données bimodales, la gaussienne unique résume tout en `moyenne = 20.00 min, ecart-type = 8.06 min` et sa prédictive est une `Student-t(df=11, loc=20.0)` — une seule bosse, là où les données en ont deux |
+| Un mélange restitue la structure que la moyenne efface | deux composantes : `mu=17.4 min, sigma=4.3 min, poids=0.55` et `mu=25.9 min, sigma=5.6 min, poids=0.45` |
+| L'assignation latente explicite change l'échantillonneur | avec `z` explicite, le pas est `CompoundStep > NUTS: [w, mu_components, sigma_components] > BinaryGibbsMetropolis: [z]` ; `pm.NormalMixture` marginalise `z` et laisse NUTS seul |
+
+**Ce que ce carnet ajoute à la série** : le passage du modèle à un mode au modèle à plusieurs modes, et la preuve que c'est le **contrôle prédictif** — pas le `r_hat` — qui tranche entre les deux.",,,,,,,,4abdc9328790df60,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,e119403a,markdown,fr,ac84faa5b84390c4,"## Vérifiez votre compréhension
+
+**1. Le modèle gaussien simple rend `divergences=0`, `r_hat=1.001` et `ess_bulk` minimal `9072`. Ces trois nombres disent-ils que le modèle est *bon* ?**
+
+<details><summary>Réponse</summary>
+
+Non — ils disent que l'**échantillonnage** est sain, pas que le modèle décrit les données. `r_hat` et l'ESS portent sur la convergence des chaînes, les divergences sur la géométrie explorée. Un modèle mal spécifié peut parfaitement converger sans une seule divergence : c'est pourquoi le carnet ne tranche pas sur ces trois nombres, mais par un **contrôle prédictif**. La gaussienne unique ajustée sur les données bimodales n'est pas échantillonnée du tout — sa prédictive est analytique, `Student-t(df=11, loc=20.00, scale=8.39)`, à la section 5 — et c'est la comparaison de cette prédictive aux données qui la rejette : elle attend `24,3 %` des trajets dans le creux `[21, 27]` min, contre `8,3 %` observés, soit environ `2,9` fois trop. Les `divergences=0` cités appartiennent au modèle de la section 2, pas à ce contrôle.
+
+</details>
+
+**2. Sur les données bimodales, la gaussienne unique rapporte `moyenne = 20.00 min, ecart-type = 8.06 min`. Pourquoi ces deux nombres, pourtant corrects, ne suffisent-ils pas à décrire les trajets ?**
+
+<details><summary>Réponse</summary>
+
+Parce qu'une moyenne et un écart-type résument une loi **unimodale** : ils décrivent une seule bosse centrée en `20.00` avec une largeur `8.06`. Les données réelles ont deux populations de trajets, et la prédictive du modèle (`Student-t(df=11, loc=20.0)`) n'en produit qu'une. Le contrôle prédictif le montre : le modèle passe à côté de la structure alors que ses résumés numériques sont justes.
+
+</details>
+
+**3. Le mélange à deux composantes rend `mu=17.4, sigma=4.3, poids=0.55` et `mu=25.9, sigma=5.6, poids=0.45`. Que signifient les poids, et que se passerait-il s'ils valaient `1.0` et `0.0` ?**
+
+<details><summary>Réponse</summary>
+
+Les poids sont les proportions du mélange : `0.55` des trajets viennent de la composante rapide (autour de `17.4 min`), `0.45` de la lente (autour de `25.9 min`). Des poids de `1.0` et `0.0` feraient dégénérer le mélange en une gaussienne unique — le modèle retomberait sur celui de la section 2, et la bimodalité serait perdue.
+
+</details>
+
+**4. La version avec `z` explicite échantillonne par `BinaryGibbsMetropolis`, celle avec `pm.NormalMixture` par NUTS seul. D'où vient la différence ?**
+
+<details><summary>Réponse</summary>
+
+`z` est une variable **discrète** (l'étiquette de composante de chaque observation) : NUTS, qui suit un gradient, ne sait pas la parcourir, d'où l'ajout d'un pas de Gibbs dédié. `pm.NormalMixture` **marginalise** `z` analytiquement : la vraisemblance redevient continue et NUTS suffit. Même modèle, deux stratégies d'inférence — la seconde est plus simple à écrire et généralement plus efficace.
+
+</details>",,,,,,,,ac84faa5b84390c4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02-Gaussian-Mixtures.ipynb,595ca661,markdown,fr,444756f83fbc4ace,"## Pour aller plus loin
+
+- **Le carnet suivant de la série** : [PyMC-03-Factor-Graphs](PyMC-03-Factor-Graphs.ipynb) — la même mécanique de modèle, mais vue comme un graphe de facteurs, ce qui rend lisible *pourquoi* un mélange est une somme de chemins et non un seul.
+- [PyMC-02b-Debugging-Python](PyMC-02b-Debugging-Python.ipynb) — quand l'**échantillonnage** ne converge pas : divergences, entonnoir de Neal et non-centrage, comparaison NUTS / ADVI / Metropolis, diagnostics ArviZ et prior predictive checks.
+- [PyMC-12-Modeles-Hierarchiques](PyMC-12-Modeles-Hierarchiques.ipynb) — le pooling partiel : `theta = mu + sigma_theta * z`, la rétraction d'un groupe clairsemé vers la moyenne, et le même piège d'entonnoir que ce carnet-ci rencontre sur ses composantes.
+- [PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb) — comment trancher formellement entre la gaussienne unique et le mélange : LOO et comparaison de modèles, là où ce carnet se contente d'un contrôle prédictif visuel.
+- **Lectures** : Bishop (2006), *Pattern Recognition and Machine Learning*, chapitre 9 (mixtures of Gaussians, EM) ; McLachlan & Peel (2000), *Finite Mixture Models*.
+- **Carnet voisin d'une autre série** : la section 7 de ce carnet compare la même inférence en Infer.NET ; la série [Infer.NET](../../README.md) en donne le pendant complet.",,,,,,,,444756f83fbc4ace,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,c1cc5d43,markdown,fr,e8b1c12ca498fba7,"## Vérifiez votre compréhension
+
+**1. Le modèle hiérarchique de la section 4.2 affiche `r_hat 1.00` et `ess_bulk 2202 / 1430`. Pourquoi cela ne suffit-il pas à le déclarer sain ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce que le même échantillonnage rapporte **165 divergences after tuning**. R-hat et ESS mesurent l'accord des chaînes entre elles ; ils ne disent rien de la géométrie réellement explorée. Deux observations séparées et un hyper-prior large créent un entonnoir : quand `hyper_sigma` tend vers 0, la loi de `hyper_mean` se resserre. Une divergence signale que l'intégrateur a quitté la variété d'énergie, donc qu'une région n'a pas été échantillonnée correctement — même si les chaînes, elles, se ressemblent.
+
+</details>
+
+**2. Dans l'exemple guidé, le modèle buggé et le modèle corrigé rapportent tous deux `0 divergence`. Quel indicateur a révélé le bug ?**
+
+<details>
+<summary>Réponse</summary>
+
+La comparaison de la posterior à la **donnée**. Le modèle buggé rend `m ~ 0.001` alors que la moyenne empirique des 30 observations vaut **25.1** : le prior `Normal(0, sigma=0.01)` écrase la vraisemblance. Après correction, `moyenne ~ 25.1` et `sigma ~ 6.4` (HalfNormal, contraint positive). Le réflexe est de vérifier la posterior contre la donnée, pas seulement contre les divergences.
+
+</details>
+
+**3. Sur les 3 succès et 2 échecs (5 essais) de la section 5, le MLE vaut `0.60`. Pourquoi les posteriors vont-elles de `0.534` à `0.734` ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce que plusieurs priors sont comparés sur **les mêmes 5 essais** : `Beta(1,1)` → **0.576**, `Beta(2,2)` → **0.549**, `Beta(5,5)` → **0.534**, `Beta(8,2)` → **0.734**. Avec si peu de données, le prior pèse autant que la vraisemblance. Le prior biaisé `Beta(8,2)` déplace la moyenne de `0.158` vers le haut par rapport au prior uniforme (`0.734 − 0.576`) ; le `+0.134` de la table est l'écart **au MLE**, pas au prior uniforme. C'est le comportement recherché quand on a une connaissance a priori, et le danger quand on n'en a pas.
+
+</details>
+
+**4. Quelle est la différence entre une divergence NUTS et un R-hat élevé ?**
+
+<details>
+<summary>Réponse</summary>
+
+Une divergence est un **échec local** de l'intégrateur : le pas proposé fait exploser le Hamiltonien et NUTS abandonne cette trajectoire. Un R-hat élevé est un **désaccord global** entre chaînes : elles n'ont pas exploré la même région. Les deux peuvent coexister, mais un R-hat de 1.00 accompagné de 165 divergences montre que le second ne détecte pas le premier — les chaînes peuvent s'accorder sur une région mal explorée.
+
+</details>",,,,,,,,e8b1c12ca498fba7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-02b-Debugging-Python.ipynb,0cb85116,markdown,fr,3e7523dde020a318,"## Pour aller plus loin
+
+**Dans la série** — [PyMC-12 (Modèles hiérarchiques)](PyMC-12-Modeles-Hierarchiques.ipynb) reprend le modèle de la section 4.2 comme un cas d'école au lieu d'un contre-exemple : la reparamétrisation non centrée y devient la construction par défaut, avec les mêmes diagnostics en sortie. [PyMC-03 (Factor Graphs)](PyMC-03-Factor-Graphs.ipynb) montre la même inférence lue sur la structure du graphe, et [PyMC-10 (Model Selection)](PyMC-10-Model-Selection.ipynb) traite la question voisine : comparer des modèles au lieu de réparer un seul.
+
+**Lectures** —
+- Vehtari, Gelman, Simpson, Carpenter & Bürkner (2021), *Rank-normalization, folding, and localization: an improved R-hat*, Bayesian Analysis 16(2) — la définition de R-hat que calcule ArviZ, et pourquoi la version classique échoue sur les queues lourdes.
+- Betancourt (2017), *A conceptual introduction to Hamiltonian Monte Carlo*, arXiv:1701.02434 — la géométrie qui produit les divergences de l'entonnoir, et ce qu'une divergence mesure exactement.
+- Gabry, Simpson, Vehtari, Betancourt & Gelman (2019), *Visualization in Bayesian Workflow*, JRSS A 182(2), doi:10.1111/rssa.12378 — ce qu'un trace plot doit montrer, au-delà de son apparence de bruit.
+- Gelman et al. (2020), *Bayesian Workflow*, arXiv:2011.01808 — le cadre général dans lequel s'inscrit la checklist de la section 6.
+
+**Séries voisines** — [Probas/Infer](../Infer/README.md) traite des modèles comparables par inférence variationnelle déterministe : à lire en regard de la section 3, où ADVI est présenté comme une approximation dont la variance est structurellement sous-estimée.
+
+**Retour** — [Index Probas](../README.md)",,,,,,,,3e7523dde020a318,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,5c2edebf,markdown,fr,22a695bb003407bc,"## Vérifiez votre compréhension
+
+**1. Avant l'observation de l'arme, `P(Scarlet) = 0.6`. Après avoir appris que l'arme est celle de Mustard, elle tombe à `0.176`. Scarlet est-elle devenue moins suspecte, ou l'échantillonneur a-t-il mal convergé ?**
+
+<details>
+<summary>Réponse</summary>
+
+Elle est devenue moins suspecte. Le diagnostic est vert — `pire r_hat = 1.000` sur `coupable`, `ess_bulk min = 15310` — et la baisse est le résultat attendu de l'inférence conditionnelle : le facteur de vraisemblance de l'arme vaut `0.9` sous Mustard et `0.1` sous chacun des deux autres, comme le déclare le modèle. Ce sont ces vraisemblances qui déplacent le prior `(0.6, 0.3, 0.1)` vers le posterior `(0.176, 0.797, 0.028)`. C'est le phénomène d'*explaining away* : une cause expliquant l'observation retire de la vraisemblance à ses concurrentes. Les deux nombres `0.797` et `0.176` sont les **postérieurs**, pas les vraisemblances.
+
+</details>
+
+**2. Pourquoi `P(Peacock) = 0.028` n'est-il pas nul, alors que le modèle n'attribue que `0.1` de prior à Peacock ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce que le posterior est une distribution conditionnelle, pas une élimination : chaque hypothèse reçoit une probabilité proportionnelle à `prior × vraisemblance`, puis l'ensemble est normalisé. Peacock conserve une masse résiduelle parce qu'aucune observation ne l'exclut logiquement. Une probabilité nulle ne s'obtient qu'avec un prior nul ou une vraisemblance nulle.
+
+</details>
+
+**3. Le modèle Murder Mystery est échantillonné avec `CategoricalGibbsMetropolis`. Qu'est-ce que cela change par rapport à un passage de messages *sum-product* ?**
+
+<details>
+<summary>Réponse</summary>
+
+Le *sum-product* calcule les marginales **exactement**, en temps fini, quand le graphe de facteurs est un arbre : il propage des messages le long des arêtes. `CategoricalGibbsMetropolis` échantillonne à la place — ici 4 chaînes × 5 000 tirages — et n'approche les marginales qu'à une erreur Monte-Carlo près. Les deux répondent à la même question ; seule la garantie diffère.
+
+</details>
+
+**4. Dans Monty Hall, la porte ouverte reçoit une probabilité de `0.000`. Est-ce un artefact de l'échantillonneur ?**
+
+<details>
+<summary>Réponse</summary>
+
+Non : c'est une contrainte du modèle. Le joueur a choisi la porte 0 et Monty a ouvert la porte 1 — cette porte ne peut pas porter la voiture dans cet état conditionnel, sa probabilité est structurellement nulle. Les deux autres se partagent le reste selon `0.333 / 0.667`, et la somme `0.333 + 0.000 + 0.667 = 1` boucle exactement.
+
+</details>",,,,,,,,22a695bb003407bc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb,c6f01fd2,markdown,fr,2eb553c7ac7cf109,"## Pour aller plus loin
+
+**Dans la série** — [PyMC-04 (Bayesian Networks)](PyMC-04-Bayesian-Networks.ipynb) reprend les mêmes modèles discrets sur des réseaux à plusieurs variables, avec les indépendances conditionnelles comme objet d'étude. [PyMC-05 (Causal Inference)](PyMC-05-Causal-Inference.ipynb) en tire la conséquence pratique : un posterior conditionnel n'est pas un effet causal. Le carnet y oppose `P(Cloudy=1 | Rain=1) = 0.800` à `P(Cloudy=1 | do(Rain=1)) = 0.500`, et attribue l'écart au **confondeur** et à la mutilation du graphe. C'est le mécanisme de la fourche, distinct de l'*explaining away* du collider que ce carnet-ci démontre : les deux se rejoignent par leur conclusion — ne pas lire une cause dans une corrélation conditionnelle — et se distinguent par leur structure.
+
+**Lectures** —
+- Kschischang, Frey & Loeliger (2001), *Factor Graphs and the Sum-Product Algorithm*, IEEE Transactions on Information Theory 47(2):498-519 — l'article de référence pour la décomposition en facteurs et la propagation de messages.
+- Bishop (2006), *Pattern Recognition and Machine Learning* [PRML], §8.4 — la présentation pédagogique du même algorithme, avec le lien aux chaînes de Markov.
+- Pearl (1988), *Probabilistic Reasoning in Intelligent Systems* — la source de l'*explaining away* et du raisonnement sous incertitude dans les réseaux bayésiens.
+- van de Meent, Paige, Yang & Wood (2018), *An Introduction to Probabilistic Programming*, arXiv:1809.10756 — où se situe l'échantillonnage MCMC dans l'espace des langages probabilistes.
+
+**Séries voisines** — [Probas/Infer](../Infer/README.md) traite des graphes comparables avec Expectation Propagation : le contraste avec `CategoricalGibbsMetropolis` est visible dans les sorties, un message analytique contre des chaînes échantillonnées.
+
+**Retour** — [Index Probas](../README.md)",,,,,,,,2eb553c7ac7cf109,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb,e659b1f0,markdown,fr,2ab179071ae83f25,"## Vérifiez votre compréhension
+
+**1. Les marginales échantillonnées valent `P(Cloudy=1) = 0.494`, `P(Sprinkler=1) = 0.301`, `P(Rain=1) = 0.493`, pour des valeurs théoriques de `0.500`, `0.300` et `0.500`. D'où vient l'écart, et pourquoi reste-t-il sous le pour-cent ?**
+
+<details>
+<summary>Réponse</summary>
+
+L'écart est du bruit Monte-Carlo, pas un biais du modèle : `BinaryGibbsMetropolis` produit 4 chaînes × 10 000 tirages, et l'erreur type d'une proportion `p` sur `n` tirages indépendants varie comme `sqrt(p(1-p)/n)`. Le diagnostic du même échantillonnage est vert — `pire r_hat = 1.001` sur `wetgrass`, `ess_bulk min = 4270` — ce qui indique que les chaînes ont exploré la même loi. Un écart d'un demi-point sur 40 000 tirages est l'ordre de grandeur attendu ; il disparaîtrait en augmentant `draws`, pas en changeant de modèle.
+
+</details>
+
+**2. `P(Sprinkler=1 | WetGrass=1) = 0.429`. Après avoir appris en plus qu'il a plu, elle tombe à `0.194`. Pourquoi la pluie fait-elle *baisser* la probabilité de l'arroseur ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce que la pluie et l'arroseur sont deux causes concurrentes de la même observation, et que `WetGrass` est un *collider* (`S → W ← R`). Conditionner sur l'effet rend les causes dépendantes ; une fois `Rain=1` connu, l'herbe mouillée est déjà expliquée, et l'arroseur n'a plus besoin d'être invoqué. C'est le phénomène d'*explaining away*, mesuré ici directement : `0.429 → 0.194`, soit une division par plus de deux.
+
+</details>
+
+**3. En fourche (`S ← C → R`), la corrélation `S`-`R` vaut `-0.2630` sans observation. En collider (`S → W ← R`), elle vaut `-0.7400` sachant `W=1`. Que disent ces deux nombres sur la d-séparation ?**
+
+<details>
+<summary>Réponse</summary>
+
+Ils mesurent deux régimes de dépendance, et c'est la définition même de la d-séparation. Dans ce réseau, `S` et `R` ne sont **pas** indépendants marginalement : ils partagent la cause commune `Cloudy` (`S ← C → R`), et la corrélation de `-0.2630` mesure cette fourche. Conditionner sur `C` les rendrait indépendants. La corrélation ne passe donc pas « de nulle » à `-0.7400` : elle passe de `-0.2630` à `-0.7400` dès qu'on observe `W=1`, et c'est cet écart que le collider ajoute. Retenir une arête ne suffit pas : il faut savoir quelles variables sont observées.
+
+</details>
+
+**4. `P(Cloudy=1 | Rain=1) = 0.800`, mais `P(Cloudy=1 | do(Rain=1)) = 0.500`. Le modèle est-il incohérent ?**
+
+<details>
+<summary>Réponse</summary>
+
+Non : ce sont deux questions différentes. `Rain=1` observé est une **information** — si l'on voit qu'il pleut, les nuages sont plus probables (`0.800`, la valeur théorique du CPT). `do(Rain=1)` est une **intervention** : on coupe l'arête `Cloudy → Rain` et on fixe la pluie de l'extérieur, ce qui ne dit rien sur les nuages — leur probabilité reste la marginale `0.500`. Confondre les deux est l'erreur que Pearl résume par *seeing is not doing*.
+
+</details>",,,,,,,,2ab179071ae83f25,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb,7b1ea4a5,markdown,fr,0dc0914a63ee09ae,"## Vérifiez votre compréhension
+
+**1. Le baromètre qui baisse est associé à la tempête (`0.656`), mais provoquer sa chute ne change rien (`0.310`). Quelle variable explique cet écart ?**
+
+<details>
+<summary>Réponse</summary>
+
+La basse pression. Le graphe est une fourche `basse_pression → {barometre, tempete}`, sans arc `barometre → tempete`. Observer le baromètre renseigne donc sur la cause commune, et par ricochet sur la tempête ; intervenir sur le baromètre coupe cet arc et laisse la tempête à sa marginale `0.310`. Un baromètre n'est pas une cause, c'est un indicateur — et `0.310` est exactement `P(tempete)` mesuré en section 3.
+
+</details>
+
+**2. Le backdoor adjustment donne `0.310` et le `do` direct donne `0.310`. Cette égalité prouve-t-elle que l'ajustement est correct ?**
+
+<details>
+<summary>Réponse</summary>
+
+Elle prouve que le code évalue la formule correctement, pas que l'identification est valide. Ici la vérification est possible parce que `U` est observable et le `do` calculable directement ; sur des données réelles le `do` direct n'existe pas, et l'égalité ne serait pas testable. Ce qui rend l'ajustement légitime est un argument **graphique** — `basse_pression` bloque tous les chemins arrière — et non la coïncidence numérique.
+
+</details>
+
+**3. Dans le paradoxe de Simpson, le médicament semble nuire en agrégé, aide dans chaque strate, et aide causalement. Laquelle des trois lectures est la bonne, et pourquoi les deux autres sont-elles fausses ?**
+
+<details>
+<summary>Réponse</summary>
+
+La lecture causale (`0.700` contre `0.500` sous `do`) est la bonne. L'agrégat (`0.580` contre `0.620`) est biaisé par la sévérité, qui est un confondeur : les patients graves reçoivent le médicament plus souvent et guérissent moins. La lecture par strate (`0.50 > 0.30`, `0.90 > 0.70`) va dans le bon sens mais reste une association conditionnelle — elle ne devient causale qu'une fois la structure du graphe assumée. Le renversement de signe entre agrégé et strates est la signature du paradoxe.
+
+</details>
+
+**4. `NDE = 0.200` et `NIE = 0.120` somment exactement à `TE = 0.320`. Cette additivité est-elle garantie en général ?**
+
+<details>
+<summary>Réponse</summary>
+
+Si — `NDE + NIE = TE` est une **identité algébrique**, vraie par téléscopage des sommes quel que soit le monde, et la section 8 du carnet le dit explicitement. Ce qui n'est **pas** garanti, c'est le raccourci `NDE = CDE(m)`, exact seulement en l'absence d'interaction `x × m`. C'est le cas ici : le monde est déclaré sans interaction, et le carnet le vérifie en montrant `CDE(1) = CDE(0) = 0.200`. Dans un monde **avec** interaction, `NDE + NIE = TE` tient toujours, mais `NDE` cesse d'égaler le `CDE(m)` — c'est ce cas que mesure le jumeau [Infer-5](../Infer/Infer-05-Causal-Inference.ipynb).
+
+</details>
+
+## Pour aller plus loin
+
+Cette section déroule **le même do-calculus dans d'autres paradigmes**.
+
+**[Notebook-pont — du graphe causal au do-calculus](../Causalite/Causalite-01-Calcul-Do-Python.ipynb)** : l'armature formelle unifiée de Pearl (échelle + 3 règles) exécutée sur l'outil de référence `dowhy` (identification backdoor/front-door + estimation + refutation), qui relie cette série à Tweety-11, Infer-5 et ICT-5.
+
+Ce notebook traite le `do()` en **probabiliste MCMC + énumération exacte** (`pm.do`). Le **même opérateur** structure trois autres séries du dépôt, chacune dans un paradigme différent :
+
+- **Symbolique (Java/Tweety)** : [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) — `do()` et contrefactuels par raisonnement **propositionnel** (`scm.intervene`), sans probabilités.
+- **Bayésien par message passing (Infer.NET)** : [Infer-05-Causal-Inference](../Infer/Infer-05-Causal-Inference.ipynb) — mêmes effets **calculés** par message passing (EP/VMP par défaut), avec mutilation du graphe. Ce message passing est *exact* sur ces réseaux discrets sans boucle, mais c'est une inférence **approchée** en général — à la différence de l'énumération exhaustive de ce notebook.
+- **Théorie de l'information / émergence (ICT)** : [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) — l'intervention `do(X_t = x)` devient une **distribution uniforme** `p(C)` sur les états ; le do-calculus y mesure *à quelle échelle* la causalité est la plus effective (EI / CP).
+- **Pré-requis Python** : [PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) démontre la même distinction entre observation et intervention.
+
+> **Synthèse transversale** : voir le [README IIT](../../IIT/README.md), section **« Ponts causaux : le do-calculus de Pearl à travers les paradigmes »**, qui aligne l'échelle de Pearl (association → intervention → contrefactuel) sur les quatre instanciations de l'opérateur `do`.
+
+**Références** — Pearl (2000) *Causality* ; Pearl, Glymour & Jewell (2016) *Causal Inference in Statistics : A Primer* ; Shpitser & Pearl (2006) *Identification of Conditional Interventional Distributions*.
+
+***
+
+[← PyMC-04-Bayesian-Networks](PyMC-04-Bayesian-Networks.ipynb) | [PyMC-07-Skills-IRT](PyMC-07-Skills-IRT.ipynb) | [Retour a la serie](README.md)",,,,,,,,0dc0914a63ee09ae,,,,,,,,,,,,,,,

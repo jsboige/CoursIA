@@ -29,7 +29,6 @@ from coordination import gh_bulk
 from coordination.gh_bulk import TAILLES_PAGE, TIMEOUT_S, LectureIncomplete, Run
 
 MUR_GLOBAL_S = 60  # budget global d'une lecture de selection, en duree
-TAILLE_PAGE = 50
 
 QUERY_METADONNEES = """query($owner:String!,$name:String!,$n:Int!,$after:String){
  repository(owner:$owner,name:$name){
@@ -38,7 +37,7 @@ QUERY_METADONNEES = """query($owner:String!,$name:String!,$n:Int!,$after:String)
    nodes{number title createdAt updatedAt labels(first:20){nodes{name}}}}}}"""
 
 QUALIFICATION_CHAMP = """number title body createdAt updatedAt labels(first:20){nodes{name}}
-    comments(last:12){totalCount nodes{createdAt author{login} body}}}"""
+    comments(last:12){totalCount nodes{createdAt author{login} body}}"""
 
 
 def metadonnee(node: dict) -> dict:
@@ -104,33 +103,17 @@ def lire_metadonnees_issues(run: Run = gh_bulk.run_defaut, depot: str = gh_bulk.
 
 
 def qualifier(run: Run = gh_bulk.run_defaut, depot: str = gh_bulk.DEPOT_GH,
-              numeros: list[int] | None = None) -> dict[int, dict]:
+              numeros: list[int] | None = None) -> dict[int, dict | None]:
     """Le lecteur existant, CIBLE : corps et commentaires des issues nommees.
 
     C'est la qualification d'un grain pris en charge : la lecture lourde ne
-    porte plus sur le pool entier, mais sur les seuls grains servis."""
-    if not numeros:
-        return {}
-    owner, name = depot.split("/")
-    lues: dict[int, dict] = {}
-    for i in range(0, len(numeros), TAILLE_PAGE):
-        tranche = numeros[i:i + TAILLE_PAGE]
-        alias = " ".join(f"i{k}: issue(number:{n}){{{QUALIFICATION_CHAMP}}}"
-                         for k, n in enumerate(tranche))
-        query = (f"query($owner:String!,$name:String!){{repository(owner:$owner,"
-                 f"name:$name){{{alias}}}}}")
-        argv = ["gh", "api", "graphql", "-f", f"query={query}",
-                "-f", f"owner={owner}", "-f", f"name={name}"]
-        texte = gh_bulk._appel(run, argv, "qualification", tranche[0])
-        if texte is None:
-            raise LectureIncomplete("qualification", tranche[0], "appel indisponible")
-        try:
-            data = json.loads(texte)["data"]["repository"]
-        except (ValueError, KeyError, TypeError) as exc:
-            raise LectureIncomplete("qualification", tranche[0],
-                                    f"reponse illisible : {exc}") from exc
-        for k, n in enumerate(tranche):
-            node = data.get(f"i{k}")
-            if node:
-                lues[n] = gh_bulk.issue(node)
-    return lues
+    porte plus sur le pool entier, mais sur les seuls grains servis.
+
+    La lecture GraphQL des issues nommees est portee par `gh_issues` (une
+    seule porte pour tous les lecteurs cibles) ; les commentaires qu'elle
+    rend sont les 12 derniers -- c'est la qualification sur **fil complet**
+    qui a sa propre porte (`coordination.tapis_leger`, organe REST
+    `gh_snapshot`)."""
+    from coordination import gh_issues
+
+    return gh_issues.lire_champs(run, depot, numeros, QUALIFICATION_CHAMP, "qualification")
