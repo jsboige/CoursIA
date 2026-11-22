@@ -62,8 +62,20 @@ public static class SvgChartHelper
     {
         // Enregistrement idempotent du Formatter : un SvgChart s'affiche comme SVG inline.
         // Re-enregistrer ecrase simplement l'entree precedente (safe si #load plusieurs fois).
+        //
+        // Fournee portabilite SVG (#26783) : la sortie est emise sous les DEUX types MIME.
+        // Markup etant du SVG pur, les deux formatters ecrivent le meme contenu :
+        // - image/svg+xml : la forme canonique d'un SVG en sortie Jupyter — celle que les
+        //   surfaces de rendu qui ne sanitizent pas text/html (nbviewer, exports HTML,
+        //   rich diffs) acceptent sans dependre du rendu inline HTML ;
+        // - text/html : compatibilite du rendu enrichi historique.
+        // Le detecteur detect_svg_html_only.py (#26783) exige image/svg+xml PRESENT.
+        Formatter.Register(typeof(SvgChart),
+            (obj, writer) => ((TextWriter)writer).Write(((SvgChart)obj).Markup), "image/svg+xml");
         Formatter.Register(typeof(SvgChart),
             (obj, writer) => ((TextWriter)writer).Write(((SvgChart)obj).Markup), "text/html");
+        Formatter.SetPreferredMimeTypesFor(typeof(SvgChart),
+            new[] { "image/svg+xml", "text/html" });
     }
 
     // ---------------------------------------------------------------------------------------------
