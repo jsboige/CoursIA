@@ -29,8 +29,12 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_ancre, tapis_occupation, tapis_origami, tapis_rapide
-from coordination import tapis_rotation, tapis_service, tapis_universel
+from coordination import tapis_ancre, tapis_origami, tapis_rapide, tapis_rotation
+from coordination import tapis_service, tapis_universel
+# L'import de l'occupation est sur **sa propre ligne** : la PR d'age (#28022)
+# modifie la ligne d'import voisine, et deux ancres distinctes fusionnent sans
+# conflit (les deux PRs restent donc mergeables dans n'importe quel ordre).
+from coordination import tapis_occupation
 from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 
 #: Le classement propose ce multiple de grains : la qualification ecarte
