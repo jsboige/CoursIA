@@ -1,0 +1,387 @@
+# Conformité différentielle de Sudoku-04-SimulatedAnnealing (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+#
+# Cellules non mesurées (motif relevé à la génération) :
+#   - c13_text: côté Rust déclaré absent -- contrat a invariants declare par la spec (#28072, Tolerances, cellule 13) : invariants, pas le committe
+#   - c18_text: côté Rust déclaré absent -- contrat a invariants declare par la spec (#28072, Tolerances, cellule 18) : invariants, pas le committe
+#   - c23_seg1: côté Rust déclaré absent -- contrat a invariants declare par la spec (#28072, Tolerances, cellule 23) : sortie Python cellule 23 + invariants
+#   - c28_seg1: côté Rust déclaré absent -- contrat a invariants declare par la spec (#28072, Tolerances, cellule 28) : invariants, pas le committe
+#   - c28_seg2: côté Rust déclaré absent -- contrat a invariants declare par la spec (#28072, Tolerances, cellule 28) : invariants, pas le committe
+#   - c33_seg3: côté Rust déclaré absent -- contrat a invariants declare par la spec (#28072, Tolerances, cellule 33) : sortie Python cellule 33 + invariants
+#   - c48_text: côté Rust déclaré absent -- durees en presence seule (spec #28072, Tolerances, cellule 48) : egalite stricte ; durees : presence seule
+- name: "Sudoku-04-SimulatedAnnealing"
+  family: "Sudoku"
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-Rust.ipynb
+  measures:
+    - id: c1_text
+      description: "Sortie de la cellule 1, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 1
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 1
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 1 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c3_text
+      description: "Sortie de la cellule 3, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 3
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 3 diffère du texte Python (ligne 1 : « SudokuGrid defini. » contre « Dossier Puzzles: Puzzles » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c5_text
+      description: "Sortie de la cellule 5, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 5 diffère du texte Python (ligne 1 : « SudokuGrid defini. » contre « Puzzles charges: 5 » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c9_text
+      description: "Sortie de la cellule 9, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 9
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 9 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 10 ne porte pas de sortie : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c13_text
+      description: "Sortie de la cellule 13, texte identique au jumeau Python ; côté Rust déclaré absent (contrat de la spec)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          absent: "contrat a invariants declare par la spec (#28072, Tolerances, cellule 13) : invariants, pas le committe"
+        csharp:
+          absent: "La cellule C# 13 diffère du texte Python (ligne 1 : « … permutation de 1-9) : » contre « … permutation de 1-9): » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c16_text
+      description: "Sortie de la cellule 16, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 16 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c18_text
+      description: "Sortie de la cellule 18, texte identique au jumeau Python ; côté Rust déclaré absent (contrat de la spec)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          absent: "contrat a invariants declare par la spec (#28072, Tolerances, cellule 18) : invariants, pas le committe"
+        csharp:
+          absent: "La cellule C# 18 diffère du texte Python (ligne 1 : « …ge effectue : ligne 8, colonnes 8 <-> 3Energie avant : 31, E… » contre « …ge effectue : ligne 2, colonnes 4 <-> 8 » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c21_text
+      description: "Sortie de la cellule 21, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 21 diffère du texte Python (ligne 1 : « Classe SimulatedAnnealingSolver definie. » contre « Classe SudokuAnnealer definie. » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c23_seg1
+      description: "Sortie de la cellule 23, texte identique au jumeau Python (segment 1/2 ; durées murales en présence seule, valeurs jamais comparées) ; côté Rust déclaré absent (contrat de la spec)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "\\A\\s*(.*?)\\s*(?m:^Solution\\ trouvee\\ en\\ \\d+(?:[.,]\\d+)?s\\ \\(avec\\ simanneal\\):\\r?$)"
+          transform: text
+        rust:
+          absent: "contrat a invariants declare par la spec (#28072, Tolerances, cellule 23) : sortie Python cellule 23 + invariants"
+        csharp:
+          absent: "La cellule C# 23 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c23_seg2
+      description: "Sortie de la cellule 23, texte identique au jumeau Python (segment 2/2 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "\\A(?:.*?)(?m:^Solution\\ trouvee\\ en\\ \\d+(?:[.,]\\d+)?s\\ \\(avec\\ simanneal\\):\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "\\A(?:.*?)(?m:^Solution\\ trouvee\\ en\\ \\d+(?:[.,]\\d+)?s\\ \\(avec\\ simanneal\\):\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 23 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c26_text
+      description: "Sortie de la cellule 26, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 26 diffère du texte Python (ligne 1 : « Test sur 5 puzzles faciles :  Puzzle : Resolu en 1 ms (386 i… » contre « Classe SimulatedAnnealingSolver definie. » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c28_seg1
+      description: "Sortie de la cellule 28, texte identique au jumeau Python (segment 1/2 ; durées murales en présence seule, valeurs jamais comparées) ; côté Rust déclaré absent (contrat de la spec)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "\\A\\s*(.*?)\\s*(?m:^Temps:\\ \\d+(?:[.,]\\d+)?s\\r?$)"
+          transform: text
+        rust:
+          absent: "contrat a invariants declare par la spec (#28072, Tolerances, cellule 28) : invariants, pas le committe"
+        csharp:
+          absent: "La cellule C# 28 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c28_seg2
+      description: "Sortie de la cellule 28, texte identique au jumeau Python (segment 2/2 ; durées murales en présence seule, valeurs jamais comparées) ; côté Rust déclaré absent (contrat de la spec)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 28
+          pattern: "\\A(?:.*?)(?m:^Temps:\\ \\d+(?:[.,]\\d+)?s\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          absent: "contrat a invariants declare par la spec (#28072, Tolerances, cellule 28) : invariants, pas le committe"
+        csharp:
+          absent: "La cellule C# 28 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c32_text
+      description: "Sortie de la cellule 32, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 32
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 32 ne porte pas de sortie : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_seg1
+      description: "Sortie de la cellule 33, texte identique au jumeau Python (segment 1/3 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "\\A\\s*(.*?)\\s*(?m:^\\ \\ Puzzle\\ 1:\\ OK,\\ 36\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "\\A\\s*(.*?)\\s*(?m:^\\ \\ Puzzle\\ 1:\\ OK,\\ 36\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_seg2
+      description: "Sortie de la cellule 33, texte identique au jumeau Python (segment 2/3 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "\\A(?:.*?)(?m:^\\ \\ Puzzle\\ 1:\\ OK,\\ 36\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)(?:.*?)(?m:^\\ \\ Puzzle\\ 2:\\ OK,\\ 49\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)(?:.*?)(?m:^\\ \\ Puzzle\\ 3:\\ OK,\\ 51\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)\\s*(.*?)\\s*(?m:^\\ \\ Temps\\ total:\\ \\d+(?:[.,]\\d+)?s\\r?$)"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "\\A(?:.*?)(?m:^\\ \\ Puzzle\\ 1:\\ OK,\\ 36\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)(?:.*?)(?m:^\\ \\ Puzzle\\ 2:\\ OK,\\ 49\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)(?:.*?)(?m:^\\ \\ Puzzle\\ 3:\\ OK,\\ 51\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)\\s*(.*?)\\s*(?m:^\\ \\ Temps\\ total:\\ \\d+(?:[.,]\\d+)?s\\r?$)"
+          transform: text
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c33_seg3
+      description: "Sortie de la cellule 33, texte identique au jumeau Python (segment 3/3 ; durées murales en présence seule, valeurs jamais comparées) ; côté Rust déclaré absent (contrat de la spec)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "\\A(?:.*?)(?m:^\\ \\ Puzzle\\ 1:\\ OK,\\ 36\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)(?:.*?)(?m:^\\ \\ Puzzle\\ 2:\\ OK,\\ 49\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)(?:.*?)(?m:^\\ \\ Puzzle\\ 3:\\ OK,\\ 51\\ vides,\\ \\d+(?:[.,]\\d+)?s\\r?$)(?:.*?)(?m:^\\ \\ Temps\\ total:\\ \\d+(?:[.,]\\d+)?s\\r?$)(?:.*?)(?m:^\\ \\ Temps\\ moyen:\\ \\d+(?:[.,]\\d+)?s\\r?$)\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          absent: "contrat a invariants declare par la spec (#28072, Tolerances, cellule 33) : sortie Python cellule 33 + invariants"
+        csharp:
+          absent: "La cellule C# 33 n'imprime pas les lignes-ancres de durée du segment Python : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c36_seg1
+      description: "Sortie de la cellule 36, texte identique au jumeau Python (segment 1/3 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 36
+          pattern: "\\A\\s*(.*?)\\s*(?m:^\\ \\ Backtracking:\\ 49\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)"
+          transform: text
+        rust:
+          cell: 36
+          pattern: "\\A\\s*(.*?)\\s*(?m:^\\ \\ Backtracking:\\ 49\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 36 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c36_seg2
+      description: "Sortie de la cellule 36, texte identique au jumeau Python (segment 2/3 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 36
+          pattern: "\\A(?:.*?)(?m:^\\ \\ Backtracking:\\ 49\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)(?:.*?)(?m:^\\ \\ Recuit\\ Simule:\\ OK,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)\\s*(.*?)\\s*(?m:^\\ \\ Backtracking:\\ 201\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)"
+          transform: text
+        rust:
+          cell: 36
+          pattern: "\\A(?:.*?)(?m:^\\ \\ Backtracking:\\ 49\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)(?:.*?)(?m:^\\ \\ Recuit\\ Simule:\\ OK,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)\\s*(.*?)\\s*(?m:^\\ \\ Backtracking:\\ 201\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 36 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c36_seg3
+      description: "Sortie de la cellule 36, texte identique au jumeau Python (segment 3/3 ; durées murales en présence seule, valeurs jamais comparées)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 36
+          pattern: "\\A(?:.*?)(?m:^\\ \\ Backtracking:\\ 49\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)(?:.*?)(?m:^\\ \\ Recuit\\ Simule:\\ OK,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)(?:.*?)(?m:^\\ \\ Backtracking:\\ 201\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)(?:.*?)(?m:^\\ \\ Recuit\\ Simule:\\ OK,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)\\s*(.*?)\\s*(?m:^\\ \\ Backtracking:\\ 295\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)"
+          transform: text
+        rust:
+          cell: 36
+          pattern: "\\A(?:.*?)(?m:^\\ \\ Backtracking:\\ 49\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)(?:.*?)(?m:^\\ \\ Recuit\\ Simule:\\ OK,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)(?:.*?)(?m:^\\ \\ Backtracking:\\ 201\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)(?:.*?)(?m:^\\ \\ Recuit\\ Simule:\\ OK,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)\\s*(.*?)\\s*(?m:^\\ \\ Backtracking:\\ 295\\ appels,\\ \\d+(?:[.,]\\d+)?\\ ms\\r?$)"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 36 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c39_text
+      description: "Sortie de la cellule 39, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 39
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 39
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 39 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c41_text
+      description: "Sortie de la cellule 41, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 41
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 41
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 41 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c43_text
+      description: "Sortie de la cellule 43, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 43
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 43
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 43 diffère du texte Python (ligne 1 : « Exercice 2 : implementez le rechauffement adaptatif ci-dessu… » contre « TODO: Implementez generate_extended_neighbor et undo_extende… » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c48_text
+      description: "Sortie de la cellule 48, texte identique au jumeau Python ; côté Rust déclaré absent (contrat de la spec)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 48
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          absent: "durees en presence seule (spec #28072, Tolerances, cellule 48) : egalite stricte ; durees : presence seule"
+        csharp:
+          absent: "Le carnet C# n'a pas de cellule de code à l'index 48 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
