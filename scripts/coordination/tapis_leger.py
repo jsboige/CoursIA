@@ -29,7 +29,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_ancre, tapis_origami, tapis_rapide, tapis_rotation
+from coordination import tapis_age, tapis_ancre, tapis_origami, tapis_rapide, tapis_rotation
 from coordination import tapis_service, tapis_universel
 from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 
@@ -121,11 +121,17 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     debut = time.monotonic()
     classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
     ancres = tapis_ancre.lire(lane)
+    # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord.
+    # La rotation par numero servait les recentes (mesure du 22/11 : 0 issue
+    # anterieure au 01/11 dans les 60 premiers grains d'un pool de 455).
+    ages, exclus, reinit = tapis_age.tour(classe["grains"], ancres, maintenant)
     file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
                                          grains, max(grains * CANDIDATS_MULT, grains),
-                                         lane, maintenant, ancres=ancres)
+                                         lane, maintenant, ancres=ancres,
+                                         ages_g=ages, exclus_g=exclus)
     tapis_ancre.proposer(lane, "grains", fenetre["primaires"]["grains"],
-                          fenetre["reprises"]["grains"])
+                          fenetre["reprises"]["grains"],
+                          reboucle=False, reinit=reinit)
     tapis_ancre.proposer(lane, "conteneurs",
                           fenetre["primaires"]["conteneurs"],
                           fenetre["reprises"]["conteneurs"])
@@ -144,45 +150,9 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     return rapport, 0
 
 
-def texte(r: dict) -> str:
-    """La sortie courte de la voie leger : l'etat de chaque grain et l'action.
-
-    Elle dit ce que le chemin lourd dit, et une chose de plus : **ou** se
-    qualifie un grain, et **quand** (avant l'action).
-    """
-    lu = r["lecture"]
-    lignes = [f"Tapis leger -- lane {r['lane']} -- {r['maintenant']} "
-              f"-- source : GitHub + origin/main local (rotation universelle)"]
-    lignes.append(f"{lu['issues']} issues ouvertes ; rotation sur metadonnees seules "
-                  f"(selection {lu['selection_s']} s, citations {lu['phases'].get('citations_s')} s, "
-                  f"PRs {lu['phases'].get('prs_s')} s, budget {lu['budget_s']} s) ; "
-                  f"file de {len(r['grains'])} grain(s)")
-    fen = r.get("fenetre") or {}
-    if fen.get("blocs", 1) > 1:
-        lignes.append(f"Fenetre : bloc {fen['bloc']}/{fen['blocs']} du pool classe "
-                      f"(taille {fen['taille']}) -- la fenetre avance d'un bloc par "
-                      f"tranche de 4 h : le pool entier est couvert en "
-                      f"{fen['blocs']} tranches.")
-    non_visites = fen.get("non_visites") or []
-    if non_visites:
-        apercu = ", ".join(f"#{n}" for n in non_visites[:12])
-        suite = " ..." if len(non_visites) > 12 else ""
-        lignes.append(f"Fenetre : {len(non_visites)} numero(s) du pool non visite(s) "
-                      f"a cette tranche -- delai max de requalification "
-                      f"{fen.get('delai_max_h')} h : {apercu}{suite}.")
-    elif fen.get("delai_max_h"):
-        lignes.append(f"Fenetre : pool entier visite -- delai max de "
-                      f"requalification {fen['delai_max_h']} h.")
-    lignes.append(f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits :")
-    lignes += [f"  #{p['numero']}  {p['age_j']} j  {p['titre'][:90]}"
-               for p in r["vos_prs"]]
-    lignes.append("\nGrains -- qualifier avant action, puis servir :")
-    for g in r["grains"]:
-        lignes.append(f"  #{g['numero']}  {g['titre'][:80]}")
-        lignes.append(f"      {g['action']}")
-    q = r["qualification"]
-    lignes.append(f"\nQualification : {q['organe']} -- {q['quand']} ; {q['ecarts']}.")
-    return "\n".join(lignes)
+# La sortie courte a son propre module : le plafond de lignes de celui-ci
+# est atteint (extrait : `coordination.tapis_sortie`).
+from coordination.tapis_sortie import texte  # noqa: E402,F401
 
 
 def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,
