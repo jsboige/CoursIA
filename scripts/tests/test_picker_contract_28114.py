@@ -28,10 +28,15 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | I1 file sans fin par lane | tenu | `tapis_leger.tirage` rend une file a toute lane |
 | I2 repli chronologique | **viole** | la voie legere n'a **aucun cache** : hors reseau, elle rend le code 3 |
 | I3 autonomie | tenu | le tirage ne lit aucun artefact du coordinateur |
-| I4 degrade jamais bloque | **viole** | `main_freshness.garder_et_dire` -> sortie 4 (`TIRAGE REFUSE`) |
+| I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
 | I5 exclusions en donnees | **viole** | aucune regle ne lit un label `pause` |
 | I6 borne de temps | **viole** | budgets declares cumules : 60 + 90 + 90 = 240 s pour 60 s |
 | I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
+
+I4 est devenu **executable** dans ce PR : la garde de fraicheur distingue
+trois etats (frais / degrade / refuse), et seul l'etat **inconnu** (mesure
+impossible) refuse encore. Le marqueur `xfail` du test I4 a donc ete
+retire : le test passe, et le CI le prouve.
 
 Ce que ce fichier ne couvre pas (a dire, pas a cacher) : l'exclusion des
 **doublons de meme carnet** (I5) n'a pas de cle de carnet definie par le
@@ -202,10 +207,6 @@ def test_I3_le_tirage_ne_depend_d_aucun_artefact_du_coordinateur():
 
 # --- I4 -- degrader, jamais bloquer --------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I4 viole au 22/11 : main_freshness.garder_et_dire rend le code 4 "
-    "(TIRAGE REFUSE [MAIN_PERIME]) des 2 commits de retard. "
-    "A lever quand le tirage degrade au lieu de refuser."))
 def test_I4_un_main_perime_degrade_le_tirage_il_ne_le_refuse_pas(monkeypatch,
                                                                   capsys):
     """I4 -- un `main` local en retard **degrade** le tirage, il ne le refuse pas.
@@ -217,24 +218,29 @@ def test_I4_un_main_perime_degrade_le_tirage_il_ne_le_refuse_pas(monkeypatch,
     Le contrat : le tirage rend une file **et** un avertissement. Un `main`
     perime, un cache ancien ou un organe lent degradent l'etalage ; ils ne
     peuvent pas rendre la file vide.
+
+    Le test prend la CHAINE REELLE : la mesure est forcee (MAIN_FRESHNESS_FORCE
+    + `mesurer` factice qui rend un ecart de 2 commits), la garde classifie,
+    et le point d'entree du tapis decide. Il ne remplace pas le verdict par
+    un fait-maison : c'est la classification qui est verifiee.
     """
-    perime = {"ok": False, "refuse": True, "outre_passe": False, "passe": "mesure",
-              "depot": "D:/CoursIA-2", "branche": "main", "ecart": 2,
-              "organes_divergents": [], "causes": [],
-              "raisons": [{"code": "MAIN_PERIME",
-                           "motif": "le main local est en retard de 2 commit(s) "
-                                   "sur origin/main",
-                           "remede": "git pull --ff-only"}]}
-    monkeypatch.setattr(main_freshness, "garder_et_dire",
-                        lambda depot, allow_stale=False: perime)
+    monkeypatch.setenv("MAIN_FRESHNESS_FORCE", "1")
+    monkeypatch.setattr(main_freshness, "mesurer",
+                        lambda depot, organes=None, run=None: {
+                            "depot": str(depot), "branche": "main",
+                            "ref_mesure": "refs/heads/main", "ecart": 2,
+                            "organes_divergents": [], "cause": None})
     pool = [_meta(4000 + k) for k in range(12)]
     code = tapis_rapide.main(["--lane", LANE, "--grains", "8", "--json"],
                               run=_run(pool))
-    sortie = capsys.readouterr().out
+    capture = capsys.readouterr()
     assert code == 0, "un main perime doit degrader le tirage, pas le refuser"
-    rapport = json.loads(sortie)
+    rapport = json.loads(capture.out)
     assert rapport["grains"], "la file doit etre rendue malgre le main perime"
-    assert rapport["fraicheur"]["raisons"], "l'avertissement doit etre dit"
+    assert rapport["fraicheur"]["degrade"] is True
+    assert rapport["fraicheur"]["refuse"] is False
+    assert [r["code"] for r in rapport["fraicheur"]["raisons_degradees"]] == ["MAIN_PERIME"]
+    assert "TIRAGE DEGRADE [MAIN_PERIME]" in capture.err, "l'avertissement doit etre dit"
 
 
 # --- I5 -- les exclusions en donnees -------------------------------------------

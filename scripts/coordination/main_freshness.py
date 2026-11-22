@@ -14,16 +14,37 @@ collisions ») :
   d'`origin/main` ([PICKER PERIME], #25522) et a continue : un
   avertissement n'arrete personne.
 
-La garde REFUSE, elle n'avertit pas. Avant de rendre des grains, l'organe de
-tirage mesure l'ecart entre le `main` local et `origin/main` (`git fetch
-origin main`, puis `git rev-list --count main..origin/main`) et refuse :
+Trois etats, pas deux (invariant I4 de #28114, mandat du 22/11 : « degrade,
+jamais bloque »). Avant de rendre des grains, l'organe de tirage mesure
+l'ecart entre le `main` local et `origin/main` (`git fetch origin main`, puis
+`git rev-list --count main..origin/main`) et rend l'un des trois etats :
 
-* si l'ecart n'est pas nul -- remede : `git pull --ff-only` ;
-* si l'un des modules du tirage differe de sa version sur `origin/main` --
-  la mesure compare l'arbre de travail au `origin/main` fraichement fetche,
-  quel que soit le nom de la branche courante ;
-* si la mesure est impossible (fetch hs, ref illisible) -- une mesure ratee
-  ne se publie jamais comme un vert.
+* **FRAIS** : l'ecart est nul et les modules du tirage sont conformes a
+  `origin/main` (la mesure compare l'arbre de travail a l'`origin/main`
+  fraichement fetche, quel que soit le nom de la branche courante) ;
+* **DEGRADE** : l'etat est mesure et imparfait -- le tirage rend sa file
+  **avec un avertissement** ;
+* **REFUSE** : l'etat n'a pas PU etre mesure (fetch rate, ref illisible) --
+  une mesure ratee ne se publie jamais comme un vert, et on ne sert rien sur
+  un etat inconnu.
+
+Sont DEGRADE : l'ecart entre le `main` local et `origin/main`, et la
+divergence d'un module du tirage d'`origin/main`. Sont REFUSE : la mesure
+impossible seule.
+
+Mesures du 22/11 qui ont fixe ces etats (#28114, defaillance 1) : `main`
+local en retard de **2** commits -> `TIRAGE REFUSE [MAIN_PERIME]` et sortie
+4 ; po-2028:CoursIA-2, a **123** commits de retard, n'a plus eu de picker du
+tout. Un `main` qui bouge en permanence (30 fusions par jour) ne peut pas
+etre un motif de blocage : c'est l'ETAT du depot qui est degrade, pas la
+capacite du tirage.
+
+Pourquoi la degradation est sure : le code execute est verifie identique a
+`origin/main` par la mesure de divergence des organes ; l'ancre du tirage
+(le curseur de rotation) vit HORS du depot, dans l'etat local de la machine ;
+et les donnees lues par le tirage sont live (GitHub), pas lues dans un
+fichier du depot. Ce qui avait produit « sature, tout est livre » le
+14/11 n'est plus possible par ce chemin.
 
 Le clone qui n'est pas sur `main` se mesure quand meme : les references
 candidates sont `refs/heads/main` quand elle existe (un worktree partage les
@@ -45,10 +66,13 @@ Usage
 -----
     python scripts/coordination/main_freshness.py [--repo <depot>] [--allow-stale] [--json]
 
-Codes de sortie du standalone : 0 = frais (ou outre-passe) ; 1 = refus.
-Cable dans tapis_rapide.py en tete du point d'entree : le refus s'y rend par
+Codes de sortie du standalone : 0 = frais ou degrade ; 1 = refus (mesure
+impossible).
+Cable dans tapis_rapide.py en tete du point d'entree : le REFUS s'y rend par
 le code de sortie 4 (distinct du 3 « lecture incomplete », qui pointe le
-repli -- ici le repli serait le contournement).
+repli -- ici le repli serait le contournement) ; la DEGRADATION laisse le
+tirage se faire et s'annonce sur stderr (`TIRAGE DEGRADE [...]`) et dans le
+rapport JSON (`fraicheur.degrade`).
 """
 from __future__ import annotations
 
@@ -95,6 +119,14 @@ ORGANES = (
 )
 
 FETCH_TIMEOUT_S = 120
+
+#: Les conditions DURES : elles seules refusent le tirage. Une mesure ratee
+#: ne se publie jamais comme un vert, et on ne sert rien sur un etat inconnu.
+RAISONS_DURES = frozenset({"MESURE_IMPOSSIBLE"})
+
+#: Les conditions DEGRADABLES (invariant I4 de #28114) : l'etat est mesure et
+#: imparfait -- le tirage rend sa file, avec un avertissement.
+RAISONS_DEGRADABLES = frozenset({"MAIN_PERIME", "ORGANE_DIVERGENT"})
 
 #: Runner injectable : argv + timeout -> (rc, stdout, stderr), tous strippes.
 Run = Callable[[list[str], int], tuple[int, str, str]]
@@ -176,10 +208,15 @@ def mesurer(depot: str | Path, organes: tuple[str, ...] = ORGANES,
 
 def garder(depot: str | Path, allow_stale: bool = False,
            organes: tuple[str, ...] = ORGANES, run: Run | None = None) -> dict:
-    """Le verdict de garde : `refuse` arrete le tirage, `raisons` nomment le remede.
+    """Le verdict de garde : trois etats, `raisons` nomment le remede.
 
-    `outre_passe` est vrai seulement quand un refus a eu lieu ET que
-    `allow_stale` l'a explicitement leve : le depassement se lit dans la
+    * `refuse` : l'etat n'a pas pu etre mesure -- le tirage s'arrete ;
+    * `degrade` : l'etat est mesure et imparfait -- le tirage rend sa file
+      avec un avertissement (invariant I4 de #28114) ;
+    * `ok` : rien a signaler.
+
+    `outre_passe` est vrai quand un etat imparfait a ete mesure ET que
+    `allow_stale` l'a explicitement accepte : le depassement se lit dans la
     sortie JSON, il ne se prend pas en silence.
     """
     if run is None:
@@ -187,8 +224,9 @@ def garder(depot: str | Path, allow_stale: bool = False,
         # qui la veulent lui injectent un `run` ou posent MAIN_FRESHNESS_FORCE
         # (memes coutures que le journal de tirage de pick_idle_grain.py).
         if "PYTEST_CURRENT_TEST" in os.environ and not os.environ.get("MAIN_FRESHNESS_FORCE"):
-            return {"ok": True, "refuse": False, "outre_passe": False,
-                    "raisons": [], "passe": "pytest"}
+            return {"ok": True, "refuse": False, "degrade": False,
+                    "outre_passe": False, "raisons": [], "raisons_dures": [],
+                    "raisons_degradees": [], "passe": "pytest"}
         run = run_defaut
     m = mesurer(depot, organes=organes, run=run)
     raisons: list[dict] = []
@@ -210,10 +248,15 @@ def garder(depot: str | Path, allow_stale: bool = False,
                                       + ", ".join(m["organes_divergents"])),
                             "remede": ("remettre ces fichiers a leur version d'origin/main "
                                        "puis rejouer le tirage")})
+    dures = [r for r in raisons if r["code"] in RAISONS_DURES]
+    degradees = [r for r in raisons if r["code"] in RAISONS_DEGRADABLES]
     return {**m, "ok": not raisons, "allow_stale": bool(allow_stale),
-            "refuse": bool(raisons and not allow_stale),
+            "refuse": bool(dures and not allow_stale),
+            "degrade": bool(degradees) and not dures,
             "outre_passe": bool(raisons and allow_stale),
-            "raisons": raisons}
+            "raisons": raisons,
+            "raisons_dures": dures,
+            "raisons_degradees": degradees}
 
 
 def garder_et_dire(depot: str | Path, allow_stale: bool = False) -> dict:
@@ -225,6 +268,10 @@ def garder_et_dire(depot: str | Path, allow_stale: bool = False) -> dict:
     aucun des deux ne renvoie au tapis lourd (#26926). Un
     outrepasse `--allow-stale` se dit sur stderr : il ne se prend pas en
     silence. Le tapis attache ensuite le verdict au rapport JSON (`fraicheur`).
+
+    La DEGRADATION (invariant I4 de #28114) ne s'ecrit que sur stderr :
+    stdout porte le RAPPORT du tirage, qui doit rester du JSON parseable.
+    Le verdict complet voyage dans le rapport (`fraicheur`).
     """
     v = garder(depot, allow_stale=allow_stale)
     if v["refuse"]:
@@ -233,6 +280,13 @@ def garder_et_dire(depot: str | Path, allow_stale: bool = False) -> dict:
                   file=sys.stderr)
         sys.stdout.buffer.write((json.dumps(v, ensure_ascii=False, indent=1)
                                  + "\n").encode("utf-8"))
+    elif v.get("degrade"):
+        for r in v["raisons_degradees"]:
+            print(f"TIRAGE DEGRADE [{r['code']}] : {r['motif']} -- remede : {r['remede']}",
+                  file=sys.stderr)
+        print("TIRAGE DEGRADE : la file est servie sur un etat perime "
+              "(invariant I4 de #28114) ; le verdict complet est dans le "
+              "rapport (fraicheur).", file=sys.stderr)
     if v.get("outre_passe"):
         print("TIRAGE SUR UN ETAT PERIME (--allow-stale) : "
               + " ; ".join(r["motif"] for r in v["raisons"]), file=sys.stderr)
@@ -251,6 +305,11 @@ def _texte(v: dict) -> str:
     for r in v.get("raisons") or []:
         lignes.append(f"[{r['code']}] {r['motif']}")
         lignes.append(f"  remede : {r['remede']}")
+    if v.get("refuse"):
+        lignes.append("REFUS : l'etat n'a pas pu etre mesure ; le tirage s'arrete.")
+    elif v.get("degrade"):
+        lignes.append("DEGRADE : le tirage rend sa file, avec cet avertissement "
+                      "(invariant I4 de #28114).")
     if v.get("outre_passe"):
         lignes.append("OUTRE-PASSE par --allow-stale : le tirage rend des grains "
                       + "sur un etat perime, en connaissance de cause.")
@@ -264,8 +323,9 @@ def main(argv: list[str] | None = None) -> int:
         if hasattr(stream, "reconfigure"):
             stream.reconfigure(encoding="utf-8", errors="replace")
     ap = argparse.ArgumentParser(
-        description="Garde de fraicheur du tirage : refuse sur un main local "
-                    "en retard ou un organe divergent d'origin/main.")
+        description="Garde de fraicheur du tirage : degrade sur un main local "
+                    "en retard ou un organe divergent d'origin/main ; refuse "
+                    "seulement si la mesure est impossible.")
     ap.add_argument("--repo", default=".", help="depot a mesurer (defaut : cwd)")
     ap.add_argument("--allow-stale", action="store_true",
                     help="outre-passer le refus, explicitement (dit dans le JSON)")
