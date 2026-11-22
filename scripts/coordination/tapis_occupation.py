@@ -22,7 +22,13 @@ pour decouvrir que l'organe de claim refuse le grain qu'on lui a servi.
 
 **Une exclusion n'est jamais silencieuse** : le motif est rendu, avec le
 numero de la PR qui occupe. L'issue n'est pas fermee -- elle reste dans le
-pool ; seule sa place dans la tete change.
+pool ; seule sa place dans la tete change. Le rendu est **plafonne**
+(`RENDU_MAX`) : au-dela, le compte est rendu, la liste complete reste dans
+la sortie JSON.
+
+Les lanes qui **gerent** l'urne (coordinateur, adjoint, secretaire) ne
+perdent aucun grain : elles recoivent une section **courte** (`resume`),
+qui dit ce qui est a l'urne et ce qui est occupe.
 """
 from __future__ import annotations
 
@@ -31,22 +37,35 @@ import re
 #: Le label d'urne : il route l'issue vers la cloture, il ne la livre pas.
 LABEL_URNE = "candidate-delivered"
 
-#: Les deux lanes qui **gerent** l'urne et l'occupation : le coordinateur
-#: (`myia-ai-01:CoursIA`) et l'adjoint (`myia-po-2025:CoursIA-2`). Pour
-#: elles, les deux classes sont une information, pas une exclusion : elles
-#: arbitrent, elles ne perdent pas une opportunite de travail.
-LANES_PRIVILEGIEES = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
+#: Les trois lanes qui **gerent** l'urne et l'occupation : le coordinateur
+#: (`myia-ai-01:CoursIA`), l'adjoint (`myia-po-2025:CoursIA-2`) et le
+#: secretaire (`myia-po-2028:CoursIA-3`), qui **ferme** l'urne (Q167 b).
+#: Pour elles, les deux classes sont une information, pas une exclusion :
+#: elles arbitrent, elles ne perdent pas une opportunite de travail.
+LANES_PRIVILEGIEES = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2",
+                                "myia-po-2028:CoursIA-3"})
 
 #: Le code d'ecart de l'occupation (la qualification) : il rejoint les codes
 #: des neuf regles, qui sont tous des exclusions.
 CODE_OCCUPEE = "OCCUPEE"
 
 #: La note d'urne : le label route l'issue, il ne prouve pas la livraison.
-NOTE_URNE = ("label candidate-delivered : urne de cloture (coordinateur, adjoint) "
-             "-- signal, pas preuve : verifie l'artefact, puis rends la main")
+NOTE_URNE = ("label candidate-delivered : urne de cloture (coordinateur, adjoint, "
+             "secretaire) -- signal, pas preuve : verifie l'artefact, puis rends "
+             "la main")
 
+#: Une reference **qui compte** : la forme sure de cloture de `git-workflow.md`
+#: (le mot de cloture precede immediatement le numero) -- ou le numero porte
+#: par le tag `Grain:`, qui nomme le grain servi.
+_CLOSE_RE = re.compile(r"(?i)\b(?:closes|fixes|resolves)\s+#(\d+)\b")
+_GRAIN_RE = re.compile(r"(?im)^[ \t>*]*Grain:.*$")
 _CITE_RE = re.compile(r"#(\d+)\b")
 _LANE_RE = re.compile(r"\blane\s+([A-Za-z0-9._-]+:[A-Za-z0-9._-]+)")
+
+#: Le rendu des exclusions est plafonne : une exclusion muette est interdite,
+#: mais une liste de 284 lignes n'est pas un rapport. Au-dela du plafond, le
+#: compte reste affiche -- l'exclusion n'est pas muette, elle est comptee.
+RENDU_MAX = 12
 
 
 def privilege(lane: str) -> bool:
@@ -67,12 +86,39 @@ def lane_de_pr(pr: dict) -> str | None:
     return None
 
 
+def refs_legitimes(texte: str) -> set[int]:
+    """Les numeros d'issue qu'une PR **tient** reellement.
+
+    Seules deux formes comptent :
+
+    - la forme sure de `git-workflow.md` — le mot de cloture precede
+      immediatement le numero (`Closes #N`, `Fixes #N`, `Resolves #N`) ;
+    - le numero porte par le tag `Grain:` de la premiere ligne, qui nomme le
+      grain que la PR sert.
+
+    Les references **structurelles** ne comptent pas : `Part of #N`,
+    `Refs #N` et `See #N` designent un parent, un contexte ou une issue
+    partagee. Les compter marquait l'umbrella `OCCUPEE` pour toute la
+    flotte (mesure du 22/11, sur le corps de #28096 : `Part of #24823`).
+
+    Le numero du tag `Grain:` est aujourd'hui le numero de la PR
+    **precedente** (`prev:`) : PR et issues partagent un compteur, donc il
+    ne designe jamais une issue ouverte -- aucun grain du pool n'en
+    souffre. La regle reste explicite pour le jour ou le tag portera le
+    numero du grain servi.
+    """
+    refs = {int(m.group(1)) for m in _CLOSE_RE.finditer(texte)}
+    for ligne in _GRAIN_RE.findall(texte):
+        refs |= {int(x) for x in _CITE_RE.findall(ligne)}
+    return refs
+
+
 def prs_par_issue(prs: list[dict]) -> dict[int, list[dict]]:
-    """Les PRs ouvertes, indexees par le numero d'issue qu'elles citent."""
+    """Les PRs ouvertes, indexees par le numero d'issue qu'elles tiennent."""
     index: dict[int, list[dict]] = {}
     for pr in prs:
         texte = f"{pr.get('title') or ''}\n{pr.get('body') or ''}"
-        for num in {int(x) for x in _CITE_RE.findall(texte)}:
+        for num in refs_legitimes(texte):
             index.setdefault(num, []).append(pr)
     return index
 
@@ -156,12 +202,56 @@ def motif(marque: str) -> str:
     """Le motif lisible d'une marque d'occupation."""
     if marque == "urne":
         return ("label candidate-delivered : urne de cloture reservee au "
-                "coordinateur et a l'adjoint (#15069) -- la lane worker rend "
-                "la main")
+                "coordinateur, a l'adjoint et au secretaire (#15069) -- la lane "
+                "worker rend la main")
     if marque.startswith("occupee:#"):
         return (f"PR ouverte {marque.split(':', 1)[1]} d'une autre lane la "
                 "cite : l'issue est occupee (collision L898 evitee)")
     return marque
+
+
+def rendre_exclus(exclus: list[dict], max_lignes: int = RENDU_MAX) -> list[str]:
+    """Les lignes de rendu des exclusions, **plafonnees**.
+
+    Une exclusion muette est interdite ; une liste de 284 lignes n'est pas un
+    rapport. Au-dela du plafond, le compte reste affiche.
+    """
+    if not exclus:
+        return []
+    lignes = [f"  #{e['numero']}  {e['marque']}  {e['motif']}"
+              for e in exclus[:max_lignes]]
+    reste = len(exclus) - max_lignes
+    if reste > 0:
+        lignes.append(f"  ... et {reste} autre(s) exclusion(s) -- le compte "
+                      "complet est dans la sortie JSON")
+    return lignes
+
+
+def resume(occupation: dict[int, str], max_lignes: int = RENDU_MAX) -> list[str]:
+    """La section **Occupation courte** des lanes qui gerent l'urne.
+
+    Elles ne perdent rien : les deux classes sont pour elles une information,
+    pas une exclusion. La section dit ce qui est a l'urne et ce qui est
+    occupe, sans la liste complete.
+    """
+    if not occupation:
+        return []
+    urnes = sorted(n for n, m in occupation.items() if m == "urne")
+    occupees = sorted((n, m) for n, m in occupation.items()
+                       if m.startswith("occupee:"))
+    lignes: list[str] = []
+    if urnes:
+        apercu = ", ".join(f"#{n}" for n in urnes[:max_lignes])
+        reste = len(urnes) - max_lignes
+        lignes.append(f"  urne ({len(urnes)}) : {apercu}"
+                      + (f" ... et {reste}" if reste > 0 else ""))
+    if occupees:
+        apercu = ", ".join(f"#{n} ({m.split(':', 1)[1]})"
+                            for n, m in occupees[:max_lignes])
+        reste = len(occupees) - max_lignes
+        lignes.append(f"  occupee ({len(occupees)}) : {apercu}"
+                      + (f" ... et {reste}" if reste > 0 else ""))
+    return lignes
 
 
 def urne_en_note(issues: dict[int, dict], lane: str = "") -> dict[int, str]:

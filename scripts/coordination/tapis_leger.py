@@ -111,9 +111,16 @@ def classer(lane: str, maintenant: datetime, jours: int, graine: str, depot,
     grains_, conteneurs = _ordre(etats_, lane, maintenant, graine)
     grains_, conteneurs, exclus = tapis_occupation.retirer(
         grains_, conteneurs, occupation, lane)
+    # Les lanes qui **gerent** l'urne ne perdent aucun grain : elles n'ont
+    # donc aucune exclusion a afficher. Elles recoivent une section
+    # **courte** : ce qui est a l'urne, ce qui est occupe -- l'information
+    # qui leur manque pour arbitrer.
+    resume = (tapis_occupation.resume(occupation)
+              if tapis_occupation.privilege(lane) else [])
     return {"metas": metas, "citations": citations, "prs": prs, "etats": etats_,
             "grains": grains_, "conteneurs": conteneurs,
-            "occupation": {"marques": occupation, "exclus": exclus},
+            "occupation": {"marques": occupation, "exclus": exclus,
+                           "resume": resume},
             "phases": {"selection_s": duree, "citations_s": round(t2 - t1, 1),
                        "prs_s": round(t3 - t2, 1)},
             "secondes": round(time.monotonic() - debut, 1)}

@@ -9,6 +9,8 @@ re-exporte ``texte`` : les appelants (``tapis_voie_leger``, tests) ne
 changent pas.
 """
 
+from coordination import tapis_occupation
+
 
 def texte(r: dict) -> str:
     """La sortie courte de la voie leger : l'etat de chaque grain et l'action.
@@ -51,8 +53,11 @@ def texte(r: dict) -> str:
     if exclus:
         lignes.append(f"\nOccupation ({len(exclus)}) -- ecartees de la tete, "
                       f"affichees, jamais perdues :")
-        for e in exclus:
-            lignes.append(f"  #{e['numero']}  {e['marque']}  {e['motif']}")
+        lignes += tapis_occupation.rendre_exclus(exclus)
+    elif occ.get("resume"):
+        lignes.append("\nOccupation -- lanes gerantes : les deux classes sont "
+                      "une information, pas une exclusion :")
+        lignes += occ["resume"]
     q = r["qualification"]
     lignes.append(f"\nQualification : {q['organe']} -- {q['quand']} ; {q['ecarts']}.")
     cap = r.get("cap_livraisons") or {}
