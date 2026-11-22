@@ -662,7 +662,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # #21067, 22/11) ; tapis_cap_livraisons.py la vingt-huitieme (le CAP DE
 # LIVRAISONS EPIC rebranche sur la voie de tirage reelle, #21067, 22/11) ;
 # tapis_occupation.py la vingt-neuvieme (l'OCCUPATION d'un grain : l'urne de
-# cloture et la PR qui le tient, #28090, 22/11).
+# cloture et la PR qui le tient, #28090, 22/11) ; tapis_leger_rapport.py la
+# trentieme (le RAPPORT du tirage leger -- extrait pour que le cumul des deux
+# organes du tapis tienne le plafond, #28090 + #27223, 22/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -703,7 +705,8 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_assiette.py", 200),
                                               ("tapis_leger_texte.py", 80),
                                               ("tapis_cap_livraisons.py", 160),
-                                              ("tapis_occupation.py", 298)])
+                                              ("tapis_occupation.py", 298),
+                                              ("tapis_leger_rapport.py", 50)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
