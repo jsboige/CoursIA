@@ -1,3 +1,5 @@
+> RAPPORT — 2026-10-31 — mesure du débit UDP des runners éphémères (#22937 volet 5.1) — figé
+
 # Débit de requêtes UDP des runners — mesure (#22937 volet 5.1)
 
 > **Organe** : `scripts/ci/check_dns_rate.py`
