@@ -147,15 +147,25 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
                         citations=classe["citations"],
                         lu_a=_iso(maintenant), secondes=round(secondes, 1),
                         appels=0), reseau=True)
+    # Cap de livraisons EPIC (#21067) : le garde arbitre (charge en vol,
+    # item K=2 / famille K=4) vivait dans le seul pick_idle_grain, retire du
+    # tirage depuis #26926 -- rebranche sur la voie reelle, fail-OPEN.
+    from coordination import tapis_cap_livraisons
+    file, temoins_cap, cap_mesure = tapis_cap_livraisons.passer(
+        file, classe["grains"] + classe["conteneurs"], lane, maintenant,
+        classe["prs"], run=run)
     rapport = _rapport(lane, graine, maintenant, classe["metas"],
                        phases["selection_s"], secondes, budget_s, classe["etats"],
                        file, classe["prs"], origami, phases, fenetre)
+    rapport["cap_livraisons"] = {"mesure": cap_mesure, "ecartes": temoins_cap,
+                                 "fenetre_j": tapis_cap_livraisons.FENETRE_J}
     return rapport, 0
 
 
-# La sortie courte a son propre module : le plafond de lignes de celui-ci
-# est atteint (extrait : `coordination.tapis_sortie`).
-from coordination.tapis_sortie import texte  # noqa: E402,F401
+# La sortie texte de la voie leger vit dans tapis_leger_texte (extraction
+# pour tenir le plafond de lignes de ce module) ; l'alias garde les
+# appelants intacts (tapis_voie_leger, tests).
+from coordination.tapis_leger_texte import texte  # noqa: E402,F401
 
 
 def main(argv: list[str] | None = None, run=gh_bulk.run_defaut,

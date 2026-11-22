@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""La SORTIE COURTE du tirage leger : l'etat de chaque grain et l'action.
+"""La SORTIE TEXTE de la voie legere du tirage.
 
-Ce module est **extrait** de `coordination.tapis_leger` : le plafond de
-lignes de ce dernier est atteint, et la sortie courte est une piece a part
-(elle ne sert ni le pool, ni la selection). L'appelant continue de l'avoir
-sous `tapis_leger.texte`.
+Extraite de ``tapis_leger.py`` pour tenir son plafond de lignes (#21067 :
+la greffe du cap de livraisons s'y paye en extraction, comme chaque
+extension avant elle -- cf. l'historique du plafond dans
+``test_tapis_rapide.py::test_plafonds_de_lignes``). ``tapis_leger``
+re-exporte ``texte`` : les appelants (``tapis_voie_leger``, tests) ne
+changent pas.
 """
-from __future__ import annotations
 
 
 def texte(r: dict) -> str:
@@ -54,4 +55,9 @@ def texte(r: dict) -> str:
         lignes.append(f"      {g['action']}")
     q = r["qualification"]
     lignes.append(f"\nQualification : {q['organe']} -- {q['quand']} ; {q['ecarts']}.")
+    cap = r.get("cap_livraisons") or {}
+    if cap.get("ecartes"):
+        for t in cap["ecartes"]:
+            lignes.append(f"\nCap livraisons EPIC (#21067) : #{t['numero']} ecarte -- "
+                          f"{t['motif']}")
     return "\n".join(lignes)
