@@ -74,8 +74,8 @@
       "note": "Densite de commentaires des carnets : module NEUF, fusionne le 16/11 (#26782, #26788). Depasse le plafond des scripts neufs (800) des sa creation : epingle ici avec son motif, cible T7 (second rang)."
     },
     "scripts/pr_gate.py": {
-      "lines": 2846,
-      "note": "Porte de fusion : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 195 lignes depuis la mesure du 13/11 (2650 -> 2845), puis de 1 ligne(s) au 20/11 (2845 -> 2846) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee"
+      "lines": 2874,
+      "note": "Porte de fusion : cible T7 (second rang). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 195 lignes depuis la mesure du 13/11 (2650 -> 2845), puis de 1 ligne(s) au 20/11 (2845 -> 2846) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee. Releve au 22/11 dans #27768 (2846 -> 2874) : verdict quota rendu CANCELLED plutot que FAILURE sur la jambe pr-gate -- logique de verdict ajoute dans cette PR, motif #27768"
     },
     "scripts/notebook_tools/check_prose_output_numbers.py": {
       "lines": 810,

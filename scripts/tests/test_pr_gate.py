@@ -902,6 +902,102 @@ def test_main_starved_refused_cancel_still_exits_one(monkeypatch):
     assert sleeps == [], "no grace wait when the cancel never landed"
 
 
+# --- #27768 -- the INCONCLUSIVE quota verdict renders CANCELLED ------------
+#
+# The quota verdict (exit 3) means "unknown, replay me", not "false". It used
+# to exit 3 with nothing else, so the job leg concluded FAILURE -- a failure
+# that never happened, in the very class the stale sweep does NOT re-drive
+# (it re-drives cancelled legs). `neutral` cannot be the answer on the required
+# leg: the job check-run takes its conclusion from the step's exit status (any
+# non-zero exit is FAILURE; `continue-on-error` renders SUCCESS, a false
+# green), and `check_run_state.GREEN` counts `neutral` as green -- a neutral
+# gate leg would merge PRs whose checks were never read. The rendering is
+# therefore the #13510 self-cancel: CANCELLED, replayable by the sweep.
+
+def _drive_inconclusive(monkeypatch, extra_args, cancel_result=True):
+    """Run main() over an INCONCLUSIVE quota verdict; return (exit, cancels,
+    sleeps)."""
+    cancels = []
+    sleeps = []
+
+    def fake_wait(*_a, **_k):
+        raise pr_gate.QuotaInconclusive("installation quota exhausted")
+
+    def fake_cancel(repo, run_id):
+        cancels.append((repo, run_id))
+        return cancel_result
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", fake_wait)
+    monkeypatch.setattr(pr_gate, "cancel_own_run", fake_cancel)
+    monkeypatch.setattr(pr_gate, "publish_check_run_output",
+                        lambda *_a, **_k: True)
+    monkeypatch.setattr(pr_gate.time, "sleep", lambda s: sleeps.append(s))
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef", *extra_args])
+    return code, cancels, sleeps
+
+
+def test_main_inconclusive_cancels_own_run_then_exits_three(monkeypatch):
+    """Acceptance #27768: workflow-run mode renders the quota verdict as a
+    self-cancel with the grace wait; exit stays 3 (the chainer's replayable
+    contract, unchanged)."""
+    code, cancels, sleeps = _drive_inconclusive(
+        monkeypatch, ["--run-id", "515151"])
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE
+    assert cancels == [("o/r", "515151")]
+    assert sleeps and sleeps[0] == pr_gate.CANCEL_GRACE_SEC
+
+
+def test_main_inconclusive_without_run_id_stays_plain(monkeypatch):
+    """Local run (no run id resolvable): no cancel, no grace, exit 3."""
+    code, cancels, sleeps = _drive_inconclusive(monkeypatch, [])
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE
+    assert cancels == [] and sleeps == []
+
+
+def test_main_inconclusive_no_self_cancel_flag_disables(monkeypatch):
+    code, cancels, _ = _drive_inconclusive(
+        monkeypatch, ["--run-id", "515151", "--no-self-cancel"])
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE and cancels == []
+
+
+def test_main_inconclusive_post_mode_does_not_self_cancel(monkeypatch):
+    """--post-check-run runs on the default branch; its own run is not the
+    PR's gate leg, so it never cancels itself."""
+    code, cancels, _ = _drive_inconclusive(
+        monkeypatch, ["--run-id", "515151", "--post-check-run"])
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE and cancels == []
+
+
+def test_main_inconclusive_refused_cancel_still_exits_three(monkeypatch):
+    """A refused cancel degrades to the status-quo FAILURE leg, never to a
+    pass: exit 3 and no grace wait."""
+    code, cancels, sleeps = _drive_inconclusive(
+        monkeypatch, ["--run-id", "515151"], cancel_result=False)
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE
+    assert cancels == [("o/r", "515151")]
+    assert sleeps == []
+
+
+def test_main_genuine_fail_never_self_cancels(monkeypatch):
+    """Negative control: a real red is a FAIL and keeps the FAILURE leg --
+    only verdicts with no answer (STARVED, INCONCLUSIVE) render CANCELLED."""
+    cancels = []
+
+    def fake_wait(*_a, **_k):
+        return 1, "FAIL -- failing checks: Slow CI (failure)"
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", fake_wait)
+    monkeypatch.setattr(pr_gate, "cancel_own_run",
+                        lambda repo, run_id: cancels.append((repo, run_id)))
+    monkeypatch.setattr(pr_gate, "publish_check_run_output",
+                        lambda *_a, **_k: True)
+    monkeypatch.delenv("GITHUB_RUN_ID", raising=False)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef",
+                         "--run-id", "515151"])
+    assert code == 1 and cancels == []
+
+
 # --- #11751 -- phantom FAIL when the deadline fires between polls ------------
 #
 # The defect: the wait loop's last poll reports `pending=[X]`; the deadline
