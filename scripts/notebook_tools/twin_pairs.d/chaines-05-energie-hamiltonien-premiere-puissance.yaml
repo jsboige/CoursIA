@@ -1,0 +1,10 @@
+- name: "Chaines-05 Energie Hamiltonien premiere puissance"
+  family: Physique/Chaines
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-05-Energie-Hamiltonien-Premiere-Puissance-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : le chapitre 44 rejoue des sommes et des niveaux rationnels exacts (S0 = 116*36 = 4176, N = 24+30+3 = 57, Z = 96, niveaux 1392/67 et 4176/67, corps electron S = 201). Python calcule en fractions.Fraction ; C# en rationnel exact local sur System.Numerics.BigInteger. Aucun moteur externe canonique."
+  known_differences:
+    - "C# implemente un rationnel exact local (Rat sur BigInteger) ; Python utilise fractions.Fraction. Les valeurs porteuses (4176, 57, 96, 1392/67, 4176/67, 201, carres de Born 1 et 9) coincident verbatim."
+    - "La trace de l'operateur de gain tr G = 30 + 30*sqrt(2) est citee : Python l'evalue en flottant numpy, C# l'affiche sous sa forme d'anneau sans l'evaluer."
