@@ -1,0 +1,21 @@
+# Paire Python / C# de `ChoixSocial-06 Mobius-Aggregation-Pouvoir-Manipulation`.
+#
+# Enregistree le 2026-11-22 par la lane `myia-ai-01:CoursIA-2` (revue
+# coordinateur c0019) : la couverture du registre (`check_twin_parity.py
+# --coverage`) classait la paire comme UNREGISTERED alors que les deux
+# jumeaux sont versionnes et que le registre de conformite differentielle
+# (`rust_conformance.d/choixsocial-06-mobius.yaml`, ajoute par #27828) mesurait
+# deja 22 grandeurs sur les trois cotes.
+- name: "SocialChoice-6 Mobius-Aggregation-Pouvoir-Manipulation"
+  family: GameTheory/SocialChoice
+  python: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire from-scratch / from-scratch, sans moteur externe d'un cote ou de l'autre : le cote Python calcule l'inversion de Mobius, les dividendes de Harsanyi et la valeur de Shapley avec la seule bibliotheque standard (`itertools.combinations`, `math.factorial`), le cote C# avec la seule BCL .NET 9 + LINQ (0 NuGet, annonce dans la cellule 0 du carnet). Aucun moteur de production n'est contourne : l'inversion de Mobius EST l'objet pedagogique du carnet, et le formalisme correspondant est porte par le carnet Lean jumeau `ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb` (lake `game_theory_lean`), cite des deux cotes -- aucun des deux cotes ne reimplant de preuve. parity_level: semantic (meme contenu mathematique et meme structure de cellules 1:1 -- 18 cellules, 6 cellules de code des deux cotes, rangs de code identiques 3, 6, 9, 11, 13, 15 --, idiomes differents : dict/list Python contre Dictionary/List + LINQ C#)."
+  known_differences:
+    - "2026-11-22 (myia-ai-01:CoursIA-2) : premiere attestation de la paire. Parite mesuree sur les 22 grandeurs du registre de conformite differentielle `scripts/notebook_tools/rust_conformance.d/choixsocial-06-mobius.yaml` (trois cotes Python / C# / Rust) : 19 grandeurs sont mesurees sur le cote C#, 2 mesures d'identite textuelle (la table des dividendes de Harsanyi, les scores de Borda) n'ont pas de cote C# -- le rendu .NET differe, les valeurs sont comparees separement par la mesure `dividendes_valeurs` (transform digits) -- et 1 mesure (l'ecart entre les deux voies de Shapley) declare explicitement le cote C# ABSENT avec son motif. Structure identique des deux cotes : 18 cellules, 6 cellules de code, memes rangs de code (3, 6, 9, 11, 13, 15). Aucun carnet n'est modifie par cette attestation : elle enregistre l'etat courant sur `main`."
+    - "Ecart entre les deux voies de Shapley : le cote C# publie `0e` la ou le cote Python et le portage Rust mesurent 5.55e-17 (2^-54) -- son arithmetique en `double` fait tomber les deux voies exactement sur la meme valeur. Les deux cotes restent exacts sur les grandeurs mesurees ; l'ecart de l'un n'est pas une absence de mesure (cote declare ABSENT, motif dans le registre de conformite differentielle)."
+    - "Arithmetique : le cote Python et le portage Rust travaillent sur les poids entiers et l'inversion de Mobius en arithmetique exacte, le cote C# en `double` ; l'ecart de 5.55e-17 ci-dessus en decoule. Les grandeurs integrees (dividendes, poids des coalitions, compte des coalitions verifiees) sont identiques sur les deux cotes."
+    - "Idiomes de rendu : le tableau des dividendes et le tableau des scores Borda sont rendus par des collections differentes des deux cotes (dict/set Python contre Dictionary/HashSet C#), d'ou l'absence de cote C# sur les deux mesures d'identite textuelle -- la comparaison porte sur les valeurs, pas sur la forme."
+    - "Le carnet `ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb` (decomposition de Mobius, Lean + Python) est un compagnon de la serie, pas un jumeau de la paire : il ne porte pas de version C# et n'entre donc pas dans le registre de parite Python/C#."
