@@ -26,8 +26,12 @@
       "note": "Perimetre de PR : cible T7 (second rang). Plafond pose sur la taille du 13/11."
     },
     "scripts/check_unaddressed_nits.py": {
-      "lines": 6712,
-      "note": "B.0 : cible T5 (separer la grammaire des marqueurs, l'evaluation et le rapport). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 332 lignes depuis la mesure du 13/11 (6414 -> 6746), puis de 12 lignes de plus (6746 -> 6758) apres le #26763, puis de 1 ligne(s) au 20/11 (6758 -> 6759) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee. Releve au 22/11 dans cette PR (#27882) : la grammaire des marqueurs (familles FORMELLE/PROSE, vocabulaire des verdicts) est extraite dans `scripts/ci/nit_markers.py` -- 6759 -> 6712 lignes ; le plafond descend avec la mesure (le cliquet ne fait que retrecir)"
+      "lines": 6660,
+      "note": "B.0 : cible T5 (separer la grammaire des marqueurs, l'evaluation et le rapport). Plafond pose sur la taille du 13/11. Releve au 16/11 sur origin/main : le script a grossi de 332 lignes depuis la mesure du 13/11 (6414 -> 6746), puis de 12 lignes de plus (6746 -> 6758) apres le #26763, puis de 1 ligne(s) au 20/11 (6758 -> 6759) : imports repointes par le relogement gh_etag/gh_identity/gh_payload_cache dans scripts/ci/ (#27367), sans logique ajoutee. Releve au 22/11 dans cette PR (#27882) : la grammaire des marqueurs (familles FORMELLE/PROSE, vocabulaire des verdicts) est extraite dans `scripts/ci/nit_markers.py` -- 6759 -> 6712 lignes ; le plafond descend avec la mesure (le cliquet ne fait que retrecir). Releve au 22/11 dans cette PR (#27319) : le funnel B.0 (threads inline #17437, bundle des surfaces typees + join des dismissals #22757) est extrait dans `scripts/ci/b0_funnel.py` -- 7051 -> 6660 lignes ; le plafond descend avec la mesure (6660), le funnel porte desormais son propre plafond"
+    },
+    "scripts/ci/b0_funnel.py": {
+      "lines": 491,
+      "note": "Funnel B.0 : threads inline pagines (#17437), bundle des surfaces typees + threads + join des dismissals en une requete GraphQL multi-curseurs (#22757), join REST historique des reviews. Module NEUF extrait de `scripts/check_unaddressed_nits.py` dans #27319 : il porte son propre plafond (491 lignes) pour que le funnel puisse grossir sans faire grossir l'organe (modele nit_markers #27882). Couplage : collaborateurs de l'organe (gh_json, _author_login, _typed_author_surfaces, LIFT_OVERRIDE_LOGINS) resolus au moment de l'appel via wire() — les monkeypatchs des tests passent."
     },
     "scripts/ci/fast_lane_registry.py": {
       "lines": 4725,

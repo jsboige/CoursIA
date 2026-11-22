@@ -465,3 +465,44 @@ def test_17437_review_threads_curseur_fige_rend_le_collecte(monkeypatch):
     out = mod.review_threads(1)
     assert len(out) == 2
     assert all(not t["resolved"] for t in out)
+
+
+def test_17437_review_threads_strict_refuse_le_prefixe_curseur_fige(monkeypatch):
+    """#22757 (relecture ai-01 2026-11-19) : en mode STRICT — celui du repli
+    du bundle — un curseur figé PROPAGE (ThreadsIncomplete) au lieu de
+    rendre le préfixe collecté : le préfixe n'est jamais un résultat
+    complet, l'appelant doit refuser de conclure."""
+    page = _threads_page([_thread(False, "x")], True, "t1")
+
+    monkeypatch.setattr(mod, "gh_json", lambda args: page)
+    with pytest.raises(mod.ThreadsIncomplete):
+        mod.review_threads(1, strict=True)
+
+
+def test_17437_review_threads_strict_refuse_pageinfo_sans_hasnextpage(monkeypatch):
+    """#22757 (relecture ai-01 2026-11-19) : une connexion avec `nodes`
+    valide mais `pageInfo` SANS booléen `hasNextPage` n'est pas acceptée
+    comme complète — en mode strict, refus explicite."""
+    page = {"data": {"repository": {"pullRequest": {"reviewThreads": {
+        "pageInfo": {"endCursor": "t1"},   # pas de hasNextPage
+        "nodes": [_thread(True, "leve")],
+    }}}}}
+
+    monkeypatch.setattr(mod, "gh_json", lambda args: page)
+    with pytest.raises(mod.ThreadsIncomplete):
+        mod.review_threads(1, strict=True)
+
+
+def test_17437_review_threads_historique_tolerant_pageinfo_sans_hasnextpage(monkeypatch):
+    """Contre-témoin du strict : le mode historique (appels existants)
+    garde sa tolérance — même page incomplète, rendu du collecté, pas de
+    levée."""
+    page = {"data": {"repository": {"pullRequest": {"reviewThreads": {
+        "pageInfo": {"endCursor": "t1"},   # pas de hasNextPage
+        "nodes": [_thread(True, "leve")],
+    }}}}}
+
+    monkeypatch.setattr(mod, "gh_json", lambda args: page)
+    out = mod.review_threads(1)
+    assert len(out) == 1
+    assert out[0]["resolved"] is True
