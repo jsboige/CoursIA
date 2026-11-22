@@ -33,6 +33,19 @@ The organ runs in TWO modes (review of #22527, squash-merge convention):
               HEAD checkout, not the merge ref: on the merge ref every touched
               doc's last commit is the merge commit, dated at CI time.
 
+              A revision can also live INSIDE a merge commit: when the PR
+              merges ``main`` and resolves a conflict on a doc, the resolution
+              (e.g. the refreshed header itself) is carried by the merge, not
+              by any ordinary commit -- ``--no-merges`` then measures the doc
+              at its last ordinary revision and reddens a correct header
+              (#27861, founder PR #27242, merge ``2b0573f8``). So a merge of
+              the PR's first-parent chain whose tree DIFFERS from the
+              auto-merge of its parents on ``docs/`` (``git merge-tree``)
+              counts as a revision, at the merge's committer date. A trivial
+              merge (tree == auto-merge on ``docs/``) still counts for
+              nothing: the docs ``main`` modified through an update-branch
+              stay main's business, not the PR's (#24482).
+
               ``GIT_LOG_FAILED`` **replaces** the ``GIT_DIFF_FAILED`` code this
               organ used to publish on the same path: the touched-doc list is
               now read by ``git log``, so it is a failing ``git log`` that is
@@ -173,6 +186,11 @@ def _pr_own_commits(root: Path, base: str) -> list[tuple[str, list[str]]] | None
         survive the fix;
       - ``--no-merges``: an ``update-branch`` or a ``git merge origin/main``
         must not make the docs that ``main`` modified look like the PR's;
+        the exception is the conflict-resolving merge: a merge whose tree
+        differs from the auto-merge on ``docs/`` revises a doc IN the merge
+        (#27861) -- those merges are counted separately, by
+        ``_merge_resolved_docs``, and their resolved docs join the PR's own
+        revisions at the merge's committer date;
       - ``--first-parent``: the commits that an update-branch merge BRINGS IN
         are not merge commits -- they are ordinary commits that became
         reachable from the PR's head. Without this flag they stay in the
@@ -204,6 +222,71 @@ def _pr_own_commits(root: Path, base: str) -> list[tuple[str, list[str]]] | None
     if date is not None:
         commits.append((date, files))
     return commits
+
+
+def _merge_docs_differing_from_automerge(root: Path, sha: str) -> list[str]:
+    """Docs whose content in merge ``sha`` is NOT what the auto-merge of its
+    parents would produce -- the signature of a conflict resolution (or manual
+    edit) made in the merge itself (#27861, founder PR #27242, merge
+    ``2b0573f8``).
+
+    ``git merge-tree --write-tree <p1> <p2>`` prints the auto-merged tree OID
+    as its first stdout line (exit 1 when the auto-merge carries conflict
+    markers -- the OID is still printed); the docs where the merge's own tree
+    differs from that auto tree are the ones the merge revised. A merge with
+    anything else than two parents (octopus, root) is skipped, and any git
+    failure yields an empty list: an unmeasured merge counts as trivial, which
+    is the pre-#27861 behaviour -- it can only leave a false positive in
+    place, never pass a wrong one.
+    """
+    try:
+        parents = _git(root, "rev-list", "--parents", "-n", "1", sha).split()
+        if len(parents) != 3:
+            return []
+        _, p1, p2 = parents
+        proc = subprocess.run(
+            ["git", "-C", str(root), "merge-tree", "--write-tree", p1, p2],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+        auto_tree = proc.stdout.splitlines()[0].strip() if proc.stdout else ""
+        if not auto_tree:
+            return []
+        merge_tree = _git(root, "rev-parse", f"{sha}^{{tree}}").strip()
+        out = _git(root, "diff", "--name-only", auto_tree, merge_tree, "--", "docs/")
+    except (subprocess.CalledProcessError, IndexError, OSError):
+        return []
+    return [line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()]
+
+
+def _merge_resolved_docs(root: Path, base: str) -> list[tuple[str, list[str]]]:
+    """Conflict-resolving merges of the PR's first-parent chain:
+    (committer date, docs resolved), most recent first.
+
+    Only merges whose tree differs from the auto-merge on ``docs/`` are
+    returned -- a trivial ``update-branch`` merge (tree == auto-merge on
+    ``docs/``) revises nothing and must keep counting for nothing, or the
+    docs ``main`` modified would become the PR's business again (#24482).
+    """
+    try:
+        out = _git(root, "log", f"{base}..HEAD", "--merges", "--first-parent",
+                   "--format=@@@%H %cs")
+    except (subprocess.CalledProcessError, OSError):
+        return []
+    entries: list[tuple[str, list[str]]] = []
+    for line in out.splitlines():
+        if not line.startswith("@@@"):
+            continue
+        parts = line[3:].split()
+        if len(parts) < 2:
+            continue
+        sha, date = parts[0], parts[1]
+        docs = _merge_docs_differing_from_automerge(root, sha)
+        if docs:
+            entries.append((date, docs))
+    return entries
 
 
 def _perenne_docs(root: Path) -> list[Path]:
@@ -266,11 +349,16 @@ def scan_perenne(
             touched = set()
         else:
             # The PR's OWN commits decide both WHICH docs it is answerable
-            # for and WHEN it revised them. A doc that only the base branch
-            # or main touched is not the PR's business -- that finding
-            # belongs to the PR that made the change.
+            # for and WHEN it revised them -- and a conflict-resolving merge
+            # is one of the PR's own revisions (#27861): when the PR merges
+            # main and resolves a conflict on a doc, the refreshed header
+            # lives in the merge, invisible to ``--no-merges``. A doc that
+            # only the base branch or main touched is not the PR's business
+            # -- that finding belongs to the PR that made the change.
+            revisions = commits + _merge_resolved_docs(root, base)
+            revisions.sort(key=lambda entry: entry[0], reverse=True)  # ISO dates
             touched = set()
-            for commit_date, files in commits:  # most recent first
+            for commit_date, files in revisions:  # most recent first
                 for name in files:
                     if name not in date_of:
                         date_of[name] = commit_date
