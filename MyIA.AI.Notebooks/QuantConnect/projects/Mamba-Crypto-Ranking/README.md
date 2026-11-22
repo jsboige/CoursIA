@@ -8,7 +8,7 @@
 
 ## Description
 
-Notebook de recherche évaluant Mamba (Selective State Space Model, Gu et Dao 2023) pour la prédiction de direction crypto (BTC-USD, ETH-USD). Compare Mamba (d_model=64, d_state=8, 1 couche, 80 epochs) aux baselines DLinear et TFT-Lite. Implémentation pure PyTorch avec validation walk-forward. Verdict : Mamba INCONCLUSIVE (Sharpe 0.000, outputs NaN durant l'entraînement), DLinear NO BEATS, TFT-Lite NO BEATS.
+Notebook de recherche évaluant Mamba (Selective State Space Model, Gu et Dao 2023) pour la prédiction de direction crypto (BTC-USD, ETH-USD). Compare Mamba (d_model=64, d_state=8, 1 couche, 80 epochs) aux baselines DLinear et TFT-Lite. Implémentation pure PyTorch avec validation walk-forward. Verdict (ré-exécution du 2026-11-21, #26319) : aucun modèle ne bat le Buy & Hold des mêmes fenêtres de test (Sharpe moyen 1,164). Mamba NO BEATS (Sharpe test 0,625, z −2,49), DLinear NO BEATS (0,375, z −2,03), TFT-Lite INCONCLUSIVE (0,864, z −1,24), ce dernier souvent figé sur une seule classe prédite.
 
 ## Comment exécuter
 
