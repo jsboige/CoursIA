@@ -205,6 +205,7 @@ runs:
     # comportement exact d'avant (le clone `lake update` fait la source).
     - name: Use the shared Mathlib source
       working-directory: ${{ inputs.project-path }}
+      shell: bash
       run: |
         if [ "${{ steps.mathlib-src-cache.outputs.cache-hit }}" = "true" ] \
            && [ -f "${RUNNER_TEMP}/mathlib-src/Mathlib.lean" ]; then
