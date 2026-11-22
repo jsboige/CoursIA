@@ -563,27 +563,42 @@ def test_le_label_d_urne_ne_prouve_pas_la_livraison(monkeypatch):
     """Un label `candidate-delivered` est une ROUTE, pas une preuve.
 
     Il dit que l'issue est dans l'urne de cloture du coordinateur et de
-    l'adjoint ; il ne dit pas que la tranche est livree. Retirer le grain sur
-    cette seule foi, ce serait heriter d'une exclusion que personne n'a
-    prouvee : la lane qui le rencontre verifie la preuve sur l'artefact, puis
-    rend la main (#15069)."""
+    l'adjoint ; il ne dit pas que la tranche est livree : aucun verdict
+    `LIVREE` n'en decoule.
+
+    **Mais l'urne n'est pas un grain neuf** (TASK c0021, 22/11) : elle est
+    reservee au coordinateur et a l'adjoint (#15069), et l'organe de claim
+    refuse de la reclamer. Une lane worker ne la sert donc pas -- sinon elle
+    paie un cycle pour decouvrir le refus. Les lanes qui **gerent** l'urne la
+    gardent : elles arbitrent."""
     def faux_qualifier(run, depot, numeros=None):
         return {7: _issue(7, labels=["candidate-delivered"])}
 
     monkeypatch.setattr(tq.tapis_lot.gh_selection, "qualifier", faux_qualifier)
     servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
         [7], LANE, NOW, 45, [], _run_faux([]))
-    assert [e.numero for e in servis] == [7], "le label ne retire pas le grain"
-    assert any("urne" in n for n in servis[0].notes), "l'urne reste dite"
-    assert 7 not in ecartees, "le label n'est pas une exclusion"
+    assert [e.numero for e in servis] == [], "l'urne n'est pas servie a une worker"
+    assert ecartees[7]["code"] == "LABEL", "l'urne est ecartee, avec son code"
+    assert "urne" in ecartees[7]["motif"], "le motif nomme l'urne"
+
+    # Les lanes qui GERENT l'urne la gardent : note, et grain servi.
+    for gerante in ("myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"):
+        servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
+            [7], gerante, NOW, 45, [], _run_faux([]))
+        assert [e.numero for e in servis] == [7], "l'urne reste servie par sa gerante"
+        assert any("urne" in n for n in servis[0].notes), "l'urne reste dite"
+        assert 7 not in ecartees, "l'urne n'est pas une exclusion pour sa gerante"
 
 
 def test_une_pr_ouverte_qui_cite_est_un_signal_pas_un_verdict(monkeypatch):
     """Une PR ouverte qui cite l'issue est une couverture, pas une livraison.
 
-    Le verdict `COUVERTE` retirait le grain sur cette seule foi. Dans la
-    requalification, la couverture reste DITE -- en note -- et le grain reste
-    servable."""
+    Aucun verdict `LIVREE` n'en decoule : la couverture reste DITE, en note.
+
+    **Mais elle occupe l'issue** (TASK c0021, 22/11) : une PR ouverte d'une
+    autre lane la tient, et l'organe de claim refuse la lane qui s'y met
+    (collision L898). Une lane worker ne sert donc pas ce grain ; la lane de
+    la PR, elle, le garde -- c'est elle qui doit le porter au merge (P0)."""
     def faux_qualifier(run, depot, numeros=None):
         return {7: _issue(7)}
 
@@ -592,7 +607,14 @@ def test_une_pr_ouverte_qui_cite_est_un_signal_pas_un_verdict(monkeypatch):
             "body": "Grain: LIGHT/guard -- lane myia-po-2025:CoursIA-2\n\nRefs #7"}]
     servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
         [7], LANE, NOW, 45, prs, _run_faux([]))
-    assert [e.numero for e in servis] == [7], "une couverture ne retire pas le grain"
+    assert [e.numero for e in servis] == [], "une issue occupee n'est pas servie"
+    assert ecartees[7]["code"] == "OCCUPEE", "l'occupation a son code"
+    assert "#99" in ecartees[7]["motif"], "le motif nomme la PR qui occupe"
+
+    # La lane de la PR garde l'issue : c'est son travail en cours.
+    servis, ecartees, echecs, arrete, appels, chrono = tq.qualifier(
+        [7], "myia-po-2025:CoursIA-2", NOW, 45, prs, _run_faux([]))
+    assert [e.numero for e in servis] == [7], "la lane de la PR garde son issue"
     assert any("#99" in n for n in servis[0].notes), "la couverture reste dite"
 
 

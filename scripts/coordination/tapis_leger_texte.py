@@ -46,6 +46,13 @@ def texte(r: dict) -> str:
     for g in r["grains"]:
         lignes.append(f"  #{g['numero']}  {g['titre'][:80]}")
         lignes.append(f"      {g['action']}")
+    occ = r.get("occupations") or {}
+    exclus = occ.get("exclus") or []
+    if exclus:
+        lignes.append(f"\nOccupation ({len(exclus)}) -- ecartees de la tete, "
+                      f"affichees, jamais perdues :")
+        for e in exclus:
+            lignes.append(f"  #{e['numero']}  {e['marque']}  {e['motif']}")
     q = r["qualification"]
     lignes.append(f"\nQualification : {q['organe']} -- {q['quand']} ; {q['ecarts']}.")
     cap = r.get("cap_livraisons") or {}
