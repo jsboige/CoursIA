@@ -283,7 +283,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 13e | [Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python](Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb) | 21 | 4 | **NOUVEAU** (hommage) |
 | 13f | [Lean-13f-Correlation-Bell-Vide-Lean-Python](Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb) | 14 | 3 | **NOUVEAU** (digest OQP 12) |
 | 13g | [Lean-13g-CGLMP-Mesures-Optimales-Lean-Python](Lean-13g-CGLMP-Mesures-Optimales-Lean-Python.ipynb) | 10 | 3 | **NOUVEAU** (digest OQP 27) |
-| 13h | [Lean-13h-Maps-PPT-Borne-Lean-Python](Lean-13h-Maps-PPT-Borne-Lean-Python.ipynb) | 14 | 3 | **NOUVEAU** (digest OQP 38) |
+| 13h | [Lean-13h-Maps-PPT-Borne-Lean-Python](Lean-13h-Maps-PPT-Borne-Lean-Python.ipynb) | 15 | 3 | **NOUVEAU** (digest OQP 38) |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) | 6 | 3 | **NOUVEAU** |
 | 14b | [Lean-14b-Finiteness-Lean-Companion](Lean-14b-Finiteness-Lean-Companion.ipynb) | 10 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
 | GROTH-02 | [GROTH/GROTH-02-Tribut-Python](GROTH/GROTH-02-Tribut-Python.ipynb) | 12 | 4 | **NOUVEAU** (hommage) |
