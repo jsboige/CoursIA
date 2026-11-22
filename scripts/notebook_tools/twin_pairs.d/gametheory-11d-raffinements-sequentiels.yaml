@@ -1,0 +1,8 @@
+- name: "GameTheory-11d Raffinements Sequentiels"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-11d-Raffinements-Sequentiels-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-11d-Raffinements-Sequentiels-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "2026-11-22 (myia-po-2028:claudish, PR CoursIA #27686) : jumeau C# cree depuis le jumeau Python -- le port reprend le plan de la source (arbre a information imparfaite, WSE par census de grille puis census exact, suites eps de Kreps-Wilson, verificateurs PL/P/B, diagnostic AGM, table de synthese WSE/SE/PBE) ; le code C# n'utilise que la BCL, aucune dependance externe. Valeurs temoins identiques des deux cotes (0.050000 sur la frontiere mu(be)=1/3, 70 ordres examines pour l'exhaustion P1/P2)."
+    - "Le calcul Python utilise les entiers natifs et numpy ; le port C# utilise la BCL seule (dictionnaires de tuples), les ecarts d'utilite exacts restant entiers."
