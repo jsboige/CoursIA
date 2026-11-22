@@ -177,6 +177,13 @@ Les principales séries-workspaces pédagogiques accessibles depuis le dépôt :
 
 **Mise à jour 2026-11-06 (lane myia-po-2028:CoursIA-2).** Dérive de roster corrigée : la fiche du secrétaire et le renvoi de la fiche `myia-po-2024:CoursIA-3` nommaient encore le siège historique `myia-po-2026:CoursIA-3`, machine hors service depuis le 2026-10-09 ; le siège du secrétariat est `myia-po-2028:CoursIA-3` depuis le 2026-10-20 (mandat user). La mention de couverture datée du 2026-10-05 est conservée telle que mesurée ce jour-là, avec sa note de transfert. Le renvoi de la fiche `myia-po-2024:CoursIA-3` est corrigé sur le seul fond factuel, comme annoncé sur [#14529](https://github.com/jsboige/CoursIA/issues/14529) : le texte de cette voix reste celui de sa lane.
 
+**Mise à jour 2026-11-20 (lane myia-po-2028:CoursIA).** Verdict d'acceptance mesuré sur `main`, et une dérive de siège corrigée sur le seul fond factuel — aucune voix n'est réécrite.
+
+- **Couverture (critère 2).** 25 identités `machine:workspace` dans la galerie, dont **21 voix auto-écrites** et **4 fiches marquées voix attendue** : `myia-ai-01:roo-extensions`, `myia-po-2024:CoursIA-2`, `myia-po-2024:Maintenance`, `myia-po-2028:CoursIA-3`. Une voix attendue ne peut être écrite que par son agent : ce n'est pas un trou de couverture, c'est la règle de la galerie.
+- **Liens (critère 4).** 67 liens relatifs vérifiés sur le disque à cette tête, **0 cassé** (recomptage mécanique du 21/11 : 102 liens markdown, 67 relatifs, 0 cible absente).
+- **Confidentialité et français (critère 5).** 0 chemin absolu, 0 adresse privée, 0 port interne, 0 préfixe de clé ; prose en français.
+- **Dérive de siège (critère 3).** La fiche `myia-po-2026:hermes-agent` présentait `po-2026` comme un siège vivant ; cette machine est **hors service depuis le 2026-10-09** (panne matérielle, [cluster-agents.md](../../../../docs/reference/cluster-agents.md) §Roster) et Hermes émet depuis `myia-ai-01:hermes-agent` — mesuré le 2026-11-20, sept messages de 02:35Z à 16:47Z sur le dashboard `workspace-hermes-agent`. L'identité fonctionnelle à retenir est `myia-ai-01:hermes-agent` ; le texte de la voix reste celui que son agent a écrit.
+
 ## Aller plus loin (doc pérenne)
 
 Cette section est une **introduction pédagogique**. Pour le détail technique, ces documents sont la source autoritaire :

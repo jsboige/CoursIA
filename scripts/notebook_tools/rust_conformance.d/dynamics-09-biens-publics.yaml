@@ -1,0 +1,286 @@
+# Triplet Dynamics-09 : jumeau Python + portage Rust (issue #27659, spec Rust portage).
+# Les deux carnets ont exactement la meme structure 24 cellules (meme indices) :
+# les cotes se correspondent par index. Cote Rust = evcxr + ndarray 0.17.2 + plotters 0.3.
+# Le cote C# n'existe pas pour cette serie (Dynamics est Python + Rust seulement).
+# Les figures (E2b scatter, E3 bifurcation) sont QUALITATIVES : hors registre,
+# comparees a l'oeil dans le body de la PR (legendes markdown, memes couleurs).
+# La parite SHA par cote (twin_pairs.d, cote rust) attend le point 1 de #27098 :
+# declare ici, pas reimplemente.
+- name: "Dynamics-09 Biens publics N-personnes"
+  family: Dynamics
+  python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Rust.ipynb
+  measures:
+    - id: formes_normales
+      description: "Quotient d'orbites : 78 formes normales distinctes (Rapoport-Guyer 1966)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "Formes normales distinctes : (\\d+) jeux"
+          transform: int
+        rust:
+          cell: 4
+          pattern: "Formes normales distinctes : (\\d+) jeux"
+          transform: int
+    - id: archetype_pd
+      description: "Orbites PD (1/78)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "PD : +(\\d+) \\("
+          transform: int
+        rust:
+          cell: 4
+          pattern: "PD : +(\\d+) \\("
+          transform: int
+    - id: archetype_sh
+      description: "Orbites SH (6/78)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "SH : +(\\d+) \\("
+          transform: int
+        rust:
+          cell: 4
+          pattern: "SH : +(\\d+) \\("
+          transform: int
+    - id: archetype_sd
+      description: "Orbites SD (1/78)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "SD : +(\\d+) \\("
+          transform: int
+        rust:
+          cell: 4
+          pattern: "SD : +(\\d+) \\("
+          transform: int
+    - id: archetype_h
+      description: "Orbites H (6/78)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "H : +(\\d+) \\("
+          transform: int
+        rust:
+          cell: 4
+          pattern: "H : +(\\d+) \\("
+          transform: int
+    - id: archetype_other
+      description: "Orbites Other (64/78, 82.1 %)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "Other : +(\\d+) \\("
+          transform: int
+        rust:
+          cell: 4
+          pattern: "Other : +(\\d+) \\("
+          transform: int
+    - id: eq9_err_rel_n3
+      description: "Erreur relative eq. 9 vs approximation a N=3 (0.7071)"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "N= *3 [^\\n]*err_rel=([0-9.]+)"
+          transform: float
+        rust:
+          cell: 9
+          pattern: "N= *3 [^\\n]*err_rel=([0-9.]+)"
+          transform: float
+    - id: eq9_err_rel_n10
+      description: "Erreur relative eq. 9 vs approximation a N=10 (0.4990)"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "N= *10 [^\\n]*err_rel=([0-9.]+)"
+          transform: float
+        rust:
+          cell: 9
+          pattern: "N= *10 [^\\n]*err_rel=([0-9.]+)"
+          transform: float
+    - id: eq9_err_rel_n100
+      description: "Erreur relative eq. 9 vs approximation a N=100 (0.4478)"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "N= *100 [^\\n]*err_rel=([0-9.]+)"
+          transform: float
+        rust:
+          cell: 9
+          pattern: "N= *100 [^\\n]*err_rel=([0-9.]+)"
+          transform: float
+    - id: carte_coexistence
+      description: "Carte E2b : cellules coexistence (32/192)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "coexistence : +(\\d+) \\("
+          transform: int
+        rust:
+          cell: 11
+          pattern: "coexistence : +(\\d+) \\("
+          transform: int
+    - id: carte_bistable
+      description: "Carte E2b : cellules bistable (91/192)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "bistable +: +(\\d+) \\("
+          transform: int
+        rust:
+          cell: 11
+          pattern: "bistable +: +(\\d+) \\("
+          transform: int
+    - id: carte_defection
+      description: "Carte E2b : cellules defection (69/192)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "defection +: +(\\d+) \\("
+          transform: int
+        rust:
+          cell: 11
+          pattern: "defection +: +(\\d+) \\("
+          transform: int
+    - id: carte_pct_coexistence
+      description: "Carte E2b : pourcentage coexistence (16.7 %)"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "coexistence : +\\d+ \\(([0-9.]+) %\\)"
+          transform: float
+        rust:
+          cell: 11
+          pattern: "coexistence : +\\d+ \\(([0-9.]+) %\\)"
+          transform: float
+    - id: carte_pct_bistable
+      description: "Carte E2b : pourcentage bistable (47.4 %)"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "bistable +: +\\d+ \\(([0-9.]+) %\\)"
+          transform: float
+        rust:
+          cell: 11
+          pattern: "bistable +: +\\d+ \\(([0-9.]+) %\\)"
+          transform: float
+    - id: carte_pct_defection
+      description: "Carte E2b : pourcentage defection (35.9 %)"
+      tolerance: 1e-6
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "defection +: +\\d+ \\(([0-9.]+) %\\)"
+          transform: float
+        rust:
+          cell: 11
+          pattern: "defection +: +\\d+ \\(([0-9.]+) %\\)"
+          transform: float
+    - id: fenetre_basse
+      description: "Fenetre d'hysteresis, borne basse (0.07)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "c/b in \\[([0-9.]+),"
+          transform: float
+        rust:
+          cell: 16
+          pattern: "c/b in \\[([0-9.]+),"
+          transform: float
+    - id: fenetre_haute
+      description: "Fenetre d'hysteresis, borne haute (0.27)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "c/b in \\[[0-9.]+, ([0-9.]+)\\]"
+          transform: float
+        rust:
+          cell: 16
+          pattern: "c/b in \\[[0-9.]+, ([0-9.]+)\\]"
+          transform: float
+    - id: ecart_max
+      description: "Ecart max entre branches a c/b=0.07 (+0.482)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "Ecart max : \\+([0-9.]+) a c/b"
+          transform: float
+        rust:
+          cell: 16
+          pattern: "Ecart max : \\+([0-9.]+) a c/b"
+          transform: float
+    - id: table_cb0100_up
+      description: "Table E3 a c/b=0.100 : branche haute (0.429)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "0.100  ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 16
+          pattern: "0.100  ([0-9.]+)"
+          transform: float
+    - id: pred_npl
+      description: "E4 : prediction du modele Np non-lineaire eq. 9 (0.1294)"
+      tolerance: 1e-9
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "eq\\.9\\) : ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 21
+          pattern: "eq\\.9\\) : ([0-9.]+)"
+          transform: float
+    - id: verdict_npl
+      description: "E4 : verdict du banc sur l'eq. 9 (RATEE, seuil 0.1 declare)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "eq\\.9\\) : [0-9.]+  -> erreur = [0-9.]+  \\[(\\w+)\\]"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "eq\\.9\\) : [0-9.]+  -> erreur = [0-9.]+  \\[(\\w+)\\]"
+          transform: text
