@@ -543,7 +543,7 @@ PILOT: list[Guard] = [
     # injectee dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
     # violation passe (exit 0) sur le meme depot.
     #
-    # `scripts/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
+    # `scripts/ci/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
     # `swap_paths` : la phase base doit mesurer le MEME predicat que la
     # phase head sur le contenu de base. Restaurer le script de la base
     # ferait mesurer la classe retiree (STALE_LINK) et le comparator
@@ -564,7 +564,7 @@ PILOT: list[Guard] = [
             "MyIA.AI.Notebooks/**/README.md",
             "MyIA.AI.Notebooks/**/*.ipynb",
             "_quarto.yml",
-            "scripts/regen_quarto_render.py",
+            "scripts/ci/regen_quarto_render.py",
             "scripts/notebook_tools/dump_readme_link_violations.py",
             "scripts/notebook_tools/diff_readme_link_violations.py",
             "scripts/notebook_tools/fix_ipynb_links.py",
@@ -3371,7 +3371,8 @@ TRANCHE28: list[Guard] = [
 # existe, il ne tourne pas (incident #19374). C'est exactement ce que mesure
 # la garde `test_no_module_level_name_is_assigned_twice_in_the_registry`, et
 # c'est ce que verifiait `test_check_lib_versions.py`, rouge sur `main` avec
-# un `KeyError: 'Library versions guard (advisory, #23073)'`.
+# un `KeyError: 'Library versions guard (advisory, #23073)'` (nom de
+# l'epoque ; renomme sans `advisory` par la promotion en bloquante, #27762).
 #
 # Mandat user du 2026-10-28, a propos de #23047 : « Ca meritera un organe
 # pour stabiliser les versions d'API et de libs, car ce genre de regressions
@@ -3398,24 +3399,27 @@ TRANCHE28: list[Guard] = [
 # convergence traite), et ETAT pour le provisionnement etranger (son dommage
 # se produit a l'execution, pas a l'edition).
 #
-# Pourquoi ADVISORY : le stock porte des derives connues (dotNetRDF 3.2.1 sur
-# sept carnets de la serie SemanticWeb, OrTools 9.11.4210 sur onze carnets).
-# L'ecart IKVM 8.14.0 des six carnets Tweety n'en est pas une : leur artefact
-# ombre est compile en 8.14.0, l'ecart est justifie et porte au manifeste
-# (allowlist + motif). Un garde bloquant rougirait des PR qui ne font que
-# retoucher un de ces carnets -- un taux de faux positifs qui nuirait a la
-# lecture du rollup. Le taux est mesure sur les dernieres PRs de carnets et
-# publie ; la promotion en bloquant est une tranche distincte, apres
-# convergence.
+# Pourquoi BLOQUANTE depuis #27762 : la garde compare un DELTA base -> tete,
+# donc un epinglage deja present et non touche par la PR ne rougit pas -- le
+# stock de derives historiques est invisible a la jambe. Le taux de faux
+# positifs de la ligne delta est mesure a 0 sur 32 PRs de carnets
+# (docs/reference/lib-versions.md §« Taux de faux positifs ») : le risque qui
+# fondait l'advisory (rougir une PR qui ne fait que retoucher un carnet
+# legacy) ne se realise pas sous cette semantique. Le stock est par ailleurs
+# arbitre -- plus aucun `a_classer` au recensement du 2026-11-21, les 42
+# carnets a epinglage non canonique portent `decision: to_converge` au
+# manifeste et sont suivis par #27787. L'ecart IKVM 8.14.0 des carnets Tweety
+# reste justifie : leur artefact ombre est compile en 8.14.0, allowlist +
+# motif au manifeste.
 #
 # `absorbed=True` : garde natif (aucun workflow d'origine), convention des
-# tranches depuis TRANCHE8. Le nom porte `advisory` pour que `pr_gate` le
-# range dans le seau advisory : un `failure` publie ne doit jamais tenir le
-# merge.
+# tranches depuis TRANCHE8. Depuis #27762 le nom NE porte PLUS `advisory` :
+# `pr_gate` range dans le seau advisory tout job dont le nom contient ce mot,
+# et un `failure` publie tient desormais le merge.
 # ---------------------------------------------------------------------------
 TRANCHE31: list[Guard] = [
     Guard(
-        name="Library versions guard (advisory, #23073)",
+        name="Library versions guard (#23073)",
         source=FAST_LANE_NATIVE,
         paths=[
             "**/*.ipynb",
@@ -3429,7 +3433,7 @@ TRANCHE31: list[Guard] = [
             "python", "scripts/notebook_tools/check_lib_versions.py",
             "--changed", "{base_ref}...HEAD",
         ],
-        blocking=False,   # advisory : publie le constat, ne tient jamais le merge
+        blocking=True,   # delta base -> tete : ne rougit que ce que la PR introduit
         needs_base=True,  # delta base -> tete sur les epinglages
         # rc=2 = incident d'entree (manifeste illisible, git en echec), pas une
         # faute de la PR : il rend le check-run neutre, avec un titre distinct
@@ -4063,7 +4067,7 @@ TRANCHE40: list[Guard] = [
 #
 # Le programme "tri de la CI" : un carnet pousse sur une PR declenche ~33
 # workflows, chacun avec son `actions/checkout` (82 % du temps d'execution
-# d'un garde, mesure du coordinateur dans docs/coordination/ci-two-tier.md).
+# d'un garde, mesure du coordinateur dans docs/transients/2026-11-10-ci-two-tier.md).
 # Ces gardes AUTONOMES ne regardent que la PR -- ils n'ont besoin ni du
 # corps de la PR, ni d'un artefact, ni d'une etiquette. La voie rapide les
 # execute dans UN checkout partage : c'est ce que cette tranche absorbe.
@@ -4151,7 +4155,7 @@ TRANCHE42: list[Guard] = [
         ],
         pre_argv=[
             "python", "-m", "unittest",
-            "scripts.tests.test_check_cell_source_parses", "-v",
+            "scripts.tests.test_notebook_tools_check_cell_source_parses", "-v",
         ],
         argv=[
             "python", "scripts/notebook_tools/check_cell_source_parses.py",
@@ -4234,7 +4238,7 @@ TRANCHE42: list[Guard] = [
 # POURQUOI CE GESTE (#25510, plan de tri de la CI) : une PR de carnet
 # declenchait 31 workflows, chacun avec son runner, son checkout et son
 # `setup-python` ; un garde de carnet median coute 1,2 min, dont 82 % de
-# checkout (`docs/coordination/ci-two-tier.md` §3.4). La voie rapide fait
+# checkout (`docs/transients/2026-11-10-ci-two-tier.md` §3.4). La voie rapide fait
 # tourner les gardes dans le checkout DEJA materialise de `always-on-guards`.
 #
 # SEMANTIQUE CONSERVEE, point par point :
@@ -4298,7 +4302,7 @@ TRANCHE43: list[Guard] = [
 # derive de traduction (`translation-drift.yml`).
 #
 # POURQUOI CE GESTE : un garde de carnet median coute 1,2 min, dont 82 % de
-# checkout (docs/coordination/ci-two-tier.md §3.4). Ce garde balayait les
+# checkout (docs/transients/2026-11-10-ci-two-tier.md §3.4). Ce garde balayait les
 # carnets touches par la PR dans son propre checkout ; la voie rapide le
 # rend dans le checkout DEJA materialise de `always-on-guards`.
 #
@@ -4644,6 +4648,66 @@ TRANCHE48: list[Guard] = [
 ]
 
 # ---------------------------------------------------------------------------
+# TRANCHE 53 -- contrat des carnets Rust (#27098, pli 3 de l'Epic Origami
+# #26510, point 5).
+#
+# Un carnet Rust s'execute sous `evcxr`, un kernel Jupyter qui COMPILE chaque
+# cellule. Trois contraintes en decoulent, chacune avec un cout deja mesure
+# (`docs/reference/kernels-runtime.md` § Rust) :
+#
+#  1. le `:dep` se declare dans la PREMIERE cellule de code -- un `:dep` plus
+#     bas recompile tout et efface les variables typees des cellules
+#     precedentes ;
+#  2. C.1 : `panic!`, `unimplemented!()`, `todo!()`, `unreachable!()` sont les
+#     equivalents Rust de `raise NotImplementedError` -- `audit_c1_c3.py` ne
+#     connait que les motifs Python, la classe Rust passait donc sans
+#     temoin ;
+#  3. C.2 : chaque cellule de code porte un `execution_count`. L'absence
+#     d'`outputs` n'est PAS un finding (une cellule de declarations
+#     n'affiche rien sous evcxr).
+#
+# L'organe ne juge que les carnets Rust (suffixe canonique `-Rust` ou
+# kernelspec `rust`) et ne se prononce pas sur les autres : la garde ne peut
+# pas rougir un carnet Python qui n'a rien a voir avec la classe.
+#
+# `diff_bounded=True` : le verdict porte sur les carnets TOUCHES par la PR
+# (delta base-vs-head), jamais sur le stock de `main` -- un carnet Rust
+# ancien reste visible sans bloquer la PR qui ne le touche pas.
+# `warn_rc=(2,)` : rc=2 de l'organe, c'est l'instrument en panne (carnet
+# illisible, diff illisible) -- jamais un vert muet, jamais un rouge forge.
+# `absorbed=True` : mesure sur la tete `b82151be9cd58` de `main` -- le diff
+# ne touche aucun carnet Rust, donc le garde ne rougit aucune PR par dette
+# heritee.
+#
+# Cette tranche est ecrite AVANT la 51 (et non a la fin du fichier) : les
+# tranches ajoutees recemment se suivent au meme endroit, et deux PRs qui
+# ajoutent chacune une tranche se marchent dessus. Ici les hunks sont
+# eloignes, donc les deux PRs fusionnent sans conflit.
+# ---------------------------------------------------------------------------
+TRANCHE53: list[Guard] = [
+    Guard(
+        name="Rust notebook contract (:dep head, C.1, C.2)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*-Rust.ipynb",
+            "scripts/notebook_tools/check_rust_notebook_contract.py",
+            "scripts/notebook_tools/tests/test_check_rust_notebook_contract.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_rust_notebook_contract.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
+        warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # TRANCHE 51 -- banniere NuGet Interactive dans les sorties des carnets
 # (#26932).
 #
@@ -4849,6 +4913,66 @@ TRANCHE50: list[Guard] = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# TOPLEVEL_SERIES_GUARDS -- garde des dossiers de premier niveau sous
+# `MyIA.AI.Notebooks/` (#27141, decision du mainteneur #27092 du 17/11).
+#
+# Le critere d'eparpillement est le PREMIER NIVEAU : une serie soeur se range
+# dans un rayon ou sous un hub, elle ne s'ajoute pas a la racine. Le gel
+# diffuse sur les dashboards n'a pas suffi : la regle avait besoin d'un
+# controle qui la porte. Ce garde est ce controle.
+#
+# L'organe compare les dossiers de premier niveau TOUCHES par le diff
+# (`--diff-filter=AR` : ajouts et renommages) a la liste d'autorisation
+# versionnee (`scripts/ci/toplevel_series_allowlist.txt`).
+#
+# Forme : delta base-vs-head, bloquant. rc=1 = un dossier de premier niveau
+# nouveau et non autorise (le dossier est nomme, avec le renvoi vers #27092) ;
+# rc=2 = l'instrument est en panne (diff illisible, liste introuvable) --
+# `warn_rc=(2,)` le rend neutre au check-run, titre distinct, NON silencieux
+# (forme hr-substitution-guard, #17941) : une panne ne vaut jamais un quitus.
+#
+# `absorbed=True` : mesure sur la tete `b82151be9cd58` de `main` --
+# `--diff origin/main...HEAD` rend rc=0 (aucun dossier de premier niveau
+# ajoute), donc l'absorption ne rougit aucune PR par dette heritee. Les deux
+# controles sont mesures dans le body de la PR #27181 :
+#   - POSITIF : `origin/main...b3578f9b018e2` (l'etat `CodingTheory/` de la
+#     branche de #27128) -> rc=1, `MyIA.AI.Notebooks/CodingTheory/` nomme ;
+#   - NEGATIF : `b82151be9cd58^..b82151be9cd58` (#27140, deplacement de
+#     `Symmetry/` vers `GenAI/Image/05-History/`) -> rc=0.
+#
+# NOM : la liste est NOMMEE, pas numerotee. Pendant que cette branche etait
+# ouverte, `#27233` a fusionne sur `main` une AUTRE garde sous le nom
+# `TRANCHE52` (prose<->sorties). Deux gardes distinctes ne peuvent pas porter
+# le meme numero : l'import homonyme aurait masque l'une des deux SANS
+# erreur visible (la seconde import ecrase la premiere, et la concatenation
+# des listes n'en garderait qu'une). Le nom porte l'issue (#27141) au lieu
+# d'un compteur de file -- meme forme que `RISK_KERNEL_GUARDS` (#24698).
+# ---------------------------------------------------------------------------
+TOPLEVEL_SERIES_GUARDS: list[Guard] = [
+    Guard(
+        name="toplevel-series-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**",
+            "scripts/ci/check_toplevel_series.py",
+            "scripts/ci/toplevel_series_allowlist.txt",
+            "scripts/ci/tests/test_check_toplevel_series.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_toplevel_series.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
+        warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
 
 # ---------------------------------------------------------------------------
 # RISK_KERNEL_GUARDS (#24698, garde bloquant) -- copies du noyau de risque. Le noyau
@@ -4920,5 +5044,55 @@ TRANCHE52: list[Guard] = [
         needs_base=True,
         diff_bounded=True,
         absorbed=False,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 54 -- bloc « Verifiez votre comprehension » sans reponse (#27611).
+#
+# Garde NATIF, tranche propre : il n'absorbe aucun workflow d'origine, et il
+# ferme une CLASSE de defaut (le bloc pedagogique qui porte les questions doit
+# porter les reponses).
+#
+# Defaut ferme : le mainteneur a pose sur la PR #27049 (commentaire
+# 6943057003) la constatation que le bloc « Verifiez votre comprehension »
+# porte la meilleure valeur pedagogique d'un carnet -- mais seulement si les
+# reponses sont la. Les exercices, eux, restent volontairement sans reponse.
+# Le premier recensement etait trop large : il comptait les blocs « Exercices »
+# et surestimait la dette.
+#
+# Forme moteur : scan global ABSOLU (aucune base, aucun delta) -- l'organe
+# liste, par serie, les carnets dont le bloc canonique ne porte pas de
+# reponse repliee. Meme contrat que le garde « Link-label agreement »
+# (TRANCHE 12) : le verdict est absolu, il ne peut donc pas heriter de la
+# base, et le carve-out advisory s'impose.
+#
+# Caractere ADVISORY : la dette mesuree sur main est de 150 carnets (panel
+# par serie dans le body de #27611) ; demarrer en bloquant rougirait des PRs
+# sans rapport. L'organe publie le signal, il ne confisque pas le merge ; la
+# promotion suit la fournee de remediation, plan Q162 d dans le body de la PR
+# porteuse.
+# ---------------------------------------------------------------------------
+TRANCHE54: list[Guard] = [
+    Guard(
+        name="End-block answers (per-notebook, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_end_block_answers.py",
+            "scripts/notebook_tools/tests/test_check_end_block_answers.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_end_block_answers.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_end_block_answers.py",
+            "--fail",
+        ],
+        blocking=False,  # advisory : signale le bloc sans reponse, ne rougit jamais
+        absorbed=True,
     ),
 ]
