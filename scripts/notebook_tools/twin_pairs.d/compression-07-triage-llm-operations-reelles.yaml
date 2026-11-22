@@ -1,0 +1,11 @@
+- name: "Compression-07 Triage par le LLM operations reelles"
+  family: Compression
+  python: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-07-Triage-LLM-Operations-Reelles-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux cotes branchent les memes moteurs reels : codecs de compression effectifs (zlib/bz2/lzma/store), endpoint OpenAI-compatible du LLM local en function calling, recette compacte certifiee par HMAC-SHA256 et rejouee a l'envers. Aucun moteur n'est contourne ; le carnet C# echoue explicitement sans endpoint, sans sortie de repli."
+  known_differences:
+    - "Cote C#, zlib vient de la BCL (ZLibStream, SmallestSize), bz2 de SharpZipLib 1.4.2 et lzma de LZMA-SDK 22.1.1 (format ALONE) ; cote Python, les trois viennent de la bibliotheque standard. Les tailles compressees different donc legerement entre jumeaux."
+    - "La coherence exigee est interne a chaque carnet : corpus serialise et rejeu utilisent les memes options de serialisation (indentation 1, Math.Round ToEven cote C# = round Python). La parite est pedagogique (meme sequence de 34 cellules, memes exercices), pas byte-a-byte."
+    - "Les stubs d'exercice respectent C.1 de chaque cote : return None / pass cote Python, return null / collections vides cote C#, avec TODO etudiant."
