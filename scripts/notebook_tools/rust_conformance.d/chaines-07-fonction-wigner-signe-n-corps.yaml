@@ -1,0 +1,371 @@
+# Conformité différentielle de Chaines-07-Fonction-Wigner-Signe-N-Corps (portage Rust nb_coder).
+#
+# Écrite à la livraison par nb_coder_integrate depuis les sorties COMMITÉES
+# des carnets : correspondance par index de cellule (le portage garde la
+# structure de cellules du jumeau Python, scellée par twin-parity), une
+# mesure par cellule qui imprime côté Python, égalité stricte du texte ;
+# les lignes de durée murale sont des ancres en présence seule. Le côté
+# C# est comparé où sa cellule alignée imprime le même texte, sinon
+# déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
+# divergence est un écart d'API documenté : le fichier n'est jamais
+# réécrit par l'outil une fois présent.
+- name: "Chaines-07-Fonction-Wigner-Signe-N-Corps"
+  family: "Physique/Chaines"
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-07-Fonction-Wigner-Signe-N-Corps-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-07-Fonction-Wigner-Signe-N-Corps-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Physique/Chaines/Chaines-07-Fonction-Wigner-Signe-N-Corps-Rust.ipynb
+  measures:
+    - id: c4_text
+      description: "Sortie de la cellule 4, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 4 diffère du texte Python (ligne 1 : « Outils du carnet : BigInteger pour les comptes, Rationnel (B… » contre « Outils du carnet : int natif pour les comptes, Fraction pour… » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c6_text
+      description: "Sortie de la cellule 6, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 6 diffère du texte Python (ligne 1 : « …(c1) = 9 * (67+6+6) = 711 (attendu 711) -> CONFORME » contre « …(c1) = 9 * (67+6+6)  = 711 (eq. 68 annonce 711) -> True » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c8_text
+      description: "Sortie de la cellule 8, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 8 diffère du texte Python (ligne 1 : « P2 = 1494^2 = 2232036 (attendu 2232036) -> CONFORME » contre « P2 = 1494^2                    = 2232036 (eq. 69 annonce 223… » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c8_croix_copies_signe_1
+      description: "« croix copies (signe -1)        = » de la cellule 8, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "(?m:^croix\\ copies\\ \\(signe\\ \\-1\\)\\ \\ \\ \\ \\ \\ \\ \\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "(?m:^croix\\ copies\\ \\(signe\\ \\-1\\)\\ \\ \\ \\ \\ \\ \\ \\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 8
+          pattern: "(?m:^croix\\ copies\\ \\(signe\\ \\-1\\)\\ \\ \\ \\ \\ \\ \\ \\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c11_text
+      description: "Sortie de la cellule 11, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 11 diffère du texte Python (ligne 1 : « … = 657^2+657^2+36^2 = 864594 (attendu 864594) -> CONFORME » contre « … = 657^2+657^2+36^2  = 864594 (comptes du ch. 42 : 863298 + … » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c14_text
+      description: "Sortie de la cellule 14, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 14 diffère du texte Python (ligne 1 : « Exercice 1 a completer » contre « Exercice a completer » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c16_text
+      description: "Sortie de la cellule 16, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 16 diffère du texte Python (ligne 1 : « …_swap(double paire) [rejoue] = 209952 (attendu 209952) -> CO… » contre « …_swap(double paire) = 209952 -> positif ? True » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c16_premier_n_de_parting
+      description: "« Premier N de parting          : » de la cellule 16, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "(?m:^Premier\\ N\\ de\\ parting\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "(?m:^Premier\\ N\\ de\\ parting\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 16
+          pattern: "(?m:^Premier\\ N\\ de\\ parting\\ \\ \\ \\ \\ \\ \\ \\ \\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c18_text
+      description: "Sortie de la cellule 18, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 18 diffère du texte Python (ligne 5 : « …iers de l'anneau) : 1 » contre « …iers de l'anneau) : [1] » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c18_coefficient_de_1
+      description: "« coefficient de 1     : » de la cellule 18, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ 1\\ \\ \\ \\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ 1\\ \\ \\ \\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ 1\\ \\ \\ \\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c18_coefficient_de_rac2
+      description: "« coefficient de rac2  : » de la cellule 18, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ rac2\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ rac2\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ rac2\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c18_coefficient_de_rac3
+      description: "« coefficient de rac3  : » de la cellule 18, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ rac3\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ rac3\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ rac3\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c18_coefficient_de_rac6
+      description: "« coefficient de rac6  : » de la cellule 18, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ rac6\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ rac6\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "(?m:^coefficient\\ de\\ rac6\\ \\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c18_enregistrements_de_cloture_sommes
+      description: "« Enregistrements de cloture sommes : » de la cellule 18, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(?m:^Enregistrements\\ de\\ cloture\\ sommes\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(?m:^Enregistrements\\ de\\ cloture\\ sommes\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "(?m:^Enregistrements\\ de\\ cloture\\ sommes\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c18_marginales_de_cloture_non_negatives_aux_
+      description: "« Marginales de cloture non negatives aux 22 sites (CITE) ; total = » de la cellule 18, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "(?m:^Marginales\\ de\\ cloture\\ non\\ negatives\\ aux\\ 22\\ sites\\ \\(CITE\\)\\ ;\\ total\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "(?m:^Marginales\\ de\\ cloture\\ non\\ negatives\\ aux\\ 22\\ sites\\ \\(CITE\\)\\ ;\\ total\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 18
+          pattern: "(?m:^Marginales\\ de\\ cloture\\ non\\ negatives\\ aux\\ 22\\ sites\\ \\(CITE\\)\\ ;\\ total\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c21_text
+      description: "Sortie de la cellule 21, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 21 diffère du texte Python (ligne 1 : « Exercice 2 a completer » contre « Exercice a completer » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c23_text
+      description: "Sortie de la cellule 23, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 23 diffère du texte Python (ligne 7 : « nombre de constats saisis = 5 (attendu 5) -> CONFORME » contre « Census : 18 cellules a la double paire ; 6 comparaisons de t… » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
+    - id: c23_tient_corps_electron_ch_42
+      description: "« TIENT   corps electron (ch. 42) : » de la cellule 23, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(?m:^TIENT\\ \\ \\ corps\\ electron\\ \\(ch\\.\\ 42\\)\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(?m:^TIENT\\ \\ \\ corps\\ electron\\ \\(ch\\.\\ 42\\)\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "(?m:^TIENT\\ \\ \\ corps\\ electron\\ \\(ch\\.\\ 42\\)\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c23_part_recouvrement_de_deux_distributions
+      description: "« PART    recouvrement de deux distributions = » de la cellule 23, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(?m:^PART\\ \\ \\ \\ recouvrement\\ de\\ deux\\ distributions\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(?m:^PART\\ \\ \\ \\ recouvrement\\ de\\ deux\\ distributions\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "(?m:^PART\\ \\ \\ \\ recouvrement\\ de\\ deux\\ distributions\\ =[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c23_constats_qui_tiennent
+      description: "« Constats qui tiennent : » de la cellule 23, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(?m:^Constats\\ qui\\ tiennent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(?m:^Constats\\ qui\\ tiennent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "(?m:^Constats\\ qui\\ tiennent\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c23_census
+      description: "« Census : » de la cellule 23, même valeur sur les trois côtés"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 23
+          pattern: "(?m:^Census\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        rust:
+          cell: 23
+          pattern: "(?m:^Census\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+        csharp:
+          cell: 23
+          pattern: "(?m:^Census\\ :[ \\t]+([^\\n]*?)[ \\t]*\\r?$)"
+          transform: text
+    - id: c26_text
+      description: "Sortie de la cellule 26, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "La cellule C# 26 diffère du texte Python (ligne 1 : « Exercice 3 a completer » contre « Exercice a completer » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."

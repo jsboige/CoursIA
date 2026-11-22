@@ -375,17 +375,38 @@ def _concept_uri(concept_id: str) -> URIRef:
 
 
 def _notebook_uri(repository_path: str) -> URIRef:
-    """Nœud d'un carnet : le même que dans l'export du catalogue."""
+    """Nœud d'un carnet : le même que dans l'export du catalogue.
+
+    Le catalogue cite les carnets relatifs à `MyIA.AI.Notebooks/` : retirer le
+    préfixe ici produit l'URI exacte de `generate_curriculum_rdf
+    _resource("notebook", path)`. C'est par cette égalité d'URI que les
+    concepts cités rejoignent les carnets du graphe du cursus (#25001) --
+    mesure : 26/26 carnets de la taxonomie search retrouvent leur entrée de
+    catalogue par ce retrait de préfixe.
+    """
     return URIRef(BASE + "notebook/" + quote(repository_path.removeprefix(NOTEBOOKS_ROOT), safe=""))
 
 
-def build_graph(data: dict, taxonomy: str | None = None, graph: Graph | None = None) -> Graph:
+def build_graph(
+    data: dict,
+    taxonomy: str | None = None,
+    graph: Graph | None = None,
+    emit_structure: bool = True,
+) -> Graph:
     """Construit un graphe SKOS/OWL ; les identifiants restent indépendants des chemins.
 
     `taxonomy` est le nom du fichier sans extension : s'il est donné, concepts
     et carnets portent `rdfs:isDefinedBy` vers leur taxonomie. `graph` permet
     de réunir plusieurs taxonomies dans un même graphe ; un prérequis ou un
     alignement vers une autre taxonomie y retrouve alors le concept visé.
+
+    `emit_structure=False` n'émet que les concepts : ni série, ni sous-série,
+    ni nœud de carnet issu de `notebook_tree`. La structure du cursus a une
+    seule source, le catalogue ; en fusion dans le graphe du cursus
+    (`generate_curriculum_rdf`), seuls les concepts, leurs prérequis et le
+    lien carnet -> concept (`cursus:concept`, sur l'URI du carnet du
+    catalogue) doivent s'ajouter -- la jointure se fait par l'égalité des URI
+    de carnets (#25001).
     """
     if graph is None:
         graph = Graph()
@@ -415,29 +436,33 @@ def build_graph(data: dict, taxonomy: str | None = None, graph: Graph | None = N
         graph.add((taxonomy_uri, RDF.type, VOCAB.Taxonomy))
         graph.add((taxonomy_uri, RDFS.label, Literal(taxonomy)))
 
-    series_uri = URIRef(BASE + "serie/" + quote(data["series"], safe=""))
-    graph.add((series_uri, RDF.type, VOCAB.Series))
-    graph.add((series_uri, RDFS.label, Literal(data["series"], lang="fr")))
-    for node in data["notebook_tree"]:
-        if node["level"] == "series":
-            subject = series_uri
-            graph.add((subject, VOCAB.path, Literal(node["path"])))
-        elif node["level"] == "subseries":
-            subject = URIRef(BASE + "sous-serie/" + quote(data["series"] + "/" + node["label_fr"], safe=""))
-            graph.add((subject, RDF.type, VOCAB.Subseries))
-            graph.add((subject, VOCAB.partOfSeries, series_uri))
-            graph.add((subject, RDFS.label, Literal(node["label_fr"], lang="fr")))
-        else:
-            subject = _notebook_uri(node["repository_path"])
-            graph.add((subject, RDF.type, VOCAB.Notebook))
-            graph.add((subject, RDFS.label, Literal(node["label_fr"], lang="fr")))
-            graph.add((subject, DCTERMS.identifier,
-                       Literal(node["repository_path"].removeprefix(NOTEBOOKS_ROOT))))
-            graph.add((subject, VOCAB.inSeries, series_uri))
-            if taxonomy_uri is not None:
-                graph.add((subject, RDFS.isDefinedBy, taxonomy_uri))
-        graph.add((subject, VOCAB.decimalPath, Literal(node["decimal_path"])))
-        graph.add((subject, VOCAB.depth, Literal(node["depth"], datatype=XSD.integer)))
+    if emit_structure:
+        series_uri = URIRef(BASE + "serie/" + quote(data["series"], safe=""))
+        graph.add((series_uri, RDF.type, VOCAB.Series))
+        graph.add((series_uri, RDFS.label, Literal(data["series"], lang="fr")))
+        for node in data["notebook_tree"]:
+            if node["level"] == "series":
+                subject = series_uri
+                graph.add((subject, VOCAB.path, Literal(node["path"])))
+            elif node["level"] == "subseries":
+                subject = URIRef(BASE + "sous-serie/" + quote(data["series"] + "/" + node["label_fr"], safe=""))
+                graph.add((subject, RDF.type, VOCAB.Subseries))
+                graph.add((subject, VOCAB.partOfSeries, series_uri))
+                graph.add((subject, RDFS.label, Literal(node["label_fr"], lang="fr")))
+            else:
+                subject = _notebook_uri(node["repository_path"])
+                graph.add((subject, RDF.type, VOCAB.Notebook))
+                graph.add((subject, RDFS.label, Literal(node["label_fr"], lang="fr")))
+                # Identifiant relatif à MyIA.AI.Notebooks/, comme dans l'export
+                # du catalogue (generate_curriculum_rdf cite entry["path"]
+                # tel quel) : les deux exports désignent un carnet pareil.
+                graph.add((subject, DCTERMS.identifier,
+                           Literal(node["repository_path"].removeprefix(NOTEBOOKS_ROOT))))
+                graph.add((subject, VOCAB.inSeries, series_uri))
+                if taxonomy_uri is not None:
+                    graph.add((subject, RDFS.isDefinedBy, taxonomy_uri))
+            graph.add((subject, VOCAB.decimalPath, Literal(node["decimal_path"])))
+            graph.add((subject, VOCAB.depth, Literal(node["depth"], datatype=XSD.integer)))
 
     scheme = URIRef(BASE + "scheme/" + data["series"].lower())
     graph.add((scheme, RDF.type, SKOS.ConceptScheme))
