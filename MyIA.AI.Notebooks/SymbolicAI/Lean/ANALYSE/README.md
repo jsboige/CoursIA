@@ -38,7 +38,7 @@ Les carnets lettrés ajoutent une marche au palier correspondant ; ils ne font p
 ### Autour de 02
 
 
-- [ANALYSE-02b-Entropie-Shannon-Python](ANALYSE-02b-Entropie-Shannon-Python.ipynb) (30 min) — **Marche d'entrée** avant ANALYSE-03 : l'entropie de Shannon définie et calculée — bits et nats (et pourquoi `binEntropy ≈ 0,693` **est** `1` bit), `H(uniforme sur A) = log \\|A\\|` mesurée sur trois groupes d'ordre 8, règle de chaîne vérifiée au bit près avec `H(Y\\|X) = H₂(q)`, sous-modularité et information mutuelle (cas d'égalité = indépendance), puis le pont `H(X + X') ≤ log \\|A + A\\|` avec un cas strict, un cas saturé par un sous-groupe, et le piège `{0, 2, 4}` qui n'en est pas un — trois exercices, aucun résultat de preuve revendiqué
+- [ANALYSE-02b-Entropie-Shannon-Python](ANALYSE-02b-Entropie-Shannon-Python.ipynb) (30 min) — **Marche d'entrée** avant ANALYSE-03 : l'entropie de Shannon définie et calculée — bits et nats (et pourquoi `binEntropy ≈ 0,693` **est** `1` bit), `H(uniforme sur A) = log \\|A\\|` mesurée sur trois groupes d'ordre 8, règle de chaîne vérifiée au bit près avec `H(Y\\|X) = H₂(q)`, sous-modularité et information mutuelle (cas d'égalité = indépendance), puis le pont `H(X + X') ≤ log \\|A + A\\|` avec un cas strict, un cas saturé par un sous-groupe, et le piège `{0, 2, 4}` qui n'en est pas un — trois exercices, aucun résultat de preuve revendiqué ; jumeau C# (kernel `.net-csharp`) : [ANALYSE-02b-Entropie-Shannon-CSharp](ANALYSE-02b-Entropie-Shannon-CSharp.ipynb) ; jumeau Rust (kernel `rust`/evcxr, std seul, sorties strictement identiques) : [ANALYSE-02b-Entropie-Shannon-Rust](ANALYSE-02b-Entropie-Shannon-Rust.ipynb)
 
 ### Autour de 05
 

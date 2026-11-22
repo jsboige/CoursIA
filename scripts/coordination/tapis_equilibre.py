@@ -1,38 +1,34 @@
 #!/usr/bin/env python3
 """Equilibrage des visites du tapis rapide (mandat user du 2026-11-16).
 
-Verbatim : « Toute issue doit etre visitee au moins une fois avant qu'une
-autre le soit deux fois, a l'exception de quelques issues anciennes de
-consolidation qui peuvent recevoir plusieurs visites, et des marathon csharp
-et Rust qui recevront le fruit du travail du nouveau harnais. Les issues
-recentes en particulier ne devraient pas recevoir plus de visites que les
-anciennes. »
+Verbatim : « Toute issue doit etre visitee au moins une fois avant qu'une autre
+le soit deux fois, a l'exception de quelques issues anciennes de consolidation
+qui peuvent recevoir plusieurs visites, et des marathon csharp et Rust qui
+recevront le fruit du travail du nouveau harnais. Les issues recentes en
+particulier ne devraient pas recevoir plus de visites que les anciennes. »
 
 Le tapis range les servables par NIVEAU, le nombre de visites recues dans les
 `FENETRE_J` derniers jours : c'est le « tour » de la regle. La mesure du
-16/11 (395 issues ouvertes, environ 47 seances par jour) donne un tour
-complet en 4 a 8 jours. Un compte sur toute la vie de l'issue aurait l'effet
-inverse du mandat : les anciennes en ont plus parce qu'elles vivent plus
-longtemps (1,1 visite en moyenne avant 7 jours, 6,2 entre 30 et 90 jours), et
-un niveau strict sur ce compte les affamerait. Dans un niveau, l'issue jamais
-visitee passe d'abord, puis la plus ancienne : une issue recente recoit sa
-premiere visite, puis attend que les anciennes aient recu la leur.
+16/11 (395 issues ouvertes, environ 47 seances par jour) donne un tour complet
+en 4 a 8 jours. Un compte sur toute la vie de l'issue aurait l'effet inverse
+du mandat : les anciennes en ont plus parce qu'elles vivent plus longtemps.
+Dans un niveau, l'issue jamais visitee passe d'abord, puis la plus ancienne.
 
-Deux exceptions, celles du mandat :
-
-- une issue de consolidation (label, ou racine de famille labellisee) ouverte
-  depuis plus de `AGE_CONSOLIDATION_J` jours a pour niveau
-  `visites // VISITES_CONSOLIDATION` : elle recoit plusieurs visites par tour ;
-- les marathons de parite C# (#26070, titres « Marathon ») et Rust (#26510)
-  sortent de l'equilibrage et passent apres le pool equilibre : c'est le
-  harnais sk-agent qui les servira.
+Les priorites LEGERES du mandat du 2026-11-18 (age, consolidation) sont dans
+`coordination/tapis_avantages.py` ; leur somme reste sous une visite, donc
+l'equite du 16/11 tient : 0 visite avant 1 visite. La division par 3 des
+consolidations anciennes, plus forte qu'une priorite legere, disparait.
+Une exception reste : les marathons de parite C# (#26070) et Rust (#26510)
+sortent de l'equilibrage : c'est le harnais sk-agent qui les servira.
 
 Une visite est une SEANCE : les marqueurs VISITE (CLAIMED, CLAIMED-AMEND,
-DELIVERED) d'une meme lane a moins de `SEANCE_H` heures d'intervalle n'en font
-qu'une. Les commits de `origin/main` qui citent l'issue forment des seances
-sans lane ; le compte retenu est le plus grand des deux (un claim puis le merge
-de sa PR comptent une fois). Fonctions pures, sans reseau. Doc :
-docs/reference/tapis-rapide.md, section « L'ordre : l'equilibrage des visites ».
+DELIVERED) d'une meme lane a moins de `SEANCE_H` heures n'en font qu'une --
+et **une livraison en ouvre une neuve** (19/11, #27338). Les seances des
+marqueurs sont celles de `tapis_seance.py` (`par_lane`), celles des citations
+celles de `tapis_dernier_grain.seances`. Le **classement** ne compte que les
+prises en charge nominatives (un **grain**) : une citation Git n'est pas une
+visite ; `compter` garde le compte historique pour la seule **voie legere**.
+Fonctions pures, sans reseau. Doc : docs/reference/tapis-rapide.md.
 """
 from __future__ import annotations
 
@@ -41,40 +37,43 @@ import math
 import re
 from datetime import datetime, timedelta
 
-from coordination.tapis_marqueurs import VISITE, Evt, _dt, _iso
+from coordination import tapis_avantages, tapis_seance
+from coordination.tapis_marqueurs import FERME, VISITE, Evt, _dt, _iso
+from coordination.tapis_dernier_grain import cle_tri, seances
 
 FENETRE_J = 7  # le tour : un tour de flotte complet mesure en 4 a 8 jours (16/11)
-AGE_CONSOLIDATION_J = 60
-VISITES_CONSOLIDATION = 3
-SEANCE_H = 24
 MARATHONS = frozenset({26070, 26510})  # racines : parite C# (Marathon II), parite Rust
 TETE = 24  # tete de niveau decalee par lane, pour que deux lanes divergent
 _MARATHON_RE = re.compile(r"^\s*\[?\s*marathon\b", re.IGNORECASE)
 
 
-def _seances(instants: list[datetime], depuis: datetime | None = None) -> int:
-    """Le nombre de seances : un ecart de plus de SEANCE_H en ouvre une neuve."""
-    n, avant = 0, None
-    for t in sorted(t for t in instants if depuis is None or t >= depuis):
-        if avant is None or t - avant > timedelta(hours=SEANCE_H):
-            n += 1
-        avant = t
-    return n
-
-
 def compter(evts: list[Evt], citations: list[dict],
             maintenant: datetime) -> tuple[str | None, int, int]:
-    """La derniere visite (ISO), les visites au total, celles du tour."""
-    par_lane: dict[str, list[datetime]] = {}
+    """La derniere visite (ISO), les visites au total, celles du tour.
+
+    Le compte **historique** de la **voie legere** (elle ne lit pas le fil) :
+    marqueurs et citations, le plus grand des deux ; le classement lui passe
+    par `tapis_dernier_grain.compter_grains` (les grains seuls). Les seances
+    des marqueurs suivent `tapis_seance.par_lane` (une livraison en ouvre une
+    neuve, #27338), celles des citations `seances` ; les citations des PRs
+    **ouvertes** comptent UNE visite chacune (elles ne sont pas mergees).
+    """
+    par_lane: dict[str, list[Evt]] = {}
+    visites: list[datetime] = []
     for ev in evts:
         if ev.marque in VISITE:
-            par_lane.setdefault(ev.lane or "?", []).append(ev.quand)
-    commits = [d for c in citations if (d := _dt(c.get("date")))]
-    tous = [t for ts in par_lane.values() for t in ts] + commits
+            visites.append(ev.quand)
+            par_lane.setdefault(ev.lane or "?", []).append(ev)
+        elif ev.marque in FERME:
+            par_lane.setdefault(ev.lane or "?", []).append(ev)
+    en_cours = [d for c in citations if c.get("ouvert") and (d := _dt(c.get("date")))]
+    commits = [d for c in citations if not c.get("ouvert") and (d := _dt(c.get("date")))]
+    tous = visites + commits + en_cours
 
     def compte(depuis: datetime | None) -> int:
-        marques = sum(_seances(ts, depuis) for ts in par_lane.values())
-        return max(marques, _seances(commits, depuis))
+        marques = sum(tapis_seance.par_lane(evs, depuis) for evs in par_lane.values())
+        fen = [d for d in en_cours if depuis is None or d >= depuis]
+        return max(marques, seances(commits, depuis)) + len(fen)
 
     return ((_iso(max(tous)) if tous else None), compte(None),
             compte(maintenant - timedelta(days=FENETRE_J)))
@@ -89,19 +88,27 @@ def familles_consolidation(etats_) -> set[int]:
     return {e.numero for e in etats_ if e.consolidation}
 
 
-def _vieille_consolidation(e, conso: set[int], maintenant: datetime) -> bool:
-    cree = _dt(e.cree_le)
-    return bool((e.consolidation or e.famille in conso) and cree
-                and maintenant - cree > timedelta(days=AGE_CONSOLIDATION_J))
+def bonus(e, conso: set[int], maintenant: datetime) -> tuple[float, list[str]]:
+    """Le bonus leger du mandat du 18/11 : l'age, puis la consolidation.
+
+    Deux contributions PETITES et DISTINCTES, comptees en dixiemes de visite :
+    le niveau reste un multiple de 0,1, les issues se regroupent par niveau
+    (c'est ce qui fait tourner la tete d'une lane a l'autre), et l'equite du
+    16/11 tient : 0 visite avant 1 visite."""
+    dix, motifs = tapis_avantages.bonus_dixiemes(
+        tapis_avantages.age_jours(e.cree_le, maintenant),
+        tapis_avantages.est_consolidation(e.consolidation, e.famille, conso))
+    return dix / 10, motifs
 
 
 def niveau(e, conso: set[int], maintenant: datetime) -> float:
-    """Le niveau de service : les marathons hors equilibrage, au fond."""
+    """Le niveau de service : les visites du tour moins le bonus leger.
+
+    Plus petit niveau d'abord : 0 visite passe devant 1 visite (le bonus total
+    est borne a 0,9), et l'age puis la consolidation font les departages."""
     if est_marathon(e):
         return math.inf
-    if _vieille_consolidation(e, conso, maintenant):
-        return e.visites // VISITES_CONSOLIDATION
-    return e.visites
+    return e.visites - bonus(e, conso, maintenant)[0]
 
 
 def raisons(e, conso: set[int], maintenant: datetime) -> list[str]:
@@ -109,8 +116,7 @@ def raisons(e, conso: set[int], maintenant: datetime) -> list[str]:
     if est_marathon(e):
         return ["marathon : hors equilibrage (harnais sk-agent)"]
     r = [f"{e.visites} visite(s) en {FENETRE_J} j ({e.visites_total} au total)"]
-    if _vieille_consolidation(e, conso, maintenant):
-        r.append(f"consolidation ancienne : niveau {int(niveau(e, conso, maintenant))}")
+    r.extend(bonus(e, conso, maintenant)[1])
     return r
 
 
@@ -133,13 +139,16 @@ def _decaler(tour: list, graine: str, cle: float) -> list:
     return tete + list(tour[TETE:])
 
 
-def ordre(etats_, servables, graine: str, maintenant: datetime) -> list:
+def ordre(etats_, servables, graine: str, maintenant: datetime,
+          rotation: bool = True) -> list:
     """Niveau croissant ; dans un niveau, la jamais visitee puis la plus
-    ancienne d'abord, les familles servies a tour de role."""
+    ancienne d'abord, les familles servies a tour de role.
+
+    `rotation=False` : l'ordre **fair**, sans rotation de tete par lane
+    (la fenetre qui avance decide de la rotation, pas le pool)."""
     conso = familles_consolidation(etats_)
     niveaux: dict[float, dict[int, list]] = {}
-    for e in sorted(servables, key=lambda e: (e.visites_total > 0, e.cree_le,
-                                             e.derniere_visite or "", e.numero)):
+    for e in sorted(servables, key=cle_tri):
         niveaux.setdefault(niveau(e, conso, maintenant), {}).setdefault(e.famille, []).append(e)
     tour: list = []
     for n in sorted(niveaux):
@@ -147,5 +156,5 @@ def ordre(etats_, servables, graine: str, maintenant: datetime) -> list:
         while any(rang < len(lst) for lst in listes):
             rr.extend(lst[rang] for lst in listes if rang < len(lst))
             rang += 1
-        tour += _decaler(rr, graine, n)
+        tour += _decaler(rr, graine, n) if rotation else rr
     return tour
