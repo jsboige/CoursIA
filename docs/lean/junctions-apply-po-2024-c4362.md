@@ -25,9 +25,9 @@ Côté NTFS : `calibration_lean` (checkout physique 1,04 Go, rev `db584cd6` conf
 
 | Groupe | Donateur | Preuve de complétude |
 |---|---|---|
-| `db584cd6` | `lean-projects/conway_lean` (13,1 Go) | git clean, rev exact, **8852 fichiers .lean**, `Mathlib.lean` présent |
-| `520045ab` | `lakes/planning_lean` (11,1 Go) | git clean, rev exact, **8795 fichiers .lean**, `Mathlib.lean` présent |
-| `0df444a3` | `ffl-foundation-pilot` (7,2 Go) | rev exact, **8852 fichiers .lean** |
+| `db584cd6` | `lean-projects/conway_lean` (13,1 Go) | git clean, rev exact, **8852 oleans**, `Mathlib.lean` présent |
+| `520045ab` | `lakes/planning_lean` (11,1 Go) | git clean, rev exact, **8795 oleans**, `Mathlib.lean` présent |
+| `0df444a3` | `ffl-foundation-pilot` (7,2 Go) | rev exact, **8852 oleans** |
 
 Les victimes incluent des checkouts **partiels** (3,4–4,7 Go, clone interrompu) : les brancher sur le donateur complet les répare au passage — un checkout partiel ne peut servir aucun build complet.
 
@@ -35,7 +35,7 @@ Les victimes incluent des checkouts **partiels** (3,4–4,7 Go, clone interrompu
 
 - Aucun process `lake`/`lean` actif (garde par `comm` via `pgrep -x`, pas par arguments — leçon po-2028 n°2).
 - mtimes des checkouts : tous antérieurs de ≥ 6 jours au geste (le plus récent : 2026-11-15) — **aucun acteur concurrent** en setup (leçon po-2028 n°3).
-- Triple prédicat par victime avant mutation : `.lake/packages` n'est pas lui-même un lien · `mathlib` est un vrai répertoire · rev du checkout = rev du groupe (leçon po-2028 n°1). Aucun SKIP n'a déclenché : 24/24 víctimas ont passé la garde.
+- Triple prédicat par victime avant mutation : `.lake/packages` n'est pas lui-même un lien · `mathlib` est un vrai répertoire · rev du checkout = rev du groupe (leçon po-2028 n°1). Aucun SKIP n'a déclenché : 24/24 victimes ont passé la garde.
 
 ## Apply exécuté
 
@@ -66,6 +66,8 @@ Les victimes incluent des checkouts **partiels** (3,4–4,7 Go, clone interrompu
 | Checkouts dupliqués neutralisés (en poubelle, récupérables) | **133,5 Go** (133 Go WSL + 0,51 Go NTFS) |
 | Magasins restants | 3 donateurs WSL (1 par rev du groupe muté) + 1 store NTFS |
 | Réparation au passage | 1 checkout stale (`mimo_lean` NTFS, `81a5d257` vs manifest `db584cd6`) + les checkouts partiels branchés sur un magasin complet |
+
+**Rapprochement des tailles (point du CR 22/11).** La somme des tailles par groupe de la table « Topologie réelle » (~112 + ~52 + ~8,5 Go, moins les 3 donateurs conservés ~13,1 + ~11,1 + ~7,2 Go) donne ~141 Go de victimes estimées ; ces valeurs sont des **estimations arrondies** par groupe. La valeur faisant foi est la **mesure directe** de la poubelle après l'apply : `du -sh /home/jesse/.trash/mathlib-swap-20261121/` = **133 Go**. C'est cette mesure (133 Go WSL + 0,51 Go NTFS = 133,5 Go) qui est annoncée, pas la somme de la table.
 
 ## Leçons (pour les Apply suivants)
 
