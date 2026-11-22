@@ -1,0 +1,632 @@
+# Conformite differentielle du couple Metajeux-04 (Chemin minimal Robinson-
+# Goforth, issue #27935, lot Rust std de l'EPIC #26510).
+#
+# Le portage Rust (kernel evcxr, `std` seul, aucun :dep) reprend le carnet
+# Python a l'identique : meme enumeration des ordres faibles (75 = nombre de
+# Fubini F4), meme graphe des 576 chambres, memes BFS exhaustifs. Chaque
+# cellule code est autonome sous evcxr (preludes recomposes par cellule) ;
+# les sorties des 17 cellules code sont identiques octet par octet au jumeau
+# Python.
+#
+# Le carnet n'a pas de jumeau C# : ce cote n'est pas declare.
+#
+# Ecarts de forme DECLARES : aucun -- les helpers de rendu Rust (`t4`,
+# `jeu_repr`, `py_bool`, `py_list`, `py_infos`) reproduisent les repr Python
+# (tuples, True/False, listes de chaines).
+- name: "Metajeux-04 Chemin Minimal Robinson Goforth"
+  family: Metajeux
+  python: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Rust.ipynb
+  measures:
+    # --- cellule 2 : le temoin constructeur/verificateur -------------------
+    - id: temoin_entete
+      description: "Bandeau du temoin : constructeur produit, verificateur separate verifie"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "GameTheory 20 : chemin minimal \\(temoin construit et v[ée]rifi[ée] ind[ée]pendamment\\)"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "GameTheory 20 : chemin minimal \\(temoin construit et v[ée]rifi[ée] ind[ée]pendamment\\)"
+          transform: text
+    # --- cellule 5 : enumeration des ordres faibles -------------------------
+    - id: ordres_faibles
+      description: "Nombre d'ordres faibles sur 4 cases (nombre de Fubini F4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Ordres faibles sur 4 cases : (\\d+)"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "Ordres faibles sur 4 cases : (\\d+)"
+          transform: int
+    - id: stricts
+      description: "Ordres stricts (futurs chambers) : 24 permutations"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "stricts \\(futurs chambers\\)\\s+: (\\d+)"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "stricts \\(futurs chambers\\)\\s+: (\\d+)"
+          transform: int
+    - id: avec_ex_aequo
+      description: "Ordres avec ex aequo (futurs murs)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "avec ex aequo \\(futurs murs\\) : (\\d+)"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "avec ex aequo \\(futurs murs\\) : (\\d+)"
+          transform: int
+    - id: univers_jeux_rangs
+      description: "Univers des jeux a rangs (75 x 75)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Univers des jeux a rangs :\\s+\\d+ x \\d+ = (\\d+)"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "Univers des jeux a rangs :\\s+\\d+ x \\d+ = (\\d+)"
+          transform: int
+    - id: univers_chambres
+      description: "Univers des chambres strictes (576)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Univers des chambres strictes : (\\d+)"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "Univers des chambres strictes : (\\d+)"
+          transform: int
+    # --- cellule 8 : les cinq bornes en jeux --------------------------------
+    - id: dilemme_strict
+      description: "Le Dilemme est bien une chambre stricte"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "strict \\(chambre\\) : (True)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "strict \\(chambre\\) : (True)"
+          transform: text
+    - id: bornes_canoniques
+      description: "Les cinq bornes canoniques sont des chambres strictes"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Les cinq bornes canoniques sont des chambres strictes, toutes dans les (\\d+)"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "Les cinq bornes canoniques sont des chambres strictes, toutes dans les (\\d+)"
+          transform: int
+    # --- cellule 11 : adjacences des chambres -------------------------------
+    - id: nb_chambres
+      description: "Nombre de chambres (24 x 24)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "Chambres : (\\d+) \\| degre"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "Chambres : (\\d+) \\| degre"
+          transform: int
+    - id: degre_sommet
+      description: "Degre de chaque sommet du graphe des chambres (6 voisins)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "degre de chaque sommet : (\\d+)"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "degre de chaque sommet : (\\d+)"
+          transform: int
+    - id: chambres_connexes
+      description: "Connexite du graphe des 576 chambres"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "connexe = (True)"
+          transform: text
+        rust:
+          cell: 11
+          pattern: "connexe = (True)"
+          transform: text
+    - id: diametre_chambres
+      description: "Diametre du graphe des chambres (12)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "diametre = (\\d+)"
+          transform: int
+        rust:
+          cell: 11
+          pattern: "diametre = (\\d+)"
+          transform: int
+    - id: repartition_distances_chambres
+      description: "Distribution des distances depuis l'identite sur les chambres"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: "repartition des distances : \\{([0-9:, ]+)\\}"
+          transform: digits
+        rust:
+          cell: 11
+          pattern: "repartition des distances : \\{([0-9:, ]+)\\}"
+          transform: digits
+    # --- cellule 14 : chemin constructeur PD -> Poule -----------------------
+    - id: depart_pd
+      description: "Point de depart du chemin construit (jeu PD)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "\\(3, 1, 4, 2\\) \\| \\(3, 4, 1, 2\\)   \\((depart)\\)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "\\(3, 1, 4, 2\\) \\| \\(3, 4, 1, 2\\)   \\((depart)\\)"
+          transform: text
+    - id: longueur_chemin_pd_poule
+      description: "Longueur du chemin produit PD -> Poule (2 pas)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "Longueur du chemin produit : (\\d+) pas"
+          transform: int
+        rust:
+          cell: 14
+          pattern: "Longueur du chemin produit : (\\d+) pas"
+          transform: int
+    # --- cellule 16 : antipodes du permutaedre ------------------------------
+    - id: longueur_antipodes
+      description: "Chemin Identite -> Renversement (12 = diametre du permutaedre S4 x S4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "Longueur : (\\d+) pas \\(le diametre exact"
+          transform: int
+        rust:
+          cell: 16
+          pattern: "Longueur : (\\d+) pas \\(le diametre exact"
+          transform: int
+    - id: dilemme_cerf_2pas
+      description: "Dilemme -> Chasse au Cerf en 2 pas avec les swaps cites"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "Dilemme -> Chasse au Cerf : (\\d+) pas"
+          transform: int
+        rust:
+          cell: 16
+          pattern: "Dilemme -> Chasse au Cerf : (\\d+) pas"
+          transform: int
+    # --- cellule 19 : le verificateur independant ---------------------------
+    - id: verdict_valide_minimal
+      description: "Verdict VALIDE + MINIMAL du verificateur (chemin constructeur)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "VALIDE \\+ MINIMAL : (\\d+) pas = distance exhaustive d\\(G,H\\)"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "VALIDE \\+ MINIMAL : (\\d+) pas = distance exhaustive d\\(G,H\\)"
+          transform: int
+    - id: verdict_non_minimal
+      description: "Verdict VALIDE mais NON MINIMAL (chemin rallonge d'un aller-retour)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "VALIDE mais NON MINIMAL : (\\d+) pas, distance reelle \\d+"
+          transform: int
+        rust:
+          cell: 19
+          pattern: "VALIDE mais NON MINIMAL : (\\d+) pas, distance reelle \\d+"
+          transform: int
+    - id: verdict_invalide
+      description: "Verdict INVALIDE : pas non elementaire (vers le jeu non adjacent cite)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "INVALIDE : pas non elementaire vers (\\(\\(4, 1, 3, 2\\), \\(4, 3, 1, 2\\)\\))"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "INVALIDE : pas non elementaire vers (\\(\\(4, 1, 3, 2\\), \\(4, 3, 1, 2\\)\\))"
+          transform: text
+    # --- cellule 22 : geodesiques --------------------------------------------
+    - id: geodesiques_w0
+      description: "Geodesiques (1,2,3,4) -> (4,3,2,1) sur une table (16 mots reduits de w0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "sur une table : (\\d+) \\(mots reduits"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "sur une table : (\\d+) \\(mots reduits"
+          transform: int
+    - id: geodesiques_pd_poule
+      description: "Geodesiques PD -> Poule sur les 576 chambres (2)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "sur les 576 chambres : (\\d+)"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "sur les 576 chambres : (\\d+)"
+          transform: int
+    - id: geodesiques_diametre
+      description: "Geodesiques Identite -> Renversement au diametre 12 (236544)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "\\(diametre 12\\) : (\\d+)"
+          transform: int
+        rust:
+          cell: 22
+          pattern: "\\(diametre 12\\) : (\\d+)"
+          transform: int
+    # --- cellule 25 : univers complet avec murs ------------------------------
+    - id: univers_sommets
+      description: "Univers complet des jeux a rangs (5625 sommets)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "Univers complet : (\\d+) sommets"
+          transform: int
+        rust:
+          cell: 25
+          pattern: "Univers complet : (\\d+) sommets"
+          transform: int
+    - id: univers_atteints
+      description: "Sommets atteints par BFS dans l'univers complet (connexe)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "atteints : (\\d+) \\(connexe"
+          transform: int
+        rust:
+          cell: 25
+          pattern: "atteints : (\\d+) \\(connexe"
+          transform: int
+    - id: univers_connexe
+      description: "Connexite de l'univers complet"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "\\(connexe : (True )\\)"
+          transform: text
+        rust:
+          cell: 25
+          pattern: "\\(connexe : (True )\\)"
+          transform: text
+    - id: univers_diametre
+      description: "Diametre de l'univers complet (12, comme le permutaedre seul)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "Diametre de l'univers complet : (\\d+)"
+          transform: int
+        rust:
+          cell: 25
+          pattern: "Diametre de l'univers complet : (\\d+)"
+          transform: int
+    - id: univers_repartition
+      description: "Distribution des distances dans l'univers complet"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: "repartition : \\{([0-9:, ]+)\\}"
+          transform: digits
+        rust:
+          cell: 25
+          pattern: "repartition : \\{([0-9:, ]+)\\}"
+          transform: digits
+    # --- cellule 27 : les murs ne raccourcissent rien ------------------------
+    - id: paires_comparees
+      description: "Paires d'ordres stricts comparees (24 x 24)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "comparees \\(24 x 24\\) : (\\d+)"
+          transform: int
+        rust:
+          cell: 27
+          pattern: "comparees \\(24 x 24\\) : (\\d+)"
+          transform: int
+    - id: paires_plus_courtes
+      description: "Paires ou l'espace complet est PLUS COURT que le permutaedre (0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "PLUS COURT que le permutaedre : (\\d+)"
+          transform: int
+        rust:
+          cell: 27
+          pattern: "PLUS COURT que le permutaedre : (\\d+)"
+          transform: int
+    - id: couverture_paires
+      description: "Par structure produit, le verdict couvre 576 x 576 = 331776 paires"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "\\d+ x \\d+ = (\\d+) paires de chambres"
+          transform: int
+        rust:
+          cell: 27
+          pattern: "\\d+ x \\d+ = (\\d+) paires de chambres"
+          transform: int
+    - id: murs_aucun_raccourci
+      description: "Les murs ne raccourcissent AUCUNE distance inter-chambres"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "les murs ne raccourcissent (AUCUNE) distance inter-chambres"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "les murs ne raccourcissent (AUCUNE) distance inter-chambres"
+          transform: text
+    - id: pd_renverse_murs
+      description: "PD -> Renversement dans l'univers complet (5 pas dont 0 sur un mur)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "PD -> Renversement : univers complet (\\d+) pas dont (\\d+) sur un mur"
+          transform: digits
+        rust:
+          cell: 27
+          pattern: "PD -> Renversement : univers complet (\\d+) pas dont (\\d+) sur un mur"
+          transform: digits
+    - id: pd_renverse_chambres
+      description: "PD -> Renversement en chambres seules (5 pas)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "chambres seules (\\d+) pas"
+          transform: int
+        rust:
+          cell: 27
+          pattern: "chambres seules (\\d+) pas"
+          transform: int
+    - id: verdict_verificateur_5pas
+      description: "Verificateur sur l'univers complet : VALIDE + MINIMAL en 5 pas"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "Verificateur \\(univers complet\\) : VALIDE \\+ MINIMAL : (\\d+) pas"
+          transform: int
+        rust:
+          cell: 27
+          pattern: "Verificateur \\(univers complet\\) : VALIDE \\+ MINIMAL : (\\d+) pas"
+          transform: int
+    # --- cellule 30 : moteur d'induction a rebours ---------------------------
+    - id: spe_punition_choisie
+      description: "Sous-jeu de punition : valeur SPE (1, 4), action retenue J1:laisser"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "valeur SPE = \\(1, 4\\), action retenue = (J1:laisser)"
+          transform: text
+        rust:
+          cell: 30
+          pattern: "valeur SPE = \\(1, 4\\), action retenue = (J1:laisser)"
+          transform: text
+    - id: menace_choisie_incredible
+      description: "La menace CHOISIE est INCROYABLE (verdict de l'induction, pas d'une assertion)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "la menace CHOISIE est (INCROYABLE)"
+          transform: text
+        rust:
+          cell: 30
+          pattern: "la menace CHOISIE est (INCROYABLE)"
+          transform: text
+    # --- cellule 32 : le Dilemme en forme extensive --------------------------
+    - id: spe_silence_dilemme
+      description: "Valeur SPE du Dilemme au silence (2, 2)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "valeur SPE : \\(2, 2\\)"
+          transform: text
+        rust:
+          cell: 32
+          pattern: "valeur SPE : \\(2, 2\\)"
+          transform: text
+    - id: verdict_silence_dilemme
+      description: "Au silence, le play cooperatif est inatteignable"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "silence\\s+-> \\(2, 2\\) : transition vers le play cooperatif : (inatteignable)"
+          transform: text
+        rust:
+          cell: 32
+          pattern: "silence\\s+-> \\(2, 2\\) : transition vers le play cooperatif : (inatteignable)"
+          transform: text
+    - id: verdict_menace_programmee
+      description: "Seule la menace programmee ATTEINT le play cooperatif (3, 3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "menace_programmee\\s+-> \\(3, 3\\) : transition vers le play cooperatif : (ATTEINTE )"
+          transform: text
+        rust:
+          cell: 32
+          pattern: "menace_programmee\\s+-> \\(3, 3\\) : transition vers le play cooperatif : (ATTEINTE )"
+          transform: text
+    # --- cellule 34 : le Cerf en forme extensive -----------------------------
+    - id: spe_silence_cerf
+      description: "Valeur SPE du Cerf au silence (4, 4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 34
+          pattern: "valeur SPE : \\(4, 4\\)"
+          transform: text
+        rust:
+          cell: 34
+          pattern: "valeur SPE : \\(4, 4\\)"
+          transform: text
+    - id: cerf_promesse_autoexecutoire
+      description: "Au Cerf, la promesse est AUTO-EXECUTOIRE (mur poreux)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 34
+          pattern: "la promesse y est (AUTO-EXECUTOIRE)"
+          transform: text
+        rust:
+          cell: 34
+          pattern: "la promesse y est (AUTO-EXECUTOIRE)"
+          transform: text
+    # --- cellules d'exercice : les stubs restent des stubs -------------------
+    - id: exercice_1_stub
+      description: "L'Exercice 1 reste un stub (chemin retour Poule -> Dilemme)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 39
+          pattern: "Exercice 1 : a completer \\(chemin retour Poule -> Dilemme\\)"
+          transform: text
+        rust:
+          cell: 39
+          pattern: "Exercice 1 : a completer \\(chemin retour Poule -> Dilemme\\)"
+          transform: text
+    - id: exercice_2_stub
+      description: "L'Exercice 2 reste un stub (geodesiques PD -> Cerf, deux univers)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 41
+          pattern: "Exercice 2 : a completer \\(geodesiques PD -> Cerf, deux univers\\)"
+          transform: text
+        rust:
+          cell: 41
+          pattern: "Exercice 2 : a completer \\(geodesiques PD -> Cerf, deux univers\\)"
+          transform: text
+    - id: exercice_3_stub
+      description: "L'Exercice 3 reste un stub (antipode du Dilemme dans l'univers complet)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 43
+          pattern: "Exercice 3 : a completer \\(antipode du Dilemme dans l'univers complet\\)"
+          transform: text
+        rust:
+          cell: 43
+          pattern: "Exercice 3 : a completer \\(antipode du Dilemme dans l'univers complet\\)"
+          transform: text
+    - id: exercice_4_stub
+      description: "L'Exercice final reste un stub (verdict de l'engagement D observable sur la Poule)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 45
+          pattern: "Exercice a completer : verdict de l'engagement D observable sur la Poule"
+          transform: text
+        rust:
+          cell: 45
+          pattern: "Exercice a completer : verdict de l'engagement D observable sur la Poule"
+          transform: text
