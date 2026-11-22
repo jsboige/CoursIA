@@ -1747,6 +1747,79 @@ def fetch_pr_view(runner: Runner, pr: int, gh_env: dict[str, str]) -> dict:
     return view
 
 
+#: Pagination de la liste des fichiers d'une PR. ``gh pr view --json files``
+#: plafonne a **100** fichiers ; le REST ``/pulls/{n}/files`` est pagine et
+#: porte jusqu'a 3 000 fichiers. La troncature de la vue ne peut pas etre
+#: toleree : le controle de perimetre est fail-closed (un fichier hors
+#: perimetre cache derriere le plafond doit bloquer), donc une liste tronquee
+#: rendait la PR **non mergeable** — mesure sur #27684 (146 fichiers, 100
+#: listes, skip `files-truncated:100/146`).
+PR_FILES_PER_PAGE = 100
+PR_FILES_MAX_PAGES = 30
+
+
+def fetch_pr_files(
+    runner: Runner, pr: int, view: dict, gh_env: dict[str, str]
+) -> list[dict] | None:
+    """Liste COMPLETE des fichiers d'une PR, ou ``None`` si elle est illisible.
+
+    Deux sources :
+
+    - la vue ``gh pr view --json files`` : complete quand sa taille atteint
+      ``changedFiles`` — aucun appel supplementaire dans ce cas ;
+    - le REST ``/pulls/{n}/files``, pagine, lu jusqu'a epuisement, quand la
+      vue est tronquee.
+
+    La forme rendue est celle de la vue (``{"path": ...}``) pour que les
+    consommateurs (perimetre, attestation Lean, collisions twin/slot) ne
+    changent pas : le REST nomme le champ ``filename``.
+
+    ``None`` = liste illisible (quota, 5xx, stdout non-JSON) : l'appelant
+    garde le comportement fail-closed.
+    """
+    listed = view.get("files") or []
+    changed = view.get("changedFiles")
+    if isinstance(changed, int) and len(listed) >= changed:
+        return list(listed)
+    fichiers: list[dict] = []
+    for page in range(1, PR_FILES_MAX_PAGES + 1):
+        res = runner.run(
+            [
+                "gh", "api",
+                f"repos/{REPO}/pulls/{pr}/files"
+                f"?per_page={PR_FILES_PER_PAGE}&page={page}",
+            ],
+            env=gh_env,
+        )
+        if res.returncode != 0:
+            return None
+        try:
+            data = _json_stdout(res, f"gh api pulls/{pr}/files page {page}")
+        except UnexpectedError:
+            return None
+        if not isinstance(data, list):
+            return None
+        for row in data:
+            if not isinstance(row, dict):
+                return None
+            chemin = row.get("filename") or row.get("path")
+            if not isinstance(chemin, str) or not chemin.strip():
+                # Fail-closed (reserve 1 de NanoClaw, #27749) : une ligne sans
+                # nom de fichier ne vaut pas « fichier hors perimetre » — un
+                # chemin vide ne matche aucune exclusion, donc la garde le
+                # lirait comme du hors harnais. La ligne est ILLISIBLE : on
+                # rend `None` comme pour une lecture impossible, et l'appelant
+                # bloque sur `files-unreadable` au lieu de trancher sur une
+                # liste incomplete.
+                return None
+            fichiers.append({"path": chemin})
+        if len(data) < PR_FILES_PER_PAGE:
+            break
+        if isinstance(changed, int) and len(fichiers) >= changed:
+            break
+    return fichiers
+
+
 def _review_voice_state(review: dict) -> str | None:
     """L'etat REEL d'une review, ou le verdict type de son corps (canal COMMENT).
 
@@ -2858,16 +2931,33 @@ def evaluate_pr(
     if view.get("isDraft"):
         return skip("draft")
     # 2. perimetre (b), fail-closed.
-    for file_row in view.get("files") or []:
+    # La liste de fichiers est COMPLETE avant le controle : `gh pr view --json
+    # files` plafonne a 100 (mesure : #27684, 146 fichiers) et la troncature
+    # rendait la PR non mergeable au lieu de signaler un fichier hors
+    # perimetre. `fetch_pr_files` pagine le REST quand la vue est tronquee.
+    changed = view.get("changedFiles")
+    if not isinstance(changed, int):
+        # Sans le nombre de fichiers modifies, l'exhaustivite n'est pas
+        # demontrable : fail-closed, comme avant le correctif.
+        return skip("files-unknown-count")
+    fichiers = fetch_pr_files(runner, pr, view, gh_env)
+    if fichiers is None:
+        # Liste illisible (quota, 5xx) : fail-closed — mais le motif dit
+        # qu'il s'agit d'une LECTURE, pas d'un contenu de PR.
+        return skip("files-unreadable")
+    if len(fichiers) < changed:
+        # Le REST plafonne a 3 000 fichiers : au-dela, la liste reste
+        # incomplete et le controle de perimetre ne peut pas etre trustworthy.
+        return skip(f"files-truncated:{len(fichiers)}/{changed}")
+    if len(fichiers) != len(view.get("files") or []):
+        # Les consommateurs en aval (attestation Lean, collisions twin/slot)
+        # lisent `view["files"]` : ils doivent voir la liste COMPLETE.
+        view = dict(view)
+        view["files"] = fichiers
+    for file_row in fichiers:
         reason = scope_exclusion(str((file_row or {}).get("path") or ""))
         if reason is not None:
             return skip(reason)
-    # `gh pr view --json files` plafonne la liste : une PR plus grosse que ce
-    # plafond cacherait peut-etre un fichier hors perimetre -> fail-closed.
-    changed = view.get("changedFiles")
-    listed = len(view.get("files") or [])
-    if not isinstance(changed, int) or changed > listed:
-        return skip(f"files-truncated:{listed}/{changed}")
     reason = grain_exclusion(view.get("body"), view.get("headRefName"))
     if reason is not None:
         return skip(reason)
