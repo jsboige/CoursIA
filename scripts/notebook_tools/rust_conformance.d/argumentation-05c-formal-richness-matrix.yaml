@@ -1,0 +1,245 @@
+# Paire Argumentation-05c : jumeau Python + portage Rust (issue #27929, spec Rust portage).
+# Les deux carnets ont exactement la meme structure 24 cellules (meme indices) :
+# les cotes se correspondent par index. Cote Rust = evcxr, std-only (aucun :dep).
+# Le cote C# n'existe pas pour cette serie (ArgumentAnalysis est Python + Rust seulement).
+# Les cellules 2 et 7 (definitions seules, `#[allow(dead_code)]`) n'emettent rien :
+# hors registre ; les stubs 17/19/21 verifient l'execution end-to-end (C.1).
+- name: "Argumentation-05c Matrice de richesse formelle"
+  family: ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Rust.ipynb
+  measures:
+    - id: arch_pl
+      description: "Archétype pl : substantive (verdict réel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "pl +-> +(\\w+)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "pl +-> +(\\w+)"
+          transform: text
+    - id: arch_defeasible
+      description: "Archétype defeasible : honest_absent (fail-loud empty)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "defeasible +-> +(\\w+)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "defeasible +-> +(\\w+)"
+          transform: text
+    - id: arch_atms
+      description: "Archétype atms : unavailable (sous-dimension)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "atms +-> +(\\w+)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "atms +-> +(\\w+)"
+          transform: text
+    - id: arch_dung
+      description: "Archétype dung : theatre_suspect (verdict fabriqué)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "dung +-> +(\\w+)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "dung +-> +(\\w+)"
+          transform: text
+    - id: mesure_naive
+      description: "Mesure naïve (grep de présence) : 24/24 (le mensonge)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "Mesure naïve \\(grep de présence\\) : (\\d+)/24"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "Mesure naïve \\(grep de présence\\) : (\\d+)/24"
+          transform: int
+    - id: tally_substantive
+      description: "Tally honnête : substantive (14)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "substantive +: +(\\d+)"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "substantive +: +(\\d+)"
+          transform: int
+    - id: tally_honest_absent
+      description: "Tally honnête : honest_absent (6)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "honest_absent +: +(\\d+)"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "honest_absent +: +(\\d+)"
+          transform: int
+    - id: tally_unavailable
+      description: "Tally honnête : unavailable (3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "unavailable +: +(\\d+)"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "unavailable +: +(\\d+)"
+          transform: int
+    - id: tally_theatre
+      description: "Tally honnête : theatre_suspect (1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "theatre_suspect +: +(\\d+)"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "theatre_suspect +: +(\\d+)"
+          transform: int
+    - id: diag_dung_docb
+      description: "Diagnostic : dung_semantics @ doc_B = theatre_suspect"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "dung_semantics +@ doc_B +: +(\\S+)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "dung_semantics +@ doc_B +: +(\\S+)"
+          transform: text
+    - id: diag_dung_action
+      description: "Diagnostic : action attendue sur le théâtre (À RÉPARER)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "-> (À RÉPARER)"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "-> (À RÉPARER)"
+          transform: text
+    - id: invariant_avant
+      description: "Invariant anti-théâtre AVANT réparation : VIOLÉ"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "INVARIANT (\\w+) —"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "INVARIANT (\\w+) —"
+          transform: text
+    - id: tally2_honest_absent
+      description: "Tally après réparation fail-loud : honest_absent (7)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "honest_absent=(\\d+)"
+          transform: int
+        rust:
+          cell: 14
+          pattern: "honest_absent=(\\d+)"
+          transform: int
+    - id: tally2_theatre
+      description: "Tally après réparation fail-loud : theatre_suspect (0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "theatre_suspect=(\\d+)"
+          transform: int
+        rust:
+          cell: 14
+          pattern: "theatre_suspect=(\\d+)"
+          transform: int
+    - id: reclassification_dung
+      description: "dung_semantics @ doc_B reclassifiée : honest_absent"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "reclassifiée : (\\w+)"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "reclassifiée : (\\w+)"
+          transform: text
+    - id: stub_exercice_1
+      description: "Stub exercice 1 exécuté (C.1, pas d'erreur volontaire)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "(Exercice 1 a completer)"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "(Exercice 1 a completer)"
+          transform: text
+    - id: stub_exercice_2
+      description: "Stub exercice 2 exécuté (C.1, pas d'erreur volontaire)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "(Exercice 2 a completer)"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "(Exercice 2 a completer)"
+          transform: text
+    - id: stub_exercice_3
+      description: "Stub exercice 3 exécuté (C.1, pas d'erreur volontaire)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 21
+          pattern: "(Exercice 3 a completer)"
+          transform: text
+        rust:
+          cell: 21
+          pattern: "(Exercice 3 a completer)"
+          transform: text
