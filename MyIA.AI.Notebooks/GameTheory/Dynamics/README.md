@@ -88,6 +88,18 @@ Les projets Lean outillent les carnets. Leurs toolchains et leur état détaill�
 
 ## Ressources — tous niveaux
 
-Les références et discussions des carnets donnent les sources et le contexte de chaque expérience : théorie des jeux répétés en [01](Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb), coopération par prouvabilité en [04b](Dynamics-04b-FairBot-Loeb-Lean.ipynb), institutions transparentes en [08](Dynamics-08-Institutions-Transparentes-Python.ipynb), biens publics d'Archetti et Scheuring en [09](Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb), jeux répétés et modèles de langage étudiés par Mei et ses coauteurs en [10](Dynamics-10-Joueur-LLM-Python.ipynb).
+Les références et discussions des carnets donnent les sources et le contexte de chaque expérience : théorie des jeux répétés en [01](Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb), coopération par prouvabilité en [04b](Dynamics-04b-FairBot-Loeb-Lean.ipynb), institutions transparentes en [08](Dynamics-08-Institutions-Transparentes-Python.ipynb), biens publics d'Archetti et Scheuring en [09](Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb), jeux répétés et modèles de langage étudiés par Mei et ses coauteurs en [10](Dynamics-10-Joueur-LLM-Python.ipynb). L'arc 04→10 s'appuie en outre sur cinq sources vives de la littérature « open-source game theory », épinglées ci-dessous.
+
+### Sources externes — open-source game theory
+
+| Source (pin public) | Apport à l'arc 04→10 |
+|---|---|
+| [maisi.org — Open-Source Game Theory](https://maisi.org) (page de direction de recherche) | Taxonomie DUPOC/CUPOD, théorèmes de self-play bornés, Löb borné paramétrique et Open Problem 3 — le cadre que les carnets 04–06 enseignent et mesurent. |
+| [*Payorian cooperation is easy with Kripke frames*](https://www.alignmentforum.org/posts/LaCP6WyNzX8kiZn3w/) (Alignment Forum, 2026-03-09) | Le bot payorien `C_A ↔ (□C_A → C_B)` et le lemme de Payor sans Löb, prouvé sémantiquement par cadres de Kripke — le carnet 04c. |
+| [ColombanD/open-source-game-theory](https://github.com/ColombanD/open-source-game-theory) @ `c7f0ed76` (main) | Mécanisation Lean complète (PA-S', Löb borné, agents `Prog`, EGT sur les issues) que l'arc cite sans porter. La branche `ai4math-icml-camera-ready` citée à l'origine n'existe plus : les renvois épinglent `main`. |
+| [Math-for-AI-Safety/MAIS](https://github.com/Math-for-AI-Safety/MAIS) `agendas/` @ `1cb9f003` | Agenda A1 « Quantitative bounded Löb » et point d'entrée MAIS-O16 (« mesurer le budget de coopération minimal de FairBot ») — préfigurés par la courbe de seuils du carnet 06. |
+| [Robertboy18/TorchLean-Verified-Examples](https://github.com/Robertboy18/TorchLean-Verified-Examples) `week-07-program-equilibrium` @ `5afa0589` | Zoo modal (CooperateBot, FairBot, PrudentBot, CUPOD) évalué monde par monde sur la chaîne des mondes, certificats et seuil exact de self-play. |
+
+Des copies archivées figurent au gisement partagé de bibliographie du dépôt ; le point de lecture pour toute attribution en est la copie archivée. Les trois papiers cœur (Barasz et al. 2014, arXiv:1401.5577 ; Critch 2016, arXiv:1602.04184 ; Critch, Dennis et Russell 2022, arXiv:2208.07006) sont déjà cités dans les carnets de l'arc.
 
 [Retour à GameTheory](../README.md) · [Catalogue du dépôt](../../../COURSE_CATALOG.generated.md)
