@@ -317,7 +317,18 @@ theorem fairBot_not_sucker (d : FairBotDuel box)
   exact hr (soundCol (d.rowClause.1 hq))
 
 /-- Version « action » de `fairBot_not_sucker` : le profil (C, D) du dindon
-est exclu sous la même hypothèse de fiabilité locale. -/
+est exclu sous la même hypothèse de fiabilité locale.
+Preuve alternative déclarée (formulation différente) :
+`formal_logic_lean/FormalLogic/FairBotLoeb.lean` déclare un théorème du même
+nom en lecture syntaxique — `T₀ ⊢ p 🡘 𝔅 q` et `T ⊢ p` donnent `T ⊢ q` sous
+`[𝔅.Kreisel]`. Maison canonique de l'agent FairBot : ce lac
+`game_theory_lean`, où vit le duel opérationnel ; la version
+`formal_logic_lean` en est la généralisation Löb. Comparaison : ici
+l'hypothèse est la fiabilité locale `box r → r` portant sur la clause adverse
+d'un duel concret, et la conclusion exclut un profil d'actions ; là,
+l'hypothèse de Kreisel gouverne toute théorie `T` et la conclusion est une
+prouvabilité — cadres non transportables terme à terme, chaque preuve est
+canonique dans le sien. Axiomes atteints : propext, Classical.choice, Quot.sound. -/
 theorem fairBot_unexploitable (d : FairBotDuel box)
     (soundCol : box d.colCooperates → d.colCooperates) :
     (modalAction d.rowCooperates, modalAction d.colCooperates)
@@ -362,7 +373,17 @@ cosmétique, elle est exactement ce qui sépare défection mutuelle et
 coopération illusoire. **Mesure T4 (#26945)** : dans l'interface, cette
 hypothèse est INSATISFIABLE (`consistency_hypothesis_unsat`) — le théorème
 est vrai de vacuité ; la cohérence instanciable vit en L3 (`Consistent T`
-dans l'organe `FormalLogic.FairBotLoeb`). -/
+dans l'organe `FormalLogic.FairBotLoeb`).
+Preuve alternative déclarée (formulation différente) :
+`formal_logic_lean/FormalLogic/FairBotLoeb.lean` déclare un théorème du même
+nom sous `[Consistent T] [𝔅.Kreisel]` et conclut `T ⊬ p` : la coopération
+n'est pas prouvable. Maison canonique de l'agent FairBot : ce lac
+`game_theory_lean` ; la version `formal_logic_lean` en est la lecture
+syntaxique. Comparaison : ici la conclusion est une égalité d'action
+(`fairBotAction box False = defect`) — le comportement du duel est déterminé ;
+là, une non-prouvabilité — l'information épistémique qui manque à ce côté.
+Deux forces distinctes, aucune ne contient l'autre. Axiomes atteints :
+propext, Classical.choice, Quot.sound. -/
 theorem fairBot_vs_defectBot (hconsis : ¬ box False) :
     fairBotAction box False = defect :=
   modalAction_false hconsis
@@ -439,7 +460,7 @@ sont fournies GRATUITEMENT par `every_instance_boxes_everything` — le
 corollaire `cupod_cupod_mutual_defect_degenerate` ci-dessous établit le
 (D, D) sans aucune hypothèse. La lecture « sous hypothèses nommées »
 décrit la VRAIE prouvabilité : là, un système cohérent ne prouve pas
-l'absence de preuve (2ᵉ théorème de Gödel), et c'est la contre-intuition
+l'absence de preuve (second théorème de Gödel), et c'est la contre-intuition
 que signale Critch : « CUPOD seems the nicer robot, yet it defects
 against itself. »
 

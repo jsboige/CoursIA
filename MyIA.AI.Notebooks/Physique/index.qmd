@@ -31,8 +31,6 @@ listing:
 ---
 
 ::: {.series-banner}
-# Physique — physique numérique et théorie des champs
-
 **En physique, un calcul numérique a une réponse.** Les équations y possèdent des
 solutions exactes, des identités de symétrie, des limites analytiques : autant de
 vérités établies hors du code, contre lesquelles un solveur se juge sans complaisance.

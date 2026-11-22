@@ -6,7 +6,7 @@ pagetitle: "Probas - Programmation Probabiliste"
 series: Probas
 pedagogical_count: 96
 breakdown: DecisionTheory=26, Infer=21, PyMC=20, Applications=12, Causalite=12, Fondations=4, root=1
-maturity: BETA=91, ALPHA=4, DRAFT=1
+maturity: BETA=94, ALPHA=1, DRAFT=1
 -->
 
 # Programmation probabiliste — des observations à la décision

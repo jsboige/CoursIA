@@ -135,6 +135,15 @@ Le dépôt utilise des services commerciaux, des modèles propriétaires et des 
 
 L’IA réduit le coût de génération. Elle ne réduit pas automatiquement le coût de vérification sémantique, d’attribution, d’exposition ou de maintenance. Lorsque le flux dépasse la revue, ralentir la publication peut constituer le progrès responsable.
 
+#### Témoin daté : le récit d’une communauté dépassée (2026)
+
+Une conférence de dix minutes de Jacob Tsimerman (The Curve, Golden Gate Institute for AI, 2026, [vidéo](https://www.youtube.com/watch?v=kbzIVh405r8)) documente cette tension de l’intérieur. Les citations ci-dessous proviennent d’une **transcription automatique non corrigée** (Whisper large-v3, 139 segments, contrôle des noms sur échantillon), conservée hors dépôt au gisement `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\AI and Mathematics - the October 2026 Release and its Reception\` (fichier `.md` horodaté et `.srt` du 2026-11-20). Elles sont citées comme témoignage daté, pas comme résultat vérifié ; la table de passages complète, avec marqueurs VERIFIE/RAPPORTE et rattachements ICT et Argumentum, est consignée dans #27536.
+
+- **[03:16–03:30]** « Major conjectures that would normally take years or decades to resolve are being resolved every day. Journals are overwhelmed, the conferences are overwhelmed, the archive is overwhelmed by the number of submissions. The field is not keeping up with the changes. »
+- **[01:12–01:32]** « AI is better than mathematicians at doing math. I have done math my whole life. And if I want to solve a math problem now, basically, no matter what it is, the fastest way for me to do it is to work with AI. It is not yet the case that AI is a replacement for me, but it is better than me. »
+
+**Lecture.** La première citation est le constat qui fonde cette tension : quand le flux dépasse la revue, ralentir la publication peut être le progrès responsable — la conférence décrit l’état que cette section refuse de lisser. La seconde est une nuance que nous retenons comme telle : l’orateur décrit un outil meilleur que lui et une collaboration qui bat chacun seul, pas un remplacement. Notre interprétation — que la vérification, l’attribution et la digestion restent le travail humain qui donne sa valeur à la vitesse — est un rapprochement motivé, jamais une thèse prêtée à l’orateur ; et les faits externes que celui-ci invoque (résolution de problèmes du millénaire, [02:44–03:04]) restent rapportés, non vérifiés par nous. Rien ici ne prétend que la conférence valide le travail du dépôt.
+
 ### Formalisation contre compréhension
 
 La formalisation rend des hypothèses et des dépendances inspectables. Elle peut aussi déplacer l’opacité vers les bibliothèques, les tactiques, les ponts de langage ou la sélection même de l’énoncé. Une preuve noyau-correcte n’est pas encore un cours.
