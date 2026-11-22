@@ -6,8 +6,8 @@ tirage separe deux temps qui etaient confondus :
 
 - la **rotation universelle** (`coordination.tapis_universel`) classe TOUTES
   les issues ouvertes sur leurs **metadonnees seules** et tourne la tete de
-  niveau. Elle n'ecarte rien : un conteneur ne passe jamais devant un grain
-  (#26926), et chaque grain servi porte son **etat** et l'**action** ;
+  niveau. Elle n'ecarte rien : chaque classe a son creneau de lecture
+  (19/11), et chaque grain servi porte son **etat** et l'**action** ;
 - la **qualification** (`coordination.tapis_qualification`) ne porte que sur
   le grain pris en charge : son corps, son **fil complet**, et la re-decision
   des neuf regles d'ecart, AVANT l'action.
@@ -29,7 +29,8 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_ancre, tapis_origami, tapis_rapide, tapis_rotation
+from coordination import (tapis_ancre, tapis_origami, tapis_public,
+                         tapis_rapide, tapis_rotation)
 from coordination import tapis_service, tapis_universel
 from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 
@@ -121,14 +122,9 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     debut = time.monotonic()
     classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
     ancres = tapis_ancre.lire(lane)
-    file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
-                                         grains, max(grains * CANDIDATS_MULT, grains),
-                                         lane, maintenant, ancres=ancres)
-    tapis_ancre.proposer(lane, "grains", fenetre["primaires"]["grains"],
-                          fenetre["reprises"]["grains"])
-    tapis_ancre.proposer(lane, "conteneurs",
-                          fenetre["primaires"]["conteneurs"],
-                          fenetre["reprises"]["conteneurs"])
+    file, fenetre = tapis_public.lot_public(
+        lane, classe["grains"], classe["conteneurs"], grains,
+        max(grains * CANDIDATS_MULT, grains), maintenant, ancres=ancres)
     secondes = time.monotonic() - debut
     phases = classe["phases"]
     # `tapis_origami.mesurer` est TOTAL : il rend un etat d'echec, jamais une

@@ -32,7 +32,12 @@ def a_retry(inc: dict, limite: int) -> list[int]:
 
 
 def membres_reprise(ordre: list, retenus: list, inc: dict, limite: int) -> list:
-    """Les membres a re-proposer, dans l'ordre du classement (entree).
+    """Les membres a re-proposer, les PLUS ANCIENS d'abord.
+
+    La FILE (l'ordre de parcage) prime sur le classement : un numero
+    parque et non relu doit tourner, sinon il occupe la tete du lot sans
+    jamais etre servi (mesure du 19/11 : les numeros 2, 4 et 6 restaient
+    parques derriere la primaire, aucun tour ne les servait).
 
     Un numero PARKÉ est servi a nouveau, sans doubbler les membres deja
     retenus par la tranche du tour.
@@ -40,4 +45,6 @@ def membres_reprise(ordre: list, retenus: list, inc: dict, limite: int) -> list:
     if not inc or limite <= 0:
         return []
     pris = {g.numero for g in retenus}
-    return [g for g in ordre if g.numero in inc and g.numero not in pris][:limite]
+    par_num = {g.numero: g for g in ordre}
+    return [par_num[n] for n in list(inc)
+            if n in par_num and n not in pris][:limite]

@@ -188,23 +188,30 @@ def test_une_arrivee_est_servie_sans_sauter_le_tour():
 def test_la_priorite_est_visible_a_la_sortie_du_bloc():
     """La rotation choisit QUOI servir ; l'ordre de PRIORITE reste visible.
 
-    Le classement d'entree (la priorite) est 3, 1, 4, 2 : le bloc doit
-    rendre ces numeros DANS cet ordre, pas dans l'ordre des numeros.
+    Le classement d'entree (la priorite) est 3, 1, 4, 2 : le bloc rend ces
+    numeros dans cet ordre -- SAUF la tete, qui est le **numero suivant le
+    curseur** (famine du 19/11 : la priorite gardait la meme tete a chaque
+    tranche et le curseur sautait par blocs entiers, 4 lus sur 80).
     """
     grains = _grains([(3, 9), (1, 8), (4, 7), (2, 6)])
     bloc, _ = tapis_rotation.bloc(grains, [], 4, 4, LANE, MAINTENANT,
                                    ancres={"grains": 0})
-    assert [g.numero for g in bloc] == [3, 1, 4, 2], \
-        "la priorite d'entree est l'ordre rendu"
+    assert [g.numero for g in bloc] == [1, 3, 4, 2], (
+        "la tete est le numero suivant le curseur, le reste garde la priorite")
 
 
 def test_une_ancre_inconnue_ne_s_acquitte_pas(tmp_path, monkeypatch):
     """Un fichier d'ancre illisible ne vaut pas zero : il vaut inconnu."""
     monkeypatch.setenv(tapis_ancre.ENV_ETAT, str(tmp_path))
+    # La PHASE (le compteur des propositions) et le COMMIT (le code qui a
+    # ecrit l'etat) font partie de l'etat : l'un commande l'alternance du
+    # lot, l'autre dit a quelle semantique l'etat appartient (19/11).
     inconnu = {"grains": {"ancre": None, "tour": 0, "attente": {},
-                          "inconnus": {}, "primaire": []},
+                          "inconnus": {}, "primaire": [], "phase": 0,
+                          "commit": None},
                "conteneurs": {"ancre": None, "tour": 0, "attente": {},
-                              "inconnus": {}, "primaire": []}}
+                              "inconnus": {}, "primaire": [], "phase": 0,
+                              "commit": None}}
     assert tapis_ancre.lire("myia-ai-01:CoursIA-2") == inconnu
     chemin = tapis_etat.chemin_etat("myia-ai-01:CoursIA-2")
     chemin.parent.mkdir(parents=True, exist_ok=True)
