@@ -458,12 +458,19 @@ REGISTRE: tuple[Entree, ...] = (
             # d'instrument, revelees par le correctif (46 -> 28 sur le meme
             # arbre). Le point reste dans la serie : l'increment REEL du
             # depot se lit 21 -> 28, pas 21 -> 46.
+            # Produit par l'instrument au merge de branche 0ed9229a
+            # (2026-11-15), sha mort au squash et non ancetre de main :
+            # comme pour les points 25 et 21 ci-dessus, le point declare
+            # l'identite RESOLVABLE de main -- le squash #26349
+            # (27e3e88afb, instrument byte-identique au merge, diff vide
+            # sur le fichier) -- ancetre de toute derivee du 2026-11-22.
             Reference(46.0, "2026-11-22",
                       "issue #23175, pouls du 2026-11-22 publie par "
-                      "l'organe sur #5081 (avant correctif kernel rust)",
+                      "l'organe sur #5081 (avant correctif kernel rust ; "
+                      "identite resoluble = squash 27e3e88afb)",
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
-                                  "@0ed9229a6b579541747f106ef93d405a7c377eb3")),
+                                  "@27e3e88afb76b73335b7651e064629573c96ec45")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
