@@ -167,6 +167,9 @@ python -c "import pysat; from importlib.metadata import version; print('python-s
 # test_run_gateway.py signalerait une dependance manquante au lieu
 # d'exercer le lanceur.
 pip install jupyter_kernel_gateway
+# trueskill: oracle independant des formes fermees du service Probas/Infer
+# (#27217). Le coeur reste en Python pur ; ce paquet sert uniquement aux tests.
+pip install "trueskill>=0.4.5,<1"
 # opentelemetry-sdk + pydantic + openai : trois paquets que ce job
 # consomme a l'import mais n'installait pas -- il ne passait que sur
 # les slots au toolcache chaud (residu d'installations d'autres
