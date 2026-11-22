@@ -1,6 +1,6 @@
 # Docker Configurations - GenAI Services
 
-Configurations Docker pour les services GenAI sur po-2023 : la table « Services » ci-dessous liste les services déployés avec port et URL ; le socle partagé non exposé vit sous `services/shared/`.
+Configurations Docker pour les services GenAI sur po-2023 : la table « Services » ci-dessous liste les services déployés avec port et URL ; le socle partagé non exposé vit sous `services/shared/`. La [pile d'apprentissage](learning/) (image JupyterLab du pli 1.2 + services optionnels par profil compose) vit sous `learning/`.
 
 ## Vue d'ensemble
 

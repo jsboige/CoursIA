@@ -1,0 +1,179 @@
+# Conformité différentielle de Argumentation-03-Dung-AF-Semantics (portage Rust).
+#
+# Portage cellule-par-cellule du jumeau Python : les 15 cellules de code
+# du Rust correspondent index-par-index aux 15 cellules du Python, et le
+# texte concaténé des sorties `stream` de chaque cellule est strictement
+# identique (tolerance 0, transform text, pattern ancre tout le texte).
+# Aucun jumeau C# n'existe dans le dépôt : le côté est déclaré absent sur
+# chaque mesure, mesuré à la génération (ls Argumentation-03-Dung* ne
+# retourne que Python et Rust).
+- name: "Argumentation-03-Dung-AF-Semantics"
+  family: "SymbolicAI/ArgumentAnalysis"
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Rust.ipynb
+  measures:
+    - id: c2_af_repr_attackers
+      description: "Cellule 2 : représentation de l'AF et attaquants de a"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c4_conflict_free
+      description: "Cellule 4 : test sans-conflit sur {a,b} et {a}"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c6_defense_witness
+      description: "Cellule 6 : témoin de défense de {a} pour a"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c8_admissibility
+      description: "Cellule 8 : admissibilité de ∅, {a}, {b}, {a b}"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c12_af1_semantics
+      description: "Cellule 12 : sémantiques grounded/preferred/stable sur af1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c14_af1_comparisons
+      description: "Cellule 14 : comparaisons grounded/preferred/stable sur af1"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c16_semistable_af1
+      description: "Cellule 16 : semi-stable sur af1 et coïncidence avec preferred"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c17_semistable_af3
+      description: "Cellule 17 : semi-stable/stable/preferred sur af3"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c20_ideal_semantics
+      description: "Cellule 20 : sémantique idéale sur af_id1 et af_id2"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c31_exercice_ideal
+      description: "Cellule 31 : stub exercice axe sceptique grounded / idéale / ∩preferred"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 31
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
+    - id: c33_grounded_trajectories
+      description: "Cellule 33 : deux trajectoires d'étiquetage grounded"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 33
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "pas de jumeau C# dans le dépôt"
