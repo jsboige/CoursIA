@@ -37,7 +37,10 @@ reste l'état mesuré au 2026-09-30 et ne décrit plus l'arbre courant. Ajout
 ponctuel 2026-11-13 : ligne `combinators_lean` (#25061, grain B du pli 4 de
 l'Epic Origami #19742 — confluence du système S/K/I par invocation de l'organe
 Mathlib `Relation.church_rosser`, pin `db584cd` v4.33.0, 0 sorry, témoin ICT-51),
-sans refresh complet des autres lignes.
+sans refresh complet des autres lignes. Ajout ponctuel 2026-11-16 : lake `linear_lean` (#24838 Fille 3.1 marche 1 — socle
+chapitres 1-2 d'Axler en marches `.lean`, Mathlib v4.33.0, 4 sorry-cibles
+d'exercices documentées, tranche FR seule, sans ligne du tableau ni refresh
+complet — au prochain refresh).
 
 ## Résumé
 
