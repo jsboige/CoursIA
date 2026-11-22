@@ -3,8 +3,22 @@
     "minicpm5_seed0",
     "minicpm5_seed1",
     "qwen35_seed0",
-    "qwen35_seed1"
+    "qwen35_seed1",
+    "qwen3_14b_seed0",
+    "qwen3_8b_seed0",
+    "qwen3_8b_seed1",
+    "qwen3_8b_seed7"
   ],
+  "aborted_runs": [],
+  "runs_sans_post_eval": [],
+  "runs_smoke": [
+    {
+      "model_key": "qwen3_14b",
+      "seed": 0,
+      "max_steps": 3
+    }
+  ],
+  "runs_partiels": [],
   "per_model": {
     "minicpm5": {
       "label": "MiniCPM5-2B",
@@ -16,7 +30,50 @@
       "deltas": [
         0.01875,
         0.025
-      ]
+      ],
+      "saturation": {
+        "verdict": "SIGNAL_PARTIEL",
+        "n_seeds": 2,
+        "graines_ids": [
+          0,
+          1
+        ],
+        "frac_steps_satures": 0.92,
+        "frac_steps_sans_gradient": 0.985,
+        "frac_steps_sans_signal": 0.53,
+        "frac_steps_recompense_nulle": 0.53,
+        "gain_eval_par_step_avec_gradient": 0.017188,
+        "gain_eval_par_step_comparable": true,
+        "steps_avec_gradient": 1.5,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.9,
+            "frac_steps_sans_gradient": 0.98,
+            "frac_steps_sans_signal": 0.62,
+            "frac_steps_recompense_nulle": 0.62,
+            "steps_avec_gradient": 2
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.94,
+            "frac_steps_sans_gradient": 0.99,
+            "frac_steps_sans_signal": 0.44,
+            "frac_steps_recompense_nulle": 0.44,
+            "steps_avec_gradient": 1
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_PARTIEL",
+          "frac_steps_satures": 0.92,
+          "frac_steps_sans_gradient": 0.985,
+          "steps_avec_gradient": 1.5,
+          "gain_eval_par_step_avec_gradient": 0.017188
+        },
+        "concordant": true
+      }
     },
     "qwen35": {
       "label": "Qwen3.5-0.8B",
@@ -28,7 +85,116 @@
       "deltas": [
         0.0,
         0.0125
-      ]
+      ],
+      "saturation": {
+        "verdict": "SIGNAL_NUL",
+        "n_seeds": 2,
+        "graines_ids": [
+          0,
+          1
+        ],
+        "frac_steps_satures": 0.97,
+        "frac_steps_sans_gradient": 0.995,
+        "frac_steps_sans_signal": 0.62,
+        "frac_steps_recompense_nulle": 0.62,
+        "gain_eval_par_step_avec_gradient": null,
+        "gain_eval_par_step_comparable": false,
+        "steps_avec_gradient": 0.5,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_NUL",
+            "frac_steps_satures": 0.95,
+            "frac_steps_sans_gradient": 1.0,
+            "frac_steps_sans_signal": 0.68,
+            "frac_steps_recompense_nulle": 0.68,
+            "steps_avec_gradient": 0
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_NUL",
+            "frac_steps_satures": 0.99,
+            "frac_steps_sans_gradient": 0.99,
+            "frac_steps_sans_signal": 0.56,
+            "frac_steps_recompense_nulle": 0.56,
+            "steps_avec_gradient": 1
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_NUL",
+          "frac_steps_satures": 0.97,
+          "frac_steps_sans_gradient": 0.995,
+          "steps_avec_gradient": 0.5,
+          "gain_eval_par_step_avec_gradient": null
+        },
+        "concordant": true
+      }
+    },
+    "qwen3_8b": {
+      "label": "Qwen3-8B",
+      "n_seeds": 3,
+      "pre_mean": 0.04791666666666666,
+      "post_mean": 0.09999999999999999,
+      "delta_mean": 0.052083333333333336,
+      "delta_std": 0.02901747557746691,
+      "deltas": [
+        0.0625,
+        0.08124999999999999,
+        0.012500000000000004
+      ],
+      "saturation": {
+        "verdict": "SIGNAL_PARTIEL",
+        "n_seeds": 3,
+        "graines_ids": [
+          0,
+          1,
+          7
+        ],
+        "frac_steps_satures": 0.65,
+        "frac_steps_sans_gradient": 0.79,
+        "frac_steps_sans_signal": 0.48,
+        "frac_steps_recompense_nulle": 0.45,
+        "gain_eval_par_step_avec_gradient": 0.002604,
+        "gain_eval_par_step_comparable": true,
+        "steps_avec_gradient": 21,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.64,
+            "frac_steps_sans_gradient": 0.76,
+            "frac_steps_sans_signal": 0.48,
+            "frac_steps_recompense_nulle": 0.45,
+            "steps_avec_gradient": 24
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.65,
+            "frac_steps_sans_gradient": 0.79,
+            "frac_steps_sans_signal": 0.47,
+            "frac_steps_recompense_nulle": 0.38,
+            "steps_avec_gradient": 21
+          },
+          {
+            "graine": 7,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.83,
+            "frac_steps_sans_gradient": 0.88,
+            "frac_steps_sans_signal": 0.63,
+            "frac_steps_recompense_nulle": 0.61,
+            "steps_avec_gradient": 12
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_PARTIEL",
+          "frac_steps_satures": 0.65,
+          "frac_steps_sans_gradient": 0.79,
+          "steps_avec_gradient": 21,
+          "gain_eval_par_step_avec_gradient": 0.002604
+        },
+        "concordant": true
+      }
     }
   },
   "verdict": {
@@ -37,5 +203,384 @@
     "delta_intervals_disjoint": true,
     "beats": true,
     "rule": "BEATS si courbes MiniCPM5 saines (post>pre par seed, pas d'effondrement de longueur) ET delta eval moyen > qwen avec intervalles \u00b11std disjoints (\u22652 seeds par mod\u00e8le)"
+  },
+  "saturation": {
+    "disponible": true,
+    "par_bras": {
+      "minicpm5": {
+        "verdict": "SIGNAL_PARTIEL",
+        "n_seeds": 2,
+        "graines_ids": [
+          0,
+          1
+        ],
+        "frac_steps_satures": 0.92,
+        "frac_steps_sans_gradient": 0.985,
+        "frac_steps_sans_signal": 0.53,
+        "frac_steps_recompense_nulle": 0.53,
+        "gain_eval_par_step_avec_gradient": 0.017188,
+        "gain_eval_par_step_comparable": true,
+        "steps_avec_gradient": 1.5,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.9,
+            "frac_steps_sans_gradient": 0.98,
+            "frac_steps_sans_signal": 0.62,
+            "frac_steps_recompense_nulle": 0.62,
+            "steps_avec_gradient": 2
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.94,
+            "frac_steps_sans_gradient": 0.99,
+            "frac_steps_sans_signal": 0.44,
+            "frac_steps_recompense_nulle": 0.44,
+            "steps_avec_gradient": 1
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_PARTIEL",
+          "frac_steps_satures": 0.92,
+          "frac_steps_sans_gradient": 0.985,
+          "steps_avec_gradient": 1.5,
+          "gain_eval_par_step_avec_gradient": 0.017188
+        },
+        "concordant": true
+      },
+      "qwen35": {
+        "verdict": "SIGNAL_NUL",
+        "n_seeds": 2,
+        "graines_ids": [
+          0,
+          1
+        ],
+        "frac_steps_satures": 0.97,
+        "frac_steps_sans_gradient": 0.995,
+        "frac_steps_sans_signal": 0.62,
+        "frac_steps_recompense_nulle": 0.62,
+        "gain_eval_par_step_avec_gradient": null,
+        "gain_eval_par_step_comparable": false,
+        "steps_avec_gradient": 0.5,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_NUL",
+            "frac_steps_satures": 0.95,
+            "frac_steps_sans_gradient": 1.0,
+            "frac_steps_sans_signal": 0.68,
+            "frac_steps_recompense_nulle": 0.68,
+            "steps_avec_gradient": 0
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_NUL",
+            "frac_steps_satures": 0.99,
+            "frac_steps_sans_gradient": 0.99,
+            "frac_steps_sans_signal": 0.56,
+            "frac_steps_recompense_nulle": 0.56,
+            "steps_avec_gradient": 1
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_NUL",
+          "frac_steps_satures": 0.97,
+          "frac_steps_sans_gradient": 0.995,
+          "steps_avec_gradient": 0.5,
+          "gain_eval_par_step_avec_gradient": null
+        },
+        "concordant": true
+      },
+      "qwen3_8b": {
+        "verdict": "SIGNAL_PARTIEL",
+        "n_seeds": 3,
+        "graines_ids": [
+          0,
+          1,
+          7
+        ],
+        "frac_steps_satures": 0.65,
+        "frac_steps_sans_gradient": 0.79,
+        "frac_steps_sans_signal": 0.48,
+        "frac_steps_recompense_nulle": 0.45,
+        "gain_eval_par_step_avec_gradient": 0.002604,
+        "gain_eval_par_step_comparable": true,
+        "steps_avec_gradient": 21,
+        "graines": [
+          {
+            "graine": 0,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.64,
+            "frac_steps_sans_gradient": 0.76,
+            "frac_steps_sans_signal": 0.48,
+            "frac_steps_recompense_nulle": 0.45,
+            "steps_avec_gradient": 24
+          },
+          {
+            "graine": 1,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.65,
+            "frac_steps_sans_gradient": 0.79,
+            "frac_steps_sans_signal": 0.47,
+            "frac_steps_recompense_nulle": 0.38,
+            "steps_avec_gradient": 21
+          },
+          {
+            "graine": 7,
+            "verdict": "SIGNAL_PARTIEL",
+            "frac_steps_satures": 0.83,
+            "frac_steps_sans_gradient": 0.88,
+            "frac_steps_sans_signal": 0.63,
+            "frac_steps_recompense_nulle": 0.61,
+            "steps_avec_gradient": 12
+          }
+        ],
+        "organe": {
+          "verdict": "SIGNAL_PARTIEL",
+          "frac_steps_satures": 0.65,
+          "frac_steps_sans_gradient": 0.79,
+          "steps_avec_gradient": 21,
+          "gain_eval_par_step_avec_gradient": 0.002604
+        },
+        "concordant": true
+      }
+    },
+    "source": "scripts/analyse_dapo_saturation.py",
+    "tous_concordants": true,
+    "reponse_au_reward_agreggee_par_l_organe": true
+  },
+  "tiers": {
+    "tiers": {
+      "0.8-2B": {
+        "models": [
+          "minicpm5",
+          "qwen35"
+        ],
+        "n_models": 2,
+        "n_seeds": 4,
+        "delta_mean": 0.014062499999999999,
+        "delta_std": 0.00924387466109315,
+        "per_model_delta_mean": {
+          "minicpm5": 0.021875,
+          "qwen35": 0.00625
+        },
+        "courbes_saines": {
+          "minicpm5": true,
+          "qwen35": false
+        },
+        "toutes_courbes_saines": false,
+        "saturation": {
+          "par_bras": {
+            "minicpm5": {
+              "verdict": "SIGNAL_PARTIEL",
+              "n_seeds": 2,
+              "graines_ids": [
+                0,
+                1
+              ],
+              "frac_steps_satures": 0.92,
+              "frac_steps_sans_gradient": 0.985,
+              "frac_steps_sans_signal": 0.53,
+              "frac_steps_recompense_nulle": 0.53,
+              "gain_eval_par_step_avec_gradient": 0.017188,
+              "gain_eval_par_step_comparable": true,
+              "steps_avec_gradient": 1.5,
+              "graines": [
+                {
+                  "graine": 0,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.9,
+                  "frac_steps_sans_gradient": 0.98,
+                  "frac_steps_sans_signal": 0.62,
+                  "frac_steps_recompense_nulle": 0.62,
+                  "steps_avec_gradient": 2
+                },
+                {
+                  "graine": 1,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.94,
+                  "frac_steps_sans_gradient": 0.99,
+                  "frac_steps_sans_signal": 0.44,
+                  "frac_steps_recompense_nulle": 0.44,
+                  "steps_avec_gradient": 1
+                }
+              ],
+              "organe": {
+                "verdict": "SIGNAL_PARTIEL",
+                "frac_steps_satures": 0.92,
+                "frac_steps_sans_gradient": 0.985,
+                "steps_avec_gradient": 1.5,
+                "gain_eval_par_step_avec_gradient": 0.017188
+              },
+              "concordant": true
+            },
+            "qwen35": {
+              "verdict": "SIGNAL_NUL",
+              "n_seeds": 2,
+              "graines_ids": [
+                0,
+                1
+              ],
+              "frac_steps_satures": 0.97,
+              "frac_steps_sans_gradient": 0.995,
+              "frac_steps_sans_signal": 0.62,
+              "frac_steps_recompense_nulle": 0.62,
+              "gain_eval_par_step_avec_gradient": null,
+              "gain_eval_par_step_comparable": false,
+              "steps_avec_gradient": 0.5,
+              "graines": [
+                {
+                  "graine": 0,
+                  "verdict": "SIGNAL_NUL",
+                  "frac_steps_satures": 0.95,
+                  "frac_steps_sans_gradient": 1.0,
+                  "frac_steps_sans_signal": 0.68,
+                  "frac_steps_recompense_nulle": 0.68,
+                  "steps_avec_gradient": 0
+                },
+                {
+                  "graine": 1,
+                  "verdict": "SIGNAL_NUL",
+                  "frac_steps_satures": 0.99,
+                  "frac_steps_sans_gradient": 0.99,
+                  "frac_steps_sans_signal": 0.56,
+                  "frac_steps_recompense_nulle": 0.56,
+                  "steps_avec_gradient": 1
+                }
+              ],
+              "organe": {
+                "verdict": "SIGNAL_NUL",
+                "frac_steps_satures": 0.97,
+                "frac_steps_sans_gradient": 0.995,
+                "steps_avec_gradient": 0.5,
+                "gain_eval_par_step_avec_gradient": null
+              },
+              "concordant": true
+            }
+          },
+          "frac_satures_moyenne_bras": 0.9450000000000001
+        }
+      },
+      "8-14B": {
+        "models": [
+          "qwen3_8b"
+        ],
+        "n_models": 1,
+        "n_seeds": 3,
+        "delta_mean": 0.052083333333333336,
+        "delta_std": 0.02901747557746691,
+        "per_model_delta_mean": {
+          "qwen3_8b": 0.052083333333333336
+        },
+        "courbes_saines": {
+          "qwen3_8b": true
+        },
+        "toutes_courbes_saines": true,
+        "saturation": {
+          "par_bras": {
+            "qwen3_8b": {
+              "verdict": "SIGNAL_PARTIEL",
+              "n_seeds": 3,
+              "graines_ids": [
+                0,
+                1,
+                7
+              ],
+              "frac_steps_satures": 0.65,
+              "frac_steps_sans_gradient": 0.79,
+              "frac_steps_sans_signal": 0.48,
+              "frac_steps_recompense_nulle": 0.45,
+              "gain_eval_par_step_avec_gradient": 0.002604,
+              "gain_eval_par_step_comparable": true,
+              "steps_avec_gradient": 21,
+              "graines": [
+                {
+                  "graine": 0,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.64,
+                  "frac_steps_sans_gradient": 0.76,
+                  "frac_steps_sans_signal": 0.48,
+                  "frac_steps_recompense_nulle": 0.45,
+                  "steps_avec_gradient": 24
+                },
+                {
+                  "graine": 1,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.65,
+                  "frac_steps_sans_gradient": 0.79,
+                  "frac_steps_sans_signal": 0.47,
+                  "frac_steps_recompense_nulle": 0.38,
+                  "steps_avec_gradient": 21
+                },
+                {
+                  "graine": 7,
+                  "verdict": "SIGNAL_PARTIEL",
+                  "frac_steps_satures": 0.83,
+                  "frac_steps_sans_gradient": 0.88,
+                  "frac_steps_sans_signal": 0.63,
+                  "frac_steps_recompense_nulle": 0.61,
+                  "steps_avec_gradient": 12
+                }
+              ],
+              "organe": {
+                "verdict": "SIGNAL_PARTIEL",
+                "frac_steps_satures": 0.65,
+                "frac_steps_sans_gradient": 0.79,
+                "steps_avec_gradient": 21,
+                "gain_eval_par_step_avec_gradient": 0.002604
+              },
+              "concordant": true
+            }
+          },
+          "frac_satures_moyenne_bras": 0.65
+        }
+      }
+    },
+    "cross_tier": {
+      "comparable": true,
+      "tier_bas": "0.8-2B",
+      "tier_haut": "8-14B",
+      "n_seeds": {
+        "0.8-2B": 4,
+        "8-14B": 3
+      },
+      "delta_intervals_disjoint": false,
+      "beats": false,
+      "regle": "comparaison inter-etage : deux etages, >= 2 graines chacun, delta moyen de l'etage haut > etage bas avec intervalles +-1 std disjoints, et courbes saines des deux cotes"
+    }
+  },
+  "pairs": {
+    "minicpm5_vs_qwen35": {
+      "curves_healthy": {
+        "minicpm5": true,
+        "qwen35": false
+      },
+      "delta_intervals_disjoint": true,
+      "beats": true,
+      "higher_delta": "minicpm5",
+      "rule": "BEATS si courbes MiniCPM5-2B saines (post>pre par seed, pas d'effondrement de longueur) ET delta eval moyen > Qwen3.5-0.8B avec intervalles +-1std disjoints (>=2 seeds par modele)"
+    },
+    "minicpm5_vs_qwen3_8b": {
+      "curves_healthy": {
+        "minicpm5": true,
+        "qwen3_8b": true
+      },
+      "delta_intervals_disjoint": false,
+      "beats": false,
+      "higher_delta": "qwen3_8b",
+      "rule": "BEATS si courbes MiniCPM5-2B saines (post>pre par seed, pas d'effondrement de longueur) ET delta eval moyen > Qwen3-8B avec intervalles +-1std disjoints (>=2 seeds par modele)"
+    },
+    "qwen35_vs_qwen3_8b": {
+      "curves_healthy": {
+        "qwen35": false,
+        "qwen3_8b": true
+      },
+      "delta_intervals_disjoint": false,
+      "beats": false,
+      "higher_delta": "qwen3_8b",
+      "rule": "BEATS si courbes Qwen3.5-0.8B saines (post>pre par seed, pas d'effondrement de longueur) ET delta eval moyen > Qwen3-8B avec intervalles +-1std disjoints (>=2 seeds par modele)"
+    }
   }
 }

@@ -1,5 +1,6 @@
 """Conftest : ajoute scripts/ au sys.path pour les imports des tests."""
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -32,6 +33,49 @@ class ShellEscape(BaseException):
     VIDE presente comme une mesure -- exactement le vert muet que la
     sentinelle existe pour empecher.
     """
+
+
+@pytest.fixture
+def bash() -> str:
+    """Bash capable d'exécuter les scripts du dépôt depuis un process natif.
+
+    Sous Windows, le ``bash`` du PATH peut être celui de WSL (System32), qui
+    ne monte pas les chemins ``D:/`` du worktree ; le bash de Git pour
+    Windows (``bin/bash.exe``) initialise son contexte msys seul. Ailleurs
+    (Linux, CI), ``bash`` du PATH suffit. Issue #27685.
+    """
+    if os.name != "nt":
+        return "bash"
+    for env_var, fallback in (("ProgramFiles", r"C:\Program Files"),
+                              ("ProgramFiles(x86)", r"C:\Program Files (x86)")):
+        candidate = Path(os.environ.get(env_var) or fallback) / "Git" / "bin" / "bash.exe"
+        if candidate.is_file():
+            return str(candidate)
+    return shutil.which("bash") or "bash"
+
+
+@pytest.fixture
+def stub_as_function():
+    """Windows : expose les stubs bash comme fonctions via BASH_ENV.
+
+    msys place /usr/bin AVANT le PATH hérité : un stub portant le nom d'un
+    coreutil (mkdir, mv, uname, python3) est toujours masqué par le vrai.
+    BASH_ENV est sourcé par tout bash non interactif et une fonction gagne
+    sur la résolution PATH (issue #27685). Sans effet ailleurs.
+    """
+    def _install(commands: Path, names: tuple, env: dict) -> None:
+        if os.name != "nt":
+            return
+        lines = [
+            "# Généré par les tests : stubs prioritaires sur les coreutils",
+            "# msys, toujours premiers dans le PATH hérité (issue #27685).",
+        ]
+        for name in names:
+            lines.append(f'{name}() {{ "{(commands / name).as_posix()}" "$@"; }}')
+        env_file = commands / "stub_functions.sh"
+        env_file.write_text("\n".join(lines) + "\n", newline="\n")
+        env["BASH_ENV"] = env_file.as_posix()
+    return _install
 
 
 @pytest.fixture
