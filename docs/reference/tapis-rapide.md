@@ -324,6 +324,44 @@ jamais visités occupent la place d'autres grains quand ils remplissent le tour)
 code — `ORIGAMI`, `PLAFOND`, `RECLAMEE`, `LIVREE` — reste hors du tapis, par construction. L'organe compte
 désormais les issues dont le fil est tronqué et que le tirage re-décidera au service (`redecider_au_service`).
 
+## L'assiette du pool : feuilles contre conteneurs (#25082)
+
+Le triage fait son travail ; ce qui peut le rendre stérile, c'est la **composition** du pool. Au tirage du
+21/11 (lecture de 07:54Z, lane `myia-ai-01:CoursIA-2`), 40 issues étaient servables sur 475 : **36
+conteneurs et 4 feuilles**. Le « conteneur » du tapis est plus large que le label `EPIC` — c'est aussi
+l'umbrella et l'issue qui a des filles ouvertes — d'où l'écart avec le compte en label (28 EPIC sur 29
+servables, mesuré par le coordinateur sur sa propre lane).
+
+Un conteneur ne se sert pas comme une feuille : il demande la lecture du fil entier, une tranche bornée par
+`paths:` et une PR. Servi sans subdivision, il ne produit rien. `scripts/coordination/tapis_assiette.py`
+mesure cette composition aux deux niveaux :
+
+- **le pool** (`--draw <tirage.json>`) : feuilles et conteneurs du pool, et surtout **où les feuilles se
+  perdent** — le code d'écart qui en retient le plus ;
+- **le service** (`--stat`) : ce que le service effectif a réellement servi, tirage par tirage, sur le même
+  magasin que l'acceptance de #25082 (`coordination/tirage_journal`).
+
+Le tirage porte désormais la mesure : `lecture.servables_feuilles` et `lecture.servables_conteneurs`, et
+chaque entrée d'`ecartees` dit si l'issue écartée est une feuille (`"feuille": true|false`). Un tirage
+antérieur à cette mesure ne porte pas le flag : ses entrées sont comptées à part, jamais assimilées à des
+feuilles.
+
+Mesure du 21/11 (lecture de 07:54Z) : 356 feuilles et 119 conteneurs lus, dont **4 feuilles servables**,
+soit 1,1 % des feuilles. Les feuilles retenues par code d'écart : `COUVERTE` 97, `MERGEE` 95, `LIVREE` 61,
+`LABEL` 47, `RECLAMEE` 25, `RELACHEE` 14, `HORSFLOTTE` 9, `GEL` 4 ; sur cette lecture `PLAFOND` n'écarte
+que des conteneurs (62) et aucune feuille. Cette lecture est double : `COUVERTE` et `MERGEE` ne sont pas
+des défunts — ce sont les issues dont la PR citée attend la revue ou la clôture, rôles déjà attribués par
+`visit_coverage.py` ; le tapis n'a pas à les reprendre.
+
+L'organe ne fixe **aucun seuil** : la mesure est un fait, la politique d'assiette appartient au
+coordinateur. Ce qu'il donne, c'est le levier — déplier un conteneur (tranche avec `paths:`, PR, résidus en
+issues filles d'une ligne) rend des feuilles au pool.
+
+```bash
+python scripts/coordination/tapis_assiette.py --draw <tirage.json> [--json]
+python scripts/coordination/tapis_assiette.py --stat [--journal <chemin>] [--json]
+```
+
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 
 - Le **bandit de fermeture par zone** : la variété vient du tour de rôle par famille dans un niveau et du décalage par lane.

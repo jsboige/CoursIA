@@ -46,11 +46,6 @@
           "version": "3.0.5",
           "decision": "to_converge",
           "reason": "Aucun motif ecrit ne l'impose : les carnets concernes portent une version anterieure sans contrainte documentee (le recensement les nomme). La convergence est une montee d'epinglage suivie d'une re-execution (regle C.2). Suivi : #27787."
-        },
-        {
-          "version": "3.2.1",
-          "decision": "to_converge",
-          "reason": "Epinglage superieur a la canonique, mesure le 2026-11-21 dans un carnet de recherche (`GenAI/_research/RAG04-BPE-Parite-Natif-vs-Qwen-CSharp.ipynb`). Aucun motif ecrit : soit la canonique monte avec preuve, soit le carnet redescend a 3.1.0. Suivi : #27787."
         }
       ]
     },
