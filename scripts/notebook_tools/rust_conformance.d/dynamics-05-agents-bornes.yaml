@@ -28,6 +28,15 @@
 #
 # Le triplet Python/Rust est verifie cellule a cellule : stdout identique au
 # caractere pres sur les 11 cellules de code (0 divergence).
+#
+# Base de cette comparaison (22/11, myia-ai-01:CoursIA-2) : une PASSE evcxr
+# REELLE du carnet Rust (kernel `rust`, papermill), et non une copie de
+# l'artefact Python. Une cellule evcxr dont la derniere forme est une
+# expression (bloc `for ... { }`, `if ... { }`) emet un `execute_result` `()`
+# que le jumeau Python n'a pas : les cinq cellules concernees (6, 12, 17, 19,
+# 32) sont donc terminees par `;`, ce qui fait du bloc une instruction.
+# Sans ce `;`, la comparaison Rust/Python echoue sur une ligne de trop par
+# cellule -- et le carnet doit porter cette convention, pas la comparaison.
 - name: "Dynamics-05 Agents-Bornes"
   family: GameTheory/Dynamics
   python: MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb
