@@ -181,9 +181,12 @@ jobs:
       # Le graphe du cursus est un artefact dérivé du catalogue, validé par
       # SHACL. Étape à part : un export refusé par les formes est nommé dans
       # le journal du job et n'interrompt pas la génération des autres
-      # artefacts de l'étape précédente.
+      # artefacts de l'étape précédente. Les taxonomies de concepts
+      # (docs/curriculum/taxonomy) sont fusionnées en concepts seuls depuis
+      # #25001 : prérequis interrogeables, la structure reste celle du
+      # catalogue.
       - name: Export the curriculum graph (Turtle, SHACL-validated)
-        run: python scripts/notebook_tools/generate_curriculum_rdf.py --output CURRICULUM.generated.ttl
+        run: python scripts/notebook_tools/generate_curriculum_rdf.py --output CURRICULUM.generated.ttl --taxonomy-dir docs/curriculum/taxonomy
 
       - name: Commit + push to chore/catalog-refresh-pending if the catalog drifted
         id: drift

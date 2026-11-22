@@ -367,6 +367,7 @@ Search/
 │   ├── Search-03c-LimitedDiscrepancySearch.ipynb
 │   ├── Search-03d-WeightedAstar.ipynb
 │   ├── Search-12a-Composer-Regards.ipynb       # Composer des regards : play forward x coplay backward, corridor optimal f*=g+d (op 12 #12204)
+│   ├── Search-13-AutomaticGroups-WordProblem.ipynb   # Groupes automatiques : le problème du mot décidé par automate (op 13, See #25674)
 │   └── Search-13a-Traverser-Murs-Certifies.ipynb   # Traverser un mur : chemin minimal certifié (potentiels, 0-1 BFS, flot max/coupure min) sur pavage hexagonal (op 13 #12204)
 │
 ├── Part2-CSP/                             # Programmation par Contraintes (Python + jumeaux C#, marathon #4956 achevé)
@@ -599,6 +600,7 @@ flowchart LR
         S3["Search-3<br/>A* + heuristique<br/>admissible"]
         S14["Search-14<br/>Weighted A*<br/>Pohl 1970"]
         S12["Search-12<br/>Pattern DB<br/>additives"]
+        S13["Search-13<br/>groupes automatiques<br/>problème du mot"]
         S6["Search-6<br/>Minimax / Alpha-Beta"]
         S7["Search-7<br/>MCTS + UCB1"]
     end
@@ -613,6 +615,7 @@ flowchart LR
     S3 -.->|"admissibilité ⟹<br/>optimalité"| LA
     S14 -.->|"pondération W<br/>bornée par"| LA
     S12 -.->|"PDB additives<br/>(Korf 2002)"| LA
+    S13 -.->|"automates ⟹<br/>problème du mot"| LA
     S6 -.->|"valeur de position<br/>+ élagage"| LG
     S7 -.->|"UCB1 + borne<br/>regret cumulé"| LP
     SIM -.->|"simulation<br/>ML.NET / Python"| LEAN
