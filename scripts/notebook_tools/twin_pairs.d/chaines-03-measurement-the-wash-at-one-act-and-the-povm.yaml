@@ -1,0 +1,13 @@
+- name: "Chaines-03 Measurement the wash at one act and the POVM"
+  family: Physique/Chaines
+  python: MyIA.AI.Notebooks/Physique/Chaines/Chaines-03-Mesure-Lavage-POVM-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Chaines/Chaines-03-Mesure-Lavage-POVM-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : le contenu porte sur le corps a deux docks (eq. 59-60 : S1 = 1350, les quatre comptes de paires 863298 / -863298 / 94608 / 1296 refermes par 1350^2), les quatre secteurs cites de l'espace des enregistrements (24 + 18 + 12 + 3 = N = 57), le swap d'intrication aux quatre issues de Weyl et la trine complete. Python calcule les compteurs en entiers natifs mais le swap et la trine en numpy complexe flottant verifie par allclose ; C# derive tout en arithmetique exacte : System.Numerics.BigInteger, type local Rationnel (rationnel reduit), entiers d'Eisenstein Z[zeta] (Eis/EisQ) pour la trine, swap a l'echelle entiere (probabilite entiere 4, purete Tr(M^2)/p^2, plat M_A = (p/2) I_2 entree par entree, fidelite w^T M w / (2p)), et un certificat de positivite sans spectre (hermitien exact + det = 0 + trace = 2/3 -> spectre {0, 2/3}). Aucun moteur externe canonique ne produit ces resultats : les deux cotes derivent les memes valeurs."
+  known_differences:
+    - "C# calcule tout en arithmetique exacte (System.Numerics.BigInteger, Rationnel reduit, entiers d'Eisenstein Z[zeta]) la ou la source Python emploie des entiers natifs pour les compteurs mais numpy complexe flottant avec allclose pour le swap d'intrication et la trine ; les valeurs (1350, 863298, -863298, 94608, 1296, 1822500, proba 1/4, purete 1, plat, fidelite 1, spectre {0, 2/3}, probas 1/3-1/3-1/3 et 2/3-1/6-1/6) coincident."
+    - "C# etablit chaque conformite par une assertion executable Exige.Que qui leve si la valeur differe (22 au total) : la source Python imprime des booleens numpy allclose sans levee d'exception d'aucun cote."
+    - "Les comptes cites (secteurs 24/18/12/3, N = 57, face de Born Z = 96, G_2(2,2) = 5216 + 5216 sqrt(2)) restent des donnees CITEES marquees comme telles des deux cotes ; C# imprime G_2 en forme exacte de Z[sqrt(2)], jamais en double."
+    - "Les trois exercices sont des stubs compilables a TODO etudiant cote C#, des cellules d'exercice a completer cote Python ; aucune solution n'est revelee d'un cote ni de l'autre."
+    - "BCL seulement cote C# (System, System.Collections.Generic, System.Globalization, System.Linq, System.Numerics) ; aucun NuGet, aucun appel externe, aucune figure."
