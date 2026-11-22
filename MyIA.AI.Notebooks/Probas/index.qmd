@@ -79,8 +79,6 @@ listing:
 ---
 
 ::: {.series-banner}
-# Probas — Programmation probabiliste et théorie de la décision
-
 **L'incertitude n'est pas l'absence d'information, c'est une distribution.** Cette série forme sur deux axes complémentaires : **inférer** des distributions (Infer.NET message passing vs PyMC NUTS, sur les mêmes modèles : Gaussian Mixtures, IRT, TrueSkill, LDA, HMM, Kalman) et **décider** face à l'incertitude (utility espérée, MDPs, bandits, indice de Gittins — avec **preuves formelles Lean 4** pour les identités théoriques). À la fin, vous maîtrisez la boîte à outils probabiliste complète et vous savez **prouver formellement** les résultats clefs.
 :::
 
