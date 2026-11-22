@@ -1,0 +1,13 @@
+- name: "Metajeux-4 Chemin-Minimal-Robinson-Goforth"
+  family: GameTheory/Metajeux
+  python: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire from-scratch/from-scratch sans lib-vs-lib : les jeux ordinaux 2x2 de Robinson-Goforth, le BFS du chemin minimal, le verificateur exhaustif independant et le comptage geodesique sont implantes idiomatiquement des deux cotes (stdlib Python vs BCL/LINQ C#, 0 NuGet), aucune bibliotheque canonique de la theorie des jeux formels n'existe ni dans la stdlib Python ni dans la BCL .NET. Port 1:1 : 47 cellules/47, 17 cellules code aux memes indices ; execution reelle kernel .net-csharp 17/17 0 erreur (execution_count sequentiel) ; parite numerique valeur par valeur sur les 7 sections (75/24/51/5625/576, 576 chambres degre 6 diametre 12 + distribution, chemins minimaux PD, geodesiques 5625 sommets, traverses de mur, SPE forme extensive) verifiee contre les sorties committes du jumeau Python. Les deux refus precedents du batch auto de verification sont adresses : (1) parite numerique re-etablie ; (2) les 4 cellules d'exercices (39/41/43/45) livrees en stubs compilables TODO etudiant SANS solution revelee ; (3) le verificateur independant est APPELE dans la cellule qui le demande, pas seulement defini. parity_level: semantic (meme contenu mathematique, API idiomatique differente). Issue #27499, PR a venir."
+
+  known_differences:
+    - "Commentaires : `#` (Python) → `//` (C#) ; pas d'impact sur la semantique."
+    - "Formatage numerique : le port impose `CultureInfo.InvariantCulture` sur les conversions double→string pour garantir des sorties reproductibles independamment de la locale de la machine (le Python affiche en notation locale par defaut) ; les valeurs sont rigoureusement identiques."
+    - "BFS sans sentinelle : le port C# evite `Dictionary` de valeurs nullable (CS1950/CS1503) en utilisant un `HashSet` de deja-visites + un dictionnaire de predecesseurs separé ; parcours et distances identiques au BFS Python."
+    - "Sorties francisées : les chaines d'affichage (libelles des verdicts, en-tetes de table) sont en français des deux cotes ; les valeurs numeriques et les structures de donnees sont identiques."
