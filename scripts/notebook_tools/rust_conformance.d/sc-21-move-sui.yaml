@@ -1,0 +1,107 @@
+# Conformite differentielle de SC-21-Move-Sui (portage Rust std, spec #27983, lot #27982).
+#
+# Ecrit a la livraison depuis les sorties COMMITEES des carnets : correspondance
+# par index de cellule (le portage garde la structure 23 cellules du jumeau
+# Python), une mesure par cellule code, egalite stricte du texte.
+# Cellule 14 : l'ordre des elements d'un set Python depend de PYTHONHASHSEED
+# (preuve C de la spec) -- la mesure porte les queues stables (apres le
+# premier "->"), hors contenu des accolades ; le port ecrit l'ordre commite,
+# ce qui donne de plus l'egalite octet pour octet (verifiee a la livraison).
+# Pas de jumeau C# dans le depot pour SmartContracts : cote declare absent.
+# A corriger A LA MAIN si une divergence est un ecart documente ; le fichier
+# n'est jamais reecrit par l'outil une fois present.
+- name: "SC-21-Move-Sui"
+  family: "SymbolicAI/SmartContracts"
+  python: MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-21-Move-Sui-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-21-Move-Sui-Rust.ipynb
+  measures:
+    - id: c4_module_coin
+      description: "Sortie de la cellule 4 (en-tete + module Move Coin, 1428 caracteres), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Pas de jumeau C# dans le depot (serie SmartContracts : paire Python/Rust seulement, spec #27983) ; la comparaison stricte porte sur Python et Rust."
+    - id: c7_module_nft
+      description: "Sortie de la cellule 7 (en-tete + module Move NFT, 1314 caracteres), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 7
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Pas de jumeau C# dans le depot (serie SmartContracts : paire Python/Rust seulement, spec #27983) ; la comparaison stricte porte sur Python et Rust."
+    - id: c10_simulator
+      description: "Sortie de la cellule 10 (5 lignes du stub SuiObjectSimulator), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Pas de jumeau C# dans le depot (serie SmartContracts : paire Python/Rust seulement, spec #27983) ; la comparaison stricte porte sur Python et Rust."
+    - id: c14_abilities_stable
+      description: "Cellule 14 : queues stables (6 lignes '-> invalid ... valid=False asset=False' + ligne finale), hors contenu des accolades (ordre d'un set Python non contractuel, PYTHONHASHSEED)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "-> invalid\\s+valid=False asset=False[\\s\\S]*\\Z"
+          transform: text
+        rust:
+          cell: 14
+          pattern: "-> invalid\\s+valid=False asset=False[\\s\\S]*\\Z"
+          transform: text
+        csharp:
+          absent: "Pas de jumeau C# dans le depot (serie SmartContracts : paire Python/Rust seulement, spec #27983) ; la comparaison stricte porte sur Python et Rust."
+    - id: c16_dynamic_fields
+      description: "Sortie de la cellule 16 (7 lignes du stub DynamicFieldExplorer), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 16
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Pas de jumeau C# dans le depot (serie SmartContracts : paire Python/Rust seulement, spec #27983) ; la comparaison stricte porte sur Python et Rust."
+    - id: c18_escrow
+      description: "Sortie de la cellule 18 (en-tete + module Move escrow, 1594 caracteres), texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        csharp:
+          absent: "Pas de jumeau C# dans le depot (serie SmartContracts : paire Python/Rust seulement, spec #27983) ; la comparaison stricte porte sur Python et Rust."
