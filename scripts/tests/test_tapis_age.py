@@ -9,6 +9,8 @@ Ce que ces tests prouvent, sur un pool SYNTHETIQUE :
 
 - la **cle** de l'ordre d'age : la bande des fraiches passe devant tout (fin
   de file), la jamais visitée passe devant, puis la plus ancienne ;
+- la **consolidation** (revue ai-01 du 22/11) : elle passe devant la
+  non-consolidation de meme bande, et elle echappe a la bande des fraiches ;
 - la **selection** sert les issues anciennes, et non les numeros situes
   au-dessus de l'ancre (l'inversion mesuree le 22/11 : 0 issue anterieure
   au 01/11 dans les 60 premiers grains d'un pool de 455) ;
@@ -41,13 +43,16 @@ class _Grain:
     """Un grain minimal : l'ordre d'age lit le numero, la creation, les visites."""
 
     def __init__(self, numero: int, age_j: float = 30.0, visites: int = 0,
-                 conteneur: bool = False):
+                 conteneur: bool = False, consolidation: bool = False,
+                 famille: int = 0):
         self.numero = numero
         self.titre = f"issue {numero}"
         self.cree_le = (MAINTENANT - timedelta(days=age_j)).isoformat()
         self.visites = visites
         self.visites_total = visites
         self.conteneur = conteneur
+        self.consolidation = consolidation
+        self.famille = famille
         self.notes: list[str] = []
 
 
@@ -87,8 +92,50 @@ def test_la_cle_ne_depend_que_de_l_age_de_creation():
     """La cle est la CREATION, pas la derniere visite : une cle qui bouge
     a chaque tour ne ferme jamais le tour (echec mesure le 19/11)."""
     g = _Grain(1, age_j=30.0, visites=2)
-    assert tapis_age.cle(g, MAINTENANT)[:3] == (0, 1, g.cree_le)
+    assert tapis_age.cle(g, MAINTENANT)[:4] == (0, 1, 1, g.cree_le)
     assert tapis_age.age_h(g, MAINTENANT) == pytest.approx(30 * 24, rel=1e-3)
+
+
+# --- la consolidation (revue ai-01 du 22/11) ---------------------------------
+
+def test_la_consolidation_passe_devant_la_non_consolidation():
+    """Le mandat du cycle : « priorite consolidation ET anciennete ». A
+    bande egale, la consolidation passe devant."""
+    conso = _Grain(1, age_j=10.0, consolidation=True)
+    autre = _Grain(2, age_j=20.0)
+    assert _ages([autre, conso])[0] is conso, \
+        "la consolidation passe devant, meme plus recente"
+
+
+def test_une_consolidation_fraiche_echappe_a_la_bande():
+    """Une consolidation ouverte AUJOURD'HUI doit pouvoir passer en tete :
+    elle echappe a la bande des moins de 72 h."""
+    conso_fraiche = _Grain(1, age_j=0.5, consolidation=True)
+    ancienne = _Grain(2, age_j=40.0)
+    assert _ages([ancienne, conso_fraiche])[0] is conso_fraiche, \
+        "la consolidation fraiche n'attend pas la fin de la bande"
+
+
+def test_la_famille_dune_racine_consolidation_est_heritee():
+    """Une issue dont la FAMILLE porte le label `consolidation` en est une
+    aussi (la regle de `tapis_avantages.est_consolidation`)."""
+    membre = _Grain(7, age_j=5.0, famille=900)
+    assert tapis_age.est_consolidation(membre, {900}) is True
+    assert tapis_age.est_consolidation(membre, {901}) is False, \
+        "une autre racine ne donne pas la consolidation"
+
+
+def test_la_selection_sert_la_consolidation_en_tete():
+    """De bout en bout : le bloc servi commence par la consolidation, et
+    la fraiche non-consolidation part en queue."""
+    grains = [_Grain(1, age_j=0.5), _Grain(2, age_j=1.0),
+              _Grain(3, age_j=40.0), _Grain(4, age_j=30.0, consolidation=True)]
+    ages = tapis_age.trier(grains, MAINTENANT)
+    bloc, _ = tapis_rotation.bloc(grains, [], 2, 2, LANE, MAINTENANT,
+                                   ancres={"grains": {"ancre": 0}},
+                                   ages_g=ages, exclus_g=set())
+    assert [g.numero for g in bloc] == [4, 3], \
+        "la consolidation d'abord, puis la plus ancienne"
 
 
 # --- la selection ------------------------------------------------------------

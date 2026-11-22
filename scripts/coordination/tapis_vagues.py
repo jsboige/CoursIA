@@ -53,7 +53,7 @@ def vagues(grains_ordre: list, conteneurs: list, lane: str, maintenant: datetime
     # Meme selection que le tirage (mandat du 22/11) : l'ordre d'age, et
     # l'exclusion des deja servis en attente de verdict.
     ancres = tapis_ancre.lire(lane)
-    ages, exclus, _ = tapis_age.tour(grains_ordre, ancres, maintenant)
+    ages, exclus, _ = tapis_age.tour(grains_ordre, ancres, maintenant, conteneurs)
     for k in range(max_vagnes := max_vagues):
         bloc, fen = tapis_rotation.bloc(grains_ordre, conteneurs, grains, taille,
                                          lane, maintenant, bloc_suivant=k,

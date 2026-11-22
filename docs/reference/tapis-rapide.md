@@ -556,10 +556,37 @@ le 19/11 (380 issues sur 440 atteintes en un tour, sans jamais fermer le tour). 
 
 | Composante | Rôle |
 | --- | --- |
-| bande de fraîcheur | une issue de moins de `SEUIL_FRAICHES_H` = **72 h** va en **queue** (« on mettra les nouvelles issues en fin de tapis ») |
+| bande de fraîcheur | une issue de moins de `SEUIL_FRAICHES_H` = **72 h** va en **queue** (« on mettra les nouvelles issues en fin de tapis ») — **sauf** si elle est une consolidation |
+| consolidation | la consolidation passe devant la non-consolidation de même bande (revue ai-01 du 22/11) |
 | jamais visitée | l'équité du 16/11 : une issue jamais visitée passe devant une issue déjà servie |
 | date de création | les anciennes d'abord |
 | numéro | le désempilement, stable et reproductible |
+
+**La consolidation est dans la clé, pas à côté** (revue ai-01 du 22/11). Le mandat du cycle veut « un picker
+rapide couvrant toutes les issues avec priorité consolidation et ancienneté » : l'ancienne voie donnait aux
+consolidations 0,4 visite à tout âge, et cet avantage a disparu avec la sélection par âge — les
+consolidations n'avaient plus aucun avantage dans la clé. Deux règles, celle de `tapis_avantages.est_consolidation`
+(le **label** `consolidation`, ou la **famille** dont la racine l'est) :
+
+- la consolidation passe **devant** la non-consolidation de même bande ;
+- elle **échappe à la bande des moins de 72 h** : une consolidation ouverte aujourd'hui doit pouvoir passer en
+  tête, sans attendre que la bande Fresh se vide.
+
+Mesure sur le **pool réel** (531 issues lues, 452 grains, 27 racines labellisées `consolidation`, 15
+consolidations dans le pool — 14 par label, 1 par famille), 60 premiers servis, ancre simulée à mi-pool :
+
+| 60 premiers grains servis | avant (clé d'âge seule) | après (clé avec consolidation) |
+| --- | --- | --- |
+| **consolidations servies** | **3** | **15** |
+| dont par label | 3 | 14 |
+| dont par famille héritée | 0 | 1 |
+| part des consolidations du pool | 3,3 % (15 sur 452) | 3,3 % (15 sur 452) |
+| de moins de 72 h | 0 | 1 (la consolidation #27733) |
+| jamais visitées | 60 | 50 |
+
+Les 60 premiers servis passent de **3** à **15** consolidations : **tout le pool de consolidation** (15 sur 15)
+est servi dans la première vague, contre 20 % avant. L'unique issue de moins de 72 h servie est la
+consolidation #27733 — l'échappement voulu, qui ne s'applique qu'à une consolidation.
 
 **Le tri est une ADMISSION, pas un rang.** La sélection ne porte plus sur une fenêtre de numéros mais sur
 l'ensemble du pool classé par âge : les grains servis sont les premiers de l'ordre d'âge, les plus anciens
@@ -578,14 +605,15 @@ tirage — et les grains servis par âge (dont les numéros sont *sous* l'ancre)
 plus rien n'est servable (toutes les issues attendent leur verdict), la file est **rendue** et le tour
 recommence : les issues anciennes reviennent, elles ne disparaissent pas.
 
-**Les tests.** `scripts/tests/test_tapis_age.py` (11 tests) rejoue sur un pool **synthétique** : la bande
+**Les tests.** `scripts/tests/test_tapis_age.py` (15 tests) rejoue sur un pool **synthétique** : la bande
 fraîche part en dernier, la jamais visitée passe devant, les plus anciennes d'abord, la clé ne dépend que de
 la date de création, la sélection sert les anciennes (pas les numéros au-dessus de l'ancre), les déjà servis
-sont laissés de côté, la vague suivante prend le bloc suivant, et les numéros sans verdict quittent la file.
+sont laissés de côté, la vague suivante prend le bloc suivant, les numéros sans verdict quittent la file — et
+la consolidation passe devant, échappe à la bande fraîche, et s'hérite de sa famille.
 `scripts/tests/test_tapis_vagues.py` (3 tests) suit la même sélection pour les vagues.
 
-Le module : `scripts/coordination/tapis_age.py` — clé, tri, bandes, sélection, tour. Il lit `cree_le` et
-`visites_total` des états, n'écrit rien et ne lit pas le réseau.
+Le module : `scripts/coordination/tapis_age.py` — clé, tri, bandes, sélection, tour. Il lit `cree_le`,
+`visites_total`, `consolidation` et `famille` des états, n'écrit rien et ne lit pas le réseau.
 
 ## La qualification, côté consommateur (#27225, suite du 18/11)
 

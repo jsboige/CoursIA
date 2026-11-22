@@ -124,7 +124,10 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord.
     # La rotation par numero servait les recentes (mesure du 22/11 : 0 issue
     # anterieure au 01/11 dans les 60 premiers grains d'un pool de 455).
-    ages, exclus, reinit = tapis_age.tour(classe["grains"], ancres, maintenant)
+    # Les CONTENEURS passent avec : leurs racines labellisees `consolidation`
+    # font de leurs membres des consolidations (revue ai-01 du 22/11).
+    ages, exclus, reinit = tapis_age.tour(classe["grains"], ancres, maintenant,
+                                          classe["conteneurs"])
     file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
                                          grains, max(grains * CANDIDATS_MULT, grains),
                                          lane, maintenant, ancres=ancres,
