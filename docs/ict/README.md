@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-20
+> REFERENCE — vivante — dernière révision 2026-11-22
 
 # ICT — Index de la documentation de cadrage et de synthèse
 
@@ -81,6 +81,7 @@ Un pré-enregistrement fixe **avant** l'exécution le protocole d'une campagne :
 |----------|------|
 | [`ict25a-2b-pre-enregistrement.md`](ict25a-2b-pre-enregistrement.md) | Campagne ICT-25a au palier **2B** (Gates 20-21 de [#5105](https://github.com/jsboige/CoursIA/issues/5105)) : backbone `Qwen3.5-2B-Base` + contrôle intra-famille `Qwen3.5-0.8B`, bras N et Np, quatre graines (0, 1, 7, 42), 120 pas, critères de lecture scellés, **biais écrit d'avance** (le passage 1.5B → 2B change la taille *et* la famille ; le `FEWSHOT` annonce l'astuce dans tous les bras), **issues affaiblissantes pré-enregistrées** (A1 : pas de matière première ; A2 : certification qui n'apprend rien ; A3 : portée du few-shot ; A4 : divergence des verdicts rewardspy), limite nommée (la moitié « panel persona » de la Gate 21 reste ouverte). |
 | [`ict25a-2b-resultats-2b.md`](ict25a-2b-resultats-2b.md) | **Resultats mesures** de la campagne ICT-25a au palier 2B (Gates 20-21 de [#5105](https://github.com/jsboige/CoursIA/issues/5105)) : les criteres de lecture du sceau appliquees aux artefacts `runs/ict25a_{N,Np}_2B.json` et a leurs audits rewardspy (fenetres `both` et `head`) -- Gate 21 **non franchie** (les verdicts des deux bras divergent aux deux echelles), divergence des bras et non moyenne ; la moitie « panel persona » de la Gate 21 reste ouverte. Le sceau ([`ict25a-2b-pre-enregistrement.md`](ict25a-2b-pre-enregistrement.md)) n'a pas ete modifie en aucune ligne. |
+| [`hoel-causal-emergence-pre-enregistrement.md`](hoel-causal-emergence-pre-enregistrement.md) | Case 25 de la veille [#8182](https://github.com/jsboige/CoursIA/issues/8182) — émergence causale (Hoel, Albantakis & Tononi 2013, *PNAS* 110(49)) : sceau des hypothèses H1-H4 et des portes G1-G4 **avant** le banc `ict/hoel_causal_emergence.py` (l'organe `ict/causal_emergence.py` est invoqué, jamais réimplémenté) ; verdict borné **PARTIEL** (H2 confirmée : le renversement EI-macro se reproduit sur le calibrage de la Fig. 4 ; H4 confirmée : témoin négatif, CE négatif ou nul sur tous les regroupements légaux ; H1/H3 exclues par impossibilité structurelle démontrée, bornes dans le JSON de résultats). Source primaire archivée au gisement, identité vérifiée sur la première page. |
 
 ## Parcours suggéré
 

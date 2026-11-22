@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "description": "Politique de l'organe manifeste des dependances (scripts/notebook_tools/dependency_manifest.py, #27544). Chaque regle y est classee par ORIGINE : « mesure » = le verdict se deduit d'une lecture du depot ; « declaration » = le verdict repose sur une regadme ecrite ici, que le lecteur peut contester. La table du manifeste distingue les deux.",
+  "gpu": {
+    "origin": "declaration",
+    "source": "Marqueurs CUDA/Deep-Learning mesures sur la source des cellules ; la liste ci-dessous est la regle de detection, sa presence dans un carnet est une MESURE.",
+    "markers": [
+      "\\.cuda\\s*\\(",
+      "torch\\.cuda",
+      "cuda\\s*:\\s*(?:0|True|true)",
+      "device\\s*=\\s*['\"]cuda",
+      "\\.to\\s*\\(\\s*['\"]cuda",
+      "CUDA_VISIBLE_DEVICES",
+      "nvidia-smi",
+      "tensorflow",
+      "cuda:\\d"
+    ]
+  },
+  "heavy_distributions": {
+    "origin": "declaration",
+    "source": "Liste declaree des distributions dont la presence rend une image CPU legere impossible. Elle est une REGLE, pas une mesure : l'organe n'a pas acces aux tailles de roues sans reseau. Toute exclusion par « taille » cite cette cle.",
+    "entries": {
+      "torch": "PyTorch (roues CUDA)",
+      "torchvision": "torchvision",
+      "torchaudio": "torchaudio",
+      "tensorflow": "TensorFlow",
+      "jax": "JAX",
+      "jaxlib": "jaxlib",
+      "vllm": "vLLM",
+      "flash-attn": "flash-attention",
+      "bitsandbytes": "bitsandbytes",
+      "cupy": "CuPy",
+      "onnxruntime-gpu": "onnxruntime-gpu",
+      "nvidia-cublas-cu12": "nvidia-cublas",
+      "nvidia-cudnn-cu12": "nvidia-cudnn",
+      "nvidia-cuda-runtime-cu12": "nvidia-cuda-runtime",
+      "triton": "Triton"
+    }
+  },
+  "licenses": {
+    "origin": "declaration",
+    "source": "Vide a dessein : aucune source du depot n'etablit, hors ligne, une contrainte de licence sur les paquets cites. L'inventaire de licences est un controle en ligne ; il ne doit pas etre simule par une liste inventee. Un paquet listE ici declenche une exclusion « licence ».",
+    "entries": {}
+  },
+  "optional_file_markers": {
+    "origin": "declaration",
+    "source": "Fragments de nom de fichier qui marquent un jeu de dependances optionnel (extras, audio, video) : la serie devient un « service optionnel » plutot qu'une exclusion.",
+    "markers": ["optional", "audio", "video", "extras"]
+  },
+  "canonical_python_by_kernelspec": {
+    "origin": "declaration",
+    "source": "Version Python canonique par nom de noyau, d'apres docs/reference/kernels-runtime.md (table des envs par siege). Les entrees absentes ou ambigues ne declenchent aucun conflit : une absence de mesure n'est pas une autorisation.",
+    "entries": {
+      "python3": "3.13",
+      "python3-lean": "3.13",
+      "ict-py313": "3.13",
+      "python3-coursia2": "3.13",
+      "py310": "3.10",
+      "pyphi": "3.9",
+      "pyphi-iit": "3.9"
+    },
+    "ambiguous": {
+      "coursia-ml-training": "3.11 (po-2028) ou 3.12 (po-2023) : la lecture diverge entre sieges, aucun conflit n'est declare"
+    }
+  },
+  "import_aliases": {
+    "origin": "declaration",
+    "source": "Table de correspondance entre le nom importe dans un carnet et le nom du paquet sur PyPI. Elle sert au seul controle de LACUNE : un paquet importe mais non declare dans les fichiers de dependances de la serie ne sera pas installe par l'image. Liste volontairement restreinte aux paquetsdont l'absence se paie d'un echec d'execution.",
+    "entries": {
+      "torch": "torch",
+      "torchvision": "torchvision",
+      "tensorflow": "tensorflow",
+      "jax": "jax",
+      "vllm": "vllm",
+      "cupy": "cupy",
+      "transformers": "transformers",
+      "diffusers": "diffusers",
+      "accelerate": "accelerate",
+      "peft": "peft",
+      "trl": "trl",
+      "datasets": "datasets",
+      "cv2": "opencv-python",
+      "PIL": "pillow",
+      "sklearn": "scikit-learn",
+      "skl": "scikit-learn",
+      "yaml": "pyyaml",
+      "dotenv": "python-dotenv",
+      "bs4": "beautifulsoup4",
+      "fitz": "pymupdf",
+      "docx": "python-docx",
+      "pptx": "python-pptx",
+      "mpl_toolkits": "matplotlib",
+      "IPython": "ipython",
+      "z3": "z3-solver"
+    }
+  },
+  "local_ports": {
+    "origin": "declaration",
+    "source": "Ports des services containerises du depot, releves dans docker-configurations/services/*/docker-compose*.yml. Un carnet qui appelle localhost:<port> de cette liste appelle un service du depot : sa serie est un « service optionnel » et non un carnet qui tourne seul dans l'image.",
+    "entries": {
+      "8188": "ComfyUI",
+      "8000": "orchestrateur GenAI / TTS",
+      "8191": "orchestrateur GenAI / TTS API",
+      "8080": "TTS (FishAudio)",
+      "7860": "Forge (SD.Next)",
+      "8190": "orchestrateur GenAI / Whisper API",
+      "8193": "demucs-api",
+      "8090": "orchestrateur GenAI",
+      "8200": "planners-fast-downward"
+    }
+  },
+  "container_services": {
+    "origin": "declaration",
+    "source": "Services containerises du depot (docker-configurations/services). Un carnet qui appelle un de ces services rend sa serie « service optionnel » : le patron est l'image planners-fast-downward (API REST, port local, healthcheck).",
+    "entries": {
+      "comfyui": "ComfyUI",
+      "forge": "Forge (SD.Next)",
+      "vllm": "vLLM",
+      "ollama": "Ollama",
+      "orchestrator": "orchestrateur GenAI",
+      "whisper": "Whisper",
+      "tts": "TTS",
+      "planners-fast-downward": "planners-fast-downward",
+      "api.medium": "api.medium",
+      "qdrant": "Qdrant",
+      "postgres": "PostgreSQL"
+    }
+  }
+}

@@ -4,9 +4,9 @@
 
 > **Consolidation (2026-07-17)** : les séries GenAI vivaient auparavant en double — 3 CSV consolidés (`genai/`) + 6 CSV per-series (`genai-<série>/`). Les doublons `finetuning` + `texte` faisaient double-compter le drift (cf `check_translation_sync.py translations`). Le layout est désormais **uniformisé** sous `genai/` : 4 `git mv` (audio/casestudies/image/video) + retrait des 2 doublons (finetuning/texte per-series). Voir #4957.
 
-## Séries couvertes (7 CSV, 3310 cellules)
+## Séries couvertes (7 CSV, cellules totales au seed 2026-07-16 : 3310 — les comptes courants vivent dans les CSV)
 
-| Fichier | Série | Notebooks | Cellules | Périmètre fonctionnel |
+| Fichier | Série | Notebooks (au seed 2026-07-16) | Cellules (au seed 2026-07-16) | Périmètre fonctionnel |
 |---------|-------|-----------|----------|-----------------------|
 | [`audio.csv`](audio.csv) | `GenAI/Audio/` (4 sous-niveaux) | 30 | 1128 | Pipeline audio IA : TTS (OpenAI/Kokoro), STT (Whisper API/local), signal (librosa, spectrogrammes, MFCC), orchestration, podcast fil rouge |
 | [`casestudies.csv`](casestudies.csv) | `GenAI/CaseStudies/` | 4 | 113 | 4 cas agentiques GenAI : Barbie-Schreck, Fort-Boyard, Medical-Chatbot, Recipe-Maker (Python, services GenAI locaux) |
@@ -16,7 +16,7 @@
 | [`texte.csv`](texte.csv) | `GenAI/Texte/` (20 notebooks `1`–`20`) | 20 | 718 | LLMs texte : OpenAI, OWUI, LocalLlama (`1_OpenAI_Intro` → `20_OWUI`) |
 | [`video.csv`](video.csv) | `GenAI/Video/` (4 sous-niveaux) | 17 | 486 | Génération vidéo IA (4 sous-niveaux : Foundation, Advanced, Orchestration, Applications) |
 
-**Schéma** : 21 colonnes (#4957 §1). `src_lang=fr`, `src_hash` (sha256-16) + `text_fr` remplies ; colonnes cibles (`text_en`/`es`/`ar`/`fa`/`zh`/`ru`/`pt`) vides en attente du moteur T3 Argumentum (#1650 Phase 1).
+**Schéma** : 21 colonnes au seed (#4957 §1) — le schéma courant se lit dans l'en-tête des CSV. `src_lang=fr`, `src_hash` (sha256-16) + `text_fr` remplies ; colonnes cibles (`text_en`/`es`/`ar`/`fa`/`zh`/`ru`/`pt`) vides en attente du moteur T3 Argumentum (#1650 Phase 1).
 
 **Note owner-lane** : GenAI = famille Python (partition po-2025), sauf SemanticKernel qui a des jumeaux C# .NET. L'extraction i18n est **safe cross-owner** (artefact dérivé = CSV de cellules upstream en lecture seule, pas de modification des notebooks — cf note identique dans `translations/smartcontracts/README.md`).
 

@@ -65,7 +65,8 @@ TABLE_SEPARATOR = "|---|----------|-----------------|-----------|--------|"
 
 # Identifiant de ligne : numerique (16, 16b) ou prefixe de sous-serie
 # (GOL-07, KNOTS-03, ANALYSE-14, MIMO-04, GROTH-02, GALOIS-01).
-_ID = r"(?:[A-Z]+-)?\d{1,2}[a-g]?"
+# Suffixe lettre jusqu'a z : la serie a passe g (13h, renumerotation #26536).
+_ID = r"(?:[A-Z]+-)?\d{1,2}[a-z]?"
 
 # Ligne de la table de description : | 16b | [Nom](chemin.ipynb) ... |
 # La cellule peut porter PLUSIEURS liens (ANALYSE-09 y cite son jumeau _en) :
