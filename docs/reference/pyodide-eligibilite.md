@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1446** carnets Python, **555** eligibles, **891** refuses.
+Census : **1447** carnets Python, **556** eligibles, **891** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -95,7 +95,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | InformationTheory | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Integrales | 4 | 4 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Jauge | 4 | 3 | 1 | 1 | 0 | 0 | 0 | 0 |
-| Lean | 126 | 99 | 27 | 1 | 5 | 4 | 11 | 18 |
+| Lean | 127 | 100 | 27 | 1 | 5 | 4 | 11 | 18 |
 | ML-Training-Pipeline | 18 | 11 | 7 | 0 | 0 | 0 | 1 | 7 |
 | ML.Net | 14 | 11 | 3 | 1 | 0 | 0 | 2 | 2 |
 | Metajeux | 7 | 5 | 2 | 1 | 0 | 0 | 1 | 0 |
@@ -161,7 +161,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 760 | 555 |
+| Carnets eligibles | 761 | 556 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -428,6 +428,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb` | Lean | python3-lean | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb` | Lean | python3 | pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-05-Dynamique-Tresses-Python.ipynb` | Lean | python3 | numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-06-Empilements-Cercles-Python.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/01-formes-modulaires-sl2z-hecke.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/02-monstrous-moonshine-invariant-j.ipynb` | Lean | python3 | matplotlib==3.10.8, mpmath==1.4.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/03-chaine-de-modularite-vers-fermat.ipynb` | Lean | python3 | - | - |
