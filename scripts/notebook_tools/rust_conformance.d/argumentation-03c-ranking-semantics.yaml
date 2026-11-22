@@ -1,0 +1,429 @@
+# Conformite differentielle du carnet Argumentation-03c (semantiques de
+# classement, issue #27886).
+#
+# Le portage Rust (kernel evcxr, `std` seul, aucune `:dep`) porte les deux
+# semantiques graduees du carnet Python : h-Categoriser (point fixe) et le
+# fardeau (comparaison lexicographique). Les deux cotes executent la MEME
+# instance (7 arguments, 4 attaques) et le MEME cas cyclique (a <-> b).
+#
+# Deux difficultes mesurees, traitees par construction :
+#
+# 1. **Ordre des ex-aequo.** Les cellules 5 et 13 trient un `set` Python :
+#    l'ordre d'iteration du `set` depend de la graine (`PYTHONHASHSEED`), et
+#    `sorted` est stable -- l'ordre des ex-aequo (les cinq arguments non
+#    attaques, force 1.0) est donc celui d'une execution CPython, que Python
+#    ne garantit pas. Le cote Rust reproduit l'ordre du temoin
+#    (`ARGS_ORDER` + tri stable) au lieu d'un departage alphabetique.
+# 2. **Chaines de caracteres.** Python imprime une liste Python
+#    (`['e', 'y', 'z1']`) et un booleen (`True`) ; le cote Rust reproduit
+#    ces formes (`fmt_str_list`, `py_bool`) pour que la comparaison soit
+#    stricte et non « property-based ».
+#
+# Le jumeau C# n'existe pas dans le depot (la serie ArgumentAnalysis n'a pas
+# de cote .NET) : le cote C# est declare ABSENT, pas mesure.
+- name: "Argumentation-03c Semantiques de classement (h-Categoriser & fardeau)"
+  family: ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Rust.ipynb
+  measures:
+    - id: af_repr
+      description: "Repr du cadre d'argumentation (arguments et attaques du fil rouge)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "AF\\(args=\\[(.*?)\\], attacks=\\[(.*?)\\]\\)"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "AF\\(args=\\[(.*?)\\], attacks=\\[(.*?)\\]\\)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot : la serie ArgumentAnalysis n'a
+            pas de cote .NET pour ce carnet.
+    - id: attaquants_e
+      description: "attaquants de e (aucun : argument isole, temoin de force maximale)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "attaquants de e : (.*)"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "attaquants de e : (.*)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: attaquants_a
+      description: "attaquants de a (une attaque, venue de y)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "attaquants de a : (\\[.*\\])"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "attaquants de a : (\\[.*\\])"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: attaquants_b
+      description: "attaquants de b (trois attaques, venues de z1, z2, z3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "attaquants de b : (\\[.*\\])"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "attaquants de b : (\\[.*\\])"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: convergence_iterations
+      description: "Nombre d'iterations du point fixe h-Categoriser sur le fil rouge"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Convergence en (\\d+) iterations"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "Convergence en (\\d+) iterations"
+          transform: int
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: classement_hcat
+      description: "Classement h-Categoriser complet (les 7 lignes, ordre des ex-aequo compris)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "iterations\\.\\n\\n(.*)"
+          transform: text
+        rust:
+          cell: 5
+          pattern: "iterations\\.\\n\\n(.*)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: extension_fondee
+      description: "Extension fondee de Dung sur le fil rouge (arguments acceptes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "Extension fondee : (\\[.*\\])"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "Extension fondee : (\\[.*\\])"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: statut_dung_a
+      description: "Statut Dung de a sur le fil rouge (OUT : rejete par l'extension)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "a : statut Dung = (\\w+)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "a : statut Dung = (\\w+)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: force_hcat_a
+      description: "Force h-Categoriser de a (1/(1+1) = 0.5)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "a : statut Dung = \\w+  \\|  force h-Cat = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 8
+          pattern: "a : statut Dung = \\w+  \\|  force h-Cat = ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: statut_dung_b
+      description: "Statut Dung de b sur le fil rouge (OUT : rejete par l'extension)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "b : statut Dung = (\\w+)"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "b : statut Dung = (\\w+)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: force_hcat_b
+      description: "Force h-Categoriser de b (1/(1+3) = 0.25)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "b : statut Dung = \\w+  \\|  force h-Cat = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 8
+          pattern: "b : statut Dung = \\w+  \\|  force h-Cat = ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: meme_statut_dung
+      description: "a et b ont le meme statut Dung (tous deux OUT)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "Meme statut Dung \\(a, b tous deux OUT\\) \\? (True|False)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "Meme statut Dung \\(a, b tous deux OUT\\) \\? (True|False)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: hcat_departe
+      description: "h-Categoriser departage a et b (Cat(a) > Cat(b))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "h-Categoriser les departe \\(Cat\\(a\\) > Cat\\(b\\)\\) \\? (True|False)"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "h-Categoriser les departe \\(Cat\\(a\\) > Cat\\(b\\)\\) \\? (True|False)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: classement_fardeau
+      description: "Classement par fardeau complet (en-tete et 7 lignes, ordre des ex-aequo compris)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 13
+          pattern: "Classement par fardeau \\(du plus fort au plus faible\\) :\\n(.*)"
+          transform: text
+        rust:
+          cell: 13
+          pattern: "Classement par fardeau \\(du plus fort au plus faible\\) :\\n(.*)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: accord_hcat
+      description: "Accord des deux methodes, cote h-Categoriser (a avant b)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "h-Cat : a avant b \\? (True|False)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "h-Cat : a avant b \\? (True|False)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: accord_fardeau
+      description: "Accord des deux methodes, cote fardeau (a avant b)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "Fardeau : a avant b \\? (True|False)"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "Fardeau : a avant b \\? (True|False)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: cycle_iterations
+      description: "Nombre d'iterations du point fixe sur le cycle a <-> b"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "convergence en (\\d+) iterations"
+          transform: int
+        rust:
+          cell: 18
+          pattern: "convergence en (\\d+) iterations"
+          transform: int
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: cycle_cat_a
+      description: "Force h-Categoriser de a sur le cycle (point fixe = inverse du nombre d'or)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Cat\\(a\\) = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "Cat\\(a\\) = ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: cycle_cat_b
+      description: "Force h-Categoriser de b sur le cycle (egale a celle de a)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Cat\\(b\\) = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "Cat\\(b\\) = ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: cycle_phi
+      description: "Valeur theorique (sqrt(5)-1)/2 affichee a cote de la valeur mesuree"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Valeur theorique \\(sqrt\\(5\\)-1\\)/2 = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 18
+          pattern: "Valeur theorique \\(sqrt\\(5\\)-1\\)/2 = ([\\d.]+)"
+          transform: float
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: cycle_statut_dung
+      description: "Statut Dung des deux arguments du cycle (UNDEC : la semantique binaire refuse de choisir)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "Statut Dung \\(fonde\\) des deux : (\\w+)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "Statut Dung \\(fonde\\) des deux : (\\w+)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: cycle_extension_vide
+      description: "Extension fondee du cycle : vide (l'espace avant la parenthese est reproduire tel quel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "extension fondee = (.*?)\\)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "extension fondee = (.*?)\\)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: exercice_1_stub
+      description: "L'Exercice 1 est bien laisse en stub (valeur None, aucun panic)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "a strictement > b \\? (.*)"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "a strictement > b \\? (.*)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: exercice_2_stub
+      description: "L'Exercice 2 est bien laisse en stub (bandeau « Exercice 2 a completer »)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "(Exercice 2 a completer)"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "(Exercice 2 a completer)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
+    - id: exercice_3_stub
+      description: "L'Exercice 3 est bien laisse en stub (valeur None, aucun panic)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "Fardeau convergent sur l'AF fil rouge \\? (.*)"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "Fardeau convergent sur l'AF fil rouge \\? (.*)"
+          transform: text
+        csharp:
+          absent: >-
+            Pas de jumeau C# dans le depot (cf. la premiere grandeur).
