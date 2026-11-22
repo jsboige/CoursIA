@@ -552,6 +552,37 @@ def _declared_packages(lake_dir: Path) -> list[str]:
     return names
 
 
+#: Lake ecrit un nom de paquet entre guillemets quand le nom nu n'est pas
+#: ecritable dans le DSL (un tiret, par exemple) : `«axiom-audit»`. Le
+#: REPERTOIRE, sous `.lake/packages/`, porte le nom NU.
+#:
+#: Comparer les deux chaines sans normaliser rend le verdict de completude
+#: structurellement faux : un cache chaud COMPLET est declare absent, puis
+#: le lac entier est refuse avec le motif `no-warm-cache-for-toolchain`.
+#: Mesure du 20/11 sur ai-01, lac `formal_logic` (toolchain `v4.33.1`) :
+#: `axiom-audit` et `doc-gen4` etaient presents ET resolus dans le pivot
+#: (`.git`, sources, `.lake` pour le second), et le pivot a quand meme ete
+#: ecarte -- motif : « packages incomplets : «axiom-audit» absent,
+#: «doc-gen4» absent ». Instance : PR #25236.
+QUOTE_GUILLEMETS = ("«", "»")
+
+
+def _package_dir_name(name: str) -> str:
+    """Nom du REPERTOIRE du paquet, sans la citation de lake.
+
+    `«axiom-audit»` -> `axiom-audit`. Un nom sans guillemets est rendu tel
+    quel : la normalisation n'introduit aucune hypothese.
+    """
+    raw = name.strip()
+    if (
+        len(raw) >= 2
+        and raw.startswith(QUOTE_GUILLEMETS[0])
+        and raw.endswith(QUOTE_GUILLEMETS[1])
+    ):
+        raw = raw[1:-1].strip()
+    return raw
+
+
 def _package_is_resolved(package_dir: Path, name: str) -> bool:
     """Le paquet `name` est-il reellement RESOLU sous `.lake/packages/` ?
 
@@ -586,10 +617,11 @@ def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
     """
     missing: list[str] = []
     for name in _declared_packages(manifest_owner):
-        package_dir = packages_dir / name
+        dir_name = _package_dir_name(name)
+        package_dir = packages_dir / dir_name
         if not package_dir.is_dir():
             missing.append("{} absent".format(name))
-        elif not _package_is_resolved(package_dir, name):
+        elif not _package_is_resolved(package_dir, dir_name):
             missing.append("{} incomplet".format(name))
     return missing
 
@@ -745,20 +777,10 @@ def manifest_at_head(repo: str, head: str) -> dict | None:
         repo,
         "repos/{}/contents/scripts/lean/ci_lakes.json?ref={}".format(repo, head),
     )
-    if not isinstance(payload, dict):
-        return None
-    content = payload.get("content")
-    if not isinstance(content, str):
-        return None
-    try:
-        raw = base64.b64decode(content).decode("utf-8")
-    except (ValueError, UnicodeDecodeError):
-        return None
-    try:
-        manifest = json.loads(raw)
-    except json.JSONDecodeError:
-        return None
-    return manifest if isinstance(manifest, dict) else None
+    # Le decodage de la payload REST est PORTÉ par le module partage
+    # (`lean_build_attestation`) : la garde lit le meme manifeste par le meme
+    # decodeur -- une seule definition du "contenu illisible".
+    return attestation.manifest_from_api_payload(payload)
 
 
 def select_lakes(files: list[str], head_manifest: dict, base_manifest: dict | None) -> list[dict]:
@@ -1215,6 +1237,33 @@ def restore_project_build(cache_dir: Path, lake_dir: Path) -> dict:
     return {"restored": True, "reason": "cache de build du projet restaure"}
 
 
+def seed_project_build_from_pivot(pivot_dir: Path, lake_dir: Path) -> dict:
+    """Reseme le `.lake/build` du lac depuis le pivot prechauffe (#27516).
+
+    Le pivot est deja valide par `prepare_lake` (meme toolchain, meme graphe
+    de dependances) : ses oleans des modules du projet sont le point d'appui
+    que la CI tire de son cache Actions. Sans ce semis, la premiere
+    attestation d'une PR repart de zero sur les modules herites de `main` --
+    dont `Knots.AlexanderTrivial_en` (olean de 95,7 Mo, elaboration au-dela
+    du budget local, mesure #27516) -- et se fait tuer au minuteur.
+
+    COPIE, jamais deplacement ni jonction : le pivot garde son build pour
+    les PRs suivantes, et `preserve_project_build` (qui DEPLACE le
+    `.lake/build` du worktree vers le cache par-PR) n'arrache jamais rien au
+    pivot. Les traces Lake font le reste : seuls les modules dont la source
+    differe a la tete de la PR sont re-elabores.
+    """
+    source = pivot_dir / ".lake" / "build"
+    if not source.is_dir():
+        return {"seeded": False, "reason": "aucun build de projet dans le pivot"}
+    target = lake_dir / ".lake" / "build"
+    if target.exists():
+        return {"seeded": False, "reason": "build deja present dans le worktree"}
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, target)
+    return {"seeded": True, "reason": "build du projet reseme depuis le pivot"}
+
+
 def preserve_project_build(cache_dir: Path, lake_dir: Path) -> dict:
     """Conserve le `.lake/build` du worktree dans le cache du projet.
 
@@ -1250,7 +1299,10 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
     `project_cache_dir` est le repertoire du cache de build du PROJET pour ce
     lake : le `.lake/build` est **remis** dans le worktree avant le build et
     **reconserve** apres -- un timeout ne jette plus la compilation deja
-    faite.
+    faite. Quand ce cache par-PR n'a rien restaure (premier essai de la
+    PR), le `.lake/build` du pivot `cache_root` -- deja valide par
+    `prepare_lake` -- est **reseme par copie** : meme point d'appui que le
+    cache Lake d'Actions en CI (#27516).
     """
     lake_dir = worktree / lake["project-path"]
     if not lake_dir.is_dir():
@@ -1262,6 +1314,13 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
     cache_state: dict = {"restored": False, "preserved": False}
     if project_cache_dir is not None:
         cache_state.update(restore_project_build(project_cache_dir, lake_dir))
+    if not cache_state.get("restored"):
+        # #27516 : premier essai de la PR (cache par-PR vide ou ecrase). Le
+        # pivot -- cache_root, deja valide par prepare_lake (meme toolchain,
+        # meme graphe de dependances) -- fournit le point d'appui que la CI
+        # tire de son cache Actions. Sans lui, chaque premiere attestation
+        # re-elabore les modules herites de main et se fait tuer au minuteur.
+        cache_state.update(seed_project_build_from_pivot(cache_root, lake_dir))
     try:
         payload = run_lake_build(lake_dir, timeout, jobs=jobs, budget=budget, targets=targets)
     finally:
@@ -1491,9 +1550,26 @@ def attest(pr: int, repo: str, timeout: float | None, dry_run: bool,
         },
     }
     if not lakes:
+        # #27875 : le cas frequent est un lake INTRODUIT par la PR et non
+        # declare au manifeste (l'entree arrive dans une PR empilee). Le
+        # message nomme le lake et le geste : sans cela, le blocage rendu
+        # par la garde est muet.
+        undeclared = attestation.undeclared_lakes(files, head_manifest)
+        if undeclared:
+            raise OrganError(
+                "le diff de #{} INTRODUIT le lake {} mais le manifeste "
+                "`scripts/lean/ci_lakes.json` ne le declare pas a la tete : "
+                "declarez-le (dans cette PR, ou dans une PR empilee mergee "
+                "d'abord), puis relancez l'attestation -- aucune attestation "
+                "ne peut couvrir un lake non declare.".format(
+                    pr, ", ".join(undeclared)
+                )
+            )
         raise OrganError(
             "aucun lake connu n'est touche par le diff de #{} -- rien a "
-            "construire (la garde ne bloquera pas cette PR)".format(pr)
+            "construire ; la garde Lean attend une attestation, qui ne peut "
+            "pas etre produite tant qu'aucun lake declare ne porte le "
+            "diff".format(pr)
         )
     if dry_run:
         result["dry_run"] = True
