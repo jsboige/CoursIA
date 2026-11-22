@@ -1,6 +1,6 @@
 # PR Review Discipline — Contexte, incident, anti-patterns
 
-> REFERENCE — vivante — dernière révision 2026-11-15
+> REFERENCE — vivante — dernière révision 2026-11-20
 
 Document de référence détaillant les seuils auto-loaded de [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md).
 
@@ -185,6 +185,8 @@ Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry
 - #3473 (juin 2026) : famille ~15 filles de bannières d'échec passées sous la détection d'erreurs Python classique.
 - #11693 (18/08) et #11685 : remplacements de rendus SVG/figures par des bannières « program is not installed ».
 
+Ces bannières ne déclenchent ni `execution_count` nul ni le grep d'erreurs volontaires : les points 1-3 de la règle restent verts, c'est le ratchet seul qui les voit — la même invisibilité aux organes d'exécution que la perte de sortie (D.7). Déplacé de la règle, tranche 2.
+
 ### D.7 — #15209 : l'effondrement de sortie vert sur toutes les gates
 
 `Lean-7b-Examples.ipynb`, `6b327a9bf` → `56d98429a` (#15209) : **nombre de cellules inchangé, 0 erreur, `execution_count` réels partout** — et **10637 → 2985** caractères de sortie (cellules `2195 → 147`, `2568 → 38`, `2074 → 42`). Tous les organes d'exécition verts (`exec_count`, grep d'erreurs volontaires) : la perte réelle leur était invisible. C'est le contre-exemple fondateur du ratchet `Output-collapse` (bloquant, T2 de #21424/#15327) : une perte de sortie d'un ordre de grandeur ne déclenche **aucune** gate d'exécution, d'où le verdict `SIGNATURE` — la dégradation gracieuse (`if api_ok:`) est le contournement de C.2 par la porte de secours, pas une exécution réussie.
@@ -193,7 +195,50 @@ Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry
 
 **#15862** — `GameTheory-06e-Open-Source-Game-Theory-Python.ipynb`, `244c7c54f032` → `7a355873de32`, cellule `c989_independent_v2` : **8425 → 5309** caractères de source (−37,0 %, 3116 perdus). Une table déclarative et un `assert` avaient disparu, **aucun organe rouge** : une table supprimée et un `assert` reduit ne produisent **aucune sortie**, la perte est invisible par construction aux ratchets de sortie. Fondation du ratchet `Source-collapse` (advisory, #15901).
 
-**#16097** — `ANALYSE-01-Sendov-Lean-Python.ipynb`, cellule `40cb37d5` : **1132 → 1728** caractères (la cellule **grossit** — la même écriture qui a retiré le code a ajouté une note de récupération) et `ast.parse(...).body` **10 → 0** : tout le code replié en un seul commentaire. Le ratchet de volume ne pouvait pas le voir (le gate s'arrête avant tout plancher quand la tête est plus longue) et `notebook-cell-source-parses` non plus (une cellule intégralement commentée se **parse** proprement). D'où le second mécanisme `STRUCTURE` (#16110) : `emptied` et `orphan-output` ne consultent que la cellule, aucune exemption ne les blanchit — restaurer la source ou retirer la sortie.
+**#16097** — `ANALYSE-01-Sendov-Lean-Python.ipynb`, cellule `40cb37d5` : **1132 → 1728** caractères (la cellule **grossit** — la même écriture qui a retiré le code a ajouté une note de récupération) et `ast.parse(...).body` **10 → 0** : tout le code replié en un seul commentaire. Le ratchet de volume ne pouvait pas le voir (le gate s'arrête avant tout plancher quand la tête est plus longue) et `notebook-cell-source-parses` non plus (une cellule intégralement commentée se **parse** proprement). D'où le second mécanisme `STRUCTURE` (#16110) : `emptied` et `orphan-output` ne consultent que la cellule, aucune exemption ne les blanchit — restaurer la source ou retirer la sortie. Définitions (déplacées de la règle, tranche 2) : `emptied` = la cellule avait des instructions, elle n'en a plus ; `orphan-output` = elle porte une sortie qu'aucune instruction ne peut avoir produite — le code est parti, la preuve d'exécution est restée.
+
+## Prescription B.0 détaillée (déportée de CLAUDE.md, tranche #11554)
+
+**Lire l'ÉTAT d'une review n'est pas lire la review.** Le champ `reviews[].state` est **structurellement aveugle** aux deux canaux qui portent le plus de substance sur ce dépôt :
+
+| Canal | Ce que `reviews[].state` en dit | Où le contenu vit réellement |
+|---|---|---|
+| **Nits du user** | *rien* — postés en issue comments, aucune entrée dans `reviews[]` | `comments[].body` |
+| **Réserves d'Hermes** | `COMMENTED` — le verdict est un **préfixe de body** (`[Hermes] COMMENT_WITH_CONCERNS`) | `reviews[].body` |
+| **Commentaires inline** | *rien* — absents de `gh pr view --json comments,reviews` | `reviewThreads` (GraphQL), champ `isResolved` |
+
+Avant **tout** `gh pr merge`, énumérer les **trois** surfaces et vérifier que chaque remarque postée après le dernier commit est **levée** par l'une de ces trois choses, et rien d'autre :
+
+1. une **réponse écrite** sur la PR qui nomme la remarque (traitée en code — en citant le commit — traitée en argument, ou refusée en le disant) ;
+2. un **thread inline résolu** (`isResolved: true`) ;
+3. une **issue de suivi ouverte et nommée AVANT le merge** (reportée sciemment) — le commentaire de merge peut la rappeler, il ne peut pas la créer.
+
+**Une levée porte un AUTEUR et une HEURE — sans les deux, ce n'est pas une levée.**
+
+- **Qui** : une phrase écrite par **l'auteur de la PR** ne lève pas une réserve posée par **un tiers**. Se lever soi-même une réserve d'autrui n'est pas y répondre, c'est la déclarer répondue.
+- **Sous le login partagé, seul le coordinateur lève par une phrase.** Toutes les lanes écrivent sous `jsboige` : sur une PR `jsboige`, une phrase de levée signée `jsboige` est indiscernable d'une auto-levée, et l'organe la refuse quelle que soit la lane qui l'a écrite (#13316, #13495). La levée par phrase se fait sous `myia-ai-01`, avec `[OVERRIDE] lane myia-ai-01:CoursIA` en tête de ligne, et **elle nomme l'auteur de la réserve par son login** (ou par la persona Hermes). Une lane qui a traité une réserve le dit sur la PR et le signale au coordinateur. Elle garde les voies 2 et 3 ci-dessus. Exception Q185 (user, 2026-11-13) : l'adjoint `myia-po-2025:CoursIA-2`, sous son App `coursia-lane-po-2025[bot]`, lève aussi par phrase les réserves de bot (Hermes, `clusterManager-Myia`, bots), `[OVERRIDE] lane myia-po-2025:CoursIA-2` en tête — jamais celles du coordinateur, du user ou d'une autre lane.
+- **Quand** : tout ce qui lève doit exister **avant** `gh pr merge`. Un commentaire de merge est un compte-rendu, **jamais une porte**.
+
+**Un commit poussé après la remarque ne la lève PAS à lui seul.** Un push muet est indiscernable d'un push qui répond : ce qui lève une remarque est **une phrase**, pas un SHA.
+
+L'écoulement du temps n'est **pas** une levée. `mergeStateStatus: CLEAN` n'est **pas** une levée. `state: COMMENTED` n'est **pas** une absence de réserve. Un reviewer qui écrit « je ne peux pas approuver seul sur ce format » **bloque** — c'est un refus d'approbation, pas un avis.
+
+**Organe** (la règle ne tient pas par la vigilance) :
+
+```bash
+python scripts/check_unaddressed_nits.py <PR>        # exit 1 = ne pas merger
+python scripts/check_unaddressed_nits.py --audit --limit 400
+```
+
+**`exit 0` répond « aucune phrase de levée ne manque » — et rien d'autre.** Il ne dit ni **qui** l'a écrite, ni **avant ou après le merge**, ni si la **substance** est traitée. Ces trois-là se lisent à la main, et la troisième exige d'**ouvrir les corps de review** : un `state: COMMENTED` de `jsboige` est un verdict Hermes dont le sens vit dans le préfixe du body. L'organe ne lit aussi que ses **marqueurs** : une réserve bloquante posée **sans** marqueur, en prose libre, rend `rc=0` — le contrat est côté **émission**, et les marqueurs ne s'élargissent pas à la prose ([pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md)).
+
+### Les 5 points du merge — détail des preuves (déporté de CLAUDE.md, tranche #11554)
+
+**Preuves vérifiables, pas mots-clés** : « Papermill SUCCESS » / « tests passed » / « sorry count -1 » / « BEATS » / « FALSE POSITIVE » sans log/lien CI / `lake build SUCCESS` post-modif / multi-seed ≥4 + edge ≥2σ / 3 cellules-types vérifiées = **invalide**.
+
+**Honnêteté des rapports** : pas de « DONE »/« fixed »/« validated » sans validation post-fix relancée. Rapporter « 5/7, 2 restantes », pas « DONE ». Pas de markdown « RAPPORT »/« AUDIT » comme preuve sans code valide.
+
+**Reviewers (humains ET bots)** : critères CHANGES_REQUESTED par domaine → [pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md) §A-H. **APPROVED malgré violation = complicité.**
 
 ## Incident fondateur B.0 — PR #10761 (récit déporté de CLAUDE.md, 2026-08-21)
 
@@ -261,6 +306,29 @@ Tranche 1 du slimming du harnais (#15204, parent #12051) : le détail déplacé 
 | L98 | origine de la règle des totaux de README (#17029, #9377, #17636, #17645) | § « L98 » ci-dessous et § « E — #5345 » (déjà présent) |
 | L112 | un verdict `INTRINSIC` se vérifie à la source (#21121) | § « L112 » ci-dessous |
 
+### Tranche 2 — regrowth post-#22967 (base `dace76da80e8`)
+
+Deuxième passe sur la même règle (#11554) : entre la tranche 1 et le 2026-11-19, la règle avait regagné ~2 158 o de justification inline. Même contrat que la tranche 1 : le détail déplacé est **mot pour mot**, la règle conserve obligations, interdits, seuils, marqueurs et commandes d'organe ; partent justification, mesure et récit. Les numéros de ligne renvoient à la base `dace76da80e8`.
+
+| Ligne d'origine (base `dace76da80e8`) | Bloc déplacé | Porté par |
+|---|---|---|
+| L11 | ligne Provenance (simple mention de la base tranche 1) | en-tête de la règle → § Levier B (les deux bases y sont nommées) |
+| L15 | « instance #14658, mesure #14682, scan 80 PRs » | § « #14682 » (déjà présent) |
+| L19 | phrase dupliquée sur le contrat côté émission | § « L17 » (déjà présent) |
+| L23 | « muet par résidu assumé, pas par filet » | § « #17071 » (déjà présent, ligne « résidu assumé » de la table) |
+| L27 | jambe rouge résiduelle ayant bloqué une PR verte | § « L25 » (déjà présent) |
+| L46 | « mesure du 2026-11-03 » (coût par PR) | § « L44 » (déjà présent) |
+| L59 | « mesure du 2026-08-14 » (`grep -c sorry`) | § « B.1 » (déjà présent) |
+| L64 | mécanique des trois classes d'axiomes | § « L64 bis » ci-dessous |
+| L68 | détail des deux cas B.3 + renvoi « incidents » | § « L64 » (déjà présent) |
+| L88 | « même avec une issue fille » + rationale byte-surgical | § « L84 » et § « D.5 » (déjà présents) |
+| L90 | « ex. `0 → 21` » + mécanisme d'invisibilité des bannières | § « D.6 » (« 0 → 21 » déjà présent ; mécanisme ajouté) |
+| L92 | « porte de secours » + détail des exemptions `MAGNITUDE` | § « D.7 » (déjà présent) ; la définition des exemptions reste dans la règle (point 8) |
+| L94 | intérêt de l'indépendance sortie/source + second mécanisme #16110 + définitions `emptied`/`orphan-output` | § « D.8 » (déjà présent ; définitions ajoutées) |
+| L96 | « (pas de kernel .NET en CI) » | § « D — #5214 » (déjà présent) |
+| L102 | « dérivent à chaque ajout » + mandats #9377 + « quelle que soit la qualité de son audit » | § « L98 » (mandats déjà présents ; dérive ajoutée) |
+| L116 | exemples de sorties de substitution (H.1) + « grille remplie sur une prémisse non vérifiée » | § « L112 » (phrase déjà présente ; exemples ajoutés) |
+
 ### L17 — le seuil `DIAG-LOOP` et sa mesure fondatrice (#14821)
 
 PR #14821 : 31 commentaires et 68 101 caractères d'infra-diagnostic sur 5 jours (25/28 sans action attachée), pour un livrable qui n'avait pas bougé depuis le commit du premier jour. Le commentaire de diagnostic pur coûte une lecture à chaque lane et ne fait pas avancer la PR : c'est une pompe, pas un apport. D'où le seuil porté par la règle : **plus de 3 `[DIAG]` consécutifs sans `[ACTION]` intercalé** = `DIAG-LOOP`.
@@ -299,6 +367,10 @@ Le cliquet qui fait rougir sur tout nouveau nom est **toute la valeur du gate** 
 
 (a) le job n'est pas câblé sur le lake de la PR (#8677) ; (b) il l'est, mais ses `target-modules` n'atteignent pas le module modifié (#8782) — un vert hors-cible est **indiscernable** d'un vert sur cible dans le rollup (job advisory `target-coverage`).
 
+### L64 bis — mécanique des trois classes d'axiomes `forbidden`
+
+Déplacé mot pour mot de la règle (tranche 2) : `native_decide.*` (réduction par le noyau natif **sans preuve** — vide le théorème), `sorryAx` (`sorry` **transitif**, qu'un `grep -c sorry` ne verra jamais), `Classical.choice` (non-constructif, souvent légitime).
+
 ### L68 — pourquoi sigma seul ne suffit pas, et pourquoi `linear` n'est pas la jambe
 
 Sigma mesure la **dispersion inter-seeds**, pas la significativité. `loss_fn="linear"` est un **contrôle de biais**, jamais la jambe de la conjonction : il est aveugle à la dispersion, si bien qu'un modèle plus précis peut « perdre » face à une baseline plus biaisée (#10961, CE1).
@@ -317,10 +389,12 @@ Un verdict `CAUSE_DOCUMENTED_ONLY` sur une cause réparable par la flotte, même
 
 ### L98 — l'origine de la règle des totaux de README
 
-Périmètre des statistiques visées par la règle : total de notebooks, comptes par langage ou par sous-dossier, comptes de cellules, bandeaux « N notebooks ».
+Ces statistiques dérivent à chaque ajout de carnet — d'où le renvoi à la régénération plutôt qu'à la mise à jour manuelle, même avec un audit parfait. Périmètre visé : total de notebooks, comptes par langage ou par sous-dossier, comptes de cellules, bandeaux « N notebooks ».
 
 Arbitrage user 2026-09-24 (#17029 revertée) ; mandat user du 2026-08-04 (#9377) ; durcissement du check-run `prose-counts` par #17636 puis #17645 (bloquant sur les lignes ajoutées). Le cas de la liste laissée périmée plus bas est dans la section « E — #5345 Probas » ci-dessus.
 
 ### L112 — un verdict `INTRINSIC` se vérifie à la source (#21121)
 
 **#21121** : TorchLean déclaré « non public » — il l'était depuis cinq mois. Une grille de verdicts remplie sur une prémisse non vérifiée n'est pas une preuve : le reviewer vérifie lui-même que l'outil existe, qu'il est public et installable.
+
+Sorties de substitution visées par H.1 (déplacées de la règle, tranche 2) : ASCII au lieu d'une image générée, réimplémentation jouet au lieu de la lib, stub au lieu d'un appel de service, sortie fabriquée au lieu d'un backtest.

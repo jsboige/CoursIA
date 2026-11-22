@@ -109,6 +109,7 @@ from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
 from grain_tag import extract_lane, lane_marker_residues
+from claim_cap_advice import cap_action_line, open_daughters
 
 # #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
 # `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
@@ -5648,8 +5649,18 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         if cause:
             verdict.update(cause=cause, epic=target["number"])
             break
+    if verdict.get("cause") and pool:  # #27012 : filles reelles de l'EPIC
+        verdict["daughters"] = open_daughters(pool, verdict.get("epic"), picker.parent_refs)
     verdict["error"] = "; ".join(errors) or None
     return verdict
+
+
+def _qualification_grain(payload: dict, my_lane: str,
+                         now: datetime | None = None) -> tuple[str, str] | None:
+    """Shim : la qualification du grain est portee par
+    `coordination.tapis_qualification_fil` (module dedie)."""
+    from coordination import tapis_qualification_fil  # import tardif : pas de cycle
+    return tapis_qualification_fil.qualification_grain(payload, my_lane, now)
 
 
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
@@ -5718,6 +5729,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             `my_lane` (#25443) pour exclure du plafond le propre marqueur de
             la lane qui interroge.
     """
+    # La QUALIFICATION, cote CONSOMMATEUR : un grain ecarte par la
+    # qualification n'est ni reclame ni edite. La decision vient du meme
+    # organe que le tirage (`tapis_rapide.etats`), applique au FIL COMPLET
+    # que cette lecture a deja rendu -- pas d'appel reseau supplementaire.
+    code_motif = _qualification_grain(payload, my_lane, now)
+    if code_motif:
+        code, motif = code_motif
+        print(f"[QUALIFICATION] {code} : {motif} -- grain non qualifie : "
+              f"ni reclame, ni edite (la qualification est prealable a "
+              f"l'action).", file=sys.stderr)
+        return 1
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
     # repo, in which case the empty-scope witness degrades to its pre-#10958
@@ -6814,11 +6836,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"de lane y a ete pose, il y a moins de 7 jours (#22500 point 3). "
             f"Le plafond exempte les EPICs de classe `consolidation`, et "
             f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
-            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC {where} "
-            f"(#26414 : une fille existante se sert librement, seul le claim "
-            f"pose sur l'EPIC est plafonne), ou prendre un autre grain du "
-            f"pool. Re-scoper avec `--paths` ne leve pas ce plafond ; "
-            f"`--force` reste reserve a l'arbitrage coordinateur.",
+            f"{cap_action_line(where, epic_cap_verdict.get('daughters') or [])}",
             file=sys.stderr,
         )
         return 1
@@ -7634,6 +7652,30 @@ def _glob_parent_dir(glob: str) -> str:
     return prefix.rsplit("/", 1)[0]
 
 
+def _glob_carries_prose(glob: str) -> bool:
+    """True when a scope element carries PROSE instead of a path pattern.
+
+    #27162 -- the claim grammar splits the `paths:` clause on its annotation
+    separators (` -- `, ` — `, ` (...)`). A glob that STILL carries whitespace
+    after that split is a FRAGMENT of a mis-split clause, not a path: the
+    measured case is a coordinator claim that glued its rationale to the glob
+    (`MyIA.AI.Notebooks/Sudoku/** ; claim pose au dispatch par le
+    coordinateur`).
+
+    Such a scope matches zero tracked file. The #21431 creation relaxation
+    then read it as "a file to be created in an existing directory" -- the
+    parent directory of the polluted glob DOES exist, so the tracked tree
+    could not decide the disjointness question, the scope was compared BY
+    PATTERN, the pattern missed the caller's path, and the lane was dropped
+    from the blockers: a fail-open (measured case #27139).
+
+    The creation relaxation therefore REFUSES a scope that carries prose: a
+    creation scope names a path, and a path with a rationale glued to it is a
+    broken claim -- which keeps the #10958 epic-wide lift (fail-CLOSED).
+    """
+    return any(ch.isspace() for ch in glob) or ";" in glob
+
+
 def _scope_is_creation(scope: list[str] | None,
                        tracked: list[str] | None) -> bool:
     """True when every glob of `scope` names a file to be CREATED.
@@ -7656,6 +7698,12 @@ def _scope_is_creation(scope: list[str] | None,
           something else. This is the discriminator the issue leaves to
           the implementation, and it is the one that keeps every existing
           fail-safe test green.
+      (d) it does not carry PROSE (#27162) -- a glob with a rationale glued
+          to it is a broken claim, not a file to be created. Without this
+          condition the polluted glob of the measured case reads as a
+          creation scope (its parent directory exists), is compared BY
+          PATTERN, misses the caller's path and is dropped: the fail-open
+          of #27139.
     """
     if not scope or tracked is None:
         return False
@@ -7665,6 +7713,8 @@ def _scope_is_creation(scope: list[str] | None,
             return False          # (a) the file already exists
         if _unparseable_scope_in([glob], tracked):
             return False          # (b) prose residue -- a typo
+        if _glob_carries_prose(glob):
+            return False          # (d) prose glued to the glob -- a typo
         parent = _glob_parent_dir(glob)
         if parent and parent not in dirs:
             return False          # (c) the directory does not exist -- a typo

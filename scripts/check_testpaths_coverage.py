@@ -105,6 +105,7 @@ from __future__ import annotations
 
 import argparse
 import configparser
+import json
 import os
 import posixpath
 import re
@@ -337,7 +338,7 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
     # --- verts locaux, hermeticite runner a demontrer (T1 #25366) ---
     # Petits volumes, hermetiques : ils rejoignent le run pytest partage
     # des que l'hermeticite du runner est demontree.
-    "MyIA.AI.Notebooks/Compression/tests": "jambe-pr",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/tests": "jambe-pr",
     "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/tests": "jambe-pr",
     "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/tests": "jambe-pr",
     "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/examples/sample_project/tests": "jambe-pr",
@@ -379,7 +380,15 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # Les 611 « tests verts » du triage sont un SOUS-ensemble mesure en local
 # (conda projet-is) : ils ne sont pas recomputables par l'organe. Le
 # compteur `items` est l'invariant mecanique qui les englobe.
-CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 66, "items": 1097}
+#
+# #27201 et #27121 / #27122 : population mesuree apres fusion des controles
+# de finitude et de fenetre datee : 26 marqueurs, 67 fichiers, 1110 items.
+# collectible_item_count compte les fonctions/classes, pas les cas parametres
+# de pytest : les 145 cas executes dans le harness sont une mesure distincte.
+# Le plafond precedent de 1134 confondait ces deux unites ; il est resserre.
+# Toujours hors CI racine : ce relevement ne pretend pas ajouter une
+# couverture CI. La suite complete se rejoue depuis le dossier du projet.
+CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 67, "items": 1110}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).
@@ -733,13 +742,17 @@ def run_inventory(
             print(f"    - {d}")
     if unwatched and not strict:
         print(
-            "  (advisory : exit 0. Se câblent en ajoutant le dossier à "
-            "`testpaths` de pytest.ini, en le déclarant comme cible de "
-            "`WORKFLOW_COVERAGE` s'il a son workflow dédié, ou en le nommant "
-            "`# CI-EXCLUDED: <dossier> — <raison>` ; strict est le défaut "
-            "depuis #25366 T0, `--advisory` rétrograde.)"
+            "  (câblage : ajouter le dossier à `testpaths` de pytest.ini, le "
+            "déclarer comme cible de `WORKFLOW_COVERAGE` s'il a son workflow "
+            "dédié, ou le nommer `# CI-EXCLUDED: <dossier> — <raison>` ; "
+            "strict est le défaut depuis #25366 T0, `--advisory` rétrograde, "
+            "`--baseline` tolère la dette connue et refuse le nouveau.)"
         )
-    return unwatched if strict else []
+    # Depuis T4 (#25366), le retour porte TOUJOURS la liste des trous :
+    # le drapeau strict ne decide plus de la donnee mais de l'impression
+    # (FAIL vs INFO) -- le verdict appartient a main(), qui connait le
+    # mode (advisory, baseline, strict).
+    return unwatched
 
 
 # --- #25366 T0 : cinquième et sixième sens, la consolidation mesurable ---
@@ -815,6 +828,160 @@ def coverage_without_testpaths(
         if t not in excluded
         and not any(t == tp or t.startswith(tp + "/") for tp in testpaths)
     ]
+
+
+# --- #25366 T4 : le ratchet — dette connue tolérée, NOUVEAU refusé ---
+
+def write_inventory_baseline(
+    path: Path,
+    unwatched: list[str],
+    dupes: dict[str, list[str]],
+    unplayed: list[str],
+) -> None:
+    """Écrit la baseline de dette connue des sens d'inventaire.
+
+    Format JSON : {"unwatched": [...], "duplicate_basenames": {nom:
+    [répertoires]}, "unplayed": [...]}. Le sens fichier (couverture par
+    fichier de #26759) est baseliné depuis que #26759 le rend strict
+    sous --inventory. Régénérer quand une tranche T1/T2 résorbe de la
+    dette (le jugement le rappelle par des lignes « régénérer »).
+    """
+    payload = {
+        "description": (
+            "Dette connue des sens d'inventaire de #25366 (dossiers de "
+            "tests non triés, basenames dupliqués) et du sens fichier "
+            "de #26759 (fichiers qu'aucune jambe ne collecte). Ratchet "
+            "T4 : ces entrées sont tolérées, tout finding NOUVEAU fait "
+            "rougir la garde. Régénération : python "
+            "scripts/check_testpaths_coverage.py --inventory "
+            "--write-baseline scripts/tests/baseline_testpaths_inventory.json"
+        ),
+        "unwatched": sorted(unwatched),
+        "duplicate_basenames": {
+            k: sorted(v) for k, v in sorted(dupes.items())
+        },
+        "unplayed": sorted(unplayed),
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True)
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def load_inventory_baseline(path: Path) -> dict:
+    """Charge la baseline ; absente ou mal formée = blocage explicite.
+
+    Une baseline manquante ne rend JAMAIS la garde muette : c'est un
+    rouge actionnable (corriger le chemin ou régénérer), pas un vert.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise SystemExit(
+            f"baseline ratchet introuvable : {path} — la régénérer par "
+            "--write-baseline (jamais un vert silencieux)"
+        )
+    except json.JSONDecodeError as exc:
+        raise SystemExit(f"baseline ratchet illisible ({path}) : {exc}")
+    if (
+        not isinstance(data, dict)
+        or not isinstance(data.get("unwatched"), list)
+        or not isinstance(data.get("duplicate_basenames"), dict)
+        or not isinstance(data.get("unplayed"), list)
+    ):
+        raise SystemExit(
+            f"baseline ratchet mal formée ({path}) : clés 'unwatched' "
+            "(liste), 'duplicate_basenames' (dict) et 'unplayed' "
+            "(liste) attendues — régénérer par --write-baseline"
+        )
+    return data
+
+
+def judge_inventory_against_baseline(
+    unwatched: list[str],
+    dupes: dict[str, list[str]],
+    unplayed: list[str],
+    baseline: dict,
+) -> list[str]:
+    """T4 : la dette de la baseline est tolérée, le NOUVEAU rougit.
+
+    - dossier non trié : toléré ssi listé dans la baseline ;
+    - basename dupliqué : toléré ssi ses répertoires sur l'arbre sont
+      un SOUS-ENSEMBLE de ceux de la baseline — retirer une copie
+      (progression T2) verdit, en ajouter une (croissance latérale,
+      invisible au simple compte de basenames) rougit ;
+    - le sixième sens (convergence CI -> testpaths) n'est PAS baseliné :
+      mesuré à zéro sur main (critère 1 tranché en T1), toute récidive
+      rougit sans tolérance.
+    """
+    failures: list[str] = []
+
+    base_unwatched = set(baseline.get("unwatched", []))
+    for d in unwatched:
+        if d in base_unwatched:
+            print(f"  [baseline] dette connue (tolérée) : {d}")
+        else:
+            failures.append(
+                f"dossier de tests non trié, absent de la baseline : {d}"
+            )
+    for d in sorted(base_unwatched - set(unwatched)):
+        print(f"  [baseline] dette résorbée — régénérer la baseline : {d}")
+
+    base_dupes: dict[str, list[str]] = baseline.get(
+        "duplicate_basenames", {}
+    )
+    for name, dirs in dupes.items():
+        if name not in base_dupes:
+            failures.append(
+                f"basename dupliqué NOUVEAU, absent de la baseline : "
+                f"{name} — {', '.join(dirs)}"
+            )
+            continue
+        extra = sorted(set(dirs) - set(base_dupes[name]))
+        if extra:
+            failures.append(
+                f"basename dupliqué en CROISSANCE : {name} porte des "
+                f"répertoires absents de la baseline : {', '.join(extra)}"
+            )
+        else:
+            removed = sorted(set(base_dupes[name]) - set(dirs))
+            if removed:
+                print(
+                    f"  [baseline] dette réduite — régénérer la baseline : "
+                    f"{name} ({', '.join(removed)} en moins)"
+                )
+            else:
+                print(f"  [baseline] dette connue (tolérée) : {name}")
+    for name in sorted(set(base_dupes) - set(dupes.keys())):
+        print(f"  [baseline] dette résorbée — régénérer la baseline : {name}")
+
+    base_unplayed = set(baseline.get("unplayed", []))
+    for f in unplayed:
+        if f in base_unplayed:
+            print(f"  [baseline] dette connue (tolérée) : {f}")
+        else:
+            failures.append(
+                "fichier de test non collecté NOUVEAU, absent de la "
+                f"baseline : {f}"
+            )
+    for f in sorted(base_unplayed - set(unplayed)):
+        print(f"  [baseline] dette résorbée — régénérer la baseline : {f}")
+
+    if failures:
+        print("Ratchet inventaire (#25366 T4) — findings NOUVEAUX :")
+        for f in failures:
+            print(f"  FAIL {f}")
+    elif unwatched or dupes:
+        print(
+            f"[ok] ratchet : aucun finding nouveau "
+            f"({len(unwatched)} dossier(s) non trié(s), "
+            f"{len(dupes)} basename(s) dupliqué(s), "
+            f"{len(unplayed)} fichier(s) non collecté(s) — dette de "
+            "baseline tolérée)"
+        )
+    return failures
 
 
 # --- #22735 : second sens, l'arborescence confrontée à la couverture ---
@@ -1211,7 +1378,29 @@ def main() -> int:
         "faire échouer (exit 0). Les quatre sens historiques restent "
         "bloquants dans tous les cas.",
     )
+    ap.add_argument(
+        "--baseline",
+        type=Path,
+        default=None,
+        help="Ratchet #25366 T4 : juger les sens d'inventaire contre la "
+        "dette connue enregistrée dans ce JSON — tolérée telle quelle, "
+        "tout finding NOUVEAU (dossier non trié inédit, basename "
+        "dupliqué inédit ou en croissance) fait échouer. Exige "
+        "--inventory.",
+    )
+    ap.add_argument(
+        "--write-baseline",
+        type=Path,
+        default=None,
+        help="Écrire la dette actuelle comme baseline du ratchet puis "
+        "sortir (régénération T1/T2). Exige --inventory.",
+    )
     args = ap.parse_args()
+
+    if not args.inventory and (args.baseline or args.write_baseline):
+        ap.error("--baseline et --write-baseline exigent --inventory")
+    if args.baseline is not None and args.write_baseline is not None:
+        ap.error("--baseline et --write-baseline sont exclusifs")
 
     repo_root = args.repo_root.resolve()
     testpaths = load_testpaths(repo_root / "pytest.ini")
@@ -1331,7 +1520,8 @@ def main() -> int:
         )
         for finding in (unplayed if args.inventory else unplayed[:20]):
             print(
-                f"  {'FAIL' if file_strict else 'INFO'} {finding['path']} "
+                f"  {'FAIL' if file_strict and args.baseline is None else 'INFO'}"
+                f" {finding['path']} "
                 f"({finding['items']} item(s)) — jambe candidate : "
                 f"{', '.join(finding['candidates'])}"
             )
@@ -1350,13 +1540,25 @@ def main() -> int:
     # l'inventaire est STRICT PAR DÉFAUT (--advisory rétrograde) : le rouge
     # est le signal qui motive les tranches T1 (trier les répertoires) et
     # T2 (dédoubler les basenames), pas une régression à corriger d'urgence.
-    # La garde CI (fast lane) appelle ce script sans --inventory : les sens
-    # de consolidation y entrent en T4, une fois la dette triée.
+    # Depuis T4 (#25366), la garde CI (fast lane) appelle ce script AVEC
+    # --inventory --baseline : la dette connue (baseline JSON committée)
+    # est tolérée, tout finding NOUVEAU rougit la PR — la classe ne peut
+    # plus revenir ni croître pendant que T2 épuise la dette.
+    write_mode = args.write_baseline is not None
     inventory: list[str] = []
     dupes: dict[str, list[str]] = {}
     convergence: list[str] = []
+    baseline_failures: list[str] = []
     if args.inventory:
-        inventory = run_inventory(repo_root, testpaths, excluded, strict)
+        # En mode baseline, l'impression des trous reste INFO (le verdict
+        # du ratchet est porté par judge_inventory_against_baseline) ; en
+        # mode écriture, strict=True pour lister la dette enregistrée.
+        inventory = run_inventory(
+            repo_root,
+            testpaths,
+            excluded,
+            (strict or write_mode) and args.baseline is None,
+        )
         # Cinquième sens (#25366 T0) : basenames dupliqués.
         dupes = duplicate_basenames(repo_root)
         if dupes:
@@ -1365,7 +1567,7 @@ def main() -> int:
                 f"découverts : {len(dupes)}"
             )
             for name, dirs in dupes.items():
-                print(f"  {'FAIL' if strict else 'INFO'} {name} — {', '.join(dirs)}")
+                print(f"  {'FAIL' if strict and args.baseline is None else 'INFO'} {name} — {', '.join(dirs)}")
         elif args.verbose:
             print("[ok] aucun basename dupliqué entre répertoires découverts")
         # Sixième sens (#25366 T0) : convergence CI -> testpaths.
@@ -1376,23 +1578,53 @@ def main() -> int:
                 "(un pytest racine ne les voit pas) :"
             )
             for t in convergence:
-                print(f"  {'FAIL' if strict else 'INFO'} {t}")
+                print(f"  {'FAIL' if strict and args.baseline is None else 'INFO'} {t}")
         elif args.verbose:
             print("[ok] toutes les cibles-dossier CI sont dans les testpaths")
+        # T4 (#25366) : ratchet — dette connue tolérée, nouveau refusé.
+        if write_mode:
+            write_inventory_baseline(
+                args.write_baseline,
+                inventory,
+                dupes,
+                [f["path"] for f in unplayed],
+            )
+            print(f"[ok] baseline ratchet écrite : {args.write_baseline}")
+            return 0
+        if args.baseline is not None:
+            baseline_failures = judge_inventory_against_baseline(
+                inventory,
+                dupes,
+                [f["path"] for f in unplayed],
+                load_inventory_baseline(args.baseline),
+            )
 
-    # `run_inventory` ne rend des trous qu'en strict ; les deux sens de
-    # #25366 suivent la même règle : listés en advisory, rouges en strict.
+    # Verdict des sens d'inventaire : rouges en strict (T0), SAUF en mode
+    # baseline (T4) où seuls les findings NOUVEAUX rougissent — la dette
+    # enregistrée est tolérée jusqu'à résorption T1/T2. Le sens de
+    # convergence (critère 1) reste refusé sans tolérance dans tous les
+    # modes stricts : il est mesuré à zéro sur main.
+    if args.baseline is not None:
+        # Mode ratchet : seuls les findings NOUVEAUX rougissent (le
+        # juge couvre dossiers, dupes ET fichiers non collectés), la
+        # convergence reste refusée sans tolérance (zéro sur main).
+        inventory_red = bool(baseline_failures) or (
+            strict and bool(convergence)
+        )
+    else:
+        inventory_red = strict and bool(
+            inventory or dupes or convergence
+        ) or (file_strict and bool(unplayed))
+
     return 1 if (
         uncovered
         or problems
         or uncovered_disk
         or missing
         or namespace_problems
-        or inventory
+        or inventory_red
         or ratchet
         or plan_issues
-        or (strict and (dupes or convergence))
-        or (file_strict and unplayed)
     ) else 0
 
 

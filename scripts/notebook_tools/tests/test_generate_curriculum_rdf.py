@@ -1,11 +1,17 @@
 import sys
 from pathlib import Path
 
-from rdflib import Literal, RDF, URIRef
+from rdflib import DCTERMS, Literal, RDF, URIRef
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from generate_curriculum_rdf import VOCAB, build_graph, validate_graph
+from generate_curriculum_rdf import (
+    VOCAB,
+    build_graph,
+    build_interfaces_graph,
+    build_taxonomy_graph,
+    validate_graph,
+)
 
 
 def test_catalogue_fixture_builds_and_passes_shacl():
@@ -121,3 +127,124 @@ def test_resource_fields_reject_values_with_wrong_types():
         assert "requires_api" in str(error)
     else:
         raise AssertionError("un booléen de ressource invalide doit être refusé")
+
+
+def test_interfaces_emit_class_path_and_contract():
+    interfaces = [
+        {"class": "cli", "name": "count_code_sorry",
+         "path": "scripts/lean/count_code_sorry.py",
+         "description": "Compte les sorry reels.",
+         "contract": {"usage": "python scripts/lean/count_code_sorry.py --json",
+                      "exit_semantics": "0 = compte rendu"}},
+        {"class": "mcp", "name": "sk08", "path": "a/b/",
+         "contract": {"usage": "dotnet run"}},
+    ]
+    graph = build_interfaces_graph(interfaces)
+    assert len(list(graph.subjects(RDF.type, VOCAB.Interface))) == 2
+    cli = URIRef("https://github.com/jsboige/CoursIA/cursus/interface/count_code_sorry")
+    assert (cli, VOCAB.interfaceClass, Literal("cli")) in graph
+    assert (cli, DCTERMS.identifier, Literal("scripts/lean/count_code_sorry.py")) in graph
+    assert (cli, VOCAB.invocation, Literal("python scripts/lean/count_code_sorry.py --json")) in graph
+    assert (cli, VOCAB.exitSemantics, Literal("0 = compte rendu")) in graph
+    # l'entree sans description ne porte pas de description (champ absent, non invente)
+    mcp = URIRef("https://github.com/jsboige/CoursIA/cursus/interface/sk08")
+    assert not list(graph.objects(mcp, DCTERMS.description))
+
+
+def test_interfaces_pass_shacl_with_valid_class():
+    graph = build_interfaces_graph([
+        {"class": "bridge", "name": "amd_lean_bridge",
+         "path": "MyIA.AI.Notebooks/GameTheory/amd_lean_bridge.py",
+         "contract": {"usage": "module Python"}},
+    ])
+    conforms, report = validate_graph(graph)
+    assert conforms, report
+
+
+def test_combined_catalogue_and_interfaces_pass_shacl():
+    """La facette interface coexiste avec les formes carnet sans se salir mutuellement."""
+    graph = build_graph([{"path": "A/B.ipynb", "title": "B", "serie": "A"}])
+    graph += build_interfaces_graph([
+        {"class": "cli", "name": "q", "path": "scripts/q.py",
+         "contract": {"usage": "python scripts/q.py"}},
+    ])
+    assert list(graph.subjects(RDF.type, VOCAB.Notebook))
+    assert list(graph.subjects(RDF.type, VOCAB.Interface))
+    conforms, report = validate_graph(graph)
+    assert conforms, report
+
+
+def test_interfaces_reject_unknown_class():
+    try:
+        build_interfaces_graph([
+            {"class": "rest", "name": "x", "path": "p", "contract": {"usage": "u"}},
+        ])
+    except ValueError as error:
+        assert "class" in str(error)
+    else:
+        raise AssertionError("une classe inconnue doit être refusée")
+
+
+def test_interfaces_reject_missing_usage():
+    try:
+        build_interfaces_graph([{"class": "cli", "name": "x", "path": "p"}])
+    except ValueError as error:
+        assert "usage" in str(error)
+    else:
+        raise AssertionError("un contrat sans usage doit être refusé")
+
+
+REPO_ROOT = Path(__file__).resolve().parents[3]
+TAXONOMY_DIR = REPO_ROOT / "docs" / "curriculum" / "taxonomy"
+
+
+def test_taxonomy_merge_emits_concepts_only_and_joins_catalogue_notebooks():
+    """Fusion --taxonomy-dir (#25001) : concepts sans structure, jointure par URI.
+
+    Témoin sur données réelles : catalogue réel + 9 taxonomies réelles. La
+    fusion n'émet ni série ni carnet de la taxonomie (une seule source de
+    structure : le catalogue) ; chaque lien cursus:concept atterrit sur un
+    nœud carnet du catalogue.
+    """
+    import json
+
+    catalog = json.loads((REPO_ROOT / "COURSE_CATALOG.generated.json").read_text(encoding="utf-8"))
+    graph = build_graph(catalog)
+    notebooks_before = set(graph.subjects(RDF.type, VOCAB.Notebook))
+    concepts_graph = build_taxonomy_graph(TAXONOMY_DIR)
+
+    # Concepts seuls : aucune structure de taxonomie ne s'ajoute.
+    assert not set(concepts_graph.subjects(RDF.type, VOCAB.Series))
+    assert not set(concepts_graph.subjects(RDF.type, VOCAB.Subseries))
+    assert not set(concepts_graph.subjects(RDF.type, VOCAB.Notebook))
+
+    graph += concepts_graph
+    notebooks_after = set(graph.subjects(RDF.type, VOCAB.Notebook))
+    assert notebooks_after == notebooks_before  # aucun doublon de carnet
+
+    linked = [
+        notebook for notebook in notebooks_after
+        if (notebook, VOCAB.concept, None) in graph
+    ]
+    assert linked, "aucun carnet du catalogue ne reçoit de concept"
+    assert any(True for _ in graph.triples((None, VOCAB.requiresConcept, None)))
+
+
+def test_merged_graph_conforms_and_dangling_prerequisite_is_refused():
+    """Le graphe fusionné passe les formes ; un prérequis pendant est refusé."""
+    import json
+
+    catalog = json.loads((REPO_ROOT / "COURSE_CATALOG.generated.json").read_text(encoding="utf-8"))
+    graph = build_graph(catalog)
+    graph += build_taxonomy_graph(TAXONOMY_DIR)
+    conforms, report = validate_graph(graph)
+    assert conforms, report
+
+    # Témoin négatif : un requiresConcept vers un concept absent du graphe
+    # viole sh:class cursus:CurriculumConcept de ConceptShape.
+    concept = next(graph.subjects(RDF.type, VOCAB.CurriculumConcept))
+    dangling = URIRef("https://github.com/jsboige/CoursIA/cursus/concept/00000000-0000-0000-0000-00000000dead")
+    graph.add((concept, VOCAB.requiresConcept, dangling))
+    conforms, report = validate_graph(graph)
+    assert not conforms
+    assert "requiresConcept" in report
