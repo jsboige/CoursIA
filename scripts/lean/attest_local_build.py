@@ -552,6 +552,37 @@ def _declared_packages(lake_dir: Path) -> list[str]:
     return names
 
 
+#: Lake ecrit un nom de paquet entre guillemets quand le nom nu n'est pas
+#: ecritable dans le DSL (un tiret, par exemple) : `«axiom-audit»`. Le
+#: REPERTOIRE, sous `.lake/packages/`, porte le nom NU.
+#:
+#: Comparer les deux chaines sans normaliser rend le verdict de completude
+#: structurellement faux : un cache chaud COMPLET est declare absent, puis
+#: le lac entier est refuse avec le motif `no-warm-cache-for-toolchain`.
+#: Mesure du 20/11 sur ai-01, lac `formal_logic` (toolchain `v4.33.1`) :
+#: `axiom-audit` et `doc-gen4` etaient presents ET resolus dans le pivot
+#: (`.git`, sources, `.lake` pour le second), et le pivot a quand meme ete
+#: ecarte -- motif : « packages incomplets : «axiom-audit» absent,
+#: «doc-gen4» absent ». Instance : PR #25236.
+QUOTE_GUILLEMETS = ("«", "»")
+
+
+def _package_dir_name(name: str) -> str:
+    """Nom du REPERTOIRE du paquet, sans la citation de lake.
+
+    `«axiom-audit»` -> `axiom-audit`. Un nom sans guillemets est rendu tel
+    quel : la normalisation n'introduit aucune hypothese.
+    """
+    raw = name.strip()
+    if (
+        len(raw) >= 2
+        and raw.startswith(QUOTE_GUILLEMETS[0])
+        and raw.endswith(QUOTE_GUILLEMETS[1])
+    ):
+        raw = raw[1:-1].strip()
+    return raw
+
+
 def _package_is_resolved(package_dir: Path, name: str) -> bool:
     """Le paquet `name` est-il reellement RESOLU sous `.lake/packages/` ?
 
@@ -586,10 +617,11 @@ def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
     """
     missing: list[str] = []
     for name in _declared_packages(manifest_owner):
-        package_dir = packages_dir / name
+        dir_name = _package_dir_name(name)
+        package_dir = packages_dir / dir_name
         if not package_dir.is_dir():
             missing.append("{} absent".format(name))
-        elif not _package_is_resolved(package_dir, name):
+        elif not _package_is_resolved(package_dir, dir_name):
             missing.append("{} incomplet".format(name))
     return missing
 

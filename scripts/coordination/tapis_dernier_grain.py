@@ -12,31 +12,26 @@ Le classement du tapis raisonne aujourd'hui sur une seule quantite : la
     l'issue.
 
 Les deux rajeunissent aujourd'hui le meme compteur. Consequence mesuree
-(releve groupe du 18/11 22:38Z, 454 issues ouvertes) : **45 issues** n'ont
-recu qu'une mention Git et aucune prise en charge -- elles sont comptees
-comme « visitees » par le classement, alors qu'aucune lane ne les a servies.
-Et l'absence de marqueur n'etablit rien quand le fil lu est **partiel** :
-l'absence est alors **non mesurable**, pas une absence.
+(releve du 18/11 22:38Z, 454 issues) : **45 issues** n'ont recu qu'une mention
+Git et aucune prise en charge -- elles sont comptees comme « visitees » par
+le classement, alors qu'aucune lane ne les a servies. L'absence de marqueur
+n'etablit rien quand le fil lu est **partiel** : elle est **non mesurable**.
 
 Ce module rend les trois etats, separement :
 
   ``grain``          une prise en charge nominative dans la fenetre ;
   ``passage_seul``   des citations Git, mais aucune prise en charge ;
-  ``jamais_servie``  aucun signal du tout, et le fil est **complet** :
-                     l'absence est etablie ;
+  ``jamais_servie``  aucun signal du tout, fil **complet** : absence etablie ;
   ``non_measurable`` aucun marqueur lisible, mais le fil n'est **pas**
                      complet : l'absence n'est **pas** etablie.
 
-Ce qui **ne** rajeunit pas le dernier grain :
-
-  - une **qualification** (le verdict d'un banc qui relit le fil) : c'est
-    une lecture, pas une prise en charge ;
-  - une **apparition dans une liste** (un releve, un recensement, un
-    classement) : une liste ne dit pas qui a travaille sur l'issue.
+Ce qui **ne** rajeunit pas le dernier grain : une **qualification** (le verdict
+d'un banc qui relit le fil) est une lecture, pas une prise en charge ; une
+**apparition dans une liste** (un releve, un recensement, un classement) ne dit
+pas qui a travaille sur l'issue.
 
 Fonctions PURES, sans reseau. La mesure groupee se branche par
-``depuis_signaux`` (aucun appel par issue) ; le fil lu par la lecture
-groupee se branche par ``depuis_evenements``.
+``depuis_signaux`` ; le fil lu par ``depuis_evenements``.
 
 Usage :
 
@@ -55,7 +50,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination.tapis_marqueurs import VISITE, Evt, _dt, _iso  # noqa: E402
+from coordination import tapis_seance  # noqa: E402
+from coordination.tapis_marqueurs import FERME, MARQUEUR_GRAIN, VISITE, Evt, _dt, _iso  # noqa: E402
 
 #: Une prise en charge : le marqueur doit etre **nominatif** (une lane nommee).
 GRAIN = "grain"
@@ -72,8 +68,9 @@ NON_MESURABLE = "non_measurable"
 RANG = {JAMAIS: 0, PASSAGE: 1, NON_MESURABLE: 2, GRAIN: 3}
 
 #: Une prise en charge fait une **SEANCE** : deux marqueurs de la meme lane a
-#: moins de `SEANCE_H` heures d'intervalle n'en font qu'une. La regle vit
-#: ici : c'est ce module qui dit ce qu'est une visite.
+#: moins de `SEANCE_H` heures d'intervalle n'en font qu'une. La regle des
+#: **instants** vit ici (`seances`) ; celle des **marqueurs** -- une livraison
+#: en ouvre une neuve (#27338) -- vit dans `coordination/tapis_seance.py`.
 SEANCE_H = 24
 
 
@@ -131,9 +128,10 @@ def _marqueurs_grain(evts: list[Evt]) -> list[datetime]:
 
     Un marqueur de visite sans lane nommee n'est pas un grain : personne ne
     peut en etre responsable, donc il ne dit rien de l'historique de l'issue.
+    Une lecture (`VISITE-INFO`) non plus : c'est une qualification.
     """
     return [ev.quand for ev in evts
-            if ev.marque in VISITE and ev.lane]
+            if ev.marque in MARQUEUR_GRAIN and ev.lane]
 
 
 def _passages(citations: list[dict]) -> list[datetime]:
@@ -143,20 +141,24 @@ def _passages(citations: list[dict]) -> list[datetime]:
 
 def compter_grains(evts: list[Evt],
                     depuis: datetime) -> tuple[str | None, int, int]:
-    """Les visites GRAIN : seances de prises en charge **nominatives**.
+    """Les **visites** : seances de prises en charge **ou** de lectures.
 
     Une citation Git n'est pas une visite : elle n'entre pas dans le compte,
     et elle ne rajeunit pas la derniere visite. `depuis` est le debut du tour
-    -- c'est la fenetre qui decide, pas la date du dernier grain.
+    -- c'est la fenetre qui decide, pas la date du dernier grain. L'ensemble
+    lu est `VISITE` : une lecture d'une lane y compte aussi (#27590). Les
+    seances suivent la regle des marqueurs (`tapis_seance.par_lane`) : une
+    livraison en ouvre une neuve (#27338).
     """
-    par_lane: dict[str, list[datetime]] = {}
+    par_lane: dict[str, list[Evt]] = {}
     for ev in evts:
-        if ev.marque in VISITE and ev.lane:
-            par_lane.setdefault(ev.lane, []).append(ev.quand)
-    tous = [t for ts in par_lane.values() for t in ts]
+        if ev.lane and (ev.marque in VISITE or ev.marque in FERME):
+            par_lane.setdefault(ev.lane, []).append(ev)
+    tous = [ev.quand for evs in par_lane.values() for ev in evs
+            if ev.marque in VISITE]
     return ((_iso(max(tous)) if tous else None),
-            sum(seances(ts) for ts in par_lane.values()),
-            sum(seances(ts, depuis) for ts in par_lane.values()))
+            sum(tapis_seance.par_lane(evs) for evs in par_lane.values()),
+            sum(tapis_seance.par_lane(evs, depuis) for evs in par_lane.values()))
 
 
 def depuis_evenements(evts: list[Evt], citations: list[dict], *,
