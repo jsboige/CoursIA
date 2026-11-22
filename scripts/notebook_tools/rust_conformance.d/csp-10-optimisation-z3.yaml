@@ -9,6 +9,14 @@
 # déclaré absent avec l'écart mesuré. À corriger À LA MAIN si une
 # divergence est un écart d'API documenté : le fichier n'est jamais
 # réécrit par l'outil une fois présent.
+#
+# Cellules non mesurées (motif relevé à la relecture de la livraison) :
+#   - cellule 1 : bannière d'environnement du jumeau Python (« Dépendances
+#     prêtes. », version de Z3) ; le carnet Rust n'imprime rien à cette
+#     cellule, il n'y a pas de texte à comparer ;
+#   - cellule 13 : le jumeau Python rend une figure matplotlib (image/png),
+#     le carnet Rust imprime la grille en texte ; une sortie riche contre du
+#     texte ne se compare pas à l'égalité stricte.
 - name: "CSP-10-Optimisation-Z3"
   family: "Search/Part2-CSP"
   python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb
