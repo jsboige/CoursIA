@@ -1,0 +1,172 @@
+- name: "Sudoku-18 Comparison"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Rust.ipynb
+  measures:
+    - id: backtracking_calls
+      description: "Appels du backtracking simple sur la grille de reference (deterministe)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "Backtracking simple: resolu=\\w+, (\\d+) appels"
+          transform: int
+        csharp:
+          cell: 9
+          pattern: "Backtracking simple: resolu=\\w+, (\\d+) appels"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "Backtracking simple: resolu=\\w+, (\\d+) appels"
+          transform: int
+    - id: mrv_calls
+      description: "Appels du backtracking MRV sur la grille de reference (deterministe)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "Backtracking MRV: resolu=\\w+, (\\d+) appels"
+          transform: int
+        csharp:
+          cell: 14
+          pattern: "Backtracking MRV: resolu=\\w+, (\\d+) appels"
+          transform: int
+        rust:
+          cell: 14
+          pattern: "Backtracking MRV: resolu=\\w+, (\\d+) appels"
+          transform: int
+    - id: norvig_calls
+      description: "Appels de Norvig sur la grille de reference (resolution par propagation seule)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "Norvig: resolu=\\w+, (\\d+) appels"
+          transform: int
+        csharp:
+          cell: 17
+          pattern: "Norvig: resolu=\\w+, (\\d+) appels"
+          transform: int
+        rust:
+          cell: 17
+          pattern: "Norvig: resolu=\\w+, (\\d+) appels"
+          transform: int
+    - id: mrv_global_rate
+      description: "Grilles resolues par BT + MRV sur le benchmark coeur (numerateur sur 16)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 34
+          pattern: "BT \\+ MRV\\s+: (\\d+)/16 resolus"
+          transform: int
+        csharp:
+          cell: 34
+          pattern: "BT \\+ MRV\\s+: (\\d+)/16 resolus"
+          transform: int
+        rust:
+          cell: 34
+          pattern: "BT \\+ MRV\\s+: (\\d+)/16 resolus"
+          transform: int
+    - id: norvig_global_rate
+      description: "Grilles resolues par Norvig sur le benchmark coeur (numerateur sur 16)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 34
+          pattern: "Norvig\\s+: (\\d+)/16 resolus"
+          transform: int
+        csharp:
+          cell: 34
+          pattern: "Norvig\\s+: (\\d+)/16 resolus"
+          transform: int
+        rust:
+          cell: 34
+          pattern: "Norvig\\s+: (\\d+)/16 resolus"
+          transform: int
+    - id: exact_cover_global_rate
+      description: >
+        Grilles resolues par le solveur de couverture exacte sur le benchmark
+        coeur (numerateur sur 16). Le solveur change de visage selon la langue
+        -- OR-Tools CP-SAT cote Python et C#, DLX (crate dlx 0.8.5) cote Rust,
+        fallback pre-autorise par la spec #27665 -- mais la famille et la
+        grandeur mesuree sont identiques.
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 34
+          pattern: "OR-Tools CP-SAT\\s+: (\\d+)/16 resolus"
+          transform: int
+        csharp:
+          cell: 34
+          pattern: "OR-Tools CP-SAT\\s+: (\\d+)/16 resolus"
+          transform: int
+        rust:
+          cell: 34
+          pattern: "DLX[^\n:]*: (\\d+)/16 resolus"
+          transform: int
+    - id: sa_iterations
+      description: >
+        Iterations du recuit simule sur la grille de reference. Les moteurs
+        aleatoires divergent (Mersenne seed 42 cote Python, RNG .NET cote C#,
+        ChaCha8 seed 3 cote Rust -- le seed 42 diverge sous ChaCha8, ecart
+        documente en tete de la cellule des solveurs etendus) : la spec #27665
+        admet +-50 % autour de la reference Python (981), soit 490 iterations.
+      tolerance: 490
+      reference: python
+      sides:
+        python:
+          cell: 48
+          pattern: "Simulated Annealing: resolu=\\w+, (\\d+) iterations"
+          transform: int
+        csharp:
+          cell: 48
+          pattern: "Simulated Annealing: resolu=\\w+, (\\d+) iterations"
+          transform: int
+        rust:
+          cell: 48
+          pattern: "Simulated Annealing: resolu=\\w+, (\\d+) iterations"
+          transform: int
+    - id: sa_resolu
+      description: "Le recuit simule resout la grille de reference (booleen, casse libre)"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 48
+          pattern: "Simulated Annealing: resolu=(\\w+)"
+          transform: text
+        csharp:
+          cell: 48
+          pattern: "Simulated Annealing: resolu=(\\w+)"
+          transform: text
+        rust:
+          cell: 48
+          pattern: "Simulated Annealing: resolu=(\\w+)"
+          transform: text
+    - id: fc_easy_rate
+      description: >
+        Grilles Easy resolues par Norvig + forward checking au benchmark
+        etendu (numerateur sur 5, premiere ligne FC du tableau).
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 54
+          pattern: "Norvig \\+ FC\\s+Easy\\s+[\\d.]+ \\[[\\d.\\-]+\\]\\s+(\\d+)/\\d+"
+          transform: int
+        csharp:
+          cell: 54
+          pattern: "Norvig \\+ FC\\s+Easy\\s+[\\d.]+ \\[[\\d.\\-]+\\]\\s+(\\d+)/\\d+"
+          transform: int
+        rust:
+          cell: 54
+          pattern: "Norvig \\+ FC\\s+Easy\\s+[\\d.]+ \\[[\\d.\\-]+\\]\\s+(\\d+)/\\d+"
+          transform: int

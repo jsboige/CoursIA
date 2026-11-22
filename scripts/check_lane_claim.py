@@ -109,6 +109,7 @@ from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
 from grain_tag import extract_lane, lane_marker_residues
+from claim_cap_advice import cap_action_line, open_daughters
 
 # #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
 # `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
@@ -131,10 +132,17 @@ _GH_OPEN_PRS_TIMEOUT_S = int(
 # #21742 -- ce cache ne vaut PLUS comme preuve de liberte : le producteur
 # (picker belt) y ecrivait une liste issue de `gh pr list --limit 200`, donc
 # TRONQUEE (mesure : 362 PRs ouvertes sur le depot, 200 seulement dans la
-# fenetre). Le format v2 (`open-prs-v2`) porte explicitement la completude ;
-# une liste nue (format heritage) n'en porte aucune et vaut absence de cache.
+# fenetre). Le format courant (`_OPEN_PRS_CACHE_FORMAT`) porte explicitement
+# la completude ; une liste nue (format heritage) n'en porte aucune et vaut
+# absence de cache.
 _OPEN_PRS_CACHE_PATH = os.environ.get("CHECK_LANE_CLAIM_OPEN_PRS_JSON")
-_OPEN_PRS_CACHE_FORMAT = "open-prs-v2"
+# v3 (#26725) -- la liste `files` d'une PR n'est plus la liste BRUTE de
+# `/pulls/{n}/files` : pour une PR dont la base n'est pas la branche par
+# defaut, l'enumeration la reduit a ce que la PR change reellement (cf
+# `_reduce_stacked_pr_files`). Un cache v2 porte les listes base-relatives
+# d'avant -- dont les milliers de fichiers de rattrapage d'une PR empilee --
+# et n'a donc pas le droit d'etre relu.
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v3"
 
 # --- #21742 : enumeration COMPLETE des PRs ouvertes ----------------------------
 #
@@ -2392,10 +2400,11 @@ class OpenPrsIncompleteError(RuntimeError):
 _OPEN_PRS_QUERY_FIRST = """
 query {
   repository(owner:"@OWNER@", name:"@NAME@") {
+    defaultBranchRef { name }
     pullRequests(states:OPEN, first:100, orderBy:{field:UPDATED_AT, direction:ASC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        number title headRefName body additions deletions
+        number title headRefName baseRefName body additions deletions createdAt
         headRefOid
         files(first:100) { totalCount nodes { path changeType } }
       }
@@ -2407,10 +2416,11 @@ query {
 _OPEN_PRS_QUERY_NEXT = """
 query($cursor: String) {
   repository(owner:"@OWNER@", name:"@NAME@") {
+    defaultBranchRef { name }
     pullRequests(states:OPEN, first:100, after:$cursor, orderBy:{field:UPDATED_AT, direction:ASC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        number title headRefName body additions deletions
+        number title headRefName baseRefName body additions deletions createdAt
         headRefOid
         files(first:100) { totalCount nodes { path changeType } }
       }
@@ -2418,6 +2428,83 @@ query($cursor: String) {
   }
 }
 """
+
+
+def _run_bounded(cmd, *, timeout, env=None):
+    """Lance `gh` (ou `git`) borne pour de VRAI : fichiers, pas de pipe.
+
+    Sur Windows, `subprocess.run(capture_output=True, timeout=T)` peut ne
+    JAMAIS rendre la main. A l'expiration il tue l'enfant, puis appelle
+    `communicate()` une seconde fois pour recuperer la sortie -- sans
+    `timeout` (Lib/subprocess.py, `run()`, branche `_mswindows`). Ce second
+    appel joint les threads lecteurs avec `join(None)`, soit une attente
+    infinie, et il suffit qu'un descendant ait herite du handle du pipe pour
+    que ces threads ne finissent jamais.
+
+    Mesure du 2026-11-15 sur ce siege (pile `faulthandler`, tapis `--belt` a
+    `--belt-time-budget 240` sous `timeout 400`) : le thread principal passe
+    de `_gh_graphql` a `communicate` puis `join` a l'etat bloque, et le run
+    est tue par sa borne externe sans avoir servi un grain (#21436). Le
+    `timeout=60` de l'appel avait pourtant ete respecte une premiere fois --
+    c'est sa reprise sur erreur qui le defait.
+
+    On redirige donc la sortie vers des FICHIERS temporaires : `_communicate`
+    n'a alors aucun thread lecteur a joindre, et l'echeance redevient une
+    borne reelle. `subprocess.run` reste la surface d'appel (les tests le
+    simulent ; le correctif porte sur le transport, pas sur le seam).
+
+    Rend un `CompletedProcess` de meme forme que `subprocess.run`, et propage
+    `subprocess.TimeoutExpired` comme lui -- les appelants continuent de
+    convertir ce timeout en `OpenPrsIncompleteError` ou `RuntimeError`.
+
+    Ce transport est le meme que `pick_idle_grain._run_bounded` (ecrit le
+    2026-10-24 pour la meme classe) : le picker l'avait recu, le lecteur non.
+    """
+    out_file = tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                      errors="replace")
+    err_file = tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                      errors="replace")
+    try:
+        try:
+            # `encoding=`/`errors=` sont INERTES sur un descripteur de
+            # fichier (Popen n'enveloppe que les PIPE) : le decodage reel est
+            # fait par les fichiers ci-dessus, eux aussi epingles UTF-8. On
+            # les repete quand meme, parce que c'est le contrat que le test
+            # #12811 lit, et qu'il redeviendrait vrai si le transport
+            # repassait un jour par un PIPE. Sans ce pin, `text=True` decode
+            # avec le locale de l'OS (cp1252 sous Windows) et la garde meurt.
+            proc = subprocess.run(cmd, stdout=out_file, stderr=err_file,
+                                  stdin=subprocess.DEVNULL, env=env,
+                                  shell=False, timeout=timeout,
+                                  encoding="utf-8", errors="replace")
+        except subprocess.TimeoutExpired:
+            # Pas de nettoyage d'arbre ici : `taskkill /T` exigerait le pid
+            # que `run` ne rend pas sur expiration, et un `gh` orphelin
+            # s'arrete seul. Ce qui compte est que l'APPELANT ne soit plus
+            # retenu -- c'est ce que la redirection fichier garantit.
+            raise
+        rc = proc.returncode
+        out_file.seek(0)
+        err_file.seek(0)
+        out = out_file.read()
+        err = err_file.read()
+        # Seam de simulation : un `subprocess.run` simule ne connait pas les
+        # descripteurs qu'on lui passe et rend son texte dans `.stdout` au
+        # lieu de l'ecrire. Le fichier reste VIDE dans ce cas -- jamais en
+        # production, ou `run` n'alimente pas `.stdout` quand `stdout=` est
+        # redirige.
+        if not out:
+            fallback = getattr(proc, "stdout", None)
+            if isinstance(fallback, str):
+                out = fallback
+        if not err:
+            fallback_err = getattr(proc, "stderr", None)
+            if isinstance(fallback_err, str):
+                err = fallback_err
+        return subprocess.CompletedProcess(cmd, rc, out, err)
+    finally:
+        out_file.close()
+        err_file.close()
 
 
 def _gh_repo_name_with_owner() -> str:
@@ -2428,11 +2515,12 @@ def _gh_repo_name_with_owner() -> str:
     est validee par motif : la chaine part dans une requete GraphQL.
     """
     try:
-        proc = subprocess.run(
+        # #21436 -- `_run_bounded` et non `subprocess.run` : sur Windows, ce
+        # dernier perd sa borne a la premiere expiration (join infini sur les
+        # threads lecteurs). Voir la docstring du transport.
+        proc = _run_bounded(
             ["gh", "repo", "view", "--json", "nameWithOwner",
              "-q", ".nameWithOwner"],
-            capture_output=True, text=True, shell=False,
-            encoding="utf-8", errors="replace",
             timeout=_GH_OPEN_PRS_TIMEOUT_S,
         )
     except subprocess.TimeoutExpired as exc:
@@ -2465,11 +2553,9 @@ def _gh_graphql(query: str, variables: dict[str, str] | None = None) -> dict:
         # un `@` initial, mais la forme brute evite la question.
         cmd += ["-f", f"{key}={value}"]
     try:
-        proc = subprocess.run(
-            cmd, capture_output=True, text=True, shell=False,
-            encoding="utf-8", errors="replace",
-            timeout=_GH_OPEN_PRS_TIMEOUT_S,
-        )
+        # #21436 -- transport borne : la pile du tapis bloquait ICI, dans la
+        # reprise sur expiration de `subprocess.run` (Windows).
+        proc = _run_bounded(cmd, timeout=_GH_OPEN_PRS_TIMEOUT_S)
     except subprocess.TimeoutExpired as exc:
         raise OpenPrsIncompleteError(
             "delai de l'appel GraphQL depasse",
@@ -2521,13 +2607,12 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
     chemins supplementaires, pas des fichiers de la PR.
     """
     try:
-        proc = subprocess.run(
+        # #21436 -- meme classe que `_gh_graphql` : transport borne.
+        proc = _run_bounded(
             [
                 "gh", "api", "--paginate",
                 f"repos/{owner}/{name}/pulls/{number}/files?per_page=100",
             ],
-            capture_output=True, text=True, shell=False,
-            encoding="utf-8", errors="replace",
             timeout=_GH_OPEN_PRS_TIMEOUT_S,
         )
     except subprocess.TimeoutExpired as exc:
@@ -2579,6 +2664,65 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
     return paths, previous
 
 
+def _reduce_stacked_pr_files(entries: list[dict],
+                             default_branch: str | None) -> None:
+    """#26725 -- une PR empilee n'occupe que ce qu'elle change.
+
+    `/pulls/{n}/files` (et le `files(first:100)` de GraphQL) decrit la
+    diff de la branche CONTRE SA BASE declaree. Pour une PR empilee -- base
+    = branche de feature, pas la branche par defaut -- la liste contient
+    donc tout l'avancement de `main` que la base n'a pas encore integre.
+
+    Instance fondatrice, mesuree le 2026-11-15 : #25029 (base
+    `feature/25013-chaines-07`, posee sur un `main` du 06/11) annoncait
+    4326 fichiers la ou elle n'en change que 7 ; deux lanes ont ete
+    bloquees le meme matin sur un fichier (`ICT-25b`, `SW-04`) qu'elle ne
+    touche pas.
+
+    Le remede est le **diff de contenu** de la PR : `origin/main...<tete>`,
+    soit la diff du point de divergence a la tete -- exactement les 7
+    chemins de #25029, contre 707 pour la diff a deux points (qui compte
+    aussi ce que `main` a change depuis) et 4171 pour l'union des commits
+    de la PR (`_pr_files_against_main`, #25243 : un de ses merges n'a aucun
+    parent sur `main` et se compare alors a une branche de feature). Le
+    resultat est intersecte avec la liste de l'API, comme le demande
+    l'issue. Trois gardes :
+
+      - base == branche par defaut, ou base inconnue : **aucun changement**
+        (exigence explicite de l'issue -- la liste de l'API reste la
+        reference pour une PR ordinaire) ;
+      - provenance non etablie (`None`) : la liste de l'API reste
+        l'occupation -- fail-CLOSED, une panne Git ne libere jamais un
+        chemin ;
+      - les ANCIENS chemins des renommages restent occupes : `git diff
+        --name-only` ne les rend pas, et un renommage est justement le
+        geste qui rend le chemin de base dangereux a editer ailleurs.
+
+    Mutation en place : l'appelant ecrit ensuite le cache, qui portera donc
+    la liste reduite (format v3).
+    """
+    if not default_branch:
+        return
+    for entry in entries:
+        base = entry.get("baseRefName")
+        if not isinstance(base, str) or not base or base == default_branch:
+            continue
+        changed = _pr_files_changed_against_main(entry)
+        if changed is None:
+            continue
+        api_paths = {
+            node.get("path") for node in entry.get("files") or []
+            if isinstance(node, dict) and node.get("path")
+        }
+        own = [path for path in changed if not api_paths or path in api_paths]
+        known = set(own)
+        for previous in entry.get("renames") or []:
+            if previous and previous not in known:
+                own.append(previous)
+                known.add(previous)
+        entry["files"] = [{"path": path} for path in own]
+
+
 def _gh_open_prs_complete() -> list[dict]:
     """Enumeration COMPLETE des PRs ouvertes.
 
@@ -2625,9 +2769,16 @@ def _gh_open_prs_complete() -> list[dict]:
             raise OpenPrsIncompleteError(
                 "depot introuvable dans la reponse GraphQL", repo)
         connection = repository.get("pullRequests") or {}
+        # #26725 -- la branche par defaut du depot, lue dans la MEME reponse
+        # que la liste : pas d'appel supplementaire, et la valeur decrit le
+        # depot au moment de l'enumeration.
+        default_branch = (repository.get("defaultBranchRef") or {}).get("name")
+        if not isinstance(default_branch, str) or not default_branch:
+            default_branch = None
         # PRs a relire en REST : plafonnees (liste de fichiers tronquee) ou
         # porteuses d'un renommage (ancien chemin invisible cote GraphQL).
         rest_needed: list[tuple[int, int]] = []
+        page_entries: list[dict] = []
         for node in connection.get("nodes") or []:
             files = node.get("files") or {}
             file_nodes = files.get("nodes") or []
@@ -2643,10 +2794,17 @@ def _gh_open_prs_complete() -> list[dict]:
                 "number": number,
                 "title": node.get("title"),
                 "headRefName": node.get("headRefName"),
+                # #26725 -- la base declaree decide si la liste `files`
+                # ci-dessous est la diff de la PR ou celle de sa pile.
+                "baseRefName": node.get("baseRefName"),
                 "headRefOid": node.get("headRefOid"),
                 "body": node.get("body"),
                 "additions": node.get("additions"),
                 "deletions": node.get("deletions"),
+                # #26751 -- la date de creation serveur de la PR : elle dit si
+                # la PR est ANTERIEURE au claim de la lane appelante (une
+                # livraison en cours que le claim a recouvre).
+                "created_at": node.get("createdAt"),
                 "files": [{"path": p} for p in paths],
                 # #25910 -- anciens chemins des renommages (liste vide si la
                 # PR n'en porte pas). La cle est aussi la preuve que cette
@@ -2655,6 +2813,7 @@ def _gh_open_prs_complete() -> list[dict]:
                 "renames": [],
             }
             prs.append(entry)
+            page_entries.append(entry)
             by_number[number] = entry
         if len(prs) > _OPEN_PRS_HARD_CAP:
             raise OpenPrsIncompleteError(
@@ -2683,6 +2842,11 @@ def _gh_open_prs_complete() -> list[dict]:
                         if old not in known:
                             entry["files"].append({"path": old})
                             known.add(old)
+        # #26725 -- la liste ci-dessus est base-relative ; pour une PR
+        # empilee elle est reduite a ce que la PR change. Apres le refetch :
+        # c'est la liste COMPLETE que l'intersection doit reduire, pas la
+        # preview GraphQL de 100 chemins.
+        _reduce_stacked_pr_files(page_entries, default_branch)
         page_info = connection.get("pageInfo") or {}
         if not page_info.get("hasNextPage"):
             break
@@ -2696,15 +2860,16 @@ def _gh_open_prs_complete() -> list[dict]:
 def _read_open_prs_cache() -> list[dict] | None:
     """Cache de session (#19643) ; `None` = absent, corrompu ou heritage.
 
-    Le format v2 (`open-prs-v2`) porte la completude : un cache v2 marque
-    `complete: true` est une preuve ; un cache v2 marque incomplet leve
-    `OpenPrsIncompleteError` (on ne pretend pas avoir la liste).
+    Le format courant (`_OPEN_PRS_CACHE_FORMAT`, v3 depuis #26725) porte la
+    completude : un cache marque `complete: true` est une preuve ; un cache
+    marque incomplet leve `OpenPrsIncompleteError` (on ne pretend pas avoir
+    la liste).
 
     Une liste NUE (format heritage, produit par le picker belt) ne porte
     AUCUNE preuve de completude : elle vient de `gh pr list --limit 200`,
     donc elle est tronquee des que le depot compte plus de 200 PRs ouvertes
     (mesure : 362). Elle est donc traitee comme absente -- et le fetch
-    complet qui suit la REECRIT le fichier au format v2.
+    complet qui suit la REECRIT le fichier au format courant.
     """
     if not _OPEN_PRS_CACHE_PATH:
         return None
@@ -2724,6 +2889,18 @@ def _read_open_prs_cache() -> list[dict] | None:
             # renommer. Il est donc traite comme absent -- le fetch complet
             # qui suit le REECRIT au format courant.
             if any("renames" not in pr for pr in prs if isinstance(pr, dict)):
+                return None
+            # #26751 -- meme traitement pour la date de creation : sans elle,
+            # la jambe IMPLICIT ne peut pas dire si une PR est ANTERIEURE au
+            # claim de la lane appelante, et le filtre par date (le cas
+            # #26597) deviendrait un verdict fabrique. Un cache ecrit par une
+            # version anterieure est donc traite comme absent : le fetch
+            # complet qui suit le REECRIT au format courant. Les DEUX
+            # graphies sont acceptees (`created_at` du fetch GraphQL de cet
+            # organe, `createdAt` du `gh pr list` du picker) -- meme chose,
+            # deux ecrivains.
+            if any("created_at" not in pr and "createdAt" not in pr
+                   for pr in prs if isinstance(pr, dict)):
                 return None
             return prs
         raise OpenPrsIncompleteError(
@@ -3007,6 +3184,73 @@ def _open_prs_by_referenced_issue(
     return index
 
 
+def _pr_head_commit(pr: dict) -> str | None:
+    """OID de tete de la PR, ou `None` si l'objet n'est pas etablissable.
+
+    L'objet est cherche dans le depot local, puis ramene par sa ref de pull
+    quand il manque (#25243). `None` est un echec de provenance, jamais une
+    preuve : les appelants conservent alors leur mesure de repli.
+    """
+    head = pr.get("headRefOid")
+    number = pr.get("number")
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", head):
+        return None
+
+    def git(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", *args], capture_output=True, check=False,
+            encoding="utf-8", errors="strict",
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+
+    try:
+        if git("cat-file", "-e", f"{head}^{{commit}}").returncode == 0:
+            return head
+        if not isinstance(number, int) or number <= 0:
+            return None
+        fetched = git("fetch", "--no-tags", "origin", f"refs/pull/{number}/head")
+        if fetched.returncode != 0:
+            return None
+        resolved = git("rev-parse", "--verify", "FETCH_HEAD")
+        if (resolved.returncode != 0
+                or resolved.stdout.strip().lower() != head.lower()):
+            return None
+        return resolved.stdout.strip()
+    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
+        return None
+
+
+def _pr_files_changed_against_main(pr: dict) -> list[str] | None:
+    """#26725 -- chemins ou la PR change, du point de divergence a sa tete.
+
+    `git diff --name-only origin/main...<tete>`, l'equivalent local du
+    `compare/main...<tete>` de GitHub : la reference est le point de
+    divergence, pas la tete de `main`, donc ce que `main` a change depuis
+    ne compte pas. Mesure du 15/11 sur #25029 -- 4326 fichiers annonces par
+    `/pulls/25029/files`, 707 en diff a deux points (l'avancement de `main`
+    y entre), **7** ici : ses 7 carnets `Chaines-08` et rien d'autre.
+
+    `None` = provenance non etablie (objet de tete introuvable, `origin/main`
+    absent, panne Git) : l'appelant garde la liste de l'API, fail-CLOSED.
+    """
+    head = _pr_head_commit(pr)
+    if head is None:
+        return None
+
+    try:
+        diff = subprocess.run(
+            ["git", "diff", "--name-only", "-z",
+             f"origin/main...{head}", "--"],
+            capture_output=True, check=False,
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+        if diff.returncode != 0:
+            return None
+        return [path.decode("utf-8") for path in diff.stdout.split(b"\0") if path]
+    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
+        return None
+
+
 def _pr_files_against_main(pr: dict) -> list[str] | None:
     """Return paths touched by first-parent PR commits absent from main.
 
@@ -3023,9 +3267,8 @@ def _pr_files_against_main(pr: dict) -> list[str] | None:
     release an implicit occupation. An empty list means there is no path
     touched by an ordinary first-parent commit or contributed by a merge.
     """
-    head = pr.get("headRefOid")
-    number = pr.get("number")
-    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", head):
+    head = _pr_head_commit(pr)
+    if head is None:
         return None
 
     def git(*args: str) -> subprocess.CompletedProcess:
@@ -3036,18 +3279,6 @@ def _pr_files_against_main(pr: dict) -> list[str] | None:
         )
 
     try:
-        has_head = git("cat-file", "-e", f"{head}^{{commit}}")
-        if has_head.returncode != 0:
-            if not isinstance(number, int) or number <= 0:
-                return None
-            fetched = git("fetch", "--no-tags", "origin",
-                          f"refs/pull/{number}/head")
-            if fetched.returncode != 0:
-                return None
-            fetched_head = git("rev-parse", "--verify", "FETCH_HEAD")
-            if (fetched_head.returncode != 0
-                    or fetched_head.stdout.strip().lower() != head.lower()):
-                return None
         main = git("rev-parse", "--verify", "origin/main")
         if main.returncode != 0:
             return None
@@ -3204,6 +3435,10 @@ def _find_open_prs_referencing_issue(
             "files": files,
             "additions": pr.get("additions"),
             "deletions": pr.get("deletions"),
+            # #26751 -- la date de creation serveur de la PR, comparee au
+            # `createdAt` serveur du claim de la lane appelante. Deux
+            # graphies acceptees (voir `_read_open_prs_cache`).
+            "created_at": pr.get("created_at") or pr.get("createdAt"),
             "enumerative": cited > limit,
             "cited_issues": cited,
         })
@@ -5414,8 +5649,18 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         if cause:
             verdict.update(cause=cause, epic=target["number"])
             break
+    if verdict.get("cause") and pool:  # #27012 : filles reelles de l'EPIC
+        verdict["daughters"] = open_daughters(pool, verdict.get("epic"), picker.parent_refs)
     verdict["error"] = "; ".join(errors) or None
     return verdict
+
+
+def _qualification_grain(payload: dict, my_lane: str,
+                         now: datetime | None = None) -> tuple[str, str] | None:
+    """Shim : la qualification du grain est portee par
+    `coordination.tapis_qualification_fil` (module dedie)."""
+    from coordination import tapis_qualification_fil  # import tardif : pas de cycle
+    return tapis_qualification_fil.qualification_grain(payload, my_lane, now)
 
 
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
@@ -5433,9 +5678,12 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     of ANOTHER lane references this issue. Implicit occupation has no
     marker authority, so it neither reuses BLOCKED (exit 1) nor the
     io/gh-error exit 2 that check_grain_free.py documents for this mode.
-    Emitted only on the read path (`check_open_pr_paths=True`): a `--claim`
-    posting is the deconfliction gesture itself and is never refused by
-    this leg.
+    #26751 -- the leg is now read AND write: `--claim` calls this function
+    with `check_open_pr_paths=True`, and a rc=3 REFUSES the post (a marker
+    posted over an untagged OPEN PR of another lane deconflicts nothing).
+    When the caller already HOLDS its claim, the leg is restricted to the
+    PRs opened BEFORE that claim (the server `createdAt` of each): a PR
+    opened after it stays subsumed by the claim (review 5429946072).
 
     Args:
         payload: `gh issue view --json ...` payload (or `from-json`).
@@ -5481,6 +5729,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             `my_lane` (#25443) pour exclure du plafond le propre marqueur de
             la lane qui interroge.
     """
+    # La QUALIFICATION, cote CONSOMMATEUR : un grain ecarte par la
+    # qualification n'est ni reclame ni edite. La decision vient du meme
+    # organe que le tirage (`tapis_rapide.etats`), applique au FIL COMPLET
+    # que cette lecture a deja rendu -- pas d'appel reseau supplementaire.
+    code_motif = _qualification_grain(payload, my_lane, now)
+    if code_motif:
+        code, motif = code_motif
+        print(f"[QUALIFICATION] {code} : {motif} -- grain non qualifie : "
+              f"ni reclame, ni edite (la qualification est prealable a "
+              f"l'action).", file=sys.stderr)
+        return 1
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
     # repo, in which case the empty-scope witness degrades to its pre-#10958
@@ -5780,20 +6039,26 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
 
     # #14300 -- the IMPLICIT leg, issue mode (the incident's exact shape:
     # `check_lane_claim.py 14259 --lane ...` said CLEAR while PR #14293 of
-    # another lane was already 79+/3- deep on the same file). Read path
-    # only (`--claim` is exempt: posting the marker IS the deconfliction
-    # gesture, and the writer path calls this function with
-    # `check_open_pr_paths=False`). Lazy by outcome: it runs only when the
-    # registry carries NO active claim at all -- neither another lane's
-    # (`not others`, final post scope-filter and stale-filter) nor the
-    # caller's (`mine is None`, review 5429946072: the letter of #14300 is
-    # « sans qu'aucun [CLAIMED] n'ait ete pose » -- a lane that HAS posted
-    # its marker owns the grain, and an open PR of a third lane must not
-    # flip its verdict to IMPLICIT), because any claim subsumes implicit
-    # occupation AND skipping the gh round-trip on claimed probes keeps
-    # the picker's N-per-draw probes cheap. Fail-open with a loud WARN on
-    # gh failure, same posture as the #16570 paths leg: a leg that cannot
-    # measure must not fabricate a verdict.
+    # another lane was already 79+/3- deep on the same file). Lazy by
+    # outcome: it runs only when the registry carries NO active claim of
+    # ANOTHER lane (`not others`, final post scope-filter and stale-filter),
+    # because an explicit claim subsumes implicit occupation. Fail-open with
+    # a loud WARN on gh failure, same posture as the #16570 paths leg: a leg
+    # that cannot measure must not fabricate a verdict.
+    #
+    # #26751 -- deux trous fermes sur cette jambe :
+    #   (a) le chemin d'ECRITURE (`--claim`) ne la lancait pas : poser le
+    #       marqueur n'est PAS le geste de deconfliction face a une PR
+    #       ouverte et SANS marqueur d'une session hors flotte (#26597).
+    #   (b) une lane qui detient DEJA son claim recevait CLEAR pour toujours
+    #       (`mine is None`), meme au-dessus d'une PR plus ancienne que son
+    #       claim : c'est exactement le cas #26597 (deux PRs pour un grain).
+    # La jambe tourne donc desormais pour la lane appelante ; le filtre
+    # chronologique (le `createdAt` serveur du claim contre celui de la PR)
+    # ne retient que les PRs ANTERIEURES au claim : une PR posterieure
+    # reste subsumee par le claim (review 5429946072). Le cout du round-trip
+    # gh est le meme qu'avant (memo de processus + cache de session) ; seule
+    # la lecture d'une lane qui CLAIMait l'evite.
     implicit_occupation: list[dict] = []
     # #22408 (item 3) -- `[]` disait deux choses incompatibles : « mesure, et
     # personne n'occupe » et « jambe non demandee ». Instance #21881 : le
@@ -5802,12 +6067,36 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # outcome* -- a cet instant le registre portait un claim actif, donc la
     # jambe n'a pas tourne. Le booleen separe la mesure de son absence.
     implicit_occupation_measured = False
-    if (check_open_pr_paths and not others and mine is None
+    if (check_open_pr_paths and not others
             and payload.get("number") is not None):
         implicit_occupation_measured = True
         try:
             implicit_occupation = _find_open_prs_referencing_issue(
                 int(payload["number"]), my_lane)
+            if mine is not None:
+                # #26751 -- la lane appelante detient son claim : seule une PR
+                # ANTERIEURE a ce claim signale que le claim a recouvre une
+                # livraison en cours. Une PR posterieure reste subsumee.
+                claim_at = mine.get("created_at")
+                kept: list[dict] = []
+                for finding in implicit_occupation:
+                    pr_at = finding.get("created_at")
+                    if not claim_at or not pr_at:
+                        # Mesure impossible : la jambe ne fabrique pas de
+                        # verdict (fail-open + WARN), comme sur un `gh` mort.
+                        print(
+                            f"WARN: date de creation illisible (PR "
+                            f"#{finding.get('number')} : {pr_at or 'absente'} ; "
+                            f"claim de {my_lane} : {claim_at or 'absent'}) : "
+                            f"le filtre chronologique de la jambe IMPLICIT "
+                            f"(#26751) ne peut pas conclure -- verifier a la "
+                            f"main avant d'editer.",
+                            file=sys.stderr,
+                        )
+                        continue
+                    if pr_at < claim_at:
+                        kept.append(finding)
+                implicit_occupation = kept
         except (RuntimeError, ValueError, TypeError) as exc:
             implicit_occupation_measured = False
             print(
@@ -6547,11 +6836,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             f"de lane y a ete pose, il y a moins de 7 jours (#22500 point 3). "
             f"Le plafond exempte les EPICs de classe `consolidation`, et "
             f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
-            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC {where} "
-            f"(#26414 : une fille existante se sert librement, seul le claim "
-            f"pose sur l'EPIC est plafonne), ou prendre un autre grain du "
-            f"pool. Re-scoper avec `--paths` ne leve pas ce plafond ; "
-            f"`--force` reste reserve a l'arbitrage coordinateur.",
+            f"{cap_action_line(where, epic_cap_verdict.get('daughters') or [])}",
             file=sys.stderr,
         )
         return 1
@@ -6611,7 +6896,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         lines.append(
             "\nCoordinate with the owner(s), re-scope to paths no OPEN PR "
             "touches, or pick another grain from the GLOBAL POOL "
-            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "(`python scripts/coordination/tapis_rapide.py --lane "
             "<machine:workspace>`)."
         )
         # Le renvoi porte sur le POOL, jamais sur un numero d'issue.
@@ -7367,6 +7652,30 @@ def _glob_parent_dir(glob: str) -> str:
     return prefix.rsplit("/", 1)[0]
 
 
+def _glob_carries_prose(glob: str) -> bool:
+    """True when a scope element carries PROSE instead of a path pattern.
+
+    #27162 -- the claim grammar splits the `paths:` clause on its annotation
+    separators (` -- `, ` — `, ` (...)`). A glob that STILL carries whitespace
+    after that split is a FRAGMENT of a mis-split clause, not a path: the
+    measured case is a coordinator claim that glued its rationale to the glob
+    (`MyIA.AI.Notebooks/Sudoku/** ; claim pose au dispatch par le
+    coordinateur`).
+
+    Such a scope matches zero tracked file. The #21431 creation relaxation
+    then read it as "a file to be created in an existing directory" -- the
+    parent directory of the polluted glob DOES exist, so the tracked tree
+    could not decide the disjointness question, the scope was compared BY
+    PATTERN, the pattern missed the caller's path, and the lane was dropped
+    from the blockers: a fail-open (measured case #27139).
+
+    The creation relaxation therefore REFUSES a scope that carries prose: a
+    creation scope names a path, and a path with a rationale glued to it is a
+    broken claim -- which keeps the #10958 epic-wide lift (fail-CLOSED).
+    """
+    return any(ch.isspace() for ch in glob) or ";" in glob
+
+
 def _scope_is_creation(scope: list[str] | None,
                        tracked: list[str] | None) -> bool:
     """True when every glob of `scope` names a file to be CREATED.
@@ -7389,6 +7698,12 @@ def _scope_is_creation(scope: list[str] | None,
           something else. This is the discriminator the issue leaves to
           the implementation, and it is the one that keeps every existing
           fail-safe test green.
+      (d) it does not carry PROSE (#27162) -- a glob with a rationale glued
+          to it is a broken claim, not a file to be created. Without this
+          condition the polluted glob of the measured case reads as a
+          creation scope (its parent directory exists), is compared BY
+          PATTERN, misses the caller's path and is dropped: the fail-open
+          of #27139.
     """
     if not scope or tracked is None:
         return False
@@ -7398,6 +7713,8 @@ def _scope_is_creation(scope: list[str] | None,
             return False          # (a) the file already exists
         if _unparseable_scope_in([glob], tracked):
             return False          # (b) prose residue -- a typo
+        if _glob_carries_prose(glob):
+            return False          # (d) prose glued to the glob -- a typo
         parent = _glob_parent_dir(glob)
         if parent and parent not in dirs:
             return False          # (c) the directory does not exist -- a typo
@@ -7711,7 +8028,7 @@ def _run_check_paths(
         msg.append(
             "\nDo not start -- coordinate with the owner(s), or pick "
             "another grain from the GLOBAL POOL "
-            "(`python scripts/pick_idle_grain.py --belt --lane "
+            "(`python scripts/coordination/tapis_rapide.py --lane "
             "<machine:workspace>`) that does not intersect the open PR(s)."
         )
         print("\n".join(msg), file=sys.stderr)
@@ -8039,15 +8356,34 @@ def main(argv: list[str] | None = None) -> int:
                             # chemin unitaire. `--from-json` est un contrat
                             # HORS RESEAU : on ne va pas chercher un parent ni
                             # un pool pour lui.
-                            epic_cap=not args.from_json)
+                            epic_cap=not args.from_json,
+                            # #26751 -- le chemin d'ECRITURE lance les jambes
+                            # PR-ouverte : poser le marqueur n'est PAS le geste
+                            # de deconfliction face a une PR ouverte et SANS
+                            # marqueur d'une session hors flotte (#26597). Un
+                            # rc=3 (IMPLICIT) refuse donc de poster.
+                            # `--from-json` reste un contrat HORS RESEAU :
+                            # aucune PR n'y est lue, la jambe est sautee et
+                            # le dit sur stderr.
+                            check_open_pr_paths=not args.from_json)
+            if args.from_json:
+                print(
+                    "WARN: --from-json : les jambes PR-ouverte sont sautees "
+                    "(contrat hors reseau) -- une PR ouverte d'une autre lane "
+                    "referencant ce grain NE PEUT PAS etre detectee ici. "
+                    "Verifier a la main avec `gh pr list --state open "
+                    "--search \"<N>\"` avant de claimer (#26751).",
+                    file=sys.stderr,
+                )
             if rc != 0:
                 # #22500 point 3 -- le refus ne nomme plus une cause unique :
                 # le check peut aussi rendre le plafond hebdomadaire d'un EPIC.
                 print(f"BLOCKED: not posting [CLAIMED] on #{issue} "
                       f"-- the check above names the blocking cause (another "
-                      f"lane's active claim, or the weekly EPIC cap of "
-                      f"#22500). Use --force only for coordinator "
-                      f"arbitration.",
+                      f"lane's active claim, an OPEN PR of another lane "
+                      f"referencing this grain -- IMPLICIT, #26751, or the "
+                      f"weekly EPIC cap of #22500). Use --force only for "
+                      f"coordinator arbitration.",
                       file=sys.stderr)
                 return rc
         body = _CLAIM_BODY_TMPL.format(

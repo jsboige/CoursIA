@@ -41,7 +41,9 @@ pytestmark = [
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk
+from coordination import gh_selection
 from coordination import main_freshness as mf
+from coordination import tapis_origami
 from coordination import tapis_rapide as tr
 
 _ENV_GIT = {
@@ -175,6 +177,29 @@ def test_clone_sans_main_mesure_sur_head(tmp_path):
     assert v["refuse"] is False
 
 
+def test_worktree_frais_passe_malgre_main_partage_en_retard(tmp_path):
+    """Incident po-2028 (15/11) : worktree frais refuse a cause du main partage.
+
+    La lane tirait depuis un worktree cree sur un origin/main a jour ; le
+    `main` du clone principal (partage, qu'elle ne doit pas toucher) avait
+    381 commits de retard, et la garde refusait sur lui. Le HEAD qui
+    execute est a jour : la garde passe et nomme HEAD. Controle jumeau :
+    le clone principal, lui, sur son main en retard, reste refuse.
+    """
+    clone, origin = _mini_depot(tmp_path)
+    _avancer_origin(tmp_path, origin, n=3)
+    _git("fetch", "-q", "origin", "main", cwd=clone)
+    wt = tmp_path / "wt"
+    _git("worktree", "add", "-q", "--detach", str(wt), "origin/main", cwd=clone)
+    v = mf.garder(wt, run=mf.run_defaut)
+    assert v["refuse"] is False and v["ok"] is True, f"causes : {v}"
+    assert v["ref_mesure"] == "HEAD" and v["ecart"] == 0
+    v_principal = mf.garder(clone, run=mf.run_defaut)
+    assert v_principal["refuse"] is True
+    assert v_principal["ecart"] == 3
+    assert [r["code"] for r in v_principal["raisons"]] == ["MAIN_PERIME"]
+
+
 # --- mesure impossible : fail-closed -----------------------------------------
 
 
@@ -245,8 +270,16 @@ def test_tapis_propage_allow_stale_et_le_dit_dans_le_rapport(monkeypatch, capsys
              "remede": "git pull --ff-only"}]}
 
     monkeypatch.setattr(mf, "garder", _garder)
-    monkeypatch.setattr(tr.gh_bulk, "lire_tout",
-                        lambda *a, **k: gh_bulk.Lecture(issues=[], prs=[], citations={}))
+    # La voie LEGERE est le defaut (#27225) : elle lit les metadonnees du pool,
+    # les citations et les PRs. Ces trois lectures sont MOCKEES : ce test ne
+    # touche pas le reseau (le module le dit), et un quota epuoussé ne doit
+    # pas le faire echouer.
+    monkeypatch.setattr(gh_selection, "lire_metadonnees_issues",
+                        lambda *a, **k: ([], 0.0))
+    monkeypatch.setattr(gh_bulk, "lire_citations_mergees", lambda *a, **k: {})
+    monkeypatch.setattr(gh_bulk, "lire_prs_ouvertes", lambda *a, **k: [])
+    monkeypatch.setattr(tapis_origami, "mesurer",
+                        lambda *a, **k: (set(), {"measured": False, "active": False}))
     rc = tr.main(["--lane", "L", "--allow-stale", "--json"])
     assert rc == 0
     assert vu["allow_stale"] is True, "--allow-stale doit atteindre la garde"

@@ -63,6 +63,8 @@ Note registre : `03b`/`03c`/`03d` sont enregistrées sous les numéros historiqu
 
 > Etat mesure au 2026-11-08 : les 14 compagnon-b ci-dessus (13 du relevé initial + App-34, ratée dudit relevé) sont devenues alignées par renommage **#25341** (le `b` d'accrétion est retiré du côté CSharp — trio App-17 et quatuor App-18 : retiré des **deux** membres, l'extension kernel-tierce `App-18c` restant inchangée). Historique complet : `docs/reference/rename-ledger.tsv`.
 
+> Etat mesure au 2026-11-14 : les deux paires décalées ci-dessus sont devenues **alignées** par renommage **#12933** (doctrine #5081, lane `myia-po-2027:CoursIA`) — `App-12c-ConnectFour` → `App-12b-ConnectFour-CSharp` (même numéro 12b que le Python, suffixe kernel explicite) et `App-14-ConnectFour-CSharp` → `App-14-ConnectFour-Adversarial-CSharp` (titre complet du Python repris). Les lignes du tableau ci-dessus sont conservées telles quelles (relevé initial) ; l'état courant fait foi au présent bloc. La quasi-paire GT-13b↔13c (§ ci-dessous) conserve la même forme que l'ancienne App-12b↔12c et reste du ressort de l'arbitrage EPIC.
+
 ### Sudoku — 16 paires, toutes alignées, toutes enregistrées
 
 `Sudoku-01-Backtracking` à `Sudoku-15-Infer` et `Sudoku-18-Comparison`, chaque `Sudoku-N-…-Python` ↔ `Sudoku-N-…-CSharp` (suffixe kernel explicite des deux côtés, convention la plus régulière du dépôt). Le n° 16 Python (`Sudoku-16-NeuralNetwork`) est célibataire (§4), le n° 17 aussi (LLM) ; `Sudoku-19` est Lean-only.
@@ -81,7 +83,7 @@ Cas limite documenté : la quasi-paire `13b`↔`13c` ci-dessus — **deux célib
 
 ### GameTheory/SocialChoice — 4 paires, toutes alignées, toutes enregistrées
 
-`01-Arrow-Impossibility-Theorem` · `02-Stable-Marriage-Gale-Shapley` · `03-Voting-Methods` · `04-Computational-Aggregation-SAT-Z3`, chaque `NN-…` ↔ `NN-…-Csharp`. **Note de graphie** : suffixe local `-Csharp` (casse différente du `-CSharp` canonique du reste du dépôt).
+`ChoixSocial-01-Arrow-Impossibility-Theorem-Python` · `ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python` · `ChoixSocial-03-Voting-Methods-Python` · `ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python`, chaque `NN-…` ↔ `NN-…-Csharp`. **Note de graphie** : suffixe local `-Csharp` (casse différente du `-CSharp` canonique du reste du dépôt).
 
 ### SymbolicAI/SemanticWeb — 11 paires, 11 alignées, toutes enregistrées
 
@@ -105,13 +107,13 @@ Convention locale : suffixe kernel en **position finale** pour les fondations (`
 
 ### SymbolicAI/Planners — 9 paires, toutes alignées, toutes enregistrées (énumération **récursive** des sous-dossiers : la racine ne porte aucun `.ipynb`)
 
-`Planners-01-Introduction-Python` à `Planners-09-HTN-Python`, chaque `Planners-N-…` ↔ `Planners-N-…-Csharp` (suffixe local `-Csharp`, même graphie que SocialChoice).
+`Planners-01-Introduction-Python` à `Planners-09-HTN-Python`, chaque `Planners-N-…` ↔ `Planners-N-…-CSharp` (suffixe canonique `-CSharp` depuis le 2026-11-17, #12933 ; SocialChoice reste à renommer).
 
 ## 2. Cause structurelle — deux conventions de jumelage coexistent, toutes deux enregistrées
 
 - **Convention suffixe-terminal** : même numéro, même titre, suffixe kernel en fin (`Search-01` ↔ `Search-01-CSharp`). Appliquée intégralement par Sudoku, GameTheory racine, SocialChoice, Planners, Search Part1/Part2, SW-8..13, et par 5 carnets de Part3.
 - **Convention compagnon `b`** : le jumeau porte un `b`/`c` d'accrétion que la base n'a pas (`App-N` ↔ `App-Nb-CSharp`, `SW-N` ↔ `SW-Nb-Python`). Documentée **légitime** par `_schema.yaml` (`numbering_exception`) pour Part3 et SW-2..7, donc **attendue** — mais c'est une divergence au sens strict de la doctrine #12933 (« même préfixe, numéro, accrétion et titre ; seul le suffixe varie »), et elle n'est pas interne-cohérente : SW met le `b` côté **Python**, Part3 côté **CSharp**. **Etat au 2026-11-08** : Part3 est **éliminée** (13 paires renommées #25341, b retiré côté CSharp — trios/quatuor : des deux membres) ; SW-2..7 renommées de même (#25325, PR en cours de merge). La convention ne subsiste plus qu'à l'état de trace historique dans le ledger.
-- **Trois graphies de suffixe** coexistent : `-CSharp` (canonique), `-Csharp` (SocialChoice, Planners), et la position médiane SW. Relevé, non jugé ici.
+- **Graphies de suffixe** : `-CSharp` (canonique ; Planners aligné le 2026-11-17, #12933), `-Csharp` (SocialChoice à renommer ; découvert 2026-11-17 : SymbolicLearning/SL-1..6 la portent aussi, hors périmètre P2), et la position médiane SW. Relevé, non jugé ici.
 
 ## 3. Trous du registre — paires réelles sans entrée `twin_pairs.d` (grep NONE re-vérifié par la lane)
 
@@ -136,7 +138,7 @@ Hors périmètre nominal, même constat : `Probas/Applications/Percolation/Perco
 - **Search/Part3** : `App-02-GraphColoring-Statistical-Validity-Python`, `App-17-VRP-Logistics-Metaheuristiques-Python` (ex-17b), `App-18-HyperparameterTuning-Implementation-Manuelle-Python` (ex-18b), `App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python`, `App-21-VoiceLeading-Python`, `App-22-AlgorithmSelection-Python`, `App-23-PRESENT-Differential-Cryptanalysis-SAT-Python`, `App-27-Sparse-Index-Tracking-Walk-Forward-Python`. *(Corrigé le 2026-11-08 : `App-34b-…-CSharp` n'est plus célibataire — le Python 34 ajouté le 2026-10-30 #21756 forme avec lui la paire enregistrée `app-34`, alignée par #25341.)*
 - **Sudoku** : `Sudoku-00-Environment-CSharp` (setup, cité en prose dans `sudoku-02-dancinglinks.yaml`), `Sudoku-12b-Z3-Linq2Z3-CSharp`, `Sudoku-16-NeuralNetwork-Python`, `Sudoku-17-LLM-Python`, `Sudoku-18b-Statistical-Comparison-Python`, `Sudoku-19-Lean-Propagation-Lean`.
 - **GameTheory racine** : `01-Setup-Python` ; compagnons Lean `02b-Lean-Definitions`, `04b`, `05b`, `06b/06d–06k`, `08b`, `08d`, `11b`, `15b`, `16b–16k` (hors `16f` pairé §1), `17c`, `17d` ; Python `02e`, `03b–03f`, `04d–04j`, `05c`, `06e`, `09b–09d`, `11d`, `13d–13h`, `15d–15g`, `17e/17f`, `18/18b/18c`, `19/19b`, `20/20b/20c`, `21` ; `02d` (cité en prose dans `gametheory-2-normalform.yaml`) ; `gateway/openspiel-cfr-service.ipynb`.
-- **SocialChoice** : `01b-Lean-SocialChoice-Formal`, `05` à `10` (Python).
+- **SocialChoice** : `ChoixSocial-01b-Lean-SocialChoice-Formal-Lean`, `05` à `10` (Python).
 - **SemanticWeb** : `SW-01-Setup-CSharp`, `SW-12-GraphRAG-Python`, `SW-14-Coup-Ontologique-Python`, `SW-15-Coup-Argumentatif-Python`, `SW-16-ProofCarryingOntologies-Python` ; `RDF.Net-Legacy/RDF.Net.ipynb`.
 - **Planners** : `Planners-00-Setup-Python`, `5b-Lean-Relaxation` et `10–12` (exclus explicitement dans `_schema.yaml`), `5c`, `Planners-13-Mesure-Qualite-Plans-Python` (cité en prose dans `planners-9-htn.yaml`).
 

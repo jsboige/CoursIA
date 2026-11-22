@@ -2,8 +2,6 @@
 pagetitle: "IIT - Integrated Information Theory"
 ---
 
-# IIT - Integrated Information Theory
-
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ Probas](../Probas/README.md)
 
 ## Hook — pourquoi cette série
@@ -15,6 +13,14 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 ## À qui s'adresse cette série
 
 Étudiants en sciences cognitives, neuroscience computationnelle, et philosophie de l'esprit. Les notebooks (~60-90 min chacun) nécessitent Python 3.9 avec `pyphi` (installé via conda env dédié). Une familiarité avec les graphes et la logique booléenne suffit. Il constitue un complément théorique aux séries [Probas](../Probas/README.md) (modèles probabilistes) et [GameTheory](../GameTheory/README.md) (systèmes multi-agents), avec lesquelles il partage les concepts de causalité et d'interaction.
+
+## Comment lire ce README — découverte
+
+Trois vitesses, selon d'où vous arrivez :
+
+- **En découverte** (la conscience comme quantité calculable, sans prérequis au-delà de Python) : commencez par [IIT-01](IIT-01-IntroToPyPhi-Python.ipynb) — le réseau XOR à 3 nœuds, le premier Φ et la Cause-Effect Structure, construits à la main — puis, si le formalisme vous a pris, [IIT-02](IIT-02-AdvancedTopics-Python.ipynb) démonte la machine (bipartitions MIP, MICE, big Φ).
+- **En licence / master** (un cours à suivre) : le parcours linéaire du notebook 1 au notebook 9 — les fondements PyPhi (1 à 3), la frontière et les théories rivales (4 à 6), puis l'escalier Lean (7 à 9) qui réénonce la controverse en théorèmes. La table [Objectifs → Parcours](#parcours-recommandés) décline ce fil par envie.
+- **En recherche** (une question précise) : entrez par la porte qui la porte — la frontière du système ([IIT-04](IIT-04-Le-Probleme-de-Frontiere-Python.ipynb)), la comparaison exécutable des théories ([IIT-05](IIT-05-Lentilles-et-Dissociations-Python.ipynb)), l'objection Aaronson ([IIT-06](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb)) ou sa moitié formelle ([IIT-09](IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb)) — la table [Notebooks](#notebooks) relie chacun à sa position.
 
 ## Objectifs d'apprentissage
 
@@ -30,7 +36,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 
 ## Notebooks
 
-| # | Notebook | Contenu | Durée |
+| # | Notebook | Ce qu'on y apprend | Durée |
 |---|----------|---------|-------|
 | 1 | [IIT-01-IntroToPyPhi-Python](IIT-01-IntroToPyPhi-Python.ipynb) | Réseau XOR 3-nœuds : TPM, calcul de Φ, CES, états inaccessibles, causation, complexe majeur | 60-90 min |
 | 2 | [IIT-02-AdvancedTopics-Python](IIT-02-AdvancedTopics-Python.ipynb) | MIP et bipartitions, répertoires cause-effet, MICE, big Φ sur réseau 4-nœuds, coarse-graining | 60-90 min |
@@ -115,6 +121,15 @@ Le cinquième notebook quitte la mesure de $\Phi$ pour la **comparaison des thé
 **Phase 6 : L'objet qui a mordu IIT (~90 min, notebook 6)**
 
 Le sixième notebook exécute l'échange Aaronson/Tononi de mai 2014 des deux côtés de la frontière entre formalisations. En jambe $\Phi_{DM}$ (l'implémentation NumPy de la définition visée par l'objection, sur corps finis $\mathbb{F}_p$) : la matrice de Vandermonde rend $\Phi$ **indéfini** (égalité normalisée maximale sur toutes les bipartitions), le « hack » W obtient son minimum unique et un $\Phi = (n/2)\log_2 p$ — la moitié du contenu informationnel total —, l'identité mesure 0, la croissance est linéaire. En jambe PyPhi ($\Phi$ d'IIT 3.0) : la grille de Tononi à portes majorité mesure positivement à l'état tout éteint (le scénario assumé existe), la tendance ligne < anneau < grille soutient l'argument du mur et de la corde à petite échelle, et la grille **XOR** porte le $\Phi$ maximal de la table pendant que le réseau « riche » hétérogène mesure zéro — la dissociation intégration/richesse comportementale, mesurée dans IIT 3.0 lui-même. Les deux positions sont citées avec leurs grades (l'essai firsthand de Tononi, archivé au gisement, y corrige même le souvenir de Porto Rico rapporté par Aaronson) ; les 4 exercices font varier corps, permutations, fermeture de boucle et bruit.
+
+## Approfondissements — au-delà du parcours principal
+
+Quatre directions que le parcours linéaire ne fait que traverser, chacune avec sa porte d'entrée déjà dans ce README :
+
+- **La controverse Aaronson, en trois jambes.** L'échange de mai 2014 se lit d'abord **mesuré** — [IIT-06](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) exécute Φ_DM sur corps finis (Vandermonde, le hack W) et PyPhi (grille XOR au Φ maximal, réseau « riche » à Φ nul) — puis **énoncé** — [IIT-08b](IIT-08b-Parite-et-Broadcast-Lean.ipynb) porte les théorèmes B (intégré pour toute coupe) et C (dynamique triviale) — puis **compté** — [IIT-09](IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb) mesure le défaut cardinal par énumération et réunit le couple sur le même objet. Le lake [`iit_lean`](iit_lean/README.md) en est la source formelle.
+- **Le débat empirique des théories rivales.** Les six lentilles d'[IIT-05](IIT-05-Lentilles-et-Dissociations-Python.ipynb) opèrent sur substrat jouet ; le pont falsifiable IIT ↔ GWT l'exécute sur traces réelles de LLM : [ICT-24](ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) conclut à une dissociation — pics d'intégration et événements d'ignition workspace non co-localisés sur S4. La section « Portée scientifique et débats » ci-dessous cadre le même débat côté théorie.
+- **L'échelle et l'émergence.** [IIT-03](IIT-03-CoarseGrainingMacroPhi-Python.ipynb) examine honnêtement la *causal emergence* de Hoel — quand et pourquoi le Φ macro ne dépasse le Φ micro que sur des réseaux probabilistes ; [IIT-04](IIT-04-Le-Probleme-de-Frontiere-Python.ipynb) déplace la question vers la frontière (Φ vs EI selon le découpage du même substrat) ; l'annexe « Ponts causaux » relie le même geste à Pearl : l'information effective se mesure sous distribution d'intervention, c'est-à-dire sous `do`.
+- **La moitié formelle, pour qui veut les théorèmes.** L'escalier Lean se monte marche par marche — la coupe et le verdict relationnel ([IIT-07](IIT-07-Integration-Par-Coupes-Lean.ipynb)), la parité et le broadcast ([IIT-08](IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb), ou sa variante [IIT-08b](IIT-08b-Parite-et-Broadcast-Lean.ipynb) qui porte les théorèmes), le capstone ([IIT-09](IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb)) — sans Mathlib, kernel `lean4-wsl`.
 
 ## Prérequis
 
@@ -587,7 +602,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 114
-breakdown: ICT-Series=104, root=10
-maturity: BETA=104, DRAFT=9, ALPHA=1
+pedagogical_count: 110
+breakdown: ICT-Series=100, root=10
+maturity: BETA=108, DRAFT=2
 -->

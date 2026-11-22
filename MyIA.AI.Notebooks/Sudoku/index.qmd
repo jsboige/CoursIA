@@ -16,8 +16,6 @@ listing:
 ---
 
 ::: {.series-banner}
-# Sudoku — Un problème, dix-neuf paradigmes + un compagnon statistique
-
 **Le Sudoku comme fil rouge pédagogique.** La grille 9×9 est un écrin assez riche pour exercer chaque famille d'algorithmes d'IA, assez contraint pour que chaque solveur produise une solution, et assez emblématique pour qu'on reconnaisse immédiatement le problème. Cette série résout **le même Sudoku** par **19 approches complémentaires** (16 paires miroir C#/Python + 1 NN + 1 LLM + 1 Lean) plus **un companion statistique** (Sudoku-18b, méthodologie formelle pour les benchmarks), présentés en **double track C# .NET Interactive et Python**, jusqu'à une **preuve formelle Lean 4** de la propagation de contraintes.
 :::
 
@@ -36,7 +34,7 @@ La série compte **37 notebooks canoniques** : 16 méthodes déclinées en C# .N
 
 **Kernels** : `.net-csharp` (track C#) · `python3` (track Python) · `lean4-wsl` (Sudoku-19) · **GPU** : non · **Prérequis** : la série Search (algorithmes de recherche) aide, mais le Sudoku-0 remet tout à plat.
 
-**Parcours** : [Parcours 1 — local sobre](../../docs/parcours.qmd) (track Python) · [Parcours 2 — ML.NET + Symbolic](../../parcours.qmd) (track C#) · niveau 1
+**Parcours** : [Parcours 1 — local sobre](../../docs/parcours.qmd) (track Python) · [Parcours 2 — ML.NET + Symbolic](../../docs/parcours.qmd) (track C#) · niveau 1
 
 ## Pourquoi un double track C# / Python ?
 
@@ -54,7 +52,7 @@ Chaque méthode (du backtracking au Z3) est implémentée **deux fois**, dans le
 
 ## Sudoku-19 — Propagation certifiée en Lean 4
 
-Le notebook [`Sudoku-19-Lean-Propagation.ipynb`](Sudoku-19-Lean-Propagation.ipynb) sort du dual-track pour une **preuve formelle** : la règle de propagation des contraintes (une cellule contrainte à une valeur unique n'admet aucune autre) y est démontrée en Lean 4 + Mathlib. C'est le pont vers la série SymbolicAI/Lean — la même idée de propagation, cette fois **certifiée** plutôt qu'exécutée.
+Le notebook [`Sudoku-19-Lean-Propagation.ipynb`](Sudoku-19-Lean-Propagation-Lean.ipynb) sort du dual-track pour une **preuve formelle** : la règle de propagation des contraintes (une cellule contrainte à une valeur unique n'admet aucune autre) y est démontrée en Lean 4 + Mathlib. C'est le pont vers la série SymbolicAI/Lean — la même idée de propagation, cette fois **certifiée** plutôt qu'exécutée.
 
 ## Démarrage rapide
 

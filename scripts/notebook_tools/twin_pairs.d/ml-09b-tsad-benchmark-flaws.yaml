@@ -1,0 +1,11 @@
+- name: ML-09b TSAD Benchmark Flaws
+  family: ML/ML.Net
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Le vrai MLPRegressor et StandardScaler scikit-learn sont appelés via Python.NET ; C# charge et prépare les données UCR, construit les fenêtres/cibles, orchestre les trois entraînements et mesure tous les scores et métriques. Un substitut ML.NET ne conserverait pas ce modèle exact.
+  known_differences:
+    - C# transfère les fenêtres et cibles en IEEE754 vers le backend ; le chargeur UCR partagé vérifie les octets selon le manifeste versionné.
+    - Les figures C# sont des SVG opaques avec enveloppes min/max de rendu seulement ; les calculs et apprentissages utilisent les données complètes.
+    - L’alignement historique à deux pas, le préfixe nul et l’AUC globale sont conservés et explicités ; scaler et réseau sont ajustés uniquement sur le train dans les deux versions.

@@ -153,9 +153,9 @@ on:
       # manifeste. Le wrapper declarait aussi lakefile.toml : le lake n'en a
       # pas (mesure au repertoire), le pattern mort n'est pas reporte.
       # lean_server.py / lean_utils.py sont self-cover globaux ci-dessous.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
@@ -165,10 +165,10 @@ on:
       # compression_lean (lake dedie de l'EPIC #18706, decision D4 -- jumeau
       # formel de la serie Compression : 0 sorry de naissance, axiom
       # target-modules "*" -- parametres au manifeste)
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/**.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/**.lean'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lake-manifest.json'
       # riemann200_lean (lake dedie de la serie Riemann200, EPIC #20403
       # critere 2 -- 0 sorry verifie, axiom target-modules "*", Mathlib
       # epingle db584cd6d4 -- parametres au manifeste)
@@ -255,6 +255,13 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json'
+      # linear_lean (LINEAR, marche 1 de la Fille 3.1 -- Epic Origami #24838,
+      # socle chapitres 1-2 d'Axler en marches .lean, Mathlib v4.33.0).
+      # Baseline "4" = sorry-cibles d'exercices documentees (mandat 2026-11-03).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -264,7 +271,7 @@ on:
       # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
       # HashlifeMarginFragment.lean, framework sorry documente). Le profil
       # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
-      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # allow-axioms: 83 native_decide axioms via @allow_axioms_conway.txt
       # (liste explicite, source de verite #21905 -- le compte de ce
       # commentaire est mesure contre le fichier par test_axiom_allow_file)
       # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
@@ -277,6 +284,14 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      # combinators_lean (lake dedie du pli 4 Origami #19742, grain B
+      # #25061 -- confluence S/K/I par l'organe Relation.church_rosser,
+      # 0 sorry de naissance, axiom target-modules "*", Mathlib epingle
+      # v4.33.0/rev db584cd6d4 -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lake-manifest.json'
       # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
       # la listait pas) : la liste EST la regle du gate axiom de ce lake --
       # un nom ajoute/retire doit rejouer le gate qui l'applique.
@@ -414,9 +429,9 @@ on:
       # manifeste. Le wrapper declarait aussi lakefile.toml : le lake n'en a
       # pas (mesure au repertoire), le pattern mort n'est pas reporte.
       # lean_server.py / lean_utils.py sont self-cover globaux ci-dessous.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/formal_groups_lean/lean-toolchain'
       # sensitivity_lean (herite du wrapper lean-sensitivity.yml supprime, #13751 :
       # 0 sorry verifie, axiom target-modules "*" + allow-axioms vide,
       # fail-on-sorry true par defaut -- parametres reportes au manifeste)
@@ -426,10 +441,10 @@ on:
       # compression_lean (lake dedie de l'EPIC #18706, decision D4 -- jumeau
       # formel de la serie Compression : 0 sorry de naissance, axiom
       # target-modules "*" -- parametres au manifeste)
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/**.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/**.lean'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lake-manifest.json'
       # riemann200_lean (lake dedie de la serie Riemann200, EPIC #20403
       # critere 2 -- 0 sorry verifie, axiom target-modules "*", Mathlib
       # epingle db584cd6d4 -- parametres au manifeste)
@@ -516,6 +531,13 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json'
+      # linear_lean (LINEAR, marche 1 de la Fille 3.1 -- Epic Origami #24838,
+      # socle chapitres 1-2 d'Axler en marches .lean, Mathlib v4.33.0).
+      # Baseline "4" = sorry-cibles d'exercices documentees (mandat 2026-11-03).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -525,7 +547,7 @@ on:
       # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
       # HashlifeMarginFragment.lean, framework sorry documente). Le profil
       # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
-      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # allow-axioms: 83 native_decide axioms via @allow_axioms_conway.txt
       # (liste explicite, source de verite #21905 -- le compte de ce
       # commentaire est mesure contre le fichier par test_axiom_allow_file)
       # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
@@ -538,6 +560,14 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      # combinators_lean (lake dedie du pli 4 Origami #19742, grain B
+      # #25061 -- confluence S/K/I par l'organe Relation.church_rosser,
+      # 0 sorry de naissance, axiom target-modules "*", Mathlib epingle
+      # v4.33.0/rev db584cd6d4 -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lake-manifest.json'
       # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
       # la listait pas) : la liste EST la regle du gate axiom de ce lake --
       # un nom ajoute/retire doit rejouer le gate qui l'applique.
@@ -577,11 +607,13 @@ concurrency:
 
 jobs:
   # Detection : quels lakes du manifeste sont touches par l'evenement.
-  # Les fichiers changes viennent de l'API REST (pull_request : fichiers
-  # de la PR ; push : compare avant..apres) -- pas d'un checkout profond
-  # du depot. Sur workflow_dispatch : tous les lakes (le declenchement
-  # manuel est une intention explicite de tout lancer ; le script y
-  # arrive par le self-cover).
+  # Les fichiers changes se lisent D'ABORD par git local (checkout
+  # fetch-depth: 2 : depuis le commit de fusion de test, le parent 1 =
+  # base, donc `git diff HEAD^1 HEAD` -- zero quota d'API, #22065), l'API
+  # REST en repli (pull_request : fichiers de la PR ; push : compare
+  # avant..apres) quand git ne peut pas repondre. Sur workflow_dispatch :
+  # tous les lakes (le declenchement manuel est une intention explicite
+  # de tout lancer ; le script y arrive par le self-cover).
   changes:
     name: lean-matrix-changes
     if: (github.event.action != 'edited' || github.event.changes.base != null)
@@ -609,9 +641,14 @@ jobs:
       # donc le build Lean etait `skipped` -- et `skipped` se lit comme
       # un vert. Un build Lean qui n'a pas eu lieu s'affichait comme
       # fait (instance #21999, run 39814286963).
+      # Profondeur 2 (#22065) : depuis le commit de fusion de test, le
+      # parent 1 (la base) est present localement -- le lecteur peut
+      # differencer par git sans consommer de quota d'API. Sur push, le
+      # `before` peut manquer a cette profondeur : le repli API couvre.
       - name: Checkout (dispatch script + manifest only)
         uses: actions/checkout@v4
         with:
+          fetch-depth: 2
           sparse-checkout: |
             scripts/lean
       - name: Changed files for this event

@@ -380,7 +380,48 @@ def _baseline_population() -> list[Path]:
     return out
 
 
-def _update_baseline() -> int:
+_BASELINE_COMMENT = (
+    "Pedagogy-density baseline (#10479). Burn down, do not grow. "
+    "One float per TRACKED pedagogical notebook: chars of markdown "
+    "prose per code cell (continuous metric). Population: "
+    "`git ls-files 'MyIA.AI.Notebooks/**/*.ipynb'` minus EXCLUDE_DIRS "
+    "minus setup/out-of-corpus kinds. Regenerate with: "
+    "python scripts/notebook_tools/pedagogy_density.py --update-baseline"
+)
+
+
+def _read_baseline_payload() -> dict:
+    """The baseline as it stands on disk (``{}`` when absent or unreadable)."""
+    if not BASELINE_FILE.exists():
+        return {}
+    try:
+        data = json.loads(BASELINE_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _repo_relative_key(path: str) -> str:
+    """Normalise a caller-supplied path to a repo-relative POSIX key.
+
+    The baseline keys are repo-relative POSIX paths (that is what
+    ``git ls-files`` yields); a caller may hand an absolute path or a
+    Windows-style relative one, and the two must resolve to the same key.
+    """
+    p = Path(path)
+    if p.is_absolute():
+        repo_root = _TOOLS_DIR.parents[1]
+        try:
+            p = p.resolve().relative_to(repo_root.resolve())
+        except ValueError:
+            return path.replace("\\", "/")
+    return p.as_posix()
+
+
+def _update_baseline(
+    only: list[str] | None = None,
+    admit_unkeyed: bool = False,
+) -> int:
     """Write :data:`BASELINE_FILE` with one float per tracked notebook.
 
     The float is the CONTINUOUS metric (prose_chars / code_cells), not the
@@ -388,31 +429,99 @@ def _update_baseline() -> int:
     compares continuous densities. Notebooks that cannot be measured (parse
     failure, zero code cells) have no float and are recorded separately: a
     continuous metric with a hole is not continuous.
+
+    Two modes (#26762):
+
+    * **complete** (default) -- the values of the notebooks the baseline
+      ALREADY keys are re-measured. A notebook the baseline never keyed is
+      NOT admitted: admitting 155 notebooks is a DECISION, not a side effect
+      of a rename, so it needs an explicit ``--admit-unkeyed``.
+    * **incremental** (``--only <paths>``) -- only the named keys are
+      rewritten; every other key is carried over verbatim.
+
+    Both write the keys in the canonical (sorted) order, so a run that
+    changes no value produces a byte-identical file -- an empty diff, not a
+    churn of re-ordered lines.
     """
+    existing_payload = _read_baseline_payload()
+    existing: dict[str, float] = dict(existing_payload.get("notebooks") or {})
     population = _baseline_population()
-    values: dict[str, float] = {}
-    unmeasured: list[dict[str, str]] = []
-    for path in population:
+    population_keys = {str(p).replace("\\", "/"): p for p in population}
+
+    # -- which notebooks are measured in this run --
+    if only:
+        targets: list[str] = []
+        outside: list[str] = []
+        for raw in only:
+            key = _repo_relative_key(raw)
+            if key not in population_keys:
+                outside.append(key)
+            elif key not in targets:
+                targets.append(key)
+        if outside:
+            print(
+                "REFUS : chemin(s) hors population de densite "
+                "(non suivi, hors corpus ou de kind exclu) : "
+                + ", ".join(outside),
+                file=sys.stderr,
+            )
+            return 2
+    else:
+        targets = list(population_keys)
+
+    measured: dict[str, float] = {}
+    fresh_unmeasured: list[dict[str, str]] = []
+    for key in targets:
+        path = population_keys[key]
         try:
             prose_chars, _code_chars, n_code, _n_md = _measure(path)
         except ValueError as exc:
-            unmeasured.append({"path": str(path), "detail": str(exc)})
+            fresh_unmeasured.append({"path": key, "detail": str(exc)})
             continue
         if n_code == 0:
-            unmeasured.append(
-                {"path": str(path), "detail": "no code cell to divide by"}
+            fresh_unmeasured.append(
+                {"path": key, "detail": "no code cell to divide by"}
             )
             continue
-        values[str(path).replace("\\", "/")] = round(prose_chars / n_code, 3)
+        measured[key] = round(prose_chars / n_code, 3)
+
+    if only:
+        # Incremental: the untouched keys are carried over verbatim, orphans
+        # included (dropping them here would destroy the ORPHAN_KEY evidence
+        # the orphan organ reads).
+        unkeyed = [k for k in targets if k not in existing]
+        if unkeyed and not admit_unkeyed:
+            print(
+                "REFUS : carnet(s) jamais keye(s) dans la baseline ; "
+                "admettre un carnet est une decision (--admit-unkeyed) : "
+                + ", ".join(unkeyed),
+                file=sys.stderr,
+            )
+            return 2
+        values = dict(existing)
+        values.update(measured)
+        # A named notebook that became unmeasurable keeps its previous value
+        # (the ratchet stays on the last known float) and is reported below.
+        touched = set(targets)
+        unmeasured = [
+            entry
+            for entry in (existing_payload.get("unmeasured") or [])
+            if entry.get("path") not in touched
+        ]
+        unmeasured.extend(fresh_unmeasured)
+    else:
+        # Complete: the keys already present are re-measured; the notebooks
+        # the baseline never keyed are admitted only on explicit request.
+        values = {}
+        for key in population_keys:
+            if key not in existing and not admit_unkeyed:
+                continue
+            if key in measured:
+                values[key] = measured[key]
+        unmeasured = fresh_unmeasured
+
     payload = {
-        "_comment": (
-            "Pedagogy-density baseline (#10479). Burn down, do not grow. "
-            "One float per TRACKED pedagogical notebook: chars of markdown "
-            "prose per code cell (continuous metric). Population: "
-            "`git ls-files 'MyIA.AI.Notebooks/**/*.ipynb'` minus EXCLUDE_DIRS "
-            "minus setup/out-of-corpus kinds. Regenerate with: "
-            "python scripts/notebook_tools/pedagogy_density.py --update-baseline"
-        ),
+        "_comment": _BASELINE_COMMENT,
         "metric": "prose_chars / code_cells",
         "count": len(values),
         "notebooks": dict(sorted(values.items())),
@@ -765,6 +874,24 @@ def main(argv: list[str] | None = None) -> int:
         ),
     )
     parser.add_argument(
+        "--only", nargs="*", default=None, metavar="PATHS",
+        help=(
+            "Incremental mode (#26762): rewrite ONLY the named keys of the "
+            "baseline, every other key being carried over verbatim. A named "
+            "notebook the baseline never keys requires an explicit "
+            "--admit-unkeyed. The write keeps the canonical (sorted) order, "
+            "so a run that changes no value produces an empty diff."
+        ),
+    )
+    parser.add_argument(
+        "--admit-unkeyed", action="store_true",
+        help=(
+            "Allow the update to key notebooks the baseline never keyed (155 "
+            "as of 2026-11-15). Admitting them is a DECISION, not a side "
+            "effect of a rename, so it is never implicit."
+        ),
+    )
+    parser.add_argument(
         "--check-orphans", action="store_true",
         help=(
             "Report every direction of the baseline <-> tree correspondence "
@@ -793,7 +920,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.update_baseline:
-        return _update_baseline()
+        if args.only is not None and not args.only:
+            parser.error("--only requires at least one path")
+        return _update_baseline(
+            only=args.only,
+            admit_unkeyed=args.admit_unkeyed,
+        )
+
+    if args.only is not None or args.admit_unkeyed:
+        parser.error("--only and --admit-unkeyed require --update-baseline")
 
     if args.check_orphans:
         return _check_orphans(args.base)
