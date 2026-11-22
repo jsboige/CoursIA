@@ -60,7 +60,7 @@ def _handle_concepts(graph, request: dict) -> dict:
         if 'series' in provided:
             result = reader.concepts_by_series(graph, provided['series'])
         elif 'notebook' in provided:
-            result = reader.concepts_for_notebook(graph, provided['notebook'])
+            result = reader.concepts_of_notebook(graph, provided['notebook'])
         elif 'concept' in provided:
             result = reader.notebooks_for_concept(graph, provided['concept'])
         else:

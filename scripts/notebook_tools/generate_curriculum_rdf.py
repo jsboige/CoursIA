@@ -195,71 +195,42 @@ def build_interfaces_graph(interfaces: list[dict]) -> Graph:
     return graph
 
 
-def strip_tree_nodes(taxonomy_graph: Graph) -> Graph:
-    """Ne garde d'un graphe de taxonomie que sa couche concepts (#27635).
+def build_taxonomy_graph(taxonomy_dir: Path) -> Graph:
+    """Fusionne les taxonomies de concepts dans un graphe, sans structure.
 
-    Les nœuds d'arbre (série, sous-série, carnet) émis par
-    `curriculum_taxonomy.build_graph` sont retirés : le catalogue les émet
-    déjà dans le graphe servi, avec des URI identiques — les garder dupliquerait
-    chaque carnet avec une seconde étiquette. Restent les schémas, concepts,
-    citations de cellules, prérequis de concepts et axiomes d'ontologie.
+    Le dossier (`docs/curriculum/taxonomy`) porte une taxonomie par série
+    (`*.json`, hors `schema.json`). Chaque fichier est validé par l'organe des
+    taxonomies (`load_taxonomy` vérifie les citations contre les carnets
+    réels) puis fusionné en mode concepts seuls (`emit_structure=False`) : la
+    structure du cursus -- séries, sous-séries, carnets -- reste produite par
+    le catalogue, une seule source. Le lien carnet -> concept
+    (`cursus:concept`) s'accroche sur l'URI du carnet du catalogue, identique
+    par construction à celle de la taxonomie (#25001).
     """
-    tree_nodes = {
-        subject
-        for node_type in TREE_NODE_TYPES
-        for subject in taxonomy_graph.subjects(RDF.type, node_type)
-    }
-    kept = Graph()
-    for prefix, namespace in taxonomy_graph.namespaces():
-        kept.bind(prefix, namespace)
-    for triple in taxonomy_graph:
-        if triple[0] not in tree_nodes:
-            kept.add(triple)
-    return kept
-
-
-def build_concepts_layer(
-    taxonomy_dir: Path = DEFAULT_TAXONOMY_DIR,
-    repo_root: Path = curriculum_taxonomy.REPO_ROOT,
-) -> tuple[Graph, list[dict], list[dict]]:
-    """Fusionne la couche concepts des taxonomies SKOS de séries (#27635).
-
-    L'organe d'export existe déjà (`curriculum_taxonomy`) : chaque JSON de
-    série est chargé par son validateur puis converti par son `build_graph`.
-    Une série sans taxonomie est simplement absente du TTL servi — le graphe
-    est une photo de la couverture réelle, jamais une interpolation. Une
-    taxonomie présente mais invalide (cellule déplacée, carnet renommé) est
-    exclue avec un motif nommé dans `skipped` : l'invalidation vient du
-    validateur, jamais d'une dérive silencieuse du TTL.
-
-    Rend le graphe fusionné, la liste des séries fusionnées
-    (`file`, `series`, `concepts`) et la liste des exclusions
-    (`file`, `reason`).
-    """
+    try:
+        from scripts.notebook_tools.curriculum_taxonomy import (
+            SCHEMA_FILENAME,
+            build_graph as build_concepts,
+            load_taxonomy,
+        )
+    except ImportError:
+        from curriculum_taxonomy import (  # type: ignore[no-redef]
+            SCHEMA_FILENAME,
+            build_graph as build_concepts,
+            load_taxonomy,
+        )
+    if not taxonomy_dir.is_dir():
+        raise SystemExit(f"dossier de taxonomies introuvable : {taxonomy_dir}")
+    data_files = [path for path in sorted(taxonomy_dir.glob("*.json")) if path.name != SCHEMA_FILENAME]
+    if not data_files:
+        raise SystemExit(f"aucune taxonomie de série dans {taxonomy_dir}")
+    repo_root = taxonomy_dir.parents[2]
     graph = Graph()
     graph.bind("cursus", VOCAB)
-    graph.bind("dct", DCTERMS)
-    graph.bind("rdfs", RDFS)
-    merged: list[dict] = []
-    skipped: list[dict] = []
-    if not taxonomy_dir.is_dir():
-        return graph, merged, skipped
-    files = sorted(
-        path for path in taxonomy_dir.glob("*.json")
-        if path.name != curriculum_taxonomy.SCHEMA_FILENAME
-    )
-    for data_path in files:
-        try:
-            data = curriculum_taxonomy.load_taxonomy(data_path, repo_root)
-            taxonomy_graph = curriculum_taxonomy.build_graph(data)
-        except (OSError, json.JSONDecodeError, ValueError) as error:
-            skipped.append({"file": data_path.name, "reason": str(error)})
-            continue
-        graph += strip_tree_nodes(taxonomy_graph)
-        merged.append(
-            {"file": data_path.name, "series": data["series"], "concepts": len(data["concepts"])}
-        )
-    return graph, merged, skipped
+    for data_path in data_files:
+        data = load_taxonomy(data_path, repo_root)
+        build_concepts(data, taxonomy=data_path.stem, graph=graph, emit_structure=False)
+    return graph
 
 
 def validate_graph(graph: Graph, shapes_path: Path = DEFAULT_SHAPES) -> tuple[bool, str]:
@@ -277,39 +248,23 @@ def generate(
     output_path: Path,
     shapes_path: Path,
     interfaces_path: Path | None = None,
-    taxonomy_dir: Path | None = DEFAULT_TAXONOMY_DIR,
-    repo_root: Path = curriculum_taxonomy.REPO_ROOT,
+    taxonomy_dir: Path | None = None,
 ) -> int:
     entries = json.loads(catalog_path.read_text(encoding="utf-8"))
     graph = build_graph(entries)
     if interfaces_path is not None:
         inventory = json.loads(interfaces_path.read_text(encoding="utf-8"))
         graph += build_interfaces_graph(inventory.get("interfaces", []))
-    concepts_count = 0
     if taxonomy_dir is not None:
-        concepts_graph, merged, skipped = build_concepts_layer(taxonomy_dir, repo_root)
-        graph += concepts_graph
-        concepts_count = len(list(graph.subjects(RDF.type, SKOS.Concept)))
-        for entry in merged:
-            print(
-                f"Taxonomie fusionnée : {entry['series']} ({entry['file']}) -- "
-                f"{entry['concepts']} concepts"
-            )
-        for entry in skipped:
-            print(
-                f"Taxonomie exclue du TTL servi : {entry['file']} -- {entry['reason']}",
-                file=sys.stderr,
-            )
+        graph += build_taxonomy_graph(taxonomy_dir)
     conforms, report = validate_graph(graph, shapes_path)
     if not conforms:
         print(report, file=sys.stderr)
         return 1
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_bytes(graph.serialize(format="turtle", encoding="utf-8"))
-    print(
-        f"Export RDF valide : {len(graph)} triples, "
-        f"{concepts_count} concepts, {output_path}"
-    )
+    concepts = len(set(graph.subjects(RDF.type, SKOS.Concept)))
+    print(f"Export RDF valide : {len(graph)} triples, {concepts} concepts, {output_path}")
     return 0
 
 
@@ -323,14 +278,12 @@ def main() -> int:
         help="inventaire JSON optionnel des interfaces agentiques (classes cli/mcp/bridge)",
     )
     parser.add_argument(
-        "--taxonomy-dir", type=Path, default=DEFAULT_TAXONOMY_DIR,
-        help="dossier des taxonomies SKOS de séries (défaut : docs/curriculum/taxonomy)",
+        "--taxonomy-dir", type=Path, default=None,
+        help="dossier optionnel des taxonomies de concepts (docs/curriculum/taxonomy) : "
+             "fusionne les concepts, leurs prérequis et le lien carnet -> concept (#25001)",
     )
     args = parser.parse_args()
-    return generate(
-        args.catalog, args.output, args.shapes, args.interfaces,
-        args.taxonomy_dir,
-    )
+    return generate(args.catalog, args.output, args.shapes, args.interfaces, args.taxonomy_dir)
 
 
 if __name__ == "__main__":

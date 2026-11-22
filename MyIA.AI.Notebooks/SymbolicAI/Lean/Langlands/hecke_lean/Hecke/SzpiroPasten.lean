@@ -1,6 +1,7 @@
 import Mathlib.Tactic
 import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Totient
+import Mathlib.NumberTheory.ArithmeticFunction.Misc
 import Mathlib.Algebra.Squarefree.Basic
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 
@@ -52,9 +53,14 @@ namespace SzpiroPasten
 
 /-! ### La définition-clé : factorisation admissible -/
 
-/-- Nombre de facteurs premiers distincts ω(n), lu sur le support de la
-factorisation. -/
-def omega (n : ℕ) : ℕ := (Nat.factorization n).support.card
+/-- Nombre de facteurs premiers distincts ω(n) — **délégué à l'organe
+Mathlib** `ArithmeticFunction.cardDistinctFactors`
+(`Mathlib/NumberTheory/ArithmeticFunction/Misc.lean`, à l'épingle du lake),
+qui le calcule par `n.primeFactorsList.dedup.length`. La lecture antérieure
+sur le support de la factorisation était une réimplémentation locale de ce
+même compteur (organ-first : la série ne re-définit pas ce que Mathlib
+possède déjà). -/
+def omega (n : ℕ) : ℕ := ArithmeticFunction.cardDistinctFactors n
 
 /-- Factorisation admissible `N = DM` (définition §2 du preprint) :
 `D` et `M` premiers entre eux, `D` carré-libre, et ω(D) **pair**. La parité
@@ -74,7 +80,8 @@ instance decidableIsAdmissible (N D M : ℕ) :
 théorème 1.1 n'est jamais vide. -/
 theorem one_admissible (N : ℕ) : IsAdmissibleFactorization N 1 N := by
   refine ⟨by norm_num, Nat.coprime_one_left N, squarefree_one, ?_⟩
-  simp only [omega, Nat.factorization_one, Finsupp.support_zero, Finset.card_empty]
+  have h0 : omega 1 = 0 := ArithmeticFunction.cardDistinctFactors_one
+  rw [h0]
   exact ⟨0, by norm_num⟩
 
 /-! ### `N = 30` : l'exemple filé du notebook, prouvé compositionnellement
@@ -117,29 +124,23 @@ theorem squarefree_mul_prime {n p : ℕ} (hn : n ≠ 0) (hsq : Squarefree n)
     have := hle r
     omega
 
-/-- ω d'un premier : 1 — le support de sa factorisation est un singleton. -/
-theorem omega_prime {p : ℕ} (hp : p.Prime) : omega p = 1 := by
-  simp [omega, Nat.Prime.factorization hp]
+/-- ω d'un premier : 1 — direct par l'organe
+(`ArithmeticFunction.cardDistinctFactors_apply_prime`), la définition
+déléguée rendant les deux énoncés convertibles. -/
+theorem omega_prime {p : ℕ} (hp : p.Prime) : omega p = 1 :=
+  ArithmeticFunction.cardDistinctFactors_apply_prime hp
 
-/-- ω d'un produit par un premier étranger : `ω(n·p) = ω(n) + 1` — le
-support de la factorisation gagne exactement le singleton `{p}`. -/
-theorem omega_mul_prime {n p : ℕ} (hn : n ≠ 0) (hp : p.Prime) (hnd : ¬ p ∣ n) :
+/-- ω d'un produit par un premier étranger : `ω(n·p) = ω(n) + 1` — par
+l'organe `ArithmeticFunction.cardDistinctFactors_mul`, la coprimalité
+`n.Coprime p` venant de `Nat.Prime.coprime_iff_not_dvd` (`¬p ∣ n` pour
+`p` premier). L'hypothèse `n ≠ 0`, devenue redondante (`¬p ∣ n` l'entraîne),
+est conservée sous `_hn` pour la stabilité des appelants du fichier. -/
+theorem omega_mul_prime {n p : ℕ} (_hn : n ≠ 0) (hp : p.Prime) (hnd : ¬ p ∣ n) :
     omega (n * p) = omega n + 1 := by
-  have hmem : p ∉ (n.factorization).support := by
-    rw [Finsupp.mem_support_iff]
-    intro h0
-    exact hnd (Nat.dvd_of_factorization_pos h0)
-  have hpf : p.factorization = Finsupp.single p 1 := Nat.Prime.factorization hp
-  have hsf : (Finsupp.single p 1).support = {p} := Finsupp.support_single p one_ne_zero
-  have hdisj' : Disjoint (n.factorization).support {p} := by
-    rw [Finset.disjoint_singleton_right]
-    exact hmem
-  have hdisj : Disjoint (n.factorization).support (Finsupp.single p 1).support := by
-    rw [hsf]
-    exact hdisj'
-  simp only [omega, Nat.factorization_mul hn (Nat.Prime.ne_zero hp), hpf,
-    Finsupp.support_add_eq hdisj, hsf]
-  rw [(Finset.card_union_eq_card_add_card).mpr hdisj', Finset.card_singleton]
+  have h := ArithmeticFunction.cardDistinctFactors_mul
+    ((Nat.Prime.coprime_iff_not_dvd hp).mpr hnd)
+  rw [Nat.mul_comm n p, show omega (p * n) = omega p + omega n from h, omega_prime hp]
+  omega
 
 theorem omega_two : omega 2 = 1 := omega_prime Nat.prime_two
 

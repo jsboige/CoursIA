@@ -323,7 +323,7 @@ def concepts_by_series(graph: Graph, series: str, limit: int | None = None) -> l
     return matches[:limit] if limit is not None else matches
 
 
-def concepts_for_notebook(
+def _concepts_citing_notebook(
     graph: Graph, path: str, limit: int | None = None
 ) -> list[str]:
     """Concepts citant un carnet, avec la cellule source de chaque citation (#27635)."""
@@ -366,7 +366,12 @@ def notebooks_for_concept(graph: Graph, concept_ref: str) -> list[str]:
 def concepts_of_notebook(
     graph: Graph, path: str, query: str | None = None, limit: int | None = None
 ) -> list[str]:
-    """Concepts qui citent un carnet : libellé, identifiant, taxonomie, cellules citées."""
+    """Concepts qui citent un carnet : libellé, identifiant, taxonomie, cellules citées.
+
+    Nom unique de la passerelle (#27641) : CLI et passerelle HTTP l'invoquent.
+    Retombe sur les citations déclarées `hasCellCitation` quand le lien direct
+    `vocab:concept` est absent (couche concepts fusionnée #27635).
+    """
     identifier = path.replace("\\", "/").removeprefix(NOTEBOOKS_ROOT)
     notebook = find_notebook(graph, identifier)
     source = URIRef(BLOB_PREFIX + NOTEBOOKS_ROOT + identifier)
@@ -389,6 +394,12 @@ def concepts_of_notebook(
         lines.append(
             f"{label}\t{_identifier(graph, concept)}\t{_taxonomy_of(graph, concept)}\t{', '.join(cells)}"
         )
+    if not lines:
+        # Couche concepts fusionnée : citations par identifiant de carnet (#27635).
+        citing = _concepts_citing_notebook(graph, path, limit=None)
+        if needle:
+            citing = [line for line in citing if needle in line.casefold()]
+        lines = citing
     lines.sort(key=str.casefold)
     if not lines:
         return ["Aucun concept lié à ce carnet dans l'export."]

@@ -13,29 +13,26 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import curriculum_taxonomy
 from generate_curriculum_rdf import (
     VOCAB,
-    build_concepts_layer,
     build_graph,
+    build_taxonomy_graph,
     generate,
-    strip_tree_nodes,
     validate_graph,
 )
 from query_curriculum import (
     concepts_by_series,
-    concepts_for_notebook,
+    concepts_of_notebook,
     notebooks_for_concept,
     main,
 )
 
 REPO_ROOT = curriculum_taxonomy.REPO_ROOT
 TAXONOMY_DIR = REPO_ROOT / curriculum_taxonomy.TAXONOMY_DIR
-COMPRESSION_NOTEBOOK = "Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb"
+COMPRESSION_NOTEBOOK = "InformationCalcul/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb"
 
 
 @pytest.fixture(scope="module")
 def concepts_layer():
-    graph, merged, skipped = build_concepts_layer(TAXONOMY_DIR, REPO_ROOT)
-    assert not skipped, skipped
-    return graph, merged
+    return build_taxonomy_graph(TAXONOMY_DIR)
 
 
 @pytest.fixture(scope="module")
@@ -45,14 +42,14 @@ def served_graph(concepts_layer):
         {"path": "GenAI/LLM/API.ipynb", "title": "API", "serie": "GenAI"},
     ]
     graph = build_graph(catalog)
-    graph += concepts_layer[0]
+    graph += concepts_layer
     return graph
 
 
-def test_strip_tree_nodes_keeps_only_the_concept_layer():
+def test_concepts_only_graph_keeps_no_tree_nodes():
     data = curriculum_taxonomy.load_taxonomy(TAXONOMY_DIR / "compression.json", REPO_ROOT)
     full = curriculum_taxonomy.build_graph(data)
-    stripped = strip_tree_nodes(full)
+    stripped = curriculum_taxonomy.build_graph(data, emit_structure=False)
     for node_type in (VOCAB.Notebook, VOCAB.Series, VOCAB.Subseries):
         assert not list(stripped.subjects(RDF.type, node_type))
     assert len(list(stripped.subjects(RDF.type, SKOS.Concept))) == 18
@@ -61,24 +58,21 @@ def test_strip_tree_nodes_keeps_only_the_concept_layer():
     assert len(stripped) < len(full)
 
 
-def test_build_concepts_layer_merges_valid_and_skips_invalid(tmp_path):
-    (tmp_path / "compression.json").write_bytes(
-        (TAXONOMY_DIR / "compression.json").read_bytes()
-    )
-    (tmp_path / "broken.json").write_text(
-        json.dumps({"series": "Broken", "concepts": []}), encoding="utf-8"
-    )
-    graph, merged, skipped = build_concepts_layer(tmp_path, REPO_ROOT)
-    assert [entry["series"] for entry in merged] == ["Compression"]
-    assert [entry["file"] for entry in skipped] == ["broken.json"]
-    assert "schema_version" in skipped[0]["reason"]
-    assert len(list(graph.subjects(RDF.type, SKOS.Concept))) == 18
-
-
-def test_build_concepts_layer_without_directory_is_empty(tmp_path):
-    graph, merged, skipped = build_concepts_layer(tmp_path / "absent", REPO_ROOT)
-    assert len(graph) == 0
-    assert merged == [] and skipped == []
+def test_build_taxonomy_graph_fuses_series_concepts(concepts_layer):
+    # La fusion (--taxonomy-dir, #25001) porte les 18 concepts de compression
+    # parmi ceux de toutes les séries déclarées, sans nœud d'arbre dupliqué.
+    for node_type in (VOCAB.Notebook, VOCAB.Series, VOCAB.Subseries):
+        assert not list(concepts_layer.subjects(RDF.type, node_type))
+    schemes = {
+        str(s) for s in concepts_layer.subjects(RDF.type, SKOS.ConceptScheme)
+    }
+    assert any(s.endswith("compression") for s in schemes)
+    compression_concepts = [
+        c for c in concepts_layer.subjects(RDF.type, SKOS.Concept)
+        if any(str(sch).endswith("compression")
+               for sch in concepts_layer.objects(c, SKOS.inScheme))
+    ]
+    assert len(compression_concepts) == 18
 
 
 def test_served_graph_conforms_to_shapes(served_graph):
@@ -122,8 +116,8 @@ def test_query_concepts_by_series(served_graph):
     assert all("/concept/" in line for line in lines)
 
 
-def test_query_concepts_for_notebook_lists_citing_cells(served_graph):
-    lines = concepts_for_notebook(served_graph, COMPRESSION_NOTEBOOK)
+def test_query_concepts_of_notebook_lists_citing_cells(served_graph):
+    lines = concepts_of_notebook(served_graph, COMPRESSION_NOTEBOOK)
     assert lines
     assert all("\t" in line for line in lines)
     assert any(line.split("\t")[-1] for line in lines)
