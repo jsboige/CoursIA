@@ -224,6 +224,13 @@ aucun lac ne porte la théorie — la veille vit dans cette série).
 
 - [Complexity-03 — version Python](Complexity-03-HierarchieTemporelle-Python.ipynb)
 - [Complexity-03 — version C#](Complexity-03-HierarchieTemporelle-CSharp.ipynb)
+- [Complexity-03b — version Python](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb)
+- [Complexity-03b — version C#](Complexity-03b-HartmanisStearns-HierarchieTemporelle-CSharp.ipynb)
+
+L'approfondissement **03b — Hartmanis & Stearns** existe dans les deux langages :
+le jumeau C# rejoue les trois croissances comptées, la séparatrice subset-sum et
+la diagonalisation budgétée en `BigInteger` bibliothèque standard, aux mêmes
+budgets que le carnet Python ; les générateurs aléatoires diffèrent.
 
 Les deux carnets gardent les mêmes tables de budgets, les quatre machines
 booléennes et les coûts déclarés. Le port C# calcule les budgets exponentiels
