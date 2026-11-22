@@ -40,15 +40,32 @@ cursus:InterfaceShape a sh:NodeShape ;
     sh:property [ sh:path <http://purl.org/dc/terms/description> ; sh:maxCount 1 ; sh:datatype rdf:langString ] ;
     sh:property [ sh:path cursus:exitSemantics ; sh:maxCount 1 ; sh:datatype xsd:string ] .
 
-# Concepts de taxonomie fusionnés depuis --taxonomy-dir (#25001). La contrainte
-# sh:class sur requiresConcept est le témoin négatif : un prérequis qui vise
-# un concept absent du graphe (identifiant inconnu) viole la forme.
+# Concepts de taxonomie fusionnés depuis --taxonomy-dir (#25001, #27635).
+# cible CurriculumConcept : la contrainte sh:class sur requiresConcept est le
+# témoin négatif — un prérequis qui vise un concept absent du graphe viole la
+# forme. Cibles skos:Concept / skos:ConceptScheme : la couche fusionnée émet
+# aussi les concepts typés SKOS avec leurs citations de cellules.
+cursus:ConceptSchemeShape a sh:NodeShape ;
+    sh:targetClass skos:ConceptScheme ;
+    sh:property [ sh:path skos:prefLabel ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ] .
+
 cursus:ConceptShape a sh:NodeShape ;
     sh:targetClass cursus:CurriculumConcept ;
     sh:property [ sh:path skos:prefLabel ; sh:minCount 1 ; sh:datatype rdf:langString ] ;
     sh:property [ sh:path skos:definition ; sh:minCount 1 ; sh:datatype rdf:langString ] ;
     sh:property [ sh:path skos:inScheme ; sh:minCount 1 ; sh:maxCount 1 ; sh:nodeKind sh:IRI ] ;
     sh:property [ sh:path cursus:requiresConcept ; sh:class cursus:CurriculumConcept ] .
+
+cursus:SkosConceptShape a sh:NodeShape ;
+    sh:targetClass skos:Concept ;
+    sh:property [ sh:path skos:inScheme ; sh:minCount 1 ; sh:maxCount 1 ; sh:class skos:ConceptScheme ] ;
+    sh:property [ sh:path skos:prefLabel ; sh:minCount 1 ; sh:datatype rdf:langString ] ;
+    sh:property [ sh:path <http://purl.org/dc/terms/identifier> ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path cursus:path ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path cursus:decimalPath ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path cursus:depth ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:integer ] ;
+    sh:property [ sh:path skos:broader ; sh:class skos:Concept ] ;
+    sh:property [ sh:path cursus:hasCellCitation ; sh:class cursus:CellCitation ] .
 
 cursus:CellCitationShape a sh:NodeShape ;
     sh:targetClass cursus:CellCitation ;

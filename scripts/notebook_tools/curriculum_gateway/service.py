@@ -27,10 +27,13 @@ def handle(graph, request: object) -> dict:
     if not isinstance(request, dict):
         return {'status': 'invalid', 'error': 'Objet JSON attendu'}
     action = request.get('action')
-    if action not in ('series', 'path', 'prerequisites'):
-        return {'status': 'invalid', 'error': 'Action attendue : series, path ou prerequisites'}
+    if action not in ('series', 'path', 'prerequisites', 'concepts'):
+        return {'status': 'invalid',
+                'error': 'Action attendue : series, path, prerequisites ou concepts'}
     if action == 'series':
         return {'status': 'ok', 'results': reader.list_series(graph)}
+    if action == 'concepts':
+        return _handle_concepts(graph, request)
     path = request.get('path')
     if not isinstance(path, str) or not path.strip():
         return {'status': 'invalid', 'error': 'Chemin du carnet requis'}
@@ -39,6 +42,31 @@ def handle(graph, request: object) -> dict:
                   else reader.prerequisites_for(graph, path))
     except KeyError:
         return {'status': 'not_found', 'error': 'Carnet inconnu'}
+    except ValueError as exc:
+        return {'status': 'invalid', 'error': str(exc)}
+    return {'status': 'ok', 'results': result}
+
+
+def _handle_concepts(graph, request: dict) -> dict:
+    """Lecture de la couche concepts (#27635) : par série, carnet ou concept."""
+    selections = {key: request.get(key) for key in ('series', 'notebook', 'concept')}
+    provided = {key: value for key, value in selections.items() if value is not None}
+    for key, value in provided.items():
+        if not isinstance(value, str) or not value.strip():
+            return {'status': 'invalid', 'error': f'Le champ {key} doit être une chaîne'}
+    if len(provided) > 1:
+        return {'status': 'invalid', 'error': 'Un seul filtre parmi series, notebook, concept'}
+    try:
+        if 'series' in provided:
+            result = reader.concepts_by_series(graph, provided['series'])
+        elif 'notebook' in provided:
+            result = reader.concepts_of_notebook(graph, provided['notebook'])
+        elif 'concept' in provided:
+            result = reader.notebooks_for_concept(graph, provided['concept'])
+        else:
+            result = reader.concepts_for(graph)
+    except KeyError:
+        return {'status': 'not_found', 'error': 'Série, carnet ou concept inconnu'}
     except ValueError as exc:
         return {'status': 'invalid', 'error': str(exc)}
     return {'status': 'ok', 'results': result}
