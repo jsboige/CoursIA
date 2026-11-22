@@ -184,6 +184,8 @@ pas encore.
 
 [Complexity-03f : chaîne des réductions (C#)](Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb) accompagne la [version Python](Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb). Les corpus et intersections sont calculés en BCL ; les générateurs diffèrent et l'algorithme du papier reste cité, non exécuté.
 
+[Complexity-03f : chaîne des réductions (Rust)](Complexity-03f-ReductionsTriangle-Lopsided-Rust.ipynb) porte le même fil en bibliothèque standard seule (kernel evcxr, aucune crate, aucun `:dep`). Son générateur MT19937 est porté mot à mot sur le flux de CPython — même graine, même ordre des tirages — : contrairement au jumeau C#, le triple témoin, les opérations du double balayage, les captures par coloriage et les paires d'intersections coïncident avec la version Python, dont les sorties committées servent de témoin de conformité (registre `rust_conformance.d`). Chaque cellule étant autonome sous evcxr, elle rejoue les tirages des cellules précédentes pour se replacer au même point du flux global.
+
 Le notebook 03d confronte la série à la position **annoncée** : deux preuves machine
 d'octobre 2026 (OpenAI, Anthropic) prétendent réfuter l'ETH. Le carnet lit leurs trois
 surfaces Lean à la source — définitions, hypothèses, axiomes, `sorry` finaux —, cite
