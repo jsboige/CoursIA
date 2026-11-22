@@ -1721,9 +1721,9 @@ Cinquième strand de la série des orphelins, en duo : `ICT-40b` (AnalogCognitio
 
 ## Strand 20 — Le jumeau C# de la greffe 2 : ICT-Greffe2-EspaceAtteignable-CSharp (extension #11690)
 
-Au tirage de ce strand, le recompte frais (tête `e3170e1b9595`) ne laisse qu'un carnet actionnable. Les strands 16-19 avaient laissé quatre non couverts sous occupation ; deux des PRs mesurées (#26757, #27095) ont mergé le 2026-11-20, mais **ICT-48-WolframClasses** est aussitôt passé sous l'occupation de #27783 (ouverte, « blocs de fin »), et **ICT-49-JLensFideliteCrossTaille** est arrivé par #27095 lui-même, lui aussi repris sous #27783. Restait **ICT-Greffe2-EspaceAtteignable-CSharp**, portage du jumeau Python mergé le 2026-11-21 par #27564 (#27528, 33 cellules) : aucune PR ouverte n'en réécrit le contenu — seule #27816 (sweep, bandeau de bootstrap .NET Interactive sur 25 carnets) le touche mécaniquement, sans effet sur la lecture.
+Au tirage de ce strand, le recompte frais (tête `e3170e1b9595`) ne laisse qu'un carnet actionnable. Les strands 16-19 avaient laissé quatre non couverts sous occupation ; deux des PRs mesurées (#26757, #27095) ont mergé le 2026-11-20, mais **ICT-48-WolframClasses** est aussitôt passé sous l'occupation de #27783 (ouverte, « blocs de fin »), et **ICT-49-JLensFideliteCrossTaille** est arrivé par #27095 lui-même, lui aussi repris sous #27783. Restait **ICT-Greffe2-EspaceAtteignable-CSharp**, portage du jumeau Python mergé le 2026-11-21 par #27564 (#27528) : aucune PR ouverte n'en réécrit le contenu — seule #27816 (sweep, bandeau de bootstrap .NET Interactive sur 25 carnets) le touche mécaniquement, sans effet sur la lecture.
 
-### `ICT-Greffe2-EspaceAtteignable-CSharp.ipynb` (jumeau C# de la greffe 2) — 33 cellules (22 md, 11 code, 11/11 exécutées)
+### `ICT-Greffe2-EspaceAtteignable-CSharp.ipynb` (jumeau C# de la greffe 2) — exécution complète (11/11 code)
 
 | Colonne | Contenu |
 |---|---|
