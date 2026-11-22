@@ -29,7 +29,7 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 | Domaine | CSV | Cellules (au 2026-08-06) | Série source |
 |---------|-----|---------:|--------------|
 | SymbolicAI — Tweety | `tweety/tweety.csv` | 864 | `SymbolicAI/Tweety/` |
-| SymbolicAI — SemanticWeb | `semanticweb/semanticweb.csv` | 1193 | `SymbolicAI/SemanticWeb/` |
+| SymbolicAI — SemanticWeb | `semanticweb/semanticweb.csv` | 1367 | `SymbolicAI/SemanticWeb/` |
 | SymbolicAI — Planning | `planners/planners.csv` | 1006 | `SymbolicAI/Planners/` |
 | SymbolicAI — SMT/Z3-API | `smt/z3-api.csv` | 541 | `SymbolicAI/SMT/Z3-API/` |
 | SymbolicAI — SMT/Z3.Linq | `smt/z3-linq2z3.csv` | 525 | `SymbolicAI/SMT/Z3-Linq2Z3/` |
@@ -45,11 +45,11 @@ Convention : `translations/<famille>/<série>.csv`, une ligne par cellule de not
 | Search — Applications | `search-applications/search-applications.csv` | 1468 | `Search/Applications/` |
 | Probas — Infer.NET | `probas-infer/probas_infer.csv` | 940 | `Probas/Infer/` |
 | Probas — PyMC | `probas-pymc/probas_pymc.csv` | 571 | `Probas/PyMC/` |
-| Probas — Decision (Infer.NET) | `probas-decinfer/probas_decinfer.csv` | 383 | `Probas/DecisionTheory/DecInfer/` |
+| Probas — Decision (Infer.NET) | `probas-decinfer/probas_decinfer.csv` | 424 | `Probas/DecisionTheory/DecInfer/` |
 | IIT / ICT | `iit/iit.csv` | 776 | `IIT/ICT-Series/` |
 | ML.NET | `mlnet/mlnet.csv` | 599 | `ML/ML.Net/` |
 | ML — Data Science with Agents | `ml-datascience/ml-datascience.csv` | 708 | `ML/DataScienceWithAgents/` |
-| RL | `rl/rl.csv` | 513 | `RL/` |
+| RL | `rl/rl.csv` | 514 | `RL/` |
 | Sudoku | `sudoku/sudoku.csv` | 1337 | `Sudoku/` |
 | GameTheory | `gametheory/gametheory.csv` | 1897 | `GameTheory/` |
 | Complexity | `complexity/complexity.csv` | 242 | `Complexity/` |
