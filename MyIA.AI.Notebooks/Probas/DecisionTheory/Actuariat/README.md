@@ -44,8 +44,8 @@ La sous-série regarde l'assurance du côté de l'assureur. La série [Théorie 
 
 | Question | Côté assureur, dans cette sous-série | Côté marché, en théorie des jeux |
 |---|---|---|
-| Antisélection | La spirale du carnet 01, puis la valeur d'un signal de souscription (05) | Les modèles d'information asymétrique, dont le screening de Rothschild–Stiglitz : [GameTheory-17b](../../../GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) |
-| Tarif | Prime pure et chargement (01) | L'équilibre de marché lu comme un bilan d'espérances : [GameTheory-17f](../../../GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) |
+| Antisélection | La spirale du carnet 01, puis la valeur d'un signal de souscription (05) | Les modèles d'information asymétrique, dont le screening de Rothschild–Stiglitz : [GameTheory-17b](../../../GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17b-Asymmetric-Information-Python.ipynb) |
+| Tarif | Prime pure et chargement (01) | L'équilibre de marché lu comme un bilan d'espérances : [GameTheory-17f](../../../GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) |
 | Mutualisation | Modèle hiérarchique et crédibilité (02, 03) | Les jeux coopératifs et la valeur de Shapley : [GameTheory-15](../../../GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) |
 
 ### Exercices des carnets

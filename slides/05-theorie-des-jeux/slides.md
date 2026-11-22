@@ -525,7 +525,7 @@ layout: dense
 
 - Profile stratégique et système de croyance consistant tels que les stratégies sont sequentiellement rationnelles
 
-*Notebook : [GameTheory-17b-Asymmetric-Information-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) — croyances consistantes et rationalite sequentielle.*
+*Notebook : [GameTheory-17b-Asymmetric-Information-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17b-Asymmetric-Information-Python.ipynb) — croyances consistantes et rationalite sequentielle.*
 
 ---
 layout: dense
@@ -551,7 +551,7 @@ layout: dense
 
 <img src="./images/img_037.png" alt="Exemples de PBE : pooling, separating et semi-separation" style="display:block; margin:4px auto; max-height:90px; width:auto; max-width:100%; object-fit:contain;">
 
-*Notebooks : [GameTheory-12-ReputationGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb) (pooling/separating) · [GameTheory-17d-Lean-Screening-Signaling-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) (screening formalise).*
+*Notebooks : [GameTheory-12-ReputationGames-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb) (pooling/separating) · [GameTheory-17d-Lean-Screening-Signaling-Lean](../../MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) (screening formalise).*
 
 ---
 layout: dense
