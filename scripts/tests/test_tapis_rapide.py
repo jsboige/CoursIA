@@ -699,11 +699,15 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # belt_equite.py la vingt-quatrieme (l'equite du dispatch : un grain deja servi ne
 # passe pas devant les premieres visites, #27338) ; tapis_acceptance.py la
 # vingt-cinquieme (les criteres d'acceptation de #25082 mesures sur le service
-# effectif, 20/11) ; tapis_attente.py la vingt-septieme (les ecarts d'ATTENTE :
-# la remise de main et la pause explicite -- extrait de tapis_rapide.py pour
-# tenir le plafond quand la fusion avec main y ajoute les ecarts de fond,
-# #27726, 22/11) ; tapis_assiette.py la vingt-sixieme (la composition du pool :
-# feuilles contre conteneurs, #25082, 21/11).
+# effectif, 20/11) ; tapis_assiette.py la vingt-sixieme (la composition du pool :
+# feuilles contre conteneurs, #25082, 21/11) ; tapis_attente.py la vingt-septieme
+# (les ecarts d'ATTENTE : la remise de main et la pause explicite -- extrait de
+# tapis_rapide.py pour tenir le plafond quand la fusion avec main y ajoute les
+# ecarts de fond, #27726, 22/11) ; tapis_leger_texte.py la vingt-huitieme (la
+# SORTIE TEXTE de la voie leger -- extraite de tapis_leger.py pour que la greffe
+# du cap de livraisons tienne le plafond, #21067, 22/11) ;
+# tapis_cap_livraisons.py la vingt-neuvieme (le CAP DE LIVRAISONS EPIC rebranche
+# sur la voie de tirage reelle, #21067, 22/11).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
@@ -742,7 +746,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_voie_leger.py", 40),
                                               ("tapis_acceptance.py", 300),
                                               ("tapis_assiette.py", 200),
-                                              ("tapis_attente.py", 60)])
+                                              ("tapis_attente.py", 60),
+                                              ("tapis_leger_texte.py", 80),
+                                              ("tapis_cap_livraisons.py", 160)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
