@@ -183,5 +183,85 @@ def test_le_point_d_appel_de_build_lake_passe_des_kwargs_que_la_signature_accept
     assert captured["kwargs"]["project_cache_dir"].name == "demo_lean"
 
 
+# ---------------------------------------------------------------------------
+# #27516 volet 3 : le timeout pur (deferral CI, non bloquant)
+# ---------------------------------------------------------------------------
+
+
+def _timeout_build(lake="knot", **over):
+    """Un build tue au minuteur : status `timeout`, exit 124, ni violation de
+    budget ni erreur de compilation."""
+    build = {
+        "lake": lake,
+        "ok": False,
+        "exit_code": 124,
+        "status": "timeout",
+        "budget_violation": None,
+        "errors": [],
+    }
+    build.update(over)
+    return build
+
+
+def test_timeout_pur_sans_violation_ni_erreur():
+    assert attest_local_build.is_pure_timeout(_timeout_build()) is True
+
+
+def test_timeout_avec_violation_de_budget_n_est_pas_pur():
+    # Une violation du budget de concurrence est une cause a re-essayer, pas
+    # un timeout pur : elle ne doit PAS devenir un deferral CI.
+    assert (
+        attest_local_build.is_pure_timeout(
+            _timeout_build(budget_violation="jobs=8 > budget 6")
+        )
+        is False
+    )
+
+
+def test_timeout_avec_erreur_de_compilation_n_est_pas_pur():
+    # Une erreur de compilation nommee est une faute de code, jamais un
+    # timeout : elle refuse la PR.
+    assert (
+        attest_local_build.is_pure_timeout(_timeout_build(errors=[{"text": "type mismatch"}]))
+        is False
+    )
+
+
+def test_un_non_timeout_n_est_jamais_pur():
+    # Un build echoue (sans status `timeout`) n'est jamais un timeout pur.
+    assert (
+        attest_local_build.is_pure_timeout(
+            {"lake": "knot", "ok": False, "status": "child_failed", "exit_code": 1}
+        )
+        is False
+    )
+    # Un build reussi non plus.
+    assert (
+        attest_local_build.is_pure_timeout(
+            {"lake": "knot", "ok": True, "status": "ok", "exit_code": 0}
+        )
+        is False
+    )
+
+
+def test_attestation_extra_honnete_sur_timeout():
+    # Sur un timeout, le texte dit « non acheve » + deferral CI, jamais
+    # « reussi » : on n'atteste pas un vert que le build local n'a pas rendu.
+    extra = attest_local_build._attestation_extra(
+        [_timeout_build()], "auto", [_timeout_build()]
+    )
+    assert "non acheve" in extra
+    assert "deferral CI" in extra
+    assert "reussi" not in extra
+
+
+def test_attestation_extra_reussi_sans_timeout():
+    extra = attest_local_build._attestation_extra(
+        [{"lake": "knot", "ok": True, "targets": ["Knots.Foo"]}], "auto"
+    )
+    assert "reussi" in extra
+    assert "non acheve" not in extra
+
+
 if __name__ == "__main__":  # pragma: no cover
     raise SystemExit(pytest.main([__file__, "-v"]))
