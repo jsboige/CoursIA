@@ -83,8 +83,6 @@ listing:
 ---
 
 ::: {.series-banner}
-# Search — Algorithmes de recherche
-
 **Point d'entrée idéal pour les débutants en intelligence artificielle.** La série couvre l'ensemble du spectre des algorithmes de recherche : exploration non informée (BFS, DFS, Dijkstra), exploration informée (A*, heuristiques), recherche adversariale (minimax, alpha-beta), Monte Carlo Tree Search, métaheuristiques (recuit simulé, algorithmes génétiques, essaims), et résolution de contraintes (CSP).
 :::
 
