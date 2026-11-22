@@ -338,7 +338,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 37 | [Lean-37-Capstone-Serre100](Lean-37-Capstone-Serre100.ipynb) | 4 | 3 | **NOUVEAU** (kernel `python3-lean`) |
 | 38 | [Lean-38-Capstone-Geometry-Lean-Python](Lean-38-Capstone-Geometry-Lean-Python.ipynb) | 8 | 3 | **NOUVEAU** (kernel `python3`) |
 | 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | 4 | 3 | **NOUVEAU** (kernel `python3-lean`) |
-| 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) · [Rust](Lean-40-Capstone-Langlands-Rust.ipynb) | 9 | 3 | **NOUVEAU** (kernels `python3`, `rust`) |
+| 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | 9 | 3 | **NOUVEAU** (kernels `python3`, `rust`) |
 | 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | 3 | 0 | **NOUVEAU** (kernel `python3`) |
 
 Conventions de la série — l'état réel de chaque carnet se lit dans la table
