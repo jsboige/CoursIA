@@ -953,6 +953,7 @@ project:
     - "MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb"
+    - "MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb"
     - "MyIA.AI.Notebooks/Complexity/Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb"
