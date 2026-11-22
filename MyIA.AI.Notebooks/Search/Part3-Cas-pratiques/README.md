@@ -148,7 +148,7 @@ Le terrain d'application le plus direct de la [Partie 1](../Part1-Foundations/RE
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-33-RushHour-Admissible-Astar-Python](App-33-RushHour-Admissible-Astar-Python.ipynb) | Rush Hour 6x6 : BFS, A\* (heuristique admissible par comptage des voitures bloquantes) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark à l'état près | Découverte | — |
+| 1 | [App-33-RushHour-Admissible-Astar-Python](App-33-RushHour-Admissible-Astar-Python.ipynb) · [jumeau Rust](App-33-RushHour-Admissible-Astar-Rust.ipynb) | Rush Hour 6x6 : BFS, A\* (heuristique admissible par comptage des voitures bloquantes) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark à l'état près | Découverte | — |
 | 2 | [App-34-15Puzzle-Admissible-Astar-Python](App-34-15Puzzle-Admissible-Astar-Python.ipynb) — jumeau [C#](App-34-15Puzzle-Admissible-Astar-CSharp.ipynb) | 15-puzzle : A\* et heuristiques admissibles **mesurées** (Manhattan contre linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal. Le jumeau C# refait l'espace d'états en .NET avec l'état encodé dans un `ulong` (4 bits par case, parité #4956) | Licence | — |
 
 ## Approfondissements
