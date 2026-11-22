@@ -1,0 +1,12 @@
+- name: "Metajeux-6 Chemin-Minimal-3x2-Ordinal"
+  family: GameTheory/Metajeux
+  python: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire from-scratch/from-scratch sans lib-vs-lib (configuration SocialChoice-2, meme modele que les paires Metajeux-1/2) : BFS, treillis des ordres faibles et permutoedre implantes idiomatiquement des deux cotes (stdlib Python collections/itertools/time vs BCL/LINQ/Stopwatch C#, 0 NuGet), aucune bibliotheque canonique de graphes n'est requise (BFS maison des deux cotes, c'est le sujet pedagogique du carnet). Verification d'execution : Papermill kernel .net-csharp 15/15 cellules code, 0 erreur, sorties commitees. Parite numerique verifiee cellule par cellule contre la source Python : ordres faibles 75/4683, stricts 24/720, recensement 2x2 0 raccourci / 48 egalites, recensement 3x2 77760 raccourcis (15.0 %) / 65520 egalites / exemple (1, 2, 3, 4, 5, 6) -> (1, 5, 6, 4, 3, 2) d_perm = 9 d_treillis = 8 identique, BFS produit 518400 jeux / 30 = 15 + 15, chemins construits identiques pas a pas (15 pas permutoedre, 10 pas murs : 5 fusions jusqu'a (1, 1, 1, 1, 1, 1) puis 5 scissions), verdicts VALIDE [permutoedre]/[treillis] et les 3 controles INVALIDE exacts, 292864 geodesiques. parity_level: semantic (meme contenu mathematique, API idiomatique differente : tuples/dict Python vs int[]/Dictionary cles string C#). Issue #27500."
+
+  known_differences:
+    - "Egalite de valeur sur les tables : Python utilise des tuples comme cles de dict ; le port C# utilise int[] avec cle string Key(t) = string.Join(',', t) -- equivalence fonctionnelle documentee en tete du carnet (cellule Configuration)."
+    - "Durees mesurees : Python time.time() vs C# Diagnostics.Stopwatch -- les durees affichees ((0.0s), (6.9s), (2.8s)...) sont recalculees par la machine d'execution, jamais en dur ; les compteurs et distances sont identiques."
+    - "Warnings compilateur CS8632 (annotations nullable hors contexte '#nullable') dans les sorties des cellules d'exercices 25/29 -- stubs `List<(...)>? champ = null; // TODO etudiant`, meme pattern que la paire Metajeux-1, sans effet sur l'execution integrale sans erreur."
