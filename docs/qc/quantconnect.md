@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-15
+> REFERENCE — vivante — dernière révision 2026-11-16
 
 # QuantConnect (QC) - Configuration et règles
 
@@ -73,10 +73,10 @@ L'absence d'un appel `SetEndDate` (Python : `self.set_end_date(...)`) **n'est pa
 
 ## QC Cloud API - Accès MCP (trois voies : REST-lite canonique, Docker officiel, distant)
 
-**Méthode d'accès** : Utiliser le MCP Docker `quantconnect/mcp-server` configure dans `.mcp.json` a la racine du projet.
+**Méthode d'accès** : la voie canonique du dépôt est le **REST-lite** (`scripts/qc-mcp-lite/`, ci-dessous) pour les backtests, la lecture de projets et les fichiers. Le MCP Docker officiel reste disponible quand l'API complète est nécessaire, et le MCP distant couvre Research quand son accès est débloqué. **Aucune des trois ne déprécie les autres** : ni rupture REST, ni retrait du serveur Docker n'ont été établis (qualification du 2026-11-08, §« Troisième voie » ci-dessous).
 
-- **NE PAS** utiliser de scripts Python avec l'API REST directe (provoque du rate-limiting et des erreurs d'auth)
-- Le MCP gère l'authentification et le rate-limiting automatiquement
+- **NE PAS** écrire de script Python ad-hoc contre l'API REST directe : il contourne le rate-limiting partagé et les gardes d'authentification que les trois serveurs appliquent
+- Les serveurs gèrent l'authentification et le rate-limiting
 - Fichier de config : `.mcp.json` (déjà dans `.gitignore`, JAMAIS committer)
 
 ### Configuration `.mcp.json`
@@ -105,9 +105,9 @@ L'absence d'un appel `SetEndDate` (Python : `self.set_end_date(...)`) **n'est pa
 
 ### Alternative légère : `qc-mcp-lite` (~5k tokens vs ~40k)
 
-Le MCP Docker officiel charge un schema d'outils volumineux (~40k tokens). Pour les workflows de backtest standard, le dépôt fournit un wrapper Python léger **`scripts/qc-mcp-lite/server.py`** (~10 outils, schema <5k tokens) qui re-expose l'API QC v2 sans conteneur Docker.
+Le MCP Docker officiel charge un schema d'outils volumineux (~40k tokens). Pour les workflows de backtest standard, le dépôt fournit un wrapper Python léger **`scripts/qc-mcp-lite/server.py`** (**12 outils**, schema <5k tokens) qui re-expose l'API QC v2 sans conteneur Docker.
 
-Outils exposes : `create_compile`, `read_compile`, `create_backtest`, `read_backtest` (Sharpe/CAGR/MaxDD), `read_backtest_chart` (graphique écrit sur disque : equity, exposition, rotation, graphique personnalisé), `list_backtests`, `list_projects`, `read_project`, `read_file`, `create_file`, `update_file_contents`. Auth = pattern QC v2 (`SHA256(token:timestamp)` + header `Basic userId:hash`). Rate limiting 10 appels/min applique in-process (même limite fleet-wide).
+Outils exposes (**12**) : `create_compile`, `read_compile`, `create_backtest`, `read_backtest` (Sharpe/CAGR/MaxDD), `read_backtest_chart` (graphique écrit sur disque : equity, exposition, rotation, graphique personnalisé), `list_backtests`, `create_project` (`language`, et `organization_id` optionnel — l'échappatoire d'une organisation saturée, #19760), `list_projects`, `read_project`, `read_file`, `create_file`, `update_file_contents`. Aucun outil Jupyter : l'exécution QuantBook passe par le MCP distant ou le Research Assistant (§« Troisième voie », [quantbook-execution-routes.md](quantbook-execution-routes.md)). Auth = pattern QC v2 (`SHA256(token:timestamp)` + header `Basic userId:hash`). Rate limiting 10 appels/min applique in-process — donc **par processus**, pas un verrou distribué : la limite flotte du §« Rate limiting strict » reste une règle de coordination que ce garde local ne fait pas respecter à lui seul.
 
 Config `.mcp.json` (remplace l'entrée Docker `qc-mcp` ; secrets dans `.env` gitignore, **JAMAIS inline**) :
 
@@ -188,16 +188,17 @@ QC est multi-tenant via les "organizations". Le cluster CoursIA utilise plusieur
 
 ### Switcher d'org
 
-L'orga par défaut du MCP est définie par `QUANTCONNECT_ORGANIZATION_ID` dans `.mcp.json`. Deux options pour changer ponctuellement :
+L'orga par défaut du MCP est définie par `QUANTCONNECT_ORGANIZATION_ID` dans `.mcp.json`. Trois options pour changer ponctuellement :
 
-1. Éditer `.mcp.json` env var et rebuild le MCP Docker container
-2. Spécifier `organizationId` explicitement par appel quand le tool MCP l'accepte
+1. Spécifier `organizationId` explicitement par appel quand le tool MCP l'accepte — côté lite, c'est `create_project(organization_id=...)` ; côté Docker, le champ `organizationId` des tools qui le portent
+2. Éditer l'env var de `.mcp.json`
+3. Pour le MCP Docker, rebuild le conteneur après l'édition
 
 Note : `read_account` retourne TOUJOURS l'orga par défaut du USER_ID (la research tier quand non force par env var).
 
 ### Énumération des orgs
 
-Il n'existe pas d'endpoint `list_organizations`. La seule façon : `mcp__qc-mcp__list_projects` retourne les projets de toutes les orgs dont l'user est membre+ — agréger les `organizationId` distincts.
+Il n'existe pas d'endpoint `list_organizations`. La seule façon : `list_projects` (lite ou Docker) retourne les projets de toutes les orgs dont l'user est membre+ — agréger les `organizationId` distincts.
 
 ## Structure QC dans le dépôt
 
@@ -303,6 +304,10 @@ python scripts/quantconnect/check_pcm_single_source.py --json   # verdict struct
 **Câblage CI** : la garde est un garde **natif de la voie rapide** (`TRANCHE38` du registre `scripts/ci/fast_lane_registry.py`), **bloquant** : son check-run porte son nom canonique, donc un verdict rouge arrête la PR. Elle se déclenche sur toute modification d'un `.py` sous `MyIA.AI.Notebooks/QuantConnect/`, sur le manifeste et sur l'organe lui-même (une révision qui change la portée de la garde doit la rejouer).
 
 **Contrôle positif** : le corps de tests (`scripts/quantconnect/tests/test_check_pcm_single_source.py`) crée un arbre temporaire où une copie déclarée est volontairement modifiée et exige un verdict rouge (`DECLARATION_STALE`) ; le cas nominal, l'arbre du dépôt, doit rester vert. Une garde qui ne rougit pas sur une copie modifiée n'est pas une garde.
+
+### Noyau de risque déterministe — module commun
+
+Le noyau de risque déterministe (plafond d'exposition à 90 %, stop à 2 ATR(14), coupe-circuit à −3 %, #24698) vit dans `projects/RiskKernel/risk_kernel.py`. `HAR-RV-Kelly` et `Cloud-VolTargeting` en portent chacun une copie identique à l'octet, à côté de leur `main.py` : une copie se téléverse avec le projet, là où une bibliothèque QC manquante ne se voit qu'au lancement du backtest. La garde `scripts/quantconnect/check_risk_kernel_copies.py` (voie rapide, `risk-kernel-copies-guard`, bloquante) rougit sur une copie qui diverge ou un import sans copie. API, procédure de modification et choix copie contre bibliothèque : [RiskKernel/README.md](../../MyIA.AI.Notebooks/QuantConnect/projects/RiskKernel/README.md).
 
 ### AlphaModel — règles
 

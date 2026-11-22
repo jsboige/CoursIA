@@ -5,9 +5,9 @@
 | Métrique | Valeur |
 |----------|--------|
 | Série source | `MyIA.AI.Notebooks/GameTheory/` (théorie des jeux — OpenSpiel Python + .NET C# + Lean 4 social choice, **multi-langues**) |
-| Notebooks source | **55** (GameTheory-1 setup → GameTheory-19, twins C#/Python, variantes Lean `11b/15b/15c`, sous-séries CFR/différentiel/coopératif) |
-| Cellules extraites | **1886** (markdown + code tous kernels confondus, nbformat canonique, id stable) |
-| Taille CSV | ~2,0 MB (1886 enregistrements × 21 colonnes) |
+| Notebooks source | **55 au seed 2026-07-10** (GameTheory-1 setup → GameTheory-19, twins C#/Python, variantes Lean `11b/15b/15c`, sous-séries CFR/différentiel/coopératif — le compte courant vit dans le CSV) |
+| Cellules extraites | **1886 au seed 2026-07-10** (markdown + code tous kernels confondus, nbformat canonique, id stable — compte courant mesurable dans `gametheory.csv`) |
+| Taille CSV | ~2,0 MB au seed (1886 enregistrements × 21 colonnes à l'époque) — taille et schéma actuels mesurables directement dans [`gametheory.csv`](gametheory.csv) |
 | Langue pivot | **fr** (PIVOT_LANG = "fr", cf #1650 Phase 0.5 / #4980 Lean i18n) |
 | Langues cibles | **en, es, ar, fa, zh, ru, pt** (7 langues vivantes côté Argumentum) |
 | Date seed | 2026-07-10 |

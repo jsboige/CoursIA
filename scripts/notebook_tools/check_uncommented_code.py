@@ -52,7 +52,12 @@ du noyau, lue dans ``metadata.kernelspec.language`` :
     masquage, l'URL ``"https://..."`` d'une cellule C# compterait comme un
     commentaire et blanchirait la cellule (le piège miroir du ``#`` dans une
     chaine) ;
-  * **Lean** : ``--`` et ``/- -/``, chaines masquees.
+  * **Lean** : ``--`` et ``/- -/``, chaines masquees ;
+  * **Rust** (noyau evcxr, ``language: rust``) : ``//`` et ``/* */``, chaines
+    brutes, echappees et caracteres masques. Sans cette famille, le noyau
+    Rust tombait sur le tokenizer Python, qui lit ``//`` comme un operateur :
+    une cellule commentee ressortait a 0 commentaire (mesure du 2026-11-21,
+    ``Sudoku-10-CP-SAT-Rust``, cellule 11 : 4 ``//``, 0 compte).
 
 Bornage
 -------
@@ -98,15 +103,31 @@ from pathlib import Path
 
 # Le meme attelage git que les organes freres : une seule implementation de
 # « qu'est-ce qui a change entre le merge-base et HEAD ».
-import check_output_failure_text  # module objet : stub git du self-test 11
+import check_output_failure_text  # module objet : delegation renamed_notebooks
 from check_output_failure_text import (
+    BS,
     _cell_source,
+    _parse_rename_status,
     changed_notebooks,
+    git,
     read_notebook_at,
-    renamed_notebooks,
     resolve_base,
 )
 from check_output_flood import _cell_key
+
+
+def renamed_notebooks(base, head="HEAD", cwd=None):
+    """{chemin a la tete: chemin a la base} pour les carnets RENOMMES.
+
+    Delegation a l'organe partage (commande git, parseur
+    ``_parse_rename_status``, filtre des cibles exclues) avec le ``git`` de
+    CE module : les tests pytest #26914 stubent ``organ.git`` par
+    ``monkeypatch.setattr`` -- une re-export de la fonction source
+    resoudrait ``git`` dans le module source et le patch ne prendrait pas.
+    """
+    return check_output_failure_text.renamed_notebooks(
+        base, head=head, cwd=cwd, git_fn=git)
+
 
 # --------------------------------------------------------------------------
 # Seuils -- ce sont eux qui portent le faux positif.
@@ -135,6 +156,16 @@ _CS_STRING = re.compile(r'@"(?:[^"]|"")*"|\$?"(?:\\.|[^"\\])*"|\'(?:\\.|[^\'\\])
 
 #: Chaines Lean a masquer avant de chercher ``--``.
 _LEAN_STRING = re.compile(r'"(?:\\.|[^"\\])*"')
+
+#: Chaines Rust a masquer avant de chercher ``//`` : brutes ``r#"..."#`` (le
+#: nombre de ``#`` ferme la chaine), echappees ``"..."`` et ``b"..."``, et
+#: caracteres ``'x'`` / ``'\n'``. Une duree de vie (``'a``) n'a pas de quote
+#: fermante apres un seul caractere : elle n'est pas masquee.
+_RUST_STRING = re.compile(
+    r'(?<![A-Za-z0-9_])b?r(#*)"[\s\S]*?"\1'
+    r'|b?"(?:\\.|[^"\\])*"'
+    r"|b?'(?:\\[^'\n]{1,10}|[^'\\\n])'"
+)
 
 
 def _line_kind(line: str) -> str:
@@ -179,7 +210,7 @@ def _token_facts(source: str) -> tuple[int, bool] | None:
 
 
 def _family(language: str) -> str:
-    """'python' | 'csharp' | 'lean' depuis le ``language`` du kernelspec.
+    """'python' | 'csharp' | 'lean' | 'rust' depuis le ``language`` du kernelspec.
 
     Un noyau inconnu (``?``, ``ict-py313``, ``py310-gpu``) tombe sur Python :
     c'est le defaut du depot, et se tromper dans ce sens signale une cellule
@@ -190,6 +221,8 @@ def _family(language: str) -> str:
         return "csharp"
     if key.startswith("lean"):
         return "lean"
+    if key == "rust":
+        return "rust"
     return "python"
 
 
@@ -202,6 +235,9 @@ def _marker_facts(source: str, family: str) -> tuple[int, bool]:
     """
     if family == "csharp":
         masked = _CS_STRING.sub('""', source)
+        line_marker, block = "//", "/*"
+    elif family == "rust":
+        masked = _RUST_STRING.sub('""', source)
         line_marker, block = "//", "/*"
     else:  # lean
         masked = _LEAN_STRING.sub('""', source)
@@ -527,24 +563,31 @@ def self_test() -> int:
         analyse_cell(_cell(*lean_body), language="lean4") is not None,
     ))
 
-    # 11. RENOMMAGE -- la table nouveau->ancien vient de l'organe partage
-    #     (``renamed_notebooks``, parsing inline du statut git
-    #     ``R<score>\tancien\tnouveau``). Le parseur se teste ici par stub de
-    #     ``git`` dans le module source : le self-test partage ne le couvre
-    #     qu'en direct (l. 1727), pas au niveau des octets.
+    # 11. RENOMMAGE -- la table nouveau->ancien delegue a l'organe partage
+    #     (commande git, parseur ``_parse_rename_status`` extrait pour les
+    #     tests pytest #26914, filtre des cibles exclues). Le stub porte sur
+    #     le ``git`` de CE module : la delegation passe ``git_fn``, sinon le
+    #     patch ne prendrait que dans le module source.
     rename_out = (
         "R100\tdossier/ancien.ipynb\tdossier/nouveau.ipynb\n"
         "M\tun/Modifie.ipynb\n"
-        "R075\tchemin\\base.ipynb\tchemin\\reordonne.ipynb\n"
+        "R075\tchemin" + BS + "base.ipynb\tchemin" + BS
+        + "reordonne.ipynb\n"
     )
-    saved_git = check_output_failure_text.git
+    checks.append((
+        "renommage : parseur seul (R100, R075, anti-diagnostics BS)",
+        _parse_rename_status(rename_out) == {
+            "dossier/nouveau.ipynb": "dossier/ancien.ipynb",
+            "chemin/reordonne.ipynb": "chemin/base.ipynb"},
+    ))
+    saved_git = git
     try:
-        check_output_failure_text.git = lambda *a, **k: rename_out
+        globals()["git"] = lambda *a, **k: rename_out
         renames = renamed_notebooks("base")
     finally:
-        check_output_failure_text.git = saved_git
+        globals()["git"] = saved_git
     checks.append((
-        "renommage : table nouveau->ancien (R100, R075, anti-diagnostics BS)",
+        "renommage : table nouveau->ancien par delegation stubable",
         renames == {"dossier/nouveau.ipynb": "dossier/ancien.ipynb",
                     "chemin/reordonne.ipynb": "chemin/base.ipynb"},
     ))

@@ -7,7 +7,7 @@ officiel ET sans outputs reels est un **claim creux** : le rendu passe la
 barre C.2 (outputs/exec) mais le moteur annonce n'est pas celui qui
 s'execute. Defaut firsthand documente dans #13927 :
 
-* ``07-Agent-Orchestration`` : titres/objectifs parlent de Google ADK, mais 10
+* ``07-Orchestration-d-Agents`` : titres/objectifs parlent de Google ADK, mais 10
   labs sur 10 ont zero import/appel ``google.adk``.
 * ``SW-12-GraphRAG-Python.ipynb`` : objectifs "Extraction reelle avec
   GPT/Claude" mais outputs "Reponse simulee".
@@ -92,7 +92,7 @@ ENGINE_REGISTRY: Dict[str, EngineSpec] = {
         invocations=(r"\b(?:Agent|Runner|InMemoryRunner)\s*\(", r"\brunner\.run"),
         proof_markers=(r"\bagent\b", r"\b(?:runner|session)\b"),
         simulation_markers=(r"class\s+(?:Mock|Fake)Agent", r"#\s*simulated\s+adk", r"\bsdk\s+fictif\b"),
-        notes="07-Agent-Orchestration : claims sans import `google.adk` detectes en 2026-09.",
+        notes="07-Orchestration-d-Agents : claims sans import `google.adk` detectes en 2026-09.",
     ),
     "openai_llm": EngineSpec(
         key="openai_llm",
