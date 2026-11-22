@@ -1,0 +1,12 @@
+- name: "Complexity-04c KServer WorkFunction"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04c-KServer-WorkFunction-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "La work function algorithm (connue depuis 1990) est l'objet meme du carnet : les deux cotes l'ecrivent explicitement, cote Python avec itertools/random/collections et matplotlib, cote C# avec la BCL seule (System.Random, LINQ) et un rendu SVG produit a la main. Aucun moteur externe n'est appele, aucun substitut n'est presente : le carnet mesure les ratios realises de l'algorithme sur des instances jouets, ce qu'un solveur de k-server deleguerait au lieu de l'illustrer. Meme discipline que les paires 04b et 04d de la famille."
+  known_differences:
+    - "Tirage aleatoire : les deux cotes executent le meme protocole (200 instances, meme graine, meme famille de metriques) mais les flux ne coincident pas terme a terme -- Python `random` (Mersenne Twister, `random.Random(seed)`) d'un cote, `System.Random` de l'autre. Mesure au 2026-11-18 sur le protocole n=6, k=3 : ratio moyen 1,190 / max 1,714 cote Python, 1,197 / 1,750 cote C#, 0 violation de la garantie k dans les deux cas."
+    - "Formatage des nombres : le noyau .NET rend la virgule decimale (ratio moy=1,197) et le noyau Python le point (ratio moy=1.190) ; le noyau C# verrouille `InvariantGlobalization` pour que la sortie ne depende pas de la locale du poste."
+    - "Rendu des figures : matplotlib inline (PNG) cote Python, SVG statique produit a la main et affiche via `Formatter.Register(typeof(PlotSvg))` cote C#. Meme donnee, meme lecture, support different."
+    - "Exercices : les trois memes exercices des deux cotes (`double_coverage`, `suite_anti_lru`, `distribution_ratios_cycle`), stub des deux cotes avec la meme mention « Exercice a completer » en sortie."

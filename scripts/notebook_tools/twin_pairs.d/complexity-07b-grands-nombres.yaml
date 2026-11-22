@@ -1,0 +1,10 @@
+- name: "Complexity-07b Grands Nombres"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-07b-LeTourDesGrandsNombres-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-07b-LeTourDesGrandsNombres-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Les petits calculs, les arbres jouets et les machines de Turing sont implémentés nativement en C# avec BigInteger et les budgets du source.
+  known_differences:
+    - "Les très grands nombres restent des descripteurs symboliques ; la garde de l'exercice k=6 utilise l'empreinte d'un résultat certifié indépendamment."

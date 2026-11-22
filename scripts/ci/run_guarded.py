@@ -100,6 +100,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -220,43 +221,75 @@ def _resume_suspended(proc):
         return False
 
 
-def _commit_charge():
-    """Lecture de la charge de commit : ``(pct, committed_bytes, limit_bytes)``.
+def _unlink_quiet(path):
+    """Supprime un fichier temporaire sans jamais lever."""
+    try:
+        os.unlink(path)
+    except OSError:
+        pass
 
-    Meme instrument que la garde GPU existante : ``Win32_PerfFormattedData_
-    PerfOS_Memory`` (``CommittedBytes`` / ``CommitLimit``). Les compteurs
-    ``\\Memory\\...`` sont absents sous certaines locales, et la memoire
-    **physique** n'est pas la charge de commit : les deux sondes se
-    ressemblent et l'ecart enjambe le seuil. Retourner ``None`` sur echec
-    permet a l'appelant de refuser (fail-CLOSED) au lieu de laisser passer.
 
-    La LECTURE EST UNIQUE (#23531, #23546). Le pourcentage seul ne suffit
-    plus : projeter l'engagement du job exige le **plafond** de commit de
-    l'hote, et deux sondes successives pourraient voir deux etats
-    differents -- la projection ne serait alors pas un etat coherent de la
-    machine. Le trio est donc lu dans le meme instant, par le meme appel.
+def _kill_tree_quiet(pid):
+    """Tue l'arbre d'un pid sans jamais lever (abort best-effort)."""
+    try:
+        _kill_tree(pid)
+    except Exception:
+        pass
 
-    Les trois quantites viennent de la meme source : ``CommittedBytes`` est
-    l'engagement courant, ``CommitLimit`` le plafond (RAM physique +
-    pagefile) que l'hote ne peut pas depasser. Une limite de commit
-    elle-meme illisible ou nulle rend la lecture ``None`` : sans plafond,
-    aucune projection n'est demontrable.
+
+def _probe_perf_counter_commit(timeout_s: int = 25):
+    """Sonde de reference : le compteur de performance de la charge de commit.
+
+    Rend ``(pct, committed_bytes, limit_bytes)`` ou ``None``.
+
+    La lecture est **bornee ET isolee** : la sortie de l'enfant part dans un
+    FICHIER, jamais dans un pipeline. Mesure du 2026-11-20 sur `myia-ai-01` :
+    quand le fournisseur WMI est wedged, le client `powershell` reste bloque
+    dans un appel noyau et tient son pipeline -- un `communicate()` attend
+    alors un EOF qui ne vient jamais, si bien que le `timeout` de
+    `subprocess.run` ne rendait pas la main et le lanceur restait bloque
+    (observe : 27 min sans un mot, le job jamais lance). Ici, l'enfant est
+    abandonne au terme du delai : on ne l'attend pas une seconde fois (il
+    peut etre non interruptible), on passe au canal de secours.
     """
     if os.name != "nt":
         return None
-    cmd = [
-        "powershell", "-NoProfile", "-Command",
+    script = (
         "$m=Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory; "
-        "if ($m) { '{0}|{1}' -f $m.CommittedBytes,$m.CommitLimit }",
-    ]
+        "if ($m) { '{0}|{1}' -f $m.CommittedBytes,$m.CommitLimit }"
+    )
+    fd, path = tempfile.mkstemp(prefix="commit_charge_", suffix=".txt")
+    os.close(fd)
     try:
-        out = subprocess.run(cmd, capture_output=True, text=True, timeout=60,
-                             encoding="utf-8", errors="replace")
+        with open(path, "w", encoding="utf-8") as fh:
+            proc = subprocess.Popen(
+                ["powershell", "-NoProfile", "-Command", script],
+                stdout=fh, stderr=subprocess.STDOUT,
+                creationflags=getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0),
+            )
+    except (OSError, ValueError):
+        _unlink_quiet(path)
+        return None
+    try:
+        proc.wait(timeout=timeout_s)
+    except subprocess.TimeoutExpired:
+        # Lecture pendante : l'enfant est abandonne (il peut etre
+        # non interruptible), on passe au canal de secours.
+        _kill_tree_quiet(proc.pid)
+        _unlink_quiet(path)
+        return None
     except (OSError, subprocess.SubprocessError):
+        _unlink_quiet(path)
         return None
-    if out.returncode != 0:
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            text = fh.read()
+    except OSError:
+        text = ""
+    _unlink_quiet(path)
+    if proc.returncode != 0:
         return None
-    lines = [ln for ln in (out.stdout or "").splitlines() if ln.strip()]
+    lines = [ln for ln in text.splitlines() if ln.strip()]
     if not lines:
         return None
     parts = lines[-1].strip().split("|")
@@ -270,6 +303,104 @@ def _commit_charge():
     if committed < 0 or limit <= 0:
         return None
     return (int(100 * committed / limit), committed, limit)
+
+
+def _commit_charge_global_memory():
+    """Canal de secours : la MEME grandeur nommee, lue sans WMI.
+
+    ``CommittedBytes`` (compteur de performance) et
+    ``ullTotalPageFile - ullAvailPageFile`` (``GlobalMemoryStatusEx``) sont
+    l'engagement de commit ; ``CommitLimit`` et ``ullTotalPageFile`` sont le
+    plafond. Ce sont les DEUX MEMES grandeurs, lues par deux API differentes
+    du meme noyau -- pas deux grandeurs voisines.
+
+    Aucune autre grandeur n'est lue : ni ``dwMemoryLoad`` (ratio RAM), ni
+    ``ullAvailPhys`` (RAM disponible). La fiche du 2026-11-18 a mesure 9,4
+    points d'ecart entre la grandeur protegee et ``dwMemoryLoad`` : lire la
+    mauvaise grandeur protege autre chose que ce qu'on croit.
+
+    Ce canal existe parce que la voie de reference passe par WMI, dont le
+    fournisseur peut etre wedged sur un siege : mesuré le 2026-11-20 sur
+    `myia-ai-01`, TOUTE lecture CIM pendait (> 46 s, client intuable). La
+    garde rendait alors ``None`` et refusait tout lancement -- refus
+    fail-CLOSED correct dans son intention, mais.trigger par une panne
+    d'instrument et non par l'etat de la machine.
+
+    Soeur de lecture deja presente dans le depot :
+    ``scripts/lean/lean_exec.py::_memory_status_nt`` (meme API), qui
+    n'expose pas le PLAFOND de commit -- dont la projection de l'engagement
+    a besoin ; d'ou une lecture propre ici plutot qu'un import croise entre
+    un organe CI et un organe Lean.
+
+    Rend ``(pct, committed_bytes, limit_bytes)`` ou ``None``.
+    """
+    if os.name != "nt":
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class MEMORYSTATUSEX(ctypes.Structure):
+            _fields_ = [
+                ("dwLength", wintypes.DWORD),
+                ("dwMemoryLoad", wintypes.DWORD),
+                ("ullTotalPhys", ctypes.c_ulonglong),
+                ("ullAvailPhys", ctypes.c_ulonglong),
+                ("ullTotalPageFile", ctypes.c_ulonglong),
+                ("ullAvailPageFile", ctypes.c_ulonglong),
+                ("ullTotalVirtual", ctypes.c_ulonglong),
+                ("ullAvailVirtual", ctypes.c_ulonglong),
+                ("ullAvailExtendedVirtual", ctypes.c_ulonglong),
+            ]
+
+        stat = MEMORYSTATUSEX()
+        stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
+        if not ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat)):
+            return None
+        limit = int(stat.ullTotalPageFile)
+        committed = limit - int(stat.ullAvailPageFile)
+    except Exception:
+        return None
+    if limit <= 0 or committed < 0:
+        return None
+    return (int(100 * committed / limit), committed, limit)
+
+
+def _commit_charge():
+    """Lecture de la charge de commit : ``(pct, committed_bytes, limit_bytes)``.
+
+    Deux canaux, **une seule grandeur nommee** (la charge de commit) :
+
+    1. la voie de reference, le compteur de performance
+       ``Win32_PerfFormattedData_PerfOS_Memory`` (``CommittedBytes`` /
+       ``CommitLimit``), comme la garde GPU existante ;
+    2. le canal de secours, ``GlobalMemoryStatusEx`` (meme engagement, meme
+       plafond, sans WMI), pris quand la voie de reference est illisible --
+       typiquement quand le fournisseur WMI est wedged sur le siege.
+
+    Les compteurs ``\\Memory\\...`` sont absents sous certaines locales, et la
+    memoire **physique** n'est pas la charge de commit : les deux sondes se
+    ressemblent et l'ecart enjambe le seuil. Retourner ``None`` sur echec
+    permet a l'appelant de refuser (fail-CLOSED) au lieu de laisser passer.
+
+    La LECTURE EST UNIQUE (#23531, #23546). Le pourcentage seul ne suffit
+    plus : projeter l'engagement du job exige le **plafond** de commit de
+    l'hote, et deux sondes successives pourraient voir deux etats
+    differents -- la projection ne serait alors pas un etat coherent de la
+    machine. Le trio est donc lu dans le meme instant, par le meme appel.
+
+    Les trois quantites viennent de la meme source : l'engagement courant et
+    le plafond (RAM physique + pagefile) que l'hote ne peut pas depasser.
+    Une limite de commit elle-meme illisible ou nulle rend la lecture
+    ``None`` : sans plafond, aucune projection n'est demontrable. Si les
+    DEUX canaux sont illisibles, la lecture reste ``None`` et l'appelant
+    refuse : une panne d'instrument ne doit jamais se lire comme une
+    machine sous le seuil.
+    """
+    reading = _probe_perf_counter_commit()
+    if reading is not None:
+        return reading
+    return _commit_charge_global_memory()
 
 
 def _commit_charge_pct():
