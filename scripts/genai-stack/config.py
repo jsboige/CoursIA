@@ -237,7 +237,7 @@ NOTEBOOK_SERVICE_MAP = {
         "01-4-Whisper-Local.ipynb",
     ],
     "audio_tts_light": [
-        "01-5-Kokoro-TTS-Local.ipynb",
+        "01-5-TTS-Local-ONNX.ipynb",
     ],
     "audio_tts_heavy": [
         "02-1-Chatterbox-TTS.ipynb",
