@@ -1,0 +1,12 @@
+- name: "Automata-01 AutomatesFinis"
+  family: InformationCalcul/Automata
+  python: MyIA.AI.Notebooks/InformationCalcul/Automata/Automata-01-AutomatesFinis-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Automata/Automata-01-AutomatesFinis-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Implementation pedagogique declaree des deux cotes : AFD/AFN, epsilon-cloture, determinisation de Rabin-Scott et minimisation de Hopcroft sont ecrits a partir de zero en collections natives. Aucun organe Automata .NET consommable n'est materialise dans le clone ; l'acceptance #28021 retient une verification independante par enumeration exhaustive bornee. Les deux jumeaux comparent les memes langages a des references externes (parite du nombre de 1 et suffixe abb), puis mesurent la minimalite sur les memes presentations redondantes. SOTA-OK pour cette copie pedagogique declaree, sans moteur externe de substitution."
+  known_differences:
+    - "Copie pedagogique declaree, motif : montrer pas a pas les constructions fondamentales des automates finis et leurs verifications ; les series Search, SL, Lean et Z3 assurent les prolongements avec leurs organes natifs."
+    - "Python utilise frozenset pour identifier les etats composes ; C# utilise HashSet<int> et une cle texte triee. Les idiomes different, les etats accessibles et les langages verifies sont identiques."
+    - "BCL seule cote C#, bibliotheque standard seule cote Python. Aucun resultat depend d'un generateur aleatoire : les 2047 mots de parite, les 1023 mots du suffixe abb, les 4 etats deterministes et les 2 classes de Hopcroft coincident."
+    - "Les trois exercices sont repartis dans les deux carnets et restent des stubs sains executables ; la troisieme question est un raisonnement ecrit sur Myhill-Nerode."
