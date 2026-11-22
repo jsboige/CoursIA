@@ -98,7 +98,8 @@ PADDING_REFERENCE = 776.0
 #
 # Neuvieme rebasage (2026-11-22, #23175) : la grandeur CHANGE, comme le
 # quatrieme et le sixieme -- l'instrument reconnait le kernel `rust` porte
-# par la vague de portage -Rust (25 carnets ajoutes du 19 au 22/11). Sur
+# par la vague de portage -Rust (25 carnets `-Rust.ipynb` + le temoin
+# docker `witness-rust.ipynb`). Sur
 # l'arbre aligne origin/main = cd62365c02, l'instrument d'avant rend 46 et
 # le corrige 28 : le pouls RECULE du jour portait 18 unites d'artefact
 # d'instrument pour ~3 d'increment reel (21 -> 28).

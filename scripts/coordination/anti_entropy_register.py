@@ -307,8 +307,9 @@ REGISTRE: tuple[Entree, ...] = (
         # NEUVIEME REBASAGE (2026-11-22, #23175) -- et le troisieme qui
         # change la GRANDEUR : l'instrument reconnait le kernel `rust`.
         # La vague de portage Python->Rust a pose 25 carnets `-Rust.ipynb`
-        # sur main entre le 19 et le 22/11 (git log --diff-filter=A), tous
-        # avec kernelspec `rust` -- kernel absent de la liste connue, meme
+        # sur main entre le 19 et le 22/11 (git log --diff-filter=A), plus
+        # le temoin docker `witness-rust.ipynb` — soit 26 kernelspec
+        # `rust` -- kernel absent de la liste connue, meme
         # classe de retard que .net-csharp (245), coursia-ml-training (49),
         # pyphi (10) et coursia-py313 (2). Sur le meme arbre aligne
         # (origin/main = cd62365c02), l'instrument d'avant rend 46 et
@@ -434,19 +435,25 @@ REGISTRE: tuple[Entree, ...] = (
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@dfa29e000a1cb77d13b825b90f0d5a2165214ab6")),
-            # Reference rebassee precedente (neuvieme point, 2026-11-15) :
-            # la mesure combinee des correctifs #5081 et #26349 sur l'arbre
-            # fusionne b73e66c94e4. Point reel de la serie de l'instrument
-            # d'avant le neuvieme rebasage.
-            Reference(21.0, "2026-11-15",
+            # Reference rebassee precedente (neuvieme point) : la mesure
+            # combinee des correctifs #5081 et #26349 sur l'arbre fusionne
+            # b73e66c94e4 (merge de branche 0ed9229a, 2026-11-15). Le sha
+            # de branche est mort au squash : comme pour le point 25
+            # ci-dessus, la serie declare l'identite RESOLVABLE de main —
+            # le squash #26349 (27e3e88afb, 2026-11-17, instrument
+            # byte-identique au merge : diff vide sur le fichier) — et date
+            # le point du jour ou cette identite est devenue derivable.
+            Reference(21.0, "2026-11-17",
                       "issue #23175, reference rebassee precedente "
-                      "(PR #26349 merge de main b73e66c94e4)",
+                      "(PR #26349 merge de main b73e66c94e4 ; identite "
+                      "resoluble = squash 27e3e88afb)",
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
-                                  "@0ed9229a6b579541747f106ef93d405a7c377eb3")),
+                                  "@27e3e88afb76b73335b7651e064629573c96ec45")),
             # Pouls du 2026-11-22 AVANT le neuvieme rebasage, publie par
             # l'organe sur #5081 : la vague de portage -Rust (25 carnets
-            # ajoutes du 19 au 22/11, kernelspec rust non reconnu) portait
+            # `-Rust.ipynb` + le temoin docker witness-rust, kernelspec
+            # rust non reconnu) portait
             # la grandeur de 21 a 46 -- dont 18 unites d'artefact
             # d'instrument, revelees par le correctif (46 -> 28 sur le meme
             # arbre). Le point reste dans la serie : l'increment REEL du

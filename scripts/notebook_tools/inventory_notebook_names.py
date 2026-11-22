@@ -94,7 +94,8 @@ _STUDENT_HINTS = ("jsboigeEPF/", "jsboigeECE/", "jsboigeEpita/")
 # Kernel `rust`, ajoute apres mesure du 2026-11-22 (#23175, meme classe
 # que les blocs precedents) : la vague de portage Python->Rust a pose
 # 25 carnets `-Rust.ipynb` sur main entre le 19 et le 22/11 (git log
-# --diff-filter=A), tous avec kernelspec `rust` — 17 d'entre eux etaient
+# --diff-filter=A), plus le temoin docker `witness-rust.ipynb` — soit
+# 26 kernelspec `rust`. 18 d'entre eux (17 `-Rust` + le temoin) etaient
 # classes ambigus par « kernel LU mais inconnu », et l'entree
 # padding-nommage du registre anti-entropie passait de 25 a 46 sur ce
 # seul artefact d'instrument. Le suffixe `-rust` reste hors LANG_SUFFIXES
