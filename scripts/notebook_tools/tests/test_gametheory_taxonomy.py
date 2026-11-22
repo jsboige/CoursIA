@@ -16,7 +16,7 @@ def test_gametheory_spine_is_valid_and_covers_its_notebooks():
     # cell_id is checked for real and every declared notebook must be cited.
     data = load_taxonomy(GT_DATA)
     assert data["series"] == "GameTheory"
-    assert len(data["notebooks"]) == 9
+    assert len(data["notebooks"]) >= 50
     assert len(data["concepts"]) >= 20
     cited = {citation["notebook"] for concept in data["concepts"] for citation in concept["citations"]}
     assert cited == set(data["notebooks"])

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import numpy as np
 import pytest
@@ -265,3 +265,19 @@ def test_completed_cycle_journals_no_interruption(tmp_path):
     _run(tmp_path, FakeBroker(10_000.0, {}, {"SXR8": 50.0, "IUSM": 20.0}))
     [line] = (tmp_path / "journal.jsonl").read_text(encoding="utf-8").splitlines()
     assert json.loads(line)["interruption"] is None
+
+
+def test_cycles_on_successive_days_measure_each_session(tmp_path):
+    """-2.5 % per session, -5 % in total: no daily halt, buys still allowed (#27121)."""
+    prices = {"SXR8": 50.0, "IUSM": 20.0}
+    for k, equity in enumerate([10_000.0, 9_750.0, 9_500.0]):
+        report = run_cycle(
+            FakeBroker(equity, {}, prices), SIGNALS, RISK, CFG,
+            state_path=tmp_path / "risk.json", journal_path=tmp_path / "journal.jsonl",
+            starting_capital=10_000.0, now=NOW + timedelta(days=k),
+        )
+        assert "daily loss" not in report.gate, k
+        assert report.orders and all(o.allowed for o in report.orders), k
+    state = json.loads((tmp_path / "risk.json").read_text(encoding="utf-8"))
+    assert state["last_mark_date"] == (NOW + timedelta(days=2)).date().isoformat()
+    assert state["day_start_equity"] == 9_750.0
