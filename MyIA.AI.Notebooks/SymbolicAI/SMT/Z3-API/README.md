@@ -111,7 +111,7 @@ Des compagnons regroupés par palier : chaque palier prolonge un notebook du par
 | Z3-10, Z3-10ᶜˢ | §8.10 Alphametics (p. 276), Ch. 8 | Cryptarithmetic SEND + MORE = MONEY |
 | Z3-11 | Ch. 9 Graph coloring (p. 317) | Coloration de graphe, nombre chromatique |
 | Z3-12 | Ch. 4 Proofs (p. 106) | Real arithmetic, irrationnels algébriques |
-| Z3-13 | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
+| Z3-13, Z3-13ᶜˢ | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
 | Z3-13b | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
 | Z3-14 | §5.1 Integer overflow (p. 132), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
 | Z3-15 | Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361), Ch. 8 §8.1 Sudoku (p. 205) | Nested arrays 2D, carré magique |
