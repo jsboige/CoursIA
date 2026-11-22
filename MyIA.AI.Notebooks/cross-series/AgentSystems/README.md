@@ -12,6 +12,7 @@ carnets, chacun isolant une capacité de la boucle.
 | Carnet | Capacité isolée | Séries mobilisées |
 |--------|-----------------|-------------------|
 | [AgentSystems-01 — Perception → Action](AgentSystems-01-Perception-Vers-Action-Python.ipynb) | La **spine composable** : la boucle *percevoir → représenter → inférer → décider → vérifier → exécuter → observer* comme *squelette réutilisable*, l'inférence (déterministe **ou** LLM) comme *point de composition*. | Search, SymbolicAI, Compression, GenAI |
+| [AgentSystems-02 — Perception active et valeur d'information](AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb) · [jumeau C#](AgentSystems-02-Perception-Active-Valeur-Information-CSharp.ipynb) | La **perception active** : ne lire que les capteurs dont la **valeur d'information** (EVOI) justifie le coût, avec sondage Monte-Carlo du postérieur et politique d'arrêt. | GameTheory, GenAI |
 
 Le deuxième angle du projet — la **perception active** (ne lire que les capteurs
 dont la **valeur d'information** justifie le coût) — fait l'objet d'un carnet
