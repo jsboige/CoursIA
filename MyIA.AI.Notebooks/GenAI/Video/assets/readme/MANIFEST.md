@@ -34,7 +34,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## video4-esrgan.png
 
-- **Source** : notebook `01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb` (cellule 9, output 3 — display_data `image/png`)
+- **Source** : notebook `01-Foundation/01-4-Video-Enhancement.ipynb` (cellule 9, output 3 — display_data `image/png`)
 - **Description visuelle** : Grille 2 lignes × 4 colonnes (503×1200) sur fond blanc-légèrement-bleuté. **Titre global gras** `Reference HR vs Input LR`. **Rangée haute = HR (High Resolution, label HR320x240)** : 4 vignettes nettes d'une balle rouge (cercle plein avec léger quadrillage rouge interne) et 4 billes vertes en haut, sur fond **navy foncé quadrillé blanc**. Frame labels `HR - Frame 0`, `HR - Frame 12`, `HR - Frame 24`, `HR - Frame 35` superposés au-dessus de chaque vignette (compte des frames affichées : 0, 12, 24, 35). Watermark diagonal `Frame X/36` en blanc en haut-gauche de chaque vignette. **Rangée basse = LR (Low Resolution, label HR320x240)** : 4 vignettes identiques en composition mais avec un **blur léger** (soft/blur appliqué uniformément). Frame labels `LR - Frame 0 / 12 / 24 / 35`. **Les deux rangées ont strictement la même résolution 320×240 affichée** — la démonstration ESRGAN visible dans cette figure est une **comparaison qualité HR vs LR à résolution identique**, pas un upscaling visuel HR→LR.
 - **Alt-text (FR)** : Comparaison HR vs LR sur 4 frames — balle rouge + 4 billes vertes sur fond noir quadrillé, HR (320×240, nette) vs LR (320×240, soft/blur), même résolution, aucune démo d'upscaling visuel dans cette figure.
 - **Dimensions effectives (vérifiées `PIL.Image.open` 2026-07-22)** : 503×1200 max-dim 1200 vs 320×240 source authentique par vignette = ratio d'aspect 1.33 (4:3 standard).
@@ -45,7 +45,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## video5-animatediff.png
 
-- **Source** : notebook `01-Foundation/01-5-AnimateDiff-Introduction.ipynb` (cellule 13, output 3 — display_data `image/png`, downscale agressif max-dim 500)
+- **Source** : notebook `01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb` (cellule 13, output 3 — display_data `image/png`, downscale agressif max-dim 500)
 - **Description visuelle** : Grille 2 lignes × 4 colonnes (252×500 max-dim 500, compression agressive) sur fond uni. **8 vignettes successives d'un paysage lacustre au coucher de soleil**, montagnes se reflétant dans l'eau, lumière dorée chaude, nuages orangés. Frame labels superposés `Frame 1/24`, `Frame 2/24`, ..., `Frame 8/24` (1 frame par vignette, 8 vignettes sur les 24 totales, extraction tous les 3 frames). **Prompt injecté visible** dans le titre central `AnimateDiff - a serene lake at sunset with mountains in the background, g...` (tronqué par la largeur d'image). Cohérence visuelle forte entre les 8 frames : la scène illustre une continuité temporelle typique d'une génération text-to-video AnimateDiff.
 - **Alt-text (FR)** : Génération AnimateDiff text-to-video depuis prompt « a serene lake at sunset with mountains in the background » — grille 2×4 frames d'un paysage lacustre au coucher de soleil (montagnes + lac reflétant, lumière dorée).
 - **Dimensions effectives (vérifiées `PIL.Image.open` 2026-07-22)** : 252×500 max-dim 500 (downscale agressive, ratio disque/source = 0.09×) — politique #5654 tolère ce type de compression pour les frames de génération (taille source 2.15 MB → 195.7 KB).
