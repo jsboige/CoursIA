@@ -16,8 +16,6 @@ listing:
 ---
 
 ::: {.series-banner}
-# Sudoku — Un problème, dix-neuf paradigmes + un compagnon statistique
-
 **Le Sudoku comme fil rouge pédagogique.** La grille 9×9 est un écrin assez riche pour exercer chaque famille d'algorithmes d'IA, assez contraint pour que chaque solveur produise une solution, et assez emblématique pour qu'on reconnaisse immédiatement le problème. Cette série résout **le même Sudoku** par **19 approches complémentaires** (16 paires miroir C#/Python + 1 NN + 1 LLM + 1 Lean) plus **un companion statistique** (Sudoku-18b, méthodologie formelle pour les benchmarks), présentés en **double track C# .NET Interactive et Python**, jusqu'à une **preuve formelle Lean 4** de la propagation de contraintes.
 :::
 
