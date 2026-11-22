@@ -200,10 +200,19 @@ def test_workflow_targets_match_manifest():
         "CongestionGames.PoA",
         "CooperativeGames.Basic", "CooperativeGames.Basic_en",
         "CooperativeGames.ConeKernel", "CooperativeGames.ConeKernel_en",
+        # #25966 : GroupShapley (jeu fusionne de Lehrer), FR seulement --
+        # pas de sibling _en sur ce module. Verifie par la PR d'origine :
+        # code_sorry = 0, 0 classe forbidden au prescreen. Meme statut de
+        # revue que les precedents.
+        "CooperativeGames.GroupShapley",
         "CooperativeGames.Shapley", "CooperativeGames.Shapley_en",
         "ProgramGames.FairBot", "ProgramGames.FairBot_en",
         "RepeatedGames.Discounting", "RepeatedGames.Discounting_en",
         "RepeatedGames.GrimTrigger", "RepeatedGames.GrimTrigger_en",
+        # #26945 T3 : equilibre parfait en sous-jeux (deviation unique +
+        # grim_isSPE_iff), ajoute a axiom-target-modules avec la tranche --
+        # meme statut de revue, 0 sorry verifie par count_code_sorry.
+        "RepeatedGames.Perfect", "RepeatedGames.Perfect_en",
         "RepeatedGames.Stage", "RepeatedGames.Stage_en",
         "RepeatedGames_en",
         "SocialChoice._SmokeTest",

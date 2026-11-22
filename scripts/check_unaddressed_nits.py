@@ -105,8 +105,28 @@ from datetime import datetime, timezone
 try:
     import gh_identity
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/.
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity
+
+# Lectures REST conditionnelles (ETag persiste, partage par machine) : meme
+# protocole que pr_gate #26260, etendu aux processus courts de B.0. Le module
+# porte les invariants ; `gh_json` ne fait que router les argv applicables.
+try:
+    import gh_etag
+except ImportError:  # meme shim que gh_identity (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import gh_etag
+
+# #27881 — la grammaire des marqueurs (familles FORMELLE / PROSE, vocabulaire
+# des verdicts) et le predicate de signalement sont extraits dans
+# `scripts/ci/nit_markers.py` : l'organe ne doit pas grossir (cliquet de
+# taille `script_size_ceilings.json`).
+try:
+    import nit_markers
+except ImportError:  # meme shim que gh_identity (tests hors scripts/)
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
+    import nit_markers
 
 REPO = "jsboige/CoursIA"
 
@@ -304,7 +324,19 @@ AGENT_PREFIXES = (
 # #13495/#14218 : l'auteur de la PR y est nommeur valide). L'extension vit
 # donc dans cette constante, consommee uniquement par classify ; can_lift
 # reste sur AGENT_PREFIXES.
-CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + ("[ACTION", "[DIAG")
+#
+# #26364 (tranche B.0, [ACTION] ai-01 du 2026-11-15) : `[BASE-INHERITED` rejoint
+# l'extension, meme mecanisme que [DIAG. Motif : un rouge herite de la base
+# n'avait pas de canal sur la PR -- l'ecrire (comme l'exige la regle worker
+# « ecrire en commentaire puis --ignore-red ») creait un nit B.0 qui bloquait
+# la PR qu'il documentait (7 occurrences mesurees par po-2028, cycles 86-89).
+# Le commentaire de signalement est un SIGNAL, pas une reserve : il sort de la
+# classification. Une reserve vivante reste un nit par la garde habituelle
+# (ligne 51xx), et le tag ne touche ni les levees (can_lift lit
+# AGENT_PREFIXES) ni la boucle DIAG (COMMENT_TAG_RE ne le lit pas).
+CLASSIFY_AGENT_PREFIXES = AGENT_PREFIXES + (
+    "[ACTION", "[DIAG", "[BASE-INHERITED",
+)
 
 # #15511 (P1) -- taxonomie d'emission des commentaires agent, premiere
 # ligne NON VIDE du corps : [ACTION] (le commentaire porte une action --
@@ -339,20 +371,26 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
-# #17437 : la voix App n'est PAS jointe a la voix du coordinateur (arbitrage
-# ai-01 du 2026-11-13). La cle privee de ``coursia-lane-ai-01`` vit sur la
-# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
-# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
-# fichier et forge le meme jeton. Une App par machine ne peut donc pas
-# representer la lane coordinateur seule -- un ``[OVERRIDE]`` de CoursIA-2
-# vaudrait celui du coordinateur, exactement ce que la borne #12737/#12836
-# interdit. Une App PROPRE a la lane coordinateur est le prealable.
+# #17437 : la voix App PROPRE a la lane coordinateur rejoint la voix humaine
+# (Q187, 2026-11-14). L'App existe desormais (App 5763709, slug
+# ``coursia-coord-ai01``, creee le 2026-11-14 sur le go du user, installee
+# sur jsboige/CoursIA seulement, cle dediee
+# ``.secrets/github-apps/coursia-coord-ai01.pem``), DISTINCTE de la cle de
+# l'App de machine ``coursia-lane-ai-01`` que la lane worker sœur
+# ``myia-ai-01:CoursIA-2`` lit aussi : seul le coordinateur forge le jeton
+# de l'App propre. L'App de MACHINE ``coursia-lane-ai-01[bot]`` reste
+# EXCLUE pour la raison d'origine (arbitrage ai-01 du 2026-11-13) : sa cle
+# vivant dans le clone partage, un ``[OVERRIDE]`` de CoursIA-2 sous cette
+# App vaudrait celui du coordinateur, exactement ce que la borne
+# #12737/#12836 interdit.
 #
 # La preuve d'identite reste typee par ligne (``_author_login`` +
-# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique, et une
-# forme nue sans type ne leve rien. Le jour ou une App de lane coordinateur
-# existe, son login REST rejoint cet ensemble par une edition consciente.
-LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique. La forme
+# REST suffixee ``coursia-coord-ai01[bot]`` et la forme GraphQL typee
+# ``Bot`` (repliee par normalisation) levent ; une forme nue sans type ne
+# leve rien, et l'homonyme UTILISATEUR type ``User`` reste nu donc hors de
+# l'ensemble -- fail-closed.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01", "coursia-coord-ai01[bot]"}
 # Q185 (sign-off user 2026-11-13) -- l'ADJOINT coordonnateur, borne aux
 # reserves de BOT. La lane adjointe myia-po-2025:CoursIA-2 poste sous son
 # identite GitHub App propre (``coursia-lane-po-2025[bot]`` : forme REST
@@ -683,81 +721,14 @@ CONCERN_MARKERS = (
     "a changer",
 )
 
-# #12143 — Hermes severity glyphes (substance du premier PR #12148 fondateur).
-# Extrait en constante separee pour subordonner la levee par LIFT_MARKERS
-# (cf `classify` ci-dessous) : un glyphe est une EMISSION, et une emission
-# ne se laisse pas eteindre par un mot de levee pose ailleurs dans la meme
-# prose. Distribution scan 150 PRs mergees (35 reviews Hermes) :
-#   △ (U+25B3) : micro-nit non-bloquant, 23/35 (exclu de CONCERN_MARKERS).
-#   🟡 (U+1F7E1) : constat substantiel, 5/35. Promote car 4 leves par la suite,
-#     1 NON levee = #12059 fondateur, defaut B.0 = merge avec constat sans
-#     reponse, defaut pedagogique en production (hyperparametres GRPO contredits).
-#   🔴 (U+1F534) : bloquant strict, 1/35 (vrai bloquant).
-# #15951 — contrat de vocabulaire (acceptance 1 de l'issue) : le jeu de
-# SEVERITE est FERME = {🟡, 🔴}. Les glyphes de NOUVEAUTE doctrinale des
-# lanes (ex. « ★ NEW fondateur », vocabulaire Tell de po-2024:CoursIA-2)
-# ne sont PAS des marqueurs de severite et ne le deviendront pas —
-# severite et nouveaute restent DISJOINTS. Cote emission, une lane qui
-# introduit un nouveau glyphe de severite doit le proposer ici avec une
-# mesure corpus ; cote filet, aucun glyphe hors de SEVERITY_GLYPHS n'est
-# lu comme alarme. Le defaut reel de #15762 c.1102 n'etait PAS le glyphe
-# mais le verdict litteral en narration de dissipation avec attribution
-# tell — cf `_MENTION_VERDICT_TELL` (Position K).
-# `_unaccent` preserve les glyphes (categorie So, pas Mn), `_is_cited` reste
-# symetrique via CITERS ascii. Les positions A-I (regex `_MENTION_VERDICT*`)
-# ciblent l'ASCII formel et ignorent les glyphes ; la Position J
-# (`_strip_glyphe_mentions`, #14277) les neutralise en position de MENTION
-# (méta-nom sur la même ligne), l'émission en tête de ligne restant vive.
-SEVERITY_GLYPHS = (
-    "🟡",  # constat substantiel (fondateur #12059)
-    "🔴",  # bloquant strict
-)
-# Concatene pour que `live_concern` (has_live_marker sur CONCERN_MARKERS) capture
-# aussi les glyphes isoles — sans cette ligne, un body compose uniquement d'un
-# glyphe (pas de LIFT, pas de CONCERN_MARKERS textuel) retournerait None a tort.
+# Le vocabulaire des VERDICTS (glyphes de severite, verdicts de blocage, refus
+# d'approbation) est extrait dans `scripts/ci/nit_markers.py` : meme contrat
+# de vocabulaire, meme document de reference, un seul endroit a faire vivre.
+SEVERITY_GLYPHS = nit_markers.SEVERITY_GLYPHS
 CONCERN_MARKERS = CONCERN_MARKERS + SEVERITY_GLYPHS
-
-# #12908 — le verdict de l'organe B.0 lui-même, en ses deux formes d'EMISSION :
-# le gras de revalidation (« classe encore cette PR **BLOCKED** », commentaire
-# fondateur 2026-08-25T04:45:30Z de #12798) et la sortie pastee de l'organe
-# (« BLOCKED  PR #N — ... », double espace). Ce commentaire fondateur
-# maintenait explicitement la reserve (« quatre réserves tierces actives »,
-# « réserve uniquement B.0/process ») tout en narrant le vocabulaire de levée
-# (« une levée explicite sur le head final ») : le LIFT_MARKER « levée » de la
-# narration absorbait la reserve vivante — le defaut exact que B.0 existe pour
-# traquer. Comme les glyphes : concatene pour que `live_concern` classe le
-# maintien BOT-CONCERN, ET subordonne la branche LIFT de `classify` via
-# `_formal_concern_precedes_lift` (un BLOCKED emis AVANT la narration de
-# levee garde la reserve vivante ; une levée suivie d'un BLOCKED narré au
-# passe reste une levée — la position decide, comme pour les verdicts
-# formels). Le mot NU « BLOCKED » n'est PAS matche : le tag de protocole
-# « [BLOCKED] lane ... » d'une lane et la negation « n'est plus BLOCKED »
-# restent hors du filet. Residuels assumes : un BLOCKED d'emission sans gras
-# ni paste d'organe ne matche pas ; une paste dans un bloc de code fence est
-# une mention (_strip_quoted), comme tout autre verdict backtinque.
-BLOCK_VERDICTS = ("**BLOCKED**", "BLOCKED  PR")
+BLOCK_VERDICTS = nit_markers.BLOCK_VERDICTS
 CONCERN_MARKERS = CONCERN_MARKERS + BLOCK_VERDICTS
-
-# #14553 — le registre du REFUS d'approbation. Fondateur mesure : review
-# NanoClaw du 2026-09-03T23:50:16Z sur #14535 — trois demandes numerotees,
-# cloture « Donnees exactes, discipline de provenance en defaut — pas de
-# LGTM en l'etat » -> AUCUN des marqueurs existants ne vit -> classify None
-# -> gate vert. Un refus d'approbation est un verdict a part entiere (CLAUDE.md
-# B.0 : « un reviewer qui ecrit "je ne peux pas approuver seul sur ce
-# format" bloque ») ; aucun des 21 motifs ne couvrait cette famille. Casse
-# RELACHEE (defaut has_live_marker) : « Pas de LGTM » en tete de phrase doit
-# vivre. Garde-fou FP double : (1) la fenetre de citation (_is_cited) rend
-# morte l'occurrence d'un refus QUOTE dans une levee (« la reserve
-# « pas de LGTM » est adressee ») ; (2) « no LGTM » est word-bounded avec
-# lookahead anti-« no LGTM needed » (_WORD_BOUNDED_MARKERS). « sous reserve
-# de » est EXCLU : sa neutralite depend de la POSITION (verdict final vs
-# subordonnee conditionnelle), qu'un motif ne peut pas porter — residuel
-# documente sur l'issue.
-APPROVAL_REFUSALS = (
-    "pas de LGTM", "no LGTM",
-    "je ne peux pas approuver", "cannot approve", "not approving",
-    "ne pas merger en l'etat", "do not merge as is",
-)
+APPROVAL_REFUSALS = nit_markers.APPROVAL_REFUSALS
 CONCERN_MARKERS = CONCERN_MARKERS + APPROVAL_REFUSALS
 
 # La forme ETIQUETEE (« Concern: », « Concerns :», « **Concern 2 :** ») rejoint
@@ -792,8 +763,12 @@ CONCERN_MARKERS = CONCERN_MARKERS + ("concerns about", "concerns remain")
 CONCERN_MARKERS = CONCERN_MARKERS + (_EN_CONCERN_LABEL,)
 CONCERN_MARKERS = CONCERN_MARKERS + (_CONCERN_LABEL,)
 
-# Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
-
+# #27881 — la famille FORMELLE des marqueurs de reserve (la famille de
+# PROSE et le predicat de signalement vivent dans
+# `scripts/ci/nit_signal_markers.py`, extrait pour ne pas grossir
+# l'organe). La liste formelle est DERIVEE du registre vivant : elle ne
+# se recopie pas.
+FORMAL_CONCERN_MARKERS = nit_markers.formal_concern_markers(CONCERN_MARKERS)
 # Un commentaire qui ANNONCE la levee ou le merge n'est pas un nit — il en est
 # la resolution. Sans ce filtre, chaque « CHANGES_REQUESTED levée » est compte
 # comme une reserve ouverte (faux positif massif, mesure sur 400 PRs).
@@ -3736,7 +3711,11 @@ def _nits_budget_exhausted() -> bool:
 #    `pr list --json`, `issue view --json` = GraphQL ; `api repos/...` = REST.
 # 2. B.0 publie desormais son propre compte, sur stderr et dans la sortie
 #    JSON de l'audit retro.
-API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
+# 3. `rest_304` (#26260, extension cross-processus) : lectures REST servies
+#    par un 304 ETag serveur -- un 304 ne consomme AUCUN quota (mesure
+#    #26260), le compte `rest` compte les appels gh, `rest_304` la part
+#    servie gratuitement. L'economie devient mesurable par run, pas supposee.
+API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0, "rest_304": 0}
 
 
 def _count_api_call(args: list[str]) -> None:
@@ -3765,6 +3744,20 @@ def gh_json(args: list[str]) -> object:
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
     _count_api_call(args)
+    # Lectures REST conditionnelles (#26260, extension cross-processus) : les
+    # chemins `api repos/...` sans drapeau passent par l'ETag persiste partage
+    # par machine. Un 304 est une PREUVE SERVEUR que le chemin est inchange
+    # depuis le corps cache -- B.0 est un organe de merge, aucun corps n'est
+    # jamais servi sans reponse du serveur, donc aucun faux vert possible.
+    # Tout echec non-304 leve les memes exceptions que le chemin d'origine
+    # (CalledProcessError / JSONDecodeError / TimeoutExpired).
+    etag_path = gh_etag.etag_applicable(args)
+    if etag_path is not None:
+        body, served_by_304 = gh_etag.conditional_get(
+            etag_path, timeout=GH_CALL_TIMEOUT_S)
+        if served_by_304:
+            API_USAGE["rest_304"] += 1
+        return _project_gh_payload(args, body)
     out = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
         timeout=GH_CALL_TIMEOUT_S,
@@ -5065,6 +5058,12 @@ def classify(author: str, body: str) -> str | None:
         return None  # approbation sans reserve vivante : la review conclut, ne reserve pas
     if stripped.startswith(CLASSIFY_AGENT_PREFIXES):
         # Tag de protocole agent : informatif, pas un nit — sauf s'il porte une reserve.
+        # #27881 — dans un commentaire de SIGNALEMENT, la PROSE seule ne fait
+        # pas une reserve : seule la famille FORMELLE reste un nit. Un VERDICT
+        # formel (CHANGES_REQUESTED, glyphe, refus d approbation) l emporte.
+        live_concern = nit_markers.signal_live_concern(
+            live_concern, stripped, _strip_mentioned_verdicts(_strip_quoted(body)),
+            FORMAL_CONCERN_MARKERS, has_live_marker)
         return "BOT-CONCERN" if live_concern else None
     # #19810 — proxy CRLF serre : un corps CRLF ne tient HUMAN que s'il porte
     # une reserve claire (live_concern) OU une structure de plainte UI web
@@ -6687,7 +6686,8 @@ def main() -> int:
         # #17315 : la consommation sort sur stderr, comme le fait le gate --
         # un compteur publie n'est lu par personne s'il reste dans le JSON.
         print(f"API-USAGE (#17315) : rest={API_USAGE['rest']} "
-              f"graphql={API_USAGE['graphql']}", file=sys.stderr)
+              f"graphql={API_USAGE['graphql']} "
+              f"rest_304={API_USAGE['rest_304']}", file=sys.stderr)
         return rc
     except subprocess.TimeoutExpired as exc:
         # #19643 (residu) : gh n'a pas repondu dans sa borne -- aucun verdict.

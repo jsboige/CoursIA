@@ -9455,16 +9455,16 @@ ax.axis('off')
 plt.tight_layout()
 plt.show()
 ",,,,,,,,5ec8038d26ace7d2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,39121883,markdown,fr,a755fd078c0b66fb,"## 10. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,39121883,markdown,fr,350c8313d91a8e6d,"## 10. Exercices
 
-Trois **exemples guidés** (résolus par le groupe G01, TP1 MIS) illustrent chacun un algorithme ; chaque exemple est suivi d'un **exercice** à votre charge.
+Quatre **exemples guidés** — résolus par le groupe G01 (TP1 MIS) et par le groupe G05 (TP IA2-Min2) — illustrent chacun un algorithme ; les **exercices** qui les suivent restent à votre charge.
 
 ### Exemple guidé 1 — Plus court chemin dans un réseau de transport
 > **Exemple guidé — résolu par le groupe G01** (MSMIS5IN11, PR [#22969](https://github.com/jsboige/CoursIA/pull/22969), TP1 MIS)
 
 
-Construisez un graphe de réseau de transports en commun (10 stations, arêtes pondérées par temps de trajet en minutes). Calculez le plus court chemin entre deux stations données. Affichez le temps total et le nombre de stations traversées.",,,,,,,,a755fd078c0b66fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,a42f63f3,code,fr,94ff7c3bc5807fce,"# Exemple guidé 1 — Plus court chemin dans un réseau de transport
+Construisez un graphe de réseau de transports en commun (10 stations, arêtes pondérées par temps de trajet en minutes). Calculez le plus court chemin entre deux stations données. Affichez le temps total et le nombre de stations traversées.",,,,,,,,350c8313d91a8e6d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,a42f63f3,code,fr,1041926e768765c4,"# Exemple guidé 1 — Plus court chemin dans un réseau de transport
 # TODO : Construisez un graphe de 10 stations de métro avec arêtes pondérées
 #       Calculez le plus court chemin de ""Station_A"" à ""Station_J""
 #       Affichez le temps total et le nombre de stations traversées
@@ -9520,14 +9520,18 @@ def exercice_1_plus_court_chemin():
     ax.axis(""off"")
     plt.show()
 
-exercice_1_plus_court_chemin()
-",,,,,,,,94ff7c3bc5807fce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,e1c6f8fc,markdown,fr,57c4a266f0805df8,"### Exemple guidé 2 — Centralité et communautés dans un réseau social
+    # On rend le graphe : l'exemple guidé 2 et l'exercice 1 le réutilisent
+    return G
+
+
+# On mémorise le réseau de transport pour les cellules suivantes
+G = exercice_1_plus_court_chemin()",,,,,,,,1041926e768765c4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,e1c6f8fc,markdown,fr,b708fbde9cfb4487,"### Exemple guidé 3 — Centralité et communautés dans un réseau social
 > **Exemple guidé — résolu par le groupe G01** (MSMIS5IN11, PR [#22969](https://github.com/jsboige/CoursIA/pull/22969), TP1 MIS)
 
 
-Créez un réseau social d'au moins **15 personnes** réparties en 2-3 communautés, avec quelques liens inter-communautaires. Calculez la **betweenness centrality** et identifiez les 3 nœuds les plus ""broker"".",,,,,,,,57c4a266f0805df8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,5bd816be,code,fr,1e4569d7994b9a22,"# Exemple guidé 2 — Détection de brokers dans un réseau social
+Créez un réseau social d'au moins **15 personnes** réparties en 2-3 communautés, avec quelques liens inter-communautaires. Calculez la **betweenness centrality** et identifiez les 3 nœuds les plus ""broker"".",,,,,,,,b708fbde9cfb4487,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,5bd816be,code,fr,b4fe831d0bd7dfce,"# Exemple guidé 3 — Détection de brokers dans un réseau social
 # TODO : Construisez un graphe social de >= 15 nœuds avec 2-3 communautés
 #       Calculez la betweenness centrality
 #       Identifiez les 3 nœuds avec la plus grande betweenness
@@ -9609,13 +9613,13 @@ def exercice_2_brokers_reseau_social():
     plt.tight_layout()
     plt.show()
 
-exercice_2_brokers_reseau_social()",,,,,,,,1e4569d7994b9a22,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,dbdf72b8,markdown,fr,ac944bca53d40908,"### Exemple guidé 3 — Flot maximum sur un réseau de pipelines
+exercice_2_brokers_reseau_social()",,,,,,,,b4fe831d0bd7dfce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,dbdf72b8,markdown,fr,9772883b06d265e9,"### Exemple guidé 4 — Flot maximum sur un réseau de pipelines
 > **Exemple guidé — résolu par le groupe G01** (MSMIS5IN11, PR [#22969](https://github.com/jsboige/CoursIA/pull/22969), TP1 MIS)
 
 
-Construisez un graphe dirigé représentant un réseau de pipelines (3 sources, 3 destinations, 6 nœuds intermédiaires avec capacités). Calculez le flot maximum total et affichez les arêtes saturées (flot == capacité).",,,,,,,,ac944bca53d40908,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,dcc344c4,code,fr,1766b326fbf1d7cf,"# Exemple guidé 3 — Flot max sur réseau de pipelines
+Construisez un graphe dirigé représentant un réseau de pipelines (3 sources, 3 destinations, 6 nœuds intermédiaires avec capacités). Calculez le flot maximum total et affichez les arêtes saturées (flot == capacité).",,,,,,,,9772883b06d265e9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,dcc344c4,code,fr,4a88a9bee24e58e0,"# Exemple guidé 4 — Flot max sur réseau de pipelines
 # TODO : Construisez un DiGraph de 12+ nœuds (3 sources, 3 destinations, intermédiaires)
 #       Calculez le flot maximum entre super-source et super-puits
 #       Listez les arêtes saturées (où flot == capacité)
@@ -9672,9 +9676,8 @@ def exercice_3_flot_pipelines():
     for u, v in saturees:
         print(f""  {u} → {v} ({P[u][v]['flow']}/{P[u][v]['capacity']})"")
 
-exercice_3_flot_pipelines()
-",,,,,,,,1766b326fbf1d7cf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,fffe7b3b,markdown,fr,17f3b39cb0768121,"## Conclusion
+exercice_3_flot_pipelines()",,,,,,,,4a88a9bee24e58e0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,fffe7b3b,markdown,fr,7a7bdeff2fc0b112,"## Conclusion
 
 Ce notebook a couvert les **briques algorithmiques essentielles** de NetworkX :
 
@@ -9695,8 +9698,37 @@ Ce notebook a couvert les **briques algorithmiques essentielles** de NetworkX :
 - **[Partie 2 : CSP](../Part2-CSP/README.md)** — les graphes sont le substrat des problèmes de routing et scheduling (OR-Tools, Choco)
 - **[Recherche opérationnelle / SmartGrid](../../CaseStudies/Reseau-Electrique-Intelligent/README.md)** — optimisation de réseaux électriques (flot max, network simplex)
 
+### À retenir
+
+1. **Le graphe se mesure avant d'algorithmer** : 6 nœuds et 7 arêtes, connexe — le degré de Paris est 3, le degré moyen 2.33, la densité 0.467 et le diamètre 3. Ces quatre chiffres disent d'emblée quelle famille d'algorithmes est pertinente sur cette instance, et laquelle serait hors sujet.
+2. **Le « plus court chemin » dépend de ce que l'on minimise** : de Paris à Toulouse, le trajet **pondéré** passe par Bordeaux (830 km) quand le trajet **non pondéré** passe par Lyon. Un même graphe, deux réponses : sans les poids, on compte des sauts, pas des kilomètres.
+3. **Une heuristique admissible ne coûte rien en optimalité** : 660 km à vol d'oiseau vers Marseille sont bien moins que les 780 km de route, et A\* retrouve alors **exactement** l'optimum de Dijkstra ; sur la grille 5×5, il n'explore que 17 nœuds contre 25 (32 % de moins) pour le même coût de 5.905.
+4. **Les centralités classent des rôles différents** : Paris domine le degré, la betweenness (0.400) et la closeness (0.714) ; Marseille est à 0.000 en betweenness ; sur le graphe de collaborations, Bio_06 domine le PageRank (0.0454) alors que Phys_08 domine la betweenness (0.2185) — deux classements orthogonaux, et Bio_00 figure dans les deux.
+5. **Une arête saturée n'est pas forcément l'arête qui contraint** : le flot maximum vaut 80 t/j ; renforcer `Depot_2 → Client_X` ou `Usine_A → Depot_1` le porte à 81 t/j, mais renforcer `Depot_1 → Client_X` — déjà à 25/25 — le laisse à 80 t/j.
+
+### Vérifiez votre compréhension
+
+1. **Pourquoi le trajet pondéré Paris → Toulouse passe-t-il par Bordeaux, quand le trajet non pondéré passe par Lyon ?**
+2. **Sur la grille 5×5, A\* a exploré 17 nœuds contre 25 pour Dijkstra, pour le même coût (5.905). Que garantit exactement l'admissibilité de l'heuristique ?**
+3. **Bio_06 domine le PageRank (0.0454) et Phys_08 domine la betweenness (0.2185). Que mesurent ces deux classements, et qu'en déduire pour Bio_00 ?**
+4. **Le flot maximum vaut 80 t/j et une arête est saturée à 25/25. La renforcer fait-elle monter le flot ?**
+
+<details>
+<summary>Réponses</summary>
+
+1. Le poids d'une arête est ici une **distance routière**. Sans poids, un parcours se mesure en **nombre de sauts** : Paris → Lyon → Toulouse est le chemin le plus court en arêtes, Paris → Bordeaux → Toulouse le chemin le plus court en kilomètres. Les deux questions sont légitimes ; elles n'ont pas la même réponse.
+2. Que l'heuristique **trie les nœuds dans le bon ordre sans en écarter aucun** : $h(n) \leq h^*(n)$ garantit que la priorité $f = g + h$ reste cohérente avec le coût réel, donc A\* ne peut pas fermer un nœud qui porterait l'optimum. Le gain (17 nœuds au lieu de 25) est obtenu **sans** dégrader le coût.
+3. Le PageRank mesure la **popularité par citation**, la betweenness le **rôle de passerelle** (relier deux groupes). Bio_00 cumule les deux (0.0403 en PageRank, 0.2133 en betweenness) : il figure dans les deux classements. Les deux mesures ne se confondent pas.
+4. **Non.** `Depot_1 → Client_X` est saturée (25/25) mais pas **contrainte** : le flot reste à 80 t/j. En revanche, `Depot_2 → Client_X` et `Usine_A → Depot_1` sont des goulots : les renforcer porte le flot à 81 t/j. Une arête saturée peut être redondante ; c'est le goulot qu'il faut tester, pas l'arête pleine.
+
+</details>
+
 ### Pour aller plus loin
 
+- **Carnet suivant** : [Search-02c-QuikGraph](Search-02c-QuikGraph.ipynb) — le jumeau .NET de ce carnet (QuikGraph), pour la parité structurelle Python ⇄ .NET
+- **Même famille** : [Search-02-Uninformed](Search-02-Uninformed.ipynb) — BFS, DFS, UCS et IDDFS faits main, dont le chemin Paris → Toulouse non pondéré vu plus haut
+- **Série voisine** : [Recherche opérationnelle / SmartGrid](../../CaseStudies/Reseau-Electrique-Intelligent/README.md) — le même modèle de flux appliqué à un réseau électrique
+- **Lectures** : les papiers fondateurs déjà cités en fin de carnet — Dijkstra (1959), Bellman (1958), Edmonds & Karp (1972) pour le flot, Kamada & Kawai (1989) pour le layout
 - `networkx.algorithms.approximation` — versions approchées pour graphes massifs (TSP, max-cut, clustering)
 - `networkx.algorithms.tree` — forêts couvrantes minimales (Kruskal, Prim)
 - `networkx.algorithms.flow` — flot min, multi-commodités, coût minimal
@@ -9720,7 +9752,7 @@ Papiers fondateurs des algorithmes de graphe embarqués par NetworkX dans ce not
 
 > **Documentation** : [NetworkX officielle](https://networkx.org/documentation/stable/).
 > **Algorithmes A\* et Floyd-Warshall** : approfondis dans [Search-02-Uninformed](Search-02-Uninformed.ipynb) (BFS, Dijkstra, Bellman-Ford) et [Search-03-Informed](Search-03-Informed.ipynb) (A\*, heuristiques admissibles) — implémentations pédagogiques faites main.
-",,,,,,,,17f3b39cb0768121,,,,,,,,,,,,,,,
+",,,,,,,,7a7bdeff2fc0b112,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,9aa250ae,code,fr,59d2947c3a284c79,"# Cellule de fermeture — vérifie que tout est en ordre
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -38953,12 +38985,12 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Select
 - **Si vous avez des contraintes hybrides** (Sudoku + règles exotiques) : **Z3** — plus expressif que CP-SAT.
 
 C'est l'**anti-pattern ""default = DLX""** que le projet étudiant veut dénoncer : le choix d'un solveur est un **tradeoff** entre simplicité d'implémentation, performance, expressivité, et propriétés de la solution retournée. Le **bon** choix dépend du contexte.",,,,,,,,5f08b0e48493305f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,13c542bc,markdown,fr,5825b2e91df29fd6,"## 8. Deuxième terrain : Puissance 4 (tranche 2/3)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,13c542bc,markdown,fr,e5ed5a8ccbbd11d0,"## 8. Deuxième terrain : Puissance 4 (tranche 2/3)
 
 La tranche 1 a comparé six paradigmes sur un problème de **satisfaction de contraintes**. Le projet étudiant distillé (cf. §9) en couvre deux autres ; cette tranche applique le même protocole au **Puissance 4** — un **jeu adversarial à somme nulle, information parfaite**.
 
-Les algorithmes eux-mêmes (minimax, élagage alpha-beta, MCTS) sont enseignés en détail dans [`App-12b-ConnectFour`](../Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) (moteur de jeu, baseline aléatoire, alpha-beta) et [`App-14-ConnectFour-Adversarial`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) (minimax, alpha-beta, MCTS, benchmark mono-position). **Ce notebook ne les ré-enseigne pas** : il pose la question de la **sélection** — même harnais, même timeout, mêmes métriques, mais un terrain dont la nature change ce que « bien résoudre » veut dire.
-",,,,,,,,5825b2e91df29fd6,,,,,,,,,,,,,,,
+Les algorithmes eux-mêmes (minimax, élagage alpha-beta, MCTS) sont enseignés en détail dans [`App-12-ConnectFour-Python`](../Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb) (moteur de jeu, baseline aléatoire, alpha-beta) et [`App-14-ConnectFour-Adversarial-Python`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) (minimax, alpha-beta, MCTS, benchmark mono-position). **Ce notebook ne les ré-enseigne pas** : il pose la question de la **sélection** — même harnais, même timeout, mêmes métriques, mais un terrain dont la nature change ce que « bien résoudre » veut dire.
+",,,,,,,,e5ed5a8ccbbd11d0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,fc545090,markdown,fr,f15edc9d81c4f51b,"### 8.1 Ce qui change quand le problème devient adversarial
 
 | Axe | Sudoku (tranche 1) | Puissance 4 (tranche 2) |
@@ -39388,12 +39420,12 @@ df_sweep
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,57c31931,markdown,fr,e5d60f594d1a1700,"**Lecture** : l'ordre entre écoles **dépend du budget, sans être monotone pour personne**. Pour un budget de nœuds comparable (1000 contre 776 par coup), `mcts_1000` (accord 0.67) devance `alphabeta_d4` (0.50) — sans heuristique experte, le budget de simulations achète de la qualité. À budget serré c'est l'inverse : `alphabeta_d2` (39 nœuds/coup, 0.67) écrase `mcts_200` (200 nœuds, 0.17) — un élagage profond vaut mieux qu'un arbre incomplet. À budget large, `alphabeta_d6` retrouve la référence (1.00, par construction : c'est elle) au prix de 2.7× les nœuds de `mcts_5000` (0.50). Et la progression n'est monotone nulle part : MCTS fait 0.17 → 0.67 → 0.50, la profondeur 0.67 → 0.50 → 1.00. Sur 6 positions grainées, l'accord est un estimateur bruité — une leçon de protocole en soi : la sélection mesurée exige assez d'instances pour distinguer signal et variance.
 
 Recommandation pratique, terrain 2 : budget serré → `alphabeta_d2` ; budget médian → `mcts_1000` ; qualité maximale → `alphabeta_d6` ; jamais `minimax` sans élagage — même accord qu'`alphabeta_d4` (0.50 = 0.50) pour 3.4× les nœuds, la mesure du profit de l'élagage.",,,,,,,,e5d60f594d1a1700,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,61dba7b2,markdown,fr,721ef75cb3843d45,"### 8.7 Renvois
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,61dba7b2,markdown,fr,4f5d261a3655faee,"### 8.7 Renvois
 
-- [`App-12b-ConnectFour`](../Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) — moteur, baseline aléatoire, alpha-beta (cours détaillé).
-- [`App-14-ConnectFour-Adversarial`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) — minimax, alpha-beta, MCTS et benchmark mono-position par profondeur.
+- [`App-12-ConnectFour-Python`](../Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb) — moteur, baseline aléatoire, alpha-beta (cours détaillé).
+- [`App-14-ConnectFour-Adversarial-Python`](../Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) — minimax, alpha-beta, MCTS et benchmark mono-position par profondeur.
 - Tranche 3/3 (Wordle — élimination bayésienne / entropie / CSP) : à venir, même protocole.
-",,,,,,,,721ef75cb3843d45,,,,,,,,,,,,,,,
+",,,,,,,,4f5d261a3655faee,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,36eb0d8b,markdown,fr,b43505fb4056e37a,## Exercices,,,,,,,,b43505fb4056e37a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb,b3b46f2f,markdown,fr,4fe07791c02e33e8,"### Exemple guidé 1 — L'effet du budget temps sur la sélection (crédité #25579 — janok181)
 
@@ -40780,7 +40812,7 @@ violations de l'ancien certificat — un morphisme les préserve toutes les deux
 non-morphisme en change au moins une. La cellule suivante confronte ce critère à trois
 expériences : percer le mur au point de traversée, rendre mur une feuille de sol éloignée, et
 balayer le coût du mur pour déplacer le point de passage.",,,,,,,,a7313521dad5e3eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,a307af03,markdown,fr,5bf0c306455752b2,"### Lien avec la topologie des jeux 2×2
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,a307af03,markdown,fr,dce6084b48ed7a3b,"### Lien avec la topologie des jeux 2×2
 
 L'opération « traverser un mur » n'est pas née ici : elle vient de la **topologie des jeux 2×2 de
 Robinson-Goforth**, construite dans la série GameTheory. La correspondance terme à terme :
@@ -40802,8 +40834,8 @@ détour par une traversée plus économe devient rentable.
 
 Pour la géométrie complète : [GameTheory-03-Topology2x2-Python](../../GameTheory/GameTheory-03-Topology2x2-Python.ipynb),
 [GameTheory-03b — Chambres, murs et chemins](../../GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb)
-et [GameTheory-20 — Le chemin minimal](../../GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
-",,,,,,,,5bf0c306455752b2,,,,,,,,,,,,,,,
+et [Metajeux-04 — Le chemin minimal](../../GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
+",,,,,,,,dce6084b48ed7a3b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,0290e5fd,markdown,fr,fa0540dc1f727a5e,"## Exemples guidés et exercices
 
 Trois exemples guidés reconstruisent la mécanique sur d'autres murs, trois exercices la
@@ -43926,36 +43958,41 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part
 - [Search-11 — Métaheuristiques (MEALPy, Python)](Search-11-Metaheuristics.ipynb) — le jumeau Python du carnet `Search-11`, qui prend l'API MEALPy comme organe.
 - [Search-11 (C#) — Métaheuristiques](Search-11-Metaheuristics-CSharp.ipynb) — le même contenu en C#.
 ",,,,,,,,bcf9ebbfc2cc271a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,d2fa692f,markdown,fr,d07fbe6f65e99fed,"### Exercice 1 — Centralité de proximité sur le même réseau
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,d2fa692f,markdown,fr,142c96bb5e9b767b,"### Exemple guidé 2 — Centralité de proximité sur le même réseau
+> **Exemple guidé — résolu par @oubiM** (TP IA2-Min2, groupe G05, PR [#27078](https://github.com/jsboige/CoursIA/pull/27078))
 
-À partir du **même graphe de 10 stations** que l'exemple guidé 1, calculez la **closeness centrality** de chaque station avec `nx.closeness_centrality(G)`. Identifiez la station la plus « centrale » au sens de la proximité, et commentez en une phrase en quoi elle diffère (ou non) de la destination `Station_J` du plus court chemin.",,,,,,,,d07fbe6f65e99fed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,4a1bc911,code,fr,e9e9acab38e53094,"# Exercice 1 — Centralité de proximité (closeness)
-# TODO : Réutilisez le graphe G de l'exemple guidé 1.
-#       Calculez nx.closeness_centrality(G), trouvez la station la plus centrale, commentez.
-# Indice : nx.closeness_centrality(G) -> dict {node: score} ; max(scores, key=scores.get)
-# VOTRE CODE ICI
-pass
-",,,,,,,,e9e9acab38e53094,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,62ee8f17,markdown,fr,42edb6d2244deab6,"### Exercice 2 — PageRank vs betweenness
+À partir du **même graphe de 10 stations** que l'exemple guidé 1, calculons la **closeness centrality** de chaque station avec `nx.closeness_centrality(G)` : un score de proximité par station, dont on déduit la station la plus « centrale » au sens de la proximité.",,,,,,,,142c96bb5e9b767b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,4a1bc911,code,fr,e388ef66ecc5704b,"# Exemple guidé 2 — Centralité de proximité (closeness)
+# Résolu par @oubiM (TP IA2-Min2, groupe G05, PR #27078) — code étudiant conservé
 
-Sur le **même réseau social** que l'exemple guidé 2, remplacez la betweenness par **`nx.pagerank(G)`**. Classez les 3 premiers « brokers » selon PageRank et commentez l'écart avec le classement par betweenness.",,,,,,,,42edb6d2244deab6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,8c31e119,code,fr,1736dbc0d3fd03ce,"# Exercice 2 — PageRank
-# TODO : Réutilisez le graphe social G de l'exemple guidé 2.
+scores = nx.closeness_centrality(G)
+
+for station, score in scores.items():
+    print(f""{station} : {score:.3f}"")
+
+station_centrale = max(scores, key=scores.get)
+
+print(f""\nStation la plus centrale : {station_centrale}"")
+print(f""Score : {scores[station_centrale]:.3f}"")
+print(f""Centralité de Station_J : {scores['Station_J']:.3f}"")",,,,,,,,e388ef66ecc5704b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,62ee8f17,markdown,fr,f1a0d5176ce7e889,"### Exercice 2 — PageRank vs betweenness
+
+Sur le **même réseau social** que l'exemple guidé 3, remplacez la betweenness par **`nx.pagerank(G)`**. Classez les 3 premiers « brokers » selon PageRank et commentez l'écart avec le classement par betweenness.",,,,,,,,f1a0d5176ce7e889,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,8c31e119,code,fr,39b90cb73319f257,"# Exercice 2 — PageRank
+# TODO : Réutilisez le graphe social G de l'exemple guidé 3.
 #       Calculez nx.pagerank(G), classez les 3 premiers, commentez l'écart vs betweenness.
 # Indice : nx.pagerank(G, alpha=0.85) -> dict {node: score}
 # VOTRE CODE ICI
-pass
-",,,,,,,,1736dbc0d3fd03ce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,ec1c20b4,markdown,fr,cd11bfaeef6bfb0d,"### Exercice 3 — Coupe minimale (max-flow / min-cut)
+pass",,,,,,,,39b90cb73319f257,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,ec1c20b4,markdown,fr,67884fe454529486,"### Exercice 3 — Coupe minimale (max-flow / min-cut)
 
-Sur le **même graphe de pipelines** que l'exemple guidé 3, calculez la **coupe minimale** avec `nx.minimum_cut(G, s, t)` entre la super-source et le super-puits. Vérifiez en commentaire que la capacité de la coupe vaut la valeur du flot maximum (théorème de max-flow/min-cut).",,,,,,,,cd11bfaeef6bfb0d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,5116c169,code,fr,c2c3c74bb5bbd0fe,"# Exercice 3 — Coupe minimale
-# TODO : Réutilisez le DiGraph G (avec capacités) de l'exemple guidé 3.
+Sur le **même graphe de pipelines** que l'exemple guidé 4, calculez la **coupe minimale** avec `nx.minimum_cut(G, s, t)` entre la super-source et le super-puits. Vérifiez en commentaire que la capacité de la coupe vaut la valeur du flot maximum (théorème de max-flow/min-cut).",,,,,,,,67884fe454529486,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,5116c169,code,fr,db7477b468715a07,"# Exercice 3 — Coupe minimale
+# TODO : Réutilisez le DiGraph G (avec capacités) de l'exemple guidé 4.
 #       Calculez nx.minimum_cut(G, s, t) ; comparez la capacité au flot maximum.
 # Indice : nx.minimum_cut renvoie (capacite, (ensemble_S, ensemble_T))
 # VOTRE CODE ICI
-pass
-",,,,,,,,c2c3c74bb5bbd0fe,,,,,,,,,,,,,,,
+pass",,,,,,,,db7477b468715a07,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb,c7583973,markdown,fr,74df386b991d8ee4,"### Taille de l'espace atteignable : du taquin 8 au taquin 15
 
 Les exemples ci-dessus évaluent des heuristiques sur des états du taquin 8 ; ils ne parcourent pas tout son espace. Pour comprendre l'échelle du problème, comptons les configurations accessibles par déplacements légaux de la case vide.
@@ -44860,3 +44897,19 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.i
 - [Search-03f — Réparer localement sous garantie](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb) — l'**opération 6** du même chantier : le repair incrémental avec garantie d'optimalité transportée — la même exigence de certificat, côté repair.
 - [Search-12 — Branch and bound, borne LP](Search-12-BranchAndBound-Borne-LP-Python.ipynb) — l'autre face de la preuve : trois méthodes exactes qui concordent 9/9, et une borne qui s'effondre quand les instances se corrèlent.
 ",,,,,,,,c49914a8df642f19,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,424433da,markdown,fr,4266687465a8c242,"### Lecture du résultat — la closeness non pondérée compte des sauts, pas des minutes
+
+`Station_E` domine (0,643 = 9/14 : la somme de ses distances en sauts vaut 14, pour 9 autres stations). Viennent `Station_H` (0,562), `Station_G` (0,529), puis `Station_B` et `Station_C` (0,500). La destination du plus court chemin de l'exemple guidé 1, `Station_J`, n'est que 9e sur 10, ex aequo avec `Station_D` (0,429) : être le but d'un trajet n'est pas être au centre du réseau.
+
+Nuance : `nx.closeness_centrality(G)` appelée sans argument `distance` est **non pondérée** — chaque arête compte pour 1. Sur ce graphe pondéré **en minutes**, le classement ci-dessus dit donc quelle station minimise le **nombre de correspondances**, pas le **temps de trajet**. L'exercice 1 compare ce classement à la même mesure calculée en minutes.",,,,,,,,4266687465a8c242,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,38624b8f,markdown,fr,95ffb4f8091256fb,"### Exercice 1 — Centralité pondérée par le temps de trajet
+
+Reprenez le **même graphe G** et calculez cette fois la closeness **pondérée** : `nx.closeness_centrality(G, distance=""weight"")` — les distances se comptent en minutes, et non plus en sauts. Comparez les **deux classements** (non pondéré ci-dessus, pondéré) : la station n°1 change-t-elle ? Citez deux stations qui changent nettement de rang entre les deux mesures, et expliquez avec les poids de leurs arêtes pourquoi elles déclinent.",,,,,,,,95ffb4f8091256fb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02b-NetworkX.ipynb,2c79d450,code,fr,e35123b097a1a0b3,"# Exercice 1 — Centralité pondérée par le temps de trajet
+# TODO : Calculez nx.closeness_centrality(G, distance=""weight"")
+#       Affichez le classement pondéré à côté du classement non pondéré de l'exemple guidé 2.
+#       Identifiez deux stations qui changent nettement de rang, et expliquez avec les poids.
+# Indice : les scores pondérés sont plus petits (9 / somme des minutes) — comparez les RANGS, pas les valeurs.
+#         sorted(scores_pond.items(), key=lambda x: -x[1]) donne le classement décroissant.
+# VOTRE CODE ICI
+pass",,,,,,,,e35123b097a1a0b3,,,,,,,,,,,,,,,

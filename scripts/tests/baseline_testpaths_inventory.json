@@ -1,0 +1,172 @@
+{
+  "description": "Dette connue des sens d'inventaire de #25366 (dossiers de tests non triés, basenames dupliqués) et du sens fichier de #26759 (fichiers qu'aucune jambe ne collecte). Ratchet T4 : ces entrées sont tolérées, tout finding NOUVEAU fait rougir la garde. Régénération : python scripts/check_testpaths_coverage.py --inventory --write-baseline scripts/tests/baseline_testpaths_inventory.json",
+  "duplicate_basenames": {
+    "test_catastrophe.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_compression.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_epsilon_machine.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_feature_dynamics.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_jlens_traces.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_lens_agreement.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_multiscale_agency.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_phat_self_reference.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_reversibility_budget.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_salience_valence_dissociation.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_self_sorting.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_sensitivity.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_sorting_metrics.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_strategic_morphodynamics.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_time_arrow.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ],
+    "test_utils.py": [
+      "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/tests",
+      "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/examples/sample_project/tests"
+    ],
+    "test_workspace.py": [
+      "MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests",
+      "MyIA.AI.Notebooks/IIT/ICT-Series/tests"
+    ]
+  },
+  "unplayed": [
+    "MyIA.AI.Notebooks/GenAI/PostTraining/verifiers/test_lean_rlvr_verifier.py",
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/helpers/test_claude_cli.py",
+    "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claudish/notebooks/helpers/test_claudish_client.py",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/test_adk_runtime.py",
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/test_llm_client.py",
+    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_anti_derive_notebook.py",
+    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_causal_organs.py",
+    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_dowhy_discovery_organs.py",
+    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_dowhy_iv_organs.py",
+    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_dowhy_organs.py",
+    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_dowhy_sensitivity_organs.py",
+    "MyIA.AI.Notebooks/Probas/Causalite/tests/test_fairness_organs.py",
+    "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/test_dm.py",
+    "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/wf_framework/test_portfolio_metrics.py",
+    "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/wf_framework/test_wf_framework.py",
+    "MyIA.AI.Notebooks/QuantConnect/projects/Cloud-MeanReversion-Sectors/test_daily_scan.py",
+    "MyIA.AI.Notebooks/QuantConnect/projects/Sector-ML-Classification/test_historical_rsi.py",
+    "MyIA.AI.Notebooks/QuantConnect/scripts/test_algorithms.py",
+    "MyIA.AI.Notebooks/QuantConnect/shared/test_backtest_helpers.py",
+    "MyIA.AI.Notebooks/QuantConnect/shared/test_data_cache.py",
+    "MyIA.AI.Notebooks/QuantConnect/shared/test_features.py",
+    "MyIA.AI.Notebooks/QuantConnect/shared/test_gpu_training.py",
+    "MyIA.AI.Notebooks/QuantConnect/shared/test_indicators.py",
+    "MyIA.AI.Notebooks/QuantConnect/shared/test_ml_utils.py",
+    "MyIA.AI.Notebooks/QuantConnect/shared/test_plotting.py",
+    "MyIA.AI.Notebooks/Sudoku/tests/test_generate_certified_corpus.py",
+    "MyIA.AI.Notebooks/Sudoku/tests/test_thermal_safe_train.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/integration/test_leandojo_feasibility.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/test_fleet_bench.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/test_target_guard.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_attempt_history.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_calibration_stub.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_check_axioms.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_config_create_client.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_deadline_keeps_proof.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_decomposition_regression.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_error_marker_contract.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_freeze_loop_termination.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_inline_sorry_splice.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_instructions.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_knowledge.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_local_base_url_env_alias.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_mine_lean_sessions.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_multi_agent_proof_calibration.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_p4_l1_false_negative.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_p4_pristine_type.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_p6_routing.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_persist_writeback.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_probe_inline_sorry.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_proof_latch_multisorry.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_correctly_refused.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_decomposition_regression.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_empty_response_storm_guard.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_error_signature_loop.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_execution_leftovers.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_freeze_loop_guard.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_heartbeat_budget.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_p1b_timeout.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_p2b_target_guard.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_pathology3_counter.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_reasoning_budget.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_size_guard.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_verdict_single_source.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_verifier_guards.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_read_lines_from_source.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_reverify_tri_state.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_run_baselines_calibration_stub.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_run_prover_bg_gate.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_state_checkpoint_aliasing.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_subdir_launcher_calibration.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_to_dict_aliasing.py",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/test_forge_helper.py",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/test_sc11_local_path.py",
+    "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/test_web3_tx.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/test_sat_calibration.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/test_sat_comparison_demo.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/test_validate_syntax.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/test_verify_tweety_iopub.py",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/test_tweety_init.py",
+    "MyIA.AI.Notebooks/SymbolicAI/ext_tools/test_marco.py",
+    "MyIA.AI.Notebooks/SymbolicAI/ext_tools/test_maxsat_solver.py",
+    "MyIA.AI.Notebooks/SymbolicAI/ext_tools/test_sat_solver.py",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/tests/e2e/test_app_flows.py",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/tests/unit/test_cache_performance.py",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/tests/unit/test_matching_logics.py",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/tests/unit/test_matching_utility.py",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/tests/unit/test_persistence.py",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/tests/unit/test_semantic_performance.py",
+    "MyIA.AI.Notebooks/cross-series/matching-cv/tests/unit/test_simple_matching.py",
+    "scripts/ci/test_check_cancelled_only_commits.py",
+    "scripts/ci/test_classify_infra_leg.py",
+    "scripts/lean/test_check_grothendieck_readme.py",
+    "scripts/tts_verification/test_mos_protocol.py",
+    "scripts/tts_verification/test_syllable_variability.py"
+  ],
+  "unwatched": [
+    "MyIA.AI.Notebooks/Probas/Causalite/tests"
+  ]
+}

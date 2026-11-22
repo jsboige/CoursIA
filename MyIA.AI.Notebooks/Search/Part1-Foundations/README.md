@@ -75,8 +75,8 @@ La boîte à outils de graphes et la recherche continue, trois accrétions de Se
 Cette section absorbe le contenu durable de l'ancienne Partie 3, centrée sur la recherche heuristique avancée. Le **fil rouge** reste le **15-puzzle** — le banc d'essai historique de la recherche heuristique depuis Korf (1985). L'enjeu central est la **mémoire comme ressource algorithmique** : jusqu'où peut-on précalculer, et comment décomposer un problème pour que ce précalcul reste abordable ? Les notebooks forment un **triptyque** aux stratégies complémentaires : renforcer l'heuristique, borner les écarts à l'heuristique dont on dispose, et relâcher l'optimalité de façon contrôlée — sans jamais violer l'admissibilité.
 
 - **[3b Pattern Databases](Search-03b-PatternDatabases.ipynb)** (+ [jumeau C#](Search-03b-PatternDatabases-CSharp.ipynb)) — PDB (Culberson & Schaeffer 1996) et additives (Korf & Felner 2002) sur 15-puzzle, IDA\*, heuristique précalculée admissible ; la section 12 « quotienter / fibrer » (op 3 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) mesure le fondement informationnel des PDB sur un espace énuméré exhaustivement — règle de chaîne exacte, témoin I(X_A;X_B \| S_B) = 0 contre 2,071 bits marginaux, contre-témoin du quotient trop grossier. Le jumeau C# porte le BFS rétrograde, le 0-1 BFS deque et le rang de Lehmer from-scratch.
-- **[3c Limited Discrepancy Search](Search-03c-LimitedDiscrepancySearch.ipynb)** (+ [jumeau C#](Search-03c-LimitedDiscrepancySearch-CSharp.ipynb)) — LDS (Harvey & Ginsberg 1995) sur sac à dos 0/1 : greedy vs LDS(k) vs exhaustif — toujours optimal.
-- **[3d Weighted A\*](Search-03d-WeightedAstar.ipynb)** (+ [jumeau C#](Search-03d-WeightedAstar-CSharp.ipynb)) — Weighted A\* (Pohl 1970), f = g + W·h sur terrain pondéré : optimalité relâchée de façon contrôlée, coût borné à W fois l'optimal.
+- **[3c Limited Discrepancy Search](Search-03c-LimitedDiscrepancySearch.ipynb)** (+ [jumeau C#](Search-03c-LimitedDiscrepancySearch-CSharp.ipynb) · [Rust](Search-03c-LimitedDiscrepancySearch-Rust.ipynb)) — LDS (Harvey & Ginsberg 1995) sur sac à dos 0/1 : greedy vs LDS(k) vs exhaustif — toujours optimal.
+- **[3d Weighted A\*](Search-03d-WeightedAstar.ipynb)** (+ [jumeau C#](Search-03d-WeightedAstar-CSharp.ipynb) · [Rust](Search-03d-WeightedAstar-Rust.ipynb)) — Weighted A\* (Pohl 1970), f = g + W·h sur terrain pondéré : optimalité relâchée de façon contrôlée, coût borné à W fois l'optimal.
 - **[3e AStar-Optimality](Search-03e-AStar-Optimality.ipynb)** — **Compagnon formel** : l'admissibilité comme condition exacte de l'optimalité d'A\* — preuves du lake [`search_lean`](../search_lean/) visitées depuis Python (subprocess → WSL `lean`), pont vers Lean-6. Suppose le kernel Python + WSL.
 - **[3f Reparer-Localement-Sous-Garantie](Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb)** — **Réparer localement sous garantie** (op 6 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : recherche incrémentale **LPA\*** (Koenig & Likhachev 2002) — repair après blocage d'une cellule du plan optimal : optimalité **transportée** (34 = 34) au prix de 12 expansions contre 273 au A\* from scratch (23×) ; la section « recoller » (op 5) recolle des tables locales de fenêtres chevauchantes — compatibilité par paires vérifiée, composition sur le triple violée puis réparée ; le palier mémoire bornée mesure le pic de frontière d'A\* (28 / 39 / 170 états) contre le pic de pile d'IDA\* (21 / 15 / 19) à coût optimal égal.
 
@@ -95,15 +95,23 @@ Le fil relaxation / arrondi / convexité, cinq accrétions de Search-9 :
 - **[9e Komlos-Lean](Search-09e-Komlos-Lean.ipynb)** — **Compagnon formel de 9c** sur kernel `lean4-wsl` : `#check` des conjectures (Komlós ∃C universel, Beck–Fiala 2k−1, régimes Bansal–Jiang 2025), témoins coloriés ±1 énumérés exhaustivement sur instances jouet (Hadamard ½n en particulier). Suppose le miroir local du lake `discrepancy_lean`.
 - **[9f ConvexOptimisation](Search-09f-ConvexOptimisation-Python.ipynb)** — **Du linéaire au convexe** : l'escalier LP → QP → SOCP nommé et démontré — le LP de Search-9 relu comme QP dégénérée, Markowitz en QP exacte sur l'instance App-10 (tangence Sharpe identique à son génétique), mesure échantillonnage vs QP, plafond de risque SOCP. Copie pédagogique déclarée d'App-10.
 
+### Autour de 10
+
+- **Service web de Search-10** (pli 0 v2, [#26511](https://github.com/jsboige/CoursIA/issues/26511)) — Le carnet de cours devient cours + TP + **service web** : le cœur d'exécution vit dans [`automata_core.py`](automata_core.py) (construction, validation, parcours, opérations — tout délégué à `automata-lib`, jamais réimplémenté) et sert deux frontends : le service FastAPI [`automata_service.py`](automata_service.py) (`POST /automata/run`, contrat `ok`/`invalid`/`error` ↔ 200/422/502) et une cellule d'endpoint Kernel Gateway dans le carnet lui-même. Le DFA pair de « a » de la section 2.3 rejoué en JSON par le cœur du service valide la sérialisation de bout en bout. Tests du cœur **et** du transport TCP réel dans [`test_automata_core.py`](test_automata_core.py) (18 tests, câblés dans la CI via `search-automata-tests.yml`), dépendances dans [`requirements-automata.txt`](requirements-automata.txt).
+
 ### Autour de 11
 
 - **[11b Metaheuristiques-Deep](Search-11b-Metaheuristiques-Deep.ipynb)** (4 volets .NET : [T2 PSO](Search-11b-Metaheuristiques-Deep-Part2.ipynb), [T3 ABC](Search-11b-Metaheuristiques-Deep-Part3.ipynb), [T4 Benchmark](Search-11b-Metaheuristiques-Deep-Part4.ipynb)) — **Déclinaison deep-dive** : un algorithme from-scratch approfondi par tranche (recuit T1, PSO T2, ABC T3, benchmark capstone T4). Complète le jumeau 11 (.NET) par un traitement détaillé algorithme par algorithme.
 - **[11c Empirical-Algorithm-Selection](Search-11c-Empirical-Algorithm-Selection.ipynb)** — Distillation du projet L4 EPITA SCIA 2026 (Th. Deguest, PR source #42) : **sélection empirique d'algorithmes** sous protocole commun (timeout 5 s, budget nœuds, métriques uniformes) sur Sudoku et Puissance 4 — front de Pareto qualité-coût, sweep de budget qui **inverse la sélection**, No Free Lunch mesuré (Rice 1976, Wolpert 1996). Aucun prérequis.
-- **[11d Descente-Sous-Budget](Search-11d-Descente-Sous-Budget.ipynb)** — La loi derrière les descentes sous budget (op 11 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : les hypothèses de `mimo_lean/Descent.lean` exercées au runtime, l'hypothèse `hnostall` réfutée — à budget généreux, tous les blocages sont des optima locaux hors cible. Bibliothèque standard seule.
+- **[11d Descente-Sous-Budget](Search-11d-Descente-Sous-Budget.ipynb) · [jumeau Rust](Search-11d-Descente-Sous-Budget-Rust.ipynb)** — La loi derrière les descentes sous budget (op 11 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : les hypothèses de `mimo_lean/Descent.lean` exercées au runtime, l'hypothèse `hnostall` réfutée — à budget généreux, tous les blocages sont des optima locaux hors cible. Bibliothèque standard seule.
 
 ### Autour de 12
 
-- **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (19/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 24 vs 75 expansions). Suppose Search-3.
+- **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (23/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 23 vs 75 expansions). Suppose Search-3.
+
+### Paysage SDP factorisé en deux langages
+
+[Search-09b en Python](Search-09b-SpuriousMinima.ipynb) et [son compagnon C#](Search-09b-SpuriousMinima-CSharp.ipynb) comparent coupes exhaustives et relaxation SDP numérique, puis recensent des départs de l'ascension factorisée. Le C# pilote les calculs et appelle CVXPY/CLARABEL et NumPy via Python.NET. Les perturbations échantillonnées ne certifient pas un maximum local.
 
 ## Progression
 
@@ -141,6 +149,7 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | `deap` | Search-5 (Genetic Algorithms) |
 | `mealpy` | Search-11 (Métaheuristiques) |
 | `z3-solver` | Search-10 (Symbolic Automata), Search-11c (SMT) |
+| [`requirements-automata.txt`](requirements-automata.txt) | Search-10, service web pli 0 v2 : `automata-lib` (cœur), `fastapi` + `uvicorn` (service `POST /automata/run`), `httpx` (tests loopback) |
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
 | `cvxpy` | Search-09b (relaxation SDP, solveur CLARABEL embarqué), Search-09f (QP Markowitz et SOCP, même solveur CLARABEL) |
 | Kernel `lean4-wsl` | Search-09e : kernel Jupyter Lean 4 + miroir local du lake [`discrepancy_lean`](../discrepancy_lean/README.md) (Mathlib 4 via les packages du dépôt) — cf. [`docs/reference/wsl-kernels-detail.md`](../../../docs/reference/wsl-kernels-detail.md) |
@@ -156,9 +165,17 @@ Le notebook [Search-2c-QuikGraph](Search-02c-QuikGraph.ipynb) ferme la boucle c�
 
 La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
 
+### Descente sous budget : deux langages
+
+[Python](Search-11d-Descente-Sous-Budget.ipynb) et [C#](Search-11d-Descente-Sous-Budget-CSharp.ipynb) confrontent descente à un flip, borne LP et optimum exact ; les générateurs aléatoires diffèrent, mais les budgets sont identiques. Un arrêt sur budget ne certifie pas un blocage.
+
 ## Ponts vers les autres séries
 
 Cette partie irrigue le reste du dépôt : les Dancing Links de Search-8 sont à l'œuvre dans la série [Sudoku](../../Sudoku/README.md), Minimax et MCTS (Search-6/7) se prolongent dans [GameTheory](../../GameTheory/README.md) avec OpenSpiel puis dans [RL](../../RL/README.md) côté politiques apprises, et les prédicats Z3 de Search-10 ouvrent sur [SymbolicAI](../../SymbolicAI/README.md).
+
+### Composer les regards en Python et C#
+
+Le carnet [Python](Search-12a-Composer-Regards.ipynb) et son [jumeau C#](Search-12a-Composer-Regards-CSharp.ipynb) calculent les distances arrière sur les arcs inversés, comparent les guides et conservent le même terrain déterministe.
 
 ## Références
 
@@ -173,6 +190,10 @@ Couverture par notebook des sources fondatrices mobilisées dans cette partie :
 | Search-8 (DancingLinks) | Knuth, D. E. (2000) — « Dancing Links », dans *Millennial Perspectives in Computer Science* (Springer). |
 | Search-09e (conjecture de Komlós) | Matoušek, J. (1999) — *Geometric Discrepancy: An Illustrated Guide*, Springer. Contexte classique de la conjecture de Komlós (disc ≤ C pour colonnes unitaires) ; les énoncés `KomlosConjecture` / `BansalJiangLargeDegree` / `KomlosBansalJiangWeak` formalisés dans [`discrepancy_lean/Komlos.lean`](../discrepancy_lean/Discrepancy/Komlos.lean) suivent les régimes de Bansal & Jiang (2025, arXiv:2508.03961 — cf. Search-09c). |
 | Search-11 (Metaheuristics) | Kennedy, J., & Eberhart, R. (1995) — « Particle Swarm Optimization », *Proc. IEEE Int. Conf. on Neural Networks*. Origine du PSO. |
+
+### Traverser les murs en Python et C#
+
+[Python](Search-13a-Traverser-Murs-Certifies.ipynb) et [C#](Search-13a-Traverser-Murs-Certifies-CSharp.ipynb) comparent chemin minimal, épaisseur, coupe de sommets et audit de potentiels sur le pavage hexagonal ; trois exemples guidés de Tristan Dhersin prolongent les mesures.
 
 ## FAQ
 
@@ -222,3 +243,11 @@ Le véritable enseignement, au-delà du catalogue d'algorithmes, est un **réfle
 ### Le fil rouge
 
 La recherche en IA propose un changement de regard sur la résolution de problèmes : ne plus voir chaque algorithme comme une recette à appliquer, mais comprendre qu'ils sont tous des **négociations d'un même compromis fondamental** — entre la garantie de trouver l'optimal et le coût pour l'atteindre, entre explorer l'inconnu et exploiter l'acquis, entre la complétude et la mémoire disponible. BFS garantit l'optimal mais explose en mémoire ; DFS file droit mais peut se perdre ; A* négocie les deux via une heuristique dont l'honnêteté (l'admissibilité) conditionne la justesse du résultat ; le recuit simulé accepte de remonter la pente pour s'échapper d'un optimum local ; MCTS remplace l'expertise par la statistique. Comprendre la recherche, c'est comprendre qu'il n'existe pas de « bon » algorithme dans l'absolu, mais une famille de stratégies dont le choix dépend du compromis qu'on est prêt à accepter — et que ce compromis, loin d'être une limitation, est précisément ce qui rend la recherche applicable à tout problème formalisable en espace d'états.
+
+## Discrépance combinatoire en Python et C#
+
+[Search-09c en Python](Search-09c-CombinatorialDiscrepancy.ipynb) et [son jumeau C#](Search-09c-CombinatorialDiscrepancy-CSharp.ipynb) comparent hasard, arrondi de Beck–Fiala et optimum CP-SAT. Le C# utilise MathNet pour la SVD et le moteur CP-SAT natif ; les tirages et les directions numériques peuvent différer. La garantie de l'arrondi concerne les matrices d'incidence, tandis que l'expérience Komlós sur des vecteurs réels est distincte.
+
+## B&B et borne LP : versions Python et C#
+
+[Search-12 en Python](Search-12-BranchAndBound-Borne-LP-Python.ipynb) et [en C#](Search-12-BranchAndBound-Borne-LP-CSharp.ipynb) comparent DP, branch-and-bound et MILP sur le sac à dos. Le juge est HiGHS côté Python et SCIP via Google.OrTools côté C# ; les durées et les générateurs aléatoires diffèrent.

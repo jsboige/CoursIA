@@ -49,7 +49,7 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Lean-23-ERC20-Invariant-Companion.ipynb",
+    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\VERIF-02-ERC20-Invariant-Companion.ipynb",
     "cell_index": 14,
     "line_no": 9,
     "text": "# Etape 3 : collecter l'invariant Σ=totalSupply a chaque etape (200 lignes).",
@@ -98,14 +98,14 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\Search\\Applications\\CSP\\App-8-MiniZinc-CSharp.ipynb",
+    "path": "MyIA.AI.Notebooks\\Search\\Applications\\CSP\\App-08-MiniZinc-CSharp.ipynb",
     "cell_index": 11,
     "line_no": 2,
     "text": "// MiniZinc exprime N-Reines en ~5 lignes grace a la contrainte globale alldifferent.",
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\Search\\Applications\\CSP\\App-8-MiniZinc.ipynb",
+    "path": "MyIA.AI.Notebooks\\Search\\Applications\\CSP\\App-08-MiniZinc-Python.ipynb",
     "cell_index": 15,
     "line_no": 36,
     "text": "# CP-SAT (Python, OR-Tools) - 12 lignes utiles",

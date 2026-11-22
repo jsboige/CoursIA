@@ -1,0 +1,12 @@
+- name: Compression-04-ANS
+  family: Compression
+  python: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets construisent les machines rANS et tANS pédagogiques depuis leurs transitions ; zlib Python et ZLibStream .NET sont réellement invoqués pour la comparaison de production."
+  known_differences:
+    - "Le flot Python stocke une liste de bits et le C# les empaquette ; les coûts logiques et physiques sont distingués. Les générateurs aléatoires sont propres à chaque runtime."
+    - "Le cadre version 1 ajoute une version et le total de symboles au format précédent ; le modèle reste externe. Les deux implémentations valident le cadre et le retour à l'état initial."
+    - "Python utilise zlib.compress(..., 9), le C# ZLibStream avec CompressionLevel.SmallestSize : les taux observés sont 3,5986 et 3,6016 bits/octet. Ces API ne garantissent pas la même version ni les mêmes paramètres internes du moteur ; aucune identité des flux compressés n'est annoncée. La cause précise du delta de taille n'a pas été isolée."
+    - "Les chronométrages C# sont des médianes de trois répétitions après chauffe ; ceux du Python portent sur un appel unique. Ils ne permettent pas de comparer directement les performances entre langages."

@@ -14,7 +14,13 @@ from datetime import UTC, datetime
 
 OUVRE = frozenset({"CLAIMED", "CLAIMED-AMEND"})
 FERME = frozenset({"RELEASED", "DELIVERED", "CANCELLED", "ABANDONED", "DONE"})
-VISITE = frozenset({"CLAIMED", "CLAIMED-AMEND", "DELIVERED"})
+#: Une **prise en charge** nominative : la lane a travaille sur l'issue.
+#: Une visite par lecture (`VISITE-INFO`) n'en est pas une -- une qualification
+#: est une lecture, pas une prise en charge (doctrine de `tapis_dernier_grain`).
+MARQUEUR_GRAIN = frozenset({"CLAIMED", "CLAIMED-AMEND", "DELIVERED"})
+#: Une **visite** : une prise en charge, ou une lecture d'une lane (`VISITE-INFO`).
+#: Les deux ensembles sont distincts : une visite n'est pas un grain.
+VISITE = MARQUEUR_GRAIN | {"VISITE-INFO"}
 ROUVRE = frozenset({"NOT-DELIVERED", "RELEASED", "CLAIMED", "CLAIMED-AMEND"})
 
 # Un marqueur est en tete de N'IMPORTE QUELLE ligne (souvent apres `Grain:`),
@@ -59,6 +65,12 @@ def _dt(texte: str | None) -> datetime | None:
 
 def _iso(d: datetime) -> str:
     return d.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _age(maintenant: datetime, quand: str | None, unite_s: int) -> float | None:
+    """L'age d'un instant ISO dans l'unite donnee (secondes), ou None."""
+    d = _dt(quand)
+    return round((maintenant - d).total_seconds() / unite_s, 1) if d else None
 
 
 def _lane(ligne: str, texte: str) -> str | None:
