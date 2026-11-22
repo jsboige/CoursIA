@@ -2495,6 +2495,77 @@ def find_stacked_parents(body: str | None) -> list[int]:
     return list(seen)
 
 
+@dataclass
+class CombinedPassContext:
+    """Contexte de passe pour l'etape 5quinquies (22/11).
+
+    Une passe evalue jusqu'a une centaine de candidats, et l'etape jouait un
+    worktree NEUF a chaque fois -- ``worktree add`` puis ``worktree remove``,
+    38 s + 9 s par candidat (mesure du coordinateur sur l'arbre de main).
+    Ce contexte donne a la passe UN worktree, reutilise par
+    ``checkout --detach`` : l'organe n'y fait plus qu'un changement de tete
+    entre deux candidats.
+
+    Le worktree est nomme par le PID de la passe : deux passes concurrentes
+    ne se partagent donc jamais le meme dossier. Un partage ferait jouer les
+    tests d'un candidat sur l'arbre d'un AUTRE -- un verdict faux.
+
+    La BASE, elle, reste resolue par l'organe a chaque candidat : elle doit
+    etre COURANTE, sinon l'organe rate le conflit entre deux PRs fusionnees
+    contre le meme ``main@T`` (fenetre residuelle de #24828). Mesure du
+    22/11 : le ``main`` n'ajoute que ~0,4 s au fetch (18,9 s avec, 18,5 s
+    pour la seule tete) -- le cout du fetch est l'aller-retour reseau, pas
+    la ref. Un ``main`` par passe n'economiserait que 2 % du fetch et
+    acheterait une base perimee.
+    """
+    worktree: Path
+    #: Vrai des que l'organe a ete invoque au moins une fois dans la passe.
+    #: Le worktree n'existe alors que si l'organe l'a pose : une passe qui
+    #: n'a evalue AUCUN candidat (porte STACK refuse, rollback operateur)
+    #: n'a rien a retirer, et ne lance donc rien du tout.
+    used: bool = False
+
+    def cleanup(self, runner: Runner, gh_env: dict[str, str]) -> None:
+        """Retire le worktree de la passe.
+
+        Le retrait est fait par l'ORGANE (``--cleanup``), pas par un ``git``
+        lance ici : l'organe sait deja poser et retirer ce worktree, et la
+        passe ne doit pas payer un aller-retour reseau pour le faire.
+
+        Rien n'est lance si l'organe n'a jamais ete invoque : une passe sans
+        evaluation ne laisse pas de worktree, et une passe qui n'a rien
+        demande au disque ne demande rien au disque en sortant.
+        """
+        if not self.used:
+            return
+        rm = runner.run(
+            [sys.executable, _repo_relative(COMBINED_PATH), "--cleanup",
+             "--worktree", _repo_relative(self.worktree)],
+            env=gh_env,
+        )
+        if rm.returncode != 0:
+            # Un worktree que git refuse de retirer est RAPPORTE, pas detruit.
+            print(f"worktree de passe non retire : {self.worktree}",
+                  file=sys.stderr)
+
+
+#: Contexte de passe courant (module-level : la chaine d'appels de l'etape
+#: 5quinquies est profonde, on ne la remplit pas de parametres).
+COMBINED_CTX: CombinedPassContext | None = None
+
+
+def combined_pass_context() -> CombinedPassContext | None:
+    """Prepare le contexte de passe ; ``None`` si l'etape est indisponible.
+
+    ``None`` n'est pas un echec : l'organe retombe alors sur son comportement
+    d'avant (un worktree par candidat).
+    """
+    if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
+        return None
+    worktree = REPO_ROOT / ".tmp" / f"premerge-passe-{os.getpid()}"
+    return CombinedPassContext(worktree=worktree)
+
+
 def combined_tree_reason(
     runner: Runner, pr: int, head: str, gh_env: dict[str, str]
 ) -> str | None:
@@ -2508,11 +2579,14 @@ def combined_tree_reason(
     """
     if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
         return None
-    res = runner.run(
-        [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr), "--head", head,
-         "--json"],
-        env=gh_env,
-    )
+    argv = [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr),
+            "--head", head, "--json"]
+    ctx = COMBINED_CTX
+    if ctx is not None:
+        argv += ["--worktree", _repo_relative(ctx.worktree),
+                 "--reuse-worktree"]
+        ctx.used = True
+    res = runner.run(argv, env=gh_env)
     payload: dict = {}
     lines = (res.stdout or "").strip().splitlines()
     if lines:
@@ -3352,6 +3426,16 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     # (revue du 16/11).
     warmup_reads = warm_up_mergeability(active_runner, gh_env, warm_candidates)
 
+    # --- contexte de l'etape 5quinquies (22/11) --------------------------------
+    #
+    # UN worktree pour toute la passe : l'etape jouait un `worktree add` +
+    # un `worktree remove` par candidat (38 s + 9 s, mesure du coordinateur).
+    # L'organe y fait un `checkout --detach` d'un candidat a l'autre. Le
+    # contexte echoue sans rien casse : `combined_pass_context` rend `None`
+    # et l'etape retombe sur son comportement d'avant.
+    global COMBINED_CTX
+    COMBINED_CTX = combined_pass_context()
+
     for pr in prs:
         # Disjoncteur --max : plafond de DECISIONS de merge du run (merges
         # reels en --apply, would-merge en dry-run : le dry-run doit refléter
@@ -3488,6 +3572,10 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         stopped_reason = f"unexpected-error:{exc}"
                         break
                     continue
+
+    if COMBINED_CTX is not None:
+        COMBINED_CTX.cleanup(active_runner, gh_env)
+        COMBINED_CTX = None
 
     emit_output(
         args, results, stopped_reason, exit_code,
