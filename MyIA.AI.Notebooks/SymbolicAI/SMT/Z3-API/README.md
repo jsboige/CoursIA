@@ -22,7 +22,7 @@ Contrat complet (`sat` / `unsat` / `invalid`, `time_ms`, cas d'erreur), démarra
 
 ## Ouverture — ce que cette série enseigne (Découverte)
 
-L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série canonique : les notebooks Python principaux (z3-solver + matplotlib) couvrent la satisfaction de contraintes, l'optimisation avancée, l'ordonnancement combinatoire, les énigmes logiques (CSP), l'arithmétique symbolique (cryptarithmes), la coloration de graphe (NP-complet), l'arithmétique réelle exacte (irrationnels algébriques), l'explication de l'insatisfiabilité (UNSAT cores), l'arithmétique machine bornée (bit-vectors, débordement), la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques), l'optimisation réaliste d'un meal-planner hebdomadaire (matrice booléenne `jours × plats`), la théorie générale des tableaux (`Select`/`Store` et axiomes de McCarthy), la comparaison des modes de résolution d'un même Sudoku (`Array` vs `Constants`) et le pont déclaratif avec la série sœur Z3.Linq (C#) ; les twins C# .NET (notebooks 01ᶜˢ à 06ᶜˢ, 09ᶜˢ, 10ᶜˢ, 12ᶜˢ, 13bᶜˢ, 16eᶜˢ et 20ᶜˢ) assurent la parité langage ; les compagnons Meal-Planner (16b à 16e, statut BETA) étendent le module 16 sur un corpus réel (Ciqual ANSES 2025 × RecipeML).
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série canonique : les notebooks Python principaux (z3-solver + matplotlib) couvrent la satisfaction de contraintes, l'optimisation avancée, l'ordonnancement combinatoire, les énigmes logiques (CSP), l'arithmétique symbolique (cryptarithmes), la coloration de graphe (NP-complet), l'arithmétique réelle exacte (irrationnels algébriques), l'explication de l'insatisfiabilité (UNSAT cores), l'arithmétique machine bornée (bit-vectors, débordement), la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques), l'optimisation réaliste d'un meal-planner hebdomadaire (matrice booléenne `jours × plats`), la théorie générale des tableaux (`Select`/`Store` et axiomes de McCarthy), la comparaison des modes de résolution d'un même Sudoku (`Array` vs `Constants`) et le pont déclaratif avec la série sœur Z3.Linq (C#) ; les twins C# .NET (notebooks 01ᶜˢ à 06ᶜˢ, 09ᶜˢ, 10ᶜˢ, 12ᶜˢ, 13ᶜˢ, 13bᶜˢ, 14ᶜˢ, 15ᶜˢ, 16ᶜˢ, 16eᶜˢ, 19ᶜˢ et 20ᶜˢ) assurent la parité langage ; les compagnons Meal-Planner (16b à 16e, statut BETA) étendent le module 16 sur un corpus réel (Ciqual ANSES 2025 × RecipeML).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
 
@@ -56,7 +56,7 @@ Ce README suit la [signalétique de lecture du dépôt](https://github.com/jsboi
 | 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | Découverte | — |
 | 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | Découverte | — |
 | 19 | [Optimisation multi-objectif (lex/Pareto/weighted)](Z3-19-Optimization-Lexicographic-Python.ipynb) — jumeau [C#](Z3-19-Optimization-Lexicographic-CSharp.ipynb) | Comparaison des trois stratégies d'arbitrage (lexicographique, front de Pareto énuméré, somme pondérée avec sweep) sur 3 projets jouet (coût/impact) | Découverte | — |
-| 20 | [Machine de Gödel](Z3-20-Machine-de-Goedel-Python.ipynb) **(BETA)** | Auto-réécriture sur preuve (Schmidhuber 2006) : théorème cible prouvé par réfutation sous axiomes d'environnement, optimalité globale contre une machine gloutonne, prix d'une amélioration non prouvable (contre-exemple Z3), coût du temps de preuve (`rlimit`) | Découverte | — |
+| 20 | [Machine de Gödel](Z3-20-Machine-de-Goedel-Python.ipynb) **(BETA)** — jumeau [C#](Z3-20-Machine-de-Goedel-CSharp.ipynb) | Auto-réécriture sur preuve (Schmidhuber 2006) : théorème cible prouvé par réfutation sous axiomes d'environnement, optimalité globale contre une machine gloutonne, prix d'une amélioration non prouvable (contre-exemple Z3), coût du temps de preuve (`rlimit`) | Découverte | — |
 
 > **Les jumeaux C#** : les notebooks 01 à 06, le 09, le 10, le 12, le 13, le 13b, le 14, le 15, le 16, le compagnon 16e, le 19 et le 20 existent chacun en version .NET (`Z3-01-Introduction-CSharp.ipynb`, …), accessibles directement depuis la colonne *Notebook* ci-dessus. Chaque jumeau rejoue le parcours du notebook Python via le binding `Microsoft.Z3` (NuGet) — même moteur Z3, autre langage — et se repère au suffixe `CSharp` du fichier et à l'exposant `ᶜˢ` (01ᶜˢ–06ᶜˢ, 09ᶜˢ, 10ᶜˢ, 12ᶜˢ, 13ᶜˢ, 13bᶜˢ, 14ᶜˢ, 15ᶜˢ, 16ᶜˢ, 16eᶜˢ, 19ᶜˢ, 20ᶜˢ) utilisé dans le reste du README.
 
@@ -78,7 +78,7 @@ Des compagnons regroupés par palier : chaque palier prolonge un notebook du par
 
 | # | Notebook | Ce qu'on y apprend |
 |---|----------|---------------------|
-| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) **(BETA)** | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT |
+| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) **(BETA)** — jumeau [C#](Z3-13b-UnsatCores-MUS-CSharp.ipynb) | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT |
 
 ### Autour de 16
 
@@ -110,12 +110,12 @@ Des compagnons regroupés par palier : chaque palier prolonge un notebook du par
 | Z3-09, Z3-09ᶜˢ | §8.2 Zebra puzzle (p. 232), Ch. 8 | Einstein's riddle / Zebra puzzle |
 | Z3-10, Z3-10ᶜˢ | §8.10 Alphametics (p. 276), Ch. 8 | Cryptarithmetic SEND + MORE = MONEY |
 | Z3-11 | Ch. 9 Graph coloring (p. 317) | Coloration de graphe, nombre chromatique |
-| Z3-12 | Ch. 4 Proofs (p. 106) | Real arithmetic, irrationnels algébriques |
+| Z3-12, Z3-12ᶜˢ | Ch. 4 Proofs (p. 106) | Real arithmetic, irrationnels algébriques |
 | Z3-13, Z3-13ᶜˢ | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
-| Z3-13b | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
-| Z3-14 | §5.1 Integer overflow (p. 132), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
-| Z3-15 | Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361), Ch. 8 §8.1 Sudoku (p. 205) | Nested arrays 2D, carré magique |
-| Z3-16 | Ch. 14 §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405), Ch. 22 §22.8 Job Shop Scheduling/Problem (p. 633) | Optimize, plan hebdomadaire — **voisine de thème**, pas une section portée : le carnet ne met en œuvre **aucune** des trois sections citées (§14.5 et §14.8 sont portées par `Z3-06`, §22.8 par `Z3-08`) ; le rattachement est la même famille de problèmes d'allocation et d'ordonnancement |
+| Z3-13b, Z3-13bᶜˢ | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
+| Z3-14, Z3-14ᶜˢ | §5.1 Integer overflow (p. 132), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
+| Z3-15, Z3-15ᶜˢ | Ch. 12 Latin squares (p. 346) + §12.4 Magic/Latin square of Knut Vik design (p. 361), Ch. 8 §8.1 Sudoku (p. 205) | Nested arrays 2D, carré magique |
+| Z3-16, Z3-16ᶜˢ | Ch. 14 §14.5 Assignment problem (p. 397) + §14.8 Packing students into a dorm (p. 405), Ch. 22 §22.8 Job Shop Scheduling/Problem (p. 633) | Optimize, plan hebdomadaire — **voisine de thème**, pas une section portée : le carnet ne met en œuvre **aucune** des trois sections citées (§14.5 et §14.8 sont portées par `Z3-06`, §22.8 par `Z3-08`) ; le rattachement est la même famille de problèmes d'allocation et d'ordonnancement |
 | Z3-17 | §3.13 Recalculating micro-spreadsheet (p. 88), Ch. 3 | Array theory général, `Select`/`Store` |
 | Z3-18 | §8.1 Sudoku (p. 205), Ch. 8 | Sudoku modes `Array` vs `Constants` |
 
