@@ -1,145 +1,97 @@
-# AI-Engine (WordPress) — extension GenAI côté contenu
+# AI Engine (WordPress) — la couche conversationnelle dans un site de contenu
 
-[← Documentation GenAI](../../README.md) | [↑ Plateformes conversationnelles](../README.md) | [Open-WebUI](../Open-WebUI/README.md) | [Tour OWUI](../Open-WebUI/00-Tour-Plateforme/README.md) | [QA Playwright-OWUI](../Open-WebUI/Playwright-OWUI/README.md)
+[← Plateformes conversationnelles](../README.md) | [↑ Documentation GenAI](../../README.md) | [Open WebUI →](../Open-WebUI/README.md)
 
-> **Parcours découverte.** Ce dossier présente **AI-Engine**, l'extension
-> WordPress de Jordy Meow, comme **presqu'équivalent d'Open WebUI** côté
-> *site de contenu*. La question n'est pas « quel produit choisir en
-> absolu » — les deux ciblent des usages différents — mais « quand l'un
-> est plus adapté que l'autre » pour un projet donné. Cible : qui a déjà
-> un WordPress, qui évalue Open WebUI, qui veut voir MCP intégré à un CMS.
+Beaucoup de sites de contenu — blogs, boutiques, sites éditoriaux — tournent déjà sous WordPress. Plutôt que de poser une plateforme de chat à côté du site, on peut ajouter la couche conversationnelle dans le site lui-même, par l'extension AI Engine. Cette série enseigne ce que cela donne : à quoi ressemble le plugin, comment il est découpé, ce que son API répond réellement, ce qu'un navigateur constate et que l'API ne voit pas, et ce qu'une installation en service en fait. Elle garde [Open WebUI](../Open-WebUI/README.md) comme point de comparaison : la question n'est pas de classer les deux produits, mais de savoir quand l'un convient mieux que l'autre.
 
----
+Elle s'adresse à qui administre ou intègre un site WordPress, à qui évalue une plateforme conversationnelle pour un projet, et à qui veut voir le protocole MCP intégré à un système de gestion de contenu. Le tour de l'interface et la carte du plugin se lisent sans prérequis ; les carnets demandent de savoir lire du JSON et envoyer une requête HTTP en Python.
 
-## Pourquoi une plateforme voisine d'Open WebUI ?
+## Comment lire ce README
 
-La série voisine **[Open-WebUI](../Open-WebUI/README.md)** documente la plateforme éponyme :
-auto-hébergée, multi-tenant, centrée *chat LLM*. Mais ce n'est pas la
-seule interface GenAI réaliste : beaucoup de sites de contenu (blogs,
-forums, boutiques WooCommerce, sites éditoriaux) ont déjà un WordPress
-installé. Plutôt que de poser Open WebUI *à côté* de WordPress, on peut
-**ajouter la couche GenAI directement dans WordPress** via l'extension
-**AI-Engine**. C'est ce que ce parcours explore — en gardant Open WebUI
-comme point de comparaison pour les fonctionnalités communes (chat,
-RAG, outils MCP, personas).
+Les séries du dépôt se lisent à plusieurs vitesses, selon le principe décrit dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
 
-Le projet **livresagités** — une installation WordPress de maison
-d'édition, avec workflow de manuscrits, comité de lecture et catalogue
-WooCommerce — sert de **terrain d'observation** concret. Aucune donnée
-de ce site n'est reproduite ici : ce dossier ne transmet que des
-structures et des comptages, sans contenu, sans nom, et sans capture
-d'écran (voir la note de méthode du
-[parcours détaillé](04-Cas-Usage-livresagites/livresagites-parcours.md#note-de-méthode--pourquoi-il-ny-a-aucune-capture)).
+- Vous **découvrez** : suivez le parcours principal dans l'ordre ; ses deux premières étapes se lisent sans rien installer.
+- Vous **creusez un palier** : la section « Approfondissements » ajoute le comparatif avec Open WebUI et l'étude d'une installation en service.
+- Vous cherchez **ce qui reste ouvert** : « Pour aller plus loin » rassemble les frontières que la série mesure sans les franchir.
 
----
+## Parcours principal
 
-## Vue d'ensemble (5 min)
+*Niveau Découverte pour les étapes 1 et 2, Approfondissement ensuite.* Chaque étape est un dossier, avec son propre README.
 
-| Parcours | Format | Où |
-|---|---|---|
-| 1. Tour de l'UI (admin + front) | markdown + captures instance jetable | [00-Tour-Plateforme/](00-Tour-Plateforme/README.md) |
-| 2. Architecture et surface fonctionnelle | markdown | [01-Architecture/](01-Architecture/README.md) |
-| 3. Comparatif OWUI vs AI-Engine | tableau structuré | [02-Comparatif/](02-Comparatif/comparatif-owui-vs-ai-engine.md) |
-| 4. Cas d'usage livresagités | markdown observé | [04-Cas-Usage-livresagites/](04-Cas-Usage-livresagites/livresagites-parcours.md) |
-| 5. Sécurité et méthode | markdown + notebook | [06-Securite-et-Methode/](06-Securite-et-Methode/README.md) |
-| 6. Récit de bout en bout, par l'API | notebooks exécutés | série « par son API » dans [03-Functional/](03-Functional/) |
+| # | Étape | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 1 | [Tour de la plateforme](00-Tour-Plateforme/README.md) | À quoi ressemble AI Engine et comment on s'en sert depuis son interface : tableau de bord, catalogue des modules, éditeur de chatbots, réglages des moteurs, bac à sable, générateurs, puis le site public et une conversation réelle. | Toute personne qui découvre le plugin | [Comparatif avec Open WebUI](02-Comparatif/comparatif-owui-vs-ai-engine.md) |
+| 2 | [Architecture et surface fonctionnelle](01-Architecture/README.md) | Le plugin n'est pas un bloc : des familles de modules activables séparément, et un protocole MCP qui se configure dans les deux sens à deux endroits distincts. | Qui doit décider quoi activer sur un site | [L'architecture en modules](01-Architecture/architecture-en-modules.md) |
+| 3 | [Les fonctionnalités par l'API](03-Functional/README.md) | Piloter le plugin par requêtes, sur une instance jetable : une chaîne de carnets qui parcourt ses faces — administrateur, agent, visiteur, éditeur — et des carnets autonomes qui prolongent chaque palier. | Administrateur, intégrateur, développeur d'agents | [Cas d'usage éditorial](04-Cas-Usage-livresagites/livresagites-parcours.md) |
+| 4 | [Parcours QA — ce que l'API ne voit pas](05-Playwright-AI-Engine/README.md) | L'application d'administration écrit : une valeur posée par l'API peut être défaite par la seule ouverture d'une page de réglages. Ce qu'un vrai navigateur constate, et pourquoi il faut publier un taux plutôt qu'un verdict. | Testeur, intégrateur | [Sécurité et méthode](06-Securite-et-Methode/README.md) |
+| 5 | [Sécurité et méthode](06-Securite-et-Methode/README.md) | La règle de publication des supports, et un carnet qui mesure ce qu'un test de structure ne voit pas quand un assistant a modifié le rendu d'une page. | Relecteur de pages générées, contributeur | [Quand la vérification est verte et le système est cassé](../../../../docs/reference/verification-verte-systeme-casse.md) |
 
-## Comment lire — 3 portes d'entrée
+Les étapes 3 à 5 partagent un même terrain : l'[instance jetable « Maison Valmont »](instance-jetable/README.md), un WordPress local au contenu entièrement synthétique. Aucun carnet ne s'adresse à un site en service.
 
-- **Vous découvrez AI-Engine** → [00-Tour-Plateforme/](00-Tour-Plateforme/README.md)
-  (l'interface en écrans commentés) puis [01-Architecture/](01-Architecture/README.md).
-- **Vous voulez comparer à Open WebUI** → [02-Comparatif/](02-Comparatif/comparatif-owui-vs-ai-engine.md).
-- **Vous allez l'installer sur un WordPress** → [03-Functional/](03-Functional/)
-  (fonctionnalités par thème), [04-Cas-Usage-livresagites/](04-Cas-Usage-livresagites/livresagites-parcours.md)
-  (le terrain réel) et [06-Securite-et-Methode/](06-Securite-et-Methode/README.md)
-  (la méthode sans-fuite).
+## Approfondissements
 
-Les sections du parcours suivent le même rythme : **ce que c'est**
-(la fonctionnalité en deux phrases), **comment ça marche** (architecture
-et séquence d'appels), **comparaison OWUI** (l'équivalent ou son
-absence), **référence livresagités** (un cas d'usage réel, sans PII).
+*Niveau Approfondissement.*
 
-Les notebooks de la série « par son API » appellent réellement l'API
-d'une instance jetable dédiée (montage en 5 étapes dans
-[`instance-jetable/`](instance-jetable/), corpus synthétique 100 %
-« Maison Valmont ») ; configuration par copie de
-[`.env.example`](.env.example) vers `.env` — jamais commité.
+### Autour de 1 — comparer avec une plateforme autonome
 
----
+Le [comparatif avec Open WebUI](02-Comparatif/comparatif-owui-vs-ai-engine.md) aligne les deux produits critère par critère : positionnement, fonctionnalités, RAG, MCP, extensibilité, sécurité, coût. Il se termine par trois cas — choisir l'un, choisir l'autre, les faire cohabiter — et par ses limites connues. Il se lit sans rien installer.
 
-## Index par thème
+### Autour de 3 — ce qu'une installation en service en fait
 
-### Tour et QA
+Le [cas d'usage éditorial](04-Cas-Usage-livresagites/livresagites-parcours.md) observe le plugin sur le site d'une maison d'édition, où il outille une chaîne de production plutôt qu'un auteur isolé. Il suit l'assistant de l'éditeur, le RAG sur corpus et le piège des environnements multiples, le site comme serveur MCP exposant des verbes du métier, et le formulaire comme machine à états. L'installation est décrite à un niveau architectural, sans contenu, sans nom et sans capture ; chacun de ses parcours a un carnet compagnon dans la série par l'API, qui rejoue la question sur l'instance jetable ou sur des données synthétiques.
 
-- [Tour de la plateforme](00-Tour-Plateforme/README.md) — l'interface d'AI-Engine en douze écrans commentés, captures sur instance jetable
-- [QA Playwright-AI-Engine](05-Playwright-AI-Engine/README.md) — ce que l'API ne voit pas : l'interface d'administration défait des écritures REST, et pas toujours
+Prérequis en plus : aucun pour ces deux lectures.
 
-### Architecture et comparatif
+## Sous-séries
 
-- [Vue d'ensemble, fonctionnalités cœur, multi-provider](01-Architecture/README.md) — regroupé depuis la racine
-- [Architecture en modules](01-Architecture/architecture-en-modules.md) — le découpage en modules du plugin
-- [Comparatif OWUI vs AI-Engine](02-Comparatif/comparatif-owui-vs-ai-engine.md) — tableau structuré des fonctionnalités
+*Chaque dossier porte son propre niveau, rappelé dans son README.*
 
-### Cas d'usage
+**[Tour de la plateforme](00-Tour-Plateforme/README.md).** Le pendant « interface » de la série par l'API : on y apprend à se servir de l'outil à la souris, là où les carnets apprennent à l'automatiser. Chaque section dit ce qu'est la fonctionnalité, ce que montre la capture, puis donne la capture. Les images sont produites par un script rejouable contre l'instance jetable : elles suivent l'interface, pas l'inverse, et ne montrent ni clé ni donnée réelle.
 
-- [Parcours livresagités](04-Cas-Usage-livresagites/livresagites-parcours.md) — 88 outils MCP dont 24 métier, six environnements d'embeddings, le terrain d'observation réel
+**[Architecture et surface fonctionnelle](01-Architecture/README.md).** La carte du plugin : ce qu'il apporte à un site, comment le moteur se choisit, et les familles de modules de son tableau de bord. Le dossier ne contient pas de carnet ; il relie chaque partie de la carte au dossier qui la rend exécutable.
 
-### Fonctionnel — chatbots et assistants
+**[Comparatif](02-Comparatif/comparatif-owui-vs-ai-engine.md).** Un tableau structuré des deux plateformes de la famille, construit pour répondre à « quand l'une plutôt que l'autre », pas pour désigner un vainqueur.
 
-- [configurer-chatbots-par-l-api](03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) — les chatbots sont des documents JSON : lire, dupliquer, écrire (read-modify-write) — et mesurer ce que les instructions d'un persona changent réellement
-- [parler-au-chatbot-en-visiteur](03-Functional/03-1-Chatbots/parler-au-chatbot-en-visiteur-par-l-api.ipynb) — la face navigateur : page sans jeton, `start_session` seul endpoint public, et nonce = anti-CSRF, pas authentification
-- [interroger-lassistant-de-lediteur](03-Functional/03-1-Chatbots/interroger-lassistant-de-lediteur-par-l-api.ipynb) — la face éditeur : nonce `wp_rest`, contrat découvert par les refus, frontière gratuite/Pro inscrite dans la réponse
-- [donner-une-memoire-ephemere](03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb) — la famille `files/*` : upload par refus, TTL d'une heure prouvé par soustraction, partition par utilisateur
-- [joindre-un-fichier-au-chatbot](03-Functional/03-1-Chatbots/joindre-un-fichier-au-chatbot-par-l-api.ipynb) — un fichier joint a trois destins : ignoré (200 silencieux), annoté-puis-jeté (tokens à l'appui), réellement vu (l'image bicolore)
-- [mesurer-la-derive-dun-copilot](03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.ipynb) — le gate humain à chaque étape ne protège pas la chaîne : des destructrices complémentaires perdent la moitié du document
-- [obtenir-des-donnees-structurees](03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.ipynb) — la route `/ai/json` : la case json de la matrice d'usages, son remplissage, le null silencieux du parser
+**[Les fonctionnalités par l'API](03-Functional/README.md).** Le cœur exécutable de la série. Une chaîne numérotée de carnets fait le tour du plugin par ses routes et ses quatre faces — administrateur, agent, visiteur, rédacteur ; des carnets autonomes approfondissent l'audit d'un formulaire, d'un catalogue d'outils, d'un modèle, d'une chaîne de transformations ou d'un corpus. Le dossier se divise en sous-séries par thème : chatbots, formulaires, RAG et embeddings, serveur MCP, multi-provider.
 
-### Fonctionnel — formulaires
+**[Cas d'usage éditorial](04-Cas-Usage-livresagites/livresagites-parcours.md).** L'observation d'une installation réelle, restituée par ses structures et ses comptages. C'est lui qui fournit aux carnets autonomes leurs questions : la dérive d'un assistant d'édition, la fuite entre environnements de vecteurs, le catalogue d'outils générique, le coût caché d'un formulaire conditionnel.
 
-- [administrer-les-formulaires-par-l-api](03-Functional/03-2-Forms/administrer-les-formulaires-par-l-api.ipynb) — le formulaire est un contenu WordPress (CPT `mwai_form`) : CRUD unitaire, rendu par shortcode, frontière gratuite/Pro mesurée
-- [auditer-un-formulaire-conditionnel](03-Functional/03-2-Forms/auditer-un-formulaire-conditionnel.ipynb) — un formulaire à branchement est une machine à états implicite : sept champs engendrent treize états, coût LLM et champs morts émergents
+**[Parcours QA](05-Playwright-AI-Engine/README.md).** Un carnet qui pilote un vrai navigateur sur l'instance jetable et montre l'angle mort commun à toutes les sondes d'API : l'application d'administration réécrit des réglages à l'ouverture d'une page. La leçon de méthode est de répéter, compter et publier une proportion.
 
-### Fonctionnel — RAG et embeddings
+**[Sécurité et méthode](06-Securite-et-Methode/README.md).** La règle « pas de secret dans les supports », qui vaut pour toute la série, et un carnet d'audit visuel : un test de structure reste vert sur des pages au rendu cassé, et il faut un détecteur par classe de défaut, mesuré sur le style que le navigateur calcule.
 
-- [ingestion-corpus-long-rag](03-Functional/03-3-RAG-et-Embeddings/ingestion-corpus-long-rag.ipynb) — découper un catalogue avant de l'indexer : la dégradation du retrieval vient du chunking, pas de l'embedder
-- [separer-les-environnements-de-vecteurs](03-Functional/03-3-RAG-et-Embeddings/separer-les-environnements-de-vecteurs.ipynb) — fuite cross-environnement et accident de réindexation, mesurés sur un vector store partitionné
+**[Instance jetable](instance-jetable/README.md).** Le terrain commun des carnets : une pile Docker qui installe WordPress, la version gratuite du plugin et un contenu synthétique, branchée sur un moteur de langage local. Son README donne le montage pas à pas, la vérification rapide, une note de maintenance et le nettoyage.
 
-### Fonctionnel — serveur MCP
+## Installation et prérequis
 
-- [piloter-wordpress-par-mcp](03-Functional/03-4-MCP-Server/piloter-wordpress-par-mcp.ipynb) — WordPress serveur MCP : handshake JSON-RPC, catalogue à JSON Schema, vrais `tools/call` en écriture
-- [consommer-vs-exposer-le-mcp](03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb) — les deux sens du fil : chevauchement cross-catalogue (Jaccard sur verbe, cible), la redondance d'écriture est dangereuse
-- [auditer-un-serveur-mcp](03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.ipynb) — un serveur MCP utile expose les verbes du métier, pas les tables : classification CRUD/métier + distance au schéma
-- [autour-du-consent-oauth](03-Functional/03-4-MCP-Server/autour-du-consent-oauth-du-serveur-mcp.ipynb) — l'escalier des refus de l'OAuth embarqué : PKCE, consent admin mécanisé, token délégué — puis révocation mesurée
+*Niveau Découverte.*
 
-### Fonctionnel — multi-provider
+Le tour, la carte du plugin, le comparatif et le cas d'usage se lisent sans rien installer. Les carnets demandent :
 
-- [presenter-ai-engine-par-son-api](03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb) — le socle de la série : instance jetable, catalogue des routes `mwai/v1`, première completion réelle
-- [brancher-plusieurs-providers](03-Functional/03-5-Multi-Provider/brancher-plusieurs-providers-par-l-api.ipynb) — la matrice `ai_<usage>_default_env` lue et écrite — et le piège : `settings/update` ne met pas à jour, il remplace
-- [eval-choisir-son-modele](03-Functional/03-5-Multi-Provider/eval-choisir-son-modele.ipynb) — cinq propriétés discriminantes contre n'importe quel endpoint : « je l'ai essayé, il répond bien » devient un tableau reproductible
+| Ce qu'il faut | Pour quoi |
+|---|---|
+| Docker, et l'[instance jetable](instance-jetable/README.md) démarrée, servie par défaut sur le port local 8093 | Tous les carnets qui interrogent le plugin |
+| Le fichier `instance-jetable/.env`, copié de son gabarit et complété du mot de passe d'application créé au montage | Tous les carnets qui interrogent le plugin |
+| Un moteur de langage local compatible OpenAI, déclaré dans ce même fichier | Les carnets qui obtiennent une réponse générée |
+| Un modèle d'embeddings servi par ce moteur | La mesure de dérive d'un assistant et la comparaison des découpages sur vecteurs réels |
+| Python 3.10 ou plus récent, avec `requests` et `python-dotenv` | Tous les carnets ; chaque sous-série précise ses paquets en plus |
+| `playwright` et son navigateur Chromium | Le parcours QA, l'audit visuel, et la régénération des captures du tour |
+| Le fichier [`.env.example`](.env.example) de ce dossier, copié en `.env` | Diriger le banc d'évaluation de modèle vers un autre moteur, ou l'audit de catalogue vers un autre serveur MCP |
 
-### Sécurité et méthode
+Aucune adresse ni clé n'est écrite dans un carnet, et aucun fichier `.env` n'est versionné. Aucun GPU n'est requis par les carnets eux-mêmes : le besoin en calcul est celui du moteur que vous servez. Plusieurs carnets écrivent sur l'instance et rétablissent son état en fin d'exécution : exécutez-les sur l'instance jetable, jamais sur un site en service.
 
-- [Sécurité et méthode](06-Securite-et-Methode/README.md) — pas de secret dans les supports, posture PII, et le notebook qui mesure ce que le smoke test ne voit pas
+## Pour aller plus loin
 
----
+*Niveau Recherche.*
 
-## Sécurité — pas de secret dans les supports
+- **La frontière de la version gratuite.** La série travaille sur la version gratuite du plugin et mesure ce qu'elle n'ouvre pas — indexation et recherche par embeddings, champs de formulaire dynamiques, actions de l'assistant d'édition — sans décrire ce qu'elle n'a pas pu observer. Rejouer ces mesures sur une installation qui dispose de l'offre payante reste à faire.
+- **Un persona n'est pas une frontière de sécurité.** La note [Cadrer ce qu'un agent a le droit de faire](../cadrer-les-agents.md) sépare l'intention, la portée et l'autorité d'un assistant, et le carnet [Différencier plusieurs assistants](../differencier-les-assistants.ipynb) mesure ce qu'un prompt promet réellement.
+- **Un catalogue d'outils générique** donne à un agent beaucoup de pouvoir et peu de compréhension : concevoir les verbes métier qui manquent est un exercice ouvert de la sous-série [Serveur MCP](03-Functional/03-4-MCP-Server/README.md).
+- **Les vérifications vertes qui ne prouvent rien** forment le fil commun du parcours QA et de l'audit visuel ; l'[étude de cas](../../../../docs/reference/verification-verte-systeme-casse.md) du dépôt en catalogue les classes.
 
-La politique complète — aucun secret exposé, aucune capture d'écran,
-aucun contenu privé livresagités, constantes de substitution dans les
-exemples, `.env` jamais commités — vit dans
-[06-Securite-et-Methode/](06-Securite-et-Methode/README.md).
+## Ressources
 
----
-
-## Voir aussi
-
-- [Plateformes conversationnelles](../README.md) — point d'entrée de la catégorie
-- [README d'Open-WebUI](../Open-WebUI/README.md) — dossier voisin
-- [Tour OWUI](../Open-WebUI/00-Tour-Plateforme/README.md) — pendant « chat LLM » centré
-- [QA Playwright-OWUI](../Open-WebUI/Playwright-OWUI/README.md) — pendant « assurance qualité » de bout en bout
-- [`instance-jetable/`](instance-jetable/) — montage en 5 étapes de l'instance de démo, corpus 100 % synthétique
-- Epic [#4433](https://github.com/jsboige/CoursIA/issues/4433) —
-  refonte pédagogique GenAI (ce parcours en est une extension)
-- Issue [#9734](https://github.com/jsboige/CoursIA/issues/9734) —
-  mandat user à l'origine de ce dossier
+- [Plateformes conversationnelles](../README.md) — la famille, et la plateforme voisine.
+- [Tests de bout en bout pour Open WebUI](../Open-WebUI/Playwright-OWUI/README.md) — le pendant du parcours QA sur l'autre plateforme.
+- [Fiche du plugin sur wordpress.org](https://wordpress.org/plugins/ai-engine/) — versions, licence et documentation publique.
+- [Spécification du protocole MCP](https://modelcontextprotocol.io) — la référence du protocole.

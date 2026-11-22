@@ -1,6 +1,6 @@
 # Kernels & Runtime — Cluster CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-17
+> REFERENCE — vivante — dernière révision 2026-11-21
 
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
@@ -9,6 +9,27 @@ Document de référence détaillant l'inventaire kernels obligatoire sur toute m
 ## Setup macOS / Linux (poste contributeur)
 
 Ce document est centré cluster Windows. Pour le setup d'un poste contributeur **macOS / Linux** (équivalents `brew`/`apt` des commandes `winget`/`choco`, `elan` Lean sans WSL, backend MPS sur Apple Silicon), cf [setup-linux-macos.md](setup-linux-macos.md). Les kernels .NET Interactive, Python et Lean 4 sont cross-OS ; les notebooks s'exécutent à l'identique modulo le backend GPU.
+
+## Pins d'acquisition des toolchains (plis 1.1 et 1.2 de #27543)
+
+Les quatre familles de noyaux du dépôt s'acquièrent par **trois points de
+download**, épinglés ici une fois pour toutes : le manifeste du pli 1.1
+([#27544](https://github.com/jsboige/CoursIA/issues/27544)) et l'image
+d'apprentissage du pli 1.2 ([#27545](https://github.com/jsboige/CoursIA/issues/27545))
+lisent cette table, au lieu d'y recopier des versions qui divergent. La
+quatrième famille, .NET Interactive, a déjà son canon propre (1.0.712001,
+décision #18766) dans la section suivante.
+
+| Famille | Pin d'acquisition | Verification |
+|---------|--------------------|--------------|
+| Python 3.13 (`global-3.13`) | **Miniforge — dernière release** (`conda-forge/miniforge`, `releases/latest/download/Miniforge3-Linux-x86_64.sh`, canal conda-forge) | `conda create -n global-3.13 python=3.13 ipykernel` puis `python -m ipykernel install --name global-3.13` |
+| Lean 4 | **elan-init — branche `master`** (`leanprover/elan`, `elan/master/elan-init.sh`), toolchain `stable` | `elan --version`, `elan toolchain list` |
+| Rust (evcxr) | **toolchain rustup `stable` = rustc 1.100.0** (mesuré sur le poste) | `rustc --version` — détail et pièges dans la section Rust plus bas |
+
+Les trois pins correspondent à ce que l'image `docker-configurations/notebook-runner`
+fait déjà (`releases/latest/...` pour Miniforge, `elan/master/elan-init.sh` pour
+elan) ; Rust n'y est pas encore installé — c'est le manque que le pli 1.2 doit
+couvrir, et son pin est donc fixé ici avant que l'image ne le consomme.
 
 ## .NET Interactive (C# notebooks)
 
@@ -291,23 +312,23 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 | Kernelspec | Python | numpy | Executable |
 |---|---|---|---|
 | `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet) | - | `dotnet` |
-| `acestep` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\acestep\python.exe` |
+| `acestep` | 3.10.20 | 2.2.6 | `%USERPROFILE%\.conda\envs\acestep\python.exe` |
 | `acestep-venv` | 3.11.15 | 2.4.4 | `D:\envs\acestep-venv\Scripts\python.exe` |
-| `argu-reexec-310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `argu-reexec-310` | 3.10.18 | 1.26.0 | `%USERPROFILE%\.conda\envs\mcp-jupyter-py310\python.exe` |
 | `arviz11-py312` | 3.12.10 | 2.5.3 | `D:\Dev\venvs\arviz11-py312\Scripts\python.exe` |
-| `bonsai-gpu` | 3.11.15 | 2.4.4 | `C:\Users\jsboi\.conda\envs\bonsai\python.exe` |
-| `chc-py312` | 3.12.10 | 2.5.3 | `C:\Users\jsboi\.venvs\chc-py312\Scripts\python.exe` |
+| `bonsai-gpu` | 3.11.15 | 2.4.4 | `%USERPROFILE%\.conda\envs\bonsai\python.exe` |
+| `chc-py312` | 3.12.10 | 2.5.3 | `%USERPROFILE%\.venvs\chc-py312\Scripts\python.exe` |
 | `cogvideox` | 3.13.3 | 2.4.4 | `C:\Tools\venv-cogvideox\Scripts\python.exe` |
-| `coursia-gpu-tests` | 3.11.15 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-gpu-tests\python.exe` |
-| `coursia-ml-training` | 3.11.16 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-ml-training\python.exe` |
-| `coursia-py313-argu` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
-| `dia-tts` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\dia-tts\python.exe` |
+| `coursia-gpu-tests` | 3.11.15 | 2.4.6 | `%USERPROFILE%\.conda\envs\coursia-gpu-tests\python.exe` |
+| `coursia-ml-training` | 3.11.16 | 2.4.6 | `%USERPROFILE%\.conda\envs\coursia-ml-training\python.exe` |
+| `coursia-py313-argu` | 3.13.16 | 2.5.2 | `%USERPROFILE%\.conda\envs\coursia-canonical\python.exe` |
+| `dia-tts` | 3.10.20 | 2.2.6 | `%USERPROFILE%\.conda\envs\dia-tts\python.exe` |
 | `gametheory-wsl` / `python3-wsl` / `lean4-wsl` | non-Python (wsl) | - | `wsl` |
-| `gsplat310` | 3.10.22 | 2.2.6 | `C:\Users\jsboi\.conda\envs\gsplat310\python.exe` |
-| `mcp-jupyter-py310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `gsplat310` | 3.10.22 | 2.2.6 | `%USERPROFILE%\.conda\envs\gsplat310\python.exe` |
+| `mcp-jupyter-py310` | 3.10.18 | 1.26.0 | `%USERPROFILE%\.conda\envs\mcp-jupyter-py310\python.exe` |
 | `py313-clean` | 3.13.3 | 2.3.5 | `D:\Dev\venvs\py313-clean\Scripts\python.exe` |
-| `pyphi` | 3.9.25 | 1.26.4 | `C:\Users\jsboi\.conda\envs\pyphi\python.exe` |
-| `python3` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
+| `pyphi` | 3.9.25 | 1.26.4 | `%USERPROFILE%\.conda\envs\pyphi\python.exe` |
+| `python3` | 3.13.16 | 2.5.2 | `%USERPROFILE%\.conda\envs\coursia-canonical\python.exe` |
 | `python3-lean` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
 | `sheetsage2-gpu` | 3.13.3 | 2.5.3 | `D:\Dev\venvs\sheetsage2\Scripts\python.exe` |
 | `smartcontracts` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
@@ -320,16 +341,16 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 | Kernelspec | Python | numpy | Executable |
 |---|---|---|---|
 | `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
-| `coursia-canonical` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
-| `coursia-ml-training` | 3.12.15 | 2.5.4 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training/python.exe` |
-| `coursia-ml-training-py310` | 3.10.22 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training-py310/python.exe` |
-| `coursia-pymc` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `coursia-canonical` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter/python.exe` |
+| `coursia-ml-training` | 3.12.15 | 2.5.4 | `%USERPROFILE%/miniconda3/envs/coursia-ml-training/python.exe` |
+| `coursia-ml-training-py310` | 3.10.22 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/coursia-ml-training-py310/python.exe` |
+| `coursia-pymc` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter/python.exe` |
 | `lean4-wsl` / `lean4-wsl-perc` / `python3-wsl` | non-Python (wsl) | - | wsl |
-| `py311-po2028` | 3.11.17 | 2.4.6 | `C:\Users\jsboi\.venvs\py311-po2028\Scripts\python.exe` — **réparé le 05/11** (venv reconstruit hors `%TEMP%`, règle F ; tuple d'origine : venv cassé sous `%TEMP%`, numpy AttributeError) |
-| `pymc-528` | 3.12.16 | 2.4.6 | `C:/Users/jsboi/miniconda3/envs/pymc528/python.exe` |
-| `pyphi` / `pyphi-iit` | 3.9.23 | 1.23.5 | `C:/Users/jsboi/miniconda3/envs/pyphi/python.exe` |
-| `python3` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
-| `python3-lean` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter-py313/python.exe` |
+| `py311-po2028` | 3.11.17 | 2.4.6 | `%USERPROFILE%\.venvs\py311-po2028\Scripts\python.exe` — **réparé le 05/11** (venv reconstruit hors `%TEMP%`, règle F ; tuple d'origine : venv cassé sous `%TEMP%`, numpy AttributeError) |
+| `pymc-528` | 3.12.16 | 2.4.6 | `%USERPROFILE%/miniconda3/envs/pymc528/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.23.5 | `%USERPROFILE%/miniconda3/envs/pyphi/python.exe` |
+| `python3` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter/python.exe` |
+| `python3-lean` | 3.13.16 | 2.2.6 | `%USERPROFILE%/miniconda3/envs/mcp-jupyter-py313/python.exe` |
 
 **Canon de re-exécution po-2028** : `python3` → **(3.13.16, numpy 2.2.6)**, env `mcp-jupyter`.
 
@@ -338,22 +359,22 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 | Kernelspec | Python | numpy | Executable |
 |---|---|---|---|
 | `.net-csharp{,-r9,-r10,-r10-canon,-r11,-stdio}` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
-| `python3` / `python3-lean` / `mcp-jupyter` / `global-3.13` / `coursia-py313-argu` | 3.13.16 | 2.4.2 | `C:/Users/jsboi/AppData/Local/Programs/Python/Python313/python.exe` |
-| `py31315` | 3.13.16 | 2.5.4 | `C:/Users/jsboi/.venvs/py31315/Scripts/python.exe` |
+| `python3` / `python3-lean` / `mcp-jupyter` / `global-3.13` / `coursia-py313-argu` | 3.13.16 | 2.4.2 | `%USERPROFILE%/AppData/Local/Programs/Python/Python313/python.exe` |
+| `py31315` | 3.13.16 | 2.5.4 | `%USERPROFILE%/.venvs/py31315/Scripts/python.exe` |
 | `sheetsage2-gpu` | 3.13.16 | 2.5.3 | `D:/Dev/venvs/sheetsage2-gpu/Scripts/python.exe` |
 | `ict-py313` | 3.13.7 | 2.5.4 | `D:/Dev/venvs/ict-py3137/Scripts/python.exe` |
-| `coursia-ml-training` | 3.11.15 | 2.4.6 | `C:/Users/jsboi/.conda/envs/coursia-ml-training/python.exe` |
-| `coursia-drift` | 3.11.16 | 1.26.4 | `C:/Users/jsboi/.conda/envs/coursia-drift/python.exe` |
-| `python3119` | 3.11.9 | 2.4.6 | `C:/Users/jsboi/AppData/Local/CoursIA/venvs/py3119/Scripts/python.exe` |
-| `pyphi` / `pyphi-iit` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/pyphi/python.exe` |
-| `ict-py39` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** : `pip install numpy==1.26.4` (restaure le pin déclaré, tuple d'origine 1.26.4 mesuré le 08/11) puis `pip install "antropy<0.2" "cryptography>=3.4,<44"` (les deux deps déclarées de `ict-series` qui manquaient) ; après réparation `numpy 1.26.4`, `import pyemd` OK, `import ict` OK, `pip check` → « No broken requirements found » — étapes et mesures d'origine : commentaire `6870260888` de #24883 |
+| `coursia-ml-training` | 3.11.15 | 2.4.6 | `%USERPROFILE%/.conda/envs/coursia-ml-training/python.exe` |
+| `coursia-drift` | 3.11.16 | 1.26.4 | `%USERPROFILE%/.conda/envs/coursia-drift/python.exe` |
+| `python3119` | 3.11.9 | 2.4.6 | `%USERPROFILE%/AppData/Local/CoursIA/venvs/py3119/Scripts/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.26.4 | `%USERPROFILE%/.conda/envs/pyphi/python.exe` |
+| `ict-py39` | 3.9.23 | 1.26.4 | `%USERPROFILE%/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** : `pip install numpy==1.26.4` (restaure le pin déclaré, tuple d'origine 1.26.4 mesuré le 08/11) puis `pip install "antropy<0.2" "cryptography>=3.4,<44"` (les deux deps déclarées de `ict-series` qui manquaient) ; après réparation `numpy 1.26.4`, `import pyemd` OK, `import ict` OK, `pip check` → « No broken requirements found » — étapes et mesures d'origine : commentaire `6870260888` de #24883 |
 | `cb09-ass` / `pymc311` | **RETIRÉ le 14/11** | - | 0 consommateur sur `main` → enreg retiré, `kernel.json` sauvegardé (`%APPDATA%\jupyter\kernels\_bak-20261114-deadargv\`) |
 | `ft03-gpu` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/ft03-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.14.0+cu126 CUDA True, transformers 5.15.1, peft 0.20.0, datasets 5.0.1, pillow) ; **noyau lancé et dépendances importées** |
 | `mert2-gpu` | 3.13.16 | 2.5.4 | `D:/Dev/venvs/mert2-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.6.0+cu126, torchaudio 2.6.0+cu126, transformers 4.53.2, soundfile, scikit-learn, scipy) + `ipykernel` ; **noyau lancé et dépendances importées** |
 | `difflogic-sl12` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/difflogic-sl12/Scripts/python.exe` — **reconstruit le 14/11** ; **noyau lancé, `difflogic.LogicLayer` forward CUDA avec autograd vérifié** |
 | `lean4-wsl` / `python3-wsl` / `python3-wsl-swipl` / `python3-sc16-concrete-wsl` | non-Python (wsl) | - | `wsl.exe` |
 
-**Canon de re-exécution po-2024** : `python3` → **(3.13.16, numpy 2.4.2)**, `C:/Users/jsboi/AppData/Local/Programs/Python/Python313`.
+**Canon de re-exécution po-2024** : `python3` → **(3.13.16, numpy 2.4.2)**, `%USERPROFILE%/AppData/Local/Programs/Python/Python313`.
 
 **Preuve d'exécution, pas seulement de lancement** — les cellules **3** (résolution d'env), **5** (construction du modèle aux dimensions du carnet) et **6** (forward réel) de `SL-12-DifferentiableLogicGateNetworks` s'exécutent **sans erreur** dans l'enreg reconstruit : `difflogic : fork vendor chargé | Python 3.13.16 | PyTorch 2.14.0+cu126 | CUDA dispo : True | Execution : cpu (snapshot reproductible) | Graine : 42 | Algorithmes : deterministes`, puis `DEVICE : cpu | Implementation : python (pure PyTorch, reference CPU) | Modele difflogic : 96 000 parametres`, puis `Logits shape : (100, 10) (attendu : (100, 10)) | OK -- forward pass difflogic fonctionne`. C'est le **carnet lui-même** qui valide son env, pas une sonde exterior. (Cellules 8+ hors périmètre de cette preuve : téléchargement MNIST et campagne de 2 000 itérations.)
 
@@ -363,15 +384,41 @@ Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` s
 
 **`difflogic` n'est PAS « GPU-only » pour la copie du dépôt — le fork vendored l'est.** Le paquet PyPI `difflogic` 0.1.0 déclare `CUDAExtension` inconditionnellement et importe `difflogic_cuda` sans garde : son installation exige un **CUDA Toolkit assorti au torch** (13.3 installé ici, mais les wheels torch cp313 existent en cu126/cu128/cu130 — **pas de cu133**), et son import échoue sans l'extension. La copie **vendored** `SymbolicAI/SymbolicLearning/vendor/difflogic/` corrige cela : `setup.py` ne construit `CUDAExtension` que si le **major** de `nvcc` égale celui de `torch.version.cuda`, et `difflogic.py` garde l'import de `difflogic_cuda` sous `try/except ImportError`. Conséquence mesurée : avec torch cu126 (major 12) face à nvcc 13.3 (major 13), **l'extension est sautée et l'implémentation `python` (PyTorch pur) est la seule disponible** — ce qui est exactement le mode du snapshot commité de `SL-12` (`IMPL = "python"`). Le carnet n'exige donc **ni CUDA Toolkit-matching ni GPU** pour sa ré-exécution ; réinstaller le **fork vendored** (et non le paquet PyPI) suffit. Le mismatch de **major** est le seul bloquant de compilation (`torch/utils/cpp_extension.py` : major différent → `RuntimeError`, minor différent → simple avertissement).
 
-### Ce que les trois rangées mesurées établissent
+### MYIA-PO-2027 (mesuré 2026-11-17T10:45Z — rangée d'origine : #24883, commentaire `6945968196`)
 
-1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023), **2.2.6** (po-2028), **2.4.2** (po-2024). Le cas fondateur de #24883 en version mineure — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
-2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310`. Dans les deux sens, le nom ne dénote pas l'artefact.
-3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028, **(3.11.15, 2.4.6)** sur po-2024 — le nom le plus « canonique » du dépôt n'est pas plus dénotatif que les autres.
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | `dotnet` |
+| `python3` / `coursia-venv-cu126` | 3.13.16 | **2.5.4** | `D:/dev/CoursIA/venv/Scripts/python.exe` |
+| `py313` / `py313gpu` / `python3-lean` | 3.13.15 | 2.4.6 | `C:/Program Files/Python313/python.exe` |
+| `pipecat-kokoro` | 3.13.16 | 2.5.4 | `D:/dev/CoursIA/.venvs/pipecat/Scripts/python.exe` |
+| `coursia-ml-training` / `python3-coursia2` / `sw14-coursia16120` | 3.13.15 | 2.4.6 | `D:/dev/CoursIA-2/venv/Scripts/python.exe` |
+| `coursia-pymc05` | 3.13.15 | 2.4.4 | `D:/dev/.venv-pymc05/Scripts/python.exe` |
+| `coursia-pymc601` | 3.13.15 | 2.3.5 | `D:/dev/.venv-pymc601/Scripts/python.exe` |
+| `adkcheck` | 3.11.16 | 2.4.6 | `%USERPROFILE%/miniconda3/envs/adkcheck/python.exe` |
+| `pyphi-iit` | 3.9.25 | 1.26.4 | `%USERPROFILE%/miniconda3/envs/pyphi/python.exe` |
+| `gametheory-wsl` | 3.11.16 | 2.4.6 | `~/venv-coursia/bin/python3.11` (WSL) |
+| `python3-wsl` | 3.11.16 | 2.4.6 | `~/.lean4-venv/bin/python3.11` (WSL) |
+| `rvc-wsl` | 3.10.21 | **1.23.5** | `~/miniconda3/envs/rvc/bin/python3.10` (WSL — plus vieux numpy du siège) |
+| `lean4-wsl` / `lean4-wsl-conway` / `lean4-wsl-groth` / `lean4-wsl-groth16200` / `lean4-wsl-perc` / `lean4-wsl-torchlean` / `rust-wsl` | non-Python (wsl) | - | `wsl.exe` |
+| `lean4` | **timeout readiness** (60 s) | - | `D:/dev/CoursIA/venv/Scripts/python.exe` — enreg vivante (carnets Lean Python-wrapped), noyau lent à signaler prêt ; statut mesuré tel quel |
+| `rust` | **timeout readiness** (60 s) | - | `evcxr_jupyter.exe` — kernel Rust natif, compilation au démarrage ; statut mesuré tel quel |
+| `torch2121` | **RETIREE le 17/11** | - | pointait sous `D:/dev/CoursIA/.tmp/torch2121_venv/` (répertoire scratch purgé par les nettoyages de session — classe #23997), **0 consommateur sur `main`** ; `kernel.json` sauvegardée (`%APPDATA%\jupyter\kernels\_bak-20261117-tmp-pointers\`) avant retrait |
+
+**Canon de re-exécution po-2027** : `python3` → **(3.13.16, numpy 2.5.4)**, `D:/dev/CoursIA/venv` (venv du projet).
+
+Prédicat #23997 re-attesté après retrait : `check_kernelspec_temp_paths.py --check-exists` → `CLEAN : aucun interpreteur sous un chemin temporaire`.
+
+### Ce que les quatre rangées mesurées établissent
+
+1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023), **2.2.6** (po-2028), **2.4.2** (po-2024), **2.5.4** (po-2027). Le cas fondateur de #24883 en version mineure, désormais complet sur les quatre sièges mesurés — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
+2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310` ; po-2027 `python3` == `coursia-venv-cu126`, `coursia-ml-training` == `python3-coursia2` == `sw14-coursia16120` (venv du second checkout), `py313` == `py313gpu` == `python3-lean`. Dans les deux sens, le nom ne dénote pas l'artefact.
+3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028, (3.11.15, 2.4.6) sur po-2024, **(3.13.15, 2.4.6) sur po-2027** — quatre environnements pour le nom le plus « canonique » du dépôt ; sur po-2027 il pointe sur le venv de l'autre checkout (`CoursIA-2`), partagé avec deux autres enregs.
+4. **Les enregs WSL rendent du Python réel mesuré** (po-2027) : trois enregs `*-wsl` exécutent des interpréteurs Linux distincts (`venv-coursia`, `.lean4-venv`, conda `rvc` — numpy 1.23.5, la plus ancienne du siège) : le préfixe « wsl » ne dénote pas non plus un environnement unique.
 
 ### Sièges restants
 
-Non mesurés à la date de cette section : `ai-01`, `po-2025`, `po-2026`, `po-2027`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
+Non mesurés à la date de cette section : `ai-01`, `po-2025`, `po-2026`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
 
 ## Python 3.10+ (notebooks Python)
 
@@ -458,16 +505,16 @@ des sièges manquants et à la publication de leurs mesures réelles.
 
 | Env | Python | Path | Usage principal |
 |-----|--------|------|-----------------|
-| **coursia-ml-training** | 3.11.15 | `C:\Users\MYIA\miniconda3\envs\coursia-ml-training` | ML training (PyTorch CUDA 12.6 RTX 4090, sklearn, scipy, hmmlearn, pyarrow) |
-| **coursia-sae** | 3.12.13 | `C:\Users\MYIA\miniconda3\envs\coursia-sae` | Traces SAE / substrat LLM série ICT (ICT-21+, #5643) : torch 2.12 CUDA 12.6, transformers 5.x. Extraction GPU = `CUDA_VISIBLE_DEVICES=2` obligatoire (cf Quick Reference GPU) |
-| `mcp-jupyter` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\mcp-jupyter` | MCP Jupyter server (kernels Python du MCP) |
-| `epita_symbolic_ai` | 3.10+ | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai` | EPITA SymbolicAI : `rdflib`, `owlready2`, `reasonable`, `pyshacl` |
-| `epita_symbolic_ai_sherlock` | 3.10+ | `C:\Users\MYIA\.conda\envs\epita_symbolic_ai_sherlock` | Variante Sherlock |
-| `llmcompressor` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\llmcompressor` | LLM quantization tooling |
-| `e2e_test_env` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\e2e_test_env` | E2E tests |
-| **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`C:\Users\jsboi\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
+| **coursia-ml-training** | 3.11.15 | `%USERPROFILE%\miniconda3\envs\coursia-ml-training` | ML training (PyTorch CUDA 12.6 RTX 4090, sklearn, scipy, hmmlearn, pyarrow) |
+| **coursia-sae** | 3.12.13 | `%USERPROFILE%\miniconda3\envs\coursia-sae` | Traces SAE / substrat LLM série ICT (ICT-21+, #5643) : torch 2.12 CUDA 12.6, transformers 5.x. Extraction GPU = `CUDA_VISIBLE_DEVICES=2` obligatoire (cf Quick Reference GPU) |
+| `mcp-jupyter` | 3.10+ | `%USERPROFILE%\miniconda3\envs\mcp-jupyter` | MCP Jupyter server (kernels Python du MCP) |
+| `epita_symbolic_ai` | 3.10+ | `%USERPROFILE%\.conda\envs\epita_symbolic_ai` | EPITA SymbolicAI : `rdflib`, `owlready2`, `reasonable`, `pyshacl` |
+| `epita_symbolic_ai_sherlock` | 3.10+ | `%USERPROFILE%\.conda\envs\epita_symbolic_ai_sherlock` | Variante Sherlock |
+| `llmcompressor` | 3.10+ | `%USERPROFILE%\miniconda3\envs\llmcompressor` | LLM quantization tooling |
+| `e2e_test_env` | 3.10+ | `%USERPROFILE%\miniconda3\envs\e2e_test_env` | E2E tests |
+| **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`%USERPROFILE%\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
 | **ict-py39** | **3.9** | env **dédié** série IIT/ICT — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_ict_env.ps1` (ou `.sh`), cloné de `pyphi` | Unifie numpy<2 + torch CPU + package local `ict` : strates cœur Φ **et** LLM/SAE dans un seul env. Cf. § « Env dédié ICT » ci-dessous |
-| `base` | 3.10+ | `C:\Users\MYIA\miniconda3` | Conda base — NE PAS modifier |
+| `base` | 3.10+ | `%USERPROFILE%\miniconda3` | Conda base — NE PAS modifier |
 
 ### Série IIT/ICT — env canonique `pyphi` (PyPhi 1.2.0)
 
@@ -581,7 +628,7 @@ Le carnet `GenAI/Audio/02-Advanced/02-11-SVS-Singing-Voice-RVC.ipynb` (conversio
 **Direct execution** (recommande pour scripts long-running) :
 
 ```powershell
-& "C:\Users\MYIA\miniconda3\envs\coursia-ml-training\python.exe" train_moe.py --symbol SPY --regime-method hmm --n-folds 5 --seed 42
+& "$env:USERPROFILE\miniconda3\envs\coursia-ml-training\python.exe" train_moe.py --symbol SPY --regime-method hmm --n-folds 5 --seed 42
 ```
 
 **Activation interactive** :
@@ -594,7 +641,7 @@ python train_moe.py ...
 **Background avec log** :
 
 ```bash
-nohup "C:/Users/MYIA/miniconda3/envs/coursia-ml-training/python.exe" train_moe.py ... > run.log 2>&1 &
+nohup "$USERPROFILE/miniconda3/envs/coursia-ml-training/python.exe" train_moe.py ... > run.log 2>&1 &
 ```
 
 ### Pourquoi un env Conda dédié ?
@@ -611,21 +658,21 @@ Incident 2026-05-06 : training MoE tenté directement sur Python 3.14 système :
 
 #### Python PATH piège
 
-`python` sur PATH = MS Store Python 3.13 (`C:\Users\jsboi\AppData\Local\Microsoft\WindowsApps\...\python.exe`). Le kernel Jupyter `python3` = conda base (`C:\ProgramData\miniconda3\python.exe`). Pour papermill : utiliser **toujours** le chemin complet du binaire cible.
+`python` sur PATH = MS Store Python 3.13 (`%USERPROFILE%\AppData\Local\Microsoft\WindowsApps\...\python.exe`). Le kernel Jupyter `python3` = conda base (`C:\ProgramData\miniconda3\python.exe`). Pour papermill : utiliser **toujours** le chemin complet du binaire cible.
 
 #### Conda environments
 
 | Env | Python | Path | Usage |
 |-----|--------|------|-------|
 | base (ProgramData) | - | `C:\ProgramData\miniconda3` | Conda système |
-| base (user) | - | `C:\Users\jsboi\miniconda3` | Conda user |
-| coursia-ml-training | 3.12 | `C:\Users\jsboi\.conda\envs\...` | ML training (torch CPU-only) |
-| epita_symbolic_ai | 3.12 | `C:\Users\jsboi\.conda\envs\...` | SemanticWeb Python (rdflib, owlready2, pyshacl) |
-| mcp-jupyter | 3.10 | `C:\Users\jsboi\.conda\envs\...` | MCP Jupyter server |
-| mcp-jupyter-py310 | 3.10 | `C:\Users\jsboi\.conda\envs\...` | Papermill execution (Tweety, SW Python, Lean Python, GT) |
-| mcp-markitdown | - | `C:\Users\jsboi\.conda\envs\...` | Document conversion |
-| mcp-powerpoint | - | `C:\Users\jsboi\.conda\envs\...` | PPTX handling |
-| projet-is-roo-new | - | `C:\Users\jsboi\.conda\envs\...` | Roo dev |
+| base (user) | - | `%USERPROFILE%\miniconda3` | Conda user |
+| coursia-ml-training | 3.12 | `%USERPROFILE%\.conda\envs\...` | ML training (torch CPU-only) |
+| epita_symbolic_ai | 3.12 | `%USERPROFILE%\.conda\envs\...` | SemanticWeb Python (rdflib, owlready2, pyshacl) |
+| mcp-jupyter | 3.10 | `%USERPROFILE%\.conda\envs\...` | MCP Jupyter server |
+| mcp-jupyter-py310 | 3.10 | `%USERPROFILE%\.conda\envs\...` | Papermill execution (Tweety, SW Python, Lean Python, GT) |
+| mcp-markitdown | - | `%USERPROFILE%\.conda\envs\...` | Document conversion |
+| mcp-powerpoint | - | `%USERPROFILE%\.conda\envs\...` | PPTX handling |
+| projet-is-roo-new | - | `%USERPROFILE%\.conda\envs\...` | Roo dev |
 
 #### .NET
 

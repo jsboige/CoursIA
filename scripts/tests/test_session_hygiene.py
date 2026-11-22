@@ -403,3 +403,58 @@ def test_origin_main_absent_rend_amber_mesure_impossible(tmp_path):
     )
     assert "diff" in c.detail
     assert c.data.get("mesure_impossible") is True
+
+
+# ---------------------------------------------------------------------------
+# check_main_hostage — l'arbre principal n'est pas un ravisseur (#27696)
+# ---------------------------------------------------------------------------
+
+
+def _worktree_add(repo: Path, *args: str) -> None:
+    """Ajoute un worktree lie au depot ``repo`` et echoue le test si git refuse."""
+    proc = _run("worktree", "add", *args, cwd=repo)
+    assert proc.returncode == 0, proc.stderr
+
+
+def test_main_hostage_principal_detenteur_vu_d_un_worktree_secondaire_est_vert(tmp_path):
+    """Depuis un worktree secondaire : le principal detient ``main`` -> GREEN.
+
+    Etat normal d'une session qui travaille dans un worktree pendant que l'arbre
+    partage reste sur ``main``. Avant #27696, l'organe prenait le worktree courant
+    pour l'arbre principal, rendait RED sur cet etat sain, et proposait un remede
+    destructeur (``git worktree remove`` sur l'arbre partage).
+    """
+    repo = _make_mini_repo(tmp_path)
+    secondaire = tmp_path / "secondaire"
+    _worktree_add(repo, "-b", "feature/x", str(secondaire))
+
+    checks = session_hygiene.check_main_hostage(secondaire)
+    c = next(chk for chk in checks if chk.name == "main-otage")
+    assert c.level == session_hygiene.GREEN, (
+        f"le principal detient main legitimement, organe a rendu {c.level}: {c.detail}"
+    )
+
+
+def test_main_hostage_worktree_secondaire_detenteur_est_rouge(tmp_path):
+    """Depuis l'arbre principal : un worktree secondaire detient ``main`` -> RED nomme."""
+    repo = _make_mini_repo(tmp_path)
+    _run("checkout", "-b", "feature/principale", "--quiet", cwd=repo)
+    secondaire = tmp_path / "secondaire"
+    _worktree_add(repo, str(secondaire), "main")
+
+    checks = session_hygiene.check_main_hostage(repo)
+    c = next(chk for chk in checks if chk.name == "main-otage")
+    assert c.level == session_hygiene.RED, (
+        f"un secondaire detenteur doit rester RED, organe a rendu {c.level}: {c.detail}"
+    )
+    assert Path(c.data["holder"]).resolve() == secondaire.resolve()
+    assert c.data.get("principal") == str(repo.resolve())
+
+
+def test_main_hostage_principal_detenteur_vu_du_principal_est_vert(tmp_path):
+    """Depuis l'arbre principal qui detient ``main`` -> GREEN (comportement inchange)."""
+    repo = _make_mini_repo(tmp_path)
+
+    checks = session_hygiene.check_main_hostage(repo)
+    c = next(chk for chk in checks if chk.name == "main-otage")
+    assert c.level == session_hygiene.GREEN, f"{c.level}: {c.detail}"

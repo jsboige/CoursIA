@@ -1,39 +1,34 @@
 #!/usr/bin/env python3
 """Equilibrage des visites du tapis rapide (mandat user du 2026-11-16).
 
-Verbatim : « Toute issue doit etre visitee au moins une fois avant qu'une
-autre le soit deux fois, a l'exception de quelques issues anciennes de
-consolidation qui peuvent recevoir plusieurs visites, et des marathon csharp
-et Rust qui recevront le fruit du travail du nouveau harnais. Les issues
-recentes en particulier ne devraient pas recevoir plus de visites que les
-anciennes. »
+Verbatim : « Toute issue doit etre visitee au moins une fois avant qu'une autre
+le soit deux fois, a l'exception de quelques issues anciennes de consolidation
+qui peuvent recevoir plusieurs visites, et des marathon csharp et Rust qui
+recevront le fruit du travail du nouveau harnais. Les issues recentes en
+particulier ne devraient pas recevoir plus de visites que les anciennes. »
 
 Le tapis range les servables par NIVEAU, le nombre de visites recues dans les
 `FENETRE_J` derniers jours : c'est le « tour » de la regle. La mesure du
-16/11 (395 issues ouvertes, environ 47 seances par jour) donne un tour
-complet en 4 a 8 jours. Un compte sur toute la vie de l'issue aurait l'effet
-inverse du mandat : les anciennes en ont plus parce qu'elles vivent plus
-longtemps. Dans un niveau, l'issue jamais visitee passe d'abord, puis la plus
-ancienne.
+16/11 (395 issues ouvertes, environ 47 seances par jour) donne un tour complet
+en 4 a 8 jours. Un compte sur toute la vie de l'issue aurait l'effet inverse
+du mandat : les anciennes en ont plus parce qu'elles vivent plus longtemps.
+Dans un niveau, l'issue jamais visitee passe d'abord, puis la plus ancienne.
 
 Les priorites LEGERES du mandat du 2026-11-18 (age, consolidation) sont dans
 `coordination/tapis_avantages.py` ; leur somme reste sous une visite, donc
-l'equite du 16/11 tient : une issue a 0 visite passe devant une issue a
-1 visite. La division par 3 des consolidations anciennes, plus forte qu'une
-priorite legere, disparait.
-
-Une exception reste : les marathons de parite C# (#26070, titres « Marathon »)
-et Rust (#26510) sortent de l'equilibrage et passent apres le pool equilibre :
-c'est le harnais sk-agent qui les servira.
+l'equite du 16/11 tient : 0 visite avant 1 visite. La division par 3 des
+consolidations anciennes, plus forte qu'une priorite legere, disparait.
+Une exception reste : les marathons de parite C# (#26070) et Rust (#26510)
+sortent de l'equilibrage : c'est le harnais sk-agent qui les servira.
 
 Une visite est une SEANCE : les marqueurs VISITE (CLAIMED, CLAIMED-AMEND,
-DELIVERED) d'une meme lane a moins de `SEANCE_H` heures d'intervalle n'en font
-qu'une. Le **classement** ne compte que ces prises en charge nominatives --
-un **grain** (`coordination/tapis_dernier_grain.py`) : une citation Git
-n'est pas une visite. `compter` ci-dessous garde l'ancien compte (marqueurs
-**et** citations) pour la seule **voie legere**, qui ne lit pas le fil : elle
-ne peut pas distinguer un grain d'un passage. Fonctions pures, sans reseau.
-Doc : docs/reference/tapis-rapide.md.
+DELIVERED) d'une meme lane a moins de `SEANCE_H` heures n'en font qu'une --
+et **une livraison en ouvre une neuve** (19/11, #27338). Les seances des
+marqueurs sont celles de `tapis_seance.py` (`par_lane`), celles des citations
+celles de `tapis_dernier_grain.seances`. Le **classement** ne compte que les
+prises en charge nominatives (un **grain**) : une citation Git n'est pas une
+visite ; `compter` garde le compte historique pour la seule **voie legere**.
+Fonctions pures, sans reseau. Doc : docs/reference/tapis-rapide.md.
 """
 from __future__ import annotations
 
@@ -42,8 +37,8 @@ import math
 import re
 from datetime import datetime, timedelta
 
-from coordination import tapis_avantages
-from coordination.tapis_marqueurs import VISITE, Evt, _dt, _iso
+from coordination import tapis_avantages, tapis_seance
+from coordination.tapis_marqueurs import FERME, VISITE, Evt, _dt, _iso
 from coordination.tapis_dernier_grain import cle_tri, seances
 
 FENETRE_J = 7  # le tour : un tour de flotte complet mesure en 4 a 8 jours (16/11)
@@ -56,21 +51,29 @@ def compter(evts: list[Evt], citations: list[dict],
             maintenant: datetime) -> tuple[str | None, int, int]:
     """La derniere visite (ISO), les visites au total, celles du tour.
 
-    Le compte **historique** : marqueurs et citations, le plus grand des deux.
-    C'est le compte de la **voie legere** (elle ne lit pas le fil, donc elle
-    ne peut pas distinguer un grain d'un passage) ; le classement lui passe
-    par `tapis_dernier_grain.compter_grains`, qui ne compte que les grains.
+    Le compte **historique** de la **voie legere** (elle ne lit pas le fil) :
+    marqueurs et citations, le plus grand des deux ; le classement lui passe
+    par `tapis_dernier_grain.compter_grains` (les grains seuls). Les seances
+    des marqueurs suivent `tapis_seance.par_lane` (une livraison en ouvre une
+    neuve, #27338), celles des citations `seances` ; les citations des PRs
+    **ouvertes** comptent UNE visite chacune (elles ne sont pas mergees).
     """
-    par_lane: dict[str, list[datetime]] = {}
+    par_lane: dict[str, list[Evt]] = {}
+    visites: list[datetime] = []
     for ev in evts:
         if ev.marque in VISITE:
-            par_lane.setdefault(ev.lane or "?", []).append(ev.quand)
-    commits = [d for c in citations if (d := _dt(c.get("date")))]
-    tous = [t for ts in par_lane.values() for t in ts] + commits
+            visites.append(ev.quand)
+            par_lane.setdefault(ev.lane or "?", []).append(ev)
+        elif ev.marque in FERME:
+            par_lane.setdefault(ev.lane or "?", []).append(ev)
+    en_cours = [d for c in citations if c.get("ouvert") and (d := _dt(c.get("date")))]
+    commits = [d for c in citations if not c.get("ouvert") and (d := _dt(c.get("date")))]
+    tous = visites + commits + en_cours
 
     def compte(depuis: datetime | None) -> int:
-        marques = sum(seances(ts, depuis) for ts in par_lane.values())
-        return max(marques, seances(commits, depuis))
+        marques = sum(tapis_seance.par_lane(evs, depuis) for evs in par_lane.values())
+        fen = [d for d in en_cours if depuis is None or d >= depuis]
+        return max(marques, seances(commits, depuis)) + len(fen)
 
     return ((_iso(max(tous)) if tous else None), compte(None),
             compte(maintenant - timedelta(days=FENETRE_J)))
@@ -136,9 +139,13 @@ def _decaler(tour: list, graine: str, cle: float) -> list:
     return tete + list(tour[TETE:])
 
 
-def ordre(etats_, servables, graine: str, maintenant: datetime) -> list:
+def ordre(etats_, servables, graine: str, maintenant: datetime,
+          rotation: bool = True) -> list:
     """Niveau croissant ; dans un niveau, la jamais visitee puis la plus
-    ancienne d'abord, les familles servies a tour de role."""
+    ancienne d'abord, les familles servies a tour de role.
+
+    `rotation=False` : l'ordre **fair**, sans rotation de tete par lane
+    (la fenetre qui avance decide de la rotation, pas le pool)."""
     conso = familles_consolidation(etats_)
     niveaux: dict[float, dict[int, list]] = {}
     for e in sorted(servables, key=cle_tri):
@@ -149,5 +156,5 @@ def ordre(etats_, servables, graine: str, maintenant: datetime) -> list:
         while any(rang < len(lst) for lst in listes):
             rr.extend(lst[rang] for lst in listes if rang < len(lst))
             rang += 1
-        tour += _decaler(rr, graine, n)
+        tour += _decaler(rr, graine, n) if rotation else rr
     return tour

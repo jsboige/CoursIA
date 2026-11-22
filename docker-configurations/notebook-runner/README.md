@@ -64,6 +64,27 @@ wrapper canonique du noyau Lean — directement depuis le depot. Il n'est ni
 recopie ni reecrit dans le contexte Docker ; sans lui, la construction echoue
 (fail-closed) au lieu de livrer un wrapper bricole.
 
+### L'image publiee : une seule commande, sans construire
+
+Le workflow [`learning-image-ghcr`](../../.github/workflows/learning-image-ghcr.yml)
+(publie par #27546) reconstruit l'image quand le `Dockerfile`, les exigences,
+les temoins ou le manifeste du pli 1.1 changent, execute un carnet temoin par
+famille de noyau (7 sur 7 exigees), puis publie sur GHCR avec une etiquette
+versionnee et `latest`. Une fois le paquet public, l'apprenant n'a **rien a
+construire** :
+
+```bash
+docker run -p 8888:8888 ghcr.io/jsboige/coursia-learning:latest
+# -> http://localhost:8888 — JupyterLab, les 7 noyaux canoniques
+```
+
+La premiere publication et la visibilite publique du paquet dependent du
+reglage du paquet GHCR cote mainteneur ; les etiquettes datees
+(`20261120-1930`) et `sha-<commit>` restent disponibles pour figer une
+version de cours. Le cache de couches vit dans l'etiquette `buildcache` du
+paquet : la reconstruction apres un changement ne recompile que les etages
+touches.
+
 Les paquets Python de l'image d'apprentissage ne sont **pas** ecrits a la
 main : ils sont la projection du manifeste consolide du pli 1.1
 (`docs/curriculum/manifeste-dependances.json`), produite par

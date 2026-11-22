@@ -3,14 +3,25 @@ import argparse
 import json
 import math
 import platform
-import resource
 import statistics
 import subprocess
 from pathlib import Path
 
+try:
+    import resource
+except ImportError:  # Module POSIX, absent sous Windows (issue #27685).
+    resource = None
+
 
 def limit_memory() -> None:
+    if resource is None:
+        return
     resource.setrlimit(resource.RLIMIT_AS, (512 * 1024 * 1024, 512 * 1024 * 1024))
+
+
+# Windows interdit preexec_fn dans subprocess : la borne mémoire y est
+# simplement absente plutôt que de rendre le protocole inexécutable.
+PREEXEC = limit_memory if resource is not None else None
 
 
 def main() -> None:
@@ -19,11 +30,13 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--raw", type=Path, required=True)
     args = parser.parse_args()
-    subprocess.run([str(args.binary.resolve()), "--self-test"], check=True, timeout=40, preexec_fn=limit_memory)
+    subprocess.run([str(args.binary.resolve()), "--self-test"], check=True, timeout=40, preexec_fn=PREEXEC)
     rows = []
     raw = []
     for depth in (16, 24, 32, 40, 48):
-        observations = [json.loads(subprocess.check_output([str(args.binary.resolve()), str(depth)], text=True, timeout=40, preexec_fn=limit_memory))
+        observations = [json.loads(subprocess.check_output([str(args.binary.resolve()), str(depth)], text=True,
+                                                           encoding="utf-8", errors="replace",
+                                                           timeout=40, preexec_fn=PREEXEC))
                         for _ in range(5)]
         for index, observation in enumerate(observations, start=1):
             seconds = observation.get("seconds") if isinstance(observation, dict) else None
