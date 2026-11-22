@@ -33,10 +33,18 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
     # Get working directory from notebook location
     working_dir = str(notebook_path.parent)
 
-    # Start .NET C# kernel
+    # Start the .NET C# kernel IN the notebook's directory so relative
+    # `#load`/`#r` directives resolve against the notebook. The `cwd` must be
+    # given to `start_kernel`, NOT to the constructor: `KernelManager(...,
+    # cwd=...)` is swallowed by `**kwargs` and leaves no `cwd` attribute at
+    # all (measured 2026-11-21 -- kernel then starts in the launcher's own
+    # directory and every `#load "file.cs"` fails with CS1504). This replaces
+    # the former `SetCurrentDirectory(...)` setup execution, which worked too
+    # but consumed execution_count 1 before the notebook started, shifting
+    # every cell's count by one.
     print("Starting .NET C# kernel...")
     km = KernelManager(kernel_name='.net-csharp')
-    km.start_kernel()
+    km.start_kernel(cwd=working_dir)
     kc = km.client()
 
     # Wait for kernel to be ready
@@ -53,16 +61,6 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
     }
 
     try:
-        # Set working directory FIRST (critical for relative paths)
-        print(f"Setting working directory to: {working_dir}")
-        setup_code = f'''System.IO.Directory.SetCurrentDirectory(@"{working_dir}");'''
-        kc.execute(setup_code)
-
-        # Wait for setup to complete
-        msg = kc.get_shell_msg(timeout=10)
-        if msg['content']['status'] == 'error':
-            print(f"Warning: Could not set working directory: {msg['content']['evalue']}")
-
         # Execute cells
         for idx, cell in enumerate(notebook.get('cells', [])):
             if cell.get('cell_type') != 'code':
@@ -130,6 +128,14 @@ def execute_dotnet_notebook(notebook_path: str, timeout: int = 300):
                                 'name': msg['content'].get('name', 'stdout'),
                                 'text': msg['content'].get('text', '')
                             })
+
+                        elif msg['msg_type'] == 'execute_input':
+                            # The kernel's OWN count for this submission. Storing
+                            # it is what makes the notebook C.2-complete: without
+                            # it every cell kept `execution_count: null`, which
+                            # check_exec_sequence reports as PARTIAL (not a
+                            # sequence, no proof the cell ever ran).
+                            cell['execution_count'] = msg['content'].get('execution_count')
 
                         elif msg['msg_type'] == 'execute_result':
                             outputs.append({

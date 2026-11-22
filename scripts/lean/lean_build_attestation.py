@@ -30,6 +30,9 @@ de l'APPROVE du coordinateur.
 
 from __future__ import annotations
 
+import base64
+import fnmatch
+import json
 import re
 
 #: Premiere ligne non vide que doit porter un commentaire d'attestation.
@@ -56,6 +59,14 @@ _JOBS_FIELD_RE = re.compile(r"^jobs\s*:\s*(\d+)\s*$", re.MULTILINE)
 #: bloquants : changer la toolchain ou le graphe de dependances change ce que
 #: le build doit prouver.
 LEAN_TOOLCHAIN_FILES = ("lean-toolchain", "lake-manifest.json")
+
+#: Fichiers qui DECLARENT un lake : le repertoire qui les contient est la
+#: racine du lake.
+LAKEFILE_NAMES = ("lakefile.lean", "lakefile.toml")
+
+#: Manifeste des lakes declares en CI (l'organe qui produit et la garde qui
+#: lit le partagent : une seule reference au chemin).
+LEAN_MANIFEST_RELATIVE = "scripts/lean/ci_lakes.json"
 
 
 def is_lean_path(path: str) -> bool:
@@ -182,3 +193,99 @@ def render_attestation(
         lines.append("")
         lines.append(str(extra).strip())
     return "\n".join(lines) + "\n"
+
+
+# --------------------------------------------------------------------------
+# Les lakes INTRODUITS par un diff (#27875)
+# --------------------------------------------------------------------------
+#
+# Un lake est declare par une entree de `scripts/lean/ci_lakes.json`. L'organe
+# d'attestation SELECTIONNE ses lakes dans le manifeste de la TETE ; la garde
+# lit la meme reference. Un lake que la PR INTRODUIT (dossier + `lakefile.*` +
+# toolchain) mais que le manifeste ne declare pas est donc invisible aux deux :
+# aucune attestation ne peut le couvrir, et le blocage rendu est muet.
+#
+# Cas fondateur : PR #27587 (lake `busybeaver_lean`) -- l'entree de manifeste
+# arrive dans la PR empilee #27658 ; tant que celle-ci n'est pas mergee, la
+# PR mere se heurte a un mur sans nom.
+
+
+def lake_root_of_path(path: str) -> str:
+    """La racine du lake qu'un chemin `lakefile.*` designe ("" sinon).
+
+    Un `.lean` seul ne nomme PAS la racine : on ne devine pas.
+    """
+    text = str(path or "").replace("\\", "/")
+    name = text.rsplit("/", 1)[-1]
+    if name not in LAKEFILE_NAMES:
+        return ""
+    return text.rsplit("/", 1)[0] if "/" in text else ""
+
+
+def manifest_declares_lake(manifest: dict | None, root: str, lakefile_path: str) -> bool:
+    """Le manifeste declare-t-il le lake de racine `root` ?
+
+    Deux signatures sont acceptees : l'entree porte un `project-path` egal a la
+    racine, ou l'un de ses `paths` couvre le chemin du `lakefile`.
+    """
+    for entry in (manifest or {}).get("lakes") or []:
+        if not isinstance(entry, dict):
+            continue
+        project = str(entry.get("project-path") or "").replace("\\", "/").rstrip("/")
+        if project and project == root:
+            return True
+        for pattern in entry.get("paths") or []:
+            pat = str(pattern or "").replace("\\", "/")
+            if not pat:
+                continue
+            if fnmatch.fnmatch(lakefile_path, pat):
+                return True
+            if pat.endswith("/**") and lakefile_path.startswith(pat[:-2]):
+                return True
+    return False
+
+
+def undeclared_lakes(paths, manifest: dict | None) -> list[str]:
+    """Les racines de lakes touches par le diff et NON declarees au manifeste.
+
+    Un lake est touche quand le diff porte son `lakefile.*` : le repertoire
+    qui le contient est alors sa racine. Les racines sont rendues triees.
+
+    ``manifest is None`` = **absence d'information** (manifeste illisible) :
+    rien n'est signale -- une affirmation de non-declaration sans manifeste
+    serait un faux verdict. Un manifeste LU ( meme vide) est une preuve : un
+    lake absent d'un manifeste qui declare d'autres lakes n'y est pas declare.
+    """
+    if manifest is None:
+        return []
+    roots: list[str] = []
+    for path in paths or []:
+        text = str(path or "").replace("\\", "/")
+        root = lake_root_of_path(text)
+        if not root or root in roots:
+            continue
+        if not manifest_declares_lake(manifest, root, text):
+            roots.append(root)
+    return sorted(roots)
+
+
+def manifest_from_api_payload(payload) -> dict | None:
+    """Le manifeste `ci_lakes.json` lu dans une payload REST `contents`.
+
+    La payload GitHub porte le fichier en base64 ; un contenu illisible
+    rend ``None`` (absence d'information, jamais un accord).
+    """
+    if not isinstance(payload, dict):
+        return None
+    content = payload.get("content")
+    if not isinstance(content, str):
+        return None
+    try:
+        raw = base64.b64decode(content).decode("utf-8")
+    except (ValueError, UnicodeDecodeError):
+        return None
+    try:
+        manifest = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return manifest if isinstance(manifest, dict) else None

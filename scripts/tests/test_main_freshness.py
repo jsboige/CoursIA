@@ -41,7 +41,9 @@ pytestmark = [
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from coordination import gh_bulk
+from coordination import gh_selection
 from coordination import main_freshness as mf
+from coordination import tapis_origami
 from coordination import tapis_rapide as tr
 
 _ENV_GIT = {
@@ -268,8 +270,16 @@ def test_tapis_propage_allow_stale_et_le_dit_dans_le_rapport(monkeypatch, capsys
              "remede": "git pull --ff-only"}]}
 
     monkeypatch.setattr(mf, "garder", _garder)
-    monkeypatch.setattr(tr.gh_bulk, "lire_tout",
-                        lambda *a, **k: gh_bulk.Lecture(issues=[], prs=[], citations={}))
+    # La voie LEGERE est le defaut (#27225) : elle lit les metadonnees du pool,
+    # les citations et les PRs. Ces trois lectures sont MOCKEES : ce test ne
+    # touche pas le reseau (le module le dit), et un quota epuoussé ne doit
+    # pas le faire echouer.
+    monkeypatch.setattr(gh_selection, "lire_metadonnees_issues",
+                        lambda *a, **k: ([], 0.0))
+    monkeypatch.setattr(gh_bulk, "lire_citations_mergees", lambda *a, **k: {})
+    monkeypatch.setattr(gh_bulk, "lire_prs_ouvertes", lambda *a, **k: [])
+    monkeypatch.setattr(tapis_origami, "mesurer",
+                        lambda *a, **k: (set(), {"measured": False, "active": False}))
     rc = tr.main(["--lane", "L", "--allow-stale", "--json"])
     assert rc == 0
     assert vu["allow_stale"] is True, "--allow-stale doit atteindre la garde"

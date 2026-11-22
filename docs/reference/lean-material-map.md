@@ -16,8 +16,8 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | 34 | 26 | declare | couverte | ok (1) | - | 2026-08-25 |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | 32 | 30 | declare | couverte | 1 hors site (5 carnets) | - | 2026-06-25 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean` | 25 | 24 | declare | couverte | non consomme | - | 2026-10-08 |
-| `MyIA.AI.Notebooks/Compression/Compression_lean` | 15 | 2 | declare | couverte | ok (1) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | 15 | 14 | declare | couverte | ok (1) | - | 2026-06-10 |
+| `MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean` | 15 | 2 | declare | hors matrice | ok (1) | - | 2026-10-12 |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | 15 | 14 | declare | couverte | ok (2) | - | 2026-10-02 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean` | 12 | 10 | declare | couverte | ok (4) | - | 2026-05-15 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | 11 | 0 | declare | couverte | ok (1) | - | 2026-09-21 |
@@ -106,7 +106,7 @@ La doctrine demande qu'un lac vive dans le dossier de la (sous-)serie dont les c
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean` — 5 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Tweety`
 - `MyIA.AI.Notebooks/GameTheory/assignment_lean` — 3 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE`
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
-- `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean`
+- `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` — 2 carnets, hors site : `MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF`
 
 ## R4 — les doublons de theoreme, et leur declaration
 
