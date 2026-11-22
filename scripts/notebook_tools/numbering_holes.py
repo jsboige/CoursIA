@@ -81,6 +81,16 @@ REFERENCE_ROOTS = (
     "MyIA.AI.Notebooks/SymbolicAI/Tweety",
 )
 
+# Paliers documentés : un numéro nu volontairement ABSENT parce que la série est
+# née structurée en accrétions — un « niveau d'enseignement » scindé en plusieurs
+# carnets (07a + 07b), pas un emplacement vidé par une descente. Le nu ne figure
+# ni dans les trous ni dans les lettres orphelines. Source : note de numérotation
+# de #26707 (Tweety, palier 07 = 07a Python + 07b probabiliste + 07ac C#, README
+# de série) ; même statut que les conventions SmartContracts/Planners du body.
+PALIER_EXCEPTIONS: dict[str, frozenset[int]] = {
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety": frozenset({7}),
+}
+
 _OUTPUT_SUFFIX = re.compile(r"_output\.ipynb$", re.I)
 
 
@@ -120,7 +130,8 @@ def git_ls_tree_ipynb(ref: str) -> list[str]:
     return out
 
 
-def measure_paths(paths: list[str], prefix: str | None = None) -> dict:
+def measure_paths(paths: list[str], prefix: str | None = None,
+                 palier_exceptions: frozenset[int] | None = None) -> dict:
     """Mesure trous + lettres orphelines sur une liste de chemins `.ipynb`.
 
     `prefix` : préfixe de série à mesurer. Si `None`, c'est le préfixe DOMINANT
@@ -154,13 +165,18 @@ def measure_paths(paths: list[str], prefix: str | None = None) -> dict:
         else:
             letters.add("%d%s" % (n, name.accr.lower()))
 
+    paliers = palier_exceptions if palier_exceptions is not None else frozenset()
     max_num = max(bare) if bare else None
-    holes = (sorted(k for k in range(1, max_num + 1) if k not in bare)
+    holes = (sorted(k for k in range(1, max_num + 1)
+                    if k not in bare and k not in paliers)
              if max_num is not None else [])
     # Lettres orphelines : `NNx` dont le nu `NN` est absent, à l'exception des
-    # préliminaires `0x` (choix de structure, hors mesure).
+    # préliminaires `0x` (choix de structure) et des paliers documentés (nu
+    # volontairement absent, scindé en accrétions — hors mesure).
     orphans = sorted(
-        (L for L in letters if int(L[:-1]) not in bare and int(L[:-1]) >= 1),
+        (L for L in letters
+         if int(L[:-1]) not in bare and int(L[:-1]) >= 1
+         and int(L[:-1]) not in paliers),
         key=lambda L: (int(L[:-1]), L[-1]))
     return {"prefix": prefix, "notebook_count": len(paths), "matched": matched,
             "max": max_num, "holes": holes, "orphan_letters": orphans}
@@ -171,7 +187,8 @@ def measure_root(all_ipynb: list[str], root: str,
     """Mesure une racine de série : tous les `.ipynb` sous `root` (en profondeur)."""
     root = root.rstrip("/")
     paths = [p for p in all_ipynb if p == root or p.startswith(root + "/")]
-    m = measure_paths(paths, prefix=prefix)
+    paliers = PALIER_EXCEPTIONS.get(root, frozenset())
+    m = measure_paths(paths, prefix=prefix, palier_exceptions=paliers)
     m["root"] = root
     return m
 
@@ -258,6 +275,18 @@ def self_test() -> int:
         print("  %s %-40s -> préfixe=%s max=%s trous=%s orphelines=%s"
               % ("OK " if ok else "KO ", label, m["prefix"], m["max"],
                  m["holes"], m["orphan_letters"]))
+    # Palier documenté : un nu volontairement absent (scindé en accrétions
+    # 07a/07b, le nu n'a jamais existé) est hors mesure — ni trou 7, ni 07a/07b.
+    m = measure_paths(
+        ["T/T-07a-C-Python.ipynb", "T/T-07b-D-Python.ipynb",
+         "T/T-01-A-Python.ipynb", "T/T-08-E-Python.ipynb"],
+        palier_exceptions=frozenset({7}))
+    ok = (7 not in m["holes"]) and m["orphan_letters"] == []
+    if not ok:
+        ko += 1
+    print("  %s palier 07 (07a/07b, nu absent) exclu  -> trous=%s "
+          "orphelines=%s" % ("OK " if ok else "KO ", m["holes"],
+                             m["orphan_letters"]))
     # compress_runs : les plages consécutives sont repliées.
     for nums, want in [([18, 19, 20, 24, 25, 26], "18-20, 24-26"),
                        ([2], "2"), ([], ""), ([41, 44, 45], "41, 44-45")]:
@@ -269,7 +298,7 @@ def self_test() -> int:
               % ("OK " if ok else "KO ", nums, got, want))
     print("")
     print("%s : %d cas, %d échec(s)" % ("ECHEC" if ko else "SUCCES",
-                                        len(_CASES) + 4, ko))
+                                        len(_CASES) + 5, ko))
     return 1 if ko else 0
 
 
