@@ -180,6 +180,8 @@ pas encore.
 
 [Complexity-03c : carte du zoo (C#)](Complexity-03c-ComplexityZoo-Navigation-CSharp.ipynb) accompagne la [version Python](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb). DFS, Kosaraju et DPLL sont réécrits en BCL pure ; vérificateur NL contre DFS, 2-SAT contre 3-SAT, mondes d'oracles et carte Mesuré/Cité/Ouvert sont rejoués aux mêmes budgets. Les générateurs aléatoires diffèrent, donc les instances et les temps ; les faux témoins restent refusés dans les deux langages.
 
+[Complexity-03c : carte du zoo (Rust)](Complexity-03c-ComplexityZoo-Navigation-Rust.ipynb) porte le même fil en bibliothèque standard seule (kernel evcxr, aucune crate, aucun `:dep`). Son générateur MT19937 est porté mot à mot sur le flux de CPython — même graine, même ordre des tirages — : contrairement au jumeau C#, les valeurs mesurées coïncident avec la version Python, dont les sorties committées servent de témoin de conformité (piles DFS, pas du vérificateur, nœuds DPLL, facteurs de croissance). Chaque cellule étant autonome sous evcxr, elle rejoue les tirages des cellules précédentes pour se replacer au même point du flux global.
+
 [Complexity-03f : chaîne des réductions (C#)](Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb) accompagne la [version Python](Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb). Les corpus et intersections sont calculés en BCL ; les générateurs diffèrent et l'algorithme du papier reste cité, non exécuté.
 
 Le notebook 03d confronte la série à la position **annoncée** : deux preuves machine
@@ -241,6 +243,9 @@ Le notebook 06 ajoute une dépendance **optionnelle** :
 [`stim`](https://github.com/quantumlib/Stim) (troisième juge du croisement et banc
 d'échelle). Sans lui, le notebook s'exécute intégralement avec les deux machines
 qu'il construit — le banc affiche alors sa colonne vide et le dit.
+Le jumeau Rust du 03c s'exécute sous le kernel `rust` (evcxr, installé par
+`cargo install evcxr_jupyter` puis `evcxr_jupyter --install`) : bibliothèque
+standard seule, aucune crate, aucun `:dep`.
 
 Le notebook 06d ajoute `scipy` (`scipy.optimize.linprog`, solveur HiGHS), qui calcule
 les rangées minimales par programmation linéaire.
