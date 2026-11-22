@@ -1,0 +1,592 @@
+- name: "GameTheory-16c Extraction-de-Revenu-DSIC-IR"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Rust.ipynb
+  measures:
+    - id: runtime_banniere
+      description: "Banniere de runtime du port Rust (la source publie sa version de Python ; la substitution est une tolerance de presence prescrite par la spec #27793)"
+      tolerance: 0
+      reference: rust
+      sides:
+        rust:
+          cell: 3
+          pattern: 'Runtime Rust : ([^\n]*)'
+          transform: text
+        python:
+          absent: >-
+            La source Python publie `Runtime Python : 3.13.16` ; le port
+            remplace cette ligne par sa propre banniere Rust (tolerance de
+            presence de la spec : le port n'affiche jamais le mot « Python »).
+            Cote declare ABSENT, la ligne de runtime n'etant pas une grandeur
+            de calcul.
+        csharp:
+          absent: >-
+            Le jumeau C# publie `Runtime : .NET 10.0.14` ; meme raison que le
+            cote Python (tolerance de presence).
+    - id: issue_profil_vrai
+      description: "Issue choisie par le designer GT-16b au profil vrai (1,1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'issue\(\(1,1\)\) = (\d)'
+          transform: int
+        rust:
+          cell: 3
+          pattern: 'issue\(\(1,1\)\) = (\d)'
+          transform: int
+        csharp:
+          cell: 3
+          pattern: 'issue=(\d)'
+          transform: int
+    - id: bien_etre_designer
+      description: "Bien-etre J atteint par le designer GT-16b"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'Bien-etre J = (\d+)'
+          transform: int
+        rust:
+          cell: 3
+          pattern: 'Bien-etre J = (\d+)'
+          transform: int
+        csharp:
+          cell: 3
+          pattern: 'bien-être=(\d+)'
+          transform: int
+    - id: revenu_designer
+      description: "Revenu du designer GT-16b (paiements nuls)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'Revenu = (\d+)'
+          transform: int
+        rust:
+          cell: 3
+          pattern: 'Revenu = (\d+)'
+          transform: int
+        csharp:
+          cell: 3
+          pattern: 'revenu=(\d+)'
+          transform: int
+    - id: espace_tables_issues
+      description: "Nombre de tables d'issues visitees par le generateur (2^4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'generateur : (\d+) tables'
+          transform: int
+        rust:
+          cell: 3
+          pattern: 'generateur : (\d+) tables'
+          transform: int
+        csharp:
+          cell: 3
+          pattern: 'Générateur : (\d+) tables'
+          transform: int
+    - id: espace_table_paiements
+      description: "Nombre de tables de paiements par table d'issues (4^4)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: 'des mecanismes   : \d+ x (\d+) ='
+          transform: int
+        rust:
+          cell: 3
+          pattern: 'des mecanismes   : \d+ x (\d+) ='
+          transform: int
+        csharp:
+          cell: 3
+          pattern: '× (\d+) ='
+          transform: int
+    - id: espace_total_candidats
+      description: "Espace complet des mecanismes (16 x 256)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 3
+          pattern: '= (\d+) candidats'
+          transform: int
+        rust:
+          cell: 3
+          pattern: '= (\d+) candidats'
+          transform: int
+        csharp:
+          cell: 3
+          pattern: '= (\d+) mécanismes'
+          transform: int
+    - id: entete_frontiere
+      description: "En-tete de la table de frontiere (rendu identique au caractere pres par le port)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: '(instance\s+admissibles\s+welfare-opt\s+dont revenu>0\s+max rev@fb)'
+          transform: text
+        rust:
+          cell: 6
+          pattern: '(instance\s+admissibles\s+welfare-opt\s+dont revenu>0\s+max rev@fb)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# rend un tableau pipe-separe (`Types | admissibles | ...`)
+            et non le tableau aligne de la source : la grandeur n'est pas
+            comparable au caractere pres. Les valeurs de la table sont
+            comparees, elles, mesure par mesure (`frontiere_00` a
+            `frontiere_11`).
+    - id: frontiere_00
+      description: "Instance (0,0) : admissibles / bien-etre optimal / revenu>0 / revenu maximal"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: '\(0, 0\)\s+(\d+\s+\d+\s+\d+\s+\d+)'
+          transform: digits
+        rust:
+          cell: 6
+          pattern: '\(0, 0\)\s+(\d+\s+\d+\s+\d+\s+\d+)'
+          transform: digits
+        csharp:
+          cell: 6
+          pattern: '\(0,0\)\s*\|\s*(\d+\s*\|\s*\d+\s*\|\s*\d+\s*\|\s*\d+)'
+          transform: digits
+    - id: frontiere_01
+      description: "Instance (0,1) : admissibles / bien-etre optimal / revenu>0 / revenu maximal"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: '\(0, 1\)\s+(\d+\s+\d+\s+\d+\s+\d+)'
+          transform: digits
+        rust:
+          cell: 6
+          pattern: '\(0, 1\)\s+(\d+\s+\d+\s+\d+\s+\d+)'
+          transform: digits
+        csharp:
+          cell: 6
+          pattern: '\(0,1\)\s*\|\s*(\d+\s*\|\s*\d+\s*\|\s*\d+\s*\|\s*\d+)'
+          transform: digits
+    - id: frontiere_10
+      description: "Instance (1,0) : admissibles / bien-etre optimal / revenu>0 / revenu maximal"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: '\(1, 0\)\s+(\d+\s+\d+\s+\d+\s+\d+)'
+          transform: digits
+        rust:
+          cell: 6
+          pattern: '\(1, 0\)\s+(\d+\s+\d+\s+\d+\s+\d+)'
+          transform: digits
+        csharp:
+          cell: 6
+          pattern: '\(1,0\)\s*\|\s*(\d+\s*\|\s*\d+\s*\|\s*\d+\s*\|\s*\d+)'
+          transform: digits
+    - id: frontiere_11
+      description: "Instance (1,1) : admissibles / bien-etre optimal / revenu>0 / revenu maximal"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: '\(1, 1\)\s+(\d+\s+\d+\s+\d+\s+\d+)'
+          transform: digits
+        rust:
+          cell: 6
+          pattern: '\(1, 1\)\s+(\d+\s+\d+\s+\d+\s+\d+)'
+          transform: digits
+        csharp:
+          cell: 6
+          pattern: '\(1,1\)\s*\|\s*(\d+\s*\|\s*\d+\s*\|\s*\d+\s*\|\s*\d+)'
+          transform: digits
+    - id: designer_non_deviation
+      description: "Le designer GT-16b echoue-t-il a la non-deviation locale ? (False = echec)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: 'non-déviation locale : \((\w+),'
+          transform: text
+        rust:
+          cell: 6
+          pattern: 'non-déviation locale : \((\w+),'
+          transform: text
+        csharp:
+          cell: 6
+          pattern: 'non-déviation locale=(\w+)'
+          transform: text
+    - id: designer_ir
+      description: "Le designer GT-16b passe-t-il l'IR aux types vrais ? (True)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: 'IR : \((\w+),'
+          transform: text
+        rust:
+          cell: 6
+          pattern: 'IR : \((\w+),'
+          transform: text
+        csharp:
+          cell: 6
+          pattern: 'IR=(\w+)'
+          transform: text
+    - id: exercice1_titre
+      description: "En-tete de l'exercice 1 (borne IR et preuve pour les types nuls)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: '(Exercice 1 à compléter : borne IR et preuve pour les types nuls)'
+          transform: text
+        rust:
+          cell: 9
+          pattern: '(Exercice 1 à compléter : borne IR et preuve pour les types nuls)'
+          transform: text
+        csharp:
+          cell: 9
+          pattern: '(Exercice 1 à compléter : borne IR et preuve pour les types nuls)'
+          transform: text
+    - id: extracteur_non_deviation
+      description: "L'extracteur passe-t-il la non-deviation locale ? (True)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'non-déviation locale : (\w+)'
+          transform: text
+        rust:
+          cell: 11
+          pattern: 'non-déviation locale : (\w+)'
+          transform: text
+        csharp:
+          cell: 11
+          pattern: 'non-déviation locale=(\w+)'
+          transform: text
+    - id: extracteur_ir
+      description: "L'extracteur passe-t-il l'IR ? (True)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'IR   : (\w+)'
+          transform: text
+        rust:
+          cell: 11
+          pattern: 'IR   : (\w+)'
+          transform: text
+        csharp:
+          cell: 11
+          pattern: 'IR=(\w+)'
+          transform: text
+    - id: extracteur_bien_etre
+      description: "Bien-etre de l'extracteur au profil vrai (1,1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'Bien-etre : (\d+)'
+          transform: int
+        rust:
+          cell: 11
+          pattern: 'Bien-etre : (\d+)'
+          transform: int
+        csharp:
+          cell: 11
+          pattern: 'bien-être=(\d+)'
+          transform: int
+    - id: extracteur_revenu
+      description: "Revenu de l'extracteur au profil vrai (1,1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'Revenu    : (\d+)'
+          transform: int
+        rust:
+          cell: 11
+          pattern: 'Revenu    : (\d+)'
+          transform: int
+        csharp:
+          cell: 11
+          pattern: 'revenu=(\d+)'
+          transform: int
+    - id: extracteur_utilite_sincere
+      description: "Utilite sincere de l'agent 1 au profil (1,1) (0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'sincere        : u = 1\*\d+ - \d+ = (\d+)'
+          transform: int
+        rust:
+          cell: 11
+          pattern: 'sincere        : u = 1\*\d+ - \d+ = (\d+)'
+          transform: int
+        csharp:
+          cell: 11
+          pattern: 'utilité sincère=(\d+)'
+          transform: int
+    - id: extracteur_utilite_deviation
+      description: "Utilite de l'agent 1 apres deviation (->0) (0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 11
+          pattern: 'devier \(->0\)   : u = 1\*\d+ - \d+ = (\d+)'
+          transform: int
+        rust:
+          cell: 11
+          pattern: 'devier \(->0\)   : u = 1\*\d+ - \d+ = (\d+)'
+          transform: int
+        csharp:
+          cell: 11
+          pattern: 'après déviation=(\d+)'
+          transform: int
+    - id: exercice2_titre
+      description: "En-tete de l'exercice 2 (gamme des paiements etendue)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: '(Exercice 2 à compléter : gamme des paiements étendue)'
+          transform: text
+        rust:
+          cell: 14
+          pattern: '(Exercice 2 à compléter : gamme des paiements étendue)'
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# ecrit `Exercice 2 à compléter : gamme de paiements
+            étendue` (la source ecrit « gamme **des** paiements étendue ») :
+            meme exercice, libelle different d'un mot. Cote declare ABSENT,
+            la grandeur n'etant pas comparable au caractere pres.
+    - id: temoin_admissibles_00
+      description: "Temoin (paiement >= 1 partout) sur (0,0) : nombre d'admissibles (0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'true=\(0, 0\) : admissibles = (\d+)'
+          transform: int
+        rust:
+          cell: 16
+          pattern: 'true=\(0, 0\) : admissibles = (\d+)'
+          transform: int
+        csharp:
+          cell: 16
+          pattern: '\(0,0\) : (\d+) admissible'
+          transform: int
+    - id: temoin_admissibles_01
+      description: "Temoin (paiement >= 1 partout) sur (0,1) : nombre d'admissibles (0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'true=\(0, 1\) : admissibles = (\d+)'
+          transform: int
+        rust:
+          cell: 16
+          pattern: 'true=\(0, 1\) : admissibles = (\d+)'
+          transform: int
+        csharp:
+          cell: 16
+          pattern: '\(0,1\) : (\d+) admissible'
+          transform: int
+    - id: temoin_admissibles_10
+      description: "Temoin (paiement >= 1 partout) sur (1,0) : nombre d'admissibles (0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'true=\(1, 0\) : admissibles = (\d+)'
+          transform: int
+        rust:
+          cell: 16
+          pattern: 'true=\(1, 0\) : admissibles = (\d+)'
+          transform: int
+        csharp:
+          cell: 16
+          pattern: '\(1,0\) : (\d+) admissible'
+          transform: int
+    - id: temoin_admissibles_11
+      description: "Temoin (paiement >= 1 partout) sur (1,1) : nombre d'admissibles (1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'true=\(1, 1\) : admissibles = (\d+)'
+          transform: int
+        rust:
+          cell: 16
+          pattern: 'true=\(1, 1\) : admissibles = (\d+)'
+          transform: int
+        csharp:
+          cell: 16
+          pattern: '\(1,1\) : (\d+) admissible'
+          transform: int
+    - id: survivant_non_deviation
+      description: "Le survivant uniforme (1,1) passe-t-il la non-deviation locale ? (True)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'non-déviation locale : (\w+)\s+IR point-prior'
+          transform: text
+        rust:
+          cell: 16
+          pattern: 'non-déviation locale : (\w+)\s+IR point-prior'
+          transform: text
+        csharp:
+          cell: 16
+          pattern: 'non-déviation locale=(\w+)'
+          transform: text
+    - id: survivant_ir
+      description: "Le survivant uniforme (1,1) passe-t-il l'IR point-prior ? (True)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'IR point-prior : (\w+)'
+          transform: text
+        rust:
+          cell: 16
+          pattern: 'IR point-prior : (\w+)'
+          transform: text
+        csharp:
+          cell: 16
+          pattern: 'IR=(\w+)'
+          transform: text
+    - id: survivant_bien_etre
+      description: "Bien-etre du survivant uniforme (1,1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'Bien-etre : (\d+)'
+          transform: int
+        rust:
+          cell: 16
+          pattern: 'Bien-etre : (\d+)'
+          transform: int
+        csharp:
+          cell: 16
+          pattern: 'bien-être=(\d+)'
+          transform: int
+    - id: survivant_revenu
+      description: "Revenu du survivant uniforme (1,1)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'Revenu : (\d+)'
+          transform: int
+        rust:
+          cell: 16
+          pattern: 'Revenu : (\d+)'
+          transform: int
+        csharp:
+          cell: 16
+          pattern: 'revenu=(\d+)'
+          transform: int
+    - id: ir_uniforme_admissibles
+      description: "Mecanismes admissibles a l'IR uniforme sur les types et reports (2)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'types et reports = (\d+),'
+          transform: int
+        rust:
+          cell: 16
+          pattern: 'types et reports = (\d+),'
+          transform: int
+        csharp:
+          cell: 16
+          pattern: 'types et reports : (\d+) admissibles'
+          transform: int
+    - id: ir_uniforme_revenus
+      description: "Revenus possibles sous IR uniforme (liste [0])"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'revenus possibles = (\[[0-9, ]*\])'
+          transform: text
+        rust:
+          cell: 16
+          pattern: 'revenus possibles = (\[[0-9, ]*\])'
+          transform: text
+        csharp:
+          cell: 16
+          pattern: 'revenus=(\[[0-9, ]*\])'
+          transform: text
+    - id: ir_uniforme_paiement_non_nul
+      description: "Admissibles avec au moins un paiement non nul (0)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 16
+          pattern: 'dont un paiement non nul = (\d+)'
+          transform: int
+        rust:
+          cell: 16
+          pattern: 'dont un paiement non nul = (\d+)'
+          transform: int
+        csharp:
+          cell: 16
+          pattern: '(\d+) avec paiement non nul'
+          transform: int
+    - id: exercice3_titre
+      description: "En-tete de l'exercice 3 (non-deviation stricte locale)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: '(Exercice 3 à compléter : non-déviation stricte locale)'
+          transform: text
+        rust:
+          cell: 19
+          pattern: '(Exercice 3 à compléter : non-déviation stricte locale)'
+          transform: text
+        csharp:
+          cell: 19
+          pattern: '(Exercice 3 à compléter : non-déviation stricte locale)'
+          transform: text
