@@ -118,7 +118,7 @@ est la Phase 3, argumentation).
 | 4 | [Tweety-04-Belief-Revision-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb) | 30 min | MUS, mesure d'incohérence, révision AGM, MaxSAT → étape 2 |
 | 5 | [Tweety-05-Abstract-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) | 45 min | **cœur** : sémantiques de Dung (grounded, preferred, stable) → étapes 2-4 |
 | 6 | [Tweety-06-Structured-Argumentation-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb) | 30 min | ASPIC+, DeLP, ABA, ASP (Clingo) → étape 5 |
-| 7 | [Tweety-07a-Extended-Frameworks-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07a-Extended-Frameworks-Python.ipynb) | 30 min | ADF, bipolaire, WAF, attaques récursives → étape 5 |
+| 7 | [Tweety-07-Extended-Frameworks-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07-Extended-Frameworks-Python.ipynb) | 30 min | ADF, bipolaire, WAF, attaques récursives → étape 5 |
 | 8 | [Tweety-07b-Ranking-Probabilistic-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb) | 30 min | classement et probabilités sur arguments → étape 5 |
 | 9 | [Tweety-08-Agent-Dialogues-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb) | 30 min | protocoles de dialogue, jeux grounded → étape 6 |
 | 10 | [Tweety-09-Preferences-Python](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb) | 30 min | préférences, vote (Borda, Condorcet) → étape 6 |
