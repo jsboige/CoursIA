@@ -14,6 +14,14 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# Deux lanceurs de la flotte portent le nom ``run_gateway`` (Z3 Sudoku #22439,
+# TrueSkill #27217) et leurs fichiers de tests tournent dans le meme processus
+# pytest (liste explicite de scripts-tests.yml) : le module du voisin peut deja
+# sieger dans ``sys.modules``. On l'evicte avant d'importer, quel que soit
+# l'ordre de collecte, sinon ce fichier testerait le lanceur du voisin (4
+# echecs mesures sur le jumeau TrueSkill, run 44297348528).
+sys.modules.pop("run_gateway", None)
+
 import run_gateway
 from run_gateway import build_arguments, core_dir, main, preflight
 
