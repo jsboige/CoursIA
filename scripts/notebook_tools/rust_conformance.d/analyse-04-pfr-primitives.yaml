@@ -29,11 +29,11 @@
       sides:
         python:
           cell: 4
-          pattern: "\\(a − b\\) mod 4.*min d = (\\+[\\d.]+)"
+          pattern: "\\(a − b\\) mod 4.*?min d = (\\+[\\d.]+)"
           transform: float
         rust:
           cell: 4
-          pattern: "\\(a − b\\) mod 4.*min d = (\\+[\\d.]+)"
+          pattern: "\\(a − b\\) mod 4.*?min d = (\\+[\\d.]+)"
           transform: float
     - id: ruzsa_min_noninversible
       description: "min d sous max(a − b, 0) (non inversible, valeur NEGATIVE attendue)"
@@ -42,11 +42,11 @@
       sides:
         python:
           cell: 4
-          pattern: "max\\(a − b, 0\\).*min d = (-[\\d.]+)"
+          pattern: "max\\(a − b, 0\\).*?min d = (-[\\d.]+)"
           transform: float
         rust:
           cell: 4
-          pattern: "max\\(a − b, 0\\).*min d = (-[\\d.]+)"
+          pattern: "max\\(a − b, 0\\).*?min d = (-[\\d.]+)"
           transform: float
     - id: triangulaire_marge_t3
       description: "Marge du triplet 3 de l'inegalite triangulaire (Y degenere, marge 2.0 bits)"
@@ -172,11 +172,11 @@
       sides:
         python:
           cell: 26
-          pattern: "\\(x₁ ∨ ¬x₂\\) ∧ \\(¬x₁ ∨ x₂\\) ∧ \\(x₁ ∨ x₂\\).*→ (\\d+) composante"
+          pattern: "\\(x₁ ∨ ¬x₂\\).*?→ (\\d+) composante\\(s\\), satisfiable = True"
           transform: int
         rust:
           cell: 26
-          pattern: "\\(x₁ ∨ ¬x₂\\) ∧ \\(¬x₁ ∨ x₂\\) ∧ \\(x₁ ∨ x₂\\).*→ (\\d+) composante"
+          pattern: "\\(x₁ ∨ ¬x₂\\).*?→ (\\d+) composante\\(s\\), satisfiable = True"
           transform: int
     - id: deuxsat_non_satisfiable
       description: "Booleen satisfiable du 2-SAT contradictoire (casse libre entre langues : True/False vs true/false)"
@@ -186,9 +186,9 @@
       sides:
         python:
           cell: 26
-          pattern: "\\(x₁ ∨ x₁\\) ∧ \\(¬x₁ ∨ ¬x₁\\).*satisfiable = (\\w+)"
+          pattern: "\\(x₁ ∨ x₁\\) ∧ \\(¬x₁ ∨ ¬x₁\\).*?satisfiable = (\\w+)"
           transform: text
         rust:
           cell: 26
-          pattern: "\\(x₁ ∨ x₁\\) ∧ \\(¬x₁ ∨ ¬x₁\\).*satisfiable = (\\w+)"
+          pattern: "\\(x₁ ∨ x₁\\) ∧ \\(¬x₁ ∨ ¬x₁\\).*?satisfiable = (\\w+)"
           transform: text
