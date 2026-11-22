@@ -420,7 +420,9 @@ PASS_BUDGET_REASON = "pass-budget-exceeded"
 #:
 #: La borne se lit ENTRE deux PRs : elle n'interrompt jamais un merge en
 #: cours, et une PR non evaluee est journalisee avec ce motif (jamais une PR
-#: disparue du bilan). La passe suivante repart de la file entiere.
+#: disparue du bilan). La passe suivante **continue** apres la derniere PR
+#: evaluee (curseur de reprise, `PASS_CURSOR_FILENAME`) : la file est relue
+#: a chaque tour, mais son POINT DE DEPART avance.
 PASS_BUDGET_S = 2700.0
 
 #: Verdict d'une PR que la passe n'a pas EVALUEE (arret sur le budget de
@@ -433,6 +435,26 @@ PASS_BUDGET_S = 2700.0
 #: sur `review`, qui porte le litteral voisin `not-evaluated` pour une autre
 #: raison : la porte de review n'a pas ete atteinte).
 VERDICT_NOT_EVALUATED = "unevaluated"
+
+#: Curseur de reprise d'une passe (revue du 22/11, #28009).
+#:
+#: `list_open_prs` rend les PRs **triees par numero croissant** ; sans
+#: curseur, une passe arretee par le budget de duree repart de la file
+#: entiere et s'arrete **au meme endroit** -- les PRs au-dessus de ce point
+#: ne sont jamais evaluees (mesure du coordinateur sur le journal du 22/11 :
+#: la borne aurait arrete la passe a #27652, et toutes les PRs au-dessus
+#: seraient restees invisibles).
+#:
+#: Le curseur est le numero de la derniere PR **EVALUEE** : la passe
+#: suivante commence apres elle, puis **boucle** (les PRs du dessous passent
+#: en second temps). Chaque PR ouverte est donc evaluee en un nombre borne
+#: de passes.
+#:
+#: Il vit dans un fichier a cote du journal -- meme dossier, meme duree de
+#: vie, aucun mot de plus dans le journal (qui reste le contrat entre
+#: l'organe qui produit et celui qui mesure). Un curseur illisible vaut
+#: « depuis le debut » : la passe n'est jamais bloquee par son curseur.
+PASS_CURSOR_FILENAME = "pass_cursor.json"
 
 
 class CannotRunError(Exception):
@@ -647,6 +669,55 @@ def _clock() -> float:
 def default_journal_path() -> Path:
     base = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
     return base / "CoursIA" / "merge_ready" / "journal.jsonl"
+
+
+def pass_cursor_path(journal_path: Path) -> Path:
+    """Le fichier de curseur de reprise : a cote du journal, jamais dedans."""
+    return journal_path.parent / PASS_CURSOR_FILENAME
+
+
+def read_pass_cursor(journal_path: Path) -> int | None:
+    """Le numero apres lequel la prochaine passe commence.
+
+    `None` = depuis le debut de la file. Un curseur absent, illisible ou
+    aberrant vaut `None` : le curseur ameliore la fairness, il ne bloque
+    jamais une passe (fail-OPEN, comme le reste du harnais).
+    """
+    try:
+        brut = json.loads(pass_cursor_path(journal_path).read_text(encoding="utf-8"))
+        valeur = int(brut["after"])
+    except (OSError, ValueError, KeyError, TypeError):
+        return None
+    return valeur if valeur > 0 else None
+
+
+def write_pass_cursor(journal_path: Path, after: int | None) -> None:
+    """Ecrit le curseur de reprise ; `None` le retire.
+
+    Un echec d'ecriture n'interrompt PAS la passe : le curseur est un
+    raccourci, pas une condition de service.
+    """
+    chemin = pass_cursor_path(journal_path)
+    try:
+        chemin.parent.mkdir(parents=True, exist_ok=True)
+        if after is None:
+            chemin.unlink(missing_ok=True)
+            return
+        chemin.write_text(json.dumps({"after": int(after)}), encoding="utf-8")
+    except (OSError, TypeError, ValueError):
+        pass
+
+
+def _ordonner_apres_curseur(prs: list[int], curseur: int | None) -> list[int]:
+    """Les PRs **au-dessus** du curseur d'abord, puis celles du dessous.
+
+    La passe **boucle** : elle ne s'arrete plus toujours au meme endroit.
+    L'ordre reste croissant par numero dans chaque groupe (c'est l'ordre de
+    `list_open_prs`).
+    """
+    if curseur is None:
+        return list(prs)
+    return sorted(prs, key=lambda n: (0 if n > curseur else 1, n))
 
 
 # Une retenue decidee par le coordinateur (collision, ordre de stack,
@@ -3268,7 +3339,20 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         emit_output(args, results, f"unexpected-error:{exc}", 1)
         return 1
 
+    # Curseur de reprise (revue du 22/11) : la passe continue apres la
+    # derniere PR EVALUEEe de la passe precedente, puis boucle. Sans lui, une
+    # passe arretee par le budget repart de la file entiere et s'arrete au
+    # MEME endroit -- les PRs du haut ne sont jamais vues (file affamee).
+    curseur = read_pass_cursor(journal_path)
+    prs = _ordonner_apres_curseur(prs, curseur)
+
     merged_count = 0
+    #: Derniere PR **EVALUEE** de cette passe : c'est le curseur que la
+    #: passe suivante reprend (revue du 22/11).
+    dernier_evalue: int | None = None
+    #: La file entiere a-t-elle ete parcourue ? Si oui, le curseur se remet a
+    #: zero : la passe suivante repart du debut.
+    file_parcourue = False
     #: PRs dont l'etat de mergeabilite etait « en cours de calcul » a leur
     #: tour : elles sont PARQUEES, pas refusees, et rejouees en fin de
     #: passe (#26799).
@@ -3311,8 +3395,11 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                 stopped_reason = f"unexpected-error:{exc}"
                 exit_code = 1
                 break
+            dernier_evalue = pr
             continue
         try:
+            # Cette PR est EVALUEEe : le curseur de reprise doit le dire.
+            dernier_evalue = pr
             view = fetch_pr_view(active_runner, pr, gh_env)
             decision = evaluate_pr(view, pr, active_runner, gh_env)
             if decision.verdict == "would-merge":
@@ -3368,14 +3455,24 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
             # None -- le run ne s'est PAS arrete, l'ecrire ici serait un
             # constat faux (le bilan, lui, compte les erreurs isolees).
             continue
+    else:
+        # La boucle s'est achevee SANS arret : toute la file a ete parcourue.
+        file_parcourue = True
+
+    # Curseur de reprise (revue du 22/11) : la passe suivante continue apres
+    # la derniere PR EVALUEEe de celle-ci, puis boucle. Une passe qui a
+    # parcouru toute la file remet le curseur a zero : la suivante repart du
+    # debut. Le curseur ne remplace pas la file relue a chaque tour -- il
+    # en change le POINT DE DEPART.
+    write_pass_cursor(journal_path, None if file_parcourue else dernier_evalue)
 
     # PRs NON EVALUEES : la passe s'est arretee sur son budget de duree avant
     # de les atteindre. Elles sont journalisees avec un motif nomme -- jamais
     # une PR disparue du bilan (#28009). Elles ne sont PAS dans `results` :
     # `results` ne compte que les PRs EVALUEES, et le bilan distingue les
     # deux comptes (le compte « evaluee(s) » reste exact). La passe suivante
-    # repart de la file entiere -- la file est relue a chaque tour, une PR
-    # non evaluee n'est donc pas « consommee ».
+    # les atteint : la file est relue a chaque tour et le curseur de reprise
+    # fait avancer son point de depart (revue du 22/11).
     not_evaluated: list[PRVerdict] = []
     if stopped_reason == PASS_BUDGET_REASON:
         deja = {v.pr for v in results} | {parked for parked, _ in replay_queue}
@@ -3516,8 +3613,8 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
             "budget de duree d'une passe, en secondes (defaut "
             f"{int(PASS_BUDGET_S)} s). Depasse, la passe s'arrete PROPREMENT "
             "et les PRs restantes sont journalisees avec le motif "
-            f"'{PASS_BUDGET_REASON}' ; la passe suivante repart de la file "
-            "entiere."
+            f"'{PASS_BUDGET_REASON}' ; la passe suivante continue apres la "
+            "derniere PR evaluee (curseur de reprise)."
         ),
     )
     parser.add_argument(
