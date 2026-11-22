@@ -546,3 +546,78 @@ def test_le_plan_de_prechauffage_cible_la_racine_des_pivots(monkeypatch, tmp_pat
     assert str(pivot_root) in plan["worktree"][-2]
     cwd = plan["cache_get"][plan["cache_get"].index("--cwd") + 1]
     assert cwd == str(pivot_root / "formal_logic" / "lakes/formal_logic_lean")
+
+
+# --- 1 ter. les noms de paquets CITES par lake -------------------------------
+#
+# Lake ecrit entre guillemets un nom de paquet que le DSL ne peut pas ecrire
+# nu (un tiret) : `«axiom-audit»`. Le REPERTOIRE, sous `.lake/packages/`,
+# porte le nom NU. Comparer les deux chaines sans normaliser rend le verdict
+# de completude structurellement faux : le pivot est ecarte (« packages
+# incomplets : «axiom-audit» absent ») alors que le paquet y est present ET
+# resolu, puis le lac entier est refuse avec `no-warm-cache-for-toolchain`.
+#
+# Mesure du 20/11 sur ai-01, lac `formal_logic` (toolchain `v4.33.1`) :
+# `axiom-audit` (`.git`, `AxiomAudit.lean`, `Main.lean`) et `doc-gen4`
+# (`.git`, `.lake`, `DocGen4/`) etient materialises ET resolus dans le pivot
+# `D:/coursia-lean-pivots/formal_logic`. Instance : PR #25236.
+#
+# Ces tests sont les temoins : ils rougissent sur le code casse (comparaison
+# sans normalisation) et restent verts sur le code corrige.
+
+
+def test_un_paquet_cite_par_lake_est_servi_par_le_pivot(tmp_path):
+    """POSITIF : le manifeste cite `«axiom-audit»`, le pivot sert le
+    repertoire `axiom-audit` -- le pivot est un pivot."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    _manifest_de_paquets(lake, ["batteries", "«axiom-audit»"])
+    pivot = _lake(
+        tmp_path / "pivots", "warm", V4331, warm=True,
+        packages=["batteries", "axiom-audit"],
+    )
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is True
+    assert Path(verdict["pivot"]) == pivot
+
+
+def test_un_paquet_cite_et_absent_du_pivot_est_refuse(tmp_path):
+    """NEGATIF : la normalisation ne rend PAS valide un paquet reellement
+    absent -- le motif nomme le paquet manquant."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    _manifest_de_paquets(lake, ["batteries", "«axiom-audit»"])
+    pivot = _lake(
+        tmp_path / "pivots", "warm", V4331, warm=True, packages=["batteries"],
+    )
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is False
+    assert verdict["reason"] == alb.NO_WARM_CACHE
+    assert any("axiom-audit" in r for r in verdict["rejects"])
+
+
+def test_un_paquet_cite_et_non_resolu_est_refuse(tmp_path):
+    """NEGATIF : le repertoire du paquet cite existe mais n'est pas RESOLU
+    (pas de `.git`) -- un repertoire vide traine, lake le re-resoudrait."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    _manifest_de_paquets(lake, ["batteries", "«axiom-audit»"])
+    pivot = _lake(
+        tmp_path / "pivots", "warm", V4331, warm=True, packages=["batteries"],
+    )
+    (pivot / ".lake" / "packages" / "axiom-audit").mkdir(parents=True, exist_ok=True)
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is False
+    assert verdict["reason"] == alb.NO_WARM_CACHE
+    assert any("axiom-audit" in r and "incomplet" in r for r in verdict["rejects"])
+
+
+def test_le_nom_du_repertoire_est_le_nom_nu():
+    """La normalisation retire la citation de lake et rien d'autre."""
+    assert alb._package_dir_name("«axiom-audit»") == "axiom-audit"
+    assert alb._package_dir_name("«doc-gen4»") == "doc-gen4"
+    assert alb._package_dir_name("mathlib") == "mathlib"
+    assert alb._package_dir_name("  batteries  ") == "batteries"

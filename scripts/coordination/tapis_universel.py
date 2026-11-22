@@ -31,6 +31,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from coordination import gh_bulk, gh_selection, tapis_equilibre, tapis_marqueurs
+from coordination import gh_bulk, gh_selection, tapis_citations, tapis_equilibre, tapis_marqueurs, tapis_rapide
 from coordination.tapis_rapide import Etat, graine_defaut, ordonner
 
 
@@ -48,39 +49,53 @@ def _parent_de_titre(titre: str) -> int | None:
 
 
 def etats_leger(metas: list[dict], citations: dict[int, list[dict]],
-                maintenant: datetime) -> list[Etat]:
+                maintenant: datetime,
+                citations_ouvertes: dict[int, list[dict]] | None = None) -> list[Etat]:
     """Un etat par issue ouverte, sur les metadonnees seules.
 
-    Les visites comptent le **travail reel** : les commits qui citent l'issue.
+    Les visites comptent le **travail reel** : les commits qui citent l'issue,
+    et les PRs **ouvertes** qui la citent (le travail en cours compte aussi).
     Les marqueurs de visite vivent dans les commentaires -- ils sont lus a la
     prise en charge, pas au classement."""
     etats = []
     for it in metas:
         n = int(it["number"])
         labels = list(it.get("labels") or [])
-        parent = _parent_de_titre(it.get("title") or "")
-        e = Etat(n, it.get("title") or "", labels, it.get("created_at") or "",
-                 parent, parent or n, False,
+        titre = it.get("title") or ""
+        parent = _parent_de_titre(titre)
+        e = Etat(n, titre, labels, it.get("created_at") or "",
+                 parent, parent or n, tapis_rapide._conteneur_de(titre, labels),
                  any(lab.strip().lower() == "consolidation" for lab in labels))
+        cites = citations.get(n, []) + (citations_ouvertes or {}).get(n, [])
         e.derniere_visite, e.visites_total, e.visites = tapis_equilibre.compter(
-            [], citations.get(n, []), maintenant)
+            [], cites, maintenant)
         etats.append(e)
     return etats
 
 
 def rotation_universelle(etats_: list[Etat], lane: str, maintenant: datetime,
-                          grains: int, graine: str | None = None) -> list[Etat]:
+                          grains: int, graine: str | None = None,
+                          rotation: bool = True) -> list[Etat]:
     """La rotation de TOUTES les issues ouvertes, sans ecarter.
 
     L'ordre est celui de `tapis_equilibre` : niveau croissant (visites du
-    tour moins les priorites legeres), puis le decalage de tete par lane."""
-    return ordonner(etats_, lane, maintenant, grains, graine)
+    tour moins les priorites legeres), puis le decalage de tete par lane.
+
+    `rotation=False` rend l'ordre **fair** (le decalage de tete par lane
+    n'est pas applique) : la voie legere s'en sert, parce que sa FENETRE
+    doit pouvoir etre un bloc contigu du pool classe."""
+    return ordonner(etats_, lane, maintenant, grains, graine, rotation=rotation)
 
 
 def action_de(e: Etat, lane: str) -> str:
-    """Ce que la lane doit faire de ce grain : le lire, le qualifier, le servir."""
-    base = (f"lire l'issue #{e.numero}, la qualifier (claim vivant, gel, "
-            f"contenu deja livre) puis la servir")
+    """Ce que la lane doit faire de ce grain : le qualifier, puis le servir.
+
+    La qualification est le temps d'ACTION : elle lit le corps et le fil
+    complet de l'issue et rejoue les neuf regles d'ecart -- l'organe est
+    `scripts/coordination/tapis_prise_en_charge.py`.
+    """
+    base = (f"qualifier #{e.numero} avant action (corps + fil complet, "
+            f"scripts/coordination/tapis_prise_en_charge.py) puis la servir")
     if e.consolidation:
         base += " -- issue de consolidation"
     return base
@@ -122,11 +137,13 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
         metas, duree = gh_selection.lire_metadonnees_issues(
             run, budget_s=args.budget_s)
         citations = gh_bulk.lire_citations_mergees(depot, args.jours, run)
+        prs = gh_bulk.lire_prs_ouvertes(run)
     except gh_bulk.LectureIncomplete as exc:
         print(f"Lecture incomplete ({exc.lecture}, page {exc.page}) : {exc.cause}",
               file=sys.stderr)
         return 3
-    etats_ = etats_leger(metas, citations, maintenant)
+    etats_ = etats_leger(metas, citations, maintenant,
+                          tapis_citations.des_prs_ouvertes(prs))
     file = rotation_universelle(etats_, args.lane, maintenant, args.grains,
                                 graine_defaut(args.lane, maintenant))
     r = rapport(etats_, file, args.lane, maintenant,
