@@ -6346,7 +6346,7 @@ if FD_OK:
         print(f""Erreur: {result.get('error', 'Inconnue')}"")
 else:
     print(""Fast Downward non disponible (ni service Docker, ni plugin local)"")",,,,,,,,05117249bd3af6e5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb,cell-16,markdown,fr,9daa1298d8d52818,"### Interpretation de la sortie
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb,cell-16,markdown,fr,fb2de94aa9e1a43d,"### Interpretation de la sortie
 
 La sortie de Fast Downward contient plusieurs informations cles :
 
@@ -6360,7 +6360,8 @@ La sortie de Fast Downward contient plusieurs informations cles :
 **Points cles** :
 - Le nombre de variables SAS+ est typiquement inferieur aux predicats PDDL
 - L'heuristique LM-cut est **admissible** (garantit optimalite avec A*)
-- Le temps de recherche depend de la difficulte du problème",,,,,,,,9daa1298d8d52818,,,,,,,,,,,,,,,
+- Le temps de recherche depend de la difficulte du problème
+- **Le « Temps » affiché est un temps d'appel, pas un temps de recherche** : le moteur transite ici par le service Docker `coursia-fast-downward` (port 8200), ≈ 2 s par appel (démarrage du solveur dans le conteneur) ; le solveur lui-même termine en ~1 ms, visible dans le journal `[t=…]`.",,,,,,,,fb2de94aa9e1a43d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb,cell-17,markdown,fr,9a43a47e8d947d71,"***
 
 ## 5. Algorithmes de recherche
@@ -24143,7 +24144,9 @@ string[] lieux3 = { ""A"", ""B"", ""C"" };
 string[] lieux4 = { ""A"", ""B"", ""C"", ""D"" };
 RunLogistics(""E1 : 3 lieux, pkgA A->B, pkgB C->B (camion en A)"", lieux3, 0, new[] { (""pkgA"", 0, 1), (""pkgB"", 2, 1) });
 RunLogistics(""E2 : 4 lieux, pkgA A->B, pkgB C->B, pkgC D->B (camion en A)"", lieux4, 0, new[] { (""pkgA"", 0, 1), (""pkgB"", 2, 1), (""pkgC"", 3, 1) });",,,,,,,,84c89bab7d1d92f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,262efac2,markdown,fr,598ac542cddec636,"### Interprétation : le compromis satisficing devient visible
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,262efac2,markdown,fr,a8b9591cc961d7f0,"### Interprétation : le compromis satisficing devient visible
+
+**Échelle des instances** : E1 = 48 états (3 × 4²), 18 opérateurs, h^FF(init) = 6 ; E2 = 500 états (4 × 5³), 36 opérateurs, h^FF(init) = 9.
 
 Résultats observés (exécution réelle ci-dessus) :
 
@@ -24158,4 +24161,14 @@ Résultats observés (exécution réelle ci-dessus) :
 
 **Lecture** : sur E1, GBFS et EHC livrent `pkgA` à B dès qu'ils le peuvent — chaque livraison fait chuter h^FF, c'est donc toujours un état améliorant — puis doivent retourner chercher `pkgB` à C et revenir : 7 actions, au lieu du balayage optimal A->C->B qui transporte `pkgA` pendant le détour (6). Sur E2, l'écart à l'optimal **croît** (+2) pendant que l'écart de nœuds explose dans l'autre sens (135 contre 12) : c'est le compromis exact annoncé en §8 — le satisficing paie ses nœuds en optimalité, et réciproquement.
 
-**Pourquoi h^FF ne voit pas le piège** : dans le monde relâché, le camion peut « être » en A, C et B simultanément — le plan relâché ne compte chaque détour qu'une fois, sans le chaînage réel des positions. Dès que plusieurs colis imposent des détours imbriqués, h^FF devient optimiste, et l'état qui la fait baisser n'est plus forcément sur un plan optimal. C'est pourquoi FF lance EHC d'abord et garde une recherche complète en secours (§7) : sur les instances opaques à h^FF, seul A* garantit le coût minimal.",,,,,,,,598ac542cddec636,,,,,,,,,,,,,,,
+**h^FF(init) est exacte, le piège est en cours de recherche** : sur E1 h^FF(init) = 6 = coût optimal, sur E2 h^FF(init) = 9 = coût optimal — la relaxation ne se trompe donc **pas à l'état initial**. C'est en cours de recherche que le camion doit **chaîner** ses positions à travers des détours imbriqués, et que l'état qui fait baisser h^FF n'est plus sur un plan optimal : d'où le +1 (E1) et le +2 (E2) de GBFS/EHC.
+
+**Pourquoi h^FF ne voit pas le piège** : dans le monde relâché, le camion peut « être » en A, C et B simultanément — le plan relâché ne compte chaque détour qu'une fois, sans le chaînage réel des positions. Dès que plusieurs colis imposent des détours imbriqués, h^FF devient optimiste, et l'état qui la fait baisser n'est plus forcément sur un plan optimal. C'est pourquoi FF lance EHC d'abord et garde une recherche complète en secours (§7) : sur les instances opaques à h^FF, seul A* garantit le coût minimal.",,,,,,,,a8b9591cc961d7f0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb,e3f4146f,markdown,fr,d4341ddab093f70f,"### Interprétation : les trois variantes GBFS
+
+Sur la tour de 3 blocs, les trois configurations livrent le **même coût 4** que A* (cellule précédente) — eager ou lazy, avec `ff()` ou `cg()` : à cette taille, le satisficing ne paie **aucun écart d'optimalité** ; il ne se distingue que par le nombre de nœuds, absent de ce tableau. L'écart de coût entre satisficing et optimal n'apparaît que sur les instances où l'heuristique présente des **plateaux** — le régime que le twin C# met en évidence en §9 (Logistics au-delà du seuil, 48 / 500 états), où GBFS/EHC livrent un plan **+1 à +2** contre **moins de nœuds expansés**.",,,,,,,,d4341ddab093f70f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-CSharp.ipynb,880167c5,markdown,fr,163354297caec68a,"### Interprétation : le test falsifiable est passé
+
+Le test posé en tête de la Tranche 2 est **passé** : la première ligne de sortie nomme bien le **service Docker `coursia-fast-downward` (port 8200)** — le C# a réellement invoqué Fast Downward, pas un repli local. Le plan renvoyé est **optimal** : 2 actions (`pick-up a` → `stack a b`), coût 2, 3 états expansés — **identique au plan du jumeau Python** (cellule 18), qui passe par le même moteur. La parité **lib-vs-lib** est établie de part et d'autre : même moteur, même plan, même preuve.
+
+Le C# atteint le moteur de production par le même organe que le Python ([`FastDownwardBackend.cs`](../FastDownwardBackend.cs) ↔ `fast_downward_backend.py`) : service Docker s'il répond à `/health`, sinon pilote local du paquet `up-fast-downward`.",,,,,,,,163354297caec68a,,,,,,,,,,,,,,,

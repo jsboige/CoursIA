@@ -86,11 +86,18 @@ public static class FastDownwardBackend
         }
     }
 
+    // Delai de la sonde /health. Il doit absorber le cout a froid du kernel .NET Interactive
+    // (chargement de System.Net.Http + JIT + connexion) : mesure le 2026-11-22, la sonde a
+    // 2 s expirait sur un kernel neuf (AggregateException "A task was canceled" apres 2021 ms)
+    // alors que la meme requete repondait 200 en 2036 ms. L'exception etant avalee, le moteur
+    // restait bloque sur le pilote local pour toute la session, alors que le service repondait.
+    const int ProbeTimeoutSeconds = 15;
+
     static bool ServiceAnswers()
     {
         try
         {
-            using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(2) };
+            using var probe = new HttpClient { Timeout = TimeSpan.FromSeconds(ProbeTimeoutSeconds) };
             using var resp = probe.GetAsync(ServiceUrl + "/health").Result;
             if (!resp.IsSuccessStatusCode) return false;
             try
