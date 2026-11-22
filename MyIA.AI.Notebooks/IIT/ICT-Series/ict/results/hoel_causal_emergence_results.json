@@ -1,0 +1,246 @@
+{
+  "case": "25-hoel-causal-emergence",
+  "source": "Hoel, Albantakis, Tononi 2013, PNAS 110(49):19790-19795, 10.1073/pnas.1314922110",
+  "organ": "ict.causal_emergence (causal_profile + partition_profile), invoque",
+  "stochastic": false,
+  "gates": {
+    "G2_analytic": {
+      "ok": true,
+      "copy": {
+        "n": 2,
+        "determinism": 1.0,
+        "degeneracy": 0.0,
+        "specificity": 1.0,
+        "effectiveness": 1.0,
+        "effective_information": 1.0
+      },
+      "noisy": {
+        "n": 2,
+        "determinism": 0.0,
+        "degeneracy": 0.0,
+        "specificity": 1.0,
+        "effectiveness": 0.0,
+        "effective_information": 0.0
+      },
+      "degenerate": {
+        "n": 3,
+        "determinism": 1.0,
+        "degeneracy": 1.0,
+        "specificity": 0.0,
+        "effectiveness": 0.0,
+        "effective_information": 0.0
+      }
+    },
+    "G1_dual_impl": {
+      "ok": true,
+      "max_abs_diff": 4.440892098500626e-16,
+      "n_matrices": 5
+    },
+    "G4_legality": {
+      "ok": true
+    }
+  },
+  "calibration": {
+    "fig2": null,
+    "fig4": {
+      "gates": {
+        "0": [
+          2,
+          3
+        ],
+        "1": [
+          2,
+          3
+        ],
+        "2": [
+          4,
+          5
+        ],
+        "3": [
+          4,
+          5
+        ],
+        "4": [
+          0,
+          1
+        ],
+        "5": [
+          0,
+          1
+        ]
+      },
+      "family": "paires-dupliquees-dir1",
+      "noise": 0.0,
+      "exhaustive": true
+    },
+    "fig5": null
+  },
+  "hypotheses": {
+    "H1": {
+      "verdict": "NON_CONCLUSIF",
+      "reason": "calibrage G3 Fig. 2 non atteint",
+      "exclusion": {
+        "impossible": true,
+        "output_site": {
+          "p_star": 0.17,
+          "det_at_p_star": 0.3423,
+          "degeneracy_lower_bound": 0.08,
+          "target_deg": 0.05,
+          "unreachable": true
+        },
+        "input_site": {
+          "degeneracy_lower_bound": 0.1887,
+          "target_deg": 0.05,
+          "unreachable": true
+        },
+        "conclusion": "bruit symetrique (sortie ou entree) incompatible avec det=0.34 ET deg=0.05 imprimes sur mecanisme AND"
+      }
+    },
+    "H2": {
+      "CE": 0.5661656266226012,
+      "band": [
+        0.3,
+        0.8
+      ],
+      "macro_eff": 1.0,
+      "micro_det": 1.0,
+      "micro": {
+        "n": 64,
+        "determinism": 1.0,
+        "degeneracy": 0.5943609377704335,
+        "specificity": 0.40563906222956647,
+        "effectiveness": 0.40563906222956647,
+        "effective_information": 2.433834373377399
+      },
+      "macro": {
+        "n": 8,
+        "determinism": 1.0,
+        "degeneracy": 0.0,
+        "specificity": 1.0,
+        "effectiveness": 1.0,
+        "effective_information": 3.0,
+        "macro_tpm": [
+          [
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0
+          ],
+          [
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0
+          ]
+        ]
+      },
+      "verdict": "CONFIRMEE"
+    },
+    "H3": {
+      "verdict": "NON_CONCLUSIF",
+      "reason": "calibrage G3 Fig. 5 non atteint"
+    },
+    "H4": {
+      "micro": {
+        "n": 16,
+        "determinism": 0.5310044064107188,
+        "degeneracy": 0.0,
+        "specificity": 1.0,
+        "effectiveness": 0.5310044064107188,
+        "effective_information": 2.124017625642875
+      },
+      "rows": [
+        {
+          "label": "paires-01-23",
+          "EI_macro": 0.9347817068497102,
+          "CE": -1.189235918793165
+        },
+        {
+          "label": "paires-02-13",
+          "EI_macro": 0.9347817068497102,
+          "CE": -1.189235918793165
+        },
+        {
+          "label": "paires-03-12",
+          "EI_macro": 0.9347817068497102,
+          "CE": -1.189235918793165
+        },
+        {
+          "label": "total-4",
+          "EI_macro": 0.3813154004046816,
+          "CE": -1.7427022252381934
+        }
+      ],
+      "verdict": "CONFIRMEE"
+    }
+  },
+  "global_verdict": "PARTIEL"
+}
