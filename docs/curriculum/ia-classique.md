@@ -137,8 +137,8 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 20 | [App-10 : Optimisation de portefeuille par algorithme…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) | BETA | Oui |
 | 21 | [App-11-CSharp : Picross (Nonogrammes) — Jumeau C#](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb) | BETA | Oui |
 | 22 | [App-11 - Picross (Nonogrammes)](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-Python.ipynb) | BETA | Oui |
-| 23 | [App-12b (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb) | BETA | Oui |
-| 24 | [App-12b : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb) | BETA | Oui |
+| 23 | [App-12 (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-CSharp.ipynb) | BETA | Oui |
+| 24 | [App-12 : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb) | BETA | Oui |
 | 25 | [App-13-CSharp : TSP (Voyageur de Commerce) — Jumeau C#](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb) | BETA | Oui |
 | 26 | [App-13 : Le Problème du Voyageur de Commerce (TSP)](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-Python.ipynb) | BETA | Oui |
 | 27 | [App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb) | BETA | Oui |

@@ -5,16 +5,15 @@ la forme du service -- la commande a lancer avant d'editer, la procedure d'un
 conteneur, la lecture de secours sur le cache quand le reseau tombe, et la
 sortie texte. Aucune decision d'ecart ici ; aucun processus lance.
 
-Mesure fondatrice (#26926, 16/11) : un conteneur servi avec la commande
-`check_lane_claim.py N` sans `--paths` etait refuse par construction des que
-d'autres lanes y tenaient des claims bornes (6 sur #19297), et la lecture
-incomplete renvoyait vers le tapis lourd (240 s, grains non verifies).
+Mesure fondatrice (#26926, 16/11) : un conteneur servi avec `check_lane_claim.py N`
+sans `--paths` etait refuse des que d'autres lanes y tenaient des claims bornes
+(6 sur #19297), et la lecture incomplete renvoyait vers le tapis lourd (240 s).
 """
 from __future__ import annotations
 
 from pathlib import Path
 
-from coordination import gh_bulk, gh_cache_fichier
+from coordination import gh_bulk, gh_cache_fichier, tapis_sature
 
 VERIF = "python scripts/check_lane_claim.py {n} --lane {lane}"
 VERIF_CONTENEUR = VERIF + " --paths <vos chemins>"
@@ -100,8 +99,10 @@ def texte(r: dict, source: str) -> str:
     fetch = f" ; {lu['fetch_note']}" if lu.get("fetch_note") else ""
     lignes = [f"Tapis rapide -- lane {r['lane']} -- {r['maintenant']} -- source : {source}",
               (f"{lu['issues']} issues ouvertes, {lu['servables']} servables en "
-               f"{lu['familles']} familles ; lecture {lu['secondes']} s, {lu['appels']} "
-               f"appels, cache {'oui' if lu['depuis_cache'] else 'non'} ; origin/main "
+               f"{lu['familles']} familles (feuilles {lu.get('servables_feuilles', '?')}, "
+               f"conteneurs {lu.get('servables_conteneurs', '?')}) ; lecture "
+               f"{lu['secondes']} s, {lu['appels']} appels, cache "
+               f"{'oui' if lu['depuis_cache'] else 'non'} ; origin/main "
                f"local : dernier commit {age}{fetch}"),
               (f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- traitez d'abord leurs nits "
                "(reserves, rouge propre, conflit) ; une PR verte qui n'attend que la "
@@ -117,6 +118,8 @@ def texte(r: dict, source: str) -> str:
     comptes = ", ".join(f"{code} {len(v)}" for code, v in r["ecartees"].items())
     total = sum(len(v) for v in r["ecartees"].values())
     lignes.append(f"\nEcartees sans sonde : {comptes} (total {total})")
+    eteints = r.get("eteints") or []
+    lignes += tapis_sature.lignes_urne(eteints)
     rev = r.get("reverif_fils")
     if rev:
         jetes = ", ".join(f"{j['code']} #{j['numero']}" for j in rev["jetes"]) or "aucun"
