@@ -142,6 +142,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | Fichier | Description |
 |---------|-------------|
 | [genai/3d-socle-reproductibilite.md](genai/3d-socle-reproductibilite.md) | Reproductibilité des socles 3D (NeRF, splats) — mesure sur deux postes : écart 0,07 dB et reproduction exacte |
+| [reference/genai-3dtiles-public-measurements.md](reference/genai-3dtiles-public-measurements.md) | 3D Tiles — mesures du viewer public et prototype hiérarchique local, avec limites de comparaison |
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
 | [genai/tts-fishaudio-int4.md](genai/tts-fishaudio-int4.md) | La route int4 réelle de tts-fishaudio — quantification amont weight-only, quatre correctifs, mesures VRAM/qualité (#23415) |
 | [genai/audio-fish-decision.md](genai/audio-fish-decision.md) | Décision Fish Audio S2 Pro — evidence mesurée et recommandation hybride (critère 5, #19694) |
