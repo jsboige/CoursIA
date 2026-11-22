@@ -482,6 +482,58 @@ jobs:
           path: site-slides
           retention-days: 3
 
+  build-jupyterlite:
+    # Pli 2.2 de l'Epic #27543 : publier le lot de carnets Python eligible
+    # sous /jupyterlite/ du site, ou chaque carnet s'ouvre et s'execute dans
+    # le navigateur (noyau Pyodide).
+    #
+    # Job SEPARE, comme les decks Slidev : la construction installe son
+    # outillage (jupyterlite-core + noyau Pyodide) et ne doit pas tenir le
+    # rendu Quarto en otage.
+    #
+    # Le lot n'est PAS une liste tenue a la main : il est RECALCULE par
+    # scripts/notebook_tools/build_jupyterlite_site.py a partir du critere
+    # d'eligibilite du pli 2.1 (docs/reference/pyodide-lock.json). Si aucun
+    # carnet n'est eligible, le job echoue : un deploiement sans lot ne doit
+    # pas passer pour un deploiement reussi.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    name: Build JupyterLite lot
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install JupyterLite
+        # Versions egales : le noyau Pyodide doit correspondre au core.
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "jupyterlite-core==0.8.7" "jupyterlite-pyodide-kernel==0.8.7"
+
+      - name: Build the JupyterLite lot
+        run: |
+          set -euo pipefail
+          # Le site Pages sert le depot sous /<nom-du-depot>/ : c'est ce
+          # prefixe que portent les URLs publiques du lot (manifeste).
+          BASE="/${GITHUB_REPOSITORY#*/}"
+          python scripts/notebook_tools/build_jupyterlite_site.py             --repo .             --taille 8             --source-dir "$RUNNER_TEMP/jlite/site"             --output-dir "$RUNNER_TEMP/jlite/site/_output"             --base-url "$BASE"
+
+      - name: Upload JupyterLite artifact
+        # Pas upload-pages-artifact : cet artifact est un INGREDIENT du site,
+        # pas le site -- c'est assemble-pages qui compose l'artifact Pages.
+        uses: actions/upload-artifact@v4
+        with:
+          name: jupyterlite-dist
+          path: ${{ runner.temp }}/jlite/site/_output
+          retention-days: 3
+
   assemble-pages:
     # L5 #11508 : composer le site final (Quarto + decks) en UN artifact Pages.
     # Un second workflow deploy-pages deploierait un artifact decks-seul qui
@@ -496,7 +548,7 @@ jobs:
     # par ce chemin.
     if: always() && (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.build.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     name: Assemble Pages artifact
-    needs: [build, build-slides]
+    needs: [build, build-slides, build-jupyterlite]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -517,6 +569,15 @@ jobs:
           path: _site/slides
         continue-on-error: true
 
+      - name: Download JupyterLite lot
+        # Fail-soft : l'artifact peut manquer (job jupyterlite en echec) --
+        # le site part alors sans /jupyterlite/, le warning du step Check le dit.
+        uses: actions/download-artifact@v4
+        with:
+          name: jupyterlite-dist
+          path: _site/jupyterlite
+        continue-on-error: true
+
       - name: Check output
         run: |
           test -f _site/index.html || (echo "::error::_site/index.html absent -- artifact Quarto incomplet" && exit 1)
@@ -524,6 +585,11 @@ jobs:
           echo "Site final : $(find _site -type f | wc -l) fichiers dont $N_SLIDES deck(s) Slidev sous /slides/."
           if [ "$N_SLIDES" -eq 0 ]; then
             echo "::warning::Aucun deck Slidev dans l'artifact (job build-slides en echec ou 0 deck construit) -- deploiement SANS /slides/."
+          fi
+          N_LOT=$(find _site/jupyterlite/files -maxdepth 1 -name "*.ipynb" 2>/dev/null | wc -l)
+          echo "Lot JupyterLite : $N_LOT carnet(s) sous /jupyterlite/files/."
+          if [ "$N_LOT" -eq 0 ]; then
+            echo "::warning::Aucun carnet JupyterLite dans l'artifact (job build-jupyterlite en echec ou lot vide) -- deploiement SANS /jupyterlite/."
           fi
 
       - name: Upload Pages artifact
