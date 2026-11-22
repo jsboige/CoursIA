@@ -7,7 +7,7 @@ La famille Python se lit sur la langue declaree (`language_info.name`), le nom d
 noyau ne servant que de repli : un carnet sans langue ni noyau Python n'est pas
 compte -- le census ne suppose pas Python par defaut. Le compte d'une serie peut
 donc etre inferieur au nombre de fichiers `.ipynb` qu'elle contient.
-Census : **1445** carnets Python, **555** eligibles, **890** refuses.
+Census : **1446** carnets Python, **555** eligibles, **891** refuses.
 
 Source de verite des paquets : `pyodide-lock.json` (ABI 2026_0, Python 3.14.2, wasm32, emscripten_5_0_3 ; 357 paquets),
 commite avec le rapport (`docs/reference/pyodide-lock.json`), ainsi que le cache des sondes
@@ -105,6 +105,7 @@ accessibles en local avec `--detail-cle` (sortie a ne pas committer).
 | MyIA.AI.Notebooks/Probas | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 1 |
 | MyIA.AI.Notebooks/RL | 28 | 10 | 18 | 12 | 0 | 0 | 0 | 15 |
 | MyIA.AI.Notebooks/Sudoku | 21 | 8 | 13 | 2 | 1 | 1 | 5 | 7 |
+| NotionsInteractives | 1 | 0 | 1 | 0 | 0 | 0 | 0 | 1 |
 | Numerique | 2 | 2 | 0 | 0 | 0 | 0 | 0 | 0 |
 | Part1-Foundations | 28 | 17 | 11 | 0 | 1 | 1 | 7 | 5 |
 | Part2-CSP | 10 | 1 | 9 | 0 | 1 | 0 | 9 | 0 |
@@ -151,7 +152,7 @@ par classe :
 |---|---|---:|
 | `dependance_locale` | un module de la serie a une dependance absente de la distribution | 18 |
 | `hors_serie` | le carnet importe un module d'une autre serie, non livre par le bundle | 23 |
-| `absent_distribution` | l'import est une roue pure que le carnet n'installe pas lui-meme | 171 |
+| `absent_distribution` | l'import est une roue pure que le carnet n'installe pas lui-meme | 172 |
 
 Ces trois classes sont mesurees sur la population que le critere acceptait
 **avant** l'alignement -- un carnet deja refuse pour un GPU ou une cle n'y
@@ -160,7 +161,7 @@ disait. Le comptage avant/apres est donc sur la meme population :
 
 | Mesure | Avant | Apres |
 |---|---:|---:|
-| Carnets eligibles | 759 | 555 |
+| Carnets eligibles | 760 | 555 |
 
 Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suffisance`).
 
@@ -444,10 +445,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19c-Borne-Bernstein-Python.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb` | Lean | python3 | numpy==2.4.6, scipy==1.18.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-Capstone-Digestions-Tao-Python.ipynb` | Lean | python3 | - | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb` | Lean | python3 | - | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-25-Coherence-et-Temoin.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Complex-Structure-S6.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-37-Capstone-Serre100.ipynb` | Lean | python3-lean | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-38-Capstone-Geometry-Lean-Python.ipynb` | Lean | python3 | numpy==2.4.6, sympy==1.14.0 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb` | Lean | python3 | - | - |
@@ -500,6 +498,9 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/29-reciprocite-quadratique-legendre.ipynb` | Lean | python3 | - | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/30-fonction-partition-nombres-pentagonaux.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/31-squelette-soule-sl3.ipynb` | Lean | python3 | matplotlib==3.10.8 | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb` | Lean | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-05-Coherence-et-Temoin.ipynb` | Lean | python3 | - | - |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/VERIF/VERIF-07-FairBot-Loeb.ipynb` | Lean | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/hmm_alpha_dm_research.ipynb` | ML-Training-Pipeline | python3 | numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m11e_ensemble_research.ipynb` | ML-Training-Pipeline | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m12_har_rv_j_research.ipynb` | ML-Training-Pipeline | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
@@ -623,7 +624,7 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb` | Part1-Foundations | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb` | Part2-CSP | python3 | matplotlib==3.10.8, networkx==3.6.1, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-07-Wordle-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
+| `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb` | Part3-Cas-pratiques | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-Python.ipynb` | Part3-Cas-pratiques | python3 | - | - |
@@ -760,6 +761,7 @@ fichier `pyodide-refus.tsv`, une ligne par carnet refuse.
 | MyIA.AI.Notebooks/Probas | suffisance | - |
 | MyIA.AI.Notebooks/RL | gpu, suffisance | - |
 | MyIA.AI.Notebooks/Sudoku | cle, gpu, import_absent, reseau, suffisance | ortools.sat.python (2), z3 (2), dd.autoref (1), jpype (1), jpype.imports (1), jpype.types (1) |
+| NotionsInteractives | suffisance | - |
 | Part1-Foundations | cle, import_absent, reseau, suffisance | cvxpy (2), ortools.sat.python (2), z3 (2), automata.fa.dfa (1), automata.fa.nfa (1), open_spiel.python.algorithms (1) |
 | Part2-CSP | cle, import_absent | ortools.sat.python (6), pychoco (4), constraint (2), z3 (1) |
 | Part3-Cas-pratiques | import_absent, suffisance | ortools.sat.python (13), ortools.constraint_solver (3), __main__ (1), constraint (1), cvxpy (1), ortools (1) |
