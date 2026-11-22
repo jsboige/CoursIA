@@ -34,6 +34,12 @@ cours (la boucle evalue chaque PR une seule fois) ou un ecart superieur a
 ``--max-gap`` (les couts par PR d'un passage se comptent en minutes, la cadence
 entre passages en dizaines de minutes).
 
+Les lignes ``unevaluated`` (PRs que la passe n'a pas evaluees, arret sur le
+budget de duree -- #28009) sont comptees mais **hors cout et hors compte de
+PRs** : elles ne representent aucune evaluation, et les compter comme des
+PRs evaluees ferait passer un passage lent pour un passage rapide (regle de
+trois sur un compte gonfle).
+
 Usage
 -----
     python scripts/coordination/merge_ready_pass_timing.py
@@ -68,6 +74,21 @@ DEFAULT_MAX_GAP_S = 900.0
 #: Le seuil d'acceptance de #26799 : un passage de 132 PRs sous 30 min.
 DEFAULT_TARGET_MINUTES = 30.0
 DEFAULT_TARGET_PRS = 132
+
+#: Verdict d'une PR que la passe de ``merge_ready`` n'a pas **evaluee** (arret
+#: sur le budget de duree, #28009).
+#:
+#: Ces lignes ne portent aucun cout d'evaluation : l'organe les COMPTE mais ne
+#: les mesure pas. Sans cela, un passage arrete par son budget gonflerait son
+#: compte de PRs de centaines de lignes sans evaluation, et la projection
+#: ``span * (132 / count)`` -- qui est une regle de trois sur le compte de
+#: PRs -- repartirait d'un compte faux : plus de PRs, moins de cout unitaire
+#: annonce, un passage lent qui passerait pour rapide.
+#:
+#: C'est une **recopie** de ``merge_ready.VERDICT_NOT_EVALUATED`` ( meme
+#: convention que ``default_journal_path`` : la copie ne derive pas en
+#: silence, un test verrouille l'egalite).
+NOT_EVALUATED_VERDICT = "unevaluated"
 
 
 def default_journal_path() -> Path:
@@ -157,6 +178,10 @@ class Pass:
     costs: list[tuple[float, Row]] = field(default_factory=list)
     #: Lignes dont l'horodatage precede celui de la ligne precedente.
     time_travel: int = 0
+    #: PRs du passage que la passe n'a pas EVALUEEes (arret sur le budget de
+    #: duree, #28009). Elles ne portent aucun cout : elles sont comptees,
+    #: pas mesurees.
+    not_evaluated: int = 0
 
     @property
     def start(self) -> datetime | None:
@@ -205,6 +230,18 @@ def split_passes(rows: list[Row], max_gap_s: float) -> list[Pass]:
     seen: set[int | None] = set()
     previous: Row | None = None
     for row in rows:
+        if row.verdict == NOT_EVALUATED_VERDICT:
+            # Ligne d'une PR que la passe n'a pas evaluee (arret sur le budget
+            # de duree, #28009) : elle ne porte AUCUN cout et son horodatage
+            # ne delimite aucune evaluation -- elle ne compte donc ni dans le
+            # cout, ni dans le compte de PRs du passage. Elle est COMPTEE, et
+            # sa PR reste dans `seen` : evaluee au tour suivant, elle ouvrira
+            # un passage (sans cela, les deux passages fusionneraient et la
+            # mesure du suivant serait absorbee par le precedent).
+            current.not_evaluated += 1
+            if row.pr is not None:
+                seen.add(row.pr)
+            continue
         boundary = False
         went_back = previous is not None and row.ts < previous.ts
         if previous is not None:
@@ -231,7 +268,9 @@ def split_passes(rows: list[Row], max_gap_s: float) -> list[Pass]:
         current.add(row, delta)
         seen.add(row.pr)
         previous = row
-    if current.rows:
+    if current.rows or current.not_evaluated:
+        # Un passage qui n'a evalue aucune PR (arret sur le budget avant la
+        # premiere PR) reste visible : il porte un compte, meme nul.
         passes.append(current)
     return passes
 
@@ -323,6 +362,9 @@ def pass_report(pass_obj: Pass, index: int) -> dict:
         "span_s": round(span, 1),
         "startup_unmeasured_prs": 1 if pass_obj.count else 0,
         "time_travel": pass_obj.time_travel,
+        # PRs que la passe n'a pas evaluees (arret sur le budget de duree) :
+        # hors comptage des PRs evaluees, hors cout.
+        "not_evaluated": pass_obj.not_evaluated,
         "classes": classes,
     }
 
@@ -342,6 +384,12 @@ def render(pass_obj: Pass, index: int, top: int, target_minutes: float,
         "  (etendue = premiere -> derniere ligne ; demarrage du passage et "
         "derniere ecriture non mesures)"
     )
+    if pass_obj.not_evaluated:
+        lines.append(
+            f"  {pass_obj.not_evaluated} PR(s) NON evaluee(s) (arret sur le "
+            "budget de duree) : comptees, hors cout d'evaluation -- elles "
+            "n'entrent ni dans le compte de PRs ni dans la projection."
+        )
     lines.append("")
     lines.append(f"  {'classe':<34} {'PRs':>4} {'duree':>12} {'part':>7}")
     lines.append(f"  {'-' * 34} {'-' * 4} {'-' * 12} {'-' * 7}")
@@ -443,17 +491,24 @@ def main(argv: list[str] | None = None) -> int:
 
     passes = split_passes(rows, args.max_gap)
     selected = list(enumerate(passes, start=1))[-args.last:]
+    not_evaluated_total = sum(p.not_evaluated for p in passes)
 
     if args.json:
         payload = {
             "journal": str(path),
             "passes_total": len(passes),
             "unreadable": unreadable,
+            # Lignes de PRs que la passe n'a pas evaluees : comptees, hors
+            # cout d'evaluation et hors compte de PRs du passage.
+            "not_evaluated": not_evaluated_total,
             "selected": [pass_report(p, i) for i, p in selected],
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
-        print(f"journal : {path} ({len(rows)} lignes, {unreadable} illisible(s))")
+        print(
+            f"journal : {path} ({len(rows)} lignes dont {not_evaluated_total} "
+            f"non evaluee(s), {unreadable} illisible(s))"
+        )
         print(f"passages : {len(passes)}")
         print("")
         for position, (i, p) in enumerate(selected):
