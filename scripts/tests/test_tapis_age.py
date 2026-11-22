@@ -23,6 +23,7 @@ Aucun test ne touche le reseau : les modules sont purs.
 """
 from __future__ import annotations
 
+import json
 import sys
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -31,7 +32,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from coordination import tapis_age, tapis_ancre, tapis_etat, tapis_rotation  # noqa: E402
+from coordination import (tapis_age, tapis_ancre, tapis_etat,  # noqa: E402
+                          tapis_leger, tapis_rotation)
 
 pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
@@ -221,3 +223,58 @@ def test_un_tour_couvert_redonne_la_file(tmp_path, monkeypatch):
     etat = tapis_ancre.proposer(LANE, "grains", [9, 10], [], reinit=True)
     assert set(etat["grains"]["attente"]) == {9, 10}, \
         "la file rend les anciens et prend les nouveaux"
+
+
+# --- LE TIRAGE REEL : LE VIEUX STOCK (dispatch du coordinateur, 22/11) -----
+#
+# « le tapis rapide doit aussi tirer du vieux stock (non_visites, par ex.
+# #1203), avec un test qui le prouve sur un pool synthetique ».
+
+def _noeud(n: int, cree: str) -> dict:
+    return {"number": n, "title": f"Grain {n}", "createdAt": cree,
+            "updatedAt": cree, "labels": {"nodes": []}}
+
+
+def _run_faux(nodes: list[dict]):
+    """Un faux `run` : metadonnees (GraphQL), citations (vide), PRs (vides)."""
+    def run(argv, timeout):
+        requete = " ".join(argv)
+        if "graphql" in requete:
+            return json.dumps({"data": {"repository": {"issues": {
+                "pageInfo": {"hasNextPage": False, "endCursor": "c"},
+                "nodes": nodes}}}})
+        if argv[0] == "git":
+            return ""
+        return "[]"
+    return run
+
+
+def test_le_tirage_sert_le_vieux_stock():
+    """Sur un pool SYNTHETIQUE, le tapis sert d'abord le vieux stock : une
+    issue ancienne jamais visitee (#1203) passe devant les issues fraiches,
+    qui attendent la fin de file (le mandat du 22/11)."""
+    vieux = [_noeud(1203, "2025-01-15T00:00:00Z"),
+             _noeud(1204, "2025-02-20T00:00:00Z")]
+    frais = [_noeud(9000 + k, "2026-11-22T00:00:00Z") for k in range(5)]
+    classe = tapis_leger.classer(LANE, MAINTENANT, 45, "graine",
+                                  Path(__file__).resolve().parents[2],
+                                  _run_faux(vieux + frais))
+    # L'ancre est posee sur les numeros frais : c'est l'inversion mesuree
+    # (la tete de numero sert ce qui vient d'etre cree).
+    ancres = {"grains": {"ancre": 9000}}
+    frais_n = {9000 + k for k in range(5)}
+    # Le contre-exemple : la rotation par numero sert les issues fraiches.
+    sans_age, _ = tapis_rotation.bloc(classe["grains"], [], 2, 2, LANE,
+                                      MAINTENANT, ancres=ancres)
+    assert {g.numero for g in sans_age} & frais_n, (
+        "la rotation par numero sert les fraiches -- c'est l'inversion")
+    ages, exclus, _ = tapis_age.tour(classe["grains"], ancres, MAINTENANT,
+                                      classe["conteneurs"])
+    bloc, rapport = tapis_rotation.bloc(classe["grains"], [], 2, 2, LANE,
+                                        MAINTENANT, ancres=ancres,
+                                        ages_g=ages, exclus_g=exclus)
+    servis = {g.numero for g in bloc}
+    assert {1203, 1204} <= servis, "le vieux stock passe en tete"
+    assert not (servis & frais_n), (
+        "les issues fraiches attendent la fin de file")
+    assert rapport["ordre"] == "age"

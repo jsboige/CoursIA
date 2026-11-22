@@ -656,7 +656,9 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # passe pas devant les premieres visites, #27338) ; tapis_acceptance.py la
 # vingt-cinquieme (les criteres d'acceptation de #25082 mesures sur le service
 # effectif, 20/11) ; tapis_assiette.py la vingt-sixieme (la composition du pool :
-# feuilles contre conteneurs, #25082, 21/11) ; tapis_leger_texte.py la
+# feuilles contre conteneurs, #25082, 21/11) ; tapis_age.py la vingt-neuvieme
+# (l'ORDRE D'AGE du tirage : les issues anciennes d'abord -- un module pour
+# la cle et la selection, 22/11) ; tapis_leger_texte.py la
 # vingt-septieme (la SORTIE TEXTE de la voie leger -- extraite de
 # tapis_leger.py pour que la greffe du cap de livraisons tienne le plafond,
 # #21067, 22/11) ; tapis_cap_livraisons.py la vingt-huitieme (le CAP DE
@@ -700,6 +702,7 @@ def test_tapis_rapide_ne_lance_aucun_processus():
                                               ("tapis_acceptance.py", 300),
                                               ("tapis_assiette.py", 200),
                                               ("tapis_leger_texte.py", 80),
+                                              ("tapis_age.py", 181),
                                               ("tapis_cap_livraisons.py", 160)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
