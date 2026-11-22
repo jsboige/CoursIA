@@ -6,5 +6,6 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Les oracles et intersections naifs sont les objets experimentaux du source ; aucun moteur du papier n'est appele."
   known_differences:
+    - "Navigation Python : le lien « Version Rust » relie le nouveau jumeau Rust ; la paire Python/C# conserve son contenu démonstratif et ses sorties."
     - "System.Random et Python random engendrent des corpus differents."
     - "Les mesures de temps dependent du runtime et de la machine."
