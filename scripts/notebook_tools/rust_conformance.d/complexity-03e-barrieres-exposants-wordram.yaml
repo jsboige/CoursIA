@@ -15,19 +15,19 @@
   csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb
   rust: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-Rust.ipynb
   measures:
-    - id: c3_text
-      description: "Sortie de la cellule 3, texte identique au jumeau Python"
+    - id: c3_seed
+      description: "Graine de la cellule 3, identique au jumeau Python. Corrigé à la main : la ligne d'imports est un écart d'API documenté (Python liste math, random, time, fractions ; le portage Rust n'utilise que std et n'importe rien), seule la graine est comparée."
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 3
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
-          transform: text
+          pattern: "SEED = (\\d+)"
+          transform: int
         rust:
           cell: 3
-          pattern: "\\A\\s*(.*?)\\s*\\Z"
-          transform: text
+          pattern: "SEED = (\\d+)"
+          transform: int
         csharp:
           absent: "La cellule C# 3 diffère du texte Python (ligne 1 : « r = 2499/1250 : T(n)^1250 <= K * n^2499, n >= 2 » contre « Imports OK : math, random, time, fractions. SEED = 20261028. » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
     - id: c5_text
@@ -76,17 +76,17 @@
         csharp:
           absent: "La cellule C# 11 diffère du texte Python (ligne 1 : « Exercice 2 à compléter : programme de construction. » contre « Trois cas canoniques, un par chemin du programme : » côté Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
     - id: c14_text
-      description: "Sortie de la cellule 14, texte identique au jumeau Python (segment 1/1 ; durées murales en présence seule, valeurs jamais comparées)"
+      description: "Sortie de la cellule 14 (segment 1/1). Corrigé à la main : les quatre durées murales et la pente log-log qui en dérive sont des ancres en présence seule (largeur de colonne libre, valeurs jamais comparées : elles dépendent de la machine et du langage) ; seule la ligne déterministe du facteur n^(2-1.9992) est comparée au texte."
       tolerance: 0
       reference: python
       sides:
         python:
           cell: 14
-          pattern: "\\A(?:.*?)(?m:^n\\ =\\ \\ 1000\\ :\\ \\ \\ \\ \\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(mediane\\ de\\ 3,\\ reponse\\ False\\)\\r?$)(?:.*?)(?m:^n\\ =\\ \\ 2000\\ :\\ \\ \\ \\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(mediane\\ de\\ 3,\\ reponse\\ False\\)\\r?$)(?:.*?)(?m:^n\\ =\\ \\ 4000\\ :\\ \\ \\ \\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(mediane\\ de\\ 3,\\ reponse\\ False\\)\\r?$)(?:.*?)(?m:^n\\ =\\ \\ 8000\\ :\\ \\ \\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(mediane\\ de\\ 3,\\ reponse\\ False\\)\\r?$)\\s*(.*?)\\s*\\Z"
+          pattern: "\\A(?:.*?)(?m:^n = +1000 : +\\d+(?:[.,]\\d+)? ms \\(mediane de 3, reponse False\\)\\r?$)(?:.*?)(?m:^n = +2000 : +\\d+(?:[.,]\\d+)? ms \\(mediane de 3, reponse False\\)\\r?$)(?:.*?)(?m:^n = +4000 : +\\d+(?:[.,]\\d+)? ms \\(mediane de 3, reponse False\\)\\r?$)(?:.*?)(?m:^n = +8000 : +\\d+(?:[.,]\\d+)? ms \\(mediane de 3, reponse False\\)\\r?$)(?:.*?)(?m:^Pente empirique du quadratique \\(regression log-log sur 4 tailles\\) : \\d+(?:[.,]\\d+)? -- temoin du point de depart\\.\\r?$)\\s*(.*?)\\s*\\Z"
           transform: text
         rust:
           cell: 14
-          pattern: "\\A(?:.*?)(?m:^n\\ =\\ \\ 1000\\ :\\ \\ \\ \\ \\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(mediane\\ de\\ 3,\\ reponse\\ False\\)\\r?$)(?:.*?)(?m:^n\\ =\\ \\ 2000\\ :\\ \\ \\ \\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(mediane\\ de\\ 3,\\ reponse\\ False\\)\\r?$)(?:.*?)(?m:^n\\ =\\ \\ 4000\\ :\\ \\ \\ \\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(mediane\\ de\\ 3,\\ reponse\\ False\\)\\r?$)(?:.*?)(?m:^n\\ =\\ \\ 8000\\ :\\ \\ \\ \\d+(?:[.,]\\d+)?\\ ms\\ \\(mediane\\ de\\ 3,\\ reponse\\ False\\)\\r?$)\\s*(.*?)\\s*\\Z"
+          pattern: "\\A(?:.*?)(?m:^n = +1000 : +\\d+(?:[.,]\\d+)? ms \\(mediane de 3, reponse False\\)\\r?$)(?:.*?)(?m:^n = +2000 : +\\d+(?:[.,]\\d+)? ms \\(mediane de 3, reponse False\\)\\r?$)(?:.*?)(?m:^n = +4000 : +\\d+(?:[.,]\\d+)? ms \\(mediane de 3, reponse False\\)\\r?$)(?:.*?)(?m:^n = +8000 : +\\d+(?:[.,]\\d+)? ms \\(mediane de 3, reponse False\\)\\r?$)(?:.*?)(?m:^Pente empirique du quadratique \\(regression log-log sur 4 tailles\\) : \\d+(?:[.,]\\d+)? -- temoin du point de depart\\.\\r?$)\\s*(.*?)\\s*\\Z"
           transform: text
         csharp:
           absent: "Le carnet C# n'a pas de cellule de code à l'index 14 (structure de cellules différente du jumeau Python) : côté déclaré absent, mesuré à la génération ; la comparaison stricte porte sur Python et Rust."
