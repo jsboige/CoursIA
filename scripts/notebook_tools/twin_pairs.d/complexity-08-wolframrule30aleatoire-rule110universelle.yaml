@@ -1,7 +1,7 @@
 - name: "Complexity-08 WolframRule30Aleatoire Rule110Universelle"
   family: Complexity
-  python: MyIA.AI.Notebooks/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Solver-free by design : les automates cellulaires (regles 30/110/90/60, LFSR, LCG) sont rejoues pas a pas en arithmetique entiere des deux cotes ; les tests statistiques (chi2, entropie, densite) recomptent les memes series. Aucun moteur externe canonique : les deux cotes derivent les memes tables de verite et les memes sequences."
