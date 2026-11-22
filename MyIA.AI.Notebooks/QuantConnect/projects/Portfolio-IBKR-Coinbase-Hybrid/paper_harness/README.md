@@ -53,7 +53,10 @@ le sleeve crypto seul sur Coinbase, sleeve IBKR en backtest parallèle.
   `RISK_ALERT_HALVES=true`, il divise aussi l'exposition par deux, et l'exposition revient à
   100 % quand la baisse est revenue à la moitié du seuil (pas au seuil, ce qui ferait
   osciller). Une perte journalière au-delà de `RISK_DAILY_VAR_PCT` bloque les achats sans
-  liquider.
+  liquider. Elle se mesure depuis la dernière marque de la séance précédente : `run_cycle`
+  passe la date UTC du cycle, et la fenêtre avance seule quand la date change. Une baisse
+  lente étalée sur plusieurs séances relève donc du seuil de baisse depuis le pic, pas de
+  celui-ci. Le blocage, lui, reste en place d'une séance à l'autre jusqu'à `clear_halt`.
 - Aucun secret n'est imprimé ; les credentials vivent uniquement dans le `.env` gitigné.
 
 ## SOTA-OK (Prong A)
@@ -124,8 +127,10 @@ appellera avant tout ordre :
   l'achat après l'envoi des ventes. La mesure sur 2005-2026 et le choix de cet ordre sont
   dans #19113.
 
-`RiskGate.save` / `RiskGate.load` conservent le pic d'équité, l'équité d'ouverture et un
-éventuel arrêt dans un fichier JSON, écrit de façon atomique. Sans cela, un redémarrage du
+`RiskGate.save` / `RiskGate.load` conservent le pic d'équité, l'équité d'ouverture, la date
+et l'équité de la dernière marque datée et un éventuel arrêt dans un fichier JSON, écrit de
+façon atomique. Un fichier antérieur à ces deux clés se relit : sa première marque datée
+ouvre la fenêtre journalière sur elle-même. Sans cela, un redémarrage du
 programme remettrait le disjoncteur à zéro. Un fichier illisible lève une erreur plutôt que
 de repartir d'un état vierge.
 

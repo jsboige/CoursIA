@@ -5,9 +5,9 @@
 | Métrique | Valeur |
 |----------|--------|
 | Série source | `MyIA.AI.Notebooks/IIT/` (PyPhi + ICT-Series : information intégrée, émergence, workspace — Python) |
-| Notebooks source | **29** (3 IIT PyPhi + 26 ICT-Series) |
-| Cellules extraites | **731** (428 markdown + 303 code, nbformat canonique, 99 % avec id stable) |
-| Taille CSV | ~743 KB (731 enregistrements × 21 colonnes) |
+| Notebooks source | **29 au seed 2026-07-10** (3 IIT PyPhi + 26 ICT-Series — le compte courant vit dans le CSV) |
+| Cellules extraites | **731 au seed 2026-07-10** (428 markdown + 303 code, nbformat canonique, 99 % avec id stable — compte courant mesurable dans `iit.csv`) |
+| Taille CSV | ~743 KB au seed (731 enregistrements × 21 colonnes à l'époque) — taille et schéma actuels mesurables directement dans [`iit.csv`](iit.csv) |
 | Langue pivot | **fr** (PIVOT_LANG = "fr", cf #1650 Phase 0.5 / #4980 Lean i18n) |
 | Langues cibles | **en, es, ar, fa, zh, ru, pt** (7 langues vivantes côté Argumentum) |
 | Date seed | 2026-07-10 |

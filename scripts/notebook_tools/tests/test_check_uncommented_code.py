@@ -251,6 +251,58 @@ def test_cellule_lean_sans_commentaire_signalee():
 
 
 # --------------------------------------------------------------------------
+# 5 bis. La langue : le Rust (noyau evcxr) commente avec '//'
+# --------------------------------------------------------------------------
+
+RUST_BODY = (
+    "fn somme<'a>(v: &'a [i64]) -> i64 {",
+    "    let mut total = 0;",
+    "    for x in v.iter() {",
+    "        total += x;",
+    "    }",
+    "    total",
+    "}",
+    "let v = vec![1, 2, 3];",
+    'println!("{}", somme(&v));',
+)
+
+
+def test_cellule_rust_commentee_par_slash_slash_non_signalee():
+    # Avant la famille rust, le tokenizer Python lisait '//' comme un
+    # operateur et comptait 0 commentaire sur cette cellule.
+    assert organ.analyse_cell(
+        _cell("// Somme des elements.", *RUST_BODY), language="rust") is None
+
+
+def test_cellule_rust_sans_commentaire_signalee():
+    finding = organ.analyse_cell(_cell(*RUST_BODY), language="rust")
+    assert finding is not None
+    assert finding["counter"] == "rust"
+
+
+def test_url_dans_une_chaine_rust_ne_compte_pas_comme_commentaire():
+    for line in ('let api = "https://api.exemple.fr/v1";',
+                 'let api = r#"https://api.exemple.fr/"v1""#;',
+                 "let barre = '/'; let api = \"http://x\";"):
+        finding = organ.analyse_cell(_cell(line, *RUST_BODY), language="rust")
+        assert finding is not None, line
+        assert finding["comments"] == 0, line
+
+
+def test_commentaire_bloc_rust_compte():
+    cell = _cell("/* Somme des elements */", *RUST_BODY)
+    assert organ.analyse_cell(cell, language="rust") is None
+
+
+def test_duree_de_vie_ne_masque_pas_un_commentaire_rust():
+    # Deux durees de vie sur une ligne ne forment pas un caractere : le
+    # commentaire qui les suit reste visible.
+    cell = _cell("fn f<'a, 'b>(x: &'a str) {} // deux durees de vie",
+                 *RUST_BODY)
+    assert organ.analyse_cell(cell, language="rust") is None
+
+
+# --------------------------------------------------------------------------
 # 6. Le bornage au diff
 # --------------------------------------------------------------------------
 
@@ -316,7 +368,7 @@ def test_sortie_json_est_lisible(tmp_path, capsys):
 #    #26837 -- ces tests pytests doublent le self-test integre)
 # --------------------------------------------------------------------------
 
-def test_table_de_renommage_lit_toutes_les_lignes_R():
+def test_table_de_renommage_lit_toutes_les_lignes_R(monkeypatch):
     # R100 = renommage pur, R075 = renommage remanie (toujours un renommage
     # tant que la similarite passe le seuil -M). A/M/D sont ignores.
     out = "\n".join([
@@ -327,28 +379,49 @@ def test_table_de_renommage_lit_toutes_les_lignes_R():
         "R075\tsrc/Old.ipynb\tdst/New.ipynb",
         "",
     ])
-    assert organ._parse_rename_status(out) == {
+    monkeypatch.setattr(organ.check_output_failure_text, "git",
+                        lambda *args, **kwargs: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
+    assert organ.renamed_notebooks("base") == {
         "nouveau/Apres.ipynb": "ancien/Avant.ipynb",
         "dst/New.ipynb": "src/Old.ipynb",
     }
 
 
-def test_table_de_renommage_normalise_les_antislashs():
-    # git sous Windows rend des chemins a antislashs ; la table servira de
-    # cles comparees aux chemins --name-only (a slashes).
-    out = ("R100\tancien" + organ.BS + "Avant.ipynb\tnouveau" + organ.BS
-           + "Apres.ipynb")
-    assert organ._parse_rename_status(out) == {
+def test_table_de_renommage_normalise_les_antislashs(monkeypatch):
+    # git sous Windows rend des chemins a antislashs ; l'organe partage les
+    # normalise avant de construire la table nouveau->ancien.
+    out = ("R100\tancien" + organ.check_output_failure_text.BS + "Avant.ipynb\tnouveau"
+           + organ.check_output_failure_text.BS + "Apres.ipynb")
+    monkeypatch.setattr(organ.check_output_failure_text, "git",
+                        lambda *args, **kwargs: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
+    assert organ.renamed_notebooks("base") == {
         "nouveau/Apres.ipynb": "ancien/Avant.ipynb",
     }
 
 
-def test_renommage_hors_seuil_absent_de_la_table():
+def test_renommage_hors_seuil_absent_de_la_table(monkeypatch):
     # Un renommage lourdement remanie (similarite sous -M) apparait comme
     # une paire D+A, jamais comme R : il sera juge carnet neuf. C'est le
     # sur-signalement assume, jamais un blanchiment.
     out = "D\tancien/Avant.ipynb\nA\tnouveau/Apres.ipynb"
-    assert organ._parse_rename_status(out) == {}
+    monkeypatch.setattr(organ.check_output_failure_text, "git",
+                        lambda *args, **kwargs: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
+    assert organ.renamed_notebooks("base") == {}
 
 
 def _fake_reader(heads: dict, bases: dict):
@@ -393,8 +466,16 @@ def test_renomme_vers_chemin_exclu_sort_du_perimetre(monkeypatch):
     # Un carnet renomme vers un chemin exclu (_output, archive...) n'est pas
     # juge : le filtre porte sur le chemin NOUVEAU (renamed_notebooks).
     out = "R100\tsrc/Ok.ipynb\tdst/_output/Ok.ipynb\nR100\tsrc/A.ipynb\tdst/A.ipynb"
-    monkeypatch.setattr(organ, "git", lambda *a, **k: out)
-    assert organ.renamed_notebooks("BASE") == {"dst/A.ipynb": "src/A.ipynb"}
+    monkeypatch.setattr(organ.check_output_failure_text, "git",
+                        lambda *a, **k: out)
+    monkeypatch.setattr(
+        organ, "renamed_notebooks",
+        lambda *args, **kwargs: organ.check_output_failure_text.renamed_notebooks(
+            *args, **kwargs),
+    )
+    assert organ.renamed_notebooks("BASE") == {
+        "dst/A.ipynb": "src/A.ipynb",
+    }
 
 
 def test_vrai_carnet_neuf_reste_juge_en_entier(monkeypatch):

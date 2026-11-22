@@ -153,8 +153,13 @@ class ShortUnprofitableIntlAlgorithm(QCAlgorithm):
             self._short_empty_days += 1
 
     def on_data(self, data):
-        # Une clôture par séance, à sa date : la barre journalière de SPY.
+        # Une clôture par séance, à sa date : la barre journalière de SPY. Une barre
+        # recopiée vers l'avant (séance pas encore publiée en fin de fenêtre) ne
+        # compte pas : la tracer figerait une séance plate (#27482, règle 2 étendue
+        # aux actions).
         if self.is_warming_up or not data.bars.contains_key(self._spy):
+            return
+        if data.bars[self._spy].is_fill_forward:
             return
         self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
         self.plot("shadow", "fees", float(self.portfolio.total_fees) / self._start_value)

@@ -105,7 +105,8 @@ from datetime import datetime, timezone
 try:
     import gh_identity
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/.
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity
 
 # Lectures REST conditionnelles (ETag persiste, partage par machine) : meme
@@ -114,7 +115,7 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
 try:
     import gh_etag
 except ImportError:  # meme shim que gh_identity (tests hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_etag
 
 REPO = "jsboige/CoursIA"

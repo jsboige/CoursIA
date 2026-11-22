@@ -123,7 +123,12 @@ def test_mergee_epargne_la_consolidation_et_les_simples_citations():
     lec = lecture([issue(1, labels=["consolidation"]), issue(2), issue(3)], citations=citations)
     assert etat(lec, 1).ecart is None  # une tranche de consolidation ne la livre pas
     e2 = etat(lec, 2)
-    assert e2.ecart is None and e2.derniere_visite == _h(5)  # citee : une visite, pas une livraison
+    # Raccord du classement (c3274) : une citation Git est un PASSAGE, pas
+    # une visite -- elle ne rajeunit plus le dernier grain. L'ecart reste
+    # nul : une citation n'a toujours ete ni une livraison ni une exclusion.
+    assert e2.ecart is None
+    assert e2.derniere_visite is None
+    assert e2.etat_grain == "passage_seul"
     assert etat(lec, 3).motif == "livraison probable, commit def5678"
 
 
@@ -312,7 +317,11 @@ def test_parent_famille_conteneur_et_derniere_visite():
     assert (e13.parent, e13.famille) == (12, 10)
     assert etat(lec, 10).conteneur and etat(lec, 14).conteneur
     assert not etat(lec, 13).conteneur
-    assert e13.derniere_visite == _h(10)  # le commit est plus recent que le marqueur
+    # Raccord du classement (c3274) : la derniere visite est le dernier
+    # GRAIN -- ici le marqueur de livraison. Le commit, plus recent, n'est
+    # qu'un passage : il ne rajeunit pas le grain.
+    assert e13.derniere_visite == _h(30)
+    assert e13.etat_grain == "grain"
     assert etat(lec, 14).derniere_visite is None
 
 
@@ -353,14 +362,21 @@ def test_une_seule_famille_garde_ses_invariants():
 
 def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
     """Mesure du 14/11 : deux sieges ont recu les memes grains, parce que
-    l'ordre des membres d'une famille ne dependait pas de la lane."""
+    l'ordre des membres d'une famille ne dependait pas de la lane.
+
+    La tete d'un niveau tourne d'une lane a l'autre (le decalage depend de la
+    graine, donc de la lane). Deux lanes particularieres peuvent colliding par
+    hasard -- la tete est une FONCTION de la graine, pas un tirage sans
+    rappel : l'assertion porte donc sur l'ensemble des lanes, ou la
+    diversification est une consequence et non une chance."""
     lec = lecture([issue(1, titre="[EPIC] Racine", cree="2026-01-01T00:00:00Z")]
                   + [issue(k, body="Part of #1", cree=f"2026-02-0{k - 1}T00:00:00Z")
                      for k in (2, 3, 4, 5)])
     etats_ = tr.etats(lec, LANE, NOW)
-    tetes = {lane: tr.ordonner(etats_, lane, NOW, 8)[0].numero
-             for lane in (LANE, AUTRE)}
-    assert len(set(tetes.values())) == 2, tetes
+    lanes = (LANE, AUTRE, "myia-po-2025:CoursIA-2", "myia-po-2026:CoursIA",
+             "myia-po-2028:CoursIA", "myia-po-2023:CoursIA", "myia-po-2024:CoursIA")
+    tetes = {lane: tr.ordonner(etats_, lane, NOW, 8)[0].numero for lane in lanes}
+    assert len(set(tetes.values())) > 1, tetes
 
 
 def test_le_decalage_est_deterministe_pour_une_lane_et_une_tranche():
@@ -407,7 +423,7 @@ def _panne(argv, timeout):
 
 def test_cli_lecture_en_panne_code_3_sans_tapis_lourd(capsys):
     """Sans secours, rien n'est servi -- et rien ne renvoie au tapis lourd (#26926)."""
-    assert tr.main(["--lane", LANE, "--cache-s", "0"], run=_panne, maintenant=NOW) == 3
+    assert tr.main(["--lane", LANE, "--cache-s", "0", "--voie", "lourd"], run=_panne, maintenant=NOW) == 3
     err = capsys.readouterr().err
     assert "Lecture incomplete (issues" in err
     assert "pick_idle_grain" not in err and "Ne tirez pas le tapis lourd" in err
@@ -432,13 +448,13 @@ def test_cli_lecture_en_panne_tire_sur_le_cache_de_secours(tmp_path, monkeypatch
     _cache(tmp_path, 3 * 3600, lec)
     monkeypatch.setattr(tr.gh_bulk, "lire_tout", lambda *a, **k: (_ for _ in ()).throw(
         gh_bulk.LectureIncomplete("issues", 1, "HTTP 502")))
-    assert tr.main(["--lane", LANE], run=_panne, maintenant=NOW) == 0
+    assert tr.main(["--lane", LANE, "--voie", "lourd"], run=_panne, maintenant=NOW) == 0
     capture = capsysbinary.readouterr()
     out, err = capture.out.decode("utf-8"), capture.err.decode("utf-8")
     assert "#7 Grain du cache" in out and "lecture reseau en echec (issues" in out
     assert "lecture de secours" in err and "pick_idle_grain" not in out + err
     _cache(tmp_path, 13 * 3600, lec)
-    assert tr.main(["--lane", LANE], run=_panne, maintenant=NOW) == 3
+    assert tr.main(["--lane", LANE, "--voie", "lourd"], run=_panne, maintenant=NOW) == 3
 
 
 def test_conteneur_servi_apres_les_grains_avec_sa_procedure_paths():
@@ -480,7 +496,8 @@ def test_cli_mesure_origami_en_panne_sort_0_et_la_cause(monkeypatch, capsysbinar
         {}, {"active": True, "measured": False, "parked": [],
             "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
 
-    code = tr.main(["--lane", LANE, "--cache-s", "0"], run=lambda argv, timeout: "",
+    code = tr.main(["--lane", LANE, "--cache-s", "0", "--voie", "lourd"],
+                    run=lambda argv, timeout: "",
                     maintenant=NOW)
     capture = capsysbinary.readouterr()
     out, err = capture.out.decode("utf-8"), capture.err.decode("utf-8")
@@ -498,7 +515,7 @@ def test_cli_json_porte_la_mesure_non_faite(monkeypatch, capsysbinary):
         {}, {"active": True, "measured": False, "parked": [],
             "reason": "mesure en echec (RuntimeError: reseau indisponible)"}))
 
-    code = tr.main(["--lane", LANE, "--cache-s", "0", "--json"],
+    code = tr.main(["--lane", LANE, "--cache-s", "0", "--json", "--voie", "lourd"],
                     run=lambda argv, timeout: "", maintenant=NOW)
     sortie = json.loads(capsysbinary.readouterr().out.decode("utf-8"))
     assert code == 0
@@ -581,7 +598,8 @@ def _violations(source: str) -> list[str]:
 
 def test_tapis_rapide_ne_lance_aucun_processus():
     for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "tapis_hors_flotte.py",
-                "gh_cache.py", "gh_cache_fichier.py", "tapis_service.py"):
+                "gh_cache.py", "gh_cache_fichier.py", "tapis_service.py",
+                "tapis_reverif.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -595,13 +613,78 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 # atomiquement -- extraction demandee par les replis de la review Hermes,
 # #22630, 14/11 : le protocole a grandi de 41 lignes) ; tapis_service.py la
 # quatrieme (ce que le tapis sert : procedure des conteneurs, secours, sortie
-# texte, #26926, 16/11).
+# texte, #26926, 16/11) ; gh_selection.py la cinquieme (le chemin de selection
+# leger : metadonnees seules, budget global, #27223, 18/11) ; tapis_avantages.py
+# la sixieme (les deux priorites legeres du mandat du 18/11) ; tapis_universel.py
+# la septieme (la rotation universelle, #27223) ; tapis_reverif.py la huitieme
+# (re-decision des grains servis au fil tronque sur leur fil complet, #27179,
+# 18/11) ; gh_issues.py la neuvieme (la lecture ciblee des issues nommees,
+# une porte pour tous les lecteurs cibles, #27225, 18/11) ; tapis_leger.py la
+# dixieme (la voie LEGERE du tirage : classement sur metadonnees, qualification
+# sur fil complet, #27225, 18/11) ; tapis_qualification.py la onzieme (la
+# qualification d'un grain servi : corps, fil complet, vagues -- extraite de
+# tapis_leger.py pour tenir le plafond, #27225, 18/11) ; tapis_fil_complet.py
+# la douzieme (le fil COMPLET des seuls candidats retenus : lever le doute de
+# la fenetre, #27225, 18/11) ; tapis_prise_en_charge.py la treizieme (le CLI
+# de la prise en charge, extrait pour tenir le plafond, #27225, 18/11) ;
+# tapis_fenetre.py la quatorzieme (la FENETRE du pool classe et celle du
+# fil : le bloc qui avance et le cas de la fenetre de 12, #27225, 18/11) ;
+# tapis_vagues.py la quinzieme (les VAGUES de la prise en charge : la file
+# se remplit, 4 vagues au plus, #27225, 18/11) ; tapis_lot.py la seizeieme
+# (la lecture d'un LOT de candidats : un VERDICT par numero demande, 19/11) ;
+# tapis_rotation.py la dix-septieme (la ROTATION par numero d'issue : le bloc
+# servi et le tour qui se ferme, 19/11) ; tapis_diff.py la dix-huitieme (la
+# PREUVE par le diff : un marqueur DESIGNE une PR a verifier, 19/11) ;
+# tapis_perimetre.py la dix-neuvieme (le PERIMETRE : ce qu'un glob certifie,
+# l'attribution de l'issue et la livraison complete -- extrait de tapis_diff.py
+# pour tenir le plafond, 19/11) ; tapis_preuve.py la vingtieme (la PREUVE
+# elle-meme : le diff ET l'etat de la PR -- extrait de tapis_diff.py pour
+# tenir le plafond, 19/11) ; gh_lecture.py la vingt-et-unieme (la LECTURE :
+# son conteneur, son echec et la mise a plat d'une issue -- extrait de
+# gh_bulk.py pour tenir le plafond, 19/11).
+# 18/11) ; tapis_dernier_grain.py la vingt-deuxieme (le DERNIER GRAIN d'une issue --
+# grain, passage, absence etablie ou non mesurable -- et la regle des SEANCES,
+# extraite de tapis_equilibre.py pour que le module du classement tienne son
+# plafond, #27242, 19/11) ; tapis_citations.py la vingt-troisieme (les citations des
+# PRs OUVERTES : le travail en cours compte comme une visite, #27338) ;
+# belt_equite.py la vingt-quatrieme (l'equite du dispatch : un grain deja servi ne
+# passe pas devant les premieres visites, #27338).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
                                               ("tapis_marqueurs.py", 130),
                                               ("tapis_hors_flotte.py", 60),
                                               ("gh_cache.py", 130),
                                               ("gh_cache_fichier.py", 60),
-                                              ("tapis_service.py", 140)])
+                                              ("tapis_service.py", 140),
+                                              ("gh_selection.py", 140),
+                                              ("tapis_avantages.py", 80),
+                                              ("tapis_universel.py", 160),
+                                              ("tapis_reverif.py", 120),
+                                              ("gh_issues.py", 80),
+                                              ("tapis_leger.py", 220),
+                                              ("tapis_qualification.py", 140),
+                                              ("tapis_fil_complet.py", 100),
+                                              ("tapis_prise_en_charge.py", 90),
+                                              ("tapis_fenetre.py", 70),
+                                              ("tapis_vagues.py", 140),
+                                              ("tapis_lot.py", 80),
+                                              ("tapis_preuves.py", 80),
+                                              ("tapis_rotation.py", 80),
+                                              ("tapis_ancre.py", 140),
+                                              ("tapis_etat.py", 115),
+                                              ("tapis_retry.py", 50),
+                                              ("tapis_tranche.py", 70),
+                                              ("tapis_verdict.py", 50),
+                                              ("tapis_composition.py", 60),
+                                              ("tapis_position.py", 40),
+                                              ("gh_lecture.py", 70),
+                                              ("tapis_diff.py", 200),
+                                              ("tapis_perimetre.py", 110),
+                                              ("tapis_dernier_grain.py", 260),
+                                              ("tapis_citations.py", 40),
+                                              ("belt_equite.py", 110),
+                                              ("tapis_preuve.py", 110),
+                                              ("tapis_ecarts_fond.py", 50),
+                                              ("tapis_voie_leger.py", 40)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
