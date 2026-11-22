@@ -1,6 +1,6 @@
 # Versions de bibliotheques chargees par les carnets
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-21
 
 Organe : `scripts/notebook_tools/check_lib_versions.py` — manifeste :
 `scripts/notebook_tools/lib_versions_manifest.json` — issue : #23073.
@@ -193,15 +193,36 @@ pourquoi un ecart est justifie, pourquoi un autre doit converger. Un motif
 qui contient un decompil (« presente sur N carnets ») est un decompil
 copic qui perime au premier ajout de carnet ; il n'a pas sa place la.
 
-Les ecarts **a converger** portent aujourd'hui sur OrTools (11 carnets),
-pythonnet (7), CsvHelper, Microsoft.ML et SkiaSharp (un chacun). Les ecarts
-**justifies** portent sur IKVM et IKVM.Image (8.14.0, six et cinq carnets :
-l'artefact ombre est compile dans cette version). Deux series ont **converge**
-et ne declarent plus aucun ecart : la SemanticWeb sur dotNetRDF 3.4.1
-(#23083) et AutoML sur 0.23.0 (#23088) — leurs entrees ont ete retirees du
-manifeste le jour ou la convergence a atterri, pas avant (une divergence
-declaree pour une version absente du corpus est un **fantome**, que
-l'organe signale).
+Stock mesure le 2026-11-21 (`--census --json`) :
+
+| bibliotheque | version portee | canonique | carnets |
+|---|---|---|---|
+| pythonnet | 3.0.5 | 3.1.0 | 26 |
+| pythonnet | 3.2.1 | 3.1.0 | 1 (`GenAI/_research/RAG04-BPE-Parite-Natif-vs-Qwen-CSharp.ipynb`) |
+| dotNetRDF | 3.4.1 | 3.5.2 | 13 (SW-01 a SW-11, SW-13, SL-8) |
+| Microsoft.ML | 4.0.2 | 5.0.0 | 1 (`ML/ML.Net/ML-04b-ModelComparison-Validity-CSharp.ipynb`) |
+| CsvHelper | 27.1.1 | 33.0.1 | 1 (`GradeBook.ipynb`) |
+
+Soit 42 epinglages divergents a converger et 1 justifie (IKVM 8.14.0),
+pour 127 epinglages canoniques. Le meme recensement releve 16 carnets a
+epinglage flottant (Google.OrTools 14, mealpy 2) et 4 carnets sous le
+plancher de leur serie (torch 2.13.0 contre 2.14.0 en `04-Vision`) : ce sont
+des classes distinctes, rapportees par le recensement, non jugees par la
+garde de PR.
+
+Chaque ecart porte desormais une **decision ecrite** au manifeste : le
+recensement ne rend plus aucun `a_classer`. La convergence des carnets est
+suivie par #27787 (un PR par serie, montee + re-execution).
+
+Les ecarts **justifies** portent sur IKVM 8.14.0 : l'artefact ombre des
+carnets Tweety est compile dans cette version, et la levee passe par
+l'allowlist nommee, avec son motif. Deux series ont **converge** et ne
+declarent plus aucun ecart : la SemanticWeb sur dotNetRDF 3.4.1 (#23083) et
+AutoML sur 0.23.0 (#23088) — leurs entrees ont ete retirees du manifeste le
+jour ou la convergence a atterri, pas avant (une divergence declaree pour une
+version absente du corpus est un **fantome**, que l'organe signale). Depuis,
+la canonique dotNetRDF a ete portee a 3.5.2 : le retard de la serie est
+redevenu un ecart, declare `to_converge`.
 
 ## Taux de faux positifs — mesure
 
@@ -218,11 +239,15 @@ Le faux positif de la ligne « etat » est mesure : la PR `9364be282` modifie
 `Google.OrTools 9.11.4210` (canonique 9.15.6755). Une garde fondee sur l'etat
 l'aurait fait rougir a tort.
 
-C'est la mesure qui fonde le demarrage **en advisory** : le stock porte des
-derives connues (les epinglages ages, les epinglages flottants), et un garde
-bloquant rougirait des PR qui ne font que retoucher un de ces carnets. Le
-detail des derives se lit dans le recensement ; la promotion en bloquant est
-une tranche distincte, apres convergence.
+C'est cette mesure qui a fonde le demarrage **en advisory**. La promotion en
+**bloquante** (#27762) s'appuie sur la meme mesure, relue : le risque alors
+invoque — rougir une PR qui ne fait que retoucher un carnet legacy — ne se
+realise pas sous la semantique delta (0 constat, 0 faux positif sur 32 PRs),
+parce que la garde ne compare que les epinglages **touches** par la PR. Le
+stock est par ailleurs arbitre (plus aucun `a_classer` au recensement du
+2026-11-21, convergence suivie par #27787). La jambe est enregistree
+bloquante dans `scripts/ci/fast_lane_registry.py` depuis cette date, et son
+nom ne porte plus `advisory` : un `failure` publie tient le merge.
 
 ## Monter une version d'une bibliotheque en un seul geste
 

@@ -54,6 +54,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/rust-ecosystem-map.md](reference/rust-ecosystem-map.md) | Carte de l'écosystème Rust (Pli 1 de l'Epic #26510) : correspondance bibliothèques Python/C# en usage → crate Rust, série par série ; socle mesuré par `rust_ecosystem_census.py` |
 | [reference/pyodide-eligibilite.md](reference/pyodide-eligibilite.md) | Éligibilité Pyodide/JupyterLite des carnets Python (pli 2.1 de l'Epic #27543) : critère en quatre conditions, dont la **suffisance** au bundle (le bundle publie des fichiers et n'installe rien), recensement par série et classes d'écart ; socle mesuré par `scripts/notebook_tools/pyodide_eligibility.py` (détail par carnet refusé : `reference/pyodide-refus.tsv` ; reproduction hors réseau : `reference/pyodide-lock.json` + `reference/pyodide-wheel-cache.json`) |
 | [reference/rust-porting-spec.md](reference/rust-porting-spec.md) | Gabarit de spécification de portage Rust (Pli 3 de l'Epic #26510, #27098) : une page par carnet, remplie avant l'implémentation ; un seul format pour les deux producteurs de specs (harnais `nb_coder` et portage Rust) |
+| [reference/jupyterlite-deploy.md](reference/jupyterlite-deploy.md) | Deploiement JupyterLite du lot Python (pli 2.2 de l'Epic #27543) : le lot est **recalcule** a chaque construction depuis le critere du pli 2.1 (aucune liste tenue a la main), filtre par une regle de suffisance (les dependances des modules locaux embarques doivent etre dans la distribution), le site construit est verifie (exactement le lot, ni manquant ni en trop), le manifeste porte les URLs publiques et le garde `scripts/ci/check_jupyterlite_lot.py` les verifie sur le site publie ; lot publie et executions reelles mesurees : `reference/jupyterlite-lot.json` + `reference/jupyterlite-executions/` |
 | [reference/audit-reassessment-findings.md → transients/2026-05-17-…](transients/2026-05-17-reference-audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) — déplacé en lane transiente (tranche 3b #14623) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
@@ -141,6 +142,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | Fichier | Description |
 |---------|-------------|
 | [genai/3d-socle-reproductibilite.md](genai/3d-socle-reproductibilite.md) | Reproductibilité des socles 3D (NeRF, splats) — mesure sur deux postes : écart 0,07 dB et reproduction exacte |
+| [reference/genai-3dtiles-public-measurements.md](reference/genai-3dtiles-public-measurements.md) | 3D Tiles — mesures du viewer public et prototype hiérarchique local, avec limites de comparaison |
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
 | [genai/tts-fishaudio-int4.md](genai/tts-fishaudio-int4.md) | La route int4 réelle de tts-fishaudio — quantification amont weight-only, quatre correctifs, mesures VRAM/qualité (#23415) |
 | [genai/audio-fish-decision.md](genai/audio-fish-decision.md) | Décision Fish Audio S2 Pro — evidence mesurée et recommandation hybride (critère 5, #19694) |
@@ -280,6 +282,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/vervaeke-insight-pre-enregistrement.md](ict/vervaeke-insight-pre-enregistrement.md) | Réalisation de pertinence (Jaeger, Riedl, Djedovic, Vervaeke, Walsh 2024, *Front Psychol* 15:1362658) — protocole scellé avant codage du module : engagement adverse, heuristiques antagonistes, re-commitment ; opérationnalisation déclarée grade C, thèse de non-formalisabilité de l'article non testée |
 | [ict/solms-affect-pre-enregistrement.md](ict/solms-affect-pre-enregistrement.md) | Réalisation de pertinence — Solms & Friston 2018 (*Front Psychol* 9:2714) : l'affect comme forme élémentaire de la conscience, mécanisme homéostatique formalisé en énergie libre, localisation subcorticale ; dissociation level (affectif, subcortical) vs contents (corticaux) — protocole scellé avant écriture du banc, 5 prédictions (H1 subcortical vs null H0 readout cortical) |
 | [ict/ict23-anticipation-pre-enregistrement.md](ict/ict23-anticipation-pre-enregistrement.md) | Tranche T2 #26945 — le banc ICT-23 anticipe-t-il la transition ? rampe vers le pli de la fronce (Wissel 1984, Scheffer et al. 2009), deux nuls préservant le spectre, hystérésis au retour ; scellage avant toute ligne de code (ordre git vérifiable), bornage « ne teste pas un LLM » |
+| [ict/penrose-orch-or-pre-enregistrement.md](ict/penrose-orch-or-pre-enregistrement.md) | Case 24 — Penrose & Hameroff (Orch-OR, DP) : lois de régimes de la réduction objective (Fermi linéaire 2× vs blob quadratique √2) et effet dual τ/masquage lié par 1/(1+η) — protocole scellé v1 avant le banc, amendement v2 pré-exécution (géométrie blob), verdict SUPPORTED 8/8 |
 
 ## Curriculum (docs/curriculum/)
 
@@ -305,6 +308,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 | [curriculum/qualification/README.md](curriculum/qualification/README.md) | Qualification des carnets — échelle de difficulté et dimension recherche, séries pilotes qualifiées valeur par valeur (#24996) |
+| [curriculum/manifeste-dependances.md](curriculum/manifeste-dependances.md) | Manifeste des dépendances du cursus par famille de noyau — verdict d'inclusion dans l'image CPU, motifs mesurés ou déclarés, conflits de versions, manifeste consolidé (généré par `scripts/notebook_tools/dependency_manifest.py`, #27544) |
 
 ## Métadonnées notebooks (docs/notebook-metadata/)
 
@@ -335,7 +339,7 @@ Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957
 | [i18n/CSV-by-series-design.md](i18n/CSV-by-series-design.md) | Design doc infra CSV-by-series (EPIC #4957 Phase 1) |
 | [translation/argumentum-fork-mapping.md](translation/argumentum-fork-mapping.md) | Référence pérenne couche T3 (moteur `translate_csv.py`, #6949/#6976) |
 | [transients/2026-07-19-epic-4957-status.md](transients/2026-07-19-epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
-| [translation/translations-root-diagnostic.md](translation/translations-root-diagnostic.md) | Diagnostic du répertoire `translations/` à la racine : état des lieux et options de disposition. **Doc-only, sans action destructive** — le diagnostic est écrit et arbitrable avant qu'une ligne ne soit supprimée |
+| [transients/2026-08-06-translations-root-diagnostic.md](transients/2026-08-06-translations-root-diagnostic.md) | Diagnostic du répertoire `translations/` à la racine : état des lieux et options de disposition. **Doc-only, sans action destructive** — le diagnostic est écrit et arbitrable avant qu'une ligne ne soit supprimée |
 | [translation/translation-override-protocol.md](translation/translation-override-protocol.md) | Voie normale du double-clé `translation-override` : quand resynchroniser un CSV par `T1 --update`, à qui le demander, motif type. Transpose l'arbitrage ai-01 du dispatch `c2760` (#20232) |
 
 ## Recherche (docs/research/)
@@ -379,6 +383,7 @@ Preuves visuelles attachées à un chantier : elles ne vivent pas dans `transien
 | [captures/22286/README.md](captures/22286/README.md) | Preuve de rendu des classes `dense-list` / `xl-dense` / `img-fit` sur les decks 02, 06, S3 et S8 (#22286) — sélection par le DOM rendu, capture au canvas du scanner (980×552), comparaison à l'original PPTX par titre, scan de composition |
 | [captures/24171/README.md](captures/24171/README.md) | Premier relevé de rendu du lot L2 sous forme **opposable** (#24171, EPIC #11508) — le relevé est archivé comme artefact versionné (hash de chaque image mesurée, empreinte de la machine) et non comme un compteur rejoué ; mesure du deck `06-apprentissage` (124 diapositives rendues) et **deux contraintes d'export mesurées** que la documentation du dépôt ne portait pas (`--range` obligatoire, `--output` effacé à chaque invocation) |
 | [captures/24171-point3/README.md](captures/24171-point3/README.md) | Relevé de composition **après correction** du deck `06-apprentissage` (point 3 de #24171) — 7 diapositives corrigées, 0 élément hors canvas sur 124, marges sous canvas mesurées, et le résidu à douze diapositives que la compression ne peut plus lever |
+| [captures/27751/README.md](captures/27751/README.md) | Preuve **visuelle** de la correction CSS qui retire le cadre vide de 150 px des vignettes de listing sans image (#10921, PR #27751) — deux copies du même site rendu servies en HTTP (avant/après), captures navigateur de la page de listing `Search` : 56 placeholders visibles sur 56 avant, **0** après, 56 cartes et leurs titres intacts dans les deux cas |
 
 ## Audit sémantique cross-famille (docs/audit/)
 
@@ -451,8 +456,8 @@ Protocoles opérationnels de la coordination flotte (registres, tenanciers, liai
 | [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole de réservation GPU — schéma du ledger, garde 85 % charge hôte, CUDA devices explicites, GPU 2 dédié ai-01, fold hebdomadaire, liaison picker / file #1454. Chantier #16737. |
 | [coordination/gpu-ledger-transport.md](coordination/gpu-ledger-transport.md) | Transport git du ledger `gpu-reservation` — publication en ajout seul, remote paramétrable, garde de lancement et sources des verdicts, sans changement de l'autorité déclarée. |
 | [coordination/ci-overflow-controller.md](coordination/ci-overflow-controller.md) | Contrôleur automatique de la variable de dépôt `CI_OVERFLOW_LOCAL` (phase B du débordement CI) — file hébergeuse saturée → `true`, file drainée → `false`, mesure illisible → aucune écriture ; le job automatisé **écrit** la variable via le secret dédié `ACTIONS_VARIABLES_PAT` (canal séparé du jeton de mesure, aucun repli : secret absent → verdict rendu, rien d'écrit, cause nommée dans le résumé du job). Chantier #22937. |
-| [coordination/dns-rate-measurement.md](coordination/dns-rate-measurement.md) | Mesure du débit de requêtes UDP des runners éphémères (volet 5.1 de Maintenance#196) — compteur `Udp.OutDatagrams` lu dans chaque conteneur, distinction recyclage / remise à zéro, verdict `UNREADABLE` quand aucune mesure n'est exploitable. Chantier #22937. |
-| [coordination/ci-two-tier.md](coordination/ci-two-tier.md) | Inventaire mesuré des workflows de CI (phase P0 du plan « CI à deux étages ») — census des déclencheurs lus dans le bloc `on:`, médiane et p90 par workflow sur une fenêtre bornée et annoncée, et l'ensemble des jobs que le PR gate exige aujourd'hui ; reproduction par `scripts/ci/measure_ci_two_tier.py`. Chantier #22937. |
+| [transients/2026-10-31-dns-rate-measurement.md](transients/2026-10-31-dns-rate-measurement.md) | Mesure du débit de requêtes UDP des runners éphémères (volet 5.1 de Maintenance#196) — compteur `Udp.OutDatagrams` lu dans chaque conteneur, distinction recyclage / remise à zéro, verdict `UNREADABLE` quand aucune mesure n'est exploitable. Chantier #22937. |
+| [transients/2026-11-10-ci-two-tier.md](transients/2026-11-10-ci-two-tier.md) | Inventaire mesuré des workflows de CI (phase P0 du plan « CI à deux étages ») — census des déclencheurs lus dans le bloc `on:`, médiane et p90 par workflow sur une fenêtre bornée et annoncée, et l'ensemble des jobs que le PR gate exige aujourd'hui ; reproduction par `scripts/ci/measure_ci_two_tier.py`. Chantier #22937. |
 
 ## Cadrage épistémique (docs/cadrage/)
 

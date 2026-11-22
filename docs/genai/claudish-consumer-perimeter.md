@@ -1,6 +1,6 @@
 # Périmètre des consommateurs claudish — carnets notebooks
 
-**État mesuré au 2026-11-03** par la lane `myia-po-2027:CoursIA` sur `origin/main`, issue #14926.
+**État mesuré au 2026-11-03** par la lane `myia-po-2027:CoursIA` sur `origin/main`, issue #14926. **Dernier addendum : 2026-11-21** (fournée 22b, lane `myia-po-2028:CoursIA` — [ci-dessous](#addendum-du-2026-11-21--22b-migre-et-une-mesure-du-gate-sinverse)).
 
 Ce document répond à la demande du pre-flight du [runbook de flip d'authentification](auth-flip-runbook.md) (l.53) : « **énumérer les consommateurs claudish** ». Jusqu'ici cette énumération était refaite à la main à chaque audit, et elle a dérivé — la liste de huit carnets portée par le corps de #14926 (mesure du 2026-10-06) nomme encore `GameTheory-03c-Le-Joueur-LLM.ipynb` et `GameTheory-28b-Humour-Banc-Dur.ipynb`, **qui n'existent plus sous ces chemins**.
 
@@ -19,6 +19,7 @@ Parse JSON des cellules de code, jamais un `grep` de chaîne : dans un `.ipynb`,
 | `GenAI/Texte/10c_Long_Context_Strategies.ipynb` | oui | non | `chat_template_kwargs` | exception — paramètres |
 | `GenAI/Texte/10_LocalLlama.ipynb` | oui | non | — | exception — sujet serving |
 | `GenAI/_research/e2e_quant_validation.ipynb` | oui | non | — | exception — sujet serving |
+| `GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb` | oui (repli) | **oui** | `chat_template_kwargs` (relayé, mesuré 2026-11-21) | **migré** ([addendum 2026-11-21](#addendum-du-2026-11-21--22b-migre-et-une-mesure-du-gate-sinverse)) |
 
 ## Les trois classes, et le motif de chacune
 
@@ -62,6 +63,17 @@ Ce qui tient, mesuré : le conteneur `claudish-sidecar` de `po-2027` porte la cl
 La règle de redémarrage ne s'applique pas ici : elle vise les services qui recalculent un secret **au démarrage** (ComfyUI-Login, [secrets-management.md](secrets-management.md)). Un sidecar dont l'environnement est déjà correct n'a rien à redémarrer — un redémarrage n'aurait rien changé et aurait coupé la passe.
 
 Le geste correctif de **cette** panne appartient donc à cette lane, et il est fait. Reste ce qui n'est pas à nous : que la passe serve le modèle nominal et relaie les paramètres natifs — cela se demande à son propriétaire.
+
+## Addendum du 2026-11-21 — 22b migre, et une mesure du gate s'inverse
+
+Deux faits nouveaux depuis le 2026-11-03, mesurés depuis `po-2028` (clé du coffre `MyIA-Keys`, empreinte identique à celle mesurée par po-2024) contre `https://models.myia.io/v1` :
+
+1. **`22b_Profil_Cognitif_CHC` entre au périmètre comme migré.** Absent du relevé du 2026-11-03 (absence signalée le 2026-11-20 sur #14926), ce carnet batterie adresse la pile vLLM par sa route `hebergee`. Il gagne le couple canonique `https://models.myia.io/v1` + `CLAUDISH_PROXY_KEY` **en tête de cascade**, les couples directs historiques restant en repli. Ce repli n'est pas un écart à la forme de référence « sans repli » de `04-SK` : celle-ci interdit le repli sur un credential **marchand** (`OPENAI_API_KEY` vers la façade — credential cross-provider), tandis que le repli de 22b est **même-pile** (clé vLLM vers hôte vLLM direct) et que la cascade d'essais successifs est le sujet pédagogique de la cellule.
+2. **La passerelle relaie désormais `chat_template_kwargs`.** Mesure : `enable_thinking=False` → `finish=stop`, réponse en 2 tokens à budget 5 ; sans le paramètre, `content=None` (le thinking consomme le budget) ; à budget 512 sans le paramètre, réponse en 37 tokens. Catalogue de 35 modèles, `swift-1.5-27b` servi tel quel (echo exact, pas de repli `deepseek-flash` observé sur ce checkpoint depuis ce siège). **Cela inverse la mesure du 2026-10-07** qui fondait la liste close `chat_template_kwargs, seed, logprobs` de la condition 2.
+
+`seed` et `logprobs` restent **non mesurés** : la condition 2 de réouverture de la fournée A n'est **pas** réunie, et cette fournée (09, 10b, 10c) reste fermée — le motif pédagogique de ces carnets exige les trois sémantiques.
+
+Conséquence pour la validation d'un couple passerelle : sur la façade, `GET /v1/models` est **exempt d'authentification** (proxy-auth). Le carnet juge donc le couple passerelle sur une **completion réelle** (sonde `max_tokens=2` avec le dialecte du carnet), jamais sur le listing — une clé périmée ne peut plus valider la cascade puis échouer en silence dans la batterie.
 
 ## Condition de réouverture
 
