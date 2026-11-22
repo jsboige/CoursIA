@@ -242,6 +242,11 @@ import check_run_state  # noqa: E402
 # #17437 : normalisation de l'auteur d'une review (orthographe REST des
 # identites App) -- source unique de la forme canonique, jamais recopiee.
 import gh_identity  # noqa: E402
+# #28131 (voie L1) : verdict LOCAL du garde de perimetre quand son run
+# heberge est encore en file. La grammaire du perimetre reste dans
+# l'organe (`scripts/check_pr_perimeter.py`) : ce module ne fait que
+# l'appeler, jamais la recopier.
+import merge_ready_perimeter as perimeter  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
@@ -2807,6 +2812,9 @@ def unstable_state_reason(
 
     jobs = advisory_jobs()
     advisory_count = 0
+    # #28131 (voie L1) : le garde de perimetre heberge est en file, le merge
+    # n'attend pas la file -- on mesure LOCALEMENT, avec le meme organe.
+    local_perimeter = 0
     for name in sorted(latest):
         if name == gate_leg["name"]:
             continue
@@ -2815,6 +2823,17 @@ def unstable_state_reason(
             continue
         done = latest_done.get(name)
         if done is None:
+            if name == perimeter.PERIMETER_CHECK_NAME:
+                verdict = perimeter.local_perimeter_verdict(
+                    runner, pr, head, gh_env, REPO
+                )
+                if verdict.blocking is False:
+                    local_perimeter += 1
+                    continue
+                return (
+                    f"mergeable-state:unstable:{name}:{verdict.detail}",
+                    verdict.detail,
+                )
             return (f"mergeable-state:unstable:{name}:no-completed-leg", "")
         if done.get("conclusion") not in CHECK_GREEN:
             return (
@@ -2836,7 +2855,8 @@ def unstable_state_reason(
         )
     return (
         None,
-        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded",
+        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded"
+        + (f"+{local_perimeter} perimeter-local" if local_perimeter else ""),
     )
 
 
