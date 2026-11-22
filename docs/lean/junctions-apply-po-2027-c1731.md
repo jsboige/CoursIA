@@ -30,7 +30,7 @@ EPIC parente : [#4362](https://github.com/jsboige/CoursIA/issues/4362) — Lean 
 ```
 === Apply groupe leanprover_lean4_v4.33.0-db584cd6 (17 a traiter, 7 deja junctionne(s)) ===
 Donneur : MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean -> D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
-  junction : MyIA.AI.Notebooks/Compression/Compression_lean -> leanprover_lean4_v4.33.0-db584cd6 
+  junction : MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction : MyIA.AI.Notebooks/GameTheory/assignment_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction REPOINTEE : MyIA.AI.Notebooks/GameTheory/game_theory_lean
      ancienne cible : D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.32.1-520045ab\mathlib
