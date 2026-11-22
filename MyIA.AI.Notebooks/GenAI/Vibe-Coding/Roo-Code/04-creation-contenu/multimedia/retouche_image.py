@@ -108,7 +108,7 @@ def retouche_image(image_path, instructions, output_path):
                 ]
             }
         ],
-        "max_tokens": 4096
+        "max_completion_tokens": 4096
     }
     
     try:
