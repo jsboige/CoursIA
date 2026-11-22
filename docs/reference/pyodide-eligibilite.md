@@ -567,9 +567,9 @@ Le detail des dependances est dans le fichier `pyodide-refus.tsv` (colonne `suff
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | - | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
-| `MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
-| `MyIA.AI.Notebooks/GameTheory/GameTheory-17e-Bayesian-Persuasion-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
-| `MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17b-Asymmetric-Information-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17e-Bayesian-Persuasion-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, scipy==1.18.0 | - |
+| `MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | matplotlib==3.10.8, numpy==2.4.6, pandas==3.0.2 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-19-Capstone-Dynamics-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | numpy==2.4.6 | - |
 | `MyIA.AI.Notebooks/GameTheory/GameTheory-20-Capstone-Coalitions-Python.ipynb` | MyIA.AI.Notebooks/GameTheory | python3 | networkx==3.6.1, numpy==2.4.6, pandas==3.0.2 | - |
