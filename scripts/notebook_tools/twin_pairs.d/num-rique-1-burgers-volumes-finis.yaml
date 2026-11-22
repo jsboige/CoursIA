@@ -1,0 +1,12 @@
+- name: "Numérique-1 Burgers volumes finis"
+  family: Physique/Numerique
+  python: MyIA.AI.Notebooks/Physique/Numerique/Numerique-01-Burgers-Volumes-Finis-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Physique/Numerique/Numerique-01-Burgers-Volumes-Finis-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design des deux cotes : le sujet du carnet est d'IMPLEMENTER Godunov et Rusanov a la main (cote Python numpy boucle par boucle, cote C# BCL .NET pure sans NuGet). Aucun moteur SOTA n'est saute : il n'existe pas de solveur volumes finis invoquable qui serait le 'vrai outil' du carnet - la reimplementation EST le livrable pedagogique. Les deux cotes comparent a la MEME solution exacte de Riemann derivee dans le carnet (choc s=(uL+uR)/2, eventail x/t)."
+  known_differences:
+    - "2026-11-20 (myia-po-2023:CoursIA, creation de la paire, #27527) : figures matplotlib remplacees cote C# par des sorties texte (postes des particules, taux, verdict) - la parite porte sur les VALEURS, pas sur le rendu graphique."
+    - "Egalite bit-a-bit exigee et gardee par assertions executables cote C# : nb de pas 89/89, erreurs L1 0.004156/0.005131 (1e-9 rel), ordres 0.99/0.99/0.75/0.79 et regionaux 0.75/0.75/0.72 (5e-3), t_pred/t_mesure (1e-12), pentes 5.9->57.0, positions du front. Deux prerequis arithmetiques documentes dans le code C# : (1) les grilles fines repliquent l'arithmetique np.linspace (start + i*step, PAS (stop-start)*i/(n-1)) car le point x_f[560] tombe a un ulp du choc x=0.4 - les deux formules y donnent des valeurs de part et d'autre de la discontinuite et l'erreur L1 saute de 0.0006 ; (2) le front est rapporte a la cellule GAUCHE de l'interface la plus raide (convention np.diff/argmax)."
+    - "Regression log-log : Python np.polyfit (QR), C# formule fermee des moindres carres - ecart ~1e-13, couvert par la tolerance 5e-3 des assertions. Sommation : numpy pairwise vs LINQ sequentielle - ecart ~1e-16 rel, couvert par 1e-9."
+    - "Exercices : les 4 stubs (Lax-Wendroff, Riemann cubique f(u)=u^3/3, compte_traversees, trace_entropie) sont portes avec le meme enonce et `double[] result = null; // TODO etudiant` (C.1 : pas d'erreur volontaire, execution bout en bout)."

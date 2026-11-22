@@ -10,10 +10,8 @@ Doc : docs/reference/tapis-rapide.md.
 
 Usage : tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json] [--jours 45]
     [--cache-s 300] [--graine S] [--lecture <dossier>] [--allow-stale]
-    (sorties : 0 tirage (aussi sur le cache de secours de moins de 12 h) ;
-     3 lecture incomplete sans secours ; 4 main perime ou organe divergent ;
-     aucune sortie ne renvoie au tapis lourd (#26926) ; une mesure Origami en
-     echec ne bloque pas le tirage -- fail-OPEN)
+    (sorties : 0 tirage (aussi via le cache de secours de moins de 12 h) ; 3 lecture incomplete ;
+     4 main perime ; le tapis lourd n'est jamais appele (#26926) ; fail-OPEN)
 """
 from __future__ import annotations
 
@@ -26,8 +24,8 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_dernier_grain,
-                         tapis_ecarts_fond, tapis_equilibre, tapis_origami,
+from coordination import (frozen_campaigns, gh_bulk, gh_recherche, tapis_acceptance, tapis_assiette,
+                         tapis_dernier_grain, tapis_ecarts_fond, tapis_equilibre, tapis_origami,
                          tapis_sature, tapis_service, tapis_voie_leger)
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
@@ -36,9 +34,8 @@ from coordination.tapis_hors_flotte import ecart_hors_flotte
 from coordination.tapis_service import texte  # sortie texte, aussi lue par les tests
 from coordination.tapis_visites import evenements_info
 
-# Part au plus des conteneurs (EPIC, parapluie) dans la liste : la lane recoit des grains,
-# pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains,
-# toujours APRES les grains, avec leur procedure --paths (#26926).
+# Part au plus des conteneurs (EPIC, parapluie) : la lane recoit des grains, pas des Epics ;
+# ils completent la liste apres les grains, avec leur procedure --paths (#26926).
 PART_CONTENEURS = 0.25
 CLAIM_VIVANT_H = 48  # au-dela, un claim est tenu pour abandonne (meme borne que l'organe)
 # Plafond EPIC (#22500) : meme fenetre que l'organe check_lane_claim.py epic_visit_cap.
@@ -398,10 +395,13 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
     ecartees: dict[str, list[dict]] = {code: [] for code in CODES}
     for e in etats_:
         if e.ecart:
-            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif})
+            ecartees[e.ecart].append({"numero": e.numero, "motif": e.motif,
+                                       "feuille": not e.conteneur})
     return {
         "lane": lane, "graine": graine, "maintenant": _iso(maintenant),
         "lecture": {"issues": len(etats_), "servables": sum(e.ecart is None for e in etats_),
+                    "servables_feuilles": sum(e.ecart is None and not e.conteneur for e in etats_),
+                    "servables_conteneurs": sum(e.ecart is None and e.conteneur for e in etats_),
                     "familles": len({e.famille for e in etats_ if e.ecart is None}), "lu_a": lecture.lu_a, "appels": lecture.appels,
                     "secondes": lecture.secondes, "depuis_cache": lecture.depuis_cache,
                     "fetch_note": lecture.fetch_note,
@@ -447,10 +447,9 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
                  fraicheur: dict | None, lire_fils: object) -> int:
     """La voie LOURDE : la lecture du pool entier (rejeu --lecture inclus)."""
     try:
-        if args.lecture:
-            lecture = gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
-        else:
-            lecture = gh_bulk.lire_tout(depot, args.cache_s, run, args.jours)
+        lecture = (gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
+                   if args.lecture else
+                   gh_bulk.lire_tout(depot, args.cache_s, run, args.jours))
     except gh_bulk.LectureIncomplete as exc:
         # Secours (#26926) : la derniere lecture COMPLETE du cache (< 12 h), jamais
         # le tapis lourd (240 s, grains non verifies). Un rejeu n'a pas de secours.
@@ -479,6 +478,7 @@ def _voie_lourde(args, depot: Path, run: gh_bulk.Run, maintenant: datetime | Non
         lambda: ordonner(tous, args.lane, maintenant, args.grains, graine))
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
     r["origami_parking"] = origami
+    r["journal_service"] = tapis_acceptance.journaliser_service(r, args.lane, args.lecture, run)
     if reverif is not None:
         r["reverif_fils"] = reverif
     if fraicheur is not None:

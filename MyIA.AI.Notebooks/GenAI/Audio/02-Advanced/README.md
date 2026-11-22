@@ -26,6 +26,7 @@ Les numéros ci-dessous sont les étapes de cette sous-série. Elles présentent
 | 10 | [Effets sonores AudioLDM2](02-10-Effets-Sonores-AudioLDM2.ipynb) | Générer des effets sonores à partir d'un texte, mesurer étapes, durée et guidance, puis discriminer un effet d'une musique. | Intermédiaire | [Effets sonores](#effets-sonores) |
 | 11 | [AudioGen](02-11-Text-to-Audio-Bruitages.ipynb) | Générer des scènes sonores décrites en texte et comparer le paradigme autoregressif à la diffusion d'[AudioLDM-S](../06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb). | Intermédiaire | [Bruitages](#bruitages) |
 | 12 | [RVC v2 : conversion de voix chantée](02-12-SVS-Singing-Voice-RVC.ipynb) | Remplacer le timbre d'un chant en préservant la mélodie : charger un checkpoint, mesurer trajectoire f0, transposition et paramètre protect sur CPU, puis convertir une voix de parole (couple avant/après dans `assets/`). | Avancé | [Voix](#voix) |
+| 14 | [Transcription audio Qwen3](02-14-Transcription-Audio-Qwen3-Python.ipynb) | Transcrire la parole avec un moteur de la génération Qwen3, le confronter à un témoin hors famille Qwen et à la génération précédente, et lire l'écart sur le même signal. | Avancé | [Voix](#voix) |
 
 ## Approfondissements — Pratique
 
@@ -34,6 +35,8 @@ Les numéros ci-dessous sont les étapes de cette sous-série. Elles présentent
 Commencez par [Chatterbox](02-1-Chatterbox-TTS.ipynb) : fixez le texte et faites varier `exaggeration` ou `cfg_weight` pour distinguer expressivité et fidélité au conditionnement. [XTTS](02-2-XTTS-Voice-Cloning.ipynb) prolonge cette expérience par le clonage sans entraînement supplémentaire et la comparaison entre langues. La similarité calculée et l'écoute répondent à des questions différentes ; la qualité et la durée de l'extrait de référence influencent le résultat.
 
 Le [gateway](02-5-Multi-Model-TTS-Gateway.ipynb) déplace la question vers une application : vérifier la disponibilité d'un service, comparer les moteurs effectivement déployés et choisir un routage. Le carnet [TTS expressif](02-8-Expressive-TTS.ipynb) explore ensuite les tags de prosodie, Fish S2 Pro et Dia ; il suppose déjà les notions de synthèse des premiers carnets. La [conversion RVC v2](02-12-SVS-Singing-Voice-RVC.ipynb) prend le chant enregistré pour point de départ : elle remplace le timbre en préservant la mélodie, mesurée note par note, sur CPU et avec un checkpoint de voix synthétique. Une seconde source — une voix de parole générée par le TTS [Kokoro](../01-Foundation/01-5-TTS-Local-ONNX.ipynb) — montre que le même moteur convertit chant et parole ; le couple avant/après est committé dans `assets/`. Utilisez une voix de référence uniquement avec le consentement du locuteur et vérifiez les droits d'utilisation des modèles et des enregistrements.
+
+La [transcription Qwen3](02-14-Transcription-Audio-Qwen3-Python.ipynb) ferme la boucle côté perception : sur le même couple audio, un moteur de reconnaissance vocale de la génération Qwen3 est confronté à un témoin hors famille Qwen et à la génération précédente. Le dépôt ne documente pas le texte exact de ces extraits, donc le carnet ne note aucune transcription : il compare les moteurs sur le même signal, et mesure l'écart de génération plutôt que de le supposer.
 
 ### Musique
 
