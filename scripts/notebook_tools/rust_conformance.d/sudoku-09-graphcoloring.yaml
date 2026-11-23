@@ -1,0 +1,79 @@
+- name: "Sudoku-09 GraphColoring"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Rust.ipynb
+  measures:
+    - id: sommets
+      description: "Nombre de sommets du graphe de contraintes du sudoku"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: 'Sommets: (\d+)'
+          transform: int
+        rust:
+          cell: 4
+          pattern: 'Sommets: (\d+)'
+          transform: int
+        csharp:
+          cell: 40
+          pattern: 'Sommets\s*:\s*(\d+)'
+          transform: int
+    - id: aretes
+      description: "Nombre d'aretes du graphe de contraintes du sudoku"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: 'Aretes: (\d+)'
+          transform: int
+        rust:
+          cell: 4
+          pattern: 'Aretes: (\d+)'
+          transform: int
+        csharp:
+          cell: 40
+          pattern: 'Aretes\s*:\s*(\d+)'
+          transform: int
+    - id: welsh_powell_noeuds
+      description: "Noeuds explores par Welsh-Powell sur easy[0]"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: 'Welsh-Powell \(easy\[0\]\) - Succes: (?:True|true), Noeuds: (\d+)'
+          transform: int
+        rust:
+          cell: 18
+          pattern: 'Welsh-Powell \(easy\[0\]\) - Succes: (?:True|true), Noeuds: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# ne publie pas de compteur de noeuds Welsh-Powell
+            dans ses sorties commitees (seul le graphe de depart est mesure)
+            : cote declare ABSENT, pas mesure.
+    - id: mrv_noeuds
+      description: "Noeuds explores par MRV sur easy[0]"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 25
+          pattern: 'MRV \(easy\[0\]\) - Succes: (?:True|true), Noeuds: (\d+)'
+          transform: int
+        rust:
+          cell: 18
+          pattern: 'MRV \(easy\[0\]\) - Succes: (?:True|true), Noeuds: (\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `welsh_powell_noeuds` : le cote C# ne publie pas
+            de compteur de noeuds MRV.
+  # NB : le MRV pur (164 noeuds en Python vs 4037 en Rust) est VOLONTE
+  # hors registre : ce n'est pas une divergence de portage mais une
+  # convention de tie-breaking differente entre les deux implementations.
+  # La conformite se mesure sur les grandeurs qui DOIVENT etre egales.

@@ -1,0 +1,27 @@
+- name: "Search-01 StateSpace"
+  family: Search
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-Rust.ipynb
+  measures:
+    - id: bordeaux_strasbourg_km
+      description: "Distance du chemin optimal Bordeaux -> Strasbourg (Dijkstra)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: 'Distance totale\s*:\s*(\d+) km'
+          transform: int
+        rust:
+          cell: 26
+          pattern: 'Bordeaux -> Strasbourg\s*:\s*(\d+) km'
+          transform: int
+        csharp:
+          absent: >-
+            Le jumeau C# publie l'itineraire mais pas la distance totale au
+            meme format dans les cellules mesurees ici : cote declare ABSENT,
+            pas mesure.
+  # NB : la taille de l'espace d'etats du 8-puzzle (9! en Python, 8! en
+  # Rust) est VOLONTE hors registre : conventions de comptage differentes
+  # (avec/sans etat vide fixe), pas une divergence de portage.

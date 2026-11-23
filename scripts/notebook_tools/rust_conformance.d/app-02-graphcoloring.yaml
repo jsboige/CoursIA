@@ -1,0 +1,73 @@
+- name: "App-02 GraphColoring (departements)"
+  family: Search
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Rust.ipynb
+  measures:
+    - id: sommets
+      description: "Nombre de sommets du graphe de contiguite des departements"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'Sommets\s*:\s*(\d+)'
+          transform: int
+        rust:
+          cell: 4
+          pattern: 'Sommets\s*:\s*(\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Les 13 cellules code du jumeau C# ne portent aucune sortie
+            commitee (carnet non re-execute avec outputs) : cote declare
+            ABSENT, pas mesure. La reprise du cote C# suppose une re-execution
+            C.2 du carnet C# -- hors de ce portage Rust.
+    - id: aretes
+      description: "Nombre d'aretes du graphe de contiguite des departements"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: 'Aretes\s*:\s*(\d+)'
+          transform: int
+        rust:
+          cell: 4
+          pattern: 'Aretes\s*:\s*(\d+)'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `sommets` : aucune sortie commitee cote C#.
+    - id: chromatic_departements
+      description: "Nombre chromatique du graphe des departements"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 29
+          pattern: 'chi\(G\)\s*=\s*(\d+)'
+          transform: int
+        rust:
+          cell: 13
+          pattern: 'k = (\d+)\s*:\s*1 solution'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `sommets` : aucune sortie commitee cote C#.
+    - id: petersen_solutions
+      description: "Nombre de colorations du graphe de Petersen (k = 3)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 33
+          pattern: 'solutions trouvees\s*:\s*(\d+)'
+          transform: int
+        rust:
+          cell: 14
+          pattern: 'k = 3\s*:\s*(\d+) solution'
+          transform: int
+        csharp:
+          absent: >-
+            Meme raison que `sommets` : aucune sortie commitee cote C#.
