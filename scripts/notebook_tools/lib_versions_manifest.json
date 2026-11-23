@@ -138,6 +138,20 @@
         }
       ],
       "note": "Version **chargeee**, relevee dans les sorties commitees (ecosysteme `observed`). Le depot n'ecrit aucun pin dur de numpy -- seulement des planchers (`numpy>=1.24`) et deux plafonds (`IIT/requirements.txt` : `numpy<2.0`, `SymbolicLearning/requirements.txt` : `numpy<2.5`) : la dispersion se lit donc dans le recensement, la convergence se decide serie par serie."
+    },
+    {
+      "id": "SharpZipLib",
+      "ecosystem": "nuget",
+      "canonical": "1.4.2",
+      "canonical_source": "manifest",
+      "divergences": []
+    },
+    {
+      "id": "LZMA-SDK",
+      "ecosystem": "nuget",
+      "canonical": "22.1.1",
+      "canonical_source": "manifest",
+      "divergences": []
     }
   ],
   "allowlist": [
