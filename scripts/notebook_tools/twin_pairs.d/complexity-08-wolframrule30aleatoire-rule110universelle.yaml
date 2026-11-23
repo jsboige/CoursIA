@@ -1,0 +1,11 @@
+- name: "Complexity-08 WolframRule30Aleatoire Rule110Universelle"
+  family: Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design : les automates cellulaires (regles 30/110/90/60, LFSR, LCG) sont rejoues pas a pas en arithmetique entiere des deux cotes ; les tests statistiques (chi2, entropie, densite) recomptent les memes series. Aucun moteur externe canonique : les deux cotes derivent les memes tables de verite et les memes sequences."
+  known_differences:
+    - "C# ajoute des lignes de controle chi2 avec reference et ecart relatif (CA60, LFSR, LCG) qui levent sur ecart ; le Python imprime les memes mesures sans comparaison formelle (21 lignes porteuses C# contre 15 Python)."
+    - "Micro-variations editoriales : le temoin statistique est annonce « ci-dessus » (Python) / « ci-dessous » (C#) selon la mise en page ; les trois exercices sont numerotes 1/2/3 cote Python et A/B/C cote C#, memes enonces et memes positions (md-titres 23-25)."
+    - "Les valeurs porteuses (CANONICAL_RULES (0, 30, 110, 250), les 64 bits du site 0 regle 30 N=49 identiques bit a bit, la table chi2 N=17..49 (231.50/0.8519/0.0039 ... 226.44/0.9007/0.8003), CA110 N=49 1674) coincident verbatim. Exception mesuree : les densites, mesure propre de chaque port (etat initial aleatoire, generateur propre — NumPy cote Python, SplitMix64 graine 33 cote C#, documente dans le carnet C#) : Python 0.4988 (regle 30) / 0.5733 (regle 110), C# 0.5008 / 0.5742 — memes classes III/IV des deux cotes."
