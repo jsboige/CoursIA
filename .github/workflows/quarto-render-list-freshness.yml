@@ -169,7 +169,20 @@ jobs:
         # On n'ecrit rien : le checkout est en mode read sur le working
         # tree, et le regen sans modification de l'arbre ne touche pas
         # _quarto.yml. La sortie `--check` post-regen doit etre rc=0.
+        # Meme repli de chemin que l'etape de check ci-dessus (l.141-142), et
+        # pour la meme raison : le workflow est lu au merge commit, mais le
+        # checkout est la tete de la PR. Une tete anterieure au relogement de
+        # #27355 (21e7399705) ne porte que `scripts/regen_quarto_render.py` ;
+        # sans repli cette etape echouait en rc=2 avant d'avoir tourne, et le
+        # job advisory ne pouvait plus jamais etre vert sur ces tetes.
+        # Residual mesure par le secretaire (23/11) : 5 PRs portaient ce rouge
+        # (27177 27633 27652 26855 27043), meme signature dans les logs --
+        # `can't open file '.../scripts/ci/regen_quarto_render.py': [Errno 2]`
+        # (job 137281013812). #27494 avait pose le repli sur la seule etape
+        # de check, et avait oublie celle-ci.
         run: |
           set -euo pipefail
-          python3 scripts/ci/regen_quarto_render.py 2>&1 | tail -1
-          python3 scripts/ci/regen_quarto_render.py --check 2>&1 | tail -1
+          SCANNER=scripts/ci/regen_quarto_render.py
+          [ -f "${SCANNER}" ] || SCANNER=scripts/regen_quarto_render.py
+          python3 "${SCANNER}" 2>&1 | tail -1
+          python3 "${SCANNER}" --check 2>&1 | tail -1
