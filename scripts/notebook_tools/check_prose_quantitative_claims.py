@@ -185,6 +185,20 @@ DOMAIN_COVERAGE_PAIR_RE = re.compile(
     r"one\s+for\s+each\s+cell[-–]value\s+pair)\b",
     re.IGNORECASE,
 )
+# Dimensions enumerees d'une structure (grille, plateau, matrice, table de
+# verite) : « (8 lignes, 3 colonnes) », « 9 lignes + 9 colonnes + 9 blocs »,
+# « Swordfish (3 lignes, 3 colonnes) », « 6 lignes x 7 colonnes »,
+# « 3 lignes/colonnes ». Le nombre est RELATIONNEL : il est suivi d'une
+# seconde dimension sur la meme enumeration. Un « 140 lignes » seul, un
+# « 9 lignes de code » ou un « 64 lignes » sans colonnes restent des
+# compteurs d'artefacts -- et le prefixe « le carnet contient N lignes, ... »
+# reste signale par le garde de prefixe de _is_domain_model_quantity.
+DOMAIN_GRID_ENUMERATION_RE = re.compile(
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
+    r"\s*(?:[,+/]\s*|[x×]\s*|\bet\s+)"
+    r"(?:\*{0,2}\d{1,6}\*{0,2}\s+)?(?:colonnes?|columns?)\b",
+    re.IGNORECASE,
+)
 
 
 def _is_domain_model_quantity(line: str, count: re.Match[str]) -> bool:
@@ -196,6 +210,7 @@ def _is_domain_model_quantity(line: str, count: re.Match[str]) -> bool:
         DOMAIN_COVERAGE_FACTOR_RE,
         DOMAIN_COVERAGE_MATRIX_DIMENSION_RE,
         DOMAIN_COVERAGE_PAIR_RE,
+        DOMAIN_GRID_ENUMERATION_RE,
     )
     for pattern in patterns:
         for match in pattern.finditer(line):

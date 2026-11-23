@@ -90,6 +90,12 @@ def test_count_re_requires_number_before_noun():
         "La matrice de couverture exacte compte 729 lignes, une par couple cellule-valeur.",
         "La matrice contient 324 colonnes x 729 lignes maximum.",
         "The exact-cover matrix has 729 lines, one for each cell-value pair.",
+        "construire la TPM (8 lignes, 3 colonnes).",
+        "on déclare 27 contraintes `AllDifferent` (9 lignes + 9 colonnes + 9 blocs).",
+        "Le Swordfish (3 lignes, 3 colonnes) et le Jellyfish (4 lignes, 4 colonnes) suivent le même principe.",
+        "Extension de X-Wing a 3 lignes/colonnes",
+        "Puissance 4 (6 lignes x 7 colonnes).",
+        "un plateau de 6 lignes et 7 colonnes",
     ],
 )
 def test_artifact_detector_spares_explicit_domain_model_dimensions(line):
@@ -138,6 +144,18 @@ def test_artifact_detector_spares_explicit_domain_model_dimensions(line):
             "Matrice de couverture exacte : le code fait 80 lignes de code ; "
             "729 lignes, une par couple cellule-valeur.",
             ["80 lignes"],
+        ),
+        (
+            "Le carnet contient 9 lignes, 9 colonnes, 9 blocs.",
+            ["9 lignes"],
+        ),
+        (
+            "Le notebook fait 64 lignes, 12 colonnes.",
+            ["64 lignes"],
+        ),
+        (
+            "Le fichier source a 140 lignes, et 9 colonnes.",
+            ["140 lignes"],
         ),
     ],
 )
