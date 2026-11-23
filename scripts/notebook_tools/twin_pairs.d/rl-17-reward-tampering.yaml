@@ -1,0 +1,10 @@
+- name: "RL-17 Reward Tampering"
+  family: RL/.NET-Parity
+  python: MyIA.AI.Notebooks/RL/RL-17-Reward-Tampering-Python.ipynb
+  csharp: MyIA.AI.Notebooks/RL/RL-17-Reward-Tampering-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets construisent leurs environnements tabulaires et résolvent les mêmes agents et expériences ; la BCL .NET et les SVG statiques suffisent sans moteur externe."
+  known_differences:
+    - "System.Random et NumPy ne produisent pas les mêmes départages ni les mêmes trajectoires d'apprentissage ; les comptes observés sont propres à chaque moteur."
+    - "Les figures SVG remplacent Matplotlib et les exercices restent ouverts."

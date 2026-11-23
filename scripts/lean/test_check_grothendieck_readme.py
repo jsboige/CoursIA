@@ -70,7 +70,7 @@ from unittest import mock
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CHECKER = REPO_ROOT / "scripts" / "lean" / "check_grothendieck_readme.py"
-DEFAULT_LAKE = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GROTH" / "grothendieck_lean"
+DEFAULT_LAKE = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "Grothendieck" / "grothendieck_lean"
 
 
 def _run_checker(*args: str, expect_exit: int, cwd: Path | None = None) -> subprocess.CompletedProcess:
