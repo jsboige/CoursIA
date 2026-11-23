@@ -394,16 +394,16 @@
     },
     {
       "lake": "compression",
-      "project-path": "MyIA.AI.Notebooks/Compression/Compression_lean",
+      "project-path": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean",
       "display-name": "compression_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/Compression/Compression_lean/**.lean",
-        "MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json"
+        "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/**.lean",
+        "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/lake-manifest.json"
       ],
       "axiom-include-i18n-siblings": "true"
     },
@@ -533,6 +533,22 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
+      ]
+    },
+    {
+      "lake": "linear",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean",
+      "display-name": "linear_lean",
+      "sorry-baseline": "4",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "axiom-fail-on-sorry": "false",
+      "axiom-include-i18n-siblings": "false",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/LINEAR/linear_lean/lake-manifest.json"
       ]
     },
     {

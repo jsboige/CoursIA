@@ -1,7 +1,7 @@
 - name: "Complexity-04c KServer WorkFunction"
   family: Complexity
-  python: MyIA.AI.Notebooks/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb
-  csharp: MyIA.AI.Notebooks/Complexity/Complexity-04c-KServer-WorkFunction-CSharp.ipynb
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-04c-KServer-WorkFunction-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "La work function algorithm (connue depuis 1990) est l'objet meme du carnet : les deux cotes l'ecrivent explicitement, cote Python avec itertools/random/collections et matplotlib, cote C# avec la BCL seule (System.Random, LINQ) et un rendu SVG produit a la main. Aucun moteur externe n'est appele, aucun substitut n'est presente : le carnet mesure les ratios realises de l'algorithme sur des instances jouets, ce qu'un solveur de k-server deleguerait au lieu de l'illustrer. Meme discipline que les paires 04b et 04d de la famille."

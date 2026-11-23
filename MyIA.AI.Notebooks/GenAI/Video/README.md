@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Video
-pedagogical_count: 22
-breakdown: Video=22
-maturity: BETA=19, ALPHA=3
+pedagogical_count: 23
+breakdown: Video=23
+maturity: BETA=20, ALPHA=3
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Audio Sync](../Audio/04-Applications/04-4-Audio-Video-Sync.ipynb)
@@ -58,23 +58,23 @@ On ne peut pas créer ce qu'on ne comprend pas. Ce niveau pose les bases techniq
 </p>
 
 <p align="center">
-  <a href="01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb"><img src="assets/readme/video4-esrgan.png" width="540" alt="Comparaison HR vs LR sur 4 frames — balle rouge + 4 billes vertes sur fond noir quadrillé, HR (320×240, nette) vs LR (320×240, soft/blur), même résolution, aucune démo d'upscaling visuel dans cette figure."></a><br>
-  <em>Sortie du notebook <a href="01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb">01-4</a> : comparaison HR vs LR à résolution identique (320×240) — la figure montre les mêmes frames dans les deux qualités, mais <strong>ne démontre pas visuellement l'upscaling</strong> ; la sortie upscalée ESRGAN est à voir dans le notebook lui-même. La figure sert ici d'<strong>input de référence</strong> pour le modèle.</em>
+  <a href="01-Foundation/01-4-Video-Enhancement.ipynb"><img src="assets/readme/video4-esrgan.png" width="540" alt="Comparaison HR vs LR sur 4 frames — balle rouge + 4 billes vertes sur fond noir quadrillé, HR (320×240, nette) vs LR (320×240, soft/blur), même résolution, aucune démo d'upscaling visuel dans cette figure."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-4-Video-Enhancement.ipynb">01-4</a> : comparaison HR vs LR à résolution identique (320×240) — la figure montre les mêmes frames dans les deux qualités, mais <strong>ne démontre pas visuellement l'upscaling</strong> ; la sortie upscalée ESRGAN est à voir dans le notebook lui-même. La figure sert ici d'<strong>input de référence</strong> pour le modèle.</em>
 </p>
 
 <p align="center">
-  <a href="01-Foundation/01-5-AnimateDiff-Introduction.ipynb"><img src="assets/readme/video5-animatediff.png" width="560" alt="Génération AnimateDiff text-to-video depuis prompt « a serene lake at sunset with mountains in the background » — grille 2×4 frames d'un paysage lacustre au coucher de soleil (montagnes + lac reflétant, lumière dorée)."></a><br>
-  <em>Sortie du notebook <a href="01-Foundation/01-5-AnimateDiff-Introduction.ipynb">01-5</a> : génération AnimateDiff text-to-video (grille 2×4 frames) — paysage lacustre au coucher de soleil généré depuis le prompt « a serene lake at sunset with mountains in the background ». Le prompt est visible en haut de la figure (tronqué par la largeur d'image).</em>
+  <a href="01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb"><img src="assets/readme/video5-animatediff.png" width="560" alt="Génération AnimateDiff text-to-video depuis prompt « a serene lake at sunset with mountains in the background » — grille 2×4 frames d'un paysage lacustre au coucher de soleil (montagnes + lac reflétant, lumière dorée)."></a><br>
+  <em>Sortie du notebook <a href="01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb">01-5</a> : génération AnimateDiff text-to-video (grille 2×4 frames) — paysage lacustre au coucher de soleil généré depuis le prompt « a serene lake at sunset with mountains in the background ». Le prompt est visible en haut de la figure (tronqué par la largeur d'image).</em>
 </p>
 
 | Notebook | Contenu | Service | VRAM |
 |----------|---------|---------|------|
 | [01-1-Video-Operations-Basics](01-Foundation/01-1-Video-Operations-Basics.ipynb) | moviepy, ffmpeg, decord, codecs | Local | 0 |
 | [01-1b-Video-Slideshow-Bonus](01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb) | *Bonus* — slideshow : frames PIL centrées, assemblage imageio à `fps` choisi | Local | 0 |
-| [01-2-GPT-5-Video-Understanding](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) | GPT-5 vidéo, scènes, Q&A | OpenAI API | 0 |
-| [01-3-Qwen-VL-Video-Analysis](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) | Qwen2.5-VL 7B local, grounding | Local GPU | ~18 GB |
-| [01-4-Video-Enhancement-ESRGAN](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) | Real-ESRGAN, RIFE interpolation | Local GPU | ~4 GB |
-| [01-5-AnimateDiff-Introduction](01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | AnimateDiff, text-to-video basique | Local GPU | ~12 GB |
+| [01-2-Comprehension-Video-API](01-Foundation/01-2-Comprehension-Video-API.ipynb) | GPT-5 vidéo, scènes, Q&A | OpenAI API | 0 |
+| [01-3-Comprehension-Video-Locale](01-Foundation/01-3-Comprehension-Video-Locale.ipynb) | Qwen2.5-VL 7B local, grounding | Local GPU | ~18 GB |
+| [01-4-Video-Enhancement](01-Foundation/01-4-Video-Enhancement.ipynb) | Real-ESRGAN, RIFE interpolation | Local GPU | ~4 GB |
+| [01-5-Generation-Text-to-Video-Intro](01-Foundation/01-5-Generation-Text-to-Video-Intro.ipynb) | AnimateDiff, text-to-video basique | Local GPU | ~12 GB |
 
 **01-1b — quand le lire, quand le sauter.** Le bonus est une accrétion optionnelle détachée de la conclusion de
 [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) : le challenge du slideshow y a trouvé un espace de travail,
@@ -143,7 +143,7 @@ Les trois derniers notebooks et le notebook de synchronisation audio-vidéo conc
 
 Le fil rouge de cette série est la création d'un pipeline de vidéo pédagogique générée par IA. Voici comment les niveaux s'articulent :
 
-1. **01-Foundation** (compréhension vidéo) : [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb) et [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb) couvrent la compréhension vidéo (décomposition en scènes, Q&A). [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) améliore la qualité. À la fin, vous savez analyser et manipuler une vidéo existante.
+1. **01-Foundation** (compréhension vidéo) : [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb) donne les bases techniques (ffmpeg, moviepy). [01-2](01-Foundation/01-2-Comprehension-Video-API.ipynb) et [01-3](01-Foundation/01-3-Comprehension-Video-Locale.ipynb) couvrent la compréhension vidéo (décomposition en scènes, Q&A). [01-4](01-Foundation/01-4-Video-Enhancement.ipynb) améliore la qualité. À la fin, vous savez analyser et manipuler une vidéo existante.
 
 2. **02-Advanced** (génération vidéo) : [02-1](02-Advanced/02-1-HunyuanVideo-Generation.ipynb) génère des vidéos haute qualité. [02-3](02-Advanced/02-3-Wan-Video-Generation.ipynb) offre une alternative rapide avec support multilingue. [02-4](02-Advanced/02-4-SVD-Image-to-Video.ipynb) anime une image existante (utile pour transformer un diagramme en animation). [02-5](02-Advanced/02-5-Video-Audio-Conjoint.ipynb) est le seul à produire vidéo **et audio synchronisés** en une passe (LTX-2 22B, le plus exigeant en VRAM). [02-6](02-Advanced/02-6-Video-Architecture-Licensing.ipynb) étudie MiniMax H3 (modèle omni-modal #1) sous l'angle de sa **bifurcation juridique** — un cas d'école de conformité : pourquoi ce modèle ne peut pas être *auto-hébergé* en UE (licence des poids) mais reste invocable via le *service cloud* Hailuo (ToS sans exclusion UE), avec un loader idempotent Section 7 pour la génération réelle quand `MINIMAX_GENAI_API_KEY` est fournie. [02-7](02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb) démontre la voie **exécutive** : CogVideoX-2b (THUDM, Apache-2.0) — modèle *text-to-video* open-weights que la famille peut effectivement faire tourner quand la licence est permissive. Le couple 02-6 + 02-7 (descriptif INTRINSIC vs exécutif SOTA-OK) illustre la méthode de raisonnement qui doit précéder tout déploiement. [02-8](02-Advanced/02-8-PAN2-Modele-du-Monde-GLP.ipynb) passe à la **technique** du modèle du monde : PAN 2 (GLP) — la thèse, les cinq dimensions de design, la différence entre JEPA (dégénéré) et GLP (boucle fermée avec décodeur-diagnostic), la factorisation `p_h . p_f . p_g` — rejouable sur CPU, sans GPU ni poids.
 
@@ -276,7 +276,7 @@ La cohérence entre les frames est le défi principal de la génération vidéo.
 - Utiliser des prompts simples et descriptifs plutôt que narratifs.
 - HunyuanVideo et Wan offrent une meilleure cohérence temporelle que LTX-Video.
 - Le pipeline ComfyUI (notebook [03-3](03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb)) permet de contrôler finement les paramètres de génération (CFG, steps, seed).
-- L'upscaling ESRGAN + interpolation RIFE (notebook [01-4](01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb)) améliore la qualité visuelle a posteriori.
+- L'upscaling ESRGAN + interpolation RIFE (notebook [01-4](01-Foundation/01-4-Video-Enhancement.ipynb)) améliore la qualité visuelle a posteriori.
 
 ### ComfyUI Video retourne des erreurs de nœuds manquants
 
@@ -294,11 +294,11 @@ Les conteneurs Docker CoursIA incluent déjà les nœuds nécessaires. Si vous u
 
 ### GPT-5 Video Understanding échoue sur les vidéos longues
 
-L'API GPT-5 vidéo (notebook [01-2](01-Foundation/01-2-GPT-5-Video-Understanding.ipynb)) a des limites sur la durée et la taille des fichiers envoyés. Si erreur 413 ou timeout :
+L'API GPT-5 vidéo (notebook [01-2](01-Foundation/01-2-Comprehension-Video-API.ipynb)) a des limites sur la durée et la taille des fichiers envoyés. Si erreur 413 ou timeout :
 
 - Découper la vidéo en segments de 30-60 secondes avec moviepy (notebook [01-1](01-Foundation/01-1-Video-Operations-Basics.ipynb)).
 - Compresser avant envoi : résolution 720p, bitrate réduit.
-- Utiliser le modèle local Qwen2.5-VL (notebook [01-3](01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb)) pour les vidéos longues ou sensibles, sans limite de taille.
+- Utiliser le modèle local Qwen2.5-VL (notebook [01-3](01-Foundation/01-3-Comprehension-Video-Locale.ipynb)) pour les vidéos longues ou sensibles, sans limite de taille.
 
 ## Licence
 

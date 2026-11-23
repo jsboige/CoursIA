@@ -1,0 +1,149 @@
+{
+  "schema_version": 1,
+  "series": "Beta",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/Beta/Beta-01.ipynb",
+    "MyIA.AI.Notebooks/Beta/Beta-02.ipynb"
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "Beta",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Beta"
+    },
+    {
+      "level": "notebook",
+      "path": "Beta/Beta-01",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Utilité et équilibre",
+      "repository_path": "MyIA.AI.Notebooks/Beta/Beta-01.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Beta/Beta-02",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Jeux séquentiels",
+      "repository_path": "MyIA.AI.Notebooks/Beta/Beta-02.ipynb"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "b0000000-0000-4000-8000-000000000001",
+      "path": "beta/utilite",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Fonction d'utilité",
+      "label_en": "Payoff function",
+      "definition_fr": "Fonction qui associe un gain à chaque issue du jeu.",
+      "definition_en": "Function mapping each outcome of the game to a payoff.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Beta/Beta-01.ipynb",
+          "cell_id": "b1-c1"
+        }
+      ],
+      "prerequisites": [],
+      "matches": [
+        {
+          "concept": "a0000000-0000-4000-8000-000000000002",
+          "kind": "exact"
+        }
+      ]
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000002",
+      "path": "beta/equilibre",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Équilibre",
+      "label_en": "Equilibrium",
+      "definition_fr": "Profil de stratégies dont aucun joueur n'a intérêt à dévier seul.",
+      "definition_en": "Strategy profile from which no player gains by deviating alone.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Beta/Beta-01.ipynb",
+          "cell_id": "b1-c2"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Alpha/Alpha-02.ipynb",
+          "cell_id": "a2-c2"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000003",
+      "path": "beta/induction-a-rebours",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "Induction à rebours",
+      "label_en": "Backward induction",
+      "definition_fr": "Résolution d'un jeu séquentiel en remontant depuis ses feuilles.",
+      "definition_en": "Solving a sequential game by reasoning back from its leaves.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Beta/Beta-01.ipynb",
+          "cell_id": "b1-c3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Beta/Beta-02.ipynb",
+          "cell_id": "b2-c1"
+        }
+      ],
+      "prerequisites": [
+        "a0000000-0000-4000-8000-000000000001"
+      ]
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000004",
+      "path": "beta/voisinage",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Voisinage",
+      "label_en": "Neighbourhood",
+      "definition_fr": "Ensemble des états atteignables en une modification élémentaire de l'état courant.",
+      "definition_en": "Set of states reachable by one elementary change of the current state.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Beta/Beta-02.ipynb",
+          "cell_id": "b2-c2"
+        }
+      ],
+      "prerequisites": [],
+      "matches": [
+        {
+          "concept": "a0000000-0000-4000-8000-000000000003",
+          "kind": "close"
+        }
+      ]
+    },
+    {
+      "id": "b0000000-0000-4000-8000-000000000005",
+      "path": "beta/somme-nulle",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "JEU A SOMME-NULLE",
+      "label_en": "Constant-sum game",
+      "definition_fr": "Jeu strictement compétitif entre deux joueurs.",
+      "definition_en": "Strictly competitive two-player game.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Beta/Beta-02.ipynb",
+          "cell_id": "b2-c3"
+        }
+      ],
+      "prerequisites": []
+    }
+  ]
+}
