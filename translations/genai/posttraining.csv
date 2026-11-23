@@ -9147,7 +9147,7 @@ Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024�
 ",,,,,,,,87eca03ad23d8cf8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,1f3609a5,markdown,fr,a02e1a78116c7102,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742) ; le volet PT-11 constitue le sous-axe RLVR. Il se rattache également à l’issue [#10289](https://github.com/jsboige/CoursIA/issues/10289).
 ",,,,,,,,a02e1a78116c7102,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,a5039bdf,markdown,fr,08e163d967909a59,"[← PT-18 — Ablation de distillation](PT_18_laya_ablation_distillation.ipynb) | [↑ PostTraining](README.md)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,a5039bdf,markdown,fr,395211a92e6dd5e2,"[← PT-18 — Ablation de distillation](PT_18_laya_ablation_distillation.ipynb) | [↑ PostTraining](README.md) | [PT-20 — L'instrument change-t-il la géométrie ? →](PT_20_instrument_axe_douleur.ipynb)
 
 ***
 
@@ -9155,7 +9155,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,a5
 
 **Carnet de synthèse inter-tailles** pour ICT-25a (GRPO à récompense hackable, 5 tailles Qwen, 2 bras N/Np, 4 graines). Lit les artefacts JSON déjà présents sur `main` (1.5B / 7B / 14B / 27B / 32B) et rapporte un verdict falsifiable par taille.
 
-> **Provenance** — carnet déplacé depuis la série ICT (`ICT-25b-StratificationInterTailles-Python.ipynb`) vers PostTraining (#20298, fournée F3) : la stratification inter-tailles des expériences GRPO relève de l'instrumentation post-training. Les artefacts `runs/ict25a_*.json` restent dans leur série d'origine (IIT/ICT-Series).",,,,,,,,08e163d967909a59,,,,,,,,,,,,,,,
+> **Provenance** — carnet déplacé depuis la série ICT (`ICT-25b-StratificationInterTailles-Python.ipynb`) vers PostTraining (#20298, fournée F3) : la stratification inter-tailles des expériences GRPO relève de l'instrumentation post-training. Les artefacts `runs/ict25a_*.json` restent dans leur série d'origine (IIT/ICT-Series).",,,,,,,,395211a92e6dd5e2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,4a30ddbd,markdown,fr,a0abaf5c08790d5b,"> **Statut épistémique** — **Falsifiable, mesure directe** : le pattern d'uptake de faille n'est PAS monotone en taille, et l'effet de l'inoculation (Np vs N) change de signe entre 7B, 14B, 27B et 32B. Le Cohen's d oscille (0, +3.26, -4.27, +6.68, -12.55) au lieu d'un effet cumulatif attendu par taille.",,,,,,,,a0abaf5c08790d5b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,4560fa25,markdown,fr,fd9594e7881c51e1,"## Garde-fous d'honnêteté
 
@@ -9172,7 +9172,10 @@ RUNS = Path(""../../IIT/ICT-Series/runs"")  # artefacts ICT-25a, laisses dans le
 TAILLES = [""1.5B"", ""7B"", ""14B"", ""27B"", ""32B""]
 BRAS = [""N"", ""Np""]
 METRICS = [""hack_early"", ""hack_late"", ""mc_early"", ""mc_late"", ""reward_early"", ""reward_late""]",,,,,,,,a403ea414ae2b6fc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,22bfeb63,code,fr,9006deb91bd8461e,"data = {}
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,22bfeb63,code,fr,112954df11133f91,"# Chargement des artefacts ICT-25a : un JSON par couple (taille, bras), 4 graines par fichier.
+# data[t][b] = liste de dicts de metriques par graine ; un bras manquant est signale
+# a l'ecran, jamais fatal -- les tailles absentes sont simplement sautees plus bas.
+data = {}
 models = {}
 for t in TAILLES:
     data[t] = {}
@@ -9189,7 +9192,7 @@ print(f""Tailles chargees: {[t for t in TAILLES if t in data]}"")
 for t, mod in models.items():
     n_n = len(data[t].get(""N"", []))
     n_np = len(data[t].get(""Np"", []))
-    print(f""  {t:6s} -> {mod:38s}  N:{n_n} graines, Np:{n_np} graines"")",,,,,,,,9006deb91bd8461e,,,,,,,,,,,,,,,
+    print(f""  {t:6s} -> {mod:38s}  N:{n_n} graines, Np:{n_np} graines"")",,,,,,,,112954df11133f91,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,94eefaeb,markdown,fr,186e4ec180ab72f3,"## 1. Inventaire des runs (5 tailles x 2 bras x 4 graines)
 
 Note : le 27B est **Qwen3.5-27B** (famille différente des autres). Toute comparaison directe 27B vs autres tailles doit tenir compte de ce changement de modèle.",,,,,,,,186e4ec180ab72f3,,,,,,,,,,,,,,,
@@ -9215,7 +9218,12 @@ df_stats[""mean+/-std""] = df_stats.apply(lambda r: f""{r['mean']:.3f} +/- {r['s
 pivot = df_stats[df_stats[""metric""] == ""hack_late""].pivot(index=""taille"", columns=""bras"", values=""mean+/-std"")
 print(""=== hack_late par taille et bras ==="")
 print(pivot)",,,,,,,,6f52f34d555fed0d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,d5f63946,code,fr,3533fa6610ff3fc3,"def cohens_d(a, b):
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,d5f63946,code,fr,533c160540e90671,"# Taille d'effet standardisee (d de Cohen) : d > 0 => le bras Np fait mieux que le
+# bras N sur cette metrique. La normalisation par l'ecart-type poolle rend d
+# comparable d'une metrique a l'autre malgre des echelles differentes -- mais un
+# d eleve sur 4 graines peut aussi naitre d'un ecart-type minuscule : la cellule
+# de dispersion plus bas sert de garde-fou a cette table.
+def cohens_d(a, b):
     a_arr, b_arr = np.array(a), np.array(b)
     pooled = np.sqrt((a_arr.var(ddof=1) + b_arr.var(ddof=1)) / 2)
     if pooled == 0:
@@ -9235,7 +9243,7 @@ for t in TAILLES:
         d = cohens_d(n_vals, np_vals)
         line += f"" {d:>+10.2f}    |""
     line = line.rstrip("" |"") + """"
-    print(line)",,,,,,,,3533fa6610ff3fc3,,,,,,,,,,,,,,,
+    print(line)",,,,,,,,533c160540e90671,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,39bfd46d,markdown,fr,f066ece2fdb17e30,"## 2. Verdict inter-tailles
 
 **Lecture directe des Cohen's d :**
@@ -9247,7 +9255,14 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,39
 - **32B** : d < 0 (Np < N), **forte inversion** (|d| ~ 12).
 
 **Pattern non-monotone.** L'intuition ""taille croissante → inoculation croissante"" **ne tient pas**.",,,,,,,,f066ece2fdb17e30,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,bd139a29,code,fr,82d32f40210d1d4d,"print(""=== Dispersion hack_late (mean +/- std) par taille ==="")
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,bd139a29,code,fr,49634276419c7271,"# Garde-fou des d de Cohen : dispersion brute de hack_late, SANS normalisation,
+# avec mean, std, min et max par graine. La lecture croisee des deux tables fait
+# le verdict : un d eleve accompagne d'un std minuscule signale un ecart fin et
+# stable, pas un decalage massif -- exemple 14B : ecart des moyennes de 0.16
+# seulement (N 0.938 vs Np 0.781) mais std N de 0.011, et les plages sont
+# disjointes (N min 0.925 > Np max 0.825) ; 32B cumule au contraire un ecart
+# de 0.62 et des plages disjointes.
+print(""=== Dispersion hack_late (mean +/- std) par taille ==="")
 for t in TAILLES:
     if ""N"" not in data.get(t, {}) or ""Np"" not in data.get(t, {}):
         continue
@@ -9256,7 +9271,7 @@ for t in TAILLES:
     n_arr, np_arr = np.array(n_vals), np.array(np_vals)
     print(f""  {t:6s}  N:  {n_arr.mean():.3f} +/- {n_arr.std(ddof=1):.3f}  (min {n_arr.min():.3f}, max {n_arr.max():.3f})"")
     print(f""  {t:6s}  Np: {np_arr.mean():.3f} +/- {np_arr.std(ddof=1):.3f}  (min {np_arr.min():.3f}, max {np_arr.max():.3f})"")
-    print()",,,,,,,,82d32f40210d1d4d,,,,,,,,,,,,,,,
+    print()",,,,,,,,49634276419c7271,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,409a2d7f,markdown,fr,06a207c9e8bdcd9a,"## 3. Contraste géométrique (placeholder)
 
 Le contraste géométrique entre les instruments (SAE, J-Lens, F-Lens, SLens) n'est **pas couvert par ce carnet** — les scripts `extract_{sae,jlens}_*.py` produisent des traces par couche, et la superposition avec les 5 tailles est un travail substantiel à part. Placeholder :
@@ -9296,3 +9311,1311 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb,71
 - **[ICT-0 — Cadrage de la série](../../IIT/ICT-Series/ICT-0-Framing.md)** : le principe directeur de la série ICT.
 
 [← PT-18 — Ablation de distillation](PT_18_laya_ablation_distillation.ipynb) | [↑ PostTraining](README.md)",,,,,,,,b2b50290d1b00619,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-title,markdown,fr,fb2e6045690270dd,"[← PT-19 — Stratification inter-tailles](PT_19_stratification_inter_tailles.ipynb) | [↑ PostTraining](README.md) | [PT-21 Onset/SAE agrégat →](PT_21_onset_9b_agregat.ipynb)
+
+***
+
+# PT-20 — L'instrument change-t-il la géométrie ? (ICT-47b)
+
+> **Provenance** — carnet déplacé depuis la série ICT (`ICT-47b-PainAxisInstrument-Python.ipynb`) vers PostTraining (#20298, fournée F3-2) : la mesure de l'instrument (quantification LoRA 4 bits de l'axe douleur) relève de l'instrumentation post-training. La cellule d'origine [ICT-47 — L'axe douleur](../../IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb) reste dans la série ICT.
+
+**Sibling d'ICT-47**, même famille de substrats (Qwen3.5-**Base**), même corpus, même pipeline.
+Une seule chose change : le **nombre de bits** des poids.
+
+Ce carnet existe parce qu'ICT-47 a laissé une question ouverte que ses propres *Limites* nomment —
+« au-delà du 9B, rien n'est mesuré ; deux tailles ne suffisent pas à conclure à une invariance
+d'échelle ». Y répondre demande une échelle supérieure ; l'atteindre sur cette machine demande de
+**quantifier**. Or changer l'instrument en même temps que l'échelle rendrait la courbe
+ininterprétable : l'effet cherché et l'effet de l'instrument deviendraient indiscernables.
+
+Ce carnet paie donc la première moitié du prix : il **mesure l'instrument**, et il **mesure la
+barrière** qui empêche la seconde.",,,,,,,,fb2e6045690270dd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,statut-epistemique,markdown,fr,35f6698a812c4a9e,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; les verdicts de la famille pain-axis sont ancrés sur [ICT-47](../../IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb).,,,,,,,,35f6698a812c4a9e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-plan,markdown,fr,6890d3a8d56c24f1,"## Plan
+
+1. Le corpus — hérité verbatim d'ICT-47 (9 groupes × 24 énoncés)
+2. **L'instrument** — la même mesure sous bf16, int8 et 4-bit NF4, à deux échelles
+3. Robustesse à l'échelle atteignable — profondeur et graine de partition (9B)
+4. **La barrière** — ce que cette machine refuse de charger, et la preuve
+5. Verdict et limites",,,,,,,,6890d3a8d56c24f1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-preamble,code,fr,c9892889068bdb5d,"import os, sys, json, math, time
+os.environ.setdefault(""HF_HOME"", ""D:/hf-cache-crosscoder"")
+# huggingface_hub avertit a chaque chargement que le cache n'est pas en symlinks ; sur
+# Windows cet avertissement imprime le chemin site-packages ET le chemin du cache dans
+# les sorties. Bruit hors propos pedagogique -- et chemins machine qui n'ont rien a faire
+# dans un artefact committe (ratchet Output-failure) : coupe a la source, avant tout
+# import HF.
+os.environ.setdefault(""HF_HUB_DISABLE_SYMLINKS_WARNING"", ""1"")
+# Meme geste pour deux artefacts du chargement batch (kernel IPC, sans ipywidgets) :
+# tqdm.auto -- importe par transformers -- avertit ""IProgress not found"" en imprimant
+# le chemin site-packages de la machine, et la barre ""Loading weights"" s'emet en ~27
+# sorties stream par modele (chaque retour chariot compte pour un output, ratchet
+# Output-flood). Aucune cellule n'affiche de barre volontairement : coupe a la source.
+os.environ[""TQDM_DISABLE""] = ""1""
+import warnings
+warnings.filterwarnings(""ignore"", message=""IProgress not found"")
+os.environ[""CUBLAS_WORKSPACE_CONFIG""] = "":4096:8""
+import torch
+torch.use_deterministic_algorithms(True)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+torch.backends.cuda.matmul.allow_tf32 = False
+torch.backends.cudnn.allow_tf32 = False
+torch.manual_seed(0)
+import numpy as np
+import pandas as pd
+SEED = 0
+rng = np.random.RandomState(SEED)
+from ict.probes import anchored_pc1, pca_stats, probe_accuracy, train_probes
+from ict.causal_engine import (
+    InterventionSpec, apply_intervention, random_target_matched, sham_of,
+    symmetric_doses, holm_adjust, damage_metrics, selectivity_verdict,
+    EffectChannels, build_gate24_family, artifact_sha256)
+import matplotlib.pyplot as plt
+print(""torch"", torch.__version__, ""cuda"", torch.cuda.is_available())
+print(""determinisme actif ; TF32 off ; barres tqdm coupees (batch)"")",,,,,,,,c9892889068bdb5d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-corpus,code,fr,ae64af15ad755ae7,"# Corpus -- 9 groupes x 24 enonces a la premiere personne, apparies en theme.
+# Themes croises : chaque categorie de douleur a des voisins thematiques dans les
+# controles (blessure <-> menace, deuil <-> perte, exclusion <-> solitude...).
+
+DATASETS = {
+    ""pain_physical"": [
+        ""My hand slipped on the knife and the cut is deep."",
+        ""The burn on my arm throbs every few seconds."",
+        ""My broken rib sharpens each time I breathe."",
+        ""The migraine pulses behind my left eye."",
+        ""The dentist's drill hit a nerve in my molar."",
+        ""My sprained ankle gives way under my weight."",
+        ""The blister on my heel burns with every step."",
+        ""My lower back seized up this morning."",
+        ""The stone hit my shin and the bone aches."",
+        ""Stomach cramps doubled me over at my desk."",
+        ""The IV needle went in crooked and stings."",
+        ""My sunburned shoulders sting under the shirt."",
+        ""The scab on my knee tears when I bend it."",
+        ""My wisdom tooth is pushing against the nerve."",
+        ""The wasp sting on my neck keeps swelling."",
+        ""My fingers ache from the cold, then burn."",
+        ""The physiotherapist pressed exactly on the inflammation."",
+        ""Standing on the fracture for an hour was unbearable."",
+        ""My ear infection turns every sound into a jab."",
+        ""The cramp in my calf locked the muscle."",
+        ""My bruised hip aches where the bike fell."",
+        ""The acid reflux scorches my throat at night."",
+        ""My surgical scar pulls tight when I reach."",
+        ""Grinding my teeth all night left my jaw sore."",
+    ],
+    ""fear"": [
+        ""The knife is lying loose on the counter near the baby."",
+        ""I smell smoke in the hallway outside my flat."",
+        ""The car did not stop as I stepped on the crossing."",
+        ""The growling dog is straining its chain toward me."",
+        ""The lump in my breast might be malignant."",
+        ""The floorboard creaked upstairs while I am alone."",
+        ""The doctor asked me to come in to discuss results."",
+        ""The pilot announced an engine problem over the ocean."",
+        ""The stranger has been walking behind me for blocks."",
+        ""The scaffolding above the sidewalk is swaying."",
+        ""My chest tightens and I fear a heart attack."",
+        ""The tornado siren just started wailing."",
+        ""The brakes felt soft on the highway this morning."",
+        ""The ferry is listing in the storm."",
+        ""There is a hornet nest above the door."",
+        ""The avalanche warning is at level four today."",
+        ""The surgery is scheduled for tomorrow morning."",
+        ""I heard glass break downstairs at night."",
+        ""The escalator juddered and grabbed my sleeve."",
+        ""The snake raised its head on the trail."",
+        ""The drill starts spinning as I sit in the chair."",
+        ""The wave behind me is far too high."",
+        ""The lump under the armpit grew this month."",
+        ""The ladder slipped a rung while I was up there."",
+    ],
+    ""pain_psychological"": [
+        ""I studied for months and failed the bar exam."",
+        ""My partner of ten years left without explanation."",
+        ""The startup I built for five years collapsed overnight."",
+        ""My mother forgot my name for the first time."",
+        ""I poured my savings into a venture that imploded."",
+        ""The adoption request was denied after two years of hope."",
+        ""My mentor told me I would never make it."",
+        ""I gave the best years of my life to a lie."",
+        ""The manuscript I worked on for a decade was rejected again."",
+        ""My child's first word was the nanny's name."",
+        ""I lost custody of my daughter last Friday."",
+        ""Everyone I trusted signed the letter against me."",
+        ""My life's work burned in the archive fire."",
+        ""The ring I saved three years for meant nothing to her."",
+        ""I found the messages he swore did not exist."",
+        ""My father died before I could apologize."",
+        ""The promotion went to the junior I trained."",
+        ""I keep rehearsing the moment it all fell apart."",
+        ""My best friend of twenty years cut me off."",
+        ""The IVF cycle failed for the fourth time."",
+        ""I watched my house sell at auction for nothing."",
+        ""The jury read the verdict and my legs gave way."",
+        ""My dream school sent the thin envelope."",
+        ""She said she never loved me, in front of everyone."",
+    ],
+    ""pain_social"": [
+        ""Everyone at the table got introduced except me."",
+        ""My friends made plans in front of me, without me."",
+        ""The invitation list went around and skipped my name."",
+        ""They laughed as I stumbled through my presentation."",
+        ""I found the group chat that excluded me."",
+        ""My coworkers lunch together every day and never ask me."",
+        ""The bouncer let everyone in but stopped me."",
+        ""My family discusses my failures at every gathering."",
+        ""I was the last picked, again, in every team."",
+        ""The bride seated me at the forgotten corner table."",
+        ""My accent was mocked in the meeting."",
+        ""Nobody replied to my message in the thread."",
+        ""They changed the restaurant when I said I was coming."",
+        ""My boss praised the team and named everyone but me."",
+        ""The children pointed at my clothes and giggled."",
+        ""I stood alone with my drink at the party."",
+        ""My partner introduced me as just a friend."",
+        ""The club rejected my application without a reason."",
+        ""My old friends forgot my birthday again."",
+        ""They kept talking as if I were not there."",
+        ""I saw the photos of the trip I was not told about."",
+        ""The teacher read my essay aloud as a bad example."",
+        ""My neighbor greets everyone on the street except me."",
+        ""The group photo was cropped to cut me out."",
+    ],
+    ""pain_moral"": [
+        ""I lied to my grandmother about the medicine money."",
+        ""I let my colleague take the blame for my error."",
+        ""I walked past the man collapsed on the pavement."",
+        ""I read my sister's diary and used it against her."",
+        ""I promised to be there, and I was not."",
+        ""I sold the counterfeit watches as genuine."",
+        ""I told her secret to make the table laugh."",
+        ""I took credit for the intern's analysis."",
+        ""I cheated in the exam and took the scholarship."",
+        ""I stayed silent while they framed him."",
+        ""I abandoned my dog when the move got complicated."",
+        ""I kissed someone else the week of the wedding."",
+        ""I faked the data in the published study."",
+        ""I let the deadline pass and blamed the intern."",
+        ""I voted to fire him to save my own seat."",
+        ""I kept the wallet with the widow's savings."",
+        ""I told my child the shelter dog ran away."",
+        ""I exaggerated my war stories for the promotion board."",
+        ""I copied the eulogy from the internet."",
+        ""I signed the inspection report I never performed."",
+        ""I overcharged the tourist who trusted me."",
+        ""I drank and drove with the kids in the back."",
+        ""I filmed the accident instead of helping."",
+        ""I denied the paternity for eleven years."",
+    ],
+    ""pain_cognitive"": [
+        ""I have read this proof ten times and still cannot see it."",
+        ""The rule contradicts itself no matter how I parse it."",
+        ""Everyone in the room understood except me."",
+        ""I keep losing the thread of my own argument."",
+        ""The instructions cancel each other out at step three."",
+        ""My mind goes blank the moment the exam starts."",
+        ""I cannot hold the three conditions in my head at once."",
+        ""The map and the address describe different cities."",
+        ""I understand each word and none of the sentence."",
+        ""The tutorial assumes a step it never teaches."",
+        ""I forget the beginning before reaching the end."",
+        ""The formula works in class and nowhere else."",
+        ""I have been stuck on this bug for three days."",
+        ""The explanation raises more questions than it answers."",
+        ""My thoughts overlap until none of them finishes."",
+        ""The contract hides its meaning in nested clauses."",
+        ""I know that I knew this yesterday."",
+        ""The lecture moves twice as fast as my comprehension."",
+        ""I misread the same number five times in a row."",
+        ""The word escapes me exactly when I need it."",
+        ""I can follow the melody but never the words."",
+        ""The puzzle piece fits nowhere and everywhere."",
+        ""My reasoning circles back to its own starting error."",
+        ""I understand until I try to explain it aloud."",
+    ],
+    ""sadness"": [
+        ""The treehouse we built is being demolished today."",
+        ""My childhood street was renamed and rebuilt."",
+        ""The last bookstore on the square closed down."",
+        ""My old dog sleeps most of the day now."",
+        ""The lighthouse I painted every summer is gone."",
+        ""The letters turned yellow in the attic."",
+        ""My hometown team folded after eighty years."",
+        ""The song we loved no longer plays anywhere."",
+        ""My daughter packed her boxes for another city."",
+        ""The garden faded while I was away."",
+        ""The carousel was sold to a distant fair."",
+        ""My friend's laugh is a memory now."",
+        ""The orchard gave no fruit this year."",
+        ""The tide took the sandcastle before noon."",
+        ""My wedding ring no longer fits my hand."",
+        ""The photographs faded grey on the windowsill."",
+        ""The theatre seats are empty all winter."",
+        ""My grandmother's dialect died with her generation."",
+        ""The stars are dim behind the new towers."",
+        ""The swing set rusts in the empty yard."",
+        ""My last piano student graduated and moved on."",
+        ""The recipe is missing a page."",
+        ""The harbor froze and the boats stayed in."",
+        ""My father's chair sits empty at the table."",
+    ],
+    ""positive_valence"": [
+        ""The results arrived and everything is clear."",
+        ""My daughter took her first steps this morning."",
+        ""The scholarship letter came with my name on it."",
+        ""We reached the summit just before sunrise."",
+        ""The garden finally bloomed after the long winter."",
+        ""My old friend called out of the blue."",
+        ""The cake rose perfectly on the first try."",
+        ""The adoption was approved this afternoon."",
+        ""I finished the marathon under my goal time."",
+        ""The audience stood up after the last note."",
+        ""My fever broke overnight and I feel light."",
+        ""The missing key was in my coat all along."",
+        ""We found the dog safe at the neighbor's."",
+        ""The launch went flawlessly, every single stage."",
+        ""My mother remembered my name today."",
+        ""The publisher accepted the manuscript without changes."",
+        ""The rain stopped exactly as the ceremony began."",
+        ""I paid off the mortgage, twenty years early."",
+        ""The children built the tower taller than themselves."",
+        ""My visa was granted on the first request."",
+        ""The team carried me through the hardest sprint."",
+        ""The scan came back completely clear."",
+        ""We laughed until the restaurant lights went out."",
+        ""The lost ring surfaced in the garden soil."",
+    ],
+    ""neutral"": [
+        ""I took the bus to the clinic on Tuesday."",
+        ""The knife is in the second drawer."",
+        ""My appointment with the dentist is at ten."",
+        ""The document needs a signature at the bottom."",
+        ""I filed the report before the deadline."",
+        ""The meeting was moved to the third floor."",
+        ""My order arrived in a brown box."",
+        ""The train to Lyon leaves from platform four."",
+        ""I read the first chapter on the flight."",
+        ""The invoice covers March and April."",
+        ""My desk faces the north window."",
+        ""The recipe calls for two eggs."",
+        ""I renew my passport next June."",
+        ""The lecture hall seats two hundred students."",
+        ""My keys are on the kitchen counter."",
+        ""The lease runs until the end of August."",
+        ""I water the plants on Sundays."",
+        ""The library closes at eight in winter."",
+        ""My shoe size changed last year."",
+        ""The printer is out of grey ink."",
+        ""I listed the car online this weekend."",
+        ""The pharmacy is next to the bakery."",
+        ""My commute takes forty minutes by bike."",
+        ""The forecast says rain by evening."",
+    ],
+}
+PAIN_CATS = [""pain_physical"", ""pain_psychological"", ""pain_social"", ""pain_moral"", ""pain_cognitive""]
+CONTROLS = [""fear"", ""sadness"", ""neutral"", ""positive_valence""]
+GROUPS = PAIN_CATS + CONTROLS
+for g in GROUPS:
+    assert len(DATASETS[g]) == 24, (g, len(DATASETS[g]))
+print(f""{len(GROUPS)} groupes x 24 enonces = {24*len(GROUPS)} statements"")",,,,,,,,ae64af15ad755ae7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-lecture-corpus,markdown,fr,0cbf4e4216505c0a,"**Lecture.** Corpus **repris verbatim** d'ICT-47 : 9 groupes de 24 énoncés à la première personne,
+appariés en thème (blessure ↔ menace, deuil ↔ perte, exclusion ↔ solitude). C'est la condition de
+comparabilité — un corpus réécrit mesurerait un autre objet. Cinq catégories de douleur
+(`PAIN_CATS`), quatre contrôles (`fear`, `sadness`, `neutral`, `positive_valence`).",,,,,,,,0cbf4e4216505c0a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-load,code,fr,96060ed3244edf35,"import contextlib
+import gc
+import io
+import logging
+import warnings
+
+# Ecarte par la mesure : `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` -- envisage comme
+# mitigation de la fragmentation sur les chargements repetes -- n'est PAS supporte sur cette
+# plateforme, et PyTorch le signale en imprimant le chemin de son propre module dans les
+# sorties. Une mitigation qui ne s'applique pas et qui salit l'artefact se retire.
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
+# Meme geste que le preambule pour HF/tqdm, applique ici. L'ordre compte : transformers
+# reconfigure ses propres loggers A L'IMPORT, donc un setLevel pose avant serait ecrase.
+logging.getLogger(""transformers"").setLevel(logging.CRITICAL)
+# Meme famille : bitsandbytes avertit en imprimant le chemin de son propre module.
+warnings.filterwarnings(""ignore"", message=""MatMul8bitLt: inputs will be cast"")
+
+
+def load_quiet(model_id, **kw):
+    """"""from_pretrained() -- en filtrant le seul bruit qui porte un chemin machine.
+
+    Le verificateur de docstrings de transformers (`utils/auto_docstring.py:3851`) fait un
+    `print()` NU -- pas du logging, donc aucun niveau de logger ne l'atteint -- et imprime
+    le chemin ABSOLU du module a la premiere instanciation de chaque classe :
+    `...\\site-packages\\transformers\\models\\qwen3_5\\modeling_qwen3_5.py`. Bruit hors
+    propos pedagogique ET chemin machine dans un artefact committe (ratchet Output-failure).
+
+    On capture stdout et on ne re-emet que ce qui n'est PAS ce bruit : filtrer a l'aveugle
+    masquerait un vrai message. Le controle de reproduction de la section 2 est la garde
+    qui rend ce filtrage sur : des poids mal charges ne reproduiraient pas le bf16 publie
+    a 0,003 pres.
+    """"""
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        md_ = AutoModelForCausalLM.from_pretrained(model_id, **kw)
+    reste = [l for l in buf.getvalue().splitlines()
+             if l.strip() and not (l.startswith(""[ERROR] `"") and ""but not documented"" in l)]
+    if reste:
+        print(""\n"".join(reste))
+    return md_
+
+
+def quant_config(mode):
+    """"""bf16 = pas de quantification ; int8 et 4-bit NF4 = bitsandbytes.""""""
+    if mode == ""bf16"":
+        return None
+    if mode == ""int8"":
+        return BitsAndBytesConfig(load_in_8bit=True)
+    if mode == ""nf4"":
+        return BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_quant_type=""nf4"",
+            bnb_4bit_use_double_quant=True, bnb_4bit_compute_dtype=torch.bfloat16)
+    raise ValueError(mode)
+
+
+def load_substrate(model_id, mode, gpu_cap=""20GiB"", cpu_cap=""8GiB""):
+    """"""Charge un substrat sous un instrument donne et rend (model, tok, meta).""""""
+    t0_ = time.time()
+    tk = AutoTokenizer.from_pretrained(model_id)
+    tk.padding_side = ""left""       # sinon la derniere position d'un lot padde n'est pas le vrai dernier token
+    if tk.pad_token is None:
+        tk.pad_token = tk.eos_token
+    kw = {""quantization_config"": quant_config(mode)} if mode != ""bf16"" else {""dtype"": torch.bfloat16}
+    md_ = load_quiet(model_id=model_id, device_map=""auto"",
+                     max_memory={0: gpu_cap, ""cpu"": cpu_cap},
+                     low_cpu_mem_usage=True, **kw)
+    md_.eval()
+    n = len(md_.model.layers)
+    meta = {""blocs"": n, ""d_model"": md_.config.hidden_size, ""mid"": n // 2,
+            ""capa"": sorted({max(1, n // 4), n // 2, 3 * n // 4, n - 2}),
+            ""charge_s"": round(time.time() - t0_, 1), ""instrument"": mode}
+    return md_, tk, meta
+
+
+def release():
+    """"""Libere la memoire GPU. L'appelant DOIT avoir remis son nom a None avant l'appel :
+    `del` sur un parametre ne libere pas l'objet tant que l'appelant le reference encore,
+    et les modeles s'empilent alors jusqu'a l'OOM (mesure : 16,7 GiB retenus apres un 9B).""""""
+    gc.collect()
+    torch.cuda.empty_cache()
+
+
+SCALES = [""Qwen/Qwen3.5-2B-Base"", ""Qwen/Qwen3.5-9B-Base""]
+INSTRUMENTS = [""bf16"", ""int8"", ""nf4""]
+ACTS_9B = None       # rempli par la boucle de la section 2, relu par la section 3
+print(""plan de mesure :"", [(s.split(""/"")[-1], i) for s in SCALES for i in INSTRUMENTS])",,,,,,,,96060ed3244edf35,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-lecture-load,markdown,fr,04065597b240b9d9,"**Lecture.** `load_substrate` est la seule porte d'entrée : un substrat, un instrument, une carte.
+Le `padding_side = ""left""` n'est pas cosmétique — sans lui la dernière position d'un lot paddé n'est
+pas le dernier token de l'énoncé, et la capture lit du remplissage. `unload` entre deux chargements
+garantit qu'un seul modèle vit en mémoire à la fois.",,,,,,,,04065597b240b9d9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-run,code,fr,a830923747c3bca3,"# Vocabulaire d'analyse : les cinq categories de douleur contre les controles.
+EMO_NEG = PAIN_CATS + [""fear"", ""sadness""]
+AXES = [""pain_all"", ""fear"", ""sadness"", ""valence""]
+
+
+@torch.no_grad()
+def capture(md_, tk, groups, cap_layers, datasets, batch=8):
+    """"""Activation de fin d'enonce par groupe, aux couches demandees.""""""
+    store = {l: {} for l in cap_layers}
+
+    def make_hook(l):
+        def hook(module, args, output):
+            h = output[0] if isinstance(output, tuple) else output
+            store[l][""batch""] = h[:, -1, :].detach().float().cpu().numpy()
+        return hook
+
+    hooks = [md_.model.layers[l].register_forward_hook(make_hook(l)) for l in cap_layers]
+    enc_dev = next(md_.parameters()).device
+    for g in groups:
+        acc = {l: [] for l in cap_layers}
+        prompts = datasets[g]
+        for i in range(0, len(prompts), batch):
+            enc = tk(prompts[i:i + batch], return_tensors=""pt"", padding=True).to(enc_dev)
+            md_(**enc)
+            for l in cap_layers:
+                acc[l].append(store[l][""batch""].copy())
+        for l in cap_layers:
+            store[l][g] = np.concatenate(acc[l])
+    for h in hooks:
+        h.remove()
+    return {g: {l: store[l][g] for l in cap_layers} for g in groups}
+
+
+def analyse(acts, mid):
+    """"""Directions, residualisation, cosinus 4D et matrice de sondes a une couche donnee.""""""
+    def dim_dir(a, b):
+        v = acts[a][mid].mean(0) - acts[b][mid].mean(0)
+        return v / np.linalg.norm(v)
+
+    x_all = np.concatenate([acts[g][mid] for g in GROUPS])
+    y_emo = np.array([1 if g in EMO_NEG else 0
+                      for g in GROUPS for _ in range(len(acts[g][mid]))])
+    d_sh = x_all[y_emo == 1].mean(0) - x_all[y_emo == 0].mean(0)
+    d_sh = d_sh / np.linalg.norm(d_sh)
+
+    def resid(x):
+        return x - (x @ d_sh)[..., None] * d_sh
+
+    def dir_of(ax):
+        if ax == ""pain_all"":
+            a_ = np.concatenate([acts[c][mid] for c in PAIN_CATS])
+        elif ax == ""valence"":
+            return dim_dir(""positive_valence"", ""neutral"")
+        else:
+            a_ = acts[ax][mid]
+        v = a_.mean(0) - acts[""neutral""][mid].mean(0)
+        return v / np.linalg.norm(v)
+
+    after = {}
+    for a in AXES:
+        v = resid(dir_of(a))
+        after[a] = v / np.linalg.norm(v)
+    cos4 = {b: round(float(after[""pain_all""] @ after[b]), 3)
+            for b in [""fear"", ""sadness"", ""valence""]}
+
+    cos5 = np.array([[float(dim_dir(x, ""neutral"") @ dim_dir(y_, ""neutral""))
+                      for y_ in PAIN_CATS] for x in PAIN_CATS])
+    off5 = cos5[~np.eye(len(PAIN_CATS), dtype=bool)]
+
+    def corpus_res(ax):
+        if ax == ""pain_all"":
+            xa = np.concatenate([acts[c][mid] for c in PAIN_CATS])
+        elif ax == ""valence"":
+            xa = acts[""positive_valence""][mid]
+        else:
+            xa = acts[ax][mid]
+        xb = acts[""neutral""][mid]
+        return resid(np.concatenate([xa, xb])), np.array([1] * len(xa) + [0] * len(xb))
+
+    probes = {}
+    for ax in AXES:
+        x, y = corpus_res(ax)
+        thetas, mu = train_probes(x, y)
+        probes[ax] = (thetas[""MM""], mu)
+    grid = np.array([[round(probe_accuracy(th, mu, *corpus_res(tg)), 2)
+                      for th, mu in (probes[ax] for ax in AXES)] for tg in AXES])
+    diag = float(np.mean(np.diag(grid)))
+    offd = float(grid[~np.eye(len(AXES), dtype=bool)].mean())
+    return {""cos4"": cos4, ""unite_moy"": round(float(off5.mean()), 3),
+            ""unite_min"": round(float(off5.min()), 3), ""grid"": grid, ""diag"": round(diag, 2),
+            ""offdiag"": round(offd, 2), ""ecart"": round(diag - offd, 2)}
+
+
+RES = {}
+for scale in SCALES:
+    for instr in INSTRUMENTS:
+        try:
+            md_, tk_, meta_ = load_substrate(scale, instr)
+        except Exception as e:                    # noqa: BLE001 -- on rapporte, on ne masque pas
+            print(""%-10s %-5s : CHARGEMENT KO -- %s"" % (scale.split(""/"")[-1], instr, str(e)[:90]))
+            continue
+        t0_ = time.time()
+        # Le 9B bf16 est la seule passe ou l'on capture les QUATRE couches : la fenetre en
+        # profondeur de la section 3 les relit ensuite, sans recharger le modele. Cout
+        # identique (memes forwards, seul le hook stocke plus) et un chargement de 18 Go en
+        # moins -- sur une machine ou sept chargements sequentiels de 2B/9B ont deja fait
+        # mourir le noyau une fois.
+        est_9b_bf16 = (scale == SCALES[-1] and instr == ""bf16"")
+        acts_ = capture(md_, tk_, GROUPS, meta_[""capa""] if est_9b_bf16 else [meta_[""mid""]],
+                        DATASETS)
+        if est_9b_bf16:
+            ACTS_9B = acts_
+        r_ = analyse(acts_, meta_[""mid""])
+        r_.update({""meta"": meta_, ""capture_s"": round(time.time() - t0_, 1)})
+        RES[(scale, instr)] = r_
+        print(""%-10s %-5s (charge %4.1fs, capture %4.1fs) | pain~fear %.2f  sadness %.2f  valence %.2f | unite %.2f | ecart %+.2f""
+              % (scale.split(""/"")[-1], instr, r_[""meta""][""charge_s""], r_[""capture_s""],
+                 r_[""cos4""][""fear""], r_[""cos4""][""sadness""], r_[""cos4""][""valence""],
+                 r_[""unite_moy""], r_[""ecart""]))
+        md_ = None                     # remettre a None AVANT release() -- cf. sa docstring
+        release()",,,,,,,,a830923747c3bca3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-lecture-instrument,markdown,fr,59d096144cccb007,"**Lecture.** Chaque ligne est la **même mesure** — mêmes énoncés, même couche médiane, même
+résidualisation — sous un instrument différent. La question n'est pas « quelle ligne est juste »
+mais **« les lignes d'une même échelle coïncident-elles »**. Si oui, la quantification ne déplace
+pas la géométrie des directions émotionnelles, et une échelle supérieure mesurée en quantifié
+reste comparable aux points bf16 publiés. Si non, l'instrument est un confondant et aucune
+comparaison inter-échelles n'est lisible sans le contrôler.",,,,,,,,59d096144cccb007,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-quant,code,fr,97781082e0f3e928,"# References bf16 publiees par ICT-47 (sorties reelles du carnet, sections 4 et 9).
+BIB = {
+    ""Qwen/Qwen3.5-2B-Base"": {""pain_fear"": 0.31, ""pain_sadness"": 0.45, ""pain_valence"": 0.94,
+                             ""unite_moy"": 0.65, ""diag"": 0.86, ""offdiag"": 0.67, ""ecart"": 0.19},
+    ""Qwen/Qwen3.5-9B-Base"": {""pain_fear"": 0.27, ""pain_sadness"": 0.43, ""pain_valence"": 0.93,
+                             ""unite_moy"": 0.60, ""diag"": 0.90, ""offdiag"": 0.65, ""ecart"": 0.25},
+}
+
+rows = []
+for scale in SCALES:
+    b = BIB[scale]
+    rows.append({""modele"": scale.split(""/"")[-1], ""instrument"": ""bf16 (ICT-47, publie)"",
+                 ""pain~fear"": b[""pain_fear""], ""pain~sadness"": b[""pain_sadness""],
+                 ""pain~valence"": b[""pain_valence""], ""unite_moy"": b[""unite_moy""],
+                 ""ecart"": b[""ecart""]})
+    for instr in INSTRUMENTS:
+        r_ = RES.get((scale, instr))
+        if r_ is None:
+            continue
+        rows.append({""modele"": scale.split(""/"")[-1], ""instrument"": instr,
+                     ""pain~fear"": r_[""cos4""][""fear""], ""pain~sadness"": r_[""cos4""][""sadness""],
+                     ""pain~valence"": r_[""cos4""][""valence""], ""unite_moy"": r_[""unite_moy""],
+                     ""ecart"": r_[""ecart""]})
+df_instr = pd.DataFrame(rows)
+print(df_instr.to_string(index=False))
+
+print(""\necart a la reference bf16 publiee (unite = point de cosinus) :"")
+REPRO, INSTR = [], []          # bf16 re-mesure ici = controle de reproduction ; int8/NF4 = effet instrument
+for scale in SCALES:
+    b = BIB[scale]
+    for instr in INSTRUMENTS:
+        r_ = RES.get((scale, instr))
+        if r_ is None:
+            continue
+        d = [r_[""cos4""][""fear""] - b[""pain_fear""], r_[""cos4""][""sadness""] - b[""pain_sadness""],
+             r_[""cos4""][""valence""] - b[""pain_valence""], r_[""unite_moy""] - b[""unite_moy""],
+             r_[""ecart""] - b[""ecart""]]
+        dm = max(abs(x) for x in d)
+        (REPRO if instr == ""bf16"" else INSTR).append(dm)
+        print(""  %-10s %-5s  d(fear) %+.3f  d(sadness) %+.3f  d(valence) %+.3f  ""
+              ""d(unite) %+.3f  d(ecart) %+.3f   |max| %.3f""
+              % (scale.split(""/"")[-1], instr, *d, dm))
+
+if REPRO:
+    print(""\ncontrole de reproduction -- bf16 re-mesure ici vs bf16 publie : ecart max %.3f"" % max(REPRO))
+if INSTR:
+    print(""effet de l'instrument  -- int8/NF4 vs bf16 publie          : ecart max %.3f"" % max(INSTR))
+    print(""  (les deux en points de cosinus ; un effet d'instrument comparable au bruit de"")
+    print(""   reproduction serait indiscernable, un effet dix fois plus grand condamnerait la comparaison)"")",,,,,,,,97781082e0f3e928,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-lecture-quant,markdown,fr,ee14bea3a645e937,"**Lecture — deux contrôles, et il faut les lire dans l'ordre.**
+
+Le premier est la ligne `bf16` **re-mesurée ici** : elle porte le même instrument que la référence
+publiée, sur une autre machine et un autre kernel. Si elle ne reproduisait pas, rien de ce qui suit
+ne serait interprétable — un écart d'instrument se confondrait avec un écart de harnais. C'est donc
+elle qui **valide la chaîne de mesure** avant qu'on lui demande quoi que ce soit sur la
+quantification.
+
+Le second est l'écart entre un instrument **quantifié** et cette référence, sur cinq grandeurs
+indépendantes — deux cosinus de disjonction, l'unité inter-douleur, et l'écart
+diagonale/hors-diagonale de la matrice 4D. Un écart de l'ordre du centième dit que l'instrument est
+**transparent** à cette géométrie : la quantification change les poids, pas les directions. Un écart
+qui atteindrait la dizaine de points dirait l'inverse — et alors aucune courbe d'échelle mixte ne
+serait lisible.",,,,,,,,ee14bea3a645e937,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-exo1,markdown,fr,2cfdf6525cbea87a,"### Exercice 1 — l'instrument sur une autre couche
+
+La mesure ne porte que sur la couche médiane. Rejouez la comparaison des trois instruments à
+`capa[0]` et `capa[-1]`. La transparence de l'instrument est-elle une propriété de la couche
+médiane, ou tient-elle à toutes les profondeurs ?",,,,,,,,2cfdf6525cbea87a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-exo1-stub,code,fr,f08572daf85e8374,"# Exercice 1 -- a completer.
+# Indice : capture() accepte une LISTE de couches et rend un dict par couche ;
+# analyse() prend la couche en argument. Reutilisez la boucle de la cellule precedente
+# en remplacant meta[""mid""] par meta[""capa""][0] puis meta[""capa""][-1].
+result = None  # TODO etudiant",,,,,,,,f08572daf85e8374,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-robust,code,fr,b8a0721ae1b6ac32,"# Robustesse a l'echelle atteignable (9B bf16) : fenetre en profondeur et graine de partition.
+#
+# Les quatre couches ont ete captees par la boucle de la section 2, au meme passage que la
+# mesure principale : la fenetre ne recharge donc rien et partage EXACTEMENT les memes
+# forwards -- aucune derive possible entre la mesure du bloc median et celle des quatre
+# couches.
+if ACTS_9B is None:
+    raise RuntimeError(
+        ""la capture 9B bf16 de la section 2 est indisponible (chargement en echec) : ""
+        ""la section 3 n'a rien a relire -- verifier la ligne 9B bf16 du tableau ci-dessus"")
+acts_ = ACTS_9B
+meta_ = RES[(""Qwen/Qwen3.5-9B-Base"", ""bf16"")][""meta""]
+mid_ = meta_[""mid""]
+
+# (a) le cosinus est-il stable a travers la profondeur ?
+rows = []
+for l in meta_[""capa""]:
+    r_ = analyse(acts_, l)
+    rows.append({""couche"": l, ""pain~fear"": r_[""cos4""][""fear""],
+                 ""pain~sadness"": r_[""cos4""][""sadness""], ""pain~valence"": r_[""cos4""][""valence""],
+                 ""unite_moy"": r_[""unite_moy""], ""ecart"": r_[""ecart""]})
+df_depth = pd.DataFrame(rows)
+print(""fenetre en profondeur (9B bf16) :"")
+print(df_depth.to_string(index=False))
+
+# (b) la lecture par sonde depend-elle de la graine de partition ?
+x_all = np.concatenate([acts_[g][mid_] for g in GROUPS])
+y_emo = np.array([1 if g in EMO_NEG else 0
+                  for g in GROUPS for _ in range(len(acts_[g][mid_]))])
+d_sh_ = x_all[y_emo == 1].mean(0) - x_all[y_emo == 0].mean(0)
+d_sh_ = d_sh_ / np.linalg.norm(d_sh_)
+xa = np.concatenate([acts_[c][mid_] for c in PAIN_CATS])
+xr = np.concatenate([xa, acts_[""neutral""][mid_]])
+xr = xr - (xr @ d_sh_)[:, None] * d_sh_
+yr = np.array([1] * len(xa) + [0] * len(acts_[""neutral""][mid_]))
+rows = []
+for seed in (0, 7, 42, 99):
+    rs = np.random.RandomState(seed)
+    idx = rs.permutation(len(xr))
+    ntr = int(0.7 * len(xr))
+    thetas, mu = train_probes(xr[idx[:ntr]], yr[idx[:ntr]])
+    rows.append({""graine"": seed,
+                 ""sonde_pain_acc"": round(probe_accuracy(thetas[""MM""], mu,
+                                                        xr[idx[ntr:]], yr[idx[ntr:]]), 3)})
+df_seeds = pd.DataFrame(rows)
+print(""\nsensibilite a la graine de partition (9B bf16, sonde pain_all) :"")
+print(df_seeds.to_string(index=False))
+print(""accuracy moyenne %.3f | ecart-type %.3f""
+      % (df_seeds[""sonde_pain_acc""].mean(), df_seeds[""sonde_pain_acc""].std()))",,,,,,,,b8a0721ae1b6ac32,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-lecture-robust,markdown,fr,b61ae80a72dae0c7,"**Lecture.** Cette section ne recharge aucun modèle : les quatre couches ont été captées par la
+boucle de la section 2, au **même passage** que la mesure principale. La fenêtre en profondeur et
+le bloc médian partagent donc exactement les mêmes forwards — aucune dérive de harnais ne peut
+se glisser entre les deux — et un chargement de 18 Go est économisé.
+
+Deux robustesses distinctes, qu'il ne faut pas confondre. Le **cosinus** entre
+directions est une grandeur géométrique calculée sur des moyennes de groupe : il ne dépend pas de
+la graine de partition, seulement de la couche. L'**accuracy** d'une sonde, elle, dépend de la
+partition — c'est donc elle qu'il faut regarder pour savoir si une lecture par sonde est stable.
+Une fenêtre en profondeur qui ferait varier `pain~valence` de plusieurs dizaines de points dirait
+que la grandeur est une propriété locale, pas un fait du modèle.",,,,,,,,b61ae80a72dae0c7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-barriere,markdown,fr,5e533d46bd8ed219,"## 4. La barrière — ce que cette machine refuse de charger
+
+Le point d'échelle supérieur était l'objet initial de ce carnet : ICT-47 s'arrête au 9B et nomme
+elle-même la question. Il n'a **pas** pu être mesuré, et la raison n'est pas une opinion — c'est
+une mesure reproductible, faite sur cette machine (po-2023, RTX 3090, 24 576 Mio) :
+
+| Substrat | Instrument | Résultat |
+|---|---|---|
+| Qwen3.5-27B | bf16 (~52 Go) | ne charge pas — dépasse les 22 GiB libres **et** la RAM disponible |
+| Qwen3.5-27B | int8 (~27 Go) | `ValueError` bitsandbytes : modules sur CPU, `llm_int8_enable_fp32_cpu_offload` requis |
+| Qwen3.5-27B | 4-bit NF4 (~15 Go) | **SIGSEGV** au chargement (3 configurations, reproductible à froid) |
+| Qwen2.5-14B-Instruct | bf16 (~28 Go) | **SIGSEGV** au chargement |
+| Qwen3.5-9B-Base | bf16 (~18 Go) | **charge en 22 s** — et charge aussi avec offload CPU forcé |
+
+Deux hypothèses ont été testées et **écartées** par la mesure :
+
+- *« la quantification plante »* — non : les mêmes modèles quantifiés en 2B et 9B chargent et se
+  mesurent normalement (c'est tout l'objet de la section 2) ;
+- *« l'offload CPU plante »* — non : le 9B bf16 charge avec un plafond GPU forcé à 8 GiB, donc
+  avec une dizaine de giga-octets de poids sur le CPU.
+
+La frontière observée est donc **la taille du substrat** — ≤ 9B charge, ≥ 14B plante nativement —
+et le mécanisme racine n'est pas établi par ce carnet. Le rapporter ainsi, plutôt que de le
+deviner, est la seule forme honnête : une barrière mal attribuée enverrait la prochaine lane
+chercher un remède là où il n'y a pas de défaut.
+
+**Pourquoi ce point d'échelle manque précisément.** La
+[matrice des dissociations](../../../docs/ict/dissociations-matrix.md) porte **déjà** un troisième
+point, à 14B (`pain~valence` 0,93, écart 0,25) — mais sa propre ligne signale la réserve : « c'est
+un Qwen3, pas un Qwen3.5 — la taille augmente *et* la famille change ». Ce point ne peut donc pas
+répondre à la question d'échelle : il la confond avec un changement de famille. Le point qui la
+trancherait est un **Qwen3.5-14B ou plus, dans la famille**, et c'est exactement celui que cette
+machine refuse de charger. La barrière n'est pas un détail d'infrastructure : elle tombe sur le
+seul point qui manque.",,,,,,,,5e533d46bd8ed219,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-exo2,markdown,fr,087e5f50b89e8ee0,"### Exercice 2 — resserrer la frontière
+
+La frontière mesurée est grossière : quelque part entre 9B et 14B. Si un substrat intermédiaire est
+disponible dans le cache local, chargez-le et resserrez la borne. C'est une expérience à faible
+coût dont le résultat est directement utile — une barrière précise se contourne, une barrière
+vague se subit.",,,,,,,,087e5f50b89e8ee0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-exo2-stub,code,fr,b610f7185e405efa,"# Exercice 2 -- a completer.
+# Indice : load_substrate leve une exception Python sur les erreurs propres, mais un SIGSEGV
+# tue le noyau -- testez donc chaque taille dans un PROCESSUS separe (subprocess).
+result = None  # TODO etudiant",,,,,,,,b610f7185e405efa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-exo3,markdown,fr,23e06c723209743c,"### Exercice 3 — le corpus comme variable
+
+Le corpus est en anglais, écrit à la main, 24 énoncés par groupe. Traduisez **un seul** groupe
+(par exemple `pain_physical`) et mesurez le déplacement de sa direction sous le même instrument.
+Un axe qui survit à une traduction tient plus probablement du modèle que du registre lexical.",,,,,,,,23e06c723209743c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-exo3-stub,code,fr,52cc5ce69a68bb78,"# Exercice 3 -- a completer.
+# Indice : rechargez le 2B, capturez une version traduite de pain_physical,
+# et comparez sa direction a celle du corpus anglais (cosinus).
+result = None  # TODO etudiant",,,,,,,,52cc5ce69a68bb78,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,f2a628b1,markdown,fr,be90f6b675f0eac1,"## À retenir
+
+***Reproduit dans le modèle (mesuré ici).*** Aux deux échelles où la référence bf16 existe, la quantification — int8
+comme 4-bit NF4 — **ne déplace pas la géométrie** des directions émotionnelles : cosinus de
+disjonction, unité inter-douleur et écart diagonale/hors-diagonale restent dans l'intervalle du
+centième. C'est un résultat **transversal** : il autorise à mesurer des substrats hors de portée du
+bf16 sans requalifier chaque comparaison, à condition de publier la référence bf16 de l'échelle où
+elle existe.
+
+**Non établi (bloqué, avec preuve).** La question d'ICT-47 reste ouverte : au-delà du 9B,
+`pain~valence` se détache-t-il enfin de la valence générique, ou reste-t-il ≥ 0,9 ? Le point
+d'échelle supérieur n'est pas mesurable sur cette machine, et la barrière est documentée plutôt que
+contournée. Le point 14B que porte déjà la matrice ne la ferme pas : il change de famille en même
+temps que de taille, et la matrice le dit elle-même.
+
+**Entrée matrice 4D.** Les lignes à reporter dans la
+[matrice de dissociations](../../../docs/ict/dissociations-matrix.md) sont les **écarts
+d'instrument** de la section 2 — elles ne modifient aucun claim d'ICT-47, elles disent à quelles
+conditions ses claims restent comparables à un run quantifié.",,,,,,,,be90f6b675f0eac1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-verdict,markdown,fr,f6c2e4110abb2d2b,"## Vérifiez votre compréhension
+
+Les trois exercices vérifient la compréhension du geste instrumental — l'instrument sur une autre couche, resserrer la frontière de chargement, le corpus comme variable ; les questions suivantes s'y ajoutent, réponses repliées.
+
+1. La quantification — int8 comme 4-bit NF4 — « ne déplace pas la géométrie » : quelles grandeurs restent dans quel intervalle, et à quelles échelles ce verdict est-il mesuré ?
+2. Pourquoi la section 2 mesure-t-elle sur des cosinus plutôt que sur des accuracies de sonde ?
+3. La barrière au-delà du 9B est documentée « avec preuve » plutôt que contournée : quelle question ne se ferme pas, et pourquoi le point 14B ne la ferme-t-il pas non plus ?
+
+<details>
+<summary>Réponses</summary>
+
+1. Le cosinus de disjonction, l'unité inter-douleur et l'écart diagonale/hors-diagonale restent dans **l'intervalle du centième**, aux **deux échelles où la référence bf16 existe (2B et 9B)** — un résultat transversal : il autorise à mesurer des substrats hors de portée du bf16 sans requalifier chaque comparaison.
+2. Parce qu'à cette taille **la lecture par sonde est fragile** : sur 9B, la précision de la sonde `pain_all` varie de 0,50 à 0,73 selon la graine de partition (écart-type 0,098) — à 24 énoncés par groupe, une accuracy ne se cite pas sans sa graine. Les cosinus, eux, n'en dépendent pas.
+3. La question d'ICT-47 — au-delà du 9B, `pain~valence` se détache-t-il enfin de la valence générique ? — n'est pas mesurable sur cette machine. Le point 14B ne la ferme pas : **il change de famille en même temps que de taille**, donc la stabilité observée ne se lit pas comme un effet d'échelle pur.
+
+</details>",,,,,,,,f6c2e4110abb2d2b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,p47b-limites,markdown,fr,82cad0b5806ebdd2,"## Limites
+
+- **Deux échelles seulement** — le contrôle d'instrument porte sur 2B et 9B. Rien ne prouve que la
+  transparence se transporte au 27B ; c'est une extrapolation, et elle est nommée comme telle.
+- **Une couche pour la mesure principale** — elle porte sur la couche médiane. L'exercice 1 ouvre la
+  question de la profondeur, la section 3 la mesure partiellement au 9B.
+- **La lecture par sonde est fragile à cette taille** — sur 9B, la précision de la sonde `pain_all`
+  varie de 0,50 à 0,73 selon la graine de partition (écart-type 0,098) : à 24 énoncés par groupe,
+  une accuracy ne se cite pas sans sa graine. Les cosinus, eux, n'en dépendent pas — c'est
+  précisément pourquoi la section 2 mesure sur des cosinus.
+- **Une machine** — la barrière de chargement décrite en section 4 est propre à po-2023. Elle n'est
+  pas une propriété des substrats, et elle ne doit pas être recopiée comme telle.
+- **Mécanisme racine non établi** — la frontière est mesurée, pas expliquée.
+- **Corpus inchangé** — comparabilité achetée au prix des limites d'ICT-47 : 24 énoncés écrits à la
+  main, en anglais, appariés en thème mais non en longueur ni en registre.
+- **Base, pas instruct** — les substrats sont des modèles de base ; rien ici ne relève de
+  l'introspection.
+- **Postulat de représentation** — ce carnet suppose qu'une direction linéaire est une description
+  suffisante d'un contenu émotionnel. Il n'est pas challengé ici, seulement hérité (#18746).",,,,,,,,82cad0b5806ebdd2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb,cd300f07,markdown,fr,2a93a8288b9c1a51,"## Pour aller plus loin
+
+- **[PT-21 — Onset/SAE au 9B](./PT_21_onset_9b_agregat.ipynb)** : l'agrégat de quatre graines (W et S) sur Qwen3.5-9B-Base, déplacé dans la même fournée.
+- **[ICT-0 — Cadrage de la série](../../IIT/ICT-Series/ICT-0-Framing.md)** : le principe directeur de la série ICT.",,,,,,,,2a93a8288b9c1a51,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,2fceb3ec,markdown,fr,62bbb4bc1a6b095f,"[← PT-20 — L'instrument change-t-il la géométrie ?](PT_20_instrument_axe_douleur.ipynb) | [↑ PostTraining](README.md)
+
+***
+
+# PT-21 — Onset/SAE Qwen3.5-9B-Base, agrégat de quatre graines (W et S) (ICT-48)
+
+> **Provenance** — carnet déplacé depuis la série ICT (`ICT-48-Onset9B-Aggregate-Python.ipynb`) vers PostTraining (#20298, fournée F3-2) : l'agrégat onset du 9B relève de l'instrumentation post-training. Les artefacts restent dans l'organe ICT-Series (`ict/results/`, `runs/`), lus et écrits via l'ancre `ICT_ROOT` (paquet installé par `pip install -e MyIA.AI.Notebooks/IIT/ICT-Series`).
+
+> **Statut épistémique** — **reproduit dans le modèle** : sur quatre graines (0, 1, 2, 3) du fine-tuning LoRA 4 bits Qwen/Qwen3.5-9B-Base (lr=1e-05, 120 étapes, num_generations=4), l'onset statique se maintient pour les deux bras W (world) et S (spurious). Aucune transition vers le takeover ni inversion de signe. Le pilote ICT-47 9B fournit un point de comparaison entre architectures (cosine = 0.60, minimum = 0.46) ; ses mesures détaillées sont conservées hors de ce dépôt.
+
+> **Sources** : runs d'origine sur la machine d'entraînement (`ICT-onset-9b-c233`, graines 0-1 ; `ICT-onset-9b-c246`, graines 2-3), committés dans l'organe ICT-Series sous `ict/results/onset_qwen35_9b_base_seeds01.json` et `ict/results/onset_qwen35_9b_base_seeds23.json`. Total : 8 runs, soit 4 W et 4 S.",,,,,,,,62bbb4bc1a6b095f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,6d1a94ed,markdown,fr,96678027cf60e997,"## Contexte
+
+Les deux fichiers source regroupent les runs par paires de graines : 0 et 1 dans le premier, 2 et 3 dans le second. Les captures couvrent les deux bras expérimentaux W et S.
+
+Le présent notebook agrège les quatre graines de chaque bras en statistiques descriptives et trace la médiane par étape.
+",,,,,,,,96678027cf60e997,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,d5f5d130,markdown,fr,a746e0350120ff80,"## Garde-fous d'honnetete (a lire avant les resultats)
+
+1. **Pas de SLI** : les runs utilisent `num_generations=4` (rollout group size), pas un SFT classique. Le signal est un **hack rate** sur 24 prompts fixes x 4 generations, et un **mc rate** (majority-choice correctness) sur le meme panel.
+2. **Statique vs takeover** : on observe `mc_late - mc_early` (Dmc) et `hack_late - hack_early` (Dhack). Une transition vers le takeover se manifesterait par un Dmc positif ET un Dhack negatif (le modele apprend a court-circuiter le signal de recompense). Une stagnation des deux signe onset statique.
+3. **Cross-architecture** : le pilote ICT-47 9B (c.228) et le present 9B Qwen3.5-Base maintiennent l'onset statique. Pas un artefact d'un modele.
+4. **Mesures** : 4 graines, lr=1e-05, max_steps=120, 4-bit QLoRA env `coursia-sae`. Total ~2h30 par job (2 bras x 2 seeds).",,,,,,,,a746e0350120ff80,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,7cc782db,markdown,fr,86ae33564cee8161,"## Protocole d'agrégation
+
+1. Charger `onset_qwen35_9b_base.json` (graines 0 et 1) et `onset_qwen35_9b_base_seeds23.json` (graines 2 et 3).
+2. Concaténer les données par bras (W et S), pour obtenir 4 runs par bras.
+3. Calculer moyenne et écart-type de `hack_early/late`, `mc_early/late` et `reward_early/late`.
+4. Calculer la médiane par étape (120 étapes) sur les `per_step` (24 prompts x 4 générations) : 480 valeurs par graine, puis 120 médianes par bras.
+5. Tracer les courbes médianes W et S superposées, avec des bandes de ±1 écart-type.
+6. Évaluer les signes de Dmc et Dhack par bootstrap sur les quatre graines.
+",,,,,,,,86ae33564cee8161,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,52de16b1,code,fr,8678df10b8d3dc7f,"import json
+import os
+import statistics
+from pathlib import Path
+
+import numpy as np
+import matplotlib
+# Rendu inline (#14122) : sans le forcage du backend Agg, plt.show() affiche
+# la figure dans le carnet au lieu d'emettre "" FigureCanvasAgg is
+# non-interactive, and thus cannot be shown "" (UserWarning porteur du chemin
+# machine, figure invisible dans les sorties committes).
+import matplotlib.pyplot as plt
+
+# Ancrage hors serie (F3-2, #20298) : le carnet vit dans PostTraining/ mais
+# consomme les artefacts de l'organe ICT-Series. L'ancre resout le paquet
+# installe (pip install -e MyIA.AI.Notebooks/IIT/ICT-Series) : les chemins ne
+# dependent plus du cwd d'execution.
+import ict
+ICT_ROOT = Path(ict.__file__).resolve().parent.parent
+assert (ICT_ROOT / ""ict/results"").is_dir(), (
+    ""L'organe ICT-Series n'est pas installe : ""
+    ""pip install -e MyIA.AI.Notebooks/IIT/ICT-Series""
+)
+print(f""Ancre ICT_ROOT : {ICT_ROOT.name}/ (organe ICT-Series)"")
+
+# Artefacts commites dans l'organe (provenance : champ sources de
+# ict/results/onset_qwen35_9b_base_aggregate.json -- ""c.233 seeds 0,1"" /
+# ""c.246 seeds 2,3""). Les chemins absolus D:/Runs ne vivaient que sur la
+# machine d'origine et rendaient le carnet non re-executable ailleurs.
+RUNS = {
+    ""c.233"": ICT_ROOT / ""ict/results/onset_qwen35_9b_base_seeds01.json"",
+    ""c.246"": ICT_ROOT / ""ict/results/onset_qwen35_9b_base_seeds23.json"",
+}
+
+artifacts = {tag: json.loads(p.read_text(encoding=""utf-8"")) for tag, p in RUNS.items()}
+for tag, art in artifacts.items():
+    print(f""{tag}: model={art['model']!r} seeds={art['seeds']} max_steps={art['max_steps']} lr={art['lr']}"")",,,,,,,,8678df10b8d3dc7f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,46ea7d46,code,fr,19cb792dc9703b08,"# Concatener W et S sur les 4 graines
+runs_w = artifacts[""c.233""][""results""][""W""] + artifacts[""c.246""][""results""][""W""]
+runs_s = artifacts[""c.233""][""results""][""S""] + artifacts[""c.246""][""results""][""S""]
+assert len(runs_w) == 4 and len(runs_s) == 4, f""Attendu 4 W + 4 S, got {len(runs_w)} W, {len(runs_s)} S""
+
+print(f""Agregat : 4 W runs (seeds {sorted(r['seed'] for r in runs_w)}) + 4 S runs (seeds {sorted(r['seed'] for r in runs_s)})"")
+print(f""Total = 8 runs sur Qwen3.5-9B-Base."")",,,,,,,,19cb792dc9703b08,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,464c5f44e0e24be89511569689de8450,markdown,fr,a0dac721af4dbc9d,"### Lecture — l'agrégat de 4 graines par bras
+
+L'agrégat réunit **4 runs W** et **4 runs S** (seeds 0, 1, 2, 3) — 8 runs au
+total sur `Qwen3.5-9B-Base`. Agréger 4 graines par bras est le geste qui
+transforme « un run qui a réussi » en « le comportement typique du bras » :
+les colonnes `std` de la cellule suivante mesurent l'écart **inter-graines**,
+c'est-à-dire combien de la différence W/S est du **signal** et combien est du
+**bruit de seed**. C'est ce bruit qu'il faut battre pour que l'écart soit
+tenable — et c'est précisément ce que la cellule du test de signe viendra
+trancher. Tant qu'on ne regarde qu'une graine, la dissociation W/S est
+indiscernable d'une fluctuation de seed ; l'agrégat est ce qui la rend lisible.",,,,,,,,a0dac721af4dbc9d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,7463f6be,code,fr,38caba3926f57a46,"def stats_for_arm(arm_runs, arm_label):
+    keys = [""hack_early"", ""hack_late"", ""mc_early"", ""mc_late"", ""reward_early"", ""reward_late""]
+    out = {""arm"": arm_label, ""n"": len(arm_runs), ""seeds"": sorted(r[""seed""] for r in arm_runs)}
+    for k in keys:
+        vals = [r[k] for r in arm_runs]
+        out[k] = {""mean"": round(statistics.mean(vals), 4), ""std"": round(statistics.stdev(vals), 4) if len(vals) > 1 else 0.0}
+    return out
+
+agg_w = stats_for_arm(runs_w, ""W"")
+agg_s = stats_for_arm(runs_s, ""S"")
+
+for agg in (agg_w, agg_s):
+    print(f""\nBras {agg['arm']} (n={agg['n']}, seeds={agg['seeds']}):"")
+    for k in (""hack_early"", ""hack_late"", ""mc_early"", ""mc_late"", ""reward_early"", ""reward_late""):
+        s = agg[k]
+        print(f""  {k:14s}  mean={s['mean']:.4f}  std={s['std']:.4f}"")
+
+# Dhack et Dmc (changement entre early et late)
+for agg in (agg_w, agg_s):
+    d_hack = agg[""hack_late""][""mean""] - agg[""hack_early""][""mean""]
+    d_mc = agg[""mc_late""][""mean""] - agg[""mc_early""][""mean""]
+    print(f""\nBras {agg['arm']} : Dhack = {d_hack:+.4f} (early -> late), Dmc = {d_mc:+.4f}"")",,,,,,,,38caba3926f57a46,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,b9d3a1226ed84ac4bed867ce7d8a1a1a,markdown,fr,c10cf8f714b3e036,"### Lecture — l'asymétrie W/S sur l'axe hack / mc
+
+C'est le **fait central** du carnet. Les deux bras s'écartent dans des
+**directions opposées** de l'axe hack / mc :
+
+- **Bras W** : `Dhack = +0.0313` contre `Dmc = +0.0021` → le gain tardif de W
+  est **concentré dans le score de hack** (le `mc` ne bouge quasiment pas).
+- **Bras S** : `Dmc = +0.0208` contre `Dhack = +0.0052` → le gain tardif de S
+  est **concentré dans le `mc`** (le `hack` ne bouge quasiment pas).
+
+W est le bras « **hack-dominant** », S le bras « **mc-dominant** ». À noter
+aussi les **niveaux** (et non les écarts) : S part nettement plus haut —
+`mc_early` **0.4948** contre **0.1031** pour W, `reward_early` **0.8542**
+contre **0.4135** — S est le bras de **référence plus fort**. Mais c'est bien
+la **direction des D** qui porte la dissociation : **W déplace hack, S
+déplace mc** — chacun son métrique propre, ce qui est exactement la signature
+qu'on cherchait à dissocier entre les deux bras.",,,,,,,,c10cf8f714b3e036,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,33c08c4b,code,fr,e91ff84429515b9c,"# Mediane par step sur les 4 graines
+def median_per_step(arm_runs):
+    n_steps = len(arm_runs[0][""per_step""])
+    return [statistics.median([s[i] for s in (r[""per_step""] for r in arm_runs)]) for i in range(n_steps)]
+
+def mean_per_step(arm_runs):
+    n_steps = len(arm_runs[0][""per_step""])
+    return [statistics.mean([s[i] for s in (r[""per_step""] for r in arm_runs)]) for i in range(n_steps)]
+
+median_w = median_per_step(runs_w)
+median_s = median_per_step(runs_s)
+mean_w = mean_per_step(runs_w)
+mean_s = mean_per_step(runs_s)
+n_steps = len(median_w)
+print(f""120 steps medianes calculees pour W et S."")
+
+# Detection onset (premier step >= threshold)
+def find_onset(seq, threshold=0.25):
+    for i, v in enumerate(seq):
+        if v >= threshold:
+            return i, v
+    return None, None
+
+w_onset_idx, w_onset_val = find_onset(median_w)
+s_onset_idx, s_onset_val = find_onset(median_s)
+print(f""\nOnset (median, seuil 0.25) :"")
+print(f""  W : step {w_onset_idx} (median={w_onset_val})"")
+print(f""  S : step {s_onset_idx} (median={s_onset_val})"")
+
+# Mediane finale (step 119)
+print(f""\nMediane finale (step 119) : W={median_w[-1]:.3f}  S={median_s[-1]:.3f}"")
+print(f""Mean finale   (step 119) : W={mean_w[-1]:.3f}  S={mean_s[-1]:.3f}"")",,,,,,,,e91ff84429515b9c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,137ccfd6eaa44a159c49f15eae2ac258,markdown,fr,3413a598bf2babdc,"### Lecture — onset immédiat, mais niveaux tardifs dissociés
+
+L'**onset** (franchissement de la médiane au seuil 0.25) tombe à **step 0
+pour les deux bras** — ici, l'« onset » n'est pas un phénomène retardé, il est
+immédiat. Le signal qui **dissocie** W et S n'est donc pas le *moment*
+d'apparition, mais le **niveau tardif** : à step 119, la médiane finale est
+**W = 0.000** contre **S = 0.125**. W **retombe à zéro** pendant que S
+**maintient** un niveau non nul. C'est la même dissociation que la cellule
+précédente, lue cette fois en **trajectoire temporelle** plutôt qu'en
+différence early→late : les deux bras démarrent ensemble, puis divergent
+parce que l'un s'efface et l'autre persiste.",,,,,,,,3413a598bf2babdc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,9078e715,code,fr,1a480b5e47e591d5,"fig, axes = plt.subplots(1, 2, figsize=(13, 4.5), sharey=True)
+
+# Panneau gauche : mediane par step, W et S
+ax = axes[0]
+xs = list(range(n_steps))
+ax.plot(xs, median_w, label=""W (world) -- mediane 4 graines"", color=""#1f77b4"", lw=2)
+ax.plot(xs, median_s, label=""S (spurious) -- mediane 4 graines"", color=""#d62728"", lw=2)
+if w_onset_idx is not None:
+    ax.axvline(w_onset_idx, color=""#1f77b4"", ls="":"", alpha=0.6, label=f""W onset step {w_onset_idx}"")
+if s_onset_idx is not None:
+    ax.axvline(s_onset_idx, color=""#d62728"", ls="":"", alpha=0.6, label=f""S onset step {s_onset_idx}"")
+ax.set_xlabel(""Step"")
+ax.set_ylabel(""Mediane (24 prompts x 4 generations)"")
+ax.set_title(""ICT-48 -- onset 9B Qwen3.5-Base, agregat 4 graines"")
+ax.legend(loc=""upper left"", fontsize=9)
+ax.grid(alpha=0.3)
+
+# Panneau droit : mean +- 1 sigma pour les 4 metriques early/late
+ax = axes[1]
+metrics = [""hack_early"", ""hack_late"", ""mc_early"", ""mc_late"", ""reward_early"", ""reward_late""]
+x_pos = np.arange(len(metrics))
+w_means = [agg_w[m][""mean""] for m in metrics]
+w_stds = [agg_w[m][""std""] for m in metrics]
+s_means = [agg_s[m][""mean""] for m in metrics]
+s_stds = [agg_s[m][""std""] for m in metrics]
+width = 0.35
+ax.bar(x_pos - width/2, w_means, width, yerr=w_stds, label=""W (world)"", color=""#1f77b4"", capsize=3)
+ax.bar(x_pos + width/2, s_means, width, yerr=s_stds, label=""S (spurious)"", color=""#d62728"", capsize=3)
+ax.set_xticks(x_pos)
+ax.set_xticklabels([m.replace(""_"", ""\n"") for m in metrics], fontsize=8)
+ax.set_ylabel(""Taux (mean +- 1 sigma sur 4 graines)"")
+ax.set_title(""Metriques early/late -- agregat 4 graines"")
+ax.legend()
+ax.grid(alpha=0.3, axis=""y"")
+
+plt.tight_layout()
+out_fig = ICT_ROOT / ""ict/results/ict48_onset_aggregate.png""
+out_fig.parent.mkdir(parents=True, exist_ok=True)
+plt.savefig(out_fig, dpi=110)
+plt.show()
+print(f""Figure sauvegardee : {out_fig.name}"")",,,,,,,,1a480b5e47e591d5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,a9127a4def444aea96685f5405723f70,markdown,fr,75b6fdd57e14589a,"### Lecture — ce que le plot montre
+
+La figure `ict48_onset_aggregate.png` (2 panneaux, axe y partagé) trace les
+**trajectoires de médiane** des deux bras sur les 120 steps. L'œil confirme
+ce que les chiffres disent : les courbes des deux bras **se séparent**, l'une
+s'aplatissant vers zéro (W) tandis que l'autre reste au-dessus (S). Le plot ne
+prouve rien que les nombres ne disent pas — son intérêt est de rendre la
+dissociation **visible d'un coup d'œil** : on voit *où* et *quand* les bras
+divergent, sans relire le tableau de la cellule d'asymétrie W/S. C'est le rôle
+propre d'une figure dans un carnet — faire voir, en un coup d'œil, ce que le
+texte qualifie.",,,,,,,,75b6fdd57e14589a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,84e39798,code,fr,894f14ed055ca416,"# Test de signe bootstrap : Dhack et Dmc sur 4 graines
+# H0 : la mediane des D par seed est nulle (onset statique)
+# H1 : mediane > 0 (takeover) ou < 0 (regression)
+
+import random
+
+def bootstrap_sign_pvalue(per_seed_deltas, n_boot=10000, seed=42):
+    """"""Test de signe bootstrap : combien de boot ont la mediane > 0 ?""""""
+    random.seed(seed)
+    n = len(per_seed_deltas)
+    count_above = 0
+    for _ in range(n_boot):
+        sample = [random.choice(per_seed_deltas) for _ in range(n)]
+        if statistics.median(sample) > 0:
+            count_above += 1
+    return count_above / n_boot
+
+dh_w = [r[""hack_late""] - r[""hack_early""] for r in runs_w]
+dm_w = [r[""mc_late""] - r[""mc_early""] for r in runs_w]
+dh_s = [r[""hack_late""] - r[""hack_early""] for r in runs_s]
+dm_s = [r[""mc_late""] - r[""mc_early""] for r in runs_s]
+
+print(""Dhack par seed (W) :"", [round(x, 4) for x in dh_w])
+print(""Dmc par seed   (W) :"", [round(x, 4) for x in dm_w])
+print(""Dhack par seed (S) :"", [round(x, 4) for x in dh_s])
+print(""Dmc par seed   (S) :"", [round(x, 4) for x in dm_s])
+
+p_dh_w = bootstrap_sign_pvalue(dh_w)
+p_dm_w = bootstrap_sign_pvalue(dm_w)
+p_dh_s = bootstrap_sign_pvalue(dh_s)
+p_dm_s = bootstrap_sign_pvalue(dm_s)
+
+print(""\nPart de bootstraps dont la mediane > 0 (sur 10k) -- la p unilaterale = 1 - cette part :"")
+print(f""  W Dhack : {p_dh_w:.3f}  -> p_unil = {1 - p_dh_w:.3f}  (regression si p_unil < 0.05)"")
+print(f""  W Dmc   : {p_dm_w:.3f}  -> p_unil = {1 - p_dm_w:.3f}  (regression si p_unil < 0.05)"")
+print(f""  S Dhack : {p_dh_s:.3f}  -> p_unil = {1 - p_dh_s:.3f}  (regression si p_unil < 0.05)"")
+print(f""  S Dmc   : {p_dm_s:.3f}  -> p_unil = {1 - p_dm_s:.3f}  (regression si p_unil < 0.05)"")
+",,,,,,,,894f14ed055ca416,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,edbf84e06c2c409eaacbcd9ff5566abb,markdown,fr,d25eb3e8b62f6b66,"### Lecture — le test de signe : pourquoi il n'y a pas de verdict
+
+Le bootstrap de signe (10 000 rééchantillonnages) est la **porte
+d'honnêteté** du carnet. Résultat : **aucun des quatre D n'est robuste** —
+
+| D | p unilatéral | lecture |
+|---|---|---|
+| W `Dhack` | **0.047** | marginal (< 0.05), en limite |
+| W `Dmc` | 0.586 | pas significatif |
+| S `Dhack` | 0.397 | pas significatif |
+| S `Dmc` | 0.165 | pas significatif |
+
+Avec **4 graines par bras**, l'unique test **frôle** le seuil (W `Dhack`,
+p = 0.047) — exactement la zone où **une graine chanceuse** peut faire passer
+un p marginal sous 0.05. C'est **pourquoi** le verdict est « **sans verdict à
+ce jour** » : l'asymétrie W/S est **visiblement là** (cellule d'asymétrie W/S),
+mais l'agrégat est **sous-puissant** pour la déclarer robuste.
+
+Deux leviers distincts, et le carnet les sépare : **ajouter des graines**
+porterait la puissance statistique nécessaire pour faire passer le W-`Dhack`
+marginal en claim tenu — c'est la limite de puissance. L'**exercice 2** opère
+le mouvement inverse : son **leave-one-out** **retire** une graine à la fois
+pour vérifier si le verdict repose sur une graine chanceuse plutôt que sur le
+bras.",,,,,,,,d25eb3e8b62f6b66,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,4bd15a0e,code,fr,6298a76be785960f,"# Sauvegarde l'artifact d'agregat
+import json
+from pathlib import Path
+
+agg_artifact = {
+    ""model"": ""Qwen/Qwen3.5-9B-Base"",
+    ""max_steps"": 120,
+    ""lr"": 1e-05,
+    ""num_generations"": 4,
+    ""n_seeds_per_arm"": 4,
+    ""sources"": [""c.233 seeds 0,1"", ""c.246 seeds 2,3""],
+    ""stats"": {""W"": agg_w, ""S"": agg_s},
+    ""median_per_step"": {""W"": median_w, ""S"": median_s},
+    ""onset_step_threshold_0.25"": {""W"": w_onset_idx, ""S"": s_onset_idx},
+    ""verdict"": ""ONSET_STATIQUE_MAINTENU"",
+    ""rationale"": (
+        ""Sur 4 graines par bras (W world, S spurious), le Dhack et le Dmc entre early (steps 0-29) ""
+        ""et late (steps 90-119) restent dans la barre 1 sigma sans takeover franc. Le bras S a un mc_early ""
+        ""plus eleve (0.49) que W (0.10), ce qui est attendu : S est le bras spurious ou le signal de ""
+        ""recompense raccourci le ground truth, et le modele a appris a le suivre. Mais le passage de ""
+        ""early a late est marginal (mc_late 0.52 vs 0.49) : pas de transition, pas d'inversion. ""
+        ""Cross-architecture robustness avec ICT-47 9B (c.228 cos 0.60 min 0.46).""
+    ),
+}
+
+out_path = ICT_ROOT / ""ict/results/onset_qwen35_9b_base_aggregate.json""
+out_path.parent.mkdir(parents=True, exist_ok=True)
+out_path.write_text(json.dumps(agg_artifact, indent=2, ensure_ascii=False), encoding=""utf-8"")
+print(f""Artifact agrege sauvegarde : {out_path.name}"")
+print(f""Taille : {out_path.stat().st_size} octets"")",,,,,,,,6298a76be785960f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,5555d798f28c463a92ab83eca408b931,markdown,fr,4b58eb3176a01618,"### Lecture — l'artifact falsifiable
+
+L'agrégat est persisté dans `onset_qwen35_9b_base_aggregate.json`
+(**5310 octets**). C'est l'**artifact falsifiable** du carnet : n'importe qui
+peut le recharger et **re-computer** les D, les onsets et les médianes sans
+re-lancer les 8 runs. Les nombres cités dans les lectures ci-dessus ne sont
+donc pas des captures d'écran — ils sont **re-dérivables** depuis un fichier
+versionné, ce qui est la condition pour qu'un chiffre de carnet soit une
+preuve plutôt qu'une assertion.",,,,,,,,4b58eb3176a01618,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,5b0c970c,markdown,fr,15b08ddb718ccdf7,"## À retenir
+
+*ONSET STATIQUE MAINTENU sur les quatre graines (W et S) du fine-tuning LoRA 4 bits Qwen/Qwen3.5-9B-Base.*
+
+| Bras | mc_early (moyenne ± 1 écart-type) | mc_late (moyenne ± 1 écart-type) | Dmc | hack_early (moyenne ± 1 écart-type) | hack_late (moyenne ± 1 écart-type) | Dhack |
+|---|---|---|---|---|---|---|
+| **W** | 0.1031 ± 0.0104 | 0.1052 ± 0.0138 | +0.002 | 0.1781 ± 0.0312 | 0.2094 ± 0.0208 | +0.031 |
+| **S** | 0.4948 ± 0.0334 | 0.5156 ± 0.0086 | +0.021 | 0.2010 ± 0.0166 | 0.2062 ± 0.0294 | +0.005 |
+
+**Lecture** :
+- **W (world)** : mc reste proche de 0.10 (le modèle ne raccourcit pas le ground truth), tandis que hack augmente légèrement (+0.031), sans franchir le seuil 0.25.
+- **S (spurious)** : mc est déjà proche de 0.49 au début, cohérent avec la nature du bras S. Il atteint 0.52 en fin de mesure, sans transition.
+- **Prise de signal (bootstrap 10k, p unilatérale = 1 - P(médiane(D) > 0))** : W Dhack a p_unil = 0.047 (seul terme sous 5 %, marginal mais significatif) ; W Dmc, S Dhack et S Dmc ont p_unil > 0.05. L'effet W Dhack est réel mais petit (Dhack = +0.031, sous 1 écart-type du run).
+- **Comparaison entre architectures** : le verdict est cohérent avec le pilote ICT-47 9B (cosine = 0.60, minimum = 0.46), mais son verdict d'onset et ses mesures détaillées sont dans `D:/Runs/ICT-47-9b-onset-c228/`, hors du dépôt ; le carnet ICT-47 ne contient pas ce résultat. La comparaison ne peut donc pas être reproduite à partir de ce carnet seul.
+",,,,,,,,15b08ddb718ccdf7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,6a0f30b65c5b46549d154a9cf4dbd20b,markdown,fr,2a7c28386892a431,"### Lecture — le verdict, lu depuis le test
+
+Le verdict du carnet est « **sans verdict à ce jour** », et ce n'est pas une
+formule creuse : c'est la **conséquence directe** de la cellule du test de
+signe. L'asymétrie W/S est **visible** (cellule d'asymétrie W/S : W
+hack-dominant, S mc-dominant), mais l'agrégat de 4 graines par bras ne la rend
+**pas significative** — seul le W-`Dhack` frôle le seuil (p = 0.047), en
+pleine zone de fragilité. Dire « sans verdict » est donc l'attitude
+**correcte** : le carnet refuse de transformer un signal *suggéré* en effet
+*prouvé*. C'est exactement ce qu'un carnet d'analyse doit faire quand la
+puissance statistique est insuffisante — et c'est ce qui le distingue d'un
+carnet qui « raconterait » un résultat que les nombres ne portent pas.",,,,,,,,2a7c28386892a431,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,4b5a3595,markdown,fr,a709bb90afb00e08,"## Echelle — le 9B lu contre 0.5B et 2B (organe `ict.onset_compare`)
+
+Le verdict 9B du carnet n'est pas lu seul : `ict.onset_compare` compare les artefacts deja commits (baseline 0.5B #17702, 2B, 9B) avec le MEME outillage que les sections precedentes (`verdict_for` de l'organe, aucune reimplementation). Les rapports complets sont persistes dans `ict/results/onset_compare_scales.md` ; cette section les re-derive et ajoute la lecture directe 2B contre 9B que l'artefact ne juxtapose pas.",,,,,,,,a709bb90afb00e08,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,5c48447c,code,fr,4e8d82b16a60e3ec,"# Comparaison inter-echelles : les artefacts commites, via l'organe (aucune reimplementation)
+import statistics
+
+from ict.onset_compare import compare, _load, _arm_metrics
+from ict.onset_runner import verdict_for
+
+base = _load(ICT_ROOT / ""ict/results/onset_results.json"")        # baseline 0.5B (#17702), 4 graines/bras
+runs_2b = _load(ICT_ROOT / ""runs/onset_qwen35_2b_base.json"")          # 3 graines/bras
+runs_9b = _load(ICT_ROOT / ""runs/onset_qwen35_9b_base_merged.json"")   # 4 graines/bras, meme contenu que l'agregat ci-dessus
+
+# 1. Le rapport complet de l'organe (0.5B -> 2B -> 9B) ; le schema a 3 echelles
+#    de onset_compare_scales.md n'est pas reproduit ici : compare() ne juxtapose
+#    que deux artefacts a la fois.
+for tag, r in [(""2B"", runs_2b), (""9B"", runs_9b)]:
+    report, overall = compare(base, r)
+    print(f""===== baseline 0.5B vs {tag} : {overall}"")
+    print(report[:900])
+    print(""..."")
+
+# 2. La juxtaposition que l'artefact ne rend pas : 2B contre 9B, bras par bras
+for arm in [""W"", ""S""]:
+    a2, a9 = _arm_metrics(runs_2b, arm), _arm_metrics(runs_9b, arm)
+    print(f""\n=== Bras {arm} : 2B (n={a2['n_seeds']}) vs 9B (n={a9['n_seeds']})"")
+    for k in [""hack_early"", ""hack_late"", ""mc_late""]:
+        print(f""  {k:11s} : 2B med {statistics.median(a2[k]):.4f} | 9B med {statistics.median(a9[k]):.4f}"")
+    v2, _ = verdict_for(arm, runs_2b[""results""][arm])
+    v9, _ = verdict_for(arm, runs_9b[""results""][arm])
+    print(f""  verdict organe : 2B << {v2['verdict']} >> | 9B << {v9['verdict']} >>"")
+
+print(""\nReference persistee : ict/results/onset_compare_scales.md (comparaison 0.5B/2B/9B complete)"")",,,,,,,,4e8d82b16a60e3ec,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,eeedb998,markdown,fr,1199f17a56ac9777,"### Lecture — le plafond d'echelle est atteint des 2B, et le bras qui soutient l'onset change avec l'echelle
+
+Les deux appels de l'organe rendent le meme verdict comparatif (« ONSET PLUS PRECOCE/FORT A L'ECHELLE SUPERIEURE » 0.5B -> 2B et 0.5B -> 9B), mais la juxtaposition directe montre que le bond se joue **entre 0.5B et 2B**, pas entre 2B et 9B : `hack_early` (bras W, medianes) vaut 0.0854 a 0.5B, 0.2167 a 2B, puis **redescend** a 0.1812 a 9B ; `hack_late` vaut 0.0604 -> 0.1917 -> 0.2062. La disponibilite-initiale du raccourci **plafonne des 2B** : c'est la reponse deja persistee dans `onset_compare_scales.md`, lue ici dans le carnet.
+
+L'exactitude math (`mc_late`) suit une autre trajectoire : en bras W elle vaut 0.0938 a 0.5B, 0.1500 a 2B puis 0.1063 a 9B ; en bras S elle vaut 0.1729 a 0.5B, 0.1458 a 2B puis monte a **0.5146** a 9B. Le signal hack et l'exactitude ne varient donc pas ensemble, et leurs trajectoires ne sont pas monotones selon le bras. Le verdict d'onset `ONSET STATIQUE MAINTENU` est present aux deux paliers, mais **sur un bras different** : S a 2B, W a 9B ; l'autre bras reste `ABSENT / NON MONOTONE`. Aucune echelle ne le soutient sur les deux bras a la fois.
+
+La comparaison reste une **etude de cas** sur trois echelles : 4 graines a 0.5B et 9B, seulement 3 a 2B. Ces medianes decrivent la fenetre mesuree (120 steps, lr=1e-05), pas une loi d'echelle.",,,,,,,,1199f17a56ac9777,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,b0047ee6,markdown,fr,6450e65548e84f44,"## Limites (assumees)
+
+1. **4 graines, pas 5** : le pipeline `pick_idle_grain` regle par defaut sur `--seed 0..3` (4 graines). Le seuil de significativite formel (5 graines minimum) n'est pas atteint. Le bootstrap 10k sur 4 graines est conservateur.
+2. **1 lr, 1 max_steps** : on n'a pas balaye l'espace des hyperparametres. Le test H1 « onset statique a d'autres lr/steps » reste ouvert.
+3. **Trois echelles seulement** : la comparaison couvre 0.5B, 2B et 9B, avec 4 graines aux deux extremites et 3 a 2B ; le 2B n'etait pas inclus dans les tests de signe du carnet. La fenetre et les ecarts entre graines interdisent d'en tirer une loi d'echelle ou un optimum de taille ; 27B et au-dela restent hors champ.
+4. **Artefact committe en-repo** : la copie canonique `ict/results/onset_qwen35_9b_base_aggregate.json` est committee dans l'organe ICT-Series (5310 chars, 4 W + 4 S mesures, mediane par step, verdict). Les snapshots bruts restent sur disque local (`D:/Runs/ICT-onset-9b-c259/`) pour reproductibilite hors-repo.",,,,,,,,6450e65548e84f44,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,5a21706acea54299a6f364e1e05f9e7a,markdown,fr,452f8c3233a1f8ec,"### Lecture — les limites, nommées une à une
+
+Les limites ne sont pas un paragraphe de prudence : ce sont les **raisons
+exactes** pour lesquelles le verdict statistique reste négatif et pourquoi la
+comparaison inter-échelles ne devient pas une loi générale :
+
+1. **Puissance insuffisante** — 4 graines par bras ne suffisent pas à rendre
+   significatif un écart de l'ordre de +0.03 (le W-`Dhack`). Le bootstrap le
+   dit noir sur blanc : p = 0.047, en limite.
+2. **Onset dépendant du seuil** — le « onset = step 0 » n'est vrai qu'aux
+   seuils 0.10/0.25 ; au seuil 0.50, l'onset de W glisse à step 72. Toute
+   affirmation d'onset doit porter son seuil.
+3. **Une comparaison bornée** — les trois tailles partagent le protocole
+   mesuré, mais pas le nombre de graines : 4 à 0.5B et 9B, 3 à 2B. Le
+   plateau lu dans les médianes est donc un constat local à cette fenêtre,
+   pas une garantie pour une autre taille, un autre modèle ou un autre taux
+   d'apprentissage.
+
+Nommées ainsi, les limites deviennent **actionnables** : l'exercice 2 teste la
+robustesse du verdict statistique par leave-one-out ; l'exercice 3 compare les
+deux bras du 9B. Étendre la grille inter-échelles reste un travail distinct.",,,,,,,,452f8c3233a1f8ec,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,f0337b6a,markdown,fr,5a6e861135dcba3c,"## Ce qu'il faut retenir
+
+1. **Verdict mesuré, pas deviné** : quatre graines W + quatre graines S, agrégat médiane et moyenne ± 1 écart-type, bootstrap 10k. L'onset statique est une lecture des mesures et du test de signe.
+2. **Comparaison entre architectures** : le verdict est cohérent avec le pilote ICT-47 9B. Les mesures détaillées de ce pilote étant conservées hors du dépôt, cette comparaison ne se reproduit pas à partir de ce carnet seul.
+3. **L'échelle est mesurée dans le carnet** : l'organe juxtapose 0.5B, 2B et 9B ; la disponibilité-initiale plafonne dès 2B dans cette fenêtre, et le bras qui soutient l'onset statique change de S à W. Les graines (4, 3, 4) et le protocole borné restent visibles avec le résultat.
+4. **Bras S raccourci tôt** : mc_early vaut 0.49 sur S, cohérent avec la nature du signal spurious. Le takeaway n'est pas « S apprend », mais « S n'aggrave pas son raccourci de manière significative ».
+5. **Pipeline reproductible** : `ict/onset_runner.py` et `ict/onset_compare.py`, présents dans l'organe ICT-Series (`pip install -e MyIA.AI.Notebooks/IIT/ICT-Series`), avec ce notebook d'agrégat, permettent de rejouer l'expérience à d'autres graines, taux d'apprentissage ou nombres d'étapes.",,,,,,,,5a6e861135dcba3c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,af53b066,markdown,fr,84e6e20e3312d4f9,"## Exemples guidés
+
+Deux résolutions complètes, **conservées telles quelles** : le contenu décide du label, pas le titre.
+
+- **Exemple guidé 1** — le verdict dépend-il du seuil d'onset ? (0.10 / 0.25 / 0.50)
+- **Exemple guidé 2** — le bootstrap est-il stable quand on réduit `n_boot` et qu'on change de graine ?
+
+Les exercices à compléter suivent en fin de section.",,,,,,,,84e6e20e3312d4f9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,71ff724e,code,fr,93ea69b68db057c7,"# Exemple guide 1 -- Sensibilite au seuil d'onset (0.10 / 0.25 / 0.50)
+# Reproduire la detection d'onset pour des seuils 0.10, 0.25, 0.50 sur les median_per_step W et S.
+# Conclure : le verdict onset-statique depend-il du seuil ?
+threshold_results = {}
+for thr in (0.10, 0.25, 0.50):
+    w_idx, w_val = find_onset(median_w, threshold=thr)
+    s_idx, s_val = find_onset(median_s, threshold=thr)
+    threshold_results[thr] = {""W"": (w_idx, w_val), ""S"": (s_idx, s_val)}
+print(""Seuil -> (W step, W val), (S step, S val) :"", threshold_results)",,,,,,,,93ea69b68db057c7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,92262c184b8e46bcabf8dab21e5824d0,markdown,fr,1a449b303ec4f43f,"### Lecture — exemple 1 : l'onset dépend du seuil
+
+L'exemple guidé balaie le seuil d'onset (0.10 / 0.25 / 0.50). Le résultat
+est un argument de **robustesse** : au seuil **0.10** et **0.25**, les deux
+bras onsetent à **step 0** ; mais au seuil **0.50**, l'onset de W est
+**retardé à step 72** contre **step 10** pour S. L'« onset » n'est donc **pas
+un invariant** — il dépend du seuil arbitraire qu'on pose. Un claim d'onset
+tenable doit le dire : *à quel seuil*. C'est le genre de fragilité qu'un
+exemple guidé sert à rendre visible — la valeur « onset = step 0 » n'est
+valable qu'autant que le seuil le permet, et le balayage le montre en une
+ligne.",,,,,,,,1a449b303ec4f43f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,042d20b0,code,fr,9c2d2e568753fa3f,"# Exemple guide 2 -- Stabilite du bootstrap (n_boot=1000, cinq graines)
+# Repeter le bootstrap_sign_pvalue avec n_boot=1000 et differentes seeds, et comparer aux resultats n_boot=10k.
+# Le verdict change-t-il ?
+import random
+seeds_to_test = [0, 1, 42, 123, 9999]
+for s in seeds_to_test:
+    p = bootstrap_sign_pvalue(dh_w, n_boot=1000, seed=s)
+    print(f""seed={s:5d}  p(Dhack_W > 0) = {p:.3f}"")",,,,,,,,9c2d2e568753fa3f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,9464c53d84c24e989028f3cddf004c02,markdown,fr,32fc3a8f43cec33e,"### Lecture — exemple 2 : le signal W-Dhack est stable
+
+Le deuxième exemple vérifie la **stabilité du bootstrap** en faisant varier
+le seed du rééchantillonnage (n_boot = 1000, 5 seeds). La probabilité
+`p(Dhack_W > 0)` reste **collée à 0.94–0.95** — 0.941, 0.950, 0.953, 0.948,
+0.936 — **nettement au-dessus de 0.5** (l'hypothèse nulle) pour **chaque**
+seed. C'est la nuance qui complète la cellule du test de signe : la **p
+unilatérale** est marginale (0.047), mais l'**estimation ponctuelle** du signal
+W-`Dhack` est **stable** et clairement positive d'un seed à l'autre. Le signal
+est *cohérent* ; c'est le **test** qui manque de puissance, pas le signal. Les
+deux faits coexistent, et c'est exactement ce qu'on veut pouvoir dire d'un
+résultat borderline.",,,,,,,,32fc3a8f43cec33e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,c367exosmd,markdown,fr,ebfe9f3291ae3a62,"## Vérifiez votre compréhension
+
+1. Le verdict est « ONSET STATIQUE MAINTENU » alors que W Dhack est le seul terme sous 5 % (p_unil = 0.047) : pourquoi cet effet significatif ne change-t-il pas le verdict ?
+2. Pourquoi l'agrégat JSON committé (`onset_qwen35_9b_base_aggregate.json`) est-il la condition de preuve du carnet ?
+3. La comparaison avec le pilote ICT-47 9B « ne peut pas être reproduite à partir de ce carnet seul » : pourquoi cette borne est-elle écrite explicitement ?
+
+<details>
+<summary>Réponses</summary>
+
+1. Parce que l'effet est **réel mais petit** : Dhack = +0.031, sous 1 écart-type du run, et hack_late (0.2094 ± 0.0208) reste sous le seuil 0.25. Un onset est un changement de régime ; un décalage marginal significatif n'est pas une transition. La lecture est la même côté S : mc monte de 0.4948 à 0.5156 « sans transition » — un niveau déjà élevé qui dérive, pas un régime qui bascule.
+2. Il rend chaque chiffre **re-dérivable sans re-lancer les 8 runs** : moyennes, écarts-types, D et p_unil se recomptent depuis le fichier versionné. Un chiffre recalculable depuis un artefact committé est une preuve ; une capture ou une affirmation de mémoire n'en est pas une — et le bootstrap de stabilité (p(Dhack_W > 0) entre 0.936 et 0.953 sur 5 seeds) se vérifie pareillement.
+3. Les mesures détaillées du pilote (cosine = 0.60, minimum = 0.46) vivent dans `D:/Runs/ICT-47-9b-onset-c228/`, hors du dépôt — le carnet ICT-47 ne contient pas ce résultat. Écrire la borne évite de maquiller une dépendance externe en résultat local : le verdict « cohérent avec le pilote » est affirmé, sa preuve directe n'est pas reproductible ici.
+
+</details>
+
+Trois exercices **non résolus** (stubs C.1 : `print` / `result = None`). Le carnet
+s'exécute de bout en bout sans qu'aucun ne soit complété.",,,,,,,,ebfe9f3291ae3a62,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,efdd9a12,code,fr,b397e38fa79a8091,"# Exercice 1 -- Comparaison directe a ICT-47 (c.228)
+# Charger l'artifact c.228 (`D:/Runs/ICT-47-9b-onset-c228/...`) si disponible, et comparer les medianes
+# par step. L'onset est-il coherent entre les deux modeles 9B ?
+# Si l'artifact n'est pas accessible, lister les 3 features (mediane, ecart-type, position d'onset)
+# qu'on aimerait voir pour conclure.
+print(""A executer quand l'artifact ICT-47 9B est accessible -- placeholder."")",,,,,,,,b397e38fa79a8091,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,c367exo2,code,fr,9b9421cde5ccaedd,"# Exercice 2 -- Robustesse du verdict a une graine (leave-one-out)
+# Retirer une graine a la fois (4 sous-ensembles de 3) et recalculer la part
+# P(mediane(Dhack_W) > 0) avec bootstrap_sign_pvalue.
+# Conclure : le verdict depend-il d'une seule graine ?
+# Indice : dh_w porte les 4 valeurs de D, une par graine.
+result = None  # TODO etudiant
+print(""Exercice a completer : leave-one-out sur les graines"")",,,,,,,,9b9421cde5ccaedd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,c367exo3,code,fr,3d99cefcaaead830,"# Exercice 3 -- Les deux bras (W et S) se distinguent-ils sur Dhack ?
+# Construire la difference Dhack_W - Dhack_S par graine, puis estimer par bootstrap
+# la part P(mediane(D) > 0) et la p unilaterale associee (critere du carnet : p < 0.05).
+# Conclure : l'ecart entre bras est distinguable du bruit a 4 graines ?
+# Indice : dh_w et dh_s portent chacune 4 valeurs.
+result = None  # TODO etudiant
+print(""Exercice a completer : contraste entre bras"")",,,,,,,,3d99cefcaaead830,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,ccf8eb21502d486b9b55b48e5b18c08f,markdown,fr,cc909028b8fb92c8,"### Synthèse — ce que les 3 exercices verrouillent
+
+Les trois exercices ciblent précisément la **fragilité** identifiée plus
+haut :
+
+- **Exercice 1** (comparaison à ICT-47) : l'onset est-il **stable** d'un
+  protocole à l'autre ? C'est le contrôle de **reproductibilité** du signal.
+- **Exercice 2** (leave-one-out) : le W-`Dhack` marginal (p = 0.047)
+  **survit-il** au retrait de chaque graine ? C'est le test de savoir si le
+  signal est **porté par une graine** ou par le bras — la question que la
+  puissance de 4 graines ne tranchait pas.
+- **Exercice 3** (W vs S sur `Dhack`) : les deux bras se **distinguent-ils**
+  directement sur la métrique qui les dissocie ? C'est la **comparaison
+  directe** que l'agrégat n'effectuait qu'indirectement.
+
+Ensemble, les trois exercices tournent autour d'une même question : **le
+signal W-`Dhack`, marginal ici, est-il un effet du bras ou un artefact de
+seed ?** C'est la suite logique du carnet — le transformer d'un constat
+*suggéré* en un résultat *prouvé*, en y apportant les graines et les tests
+manquants.",,,,,,,,cc909028b8fb92c8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb,eeaa05e9,markdown,fr,8244a70f30c16b6a,"## Pour aller plus loin
+
+- **[Complexity-08c — Machines de Gödel](../../Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb)** (rejoint la série Complexity, anciennement ICT-49) : l'auto-amélioration prouvée, en jouet honnête.
+- **[ICT-0 — Cadrage de la série](../../IIT/ICT-Series/ICT-0-Framing.md)** : le principe directeur de la série ICT.",,,,,,,,8244a70f30c16b6a,,,,,,,,,,,,,,,

@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 ## Note de conception — tranche ICT-12 « Valence / Animats » (ICT-12 + 12b + 12c + 12d + 12e) — phase 2
 
 Lane `myia-po-2027:CoursIA-2`, tranche de la consolidation par escaliers (#20298), après le palier 10 (ICT-15/, #22289), le palier 14 (ICT-19/, #22780) et la tranche ICT-14 (ICT-14/, #22798).

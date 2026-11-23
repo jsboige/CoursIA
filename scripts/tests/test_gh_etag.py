@@ -21,8 +21,12 @@ HERE = Path(__file__).resolve().parent
 
 def _charger(nom: str):
     """Charge un module de scripts/ par son fichier (patron des tests B.0 :
-    scripts/ n'est pas un package depuis n'importe quel cwd)."""
-    spec = importlib.util.spec_from_file_location(nom, HERE.parent / f"{nom}.py")
+    scripts/ n'est pas un package depuis n'importe quel cwd). #13737 tranche 2 :
+    gh_etag vit dans scripts/ci/, les autres candidats restent a la racine."""
+    candidats = [HERE.parent / f"{nom}.py", HERE.parent / "ci" / f"{nom}.py"]
+    chemin = next((c for c in candidats if c.exists()), None)
+    assert chemin is not None, f"module introuvable pour les tests : {nom}"
+    spec = importlib.util.spec_from_file_location(nom, chemin)
     module = importlib.util.module_from_spec(spec)
     sys.modules[nom] = module
     spec.loader.exec_module(module)

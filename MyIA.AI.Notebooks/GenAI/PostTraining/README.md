@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 24
-breakdown: PostTraining=24
-maturity: BETA=18, ALPHA=5, DRAFT=1
+pedagogical_count: 27
+breakdown: PostTraining=27
+maturity: BETA=21, ALPHA=5, DRAFT=1
 -->
 
 Comment adapter un modèle de langage préentraîné à une tâche, et comment savoir si cette adaptation l'améliore ? Ce parcours relie supervision, optimisation de préférences, apprentissage par récompense et vérification. Les expériences à petite échelle rendent les mécanismes inspectables ; les carnets sur modèles de langage montrent leurs conditions d'exécution et les difficultés d'évaluation.
@@ -47,6 +47,8 @@ Les variantes du palier 11 sont présentées sous [Approfondissements](#autour-d
 | 17 | [Récompenses propres et calibration](PT_17_laya_proper_rewards_toy.ipynb) | Comparer règles de score, calibration et optimisation directe ou par perturbation. | Probabilités et gradients ; CPU. | Comparer calibration et exactitude prédictive. |
 | 18 | [Ablation de distillation](PT_18_laya_ablation_distillation.ipynb) | Analyser des agrégats de distillation et éprouver un gain avec des comparaisons statistiques. | Après 17 ; analyse CPU de mesures enregistrées. | La grille d'entraînement vit dans les scripts associés. |
 | 19 | [Stratification inter-tailles](PT_19_stratification_inter_tailles.ipynb) | Comparer l'uptake de faille et l'effet d'une inoculation à travers les tailles du modèle, sur des mesures déjà enregistrées. | Lecture d'artefacts JSON produits par les runs GPU de la série ICT ; CPU. | Déplacé depuis ICT-25b (#20298, fournée F3) ; le Cohen's d change de signe entre tailles. |
+| 20 | [L'instrument change-t-il la géométrie ? (ICT-47b)](PT_20_instrument_axe_douleur.ipynb) | Mesurer si la quantification (int8, 4-bit NF4) déplace la géométrie des directions émotionnelles, et documenter la barrière d'échelle au lieu de la contourner. | Après 15b ; GPU local, chargement de modèles 2B/9B. | La question d'ICT-47 au-delà du 9B reste ouverte ; l'effet d'instrument est borné au centième. |
+| 21 | [Onset/SAE Qwen3.5-9B-Base, agrégat de quatre graines (ICT-48)](PT_21_onset_9b_agregat.ipynb) | Agréger quatre graines (W et S) et comparer 0.5B, 2B, 9B avec l'organe `ict.onset_compare` ; lire le verdict onset plutôt que de le supposer. | Après 20 ; CPU, artefacts committés dans l'organe ICT-Series. | Le seuil de significativité formel (5 graines) n'est pas atteint ; 27B et au-delà restent hors champ. |
 
 ### Du signal d'apprentissage à la preuve d'un gain
 
@@ -114,6 +116,7 @@ Partir d'un environnement isolé et des cellules de configuration du carnet choi
 - **Entraînement et interventions sur modèles** : prévoir CUDA et les dépendances de quantification indiquées dans les carnets concernés. Les pics mémoire enregistrés caractérisent leurs configurations ; ils ne garantissent pas la faisabilité de toute la série sur une carte donnée.
 - **Commutateurs** : `LOAD_MODEL_AND_TRAIN` existe dans 02–05. Vérifier chaque carnet avant de l'utiliser : il n'y a pas de commutateur CPU universel pour le dossier.
 - **Dépendances particulières** : `rewardspy` est utilisé par certains carnets et son installation depuis GitHub est précisée dans le fichier de dépendances ; sa ligne non publiée sur PyPI peut empêcher un simple `pip install -r requirements.txt` d'aboutir. Le carnet 15b utilise les modules et traces ICT ; 16 demande Ollama et les outils Dafny/Lean. La reproduction de la grille de 18 requiert les ressources de ses scripts, au-delà de la lecture des agrégats committés.
+- **Organe ICT-Series (carnet 21)** : `PT_21` lit les artefacts de la série ICT via l'ancre `ICT_ROOT`, résolue par le paquet `ict-series`. Si l'ancre échoue, installer l'organe : `pip install -e MyIA.AI.Notebooks/IIT/ICT-Series` (le message de garde du carnet le rappelle) ; les artefacts restent dans l'organe, jamais recopiés ici. `PT_20` ne dépend pas de l'organe : ses sorties gardent leur provenance d'origine, une exécution du 2026-10-08 sur GPU (`torch 2.8.0+cu126`, `cuda True`, 645 s), conservée telle quelle par le déplacement.
 
 En cas de mémoire CUDA insuffisante, examiner quantification, taille des lots, accumulation de gradients, longueur des séquences et nombre de réponses par groupe. Ces réglages modifient aussi le protocole : consigner leur effet avant de comparer les résultats. La [sonde mémoire](_measurements/vram_wall_probe.py) et ses [résultats archivés](_measurements/) donnent un autre point d’entrée pour examiner les configurations par modèle et par carte ; ils ne dispensent pas de vérifier l’environnement courant. Les cartes et checkpoints [Qwen](https://huggingface.co/Qwen/Qwen3.5-0.8B), la documentation [TRL](https://huggingface.co/docs/trl/index), [PEFT](https://huggingface.co/docs/peft/index) et les optimisations [Unsloth](https://github.com/unslothai/unsloth) complètent les instructions des carnets.
 

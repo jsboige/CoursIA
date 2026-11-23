@@ -118,6 +118,23 @@ travers la division et la multiplication par `μ` (algèbre des limites), puis
 identifier la limite à `∑' γᵏ·μ` via `geometric_series_converges`. -/
 theorem panel_partial_sums_tendsto {γ μ : ℝ} (hγ₁ : 0 < γ) (hγ₂ : γ < 1) :
     Tendsto (fun n => geometricPartialSum γ n * μ) atTop (nhds (∑' k : ℕ, γ ^ k * μ)) := by
-  sorry
+  have hγne : γ ≠ 1 := ne_of_lt hγ₂
+  have hpow : Tendsto (fun n : ℕ => γ ^ n) atTop (nhds 0) :=
+    tendsto_pow_atTop_nhds_zero_of_lt_one hγ₁.le hγ₂
+  have hsum : Tendsto (fun n : ℕ => geometricPartialSum γ n)
+      atTop (nhds ((1:ℝ) / (1 - γ))) := by
+    have hrew : (fun n : ℕ => geometricPartialSum γ n)
+        = fun n : ℕ => (1 - γ ^ n) / (1 - γ) :=
+      funext fun n => geometricPartialSum_closed hγne n
+    rw [hrew]
+    have hcont : Continuous fun x : ℝ => (1 - x) / (1 - γ) := by continuity
+    have hcomp := hcont.continuousAt.tendsto.comp hpow
+    simpa [Function.comp_def] using hcomp
+  have hsumm : Summable fun k : ℕ => γ ^ k :=
+    summable_geometric_of_lt_one hγ₁.le hγ₂
+  have hlim : ∑' k : ℕ, γ ^ k * μ = (1:ℝ) / (1 - γ) * μ := by
+    rw [tsum_mul_right, geometric_series_converges hγ₁.le hγ₂]
+  rw [hlim]
+  exact hsum.mul_const μ
 
 end Gittins

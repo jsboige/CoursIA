@@ -1,0 +1,46 @@
+{
+ "protocole": {
+  "objet": "controle positif de l'instrument additivity_gap (#20071, residu 3e passe)",
+  "n_tokens": 400,
+  "private": 1,
+  "n_noise": 4,
+  "seed": 0
+ },
+ "n_tokens": 400,
+ "private": 1,
+ "n_noise": 4,
+ "seed": 0,
+ "cas": {
+  "0": {
+   "dim_a": 1.0,
+   "dim_b": 1.0,
+   "dim_union": 2.0,
+   "additivity_gap": 0.0,
+   "overlap_energy": 1.2265940505029666e-13,
+   "gap_attendu": 0,
+   "coherent": true
+  },
+  "1": {
+   "dim_a": 2.0,
+   "dim_b": 2.0,
+   "dim_union": 3.0,
+   "additivity_gap": -1.0,
+   "overlap_energy": 0.5000000000000265,
+   "gap_attendu": -1,
+   "coherent": true
+  },
+  "2": {
+   "dim_a": 3.0,
+   "dim_b": 3.0,
+   "dim_union": 4.0,
+   "additivity_gap": -2.0,
+   "overlap_energy": 0.6666666666666674,
+   "gap_attendu": -2,
+   "coherent": true
+  }
+ },
+ "gap_negatif": true,
+ "gap_nul_disjoint": true,
+ "coherent": true,
+ "instrument_vivant": true
+}

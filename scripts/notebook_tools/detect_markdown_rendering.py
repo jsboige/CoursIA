@@ -308,7 +308,7 @@ RULE_SEVERITY = {
 _CJK_ALLOWLIST: set[tuple[str, int]] = {
     ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb", 5),
     ("MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb", 19),
-    ("MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb", 1),
+    ("MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb", 1),
 }
 
 # #12110 -- fichiers dont le scope est multilingue assumé (pas de la prose FR).

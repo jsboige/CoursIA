@@ -338,7 +338,7 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
     # --- verts locaux, hermeticite runner a demontrer (T1 #25366) ---
     # Petits volumes, hermetiques : ils rejoignent le run pytest partage
     # des que l'hermeticite du runner est demontree.
-    "MyIA.AI.Notebooks/Compression/tests": "jambe-pr",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/tests": "jambe-pr",
     "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/tests": "jambe-pr",
     "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/tests": "jambe-pr",
     "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/examples/sample_project/tests": "jambe-pr",
@@ -380,10 +380,15 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
 # Les 611 « tests verts » du triage sont un SOUS-ensemble mesure en local
 # (conda projet-is) : ils ne sont pas recomputables par l'organe. Le
 # compteur `items` est l'invariant mecanique qui les englobe.
-# #27201 : 37 cas parametres dans un nouveau fichier du harness paper,
-# toujours hors CI racine ; suite locale complete : 133 tests verts.
-# Ce relevement ne pretend pas ajouter une couverture CI.
-CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 67, "items": 1134}
+#
+# #27201 et #27121 / #27122 : population mesuree apres fusion des controles
+# de finitude et de fenetre datee : 26 marqueurs, 67 fichiers, 1110 items.
+# collectible_item_count compte les fonctions/classes, pas les cas parametres
+# de pytest : les 145 cas executes dans le harness sont une mesure distincte.
+# Le plafond precedent de 1134 confondait ces deux unites ; il est resserre.
+# Toujours hors CI racine : ce relevement ne pretend pas ajouter une
+# couverture CI. La suite complete se rejoue depuis le dossier du projet.
+CI_EXCLUDED_BASELINE = {"marqueurs": 26, "fichiers": 67, "items": 1110}
 
 # Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
 # porter au moins un `test_*.py` pour compter comme suite (#22735).

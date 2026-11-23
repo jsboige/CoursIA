@@ -1954,7 +1954,7 @@ layout: section
 - **Inférence**: `Probas/Infer/Infer-03-Factor-Graphs.ipynb`, `Probas/PyMC/PyMC-03-Factor-Graphs.ipynb`
 - **HMM et séries temporelles**: `Probas/Infer/Infer-14-Sequences.ipynb`, `Probas/PyMC/PyMC-14-Sequences.ipynb`, `Probas/Infer/Infer-17-Kalman-Filter.ipynb`
 - **Décision et utilité**: `Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb`, `DecInfer-04-Decision-Networks.ipynb`, `DecInfer-05-Value-Information.ipynb`
-- **MDP, bandits et POMDP**: `Probas/DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb`, `DecInfer-07b-Lean-Gittins.ipynb`, `DecInfer-10-Thompson-Sampling.ipynb`
+- **MDP, bandits et POMDP**: `Probas/DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb`, `DecInfer-07b-Lean-Gittins.ipynb`, `DecInfer-08-Thompson-Sampling.ipynb`
 
 <!-- Liens vers notebooks dans MyIA.AI.Notebooks/ -->
 

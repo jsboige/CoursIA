@@ -35,6 +35,24 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+# Les corps des commentaires consultatifs vivent dans un module voisin
+# (#27572, cliquet de taille des scripts) : le registre porte la DONNEE de
+# garde, le module porte les CORPS affiches dans le commentaire de la PR.
+_CI_DIR = Path(__file__).resolve().parent
+if str(_CI_DIR) not in sys.path:
+    sys.path.insert(0, str(_CI_DIR))
+
+from fast_lane_commenters import (  # noqa: E402
+    Commenter,
+    _body_claims_output,
+    _body_factual_mislabel,
+    _body_listing_coherence,
+    _body_md_hierarchy,
+    _body_organ_duplication,
+    _body_outputs_required,
+    _body_stale_claim,
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LIVE_READ_REGISTRY = REPO_ROOT / "scripts" / "notebook_tools" / "live_read_registry.json"
 # Repli du garde Live-read quand le registre est illisible : tous les carnets,
@@ -543,7 +561,7 @@ PILOT: list[Guard] = [
     # injectee dans HEAD fait `NOUVELLES=1` (=exit 1), un PR sans nouvelle
     # violation passe (exit 0) sur le meme depot.
     #
-    # `scripts/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
+    # `scripts/ci/regen_quarto_render.py` n'est VOLONTAIREMENT pas dans
     # `swap_paths` : la phase base doit mesurer le MEME predicat que la
     # phase head sur le contenu de base. Restaurer le script de la base
     # ferait mesurer la classe retiree (STALE_LINK) et le comparator
@@ -564,7 +582,7 @@ PILOT: list[Guard] = [
             "MyIA.AI.Notebooks/**/README.md",
             "MyIA.AI.Notebooks/**/*.ipynb",
             "_quarto.yml",
-            "scripts/regen_quarto_render.py",
+            "scripts/ci/regen_quarto_render.py",
             "scripts/notebook_tools/dump_readme_link_violations.py",
             "scripts/notebook_tools/diff_readme_link_violations.py",
             "scripts/notebook_tools/fix_ipynb_links.py",
@@ -2718,446 +2736,6 @@ TRANCHE27: list[Guard] = [
 # ---------------------------------------------------------------------------
 
 
-@dataclass
-class Commenter:
-    """Un effet de bord PR d'un garde absorbe.
-
-    header      En-tete de la section dans le commentaire consultatif unique
-                (organe `advisory_sticky`, #24514). Il DOIT rester un nom
-                d'organe valide (`[A-Za-z0-9._-]+`) : les six en-tetes
-                historiques marocchino le sont deja, et le dossier de
-                prevalidation les lit dans `_BOT_STICKY_ADVISORY_HEADERS`.
-    argv        Detecteur. Sa sortie standard est le rapport : elle part dans
-                l'artefact quand `artifact_name` est renseigne, et dans le
-                corps du commentaire quand `body` la consomme.
-    body        (rc, payload, ctx) -> corps de la section. Rend une chaine
-                vide quand le verdict est VERT : la section est alors RETIREE
-                (et rien n'est ecrit sur une PR qui n'en portait pas) -- le
-                succes ne parle pas (#24514).
-    artifact_name / artifact_file
-                Nom d'artefact et nom de fichier, copies tels quels du
-                workflow source (`actions/upload-artifact` garde son nom
-                public). Vide = pas d'artefact.
-    paths       Globs des fichiers passes au detecteur via `{changed_paths}`,
-                en UNE invocation (les trois detecteurs de prose rendent un
-                document JSON unique pour N carnets ; un appel par fichier
-                casserait le JSON). Vide = le detecteur ne recoit aucun
-                chemin (`{changed_paths}` n'est pas substitue).
-    max_paths   Borne du nombre de chemins passes (0 = pas de borne). Les
-                detecteurs de prose bornent a 50 dans leur workflow d'origine
-                et DISENT la couverture partielle -- on reproduit les deux.
-    needs_pr_body
-                Le detecteur lit le corps de la PR (`--body-file`) : la valeur
-                vient de `FAST_LANE_PR_BODY` et est ecrite dans un temporaire.
-                Un corps absent fait ABSTENIR le commentaire plutot que de
-                juger sur un corps vide.
-    fatal_rc    rc qui sont une PANNE du detecteur et non un constat. Le
-                workflow d'origine rougit sur ces codes (scan_md_hierarchy :
-                rc=1 = baseline illisible ou scan vide) ; l'emetteur les
-                propage au job, sans quoi un detecteur casse rendrait un
-                commentaire vert. Les rc de constat (rc=1 des detecteurs de
-                prose, rc=2 du drift) ne sont PAS fatals.
-    """
-
-    header: str
-    argv: list[str]
-    body: "Callable[[int, str, dict], str]"
-    artifact_name: str = ""
-    artifact_file: str = ""
-    paths: list[str] = field(default_factory=list)
-    max_paths: int = 0
-    needs_pr_body: bool = False
-    fatal_rc: tuple[int, ...] = ()
-
-
-# --- Corps des commentaires -------------------------------------------------
-#
-# Les phrases sont copiees MOT POUR MOT des workflows sources : ce sont les
-# textes que des reviewers et des bots lisent depuis des mois, et une
-# reformulation silencieuse changerait le signal d'une PR a l'autre pour la
-# meme mesure. Seul l'emballage change (le heredoc shell disparait).
-#
-# #24514 (famille #15511) : le succes ne parle plus. Il n'y a plus de phrase
-# OK -- un corps vide rendu par un builder fait RETIRER la section advisory
-# (ou n'ecrit rien sur une PR saine) ; le vert vit dans le check-run nomme.
-# Les phrases qui restent portent toutes un SIGNAL : abstention, panne
-# d'usage, constat, exemption ou vert PARTIEL (carnets non lus).
-
-_CLAIMS_ABSTAIN = (
-    "⚠️ Detector abstained (merge-base introuvable, shallow fetch or "
-    "unanchored branch)."
-)
-_CLAIMS_WARN = (
-    "⚠️ Prose/output review needed in the notebooks this PR changed: a "
-    "numeric value is not anchored, an explicit relation is contradicted, "
-    "or its evidence is missing. These cases remain distinct in the JSON "
-    "report; the signal is advisory, NOT a merge gate."
-)
-_CLAIMS_TRAILER = (
-    "Scope = notebooks CHANGED in this PR, not the whole corpus. Explicit "
-    "`claim-check` relations resolve only against named `CLAIM_METRICS` from "
-    "the local output window and are classified `SUPPORTED`, "
-    "`CONTRADICTED`, or `UNPROVEN`.\n"
-    "The `markdown-claims-output-report` run artifact contains the "
-    "structured JSON report. See `python "
-    "scripts/check_markdown_claims_output.py --help` for re-running "
-    "locally.\n"
-    "Detector rationale: c.290 / c.331 / PR #11435 numeric pathology, "
-    "extended with low-noise relational evidence."
-)
-
-_STALE_ABSTAIN = (
-    "⚠️ Stale-claim detector abstained (merge-base introuvable, shallow "
-    "fetch or unanchored branch)."
-)
-_STALE_WARN = (
-    "⚠️ Stale-claim review needed: a markdown cell claims a measurement "
-    "value that appears in NO committed output of the notebook. Advisory, "
-    "NOT a merge gate — triage against the JSON artifact."
-)
-_STALE_TRAILER = (
-    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
-    "`stale-claim-report` run artifact holds the structured JSON.\n"
-    "Rationale: the sibling detector above only compares a claim to the "
-    "outputs of the cells that PRECEDE it; a claim written in a cell that "
-    "precedes its code (App-05-Timetabling-Python c.2/c.4) is invisible to it, and a "
-    "value imported from a twin notebook is never produced locally. See "
-    "`python scripts/check_stale_claims.py --help`."
-)
-
-_MISLABEL_ABSTAIN = (
-    "⚠️ Factual-mislabel detector abstained (merge-base introuvable, "
-    "shallow fetch or unanchored branch)."
-)
-_MISLABEL_WARN = (
-    "⚠️ Factual-mislabel review needed: a markdown cell states an entity "
-    "count or tuple formula that CONTRADICTS the committed stream of the "
-    "code cell it describes (typically copied from a twin notebook with "
-    "different data). Advisory, NOT a merge gate — triage against the JSON "
-    "artifact."
-)
-_MISLABEL_TRAILER = (
-    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
-    "`factual-mislabel-report` run artifact holds the structured JSON.\n"
-    "Rationale: pure ABSENCE of a claimed value is the sibling stale-claim "
-    "detector's job; this one only reports CONTRADICTIONS between an "
-    "adjacent code cell's stream and the markdown that describes it. See "
-    "`python scripts/check_factual_mislabel.py --help`."
-)
-
-_LISTING_ABSTAIN = (
-    "⚠️ Listing-coherence detector abstained (merge-base introuvable, "
-    "shallow fetch or unanchored branch)."
-)
-_LISTING_WARN = (
-    "⚠️ Listing-coherence review needed: a markdown table announces a total "
-    "but lists only a CONTIGUOUS PREFIX of the identifiers a nearby code "
-    "cell's stream prints — the signature of a table left behind when the "
-    "series grew. Advisory, NOT a merge gate — triage against the JSON "
-    "artifact."
-)
-_LISTING_FATAL = (
-    "⚠️ Listing-coherence n'a PAS conclu : le detecteur a rendu un code "
-    "d'erreur d'usage (entree illisible ou chemin absent), pas un constat sur "
-    "cette PR. Ne lire ni comme un vert ni comme une troncature — voir le log "
-    "du job."
-)
-_LISTING_UNREAD = (
-    "{n} carnet(s) n'ont pas pu etre lus (JSON corrompu ou encodage non "
-    "UTF-8) : les findings ne portent que sur les carnets lus."
-)
-_LISTING_OK_UNREAD = (
-    "⚠️ Listing-coherence PARTIEL : aucun tableau tronque sur les carnets "
-    "lus, mais {n} carnet(s) n'ont pas pu etre lus (JSON corrompu ou encodage "
-    "non UTF-8) — le vert n'est pas rendu."
-)
-_LISTING_TRAILER = (
-    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
-    "`listing-coherence-report` run artifact holds the structured JSON.\n"
-    "Rationale: this compares identifier SETS, not counts — a count "
-    "comparison cannot see a table truncated from `08` while the stream "
-    "lists up to `15`. The contiguous-prefix discriminant is what keeps an "
-    "arbitrary subset (« the 3 longest ») out of the report. See "
-    "`python scripts/check_listing_coherence.py --help`."
-)
-
-# Echec d'usage (rc=2) des trois detecteurs de prose freres : ni un constat,
-# ni un quitus. Voir `_exit_state` (#23394, reserve 3).
-_CLAIMS_FATAL = (
-    "⚠️ Markdown-claims n'a PAS conclu : le detecteur a rendu un code "
-    "d'erreur d'usage, pas un constat sur cette PR. Voir le log du job."
-)
-_STALE_FATAL = (
-    "⚠️ Stale-claim n'a PAS conclu : le detecteur a rendu un code d'erreur "
-    "d'usage, pas un constat sur cette PR. Voir le log du job."
-)
-_MISLABEL_FATAL = (
-    "⚠️ Factual-mislabel n'a PAS conclu : le detecteur a rendu un code "
-    "d'erreur d'usage, pas un constat sur cette PR. Voir le log du job."
-)
-
-_ORGAN_EXEMPTED = (
-    "Organ duplication DETECTED but EXEMPTED: the PR body declares a "
-    "pedagogical copy. The organ-first rule (5 questions) is satisfied by "
-    "construction. If this copy grows (several consumer notebooks), ask the "
-    "source series for an extraction instead."
-)
-_ORGAN_ABSTAIN = (
-    "Organ-duplication detector ABSTAINS: merge-base unresolved or "
-    "structural error -- no verdict. See workflow log."
-)
-_ORGAN_WARN = (
-    "WARNING: added symbol(s) collide with another series organ API "
-    "(organ-first rule, .claude/rules/organ-first-implementation.md). "
-    "Answer the 5 questions in the PR body, or declare the pedagogical copy "
-    "(« copie pedagogique declaree, motif : ... ») which whitens it. See "
-    "the workflow log for the full collision list (demanding series -> "
-    "bypassed organ -> symbol). Advisory, NOT a merge gate."
-)
-_ORGAN_TRAILER = (
-    "Detector: `python scripts/audit/detect_organ_duplication.py --base "
-    "<merge-base> --body-file <pr body>`\n"
-    "Rationale: `#16776` / `#13564` (rule merged in `#16778`)."
-)
-
-
-def _with_note(sentence: str, ctx: dict) -> str:
-    """Phrase d'etat + note de couverture partielle quand elle existe.
-
-    Le workflow d'origine ecrit cette note sur sa propre ligne, vide quand la
-    PR tient sous la borne (`steps.run.outputs.trunc_note`) : la ligne vide
-    disparait a l'affichage markdown, donc la coller en fin de phrase rend le
-    meme commentaire.
-    """
-    note = (ctx.get("trunc_note") or "").strip()
-    return f"{sentence} {note}".strip() if note else sentence
-
-
-def _exit_state(rc: int, ctx: dict, fatal_rc: tuple[int, ...] = (2,)) -> str:
-    # L'abstention des trois detecteurs de prose porte sur le MERGE-BASE, pas
-    # sur `base_sha` : c'est lui qui manque sur une branche non ancree, et
-    # c'est lui que les workflows sources testent avant de lancer le
-    # detecteur (#11754 : « rien regarde » et « rien trouve » doivent rester
-    # distinguables).
-    if not ctx.get("merge_base"):
-        return "abstain"
-    # `rc=2` est l'erreur d'USAGE des quatre detecteurs de cette famille
-    # (entree illisible, chemin absent) : la rendre « warn » postait une
-    # accusation de troncature sur un lot que l'organe n'avait pas pu lire,
-    # et un `rc=2` suffisait a la provoquer (#23394, reserve 3 -- defaut
-    # herite des trois freres, corrige ici sur les quatre).
-    if rc in fatal_rc:
-        return "fatal"
-    return "ok" if rc == 0 else "warn"
-
-
-def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
-    state = _exit_state(rc, ctx)
-    if state == "ok":
-        # #24514 : le succes ne parle pas -- le vert vit dans le check-run.
-        # Vert TRONQUE : ce n'est pas un vert integral (borne 50 carnets),
-        # la note de couverture se conserve seule, sinon un lot > borne
-        # passe pour un vert complet (WARN adjoint 2026-11-10 sur #25286).
-        return _with_note("", ctx)
-    sentence = {"abstain": _CLAIMS_ABSTAIN,
-                "fatal": _CLAIMS_FATAL}.get(state, _CLAIMS_WARN)
-    return f"{_with_note(sentence, ctx)}\n\n{_CLAIMS_TRAILER}"
-
-
-def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
-    state = _exit_state(rc, ctx)
-    if state == "ok":
-        # Vert tronque : meme regle que claims (note seule, cf. #24514).
-        return _with_note("", ctx)
-    sentence = {"abstain": _STALE_ABSTAIN,
-                "fatal": _STALE_FATAL}.get(state, _STALE_WARN)
-    return f"{_with_note(sentence, ctx)}\n\n{_STALE_TRAILER}"
-
-
-def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
-    state = _exit_state(rc, ctx)
-    if state == "ok":
-        # Vert tronque : meme regle que claims (note seule, cf. #24514).
-        return _with_note("", ctx)
-    sentence = {"abstain": _MISLABEL_ABSTAIN,
-                "fatal": _MISLABEL_FATAL}.get(state, _MISLABEL_WARN)
-    return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
-
-
-def _payload_count(payload: str, key: str) -> int:
-    """Compte entier d'un rapport JSON, 0 si le rapport est illisible.
-
-    Un rapport qu'on ne sait pas lire ne doit pas se lire comme un zero :
-    l'appelant ne s'en sert que pour AJOUTER une phrase d'incompletude.
-    """
-    try:
-        data = json.loads(payload)
-    except (ValueError, TypeError):
-        return 0
-    valeur = data.get(key) if isinstance(data, dict) else None
-    return valeur if isinstance(valeur, int) else 0
-
-
-def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
-    state = _exit_state(rc, ctx)
-    non_lus = _payload_count(payload, "non_lus")
-    if state == "ok" and not non_lus:
-        # #24514 : le succes ne parle pas -- SAUF le vert PARTIEL, qui n'est
-        # pas un vert (carnets jamais lus, #23394 reserve 1) et parle. Le
-        # vert TRONQUE garde, lui, la note de couverture seule (borne 50).
-        return _with_note("", ctx)
-    sentence = {"ok": _LISTING_OK_UNREAD.format(n=non_lus),
-                "abstain": _LISTING_ABSTAIN,
-                "fatal": _LISTING_FATAL}.get(state, _LISTING_WARN)
-    # `non_lus` porte les carnets que le detecteur n'a pas pu ouvrir : sans
-    # cette phrase, un carnet illisible sortait en vert « aucun tableau
-    # tronque » alors qu'il n'avait jamais ete lu (#23394, reserve 1).
-    if non_lus and state not in ("ok", "abstain"):
-        sentence = f"{sentence} {_LISTING_UNREAD.format(n=non_lus)}"
-    return f"{_with_note(sentence, ctx)}\n\n{_LISTING_TRAILER}"
-
-
-def _organ_status(payload: str) -> str:
-    """Ordre du workflow source : BLOCKED, puis EXEMPTED, puis CLEAN."""
-    for line in payload.splitlines():
-        head = line.strip()
-        if head.startswith("BLOCKED"):
-            return "collision"
-        if head.startswith("EXEMPTED"):
-            return "exempted"
-        if head.startswith("CLEAN"):
-            return "clean"
-    return "abstain"
-
-
-def _body_organ_duplication(rc: int, payload: str, ctx: dict) -> str:
-    state = _organ_status(payload)
-    if state == "clean":
-        # #24514 : le succes ne parle pas.
-        return ""
-    sentence = {
-        "exempted": _ORGAN_EXEMPTED,
-        "abstain": _ORGAN_ABSTAIN,
-    }.get(state, _ORGAN_WARN)
-    return f"{sentence}\n\n{_ORGAN_TRAILER}"
-
-
-def _body_md_hierarchy(rc: int, payload: str, ctx: dict) -> str:
-    """Commentaire du drift markdown, assemble comme dans le workflow source.
-
-    Le workflow ne commente QUE sur rc=2 (derive) : rc=1 est une panne du
-    scanner, pas un constat sur la PR, et rc=0 n'a rien a dire. La reference
-    « avant » est la base de fusion re-scannee quand elle est connue ; sans
-    elle le texte est ATTENUE (mode « derive du corpus »), exactement comme
-    dans la source -- c'est la difference entre « cette PR a ajoute un
-    defaut » et « le corpus en porte ».
-    """
-    if rc != 2:
-        return ""
-    base_short = (ctx.get("base_sha") or "")[:9]
-    head_short = (ctx.get("head_sha") or "")[:9]
-    lines = [f"## MD hierarchy drift -- {head_short}", ""]
-    if base_short:
-        lines += [
-            "Cette PR augmente le compte de defauts de rendu markdown",
-            f"par rapport a la base de fusion {base_short} re-scannee.",
-            "Nouveaux defauts imputables au diff :",
-        ]
-    else:
-        lines += [
-            "Drift vs la baseline stockee (mode dispatch, sans base de",
-            "fusion) -- derive du corpus, pas d'imputation stricte a ce",
-            "diff. Details :",
-        ]
-    lines += ["", "```", payload.strip(), "```", ""]
-    if base_short:
-        lines.append(
-            "Corriger (ex. `- # Indice : ...` -> `- **Indice :** ...`). "
-            "See #11831.")
-    else:
-        lines.append(
-            "Si la regle scanner change dans CETTE PR, re-seeder la baseline")
-        lines.append("dans le meme commit : `--update-baseline`. See #11831.")
-    return "\n".join(lines)
-
-
-def _body_outputs_required(rc: int, payload: str, ctx: dict) -> str:
-    """Recapitulatif du garde `outputs-required` (#25510, tranche T-A).
-
-    Le corps est celui du workflow source, mot pour mot : c'est la section
-    que les reviewers lisent depuis le 2026-09-11 (`## Notebook
-    outputs-required (H.4 schema): ...`), et le dossier de prevalidation en
-    reconnait le prefixe (`_BOT_ONLY_PREFIX_MARKERS`). Le workflow source
-    ecrivait cette section dans le resume de job PUIS la collait (ou la
-    retirait) ; ici elle n'est plus ecrite que dans le commentaire.
-
-    Le SUCCES RETIRE la section (#15511 : le succes ne parle plus) -- c'est
-    exactement ce que faisait le workflow (`--clear` sur un run vert).
-    """
-    data: dict = {}
-    if payload.strip():
-        try:
-            data = json.loads(payload)
-        except (json.JSONDecodeError, ValueError):
-            data = {}
-    if not isinstance(data, dict):
-        data = {}
-    total = data.get("occurrences") or 0
-    notebooks = data.get("notebooks") or []
-    errors = data.get("errors") or []
-    if total > 0:
-        lines = [
-            f"## Notebook outputs-required (H.4 schema): **FAIL** ({total} "
-            f"defective cell(s) in {len(notebooks)} notebook(s))",
-            "",
-        ]
-        for entry in notebooks:
-            lines.append(f"### {entry.get('notebook', '')}")
-            lines.append("")
-            for defect in entry.get("defects") or []:
-                lines.append(
-                    f"- cell#{defect.get('cell_index')} "
-                    f"id={defect.get('cell_id')}: {defect.get('reason', '')}"
-                )
-            lines.append("")
-        lines += [
-            "### How to fix",
-            "",
-            "A code cell without an `outputs` key violates the nbformat 5.10.4 "
-            "strict schema:",
-            "",
-            "```python",
-            "# Option 1: re-execute the notebook so Papermill fills outputs",
-            "python scripts/notebook_tools/notebook_tools.py execute <path>",
-            "",
-            "# Option 2: add an empty outputs list explicitly (stub cells)",
-            "# Find cells missing the key in the .ipynb JSON and add:",
-            '#   "outputs": [],',
-            '# immediately after the "source" entry.',
-            "```",
-            "",
-            "See Hermes Concern on PR #15631 (2026-09-11T19:06:00Z) for the "
-            "founding incident.",
-            "",
-        ]
-        return "\n".join(lines)
-    if errors:
-        lines = [
-            f"## Notebook outputs-required (H.4 schema): **ERROR** "
-            f"({len(errors)} unreadable notebook(s))",
-            "",
-        ]
-        for entry in errors:
-            lines.append(
-                f"- {entry.get('notebook', '')}: {entry.get('error', '')}"
-            )
-        lines.append("")
-        return "\n".join(lines)
-    # PASS : la section est RETIREE ; le verdict vit dans le check-run du
-    # garde bloquant (TRANCHE10), qui porte le detail.
-    return ""
-
-
 _COMMENTS_OUT_GLOB = "**/*.ipynb"
 
 # ---------------------------------------------------------------------------
@@ -3371,7 +2949,8 @@ TRANCHE28: list[Guard] = [
 # existe, il ne tourne pas (incident #19374). C'est exactement ce que mesure
 # la garde `test_no_module_level_name_is_assigned_twice_in_the_registry`, et
 # c'est ce que verifiait `test_check_lib_versions.py`, rouge sur `main` avec
-# un `KeyError: 'Library versions guard (advisory, #23073)'`.
+# un `KeyError: 'Library versions guard (advisory, #23073)'` (nom de
+# l'epoque ; renomme sans `advisory` par la promotion en bloquante, #27762).
 #
 # Mandat user du 2026-10-28, a propos de #23047 : « Ca meritera un organe
 # pour stabiliser les versions d'API et de libs, car ce genre de regressions
@@ -3398,24 +2977,27 @@ TRANCHE28: list[Guard] = [
 # convergence traite), et ETAT pour le provisionnement etranger (son dommage
 # se produit a l'execution, pas a l'edition).
 #
-# Pourquoi ADVISORY : le stock porte des derives connues (dotNetRDF 3.2.1 sur
-# sept carnets de la serie SemanticWeb, OrTools 9.11.4210 sur onze carnets).
-# L'ecart IKVM 8.14.0 des six carnets Tweety n'en est pas une : leur artefact
-# ombre est compile en 8.14.0, l'ecart est justifie et porte au manifeste
-# (allowlist + motif). Un garde bloquant rougirait des PR qui ne font que
-# retoucher un de ces carnets -- un taux de faux positifs qui nuirait a la
-# lecture du rollup. Le taux est mesure sur les dernieres PRs de carnets et
-# publie ; la promotion en bloquant est une tranche distincte, apres
-# convergence.
+# Pourquoi BLOQUANTE depuis #27762 : la garde compare un DELTA base -> tete,
+# donc un epinglage deja present et non touche par la PR ne rougit pas -- le
+# stock de derives historiques est invisible a la jambe. Le taux de faux
+# positifs de la ligne delta est mesure a 0 sur 32 PRs de carnets
+# (docs/reference/lib-versions.md §« Taux de faux positifs ») : le risque qui
+# fondait l'advisory (rougir une PR qui ne fait que retoucher un carnet
+# legacy) ne se realise pas sous cette semantique. Le stock est par ailleurs
+# arbitre -- plus aucun `a_classer` au recensement du 2026-11-21, les 42
+# carnets a epinglage non canonique portent `decision: to_converge` au
+# manifeste et sont suivis par #27787. L'ecart IKVM 8.14.0 des carnets Tweety
+# reste justifie : leur artefact ombre est compile en 8.14.0, allowlist +
+# motif au manifeste.
 #
 # `absorbed=True` : garde natif (aucun workflow d'origine), convention des
-# tranches depuis TRANCHE8. Le nom porte `advisory` pour que `pr_gate` le
-# range dans le seau advisory : un `failure` publie ne doit jamais tenir le
-# merge.
+# tranches depuis TRANCHE8. Depuis #27762 le nom NE porte PLUS `advisory` :
+# `pr_gate` range dans le seau advisory tout job dont le nom contient ce mot,
+# et un `failure` publie tient desormais le merge.
 # ---------------------------------------------------------------------------
 TRANCHE31: list[Guard] = [
     Guard(
-        name="Library versions guard (advisory, #23073)",
+        name="Library versions guard (#23073)",
         source=FAST_LANE_NATIVE,
         paths=[
             "**/*.ipynb",
@@ -3429,7 +3011,7 @@ TRANCHE31: list[Guard] = [
             "python", "scripts/notebook_tools/check_lib_versions.py",
             "--changed", "{base_ref}...HEAD",
         ],
-        blocking=False,   # advisory : publie le constat, ne tient jamais le merge
+        blocking=True,   # delta base -> tete : ne rougit que ce que la PR introduit
         needs_base=True,  # delta base -> tete sur les epinglages
         # rc=2 = incident d'entree (manifeste illisible, git en echec), pas une
         # faute de la PR : il rend le check-run neutre, avec un titre distinct
@@ -4063,7 +3645,7 @@ TRANCHE40: list[Guard] = [
 #
 # Le programme "tri de la CI" : un carnet pousse sur une PR declenche ~33
 # workflows, chacun avec son `actions/checkout` (82 % du temps d'execution
-# d'un garde, mesure du coordinateur dans docs/coordination/ci-two-tier.md).
+# d'un garde, mesure du coordinateur dans docs/transients/2026-11-10-ci-two-tier.md).
 # Ces gardes AUTONOMES ne regardent que la PR -- ils n'ont besoin ni du
 # corps de la PR, ni d'un artefact, ni d'une etiquette. La voie rapide les
 # execute dans UN checkout partage : c'est ce que cette tranche absorbe.
@@ -4151,7 +3733,7 @@ TRANCHE42: list[Guard] = [
         ],
         pre_argv=[
             "python", "-m", "unittest",
-            "scripts.tests.test_check_cell_source_parses", "-v",
+            "scripts.tests.test_notebook_tools_check_cell_source_parses", "-v",
         ],
         argv=[
             "python", "scripts/notebook_tools/check_cell_source_parses.py",
@@ -4234,7 +3816,7 @@ TRANCHE42: list[Guard] = [
 # POURQUOI CE GESTE (#25510, plan de tri de la CI) : une PR de carnet
 # declenchait 31 workflows, chacun avec son runner, son checkout et son
 # `setup-python` ; un garde de carnet median coute 1,2 min, dont 82 % de
-# checkout (`docs/coordination/ci-two-tier.md` §3.4). La voie rapide fait
+# checkout (`docs/transients/2026-11-10-ci-two-tier.md` §3.4). La voie rapide fait
 # tourner les gardes dans le checkout DEJA materialise de `always-on-guards`.
 #
 # SEMANTIQUE CONSERVEE, point par point :
@@ -4298,7 +3880,7 @@ TRANCHE43: list[Guard] = [
 # derive de traduction (`translation-drift.yml`).
 #
 # POURQUOI CE GESTE : un garde de carnet median coute 1,2 min, dont 82 % de
-# checkout (docs/coordination/ci-two-tier.md §3.4). Ce garde balayait les
+# checkout (docs/transients/2026-11-10-ci-two-tier.md §3.4). Ce garde balayait les
 # carnets touches par la PR dans son propre checkout ; la voie rapide le
 # rend dans le checkout DEJA materialise de `always-on-guards`.
 #
@@ -4644,6 +4226,66 @@ TRANCHE48: list[Guard] = [
 ]
 
 # ---------------------------------------------------------------------------
+# TRANCHE 53 -- contrat des carnets Rust (#27098, pli 3 de l'Epic Origami
+# #26510, point 5).
+#
+# Un carnet Rust s'execute sous `evcxr`, un kernel Jupyter qui COMPILE chaque
+# cellule. Trois contraintes en decoulent, chacune avec un cout deja mesure
+# (`docs/reference/kernels-runtime.md` § Rust) :
+#
+#  1. le `:dep` se declare dans la PREMIERE cellule de code -- un `:dep` plus
+#     bas recompile tout et efface les variables typees des cellules
+#     precedentes ;
+#  2. C.1 : `panic!`, `unimplemented!()`, `todo!()`, `unreachable!()` sont les
+#     equivalents Rust de `raise NotImplementedError` -- `audit_c1_c3.py` ne
+#     connait que les motifs Python, la classe Rust passait donc sans
+#     temoin ;
+#  3. C.2 : chaque cellule de code porte un `execution_count`. L'absence
+#     d'`outputs` n'est PAS un finding (une cellule de declarations
+#     n'affiche rien sous evcxr).
+#
+# L'organe ne juge que les carnets Rust (suffixe canonique `-Rust` ou
+# kernelspec `rust`) et ne se prononce pas sur les autres : la garde ne peut
+# pas rougir un carnet Python qui n'a rien a voir avec la classe.
+#
+# `diff_bounded=True` : le verdict porte sur les carnets TOUCHES par la PR
+# (delta base-vs-head), jamais sur le stock de `main` -- un carnet Rust
+# ancien reste visible sans bloquer la PR qui ne le touche pas.
+# `warn_rc=(2,)` : rc=2 de l'organe, c'est l'instrument en panne (carnet
+# illisible, diff illisible) -- jamais un vert muet, jamais un rouge forge.
+# `absorbed=True` : mesure sur la tete `b82151be9cd58` de `main` -- le diff
+# ne touche aucun carnet Rust, donc le garde ne rougit aucune PR par dette
+# heritee.
+#
+# Cette tranche est ecrite AVANT la 51 (et non a la fin du fichier) : les
+# tranches ajoutees recemment se suivent au meme endroit, et deux PRs qui
+# ajoutent chacune une tranche se marchent dessus. Ici les hunks sont
+# eloignes, donc les deux PRs fusionnent sans conflit.
+# ---------------------------------------------------------------------------
+TRANCHE53: list[Guard] = [
+    Guard(
+        name="Rust notebook contract (:dep head, C.1, C.2)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*-Rust.ipynb",
+            "scripts/notebook_tools/check_rust_notebook_contract.py",
+            "scripts/notebook_tools/tests/test_check_rust_notebook_contract.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_rust_notebook_contract.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
+        warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
 # TRANCHE 51 -- banniere NuGet Interactive dans les sorties des carnets
 # (#26932).
 #
@@ -4849,6 +4491,66 @@ TRANCHE50: list[Guard] = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# TOPLEVEL_SERIES_GUARDS -- garde des dossiers de premier niveau sous
+# `MyIA.AI.Notebooks/` (#27141, decision du mainteneur #27092 du 17/11).
+#
+# Le critere d'eparpillement est le PREMIER NIVEAU : une serie soeur se range
+# dans un rayon ou sous un hub, elle ne s'ajoute pas a la racine. Le gel
+# diffuse sur les dashboards n'a pas suffi : la regle avait besoin d'un
+# controle qui la porte. Ce garde est ce controle.
+#
+# L'organe compare les dossiers de premier niveau TOUCHES par le diff
+# (`--diff-filter=AR` : ajouts et renommages) a la liste d'autorisation
+# versionnee (`scripts/ci/toplevel_series_allowlist.txt`).
+#
+# Forme : delta base-vs-head, bloquant. rc=1 = un dossier de premier niveau
+# nouveau et non autorise (le dossier est nomme, avec le renvoi vers #27092) ;
+# rc=2 = l'instrument est en panne (diff illisible, liste introuvable) --
+# `warn_rc=(2,)` le rend neutre au check-run, titre distinct, NON silencieux
+# (forme hr-substitution-guard, #17941) : une panne ne vaut jamais un quitus.
+#
+# `absorbed=True` : mesure sur la tete `b82151be9cd58` de `main` --
+# `--diff origin/main...HEAD` rend rc=0 (aucun dossier de premier niveau
+# ajoute), donc l'absorption ne rougit aucune PR par dette heritee. Les deux
+# controles sont mesures dans le body de la PR #27181 :
+#   - POSITIF : `origin/main...b3578f9b018e2` (l'etat `CodingTheory/` de la
+#     branche de #27128) -> rc=1, `MyIA.AI.Notebooks/CodingTheory/` nomme ;
+#   - NEGATIF : `b82151be9cd58^..b82151be9cd58` (#27140, deplacement de
+#     `Symmetry/` vers `GenAI/Image/05-History/`) -> rc=0.
+#
+# NOM : la liste est NOMMEE, pas numerotee. Pendant que cette branche etait
+# ouverte, `#27233` a fusionne sur `main` une AUTRE garde sous le nom
+# `TRANCHE52` (prose<->sorties). Deux gardes distinctes ne peuvent pas porter
+# le meme numero : l'import homonyme aurait masque l'une des deux SANS
+# erreur visible (la seconde import ecrase la premiere, et la concatenation
+# des listes n'en garderait qu'une). Le nom porte l'issue (#27141) au lieu
+# d'un compteur de file -- meme forme que `RISK_KERNEL_GUARDS` (#24698).
+# ---------------------------------------------------------------------------
+TOPLEVEL_SERIES_GUARDS: list[Guard] = [
+    Guard(
+        name="toplevel-series-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**",
+            "scripts/ci/check_toplevel_series.py",
+            "scripts/ci/toplevel_series_allowlist.txt",
+            "scripts/ci/tests/test_check_toplevel_series.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_toplevel_series.py",
+            "--diff", "{base_ref}...HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
+        warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
 
 # ---------------------------------------------------------------------------
 # RISK_KERNEL_GUARDS (#24698, garde bloquant) -- copies du noyau de risque. Le noyau
@@ -4920,5 +4622,104 @@ TRANCHE52: list[Guard] = [
         needs_base=True,
         diff_bounded=True,
         absorbed=False,
+    ),
+]
+# ---------------------------------------------------------------------------
+# TRANCHE 55 -- fraicheur du manifeste des dependances (#27544).
+#
+# Garde NATIF : aucun workflow d'origine. Le manifeste des dependances
+# ('docs/curriculum/manifeste-dependances.{md,json}') est un artefact
+# GENERE qui decrit l'etat du depot. Sans organe qui le regenere et le
+# compare, il derive en silence -- mesure 2026-11-20 : il etait deja perime
+# sur trois series (KNOTS-05, GOL-01, CSharpRepl) sans que rien ne le dise.
+#
+# 'dependency_manifest.py --check' regenere le manifeste et le compare aux
+# sorties versionnees, hors 'generated_from' et 'counts.tracked_files' (ils
+# decrivent l'etat du depot, pas le contenu du manifeste). Trois verdicts :
+# frais (0), perime (1), incident (2).
+#
+# Pourquoi ADVISORY et non bloquant : le manifeste pese 598 Ko ; un rouge
+# bloquant obligerait chaque PR qui touche un requirements.txt ou un carnet
+# a regenerer 598 Ko, donc a se faire marcher dessus avec les PRs voisines.
+# Le garde SIGNALE la derive (conclusion 'neutral', jamais 'failure') et la
+# regeneration est un geste deterministe :
+#   python scripts/notebook_tools/dependency_manifest.py --write
+#
+# Le nom porte 'advisory' : pr_gate.py range le check dans le seau advisory,
+# et son test interdit a un garde BLOQUANT de porter ce mot.
+# blocking=False : conclusion_for renvoie 'neutral' pour tout rc != 0 d'un
+# garde non bloquant -- le verdict reste lisible, il ne bloque pas.
+# ---------------------------------------------------------------------------
+TRANCHE55: list[Guard] = [
+    Guard(
+        name="Dependency manifest freshness (advisory, non-blocking)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "MyIA.AI.Notebooks/**/requirements*.txt",
+            "MyIA.AI.Notebooks/**/environment*.yml",
+            "MyIA.AI.Notebooks/**/pyproject.toml",
+            "docs/curriculum/manifeste-dependances.*",
+            "scripts/notebook_tools/dependency_manifest.py",
+            "scripts/notebook_tools/dependency_manifest_policy.json",
+            "scripts/notebook_tools/tests/test_dependency_manifest_refresh.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/dependency_manifest.py", "--check",
+        ],
+        blocking=False,
+        absorbed=False,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 54 -- bloc « Verifiez votre comprehension » sans reponse (#27611).
+#
+# Garde NATIF, tranche propre : il n'absorbe aucun workflow d'origine, et il
+# ferme une CLASSE de defaut (le bloc pedagogique qui porte les questions doit
+# porter les reponses).
+#
+# Defaut ferme : le mainteneur a pose sur la PR #27049 (commentaire
+# 6943057003) la constatation que le bloc « Verifiez votre comprehension »
+# porte la meilleure valeur pedagogique d'un carnet -- mais seulement si les
+# reponses sont la. Les exercices, eux, restent volontairement sans reponse.
+# Le premier recensement etait trop large : il comptait les blocs « Exercices »
+# et surestimait la dette.
+#
+# Forme moteur : scan global ABSOLU (aucune base, aucun delta) -- l'organe
+# liste, par serie, les carnets dont le bloc canonique ne porte pas de
+# reponse repliee. Meme contrat que le garde « Link-label agreement »
+# (TRANCHE 12) : le verdict est absolu, il ne peut donc pas heriter de la
+# base, et le carve-out advisory s'impose.
+#
+# Caractere ADVISORY : la dette mesuree sur main est de 150 carnets (panel
+# par serie dans le body de #27611) ; demarrer en bloquant rougirait des PRs
+# sans rapport. L'organe publie le signal, il ne confisque pas le merge ; la
+# promotion suit la fournee de remediation, plan Q162 d dans le body de la PR
+# porteuse.
+# ---------------------------------------------------------------------------
+TRANCHE54: list[Guard] = [
+    Guard(
+        name="End-block answers (per-notebook, advisory)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_end_block_answers.py",
+            "scripts/notebook_tools/tests/test_check_end_block_answers.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_end_block_answers.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_end_block_answers.py",
+            "--fail",
+        ],
+        blocking=False,  # advisory : signale le bloc sans reponse, ne rougit jamais
+        absorbed=True,
     ),
 ]

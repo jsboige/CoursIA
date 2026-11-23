@@ -41,7 +41,13 @@
       "ecosystem": "nuget",
       "canonical": "3.1.0",
       "canonical_source": "manifest",
-      "divergences": []
+      "divergences": [
+        {
+          "version": "3.0.5",
+          "decision": "to_converge",
+          "reason": "Aucun motif ecrit ne l'impose : les carnets concernes portent une version anterieure sans contrainte documentee (le recensement les nomme). La convergence est une montee d'epinglage suivie d'une re-execution (regle C.2). Suivi : #27787."
+        }
+      ]
     },
     {
       "id": "Google.OrTools",
@@ -87,7 +93,7 @@
         {
           "version": "27.1.1",
           "decision": "to_converge",
-          "reason": "Ecart non justifie : aucune dependance documentee a CsvHelper 27.x dans le depot, donc l'ecart est classe « a converger »."
+          "reason": "Ecart non justifie : aucune dependance documentee a CsvHelper 27.x dans le depot, donc l'ecart est classe « a converger ». Suivi : #27787."
         }
       ]
     },

@@ -32,7 +32,8 @@ Perimetre (v1, calibre sur ICT-35 + ICT-38 pre/post #27206) :
 - Correspondance numerique (pas sous-chaine) : Decimal en egalite exacte, OU
   arrondi/troncature d'un nombre de sortie PLUS precis a la precision de la
   citation (« 0.0859 » correspond a une sortie « 0.0859375 » ; « 1,000 » a
-  « 1.0000 »). Les sorties lues : stream + text/plain de toutes les cellules code.
+  « 1.0000 »). Les sorties lues : stream + text/plain + text/markdown + text/html
+  de toutes les cellules code.
 
 Modes :
 - positionnel ``base``      : ratchet PR -- carnets .ipynb changes sous
@@ -86,6 +87,14 @@ _BACKTICK_RE = re.compile(r"`[^`\n]*`")
 # initial). Le texte du lien ET sa cible sont exemptes, plus les URLs nues.
 _LINK_RE = re.compile(r"!?\[[^\]]*\]\([^)]*\)")
 _URL_RE = re.compile(r"https?://\S+")
+# DOI en texte nu (identifiant bibliographique, pas une mesure) : mesure sur
+# QC-Py-08 cellule 71 -- l'extracteur y lisait 10.3905, 4.060, 10.1111,
+# -6261.1952 et 10.1086 comme des valeurs, fragments des tokens
+# « DOI 10.3905/jpm.2010.36.4.060 », « DOI 10.1111/j.1540-6261.1952.tb01525.x »,
+# « DOI 10.1086/294846 » hors de tout lien. Le token ENTIER (prefixe 10.xxxx +
+# suffixe) est exempt, comme une URL ; une mesure a 3+ decimales SANS slash
+# apres le prefixe reste verifiee.
+_DOI_RE = re.compile(r"\b10\.\d{4,9}/\S+")
 # Valeur DECLAREE citee (litterature/theorie), pas mesuree : l'auteur dit lui-meme
 # que le nombre n'est pas le sien (« la prediction 4,267 ... est citee », seuil
 # 3-SAT de Complexity-02b/02c, mesure dans le census initial). L'exemption porte
@@ -156,8 +165,32 @@ def extract_numbers(text: str) -> list[NumToken]:
 # --- Cote sorties commitees --------------------------------------------------
 
 
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+_HTML_ENTITY_RE = re.compile(r"&[a-zA-Z#0-9]+;")
+# Blocs invisibles au lecteur : le contenu de <style>/<script> n'est jamais
+# rendu comme valeur -- un nombre qui n'y vit QUE la ne peut pas ancrer une
+# citation (reserve ai-01 sur la fournee 8 ML-04). Retires ENTIERS, contenu
+# compris, avant le depouillement des balises.
+_HTML_INVISIBLE_RE = re.compile(
+    r"<(style|script)\b[^>]*>.*?</\1\s*>", re.IGNORECASE | re.DOTALL
+)
+
+
 def output_numbers(nb: dict) -> list[NumToken]:
-    """Nombres de toutes les sorties (stream + text/plain) des cellules code."""
+    """Nombres de toutes les sorties (stream + text/plain + text/markdown + text/html) des cellules code.
+
+    ``text/markdown`` est lu depuis #27231 fournée 5 : les carnets de la série
+    App-* (Search) rendent leurs mesures via ``display(Markdown(...))``, dont le
+    ``text/plain`` est l'objet-repr ``<IPython.core.display.Markdown object>``
+    (aucun nombre). Sans ce mime, 25 citations ancrées du stock étaient
+    rapportées findings (App-18 : 25/29). Précédents multipart : check_equivalence,
+    regression_scan, scan_enrich_quality lisent déjà ce mime.
+
+    ``text/html`` est lu depuis la fournée 8 (ML-04) : les tables riches .NET
+    Interactive portent leurs valeurs dans le texte des balises
+    (``<pre>1.3080</pre>``), pas dans le ``text/plain`` -- les balises sont
+    dépouillées avant extraction.
+    """
     pool: list[NumToken] = []
     for cell in nb.get("cells", []):
         if cell.get("cell_type") != "code":
@@ -170,11 +203,28 @@ def output_numbers(nb: dict) -> list[NumToken]:
             elif isinstance(text, list):
                 chunks.extend(t for t in text if isinstance(t, str))
             data = out.get("data") or {}
-            plain = data.get("text/plain")
-            if isinstance(plain, str):
-                chunks.append(plain)
-            elif isinstance(plain, list):
-                chunks.extend(t for t in plain if isinstance(t, str))
+            for mime in ("text/plain", "text/markdown"):
+                payload = data.get(mime)
+                if isinstance(payload, str):
+                    chunks.append(payload)
+                elif isinstance(payload, list):
+                    chunks.extend(t for t in payload if isinstance(t, str))
+            html = data.get("text/html")
+            if isinstance(html, str):
+                html_chunks = [html]
+            elif isinstance(html, list):
+                html_chunks = [t for t in html if isinstance(t, str)]
+            else:
+                html_chunks = []
+            for chunk in html_chunks:
+                # Tables riches .NET Interactive : les valeurs vivent dans le
+                # texte des balises (<pre>1.3080861318665928</pre>), pas dans
+                # le balisage -- on lit le texte hors balises. Les blocs
+                # <style>/<script> sont retires avec leur contenu : leur
+                # texte n'est pas rendu au lecteur (nombres invisibles).
+                visible = _HTML_INVISIBLE_RE.sub(" ", chunk)
+                text_only = _HTML_ENTITY_RE.sub(" ", _HTML_TAG_RE.sub(" ", visible))
+                pool.extend(extract_numbers(text_only))
             for chunk in chunks:
                 pool.extend(extract_numbers(chunk))
     return pool
@@ -187,7 +237,7 @@ def _quantized(val: Decimal, prec: int, rounding: str) -> Decimal:
     return val.quantize(Decimal(1).scaleb(-prec), rounding=rounding)
 
 
-def citation_matches(cit: NumToken, pool: list[NumToken]) -> bool:
+def citation_matches(cit: NumToken, pool: list[NumToken], *, magnitude: bool = False) -> bool:
     """Egalite exacte, ou arrondi/troncature d'une sortie PLUS PRECISE.
 
     « 0.0859 » correspond a une sortie 0.0859375 (print formate), « 1,000 » a
@@ -196,17 +246,25 @@ def citation_matches(cit: NumToken, pool: list[NumToken]) -> bool:
     correspondance par extension de prefixe MASQUE le defaut -- la citation
     perimee 0.1953 matchait par prefixe une sortie 0.195 d'une AUTRE quantite.
     Ce residu reste un bruit du sweep report-only, jamais un masquage.
+
+    ``magnitude=True`` (prose « ±0.002 ») : la citation est une AMPLITUDE, la
+    sortie porte souvent la valeur SIGNEE (« +-0.002 pres », extrait -0.002) --
+    la correspondance se joue alors sur |x| (2.11-Regularisation, 4 faux
+    positifs du sweep #27233 : la sortie committee dit elle-meme « suit LASSO
+    a +-0.002 pres »). Egalite de magnitude EXACTE, jamais floue.
     """
     for out in pool:
-        if out.value == cit.value:
-            return True
-        if out.decimals > cit.decimals:
-            for rounding in (ROUND_HALF_EVEN, ROUND_DOWN):
-                try:
-                    if _quantized(out.value, cit.decimals, rounding) == cit.value:
-                        return True
-                except InvalidOperation:
-                    continue
+        candidates = (out.value, -out.value) if magnitude else (out.value,)
+        for v in candidates:
+            if v == cit.value:
+                return True
+            if out.decimals > cit.decimals:
+                for rounding in (ROUND_HALF_EVEN, ROUND_DOWN):
+                    try:
+                        if _quantized(v, cit.decimals, rounding) == cit.value:
+                            return True
+                    except InvalidOperation:
+                        continue
     return False
 
 
@@ -303,6 +361,7 @@ def analyze_notebook(nb: dict, rel_path: str) -> NotebookResult:
         exempt_spans = [m.span() for m in _BACKTICK_RE.finditer(cell_norm)]
         exempt_spans += [m.span() for m in _LINK_RE.finditer(cell_norm)]
         exempt_spans += [m.span() for m in _URL_RE.finditer(cell_norm)]
+        exempt_spans += [m.span() for m in _DOI_RE.finditer(cell_norm)]
         derived_values = {
             _to_decimal(m.group(1))
             for m in _FRACTION_DERIVATION_RE.finditer(cell_text)
@@ -334,7 +393,12 @@ def analyze_notebook(nb: dict, rel_path: str) -> NotebookResult:
                 if any(s <= m.start() < e for s, e in quoted_spans):
                     continue
                 result.citations_checked += 1
-                if not citation_matches(NumToken(val, decimals, raw), pool):
+                # « ±0.002 pres » : amplitude -- la sortie porte la valeur
+                # signee, la correspondance se joue sur |x| (cf docstring).
+                is_pm = line_norm[: m.start()].rstrip().endswith("±")
+                if not citation_matches(
+                    NumToken(val, decimals, raw), pool, magnitude=is_pm
+                ):
                     result.findings.append(
                         Finding(
                             file=rel_path,
@@ -601,11 +665,111 @@ def self_test() -> int:
     if citations(r) != ["0.0742"]:
         failures.append(f"spans normalises : {citations(r)}")
 
+    # 13. Sorties HTML riches (.NET Interactive) : la valeur ancre vit dans
+    # data.text/html (<pre>0.8785</pre>) -- le pool doit la lire (ML-04 C#,
+    # sonde #27233 : 0,878 / 0,894 faux positifs tant que le HTML etait muet).
+    def nb_html(md_cells: list[str], html: str) -> dict:
+        return {
+            "cells": [
+                *[{"cell_type": "markdown", "source": [c]} for c in md_cells],
+                {"cell_type": "code", "source": ["x = 1"], "outputs": [
+                    {"output_type": "display_data",
+                     "data": {"text/html": [html]}},
+                ]},
+            ]
+        }
+
+    r = analyze_notebook(
+        nb_html(
+            ["### Lecture : R2 de 0,878 a 0,894 d'un fold a l'autre"],
+            '<table><tr><td>RSquared</td><td><div class="dni-plaintext">'
+            "<pre>0.8785</pre></div></td></tr><tr><td>RSquared</td>"
+            '<td><div class="dni-plaintext"><pre>0.8944</pre></div></td></tr></table>',
+        ),
+        "t.ipynb",
+    )
+    if citations(r):
+        failures.append(f"HTML muet : {citations(r)}")
+
+    # 14. Controle : une valeur absente du HTML reste un finding.
+    r = analyze_notebook(
+        nb_html(
+            ["### Lecture : R2 de 0,912 sur ce fold"],
+            '<table><tr><td>RSquared</td><td><div class="dni-plaintext">'
+            "<pre>0.8785</pre></div></td></tr></table>",
+        ),
+        "t.ipynb",
+    )
+    if citations(r) != ["0,912"]:
+        failures.append(f"controle HTML : {citations(r)}")
+
+    # 15. Controle nombres INVISIBLES (reserve ai-01, fournee 8 ML-04) : un
+    # nombre qui ne vit que dans un bloc <style> ou <script> n'est pas rendu
+    # au lecteur -- il ne peut pas ancrer la citation. Temoin exact de la
+    # reserve : une sortie HTML dont le seul 0.912 est dans le style.
+    r = analyze_notebook(
+        nb_html(
+            ["### Lecture : R2 de 0,912 sur ce fold"],
+            '<style>.dial { value: 0.912 }</style>'
+            '<table><tr><td>RSquared</td><td><div class="dni-plaintext">'
+            "<pre>0.8785</pre></div></td></tr></table>",
+        ),
+        "t.ipynb",
+    )
+    if citations(r) != ["0,912"]:
+        failures.append(f"controle style invisible : {citations(r)}")
+
+    # Variante <script> : meme temoin, bloc script multi-ligne.
+    r = analyze_notebook(
+        nb_html(
+            ["### Lecture : R2 de 0,912 sur ce fold"],
+            '<script type="text/javascript">\nvar dial = { value: 0.912 };\n'
+            "</script>"
+            '<table><tr><td>RSquared</td><td><div class="dni-plaintext">'
+            "<pre>0.8785</pre></div></td></tr></table>",
+        ),
+        "t.ipynb",
+    )
+    if citations(r) != ["0,912"]:
+        failures.append(f"controle script invisible : {citations(r)}")
+
+    # 16. DOI en texte nu : le token entier est un identifiant, pas une mesure
+    # (QC-Py-08 cellule 71, fountee 2 plan Q162 d). Les fragments 10.1111 et
+    # 6261.1952 du token sont exemptes ; la mesure voisine 0.3189, absente des
+    # sorties, reste signalee.
+    r = analyze_notebook(
+        nb(["## A retenir : cf. Markowitz (1952), DOI 10.1111/j.1540-6261.1952.tb01525.x, "
+            "Sharpe mesure 0.3189"],
+           ["sharpe: 0.3201"]),
+        "t.ipynb",
+    )
+    if citations(r) != ["0.3189"]:
+        failures.append(f"doi nu non exemptes : {citations(r)}")
+
+    # 17. Semantique ± : « ±0.002 pres » correspond a la sortie signee
+    # « +-0.002 pres » (2.11-Regularisation, sweep #27233).
+    r = analyze_notebook(
+        nb(["### Lecture : ElasticNet suit LASSO a ±0.002 pres"],
+           ["elasticnet suit lasso a +-0.002 pres"]),
+        "t.ipynb",
+    )
+    if citations(r):
+        failures.append(f"semantique ± : {citations(r)}")
+
+    # 18. Controle : magnitude FAUSSE reste un finding (« ±0.003 » vs -0.002).
+    r = analyze_notebook(
+        nb(["### Lecture : ElasticNet suit LASSO a ±0.003 pres"],
+           ["elasticnet suit lasso a +-0.002 pres"]),
+        "t.ipynb",
+    )
+    if citations(r) != ["0.003"]:
+        failures.append(f"controle ± fausse magnitude : {citations(r)}")
+
     if failures:
         for f in failures:
             print(f"SELFTEST FAIL: {f}")
         return 1
-    print("selftest: OK (12 fixtures)")
+    print("selftest: OK (18 fixtures)")
     return 0
 
 

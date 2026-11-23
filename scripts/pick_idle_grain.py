@@ -235,7 +235,8 @@ from typing import Any, Callable
 try:
     import gh_identity
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/.
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity
 
 # #24461 -- grammaire de l'etat de livraison, source UNIQUE partagee avec le
