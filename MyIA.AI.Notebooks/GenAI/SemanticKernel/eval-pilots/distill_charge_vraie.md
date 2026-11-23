@@ -10,7 +10,7 @@ Cette charge n'est pas **figee** : elle est extraite du carnet vivant par `build
 
 *La surprise du modèle interne est-elle une énergie libre, et ajoute-t-elle quoi que ce soit à l'erreur de prédiction ?*
 
-> **Navigation** : [← ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) · [↑ ICT-Series](README.md) · [→ ICT-14b](ICT-14b-ActiveInferenceEFE-Python.ipynb) · [Framing ICT](ICT-0-Framing.md)
+> **Navigation** : [← ICT-13](../../../IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) · [↑ ICT-Series](README.md) · [→ ICT-14b](../../../IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb) · [Framing ICT](../../../IIT/ICT-Series/ICT-0-Framing.md)
 
 **Thèse.** ICT est né *« Integrated Complexity Theory »* — intégration dynamique ($\Phi_{dyn}$), **minimisation de la surprise** (énergie libre, lignée Friston), compression (Schmidhuber). La série a développé la jambe *causale* (Levin, Hoel, Thom) ; la jambe **énergie-libre** restait non attachée, alors que le banc expérimental la préparait sans le dire : le représentant interne $\hat p$ d'ICT-10.
 
@@ -24,7 +24,7 @@ Un modèle génératif gaussien à un pas prédit $\hat p_t$ avec précision $\s
 
 ## [cellule 1 | markdown]
 
-> **Statut épistémique** — **soutenu dans le protocole courant** : La *free energy* articule anticipation (`p̂`) et trajectoire Φ. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).
+> **Statut épistémique** — **soutenu dans le protocole courant** : La *free energy* articule anticipation (`p̂`) et trajectoire Φ. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).
 
 
 ## [cellule 2 | markdown]

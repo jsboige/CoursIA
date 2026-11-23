@@ -1,10 +1,12 @@
 # Préparation des runners GitHub Actions auto-hébergés
 
-> REFERENCE — vivante — dernière révision 2026-11-16
+> REFERENCE — vivante — dernière révision 2026-11-20
 
 Cette page décrit les mesures et les garde-fous du chantier #12704. **État au 2026-09-01 : activation partielle sur po-2024, volet Linux conteneurisé en ligne** (2 slots Docker, preuve d'identité `RUNNER_OS = Linux` rendue — cf section Runner Linux conteneurisé ; runner `fast-guards` live, tool-cache seedé, ré-enregistrement sans UAC opérationnel), les autres profils du registre restant en préparation. Le dépôt `jsboige/CoursIA` est public : une PR de fork peut contenir du code non fiable. Toute exécution auto-hébergée reste réservée aux branches du dépôt lui-même, avec une garde YAML explicite en plus des réglages GitHub.
 
 ## Mesurer avant de dimensionner
+
+La mesure du débit de requêtes UDP des runners éphémères (compteur `Udp.OutDatagrams`, volet 5.1 de Maintenance#196 / chantier #22937) est figée dans [`docs/transients/2026-10-31-dns-rate-measurement.md`](../transients/2026-10-31-dns-rate-measurement.md).
 
 Le collecteur `scripts/ci/measure_runner_demand.py` mesure une cohorte de runs créés dans une fenêtre UTC :
 
