@@ -95,7 +95,15 @@ PADDING_REFERENCE = 776.0
 # combinent dans l'instrument du merge et se recouvrent sur
 # Argumentation-08b / Complexity-02c : la re-mesure sur l'arbre fusionne
 # rend 21.
-PADDING_REFERENCE_REBASE = 21.0
+#
+# Neuvieme rebasage (2026-11-22, #23175) : la grandeur CHANGE, comme le
+# quatrieme et le sixieme -- l'instrument reconnait le kernel `rust` porte
+# par la vague de portage -Rust (25 carnets `-Rust.ipynb` + le temoin
+# docker `witness-rust.ipynb`). Sur
+# l'arbre aligne origin/main = cd62365c02, l'instrument d'avant rend 46 et
+# le corrige 28 : le pouls RECULE du jour portait 18 unites d'artefact
+# d'instrument pour ~3 d'increment reel (21 -> 28).
+PADDING_REFERENCE_REBASE = 28.0
 # Fixture de sha pour les tests qui simulent `git log` : ce n'est plus une
 # identite attendue du registre (c'etait le faux vert de #24678 -- la
 # constante de test et la donnee etaient la meme chaine, donc le test ne
@@ -419,14 +427,15 @@ def test_la_reference_du_padding_est_celle_de_l_issue():
     `comparables`), et c'est ce qui produisait le verdict « AVANCE »
     fabrique sur l'entree « padding et nommage »."""
     e = entree("padding-nommage")
-    assert e.reference.source.startswith("PR #26349")
-    assert e.reference.mesure_le == "2026-11-15"
+    assert e.reference.source.startswith("issue #23175")
+    assert e.reference.mesure_le == "2026-11-22"
     assert e.reference.valeur == PADDING_REFERENCE_REBASE
-    # Le 4e, le 6e et le 8e rebasages changent la grandeur : les points
-    # d'avant chaque correctif restent dans la serie, ils ne servent plus
-    # de reference.
-    assert e.reference.valeur not in {39.0, 40.0, 26.0}
-    assert {r.valeur for r in e.historique} >= {26.0, 39.0, 40.0, 27.0, 25.0}
+    # Le 4e, le 6e, le 8e et le 9e rebasages changent la grandeur : les
+    # points d'avant chaque correctif restent dans la serie, ils ne servent
+    # plus de reference.
+    assert e.reference.valeur not in {39.0, 40.0, 26.0, 21.0, 46.0}
+    assert {r.valeur for r in e.historique} >= {
+        26.0, 39.0, 40.0, 27.0, 25.0, 21.0, 46.0}
     # Et la reference rebasee est comparable a l'instrument courant : par le
     # sha, par la SOURCE du script ou par la date -- quel que soit le chemin
     # que la fusion laissera (une fusion en squash reecrit le sha sans

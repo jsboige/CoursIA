@@ -10,6 +10,7 @@ Aucun test ne touche le reseau.
 """
 import importlib.util
 import json
+import re
 import subprocess
 from datetime import timedelta
 from pathlib import Path
@@ -142,10 +143,40 @@ def test_bilan_par_role_compte_et_borne():
     r = vc.bilan(etats_, lecture([]), NOW)
     urne = r["roles"]["urne"]
     assert urne["issues"] == 25 and urne["sans_visite"] == 25
-    assert len(urne["numeros_sans_visite"]) == vc.LIMITE_LISTE
+    # le JSON rend la liste COMPLETE : la borne est une borne d'affichage
+    assert len(urne["numeros_sans_visite"]) == 25
     assert urne["numeros_sans_visite"][0] == 25  # la plus ancienne d'abord
     assert r["urgences"]["nombre"] == 25
     assert r["jamais_visitees_nombre"] == 25
+
+
+def test_le_json_rend_les_25_numeros_et_le_texte_annonce_les_5_manquants():
+    """#27725 : la borne `LIMITE_LISTE` vaut pour l'affichage, pas pour la
+    donnee. Le JSON rend les 25 numeros ; le texte en montre 20 et DIT qu'il
+    en cache 5 -- une troncature invisible est un mensonge de l'organe."""
+    etats_ = [_etat(numero=n, ecart="LIVREE", motif="dernier commentaire [INFO] candidate-delivered",
+                    cree=(NOW - timedelta(days=10 + n)).strftime("%Y-%m-%dT%H:%M:%SZ"))
+              for n in range(1, 26)]
+    r = vc.bilan(etats_, lecture([]), NOW)
+    assert len(r["roles"]["urne"]["numeros_sans_visite"]) == 25
+    assert len(r["jamais_visitees"]) == 25
+    assert len(r["urgences"]["numeros"]) == 25
+
+    texte = vc._texte(r, "test")
+    ligne = next(x for x in texte.splitlines() if x.strip().startswith("urne"))
+    assert "et 5 autres" in ligne
+    # les 20 affiches sont la tete de la liste complete, dans le meme ordre
+    affiches = [int(x) for x in re.findall(r"#(\d+)", ligne.split("a 0 :")[1].split(";")[0])]
+    assert len(affiches) == vc.LIMITE_LISTE
+    assert affiches == r["roles"]["urne"]["numeros_sans_visite"][:vc.LIMITE_LISTE]
+
+
+def test_le_texte_dit_le_nombre_cache_pour_chaque_liste_bornee():
+    """Une liste de 21 numeros : 20 affiches, 1 cache, et le texte le dit."""
+    assert vc._liste_texte([]) == "aucune"
+    assert vc._liste_texte([1, 2]) == "#1, #2"
+    assert vc._liste_texte(list(range(1, 22))) .endswith("... et 1 autre")
+    assert vc._liste_texte(list(range(1, 26))).endswith("... et 5 autres")
 
 
 def test_bilan_compte_les_visitees_non_avancees():
