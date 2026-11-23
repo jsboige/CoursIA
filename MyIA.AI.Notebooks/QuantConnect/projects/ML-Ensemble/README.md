@@ -10,7 +10,7 @@ Stratégie ML d'ensemble combinant la régression Ridge, le Random Forest et le 
 ## Comment exécuter
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-Ensemble"`
-**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour l'exécuter. **Verdict de recherche** (notebook) : **NO BEATS** — l'ensemble ne bat pas SPY buy-and-hold (Sharpe -0.987 au meilleur cas de confiance ; SPY 0.182, CAGR 4.1 %).
+**QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour l'exécuter. **Verdict de recherche** (notebook) : **NO BEATS** — sur 29 titres et 2020-2025, l'ensemble obtient un Sharpe de 0,928 (taux sans risque nul) contre 0,975 pour SPY buy-and-hold. Il ne choisit pas mieux qu'un tirage au hasard des titres dans le même univers (médiane de 20 tirages : 0,950), et un portefeuille équipondéré des 29 titres fait aussi bien (0,943).
 
 ## Métriques de backtest
 
