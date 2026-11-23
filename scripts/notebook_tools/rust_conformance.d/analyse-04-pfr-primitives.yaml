@@ -1,0 +1,194 @@
+# Triplet ANALYSE-04 : jumeau Python + portage Rust (issue #27931, spec Rust portage).
+# Les deux carnets ont exactement la meme structure 30 cellules (meme indices de
+# cellules code : 2, 4, 7, 10, 12, 14, 17, 19, 22, 24, 26) : les cotes se
+# correspondent par index. Cote Rust = evcxr, std seul (aucune crate externe ;
+# MT19937 de CPython recopie pour le tirage dirichlet de la cellule 4).
+# Le cote C# n'existe pas pour cette serie (ANALYSE est Python + Rust seulement).
+- name: "ANALYSE-04 Primitives PFR"
+  family: "SymbolicAI/Lean (ANALYSE)"
+  python: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb
+  rust: MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Rust.ipynb
+  measures:
+    - id: ruzsa_test4_dxx
+      description: "d[X;X] du test 4 (loi {0: 0.5, 1: 0.5} sur Z/4Z, non uniforme sur le groupe)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "d\\[X;X\\] = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 2
+          pattern: "d\\[X;X\\] = ([\\d.]+)"
+          transform: float
+    - id: ruzsa_min_cyclique
+      description: "min d sur 40 000 couples dirichlet sous (a − b) mod 4 (MT19937 seed 7, gammavariate(1,1))"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\(a − b\\) mod 4.*?min d = (\\+[\\d.]+)"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "\\(a − b\\) mod 4.*?min d = (\\+[\\d.]+)"
+          transform: float
+    - id: ruzsa_min_noninversible
+      description: "min d sous max(a − b, 0) (non inversible, valeur NEGATIVE attendue)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "max\\(a − b, 0\\).*?min d = (-[\\d.]+)"
+          transform: float
+        rust:
+          cell: 4
+          pattern: "max\\(a − b, 0\\).*?min d = (-[\\d.]+)"
+          transform: float
+    - id: triangulaire_marge_t3
+      description: "Marge du triplet 3 de l'inegalite triangulaire (Y degenere, marge 2.0 bits)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 7
+          pattern: "0\\.5000 <= 2\\.5000   marge = (\\+[\\d.]+)"
+          transform: float
+        rust:
+          cell: 7
+          pattern: "0\\.5000 <= 2\\.5000   marge = (\\+[\\d.]+)"
+          transform: float
+    - id: exo1_attendu
+      description: "Ligne Attendu de l'exercice 1 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "Attendu : deux valeurs distinctes"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "Attendu : deux valeurs distinctes"
+          transform: text
+    - id: projection_i_residu
+      description: "I(X−π(X); π(X)) du temoin C.5 (residu de la projection indicatrice, 25 notes)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "I\\(X−π\\(X\\); π\\(X\\)\\) = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "I\\(X−π\\(X\\); π\\(X\\)\\) = ([\\d.]+)"
+          transform: float
+    - id: projection_e_low
+      description: "E[X−π(X) | π(X)=low] du temoin (moyenne intra-fibre, 15 notes low)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "E\\[X−π\\(X\\) \\| π\\(X\\)=low\\]\\s+= ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 12
+          pattern: "E\\[X−π\\(X\\) \\| π\\(X\\)=low\\]\\s+= ([\\d.]+)"
+          transform: float
+    - id: texte_h_bits
+      description: "H(text) apres normalisation du comptage de mots"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 14
+          pattern: "H\\(text\\) = ([\\d.]+)"
+          transform: float
+        rust:
+          cell: 14
+          pattern: "H\\(text\\) = ([\\d.]+)"
+          transform: float
+    - id: exo2_attendu
+      description: "Ligne Attendu de l'exercice 2 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 17
+          pattern: "Attendu : comparer la dispersion par fibre"
+          transform: text
+        rust:
+          cell: 17
+          pattern: "Attendu : comparer la dispersion par fibre"
+          transform: text
+    - id: omega_etapes
+      description: "Suite des omega le long du raffinement N=60 (comparee en TEXTE : liste entiere)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 19
+          pattern: "ω à chaque étape : \\[([\\d, ]+)\\]"
+          transform: text
+        rust:
+          cell: 19
+          pattern: "ω à chaque étape : \\[([\\d, ]+)\\]"
+          transform: text
+    - id: exo3_attendu
+      description: "Ligne Attendu de l'exercice 3 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "Attendu : suite strictement decroissante"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "Attendu : suite strictement decroissante"
+          transform: text
+    - id: exo4_attendu
+      description: "Ligne Attendu de l'exercice 4 (stub C.1 : la ligne fixe doit exister a l'identique)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 24
+          pattern: "Attendu : trois comptes > 0"
+          transform: text
+        rust:
+          cell: 24
+          pattern: "Attendu : trois comptes > 0"
+          transform: text
+    - id: deuxsat_composantes
+      description: "Nombre de composantes fortement connexes du 2-SAT satisfiable (Kosaraju, 3 variables implicites)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 26
+          pattern: "\\(x₁ ∨ ¬x₂\\).*?→ (\\d+) composante\\(s\\), satisfiable = True"
+          transform: int
+        rust:
+          cell: 26
+          pattern: "\\(x₁ ∨ ¬x₂\\).*?→ (\\d+) composante\\(s\\), satisfiable = True"
+          transform: int
+    - id: deuxsat_non_satisfiable
+      description: "Booleen satisfiable du 2-SAT contradictoire (casse libre entre langues : True/False vs true/false)"
+      tolerance: 0
+      reference: python
+      case_insensitive: true
+      sides:
+        python:
+          cell: 26
+          pattern: "\\(x₁ ∨ x₁\\) ∧ \\(¬x₁ ∨ ¬x₁\\).*?satisfiable = (\\w+)"
+          transform: text
+        rust:
+          cell: 26
+          pattern: "\\(x₁ ∨ x₁\\) ∧ \\(¬x₁ ∨ ¬x₁\\).*?satisfiable = (\\w+)"
+          transform: text
