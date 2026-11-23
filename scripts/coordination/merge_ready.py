@@ -276,6 +276,7 @@ COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_LANE_APP_LOGIN))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
+TWIN_ATTEST_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_attestation_squash.py"
 TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
 # Issue #20774 : au merge, le slot-reservation-guard doit lire la source
 # `open_prs` (mode en ligne) pour qu'une collision cross-PR rougisse avant
@@ -2484,6 +2485,76 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+def twin_attestation_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis.ter : l'attestation jumelle doit decrire l'ARBRE DE FUSION.
+
+    Le squash-merge re-hashe l'arbre : un blob atteste sur la branche peut ne
+    jamais atterrir sur `main`. Le test
+    ``test_audit_shas_exist_in_file_history`` verifie que le sha atteste par la
+    derniere attestation d'une paire est un blob que le carnet a reellement eu
+    dans son historique, sous le path declare -- un sha qui n'atterrit jamais
+    sur `main` le fait rougir.
+
+    La CI de PR ne voit pas cette classe : elle travaille sur
+    ``refs/pull/N/merge``, ou les commits intermediaires restent joignables ;
+    seul l'arbre de fusion revele l'orphelin. D'ou la place de cette porte :
+    elle est la DERNIERE ligne de defense, celle qui evite que `main` ne
+    rougisse (mesure du 2026-11-23 : `test_audit_shas_exist_in_file_history` a
+    gele `main` environ 3 h ; les squashes de #28094 et #27869 ont orpheline
+    des ``csharp_sha``).
+
+    Cout nul pour les PRs qui ne touchent pas le registre twin (filtre
+    prefixe). Pour les autres : un fetch, puis l'organe partage
+    (``check_twin_attestation_squash.py``), qui simule le squash et compare la
+    derniere attestation de chaque paire touchee aux blobs de l'arbre de
+    fusion.
+
+    Fail-closed, sans exception : un timeout, une sortie vide, une lecture
+    impossible ou un conflit de fusion font sauter le merge. « Je n'ai pas pu
+    lire » n'est jamais « c'est propre » -- c'est la regle que 5bis applique
+    deja pour les collisions d'index.
+
+    Codes de l'organe : 0 = conforme, 1 = defaut trouve (MISMATCH, NODESC,
+    CONFLICT), 2 = mesure impossible.
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(TWIN_REGISTRY_PREFIX)
+        for row in files
+    )
+    if not touched:
+        return None
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "twin-attestation-unreadable:fetch"
+    res = runner.run(
+        [sys.executable, _repo_relative(TWIN_ATTEST_PATH),
+         "--base", "origin/main", "--head", head, "--json"]
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == 2:
+        # Mesure impossible : timeout, erreur git, sortie vide.
+        return "twin-attestation-unreadable:rc=2"
+    # rc = 1 : l'organe a lu et a trouve un defaut. Le motif nomme la paire
+    # et les cotes en cause -- il est journalise tel quel.
+    try:
+        data = json.loads(res.stdout)
+    except (json.JSONDecodeError, ValueError):
+        return "twin-attestation-unreadable:sortie-illisible"
+    if not isinstance(data, dict):
+        return "twin-attestation-unreadable:sortie-illisible"
+    verdict = str(data.get("verdict") or "?").lower()
+    reason = str(data.get("reason") or "").strip()
+    if not reason:
+        return f"twin-attestation-{verdict}:defaut-non-nomme"
+    return f"twin-attestation-{verdict}:{reason[:180]}"
+
+
 def slot_reservation_reason(
     runner: Runner, pr: int, head: str, files: list[dict]
 ) -> str | None:
@@ -3160,6 +3231,13 @@ def evaluate_pr(
         return skip("b0-organ-blocked", stack_state, stack_inc)
     # 5bis. collision d'index twin contre le main du moment.
     reason = twin_collision_reason(runner, pr, view_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason, stack_state, stack_inc)
+    # 5bis.ter. attestation jumelle decrivant l'arbre de fusion (#28202) :
+    # le squash-merge re-hashe l'arbre, un blob atteste sur la branche peut
+    # ne jamais atterrir sur `main` -- et la CI de PR ne le voit pas (elle
+    # travaille sur `refs/pull/N/merge`). Fail-closed comme 5bis.
+    reason = twin_attestation_reason(runner, pr, view_head, view.get("files") or [])
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
     # 5bis.bis. collision de slot contre la base ET les PRs ouvertes (#20774).

@@ -172,6 +172,10 @@ class ScriptedRunner:
         fetch_rc: int = 0,
         twin_rc: int = 0,
         twin_stdout: str = "",
+        # Porte 5bis.ter (#28202) : attestation jumelle decrivant l'arbre de
+        # fusion. 0 = conforme, 1 = defaut trouve, 2 = mesure impossible.
+        attest_rc: int = 0,
+        attest_stdout: str = "",
         # Revendications d'ordinal des PRs ouvertes (organe
         # twin_open_claims.py) : 0 = liste vide, 1 = liste portee par
         # claims_stdout, 2 = API illisible (fail-closed).
@@ -313,6 +317,9 @@ class ScriptedRunner:
         # Vide par defaut (les tests historiques ``twin-index-collision``
         # n'attendent pas de classification).
         self.twin_stdout = twin_stdout
+        # Porte 5bis.ter (#28202) : rapport de l'organe d'attestation.
+        self.attest_rc = attest_rc
+        self.attest_stdout = attest_stdout
         self.claims_rc = claims_rc
         self.claims_stdout = claims_stdout
         # #20774 : organe slot-reservation-guard, mode en ligne. Meme
@@ -587,6 +594,8 @@ class ScriptedRunner:
             return mr.RunResult(self.fetch_rc, "", "")
         if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
             return mr.RunResult(self.twin_rc, self.twin_stdout, "")
+        if len(c) > 1 and "check_twin_attestation_squash.py" in c[1]:
+            return mr.RunResult(self.attest_rc, self.attest_stdout, "")
         if len(c) > 1 and "twin_open_claims.py" in c[1]:
             return mr.RunResult(self.claims_rc, self.claims_stdout, "")
         if len(c) > 1 and "check_slot_reservation.py" in c[1]:
@@ -2750,6 +2759,83 @@ def test_twin_arbre_de_fusion_illisible_is_fail_closed(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner)
     assert lines[0]["verdict"] == "skipped"
     assert lines[0]["reason"] == "twin-collision-unreadable:merged"
+
+
+# --- 5bis.ter. attestation jumelle decrivant l'arbre de fusion (#28202) --------
+
+
+def _attestation_payload(verdict: str, reason: str) -> str:
+    """Rapport JSON de l'organe d'attestation, forme reelle."""
+    return json.dumps({
+        "verdict": verdict,
+        "base": "origin/main",
+        "head": HEAD,
+        "tree": "a" * 40,
+        "pairs": [{
+            "pair": "sw-5-linked-data",
+            "verdict": verdict,
+            "attestation": "0012-2026-09-25-lane.yaml",
+            "details": [reason],
+        }],
+        "reason": f"sw-5-linked-data {verdict} : {reason}",
+    })
+
+
+def test_twin_attestation_mismatch_skips(tmp_path):
+    """Un sha atteste qui ne decrit pas l'arbre de fusion fait sauter le
+    merge : c'est la classe que la CI de PR ne voit pas et qui rougit `main`
+    apres le squash (#28202)."""
+    reason = "csharp_sha atteste aaaaaaaaaaaa / arbre de fusion bbbbbbbbbbbb"
+    payload = _attestation_payload("MISMATCH", reason)
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=1, attest_stdout=payload)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith("twin-attestation-mismatch:")
+    assert "sw-5-linked-data" in lines[0]["reason"]
+
+
+def test_twin_attestation_unreadable_is_fail_closed(tmp_path):
+    """« Je n'ai pas pu lire » n'est pas « c'est propre » : une mesure
+    impossible (rc 2) fait sauter le merge."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=2)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-attestation-unreadable:rc=2"
+
+
+def test_twin_attestation_sortie_illisible_is_fail_closed(tmp_path):
+    """Une sortie non JSON sur rc 1 n'est pas un « conforme » deguise : le
+    motif reste un skip fail-closed."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=1, attest_stdout="pas du json")
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "twin-attestation-unreadable:sortie-illisible"
+
+
+def test_twin_attestation_clean_merges_and_interroge_le_tete_evaluee(tmp_path):
+    """Conforme : le merge se fait, et l'organe est interroge sur la base et
+    la tete EVALUEES (pas sur `main` courant, pas sur la branche)."""
+    view = default_view(files=(TWIN_FILE,))
+    runner = ScriptedRunner(views={123: view}, attest_rc=0)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    calls = [c for c in runner.cmds()
+             if len(c) > 1 and "check_twin_attestation_squash.py" in c[1]]
+    assert len(calls) == 1
+    assert calls[0][calls[0].index("--base") + 1] == "origin/main"
+    assert calls[0][calls[0].index("--head") + 1] == HEAD
+
+
+def test_twin_attestation_organ_not_called_when_registry_untouched(tmp_path):
+    """Une PR hors registre twin ne paie ni fetch ni organe d'attestation."""
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    assert not any("check_twin_attestation_squash.py" in f for f in runner.flat())
 
 
 def test_twin_collision_avec_une_pr_ouverte_skips(tmp_path):
