@@ -1,0 +1,397 @@
+# Conformite differentielle du couple GameTheory-03e (Meta-Actions
+# Tarifees, issue #27942).
+#
+# Le portage Rust (kernel evcxr, `std` seul) reprend le carnet Python a
+# l'identique : meme substrat GT-3b, meme meta-jeu, meme Dijkstra-heapq,
+# meme echantillon MT19937 (seed 0, 300 paires). Les dicts Python dont
+# l'ordre se lit dans une sortie deviennent des BTreeMap, les listes des
+# Vec, et le rendu des grandeurs Python (True, {(0, 'cycle'): 72}) passe
+# par des helpers (py_bool, rendu BTreeMap).
+#
+# Les deux cotes ont la MEME structure de cellules (73 cellules, 27 code
+# aux memes index) : la correspondance des cellules est directe.
+#
+# Le cote C# est absent du triplet : pas de jumeau C# dans le depot (le
+# carnet C# correspondant, s'il existe un jour, vivra dans la PR #27681,
+# non fusionnee au moment de l'ecriture de ce registre). Si cette PR
+# fusionne et livre un jumeau, rouvrir ce fichier pour ajouter le chemin
+# et les cotes C# (le lecteur ne signale pas l'absence d'un cote non
+# declare : c'est la relecture humaine qui la garantit, d'ou le present
+# commentaire).
+#
+# Ecarts de forme DECLARES :
+#
+# - les cellules evcxr sont PLATES (pas de bloc englobant) et se
+#   terminent par une instruction `;` : AUCUN execute_result « () » n'est
+#   attendu cote Rust, les patterns des deux cotes sont identiques
+#   (\A\s*(.*?)\s*\Z), sans saut d'echo -- contrairement au registre
+#   03b dont les cellules a blocs englobants laissaient un « () » final ;
+# - les cellules 18 et 42 (Python) produisent chacune deux blocs stdout
+#   separes : l'organe concatene tous les outputs portant du texte, la
+#   comparaison reste integral, aucun ecart ;
+# - la cellule 62 lit le module game_theory_lean/Abstraction/Basic.lean
+#   du depot et affiche un chemin avec separateur de l'hote : la sortie
+#   commitee porte le separateur Windows (« game_theory_lean\Abstraction
+#   \Basic.lean ») des deux cotes (re-exec locale regle F sur Windows) ;
+#   sous un hote non-Windows la re-exec rendrait « / » a la place -- le
+#   fichier lui-meme ( numeros de ligne, declarations, compteurs sorry )
+#   est commite identique des deux cotes ;
+# - les cellules d'exercices 50/52/54/56/58/60 (stubs sans erreur
+#   volontaire, C.1) impriment leur banniere « Exercice N : a completer » :
+#   comparees comme toute autre sortie.
+- name: "GameTheory-03e Meta Actions Tarifees"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb
+  rust: MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Rust.ipynb
+  measures:
+    - id: c2_text
+      description: "Sortie de la cellule 2, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 2
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c4_text
+      description: "Sortie de la cellule 4, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 4
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c6_text
+      description: "Sortie de la cellule 6, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 6
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c8_text
+      description: "Sortie de la cellule 8, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 8
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c10_text
+      description: "Sortie de la cellule 10, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 10
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c12_text
+      description: "Sortie de la cellule 12, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 12
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c15_text
+      description: "Sortie de la cellule 15, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 15
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c18_text
+      description: "Sortie de la cellule 18, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c20_text
+      description: "Sortie de la cellule 20, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 20
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c22_text
+      description: "Sortie de la cellule 22, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 22
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c27_text
+      description: "Sortie de la cellule 27, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 27
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c30_text
+      description: "Sortie de la cellule 30, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 30
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 30
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c32_text
+      description: "Sortie de la cellule 32, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 32
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 32
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c35_text
+      description: "Sortie de la cellule 35, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 35
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 35
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c37_text
+      description: "Sortie de la cellule 37, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 37
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 37
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c40_text
+      description: "Sortie de la cellule 40, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 40
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 40
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c42_text
+      description: "Sortie de la cellule 42, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 42
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 42
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c45_text
+      description: "Sortie de la cellule 45, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 45
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 45
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c47_text
+      description: "Sortie de la cellule 47, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 47
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 47
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c50_text
+      description: "Sortie de la cellule 50, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 50
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 50
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c52_text
+      description: "Sortie de la cellule 52, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 52
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 52
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c54_text
+      description: "Sortie de la cellule 54, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 54
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 54
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c56_text
+      description: "Sortie de la cellule 56, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 56
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 56
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c58_text
+      description: "Sortie de la cellule 58, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 58
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 58
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c60_text
+      description: "Sortie de la cellule 60, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 60
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 60
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c62_text
+      description: "Sortie de la cellule 62, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 62
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 62
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+    - id: c64_text
+      description: "Sortie de la cellule 64, texte identique au jumeau Python"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 64
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
+        rust:
+          cell: 64
+          pattern: "\\A\\s*(.*?)\\s*\\Z"
+          transform: text
