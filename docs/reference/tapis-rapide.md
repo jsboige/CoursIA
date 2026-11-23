@@ -820,6 +820,15 @@ Codes de sortie : `0` tout est couvert ; `1` invariant violé, ou une issue d'ur
 dans le tour alors qu'elle a plus de `FENETRE_J` jours ; `2` lecture incomplète sans secours (jamais un faux
 `0`). `--dashboard-line` rend une ligne de 200 caractères au plus, à poster sur le dashboard du secrétariat.
 
+**Listes complètes en JSON, bornées à l'affichage texte (#27725).** La borne `LIMITE_LISTE` (20) ne borne plus
+que le texte : en `--json`, chaque liste de numéros est **complète**. Mesure du 21/11 sur la lecture de 10:12Z
+(475 issues hors marathon) : avant, les listes s'arrêtaient à 20 numéros — 20 numéros d'urne à 0 visite pour
+**66** issues, 20 numéros « worker » pour **29**, 20 « jamais visitées » pour **47**, 20 urgences pour **73** ; les
+**comptes**, eux, étaient justes. Une troncature invisible donnait à lire une liste plus courte que la
+population réelle, et le secrétaire re-vérifiait à la main ce que l'organe devait rendre. Dans le texte, la
+troncature se dit désormais : `... et 9 autres`. Un test de propriété (25 numéros dans un rôle) verrouille le
+couple : le JSON rend 25, le texte en montre 20 et annonce les 5 autres.
+
 **Ce que la mesure ne voit pas** : une fermeture (la lecture ne contient que les issues ouvertes), une PR
 fusionnée sans commit cité (le squash cite sa PR, pas forcément l'issue), un `[DELIVERED]` plus ancien que
 les 12 derniers commentaires lus (fil tronqué), et `[INFO] candidate-delivered`, reconnu comme livraison par

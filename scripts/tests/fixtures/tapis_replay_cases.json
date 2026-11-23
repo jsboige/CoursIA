@@ -1,5 +1,5 @@
 {
- "note": "Cas FIGES du banc de replay du tapis (pool reel de la lane, 18/11). La fenetre de la lecture groupee est le deroule des 12 derniers commentaires du fil fige ; le code attendu est celui observe lors du rejeu reel du jour, a l'instant de reference fige. Cas #18204 RE-CAPTURE le 23/11 : les organes de decision de main (regle du corps epais, posterieure a la capture du 18/11) rendent EPAISSE la ou le banc du 18/11 rendait SERVI -- verifie sur origin/main avec ce meme corpus fige, hors de toute fusion.",
+ "note": "Cas FIGES du banc de replay du tapis (pool reel de la lane, 18/11). La fenetre de la lecture groupee est le deroule des 12 derniers commentaires du fil fige ; le code attendu est celui observe lors du rejeu reel du jour, a l'instant de reference fige. RE-ATTESTATION 23/11 : le cas 18204 attend EPAISSE et non SERVI -- la regle EPAISSE (barriere de fond d'un CONTENEUR, #26973) a ete ajoutee APRES la capture du 18/11, et son fil la declenche ; le code du 18/11 ne peut pas etre exige apres l'ajout de la regle.",
  "lane": "myia-ai-01:CoursIA-2",
  "capture": "2026-11-18",
  "maintenant": "2026-11-18T17:20:00Z",

@@ -140,7 +140,7 @@ jobs:
     # for (false negative #11770). The third term dissolves the tension: a
     # dedicated waiter pool -- waiting costs no CPU.
     #   - Jambe A (po-2024, #14303 merged + deployed 2026-09-04): 24 waiter
-    #     slots (label coursia-waiter, 1 vCPU / 1 GiB / 128 pids) online via
+    #     slots (label coursia-waiter, 1 vCPU / 512 MiB / 128 pids) online via
     #     coursia-waiters.service -- supervise.sh waiters.
     #   - Jambe B (this PR): the pull_request leg leaves the shared GitHub-
     #     hosted queue AND the self-hosted work pool, and waits on the waiter
