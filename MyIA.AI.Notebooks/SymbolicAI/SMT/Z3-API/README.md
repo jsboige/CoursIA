@@ -86,7 +86,7 @@ Des compagnons regroupés par palier : chaque palier prolonge un notebook du par
 
 | # | Notebook | Ce qu'on y apprend |
 |---|----------|---------------------|
-| 16b | [Meal-Planner : données réelles](Z3-16b-Meal-Planner-Data-External-Python.ipynb) **(BETA)** | Couche de données (compagnon du 16) : corpus Ciqual ANSES 2025 × archive RecipeML, lecture en flux (`iterparse`), appariement lexical flou, agrégation pondérée par la masse |
+| 16b | [Meal-Planner : données réelles](Z3-16b-Meal-Planner-Data-External-Python.ipynb) — jumeau [C#](Z3-16b-Meal-Planner-Data-External-CSharp.ipynb) **(BETA)** | Couche de données (compagnon du 16) : corpus Ciqual ANSES 2025 × archive RecipeML, lecture en flux (`iterparse`), appariement lexical flou, agrégation pondérée par la masse |
 | 16c | [Meal-Planner : capstone patient](Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) **(BETA)** | Capstone (compagnon du 16) : restrictions nutritionnelles (énergie bornée, protéines min, lipides max), menu multi-jours, port du C# `08_Meal_Planner_Patient_Capstone` |
 | 16d | [Meal-Planner : convergence à l'échelle](Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) **(BETA)** | Convergence (compagnon du 16) : l'encodage décide de la tractabilité — index+disjonction explose, `Array` insoluble (`unknown`), one-hot pseudo-booléen (`PbEq`/`PbLe`/`PbGe`) passe à l'échelle |
 | 16e | [Meal-Planner : optimisation](Z3-16e-Meal-Planner-Optimize-Python.ipynb) **(BETA)** — jumeau [C#](Z3-16e-Meal-Planner-Optimize-CSharp.ipynb) | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global |
