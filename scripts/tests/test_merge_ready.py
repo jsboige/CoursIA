@@ -4009,7 +4009,7 @@ def test_combined_operator_rollback_env(tmp_path, monkeypatch):
 # la tete. La couverture de tete suit la meme regle que l'APPROVE (remontee
 # first-parent de merge_dwell).
 
-LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway.lean"
+LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/Conway.lean"
 ATTESTED_SHA = "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00"
 
 
@@ -4068,10 +4068,10 @@ def test_outillage_lean_sans_attestation_donne_un_skip(tmp_path):
     """``lakefile.*``, ``lean-toolchain`` et ``lake-manifest.json`` sont des
     fichiers Lean : changer la toolchain change ce que le build doit prouver."""
     for path in (
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lake-manifest.json",
     ):
         runner = ScriptedRunner(views={123: default_view(files=(path,))})
         _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
@@ -4150,7 +4150,7 @@ def test_attestation_a_une_tete_anterieure_et_commit_de_contenu_donne_un_skip(tm
 
 BUSYBEAVER = "MyIA.AI.Notebooks/SymbolicAI/Lean/busybeaver_lean"
 BUSYBEAVER_LAKEFILE = BUSYBEAVER + "/lakefile.lean"
-CONWAY_LAKEFILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean"
+CONWAY_LAKEFILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/lakefile.lean"
 
 #: Manifeste des lakes declares en CI : `conway` y est, `busybeaver` non.
 CI_LAKES_MANIFEST = {
@@ -4158,9 +4158,9 @@ CI_LAKES_MANIFEST = {
     "lakes": [
         {
             "lake": "conway",
-            "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
+            "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean",
             "paths": [
-                "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
+                "MyIA.AI.Notebooks/SymbolicAI/Lean/JeuDeLaVie/conway_lean/**.lean",
             ],
         }
     ],
