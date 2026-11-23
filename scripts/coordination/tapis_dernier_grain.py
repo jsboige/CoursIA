@@ -21,15 +21,14 @@ Ce module rend les trois etats, separement :
 
   ``grain``          une prise en charge nominative dans la fenetre ;
   ``passage_seul``   des citations Git, mais aucune prise en charge ;
-  ``jamais_servie``  aucun signal du tout, et le fil est **complet** :
-                     l'absence est etablie ;
+  ``jamais_servie``  aucun signal du tout, fil **complet** : absence etablie ;
   ``non_measurable`` aucun marqueur lisible, mais le fil n'est **pas**
                      complet : l'absence n'est **pas** etablie.
 
-Ce qui **ne** rajeunit pas le dernier grain : une **qualification** (le
-verdict d'un banc qui relit le fil) est une lecture, pas une prise en charge ;
-une **apparition dans une liste** (un releve, un recensement, un classement)
-ne dit pas qui a travaille sur l'issue.
+Ce qui **ne** rajeunit pas le dernier grain : une **qualification** (le verdict
+d'un banc qui relit le fil) est une lecture, pas une prise en charge ; une
+**apparition dans une liste** (un releve, un recensement, un classement) ne dit
+pas qui a travaille sur l'issue.
 
 Fonctions PURES, sans reseau. La mesure groupee se branche par
 ``depuis_signaux`` ; le fil lu par ``depuis_evenements``.
@@ -52,7 +51,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import tapis_seance  # noqa: E402
-from coordination.tapis_marqueurs import FERME, VISITE, Evt, _dt, _iso  # noqa: E402
+from coordination.tapis_marqueurs import FERME, MARQUEUR_GRAIN, VISITE, Evt, _dt, _iso  # noqa: E402
 
 #: Une prise en charge : le marqueur doit etre **nominatif** (une lane nommee).
 GRAIN = "grain"
@@ -129,9 +128,10 @@ def _marqueurs_grain(evts: list[Evt]) -> list[datetime]:
 
     Un marqueur de visite sans lane nommee n'est pas un grain : personne ne
     peut en etre responsable, donc il ne dit rien de l'historique de l'issue.
+    Une lecture (`VISITE-INFO`) non plus : c'est une qualification.
     """
     return [ev.quand for ev in evts
-            if ev.marque in VISITE and ev.lane]
+            if ev.marque in MARQUEUR_GRAIN and ev.lane]
 
 
 def _passages(citations: list[dict]) -> list[datetime]:
@@ -141,11 +141,12 @@ def _passages(citations: list[dict]) -> list[datetime]:
 
 def compter_grains(evts: list[Evt],
                     depuis: datetime) -> tuple[str | None, int, int]:
-    """Les visites GRAIN : seances de prises en charge **nominatives**.
+    """Les **visites** : seances de prises en charge **ou** de lectures.
 
     Une citation Git n'est pas une visite : elle n'entre pas dans le compte,
     et elle ne rajeunit pas la derniere visite. `depuis` est le debut du tour
-    -- c'est la fenetre qui decide, pas la date du dernier grain. Les
+    -- c'est la fenetre qui decide, pas la date du dernier grain. L'ensemble
+    lu est `VISITE` : une lecture d'une lane y compte aussi (#27590). Les
     seances suivent la regle des marqueurs (`tapis_seance.par_lane`) : une
     livraison en ouvre une neuve (#27338).
     """

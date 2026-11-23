@@ -136,9 +136,9 @@ def test_les_cibles_du_job_adk_sont_reconnues_sur_le_workflow_reel() -> None:
     wf = (REPO_ROOT / ".github/workflows/scripts-tests.yml").read_text(encoding="utf-8")
     targets = extract_run_targets(wf)
     assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
-            "07-Agent-Orchestration/utils/test_adk_runtime_contracts.py") in targets
+            "07-Orchestration-d-Agents/utils/test_adk_runtime_contracts.py") in targets
     assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
-            "07-Agent-Orchestration/config/test_providers.py") in targets
+            "07-Orchestration-d-Agents/config/test_providers.py") in targets
 
 
 def test_is_covered_exact_and_ancestor() -> None:
@@ -610,7 +610,7 @@ def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pu
     assert "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean" in pr_paths
     # Keep both the original ADK contracts tree and the #25201 refactor target.
     assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**" in pr_paths
-    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**" in pr_paths
+    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/**" in pr_paths
 
     job = workflow["jobs"]["scripts-tests"]
     assert job["name"] == "Scripts Tests (CPU)"
@@ -664,7 +664,7 @@ def test_adk_job_targets_existing_refactor_files_for_run_and_collection() -> Non
 
     steps = workflow["jobs"]["adk-contracts"]["steps"]
     runs = "\n".join(step.get("run", "") for step in steps)
-    root = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
+    root = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents"
     contract = f"{root}/utils/test_adk_runtime_contracts.py"
     providers = f"{root}/config/test_providers.py"
     assert runs.count(contract) == 2, "runtime contract run and collection floor must target the live tree"

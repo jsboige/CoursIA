@@ -315,23 +315,28 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 79 | [ICT-46 — Strate 7 : freebits de second ordre, le banc…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb) | BETA | Oui |
 | 80 | [ICT-46b — Le banc unique de la strate 7 : six proxys,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46b-BancUnique-Strate7-Python.ipynb) | BETA | Oui |
 | 81 | [ICT-47 — L'axe douleur : une direction linéaire dans…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb) | BETA | Non |
-| 82 | [ICT-48 — Origami Wolfram, pli 2 : quatre classes, six…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | BETA | Oui |
-| 83 | [ICT-49 — Stabilité cross-taille de la fidélité J-Lens](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-JLensFideliteCrossTaille-Python.ipynb) | BETA | Oui |
-| 84 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb) | BETA | Oui |
-| 85 | [ICT — Substrat argumentation : trajectoires de croyance…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb) | BETA | Oui |
-| 86 | [ICT — Argumentation et croyances : le capstone du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-Capstone-Python.ipynb) | BETA | Oui |
-| 87 | [Argumentation strate 6 — Acceptabilité QBF :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb) | BETA | Oui |
-| 88 | [ICT — Substrat argumentation : maintenance de la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb) | BETA | Oui |
-| 89 | [ICT -- Dissociation F2 Dehaene : le self-model…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) | BETA | Oui |
-| 90 | [Boucle auto-referentielle p_hat (case 2 / Epic #9533)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) | BETA | Oui |
-| 91 | [ICT -- Dissociation saillance / pregnance (case s ⟂ π)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) | BETA | Oui |
-| 92 | [ICT-Greffe2 — Le quadruplet $(A, F, r, \pi)$ : rendre «…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb) | BETA | Oui |
-| 93 | [ICT-Greffe4 — Le vote argumenté sur chaîne : fermer la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb) | BETA | Oui |
-| 94 | [ICT-Greffe5 -- Attribution causale de l'intervention…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb) | BETA | Oui |
-| 95 | [ICT-Life — Substrat de calibration certifié : le Jeu de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb) | BETA | Oui |
-| 96 | [ICT-MUH — Le texte où Tegmark cite Schmidhuber :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb) | BETA | Oui |
-| 97 | [Tete-a-tete SAE <-> J-space -- les deux lentilles du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb) | BETA | Non |
-| 98 | [ICT-Synthèse — un seul appareil de mesure, cinq…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb) | BETA | Non |
+| 82 | [ICT-47b — L'instrument change-t-il la géométrie ?](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47b-PainAxisInstrument-Python.ipynb) | BETA | Non |
+| 83 | [ICT-48 — Onset/SAE Qwen3.5-9B-Base, agrégat de quatre…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb) | BETA | Oui |
+| 84 | [ICT-48 — Origami Wolfram, pli 2 : quatre classes, six…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | BETA | Oui |
+| 85 | [ICT-49 — Stabilité cross-taille de la fidélité J-Lens](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-JLensFideliteCrossTaille-Python.ipynb) | BETA | Oui |
+| 86 | [ICT-49 — Machines de Gödel : l'auto-amélioration…](../../MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb) | BETA | Oui |
+| 87 | [ICT-50 -- Origami Wolfram pli 2 : la regle 30 comme…](../../MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) | BETA | Oui |
+| 88 | [ICT-51 -- Origami Wolfram pli 4 : les combinateurs…](../../MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb) | BETA | Oui |
+| 89 | [ICT — Annexe : la contextualité du zoo de proxys est un…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb) | BETA | Oui |
+| 90 | [ICT — Substrat argumentation : trajectoires de croyance…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb) | BETA | Oui |
+| 91 | [ICT — Argumentation et croyances : le capstone du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-Capstone-Python.ipynb) | BETA | Oui |
+| 92 | [Argumentation strate 6 — Acceptabilité QBF :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb) | BETA | Oui |
+| 93 | [ICT — Substrat argumentation : maintenance de la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb) | BETA | Oui |
+| 94 | [ICT -- Dissociation F2 Dehaene : le self-model…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) | BETA | Oui |
+| 95 | [Boucle auto-referentielle p_hat (case 2 / Epic #9533)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) | BETA | Oui |
+| 96 | [ICT -- Dissociation saillance / pregnance (case s ⟂ π)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) | BETA | Oui |
+| 97 | [ICT-Greffe2 — Le quadruplet $(A, F, r, \pi)$ : rendre «…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb) | BETA | Oui |
+| 98 | [ICT-Greffe4 — Le vote argumenté sur chaîne : fermer la…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb) | BETA | Oui |
+| 99 | [ICT-Greffe5 -- Attribution causale de l'intervention…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb) | BETA | Oui |
+| 100 | [ICT-Life — Substrat de calibration certifié : le Jeu de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb) | BETA | Oui |
+| 101 | [ICT-MUH — Le texte où Tegmark cite Schmidhuber :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb) | BETA | Oui |
+| 102 | [Tete-a-tete SAE <-> J-space -- les deux lentilles du…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb) | BETA | Non |
+| 103 | [ICT-Synthèse — un seul appareil de mesure, cinq…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb) | BETA | Non |
 
 ## Probas (1 notebooks)
 

@@ -338,7 +338,7 @@ CI_EXCLUDED_PLAN: dict[str, str] = {
     # --- verts locaux, hermeticite runner a demontrer (T1 #25366) ---
     # Petits volumes, hermetiques : ils rejoignent le run pytest partage
     # des que l'hermeticite du runner est demontree.
-    "MyIA.AI.Notebooks/Compression/tests": "jambe-pr",
+    "MyIA.AI.Notebooks/InformationCalcul/Compression/tests": "jambe-pr",
     "MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/tests": "jambe-pr",
     "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/tests": "jambe-pr",
     "MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/examples/sample_project/tests": "jambe-pr",
