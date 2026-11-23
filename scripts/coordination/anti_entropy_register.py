@@ -45,6 +45,7 @@ from __future__ import annotations
 import argparse
 import dataclasses
 import datetime as dt
+import io
 import json
 import os
 import pathlib
@@ -52,6 +53,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import tokenize
 
 RACINE = pathlib.Path(__file__).resolve().parent.parent.parent
 if str(RACINE) not in sys.path:
@@ -717,8 +719,63 @@ def _blob_du_script(identite: str) -> str:
     return out.strip() if code == 0 else ""
 
 
+def _lignes_avec_code(source: str) -> list[str] | None:
+    """Les lignes qui portent du CODE, commentaires retires.
+
+    `tokenize` fait le travail pour du Python : une ligne qui ne porte
+    qu'un commentaire (ou rien) disparait, une ligne de code reste. Les
+    chaines et les docstrings restent -- les retirer changerait le sens
+    d'un instrument.
+
+    `None` quand `tokenize` ne sait pas lire la source (script non Python,
+    fichier tronque) : l'appelant replie sur le filtre ligne-a-ligne.
+    """
+    try:
+        jetons = tokenize.generate_tokens(io.StringIO(source).readline)
+        numeros = {jeton.start[0] for jeton in jetons
+                   if jeton.type not in (tokenize.COMMENT, tokenize.NL,
+                                         tokenize.NEWLINE, tokenize.INDENT,
+                                         tokenize.DEDENT, tokenize.ENDMARKER)}
+    except (tokenize.TokenError, IndentationError, SyntaxError, ValueError):
+        return None
+    lignes = source.splitlines()
+    return [ligne for numero, ligne in enumerate(lignes, 1)
+            if numero in numeros]
+
+
+def _code_normalise(source: str) -> str:
+    """Le CODE d'un script : commentaires et lignes vides retires.
+
+    C'est la grandeur qui dit « l'instrument a-t-il change ? ». Un
+    commentaire retouche ne change pas l'instrument ; le comparer blob par
+    blob le rendait change a chaque retouche (#28257).
+    """
+    lignes = _lignes_avec_code(source)
+    if lignes is None:
+        # Repli ligne-a-ligne : un script que `tokenize` ne sait pas lire.
+        lignes = [ligne.strip() for ligne in source.splitlines()
+                  if ligne.strip() and not ligne.strip().startswith("#")]
+    return "\n".join(lignes)
+
+
+def _code_du_script(identite: str) -> str:
+    """Le CODE du script nomme par une identite `<script>@<sha>`, ou "".
+
+    Le contenu est lu par `git cat-file` puis normalise : commentaires et
+    lignes vides retires. Un script illisible (blob absent, source
+    illisible) rend "" -- jamais de code a moitie.
+    """
+    blob = _blob_du_script(identite)
+    if not blob:
+        return ""
+    code, out, _ = _run(("git", "cat-file", "blob", blob))
+    if code != 0:
+        return ""
+    return _code_normalise(out)
+
+
 def instrument_inchange(identite: str, identite_reference: str) -> bool:
-    """Les deux identites designent-elles le MEME instrument (meme source) ?
+    """Les deux identites designent-elles le MEME instrument (meme code) ?
 
     L'egalite des shas est un PROXY de « meme instrument », et ce proxy se
     casse a chaque fusion : une PR mergee en squash laisse sur `main` un sha
@@ -729,14 +786,22 @@ def instrument_inchange(identite: str, identite_reference: str) -> bool:
     passer le controle pour vert, la constante de test recopiant la meme
     identite que le registre.
 
-    La grandeur qui compte est le contenu du script. Aucune presomption :
-    un blob introuvable des deux cotes ne rend pas `True`.
+    L'egalite des BLOBS a le meme defaut, un cran plus bas : un COMMENTAIRE
+    retouche apres la declaration d'une reference suffisait a re-orpheliner
+    la reference au squash suivant, alors que l'instrument n'avait pas
+    change (mesure du 2026-11-23, #28257 : les blobs `ea8f8263` et
+    `c1697629` de `scripts/notebook_tools/inventory_notebook_names.py` ne
+    different que par des commentaires).
+
+    La grandeur qui compte est donc le CODE du script, commentaires et
+    lignes vides retires. Aucune presomption : un code illisible d'un des
+    deux cotes ne rend pas `True`.
     """
     if not identite or not identite_reference:
         return False
-    blob_reference = _blob_du_script(identite_reference)
-    blob_courant = _blob_du_script(identite)
-    return bool(blob_reference) and blob_reference == blob_courant
+    code_reference = _code_du_script(identite_reference)
+    code_courant = _code_du_script(identite)
+    return bool(code_reference) and code_reference == code_courant
 
 
 def reference_comparable(commande, identite: str, ref: "Reference") -> bool:

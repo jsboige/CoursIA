@@ -1451,14 +1451,97 @@ def test_l_instrument_reel_rend_encore_une_valeur():
 # vert parce qu'il recopiait la meme identite que la donnee (faux vert).
 
 def test_instrument_inchange_compare_la_source_pas_le_sha(monkeypatch):
-    """Deux shas differents, meme contenu de script => meme instrument."""
-    monkeypatch.setattr(aer, "_blob_du_script",
-                        lambda identite: {"a@1": "blob-x", "a@2": "blob-x",
-                                          "a@3": "blob-y"}.get(identite, ""))
+    """Deux shas differents, meme CODE de script => meme instrument."""
+    monkeypatch.setattr(aer, "_code_du_script",
+                        lambda identite: {"a@1": "code-x", "a@2": "code-x",
+                                          "a@3": "code-y"}.get(identite, ""))
     assert aer.instrument_inchange("a@2", "a@1") is True
     assert aer.instrument_inchange("a@3", "a@1") is False
-    # Aucune presomption : un blob illisible ne rend pas « comparable ».
+    # Aucune presomption : un code illisible ne rend pas « comparable ».
     assert aer.instrument_inchange("a@9", "a@1") is False
+
+
+# ---------------------------------------------------------------------------
+# Comparabilite par CODE, pas par blob (#28257)
+# ---------------------------------------------------------------------------
+#
+# Comparer les BLOBS rendait l'instrument change a chaque retouche de
+# commentaire : une reference declaree, puis re-orphelinee au squash suivant,
+# alors que l'instrument n'avait pas change. Mesure du 2026-11-23 : les blobs
+# `ea8f8263` et `c1697629` de `scripts/notebook_tools/inventory_notebook_names.py`
+# ne different que par des commentaires -- et `c1697629` est la version sur
+# `main` au 23/11.
+
+#: Les deux blobs du cas reel (mesure du 2026-11-23).
+BLOB_AVANT = "ea8f8263f21a37549bc052850f248213282765fc"
+BLOB_APRES = "c169762914879cf65524c208a77de283950579e4"
+
+_SOURCE_A = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire
+def f():
+    return 1
+'''
+
+_SOURCE_COMMENTAIRE = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire retouche
+def f():
+    return 1
+'''
+
+_SOURCE_CODE = '''#!/usr/bin/env python3
+"""Doc."""
+# un commentaire retouche
+def f():
+    return 2
+'''
+
+
+def _faux_blobs(monkeypatch, sources: dict[str, str]) -> None:
+    """Sert des contenus de blob a la place de git."""
+    def run(cmd, timeout=600):
+        if list(cmd[:2]) == ["git", "cat-file"]:
+            sha = cmd[-1]
+            if sha in sources:
+                return 0, sources[sha], ""
+            return 128, "", "introuvable"
+        return 1, "", "commande inattendue"
+
+    monkeypatch.setattr(aer, "_run", run)
+    monkeypatch.setattr(aer, "_blob_du_script",
+                        lambda identite: identite.split("@", 1)[-1])
+
+
+def test_instrument_inchange_ignore_un_commentaire_retouche(monkeypatch):
+    """Temoin rouge : deux versions qui ne different que par un commentaire
+    designent le MEME instrument."""
+    _faux_blobs(monkeypatch, {"blob-1": _SOURCE_A,
+                              "blob-2": _SOURCE_COMMENTAIRE})
+    assert aer.instrument_inchange("s@blob-2", "s@blob-1") is True
+
+
+def test_instrument_inchange_detecte_une_vraie_ligne_de_code(monkeypatch):
+    """Temoin vert : une vraie ligne de code changee fait deux instruments."""
+    _faux_blobs(monkeypatch, {"blob-1": _SOURCE_A,
+                              "blob-2": _SOURCE_CODE})
+    assert aer.instrument_inchange("s@blob-2", "s@blob-1") is False
+
+
+def test_le_cas_reel_les_deux_blobs_ne_different_que_par_des_commentaires():
+    """Le cas mesure du 23/11, sur les VRAIS blobs du depot.
+
+    Les deux blobs DOIVENT differer (sinon le temoin ne prouve rien) et leur
+    CODE doit etre identique : l'instrument n'a pas change.
+    """
+    code_a, source_a, _ = aer._run(("git", "cat-file", "blob", BLOB_AVANT))
+    code_b, source_b, _ = aer._run(("git", "cat-file", "blob", BLOB_APRES))
+    if code_a != 0 or code_b != 0:
+        pytest.skip(f"blobs absents du clone : {BLOB_AVANT} / {BLOB_APRES}")
+    assert source_a != source_b, \
+        "les deux blobs doivent differer : sinon le temoin ne prouve rien"
+    assert aer._code_normalise(source_a) == aer._code_normalise(source_b), \
+        "le code est le meme : l'instrument n'a pas change"
     assert aer.instrument_inchange("", "a@1") is False
 
 
