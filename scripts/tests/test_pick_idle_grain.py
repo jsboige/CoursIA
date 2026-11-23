@@ -5970,6 +5970,33 @@ def test_cover_probe_keeps_the_anchor_boundary(
     assert pig.open_cover_signal_complete(4242) == ""
 
 
+def test_precharge_reopen_events_only_closure_carriers(monkeypatch):
+    """#24823 tranche 2 : seuls les decideurs de cloture sont chauffes.
+
+    Un numero sans instantane frais (None) n'est pas chauffe -- la boucle
+    garde son comportement historique pour lui ; un fil sans decision de
+    cloture ne declenche pas la lecture du TIMELINE.
+    """
+    comments_by_number = {
+        111: [{"body": "Un grain ordinaire",
+               "createdAt": "2026-11-01T00:00:00Z"}],
+        222: [{"body": "Fermeture sur dossier #222 -- verdict CLOSE",
+               "createdAt": "2026-11-01T00:00:00Z"}],
+    }
+    monkeypatch.setattr(
+        pig, "_snapshot_comments", lambda n: comments_by_number.get(n))
+    timeline_calls: list[int] = []
+
+    def _fake_reopen(number):
+        timeline_calls.append(number)
+        return []
+
+    monkeypatch.setattr(pig, "_reopen_events", _fake_reopen)
+    warmed = pig._precharge_reopen_events([111, 222, 333])
+    assert warmed == [222]
+    assert timeline_calls == [222]
+
+
 def test_run_bounded_redirects_to_files_not_pipes(monkeypatch):
     """Le correctif est le TRANSPORT : fichiers, jamais de pipe.
 
