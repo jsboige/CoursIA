@@ -72,6 +72,92 @@ def test_default_journal_path_matches_merge_ready():
     assert timing.default_journal_path() == merge_ready.default_journal_path()
 
 
+def test_not_evaluated_verdict_matches_merge_ready():
+    """La copie du verdict des PRs non evaluees ne doit pas deriver."""
+    spec = importlib.util.spec_from_file_location(
+        "merge_ready_for_verdict_check", COORD / "merge_ready.py"
+    )
+    merge_ready = importlib.util.module_from_spec(spec)
+    sys.modules["merge_ready_for_verdict_check"] = merge_ready
+    spec.loader.exec_module(merge_ready)
+    assert timing.NOT_EVALUATED_VERDICT == merge_ready.VERDICT_NOT_EVALUATED
+
+
+# --- PRs non evaluees (#28009) ----------------------------------------------------
+
+
+def test_les_lignes_non_evaluees_ne_portent_aucun_cout(tmp_path):
+    """Une PR non evaluee ne porte ni cout, ni compte de PRs.
+
+    Comptees comme des PRs evaluees, elles gonfleraient le compte du passage
+    de centaines de lignes sans evaluation : la projection ``span * (132 /
+    count)`` -- une regle de trois sur le compte de PRs -- annoncerait alors
+    un passage lent comme un passage rapide.
+    """
+    journal = write_journal(
+        tmp_path / "journal.jsonl",
+        [
+            (0, 101, "skipped", "no-approval"),
+            (10, 102, "merged", None),
+            (20, 103, "unevaluated", "pass-budget-exceeded"),
+            (20, 104, "unevaluated", "pass-budget-exceeded"),
+        ],
+    )
+    rows, unreadable = timing.read_journal(journal)
+    assert unreadable == 0
+    passes = timing.split_passes(rows, timing.DEFAULT_MAX_GAP_S)
+    assert len(passes) == 1
+    p = passes[0]
+    assert p.count == 2  # seules les PRs EVALUEES comptent
+    assert p.not_evaluated == 2
+    # L'etendue et le cout ne bougent pas : les lignes non evaluees ne
+    # delimitaient aucune evaluation.
+    assert p.span_s == pytest.approx(10.0)
+    assert p.measured_s == pytest.approx(p.span_s)
+    assert "pass-budget-exceeded" not in p.by_class
+    assert "pass-budget-exceeded" not in p.by_class_count
+
+
+def test_une_pr_non_evaluee_ouvre_un_passage_au_tour_suivant(tmp_path):
+    """La PR non evaluee par la passe 1, evaluee par la passe 2, ouvre un
+    NOUVEAU passage -- sans quoi la mesure de la passe 2 serait absorbee
+    par la passe 1.
+
+    L'ecart temporel est ici de 40 s : la separation ne peut pas venir de
+    lui, elle vient de la PR repetee.
+    """
+    journal = write_journal(
+        tmp_path / "journal.jsonl",
+        [
+            (0, 101, "skipped", "no-approval"),
+            (10, 102, "merged", None),
+            (20, 103, "unevaluated", "pass-budget-exceeded"),
+            (60, 103, "merged", None),
+        ],
+    )
+    rows, _ = timing.read_journal(journal)
+    passes = timing.split_passes(rows, timing.DEFAULT_MAX_GAP_S)
+    assert len(passes) == 2
+    assert passes[0].count == 2 and passes[0].not_evaluated == 1
+    assert passes[1].count == 1 and passes[1].not_evaluated == 0
+
+
+def test_le_json_nome_les_prs_non_evaluees(tmp_path, capsys):
+    journal = write_journal(
+        tmp_path / "journal.jsonl",
+        [
+            (0, 101, "skipped", "no-approval"),
+            (10, 102, "unevaluated", "pass-budget-exceeded"),
+        ],
+    )
+    rc = timing.main(["--journal", str(journal), "--json"])
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["not_evaluated"] == 1
+    assert payload["selected"][0]["not_evaluated"] == 1
+    assert payload["selected"][0]["prs"] == 1
+
+
 # --- attribution du cout --------------------------------------------------------
 
 

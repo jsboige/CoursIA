@@ -6,5 +6,6 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Les algorithmes d'enumeration et d'induction sont les objets du cours ; stdlib Python et BCL .NET les calculent sans moteur externe omis."
   known_differences:
+    - '2026-11-21 (myia-ai-01:CoursIA-2, #27792) : les deux cotes ont recu un lien de navigation vers le jumeau Rust (une seule ligne markdown, le lien [jumeau Rust] dans la ligne de navigation de chaque carnet). Portee du diff : 0 cellule de code touchee, 0 sortie reecrite, aucune re-execution due ; la semantique calculee des deux cotes est inchangee. Attestation emise apres la modification.'
     - "Fraction Python expose le seuil exact 2/3 ; C# emploie une tolerance 1e-12 au seuil fourni. Les grilles des exercices utilisent les numerateurs entiers avant division."
     - "Aucun tirage aleatoire ni graphique ; les tableaux et trajectoires textuelles preservent les experiences."
