@@ -252,10 +252,10 @@
           "justification": "Le corpus de huit documents est auto-contenu ; TF-IDF, BM25 et Recall@k sont construits devant le lecteur (P1). Les exercices adaptent l'idf, la contribution BM25 et le calcul du rappel, avec vérification sur des cas chiffrés (A2). Les requêtes annotées et Recall@3 forment un instrument réutilisable pour comparer les classements sur ce corpus ; aucune question ouverte n'est revendiquée (R1). Les calculs utilisent Python/NumPy et Matplotlib, sans paquet du domaine à configurer (O1).",
           "mesures": {
             "exercices": 3,
-            "cellules_code": 13,
-            "cellules_md": 18,
-            "prose_chars": 17035,
-            "densite": 1310,
+            "cellules_code": 14,
+            "cellules_md": 20,
+            "prose_chars": 19802,
+            "densite": 1414,
             "densite_plancher": 1200,
             "kernel": "Python 3",
             "exigences": {

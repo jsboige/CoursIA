@@ -4051,6 +4051,91 @@ theorem hashlife_correct_margin_of_union_periodic_family (c : MacroCell) (k : Na
   rw [hsplit]
   exact hcap_of_union_periodic_family_low hT4 L hnd hsep hfix hcan hne t
 
+/-! ### Tranche 26 — flottes n-aires de vaisseaux synchrones (miroir du maillon 6)
+
+Le maillon 5 closait L3 pour **deux** vaisseaux synchrones ; le maillon 6
+généralisait la voie périodique à l'arité n. Le miroir côté vaisseau manque :
+une flotte finie de vaisseaux de même période `p` et même déplacement `v`,
+deux à deux distincts et mutuellement 3-séparés, n'est couverte par aucun
+énoncé — chaque membre l'est (`hcap_of_spaceship`), la paire l'est
+(`hcap_of_spaceship_formation`), la flotte de trois gliders ne l'est pas. La
+scission n-aire suit le même schéma que `evolve_period_join` : l'égalité
+membres→égalité passe par `mem_evolve_join_sep` (la séparation deux à deux
+hérite de la tête à la queue), et la capture est celle de la voie vaisseau
+appliquée à l'union, qui est elle-même un vaisseau. -/
+
+/-- **Vaisseau de l'union n-aire.** Une famille finie de membres tous
+    vaisseaux synchrones (`evolve p g = shift v g`, même `p > 0`, même `v`),
+    deux à deux distincts et mutuellement 3-séparés à toute phase, forme une
+    union elle-même vaisseau de même période et déplacement — même pont
+    membres→égalité que `evolve_ship_union` : les deux membres de l'égalité
+    sont canoniques et ont les mêmes cellules par `mem_evolve_join_sep`,
+    `List.mem_flatten` et `mem_shift`. -/
+theorem evolve_ship_join {p : Nat} (hp0 : 0 < p) (L : List Grid) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ q ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship : ∀ g ∈ L, evolve p g = shift v g)
+    (hcan : Canonical L.flatten) :
+    evolve p L.flatten = shift v L.flatten := by
+  apply Canonical.ext (canonical_evolve_of_pos hp0 _) (canonical_shift v _)
+  intro q
+  rw [mem_evolve_join_sep L hnd hsep p q, mem_shift v L.flatten q, List.mem_flatten]
+  apply exists_congr
+  intro g
+  constructor
+  · rintro ⟨hg, hq⟩
+    exact ⟨hg, (mem_shift v g q).mp (by rw [← hship g hg]; exact hq)⟩
+  · rintro ⟨hg, hq⟩
+    exact ⟨hg, by rw [hship g hg]; exact (mem_shift v g q).mpr hq⟩
+
+/-- **hcap des flottes de vaisseaux synchrones — le miroir vaisseau du
+    maillon 6.** Pour une famille finie de vaisseaux de même période `p > 0`
+    et même déplacement `v`, deux à deux distincts et mutuellement 3-séparés,
+    dont chaque phase de l'union a un niveau de reconstruction divisible par
+    `p` et dont la vitesse vérifie `2·|v.i| ≤ p`, tout instant `t` de la
+    trajectoire de l'union est capturé : l'union est un vaisseau
+    (`evolve_ship_join`), et la capture par la voie vaisseau
+    (`hcap_of_spaceship`) s'y applique telle quelle. Généralisation 2→n
+    exacte de `hcap_of_spaceship_formation`. -/
+theorem hcap_of_spaceship_fleet {p : Nat} (hp0 : 0 < p) (L : List Grid)
+    (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ q ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship : ∀ g ∈ L, evolve p g = shift v g)
+    (hcan : Canonical L.flatten)
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i L.flatten)).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t L.flatten)).2 = true :=
+  hcap_of_spaceship L.flatten hcan hp0 v
+    (evolve_ship_join hp0 L hnd hsep v hship hcan) hdiv hspd1 hspd2
+
+/-- **L3 clos pour les flottes de vaisseaux synchrones.** Corollaire
+    d'assemblage miroir de `hashlife_correct_margin_of_union_periodic_family`
+    : une MacroCell dont la grille rendue à l'origine est l'union d'une
+    famille finie de vaisseaux de même période `p > 0` et même déplacement
+    `v`, deux à deux distincts et mutuellement 3-séparés, satisfait l'égalité
+    Hashlife à tout horizon `2^k` sous `centralCorrect`. Le degré n-aire de
+    la voie vaisseau : n'importe combien de gliders synchrones séparés par
+    trois cellules — chaque membre couvert seul l'était déjà, la flotte
+    entière ne l'était pas. -/
+theorem hashlife_correct_margin_of_spaceship_fleet (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (L : List Grid) (hsplit : c.toGrid (0, 0) = L.flatten) (hnd : L.Nodup)
+    (hsep : ∀ s g h, g ∈ L → h ∈ L → g ≠ h →
+      ∀ q ∈ evolve s g, ∀ r ∈ evolve s h, 3 ≤ chebDist q r)
+    (hship : ∀ g ∈ L, evolve p g = shift v g) (hcan : Canonical L.flatten)
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_spaceship_fleet hp0 L hnd hsep v hship hcan (hsplit ▸ hdiv)
+    hspd1 hspd2 t
 /-! ### Tranche 15 — unions de périodes mixtes (voie mod, containment)
 
 Les maillons 2-4 de la chaîne des unions exigent que les deux parties partagent la
