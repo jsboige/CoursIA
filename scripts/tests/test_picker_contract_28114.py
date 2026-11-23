@@ -29,7 +29,7 @@ Le tableau ci-dessous resume l'etat mesure au 22/11 (lane
 | I2 repli chronologique | **viole** | la voie legere n'a **aucun cache** : hors reseau, elle rend le code 3 |
 | I3 autonomie | tenu | le tirage ne lit aucun artefact du coordinateur |
 | I4 degrade jamais bloque | tenu (22/11, ce PR) | `main_freshness` rend `degrade`, plus la sortie 4 (`TIRAGE REFUSE`) |
-| I5 exclusions en donnees | **viole** | aucune regle ne lit un label `pause` |
+| I5 exclusions en donnees | tenu (23/11, ce PR) | la regle LABEL lit la table des labels d'exclusion (`tapis_labels.py`) : `candidate-delivered` et `pause` |
 | I6 borne de temps | **viole** | budgets declares cumules : 60 + 90 + 90 = 240 s pour 60 s |
 | I7 consolidation puis anciennete | **viole** | les deux bonus sont **additionnes** (`tapis_avantages`) |
 
@@ -37,6 +37,12 @@ I4 est devenu **executable** dans ce PR : la garde de fraicheur distingue
 trois etats (frais / degrade / refuse), et seul l'etat **inconnu** (mesure
 impossible) refuse encore. Le marqueur `xfail` du test I4 a donc ete
 retire : le test passe, et le CI le prouve.
+
+I5 est devenu **executable** dans ce PR : la regle LABEL de
+`tapis_rapide._decider` lit la table des labels d'exclusion
+(`coordination/tapis_labels.py`) -- l'urne de cloture et la pause. Le
+marqueur `xfail` du test I5 est donc retire : le test passe, et le CI le
+prouve.
 
 Ce que ce fichier ne couvre pas (a dire, pas a cacher) : l'exclusion des
 **doublons de meme carnet** (I5) n'a pas de cle de carnet definie par le
@@ -245,10 +251,6 @@ def test_I4_un_main_perime_degrade_le_tirage_il_ne_le_refuse_pas(monkeypatch,
 
 # --- I5 -- les exclusions en donnees -------------------------------------------
 
-@pytest.mark.xfail(strict=True, reason=(
-    "I5 viole au 22/11 : aucune des neuf regles ne lit un label de pause "
-    "(les pauses etaient filtrees a la main, par regex de titre). "
-    "A lever quand les exclusions en donnees sont branchees."))
 def test_I5_une_pause_posee_en_donnees_est_respectee_par_tous_les_tirages():
     """I5 -- les exclusions dures sont des **donnees**, pas de la memoire.
 
@@ -260,6 +262,10 @@ def test_I5_une_pause_posee_en_donnees_est_respectee_par_tous_les_tirages():
     Etat au 22/11 : aucune des neuf regles ne lit un label de pause -- les
     pauses du 22/11 (politique Rust, parites C#/Rust) etaient filtrees a la
     main, par regex de titre, par la seule memoire d'un agent.
+
+    Etat au 23/11 (ce PR) : la regle LABEL lit la **table** des labels
+    d'exclusion (`coordination/tapis_labels.py`) -- l'urne et la pause. Le
+    marqueur `xfail` est leve : le test passe, et le CI le prouve.
     """
     issues = [
         _issue(5001, "Grain libre"),
