@@ -82,6 +82,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/notebook-renumbering-detail.md](reference/notebook-renumbering-detail.md) | Corpus des precedents `renum()`/`reclass()` (19 issues, 4 verdicts « aucune renum »), blast-radius mesure de la grappe Probas, etat de l'arbre. Detail de `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/lean-axiom-coverage.md](reference/lean-axiom-coverage.md) | Couverture axiomes du gate proof-integrity par lake — classes dangereuses `native_decide.*`/`sorryAx`/`Classical.choice`. Câblage CI : matrice `ci_lakes.json` pour les lakes migrés (dont `knot_lean` depuis #13751 et `conway_lean` depuis #25256). Détail de référence pour §B.3 de `.claude/rules/pr-review-discipline.md`. Établi cycle c.950 (worker po-2023, lane `myia-po-2023:CoursIA-2`). See #8738 (step 3), #8752 (livraison) |
 | [reference/lean-material-map.md](reference/lean-material-map.md) | Carte du matériel Lean du dépôt, par lake — modules propres, miroirs `_en`, présence au CI, gate d'axiomes, date de naissance. Régénérée par `scripts/lean/lean_material_map.py`, `--check` rend 1 quand page et arbre divergent. See #23097 (T1, PR #23105) |
+| [reference/axler-companions-distillation.md](reference/axler-companions-distillation.md) | Comparaison des deux compagnons Axler (linear-algebra-done-right-lean Apache-2.0 vs Axler-Solutions sans licence) et règle de distillation par verbe d'énoncé — Fille 3.2 de l'Epic Origami #24838 ; typologie mesurée sur 7 sections, gap ch. 10, application aux marches 3+ de la Fille 3.1 |
 | [reference/secrets-and-coord-detail.md](reference/secrets-and-coord-detail.md) | Secrets + coordination cross-machine |
 | [reference/gh-posting-hygiene-detail.md](reference/gh-posting-hygiene-detail.md) | Posting gh — détail : incidents de référence (sièges, OS, remédiation, le trompe-l'œil du rouge `tag_required` sur #17270/#17326) |
 | [reference/student-pr-reviews-detail.md](reference/student-pr-reviews-detail.md) | Incident, format public, workflow |
@@ -142,6 +143,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | Fichier | Description |
 |---------|-------------|
 | [genai/3d-socle-reproductibilite.md](genai/3d-socle-reproductibilite.md) | Reproductibilité des socles 3D (NeRF, splats) — mesure sur deux postes : écart 0,07 dB et reproduction exacte |
+| [reference/genai-3dtiles-public-measurements.md](reference/genai-3dtiles-public-measurements.md) | 3D Tiles — mesures du viewer public et prototype hiérarchique local, avec limites de comparaison |
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
 | [genai/tts-fishaudio-int4.md](genai/tts-fishaudio-int4.md) | La route int4 réelle de tts-fishaudio — quantification amont weight-only, quatre correctifs, mesures VRAM/qualité (#23415) |
 | [genai/audio-fish-decision.md](genai/audio-fish-decision.md) | Décision Fish Audio S2 Pro — evidence mesurée et recommandation hybride (critère 5, #19694) |
@@ -282,6 +284,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/solms-affect-pre-enregistrement.md](ict/solms-affect-pre-enregistrement.md) | Réalisation de pertinence — Solms & Friston 2018 (*Front Psychol* 9:2714) : l'affect comme forme élémentaire de la conscience, mécanisme homéostatique formalisé en énergie libre, localisation subcorticale ; dissociation level (affectif, subcortical) vs contents (corticaux) — protocole scellé avant écriture du banc, 5 prédictions (H1 subcortical vs null H0 readout cortical) |
 | [ict/ict23-anticipation-pre-enregistrement.md](ict/ict23-anticipation-pre-enregistrement.md) | Tranche T2 #26945 — le banc ICT-23 anticipe-t-il la transition ? rampe vers le pli de la fronce (Wissel 1984, Scheffer et al. 2009), deux nuls préservant le spectre, hystérésis au retour ; scellage avant toute ligne de code (ordre git vérifiable), bornage « ne teste pas un LLM » |
 | [ict/penrose-orch-or-pre-enregistrement.md](ict/penrose-orch-or-pre-enregistrement.md) | Case 24 — Penrose & Hameroff (Orch-OR, DP) : lois de régimes de la réduction objective (Fermi linéaire 2× vs blob quadratique √2) et effet dual τ/masquage lié par 1/(1+η) — protocole scellé v1 avant le banc, amendement v2 pré-exécution (géométrie blob), verdict SUPPORTED 8/8 |
+| [ict/perceptronium-pre-enregistrement.md](ict/perceptronium-pre-enregistrement.md) | Case 27 — Tegmark 2015 *Consciousness as a State of Matter* : banc de dissociation quantitative du perceptronium scellé avant mesure (H1-H7, amendements A1-A3 pré-mesure dont le finding S''(0) = 0 exact) ; loi d'échelle 2^-4b réfutée (~2^-b mesuré, robuste sur 6 potentiels), identités exactes et plafond Φ = log(27/16)/log 8 confirmés |
 
 ## Curriculum (docs/curriculum/)
 
@@ -307,6 +310,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 | [curriculum/qualification/README.md](curriculum/qualification/README.md) | Qualification des carnets — échelle de difficulté et dimension recherche, séries pilotes qualifiées valeur par valeur (#24996) |
+| [curriculum/manifeste-dependances.md](curriculum/manifeste-dependances.md) | Manifeste des dépendances du cursus par famille de noyau — verdict d'inclusion dans l'image CPU, motifs mesurés ou déclarés, conflits de versions, manifeste consolidé (généré par `scripts/notebook_tools/dependency_manifest.py`, #27544) |
 
 ## Métadonnées notebooks (docs/notebook-metadata/)
 
@@ -337,7 +341,7 @@ Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957
 | [i18n/CSV-by-series-design.md](i18n/CSV-by-series-design.md) | Design doc infra CSV-by-series (EPIC #4957 Phase 1) |
 | [translation/argumentum-fork-mapping.md](translation/argumentum-fork-mapping.md) | Référence pérenne couche T3 (moteur `translate_csv.py`, #6949/#6976) |
 | [transients/2026-07-19-epic-4957-status.md](transients/2026-07-19-epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
-| [translation/translations-root-diagnostic.md](translation/translations-root-diagnostic.md) | Diagnostic du répertoire `translations/` à la racine : état des lieux et options de disposition. **Doc-only, sans action destructive** — le diagnostic est écrit et arbitrable avant qu'une ligne ne soit supprimée |
+| [transients/2026-08-06-translations-root-diagnostic.md](transients/2026-08-06-translations-root-diagnostic.md) | Diagnostic du répertoire `translations/` à la racine : état des lieux et options de disposition. **Doc-only, sans action destructive** — le diagnostic est écrit et arbitrable avant qu'une ligne ne soit supprimée |
 | [translation/translation-override-protocol.md](translation/translation-override-protocol.md) | Voie normale du double-clé `translation-override` : quand resynchroniser un CSV par `T1 --update`, à qui le demander, motif type. Transpose l'arbitrage ai-01 du dispatch `c2760` (#20232) |
 
 ## Recherche (docs/research/)
@@ -454,8 +458,8 @@ Protocoles opérationnels de la coordination flotte (registres, tenanciers, liai
 | [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole de réservation GPU — schéma du ledger, garde 85 % charge hôte, CUDA devices explicites, GPU 2 dédié ai-01, fold hebdomadaire, liaison picker / file #1454. Chantier #16737. |
 | [coordination/gpu-ledger-transport.md](coordination/gpu-ledger-transport.md) | Transport git du ledger `gpu-reservation` — publication en ajout seul, remote paramétrable, garde de lancement et sources des verdicts, sans changement de l'autorité déclarée. |
 | [coordination/ci-overflow-controller.md](coordination/ci-overflow-controller.md) | Contrôleur automatique de la variable de dépôt `CI_OVERFLOW_LOCAL` (phase B du débordement CI) — file hébergeuse saturée → `true`, file drainée → `false`, mesure illisible → aucune écriture ; le job automatisé **écrit** la variable via le secret dédié `ACTIONS_VARIABLES_PAT` (canal séparé du jeton de mesure, aucun repli : secret absent → verdict rendu, rien d'écrit, cause nommée dans le résumé du job). Chantier #22937. |
-| [coordination/dns-rate-measurement.md](coordination/dns-rate-measurement.md) | Mesure du débit de requêtes UDP des runners éphémères (volet 5.1 de Maintenance#196) — compteur `Udp.OutDatagrams` lu dans chaque conteneur, distinction recyclage / remise à zéro, verdict `UNREADABLE` quand aucune mesure n'est exploitable. Chantier #22937. |
-| [coordination/ci-two-tier.md](coordination/ci-two-tier.md) | Inventaire mesuré des workflows de CI (phase P0 du plan « CI à deux étages ») — census des déclencheurs lus dans le bloc `on:`, médiane et p90 par workflow sur une fenêtre bornée et annoncée, et l'ensemble des jobs que le PR gate exige aujourd'hui ; reproduction par `scripts/ci/measure_ci_two_tier.py`. Chantier #22937. |
+| [transients/2026-10-31-dns-rate-measurement.md](transients/2026-10-31-dns-rate-measurement.md) | Mesure du débit de requêtes UDP des runners éphémères (volet 5.1 de Maintenance#196) — compteur `Udp.OutDatagrams` lu dans chaque conteneur, distinction recyclage / remise à zéro, verdict `UNREADABLE` quand aucune mesure n'est exploitable. Chantier #22937. |
+| [transients/2026-11-10-ci-two-tier.md](transients/2026-11-10-ci-two-tier.md) | Inventaire mesuré des workflows de CI (phase P0 du plan « CI à deux étages ») — census des déclencheurs lus dans le bloc `on:`, médiane et p90 par workflow sur une fenêtre bornée et annoncée, et l'ensemble des jobs que le PR gate exige aujourd'hui ; reproduction par `scripts/ci/measure_ci_two_tier.py`. Chantier #22937. |
 
 ## Cadrage épistémique (docs/cadrage/)
 
