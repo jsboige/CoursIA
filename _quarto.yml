@@ -1146,6 +1146,7 @@ project:
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17e-Bayesian-Persuasion-CSharp.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17e-Bayesian-Persuasion-Python.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb"
+    - "MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL/GameTheory-17g-SelfPlay-Tabulaire-vers-PettingZoo-Python.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb"
     - "MyIA.AI.Notebooks/GameTheory/GameTheory-19-Capstone-Dynamics-Python.ipynb"
