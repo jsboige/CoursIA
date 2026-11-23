@@ -125,8 +125,8 @@ jobs:
             # et le balayage CI-armee se comportent pareil).
             scripts/delivery_grammar.py
             scripts/check_run_state.py
-            scripts/gh_identity.py
-            scripts/gh_payload_cache.py
+            scripts/ci/gh_identity.py
+            scripts/ci/gh_payload_cache.py
             scripts/grain_tag.py
             scripts/issue_containers.py
             scripts/released_covers.py

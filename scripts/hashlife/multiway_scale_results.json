@@ -1,0 +1,182 @@
+{
+  "probe": "pli5-grainB-mesure",
+  "issue": 23093,
+  "date": "2026-11-15",
+  "seat": "myia-po-2024 (Windows, python 3.13)",
+  "organe": "scripts/hashlife/hypergraph_multiway.py",
+  "declared_before_measurement": {
+    "arret": {
+      "etats_cumules_max": 150000,
+      "mur_secondes": 90.0,
+      "generation_max": 10
+    },
+    "verdict_croissance": {
+      "non_reductible": "lambda_g = |gen_g|/|gen_{g-1}| > 1.5 pour toute transition mesuree, et R2 du fit log|gen| ~ g > 0.97",
+      "reductible": "lambda <= 1.15 sur le dernier tiers des transitions mesurees",
+      "sinon": "INCONCLUSIVE"
+    },
+    "exposant_temps": {
+      "mesure": "pente de la regression log(temps_cumule) ~ log(etats_vus) sur les points enregistres a chaque doublement du nombre d'etats vus (premier point a 64), au moins 3 points",
+      "superlineaire_si": "pente > 1.2 avec R2 > 0.98"
+    },
+    "controle_correctness": {
+      "C1": "chacun des evenements de setreplace est une instance valide de la regle et sa re-application maison redonne exactement l'etat observe",
+      "C2": "l'enumerateur complet de la couche maison trouve la liaison choisie par setreplace sur chacun des 100 premiers evenements",
+      "C3": "l'etat final rejoue par la couche maison est egal, atome pour atome, a l'etat final setreplace (empreinte sha256 des deux formes canoniques)",
+      "mesure_void_si": "un quelconque controle echoue"
+    },
+    "dedup": "etats multiway dedupliques par etat EXACT etiquete ; l'atome neuf w de chaque application vaut 1 + max(atomes de l'etat source), fonction pure de (etat, liaison)",
+    "granularite_arret": "le cap etats_cumules_max est applique PENDANT la generation : l'exploration s'arrete net des que le nombre d'etats vus atteint le cap ; la generation coupee est marquee tronquee, et exclue des ratios lambda et du fit de l'exposant"
+  },
+  "controles": {
+    "reference": {
+      "package": "setreplace 0.2.0",
+      "events": 1500,
+      "wall_s": 0.069,
+      "final_edges": 3004,
+      "final_state_sha256_16": "452bb4067f0e5689"
+    },
+    "C1_rejeu_semantique": {
+      "ok": 1500,
+      "checked": 1500,
+      "pass": true
+    },
+    "C2_enum_complet_prefixe": {
+      "hits": 100,
+      "checked": 100,
+      "pass": true
+    },
+    "C3_temoin_final": {
+      "replayed_sha256_16": "452bb4067f0e5689",
+      "reference_sha256_16": "452bb4067f0e5689",
+      "pass": true
+    },
+    "diagnostic_ordre_canonique": {
+      "accord_premier_match": 1,
+      "sur_prefixe": 100
+    },
+    "pass": true
+  },
+  "mesure_multiway": {
+    "regle": "{{x, y}, {x, z}} -> {{x, z}, {x, w}, {y, w}, {z, w}}",
+    "regle_origine": "regle de l'annonce du Wolfram Physics Project (temoin du Grain A, PR #26671)",
+    "etat_initial": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ]
+    ],
+    "arrets": [
+      "etats_cumules_max"
+    ],
+    "generations": [
+      {
+        "generation": 1,
+        "etats": 12,
+        "etats_cumules": 13,
+        "matches_totaux": 12,
+        "wall_s": 0.0,
+        "tronquee": false
+      },
+      {
+        "generation": 2,
+        "etats": 312,
+        "etats_cumules": 325,
+        "matches_totaux": 384,
+        "wall_s": 0.002,
+        "tronquee": false
+      },
+      {
+        "generation": 3,
+        "etats": 11508,
+        "etats_cumules": 11833,
+        "matches_totaux": 15840,
+        "wall_s": 0.116,
+        "tronquee": false
+      },
+      {
+        "generation": 4,
+        "etats": 138167,
+        "etats_cumules": 150000,
+        "matches_totaux": 182008,
+        "wall_s": 1.987,
+        "tronquee": true
+      }
+    ],
+    "lambdas_par_transition": [
+      26.0,
+      36.885
+    ],
+    "points_doublement": [
+      [
+        1.0,
+        0.0
+      ],
+      [
+        64,
+        0.0006
+      ],
+      [
+        128,
+        0.0011
+      ],
+      [
+        256,
+        0.0021
+      ],
+      [
+        512,
+        0.0056
+      ],
+      [
+        1024,
+        0.0102
+      ],
+      [
+        2048,
+        0.019
+      ],
+      [
+        4096,
+        0.0401
+      ],
+      [
+        8192,
+        0.0795
+      ],
+      [
+        16384,
+        0.2487
+      ],
+      [
+        32768,
+        0.4435
+      ],
+      [
+        65536,
+        0.9004
+      ],
+      [
+        131072,
+        1.8823
+      ]
+    ],
+    "exposant_temps_alpha": 1.176,
+    "exposant_r2": 0.9899,
+    "croissance_log_gen_r2": 0.9991,
+    "verdict_croissance": "NON_REDUCTIBLE",
+    "wall_total_s": 2.1
+  }
+}

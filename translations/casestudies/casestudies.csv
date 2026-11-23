@@ -3183,26 +3183,59 @@ print()
 best = min(analysis.items(), key=lambda kv: kv[1]['score'])
 print(f'Strategie optimale (score multi-objectif minimal) : {best[0]}')
 ",,,,,,,,792901bce26b0d76,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/solution/Reseau-Electrique-Intelligent-Python.ipynb,c19,markdown,fr,4f708cffd3668f84,"## Conclusion
+MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/solution/Reseau-Electrique-Intelligent-Python.ipynb,c19,markdown,fr,690cd56f4b8b09df,"## À retenir
 
-Cette étude de cas illustre la **composition ordonnee** des paradigmes IA sur un problème
-metier reel (transition energetique) : on filtre les dispatches impossibles (CP-SAT) avant
-de modeliser l'incertitude (bayesien) avant d'optimiser (multi-objectif). Inverser l'ordre
-produit un système soit trop rigide (contraintes ignorent l'aleatoire), soit trop flou
-(decision sans contraintes physiques).
+- **La composition a un ordre, et l'inverser dégrade le résultat.** On filtre les dispatches impossibles (CP-SAT), puis on modélise l'incertitude (bayésien), puis on optimise (multi-objectif). Inverser produit soit un système trop rigide — des contraintes qui ignorent l'aléatoire — soit trop flou : une décision prise sans contraintes physiques.
+- **Minimiser le coût seul choisit la centrale la plus émissive.** Le dispatch optimal coûte 63 600 € sur l'horizon, avec le charbon qui porte 270 à 340 MW et l'hydroélectricité plate à ses 150 MW ; le gaz, deux fois plus cher au MWh, n'est jamais appelé. L'ordre de mérite économique est aussi l'ordre des émissions : c'est le déséquilibre que les deux couches suivantes corrigent.
+- **Le risque de défaillance est une queue, pas une moyenne.** Avec 800 MW de capacité pilotable face à 420–490 MW de demande nette, la probabilité de défaillance tombe entre 1e-35 et 1e-284. Ce n'est pas le niveau moyen de la demande qui gouverne ce chiffre, mais l'écart-type de la production renouvelable : le risque est porté par la variabilité, pas par la charge.
+- **Un score multi-objectif ne décide pas à votre place, il rend le compromis chiffré.** Le dispatch économique score 1,596, l'écologique 1,560 : l'écologique l'emporte en divisant les émissions par 1,8 (1 638 000 kg contre 918 000) pour un coût majoré de 68 % (63 600 € contre 106 800 €), soit environ 0,06 € par kilogramme de CO2 évité. Avec des poids égaux, le compromis pondéré retombe exactement sur la stratégie écologique — le poids du CO2 écrase les autres dans les normes retenues.
+- **Les limites du jumeau font partie du résultat.** Aucune contrainte de rampe (vitesse de montée entre deux heures), aucun coût de démarrage, aucune corrélation inter-horaire de l'incertitude, ni stockage, ni réseau de transport. Un chiffre lu sans ces limites se lit de travers : le modèle arbitre un problème d'ordonnancement simplifié, pas un réseau réel.
 
-**Etat de la fondation** : jumeau numérique operationnel (couche 0) **+ 4 couches de solveurs
-implémentees** (CP-SAT en Partie 1, bayésien en Partie 2, multi-objectif en Partie 3, analyse comparative en Partie 4 — toutes avec sorties réelles).
+**Etat de la fondation** : jumeau numérique opérationnel (couche 0) **+ 4 couches de solveurs
+implémentées** (CP-SAT en Partie 1, bayésien en Partie 2, multi-objectif en Partie 3, analyse comparative en Partie 4 — toutes avec sorties réelles).
 Les 3 exercices d'extension (Exercices 1 à 3) restent en stub pour les étudiants.
-**Limites du jumeau, à garder en tête** : le modèle n'impose ni contrainte de
-rampe (vitesse de montée/descente entre deux heures), ni coût de démarrage — deux
-composantes centrales du unit commitment réel ; l'incertitude renouvelable est
-supposée gaussienne et indépendante d'une heure à l'autre ; le stockage
-(batteries) et le réseau de transport sont absents. Chacune de ces limites est un
-prolongement naturel : rampes et coûts de démarrage se codent en contraintes
-CP-SAT supplémentaires, la corrélation inter-horaires change la loi de la Partie
-2, et le stockage ajoute une variable d'état entre les heures.
-",,,,,,,,4f708cffd3668f84,,,,,,,,,,,,,,,
+
+## Vérifiez votre compréhension
+
+**1. Le dispatch min-coût n'appelle jamais la centrale gaz, pourtant dimensionnée pour la pointe. Pourquoi ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce que le gaz coûte 60 €/MWh contre 30 €/MWh pour le charbon, et que la demande nette résiduelle (au plus 490 MW) reste sous le plafond combiné charbon + hydro (550 MW). Le solveur applique l'ordre de mérite : il appelle les moyens par coût croissant jusqu'à couvrir la demande. Le gaz ne deviendrait utile qu'en pointe extrême, ou si une contrainte de réserve tournante forçait une capacité disponible supplémentaire — c'est précisément l'objet du premier exercice.
+</details>
+
+**2. Les risques de défaillance sont de l'ordre de 1e-35 à 1e-284. Que signifie concrètement un nombre pareil, et que faut-il en conclure ?**
+
+<details>
+<summary>Réponse</summary>
+
+Qu'à cette échelle, la défaillance par insuffisance de capacité pilotable est un événement d'une rareté qui n'a pas de sens physique dans le modèle — le chiffre dit surtout que la marge (800 MW de capacité contre 420 à 490 MW de demande nette) est confortable. Il ne dit rien de la vraie fragilité d'un réseau : ni pannes d'unités, ni congestions, ni corrélation entre heures n'y entrent. Un risque négligeable dans un modèle l'est souvent par construction.
+</details>
+
+**3. La stratégie écologique coûte 68 % plus cher. Comment un score pondéré arbitre-t-il ce conflit ?**
+
+<details>
+<summary>Réponse</summary>
+
+En normalisant chaque objectif (coût, CO2, risque) par une référence, puis en sommant les contributions pondérées. Ici le coût de l'écologique atteint 1,00 de sa norme mais son CO2 ne pèse que 0,56, et la somme penche à 1,560 contre 1,596 pour l'économique. Le résultat dépend entièrement des poids et des normes choisis : un score n'est pas un verdict, c'est un moyen de rendre l'arbitrage visible et discutable.
+</details>
+
+**4. Pourquoi un « compromis » pondéré peut-il coïncider avec une des deux extrémités du front ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce qu'une somme pondérée de fonctions convexes atteint son minimum sur la **frontière** du domaine, et souvent exactement sur un sommet : ici, les deux stratégies cherchées rendent un dispatch identique, et le score les départage sans qu'un troisième point intermédiaire existe. Le message pratique est qu'un compromis n'est jamais garanti par la méthode — il se constate sur le front, il ne se décrète pas en choisissant des poids.
+</details>
+
+## Pour aller plus loin
+
+- **Les deux autres cas de la série** : [`Diagnostic-Medical-Python`](../../Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb) et [`Planification-Oncologie-Python`](../../Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb) montrent la même composition ordonnée, l'une avec A*, génétique et Z3, l'autre avec RDFLib, CP-SAT et Pyro.
+- **Séries d'origine des briques** : [Search](../../../Search/README.md) pour la programmation par contraintes et la recherche, [Probas](../../../Probas/README.md) pour les modèles bayésiens et la propagation d'incertitude, [SymbolicAI](../../../SymbolicAI/README.md) pour la représentation des connaissances.
+- **Prolongements directs du jumeau** : contraintes de rampe et coûts de démarrage s'ajoutent en CP-SAT ; une corrélation inter-horaire change la loi du modèle probabiliste ; un stockage ajoute une variable d'état entre les heures. Chacun est un exercice de modélisation à part entière, pas un réglage.
+- **Le cas réel** : un opérateur arbitre sur plusieurs marchés et sous contraintes de réseau, pas sur un coût moyen. Comparer les hypothèses du jumeau à un problème de production réel est le meilleur test de ce que le modèle sait dire.
+",,,,,,,,690cd56f4b8b09df,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-Python.ipynb,c0,markdown,fr,ec8f6e4b692762e6,"**Navigation** : [Index](../../README.md)
 # CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
 
@@ -3435,21 +3468,58 @@ def comparative_analysis(network):
 
 print('Analyse comparative :', comparative_analysis(net))
 ",,,,,,,,9d4189683fa4b7ce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-Python.ipynb,c19,markdown,fr,2cc087de31f35384,"## Conclusion
+MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-Python.ipynb,c19,markdown,fr,01c2125352528341,"## À retenir
 
-Cette étude de cas illustre la **composition ordonnee** des paradigmes IA sur un problème
-metier reel (transition energetique) : on filtre les dispatches impossibles (CP-SAT) avant
-de modeliser l'incertitude (bayesien) avant d'optimiser (multi-objectif). Inverser l'ordre
-produit un système soit trop rigide (contraintes ignorent l'aleatoire), soit trop flou
-(decision sans contraintes physiques).
+- **La composition a un ordre, et l'inverser dégrade le résultat.** On filtre d'abord les dispatches impossibles (CP-SAT), puis on modélise l'incertitude (bayésien), puis on optimise (multi-objectif). Inverser produit soit un système trop rigide — des contraintes qui ignorent l'aléatoire — soit trop flou : une décision prise sans contraintes physiques.
+- **Les `None` du squelette sont une information, pas un bug.** Le dispatch, le risque, le score et l'analyse comparative s'affichent vides parce que chaque fonction rend encore son marqueur de repli. L'emplacement est en place, la logique manque — et c'est exactement ce que les trois exercices demandent d'écrire.
+- **Chaque couche répond à une question que la précédente ne sait pas poser.** CP-SAT dit *quel dispatch est physiquement possible et le moins cher* ; le modèle bayésien dit *quelle est la probabilité que ce dispatch échoue* ; le score multi-objectif dit *lequel choisir quand le coût n'est pas le seul critère*. Remplir une couche ne remplace pas les autres.
+- **Un score multi-objectif ne décide pas à votre place.** Il normalise des objectifs hétérogènes (coût, CO2, risque) et rend le compromis visible et discutable. Les poids et les normes que vous choisirez détermineront largement la stratégie retenue — c'est une responsabilité de modélisation, pas un réglage cosmétique.
+- **Le jumeau numérique est l'actif à réutiliser.** Le réseau de trois centrales, les six heures de demande et les incertitudes renouvelables sont fournis : votre travail consiste à faire parler les solveurs sur ce banc d'essai, puis à comparer les stratégies sur les mêmes chiffres.
 
-**Etat du squelette** : jumeau numérique operationnel (couche 0), 4 couches de solveurs
-modelisees en stub. Implementations + exécution + analyse comparative : a completer
-par l'etudiant — le corrige (`../solution/`) montre la version exécutée de bout en bout.
-",,,,,,,,2cc087de31f35384,,,,,,,,,,,,,,,
+## Vérifiez votre compréhension
+
+**1. La fonction de dispatch renvoie `None`. Pourquoi un solveur qui n'a rien optimisé ne peut-il pas afficher un plan à zéro ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce qu'un plan nul n'est pas un plan valide : il violerait l'équilibre offre/demande à chaque heure. Afficher des zéros ferait croire à un résultat physique alors que le modèle n'a simplement pas été construit. La valeur de repli (`None`) signifie « pas encore optimisé » — une distinction que tout système de décision doit conserver, sous peine de présenter une absence de calcul comme une réponse.
+</details>
+
+**2. Les six valeurs de risque de défaillance valent `None`. Que faudrait-il pour qu'elles deviennent des probabilités interprétables ?**
+
+<details>
+<summary>Réponse</summary>
+
+Trois choses : une loi de probabilité pour l'écart de production renouvelable (ici une gaussienne centrée sur l'écart annoncé), une demande nette par heure, et une règle de comparaison avec la capacité pilotable disponible. Le risque est alors la probabilité que la production renouvelable effective plus la capacité pilotable tombent sous la demande nette. Sans le premier ingrédient, il n'y a rien à évaluer.
+</details>
+
+**3. Pourquoi la contrainte de réserve tournante de l'exercice 1 change-t-elle le résultat économique du dispatch ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce qu'elle impose de garder de la capacité disponible — non produite — pour couvrir la perte d'une unité. Cette capacité non utilisée se paie : le dispatch ne peut plus se contenter de la centrale la moins chère à chaque heure et doit parfois démarrer un moyen plus coûteux pour disposer de la réserve. La sûreté a un prix, et le modèle le rend visible.
+</details>
+
+**4. Si le score pondéré désigne la stratégie écologique comme « optimale », cela signifie-t-il que l'opérateur doit la choisir ?**
+
+<details>
+<summary>Réponse</summary>
+
+Non. Le score ne fait qu'appliquer les poids et les normes qu'on lui a donnés ; changer ces valeurs peut changer la stratégie désignée. Il rend l'arbitrage explicite et reproductible, ce qui est déjà beaucoup — mais la décision reste politique et économique, pas algorithmique. Confondre les deux revient à faire décider par un paramètre ce qui relève d'un choix assumé.
+</details>
+
+## Pour aller plus loin
+
+- **Le corrigé du même cas** : [`../solution/Reseau-Electrique-Intelligent-Python.ipynb`](../solution/Reseau-Electrique-Intelligent-Python.ipynb) — à consulter après avoir écrit votre version, pour comparer les modélisations plutôt que le code ligne à ligne.
+- **Le cas précédent de la série** : [`Planification-Oncologie-Python`](../../Planification-Oncologie/student/Planification-Oncologie-Python.ipynb) applique la même architecture par couches à la planification de cures, avec une ontologie RDF, un solveur CP-SAT et un modèle probabiliste.
+- **Séries d'origine des briques** : [Search](../../../Search/README.md) pour la programmation par contraintes et la recherche, [Probas](../../../Probas/README.md) pour les modèles bayésiens et la propagation d'incertitude, [SymbolicAI](../../../SymbolicAI/README.md) pour la représentation des connaissances.
+- **Prolongements directs du jumeau** : contraintes de rampe et coûts de démarrage s'ajoutent en CP-SAT ; une corrélation inter-horaire change la loi du modèle probabiliste ; un stockage ajoute une variable d'état entre les heures. Chacun est un exercice de modélisation à part entière.
+",,,,,,,,01c2125352528341,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb,cell-e74315e1,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb,cell-1511bccd,markdown,fr,6140829a143f5b9f,Tests automatises a completer.,,,,,,,,6140829a143f5b9f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb,cell-49e71cf1,markdown,fr,eaf9adf271e0eba5,"## Bilan — trois paradigmes IA pour un plan de cure sûr et explicable
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb,cell-49e71cf1,markdown,fr,dda530df52f9756a,"## Bilan — trois paradigmes IA pour un plan de cure sûr et explicable
 
 Ce cas-study assembling les trois familles d'IA vues en cours autour d'un même
 métier clinique — la planification de cures d'oncologie. Chacune y joue un rôle
@@ -3497,11 +3567,7 @@ gère l'incertitude, et la cryptographie garantit l'audit. Cette triplette
 (sûreté + robustesse + traçabilité) est la signature des systèmes d'IA
 déployés en milieu médical — et plus largement dans tout domaine où l'erreur
 a un coût humain.
-
-***
-
-**Retour au sommaire** : [Index CaseStudies](../../README.md)
-",,,,,,,,eaf9adf271e0eba5,,,,,,,,,,,,,,,
+",,,,,,,,dda530df52f9756a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb,edaa001d,markdown,fr,04a9fcfaab862a24,"### Exercice 1 : Etendre l'agent de diagnostic avec un score de risque
 
 **Objectif** : Ajouter une méthode `calculer_score_risque` a la classe `DiagnosticAgent` qui combine les indicateurs cliniques en un score numérique composite.
@@ -3678,13 +3744,16 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Pyt
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-diagnostic-agent,markdown,fr,38274c770c352b72,"**Lecture ancrée** : L'agent de diagnostic a été initialisé avec 3 catégories de règles cliniques chargées à partir des protocoles médicaux standard. Ces règles, basées sur les recommandations de l'OMS et de l'ADA pour le diabète de type 2, forment la base du raisonnement clinique automatisé qui sera utilisé pour classer les patients selon leur niveau de risque et orienter les décisions thérapeutiques de manière personnalisée et très précise.",,,,,,,,38274c770c352b72,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-agent-diagnostic,markdown,fr,3d5ae71e210fde9c,"**Lecture ancrée** : L'agent de diagnostic a correctement classé Alice comme ayant un risque normal (glycémie à jeun 85 mg/dL, HbA1c 5.2%) et n'a détecté aucun symptôme. Cette classification correspond aux seuils cliniques standards où une HbA1c < 5.7% indique une glycémie normale.",,,,,,,,3d5ae71e210fde9c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-astar-class,markdown,fr,6980452d808d8cc7,"**Lecture ancrée** : La classe EtatDiagnostic pour A* a été initialisée avec 7 hypothèses possibles, couvrant l'espace des diagnostics différentiels pour le diabète de type 2. Cette représentation permet à l'algorithme de naviguer efficacement dans l'espace des états cliniques possibles.",,,,,,,,6980452d808d8cc7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-astar-performance,markdown,fr,e4c940f65dd0d68b,"**Lecture ancrée** : L'algorithme A* a convergé en 308 itérations avec un temps d'exécution de 25,50 ms pour le patient simple, produisant l'hypothèse `intolerance_glucose` avec un niveau de confiance de 0,8. Ce résultat démontre l'efficacité de la recherche informée dans l'espace des états diagnostiques.",,,,,,,,e4c940f65dd0d68b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-astar-performance,markdown,fr,c26bb7fc3f9aa856,"**Lecture ancrée** : L'algorithme A* a convergé en 308 itérations pour le patient simple, produisant l'hypothèse `intolerance_glucose` avec un niveau de confiance de 0,85. Ce résultat démontre l'efficacité de la recherche informée dans l'espace des états diagnostiques.
+
+Le temps d'exécution affiché par la cellule dépend de la machine et n'est pas un résultat reproductible : il ne doit pas être épinglé dans la prose.
+",,,,,,,,c26bb7fc3f9aa856,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-genetic-class,markdown,fr,bc035ffafe9ef0c4,**Lecture ancrée** : L'algorithme génétique a été initialisé avec 5 patients de référence qui serviront de base pour l'optimisation des paramètres diagnostiques. Ces patients de référence permettent d'évaluer la fitness des solutions proposées par l'algorithme évolutionnaire.,,,,,,,,bc035ffafe9ef0c4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-genetique-convergence,markdown,fr,1d7bfecae237a57f,"**Lecture ancrée** : L'algorithme génétique a fait évoluer le fitness de 16,731 à 17,957 entre les générations 0 et 20, montrant une convergence rapide vers une solution optimale. Cette amélioration progressive reflète l'exploration efficace de l'espace des paramètres diagnostiques.",,,,,,,,1d7bfecae237a57f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-z3-class,markdown,fr,d11950ed2a097b99,"**Lecture ancrée** : Le solveur Z3 a été configuré avec succès pour la validation des protocoles thérapeutiques. Le module z3 a été importé correctement, permettant l'utilisation des contraintes logiques pour valider les traitements proposés contre les contre-indications médicales et les interactions médicamenteuses.",,,,,,,,d11950ed2a097b99,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-z3-validation,markdown,fr,bbc0b8ddcedab150,"**Lecture ancrée** : Le solveur Z3 a validé avec succès les protocoles thérapeutiques pour les cas complexes, confirmant par exemple que pour un patient de 72 ans avec cardiopathie, la prescription de statines est appropriée (Metformine: False, Insuline: False, Statines: True) avec un objectif HbA1c de 6,0%, seule contrainte satisfaite du protocole — un objectif glycémique jugé réaliste par le solveur. Cette validation par contraintes garantit que les traitements respectent les contre-indications médicales et les interactions possibles.",,,,,,,,bbc0b8ddcedab150,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-data-loading,markdown,fr,ad315ead07a1ba1e,**Lecture ancrée** : La fonction de chargement des données CSV a été définie pour permettre l'import de profils patients depuis des fichiers externes. Cette capacité est essentielle pour tester le système sur de grands jeux de données cliniques réelles et valider sa robustesse dans des scénarios variés de diagnostic du diabète de type 2.,,,,,,,,ad315ead07a1ba1e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-tests-automatises,markdown,fr,8815494f6fff2acf,"**Lecture ancrée** : La suite de tests automatisés offre une validation complète du système en vérifiant l'intégration des quatre approches (agent rationnel, A*, génétique, Z3). Chaque test valide une composante spécifique du diagnostic, assurant ainsi la cohérence et la robustesse du système de diagnostic médical multi-contraintes.
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb,lecture-tests-automatises,markdown,fr,da1995dc0405ff28,"**Lecture ancrée** : La suite de tests automatisés offre une validation complète du système en vérifiant l'intégration des quatre approches (agent rationnel, A*, génétique, Z3). Chaque test valide une composante spécifique du diagnostic, assurant ainsi la cohérence et la robustesse du système de diagnostic médical multi-contraintes.
 
 ###  Analyse Comparative et Conclusion
 
@@ -3704,19 +3773,59 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Pyt
 3. **Interface clinicien** : Rendre le système utilisable en pratique
 4. **Validation clinique** : Tester sur des cohortes réelles
 
-###  Conclusion
+## À retenir
 
-Ce notebook vous a permis d'implémenter un système de diagnostic médical multi-approches combinant :
+- **Les quatre approches ne résolvent pas le même problème.** L'agent à règles classe trois profils d'un coup — normal à 85 mg/dL et 5,2 % d'HbA1c, pré-diabétique à 115 mg/dL et 6,0 %, diabète de type 2 à 140 mg/dL et 7,8 % — et rend de 3 à 6 recommandations : c'est un triage, rapide et lisible, entièrement gouverné par les seuils écrits dans le code.
+- **A* rend un diagnostic gradué, au prix de l'exploration.** Selon le cas il converge en 198 à 308 itérations (6 à 12 ms) avec une confiance de 0,85 à 0,90, et il conserve deux hypothèses simultanées sur le cas complexe (diabète de type 2 et syndrome métabolique) au lieu d'en imposer une seule. Le nombre d'itérations ne suit pas l'étiquette de complexité du patient : c'est le nombre d'hypothèses que les observations n'éliminent pas qui fait le travail.
+- **L'algorithme génétique calibre ce que les règles supposent acquis.** Le fitness passe de 16,7 à 21,9 et rend des seuils chiffrés : glycémie à jeun 105,6 mg/dL, glycémie post-prandiale 141,0 mg/dL, HbA1c 10,7 %, poids des symptômes 2,0 contre 0,3 pour les antécédents. Il optimise une fonction choisie, il ne prouve rien.
+- **Z3 garantit la conformité, pas la pertinence clinique.** Les trois protocoles testés ressortent « VALIDÉ » en 1,96 ms en moyenne, avec la Metformine à 0 mg sur les trois cas et des statines accordées au seul patient cardiopathe. « Validé » signifie « aucune contrainte violée » — un protocole presque vide satisfait aussi le modèle, ce qui en dit long sur ce qu'on a omis d'y écrire.
+- **La composition a un ordre, et cet ordre est le vrai apprentissage.** Les règles filtrent et trient, A* explore les hypothèses restantes, le génétique calibre les seuils, Z3 valide le protocole avant prescription. Intervertir deux couches fait perdre soit la sûreté (optimiser avant d'avoir filtré), soit l'explicabilité (contraindre sans avoir posé les hypothèses).
 
- **Intelligence Artificielle Exploratoire** : Recherche (A*), heuristiques
- **Intelligence Artificielle Symbolique** : Règles, contraintes (Z3)
- **Optimisation** : Algorithmes génétiques
- **Application Biomédicale** : Diagnostic du diabète de type 2
+## Vérifiez votre compréhension
 
-Les compétences développées sont directement transférables à d'autres domaines nécessitant des systèmes de décision intelligents.
+**1. A* converge en 308 itérations sur le cas étiqueté simple, 198 sur le cas moyen et 259 sur le cas complexe. Pourquoi l'étiquette de complexité n'ordonne-t-elle pas l'effort de recherche ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce que le compteur mesure l'arbre exploré, pas la difficulté annoncée. Ce qui pilote A* est le nombre d'hypothèses encore compatibles avec les observations et le coût de chaque branche : un cas étiqueté simple peut laisser ouvertes plus d'hypothèses concurrentes qu'un cas moyen, et l'heuristique médicale ne les sépare pas également. L'étiquette décrit le patient, le compteur décrit la recherche — les deux ne coïncident que par accident.
+</details>
+
+**2. Trois protocoles sortent « VALIDÉ » alors qu'aucun ne prescrit de Metformine. Le solveur a-t-il échoué ?**
+
+<details>
+<summary>Réponse</summary>
+
+Non, il a répondu exactement à la question posée : satisfaire les contraintes logiques du modèle (âge, IMC, antécédents, interactions, objectif d'HbA1c). Écarter la Metformine chez un patient néphropathique est son travail. Mais un protocole quasi vide satisfait lui aussi le modèle, parce qu'aucune contrainte d'efficacité thérapeutique n'y figure. La faiblesse est du côté de la modélisation, pas de la résolution.
+</details>
+
+**3. Où placer une contre-indication absolue, et pourquoi ne pas la confier au score génétique ?**
+
+<details>
+<summary>Réponse</summary>
+
+Dans les contraintes dures (Z3), pas dans la fonction de fitness. Un algorithme génétique optimise une somme pondérée : il peut parfaitement compenser un risque par un gain de précision et retenir un traitement contre-indiqué si le score global y gagne. Une contrainte dure retire la solution de l'espace ; un poids la rend seulement chère.
+</details>
+
+**4. La courbe de fitness du génétique ne décroît jamais. Est-ce la preuve que les seuils trouvés sont les meilleurs ?**
+
+<details>
+<summary>Réponse</summary>
+
+Non. La courbe tracée est celle du **meilleur individu rencontré**, et cette quantité ne peut pas baisser par construction — l'élitisme conserve le meilleur chromosome d'une génération à l'autre. Une courbe monotone documente une progression, pas une convergence vers l'optimum : aucune garantie d'optimalité n'accompagne un algorithme évolutionnaire, contrairement à A* avec une heuristique admissible.
+</details>
+
+## Pour aller plus loin
+
+- **Le cas suivant de la série** : [`Planification-Oncologie-Python`](../../Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb) transpose la même logique de composition à la planification de cures, avec une ontologie RDFLib, un solveur CP-SAT, un modèle Pyro et un contrat haché.
+- **Le troisième cas** : [`Reseau-Electrique-Intelligent-Python`](../../Reseau-Electrique-Intelligent/solution/Reseau-Electrique-Intelligent-Python.ipynb) montre la même architecture sur un problème d'ordonnancement sous incertitude, où l'arbitrage coût / CO2 rend le compromis explicite.
+- **Séries d'origine des briques** : [Search](../../../Search/README.md) pour A* et les heuristiques, [SymbolicAI/SMT](../../../SymbolicAI/SMT/README.md) pour Z3 et la modélisation par contraintes, [Sudoku](../../../Sudoku/README.md) pour les algorithmes génétiques sur un problème combinatoire plus maniable.
+- **Ce que ce système ne fait pas** : aucun apprentissage à partir de cohortes réelles, aucune gestion de l'incertitude sur les mesures biologiques, aucune explication de la recommandation au patient. Ce sont trois pistes de projet, pas trois détails d'implémentation.
 
 ***
-**Retour au sommaire** : [Index CaseStudies](../../README.md)",,,,,,,,8815494f6fff2acf,,,,,,,,,,,,,,,
+
+**Retour au sommaire** : [Index CaseStudies](../../README.md)
+",,,,,,,,da1995dc0405ff28,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb,lecture-config-001,markdown,fr,2c655785182136f2,"**Lecture ancrée — Cellule de configuration (3)**
 
 Le message de sortie confirme que le solveur Z3, essentiel pour la validation par contraintes des protocoles thérapeutiques, 
@@ -3773,7 +3882,7 @@ garantit la validation formelle des protocoles thérapeutiques en vérifiant le 
 médicales, des interactions médicamenteuses et des standards cliniques. Chaque approche apporte une 
 dimension complémentaire au processus de diagnostic, permettant une évaluation personnalisée et 
 multi-dimensionnelle du diabète de type 2.",,,,,,,,00bde7eaa36f8d32,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb,lecture-perspectives-006,markdown,fr,041b57660d52ffee,"**Lecture ancrée — Perspectives d'Application Clinique**
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb,lecture-perspectives-006,markdown,fr,ca4e3dad95bc0dbe,"**Lecture ancrée — Perspectives d'Application Clinique**
 
 Ce système de diagnostic médical multi-contraintes illustre comment les techniques d'intelligence artificielle 
 symbolique peuvent être appliquées à des problèmes concrets dans le domaine de la santé. L'intégration de 
@@ -3793,26 +3902,65 @@ Complétez le tableau et le paragraphe de recommnadations suivants.
 |---------|--------|------------|-------------|
 | Agent Diagnostic |  |  |  |
 | Algorithme A* |   |  |  |
-| Algorithmes Génétiques |  |  |  |
-| Solveur Z3 |  |  |  |
+| Algorithmes Génétiques |   |  |  |
+| Solveur Z3 |   |  |  |
 
 #### Recommandations d'Amélioration
 
 
 
-###  Conclusion
+## À retenir
 
-Ce notebook vous a permis d'implémenter un système de diagnostic médical multi-approches combinant :
+- **Quatre couches, quatre questions différentes.** L'agent à règles trie un patient, A* explore les hypothèses diagnostiques, l'algorithme génétique cherche des seuils, Z3 vérifie qu'un protocole respecte des contraintes. Aucune ne fait le travail d'une autre : un triage n'est pas un diagnostic, un réglage n'est pas une validation.
+- **Ce que le squelette fournit, et ce qu'il laisse à faire.** Les structures de données et les quatre solveurs sont définis et s'initialisent ; ce sont les tests, le score de risque composite, l'heuristique alternative et les contraintes d'interaction qui restent à écrire. Rien ne tourne à vide : chaque emplacement laisse un message explicite plutôt qu'un résultat inventé.
+- **Une contrainte dure ne se négocie pas.** Une contre-indication — néphropathie, hypoglycémie récurrente — appartient au solveur de contraintes, pas au score. Un score pondéré peut compenser un risque par un gain ailleurs ; un ensemble de contraintes retire la solution de l'espace de recherche.
+- **Le tableau comparatif final est le livrable de synthèse.** Forces, faiblesses et cas idéaux se remplissent à partir de ce que vous avez écrit, et la recommandation doit nommer l'**ordre de composition** des couches, pas seulement la liste des outils.
 
- **Intelligence Artificielle Exploratoire** : Recherche (A*), heuristiques
- **Intelligence Artificielle Symbolique** : Règles, contraintes (Z3)
- **Optimisation** : Algorithmes génétiques
- **Application Biomédicale** : Diagnostic du diabète de type 2
+## Vérifiez votre compréhension
 
-Les compétences développées sont directement transférables à d'autres domaines nécessitant des systèmes de décision intelligents.
+**1. Pourquoi l'agent à règles et le solveur Z3 ne répondent-ils pas à la même question, alors qu'ils manipulent tous deux des connaissances médicales explicites ?**
+
+<details>
+<summary>Réponse</summary>
+
+L'agent applique des règles de décision à un patient donné pour produire une classe et des recommandations : il **trie**. Le solveur cherche une affectation de variables (doses, traitements, objectif) qui satisfait un ensemble de contraintes : il **valide un protocole**. Le premier consomme des seuils, le second produit un modèle ; les confondre conduit soit à un triage qui ignore les interactions, soit à un protocole validé qui ne dit rien du patient.
+</details>
+
+**2. Les blocs d'initialisation s'exécutent, mais les blocs de test annoncent qu'ils restent à compléter. Que dit cette séparation sur le contrat de chaque fonction ?**
+
+<details>
+<summary>Réponse</summary>
+
+Elle sépare la **structure** de la **mesure**. Une classe correctement définie s'instancie et imprime son état même sans logique métier ; c'est le test qui exerce la logique et rend une valeur observable. Un squelette qui n'afficherait rien du tout serait plus difficile à diagnostiquer : ici, chaque absence de résultat est déclarée, ce qui vous dit exactement où votre code doit produire quelque chose.
+</details>
+
+**3. Où placer une contre-indication absolue, et pourquoi pas dans la fonction de score ?**
+
+<details>
+<summary>Réponse</summary>
+
+Dans les contraintes dures. Une contre-indication n'est pas un critère défavorable parmi d'autres : c'est une option qui ne doit pas exister. Dans un score pondéré, un risque grave peut être compensé par un gain de précision et la solution fautive reste sélectionnable ; dans un ensemble de contraintes, elle est purement et simplement supprimée de l'espace des solutions.
+</details>
+
+**4. A* garantit l'optimalité sous une condition précise. Laquelle, et que se passe-t-il si elle n'est pas tenue ?**
+
+<details>
+<summary>Réponse</summary>
+
+L'optimalité tient si l'heuristique est **admissible** : elle ne surestime jamais le coût restant réel. Une heuristique trop optimiste ou mal calibrée fait perdre la garantie — l'algorithme rend alors un chemin valide, mais pas nécessairement le meilleur. C'est exactement ce que l'exercice sur l'heuristique alternative vous demande d'observer : ce que l'on gagne ou perd en changeant d'estimation.
+</details>
+
+## Pour aller plus loin
+
+- **Le corrigé du même cas** : [`../solution/Diagnostic-Medical-Python.ipynb`](../solution/Diagnostic-Medical-Python.ipynb) — à consulter après avoir écrit votre version, pour comparer les choix de modélisation plutôt que le code ligne à ligne.
+- **Le cas suivant de la série** : [`Planification-Oncologie-Python`](../../Planification-Oncologie/student/Planification-Oncologie-Python.ipynb) applique la même architecture de composition à la planification de cures, avec une ontologie RDF, un solveur CP-SAT et un modèle probabiliste.
+- **Séries d'origine des briques** : [Search](../../../Search/README.md) pour A* et les heuristiques, [SymbolicAI/SMT](../../../SymbolicAI/SMT/README.md) pour Z3 et la modélisation par contraintes, [Sudoku](../../../Sudoku/README.md) pour les algorithmes génétiques.
+- **Ce que ce système ne fait pas** : aucun apprentissage sur des cohortes réelles, aucune gestion de l'incertitude des mesures biologiques, aucune explication au patient. Trois pistes de projet, pas trois détails d'implémentation.
 
 ***
-**Retour au sommaire** : [Index CaseStudies](../../README.md)",,,,,,,,041b57660d52ffee,,,,,,,,,,,,,,,
+
+**Retour au sommaire** : [Index CaseStudies](../../README.md)
+",,,,,,,,ca4e3dad95bc0dbe,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb,a58315c0,markdown,fr,31efb232d44f170e,"L'ontologie ONCO a été chargée avec succès. Les 14 triplets définissent les médicaments d'oncologie, leurs propriétés de toxicité rénale et leurs incompatibilités médicamenteuses, formant la base de connaissances pour les vérifications de prescription.
 ",,,,,,,,31efb232d44f170e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb,67cc32d8,markdown,fr,1e66b850cbb24916,"L'inférence bayésienne a convergé après 800 itérations. Les probabilités a posteriori indiquent que le patient a un profil Résistant à 92%, Normal à 4% et Sensible à 4%, reflétant l'adaptation du modèle aux doses administrées et aux observations cliniques.
@@ -3882,3 +4030,101 @@ du moment (par exemple, minimiser les coûts en période de faible demande, ou r
 lorsque les ressources renouvelables sont abondantes). Cette approche systémique illustre comment 
 l'intelligence artificielle et les méthodes d'optimisation peuvent supporter des décisions complexes 
 dans le domaine de la gestion des réseaux électriques.",,,,,,,,7e3effa7137e8831,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/solution/Planification-Oncologie-Python.ipynb,7064f719,markdown,fr,40c9da43e3ff9fe0,"## Vérifiez votre compréhension
+
+**1. L'ontologie porte 14 triplets et la vérification de prescription rend deux alertes différentes. Lesquelles, et pourquoi ce contrôle passe-t-il avant la planification ?**
+
+<details>
+<summary>Réponse</summary>
+
+L'alerte de néphrotoxicité (« Cisplatine est néphrotoxique pour ce patient », patient en insuffisance rénale) et l'alerte d'incompatibilité (« Incompatibilité détectée entre Cisplatine et Gentamicine »). Le contrôle précède la planification parce qu'un calendrier optimal de cures contre-indiquées ne vaut rien : un solveur d'ordonnancement respecte les contraintes qu'on lui donne, il n'invente pas les contre-indications. On filtre l'espace des cures licites d'abord, on place les cures ensuite.
+</details>
+
+**2. Le solveur CP-SAT rend `OPTIMAL` avec un makespan de 107 jours sous une capacité de trois lits par jour. Que dit exactement ce mot ?**
+
+<details>
+<summary>Réponse</summary>
+
+Il dit qu'aucun calendrier ne fait mieux **sous les contraintes écrites dans le modèle** : dates d'administration, délais entre cycles, capacité journalière, occupation déjà planifiée. Il ne dit rien de la qualité clinique du protocole, ni des doses, ni des préférences du patient, ni de ce qui se passerait si une contrainte oubliée (rampe, congés du service, disponibilité d'un produit) était ajoutée. « Optimal » qualifie la résolution, pas la décision médicale.
+</details>
+
+**3. Après inférence, le profil du patient sort « Résistant » à 92 %, « Normal » à 4 %, « Sensible » à 4 %. Ce chiffre décrit-il une propriété du patient ?**
+
+<details>
+<summary>Réponse</summary>
+
+Il décrit une **distribution a posteriori** : la probabilité conditionnelle du profil sachant les observations et sachant le prior choisi. Changer le prior déplace le résultat — c'est précisément l'objet de l'exercice de sensibilité. Un posterior très tranché avec peu d'observations signale souvent un prior qui parle plus fort que les données.
+</details>
+
+**4. Le contrat haché refuse l'administration après modification du plan. Que protège-t-il, et que ne protège-t-il pas ?**
+
+<details>
+<summary>Réponse</summary>
+
+Il protège l'**intégrité** de ce qui a été décidé : le hash SHA-256 détecte toute altération du plan enregistré, et les deux signatures exigent l'accord du médecin et du patient. Il ne protège pas la **justesse** du plan : un protocole erroné, signé et non modifié, passe le contrôle sans difficulté. La traçabilité atteste qu'une décision a été prise par qui, quand, et sans retouche — elle ne la valide pas.
+</details>
+
+## Pour aller plus loin
+
+- **Le cas suivant de la série** : [`Reseau-Electrique-Intelligent-Python`](../../Reseau-Electrique-Intelligent/solution/Reseau-Electrique-Intelligent-Python.ipynb) reprend la même architecture par couches sur un métier sans patient — unit commitment, risque de défaillance, arbitrage coût/CO2 — où l'ordre de composition se voit encore plus nettement.
+- **Le cas précédent** : [`Diagnostic-Medical-Python`](../../Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb) combine A*, algorithmes génétiques et Z3 ; comparer les deux compositions est instructif (contraintes d'abord dans les deux cas, mais l'incertitude n'est probabiliste que dans celui-ci).
+- **Séries d'origine des briques** : [SemanticWeb](../../../SymbolicAI/SemanticWeb/README.md) pour les ontologies RDF/OWL et le raisonnement sur graphe, [Search](../../../Search/README.md) pour les problèmes sous contraintes, [Probas](../../../Probas/README.md) pour les modèles bayésiens et l'inférence variationnelle. Chacune traite sa brique seule, avec plus de recul sur ses hypothèses qu'un cas d'étude ne le permet.
+- **Les limites du plan** : ni dose individuelle, ni toxicité cumulative, ni interaction à trois produits ne sont modélisées ici. Chacune est un prolongement direct du même squelette — une contrainte de plus dans le modèle CP-SAT, un facteur de plus dans le modèle probabiliste.
+
+***
+
+**Retour au sommaire** : [Index CaseStudies](../../README.md)
+",,,,,,,,40c9da43e3ff9fe0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/student/Planification-Oncologie-Python.ipynb,a23ce628,markdown,fr,e44f44698d34d604,"## À retenir
+
+- **Trois paradigmes, trois questions distinctes.** L'ontologie RDF répond « ce médicament est-il autorisé chez ce patient ? », le solveur CP-SAT répond « quand et combien de lits ? », le modèle probabiliste répond « quel profil de patient, avec quelle confiance ? », et le contrat haché répond « qui a décidé quoi, sans retouche ? ». Aucune de ces questions n'est un cas particulier d'une autre.
+- **Les sorties vides du squelette décrivent un contrat, pas une panne.** La vérification de prescription rend une liste vide sur les trois patients, y compris l'insuffisant rénal ; le planificateur annonce un début au jour 0 sans aucune date d'administration ; le contrat répond « Non implémenté ». Chaque fonction est en place, c'est son contenu qui manque — et ce contenu est exactement ce que les trois exercices demandent.
+- **L'ordre des couches n'est pas décoratif.** On vérifie ce qui est interdit avant de placer des cures, et on place les cures avant d'estimer un risque : une planification qui ignore une contre-indication produit un calendrier parfaitement optimisé d'un protocole interdit.
+- **Une alerte n'est pas une décision.** L'ontologie signale une incompatibilité ou une toxicité ; c'est au clinicien — et à votre code de décision — de trancher. Le squelette sépare volontairement le signal de l'acte.
+- **Le livrable de synthèse** tient en trois pièces : la sensibilité du modèle au prior, le journal d'audit du contrat, et un diagnostic écrit qui dit quel paradigme porte la sûreté, lequel porte l'incertitude, et lequel porte la preuve.
+
+## Vérifiez votre compréhension
+
+**1. `verifier_prescription` rend une liste vide pour les trois patients, dont l'insuffisant rénal. Pourquoi ce résultat est-il cohérent avec une ontologie encore vide ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce que la fonction interroge le graphe : sans triplets, aucune propriété de néphrotoxicité n'est trouvée, donc aucune alerte n'est levée. Le vide n'est pas une absence de risque, c'est une absence de connaissance — et c'est la différence qui compte dans un système clinique. Remplir l'ontologie (exercice 1) est ce qui fait apparaître les alertes.
+</details>
+
+**2. Le planificateur affiche « Début optimal du traitement : Jour 0 » et une liste de jours d'administration vide. En quoi le mot « optimal » est-il trompeur ici ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce qu'un objectif d'optimisation n'a de sens que sur un modèle contraint : sans dates d'administration, sans capacité et sans occupation existante exprimées, il n'y a rien à minimiser — la valeur rendue est triviale. « Optimal » suppose un modèle complet et une fonction objectif explicite ; le squelette n'a pour l'instant que la coquille du modèle.
+</details>
+
+**3. Le profil du patient (résistant, normal, sensible) est une variable non observée. Pourquoi l'exercice 2 fait-il varier son prior plutôt que de régler un seuil de décision ?**
+
+<details>
+<summary>Réponse</summary>
+
+Parce que le seuil ne corrige pas une erreur d'entrée : si le prior impose d'avance un profil, la décision suivra le prior quel que soit le réglage du seuil en aval. Faire varier le prior montre où les données reprennent la main et où l'à-priori parle seul — c'est le test de ce qu'un modèle probabiliste apporte vraiment.
+</details>
+
+**4. Le contrat enregistre un hash du plan et exige deux signatures. Contre quelle classe de problème protège-t-il, et contre laquelle ne protège-t-il pas ?**
+
+<details>
+<summary>Réponse</summary>
+
+Il protège contre l'altération silencieuse d'une décision : toute modification du plan change le hash, et l'accord du médecin comme du patient est vérifiable. Il ne protège pas contre un plan médicalement faux, ni contre une erreur de dosage décidée d'un commun accord. La traçabilité porte sur l'intégrité de la décision, pas sur sa justesse.
+</details>
+
+## Pour aller plus loin
+
+- **Le corrigé du même cas** : [`../solution/Planification-Oncologie-Python.ipynb`](../solution/Planification-Oncologie-Python.ipynb) — à consulter après avoir écrit votre version, pour comparer la structure des trois couches plutôt que ligne à ligne.
+- **Le cas suivant de la série** : [`Reseau-Electrique-Intelligent-Python`](../../Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-Python.ipynb) applique la même architecture par couches à un problème d'ordonnancement énergétique, avec un solveur CP-SAT et un modèle bayésien de risque.
+- **Séries d'origine des briques** : [SemanticWeb](../../../SymbolicAI/SemanticWeb/README.md) pour construire et interroger une ontologie RDF/OWL, [Search](../../../Search/README.md) pour les problèmes de satisfaction de contraintes, [Probas](../../../Probas/README.md) pour les modèles bayésiens et l'inférence variationnelle.
+- **Les limites de ce squelette** : ni dose individuelle, ni toxicité cumulative, ni interaction à trois produits. Chacune se traite par une contrainte de plus côté symbolique, ou un facteur de plus côté probabiliste — le même geste, appliqué à un domaine plus fin.
+
+***
+
+**Retour au sommaire** : [Index CaseStudies](../../README.md)
+",,,,,,,,e44f44698d34d604,,,,,,,,,,,,,,,

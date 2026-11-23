@@ -290,6 +290,54 @@ class TestKernelCoherence(unittest.TestCase):
             self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
             self.assertIn("kernel_mismatch", r.stdout)
 
+    def test_rust_suffix_on_rust_kernel_is_canonical(self):
+        """Premier jumeau Rust de l'arbre (#26622, #26512) : `-Rust` + kernelspec
+        `rust` = cas canonique. Controle negatif symetrique du mismatch."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            cfg = _write_config(repo, [])
+            _write(repo, "MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Rust.ipynb",
+                   _notebook("rust"))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "jumeau rust natif")
+
+            r = _run_guard(repo, cfg, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("canonical=1", r.stdout)
+
+    def test_rust_suffix_on_python_kernel_reddens(self):
+        """`-Rust` sous kernelspec python3 ment sur le moteur : kernel_mismatch."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            cfg = _write_config(repo, [])
+            _write(repo, "MyIA.AI.Notebooks/Sudoku/Sudoku-03-Foo-Rust.ipynb",
+                   _notebook("python3"))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "suffixe rust sur noyau python")
+
+            r = _run_guard(repo, cfg, base)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("kernel_mismatch", r.stdout)
+
+    def test_lowercase_rust_in_adopted_series_reddens(self):
+        """Garde de casse : `-rust` minuscule dans une serie adoptee rougit
+        (canon `Rust`, par analogie CSharp/Python)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            cfg = _write_config(repo, [ADOPTED + "/**"])
+            _write(repo, ADOPTED + "/CSP/App-24-Baz-rust.ipynb",
+                   _notebook("rust"))
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "casse rust hors canon")
+
+            r = _run_guard(repo, cfg, base)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("case_deviation", r.stdout)
+            self.assertIn("attendue Rust", r.stdout)
+
 
 class TestSuffixCliquet(unittest.TestCase):
     """Cliquet #17784 : le suffixe de noyau est cense etre TOUJOURS present sur

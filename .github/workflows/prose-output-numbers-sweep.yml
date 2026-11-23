@@ -1,0 +1,67 @@
+name: Prose-numbers sweep
+
+# Jambe de balayage de l'organe check_prose_output_numbers.py (#27231) : le
+# garde PR (TRANCHE52, advisory) ne juge que les lignes NOUVELLES d'une PR ;
+# ce sweep mesure le STOCK entier des carnets, en rapport seul. ADVISORY PAR
+# CONSTRUCTION : declencheurs `schedule` + `workflow_dispatch` uniquement --
+# jamais `pull_request` ni `push`, donc un rouge ne peut jamais bloquer une
+# PR sans rapport (motif du pattern leaky-fixture-sweep.yml). Le job sort
+# TOUJOURS 0 : les findings vont au rapport du run, triage par la lane qui
+# porte le plan de remediation Q162 d (fournées, jamais d'issues ouvertes
+# sans lane).
+
+on:
+  schedule:
+    # Hebdomadaire, minute anti-stampede (jamais :00/:30), creneau distinct
+    # des sweeps quotidiens 03:43/07:23.
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prose-output-numbers-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    name: "Stock sweep (advisory, report-only)"
+    # Balayage cron pur-Python (stdlib seule) : doctrinale #14283 tranche 4,
+    # le pool ephemeral convient (cf grain-orphans-sweep.yml). `schedule` ne
+    # tourne que sur la branche par defaut : aucun code de fork ne peut
+    # l'atteindre. Retour arriere = ubuntu-latest + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 20
+    steps:
+      - name: Restore the warm work tree before checkout
+        run: |
+          set -u
+          if [ -d "$GITHUB_WORKSPACE/.git" ]; then
+            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null; then
+              echo "::warning::[heal-worktree] probe git status muet -- reset applique quand meme (#22722)"
+            fi
+            git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" reset --hard --quiet || \
+              echo "::warning::[heal-worktree] reset --hard a echoue (#22722)"
+          fi
+      - uses: actions/checkout@v4
+
+      - name: Pre-control (self-test embarque)
+        run: python scripts/notebook_tools/check_prose_output_numbers.py --self-test
+
+      - name: Sweep the stock (report-only, exit 0 par construction)
+        run: |
+          python scripts/notebook_tools/check_prose_output_numbers.py --all --json > sweep-report.json
+          python - << 'PY'
+          import json
+          with open("sweep-report.json", encoding="utf-8") as fh:
+              rep = json.load(fh)
+          print(f"notebooks_scanned={rep['notebooks_scanned']} "
+                f"citations_checked={rep['citations_checked']} "
+                f"findings={rep['findings_count']}")
+          for f in rep["findings"][:40]:
+              print(f"MISMATCH {f['file']} cell {f['cell']} ligne {f['line']}: "
+                    f"{f['value']} absent des sorties (plus proche {f['nearest_output']})")
+          if len(rep["findings"]) > 40:
+              print(f"... et {len(rep['findings']) - 40} autres (voir le JSON)")
+          PY

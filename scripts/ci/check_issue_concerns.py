@@ -33,9 +33,10 @@ justifier par ecrit appartenant a la phase 2 de la campagne.
 
 Le probleme propre a cette classe est le **login partage** : la flotte ecrit sous
 le compte du mainteneur, et l'auteur ne distingue donc plus un post de lane d'une
-remarque du user. C'est la FORME du corps qui tranche — six signatures mesurees
+remarque du user. C'est la FORME du corps qui tranche — sept signatures mesurees
 (``lane`` + siege, jeton de siege ``myia-x:y``, tag ``Grain:``, en-tete ``Lane``,
-filigrane de cycle ``c.NNN``, tag de tete entre crochets). Mesure canonique du
+filigrane de cycle ``c.NNN``, tag de tete entre crochets, et la taxonomie
+d'emission ``[ACTION]``/``[DIAG]``/``[ASK]`` de #15511 P1, #26791). Mesure canonique du
 2026-10-20 (465 issues ouvertes depuis le 2026-09-25, predicats de ce fichier) :
 1627 commentaires bruts du compte partage, **1071 ecartes** par les signatures
 (deux tiers), 556 candidats — dont 268 en ``MANUAL_REVIEW`` et 52 en
@@ -201,6 +202,20 @@ _LANE_SIGNATURES: tuple[tuple[str, re.Pattern[str]], ...] = (
 #: (comme ``classify``) : un tag de protocole entre crochets en tete de corps.
 _LANE_HEAD_TAG = re.compile(r"^\[[^\]]{1,80}\]")
 
+#: La septieme signature (#26791) : la taxonomie d'EMISSION d'agent de #15511 P1
+#: (`pr-review-discipline.md`, « Commentaires de diagnostic ») — ``[ACTION]``,
+#: ``[DIAG]`` et ``[ASK]`` sont ecrits par les lanes en PREMIERE ligne, par
+#: contrat. Sans cette signature nommee ils tombent dans ``_LANE_HEAD_TAG``, qui
+#: est AMBIGUE et route en ``MANUAL_REVIEW`` : sur les PRs, cette route fabrique
+#: le bruit mesure dans #26791 (193 remarques, 164 « non resolues », dont
+#: presque toutes des posts d'agent tagues). Le contrat d'emission tranche
+#: l'ambiguite : un tag de taxonomie en tete est un post de lane.
+#: ``[ASK USER]`` et ``[ASK-USER]`` restent hors du filet ``ask-unanswered``
+#: (registre des questions user) — ce sont neanmoins des posts de lane ici.
+_AGENT_TAXONOMY_TAG = re.compile(
+    r"^\[(?:ACTION|DIAG|ASK)\b[^\]]{0,80}\]", re.IGNORECASE
+)
+
 #: Intention declaree d'une remarque — **enregistree, pas filtrante** : la mesure
 #: du 2026-10-20 a montre que ces marqueurs de vocabulaire sont cites par les
 #: lanes elles-memes (« décision user », « le user a tranché ») ; s'en servir comme
@@ -327,7 +342,7 @@ GRAPHQL_SEARCH = """
 query($q: String!, $after: String) {
   search(query: $q, type: ISSUE, first: 100, after: $after) {
     pageInfo { hasNextPage endCursor }
-    nodes { ... on Issue { number } }
+    nodes { ... on Issue { number } ... on PullRequest { number } }
   }
 }
 """
@@ -616,7 +631,12 @@ def lane_signature(body: str | None) -> str:
     for name, pattern in _LANE_SIGNATURES:
         if pattern.search(text):
             return name
-    if _LANE_HEAD_TAG.match(_DECORATION.sub("", text)):
+    decorated = _DECORATION.sub("", text)
+    # #26791 : le tag de taxonomie d'emission passe AVANT le tag de tete
+    # generique, qui est ambigu et route en MANUAL_REVIEW.
+    if _AGENT_TAXONOMY_TAG.match(decorated):
+        return "agent-taxonomy-tag"
+    if _LANE_HEAD_TAG.match(decorated):
         return "head-tag"
     return ""
 
@@ -1164,24 +1184,47 @@ def gh_json(args: list[str]):
     return json.loads(proc.stdout)
 
 
-def list_issue_numbers(since: str, state: str) -> list[int]:
-    query = f"repo:{REPO} is:issue updated:>={since}"
-    if state == "open":
-        query += " is:open"
-    elif state == "closed":
-        query += " is:closed"
+def list_issue_numbers(
+    since: str, state: str, kinds: tuple[str, ...] = ("issue", "pr")
+) -> list[int]:
+    """Numeros des issues ET, par defaut, des PRs (#26791).
+
+    Le filtre ``is:issue`` laissait les PRs hors du filet : un Concern pose par
+    le mainteneur **sur une PR** n'etait vu par aucun organe avant le merge
+    (B.0) — trois Concerns sont restes ~20 h sans reponse le 2026-11-15. Les
+    deux types sont interroges **separement** (la syntaxe ``is:issue OR is:pr``
+    n'est pas garantie par l'API de recherche) puis fusionnes sans doublon,
+    issues d'abord. ``kinds=("issue",)`` restore l'ancien perimetre.
+    """
     numbers: list[int] = []
-    after = None
-    while True:
-        args = ["api", "graphql", "-f", f"query={GRAPHQL_SEARCH}", "-f", f"q={query}"]
-        if after:
-            args += ["-f", f"after={after}"]
-        data = gh_json(args)["data"]["search"]
-        numbers.extend(node["number"] for node in data["nodes"])
-        page = data["pageInfo"]
-        if not page["hasNextPage"]:
-            return numbers
-        after = page["endCursor"]
+    seen: set[int] = set()
+    for kind in kinds:
+        query = f"repo:{REPO} is:{kind} updated:>={since}"
+        if state == "open":
+            query += " is:open"
+        elif state == "closed":
+            query += " is:closed"
+        after = None
+        while True:
+            args = ["api", "graphql", "-f", f"query={GRAPHQL_SEARCH}", "-f", f"q={query}"]
+            if after:
+                args += ["-f", f"after={after}"]
+            data = gh_json(args)["data"]["search"]
+            for node in data["nodes"]:
+                # ``search`` rend une union : un type que les fragments ne
+                # couvrent pas (Discussion) revient sans ``number``. Les deux
+                # types voulus sont couverts ; le reste est ignore, jamais fatal.
+                number = node.get("number")
+                if number is None:
+                    continue
+                if number not in seen:
+                    seen.add(number)
+                    numbers.append(number)
+            page = data["pageInfo"]
+            if not page["hasNextPage"]:
+                break
+            after = page["endCursor"]
+    return numbers
 
 
 def fetch_comments(number: int) -> list[Comment]:
@@ -1363,6 +1406,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--since", default="2026-09-25", help="issues mises a jour depuis (AAAA-MM-JJ)")
     parser.add_argument("--state", choices=["open", "closed", "all"], default="open")
     parser.add_argument("--issues", type=int, nargs="*", help="issues explicites (controles)")
+    parser.add_argument(
+        "--issues-only",
+        action="store_true",
+        help="restreindre la recherche par defaut aux issues (exclut les PRs, #26791)",
+    )
     parser.add_argument("--as-of", help="figer le fil a cet instant (ISO, ex 2026-10-08T23:59:59Z)")
     parser.add_argument("--limit", type=int, default=0, help="ne lire que N issues (0 = toutes)")
     parser.add_argument("--jobs", type=int, default=8, help="lectures de fils en parallele")
@@ -1388,7 +1436,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.issues:
         numbers = list(dict.fromkeys(args.issues))
     else:
-        numbers = list_issue_numbers(args.since, args.state)
+        kinds = ("issue",) if args.issues_only else ("issue", "pr")
+        numbers = list_issue_numbers(args.since, args.state, kinds)
     if args.limit:
         numbers = numbers[: args.limit]
 

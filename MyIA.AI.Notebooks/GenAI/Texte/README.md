@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 50
-breakdown: Texte=50
-maturity: BETA=41, ALPHA=5, DRAFT=4
+pedagogical_count: 52
+breakdown: Texte=52
+maturity: BETA=44, ALPHA=4, DRAFT=4
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -93,7 +93,7 @@ Les lettres prolongent le numéro nu du même palier. Les prérequis techniques 
 
 ### Autour de 14
 - **14b — [14b_Paginated_Memory-Python.ipynb](14b_Paginated_Memory-Python.ipynb)** : Mémoire paginée d'agent (Python) — fenêtre glissante, résumé progressif, éviction LRU/MRU, mémoire vectorielle paginée, mémoire multi-domaine ; 3 exercices (#18330) — **70 min**
-  Son [jumeau C#](14b_Paginated_Memory-CSharp.ipynb) reprend les mêmes structures en BCL, sans modèle ni service externe ; les coûts sont des unités pédagogiques en caractères et l’archive reste O(N).
+  Son [jumeau C#](14b_Paginated_Memory-CSharp.ipynb) reprend les mêmes structures en BCL, sans modèle ni service externe ; son [portage Rust](14b_Paginated_Memory-Rust.ipynb) (std seul, kernel evcxr) les reprend en structures pures `VecDeque`/`Rc` avec sorties conformes au Python (#27968) ; les coûts sont des unités pédagogiques en caractères et l’archive reste O(N).
 
 ### Autour de 22
 - **22b — [22b_Profil_Cognitif_CHC.ipynb](22b_Profil_Cognitif_CHC.ipynb)** : Approfondit le 22 : on évalue le **générateur** plutôt que sa sortie. **Profil cognitif CHC** (Hendrycks et al., 2025) mesuré par une mini-batterie à correction mécanique sur 8 domaines (mémoire de travail générée, stockage long terme, hallucinations, fluence, vitesse...) sur 4 modèles réels (Qwen3.5-0.8B local + 3 API), avec IC bootstrap ; profil « jagged » vs score agrégé ; **contortions de capacité** mesurées (carnet de mémoire réinjecté, RAG) ; types d'IA stratégiques et cube **A×G×I** du *Singapore Consensus* 2026, 3 exercices C.1
@@ -287,6 +287,10 @@ flowchart LR
 | **File Upload** | 6, 7 | Support PDF et fichiers |
 | **Reasoning** | 2, 8 | Modèles o4-mini, gpt-5-thinking |
 
+## Décodage spéculatif — deux implémentations 10g
+
+[Python](10g_Speculative_Decoding.ipynb) · [C#](10g_Speculative_Decoding-CSharp.ipynb). Les mêmes n-grammes, corpus et budgets exposent les taux d'acceptation et les coûts modélisés. Trois exercices ouverts portent sur un sampler avec traces P/Q/résidu, le choix de k avec callback observé, et la génération d'arbres avec parcours et compteurs reconstruits. La BCL conserve les algorithmes pédagogiques du source ; aucun endpoint LLM n'est mesuré.
+
 ## Technologies et écosystème
 
 - **OpenAI API** : GPT-5, GPT-5-mini, o4-mini, gpt-5-thinking
@@ -425,3 +429,7 @@ Les notebooks 10, 10b et 11 utilisent vLLM : le 10 déploie et compare les endpo
 - [Responses API](https://platform.openai.com/docs/api-reference/responses)
 - [Reasoning Models](https://platform.openai.com/docs/guides/reasoning)
 - [Function Calling](https://platform.openai.com/docs/guides/function-calling)
+
+## Roofline : deux implémentations CPU
+
+[10h en Python](10h_Roofline_Memory_Bandwidth.ipynb) et [10h en C#](10h_Roofline_Memory_Bandwidth-CSharp.ipynb) mesurent une somme et un produit matriciel en Float32 avant de projeter une couche analytique. NumPy et TorchSharp exploitent des noyaux différents : leurs débits ne sont pas des pics matériels certifiés ni des mesures de LLM.

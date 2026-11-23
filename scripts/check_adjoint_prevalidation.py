@@ -156,7 +156,10 @@ try:
     import check_unaddressed_nits
     import grain_tag
 except ImportError:  # charge via importlib dans les tests (hors scripts/)
+    # #13737 tranche 2 : gh_identity est reloge dans scripts/ci/ ; les deux
+    # autres modules restent a la racine de scripts/.
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "ci"))
     import gh_identity  # type: ignore[no-redef]
     import check_unaddressed_nits  # type: ignore[no-redef]
     import grain_tag  # type: ignore[no-redef]
@@ -1636,6 +1639,84 @@ def _is_stack_noise(subject: str) -> bool:
     )
 
 
+def _pair_blocks(
+    entry: StackEntry, other: StackEntry, index: dict[int, StackEntry]
+) -> bool:
+    """``other`` fait-il de ``entry`` un sommet de pile perime ?
+
+    Predicat d'UNE paire, dans UN sens. ``_stack_partners`` l'applique dans
+    les deux sens pour reconnaitre la fourche soeur reciproque (#23100,
+    troisieme angle).
+    """
+    if not entry.commits or not other.commits:
+        return False
+    mine = _subjects_of(entry)
+    # #23100 (seconde moitie, 2026-11-11) -- un partenaire qui NE PEUT
+    # PAS ATTERRIR ne doit pas bloquer la cible. Une PR soeur en conflit
+    # avec `main` (`mergeable == "CONFLICTING"`) sera rebassee par son
+    # porteur avant d'atterrir : exiger de la cible qu'elle attende
+    # cette PR-la rend la cible inmergeable par une PR qui n'a pas
+    # d'aliance -- c'est le titre de l'issue ("un fork de base commune
+    # dont la PR soeur ne peut pas atterrir"). Mesure absente
+    # ("UNKNOWN", passe GraphQL indisponible) : l'exemption est INERTE,
+    # la porte garde son comportement d'avant. Le controle negatif
+    # (une soeur rebassee et MERGEABLE reste bloquante) est preserve.
+    if other.mergeable == "CONFLICTING":
+        return False
+    if not set(entry.commits) & set(other.commits):
+        # #20263 -- un rebase reecrit les SHA : une intersection vide
+        # ne prouve PAS l'independance, elle est exactement la
+        # signature du sommet de pile rebati que la porte existe pour
+        # attraper. Repli sur les SUJETS partages (hors bruit), comme
+        # le contrat publie le promet : « par sujet, jamais par SHA ».
+        # #20263 ( controle negatif de l'adjoint, dossier c6105057753)
+        # -- un sujet partage seul ne prouve pas non plus la parente :
+        # deux branches INDEPENDANTES depuis main portent souvent le
+        # meme prefixe canonique, et la porte les appariait en BlocAGE
+        # mutuel. Le repli exige la corroboration de CONTENU : au moins
+        # un sujet partage dont les commits des deux cotes ont le MEME
+        # patch-id (egalite qui survit au rebase). Les controles aval
+        # (ancetre lineaire, apport reel) restent appliques.
+        shared = [
+            s for s in (mine & _subjects_of(other))
+            if not _is_stack_noise(s)
+        ]
+        if not shared:
+            return False
+        if not _subjects_corroborated(entry, other, set(shared)):
+            return False
+    # Bas de pile lineaire : la tete d'AUTEUR (au-dela d'un eventuel
+    # rafraichissement content-free, #20641) de `target` est un
+    # ancetre de celle de `other`, donc merger `target` d'abord est
+    # l'ordre correct. On utilise `author_ref`, pas `ref` : un
+    # `gh pr update-branch` content-free prepende une fusion de
+    # rafraichissement a `entry.ref` (et potentiellement a
+    # `other.ref`), et la comparer brute faisait croire a un
+    # sommet de pile la ou il y a un bas lineaire.
+    if _git(
+        ["merge-base", "--is-ancestor", entry.author_ref, other.author_ref], check=False
+    ).returncode == 0:
+        return False
+    # #23100 -- l'enfant retarde de la cible. Le partenaire a pour BASE
+    # la tete de la cible (ou la tete d'un descendant de la cible : la
+    # chaine suit les liens base -> head a travers l'index, des piles de
+    # trois existent -- instance fondatrice #19548 -> #19556 -> #19567).
+    # La cible est alors le BAS d'une vraie pile : la merger d'abord est
+    # l'ordre correct, l'enfant retombera par update-branch -- aucun
+    # « sommet de pile perime » a signaler. La fausse instance qui a
+    # fonde l'issue : #22811 basee sur la tete de #22741, enfant retarde
+    # (le parent a avance apres le fork), et la porte bloquait le seul
+    # merge executable de la paire. Noms absents (entrees construites
+    # hors enumeration) : l'exemption est inerte, comportement d'avant.
+    if _is_stack_descendant(other, entry, index):
+        return False
+    if not [
+        s for s in (_subjects_of(other) - mine) if not _is_stack_noise(s)
+    ]:
+        return False
+    return True
+
+
 def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
     """PRs ouvertes dont ``target`` est un sommet de pile (cf ``stack_reasons``).
 
@@ -1645,76 +1726,28 @@ def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
     entry = index.get(target)
     if entry is None or not entry.commits:
         return []
-    mine = _subjects_of(entry)
     partners: list[int] = []
     for number in sorted(index):
         if number == target:
             continue
         other = index[number]
-        if not other.commits:
+        if not _pair_blocks(entry, other, index):
             continue
-        # #23100 (seconde moitie, 2026-11-11) -- un partenaire qui NE PEUT
-        # PAS ATTERRIR ne doit pas bloquer la cible. Une PR soeur en conflit
-        # avec `main` (`mergeable == "CONFLICTING"`) sera rebassee par son
-        # porteur avant d'atterrir : exiger de la cible qu'elle attende
-        # cette PR-la rend la cible inmergeable par une PR qui n'a pas
-        # d'aliance -- c'est le titre de l'issue ("un fork de base commune
-        # dont la PR soeur ne peut pas atterrir"). Mesure absente
-        # ("UNKNOWN", passe GraphQL indisponible) : l'exemption est INERTE,
-        # la porte garde son comportement d'avant. Le controle negatif
-        # (une soeur rebassee et MERGEABLE reste bloquante) est preserve.
-        if other.mergeable == "CONFLICTING":
-            continue
-        if not set(entry.commits) & set(other.commits):
-            # #20263 -- un rebase reecrit les SHA : une intersection vide
-            # ne prouve PAS l'independance, elle est exactement la
-            # signature du sommet de pile rebati que la porte existe pour
-            # attraper. Repli sur les SUJETS partages (hors bruit), comme
-            # le contrat publie le promet : « par sujet, jamais par SHA ».
-            # #20263 ( controle negatif de l'adjoint, dossier c6105057753)
-            # -- un sujet partage seul ne prouve pas non plus la parente :
-            # deux branches INDEPENDANTES depuis main portent souvent le
-            # meme prefixe canonique, et la porte les appariait en BlocAGE
-            # mutuel. Le repli exige la corroboration de CONTENU : au moins
-            # un sujet partage dont les commits des deux cotes ont le MEME
-            # patch-id (egalite qui survit au rebase). Les controles aval
-            # (ancetre lineaire, apport reel) restent appliques.
-            shared = [
-                s for s in (mine & _subjects_of(other))
-                if not _is_stack_noise(s)
-            ]
-            if not shared:
-                continue
-            if not _subjects_corroborated(entry, other, set(shared)):
-                continue
-        # Bas de pile lineaire : la tete d'AUTEUR (au-dela d'un eventuel
-        # rafraichissement content-free, #20641) de `target` est un
-        # ancetre de celle de `other`, donc merger `target` d'abord est
-        # l'ordre correct. On utilise `author_ref`, pas `ref` : un
-        # `gh pr update-branch` content-free prepende une fusion de
-        # rafraichissement a `entry.ref` (et potentiellement a
-        # `other.ref`), et la comparer brute faisait croire a un
-        # sommet de pile la ou il y a un bas lineaire.
-        if _git(
-            ["merge-base", "--is-ancestor", entry.author_ref, other.author_ref], check=False
-        ).returncode == 0:
-            continue
-        # #23100 -- l'enfant retarde de la cible. Le partenaire a pour BASE
-        # la tete de la cible (ou la tete d'un descendant de la cible : la
-        # chaine suit les liens base -> head a travers l'index, des piles de
-        # trois existent -- instance fondatrice #19548 -> #19556 -> #19567).
-        # La cible est alors le BAS d'une vraie pile : la merger d'abord est
-        # l'ordre correct, l'enfant retombera par update-branch -- aucun
-        # « sommet de pile perime » a signaler. La fausse instance qui a
-        # fonde l'issue : #22811 basee sur la tete de #22741, enfant retarde
-        # (le parent a avance apres le fork), et la porte bloquait le seul
-        # merge executable de la paire. Noms absents (entrees construites
-        # hors enumeration) : l'exemption est inerte, comportement d'avant.
-        if _is_stack_descendant(other, entry, index):
-            continue
-        if not [
-            s for s in (_subjects_of(other) - mine) if not _is_stack_noise(s)
-        ]:
+        # #23100 (troisieme angle, 2026-11-16) -- la fourche soeur
+        # RECIPROQUE. Deux PRs parties d'un meme commit non merge, dont
+        # chacune porte ensuite un travail propre absent de l'autre : le
+        # predicat tire dans les DEUX sens, chacune est le « sommet perime »
+        # de l'autre, et aucune ne peut jamais atterrir. Instance fondatrice :
+        # #26321 (SC-10) et #26323 (SC-11), forkees de `c2a6c7d54c3`,
+        # MERGEABLE toutes deux, skippees en boucle par merge_ready
+        # (`stack-top:26323` / `stack-top:26321`). Aucune des deux n'est la
+        # version anterieure de l'autre : l'ordre se tranche, il ne se
+        # deduit pas. La plus ANCIENNE (numero le plus bas) passe ; la plus
+        # recente reste bloquee par elle, et se libere des que la premiere
+        # a atterri (elle sort alors de l'index des PRs ouvertes). Le blocage
+        # a sens unique -- la soeur qui porte des corrections absentes ici,
+        # sans travail propre de notre cote -- reste inchange.
+        if target < number and _pair_blocks(other, entry, index):
             continue
         partners.append(number)
     return partners

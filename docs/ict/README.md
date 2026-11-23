@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-22
+
 # ICT — Index de la documentation de cadrage et de synthèse
 
 > **Portée.** Index thématique des 12 documents de cadrage, de synthèse et de détail de la série ICT (Integrated / Integrated-Coordination Theory de la strate 7). Tous sont au **grade C-documentaire** : positionnement, consolidation, cartographie — *aucun ne revendique un résultat démontré* ; ils nomment, articulent ou cartographient ce que les notebooks ICT expérimentent.
@@ -70,6 +72,16 @@ liens de navigation rétablis après la descente d'un niveau.
 | [`palier15-ict20-note-de-conception.md`](palier15-ict20-note-de-conception.md) | Palier 15 « Lentilles et représentations » : les 27 carnets du palier en 4 tranches (T1 substrat livrée, T2 observateur, T3 lentilles — attend #24452, T4 inoculation), argument de chaîne de lecture, et l'addendum T1 (ré-exécution ICT-22, `_quarto.yml`, liens croisés hors série). Issue [#20298](https://github.com/jsboige/CoursIA/issues/20298). |
 | [`queue-hors-strates-note-de-conception.md`](queue-hors-strates-note-de-conception.md) | Note de conception de la **queue « hors strates »** de la série ICT : destination de chacun des 8 carnets hors strates (40a/40b/47/47b/48-Onset/48-Wolfram/49/50) et clôture des trois options ouvertes (47b, 40b, 48-Onset). Note seule, mouvement différé. Issue [#20298](https://github.com/jsboige/CoursIA/issues/20298). |
 | [`banc-strate7-note-de-conception.md`](banc-strate7-note-de-conception.md) | Note de conception du **banc unique de la strate 7** (capstone, tête du palier) : les six proxys d'`ict/free_coordinates.py` employés comme lentille sur les mécanismes inter-séries qui changent l'espace des actions, chacun appelé par son organe natif et classé latent / nouveau / décoratif. Issue [#23778](https://github.com/jsboige/CoursIA/issues/23778). |
+
+## Pré-enregistrements d'expérience (docs/ict/)
+
+Un pré-enregistrement fixe **avant** l'exécution le protocole d'une campagne : modèle, bras, graines, pas, critères de lecture, biais connus. Il est écrit et committé **avant** le premier appel du GPU — un protocole écrit après le résultat ne scelle rien, il ne fait que justifier après coup.
+
+| Document | Rôle |
+|----------|------|
+| [`ict25a-2b-pre-enregistrement.md`](ict25a-2b-pre-enregistrement.md) | Campagne ICT-25a au palier **2B** (Gates 20-21 de [#5105](https://github.com/jsboige/CoursIA/issues/5105)) : backbone `Qwen3.5-2B-Base` + contrôle intra-famille `Qwen3.5-0.8B`, bras N et Np, quatre graines (0, 1, 7, 42), 120 pas, critères de lecture scellés, **biais écrit d'avance** (le passage 1.5B → 2B change la taille *et* la famille ; le `FEWSHOT` annonce l'astuce dans tous les bras), **issues affaiblissantes pré-enregistrées** (A1 : pas de matière première ; A2 : certification qui n'apprend rien ; A3 : portée du few-shot ; A4 : divergence des verdicts rewardspy), limite nommée (la moitié « panel persona » de la Gate 21 reste ouverte). |
+| [`ict25a-2b-resultats-2b.md`](ict25a-2b-resultats-2b.md) | **Resultats mesures** de la campagne ICT-25a au palier 2B (Gates 20-21 de [#5105](https://github.com/jsboige/CoursIA/issues/5105)) : les criteres de lecture du sceau appliquees aux artefacts `runs/ict25a_{N,Np}_2B.json` et a leurs audits rewardspy (fenetres `both` et `head`) -- Gate 21 **non franchie** (les verdicts des deux bras divergent aux deux echelles), divergence des bras et non moyenne ; la moitie « panel persona » de la Gate 21 reste ouverte. Le sceau ([`ict25a-2b-pre-enregistrement.md`](ict25a-2b-pre-enregistrement.md)) n'a pas ete modifie en aucune ligne. |
+| [`hoel-causal-emergence-pre-enregistrement.md`](hoel-causal-emergence-pre-enregistrement.md) | Case 25 de la veille [#8182](https://github.com/jsboige/CoursIA/issues/8182) — émergence causale (Hoel, Albantakis & Tononi 2013, *PNAS* 110(49)) : sceau des hypothèses H1-H4 et des portes G1-G4 **avant** le banc `ict/hoel_causal_emergence.py` (l'organe `ict/causal_emergence.py` est invoqué, jamais réimplémenté) ; verdict borné **PARTIEL** (H2 confirmée : le renversement EI-macro se reproduit sur le calibrage de la Fig. 4 ; H4 confirmée : témoin négatif, CE négatif ou nul sur tous les regroupements légaux ; H1/H3 exclues par impossibilité structurelle démontrée, bornes dans le JSON de résultats). Source primaire archivée au gisement, identité vérifiée sur la première page. |
 
 ## Parcours suggéré
 

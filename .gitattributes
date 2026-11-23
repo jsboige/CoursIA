@@ -18,6 +18,9 @@ COURSE_CATALOG.generated.json text eol=lf
 # demande au reviewer de refuser "si le diff touche autre chose" : sans cette regle,
 # ce critere est illisible a chaque run. Meme remede que le catalogue ci-dessus.
 docs/qc/qc-research-seeded.json text eol=lf
+# Meme motif (#16457/#26471) : l'organe argumentation_capacity_dedup `dedup` ecrit
+# le rapport JSON en LF (write_text, runner Linux) ; le blob committé etait en CRLF.
+docs/reference/argumentation-capacites-dedup.json text eol=lf
 # Notebooks Markdown : la regle precedente `MyIA.AI.Notebooks/*/README.md` ne
 # matchait qu'1 niveau de profondeur et ratait 296 READMEs profonds (cf #14570).
 # `**` matche profondeur arbitraire et remplace les 2 lignes en une seule, plus
@@ -132,6 +135,25 @@ docs/**/*.md text eol=lf
 # d'audit `<pair>/<date>-<lane>.yaml`, #14911).
 scripts/notebook_tools/twin_pairs.d/*.yaml text eol=lf
 scripts/notebook_tools/twin_pairs.d/*/*.yaml text eol=lf
+
+# Ledger des renommages (#27015) : TSV append-only (ancien/nouveau/date/lane)
+# ecrit en parallele par plusieurs lanes -- chaque renommage ajoute une ligne
+# en fin de fichier, donc deux PRs de renommage convergentes conflictent
+# systematiquement sur les dernieres lignes (frein signale a ai-01 le
+# 2026-11-16 par myia-po-2027:CoursIA). Contrairement au registre twin-parity
+# ci-dessus, le file-per-entry n'est PAS la bonne reponse : le ledger est
+# l'HISTOIRE ordonnee (les lecteurs -- check_subseries_descent,
+# generate_catalog, creation_budget -- la parcourent comme un flux), la
+# diviser par fichier casserait l'ordre. Le driver `union` concatene les deux
+# bouts lors d'un merge LOCAL : il supprime le conflit, mais ne juge pas --
+# d'ou la garde scripts/notebook_tools/check_rename_ledger.py, qui echoue sur
+# une cle source dupliquee ou un cycle a dates repetees (signatures d'un
+# artefact d'union), enregistree dans fast_lane_registry.py. Comme pour
+# twin_pairs ci-dessus, le merge SERVEUR GitHub n'honore pas les drivers
+# custom : le bouton merge confltera toujours -- le driver soulage les
+# merges/rebases locaux, la garde est le filet. eol=lf : 0 CR mesure sur
+# origin/main (dde06ce25ffe), aucun churn de renormalisation a prevoir.
+docs/reference/rename-ledger.tsv text eol=lf merge=union
 
 # Snapshots verbatim des taxonomies Argumentum (amont : ArgumentumGames/Argumentum).
 # Ces deux CSV ne sont PAS edites ici : ils sont recopies octet pour octet depuis

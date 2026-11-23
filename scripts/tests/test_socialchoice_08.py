@@ -16,7 +16,7 @@ ALTERNATIVES = ("A", "B", "C")
 RANKINGS = list(itertools.permutations(ALTERNATIVES))
 NOTEBOOK = (
     Path(__file__).resolve().parents[2]
-    / "MyIA.AI.Notebooks/GameTheory/SocialChoice/08-Kemeny-RankedPairs-Dodgson.ipynb"
+    / "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb"
 )
 
 

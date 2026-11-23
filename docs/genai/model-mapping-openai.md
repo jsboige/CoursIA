@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-13
+> REFERENCE — vivante — dernière révision 2026-11-15
 
 # Mapping des modèles OpenAI — génération courante (tranche 1, #14755)
 
@@ -61,6 +61,19 @@ Le mandat insiste : **« les identifiants exacts d'API sont à vérifier firstha
 
 Le « 5.6 principal » se traduit donc par **`gpt-5.6-sol`** (flagship), et le « Luna mini » par **`gpt-5.6-luna`** (confirmé économique/mini par son prix et sa description). `gpt-5.6-terra` est l'alternative équilibrée si l'on veut un modèle principal moins coûteux en latence.
 
+### Contraintes de paramètres de la série 5.6 (mesurées le 2026-11-14)
+
+Migrer le **nom** du modèle ne suffit pas : la série 5.6 refuse deux paramètres que les anciens appels passaient couramment. Sondes réelles, un appel minimal par ligne, clé du `.env` GenAI :
+
+| paramètre | `gpt-5.6`, `gpt-5.6-luna` | correction |
+|---|---|---|
+| `temperature` | **seule la valeur 1 est acceptée** — HTTP 400 « Only the default (1) value is supported » | retirer le paramètre (1 est le défaut) ou l'écrire explicitement à 1 |
+| `max_tokens` | **refusé** — HTTP 400 « Use 'max_completion_tokens' instead » | renommer en `max_completion_tokens` |
+
+`temperature=1` et `max_completion_tokens` passent. Un appel qui porte l'un de ces deux paramètres vers un modèle 5.6 **casse à l'exécution réelle** — et la sortie committée ne le montre pas quand le carnet tourne en mode démonstration (`use_mock_api = True`) : c'est le cas fondateur **#26413** (nom migré en `gpt-5.6-luna`, `temperature=0.8` resté).
+
+La détection statique est portée par `scripts/notebook_tools/check_obsolete_chat_model.py`, tier « PARAMETRE » : un appel dont le **modèle résolu** est de la famille `gpt-5.6*` est signalé s'il porte un `temperature` littéral différent de 1, ou un `max_tokens`. La contrainte suit le modèle résolu, pas le nom écrit : un `temperature` destiné au vLLM local n'est jamais accusé.
+
 ## Preuve de vérification (firsthand, 2026-09-05)
 
 - **OpenAI `GET /v1/models`** : la série `gpt-5` courante contient `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna` (et les versions antérieures `gpt-5.5`, `gpt-5.4`, `gpt-5.4-mini/nano`, `gpt-5.2`). La lignée `4.x` (`gpt-4`, `gpt-4o`, `gpt-4.1`, `gpt-4-turbo`, `gpt-3.5-turbo`, `gpt-4o-transcribe`, `gpt-4o-mini-tts`, `gpt-4o-realtime-preview`) est **toujours listée** (compatibilité) mais n'est **plus** la génération courante.
@@ -114,7 +127,7 @@ Le périmètre **exécuté** de la migration est **complet au sens de l'organe**
 
 | Classe | Raison | Fichiers |
 |---|---|---|
-| **A. Expérience épinglée** | `MODEL_ID = "gpt-4o-mini"` est la **variable de contrôle** du pilote d'évaluation (docstring « modèle EPINGLE … aucune sonde ne bascule ») : changer le modèle changerait l'expérience, ce n'est pas un défaut. **Trois de ces pilotes font un appel chat live** que l'organe ne voit pas (forme hors liste blanche) : `sk_agents_handoff_pilot.py` (`CountingOpenAI` → `ChatCompletionAgent`), `adk_distillation_pilot.py` (`ProviderConfig` → sonde) et `adk_handoff_pilot.py` (`ProviderConfig`, `model="gpt-4o-mini"` l.181, déplacé par #25008 vers `ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/`) — l'épinglage y est **délibéré et documenté**, c'est ce qui justifie la conservation | `GenAI/SemanticKernel/eval-pilots/` (**la plupart** des fichiers `.py` ; `sk_process_pilot.py` ne porte pas le littéral) · `ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py` |
+| **A. Expérience épinglée** | `MODEL_ID = "gpt-4o-mini"` est la **variable de contrôle** du pilote d'évaluation (docstring « modèle EPINGLE … aucune sonde ne bascule ») : changer le modèle changerait l'expérience, ce n'est pas un défaut. **Trois de ces pilotes font un appel chat live** que l'organe ne voit pas (forme hors liste blanche) : `sk_agents_handoff_pilot.py` (`CountingOpenAI` → `ChatCompletionAgent`), `adk_distillation_pilot.py` (`ProviderConfig` → sonde) et `adk_handoff_pilot.py` (`ProviderConfig`, `model="gpt-4o-mini"` l.181, déplacé par #25008 vers `ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/`) — l'épinglage y est **délibéré et documenté**, c'est ce qui justifie la conservation | `GenAI/SemanticKernel/eval-pilots/` (**la plupart** des fichiers `.py` ; `sk_process_pilot.py` ne porte pas le littéral) · `ML/DataScienceWithAgents/07-Orchestration-d-Agents/eval-pilots/adk_handoff_pilot.py` |
 | **B. Panneau de vetting** | **jeu de comparaison délibéré** de modèles à vérifier (`gpt-4o`, `gpt-4o-mini`, `gpt-3.5-turbo`, `o3`, `o4-mini`, `gpt-4`) : retirer des noms réduirait la couverture du panneau. **Les fichiers cités sont hors dépôt** : `semantic-fleet` est un **gitlink** (mode `160000`, sha `6e642aeb`) — les chemins cités sont inatteignables depuis ce dépôt (404 mesurés). Ils ne sont vus par l'organe que si le sous-module est **check out** : mesurés au sha épinglé `6e642aeb`, ils donnent les mêmes mentions de documentation, sans finding d'exécution. Le checkout CI n'initialisant pas les sous-modules, la CI ne les voit pas | `GenAI/SemanticKernel/semantic-fleet/` (hors dépôt) : `model_tester/api_utils.py`, `model_tester/transparent_model_test.py`, `tools/verification/vetting/multi_connector_vetting_test_fixed.py`, `tools/verification/vetting/run_vetting_tests.py` |
 | **C. Catalogue / routing** | documentation du **paysage de modèles** (catalogue + table d'état des endpoints, dict modèle→route), pas « le modèle utilisé » | `GenAI/00-GenAI-Environment/00-3-API-Endpoints-Configuration.ipynb` · `GenAI/Security/Oversight/oversight_llm_cachegen.py` |
 | **D. Recherche comparative** | les noms anciens sont **le sujet** de l'étude (scaling laws, comparaison de tailles) | `GenAI/Security/Oversight/Oversight-Scaling-Laws-Nim.ipynb` |

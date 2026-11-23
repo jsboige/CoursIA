@@ -9,35 +9,35 @@ pagetitle: "CoursIA Notebook Catalog"
 
 # CoursIA Notebook Catalog
 
-Total notebooks: 1657
+Total notebooks: 1786
 
 ## Status Summary
 
 - **BROKEN**: 2
-- **DEMO**: 224
-- **READY**: 1431
-- **TOTAL**: 1657
+- **DEMO**: 231
+- **READY**: 1553
+- **TOTAL**: 1786
 
 ## Maturity Summary
 
-- **ALPHA**: 69
-- **BETA**: 1501
-- **DRAFT**: 83
+- **ALPHA**: 56
+- **BETA**: 1650
+- **DRAFT**: 76
 - **TEMPLATE**: 4
-- **TOTAL**: 1657
+- **TOTAL**: 1786
 
 ## Series / Sub-series Totals
 
 | Series | Sub-series | Notebooks |
 |--------|-----------|-----------|
 | GenAI | 00-GenAI-Environment | 7 |
-| GenAI | 3D | 7 |
+| GenAI | 3D | 9 |
 | GenAI | Audio/01-Foundation | 5 |
-| GenAI | Audio/02-Advanced | 9 |
-| GenAI | Audio/03-Orchestration | 3 |
+| GenAI | Audio/02-Advanced | 12 |
+| GenAI | Audio/03-Orchestration | 4 |
 | GenAI | Audio/04-Applications | 6 |
 | GenAI | Audio/04-Applications/04-Audiobook | 6 |
-| GenAI | Audio/04-Applications/04-Musique | 5 |
+| GenAI | Audio/04-Applications/04-Musique | 6 |
 | GenAI | Audio/04-Applications/04-Voix | 3 |
 | GenAI | Audio/05-Diffusion-from-scratch | 2 |
 | GenAI | Audio/06-Diffusion-SOTA | 3 |
@@ -52,7 +52,7 @@ Total notebooks: 1657
 | GenAI | Image/02-Advanced | 5 |
 | GenAI | Image/03-Orchestration | 4 |
 | GenAI | Image/04-Applications | 6 |
-| GenAI | Image/05-History | 7 |
+| GenAI | Image/05-History | 8 |
 | GenAI | Integrations-DotNet | 1 |
 | GenAI | Integrations-DotNet/Aspire | 11 |
 | GenAI | Integrations-DotNet/CopilotSDK | 1 |
@@ -73,33 +73,33 @@ Total notebooks: 1657
 | GenAI | Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/04-rag-tools-avances | 1 |
 | GenAI | Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/05-multi-tenant-ci | 1 |
 | GenAI | Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/06-nouveautes-v0.10 | 1 |
-| GenAI | PostTraining | 24 |
-| GenAI | RAG-et-Memoire-Semantique | 15 |
+| GenAI | PostTraining | 27 |
+| GenAI | RAG-et-Memoire-Semantique | 18 |
 | GenAI | Security/Control | 1 |
 | GenAI | Security/Oversight | 6 |
 | GenAI | Security/RedTeam | 1 |
 | GenAI | Security/Tooling | 1 |
-| GenAI | SemanticKernel | 24 |
-| GenAI | Texte | 43 |
+| GenAI | SemanticKernel | 25 |
+| GenAI | Texte | 45 |
 | GenAI | Texte/TransformerVariants | 7 |
 | GenAI | Vibe-Coding/analyzers | 1 |
 | GenAI | Vibe-Coding/Claude-Code/notebooks | 5 |
 | GenAI | Vibe-Coding/Claudish/notebooks | 1 |
 | GenAI | Vibe-Coding/docs | 1 |
 | GenAI | Video/01-Foundation | 6 |
-| GenAI | Video/02-Advanced | 7 |
+| GenAI | Video/02-Advanced | 8 |
 | GenAI | Video/03-Orchestration | 3 |
 | GenAI | Video/04-Applications | 6 |
-| Search | Part1-Foundations | 51 |
+| Search | Part1-Foundations | 57 |
 | Search | Part2-CSP | 20 |
-| Search | Part3-Cas-pratiques | 52 |
+| Search | Part3-Cas-pratiques | 53 |
 | Search | Part4-Metaheuristics | 25 |
 | Search | Part4-Metaheuristics/MGS-vs-mealpy | 10 |
-| Search | Part5-Frontieres | 11 |
+| Search | Part5-Frontieres | 14 |
 | ML | DataScienceWithAgents/01-Python-For-Data-Science/notebooks | 6 |
-| ML | DataScienceWithAgents/02-ML-Cours | 39 |
-| ML | DataScienceWithAgents/03-Deep-Learning | 29 |
-| ML | DataScienceWithAgents/04-Vision | 14 |
+| ML | DataScienceWithAgents/02-ML-Cours | 49 |
+| ML | DataScienceWithAgents/03-Deep-Learning | 31 |
+| ML | DataScienceWithAgents/04-Vision | 15 |
 | ML | DataScienceWithAgents/05-Wavelet-Scattering | 6 |
 | ML | DataScienceWithAgents/06-Data-Agents/Day1-Foundations/Labs | 1 |
 | ML | DataScienceWithAgents/06-Data-Agents/Day2-Document-Agents/Labs/Lab2-RFP-Analysis | 1 |
@@ -112,18 +112,18 @@ Total notebooks: 1657
 | ML | DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star | 7 |
 | ML | DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star | 3 |
 | ML | DataScienceWithAgents/07-Agent-Orchestration/Day7-Production | 2 |
-| ML | ML.Net | 25 |
+| ML | ML.Net | 29 |
 | SymbolicAI | Racine | 1 |
-| SymbolicAI | ArgumentAnalysis | 37 |
+| SymbolicAI | ArgumentAnalysis | 38 |
 | SymbolicAI | ArgumentAnalysis/groupe-I2-contre-arguments-aspic | 1 |
 | SymbolicAI | Lean | 54 |
-| SymbolicAI | Lean/ANALYSE | 23 |
+| SymbolicAI | Lean/ANALYSE | 24 |
 | SymbolicAI | Lean/GALOIS | 1 |
 | SymbolicAI | Lean/Geometry | 8 |
 | SymbolicAI | Lean/GOL | 11 |
-| SymbolicAI | Lean/GROTH | 5 |
+| SymbolicAI | Lean/GROTH | 6 |
 | SymbolicAI | Lean/KNOTS | 5 |
-| SymbolicAI | Lean/Langlands | 6 |
+| SymbolicAI | Lean/Langlands | 7 |
 | SymbolicAI | Lean/MIMO | 4 |
 | SymbolicAI | Lean/Riemann200 | 13 |
 | SymbolicAI | Lean/Serre100 | 34 |
@@ -141,7 +141,7 @@ Total notebooks: 1657
 | SymbolicAI | SmartContracts/04-Privacy-Cryptography | 3 |
 | SymbolicAI | SmartContracts/05-Alternative-Chains | 5 |
 | SymbolicAI | SmartContracts/06-Real-World | 5 |
-| SymbolicAI | SMT/Z3-API | 31 |
+| SymbolicAI | SMT/Z3-API | 35 |
 | SymbolicAI | SMT/Z3-Linq2Z3 | 20 |
 | SymbolicAI | SymbolicLearning | 27 |
 | SymbolicAI | Tweety | 38 |
@@ -197,56 +197,58 @@ Total notebooks: 1657
 | QuantConnect | projects/TrendStocks-Alpha | 1 |
 | QuantConnect | projects/TurnOfMonth | 1 |
 | QuantConnect | projects/VIX-TermStructure | 1 |
-| QuantConnect | Python | 65 |
-| GameTheory | Racine | 101 |
+| QuantConnect | Python | 66 |
+| GameTheory | Racine | 123 |
 | GameTheory | Coalitions | 5 |
-| GameTheory | Dynamics | 13 |
+| GameTheory | Dynamics | 17 |
 | GameTheory | gateway | 1 |
-| GameTheory | Metajeux | 6 |
-| GameTheory | SocialChoice | 16 |
-| Sudoku | Racine | 39 |
+| GameTheory | Metajeux | 7 |
+| GameTheory | SocialChoice | 17 |
+| Sudoku | Racine | 42 |
+| Probas | Racine | 1 |
 | Probas | Applications | 4 |
 | Probas | Applications/Percolation | 8 |
+| Probas | Causalite | 12 |
 | Probas | DecisionTheory | 1 |
 | Probas | DecisionTheory/Actuariat | 5 |
-| Probas | DecisionTheory/Causal-Bridges | 12 |
 | Probas | DecisionTheory/DecInfer | 12 |
 | Probas | DecisionTheory/DecPyMC | 8 |
-| Probas | Fondations | 2 |
+| Probas | Fondations | 4 |
 | Probas | Infer | 21 |
 | Probas | PyMC | 20 |
-| Physique | Chaines | 2 |
+| Physique | Chaines | 11 |
 | Physique | Constructeur | 1 |
+| Physique | InformationQuantique | 1 |
 | Physique | Integrales | 4 |
-| Physique | Jauge | 3 |
+| Physique | Jauge | 4 |
 | Physique | Numerique | 2 |
 | IIT | Racine | 10 |
-| IIT | ICT-Series | 71 |
+| IIT | ICT-Series | 68 |
 | IIT | ICT-Series/ICT-02-SelfSortingMorphogenesis | 3 |
 | IIT | ICT-Series/ICT-05-CausalEmergence | 3 |
 | IIT | ICT-Series/ICT-12-ValenceFieldsAndAnimats | 5 |
-| IIT | ICT-Series/ICT-14-FreeEnergySurprise | 2 |
 | IIT | ICT-Series/ICT-15-IntegratedComplexity | 12 |
-| IIT | ICT-Series/ICT-19-EnjeuBattery | 2 |
+| IIT | ICT-Series/ICT-17-EpsilonMachine | 3 |
 | IIT | ICT-Series/ICT-20-FeatureCatastrophes | 6 |
-| RL | Racine | 29 |
-| RL | PostTraining | 11 |
+| RL | Racine | 32 |
+| RL | PostTraining | 12 |
 | CaseStudies | Diagnostic-Medical/solution | 1 |
 | CaseStudies | Diagnostic-Medical/student | 1 |
 | CaseStudies | Planification-Oncologie/solution | 1 |
 | CaseStudies | Planification-Oncologie/student | 1 |
 | CaseStudies | Reseau-Electrique-Intelligent/solution | 1 |
 | CaseStudies | Reseau-Electrique-Intelligent/student | 1 |
-| Complexity | Racine | 28 |
-| Compression | Racine | 10 |
+| Complexity | Racine | 44 |
+| Compression | Racine | 16 |
 | Compression | Compression_lean | 1 |
-| NLP | Racine | 13 |
+| NLP | Racine | 20 |
+| cross-series | AgentSystems | 1 |
 | cross-series | socle-metadata-driven | 2 |
-| **TOTAL** | | **1657** |
+| **TOTAL** | | **1786** |
 
 ## By Series
 
-### GenAI (317 notebooks) — BROKEN:2, DEMO:144, READY:171 | ALPHA:31, BETA:262, DRAFT:21, TEMPLATE:3
+### GenAI (335 notebooks) — BROKEN:2, DEMO:149, READY:184 | ALPHA:27, BETA:284, DRAFT:21, TEMPLATE:3
 
 #### 00-GenAI-Environment (7)
 
@@ -260,17 +262,19 @@ Total notebooks: 1657
 | 6 | [00-6-Local-Docker-Deployment.ipynb](MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-6-Local-Docker-Deployment.ipynb) | Deploiement Docker Local des Services GenAI | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 7 | [00-7-Terminal-Long-Runs.ipynb](MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-7-Terminal-Long-Runs.ipynb) | GenAI Environment — Terminal pour les longs… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 
-#### 3D (7)
+#### 3D (9)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [3D-01-NeRF-Depuis-Zero-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-Depuis-Zero-Python.ipynb) | 3D-01 — NeRF from scratch : représenter une scène… | Python 3 | DEMO | ALPHA | — | — | 1h | po-2025 |
-| 2 | [3D-02-NeRF-Critique-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critique-Python.ipynb) | 3D-02 — Critique de NeRF : cinq limitations… | Python 3 | DEMO | DRAFT | — | — | 45min | po-2025 |
-| 3 | [3D-03-Gaussian-Splats-Concepts.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-03-Gaussian-Splats-Concepts.ipynb) | 3D-03 — Gaussian Splats : la transition du volume… | Python 3 | DEMO | ALPHA | — | — | 45min | po-2025 |
-| 4 | [3D-04-3DGS-From-Scratch-with-gsplat.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-04-3DGS-From-Scratch-with-gsplat.ipynb) | 3D-04 — 3DGS avec gsplat : brancher le vrai moteur | Python 3.10 (gsplat) | DEMO | ALPHA | — | — | 45min | po-2025 |
-| 5 | [3D-05-3DGS-Optimization-Tradeoffs.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-05-3DGS-Optimization-Tradeoffs.ipynb) | 3D-05 — Tradeoffs d'optimisation 3DGS :… | Python 3.10 (gsplat) | DEMO | ALPHA | — | — | 45min | po-2025 |
-| 6 | [3D-07-Flow-Matching-Voxel-Joint-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-07-Flow-Matching-Voxel-Joint-Python.ipynb) | 3D-07 — Générer les niveaux d'une hiérarchie… | Python 3 | DEMO | DRAFT | — | — | 45min | po-2025 |
-| 7 | [3D-08-Rendu-Analytique-vs-Radiance-Field-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-08-Rendu-Analytique-vs-Radiance-Field-Python.ipynb) | 3D-08 — Rendu analytique contre radiance field :… | Python 3 | READY | ALPHA | — | — | 45min | po-2025 |
+| 1 | [10-SIG-3D-Tiles-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/10-SIG-3D-Tiles-Python.ipynb) | 3D-10 — SIG web : couches, repères et niveaux de… | Python3 | READY | BETA | — | — | 15min | po-2025 |
+| 2 | [3D-01-NeRF-Depuis-Zero-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-Depuis-Zero-Python.ipynb) | 3D-01 — NeRF from scratch : représenter une scène… | Python 3 | DEMO | ALPHA | — | — | 1h | po-2025 |
+| 3 | [3D-02-NeRF-Critique-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critique-Python.ipynb) | 3D-02 — Critique de NeRF : cinq limitations… | Python 3 | DEMO | DRAFT | — | — | 45min | po-2025 |
+| 4 | [3D-03-Gaussian-Splats-Concepts.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-03-Gaussian-Splats-Concepts.ipynb) | 3D-03 — Gaussian Splats : la transition du volume… | Python 3 | DEMO | ALPHA | — | — | 45min | po-2025 |
+| 5 | [3D-04-3DGS-From-Scratch-with-gsplat.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-04-3DGS-From-Scratch-with-gsplat.ipynb) | 3D-04 — 3DGS avec gsplat : brancher le vrai moteur | Python 3.10 (gsplat) | DEMO | ALPHA | — | — | 45min | po-2025 |
+| 6 | [3D-05-3DGS-Optimization-Tradeoffs.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-05-3DGS-Optimization-Tradeoffs.ipynb) | 3D-05 — Tradeoffs d'optimisation 3DGS :… | Python 3.10 (gsplat) | DEMO | ALPHA | — | — | 45min | po-2025 |
+| 7 | [3D-07-Flow-Matching-Voxel-Joint-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-07-Flow-Matching-Voxel-Joint-Python.ipynb) | 3D-07 — Générer les niveaux d'une hiérarchie… | Python 3 | DEMO | DRAFT | — | — | 45min | po-2025 |
+| 8 | [3D-08-Rendu-Analytique-vs-Radiance-Field-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-08-Rendu-Analytique-vs-Radiance-Field-Python.ipynb) | 3D-08 — Rendu analytique contre radiance field :… | Python 3 | READY | ALPHA | — | — | 45min | po-2025 |
+| 9 | [3D-09-Photogrammetrie-MNT-Python.ipynb](MyIA.AI.Notebooks/GenAI/3D/3D-09-Photogrammetrie-MNT-Python.ipynb) | 3D-09 — Des photos au MNT : reconstruire et… | Python3 | READY | BETA | — | — | 15min | po-2025 |
 
 #### Audio/01-Foundation (5)
 
@@ -282,27 +286,31 @@ Total notebooks: 1657
 | 4 | [01-4-Whisper-Local.ipynb](MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) | Whisper Local - Transcription GPU avec… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 5 | [01-5-Kokoro-TTS-Local.ipynb](MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb) | Kokoro TTS Local - Synthèse vocale légère | Python 3 | DEMO | BETA | — | — | 1h | po-2025 |
 
-#### Audio/02-Advanced (9)
+#### Audio/02-Advanced (12)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [02-1-Chatterbox-TTS.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-1-Chatterbox-TTS.ipynb) | Chatterbox TTS - Synthese Vocale Expressive | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 2 | [02-2-XTTS-Voice-Cloning.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) | XTTS v2 - Clonage Vocal Zero-Shot | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 3 | [02-3-MusicGen-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb) | MusicGen - Generation Musicale par IA | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 4 | [02-4-Demucs-Source-Separation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb) | Demucs v4 - Separation de Sources Audio | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 5 | [02-5-Multi-Model-TTS-Gateway.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb) | Multi-Model TTS Gateway - Synthese Vocale… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 6 | [02-6-MIDI-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb) | Generation MIDI avec midi-model (SkyTNT) | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 7 | [02-7-YuE2-Song-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb) | Generation de Chansons Completes : YuE2 | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 8 | [02-8-Expressive-TTS.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb) | TTS Expressif : Fish S2 Pro et Modèles SOTA | Python (dia-tts) | DEMO | BETA | — | — | 45min | po-2025 |
-| 9 | [02-9-AceStep-Music-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb) | Ace-Step v1.5 - Generation Musicale avec Paroles | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 2 | [02-10-Effets-Sonores-AudioLDM2.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) | AudioLDM2 - Generation d'effets sonores par le… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 3 | [02-11-AudioGen-Text-to-Audio.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-11-AudioGen-Text-to-Audio.ipynb) | AudioGen - Generation de Bruitages par IA | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 4 | [02-12-SVS-Singing-Voice-RVC.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-12-SVS-Singing-Voice-RVC.ipynb) | RVC v2 - Conversion de voix chantee (Singing Voice… | Python 3 (WSL + RVC) | DEMO | BETA | — | — | 45min | po-2025 |
+| 5 | [02-2-XTTS-Voice-Cloning.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) | XTTS v2 - Clonage Vocal Zero-Shot | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 6 | [02-3-MusicGen-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb) | MusicGen - Generation Musicale par IA | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 7 | [02-4-Demucs-Source-Separation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-4-Demucs-Source-Separation.ipynb) | Demucs v4 - Separation de Sources Audio | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 8 | [02-5-Multi-Model-TTS-Gateway.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-5-Multi-Model-TTS-Gateway.ipynb) | Multi-Model TTS Gateway - Synthese Vocale… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 9 | [02-6-MIDI-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-6-MIDI-Generation.ipynb) | Generation MIDI avec midi-model (SkyTNT) | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 10 | [02-7-YuE2-Song-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb) | Generation de Chansons Completes : YuE2 | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 11 | [02-8-Expressive-TTS.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-8-Expressive-TTS.ipynb) | TTS Expressif : Fish S2 Pro et Modèles SOTA | Python (dia-tts) | DEMO | BETA | — | — | 45min | po-2025 |
+| 12 | [02-9-AceStep-Music-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb) | Ace-Step v1.5 - Generation Musicale avec Paroles | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 
-#### Audio/03-Orchestration (3)
+#### Audio/03-Orchestration (4)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [03-1-Multi-Model-Audio-Comparison.ipynb](MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) | Comparaison Multi-Modèles Audio | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 2 | [03-2-Audio-Pipeline-Orchestration.ipynb](MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb) | Orchestration de Pipelines Audio | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 3 | [03-3-Realtime-Voice-API.ipynb](MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-3-Realtime-Voice-API.ipynb) | OpenAI Realtime Voice API | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 4 | [03-4-TTS-Streaming-Local-Pipecat.ipynb](MyIA.AI.Notebooks/GenAI/Audio/03-Orchestration/03-4-TTS-Streaming-Local-Pipecat.ipynb) | TTS streaming local avec pipecat et Kokoro-82M | pipecat-kokoro | READY | BETA | — | — | 30min | po-2025 |
 
 #### Audio/04-Applications (6)
 
@@ -326,7 +334,7 @@ Total notebooks: 1657
 | 5 | [04-6-Audiobook-Pipeline.ipynb](MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-6-Audiobook-Pipeline.ipynb) | Pipeline Audiobook Agentique | Python 3 | DEMO | BETA | — | — | 30min | po-2025 |
 | 6 | [04-8-Lecture-Analytique.ipynb](MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-8-Lecture-Analytique.ipynb) | Lecture Analytique pour Audiobook | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
-#### Audio/04-Applications/04-Musique (5)
+#### Audio/04-Applications/04-Musique (6)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -335,6 +343,7 @@ Total notebooks: 1657
 | 3 | [04-17-MIR-Classique.ipynb](MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-17-MIR-Classique.ipynb) | Analyse musicale classique (MIR) : beat, tempo,… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 4 | [04-18-Basic-Pitch-Transcription.ipynb](MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-18-Basic-Pitch-Transcription.ipynb) | Transcription Note a Note : basic-pitch | Python (basicpitch-t4) | READY | BETA | — | — | 30min | po-2025 |
 | 5 | [04-20-Separation-Avancee-Qualite.ipynb](MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-20-Separation-Avancee-Qualite.ipynb) | Separation Avancee de Sources — Qualite Mesuree… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 6 | [04-21-SI-SDR-Contre-Epreuve.ipynb](MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Musique/04-21-SI-SDR-Contre-Epreuve.ipynb) | SI-SDR — ce que la métrique mesure, et son point… | Python3 | DEMO | BETA | — | — | 45min | po-2025 |
 
 #### Audio/04-Applications/04-Voix (3)
 
@@ -470,7 +479,7 @@ Total notebooks: 1657
 | 5 | [04-5-MiniMax-Cloud-Image.ipynb](MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-5-MiniMax-Cloud-Image.ipynb) | MiniMax H3 (Hailuo) — Génération d'images par le… | Python 3 | DEMO | BETA | — | — | 30min | po-2025 |
 | 6 | [04-6-AesCode-Visual-Documents.ipynb](MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-6-AesCode-Visual-Documents.ipynb) | AesCode-8B — Documents visuels générés comme code | Python 3 | DEMO | BETA | — | — | 30min | po-2025 |
 
-#### Image/05-History (7)
+#### Image/05-History (8)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -479,8 +488,9 @@ Total notebooks: 1657
 | 3 | [05-0c-Low-Complexity-Art-Python.ipynb](MyIA.AI.Notebooks/GenAI/Image/05-History/05-0c-Low-Complexity-Art-Python.ipynb) | 05-0c — Low-complexity art : la beauté comme… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 4 | [05-0d-GANs-Portraits-Moment-NFT.ipynb](MyIA.AI.Notebooks/GenAI/Image/05-History/05-0d-GANs-Portraits-Moment-NFT.ipynb) | 05-0d — GANs : des portraits adversariaux au… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 5 | [05-0e-MDL-Mesure-Unique-Python.ipynb](MyIA.AI.Notebooks/GenAI/Image/05-History/05-0e-MDL-Mesure-Unique-Python.ipynb) | 05-0e — Une seule règle pour mesurer la longueur… | Python 3 | READY | BETA | — | — | 15min | po-2025 |
-| 6 | [05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb](MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb) | 05-1 — DiscoDiffusion : la CLIP-guided diffusion… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 7 | [05-2-CLIPasso-Semantic-Sketching.ipynb](MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-CLIPasso-Semantic-Sketching.ipynb) | 05-2 — CLIPasso : le sketching sémantique par CLIP… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 6 | [05-0f-Groupes-De-Frise-Python.ipynb](MyIA.AI.Notebooks/GenAI/Image/05-History/05-0f-Groupes-De-Frise-Python.ipynb) | Les 7 groupes de frieze — art génératif de… | Python3 | READY | BETA | — | — | 15min | po-2025 |
+| 7 | [05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb](MyIA.AI.Notebooks/GenAI/Image/05-History/05-1-DiscoDiffusion-CLIP-Guided-Diffusion.ipynb) | 05-1 — DiscoDiffusion : la CLIP-guided diffusion… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 8 | [05-2-CLIPasso-Semantic-Sketching.ipynb](MyIA.AI.Notebooks/GenAI/Image/05-History/05-2-CLIPasso-Semantic-Sketching.ipynb) | 05-2 — CLIPasso : le sketching sémantique par CLIP… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 
 #### Integrations-DotNet (1)
 
@@ -628,7 +638,7 @@ Total notebooks: 1657
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [06-Nouveautes-v0.10-QA-OWUI.ipynb](MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/06-nouveautes-v0.10/06-Nouveautes-v0.10-QA-OWUI.ipynb) | Module 06 — Tester les nouveautés v0.10 (« l'ère… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
-#### PostTraining (24)
+#### PostTraining (27)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -656,26 +666,32 @@ Total notebooks: 1657
 | 22 | [PT_16_vericoding_formal_verification.ipynb](MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb) | PT-16 — Vericoding : la preuve formelle comme… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 23 | [PT_17_laya_proper_rewards_toy.ipynb](MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb) | PT-17 — laya : la règle de score propre comme… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
 | 24 | [PT_18_laya_ablation_distillation.ipynb](MyIA.AI.Notebooks/GenAI/PostTraining/PT_18_laya_ablation_distillation.ipynb) | PT-18 — laya étage 2 : l'ablation à trois bras —… | Python 3 (venv) | READY | DRAFT | — | — | 15min | po-2025 |
+| 25 | [PT_19_stratification_inter_tailles.ipynb](MyIA.AI.Notebooks/GenAI/PostTraining/PT_19_stratification_inter_tailles.ipynb) | PT-19 — Stratification inter-tailles des… | Python 3 | READY | BETA | — | — | 15min | po-2025 |
+| 26 | [PT_20_instrument_axe_douleur.ipynb](MyIA.AI.Notebooks/GenAI/PostTraining/PT_20_instrument_axe_douleur.ipynb) | PT-20 — L'instrument change-t-il la géométrie ?… | Python 3 (ipykernel) | DEMO | BETA | — | — | 30min | po-2025 |
+| 27 | [PT_21_onset_9b_agregat.ipynb](MyIA.AI.Notebooks/GenAI/PostTraining/PT_21_onset_9b_agregat.ipynb) | PT-21 — Onset/SAE Qwen3.5-9B-Base, agrégat de… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
-#### RAG-et-Memoire-Semantique (15)
+#### RAG-et-Memoire-Semantique (18)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [01-Hands-On-Grounding.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/01-Hands-On-Grounding.ipynb) | Hands-On Grounding — Qdrant en mémoire | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 2 | [02-Retrieval-Avance.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb) | 02 — Retrieval avancé : HyDE, reranking et… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 3 | [03-Embeddings-From-Scratch.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) | Embeddings from scratch — word2vec skip-gram, la… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 4 | [03b-Espace-Embeddings-Visualisation.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03b-Espace-Embeddings-Visualisation.ipynb) | Espace des embeddings — voir la géométrie :… | Python (coursia-ml-training) | READY | ALPHA | — | — | 30min | po-2025 |
-| 5 | [04-Tokenisation-From-Scratch.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) | Tokenisation from scratch — l'unité de compte de… | Python (coursia-ml-training) | READY | ALPHA | — | — | 30min | po-2025 |
-| 6 | [04b-Tokenisateurs-Compares-CSharp.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares-CSharp.ipynb) | Tokenisateurs comparés — WordPiece et Unigram, les… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 7 | [04b-Tokenisateurs-Compares.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares.ipynb) | Tokenisateurs comparés — WordPiece et Unigram, les… | Python (coursia-ml-training) | READY | ALPHA | — | — | 30min | po-2025 |
-| 8 | [05-Stockage-Vectoriel.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb) | Stockage vectoriel réel — persistance, index ANN… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
-| 9 | [05b-Stockage-Vectoriel-Serveur.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) | RAG 05b — Stockage vectoriel : le serveur Qdrant… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 10 | [06-KernelMemory-InProcess.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/06-KernelMemory-InProcess.ipynb) | 06 — Kernel Memory in-process : la couche… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 11 | [07-KernelMemory-Python-Quickstart.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/07-KernelMemory-Python-Quickstart.ipynb) | RAG 07 — Kernel Memory Python : ingestion,… | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2025 |
-| 12 | [08-KernelMemory-Hybrid-Search.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) | RAG 08 — Kernel Memory et la recherche hybride :… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 13 | [09-KernelMemory-Multimodal.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb) | RAG 09 — Au-delà du texte : le plafond multimodal… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 14 | [10-RAG-Visuel-Embedding-Conjoint.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/10-RAG-Visuel-Embedding-Conjoint.ipynb) | RAG 10 — Retrouver des pages par leur image :… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 15 | [11-Alignement-Representationnel-Cross-Modal.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/11-Alignement-Representationnel-Cross-Modal.ipynb) | RAG 11 — Les représentations convergent-elles ?… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 4 | [03b-Espace-Embeddings-Visualisation.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03b-Espace-Embeddings-Visualisation.ipynb) | Espace des embeddings — voir la géométrie :… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2025 |
+| 5 | [04-Tokenisation-From-Scratch-CSharp.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch-CSharp.ipynb) | Tokenisation from scratch — C# | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 6 | [04-Tokenisation-From-Scratch.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) | Tokenisation from scratch — l'unité de compte de… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2025 |
+| 7 | [04b-Tokenisateurs-Compares-CSharp.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares-CSharp.ipynb) | Tokenisateurs comparés — WordPiece et Unigram, les… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 8 | [04b-Tokenisateurs-Compares.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares.ipynb) | Tokenisateurs comparés — WordPiece et Unigram, les… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2025 |
+| 9 | [05-Stockage-Vectoriel-CSharp.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel-CSharp.ipynb) | Stockage vectoriel réel — persistance, index ANN… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 10 | [05-Stockage-Vectoriel.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb) | Stockage vectoriel réel — persistance, index ANN… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
+| 11 | [05b-Stockage-Vectoriel-Serveur.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) | RAG 05b — Stockage vectoriel : le serveur Qdrant… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 12 | [06-KernelMemory-InProcess.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/06-KernelMemory-InProcess.ipynb) | 06 — Kernel Memory in-process : la couche… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 13 | [07-KernelMemory-Python-Quickstart.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/07-KernelMemory-Python-Quickstart.ipynb) | RAG 07 — Kernel Memory Python : ingestion,… | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2025 |
+| 14 | [08-KernelMemory-Hybrid-Search.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) | RAG 08 — Kernel Memory et la recherche hybride :… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 15 | [09-KernelMemory-Multimodal.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb) | RAG 09 — Au-delà du texte : le plafond multimodal… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 16 | [10-RAG-Visuel-Embedding-Conjoint.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/10-RAG-Visuel-Embedding-Conjoint.ipynb) | RAG 10 — Retrouver des pages par leur image :… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 17 | [11-Alignement-Representationnel-Cross-Modal.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/11-Alignement-Representationnel-Cross-Modal.ipynb) | RAG 11 — Les représentations convergent-elles ?… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 18 | [12-Redaction-Rapport-STORM.ipynb](MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/12-Redaction-Rapport-STORM.ipynb) | RAG 12 — Rédiger un rapport avec citations : le… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
 #### Security/Control (1)
 
@@ -706,7 +722,7 @@ Total notebooks: 1657
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Tooling-MCP-Attack-Surface.ipynb](MyIA.AI.Notebooks/GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb) | Surface d'attaque des outils MCP — le piège de la… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
-#### SemanticKernel (24)
+#### SemanticKernel (25)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -727,15 +743,16 @@ Total notebooks: 1657
 | 15 | [Créateur de mail personnalisé.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Cr%C3%A9ateur%20de%20mail%20personnalis%C3%A9.ipynb) | Projet Createur de Mail personnalise | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 16 | [Notebook-Generated.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Notebook-Generated.ipynb) | Notebook de travail — Titanic: exploration,… | Python 3 | READY | BETA | — | — | 15min | po-2025 |
 | 17 | [Notebook-Template.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Notebook-Template.ipynb) | Notebook de travail | Python 3 | BROKEN | TEMPLATE | — | — | 15min | po-2025 |
-| 18 | [Semantic-fleet-MultiConnector-Routing.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-fleet-MultiConnector-Routing.ipynb) | Semantic-fleet MultiConnector : router les prompts… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
-| 19 | [Semantic-fleet-Radix-PromptMatcher.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-fleet-Radix-PromptMatcher.ipynb) | Semantic-fleet : router les prompts par préfixe —… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
-| 20 | [Semantic-kernel-AutoInteractive.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-kernel-AutoInteractive.ipynb) | Notebook de conception de Notebook | .NET (C#) | DEMO | BETA | — | — | 45min | po-2025 |
-| 21 | [Workbook-Template-Python.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Workbook-Template-Python.ipynb) | Notebook de travail | Python 3 | READY | TEMPLATE | — | — | 15min | po-2025 |
-| 22 | [Workbook-Template.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Workbook-Template.ipynb) | Notebook de travail | .NET (C#) | BROKEN | TEMPLATE | — | — | 30min | po-2025 |
-| 23 | [fort-boyard-csharp.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/fort-boyard-csharp.ipynb) | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | DRAFT | — | — | 30min | po-2025 |
-| 24 | [fort-boyard-python.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/fort-boyard-python.ipynb) | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | — | — | 30min | po-2025 |
+| 18 | [Semantic-fleet-Claudish-Routing.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-fleet-Claudish-Routing.ipynb) | Semantic-fleet et claudish : une passerelle,… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 19 | [Semantic-fleet-MultiConnector-Routing.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-fleet-MultiConnector-Routing.ipynb) | Semantic-fleet MultiConnector : router les prompts… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 20 | [Semantic-fleet-Radix-PromptMatcher.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-fleet-Radix-PromptMatcher.ipynb) | Semantic-fleet : router les prompts par préfixe —… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 21 | [Semantic-kernel-AutoInteractive.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-kernel-AutoInteractive.ipynb) | Notebook de conception de Notebook | .NET (C#) | DEMO | BETA | — | — | 45min | po-2025 |
+| 22 | [Workbook-Template-Python.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Workbook-Template-Python.ipynb) | Notebook de travail | Python 3 | READY | TEMPLATE | — | — | 15min | po-2025 |
+| 23 | [Workbook-Template.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/Workbook-Template.ipynb) | Notebook de travail | .NET (C#) | BROKEN | TEMPLATE | — | — | 30min | po-2025 |
+| 24 | [fort-boyard-csharp.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/fort-boyard-csharp.ipynb) | Jeu de devinette : Père Fouras vs Laurent Jalabert | .NET (C#) | DEMO | DRAFT | — | — | 30min | po-2025 |
+| 25 | [fort-boyard-python.ipynb](MyIA.AI.Notebooks/GenAI/SemanticKernel/fort-boyard-python.ipynb) | Jeu de devinette : Père Fouras vs Laurent Jalabert | Python 3 | DEMO | BETA | — | — | 30min | po-2025 |
 
-#### Texte (43)
+#### Texte (45)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -760,28 +777,30 @@ Total notebooks: 1657
 | 19 | [10c_Long_Context_Strategies.ipynb](MyIA.AI.Notebooks/GenAI/Texte/10c_Long_Context_Strategies.ipynb) | 10c. Stratégies pour contextes longs — budget de… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 20 | [10d_TensorSharp_DotNet_Inference.ipynb](MyIA.AI.Notebooks/GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb) | 10d. Bake-off bindings .NET : pilote TensorSharp… | .NET (C#) | READY | BETA | — | — | 1h | po-2025 |
 | 21 | [10e_LLamaSharp_DotNet_BakeOff.ipynb](MyIA.AI.Notebooks/GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb) | 10e. LLamaSharp : bake-off binding .NET de… | Python 3 | READY | ALPHA | — | — | 45min | po-2025 |
-| 22 | [10g_Speculative_Decoding.ipynb](MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb) | 10g — Décodage spéculatif : le draft qui vérifie | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 23 | [10h_Roofline_Memory_Bandwidth.ipynb](MyIA.AI.Notebooks/GenAI/Texte/10h_Roofline_Memory_Bandwidth.ipynb) | 10h — Toit mémoire et bande passante : pourquoi le… | Python 3 (ipykernel) | READY | ALPHA | — | — | 30min | po-2025 |
-| 24 | [11_Quantization.ipynb](MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) | 11. Quantization | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 25 | [11b_Materiel_Debit_Cout.ipynb](MyIA.AI.Notebooks/GenAI/Texte/11b_Materiel_Debit_Cout.ipynb) | 11b. Matériel, coût, débit : ce que paie… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 26 | [12_Test_Time_Scaling.ipynb](MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb) | 12. Test Time Scaling | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 27 | [13_Agentic_Orchestration.ipynb](MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) | 13. Orchestration agentique du test-time scaling | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 28 | [13b_Agent_Evaluation.ipynb](MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb) | 13b — Évaluation d'agents : succès, coût, ablation… | Python 3 (coursia2) | READY | BETA | — | — | 30min | po-2025 |
-| 29 | [14_Persistent_Memory.ipynb](MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb) | 14. Memoire persistante pour le test-time scaling | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 30 | [14b_Paginated_Memory-CSharp.ipynb](MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-CSharp.ipynb) | 14b — Mémoire paginée d’agent | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
-| 31 | [14b_Paginated_Memory-Python.ipynb](MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb) | 14b. Memoire paginee d'agent -- fenetre glissante,… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 32 | [15_Tree_of_Thoughts_Search.ipynb](MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb) | 15. Tree-of-Thoughts sur de vrais problemes de… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 33 | [16_Scaling_Test_Time_Compute.ipynb](MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb) | 16. Scaling du test-time compute (Snell 2024) | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 34 | [17_Native_Reasoning_vs_Scaling.ipynb](MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb) | 17. Modèles a raisonnement natif vs scaling du… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 35 | [18_Semantic_Kernel_Plugins.ipynb](MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb) | 18. Plugins Semantic Kernel pour le test-time… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 36 | [19_OWUI_Orchestration.ipynb](MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) | 19. Orchestration et tâches planifiées avec Open… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 37 | [20_OWUI_Native_API.ipynb](MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) | 20. OWUI Native API v0.9.6 — introspection REST et… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 38 | [21_LoRA_FineTuning.ipynb](MyIA.AI.Notebooks/GenAI/Texte/21_LoRA_FineTuning.ipynb) | 21. Fine-tuning LoRA / QLoRA — Adapter un LLM sans… | Python (coursia-ml-training) | READY | DRAFT | — | — | 45min | po-2025 |
-| 39 | [22_Evaluating_Generated_Text.ipynb](MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb) | 22 — Évaluer les sorties générées : BLEU, ROUGE,… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 40 | [22b_Profil_Cognitif_CHC.ipynb](MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb) | 22b — Profil cognitif d'un LLM : batterie CHC,… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
-| 41 | [22c_DSPy_Prompt_Compile.ipynb](MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb) | 22c. DSPy — du prompt écrit au prompt compilé | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 42 | [23_Du_Notebook_A_L_Application.ipynb](MyIA.AI.Notebooks/GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb) | 23. Du notebook a l'application - servir le RAG de… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 43 | [24_Generative_Agents_MiniMonde.ipynb](MyIA.AI.Notebooks/GenAI/Texte/24_Generative_Agents_MiniMonde.ipynb) | 24 — Agents génératifs : mémoire, réflexion et… | Python 3 | READY | DRAFT | — | — | 30min | po-2025 |
+| 22 | [10g_Speculative_Decoding-CSharp.ipynb](MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding-CSharp.ipynb) | 10g — Décodage spéculatif : le draft qui vérifie | .NET C# | READY | BETA | — | — | 30min | po-2025 |
+| 23 | [10g_Speculative_Decoding.ipynb](MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb) | 10g — Décodage spéculatif : le draft qui vérifie | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 24 | [10h_Roofline_Memory_Bandwidth-CSharp.ipynb](MyIA.AI.Notebooks/GenAI/Texte/10h_Roofline_Memory_Bandwidth-CSharp.ipynb) | 10h — Toit mémoire et bande passante : pourquoi le… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 25 | [10h_Roofline_Memory_Bandwidth.ipynb](MyIA.AI.Notebooks/GenAI/Texte/10h_Roofline_Memory_Bandwidth.ipynb) | 10h — Toit mémoire et bande passante : pourquoi le… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
+| 26 | [11_Quantization.ipynb](MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) | 11. Quantization | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 27 | [11b_Materiel_Debit_Cout.ipynb](MyIA.AI.Notebooks/GenAI/Texte/11b_Materiel_Debit_Cout.ipynb) | 11b. Matériel, coût, débit : ce que paie… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 28 | [12_Test_Time_Scaling.ipynb](MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb) | 12. Test Time Scaling | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 29 | [13_Agentic_Orchestration.ipynb](MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) | 13. Orchestration agentique du test-time scaling | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 30 | [13b_Agent_Evaluation.ipynb](MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb) | 13b — Évaluation d'agents : succès, coût, ablation… | Python 3 (coursia2) | READY | BETA | — | — | 30min | po-2025 |
+| 31 | [14_Persistent_Memory.ipynb](MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb) | 14. Memoire persistante pour le test-time scaling | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 32 | [14b_Paginated_Memory-CSharp.ipynb](MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-CSharp.ipynb) | 14b — Mémoire paginée d’agent | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 33 | [14b_Paginated_Memory-Python.ipynb](MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb) | 14b. Memoire paginee d'agent -- fenetre glissante,… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 34 | [15_Tree_of_Thoughts_Search.ipynb](MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb) | 15. Tree-of-Thoughts sur de vrais problemes de… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 35 | [16_Scaling_Test_Time_Compute.ipynb](MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb) | 16. Scaling du test-time compute (Snell 2024) | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 36 | [17_Native_Reasoning_vs_Scaling.ipynb](MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb) | 17. Modèles a raisonnement natif vs scaling du… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 37 | [18_Semantic_Kernel_Plugins.ipynb](MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb) | 18. Plugins Semantic Kernel pour le test-time… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 38 | [19_OWUI_Orchestration.ipynb](MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) | 19. Orchestration et tâches planifiées avec Open… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 39 | [20_OWUI_Native_API.ipynb](MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) | 20. OWUI Native API v0.9.6 — introspection REST et… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 40 | [21_LoRA_FineTuning.ipynb](MyIA.AI.Notebooks/GenAI/Texte/21_LoRA_FineTuning.ipynb) | 21. Fine-tuning LoRA / QLoRA — Adapter un LLM sans… | Python (coursia-ml-training) | READY | DRAFT | — | — | 45min | po-2025 |
+| 41 | [22_Evaluating_Generated_Text.ipynb](MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb) | 22 — Évaluer les sorties générées : BLEU, ROUGE,… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 42 | [22b_Profil_Cognitif_CHC.ipynb](MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb) | 22b — Profil cognitif d'un LLM : batterie CHC,… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
+| 43 | [22c_DSPy_Prompt_Compile.ipynb](MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb) | 22c. DSPy — du prompt écrit au prompt compilé | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 44 | [23_Du_Notebook_A_L_Application.ipynb](MyIA.AI.Notebooks/GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb) | 23. Du notebook a l'application - servir le RAG de… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 45 | [24_Generative_Agents_MiniMonde.ipynb](MyIA.AI.Notebooks/GenAI/Texte/24_Generative_Agents_MiniMonde.ipynb) | 24 — Agents génératifs : mémoire, réflexion et… | Python 3 | READY | DRAFT | — | — | 30min | po-2025 |
 
 #### Texte/TransformerVariants (7)
 
@@ -834,17 +853,18 @@ Total notebooks: 1657
 | 5 | [01-4-Video-Enhancement-ESRGAN.ipynb](MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb) | Video Enhancement - Real-ESRGAN et Interpolation… | Python 3 | DEMO | ALPHA | — | — | 45min | po-2025 |
 | 6 | [01-5-AnimateDiff-Introduction.ipynb](MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb) | AnimateDiff - Introduction a la Generation… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 
-#### Video/02-Advanced (7)
+#### Video/02-Advanced (8)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [02-1-HunyuanVideo-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-1-HunyuanVideo-Generation.ipynb) | HunyuanVideo | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 2 | [02-2-LTX-Video-Lightweight.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb) | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 2 | [02-2-Generation-Video-Legere.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-2-Generation-Video-Legere.ipynb) | LTX-Video - Generation Video Rapide et Legere | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 3 | [02-3-Wan-Video-Generation.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-3-Wan-Video-Generation.ipynb) | Wan 2.1/2.2 - Generation Video Multilingue | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 4 | [02-4-SVD-Image-to-Video.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb) | SVD - Stable Video Diffusion (Image-to-Video) | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 5 | [02-5-LTX2-Audiovisual.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb) | LTX-2 - Generation Audiovisuelle Conjointe (Video… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 6 | [02-6-MiniMax-H3-Architecture-Licensing.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) | MiniMax H3 (Hailuo 3.0) — Architecture, capacités…… | Python 3 | DEMO | BETA | — | — | 15min | po-2025 |
+| 5 | [02-5-Video-Audio-Conjoint.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-Video-Audio-Conjoint.ipynb) | LTX-2 - Generation Audiovisuelle Conjointe (Video… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 6 | [02-6-Video-Architecture-Licensing.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-6-Video-Architecture-Licensing.ipynb) | MiniMax H3 (Hailuo 3.0) — Architecture, capacités…… | Python 3 | DEMO | BETA | — | — | 15min | po-2025 |
 | 7 | [02-7-CogVideoX-Text-to-Video.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-7-CogVideoX-Text-to-Video.ipynb) | CogVideoX - Generation Video depuis Texte (Open… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 8 | [02-8-PAN2-Modele-du-Monde-GLP.ipynb](MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-8-PAN2-Modele-du-Monde-GLP.ipynb) | PAN 2 — Modèle du monde et raisonnement simulatif… | Python3 | READY | BETA | — | — | 30min | po-2025 |
 
 #### Video/03-Orchestration (3)
 
@@ -862,12 +882,12 @@ Total notebooks: 1657
 | 2 | [04-2-Creative-Video-Workflows.ipynb](MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-2-Creative-Video-Workflows.ipynb) | Workflows Video Creatifs | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 3 | [04-3-Sora-API-Cloud-Video.ipynb](MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-3-Sora-API-Cloud-Video.ipynb) | Sora API - Generation Video Cloud | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 4 | [04-4-Production-Video-Pipeline.ipynb](MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-4-Production-Video-Pipeline.ipynb) | Pipeline Video de Production | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 5 | [04-5-MiniMax-H3-Cloud-Video.ipynb](MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb) | MiniMax H3 (Hailuo) — Génération vidéo par le… | Python 3 | DEMO | BETA | — | — | 30min | po-2025 |
-| 6 | [04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb](MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) | MiniMax video-01 (v1) — Service cloud generation… | Python 3 | DEMO | BETA | — | — | 30min | po-2025 |
+| 5 | [04-5-Video-Cloud-API.ipynb](MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-Video-Cloud-API.ipynb) | MiniMax H3 (Hailuo) — Génération vidéo par le… | Python 3 | DEMO | BETA | — | — | 30min | po-2025 |
+| 6 | [04-5b-Video-Cloud-API-v1.ipynb](MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-Video-Cloud-API-v1.ipynb) | MiniMax video-01 (v1) — Service cloud generation… | Python 3 | DEMO | BETA | — | — | 30min | po-2025 |
 
-### Search (169 notebooks) — DEMO:1, READY:168 | ALPHA:4, BETA:165
+### Search (179 notebooks) — DEMO:2, READY:177 | ALPHA:3, BETA:176
 
-#### Part1-Foundations (51)
+#### Part1-Foundations (57)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -904,24 +924,30 @@ Total notebooks: 1657
 | 31 | [Search-08-DancingLinks.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb) | Search-08-DancingLinks : L'algorithme X et Dancing… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 32 | [Search-09-LinearProgramming-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb) | Search-09 : Programmation Linéaire et Simplexe (C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
 | 33 | [Search-09-LinearProgramming.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb) | Search-09-LinearProgramming : Programmation… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 34 | [Search-09b-SpuriousMinima.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima.ipynb) | Search-09b : Minima fallacieux — le paysage de la… | Python 3 | READY | BETA | — | — | 15min | po-2025 |
-| 35 | [Search-09c-CombinatorialDiscrepancy.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb) | Search-09c — Discrépance combinatoire : colorier… | Python 3 | READY | BETA | — | — | 15min | po-2025 |
-| 36 | [Search-09d-BeckFiala-Lean-Python.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-BeckFiala-Lean-Python.ipynb) | Search-09d - Beck-Fiala (la noix disc <= 2k-1) et… | Python 3 | READY | BETA | — | — | 15min | po-2025 |
-| 37 | [Search-09e-Komlos-Lean.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb) | Search-09e — Discrépance combinatoire : la couche… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2025 |
-| 38 | [Search-09f-ConvexOptimisation-Python.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.ipynb) | Search-09f : Du linéaire au convexe — l'escalier… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 39 | [Search-10-SymbolicAutomata-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb) | Search-10 (C#) : Automates Finis Classiques —… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 40 | [Search-10-SymbolicAutomata.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | Search-10 : Automates Symboliques avec Z3 | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 41 | [Search-11-Metaheuristics-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) | Search-11 (C#) : Métaheuristiques — Optimisation… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 42 | [Search-11-Metaheuristics.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb) | Search-11-métaheuristiques : Optimisation avec… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 43 | [Search-11b-Metaheuristiques-Deep-Part2.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb) | Search-11b (Part 2) : Particle Swarm Optimization… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
-| 44 | [Search-11b-Metaheuristiques-Deep-Part3.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb) | Search-11b-Métaheuristiques-Deep-Part3 :… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
-| 45 | [Search-11b-Metaheuristiques-Deep-Part4.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb) | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
-| 46 | [Search-11b-Metaheuristiques-Deep.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb) | Search-11b : Métaheuristiques d'optimisation (C# /… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
-| 47 | [Search-11c-Empirical-Algorithm-Selection.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb) | Search-11c — Sélection empirique d'algorithmes :… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 48 | [Search-11d-Descente-Sous-Budget.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb) | Search-11d — Descente sous budget : la loi… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 49 | [Search-12-BranchAndBound-Borne-LP-Python.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-BranchAndBound-Borne-LP-Python.ipynb) | Search-12 — Branch-and-bound et qualite de borne | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 50 | [Search-12a-Composer-Regards.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb) | Search-12a — Composer des regards : play forward,… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 51 | [Search-13a-Traverser-Murs-Certifies.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb) | Search-13a — Traverser des murs : chemins minimaux… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 34 | [Search-09b-SpuriousMinima-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima-CSharp.ipynb) | Search-09b — Minima fallacieux et relaxation SDP… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 35 | [Search-09b-SpuriousMinima.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima.ipynb) | Search-09b : Minima fallacieux — le paysage de la… | Python 3 | READY | BETA | — | — | 15min | po-2025 |
+| 36 | [Search-09c-CombinatorialDiscrepancy-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy-CSharp.ipynb) | Search-09c — Discrépance combinatoire : colorier… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 37 | [Search-09c-CombinatorialDiscrepancy.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb) | Search-09c — Discrépance combinatoire : colorier… | Python 3 | READY | BETA | — | — | 15min | po-2025 |
+| 38 | [Search-09d-BeckFiala-Lean-Python.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-BeckFiala-Lean-Python.ipynb) | Search-09d - Beck-Fiala (la noix disc <= 2k-1) et… | Python 3 | READY | BETA | — | — | 15min | po-2025 |
+| 39 | [Search-09e-Komlos-Lean.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb) | Search-09e — Discrépance combinatoire : la couche… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2025 |
+| 40 | [Search-09f-ConvexOptimisation-Python.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.ipynb) | Search-09f : Du linéaire au convexe — l'escalier… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 41 | [Search-10-SymbolicAutomata-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb) | Search-10 (C#) : Automates Finis Classiques —… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 42 | [Search-10-SymbolicAutomata.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | Search-10 : Automates Symboliques avec Z3 | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 43 | [Search-11-Metaheuristics-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) | Search-11 (C#) : Métaheuristiques — Optimisation… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 44 | [Search-11-Metaheuristics.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb) | Search-11-métaheuristiques : Optimisation avec… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 45 | [Search-11b-Metaheuristiques-Deep-Part2.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb) | Search-11b (Part 2) : Particle Swarm Optimization… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 46 | [Search-11b-Metaheuristiques-Deep-Part3.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb) | Search-11b-Métaheuristiques-Deep-Part3 :… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 47 | [Search-11b-Metaheuristiques-Deep-Part4.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb) | Search-11b-Métaheuristiques-Deep-Part4 : Benchmark… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 48 | [Search-11b-Metaheuristiques-Deep.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb) | Search-11b : Métaheuristiques d'optimisation (C# /… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 49 | [Search-11c-Empirical-Algorithm-Selection.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb) | Search-11c — Sélection empirique d'algorithmes :… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 50 | [Search-11d-Descente-Sous-Budget-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget-CSharp.ipynb) | Search-11d — Descente sous budget : la loi… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 51 | [Search-11d-Descente-Sous-Budget.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb) | Search-11d — Descente sous budget : la loi… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 52 | [Search-12-BranchAndBound-Borne-LP-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-BranchAndBound-Borne-LP-CSharp.ipynb) | Search-12 — Branch-and-bound et qualite de borne | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 53 | [Search-12-BranchAndBound-Borne-LP-Python.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-BranchAndBound-Borne-LP-Python.ipynb) | Search-12 — Branch-and-bound et qualite de borne | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 54 | [Search-12a-Composer-Regards-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards-CSharp.ipynb) | Search-12a — Composer des regards : play forward,… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 55 | [Search-12a-Composer-Regards.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb) | Search-12a — Composer des regards : play forward,… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 56 | [Search-13a-Traverser-Murs-Certifies-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies-CSharp.ipynb) | Search-13a — Traverser des murs : chemins minimaux… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 57 | [Search-13a-Traverser-Murs-Certifies.ipynb](MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb) | Search-13a — Traverser des murs : chemins minimaux… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
 #### Part2-CSP (20)
 
@@ -934,7 +960,7 @@ Total notebooks: 1657
 | 5 | [CSP-2-Consistency-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb) | CSP-2 : Propagation de Contraintes et Consistance… | .NET (C#) | READY | BETA | — | — | 1h | po-2025 |
 | 6 | [CSP-2-Consistency.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb) | CSP-2 : Propagation de Contraintes et Consistance | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 7 | [CSP-3-Advanced-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb) | CSP-3 : CSP Avancé — Contraintes globales et… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 8 | [CSP-3-Advanced.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb) | CSP-3 : CSP Avance - Contraintes globales,… | Python 3 | READY | ALPHA | — | — | 45min | po-2025 |
+| 8 | [CSP-3-Advanced.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb) | CSP-3 : CSP Avance - Contraintes globales,… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 9 | [CSP-4-Scheduling-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb) | CSP-4-Scheduling-CSharp : Problèmes… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
 | 10 | [CSP-4-Scheduling.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb) | CSP-4-Scheduling : Problèmes d'Ordonnancement | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 11 | [CSP-5-Optimization-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb) | CSP-5-Optimization-CSharp : Optimisation… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
@@ -948,62 +974,63 @@ Total notebooks: 1657
 | 19 | [CSP-9-Distributed-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb) | CSP-9-Distributed : CSP Distribués (DisCSP) | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
 | 20 | [CSP-9-Distributed.ipynb](MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb) | CSP-9-Distributed : CSP Distribués (DisCSP) | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 
-#### Part3-Cas-pratiques (52)
+#### Part3-Cas-pratiques (53)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [App-1-NQueens-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb) | App-1-CSharp : Le problème des N-Reines — Jumeau… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 2 | [App-1-NQueens.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens.ipynb) | App-1 : Le Problème des N-Reines | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 3 | [App-10-Portfolio-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio-CSharp.ipynb) | App-10-CSharp : Optimisation de portefeuille par… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 4 | [App-10-Portfolio.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio.ipynb) | App-10 : Optimisation de portefeuille par… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 5 | [App-11-Picross-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb) | App-11-CSharp : Picross (Nonogrammes) — Jumeau C# | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 6 | [App-11-Picross.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross.ipynb) | App-11 - Picross (Nonogrammes) | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 7 | [App-12b-ConnectFour.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) | App-12b : Puissance 4 -- Comparaison d'algorithmes… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 8 | [App-12c-ConnectFour.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12c-ConnectFour.ipynb) | App-12c (C#) : Puissance 4 -- Comparaison… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 9 | [App-13-TSP-Metaheuristics-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb) | App-13-CSharp : TSP (Voyageur de Commerce) —… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 10 | [App-13-TSP-Metaheuristics.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb) | App-13 : Le Problème du Voyageur de Commerce (TSP) | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 11 | [App-14-ConnectFour-Adversarial.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) | App-14 - Connect Four : Benchmark Adversarial… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 12 | [App-14-ConnectFour-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-CSharp.ipynb) | App-14-ConnectFour-Adversarial-CSharp — Jumeau C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 13 | [App-15-SportsScheduling-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling-CSharp.ipynb) | App-15-CSharp : Planification de Calendrier… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 14 | [App-15-SportsScheduling.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling.ipynb) | App-15 : Planification de Calendrier Sportif (CSP) | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 15 | [App-16-Crossword-CSP-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-16-Crossword-CSP-CSharp.ipynb) | App-16-Crossword-CSP (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 16 | [App-16-Crossword-CSP.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-16-Crossword-CSP.ipynb) | App-16 : Générateur de Mots Croises (CSP) | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 17 | [App-17-VRP-Logistics-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb) | App-17-CSharp : Vehicle Routing Problem (VRP) —… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 18 | [App-17-VRP-Logistics-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | App-17-Python : Vehicle Routing Problem (VRP) —… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 19 | [App-17-VRP-Logistics.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics.ipynb) | App-17 : Vehicle Routing Problem (VRP) | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 20 | [App-18-HyperparameterTuning-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | App-18-CSharp : Optimisation d'Hyperparametres -… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 21 | [App-18-HyperparameterTuning-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | App-18-Python : Optimisation d'Hyperparamètres… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 22 | [App-18-HyperparameterTuning.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb) | App-18: Optimisation d'Hyperparametres - Approches… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 23 | [App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb) | App-18c — Rustuna vs Optuna : mesurer un portage… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 24 | [App-19-ProceduralGeneration-WFC-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | App-19 (C#) — Génération procédurale par Wave… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 25 | [App-19-ProceduralGeneration-WFC.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb) | App-19 — Génération procédurale de niveaux via WFC… | .venv (3.14.3) | READY | BETA | — | — | 45min | po-2025 |
-| 26 | [App-2-GraphColoring-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-CSharp.ipynb) | App-2-CSharp : Coloration de graphes — Jumeau C# | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 27 | [App-2-GraphColoring-Statistical-Validity-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb) | Coloration de graphes — validité statistique d'une… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 28 | [App-2-GraphColoring.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring.ipynb) | App-2 : Coloration de Graphes | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 29 | [App-20-SudokuBenchmark-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20-SudokuBenchmark-CSharp.ipynb) | App-20-CSharp : Benchmark compare des solveurs… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 30 | [App-20-SudokuBenchmark-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb) | App-20 — Benchmark comparatif des solveurs Sudoku… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 31 | [App-21-VoiceLeading.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb) | Voice Leading Minimal par Affectation —… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 32 | [App-22-AlgorithmSelection-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | App-22 — Sélection empirique d'algorithmes : trois… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 33 | [App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) | App-23 — Cryptanalyse différentielle de PRESENT… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 34 | [App-27-Sparse-Index-Tracking-Walk-Forward.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb) | App-27 — Sparse index tracking | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 35 | [App-3-NurseScheduling-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-3-NurseScheduling-CSharp.ipynb) | App-3-CSharp : Nurse Scheduling — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 36 | [App-3-NurseScheduling.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-3-NurseScheduling.ipynb) | App-3 : Nurse Scheduling (Planification des… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 37 | [App-33-RushHour-Admissible-Astar-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-CSharp.ipynb) | Search App-33 — Rush Hour : l'A* admissible sur un… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 38 | [App-33-RushHour-Admissible-Astar-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-Python.ipynb) | Search App-33 — Rush Hour : l'A* admissible sur un… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
-| 39 | [App-34-15Puzzle-Admissible-Astar-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-CSharp.ipynb) | App-34-CSharp : le 15-puzzle, A* et heuristiques… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
-| 40 | [App-34-15Puzzle-Admissible-Astar-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | App-34 — Le 15-puzzle : l'A* et ses heuristiques… | Python3 | READY | BETA | — | — | 30min | po-2025 |
-| 41 | [App-4-JobShopScheduling-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-4-JobShopScheduling-CSharp.ipynb) | App-4-CSharp : Job-Shop Scheduling — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 42 | [App-4-JobShopScheduling.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-4-JobShopScheduling.ipynb) | App-4 : Job-Shop Scheduling | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 43 | [App-5-Timetabling-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling-CSharp.ipynb) | App-5 : Emploi du temps universitaire — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 44 | [App-5-Timetabling.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling.ipynb) | App-5 : Emploi du temps universitaire (University… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 45 | [App-6-Minesweeper-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-6-Minesweeper-CSharp.ipynb) | App-6 - Demineur (C#) : CSP, probabilites et… | .NET (C#) | READY | ALPHA | — | — | 45min | po-2025 |
-| 46 | [App-6-Minesweeper.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-6-Minesweeper.ipynb) | App-6 - Demineur : CSP, Probabilites et… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 47 | [App-7-Wordle-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7-Wordle-CSharp.ipynb) | App-7-CSharp : Solveur Wordle -- CSP et théorie de… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 48 | [App-7-Wordle.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7-Wordle.ipynb) | App-7 : Wordle Solver -- CSP et théorie de… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 49 | [App-8-MiniZinc-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb) | App-8 : Modelisation declarative par contraintes… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 50 | [App-8-MiniZinc.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc.ipynb) | App-8-MiniZinc : Modelisation declarative par… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 51 | [App-9-EdgeDetection-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb) | TP : Conception d'Algorithmes Génétiques avec… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 52 | [App-9-EdgeDetection.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb) | App-9 : Detection de bords par algorithmes… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 1 | [App-01-NQueens-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-CSharp.ipynb) | App-01-CSharp : Le problème des N-Reines — Jumeau… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 2 | [App-01-NQueens-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) | App-1 : Le Problème des N-Reines | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 3 | [App-02-GraphColoring-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb) | App-02-CSharp : Coloration de graphes — Jumeau C# | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 4 | [App-02-GraphColoring-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb) | App-2 : Coloration de Graphes | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 5 | [App-02-GraphColoring-Statistical-Validity-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb) | Coloration de graphes — validité statistique d'une… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 6 | [App-03-NurseScheduling-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-03-NurseScheduling-CSharp.ipynb) | App-03-CSharp : Nurse Scheduling — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 7 | [App-03-NurseScheduling-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-03-NurseScheduling-Python.ipynb) | App-3 : Nurse Scheduling (Planification des… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 8 | [App-04-JobShopScheduling-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-04-JobShopScheduling-CSharp.ipynb) | App-04-CSharp : Job-Shop Scheduling — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 9 | [App-04-JobShopScheduling-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-04-JobShopScheduling-Python.ipynb) | App-4 : Job-Shop Scheduling | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 10 | [App-05-Timetabling-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-05-Timetabling-CSharp.ipynb) | App-5 : Emploi du temps universitaire — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 11 | [App-05-Timetabling-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-05-Timetabling-Python.ipynb) | App-5 : Emploi du temps universitaire (University… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 12 | [App-06-Minesweeper-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-06-Minesweeper-CSharp.ipynb) | App-6 - Demineur (C#) : CSP, probabilites et… | .NET (C#) | READY | ALPHA | — | — | 45min | po-2025 |
+| 13 | [App-06-Minesweeper-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-06-Minesweeper-Python.ipynb) | App-6 - Demineur : CSP, Probabilites et… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 14 | [App-07-Wordle-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-07-Wordle-CSharp.ipynb) | App-07-CSharp : Solveur Wordle -- CSP et théorie… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 15 | [App-07-Wordle-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-07-Wordle-Python.ipynb) | App-7 : Wordle Solver -- CSP et théorie de… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 16 | [App-08-MiniZinc-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-08-MiniZinc-CSharp.ipynb) | App-8 : Modelisation declarative par contraintes… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 17 | [App-08-MiniZinc-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-08-MiniZinc-Python.ipynb) | App-08-MiniZinc-Python : Modelisation declarative… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 18 | [App-09-EdgeDetection-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb) | TP : Conception d'Algorithmes Génétiques avec… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 19 | [App-09-EdgeDetection-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb) | App-9 : Detection de bords par algorithmes… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 20 | [App-10-Portfolio-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio-CSharp.ipynb) | App-10-CSharp : Optimisation de portefeuille par… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 21 | [App-10-Portfolio-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) | App-10 : Optimisation de portefeuille par… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 22 | [App-11-Picross-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb) | App-11-CSharp : Picross (Nonogrammes) — Jumeau C# | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 23 | [App-11-Picross-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-Python.ipynb) | App-11 - Picross (Nonogrammes) | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 24 | [App-12b-ConnectFour-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb) | App-12b (C#) : Puissance 4 -- Comparaison… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 25 | [App-12b-ConnectFour-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb) | App-12b : Puissance 4 -- Comparaison d'algorithmes… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 26 | [App-13-TSP-Metaheuristics-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb) | App-13-CSharp : TSP (Voyageur de Commerce) —… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 27 | [App-13-TSP-Metaheuristics-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-Python.ipynb) | App-13 : Le Problème du Voyageur de Commerce (TSP) | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 28 | [App-14-ConnectFour-Adversarial-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb) | App-14-ConnectFour-Adversarial-CSharp — Jumeau C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 29 | [App-14-ConnectFour-Adversarial-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) | App-14 - Connect Four : Benchmark Adversarial… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 30 | [App-15-SportsScheduling-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling-CSharp.ipynb) | App-15-CSharp : Planification de Calendrier… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 31 | [App-15-SportsScheduling-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling-Python.ipynb) | App-15 : Planification de Calendrier Sportif (CSP) | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 32 | [App-16-Crossword-CSP-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-16-Crossword-CSP-CSharp.ipynb) | App-16-Crossword-CSP (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 33 | [App-16-Crossword-CSP-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-16-Crossword-CSP-Python.ipynb) | App-16 : Générateur de Mots Croises (CSP) | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 34 | [App-17-VRP-Logistics-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb) | App-17-CSharp : Vehicle Routing Problem (VRP) —… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 35 | [App-17-VRP-Logistics-Metaheuristiques-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics-Metaheuristiques-Python.ipynb) | App-17-Python : Vehicle Routing Problem (VRP) —… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 36 | [App-17-VRP-Logistics-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | App-17 : Vehicle Routing Problem (VRP) | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 37 | [App-18-HyperparameterTuning-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | App-18-CSharp : Optimisation d'Hyperparametres -… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 38 | [App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb) | App-18-Python : Optimisation d'Hyperparamètres… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 39 | [App-18-HyperparameterTuning-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | App-18: Optimisation d'Hyperparametres - Approches… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 40 | [App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python.ipynb) | App-18c — Rustuna vs Optuna : mesurer un portage… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 41 | [App-19-ProceduralGeneration-WFC-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | App-19 (C#) — Génération procédurale par Wave… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 42 | [App-19-ProceduralGeneration-WFC-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-Python.ipynb) | App-19 — Génération procédurale de niveaux via WFC… | .venv (3.14.3) | READY | BETA | — | — | 45min | po-2025 |
+| 43 | [App-20-SudokuBenchmark-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20-SudokuBenchmark-CSharp.ipynb) | App-20-CSharp : Benchmark compare des solveurs… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 44 | [App-20-SudokuBenchmark-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb) | App-20 — Benchmark comparatif des solveurs Sudoku… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 45 | [App-21-VoiceLeading-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading-CSharp.ipynb) | Voice leading minimal par affectation | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 46 | [App-21-VoiceLeading-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading-Python.ipynb) | Voice Leading Minimal par Affectation —… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 47 | [App-22-AlgorithmSelection-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | App-22 — Sélection empirique d'algorithmes : trois… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 48 | [App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb) | App-23 — Cryptanalyse différentielle de PRESENT… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 49 | [App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) | App-27 — Sparse index tracking | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 50 | [App-33-RushHour-Admissible-Astar-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-CSharp.ipynb) | Search App-33 — Rush Hour : l'A* admissible sur un… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 51 | [App-33-RushHour-Admissible-Astar-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-Python.ipynb) | Search App-33 — Rush Hour : l'A* admissible sur un… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
+| 52 | [App-34-15Puzzle-Admissible-Astar-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-CSharp.ipynb) | App-34-CSharp : le 15-puzzle, A* et heuristiques… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
+| 53 | [App-34-15Puzzle-Admissible-Astar-Python.ipynb](MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | App-34 — Le 15-puzzle : l'A* et ses heuristiques… | Python3 | READY | BETA | — | — | 30min | po-2025 |
 
 #### Part4-Metaheuristics (25)
 
@@ -1050,7 +1077,7 @@ Total notebooks: 1657
 | 9 | [MGS-30-ScatterSearch-Decomposition.ipynb](MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb) | MGS-30 : Scatter Search MGS contre son ombre — la… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
 | 10 | [MGS-31-Synthese-Croisee.ipynb](MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-31-Synthese-Croisee.ipynb) | MGS-31 : Synthèse croisée MGS contre mealpy — neuf… | .NET (C#) | READY | BETA | — | — | 30min | po-2025 |
 
-#### Part5-Frontieres (11)
+#### Part5-Frontieres (14)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -1058,15 +1085,18 @@ Total notebooks: 1657
 | 2 | [Frontieres-02-Factorio-Balancer-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-Python.ipynb) | Frontieres-02 - Factorio Belt Balancer (CP-SAT… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 3 | [Frontieres-03-MAPF-Guarantee-Audit-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-03-MAPF-Guarantee-Audit-Python.ipynb) | Frontieres-03 — MAPF : auditer les garanties des… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 4 | [Frontieres-04-CombinatorialAuctions-WDP-VCG-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-04-CombinatorialAuctions-WDP-VCG-Python.ipynb) | Frontieres-04 — Enchères combinatoires : Winner… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 5 | [Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | Frontieres-05 — Covering Arrays : tester les… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 6 | [Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb) | Frontieres-06 — Learning to branch | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 7 | [Frontieres-07-SALBP-AssemblyLineBalancing-Audit-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-07-SALBP-AssemblyLineBalancing-Audit-Python.ipynb) | Frontieres-07 — Équilibrage de chaîne d'assemblage… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 8 | [Frontieres-08-OrbitalAssembly-Certificate-Audit-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-08-OrbitalAssembly-Certificate-Audit-Python.ipynb) | Frontieres-08 — Ordonnancement d'assemblage… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 9 | [Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb) | Frontieres-09 — RCPSP/max : quand la faisabilité… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 10 | [Frontieres-10-NeuralDiving-Coloration-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb) | Frontieres-10 — Neural diving : un plongeur appris… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 11 | [Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb) | Frontieres-11 — Abstraire à dette bornée :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 5 | [Frontieres-05-CoveringArrays-Guarantee-Audit-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-CSharp.ipynb) | Frontieres-05 — Covering Arrays : tester les… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 6 | [Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | Frontieres-05 — Covering Arrays : tester les… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 7 | [Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb) | Frontieres-06 — Learning to branch | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 8 | [Frontieres-07-SALBP-AssemblyLineBalancing-Audit-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-07-SALBP-AssemblyLineBalancing-Audit-Python.ipynb) | Frontieres-07 — Équilibrage de chaîne d'assemblage… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 9 | [Frontieres-08-OrbitalAssembly-Certificate-Audit-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-08-OrbitalAssembly-Certificate-Audit-Python.ipynb) | Frontieres-08 — Ordonnancement d'assemblage… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 10 | [Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-09-RCPSP-Max-Feasibility-Bounds-Python.ipynb) | Frontieres-09 — RCPSP/max : quand la faisabilité… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 11 | [Frontieres-10-NeuralDiving-Coloration-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-10-NeuralDiving-Coloration-Python.ipynb) | Frontieres-10 — Neural diving : un plongeur appris… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 12 | [Frontieres-11-Abstraction-Dette-ShortestPath-CSharp.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-11-Abstraction-Dette-ShortestPath-CSharp.ipynb) | Frontieres-11 — Abstraire à dette bornée :… | .NET(C#) | READY | BETA | — | — | 45min | po-2025 |
+| 13 | [Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb) | Frontieres-11 — Abstraire à dette bornée :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 14 | [Frontieres-12-WordProblem-Automata-Python.ipynb](MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-12-WordProblem-Automata-Python.ipynb) | Groupes & automates — le problème du mot par… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
-### ML (140 notebooks) — DEMO:20, READY:120 | ALPHA:7, BETA:129, DRAFT:4
+### ML (157 notebooks) — DEMO:20, READY:137 | ALPHA:3, BETA:150, DRAFT:4
 
 #### DataScienceWithAgents/01-Python-For-Data-Science/notebooks (6)
 
@@ -1079,102 +1109,115 @@ Total notebooks: 1657
 | 5 | [1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb) | 1.5 - Exploration et nettoyage de données réelles | Python 3 | READY | BETA | — | — | 45min | po-2023 |
 | 6 | [1.6-Statistiques_Descriptives.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.6-Statistiques_Descriptives.ipynb) | 1.6 - Statistiques descriptives | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 
-#### DataScienceWithAgents/02-ML-Cours (39)
+#### DataScienceWithAgents/02-ML-Cours (49)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [2.1-Workflow-ML.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) | 2.1 — Le workflow d'apprentissage automatique | Python 3 | READY | BETA | — | — | 45min | po-2023 |
 | 2 | [2.10-Optimisation-Hyperparametres.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb) | 2.10 — Optimisation d'hyperparamètres : grille,… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 | 3 | [2.11-Regularisation-Sparse-LASSO.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb) | 2.11 — Régularisation sparse : LASSO (L1) vs Ridge… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 4 | [2.11b-Proximal-Operators-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11b-Proximal-Operators-From-Scratch.ipynb) | 2.11b — Operateurs proximaux : ISTA et FISTA from… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 5 | [2.11c-Lasso-SOTA-Comparison.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11c-Lasso-SOTA-Comparison.ipynb) | 2.11c — Lasso SOTA : coordinate descent, LassoCV,… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 6 | [2.11d-Optimisation-ADMM-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11d-Optimisation-ADMM-From-Scratch.ipynb) | 2.11d — ADMM from scratch : LASSO sous contrainte… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 7 | [2.11e-CVXPY-Optimisation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11e-CVXPY-Optimisation.ipynb) | 2.11e — CVXPY : le problème déclaré, le solveur… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 8 | [2.11f-Comparaison-Optimisation-Convexe.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb) | 2.11f — Comparaison from scratch / SOTA : le… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 9 | [2.12-Donnees-Desequilibrees.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | 2.12 — Données déséquilibrées : la courbe PR, les… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 10 | [2.13-Analyse-Erreurs.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | 2.13 — Analyse d'erreurs : diagnostiquer un modèle… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 11 | [2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) | 2.14 — Explicabilité (XAI) : SHAP, LIME et… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 12 | [2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb) | 2.14b — SHAP et do-calculus : la jonction… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 30min | po-2023 |
-| 13 | [2.15-Donnee-Comme-Responsabilite-Python.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.15-Donnee-Comme-Responsabilite-Python.ipynb) | 2.15 — La donnée comme responsabilité : inférence… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 14 | [2.2-Descente-de-gradient.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb) | 2.2 — La descente de gradient : comment un modèle… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 15 | [2.3-Regression-lineaire-logistique.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | 2.3 — Régression linéaire et régression logistique | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 16 | [2.3b-Naive-Bayes-Generatif.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb) | Naive Bayes génératif vs régression logistique… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 17 | [2.3c-Regression-Grande-Dimension.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb) | Régression en grande dimension — quand p >> n :… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 18 | [2.3d-Modele-Gaussien-LDA-QDA.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb) | Modèle gaussien, frontière LDA / QDA | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 19 | [2.4-Arbres-Forets-Ensembles.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | 2.4 — Arbres de décision, forêts aléatoires et… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 20 | [2.4b-AdaBoost-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.4b-AdaBoost-From-Scratch.ipynb) | 2.4b — AdaBoost *from scratch* : booster des… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 21 | [2.5-Biais-Variance-CV-ROC.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | 2.5 — Biais, variance, validation croisée et… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 22 | [2.5b-Calibration-Probabilites.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb) | 2.5b — Calibration des probabilités : reliability… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 23 | [2.5c-Equite-Sous-Groupes.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | 2.5c — Equite par sous-groupe : compromis… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 24 | [2.5d-Derive-Distribution-Deploiement.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5d-Derive-Distribution-Deploiement.ipynb) | 2.5d — Dérive de distribution au déploiement :… | Python 3.11 (coursia-drift) | READY | ALPHA | — | — | 45min | po-2023 |
-| 25 | [2.6-Clustering-KMeans-PCA.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | 2.6 — Clustering (KMeans) et réduction de… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 26 | [2.7-Modeles-Non-Parametriques.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | 2.7 — Modèles non paramétriques : SVM et k plus… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 27 | [2.7b-SMO-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7b-SMO-From-Scratch.ipynb) | 2.7b — SMO from scratch : SVM soft-margin, boucle… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 28 | [2.7c-SVM-SOTA-Comparison.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7c-SVM-SOTA-Comparison.ipynb) | 2.7c — SVM SOTA : LIBSVM sous le capot de… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 29 | [2.8-Theorie-PAC.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) | 2.8 — Théorie de l'apprentissage : PAC et… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 30 | [2.8b-Theorie-PAC-Lean.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | 2.8b - Théorie PAC en Lean : l'arc du lake… | Lean 4 (WSL) | READY | DRAFT | — | — | 30min | po-2023 |
-| 31 | [2.8c-Borne-Temoin-Concentration.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | 2.8c — Borne + Témoin extrémal + Concentration :… | Python (coursia-ml-training) | READY | BETA | — | — | 15min | po-2023 |
-| 32 | [2.8d-Lean-Novikoff-Convergence.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) | Novikoff : la convergence du perceptron, démontrée… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2023 |
-| 33 | [2.9-Grokking-Generalisation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | 2.9 — Grokking : la généralisation qui arrive en… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 34 | [2.9b-GenEFT-Theorie-Effective.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9b-GenEFT-Theorie-Effective.ipynb) | 2.9b — GenEFT : une théorie effective de la… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 35 | [2.9c-Grokking-Diagrammes-Phases.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9c-Grokking-Diagrammes-Phases.ipynb) | 2.9c — Grokking : le diagramme de phases | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 36 | [2.9d-Features-Circulaires-Helice-Nombres.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9d-Features-Circulaires-Helice-Nombres.ipynb) | 2.9d — Features circulaires et hélice des nombres | Python 3 (coursia-ml-training) | DEMO | BETA | — | — | 1h | po-2023 |
-| 37 | [2.9e-MIPS-Extraction-Programme.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9e-MIPS-Extraction-Programme.ipynb) | 2.9e — MIPS : du réseau au programme | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 38 | [2.9f-Grokking-Theorie-Effective-Lean.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb) | 2.9f - Théorie effective du grokking en Lean :… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2023 |
-| 39 | [2.9g-Geometrie-de-la-Verite.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9g-Geometrie-de-la-Verite.ipynb) | 2.9g — La géométrie de la vérité : une direction… | coursia-ml-training | READY | BETA | — | — | 45min | po-2023 |
+| 4 | [2.11b-Proximal-Operators-From-Scratch-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11b-Proximal-Operators-From-Scratch-CSharp.ipynb) | 2.11b — Opérateurs proximaux : ISTA et FISTA | .NET (C#) | READY | BETA | — | — | 30min | po-2023 |
+| 5 | [2.11b-Proximal-Operators-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11b-Proximal-Operators-From-Scratch.ipynb) | 2.11b — Operateurs proximaux : ISTA et FISTA from… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 6 | [2.11c-Lasso-SOTA-Comparison.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11c-Lasso-SOTA-Comparison.ipynb) | 2.11c — Lasso SOTA : coordinate descent, LassoCV,… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 7 | [2.11d-Optimisation-ADMM-From-Scratch-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11d-Optimisation-ADMM-From-Scratch-CSharp.ipynb) | 2.11d — ADMM pour le Lasso : consensus et proximal | .NET (C#) | READY | BETA | — | — | 30min | po-2023 |
+| 8 | [2.11d-Optimisation-ADMM-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11d-Optimisation-ADMM-From-Scratch.ipynb) | 2.11d — ADMM from scratch : Lasso et contrainte… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 9 | [2.11e-CVXPY-Optimisation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11e-CVXPY-Optimisation.ipynb) | 2.11e — CVXPY : le problème déclaré, le solveur… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 10 | [2.11f-Comparaison-Optimisation-Convexe.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb) | 2.11f — Comparaison from scratch / SOTA : le… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 11 | [2.12-Donnees-Desequilibrees.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb) | 2.12 — Données déséquilibrées : la courbe PR, les… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 12 | [2.13-Analyse-Erreurs.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb) | 2.13 — Analyse d'erreurs : diagnostiquer un modèle… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 13 | [2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) | 2.14 — Explicabilité (XAI) : SHAP, LIME et… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 14 | [2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb) | 2.14b — SHAP et do-calculus : la jonction… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 30min | po-2023 |
+| 15 | [2.15-Donnee-Comme-Responsabilite-Python.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.15-Donnee-Comme-Responsabilite-Python.ipynb) | 2.15 — La donnée comme responsabilité : inférence… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 16 | [2.2-Descente-de-gradient-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient-CSharp.ipynb) | 2.2 — La descente de gradient : comment un modèle… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 17 | [2.2-Descente-de-gradient.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb) | 2.2 — La descente de gradient : comment un modèle… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 18 | [2.3-Regression-lineaire-logistique.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb) | 2.3 — Régression linéaire et régression logistique | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 19 | [2.3b-Naive-Bayes-Generatif-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif-CSharp.ipynb) | Naive Bayes génératif vs régression logistique… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 20 | [2.3b-Naive-Bayes-Generatif.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3b-Naive-Bayes-Generatif.ipynb) | Naive Bayes génératif vs régression logistique… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 21 | [2.3c-Regression-Grande-Dimension-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension-CSharp.ipynb) | Régression en grande dimension — quand p > n :… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 22 | [2.3c-Regression-Grande-Dimension.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3c-Regression-Grande-Dimension.ipynb) | Régression en grande dimension — quand p > n :… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 23 | [2.3d-Modele-Gaussien-LDA-QDA-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA-CSharp.ipynb) | Modèle gaussien, frontière LDA / QDA | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 24 | [2.3d-Modele-Gaussien-LDA-QDA.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.3d-Modele-Gaussien-LDA-QDA.ipynb) | Modèle gaussien, frontière LDA / QDA | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 25 | [2.4-Arbres-Forets-Ensembles.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb) | 2.4 — Arbres de décision, forêts aléatoires et… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 26 | [2.4b-AdaBoost-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.4b-AdaBoost-From-Scratch.ipynb) | 2.4b — AdaBoost *from scratch* : booster des… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 27 | [2.5-Biais-Variance-CV-ROC.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb) | 2.5 — Biais, variance, validation croisée et… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 28 | [2.5b-Calibration-Probabilites-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites-CSharp.ipynb) | 2.5b — C# — Calibration des probabilités :… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 29 | [2.5b-Calibration-Probabilites.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb) | 2.5b — Calibration des probabilités : reliability… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 30 | [2.5c-Equite-Sous-Groupes-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes-CSharp.ipynb) | 2.5c — C# — Equite par sous-groupe : compromis… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 31 | [2.5c-Equite-Sous-Groupes.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5c-Equite-Sous-Groupes.ipynb) | 2.5c — Equite par sous-groupe : compromis… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 32 | [2.5d-Derive-Distribution-Deploiement.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5d-Derive-Distribution-Deploiement.ipynb) | 2.5d — Dérive de distribution au déploiement :… | Python 3.11 (coursia-drift) | READY | ALPHA | — | — | 45min | po-2023 |
+| 33 | [2.6-Clustering-KMeans-PCA.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb) | 2.6 — Clustering (KMeans) et réduction de… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 34 | [2.7-Modeles-Non-Parametriques.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7-Modeles-Non-Parametriques.ipynb) | 2.7 — Modèles non paramétriques : SVM et k plus… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 35 | [2.7b-SMO-From-Scratch-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7b-SMO-From-Scratch-CSharp.ipynb) | 2.7b — SMO : SVM à marge souple, KKT et dualité | .NET (C#) | READY | BETA | — | — | 30min | po-2023 |
+| 36 | [2.7b-SMO-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7b-SMO-From-Scratch.ipynb) | 2.7b — SMO from scratch : SVM soft-margin, boucle… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 37 | [2.7c-SVM-SOTA-Comparison-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7c-SVM-SOTA-Comparison-CSharp.ipynb) | 2.7c — LIBSVM sous l'interface SVC | .NET (C#) | READY | BETA | — | — | 30min | po-2023 |
+| 38 | [2.7c-SVM-SOTA-Comparison.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.7c-SVM-SOTA-Comparison.ipynb) | 2.7c — SVM SOTA : LIBSVM sous le capot de… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 39 | [2.8-Theorie-PAC.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb) | 2.8 — Théorie de l'apprentissage : PAC et… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 40 | [2.8b-Theorie-PAC-Lean.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb) | 2.8b - Théorie PAC en Lean : l'arc du lake… | Lean 4 (WSL) | READY | DRAFT | — | — | 30min | po-2023 |
+| 41 | [2.8c-Borne-Temoin-Concentration.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb) | 2.8c — Borne + Témoin extrémal + Concentration :… | Python (coursia-ml-training) | READY | BETA | — | — | 15min | po-2023 |
+| 42 | [2.8d-Lean-Novikoff-Convergence.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb) | Novikoff : la convergence du perceptron, démontrée… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2023 |
+| 43 | [2.9-Grokking-Generalisation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9-Grokking-Generalisation.ipynb) | 2.9 — Grokking : la généralisation qui arrive en… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 44 | [2.9b-GenEFT-Theorie-Effective.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9b-GenEFT-Theorie-Effective.ipynb) | 2.9b — GenEFT : une théorie effective de la… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 45 | [2.9c-Grokking-Diagrammes-Phases.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9c-Grokking-Diagrammes-Phases.ipynb) | 2.9c — Grokking : le diagramme de phases | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 46 | [2.9d-Features-Circulaires-Helice-Nombres.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9d-Features-Circulaires-Helice-Nombres.ipynb) | 2.9d — Features circulaires et hélice des nombres | Python 3 (coursia-ml-training) | DEMO | BETA | — | — | 1h | po-2023 |
+| 47 | [2.9e-MIPS-Extraction-Programme.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9e-MIPS-Extraction-Programme.ipynb) | 2.9e — MIPS : du réseau au programme | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 48 | [2.9f-Grokking-Theorie-Effective-Lean.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb) | 2.9f - Théorie effective du grokking en Lean :… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2023 |
+| 49 | [2.9g-Geometrie-de-la-Verite.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9g-Geometrie-de-la-Verite.ipynb) | 2.9g — La géométrie de la vérité : une direction… | coursia-ml-training | READY | BETA | — | — | 45min | po-2023 |
 
-#### DataScienceWithAgents/03-Deep-Learning (29)
+#### DataScienceWithAgents/03-Deep-Learning (31)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [3.0-Theorie-Information-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0-Theorie-Information-CSharp.ipynb) | 3.0 — Théorie de l'information : entropie, KL,… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
 | 2 | [3.0-Theorie-Information.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0-Theorie-Information.ipynb) | 3.0 — Théorie de l'information : entropie, KL,… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 3 | [3.0b-Tenseurs-Strides-Vues-Python.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb) | 3.0b — Tenseurs : strides, vues et mémoire | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 4 | [3.1-Retropropagation-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation-CSharp.ipynb) | 3.1 — La rétropropagation : la chaîne des… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 5 | [3.1-Retropropagation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb) | 3.1 — La rétropropagation : la chaîne des… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 6 | [3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb) | 3.10 — Le pendant SOTA : la bibliothèque diffusers… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 7 | [3.11-Budget-Memoire-Entrainement.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb) | 3.11 — Le budget mémoire d'un entraînement :… | Python 3 | DEMO | BETA | — | — | 1h | po-2023 |
-| 8 | [3.12-Les-Collectives.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.12-Les-Collectives.ipynb) | 3.12 — Les collectives : l'anneau à la main contre… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
-| 9 | [3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb) | 3.13 — Découper le modèle : DDP, ZeRO, FSDP — et… | Python 3 (coursia-ml-training) | DEMO | DRAFT | — | — | 45min | po-2023 |
-| 10 | [3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb) | 3.13b — Deux vraies cartes : DDP et FSDP sous… | Python 3 | DEMO | DRAFT | — | — | 30min | po-2023 |
-| 11 | [3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb) | 3.14 - Debogage d un entrainement qui tourne mais… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 12 | [3.2-Optimisateurs.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs.ipynb) | 3.2 — Les optimisateurs : de SGD à Adam, ce qui… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 13 | [3.3-Regularisation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.3-Regularisation.ipynb) | 3.3 — Régularisation : dropout, weight decay,… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 14 | [3.4-Attention-Transformer-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) | 3.4 — Attention et Transformer from scratch :… | Python 3 (coursia2) | READY | BETA | — | — | 45min | po-2023 |
-| 15 | [3.4c-MoE-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb) | 3.4c — Mixture of Experts : router les jetons,… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
-| 16 | [3.4d-Fourier-Features-Biais-Spectral-Python.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) | 3.4d — Fourier features et biais spectral : quand… | Python 3 | READY | ALPHA | — | — | 30min | po-2023 |
-| 17 | [3.5-Phenomenes-de-Generalisation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb) | 3.5 — Grokking et double descente : quand la… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 18 | [3.6-Modeles-Generatifs.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6-Modeles-Generatifs.ipynb) | 3.6 — Modèles génératifs : trois objectifs, trois… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 19 | [3.6b-Modeles-Generatifs-PyTorch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | 3.6b — Modèles génératifs en PyTorch : VAE, GAN et… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 20 | [3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb) | 3.6c — Modèles génératifs par diffusion : DDPM… | Python 3 (ipykernel) | DEMO | DRAFT | — | — | 1h | po-2023 |
-| 21 | [3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb) | 3.6d — Modèles génératifs : Score-SDE *from… | Python 3 | DEMO | BETA | — | — | 1h30 | po-2023 |
-| 22 | [3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb) | 3.6e — Génération conditionnelle et… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
-| 23 | [3.7-Distillation-Maitre-Eleve.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb) | 3.7 — Distillation maître-élève : transférer le… | Python 3 (coursia-ml-training) | DEMO | BETA | — | — | 1h | po-2023 |
-| 24 | [3.8-Representations-Contrastives.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.8-Representations-Contrastives.ipynb) | Représentations contrastives modernes — du… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 25 | [3.9-Compression-Quantization-FP.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb) | 3.9 — Quantization from scratch : du flottant… | coursia-ml-training | READY | BETA | — | — | 1h30 | po-2023 |
-| 26 | [3.9b-Compression-Pruning-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb) | 3.9b — Compression par élagage : le réseau amputé… | Python 3 | DEMO | BETA | — | — | 1h | po-2023 |
-| 27 | [3.9c-Pruning-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb) | 3.9c — Pruning from scratch sur CPU : le compagnon… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
-| 28 | [3.9e-Compression-SOTA.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb) | 3.9e — Compression SOTA : quantization et élagage… | Python 3 | READY | BETA | — | — | 1h | po-2023 |
-| 29 | [3.9g-Compression-Comparatif-A-vs-B.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb) | 3.9g — Comparatif compression : from scratch (Bloc… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 3 | [3.0b-Tenseurs-Strides-Vues-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-CSharp.ipynb) | 3.0b — Tenseurs : strides, vues et mémoire | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 4 | [3.0b-Tenseurs-Strides-Vues-Python.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb) | 3.0b — Tenseurs : strides, vues et mémoire | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 5 | [3.1-Retropropagation-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation-CSharp.ipynb) | 3.1 — La rétropropagation : la chaîne des… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 6 | [3.1-Retropropagation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb) | 3.1 — La rétropropagation : la chaîne des… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 7 | [3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb) | 3.10 — Le pendant SOTA : la bibliothèque diffusers… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 8 | [3.11-Budget-Memoire-Entrainement.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb) | 3.11 — Le budget mémoire d'un entraînement :… | Python 3 | DEMO | BETA | — | — | 1h | po-2023 |
+| 9 | [3.12-Les-Collectives.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.12-Les-Collectives.ipynb) | 3.12 — Les collectives : l'anneau à la main contre… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
+| 10 | [3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb) | 3.13 — Découper le modèle : DDP, ZeRO, FSDP — et… | Python 3 (coursia-ml-training) | DEMO | DRAFT | — | — | 45min | po-2023 |
+| 11 | [3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb) | 3.13b — Deux vraies cartes : DDP et FSDP sous… | Python 3 | DEMO | DRAFT | — | — | 30min | po-2023 |
+| 12 | [3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb) | 3.14 - Debogage d un entrainement qui tourne mais… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 13 | [3.2-Optimisateurs-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs-CSharp.ipynb) | 3.2 — Les optimisateurs : de SGD à Adam, ce qui… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 14 | [3.2-Optimisateurs.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs.ipynb) | 3.2 — Les optimisateurs : de SGD à Adam, ce qui… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 15 | [3.3-Regularisation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.3-Regularisation.ipynb) | 3.3 — Régularisation : dropout, weight decay,… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 16 | [3.4-Attention-Transformer-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) | 3.4 — Attention et Transformer from scratch :… | Python 3 (coursia2) | READY | BETA | — | — | 45min | po-2023 |
+| 17 | [3.4c-MoE-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb) | 3.4c — Mixture of Experts : router les jetons,… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
+| 18 | [3.4d-Fourier-Features-Biais-Spectral-Python.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) | 3.4d — Fourier features et biais spectral : quand… | Python 3 | READY | ALPHA | — | — | 30min | po-2023 |
+| 19 | [3.5-Phenomenes-de-Generalisation.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb) | 3.5 — Grokking et double descente : quand la… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 20 | [3.6-Modeles-Generatifs.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6-Modeles-Generatifs.ipynb) | 3.6 — Modèles génératifs : trois objectifs, trois… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 21 | [3.6b-Modeles-Generatifs-PyTorch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | 3.6b — Modèles génératifs en PyTorch : VAE, GAN et… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 22 | [3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb) | 3.6c — Modèles génératifs par diffusion : DDPM… | Python 3 (ipykernel) | DEMO | DRAFT | — | — | 1h | po-2023 |
+| 23 | [3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb) | 3.6d — Modèles génératifs : Score-SDE *from… | Python 3 | DEMO | BETA | — | — | 1h30 | po-2023 |
+| 24 | [3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb) | 3.6e — Génération conditionnelle et… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
+| 25 | [3.7-Distillation-Maitre-Eleve.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb) | 3.7 — Distillation maître-élève : transférer le… | Python 3 (coursia-ml-training) | DEMO | BETA | — | — | 1h | po-2023 |
+| 26 | [3.8-Representations-Contrastives.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.8-Representations-Contrastives.ipynb) | Représentations contrastives modernes — du… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 27 | [3.9-Compression-Quantization-FP.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb) | 3.9 — Quantization from scratch : du flottant… | coursia-ml-training | READY | BETA | — | — | 1h30 | po-2023 |
+| 28 | [3.9b-Compression-Pruning-from-scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb) | 3.9b — Compression par élagage : le réseau amputé… | Python 3 | DEMO | BETA | — | — | 1h | po-2023 |
+| 29 | [3.9c-Pruning-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb) | 3.9c — Pruning from scratch sur CPU : le compagnon… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
+| 30 | [3.9e-Compression-SOTA.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-SOTA.ipynb) | 3.9e — Compression SOTA : quantization et élagage… | Python 3 | READY | BETA | — | — | 1h | po-2023 |
+| 31 | [3.9g-Compression-Comparatif-A-vs-B.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb) | 3.9g — Comparatif compression : from scratch (Bloc… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
 
-#### DataScienceWithAgents/04-Vision (14)
+#### DataScienceWithAgents/04-Vision (15)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [4.1-Conv-NumPy-Torch-Allclose.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | 4.1 — Le neurone convolutif from scratch : kernel… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 2 | [4.2-ConvNet-Profonde-Residuelles.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | 4.2 — ConvNet profonde : pourquoi les résiduelles | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 3 | [4.2b-Lean-GradientFlow-Vanishing.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb) | Le gradient qui s'évanouit, le gradient qui survit… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2023 |
-| 4 | [4.3-TransferLearning-ResNet.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.3-TransferLearning-ResNet.ipynb) | 4.3 — Transfer learning : réutiliser un ResNet18… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 5 | [4.4-Detection-Anchor-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4-Detection-Anchor-From-Scratch.ipynb) | 4.4 — Détection d'objets from scratch : la grille… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
-| 6 | [4.4b-Detection-AnchorFree-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4b-Detection-AnchorFree-From-Scratch.ipynb) | 4.4b — Détection d'objets anchor-free : le… | coursia-ml-training | READY | BETA | — | — | 45min | po-2023 |
-| 7 | [4.4c-Detection-FocalLoss-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4c-Detection-FocalLoss-From-Scratch.ipynb) | 4.4c — Détection d'objets from scratch : la Focal… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 8 | [4.5-Detection-SOTA-Torchvision.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5-Detection-SOTA-Torchvision.ipynb) | 4.5 — Détection SOTA : fine-tuner torchvision… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
-| 9 | [4.5b-Detection-SOTA-Ultralytics.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5b-Detection-SOTA-Ultralytics.ipynb) | 4.5b — Détection SOTA : YOLO sous ultralytics, la… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
-| 10 | [4.5c-YOLOv5-Bench-Ultralytics.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5c-YOLOv5-Bench-Ultralytics.ipynb) | 4.5c — Bench yolov5nu sur le terrain du 4.4 (chunk… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2023 |
-| 11 | [4.5d-Detection-SOTA-LibreYOLO.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5d-Detection-SOTA-LibreYOLO.ipynb) | 4.5d — Détection SOTA : un second wrapper,… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 12 | [4.6-Detection-Ultralytics-Difficult-Scenes.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6-Detection-Ultralytics-Difficult-Scenes.ipynb) | 4.6 — Détection SOTA : YOLO sous ultralytics,… | Python 3 (ipykernel) | DEMO | BETA | — | — | 45min | po-2023 |
-| 13 | [4.6b-Detection-Adversarial-Camouflage.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6b-Detection-Adversarial-Camouflage.ipynb) | 4.6b — Détection SOTA : le renversement — le… | Python 3 (ipykernel) | DEMO | BETA | — | — | 45min | po-2023 |
-| 14 | [4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb) | 4.6c — Du patch collé au vêtement porté : le… | Py310-Gpu | DEMO | BETA | — | — | 1h | po-2023 |
+| 1 | [4.1-Conv-NumPy-Torch-Allclose-CSharp.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose-CSharp.ipynb) | 4.1 — Le neurone convolutif from scratch : kernel… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 2 | [4.1-Conv-NumPy-Torch-Allclose.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | 4.1 — Le neurone convolutif from scratch : kernel… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 3 | [4.2-ConvNet-Profonde-Residuelles.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | 4.2 — ConvNet profonde : pourquoi les résiduelles | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 4 | [4.2b-Lean-GradientFlow-Vanishing.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb) | Le gradient qui s'évanouit, le gradient qui survit… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2023 |
+| 5 | [4.3-TransferLearning-ResNet.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.3-TransferLearning-ResNet.ipynb) | 4.3 — Transfer learning : réutiliser un ResNet18… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 6 | [4.4-Detection-Anchor-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4-Detection-Anchor-From-Scratch.ipynb) | 4.4 — Détection d'objets from scratch : la grille… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
+| 7 | [4.4b-Detection-AnchorFree-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4b-Detection-AnchorFree-From-Scratch.ipynb) | 4.4b — Détection d'objets anchor-free : le… | coursia-ml-training | READY | BETA | — | — | 45min | po-2023 |
+| 8 | [4.4c-Detection-FocalLoss-From-Scratch.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.4c-Detection-FocalLoss-From-Scratch.ipynb) | 4.4c — Détection d'objets from scratch : la Focal… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 9 | [4.5-Detection-SOTA-Torchvision.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5-Detection-SOTA-Torchvision.ipynb) | 4.5 — Détection SOTA : fine-tuner torchvision… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
+| 10 | [4.5b-Detection-SOTA-Ultralytics.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5b-Detection-SOTA-Ultralytics.ipynb) | 4.5b — Détection SOTA : YOLO sous ultralytics, la… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
+| 11 | [4.5c-YOLOv5-Bench-Ultralytics.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5c-YOLOv5-Bench-Ultralytics.ipynb) | 4.5c — Bench yolov5nu sur le terrain du 4.4 (chunk… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2023 |
+| 12 | [4.5d-Detection-SOTA-LibreYOLO.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.5d-Detection-SOTA-LibreYOLO.ipynb) | 4.5d — Détection SOTA : un second wrapper,… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 13 | [4.6-Detection-Ultralytics-Difficult-Scenes.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6-Detection-Ultralytics-Difficult-Scenes.ipynb) | 4.6 — Détection SOTA : YOLO sous ultralytics,… | Python 3 (ipykernel) | DEMO | BETA | — | — | 45min | po-2023 |
+| 14 | [4.6b-Detection-Adversarial-Camouflage.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6b-Detection-Adversarial-Camouflage.ipynb) | 4.6b — Détection SOTA : le renversement — le… | Python 3 (ipykernel) | DEMO | BETA | — | — | 45min | po-2023 |
+| 15 | [4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb) | 4.6c — Du patch collé au vêtement porté : le… | Py310-Gpu | DEMO | BETA | — | — | 1h | po-2023 |
 
 #### DataScienceWithAgents/05-Wavelet-Scattering (6)
 
@@ -1253,17 +1296,17 @@ Total notebooks: 1657
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Lab13-Web-Search-SOTA.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Lab 13: Web Search pour Modèles SOTA (MLE-STAR… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 2 | [Lab14-Ablation-Refinement.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | Python 3 | READY | ALPHA | — | — | 30min | po-2023 |
+| 2 | [Lab14-Ablation-Refinement.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Lab 14: Ablation et Raffinement Ciblé (MLE-STAR… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 | 3 | [Lab15-Kaggle-Challenge.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Lab 15: Kaggle Challenge avec MLE-STAR | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 
 #### DataScienceWithAgents/07-Agent-Orchestration/Day7-Production (2)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [Lab16-Data-Science-Agent.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | ALPHA | — | — | 30min | po-2023 |
-| 2 | [Lab17-Final-Project.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production/Lab17-Final-Project.ipynb) | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | ALPHA | — | — | 45min | po-2023 |
+| 1 | [Lab16-Data-Science-Agent.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Lab 16: Data Science Agent avec GCP BigQuery | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 2 | [Lab17-Final-Project.ipynb](MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day7-Production/Lab17-Final-Project.ipynb) | Lab 17: Projet Final - Pipeline DS-STAR Complet | Python 3 | READY | BETA | — | — | 45min | po-2023 |
 
-#### ML.Net (25)
+#### ML.Net (29)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -1274,26 +1317,30 @@ Total notebooks: 1657
 | 5 | [ML-03-Entrainement-AutoML-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-CSharp.ipynb) | ML-03 : Entraînement et AutoML | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
 | 6 | [ML-03-Entrainement-AutoML-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-Python.ipynb) | ML-03 (Python) : Entraînement et AutoML | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 | 7 | [ML-04-Evaluation-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-CSharp.ipynb) | ML-04 : Evaluation des modèles | .NET (C#) | READY | BETA | — | — | 2h+ | po-2023 |
-| 8 | [ML-04-Evaluation-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb) | ML-04 : Évaluation des modèles (Python / sklearn) | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 8 | [ML-04-Evaluation-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb) | ML-04 : Évaluation des modèles (Python / sklearn) | Python 3 | READY | BETA | — | — | 45min | po-2023 |
 | 9 | [ML-04b-ModelComparison-Validity-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-CSharp.ipynb) | ML-04b : validité statistique des comparaisons de… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
 | 10 | [ML-04b-ModelComparison-Validity-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb) | ML-04b : Validité statistique des comparaisons de… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 | 11 | [ML-05-TimeSeries-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb) | ML-05 : Time Series Forecasting avec ML.NET | .NET (C#) | READY | ALPHA | — | — | 45min | po-2023 |
 | 12 | [ML-05-TimeSeries-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb) | ML-05 (Python) : Prévision de séries temporelles… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 13 | [ML-05b-Series-Temporelles-Classiques-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb) | ML-05b (Python) : Séries temporelles classiques —… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 14 | [ML-06-ONNX-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-CSharp.ipynb) | ML-06 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 15 | [ML-06-ONNX-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb) | ML-06 (Python) : Intégration de modèles ONNX… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2023 |
-| 16 | [ML-07-Recommendation-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-CSharp.ipynb) | ML-07 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 17 | [ML-07-Recommendation-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb) | ML-07 (Python) : Systèmes de recommandation par… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 18 | [ML-07b-SemanticIDs-Recommandation-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-07b-SemanticIDs-Recommandation-Python.ipynb) | ML-07b — Identifiants sémantiques : recommander un… | Python 3 | READY | ALPHA | — | — | 30min | po-2023 |
-| 19 | [ML-08-Clustering-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-CSharp.ipynb) | ML-08 : Clustering non-supervise avec K-Means | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 20 | [ML-08-Clustering-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb) | ML-08 (Python) : Clustering non-supervisé avec… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 21 | [ML-09-Anomaly-Detection-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-CSharp.ipynb) | ML-09 : Detection d'anomalies avec Randomized PCA | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 22 | [ML-09-Anomaly-Detection-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb) | ML-09 (Python) : Détection d'anomalies par PCA… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 23 | [ML-09b-TSAD-Benchmark-Flaws-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | ML-09b (Python) : l'illusion de progression en… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 24 | [ML-09c-MatrixProfile-Multidim-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb) | ML-09c : le Matrix Profile multidimensionnel, une… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 25 | [TP-Prevision-Ventes-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb) | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | — | — | 30min | po-2023 |
+| 13 | [ML-05b-Series-Temporelles-Classiques-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-CSharp.ipynb) | ML-05b (C#) : Séries temporelles classiques —… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 14 | [ML-05b-Series-Temporelles-Classiques-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb) | ML-05b (Python) : Séries temporelles classiques —… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 15 | [ML-06-ONNX-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-CSharp.ipynb) | ML-06 : ONNX Model Integration avec ML.NET | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 16 | [ML-06-ONNX-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb) | ML-06 (Python) : Intégration de modèles ONNX… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2023 |
+| 17 | [ML-07-Recommendation-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-CSharp.ipynb) | ML-07 : Systèmes de Recommandation avec ML.NET | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 18 | [ML-07-Recommendation-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb) | ML-07 (Python) : Systèmes de recommandation par… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 19 | [ML-07b-SemanticIDs-Recommandation-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-07b-SemanticIDs-Recommandation-CSharp.ipynb) | ML-07b — Identifiants sémantiques : recommander un… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 20 | [ML-07b-SemanticIDs-Recommandation-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-07b-SemanticIDs-Recommandation-Python.ipynb) | ML-07b — Identifiants sémantiques : recommander un… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 21 | [ML-08-Clustering-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-CSharp.ipynb) | ML-08 : Clustering non-supervise avec K-Means | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 22 | [ML-08-Clustering-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb) | ML-08 (Python) : Clustering non-supervisé avec… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 23 | [ML-09-Anomaly-Detection-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-CSharp.ipynb) | ML-09 : Detection d'anomalies avec Randomized PCA | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 24 | [ML-09-Anomaly-Detection-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb) | ML-09 (Python) : Détection d'anomalies par PCA… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 25 | [ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb) | ML-09b — Évaluer des détecteurs sur cinq séries… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 26 | [ML-09b-TSAD-Benchmark-Flaws-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | ML-09b (Python) — Évaluer des détecteurs sur cinq… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 27 | [ML-09c-MatrixProfile-Multidim-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-CSharp.ipynb) | ML-09c — Matrix Profile multidimensionnel en C# | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 28 | [ML-09c-MatrixProfile-Multidim-Python.ipynb](MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb) | ML-09c : le Matrix Profile multidimensionnel, une… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 29 | [TP-Prevision-Ventes-CSharp.ipynb](MyIA.AI.Notebooks/ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb) | TP : Prevision des ventes d'assurance | .NET (C#) | READY | BETA | — | — | 30min | po-2023 |
 
-### SymbolicAI (407 notebooks) — DEMO:6, READY:401 | ALPHA:12, BETA:386, DRAFT:9
+### SymbolicAI (415 notebooks) — DEMO:6, READY:409 | ALPHA:11, BETA:394, DRAFT:10
 
 #### Racine (1)
 
@@ -1301,7 +1348,7 @@ Total notebooks: 1657
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [OR-tools-Stiegler.ipynb](MyIA.AI.Notebooks/SymbolicAI/OR-tools-Stiegler.ipynb) | Configuration de l'environnement C# | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
 
-#### ArgumentAnalysis (37)
+#### ArgumentAnalysis (38)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -1320,7 +1367,7 @@ Total notebooks: 1657
 | 13 | [Argumentation-04b-Knowledge-Base-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-04b-Knowledge-Base-Python.ipynb) | La base de connaissances d'un débat —… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 14 | [Argumentation-05-Formal-Verification-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05-Formal-Verification-Python.ipynb) | Vérification logique formelle avec Tweety | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 15 | [Argumentation-05b-Multi-Backend-Routing-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb) | Routage multi-backend : décider ou échouer… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 16 | [Argumentation-05c-Formal-Richness-Matrix-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb) | Matrice de richesse formelle — évaluer honnêtement… | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
+| 16 | [Argumentation-05c-Formal-Richness-Matrix-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb) | Matrice de richesse formelle — évaluer honnêtement… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 17 | [Argumentation-06-JTMS-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) | Truth Maintenance System (JTMS) déterministe | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 18 | [Argumentation-06b-ATMS-Conflits-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06b-ATMS-Conflits-Python.ipynb) | ATMS et résolution de conflits — les… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
 | 19 | [Argumentation-06c-Revision-Croyances-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06c-Revision-Croyances-Python.ipynb) | Révision de croyances — contraction de noyau,… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
@@ -1335,13 +1382,14 @@ Total notebooks: 1657
 | 28 | [Argumentation-08f-Synthese-Multidimensionnelle-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08f-Synthese-Multidimensionnelle-Python.ipynb) | Synthèse multidimensionnelle — le catalogue light… | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2024 |
 | 29 | [Argumentation-09-Guardrails-AI-Shield-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-09-Guardrails-AI-Shield-Python.ipynb) | Garde-fous de pipeline LLM : le contrat d'échec de… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
 | 30 | [Argumentation-10-Privacy-Export-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-10-Privacy-Export-Python.ipynb) | Privacy d'export et minage de motifs — opaque_id,… | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2024 |
-| 31 | [Argumentation-Obs-01-Graphes-Dates-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb) | Graphes d'argumentation datés — l'instrument… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 32 | [Argumentation-Obs-02-Initiation-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-02-Initiation-Python.ipynb) | Observatoire des formes relationnelles — Cas 1 | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 33 | [Argumentation-Obs-03-Recollement-Lectures-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb) | Strate 6 : le banc de recollement | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 34 | [Argumentation-Obs-04-Recollement-Strate6-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb) | Strate 6 : le recollement sur lectures réellement… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 35 | [Argumentation-Onto-01-AIF-OWL2-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | Ontologie AIF.owl — l'architecture Argumentum des… | Python 3 | READY | ALPHA | — | — | 45min | po-2024 |
-| 36 | [Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) | Liens croisés crossLink et attaques AIF du CSV… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 37 | [Argumentation-Onto-03-Vertus-SKOS-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | Ontologie des vertus argumentatives — le pôle… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 31 | [Argumentation-11-Debate-Protocol-Safety-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-11-Debate-Protocol-Safety-Python.ipynb) | Argumentation-11 — Protocole de Debate & Securite | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
+| 32 | [Argumentation-Obs-01-Graphes-Dates-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb) | Graphes d'argumentation datés — l'instrument… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 33 | [Argumentation-Obs-02-Initiation-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-02-Initiation-Python.ipynb) | Observatoire des formes relationnelles — Cas 1 | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 34 | [Argumentation-Obs-03-Recollement-Lectures-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb) | Strate 6 : le banc de recollement | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 35 | [Argumentation-Obs-04-Recollement-Strate6-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb) | Strate 6 : le recollement sur lectures réellement… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 36 | [Argumentation-Onto-01-AIF-OWL2-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb) | Ontologie AIF.owl — l'architecture Argumentum des… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 37 | [Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb) | Liens croisés crossLink et attaques AIF du CSV… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 38 | [Argumentation-Onto-03-Vertus-SKOS-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb) | Ontologie des vertus argumentatives — le pôle… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 
 #### ArgumentAnalysis/groupe-I2-contre-arguments-aspic (1)
 
@@ -1377,27 +1425,27 @@ Total notebooks: 1657
 | 22 | [Lean-13c-CHSH-Landau-Saturation.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13c-CHSH-Landau-Saturation.ipynb) | Lean-13c : la saturation de Tsirelson — le témoin… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
 | 23 | [Lean-13d-CHSH-Indeterminisme-Native.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13d-CHSH-Indeterminisme-Native.ipynb) | Lean-13d : du CHSH au libre arbitre — la route… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
 | 24 | [Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb) | Lean-13e : Le Théorème du Libre Arbitre… | Python 3.13.x (CPython… | READY | BETA | — | — | 45min | po-2024 |
-| 25 | [Lean-14-Finiteness-Derivatives.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb) | Lean-14 — Dérivées symboliques de Brzozowski : la… | Python 3 | READY | DRAFT | — | — | 15min | po-2024 |
-| 26 | [Lean-14b-Finiteness-Lean-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14b-Finiteness-Lean-Companion.ipynb) | Lean-14b - Finiteness des dérivées de Brzozowski —… | Lean 4 (WSL) | READY | DRAFT | — | — | 30min | po-2024 |
-| 27 | [Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) | Lean-15d : Grothendieck en images | Python 3 | READY | ALPHA | — | — | 45min | po-2024 |
-| 28 | [Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | Lean-15e : Monodromie et groupe fondamental — le… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 29 | [Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb) | Lean-16 - Conway, l'homme et l'oeuvre | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2024 |
-| 30 | [Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | Lean-16b : FRACTRAN, la machine universelle de… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 31 | [Lean-17-Conway-Bridge-to-Knots-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Conway-Bridge-to-Knots-Python.ipynb) | Lean-17 : le pont Conway — du Game of Life (16) à… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 32 | [Lean-19-Detection-MIMO-Index-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb) | Lean-19 : Detection MIMO par index de comptage --… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 33 | [Lean-19b-Borne-Chernoff-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19b-Borne-Chernoff-Python.ipynb) | Lean-19b : Borne de Chernoff pour le BSC --… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 34 | [Lean-19c-Borne-Bernstein-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19c-Borne-Bernstein-Python.ipynb) | Lean-19c : borne de Bernstein pour le BSC (Python) | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 35 | [Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) | Lean-19d — Inférence bayésienne Beta-Binomial… | Python 3 | READY | ALPHA | — | — | 30min | po-2024 |
-| 36 | [Lean-20-Capstone-Digestions-Tao-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-Capstone-Digestions-Tao-Python.ipynb) | Lean-20 : Capstone — digérer le travail formel de… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 37 | [Lean-23-ERC20-Invariant-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb) | Lean-23 : ERC-20 sous Lean 4 — l'invariant de… | Python3 | READY | BETA | — | — | 15min | po-2024 |
-| 38 | [Lean-23b-Lean-ERC20-Native-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23b-Lean-ERC20-Native-Companion.ipynb) | Lean-23b — ERC-20 natif : l'invariant de… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 39 | [Lean-24-Calibration-Native-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-Calibration-Native-Companion.ipynb) | Lean-24 : le lake calibration_lean par ses énoncés… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 40 | [Lean-24b-Confiance-Preuves-Native.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24b-Confiance-Preuves-Native.ipynb) | Lean-24b : Confiance et preuves — quand un… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 41 | [Lean-25-Coherence-et-Temoin.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-25-Coherence-et-Temoin.ipynb) | Lean-25 — Cohérence et témoin : de Finetti… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 42 | [Lean-26-Munkres-Tribute.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-26-Munkres-Tribute.ipynb) | Lean-26 : Hommage à James R. Munkres — le cours… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 43 | [Lean-27-EdgeColoring-Tutte-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-27-EdgeColoring-Tutte-Companion.ipynb) | Lean-27 : coloration d'arêtes et conjecture de… | Lean 4 (WSL) | READY | BETA | — | — | 15min | po-2024 |
-| 44 | [Lean-28-Complex-Structure-S6.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Complex-Structure-S6.ipynb) | Lean-28 : Le problème de Hopf sur S⁶ — digestion… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 45 | [Lean-30-FormalGroups-Native.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-30-FormalGroups-Native.ipynb) | Lean-30 : groupes formels multivariés — compagnon… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 25 | [Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb) | Lean-13f : Corrélation de Bell du vide — OQP 12 | Python 3.13.x (CPython… | READY | BETA | — | — | 30min | po-2024 |
+| 26 | [Lean-14-Finiteness-Derivatives.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb) | Lean-14 — Dérivées symboliques de Brzozowski : la… | Python 3 | READY | DRAFT | — | — | 15min | po-2024 |
+| 27 | [Lean-14b-Finiteness-Lean-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14b-Finiteness-Lean-Companion.ipynb) | Lean-14b - Finiteness des dérivées de Brzozowski —… | Lean 4 (WSL) | READY | DRAFT | — | — | 30min | po-2024 |
+| 28 | [Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) | Lean-15d : Grothendieck en images | Python 3 | READY | ALPHA | — | — | 45min | po-2024 |
+| 29 | [Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | Lean-15e : Monodromie et groupe fondamental — le… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 30 | [Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb) | Lean-16 - Conway, l'homme et l'oeuvre | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2024 |
+| 31 | [Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | Lean-16b : FRACTRAN, la machine universelle de… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 32 | [Lean-17-Conway-Bridge-to-Knots-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Conway-Bridge-to-Knots-Python.ipynb) | Lean-17 : le pont Conway — du Game of Life (16) à… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 33 | [Lean-19-Detection-MIMO-Index-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb) | Lean-19 : Detection MIMO par index de comptage --… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 34 | [Lean-19b-Borne-Chernoff-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19b-Borne-Chernoff-Python.ipynb) | Lean-19b : Borne de Chernoff pour le BSC --… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 35 | [Lean-19c-Borne-Bernstein-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19c-Borne-Bernstein-Python.ipynb) | Lean-19c : borne de Bernstein pour le BSC (Python) | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 36 | [Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) | Lean-19d — Inférence bayésienne Beta-Binomial… | Python 3 | READY | ALPHA | — | — | 30min | po-2024 |
+| 37 | [Lean-20-Capstone-Digestions-Tao-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-20-Capstone-Digestions-Tao-Python.ipynb) | Lean-20 : Capstone — digérer le travail formel de… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 38 | [Lean-23-ERC20-Invariant-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23-ERC20-Invariant-Companion.ipynb) | Lean-23 : ERC-20 sous Lean 4 — l'invariant de… | Python3 | READY | BETA | — | — | 15min | po-2024 |
+| 39 | [Lean-23b-Lean-ERC20-Native-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-23b-Lean-ERC20-Native-Companion.ipynb) | Lean-23b — ERC-20 natif : l'invariant de… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 40 | [Lean-24-Calibration-Native-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-Calibration-Native-Companion.ipynb) | Lean-24 : le lake calibration_lean par ses énoncés… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 41 | [Lean-24b-Confiance-Preuves-Native.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24b-Confiance-Preuves-Native.ipynb) | Lean-24b : Confiance et preuves — quand un… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 42 | [Lean-25-Coherence-et-Temoin.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-25-Coherence-et-Temoin.ipynb) | Lean-25 — Cohérence et témoin : de Finetti… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 43 | [Lean-26-Munkres-Tribute.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-26-Munkres-Tribute.ipynb) | Lean-26 : Hommage à James R. Munkres — le cours… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 44 | [Lean-27-EdgeColoring-Tutte-Companion.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-27-EdgeColoring-Tutte-Companion.ipynb) | Lean-27 : coloration d'arêtes et conjecture de… | Lean 4 (WSL) | READY | BETA | — | — | 15min | po-2024 |
+| 45 | [Lean-28-Complex-Structure-S6.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Complex-Structure-S6.ipynb) | Lean-28 : Le problème de Hopf sur S⁶ — digestion… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 46 | [Lean-33-Distribution-Spaces.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-33-Distribution-Spaces.ipynb) | Lean-33 : espaces de Schwartz — décroissance et… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
 | 47 | [Lean-34-Calculabilite-et-Limites.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34-Calculabilite-et-Limites.ipynb) | Lean-34 — Calculabilité et limites : de l'arrêt… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 48 | [Lean-34b-FairBot-Loeb.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb) | Lean-34b — FairBot par le théorème de Löb :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
@@ -1408,33 +1456,34 @@ Total notebooks: 1657
 | 53 | [Lean-40-Capstone-Langlands-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-40-Capstone-Langlands-Python.ipynb) | Capstone Langlands — l'escalier : de la forme… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 54 | [Lean-41-Capstone-MIMO-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-41-Capstone-MIMO-Python.ipynb) | Lean-41 : Capstone — escalier vers la sous-série… | Python 3 | READY | ALPHA | — | — | 15min | po-2024 |
 
-#### Lean/ANALYSE (23)
+#### Lean/ANALYSE (24)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [ANALYSE-01-Sendov-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb) | ANALYSE-01 : La Conjecture de Sendov (preuve L.… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 2 | [ANALYSE-02-Tao-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb) | ANALYSE-02 : Le manuel *Analysis I* de T. Tao en… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 3 | [ANALYSE-02b-Entropie-Shannon-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-Python.ipynb) | ANALYSE-02b : L'entropie de Shannon — la marche… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 4 | [ANALYSE-03-PFR-Lean.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb) | ANALYSE-03 : La conjecture de Freiman-Ruzsa… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 5 | [ANALYSE-04-PFR-Primitives-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb) | ANALYSE-04 : Trois primitives de PFR, et l'endroit… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 6 | [ANALYSE-05-KLS-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb) | ANALYSE-05 : La conjecture KLS démontrée — digérer… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
-| 7 | [ANALYSE-05b-KLS-Song-Zhang-O1.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-05b-KLS-Song-Zhang-O1.ipynb) | ANALYSE-05b - Le KLS constant est-il O(1) ? Le… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 8 | [ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb) | ANALYSE-06 : Sensibilité 2026 — Huang, le décideur… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
-| 9 | [ANALYSE-06-Sensibilite-2026-Lean-Python_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python_en.ipynb) | ANALYSE-06: Sensitivity 2026 — Huang, the refuting… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
-| 10 | [ANALYSE-06b-Sensibilite-2026-Lean.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb) | ANALYSE-06b — Sensibilité 2026 : notre lac face… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 11 | [ANALYSE-06b-Sensibilite-2026-Lean_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean_en.ipynb) | ANALYSE-06b — Sensitivity 2026: our lake facing… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 12 | [ANALYSE-07-Percolation-Critique.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique.ipynb) | ANALYSE-07 — Percolation critique et Ising sur… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 13 | [ANALYSE-07-Percolation-Critique_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.ipynb) | ANALYSE-07 — Critical percolation and Ising on the… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 14 | [ANALYSE-08-Ramsey-VdW.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-08-Ramsey-VdW.ipynb) | ANALYSE-08 : Ramsey et van der Waerden —… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 15 | [ANALYSE-09-Tuilage-Aperiodique.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique.ipynb) | ANALYSE-09 : Un carreau de ℤ³ qui pave sans… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 16 | [ANALYSE-09-Tuilage-Aperiodique_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.ipynb) | ANALYSE-09: A single tile of Z^3 that tiles… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 17 | [ANALYSE-10-Reflexion-Thurston-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-10-Reflexion-Thurston-Python.ipynb) | ANALYSE-10 : Reflexion sur la these de W. P.… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 18 | [ANALYSE-11-Synthese-Transverse-Digestions-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-11-Synthese-Transverse-Digestions-Python.ipynb) | ANALYSE-11 : Synthese transverse des pilotes de… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 19 | [ANALYSE-12-Comptage-Matching-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python.ipynb) | ANALYSE-12 : Compter les couplages parfaits — le… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
-| 20 | [ANALYSE-12-Comptage-Matching-Lean-Python_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python_en.ipynb) | ANALYSE-12: Counting perfect matchings — the… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
-| 21 | [ANALYSE-13-Smoothing-Local-Kakeya.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Smoothing-Local-Kakeya.ipynb) | ANALYSE-13 — Lissage local de Sogge et Kakeya… | Python 3 (ipykernel) | READY | DRAFT | — | — | 30min | po-2024 |
-| 22 | [ANALYSE-13-Smoothing-Local-Kakeya_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Smoothing-Local-Kakeya_en.ipynb) | ANALYSE-13 — Sogge local smoothing and Kakeya… | Python 3 (ipykernel) | READY | DRAFT | — | — | 30min | po-2024 |
-| 23 | [ANALYSE-14-Euler-Navier-Stokes-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb) | ANALYSE-14 : Euler et Navier–Stokes — reproduction… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 3 | [ANALYSE-02b-Entropie-Shannon-CSharp.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-CSharp.ipynb) | ANALYSE-02b : L'entropie de Shannon — la marche… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 4 | [ANALYSE-02b-Entropie-Shannon-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-Python.ipynb) | ANALYSE-02b : L'entropie de Shannon — la marche… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 5 | [ANALYSE-03-PFR-Lean.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb) | ANALYSE-03 : La conjecture de Freiman-Ruzsa… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 6 | [ANALYSE-04-PFR-Primitives-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb) | ANALYSE-04 : Trois primitives de PFR, et l'endroit… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 7 | [ANALYSE-05-KLS-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb) | ANALYSE-05 : La conjecture KLS démontrée — digérer… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
+| 8 | [ANALYSE-05b-KLS-Song-Zhang-O1.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-05b-KLS-Song-Zhang-O1.ipynb) | ANALYSE-05b - Le KLS constant est-il O(1) ? Le… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 9 | [ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb) | ANALYSE-06 : Sensibilité 2026 — Huang, le décideur… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
+| 10 | [ANALYSE-06-Sensibilite-2026-Lean-Python_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python_en.ipynb) | ANALYSE-06: Sensitivity 2026 — Huang, the refuting… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
+| 11 | [ANALYSE-06b-Sensibilite-2026-Lean.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean.ipynb) | ANALYSE-06b — Sensibilité 2026 : notre lac face… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 12 | [ANALYSE-06b-Sensibilite-2026-Lean_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-06b-Sensibilite-2026-Lean_en.ipynb) | ANALYSE-06b — Sensitivity 2026: our lake facing… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 13 | [ANALYSE-07-Percolation-Critique.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique.ipynb) | ANALYSE-07 — Percolation critique et Ising sur… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 14 | [ANALYSE-07-Percolation-Critique_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.ipynb) | ANALYSE-07 — Critical percolation and Ising on the… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 15 | [ANALYSE-08-Ramsey-VdW.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-08-Ramsey-VdW.ipynb) | ANALYSE-08 : Ramsey et van der Waerden —… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 16 | [ANALYSE-09-Tuilage-Aperiodique.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique.ipynb) | ANALYSE-09 : Un carreau de ℤ³ qui pave sans… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 17 | [ANALYSE-09-Tuilage-Aperiodique_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.ipynb) | ANALYSE-09: A single tile of Z^3 that tiles… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 18 | [ANALYSE-10-Reflexion-Thurston-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-10-Reflexion-Thurston-Python.ipynb) | ANALYSE-10 : Reflexion sur la these de W. P.… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 19 | [ANALYSE-11-Synthese-Transverse-Digestions-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-11-Synthese-Transverse-Digestions-Python.ipynb) | ANALYSE-11 : Synthese transverse des pilotes de… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 20 | [ANALYSE-12-Comptage-Matching-Lean-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python.ipynb) | ANALYSE-12 : Compter les couplages parfaits — le… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
+| 21 | [ANALYSE-12-Comptage-Matching-Lean-Python_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python_en.ipynb) | ANALYSE-12: Counting perfect matchings — the… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
+| 22 | [ANALYSE-13-Smoothing-Local-Kakeya.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Smoothing-Local-Kakeya.ipynb) | ANALYSE-13 — Lissage local de Sogge et Kakeya… | Python 3 (ipykernel) | READY | DRAFT | — | — | 30min | po-2024 |
+| 23 | [ANALYSE-13-Smoothing-Local-Kakeya_en.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Smoothing-Local-Kakeya_en.ipynb) | ANALYSE-13 — Sogge local smoothing and Kakeya… | Python 3 (ipykernel) | READY | DRAFT | — | — | 30min | po-2024 |
+| 24 | [ANALYSE-14-Euler-Navier-Stokes-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb) | ANALYSE-14 : Euler et Navier–Stokes — reproduction… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
 
 #### Lean/GALOIS (1)
 
@@ -1471,7 +1520,7 @@ Total notebooks: 1657
 | 10 | [GOL-09-Perplexite-Structurelle-Hashlife.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | GOL-09 — Perplexité structurelle Hashlife :… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
 | 11 | [GOL-10-Fractran.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-10-Fractran.ipynb) | GOL-10 — FRACTRAN : calculer avec des fractions | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 
-#### Lean/GROTH (5)
+#### Lean/GROTH (6)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -1480,6 +1529,7 @@ Total notebooks: 1657
 | 3 | [GROTH-03-Atelier-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-03-Atelier-Python.ipynb) | GROTH-03 : Grothendieck en Lean -- Atelier… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
 | 4 | [GROTH-04-Companion-Lean.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-04-Companion-Lean.ipynb) | GROTH-04 : le lake Grothendieck par ses énoncés… | Lean 4 (WSL) | READY | DRAFT | — | — | 45min | po-2024 |
 | 5 | [GROTH-05-MvPowerSeries-Lean.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-05-MvPowerSeries-Lean.ipynb) | GROTH-05 : séries formelles multivariées en… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 6 | [GROTH-06-FormalGroups-Lean.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-06-FormalGroups-Lean.ipynb) | GROTH-06 : groupes formels multivariés — compagnon… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
 
 #### Lean/KNOTS (5)
 
@@ -1491,7 +1541,7 @@ Total notebooks: 1657
 | 4 | [KNOTS-04-Geometrie-Hyperbolique-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-04-Geometrie-Hyperbolique-Python.ipynb) | KNOTS-04 — Géométrie hyperbolique : tétraèdres… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 5 | [KNOTS-05-Dynamique-Tresses-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-05-Dynamique-Tresses-Python.ipynb) | KNOTS-05 — Dynamique des tresses : action d'Artin,… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 
-#### Lean/Langlands (6)
+#### Lean/Langlands (7)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -1501,6 +1551,7 @@ Total notebooks: 1657
 | 4 | [04-umbral-moonshine-reseaux-niemeier.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/04-umbral-moonshine-reseaux-niemeier.ipynb) | Umbral Moonshine : les 24 réseaux de Niemeier et… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 5 | [05-szpiro-pasten-2026.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/05-szpiro-pasten-2026.ipynb) | Szpiro : Pasten 2026 rend N log log N… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
 | 6 | [06-operateurs-de-hecke-natif.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/06-operateurs-de-hecke-natif.ipynb) | Langlands 06 : les opérateurs de Hecke $T_p$ et… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2024 |
+| 7 | [07-chabauty-kim-iwasawa-python.ipynb](MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/07-chabauty-kim-iwasawa-python.ipynb) | Chabauty–Kim : l'inégalité dimensionnelle par… | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
 
 #### Lean/MIMO (4)
 
@@ -1712,20 +1763,20 @@ Total notebooks: 1657
 | 1 | [SC-18-Vyper-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-18-Vyper-Python.ipynb) | SC-18-Vyper-Python - Smart Contracts en… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 2 | [SC-19-Ripple-XRP-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-19-Ripple-XRP-Python.ipynb) | SC-19-Ripple-XRP-Python - Protocole Ripple et XRP… | Python 3 (smartcontracts) | READY | BETA | — | — | 30min | po-2024 |
 | 3 | [SC-20-Bitcoin-Scripting-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-20-Bitcoin-Scripting-Python.ipynb) | SC-20-Bitcoin-Scripting-Python - Bitcoin, UTXO et… | .venv | READY | BETA | — | — | 30min | po-2024 |
-| 4 | [SC-21-Move-Sui-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-21-Move-Sui-Python.ipynb) | SC-21-Move-Sui-Python - Move sur Sui | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 4 | [SC-21-Move-Sui-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-21-Move-Sui-Python.ipynb) | SC-21-Move-Sui-Python - Move sur Sui | Python 3 | READY | BETA | — | — | 15min | po-2024 |
 | 5 | [SC-22-Solana-Anchor-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/05-Alternative-Chains/SC-22-Solana-Anchor-Python.ipynb) | SC-22-Solana-Anchor-Python - Solana avec Anchor | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 
 #### SmartContracts/06-Real-World (5)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [SC-23-Cross-Chain-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-23-Cross-Chain-Python.ipynb) | SC-23-Cross-Chain-Python - Interoperabilite… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 1 | [SC-23-Cross-Chain-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-23-Cross-Chain-Python.ipynb) | SC-23-Cross-Chain-Python - Interoperabilite… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
 | 2 | [SC-24-Testnet-Deploy-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-24-Testnet-Deploy-Python.ipynb) | SC-24 : Deploiement sur Testnets | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 3 | [SC-25-Mainnet-Deploy-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-25-Mainnet-Deploy-Python.ipynb) | SC-25 : Deploiement Mainnet (L2) | Python 3 | DEMO | BETA | — | — | 30min | po-2024 |
 | 4 | [SC-26-Final-Project-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-26-Final-Project-Python.ipynb) | SC-26 : Projet Final - DApp Complete | Python 3 | READY | BETA | — | — | 15min | po-2024 |
 | 5 | [SC-27-Dette-Irreversibilite-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/06-Real-World/SC-27-Dette-Irreversibilite-Python.ipynb) | SC-27 : Dette d'irréversibilité — la boucle de… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 
-#### SMT/Z3-API (31)
+#### SMT/Z3-API (35)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -1744,22 +1795,26 @@ Total notebooks: 1657
 | 13 | [Z3-06-Advanced-Optimization-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb) | Z3-Python 06 — Optimisation avancee | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 14 | [Z3-08-Ordonnancement-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-08-Ordonnancement-Python.ipynb) | Z3-Python-08 : Ordonnancement de tâches (Job-Shop… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 15 | [Z3-09-Enigme-Einstein-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-09-Enigme-Einstein-Python.ipynb) | Z3-Python-09 : L'enigme d'Einstein (Zebra puzzle) | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 16 | [Z3-10-Cryptarithmetic-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb) | 10. Cryptarithmes (SEND + MORE = MONEY) | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 17 | [Z3-11-Graph-Coloring-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb) | 11 - Coloration de Graphe avec Z3 | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 18 | [Z3-12-Real-Arithmetic-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb) | 12. Arithmetique reelle : raisonner sur les… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 19 | [Z3-13-UnsatCores-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) | 13. UNSAT cores : expliquer l'insatisfiabilite (le… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 20 | [Z3-13b-UnsatCores-MUS-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) | Z3-Python-13b — UNSAT cores : le MUS… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 21 | [Z3-14-BitVectors-Overflow-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) | 14. Bit-vectors : verifier le debordement… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 22 | [Z3-15-Nested-Arrays-2D-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-15-Nested-Arrays-2D-Python.ipynb) | 15. Tableaux imbriqués et grilles 2D : carrés… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 23 | [Z3-16-Meal-Planner-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16-Meal-Planner-Python.ipynb) | 16. Meal-Planner déclaratif : du modèle Z3 au plan… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 24 | [Z3-16b-Meal-Planner-Data-External-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb) | Z3-Python-16b — Meal-Planner : couche de données… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 25 | [Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Z3-Python-16c — Meal-Planner : capstone patient… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 26 | [Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Z3-Python-16d — Convergence à l'échelle :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 27 | [Z3-16e-Meal-Planner-Optimize-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Z3-Python-16e — Meal-Planner : l'optimisation (du… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 28 | [Z3-17-Array-Theory-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb) | Z3-Python 17 — Théorie des tableaux : Select,… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 29 | [Z3-18-Sudoku-Modes-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | Z3-Python 18 — Sudoku 4x4 : comparaison des modes… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 30 | [Z3-19-Optimization-Lexicographic-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-19-Optimization-Lexicographic-Python.ipynb) | Z3-19 -- Optimisation multi-objectif… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 31 | [Z3-20-Machine-de-Goedel-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-20-Machine-de-Goedel-Python.ipynb) | Z3-Python 20 — La machine de Gödel : se réécrire… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 16 | [Z3-10-Cryptarithmetic-CSharp.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-CSharp.ipynb) | 10. Cryptarithmes (SEND + MORE = MONEY) — jumeau… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 17 | [Z3-10-Cryptarithmetic-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-10-Cryptarithmetic-Python.ipynb) | 10. Cryptarithmes (SEND + MORE = MONEY) | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 18 | [Z3-11-Graph-Coloring-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-11-Graph-Coloring-Python.ipynb) | 11 - Coloration de Graphe avec Z3 | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 19 | [Z3-12-Real-Arithmetic-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-12-Real-Arithmetic-Python.ipynb) | 12. Arithmetique reelle : raisonner sur les… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 20 | [Z3-13-UnsatCores-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb) | 13. UNSAT cores : expliquer l'insatisfiabilite (le… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 21 | [Z3-13b-UnsatCores-MUS-CSharp.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-CSharp.ipynb) | Z3-CSharp-13b — UNSAT cores et MUS | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 22 | [Z3-13b-UnsatCores-MUS-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13b-UnsatCores-MUS-Python.ipynb) | Z3-Python-13b — UNSAT cores : le MUS… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 23 | [Z3-14-BitVectors-Overflow-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) | 14. Bit-vectors : verifier le debordement… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 24 | [Z3-15-Nested-Arrays-2D-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-15-Nested-Arrays-2D-Python.ipynb) | 15. Tableaux imbriqués et grilles 2D : carrés… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 25 | [Z3-16-Meal-Planner-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16-Meal-Planner-Python.ipynb) | 16. Meal-Planner déclaratif : du modèle Z3 au plan… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 26 | [Z3-16b-Meal-Planner-Data-External-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16b-Meal-Planner-Data-External-Python.ipynb) | Z3-Python-16b — Meal-Planner : couche de données… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 27 | [Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Z3-Python-16c — Meal-Planner : capstone patient… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 28 | [Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Z3-Python-16d — Convergence à l'échelle :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 29 | [Z3-16e-Meal-Planner-Optimize-CSharp.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-CSharp.ipynb) | Z3-C#-16e — Meal-Planner : l'optimisation (du SAT… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 30 | [Z3-16e-Meal-Planner-Optimize-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Z3-Python-16e — Meal-Planner : l'optimisation (du… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 31 | [Z3-17-Array-Theory-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb) | Z3-Python 17 — Théorie des tableaux : Select,… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 32 | [Z3-18-Sudoku-Modes-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb) | Z3-Python 18 — Sudoku 4x4 : comparaison des modes… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 33 | [Z3-19-Optimization-Lexicographic-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-19-Optimization-Lexicographic-Python.ipynb) | Z3-19 -- Optimisation multi-objectif… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 34 | [Z3-20-Machine-de-Goedel-CSharp.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-20-Machine-de-Goedel-CSharp.ipynb) | Z3-CSharp 20 — La machine de Gödel : se réécrire… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 35 | [Z3-20-Machine-de-Goedel-Python.ipynb](MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-20-Machine-de-Goedel-Python.ipynb) | Z3-Python 20 — La machine de Gödel : se réécrire… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 
 #### SMT/Z3-Linq2Z3 (20)
 
@@ -1867,7 +1922,7 @@ Total notebooks: 1657
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Tweety-IKVM-Init-Probe.ipynb](MyIA.AI.Notebooks/SymbolicAI/Tweety/_probes/Tweety-IKVM-Init-Probe.ipynb) | Tweety .NET - Probe Phase 1 axe 2 : initialisation… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
 
-### QuantConnect (124 notebooks) — DEMO:34, READY:90 | ALPHA:5, BETA:86, DRAFT:32, TEMPLATE:1
+### QuantConnect (125 notebooks) — DEMO:34, READY:91 | ALPHA:7, BETA:85, DRAFT:32, TEMPLATE:1
 
 #### kelly_lean (6)
 
@@ -2183,7 +2238,7 @@ Total notebooks: 1657
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [quantbook.ipynb](MyIA.AI.Notebooks/QuantConnect/projects/VIX-TermStructure/quantbook.ipynb) | Research QuantBook: VIX-TermStructure (Short… | Python 3 | READY | BETA | — | — | 45min | po-2026 |
 
-#### Python (65)
+#### Python (66)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -2209,7 +2264,7 @@ Total notebooks: 1657
 | 20 | [QC-Py-16-Alternative-Data.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-16-Alternative-Data.ipynb) | QC-Py-16 - Alternative Data dans QuantConnect | Python 3 | READY | DRAFT | — | — | 45min | po-2026 |
 | 21 | [QC-Py-17-Sentiment-Analysis.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-17-Sentiment-Analysis.ipynb) | Objectifs d'Apprentissage | Python 3 | READY | DRAFT | — | — | 1h | po-2026 |
 | 22 | [QC-Py-18-ML-Features-Engineering.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-18-ML-Features-Engineering.ipynb) | QC-Py-18 - Feature Engineering pour Machine… | Python 3 | READY | BETA | — | — | 1h | po-2026 |
-| 23 | [QC-Py-19-ML-Supervised-Classification.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-19-ML-Supervised-Classification.ipynb) | Objectifs d'Apprentissage | Python 3 | READY | BETA | — | — | 1h | po-2026 |
+| 23 | [QC-Py-19-ML-Supervised-Classification.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-19-ML-Supervised-Classification.ipynb) | Objectifs d'Apprentissage | Python 3 | READY | ALPHA | — | — | 1h | po-2026 |
 | 24 | [QC-Py-20-ML-Regression-Prediction.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb) | Objectifs d'Apprentissage | Python 3 | DEMO | DRAFT | — | — | 1h30 | po-2026 |
 | 25 | [QC-Py-21-Portfolio-Optimization-ML.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-21-Portfolio-Optimization-ML.ipynb) | QC-Py-21 - Portfolio Optimization avec Machine… | Python 3 | READY | DRAFT | — | — | 1h | po-2026 |
 | 26 | [QC-Py-22-Deep-Learning-LSTM.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | Objectifs d'Apprentissage | Python 3 | READY | DRAFT | — | — | 1h | po-2026 |
@@ -2230,32 +2285,33 @@ Total notebooks: 1657
 | 41 | [QC-Py-33-RL-PPO-Trading.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-33-RL-PPO-Trading.ipynb) | QC-Py-33 - Reinforcement Learning PPO pour le… | Python 3 | DEMO | BETA | — | — | 45min | po-2026 |
 | 42 | [QC-Py-34-RL-SAC-A2C-Trading.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-34-RL-SAC-A2C-Trading.ipynb) | QC-Py-34 - SAC et A2C : Comparaison d'Agents RL… | Python 3 | READY | BETA | — | — | 45min | po-2026 |
 | 43 | [QC-Py-35-RL-Portfolio-Construction.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-35-RL-Portfolio-Construction.ipynb) | QC-Py-35 - Reinforcement Learning pour la… | Python 3 | READY | BETA | — | — | 30min | po-2026 |
-| 44 | [QC-Py-40-PaperTrading-Binance.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-40-PaperTrading-Binance.ipynb) | QC-Py-40 : Paper Trading Binance - Mean Reversion… | Python 3 | DEMO | BETA | — | — | 45min | po-2026 |
+| 44 | [QC-Py-40-PaperTrading-Binance.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-40-PaperTrading-Binance.ipynb) | QC-Py-40 : Paper Trading Binance - Mean Reversion… | Python 3 | DEMO | BETA | — | — | 1h | po-2026 |
 | 45 | [QC-Py-41-PaperTrading-IBKR.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-41-PaperTrading-IBKR.ipynb) | QC-Py-41 : Paper Trading IBKR - SP500 Momentum | Python 3 | DEMO | BETA | — | — | 45min | po-2026 |
 | 46 | [QC-Py-42-Alpha-Mining-Evolution.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-42-Alpha-Mining-Evolution.ipynb) | QC-Py-42 - Alpha mining par evolution | Python 3 (CoursIA-2) | DEMO | DRAFT | — | — | 45min | po-2026 |
 | 47 | [QC-Py-43-Diffusion-Series-Synthetiques.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-43-Diffusion-Series-Synthetiques.ipynb) | QC-Py-43 — Données financières synthétiques par… | Python 3 | DEMO | BETA | — | — | 45min | po-2026 |
 | 48 | [QC-Py-44-Agent-Trading-Multi-LLM.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-44-Agent-Trading-Multi-LLM.ipynb) | QC-Py-44 — Agent de trading multi-LLM : analystes,… | Python 3 | READY | BETA | — | — | 45min | po-2026 |
 | 49 | [QC-Py-45-Noyau-Risque-Deterministe.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-45-Noyau-Risque-Deterministe.ipynb) | QC-Py-45 — Noyau de risque déterministe : stops,… | Python 3 | READY | BETA | — | — | 45min | po-2026 |
-| 50 | [QC-Py-Cloud-01-FinBERT-Sentiment.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur… | Python 3 | READY | BETA | — | — | 30min | po-2026 |
-| 51 | [QC-Py-Cloud-02-ML-Classification.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb) | QC-Py-Cloud-02 : Classification de Texte et… | Python 3 | DEMO | BETA | — | — | 30min | po-2026 |
-| 52 | [QC-Py-Cloud-03-Risk-Parity.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | READY | BETA | — | — | 30min | po-2026 |
-| 53 | [QC-Py-Cloud-03b-RiskParity-Composite.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | QC-Py-Cloud-03b — Risk Parity Composite… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
-| 54 | [QC-Py-Cloud-04-MeanReversion.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb) | QC-Py-Cloud-04 — Mean Reversion on Sector ETFs | Python 3 | READY | BETA | — | — | 15min | po-2026 |
-| 55 | [QC-Py-Cloud-05-MLP-Forecasting.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb) | QC-Py-Cloud-05 : Prevision par Reseau de Neurones… | Python 3 | READY | BETA | — | — | 30min | po-2026 |
-| 56 | [QC-Py-Cloud-06-PCA-StatArb.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-PCA-StatArb.ipynb) | QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
-| 57 | [QC-Py-Cloud-07-TemporalCNN.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-07-TemporalCNN.ipynb) | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | BETA | — | — | 15min | po-2026 |
-| 58 | [QC-Py-Cloud-08-ValueFactor-ZScore.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | Value Factor Z-Score — Sélection multi-facteurs… | Python 3 | DEMO | BETA | — | — | 15min | po-2026 |
-| 59 | [QC-Py-Cloud-09-OptionWheel.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-09-OptionWheel.ipynb) | Option Wheel — Le paradoxe du win-rate eleve | Python 3 | DEMO | BETA | — | — | 15min | po-2026 |
-| 60 | [QC-Py-Cloud-10-RL-DQN-Trading.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | QC-Py-Cloud-10 : Reinforcement Learning - DQN… | Python 3 | READY | BETA | — | — | 30min | po-2026 |
-| 61 | [QC-Py-Cloud-11-RegimeSwitching.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-11-RegimeSwitching.ipynb) | QC-Py-Cloud-11 — Regime Switching : Momentum in… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
-| 62 | [QC-Py-Cloud-12-SectorRotation-Momentum.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | QC-Py-Cloud-12 — Sector Rotation & Multi-Asset… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
-| 63 | [QC-Py-Cloud-13-VolTargeting.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-13-VolTargeting.ipynb) | QC-Py-Cloud-13 -- Volatility Targeting : Risk… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
-| 64 | [QC-Py-Cloud-14-DualMomentum.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb) | QC-Py-Cloud-14 — Dual Momentum : Asset Sélection… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
-| 65 | [QC-Py-Dataset-Workflow.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Dataset-Workflow.ipynb) | Workflow : Téléchargement et gestion des datasets | Python 3 | READY | ALPHA | — | — | 45min | po-2026 |
+| 50 | [QC-Py-46-External-Etalon-FinanceBench.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-46-External-Etalon-FinanceBench.ipynb) | QC-Py-46 — FinanceBench : étalon externe pour les… | Python 3 (coursia-canonical) | READY | ALPHA | — | — | 30min | po-2026 |
+| 51 | [QC-Py-Cloud-01-FinBERT-Sentiment.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur… | Python 3 | READY | BETA | — | — | 30min | po-2026 |
+| 52 | [QC-Py-Cloud-02-ML-Classification.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb) | QC-Py-Cloud-02 : Classification de Texte et… | Python 3 | DEMO | BETA | — | — | 30min | po-2026 |
+| 53 | [QC-Py-Cloud-03-Risk-Parity.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | QC-Py-Cloud-03 : Parite de Risque (Risk Parity) | Python 3 | READY | BETA | — | — | 30min | po-2026 |
+| 54 | [QC-Py-Cloud-03b-RiskParity-Composite.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03b-RiskParity-Composite.ipynb) | QC-Py-Cloud-03b — Risk Parity Composite… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
+| 55 | [QC-Py-Cloud-04-MeanReversion.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-04-MeanReversion.ipynb) | QC-Py-Cloud-04 — Mean Reversion on Sector ETFs | Python 3 | READY | BETA | — | — | 15min | po-2026 |
+| 56 | [QC-Py-Cloud-05-MLP-Forecasting.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb) | QC-Py-Cloud-05 : Prevision par Reseau de Neurones… | Python 3 | READY | BETA | — | — | 30min | po-2026 |
+| 57 | [QC-Py-Cloud-06-PCA-StatArb.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-06-PCA-StatArb.ipynb) | QC-Py-Cloud-06 — PCA Statistical Arbitrage Mean… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
+| 58 | [QC-Py-Cloud-07-TemporalCNN.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-07-TemporalCNN.ipynb) | QC-Py-Cloud-07 — Temporal CNN Direction Prediction | Python 3 | READY | BETA | — | — | 15min | po-2026 |
+| 59 | [QC-Py-Cloud-08-ValueFactor-ZScore.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | Value Factor Z-Score — Sélection multi-facteurs… | Python 3 | DEMO | BETA | — | — | 15min | po-2026 |
+| 60 | [QC-Py-Cloud-09-OptionWheel.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-09-OptionWheel.ipynb) | Option Wheel — Le paradoxe du win-rate eleve | Python 3 | DEMO | BETA | — | — | 15min | po-2026 |
+| 61 | [QC-Py-Cloud-10-RL-DQN-Trading.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | QC-Py-Cloud-10 : Reinforcement Learning - DQN… | Python 3 | READY | BETA | — | — | 30min | po-2026 |
+| 62 | [QC-Py-Cloud-11-RegimeSwitching.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-11-RegimeSwitching.ipynb) | QC-Py-Cloud-11 — Regime Switching : Momentum in… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
+| 63 | [QC-Py-Cloud-12-SectorRotation-Momentum.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-12-SectorRotation-Momentum.ipynb) | QC-Py-Cloud-12 — Sector Rotation & Multi-Asset… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
+| 64 | [QC-Py-Cloud-13-VolTargeting.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-13-VolTargeting.ipynb) | QC-Py-Cloud-13 -- Volatility Targeting : Risk… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
+| 65 | [QC-Py-Cloud-14-DualMomentum.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb) | QC-Py-Cloud-14 — Dual Momentum : Asset Sélection… | Python 3 | READY | BETA | — | — | 15min | po-2026 |
+| 66 | [QC-Py-Dataset-Workflow.ipynb](MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Dataset-Workflow.ipynb) | Workflow : Téléchargement et gestion des datasets | Python 3 | READY | ALPHA | — | — | 45min | po-2026 |
 
-### GameTheory (142 notebooks) — DEMO:2, READY:140 | ALPHA:5, BETA:130, DRAFT:7
+### GameTheory (170 notebooks) — DEMO:2, READY:168 | ALPHA:3, BETA:162, DRAFT:5
 
-#### Racine (101)
+#### Racine (123)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -2267,99 +2323,121 @@ Total notebooks: 1657
 | 6 | [GameTheory-02b-Lean-Definitions-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb) | GameTheory 2b - Formalisation Lean : Definitions… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2024 |
 | 7 | [GameTheory-02c-Travelers-Dilemma-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-CSharp.ipynb) | GameTheory-02c : Traveler's Dilemma en C# — le… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
 | 8 | [GameTheory-02c-Travelers-Dilemma-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-Python.ipynb) | GameTheory-02c-Travelers-Dilemma-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 9 | [GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb) | GameTheory-02d-Epistemique-Connaissance-Commune-Py… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 10 | [GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb) | GameTheory 2e — IESDS et rationalisabilité :… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 11 | [GameTheory-02e-IESDS-Rationalisation-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02e-IESDS-Rationalisation-Python.ipynb) | GameTheory 2e — IESDS et rationalisabilité :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 12 | [GameTheory-03-Topology2x2-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-CSharp.ipynb) | GameTheory-3 : Topologie des Jeux 2×2 — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 13 | [GameTheory-03-Topology2x2-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) | GameTheory-03-Topology2x2-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 14 | [GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb) | GameTheory 3b — Chambres, murs et chemins : la… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 15 | [GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) | GameTheory-03d — Deux espèces de flèches : quand… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 16 | [GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) | GameTheory 3e : Meta-Actions Tarifees et Parcours… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 17 | [GameTheory-04-NashEquilibrium-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-CSharp.ipynb) | GameTheory-04-NashEquilibrium-Python (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 18 | [GameTheory-04-NashEquilibrium-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb) | GameTheory-04-NashEquilibrium-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 19 | [GameTheory-04b-Lean-NashExistence-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence-Lean.ipynb) | GameTheory 4b - Theoreme d'Existence de Nash… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2024 |
-| 20 | [GameTheory-04c-NashExistence-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-CSharp.ipynb) | GameTheory 4c - Théorème d'Existence de Nash (C#) | .NET (C#) | READY | ALPHA | — | — | 45min | po-2024 |
-| 21 | [GameTheory-04c-NashExistence-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) | GameTheory 4c - Theoreme d'Existence de Nash… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 22 | [GameTheory-04d-Marchandage-Asymetrique-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) | GameTheory-04d-Marchandage-Asymetrique-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 23 | [GameTheory-04e-Reflective-Oracles-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb) | GameTheory 04e — Oracles réflexifs, décision… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 24 | [GameTheory-04g-Supermodularite-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04g-Supermodularite-Python.ipynb) | GameTheory 04g — Supermodularité et treillis des… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 25 | [GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb) | GameTheory 04h (Lean) - Prix de l'anarchie : la… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 26 | [GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) | GameTheory-04h — Jeux de routage / congestion &… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
-| 27 | [GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb) | GameTheory-04i — Utilité espérée et aversion au… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 28 | [GameTheory-04j-Rationalisabilite-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04j-Rationalisabilite-Python.ipynb) | GameTheory-04j — Rationalisabilité : ce que la… | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
-| 29 | [GameTheory-04k-Equilibre-Correle-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04k-Equilibre-Correle-Python.ipynb) | GT-04k — Équilibre corrélé (Aumann 1974) : le… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 30 | [GameTheory-05-ZeroSum-Minimax-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-CSharp.ipynb) | GameTheory-05-ZeroSum-Minimax-Python (Twin C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 31 | [GameTheory-05-ZeroSum-Minimax-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) | GameTheory-05-ZeroSum-Minimax-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 32 | [GameTheory-05b-Lean-Minimax-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb) | GameTheory-5b — Théorème minimax de von Neumann… | Lean 4 (WSL) | READY | BETA | — | — | 15min | po-2024 |
-| 33 | [GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb) | GameTheory-05c — Conditions KKT : la dualité… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 34 | [GameTheory-06-EvolutionTrust-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-CSharp.ipynb) | GameTheory-6 : Évolution et Confiance — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 35 | [GameTheory-06-EvolutionTrust-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) | GameTheory-06-EvolutionTrust-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 36 | [GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | GameTheory-06i — Ensembles limites :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 37 | [GameTheory-07-ExtensiveForm-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-CSharp.ipynb) | GameTheory-07-ExtensiveForm-Python (Twin C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 38 | [GameTheory-07-ExtensiveForm-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) | GameTheory-07-ExtensiveForm-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 39 | [GameTheory-08-CombinatorialGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-CSharp.ipynb) | GameTheory 8 - Jeux Combinatoires (Twin C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 40 | [GameTheory-08-CombinatorialGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb) | GameTheory 8 - Jeux Combinatoires | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 41 | [GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) | GameTheory 8b - Jeux Combinatoires en Lean | Lean 4 (WSL) | READY | BETA | — | — | 15min | po-2024 |
-| 42 | [GameTheory-08c-CombinatorialGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-CSharp.ipynb) | GameTheory 8c - Jeux Combinatoires :… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 43 | [GameTheory-08c-CombinatorialGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) | GameTheory 8c - Jeux Combinatoires :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 44 | [GameTheory-08d-Lean-CGT-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Lean.ipynb) | GameTheory 8d - Combinatorial Games natif : le… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 45 | [GameTheory-09-BackwardInduction-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-CSharp.ipynb) | GameTheory-09-BackwardInduction-Python (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 46 | [GameTheory-09-BackwardInduction-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb) | GameTheory-09-BackwardInduction-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 47 | [GameTheory-09b-Commitment-Stackelberg-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb) | Stackelberg : la performativité sans mystère | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 48 | [GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) | GameTheory-09c : Stackelberg Security Game —… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 49 | [GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) | GameTheory-09d : Stackelberg PPO — quand le… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 50 | [GameTheory-10-ForwardInduction-SPE-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-CSharp.ipynb) | GameTheory-10 — Équilibres Parfaits de Sous-Jeux… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 51 | [GameTheory-10-ForwardInduction-SPE-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb) | GameTheory-10-ForwardInduction-SPE-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 52 | [GameTheory-11-BayesianGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-CSharp.ipynb) | GameTheory-11-BayesianGames-CSharp | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 53 | [GameTheory-11-BayesianGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) | GameTheory-11-BayesianGames-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 54 | [GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) | GameTheory-11b — Jeux Bayésiens en Lean 4… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2024 |
-| 55 | [GameTheory-11c-Global-Games-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11c-Global-Games-Python.ipynb) | 11c — Jeux globaux : sélection d'équilibre sous… | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
-| 56 | [GameTheory-11d-Raffinements-Sequentiels-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) | GameTheory-11d-Raffinements-Sequentiels-Python | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2024 |
-| 57 | [GameTheory-11e-Global-Games-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11e-Global-Games-Python.ipynb) | 11e — Jeux globaux : la coordination avec… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 58 | [GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb) | Jeux globaux — la sélection d'équilibre par le… | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
-| 59 | [GameTheory-12-ReputationGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-CSharp.ipynb) | GameTheory-12 — Jeux de Réputation (twin C# du… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 60 | [GameTheory-12-ReputationGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb) | GameTheory-12-ReputationGames-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 61 | [GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb) | GameTheory-13 : Jeux a Information Imparfaite et… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 62 | [GameTheory-13-ImperfectInfo-CFR-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) | GameTheory-13 : Jeux a Information Imparfaite et… | Python (GameTheory WSL +… | READY | BETA | — | — | 1h | po-2024 |
-| 63 | [GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) | GameTheory-13b : Safe Subgame Solving en C# — le… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 64 | [GameTheory-13b-Safe-Subgame-Solving-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) | GameTheory-13b : Safe Subgame Solving -- quand le… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2024 |
-| 65 | [GameTheory-13d-Optimistic-CFR-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb) | GameTheory-13d : Optimistic Counterfactual Regret… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 66 | [GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) | GameTheory-13e : Réviser un modèle d'adversaire --… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2024 |
-| 67 | [GameTheory-13f-Ataraxos-Patron-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13f-Ataraxos-Patron-Python.ipynb) | GameTheory-13f : Ataraxos — le patron en trois… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 68 | [GameTheory-13g-Ataraxos-Organe-Natif.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13g-Ataraxos-Organe-Natif.ipynb) | Ataraxos en conditions reelles : l'organe natif a… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 69 | [GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb) | GameTheory-13h — La coordination dans le temps,… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 70 | [GameTheory-14-DifferentialGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb) | GameTheory-14 : Jeux Differentiels et Equilibres… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 71 | [GameTheory-14-DifferentialGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) | GameTheory-14 : Jeux Differentiels et Equilibres… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 72 | [GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb) | Jeux répétés : le tournoi et la fragilité de la… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 73 | [GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb) | GameTheory-14c — Jeux spatiaux : la structure… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
-| 74 | [GameTheory-15-CooperativeGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb) | GameTheory-15 — Jeux Coopératifs (Twin C#) | .NET (C#) | READY | BETA | — | — | 1h | po-2024 |
-| 75 | [GameTheory-15-CooperativeGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) | GameTheory-15-CooperativeGames-Python | Python 3 (ipykernel) | READY | BETA | — | — | 1h | po-2024 |
-| 76 | [GameTheory-15b-Lean-CooperativeGames-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) | GameTheory 15b - Jeux Cooperatifs en Lean :… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2024 |
-| 77 | [GameTheory-15c-CooperativeGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-CSharp.ipynb) | GameTheory 15c - Jeux Cooperatifs (C# / .NET) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 78 | [GameTheory-15c-CooperativeGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Python.ipynb) | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2024 |
-| 79 | [GameTheory-15d-Shapley-Groupes-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb) | GameTheory 15d - Valeur de Shapley de groupe :… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 80 | [GameTheory-16-MechanismDesign-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-CSharp.ipynb) | GameTheory-16-MechanismDesign-Python (C#) | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
-| 81 | [GameTheory-16-MechanismDesign-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) | GameTheory-16 : Théorie des Mécanismes et Principe… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 82 | [GameTheory-16b-Automated-Mechanism-Design-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) | GameTheory-16b : Automated Mechanism Design (AMD) | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 83 | [GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) | GameTheory-16c : La dimension paiement que le… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 84 | [GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) | GameTheory-16d : Pilote — joueurs LLM hétérogènes… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 85 | [GameTheory-16e-Populations-Othman-Sandholm-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16e-Populations-Othman-Sandholm-Python.ipynb) | GameTheory-16e : Populations Othman-Sandholm —… | Python 3 | DEMO | BETA | — | — | 45min | po-2024 |
-| 86 | [GameTheory-16h-Cooperation-LLM-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16h-Cooperation-LLM-Python.ipynb) | GameTheory-16h : Coopération LLM — protocole… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 87 | [GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) | Appariage stable — qui peut tricher dans… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 88 | [GameTheory-16j-Screening-Loyer-Information-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Python.ipynb) | GameTheory 16j — Screening et loyer d'information | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 89 | [GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) | GameTheory 16k — Théorie des enchères : le prix… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 90 | [GameTheory-17-MultiAgent-RL-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb) | GameTheory-17 (C#) : Multi-Agent Reinforcement… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 91 | [GameTheory-17-MultiAgent-RL-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb) | GameTheory-17 : Apprentissage par Renforcement… | Python (GameTheory WSL +… | READY | BETA | — | — | 30min | po-2024 |
-| 92 | [GameTheory-17b-Asymmetric-Information-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) | Information asymétrique : types privés,… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 93 | [GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) | Le marché des lemons : le certificat formel… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 94 | [GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) | Screening, signal et anticipation : les trois… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 95 | [GameTheory-17e-Bayesian-Persuasion-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17e-Bayesian-Persuasion-Python.ipynb) | GameTheory-17e — Persuasion bayésienne :… | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
-| 96 | [GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) | Du marché au bilan : le pont théorie des jeux… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 97 | [GameTheory-18c-Humour-Banc-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb) | GameTheory-18c : Banc de calibration — humour,… | Python 3 (ipykernel) | READY | BETA | — | — | 1h | po-2024 |
-| 98 | [GameTheory-19b-Bilevel-PPO-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-19b-Bilevel-PPO-Python.ipynb) | GameTheory-19b : Co-design bilevel… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2024 |
-| 99 | [GameTheory-21-Capstone-Choix-Social-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Python.ipynb) | GameTheory-21 : Capstone — la sous-série… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 100 | [GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb) | GameTheory-22 — Jeux stochastiques : la valeur… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 101 | [GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | GameTheory-22 : Jeux stochastiques — la valeur… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 9 | [GameTheory-02d-Epistemique-Connaissance-Commune-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-CSharp.ipynb) | GameTheory-02d — Épistémique et connaissance… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 10 | [GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb) | GameTheory-02d-Epistemique-Connaissance-Commune-Py… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 11 | [GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb) | GameTheory 2e — IESDS et rationalisabilité :… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 12 | [GameTheory-02e-IESDS-Rationalisation-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-02e-IESDS-Rationalisation-Python.ipynb) | GameTheory 2e — IESDS et rationalisabilité :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 13 | [GameTheory-03-Topology2x2-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-CSharp.ipynb) | GameTheory-3 : Topologie des Jeux 2×2 — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 14 | [GameTheory-03-Topology2x2-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03-Topology2x2-Python.ipynb) | GameTheory-03-Topology2x2-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 15 | [GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb) | GameTheory 3b — Chambres, murs et chemins : la… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 16 | [GameTheory-03d-Deux-Especes-de-Fleches-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-CSharp.ipynb) | GameTheory-03d — Deux espèces de flèches : quand… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 17 | [GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) | GameTheory-03d — Deux espèces de flèches : quand… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 18 | [GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) | GameTheory 3e : Meta-Actions Tarifees et Parcours… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 19 | [GameTheory-04-NashEquilibrium-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-CSharp.ipynb) | GameTheory-04-NashEquilibrium-Python (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 20 | [GameTheory-04-NashEquilibrium-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb) | GameTheory-04-NashEquilibrium-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 21 | [GameTheory-04b-Lean-NashExistence-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence-Lean.ipynb) | GameTheory 4b - Theoreme d'Existence de Nash… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2024 |
+| 22 | [GameTheory-04c-NashExistence-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-CSharp.ipynb) | GameTheory 4c - Théorème d'Existence de Nash (C#) | .NET (C#) | READY | ALPHA | — | — | 45min | po-2024 |
+| 23 | [GameTheory-04c-NashExistence-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04c-NashExistence-Python.ipynb) | GameTheory 4c - Theoreme d'Existence de Nash… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 24 | [GameTheory-04d-Marchandage-Asymetrique-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique-CSharp.ipynb) | GameTheory-04d-Marchandage-Asymetrique-CSharp | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 25 | [GameTheory-04d-Marchandage-Asymetrique-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) | GameTheory-04d-Marchandage-Asymetrique-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 26 | [GameTheory-04e-Reflective-Oracles-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04e-Reflective-Oracles-Python.ipynb) | GameTheory 04e — Oracles réflexifs, décision… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 27 | [GameTheory-04g-Supermodularite-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04g-Supermodularite-CSharp.ipynb) | GameTheory 04g — Supermodularité et treillis des… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 28 | [GameTheory-04g-Supermodularite-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04g-Supermodularite-Python.ipynb) | GameTheory 04g — Supermodularité et treillis des… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 29 | [GameTheory-04h-Routing-PriceOfAnarchy-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-CSharp.ipynb) | GameTheory-04h — Jeux de routage / congestion et… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 30 | [GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb) | GameTheory 04h (Lean) - Prix de l'anarchie : la… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 31 | [GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) | GameTheory-04h — Jeux de routage / congestion &… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
+| 32 | [GameTheory-04i-Utilite-Esperee-Risque-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04i-Utilite-Esperee-Risque-CSharp.ipynb) | GameTheory-04i — Utilité espérée et aversion au… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 33 | [GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb) | GameTheory-04i — Utilité espérée et aversion au… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 34 | [GameTheory-04j-Rationalisabilite-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04j-Rationalisabilite-CSharp.ipynb) | GameTheory-04j — Rationalisabilité : ce que la… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 35 | [GameTheory-04j-Rationalisabilite-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04j-Rationalisabilite-Python.ipynb) | GameTheory-04j — Rationalisabilité : ce que la… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 36 | [GameTheory-04k-Equilibre-Correle-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-04k-Equilibre-Correle-Python.ipynb) | GT-04k — Équilibre corrélé (Aumann 1974) : le… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 37 | [GameTheory-05-ZeroSum-Minimax-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-CSharp.ipynb) | GameTheory-05-ZeroSum-Minimax-Python (Twin C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 38 | [GameTheory-05-ZeroSum-Minimax-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb) | GameTheory-05-ZeroSum-Minimax-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 39 | [GameTheory-05b-Lean-Minimax-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb) | GameTheory-5b — Théorème minimax de von Neumann… | Lean 4 (WSL) | READY | BETA | — | — | 15min | po-2024 |
+| 40 | [GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb) | GameTheory-05c — Conditions KKT : la dualité… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 41 | [GameTheory-06-EvolutionTrust-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-CSharp.ipynb) | GameTheory-6 : Évolution et Confiance — Twin C#… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 42 | [GameTheory-06-EvolutionTrust-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb) | GameTheory-06-EvolutionTrust-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 43 | [GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | GameTheory-06i — Ensembles limites :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 44 | [GameTheory-07-ExtensiveForm-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-CSharp.ipynb) | GameTheory-07-ExtensiveForm-Python (Twin C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 45 | [GameTheory-07-ExtensiveForm-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-07-ExtensiveForm-Python.ipynb) | GameTheory-07-ExtensiveForm-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 46 | [GameTheory-08-CombinatorialGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-CSharp.ipynb) | GameTheory 8 - Jeux Combinatoires (Twin C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 47 | [GameTheory-08-CombinatorialGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08-CombinatorialGames-Python.ipynb) | GameTheory 8 - Jeux Combinatoires | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 48 | [GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) | GameTheory 8b - Jeux Combinatoires en Lean | Lean 4 (WSL) | READY | BETA | — | — | 15min | po-2024 |
+| 49 | [GameTheory-08c-CombinatorialGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-CSharp.ipynb) | GameTheory 8c - Jeux Combinatoires :… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 50 | [GameTheory-08c-CombinatorialGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08c-CombinatorialGames-Python.ipynb) | GameTheory 8c - Jeux Combinatoires :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 51 | [GameTheory-08d-Lean-CGT-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-08d-Lean-CGT-Lean.ipynb) | GameTheory 8d - Combinatorial Games natif : le… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 52 | [GameTheory-09-BackwardInduction-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-CSharp.ipynb) | GameTheory-09-BackwardInduction-Python (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 53 | [GameTheory-09-BackwardInduction-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09-BackwardInduction-Python.ipynb) | GameTheory-09-BackwardInduction-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 54 | [GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb) | Stackelberg : la performativité sans mystère | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 55 | [GameTheory-09b-Commitment-Stackelberg-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb) | Stackelberg : la performativité sans mystère | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 56 | [GameTheory-09c-Stackelberg-SecurityGame-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-CSharp.ipynb) | GameTheory-09c : Stackelberg Security Game —… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 57 | [GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) | GameTheory-09c : Stackelberg Security Game —… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 58 | [GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) | GameTheory-09d : Stackelberg PPO — quand le… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 59 | [GameTheory-10-ForwardInduction-SPE-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-CSharp.ipynb) | GameTheory-10 — Équilibres Parfaits de Sous-Jeux… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 60 | [GameTheory-10-ForwardInduction-SPE-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-10-ForwardInduction-SPE-Python.ipynb) | GameTheory-10-ForwardInduction-SPE-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 61 | [GameTheory-11-BayesianGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-CSharp.ipynb) | GameTheory-11-BayesianGames-CSharp | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 62 | [GameTheory-11-BayesianGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11-BayesianGames-Python.ipynb) | GameTheory-11-BayesianGames-Python | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 63 | [GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) | GameTheory-11b — Jeux Bayésiens en Lean 4… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2024 |
+| 64 | [GameTheory-11c-Global-Games-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11c-Global-Games-Python.ipynb) | 11c — Jeux globaux : sélection d'équilibre sous… | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
+| 65 | [GameTheory-11d-Raffinements-Sequentiels-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) | GameTheory-11d-Raffinements-Sequentiels-Python | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2024 |
+| 66 | [GameTheory-11e-Global-Games-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11e-Global-Games-Python.ipynb) | 11e — Jeux globaux : la coordination avec… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 67 | [GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb) | Jeux globaux — la sélection d'équilibre par le… | Python 3 | READY | DRAFT | — | — | 45min | po-2024 |
+| 68 | [GameTheory-12-ReputationGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-CSharp.ipynb) | GameTheory-12 — Jeux de Réputation (twin C# du… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 69 | [GameTheory-12-ReputationGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-12-ReputationGames-Python.ipynb) | GameTheory-12-ReputationGames-Python | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 70 | [GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb) | GameTheory-13 : Jeux a Information Imparfaite et… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 71 | [GameTheory-13-ImperfectInfo-CFR-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) | GameTheory-13 : Jeux a Information Imparfaite et… | Python (GameTheory WSL +… | READY | BETA | — | — | 1h | po-2024 |
+| 72 | [GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) | GameTheory-13b : Safe Subgame Solving en C# — le… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 73 | [GameTheory-13b-Safe-Subgame-Solving-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) | GameTheory-13b : Safe Subgame Solving -- quand le… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2024 |
+| 74 | [GameTheory-13d-Optimistic-CFR-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-CSharp.ipynb) | GameTheory-13d : Optimistic Counterfactual Regret… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 75 | [GameTheory-13d-Optimistic-CFR-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb) | GameTheory-13d : Optimistic Counterfactual Regret… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 76 | [GameTheory-13e-Revision-Croyances-Adversaire-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-CSharp.ipynb) | GameTheory-13e : Réviser un modèle d'adversaire --… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 77 | [GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) | GameTheory-13e : Réviser un modèle d'adversaire --… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2024 |
+| 78 | [GameTheory-13f-Ataraxos-Patron-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13f-Ataraxos-Patron-Python.ipynb) | GameTheory-13f : Ataraxos — le patron en trois… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 79 | [GameTheory-13g-Ataraxos-Organe-Natif.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13g-Ataraxos-Organe-Natif.ipynb) | Ataraxos en conditions reelles : l'organe natif a… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 80 | [GameTheory-13h-Ataraxos-DynamicDamping-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-CSharp.ipynb) | GameTheory-13h — La coordination dans le temps,… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 81 | [GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb) | GameTheory-13h — La coordination dans le temps,… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 82 | [GameTheory-14-DifferentialGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-CSharp.ipynb) | GameTheory-14 : Jeux Differentiels et Equilibres… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 83 | [GameTheory-14-DifferentialGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14-DifferentialGames-Python.ipynb) | GameTheory-14 : Jeux Differentiels et Equilibres… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 84 | [GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-CSharp.ipynb) | Jeux répétés : le tournoi et la fragilité de la… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 85 | [GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb) | Jeux répétés : le tournoi et la fragilité de la… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 86 | [GameTheory-14c-Jeux-Spatiaux-Cooperation-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-CSharp.ipynb) | GameTheory-14c — Jeux spatiaux (C#) : quand la… | .Net-Csharp | READY | BETA | — | — | 30min | po-2024 |
+| 87 | [GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb) | GameTheory-14c — Jeux spatiaux : la structure… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
+| 88 | [GameTheory-15-CooperativeGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb) | GameTheory-15 — Jeux Coopératifs (Twin C#) | .NET (C#) | READY | BETA | — | — | 1h | po-2024 |
+| 89 | [GameTheory-15-CooperativeGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) | GameTheory-15-CooperativeGames-Python | Python 3 (ipykernel) | READY | BETA | — | — | 1h | po-2024 |
+| 90 | [GameTheory-15b-Lean-CooperativeGames-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) | GameTheory 15b - Jeux Cooperatifs en Lean :… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2024 |
+| 91 | [GameTheory-15c-CooperativeGames-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-CSharp.ipynb) | GameTheory 15c - Jeux Cooperatifs (C# / .NET) | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 92 | [GameTheory-15c-CooperativeGames-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15c-CooperativeGames-Python.ipynb) | GameTheory 15c - Jeux Cooperatifs Lean (Python) | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2024 |
+| 93 | [GameTheory-15d-Shapley-Groupes-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-15d-Shapley-Groupes-Python.ipynb) | GameTheory 15d - Valeur de Shapley de groupe :… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 94 | [GameTheory-16-MechanismDesign-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-CSharp.ipynb) | GameTheory-16-MechanismDesign-Python (C#) | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 95 | [GameTheory-16-MechanismDesign-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb) | GameTheory-16 : Théorie des Mécanismes et Principe… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 96 | [GameTheory-16b-Automated-Mechanism-Design-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) | GameTheory-16b : Automated Mechanism Design (AMD) | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 97 | [GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb) | GameTheory-16c : La dimension paiement que le… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 98 | [GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) | GameTheory-16c : La dimension paiement que le… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 99 | [GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) | GameTheory-16d : Pilote — joueurs LLM hétérogènes… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 100 | [GameTheory-16e-Populations-Othman-Sandholm-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16e-Populations-Othman-Sandholm-Python.ipynb) | GameTheory-16e : Populations Othman-Sandholm —… | Python 3 | DEMO | BETA | — | — | 45min | po-2024 |
+| 101 | [GameTheory-16h-Cooperation-LLM-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16h-Cooperation-LLM-Python.ipynb) | GameTheory-16h : Coopération LLM — protocole… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 102 | [GameTheory-16i-Appariage-Stable-Gale-Shapley-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-CSharp.ipynb) | Appariage stable — qui peut tricher dans… | .NET C# | READY | BETA | — | — | 30min | po-2024 |
+| 103 | [GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) | Appariage stable — qui peut tricher dans… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 104 | [GameTheory-16j-Screening-Loyer-Information-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-CSharp.ipynb) | GameTheory 16j — Screening et loyer d'information | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 105 | [GameTheory-16j-Screening-Loyer-Information-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16j-Screening-Loyer-Information-Python.ipynb) | GameTheory 16j — Screening et loyer d'information | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 106 | [GameTheory-16k-Theorie-des-Encheres-Myerson-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-CSharp.ipynb) | GameTheory 16k — Théorie des enchères : le prix… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 107 | [GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) | GameTheory 16k — Théorie des enchères : le prix… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 108 | [GameTheory-17-MultiAgent-RL-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb) | GameTheory-17 (C#) : Multi-Agent Reinforcement… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 109 | [GameTheory-17-MultiAgent-RL-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17-MultiAgent-RL-Python.ipynb) | GameTheory-17 : Apprentissage par Renforcement… | Python (GameTheory WSL +… | READY | BETA | — | — | 30min | po-2024 |
+| 110 | [GameTheory-17b-Asymmetric-Information-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17b-Asymmetric-Information-Python.ipynb) | Information asymétrique : types privés,… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 111 | [GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) | Le marché des lemons : le certificat formel… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 112 | [GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) | Screening, signal et anticipation : les trois… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 113 | [GameTheory-17e-Bayesian-Persuasion-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17e-Bayesian-Persuasion-CSharp.ipynb) | GameTheory-17e — Persuasion bayésienne :… | .NET (C#) | READY | DRAFT | — | — | 45min | po-2024 |
+| 114 | [GameTheory-17e-Bayesian-Persuasion-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17e-Bayesian-Persuasion-Python.ipynb) | GameTheory-17e — Persuasion bayésienne :… | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
+| 115 | [GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) | Du marché au bilan : le pont théorie des jeux… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 116 | [GameTheory-18-Capstone-Metajeux-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-18-Capstone-Metajeux-Python.ipynb) | GameTheory-18 : Capstone — ce qui survit au… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 117 | [GameTheory-18c-Humour-Banc-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb) | GameTheory-18c : Banc de calibration — humour,… | Python 3 (ipykernel) | READY | BETA | — | — | 1h | po-2024 |
+| 118 | [GameTheory-19-Capstone-Dynamics-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-19-Capstone-Dynamics-Python.ipynb) | GameTheory-19 : Capstone — la sous-série Dynamics… | Python3 | READY | BETA | — | — | 30min | po-2024 |
+| 119 | [GameTheory-20-Capstone-Coalitions-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-20-Capstone-Coalitions-Python.ipynb) | GameTheory-20 : Capstone — la sous-série… | Python3 | READY | BETA | — | — | 30min | po-2024 |
+| 120 | [GameTheory-21-Capstone-Choix-Social-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-21-Capstone-Choix-Social-Python.ipynb) | GameTheory-21 : Capstone — la sous-série… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 121 | [GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb) | GameTheory-22 — Jeux stochastiques : la valeur… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 122 | [GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | GameTheory-22 : Jeux stochastiques — la valeur… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 123 | [GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb) | GameTheory-23 : Trouver des failles légales —… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 
 #### Coalitions (5)
 
@@ -2371,23 +2449,27 @@ Total notebooks: 1657
 | 4 | [Coalitions-04-Munkres-Affectation-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb) | Coalitions-04 — L'algorithme de Kuhn-Munkres :… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 5 | [Coalitions-05-Lean-Affectation-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/Coalitions/Coalitions-05-Lean-Affectation-Lean.ipynb) | Coalitions-05 — Le lake assignment_lean par son… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
 
-#### Dynamics (13)
+#### Dynamics (17)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb) | Dynamics 01 (C#) — Jeux répétés et théorème Folk | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
 | 2 | [Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) | Dynamics 01 — Jeux répétés et théorème Folk (Folk… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 3 | [Dynamics-02-Jeux-Repetes-Lean-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) | Dynamics 02 — Jeux répétés en Lean : le lake… | Python 3 | READY | DRAFT | — | — | 30min | po-2024 |
-| 4 | [Dynamics-03-Sympathie-vs-Engagement-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) | Dynamics 03 — Sympathie contre engagement : la… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 5 | [Dynamics-04-Open-Source-Game-Theory-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) | Dynamics 04 — Transparence des programmes et issue… | Python 3 (ipykernel) | READY | ALPHA | — | — | 30min | po-2024 |
-| 6 | [Dynamics-04b-FairBot-Loeb-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb) | Dynamics 04b — FairBot par le théorème de Löb… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 7 | [Dynamics-05-Agents-Bornes-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) | Dynamics 05 — Agents à budget explicite (companion… | Lean (WSL) | READY | BETA | — | — | 30min | po-2024 |
-| 8 | [Dynamics-05-Agents-Bornes-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) | Dynamics 05 — Agents-programmes à budget explicite… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 9 | [Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) | Dynamics 06 — Preuves bornées et coût du… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 10 | [Dynamics-07-Equilibres-par-Simulation-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) | Dynamics 07 — Équilibres de jeux-programmes fondés… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 11 | [Dynamics-08-Institutions-Transparentes-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) | Dynamics 08 — Programmes transparents comme… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 12 | [Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) | Dynamics 09 — Biens publics non-linéaires : plan… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 13 | [Dynamics-10-Joueur-LLM-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb) | Dynamics-10 — Le joueur LLM dans le tableau… | Python 3 | DEMO | BETA | — | — | 30min | po-2024 |
+| 3 | [Dynamics-02-Jeux-Repetes-Lean-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) | Dynamics 02 — Jeux répétés en Lean : le lake… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 4 | [Dynamics-03-Sympathie-vs-Engagement-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-CSharp.ipynb) | Dynamics 03 — Sympathie contre engagement : la… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 5 | [Dynamics-03-Sympathie-vs-Engagement-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) | Dynamics 03 — Sympathie contre engagement : la… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 6 | [Dynamics-04-Open-Source-Game-Theory-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) | Dynamics 04 — Transparence des programmes et issue… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
+| 7 | [Dynamics-04b-FairBot-Loeb-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb) | Dynamics 04b — FairBot par le théorème de Löb… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 8 | [Dynamics-04c-Cooperation-Payorienne-Kripke-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-04c-Cooperation-Payorienne-Kripke-Python.ipynb) | Dynamics 04c — Coopération payorienne : le FairBot… | Python3 | READY | BETA | — | — | 30min | po-2024 |
+| 9 | [Dynamics-05-Agents-Bornes-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-CSharp.ipynb) | Dynamics 05 — Agents-programmes à budget explicite… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 10 | [Dynamics-05-Agents-Bornes-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) | Dynamics 05 — Agents à budget explicite (companion… | Lean (WSL) | READY | BETA | — | — | 30min | po-2024 |
+| 11 | [Dynamics-05-Agents-Bornes-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) | Dynamics 05 — Agents-programmes à budget explicite… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 12 | [Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) | Dynamics 06 — Preuves bornées et coût du… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 13 | [Dynamics-07-Equilibres-par-Simulation-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) | Dynamics 07 — Équilibres de jeux-programmes fondés… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 14 | [Dynamics-08-Institutions-Transparentes-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-CSharp.ipynb) | Dynamics 08 — Programmes transparents comme… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 15 | [Dynamics-08-Institutions-Transparentes-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) | Dynamics 08 — Programmes transparents comme… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 16 | [Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) | Dynamics 09 — Biens publics non-linéaires : plan… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 17 | [Dynamics-10-Joueur-LLM-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-10-Joueur-LLM-Python.ipynb) | Dynamics-10 — Le joueur LLM dans le tableau… | Python 3 | DEMO | BETA | — | — | 30min | po-2024 |
 
 #### gateway (1)
 
@@ -2395,41 +2477,43 @@ Total notebooks: 1657
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [openspiel-cfr-service.ipynb](MyIA.AI.Notebooks/GameTheory/gateway/openspiel-cfr-service.ipynb) | Service Kernel Gateway — CFR OpenSpiel | Python 3 | READY | DRAFT | — | — | 15min | po-2024 |
 
-#### Metajeux (6)
+#### Metajeux (7)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Metajeux-01-Open-Games-Lentilles-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb) | Metajeux-01 : Open Games et Lentilles -- la… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2024 |
 | 2 | [Metajeux-02-Casser-la-Composition-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb) | Metajeux-02 : Casser la composition — où la… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
 | 3 | [Metajeux-03-Abstraction-a-Dette-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb) | Metajeux-03 : L'abstraction a dette mesurable | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 4 | [Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | Metajeux-04 : Le chemin minimal, témoin construit… | Python 3 | READY | DRAFT | — | — | 45min | po-2024 |
-| 5 | [Metajeux-05-Temoins-Impossibilite-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb) | Metajeux-05 : Le temoin d'impossibilite | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 6 | [Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | Metajeux-06 : Le chemin minimal sur un second… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 4 | [Metajeux-03b-Bilevel-PPO-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03b-Bilevel-PPO-Python.ipynb) | Metajeux-03b : Co-design bilevel… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2024 |
+| 5 | [Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | Metajeux-04 : Le chemin minimal, témoin construit… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 6 | [Metajeux-05-Temoins-Impossibilite-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb) | Metajeux-05 : Le temoin d'impossibilite | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 7 | [Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb](MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | Metajeux-06 : Le chemin minimal sur un second… | Python 3 | READY | BETA | — | — | 45min | po-2024 |
 
-#### SocialChoice (16)
+#### SocialChoice (17)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [01-Arrow-Impossibility-Theorem-Csharp.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb) | SocialChoice 01 : Théorème d'impossibilité d'Arrow… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 2 | [01-Arrow-Impossibility-Theorem.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | SocialChoice 01 - Theoreme d'Arrow : Preuve… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 3 | [01b-Lean-SocialChoice-Formal.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) | SocialChoice 01b - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | ALPHA | — | — | 45min | po-2024 |
-| 4 | [02-Stable-Marriage-Gale-Shapley-Csharp.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/02-Stable-Marriage-Gale-Shapley-Csharp.ipynb) | SocialChoice 02 : Mariage Stable — Algorithme de… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
-| 5 | [02-Stable-Marriage-Gale-Shapley.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/02-Stable-Marriage-Gale-Shapley.ipynb) | SocialChoice 02 - Mariage Stable : Algorithme de… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 6 | [03-Voting-Methods-Csharp.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb) | SocialChoice 03 : Méthodes de Vote et Paradoxes… | .NET (C#) | READY | ALPHA | — | — | 45min | po-2024 |
-| 7 | [03-Voting-Methods.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) | SocialChoice 03 - Méthodes de Vote et Paradoxes | Python 3 | READY | BETA | — | — | 45min | po-2024 |
-| 8 | [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | SocialChoice 04 : Agregation Computationnelle -… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
-| 9 | [04-Computational-Aggregation-SAT-Z3.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) | SocialChoice 04 - Agrégation Computationnelle :… | Python 3 (WSL) | READY | BETA | — | — | 45min | po-2024 |
-| 10 | [05-Gibbard-Satterthwaite.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb) | SocialChoice-05 : Gibbard-Satterthwaite sans… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 11 | [06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | SocialChoice-06 : Mobius sur le treillis des… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
-| 12 | [06b-Mobius-Coalitions-Lean-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) | SocialChoice 06b - La decomposition de Mobius sur… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 13 | [07-Committees-Core.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/07-Committees-Core.ipynb) | 07 - Élections de comité par approbation : le core… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 14 | [08-Kemeny-RankedPairs-Dodgson.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/08-Kemeny-RankedPairs-Dodgson.ipynb) | SocialChoice 08 - Kemeny, Ranked Pairs et Dodgson… | Python 3 | READY | ALPHA | — | — | 30min | po-2024 |
-| 15 | [09-Committees-STV-Monroe-ChamberlinCourant.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/09-Committees-STV-Monroe-ChamberlinCourant.ipynb) | 09 - Comites multi-vainqueurs : STV, Monroe et… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
-| 16 | [10-Manipulation-Strategique-MultiWinner.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/10-Manipulation-Strategique-MultiWinner.ipynb) | 10 — Manipulation stratégique et règles à comité | Python3 | READY | BETA | — | — | 30min | po-2024 |
+| 1 | [ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb) | SocialChoice 01 : Théorème d'impossibilité d'Arrow… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 2 | [ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) | SocialChoice 01 - Theoreme d'Arrow : Preuve… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 3 | [ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb) | SocialChoice 01b - Choix Social Formel en Lean 4 | Lean 4 (WSL) | READY | ALPHA | — | — | 45min | po-2024 |
+| 4 | [ChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb) | SocialChoice 02 : Mariage Stable — Algorithme de… | .NET (C#) | READY | BETA | — | — | 30min | po-2024 |
+| 5 | [ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python.ipynb) | SocialChoice 02 - Mariage Stable : Algorithme de… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 6 | [ChoixSocial-03-Voting-Methods-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-CSharp.ipynb) | SocialChoice 03 : Méthodes de Vote et Paradoxes… | .NET (C#) | READY | ALPHA | — | — | 45min | po-2024 |
+| 7 | [ChoixSocial-03-Voting-Methods-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) | SocialChoice 03 - Méthodes de Vote et Paradoxes | Python 3 | READY | BETA | — | — | 45min | po-2024 |
+| 8 | [ChoixSocial-04-Computational-Aggregation-SAT-Z3-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-CSharp.ipynb) | SocialChoice 04 : Agregation Computationnelle -… | .NET (C#) | READY | BETA | — | — | 45min | po-2024 |
+| 9 | [ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python.ipynb) | SocialChoice 04 - Agrégation Computationnelle :… | Python 3 (WSL) | READY | BETA | — | — | 45min | po-2024 |
+| 10 | [ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb) | SocialChoice-05 : Gibbard-Satterthwaite sans… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 11 | [ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-CSharp.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-CSharp.ipynb) | SocialChoice-06 (C#) : Mobius sur le treillis des… | .Net-Csharp | READY | BETA | — | — | 30min | po-2024 |
+| 12 | [ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb) | SocialChoice-06 : Mobius sur le treillis des… | Python 3 | READY | BETA | — | — | 15min | po-2024 |
+| 13 | [ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb) | SocialChoice 06b - La decomposition de Mobius sur… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 14 | [ChoixSocial-07-Committees-Core-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb) | 07 - Élections de comité par approbation : le core… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 15 | [ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb) | SocialChoice 08 - Kemeny, Ranked Pairs et Dodgson… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 16 | [ChoixSocial-09-Committees-STV-Monroe-ChamberlinCourant-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-09-Committees-STV-Monroe-ChamberlinCourant-Python.ipynb) | 09 - Comites multi-vainqueurs : STV, Monroe et… | Python 3 | READY | BETA | — | — | 30min | po-2024 |
+| 17 | [ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb](MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb) | 10 — Manipulation stratégique et règles à comité | Python3 | READY | BETA | — | — | 30min | po-2024 |
 
-### Sudoku (39 notebooks) — DEMO:1, READY:38 | BETA:39
+### Sudoku (42 notebooks) — DEMO:1, READY:41 | BETA:42
 
-#### Racine (39)
+#### Racine (42)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -2438,42 +2522,51 @@ Total notebooks: 1657
 | 3 | [Sudoku-01-Backtracking-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb) | Sudoku-01 : Resolution par Backtracking (Python) | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 | 4 | [Sudoku-02-DancingLinks-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb) | Résolution de Sudoku avec Algorithm X et Dancing… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
 | 5 | [Sudoku-02-DancingLinks-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Python.ipynb) | Sudoku-Python-DancingLinks : Dancing Links /… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 6 | [Sudoku-03-Genetic-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-CSharp.ipynb) | Sudoku-03 : Résolution par Algorithme Génétique… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 7 | [Sudoku-03-Genetic-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Python.ipynb) | Sudoku-Python-Genetic : Algorithme Génétique… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 8 | [Sudoku-04-SimulatedAnnealing-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-CSharp.ipynb) | Résolution de Sudoku par Recuit Simulé | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
-| 9 | [Sudoku-04-SimulatedAnnealing-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-Python.ipynb) | Sudoku-04 : Recuit Simule (Python) | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 10 | [Sudoku-05-PSO-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-CSharp.ipynb) | Sudoku-05 : Particle Swarm Optimization (PSO) | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
-| 11 | [Sudoku-05-PSO-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Python.ipynb) | Sudoku-05 : Particle Swarm Optimization (Python) | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 12 | [Sudoku-06-AIMA-CSP-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-CSharp.ipynb) | Sudoku-06 : Résolution par CSP Académique (AIMA) | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 13 | [Sudoku-06-AIMA-CSP-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Python.ipynb) | Sudoku-06 : Résolution par CSP Académique (Python) | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 14 | [Sudoku-07-Norvig-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-CSharp.ipynb) | Sudoku-07 : Résolution par Propagation de… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 15 | [Sudoku-07-Norvig-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-Python.ipynb) | Sudoku-07 : Résolution par Propagation de… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 16 | [Sudoku-08-HumanStrategies-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-CSharp.ipynb) | Résolution de Sudoku par Stratégies Humaines | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 17 | [Sudoku-08-HumanStrategies-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-Python.ipynb) | Sudoku-08 : Resolution par Stratégies Humaines… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 18 | [Sudoku-09-GraphColoring-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb) | Notebook 9: Résolution de Sudoku par Coloration de… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 19 | [Sudoku-09-GraphColoring-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Python.ipynb) | Sudoku-09 : Coloration de Graphe (Python) | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 20 | [Sudoku-10-ORTools-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb) | Sudoku-10 : Résolution avec OR-Tools (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 21 | [Sudoku-10-ORTools-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb) | Sudoku-10-ORTools-Python : OR-Tools CP-SAT… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 22 | [Sudoku-11-Choco-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-CSharp.ipynb) | Sudoku-11-Choco-CSharp : Solveur Choco via IKVM | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 23 | [Sudoku-11-Choco-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb) | Notebook 11: Résolution de Sudoku avec Choco… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 24 | [Sudoku-12-Z3-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb) | Sudoku-12 : Résolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 25 | [Sudoku-12-Z3-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Python.ipynb) | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 26 | [Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb) | Sudoku 12b : Linq2Z3 — l'histoire d'un binding, de… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 27 | [Sudoku-13-SymbolicAutomata-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb) | Sudoku-13 : Le Sudoku comme Regex Symbolique -… | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
-| 28 | [Sudoku-13-SymbolicAutomata-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb) | Sudoku-13 : Le Sudoku comme Regex Symbolique —… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 29 | [Sudoku-14-BDD-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-CSharp.ipynb) | Sudoku-14 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 30 | [Sudoku-14-BDD-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb) | Sudoku-14 : Automates avec BDD/MDD - Approche Pure… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 31 | [Sudoku-15-Infer-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb) | Résolution de Sudoku avec Infer.NET | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
-| 32 | [Sudoku-15-Infer-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Python.ipynb) | Sudoku-15-Infer-Python : Resolution Probabiliste… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 33 | [Sudoku-16-NeuralNetwork-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb) | Sudoku-16 : Résolution par Réseaux de Neurones | Python 3 | READY | BETA | — | — | 1h | po-2023 |
-| 34 | [Sudoku-17-LLM-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-17-LLM-Python.ipynb) | Notebook 17: Resolution de Sudoku avec Large… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
-| 35 | [Sudoku-18-Comparison-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb) | Comparaison des Solveurs de Sudoku | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
-| 36 | [Sudoku-18-Comparison-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb) | Comparaison des Solveurs de Sudoku | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 37 | [Sudoku-18b-Statistical-Comparison-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) | Sudoku-18b - Comparaison statistique honnête de… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 38 | [Sudoku-19-Lean-Propagation-Lean.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb) | Sudoku-19 — Soundness de la propagation de… | Lean 4 (WSL) | READY | BETA | — | — | 15min | po-2023 |
-| 39 | [Sudoku-20-CorpusAudit-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-20-CorpusAudit-Python.ipynb) | Sudoku-20 : La hiérarchie de difficulté des… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 6 | [Sudoku-02-DancingLinks-Rust.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Rust.ipynb) | Sudoku-Rust-DancingLinks : Dancing Links /… | Rust | READY | BETA | — | — | 15min | po-2023 |
+| 7 | [Sudoku-03-Genetic-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-CSharp.ipynb) | Sudoku-03 : Résolution par Algorithme Génétique… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 8 | [Sudoku-03-Genetic-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Python.ipynb) | Sudoku-Python-Genetic : Algorithme Génétique… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 9 | [Sudoku-04-SimulatedAnnealing-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-CSharp.ipynb) | Résolution de Sudoku par Recuit Simulé | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
+| 10 | [Sudoku-04-SimulatedAnnealing-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-04-SimulatedAnnealing-Python.ipynb) | Sudoku-04 : Recuit Simule (Python) | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 11 | [Sudoku-05-PSO-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-CSharp.ipynb) | Sudoku-05 : Particle Swarm Optimization (PSO) | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
+| 12 | [Sudoku-05-PSO-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-Python.ipynb) | Sudoku-05 : Particle Swarm Optimization (Python) | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 13 | [Sudoku-06-AIMA-CSP-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-CSharp.ipynb) | Sudoku-06 : Résolution par CSP Académique (AIMA) | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 14 | [Sudoku-06-AIMA-CSP-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-06-AIMA-CSP-Python.ipynb) | Sudoku-06 : Résolution par CSP Académique (Python) | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 15 | [Sudoku-07-Norvig-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-CSharp.ipynb) | Sudoku-07 : Résolution par Propagation de… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 16 | [Sudoku-07-Norvig-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-07-Norvig-Python.ipynb) | Sudoku-07 : Résolution par Propagation de… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 17 | [Sudoku-08-HumanStrategies-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-CSharp.ipynb) | Résolution de Sudoku par Stratégies Humaines | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 18 | [Sudoku-08-HumanStrategies-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-Python.ipynb) | Sudoku-08 : Resolution par Stratégies Humaines… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 19 | [Sudoku-09-GraphColoring-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb) | Notebook 9: Résolution de Sudoku par Coloration de… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 20 | [Sudoku-09-GraphColoring-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Python.ipynb) | Sudoku-09 : Coloration de Graphe (Python) | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 21 | [Sudoku-10-ORTools-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb) | Sudoku-10 : Résolution avec OR-Tools (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 22 | [Sudoku-10-ORTools-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb) | Sudoku-10-ORTools-Python : OR-Tools CP-SAT… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 23 | [Sudoku-11-Choco-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-CSharp.ipynb) | Sudoku-11-Choco-CSharp : Solveur Choco via IKVM | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 24 | [Sudoku-11-Choco-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb) | Notebook 11: Résolution de Sudoku avec Choco… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 25 | [Sudoku-12-Z3-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb) | Sudoku-12 : Résolution avec Z3 SMT Solver (C#) | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 26 | [Sudoku-12-Z3-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-Python.ipynb) | Sudoku-12-Z3-Python : Z3 SMT Solver (Python) | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 27 | [Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb) | Sudoku 12b : Linq2Z3 — l'histoire d'un binding, de… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 28 | [Sudoku-13-SymbolicAutomata-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb) | Sudoku-13 : Le Sudoku comme Regex Symbolique -… | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
+| 29 | [Sudoku-13-SymbolicAutomata-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb) | Sudoku-13 : Le Sudoku comme Regex Symbolique —… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 30 | [Sudoku-14-BDD-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-CSharp.ipynb) | Sudoku-14 : Automates avec BDD/MDD - Approche Pure | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 31 | [Sudoku-14-BDD-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb) | Sudoku-14 : Automates avec BDD/MDD - Approche Pure… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 32 | [Sudoku-15-Infer-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb) | Résolution de Sudoku avec Infer.NET | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
+| 33 | [Sudoku-15-Infer-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Python.ipynb) | Sudoku-15-Infer-Python : Resolution Probabiliste… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 34 | [Sudoku-16-NeuralNetwork-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb) | Sudoku-16 : Résolution par Réseaux de Neurones | Python 3 | READY | BETA | — | — | 1h | po-2023 |
+| 35 | [Sudoku-17-LLM-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-17-LLM-Python.ipynb) | Notebook 17: Resolution de Sudoku avec Large… | Python 3 | DEMO | BETA | — | — | 45min | po-2023 |
+| 36 | [Sudoku-18-Comparison-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb) | Comparaison des Solveurs de Sudoku | .NET (C#) | READY | BETA | — | — | 1h | po-2023 |
+| 37 | [Sudoku-18-Comparison-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb) | Comparaison des Solveurs de Sudoku | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 38 | [Sudoku-18b-Statistical-Comparison-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-CSharp.ipynb) | Sudoku-18b — Comparaison statistique honnête de… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 39 | [Sudoku-18b-Statistical-Comparison-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb) | Sudoku-18b - Comparaison statistique honnête de… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 40 | [Sudoku-19-Lean-Propagation-Lean.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb) | Sudoku-19 — Soundness de la propagation de… | Lean 4 (WSL) | READY | BETA | — | — | 15min | po-2023 |
+| 41 | [Sudoku-20-CorpusAudit-CSharp.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-20-CorpusAudit-CSharp.ipynb) | Sudoku-20 : La hiérarchie de difficulté des… | .NET (C#) | READY | BETA | — | — | 30min | po-2023 |
+| 42 | [Sudoku-20-CorpusAudit-Python.ipynb](MyIA.AI.Notebooks/Sudoku/Sudoku-20-CorpusAudit-Python.ipynb) | Sudoku-20 : La hiérarchie de difficulté des… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 
-### Probas (93 notebooks) — DEMO:1, READY:92 | ALPHA:4, BETA:88, DRAFT:1
+### Probas (96 notebooks) — DEMO:1, READY:95 | ALPHA:1, BETA:94, DRAFT:1
+
+#### Racine (1)
+
+| # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
+|---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
+| 1 | [Probas-Capstone-Percolation-Bayesienne-Python.ipynb](MyIA.AI.Notebooks/Probas/Probas-Capstone-Percolation-Bayesienne-Python.ipynb) | Probas-Capstone : le seuil de percolation, un… | Python3 | READY | BETA | — | — | 30min | po-2023 |
 
 #### Applications (4)
 
@@ -2497,6 +2590,23 @@ Total notebooks: 1657
 | 7 | [Percolation-04-Sharpness-Python.ipynb](MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb) | Percolation 04 — Sharpness | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 | 8 | [Percolation-05-Dimension-Fractale-Effondrement-Python.ipynb](MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-05-Dimension-Fractale-Effondrement-Python.ipynb) | Percolation 05 — La geometrie de l'amas critique :… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
 
+#### Causalite (12)
+
+| # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
+|---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
+| 1 | [Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb) | Causalite-00 — Du graphe causal à l'échelle de… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 2 | [Causalite-01-Calcul-Do-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-01-Calcul-Do-Python.ipynb) | Du graphe causal au do-calculus — le pont entre… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 3 | [Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb) | Causalite-02 — Exiger un estimand :… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 4 | [Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb) | Causalite-03 — Le contrefactuel individuel : quand… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 5 | [Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb) | Causalite-04 — La découverte de structure : le… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
+| 6 | [Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb) | Causalite-05 — Le confondeur non observé :… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
+| 7 | [Causalite-06-DoWhy-Instrument-Faible-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb) | Causalite-06 — L'instrument faible : quand le… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2023 |
+| 8 | [Causalite-07-Quasi-Experimentales-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb) | Méthodes quasi-expérimentales — identifier l'effet… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
+| 9 | [Causalite-08-Equite-Causale-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-08-Equite-Causale-Python.ipynb) | Équité causale — Décomposer la discrimination :… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 10 | [Causalite-09-Hernan-Emulation-Essai-Cible-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-09-Hernan-Emulation-Essai-Cible-Python.ipynb) | Causalite-09 — Émuler un essai ciblé : confounding… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 11 | [Causalite-10-Science-Sociale-Automatisee-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-10-Science-Sociale-Automatisee-Python.ipynb) | Causalite-10 — Automated Social Science : des… | Python 3 | DEMO | BETA | — | — | 30min | po-2023 |
+| 12 | [Causalite-10b-ML-CATE-CFRNet-TARNet-Python.ipynb](MyIA.AI.Notebooks/Probas/Causalite/Causalite-10b-ML-CATE-CFRNet-TARNet-Python.ipynb) | Causalite-10b — Effets de traitement individuels :… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+
 #### DecisionTheory (1)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
@@ -2513,23 +2623,6 @@ Total notebooks: 1657
 | 4 | [Actuariat-04-Ruine-Lundberg.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-04-Ruine-Lundberg.ipynb) | Actuariat-04 : Ruine et capital — le processus de… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2023 |
 | 5 | [Actuariat-05-Valeur-Info-Souscription.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb) | Actuariat-05 — Valeur de l'information en… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 
-#### DecisionTheory/Causal-Bridges (12)
-
-| # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
-|---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [CausalBridges-00-PearlLadder-Intro-Python.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-00-PearlLadder-Intro-Python.ipynb) | CausalBridges-00 — Du graphe causal à l'échelle de… | Python 3 | READY | ALPHA | — | — | 30min | po-2023 |
-| 2 | [CausalBridges-01-Do-Calculus.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) | Du graphe causal au do-calculus — le pont entre… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
-| 3 | [CausalBridges-02-Dowhy-Estimand-Intervention.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb) | CausalBridges-02 — Exiger un estimand :… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 4 | [CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb) | CausalBridges-03 — Le contrefactuel individuel :… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 5 | [CausalBridges-04-Dowhy-Decouverte-Structure.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-04-Dowhy-Decouverte-Structure.ipynb) | CausalBridges-04 — La découverte de structure : le… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
-| 6 | [CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb) | CausalBridges-05 — Le confondeur non observé :… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
-| 7 | [CausalBridges-06-Dowhy-Instrument-Faible.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-06-Dowhy-Instrument-Faible.ipynb) | CausalBridges-06 — L'instrument faible : quand le… | Python (coursia-ml-training) | READY | BETA | — | — | 30min | po-2023 |
-| 8 | [CausalBridges-07-Quasi-Experimental.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) | Méthodes quasi-expérimentales — identifier l'effet… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 45min | po-2023 |
-| 9 | [CausalBridges-08-Causal-Fairness.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-08-Causal-Fairness.ipynb) | Causal-Fairness — Décomposer la discrimination :… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
-| 10 | [CausalBridges-09-Hernan-TargetTrialEmulation-Python.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-09-Hernan-TargetTrialEmulation-Python.ipynb) | CausalBridges-09 — Émuler un essai ciblé :… | Python 3 | READY | ALPHA | — | — | 30min | po-2023 |
-| 11 | [CausalBridges-10-Automated-Social-Science.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-10-Automated-Social-Science.ipynb) | CausalBridges-10 — Automated Social Science : des… | Python 3 | DEMO | BETA | — | — | 30min | po-2023 |
-| 12 | [CausalBridges-10b-ML-CATE-CFRNet-TARNet-Python.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-10b-ML-CATE-CFRNet-TARNet-Python.ipynb) | CausalBridges-10b — Effets de traitement… | Python 3 | READY | ALPHA | — | — | 45min | po-2023 |
-
 #### DecisionTheory/DecInfer (12)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
@@ -2544,8 +2637,8 @@ Total notebooks: 1657
 | 8 | [DecInfer-06-Expert-Systems.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Expert-Systems.ipynb) | DecInfer-06-Expert-Systems : Decisions Robustes et… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
 | 9 | [DecInfer-07-Sequential.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07-Sequential.ipynb) | DecInfer-07-Sequential : MDPs, Bandits et POMDPs | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
 | 10 | [DecInfer-07b-Lean-Gittins.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) | DecInfer-07b-Preuves formelles — Indice de Gittins | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2023 |
-| 11 | [DecInfer-10-Thompson-Sampling.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | DecInfer-10-Thompson-Sampling : Bandits bayesiens… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
-| 12 | [DecInfer-11-Theories-Decision-Predicteur-Python.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) | DecInfer 11 — Théories de la décision face à un… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
+| 11 | [DecInfer-08-Thompson-Sampling.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-08-Thompson-Sampling.ipynb) | DecInfer-08-Thompson-Sampling : Bandits bayesiens… | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 12 | [DecInfer-09-Theories-Decision-Predicteur-Python.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-09-Theories-Decision-Predicteur-Python.ipynb) | DecInfer 09 — Théories de la décision face à un… | Python 3 | READY | BETA | — | — | 45min | po-2023 |
 
 #### DecisionTheory/DecPyMC (8)
 
@@ -2560,12 +2653,14 @@ Total notebooks: 1657
 | 7 | [DecPyMC-07-Sequential.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-07-Sequential.ipynb) | DecPyMC-07-MDPs, Bandits et POMDPs | Python 3 | READY | BETA | — | — | 45min | po-2023 |
 | 8 | [DecPyMC-08-Actuariat-Capstone.ipynb](MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-08-Actuariat-Capstone.ipynb) | DecPyMC-08 : Capstone — la sous-série Actuariat | Python 3 | READY | BETA | — | — | 15min | po-2023 |
 
-#### Fondations (2)
+#### Fondations (4)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [Probas-CLT-Theoreme-Central-Limite.ipynb](MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb) | Le théorème central limite, mesuré | Python 3 | READY | BETA | — | — | 15min | po-2023 |
-| 2 | [Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb](MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) | Le MCMC, mesuré — Metropolis–Hastings et Gibbs… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
+| 1 | [Probas-CLT-Theoreme-Central-Limite-CSharp.ipynb](MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite-CSharp.ipynb) | Le théorème central limite, mesuré — C# | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 2 | [Probas-CLT-Theoreme-Central-Limite.ipynb](MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb) | Le théorème central limite, mesuré | Python 3 | READY | BETA | — | — | 15min | po-2023 |
+| 3 | [Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb](MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb) | MCMC mesuré : Metropolis–Hastings et Gibbs en C# | .NET (C#) | READY | BETA | — | — | 45min | po-2023 |
+| 4 | [Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb](MyIA.AI.Notebooks/Probas/Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) | Le MCMC, mesuré — Metropolis–Hastings et Gibbs… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 
 #### Infer (21)
 
@@ -2618,20 +2713,35 @@ Total notebooks: 1657
 | 19 | [PyMC-19-Survival-Analysis.ipynb](MyIA.AI.Notebooks/Probas/PyMC/PyMC-19-Survival-Analysis.ipynb) | 19. Analyse de survie / fiabilite bayesienne :… | Python 3 | READY | BETA | — | — | 30min | po-2023 |
 | 20 | [PyMC-Observabilite-OTel.ipynb](MyIA.AI.Notebooks/Probas/PyMC/PyMC-Observabilite-OTel.ipynb) | Observabilité OTel — instrumenter un modèle PyMC… | Python 3 | READY | DRAFT | — | — | 30min | po-2023 |
 
-### Physique (12 notebooks) — READY:12 | BETA:12
+### Physique (23 notebooks) — READY:23 | BETA:23
 
-#### Chaines (2)
+#### Chaines (11)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Chaines-01-Axiome-Intrication-Constante-Structure-Fine-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-01-Axiome-Intrication-Constante-Structure-Fine-Python.ipynb) | Chaînes-01 — L'axiome d'intrication et la… | Python 3 (ipykernel) | READY | BETA | — | — | 30min |  |
 | 2 | [Chaines-02-Born-Unitarite-Incertitude-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-02-Born-Unitarite-Incertitude-Python.ipynb) | Chaînes-02 — La règle de Born, l'unitarité et la… | Python 3 (ipykernel) | READY | BETA | — | — | 30min |  |
+| 3 | [Chaines-03-Mesure-Lavage-POVM-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-03-Mesure-Lavage-POVM-Python.ipynb) | Chaînes-03 — La mesure : le lavage à un acte et la… | Python3 | READY | BETA | — | — | 30min |  |
+| 4 | [Chaines-04-Indiscernabilite-Spin-Statistique-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-04-Indiscernabilite-Spin-Statistique-Python.ipynb) | Chaînes-04 — L'indiscernabilité et le signe… | Python3 | READY | BETA | — | — | 30min |  |
+| 5 | [Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-05-Energie-Hamiltonien-Premiere-Puissance-Python.ipynb) | Chaînes-05 — L'énergie et l'Hamiltonien :… | Python3 | READY | BETA | — | — | 30min |  |
+| 6 | [Chaines-06-Integrale-Chemin-Somme-Finie-Enregistrements-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-06-Integrale-Chemin-Somme-Finie-Enregistrements-Python.ipynb) | Chaînes — Carnet 06 : L'intégrale de chemin comme… | Python3 | READY | BETA | — | — | 30min |  |
+| 7 | [Chaines-07-Fonction-Wigner-Signe-N-Corps-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-07-Fonction-Wigner-Signe-N-Corps-Python.ipynb) | Chaînes — Carnet 07 : La fonction de Wigner et le… | Python3 | READY | BETA | — | — | 30min |  |
+| 8 | [Chaines-08-Corollaires-Quantique-Racines-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-08-Corollaires-Quantique-Racines-Python.ipynb) | Chaînes-08 — Les corollaires de mécanique… | Python3 | READY | BETA | — | — | 30min |  |
+| 9 | [Chaines-09-Coordonnee-Ordre-Chaine-Serie-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-09-Coordonnee-Ordre-Chaine-Serie-Python.ipynb) | Chaînes 09 — La coordonnée d'ordre et la chaîne… | Python3 | READY | BETA | — | — | 30min |  |
+| 10 | [Chaines-10-Groupe-Rotations-Automorphismes-Directions-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-10-Groupe-Rotations-Automorphismes-Directions-Python.ipynb) | Chaînes 10 — Le groupe des rotations comme… | Python3 | READY | BETA | — | — | 30min |  |
+| 11 | [Chaines-11-Groupe-Lorentz-Signature-Un-Contre-Trois-Python.ipynb](MyIA.AI.Notebooks/Physique/Chaines/Chaines-11-Groupe-Lorentz-Signature-Un-Contre-Trois-Python.ipynb) | Chaînes 11 — Le groupe de Lorentz et la signature… | Python3 | READY | BETA | — | — | 30min |  |
 
 #### Constructeur (1)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Constructeur-01-Lois-Comme-Taches-Python.ipynb](MyIA.AI.Notebooks/Physique/Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb) | Théorie du constructeur — les lois comme tâches… | Python 3 | READY | BETA | — | — | 15min |  |
+
+#### InformationQuantique (1)
+
+| # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
+|---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
+| 1 | [InfoQuant-01-Intrication-Werner-PPT-Distillation-Python.ipynb](MyIA.AI.Notebooks/Physique/InformationQuantique/InfoQuant-01-Intrication-Werner-PPT-Distillation-Python.ipynb) | InfoQuant-01 — Intrication quantique : états… | Python3 | READY | BETA | — | — | 30min |  |
 
 #### Integrales (4)
 
@@ -2642,13 +2752,14 @@ Total notebooks: 1657
 | 3 | [Integrales-03-Bulle-Premiere-Divergence-Python.ipynb](MyIA.AI.Notebooks/Physique/Integrales/Integrales-03-Bulle-Premiere-Divergence-Python.ipynb) | Integrales-03 — La bulle et la première divergence | Python 3 | READY | BETA | — | — | 30min |  |
 | 4 | [Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb](MyIA.AI.Notebooks/Physique/Integrales/Integrales-04-Sunrise-Courbe-Elliptique-Python.ipynb) | Integrales-04 — Le rung elliptique du sunrise | Python 3 | READY | BETA | — | — | 30min |  |
 
-#### Jauge (3)
+#### Jauge (4)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Jauge-01-Theoreme-Noether-Python.ipynb](MyIA.AI.Notebooks/Physique/Jauge/Jauge-01-Theoreme-Noether-Python.ipynb) | Jauge-01 — Le théorème de Noether en sympy | Python 3 | READY | BETA | — | — | 30min |  |
 | 2 | [Jauge-02-Invariance-Jauge-U1-SU2-Python.ipynb](MyIA.AI.Notebooks/Physique/Jauge/Jauge-02-Invariance-Jauge-U1-SU2-Python.ipynb) | Jauge-02 — De la symétrie globale à la jauge… | Python 3 | READY | BETA | — | — | 30min |  |
 | 3 | [Jauge-03-Action-Wilson-Confinement-Python.ipynb](MyIA.AI.Notebooks/Physique/Jauge/Jauge-03-Action-Wilson-Confinement-Python.ipynb) | Jauge-03 — L'action de Wilson sur réseau : la… | Python 3 | READY | BETA | — | — | 45min |  |
+| 4 | [Jauge-04-Points-Spineurs-Twisteurs-Python.ipynb](MyIA.AI.Notebooks/Physique/Jauge/Jauge-04-Points-Spineurs-Twisteurs-Python.ipynb) | Jauge-04 — Des points aux spineurs : la relation… | Python 3 | READY | BETA | — | — | 30min |  |
 
 #### Numerique (2)
 
@@ -2657,7 +2768,7 @@ Total notebooks: 1657
 | 1 | [Numerique-01-Burgers-Volumes-Finis-Python.ipynb](MyIA.AI.Notebooks/Physique/Numerique/Numerique-01-Burgers-Volumes-Finis-Python.ipynb) | Numérique-01 — Équation de Burgers : volumes… | Python 3 | READY | BETA | — | — | 30min |  |
 | 2 | [Numerique-02-Maxwell-Relativiste-Volumes-Finis-C.ipynb](MyIA.AI.Notebooks/Physique/Numerique/Numerique-02-Maxwell-Relativiste-Volumes-Finis-C.ipynb) | Numérique-02 — Maxwell en relativité : les noyaux… | Python3 | READY | BETA | — | — | 30min |  |
 
-### IIT (114 notebooks) — DEMO:7, READY:107 | ALPHA:1, BETA:104, DRAFT:9
+### IIT (110 notebooks) — DEMO:6, READY:104 | BETA:108, DRAFT:2
 
 #### Racine (10)
 
@@ -2674,7 +2785,7 @@ Total notebooks: 1657
 | 9 | [IIT-08b-Parite-et-Broadcast-Lean.ipynb](MyIA.AI.Notebooks/IIT/IIT-08b-Parite-et-Broadcast-Lean.ipynb) | IIT-08b — Parité et broadcast : le couple qui a… | Lean 4 (WSL) | READY | BETA | — | — | 45min | po-2025 |
 | 10 | [IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb](MyIA.AI.Notebooks/IIT/IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb) | IIT-09 — Le capstone : intégré pour toute coupe,… | Lean 4 (WSL) | READY | BETA | — | — | 30min | po-2025 |
 
-#### ICT-Series (71)
+#### ICT-Series (68)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -2685,20 +2796,20 @@ Total notebooks: 1657
 | 5 | [ICT-11-CausalAgencyProfiles-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles-Python.ipynb) | ICT-11 — Profils d'agence causale : à quelle… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 6 | [ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) | ICT-13 — Morphodynamique stratégique : une… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 7 | [ICT-13b-DecroisementDynamiqueObservable-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb) | ICT-13b — Décroisement dynamique × observable :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 8 | [ICT-16-MDLTwoPartCode-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) | ICT-16 — MDL / code en deux parties et bosse… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 9 | [ICT-17-EpsilonMachine-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb) | ICT-17 -- Mecanique computationnelle… | Python 3 | READY | DRAFT | — | — | 45min | po-2025 |
-| 10 | [ICT-17b-Grokking-CompressionProgress-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | ICT-17b — Grokking et compression-progress : la… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 11 | [ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb) | ICT-17c — TorchLens : inspecter les… | Python3 | READY | BETA | — | — | 45min | po-2025 |
-| 12 | [ICT-18-ArrowOfTimeReversibilization-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb) | ICT-18 -- Fleche du temps et reversibilisation | Python 3.9 (PyPhi/IIT) | READY | BETA | — | — | 30min | po-2025 |
-| 13 | [ICT-18b-ReversibilityBudget-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) | ICT-18b — Budget de réversibilité : la jambe « fin… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 14 | [ICT-23-PersonaCatastrophe-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb) | ICT-23 — PersonaCatastrophe : la fronce de Thom… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 15 | [ICT-24-WorkspaceIgnition-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) | ICT-24 — WorkspaceIgnition : l'axe Global… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 16 | [ICT-25-InoculationRL-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb) | ICT-25 — InoculationRL : GRPO à récompense… | Python 3 | DEMO | BETA | — | — | 1h30 | po-2025 |
-| 17 | [ICT-25b-StratificationInterTailles-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25b-StratificationInterTailles-Python.ipynb) | ICT-25b — Stratification inter-tailles des… | Python 3 | READY | DRAFT | — | — | 15min | po-2025 |
+| 8 | [ICT-14-FreeEnergySurprise-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) | ICT-14 — Énergie libre et surprise du représentant… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 9 | [ICT-14b-ActiveInferenceEFE-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14b-ActiveInferenceEFE-Python.ipynb) | ICT-14b — Inférence active : l'expected free… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 10 | [ICT-16-MDLTwoPartCode-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) | ICT-16 — MDL / code en deux parties et bosse… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 11 | [ICT-18-ArrowOfTimeReversibilization-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb) | ICT-18 -- Fleche du temps et reversibilisation | Python 3.9 (PyPhi/IIT) | READY | BETA | — | — | 30min | po-2025 |
+| 12 | [ICT-18b-ReversibilityBudget-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) | ICT-18b — Budget de réversibilité : la jambe « fin… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 13 | [ICT-19-EnjeuBattery-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery-Python.ipynb) | ICT-19 — La batterie de l'ENJEU : auto-maintien vs… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 14 | [ICT-19b-EnjeuBattery-Raffinement-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) | ICT-19b — Raffinement et résolution des stubs… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 15 | [ICT-23-PersonaCatastrophe-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb) | ICT-23 — PersonaCatastrophe : la fronce de Thom… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 16 | [ICT-24-WorkspaceIgnition-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) | ICT-24 — WorkspaceIgnition : l'axe Global… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 17 | [ICT-25-InoculationRL-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb) | ICT-25 — InoculationRL : GRPO à récompense… | Python 3 | DEMO | BETA | — | — | 1h30 | po-2025 |
 | 18 | [ICT-26-SignalingConvention-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb) | ICT-26 — Convention de signalisation (expérience… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 19 | [ICT-27-SymbolInvention-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-27-SymbolInvention-Python.ipynb) | ICT-27 — Invention de symboles (expérience B,… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 20 | [ICT-28-CollectiveAdoption-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-28-CollectiveAdoption-Python.ipynb) | ICT-28 — Adoption collective et seuil de… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 21 | [ICT-29-ConceptInoculation-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-29-ConceptInoculation-Python.ipynb) | ICT-29 — Inoculation d'un concept (expérience D,… | Python 3 | READY | DRAFT | — | — | 30min | po-2025 |
+| 21 | [ICT-29-ConceptInoculation-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-29-ConceptInoculation-Python.ipynb) | ICT-29 — Inoculation d'un concept (expérience D,… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 22 | [ICT-30-InhibitedInvention-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-30-InhibitedInvention-Python.ipynb) | ICT-30 — Invention inhibée (expérience E, strate… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 23 | [ICT-31-ContrasteTroisSubstrats-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-31-ContrasteTroisSubstrats-Python.ipynb) | ICT-31 — Le contraste mesuré à trois substrats :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 24 | [ICT-32-StratificationCausaleLife-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb) | ICT-32 — Stratification causale du Jeu de la Vie :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
@@ -2709,46 +2820,43 @@ Total notebooks: 1657
 | 29 | [ICT-35c-HumorDepthProfile-SAE-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35c-HumorDepthProfile-SAE-Python.ipynb) | ICT-35c -- HumorDepthProfile-SAE : le verdict… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 30 | [ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-35d-HumorTypologyBreakdown-SAE-Python.ipynb) | ICT-35d -- HumorTypologyBreakdown-SAE : le verdict… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 31 | [ICT-36-FLens-FactoredGeometry-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36-FLens-FactoredGeometry-Python.ipynb) | ICT-36 — F-Lens : mode factored-geometry,… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 32 | [ICT-36b-RuzsaOnFactorGeometry-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36b-RuzsaOnFactorGeometry-Python.ipynb) | ICT-36b -- Distance de Ruzsa appliquee a la factor… | Python 3 | READY | ALPHA | — | — | 30min | po-2025 |
+| 32 | [ICT-36b-RuzsaOnFactorGeometry-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36b-RuzsaOnFactorGeometry-Python.ipynb) | ICT-36b -- Distance de Ruzsa appliquee a la factor… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 33 | [ICT-36c-FLens-HiguchiBridge-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36c-FLens-HiguchiBridge-Python.ipynb) | ICT-36c — Pont F-Lens x Higuchi : quatre… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 34 | [ICT-36d-FLens-DecorrelationTemporelle-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36d-FLens-DecorrelationTemporelle-Python.ipynb) | ICT-36d — Pont F-Lens x Higuchi, jambe 2 : la… | Python 3 | READY | DRAFT | — | — | 30min | po-2025 |
 | 35 | [ICT-36e-FLens-SNR-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36e-FLens-SNR-Python.ipynb) | ICT-36e — F-Lens x SNR : la reference au plancher… | Ict-Py313 | READY | BETA | — | — | 30min | po-2025 |
-| 36 | [ICT-37-FLens-BeliefState-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb) | ICT-37 - F-Lens : mode belief-state, probing… | Python 3 | READY | DRAFT | — | — | 30min | po-2025 |
-| 37 | [ICT-38-SLens-SelfLocation-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb) | ICT-38 — S-Lens : la représentation porte-t-elle… | unknown | READY | BETA | — | — | 45min | po-2025 |
-| 38 | [ICT-39-CompositionRegards-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-39-CompositionRegards-Python.ipynb) | ICT-39 — Composition de regards | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 39 | [ICT-40a-TriangulationCausale-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40a-TriangulationCausale-Python.ipynb) | ICT-40a — Triangulation causale : SAE x J-Lens x… | Python 3 | READY | DRAFT | — | — | 45min | po-2025 |
-| 40 | [ICT-40b-AnalogCognitionWaves-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb) | ICT-40b — Cognition analogique : les ondes… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 41 | [ICT-42-InoculationBifurcation-Pilot-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb) | ICT-42 — Inoculation et bifurcation… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 42 | [ICT-42b-InoculationBifurcation-9B-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb) | ICT-42b — Inoculation et bifurcation : la… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 43 | [ICT-42c-InoculationHysteresis-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42c-InoculationHysteresis-Python.ipynb) | ICT-42c — Hystérésis de l'inoculation (insertion… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 44 | [ICT-42d-InoculationMatchedPair-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42d-InoculationMatchedPair-Python.ipynb) | ICT-42d — Contrôle apparié : la divergence… | unknown | READY | BETA | — | — | 30min | po-2025 |
-| 45 | [ICT-42e-InoculationNegativeWitness-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42e-InoculationNegativeWitness-Python.ipynb) | ICT-42e — Témoin négatif : la signature d'histoire… | unknown | READY | BETA | — | — | 30min | po-2025 |
-| 46 | [ICT-42f-ReadingGrid-SignedArea-Sham-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42f-ReadingGrid-SignedArea-Sham-Python.ipynb) | ICT-42f — Témoin négatif du contrôle apparié :… | unknown | READY | BETA | — | — | 30min | po-2025 |
-| 47 | [ICT-43-Calibration-MultiEchelle-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-43-Calibration-MultiEchelle-Python.ipynb) | ICT-43 — Calibration multi-échelle, Phase 0 :… | Python 3 | DEMO | DRAFT | — | — | 15min | po-2025 |
-| 48 | [ICT-46-Strate7-FreeCoordinates-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb) | ICT-46 — Strate 7 : freebits de second ordre, le… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 49 | [ICT-46b-BancUnique-Strate7-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46b-BancUnique-Strate7-Python.ipynb) | ICT-46b — Le banc unique de la strate 7 : six… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 50 | [ICT-47-PainAxisDistillation-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb) | ICT-47 — L'axe douleur : une direction linéaire… | Python 3 (py310-gpu) | DEMO | BETA | — | — | 1h | po-2025 |
-| 51 | [ICT-47b-PainAxisInstrument-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47b-PainAxisInstrument-Python.ipynb) | ICT-47b — L'instrument change-t-il la géométrie ? | Python 3 (ipykernel) | DEMO | DRAFT | — | — | 30min | po-2025 |
-| 52 | [ICT-48-Onset9B-Aggregate-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb) | ICT-48 — Onset/SAE Qwen3.5-9B-Base, agrégat de… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 53 | [ICT-48-WolframClasses-ThermoSignature-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | ICT-48 — Origami Wolfram, pli 2 : quatre classes,… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 54 | [ICT-49-MachinesDeGoedel-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb) | ICT-49 — Machines de Gödel : l'auto-amélioration… | Python 3 (pyphi) | READY | BETA | — | — | 30min | po-2025 |
-| 55 | [ICT-50-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-50-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) | ICT-50 -- Origami Wolfram pli 2 : la regle 30… | Python3 | READY | BETA | — | — | 30min | po-2025 |
-| 56 | [ICT-51-CombinateursSKI-TagDePost-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-51-CombinateursSKI-TagDePost-Python.ipynb) | ICT-51 -- Origami Wolfram pli 4 : les combinateurs… | Python 3 (coursia-canonical) | READY | BETA | — | — | 30min | po-2025 |
-| 57 | [ICT-Annexe-ProxyContextuality-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb) | ICT — Annexe : la contextualité du zoo de proxys… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 58 | [ICT-Argumentation-BeliefTrajectories-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb) | ICT — Substrat argumentation : trajectoires de… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 59 | [ICT-Argumentation-Capstone-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-Capstone-Python.ipynb) | ICT — Argumentation et croyances : le capstone du… | Python3 | READY | BETA | — | — | 45min | po-2025 |
-| 60 | [ICT-Argumentation-QBFAcceptance-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb) | Argumentation strate 6 — Acceptabilité QBF :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 61 | [ICT-Argumentation-TruthMaintenance-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb) | ICT — Substrat argumentation : maintenance de la… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 62 | [ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) | ICT -- Dissociation F2 Dehaene : le self-model… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 63 | [ICT-Dissociation-PhatSelfReference-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) | Boucle auto-referentielle p_hat (case 2 / Epic… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 64 | [ICT-Dissociation-SaillancePregnance-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) | ICT -- Dissociation saillance / pregnance (case s… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 65 | [ICT-Greffe2-EspaceAtteignable-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb) | ICT-Greffe2 — Le quadruplet $(A, F, r, \\pi)$ :… | Python 3 | READY | DRAFT | — | — | 30min | po-2025 |
-| 66 | [ICT-Greffe4-VoteOnChain-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb) | ICT-Greffe4 — Le vote argumenté sur chaîne :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 67 | [ICT-Greffe5-AttributionCausale-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb) | ICT-Greffe5 -- Attribution causale de… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 68 | [ICT-Life-SubstratCertifie-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb) | ICT-Life — Substrat de calibration certifié : le… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 69 | [ICT-MUH-FibreTegmark-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb) | ICT-MUH — Le texte où Tegmark cite Schmidhuber :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 70 | [ICT-SAE-JLens-TeteATete-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb) | Tete-a-tete SAE <-> J-space -- les deux lentilles… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 71 | [ICT-Synthese-CrossSubstrat-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb) | ICT-Synthèse — un seul appareil de mesure, cinq… | Python 3.9 (PyPhi/IIT) | READY | BETA | — | — | 45min | po-2025 |
+| 36 | [ICT-36f-FLens-SpecParam-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-36f-FLens-SpecParam-Python.ipynb) | ICT-36f — F-Lens × specparam : l'instrument… | Python 3.13 (ict) | READY | BETA | — | — | 30min | po-2025 |
+| 37 | [ICT-37-FLens-BeliefState-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb) | ICT-37 - F-Lens : mode belief-state, probing… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 38 | [ICT-38-SLens-SelfLocation-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb) | ICT-38 — S-Lens : la représentation porte-t-elle… | unknown | READY | BETA | — | — | 45min | po-2025 |
+| 39 | [ICT-39-CompositionRegards-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-39-CompositionRegards-Python.ipynb) | ICT-39 — Composition de regards | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 40 | [ICT-40a-TriangulationCausale-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40a-TriangulationCausale-Python.ipynb) | ICT-40a — Triangulation causale : SAE x J-Lens x… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 41 | [ICT-40b-AnalogCognitionWaves-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-40b-AnalogCognitionWaves-Python.ipynb) | ICT-40b — Cognition analogique : les ondes… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 42 | [ICT-42-InoculationBifurcation-Pilot-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42-InoculationBifurcation-Pilot-Python.ipynb) | ICT-42 — Inoculation et bifurcation… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 43 | [ICT-42b-InoculationBifurcation-9B-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42b-InoculationBifurcation-9B-Python.ipynb) | ICT-42b — Inoculation et bifurcation : la… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 44 | [ICT-42c-InoculationHysteresis-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42c-InoculationHysteresis-Python.ipynb) | ICT-42c — Hystérésis de l'inoculation (insertion… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 45 | [ICT-42d-InoculationMatchedPair-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42d-InoculationMatchedPair-Python.ipynb) | ICT-42d — Contrôle apparié : la divergence… | unknown | READY | BETA | — | — | 30min | po-2025 |
+| 46 | [ICT-42e-InoculationNegativeWitness-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42e-InoculationNegativeWitness-Python.ipynb) | ICT-42e — Témoin négatif : la signature d'histoire… | unknown | READY | BETA | — | — | 30min | po-2025 |
+| 47 | [ICT-42f-ReadingGrid-SignedArea-Sham-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-42f-ReadingGrid-SignedArea-Sham-Python.ipynb) | ICT-42f — Témoin négatif du contrôle apparié :… | unknown | READY | BETA | — | — | 30min | po-2025 |
+| 48 | [ICT-43-Calibration-MultiEchelle-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-43-Calibration-MultiEchelle-Python.ipynb) | ICT-43 — Calibration multi-échelle, Phase 0 :… | Python 3 | DEMO | BETA | — | — | 15min | po-2025 |
+| 49 | [ICT-46-Strate7-FreeCoordinates-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46-Strate7-FreeCoordinates-Python.ipynb) | ICT-46 — Strate 7 : freebits de second ordre, le… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 50 | [ICT-46b-BancUnique-Strate7-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46b-BancUnique-Strate7-Python.ipynb) | ICT-46b — Le banc unique de la strate 7 : six… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 51 | [ICT-47-PainAxisDistillation-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb) | ICT-47 — L'axe douleur : une direction linéaire… | Python 3 (py310-gpu) | DEMO | BETA | — | — | 1h | po-2025 |
+| 52 | [ICT-48-WolframClasses-ThermoSignature-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | ICT-48 — Origami Wolfram, pli 2 : quatre classes,… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 53 | [ICT-49-JLensFideliteCrossTaille-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-JLensFideliteCrossTaille-Python.ipynb) | ICT-49 — Stabilité cross-taille de la fidélité… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 54 | [ICT-Annexe-ProxyContextuality-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb) | ICT — Annexe : la contextualité du zoo de proxys… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 55 | [ICT-Argumentation-BeliefTrajectories-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb) | ICT — Substrat argumentation : trajectoires de… | Python 3 | READY | BETA | — | — | 1h | po-2025 |
+| 56 | [ICT-Argumentation-Capstone-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-Capstone-Python.ipynb) | ICT — Argumentation et croyances : le capstone du… | Python3 | READY | BETA | — | — | 45min | po-2025 |
+| 57 | [ICT-Argumentation-QBFAcceptance-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-QBFAcceptance-Python.ipynb) | Argumentation strate 6 — Acceptabilité QBF :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 58 | [ICT-Argumentation-TruthMaintenance-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-TruthMaintenance-Python.ipynb) | ICT — Substrat argumentation : maintenance de la… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 59 | [ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) | ICT -- Dissociation F2 Dehaene : le self-model… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 60 | [ICT-Dissociation-PhatSelfReference-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) | Boucle auto-referentielle p_hat (case 2 / Epic… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 61 | [ICT-Dissociation-SaillancePregnance-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) | ICT -- Dissociation saillance / pregnance (case s… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 62 | [ICT-Greffe2-EspaceAtteignable-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb) | ICT-Greffe2 — Le quadruplet $(A, F, r, \\pi)$ :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 63 | [ICT-Greffe4-VoteOnChain-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe4-VoteOnChain-Python.ipynb) | ICT-Greffe4 — Le vote argumenté sur chaîne :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 64 | [ICT-Greffe5-AttributionCausale-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb) | ICT-Greffe5 -- Attribution causale de… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 65 | [ICT-Life-SubstratCertifie-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb) | ICT-Life — Substrat de calibration certifié : le… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 66 | [ICT-MUH-FibreTegmark-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb) | ICT-MUH — Le texte où Tegmark cite Schmidhuber :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 67 | [ICT-SAE-JLens-TeteATete-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb) | Tete-a-tete SAE <-> J-space -- les deux lentilles… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 68 | [ICT-Synthese-CrossSubstrat-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb) | ICT-Synthèse — un seul appareil de mesure, cinq… | Python 3.9 (PyPhi/IIT) | READY | BETA | — | — | 45min | po-2025 |
 
 #### ICT-Series/ICT-02-SelfSortingMorphogenesis (3)
 
@@ -2776,13 +2884,6 @@ Total notebooks: 1657
 | 4 | [ICT-12d-InhibitedActionAnimat-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12d-InhibitedActionAnimat-Python.ipynb) | ICT-12d — Animat inhibé (Laborit) :… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 5 | [ICT-12e-Value-of-Information-Animat-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb) | ICT-12e — Valeur de l'information pour l'animat… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
-#### ICT-Series/ICT-14-FreeEnergySurprise (2)
-
-| # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
-|---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [ICT-14-FreeEnergySurprise-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) | ICT-14 — Énergie libre et surprise du représentant… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 2 | [ICT-14b-ActiveInferenceEFE-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14b-ActiveInferenceEFE-Python.ipynb) | ICT-14b — Inférence active : l'expected free… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-
 #### ICT-Series/ICT-15-IntegratedComplexity (12)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
@@ -2800,12 +2901,13 @@ Total notebooks: 1657
 | 11 | [ICT-15k-RecollementMacroCells-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15k-RecollementMacroCells-Python.ipynb) | ICT-15k — Recollement des macrocells : le quadtree… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 12 | [ICT-15l-IndependanceGenerateur-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15l-IndependanceGenerateur-Python.ipynb) | ICT-15l — Indépendance au générateur de nouveauté… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
-#### ICT-Series/ICT-19-EnjeuBattery (2)
+#### ICT-Series/ICT-17-EpsilonMachine (3)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [ICT-19-EnjeuBattery-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) | ICT-19 — La batterie de l'ENJEU : auto-maintien vs… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 2 | [ICT-19b-EnjeuBattery-Raffinement-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) | ICT-19b — Raffinement et résolution des stubs… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 1 | [ICT-17-EpsilonMachine-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb) | ICT-17 -- Mecanique computationnelle… | Python 3 | READY | DRAFT | — | — | 45min | po-2025 |
+| 2 | [ICT-17b-Grokking-CompressionProgress-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | ICT-17b — Grokking et compression-progress : la… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 3 | [ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb) | ICT-17c — TorchLens : inspecter les… | Python3 | READY | BETA | — | — | 45min | po-2025 |
 
 #### ICT-Series/ICT-20-FeatureCatastrophes (6)
 
@@ -2818,15 +2920,15 @@ Total notebooks: 1657
 | 5 | [ICT-22-LLMSubstrat-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-22-LLMSubstrat-Python.ipynb) | ICT-22 — LLMSubstrat : le transformer comme… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 6 | [ICT-22b-CausalInterventionEngine-Python.ipynb](MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-22b-CausalInterventionEngine-Python.ipynb) | ICT-22b -- Moteur d'intervention causal : operer,… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 
-### RL (40 notebooks) — DEMO:5, READY:35 | BETA:40
+### RL (44 notebooks) — DEMO:5, READY:39 | BETA:44
 
-#### Racine (29)
+#### Racine (32)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb](MyIA.AI.Notebooks/RL/RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb) | Tutoriel Stable Baselines3 - Premiers pas | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 2 | [RL-01b-Synthese-Logique-Bitwise-Python.ipynb](MyIA.AI.Notebooks/RL/RL-01b-Synthese-Logique-Bitwise-Python.ipynb) | Synthese logique d'un controleur CartPole : le… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 3 | [RL-01c-Distillation-Politique-Prolog-Python.ipynb](MyIA.AI.Notebooks/RL/RL-01c-Distillation-Politique-Prolog-Python.ipynb) | Distiller une politique RL en programme Prolog… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 3 | [RL-01c-Distillation-Politique-Prolog-Python.ipynb](MyIA.AI.Notebooks/RL/RL-01c-Distillation-Politique-Prolog-Python.ipynb) | Distiller une politique RL en programme Prolog… | Python 3 | READY | BETA | — | — | 1h | po-2025 |
 | 4 | [RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb](MyIA.AI.Notebooks/RL/RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | Notebook 2 – Wrappers Gym, Sauvegarde/Chargement,… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
 | 5 | [RL-03-Experience-Replay-HER-Python.ipynb](MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb) | Notebook 3 – Hindsight Experience Replay (HER) :… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 6 | [RL-04-Bandits-Manchots-Python.ipynb](MyIA.AI.Notebooks/RL/RL-04-Bandits-Manchots-Python.ipynb) | RL-04 : Bandits Manchots et le Compromis… | Python 3 | READY | BETA | — | — | 1h | po-2025 |
@@ -2838,37 +2940,41 @@ Total notebooks: 1657
 | 12 | [RL-06e-GRPO-Depuis-Zero-Python.ipynb](MyIA.AI.Notebooks/RL/RL-06e-GRPO-Depuis-Zero-Python.ipynb) | GRPO (Group Relative Policy Optimization) depuis… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
 | 13 | [RL-06f-SAC-Reel-Comparaison-Python.ipynb](MyIA.AI.Notebooks/RL/RL-06f-SAC-Reel-Comparaison-Python.ipynb) | SAC reel : le marchepied mene a la bibliotheque | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 | 14 | [RL-07-Apprentissage-Multi-Agent-Python.ipynb](MyIA.AI.Notebooks/RL/RL-07-Apprentissage-Multi-Agent-Python.ipynb) | RL-07 : Introduction a l'Apprentissage Multi-Agent | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 15 | [RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb](MyIA.AI.Notebooks/RL/RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) | RL-07b — Sur-généralisation relative dans le… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 16 | [RL-08-Dyna-Q-Planification-CSharp.ipynb](MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-CSharp.ipynb) | RL-08 : Model-Based RL — Dyna-Q et planification | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 17 | [RL-08-Dyna-Q-Planification-Python.ipynb](MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb) | RL-08 : Model-Based RL — Dyna-Q et planification | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
-| 18 | [RL-09-RL-Offline-Behavior-Cloning-CSharp.ipynb](MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-CSharp.ipynb) | RL-09 : RL offline — Behavior Cloning et erreur… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
-| 19 | [RL-09-RL-Offline-Behavior-Cloning-Python.ipynb](MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) | RL-09 : RL offline — Behavior Cloning et erreur… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
-| 20 | [RL-10-Reward-Shaping-Curriculum-Python.ipynb](MyIA.AI.Notebooks/RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb) | RL-10 : Reward Shaping et Curriculum Learning | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 21 | [RL-11-POMDP-Croyances-Python.ipynb](MyIA.AI.Notebooks/RL/RL-11-POMDP-Croyances-Python.ipynb) | RL-11 : POMDP - Partial Observability et Belief… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 22 | [RL-12-Distributional-RL-C51-Python.ipynb](MyIA.AI.Notebooks/RL/RL-12-Distributional-RL-C51-Python.ipynb) | RL-12 : Distributional RL — C51 (Categorical DQN)… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 23 | [RL-13-Curiosite-RND-Python.ipynb](MyIA.AI.Notebooks/RL/RL-13-Curiosite-RND-Python.ipynb) | RL 13 - Exploration par curiosité : Random Network… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
-| 24 | [RL-14-RL-Hierarchique-Options-Python.ipynb](MyIA.AI.Notebooks/RL/RL-14-RL-Hierarchique-Options-Python.ipynb) | Hierarchical RL — l'Option framework de Sutton,… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 25 | [RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb](MyIA.AI.Notebooks/RL/RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | RL-15 — GRPO (Group Relative Policy Optimization)… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 26 | [RL-16-Dream-RSI-Python.ipynb](MyIA.AI.Notebooks/RL/RL-16-Dream-RSI-Python.ipynb) | RL-16 : Dream-RSI — l'exploration comme code,… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
-| 27 | [RL-19-Reward-Tampering-Python.ipynb](MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb) | RL 19 - Reward tampering : quand l'agent peut… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
-| 28 | [RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb](MyIA.AI.Notebooks/RL/RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | RL-20 — Du simulateur au réel : la randomisation… | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2025 |
-| 29 | [RL-21-Auto-Jeu-AlphaZero-Python.ipynb](MyIA.AI.Notebooks/RL/RL-21-Auto-Jeu-AlphaZero-Python.ipynb) | RL 21 - Auto-jeu à la AlphaZero : quand le réseau… | Python 3 (ipykernel) | DEMO | BETA | — | — | 45min | po-2025 |
+| 15 | [RL-07b-Sur-Generalisation-Climbing-Game-CSharp.ipynb](MyIA.AI.Notebooks/RL/RL-07b-Sur-Generalisation-Climbing-Game-CSharp.ipynb) | RL-07b — Sur-généralisation relative dans le… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 16 | [RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb](MyIA.AI.Notebooks/RL/RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) | RL-07b — Sur-généralisation relative dans le… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 17 | [RL-08-Dyna-Q-Planification-CSharp.ipynb](MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-CSharp.ipynb) | RL-08 : Model-Based RL — Dyna-Q et planification | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 18 | [RL-08-Dyna-Q-Planification-Python.ipynb](MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb) | RL-08 : Model-Based RL — Dyna-Q et planification | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
+| 19 | [RL-09-RL-Offline-Behavior-Cloning-CSharp.ipynb](MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-CSharp.ipynb) | RL-09 : RL offline — Behavior Cloning et erreur… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 20 | [RL-09-RL-Offline-Behavior-Cloning-Python.ipynb](MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) | RL-09 : RL offline — Behavior Cloning et erreur… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
+| 21 | [RL-10-Reward-Shaping-Curriculum-Python.ipynb](MyIA.AI.Notebooks/RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb) | RL-10 : Reward Shaping et Curriculum Learning | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 22 | [RL-11-POMDP-Croyances-Python.ipynb](MyIA.AI.Notebooks/RL/RL-11-POMDP-Croyances-Python.ipynb) | RL-11 : POMDP - Partial Observability et Belief… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 23 | [RL-12-Distributional-RL-C51-Python.ipynb](MyIA.AI.Notebooks/RL/RL-12-Distributional-RL-C51-Python.ipynb) | RL-12 : Distributional RL — C51 (Categorical DQN)… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 24 | [RL-13-Curiosite-RND-Python.ipynb](MyIA.AI.Notebooks/RL/RL-13-Curiosite-RND-Python.ipynb) | RL 13 - Exploration par curiosité : Random Network… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
+| 25 | [RL-14-RL-Hierarchique-Options-CSharp.ipynb](MyIA.AI.Notebooks/RL/RL-14-RL-Hierarchique-Options-CSharp.ipynb) | Hierarchical RL — l'Option framework de Sutton,… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 26 | [RL-14-RL-Hierarchique-Options-Python.ipynb](MyIA.AI.Notebooks/RL/RL-14-RL-Hierarchique-Options-Python.ipynb) | Hierarchical RL — l'Option framework de Sutton,… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 27 | [RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb](MyIA.AI.Notebooks/RL/RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | RL-15 — GRPO (Group Relative Policy Optimization)… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 28 | [RL-16-Dream-RSI-Python.ipynb](MyIA.AI.Notebooks/RL/RL-16-Dream-RSI-Python.ipynb) | RL-16 : Dream-RSI — l'exploration comme code,… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
+| 29 | [RL-17-Reward-Tampering-Python.ipynb](MyIA.AI.Notebooks/RL/RL-17-Reward-Tampering-Python.ipynb) | RL 17 - Reward tampering : quand l'agent peut… | Python 3 (ipykernel) | READY | BETA | — | — | 30min | po-2025 |
+| 30 | [RL-18-Randomisation-Domaine-Sim-to-Real-Python.ipynb](MyIA.AI.Notebooks/RL/RL-18-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | RL-18 — Du simulateur au réel : la randomisation… | Python 3 (ipykernel) | READY | BETA | — | — | 45min | po-2025 |
+| 31 | [RL-19-Auto-Jeu-AlphaZero-Python.ipynb](MyIA.AI.Notebooks/RL/RL-19-Auto-Jeu-AlphaZero-Python.ipynb) | RL 19 - Auto-jeu à la AlphaZero : quand le réseau… | Python 3 (ipykernel) | DEMO | BETA | — | — | 45min | po-2025 |
+| 32 | [RL-20-Capstone-PostTraining-Python.ipynb](MyIA.AI.Notebooks/RL/RL-20-Capstone-PostTraining-Python.ipynb) | Capstone — ce que la sous-série PostTraining… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
 
-#### PostTraining (11)
+#### PostTraining (12)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
-| 1 | [RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | RL Post-Training — 0 : le reward model from… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 2 | [RLPT-00b-Biais-Dataset-Preferences-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | Biais d'un dataset de préférences — mesurés, pas… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 3 | [RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | RL Post-Training — 0c : l'anatomie d'un hack qui… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
-| 4 | [RLPT-00d-Reward-Trainer-TRL-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb) | RL Post-Training — 0d : le reward model à la sauce… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 5 | [RLPT-00e-DPO-TRL-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00e-DPO-TRL-Python.ipynb) | RL Post-Training — 0e : DPO version SOTA —… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 6 | [RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb) | RLPT-00f — Le SOTA de l'alignement en ligne :… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
-| 7 | [RLPT-00g-PPO-TRL-Experimental-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00g-PPO-TRL-Experimental-Python.ipynb) | RLPT-00g -- Le troisieme bras : PPO avec GAE -- et… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
-| 8 | [RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb) | RL Post-Training — 1 : PPO pour l'alignement d'un… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
-| 9 | [RLPT-02-GRPO-Minimal-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) | RL Post-Training — 2 : GRPO minimal — alignement… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
-| 10 | [RLPT-03-Reward-Hacking-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) | RL Post-Training — 3 : Reward hacking — anatomie… | Python (coursia-ml-training) | DEMO | BETA | — | — | 45min | po-2025 |
-| 11 | [RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb) | RL Post-Training — 4 : DPO offline vs RL online —… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
+| 1 | [RLPT-00-Reward-Model-Bradley-Terry-CSharp.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-CSharp.ipynb) | RL Post-Training — 0 : le reward model from… | .NET (C#) | READY | BETA | — | — | 45min | po-2025 |
+| 2 | [RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | RL Post-Training — 0 : le reward model from… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 3 | [RLPT-00b-Biais-Dataset-Preferences-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | Biais d'un dataset de préférences — mesurés, pas… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 4 | [RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | RL Post-Training — 0c : l'anatomie d'un hack qui… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
+| 5 | [RLPT-00d-Reward-Trainer-TRL-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb) | RL Post-Training — 0d : le reward model à la sauce… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 6 | [RLPT-00e-DPO-TRL-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00e-DPO-TRL-Python.ipynb) | RL Post-Training — 0e : DPO version SOTA —… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 7 | [RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb) | RLPT-00f — Le SOTA de l'alignement en ligne :… | Python 3 | READY | BETA | — | — | 45min | po-2025 |
+| 8 | [RLPT-00g-PPO-TRL-Experimental-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-00g-PPO-TRL-Experimental-Python.ipynb) | RLPT-00g -- Le troisieme bras : PPO avec GAE -- et… | Python 3 | DEMO | BETA | — | — | 45min | po-2025 |
+| 9 | [RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb) | RL Post-Training — 1 : PPO pour l'alignement d'un… | Python 3 | READY | BETA | — | — | 30min | po-2025 |
+| 10 | [RLPT-02-GRPO-Minimal-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) | RL Post-Training — 2 : GRPO minimal — alignement… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
+| 11 | [RLPT-03-Reward-Hacking-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) | RL Post-Training — 3 : Reward hacking — anatomie… | Python (coursia-ml-training) | DEMO | BETA | — | — | 45min | po-2025 |
+| 12 | [RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb](MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb) | RL Post-Training — 4 : DPO offline vs RL online —… | Python (coursia-ml-training) | READY | BETA | — | — | 45min | po-2025 |
 
 ### CaseStudies (6 notebooks) — READY:6 | BETA:6
 
@@ -2908,9 +3014,9 @@ Total notebooks: 1657
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Reseau-Electrique-Intelligent-Python.ipynb](MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/student/Reseau-Electrique-Intelligent-Python.ipynb) | CC3 : SmartGrid - Ordonnancement de la production… | Python 3 | READY | BETA | — | — | 30min |  |
 
-### Complexity (28 notebooks) — DEMO:2, READY:26 | BETA:28
+### Complexity (44 notebooks) — DEMO:2, READY:42 | BETA:43, DRAFT:1
 
-#### Racine (28)
+#### Racine (44)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
@@ -2918,47 +3024,69 @@ Total notebooks: 1657
 | 2 | [Complexity-01-StepCounting-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb) | Complexity-01 — Compter des pas | Python 3 | READY | BETA | — | — | 30min |  |
 | 3 | [Complexity-02-P-NP-Reduction-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-CSharp.ipynb) | Complexity-02 — Vérifier ou trouver : P, NP et la… | .NET (C#) | READY | BETA | — | — | 45min |  |
 | 4 | [Complexity-02-P-NP-Reduction-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb) | Complexity-02 — Vérifier ou trouver : P, NP et la… | Python 3 | READY | BETA | — | — | 30min |  |
-| 5 | [Complexity-02b-SAT-PhaseTransition-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb) | Complexity-02b — Le seuil du 3-SAT, mesuré contre… | Python 3 (venv projet) | READY | BETA | — | — | 30min |  |
-| 6 | [Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb) | Complexity-02c — La transition de phase sans mur :… | Python 3.13 (coursia-py313) | READY | BETA | — | — | 45min |  |
-| 7 | [Complexity-03-HierarchieTemporelle-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb) | Complexity-03 — Plus de temps, plus de problèmes | Python 3 | READY | BETA | — | — | 15min |  |
-| 8 | [Complexity-03-HierarchieTemporelle-Python_en.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb) | Complexity-03 — More time, more problems | Python 3 | READY | BETA | — | — | 15min |  |
-| 9 | [Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) | Complexity-03b — Le théorème de hiérarchie… | Python 3 | READY | BETA | — | — | 30min |  |
-| 10 | [Complexity-03c-ComplexityZoo-Navigation-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | Complexity-03c — Naviguer le Zoo exécutable | Python 3 (venv projet) | READY | BETA | — | — | 30min |  |
-| 11 | [Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb) | Complexity-03d — La réfutation annoncée de l'ETH :… | Python 3 (venv projet) | DEMO | BETA | — | — | 30min |  |
-| 12 | [Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb) | Complexity-03e — Barrières d'exposants et word RAM… | Python 3 | READY | BETA | — | — | 30min |  |
-| 13 | [Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb) | Complexity-03f — La chaîne des réductions : de… | Python 3 (venv projet) | READY | BETA | — | — | 30min |  |
-| 14 | [Complexity-04-OnlineAlgorithms-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-CSharp.ipynb) | Complexity-04 — Décider sans connaître la suite | .NET (C#) | READY | BETA | — | — | 30min |  |
-| 15 | [Complexity-04-OnlineAlgorithms-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb) | Complexity-04 — Décider sans connaître la suite | Python 3 | READY | BETA | — | — | 30min |  |
-| 16 | [Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb) | Complexity-04b — La semaine historique de… | Python 3 | READY | BETA | — | — | 30min |  |
-| 17 | [Complexity-04c-KServer-WorkFunction-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb) | Complexity 04c - k-server et work function : la… | Python 3 (ipykernel) | READY | BETA | — | — | 30min |  |
-| 18 | [Complexity-04d-Secretaire-Matroidal-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04d-Secretaire-Matroidal-Python.ipynb) | Complexity 04d - Le secrétaire matroïdal : la… | Python 3 (ipykernel) | READY | BETA | — | — | 30min |  |
-| 19 | [Complexity-05-CountingHarder-Permanent-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb) | Complexity-05 — Compter est plus dur que vérifier… | Python 3 | READY | BETA | — | — | 30min |  |
-| 20 | [Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) | Complexity-05b — La permanente, frontière… | Python 3 | READY | BETA | — | — | 30min |  |
-| 21 | [Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb) | Complexity-06 — Simuler un circuit quantique… | .NET (C#) | READY | BETA | — | — | 30min |  |
-| 22 | [Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) | Complexity-06 — Simuler un circuit quantique… | Python 3 | READY | BETA | — | — | 15min |  |
-| 23 | [Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb) | Complexity-06b — Déquantifier les suprématies… | Python 3 | READY | BETA | — | — | 30min |  |
-| 24 | [Complexity-06c-ClassicalAtHeart-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06c-ClassicalAtHeart-Python.ipynb) | « Classical at heart » — quand l'oracle classique… | Python 3 | READY | BETA | — | — | 15min |  |
-| 25 | [Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb) | La structure est nécessaire — la conjecture… | Python 3 | READY | BETA | — | — | 30min |  |
-| 26 | [Complexity-07-KolmogorovBornee-Sequences-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-07-KolmogorovBornee-Sequences-Python.ipynb) | Complexity-07 — Complexité de Kolmogorov bornée :… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 30min |  |
-| 27 | [Complexity-07b-LeTourDesGrandsNombres-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-07b-LeTourDesGrandsNombres-Python.ipynb) | Le tour des grands nombres — quelle écriture… | Python 3 | READY | BETA | — | — | 30min |  |
-| 28 | [Complexity-07c-LeBilanMathocalypse-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-07c-LeBilanMathocalypse-Python.ipynb) | Le bilan « mathocalypse » — quand l'IA publie 372… | Python 3 | DEMO | BETA | — | — | 15min |  |
+| 5 | [Complexity-02b-SAT-PhaseTransition-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-02b-SAT-PhaseTransition-CSharp.ipynb) | Complexity-02b — Le seuil du 3-SAT, mesuré contre… | .NET (C#) | READY | BETA | — | — | 45min |  |
+| 6 | [Complexity-02b-SAT-PhaseTransition-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb) | Complexity-02b — Le seuil du 3-SAT, mesuré contre… | Python 3 (venv projet) | READY | BETA | — | — | 30min |  |
+| 7 | [Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb) | Complexity-02c — La transition de phase sans mur :… | Python 3.13 (coursia-py313) | READY | BETA | — | — | 45min |  |
+| 8 | [Complexity-03-HierarchieTemporelle-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-CSharp.ipynb) | Complexity-03 — Plus de temps, plus de problèmes | .NET (C#) | READY | BETA | — | — | 30min |  |
+| 9 | [Complexity-03-HierarchieTemporelle-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb) | Complexity-03 — Plus de temps, plus de problèmes | Python 3 | READY | BETA | — | — | 15min |  |
+| 10 | [Complexity-03-HierarchieTemporelle-Python_en.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb) | Complexity-03 — More time, more problems | Python 3 | READY | BETA | — | — | 15min |  |
+| 11 | [Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) | Complexity-03b — Le théorème de hiérarchie… | Python 3 | READY | BETA | — | — | 30min |  |
+| 12 | [Complexity-03c-ComplexityZoo-Navigation-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-CSharp.ipynb) | Complexity-03c — Carte du zoo de complexite (C#) | .NET (C#) | READY | DRAFT | — | — | 45min |  |
+| 13 | [Complexity-03c-ComplexityZoo-Navigation-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | Complexity-03c — Naviguer le Zoo exécutable | Python 3 (venv projet) | READY | BETA | — | — | 30min |  |
+| 14 | [Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb) | Complexity-03d — La réfutation annoncée de l'ETH :… | Python 3 (venv projet) | DEMO | BETA | — | — | 30min |  |
+| 15 | [Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb) | Complexity-03e — Barrières d'exposants et word RAM | .NET (C#) | READY | BETA | — | — | 30min |  |
+| 16 | [Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb) | Complexity-03e — Barrières d'exposants et word RAM… | Python 3 | READY | BETA | — | — | 30min |  |
+| 17 | [Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb) | Complexity-03f — La chaîne des réductions : de… | .NET (C#) | READY | BETA | — | — | 45min |  |
+| 18 | [Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb) | Complexity-03f — La chaîne des réductions : de… | Python 3 (venv projet) | READY | BETA | — | — | 30min |  |
+| 19 | [Complexity-04-OnlineAlgorithms-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-CSharp.ipynb) | Complexity-04 — Décider sans connaître la suite | .NET (C#) | READY | BETA | — | — | 30min |  |
+| 20 | [Complexity-04-OnlineAlgorithms-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb) | Complexity-04 — Décider sans connaître la suite | Python 3 | READY | BETA | — | — | 30min |  |
+| 21 | [Complexity-04b-OnlineConjectures-Secretary-KServer-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-CSharp.ipynb) | Complexity-04b — La semaine historique de… | .NET (C#) | READY | BETA | — | — | 45min |  |
+| 22 | [Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb) | Complexity-04b — La semaine historique de… | Python 3 | READY | BETA | — | — | 30min |  |
+| 23 | [Complexity-04c-KServer-WorkFunction-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04c-KServer-WorkFunction-CSharp.ipynb) | Complexity 04c (C#) — k-server et work function :… | .Net-Csharp | READY | BETA | — | — | 45min |  |
+| 24 | [Complexity-04c-KServer-WorkFunction-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04c-KServer-WorkFunction-Python.ipynb) | Complexity 04c - k-server et work function : la… | Python 3 (ipykernel) | READY | BETA | — | — | 30min |  |
+| 25 | [Complexity-04d-Secretaire-Matroidal-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04d-Secretaire-Matroidal-CSharp.ipynb) | Complexity-04d — Secretaire matroidal (C#) | .NET (C#) | READY | BETA | — | — | 45min |  |
+| 26 | [Complexity-04d-Secretaire-Matroidal-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-04d-Secretaire-Matroidal-Python.ipynb) | Complexity 04d - Le secrétaire matroïdal : la… | Python 3 (ipykernel) | READY | BETA | — | — | 30min |  |
+| 27 | [Complexity-05-CountingHarder-Permanent-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-CSharp.ipynb) | Complexity-05 — Compter est plus dur que vérifier… | .NET (C#) | READY | BETA | — | — | 30min |  |
+| 28 | [Complexity-05-CountingHarder-Permanent-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb) | Complexity-05 — Compter est plus dur que vérifier… | Python 3 | READY | BETA | — | — | 30min |  |
+| 29 | [Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) | Complexity-05b — La permanente, frontière… | Python 3 | READY | BETA | — | — | 30min |  |
+| 30 | [Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb) | Complexity-06 — Simuler un circuit quantique… | .NET (C#) | READY | BETA | — | — | 30min |  |
+| 31 | [Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) | Complexity-06 — Simuler un circuit quantique… | Python 3 | READY | BETA | — | — | 15min |  |
+| 32 | [Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb) | Complexity-06b — Déquantifier les suprématies… | Python 3 | READY | BETA | — | — | 30min |  |
+| 33 | [Complexity-06c-ClassicalAtHeart-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06c-ClassicalAtHeart-CSharp.ipynb) | « Classical at heart » (C#) — quand l'oracle… | .Net-Csharp | READY | BETA | — | — | 15min |  |
+| 34 | [Complexity-06c-ClassicalAtHeart-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06c-ClassicalAtHeart-Python.ipynb) | « Classical at heart » — quand l'oracle classique… | Python 3 | READY | BETA | — | — | 15min |  |
+| 35 | [Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb) | La structure est nécessaire — la conjecture… | Python 3 | READY | BETA | — | — | 30min |  |
+| 36 | [Complexity-07-KolmogorovBornee-Sequences-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-07-KolmogorovBornee-Sequences-CSharp.ipynb) | Complexity-07 — C# — Complexité de Kolmogorov… | .NET (C#) | READY | BETA | — | — | 45min |  |
+| 37 | [Complexity-07-KolmogorovBornee-Sequences-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-07-KolmogorovBornee-Sequences-Python.ipynb) | Complexity-07 — Complexité de Kolmogorov bornée :… | Python 3 (coursia-ml-training) | READY | BETA | — | — | 30min |  |
+| 38 | [Complexity-07b-LeTourDesGrandsNombres-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-07b-LeTourDesGrandsNombres-CSharp.ipynb) | C# — Le tour des grands nombres — quelle écriture… | .NET (C#) | READY | BETA | — | — | 45min |  |
+| 39 | [Complexity-07b-LeTourDesGrandsNombres-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-07b-LeTourDesGrandsNombres-Python.ipynb) | Le tour des grands nombres — quelle écriture… | Python 3 | READY | BETA | — | — | 30min |  |
+| 40 | [Complexity-07c-LeBilanMathocalypse-CSharp.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-07c-LeBilanMathocalypse-CSharp.ipynb) | C# — Le bilan « mathocalypse » — quand l'IA publie… | .NET (C#) | READY | BETA | — | — | 30min |  |
+| 41 | [Complexity-07c-LeBilanMathocalypse-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-07c-LeBilanMathocalypse-Python.ipynb) | Le bilan « mathocalypse » — quand l'IA publie 372… | Python 3 | DEMO | BETA | — | — | 15min |  |
+| 42 | [Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-08-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) | Complexity-08 — Origami Wolfram pli 2 : la regle… | Python3 | READY | BETA | — | — | 30min |  |
+| 43 | [Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-08b-CombinateursSKI-TagDePost-Python.ipynb) | Complexity-08b — Origami Wolfram pli 4 : les… | Python 3 (coursia-canonical) | READY | BETA | — | — | 30min |  |
+| 44 | [Complexity-08c-MachinesDeGoedel-Python.ipynb](MyIA.AI.Notebooks/Complexity/Complexity-08c-MachinesDeGoedel-Python.ipynb) | Complexity-08c — Machines de Gödel :… | Python 3 (pyphi) | READY | BETA | — | — | 30min |  |
 
-### Compression (11 notebooks) — READY:11 | BETA:11
+### Compression (17 notebooks) — DEMO:2, READY:15 | ALPHA:1, BETA:16
 
-#### Racine (10)
+#### Racine (16)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Compression-01-ShannonFano-Prefixe-CSharp.ipynb](MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb) | Compression-01 — Codes préfixes : de Shannon-Fano… | .NET (C#) | READY | BETA | — | — | 45min |  |
-| 2 | [Compression-01-ShannonFano-Prefixe-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb) | Compression-01 — Codes préfixes : de Shannon-Fano… | Python 3 | READY | BETA | — | — | 30min |  |
+| 2 | [Compression-01-ShannonFano-Prefixe-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb) | Compression-01 — Codes préfixes : de Shannon-Fano… | Python 3 | READY | BETA | — | — | 45min |  |
 | 3 | [Compression-02-HuffmanCanonique-CSharp.ipynb](MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb) | Compression-02 — Huffman canonique : des longueurs… | .NET (C#) | READY | BETA | — | — | 45min |  |
 | 4 | [Compression-02-HuffmanCanonique-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb) | Compression-02 — Huffman canonique : des longueurs… | Python 3 | READY | BETA | — | — | 30min |  |
 | 5 | [Compression-03-LZ77-CSharp.ipynb](MyIA.AI.Notebooks/Compression/Compression-03-LZ77-CSharp.ipynb) | Compression-03 — LZ77 : compresser par références… | .NET (C#) | READY | BETA | — | — | 45min |  |
 | 6 | [Compression-03-LZ77-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb) | Compression-03 — LZ77 : compresser par références… | Python 3 (ipykernel) | READY | BETA | — | — | 30min |  |
-| 7 | [Compression-04-ANS-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb) | Compression 04 — Codage entropique ANS (rANS et… | Python 3 (ipykernel) | READY | BETA | — | — | 45min |  |
-| 8 | [Compression-04b-CodecsSOTA-Pareto-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb) | Compression 04b — Codecs SOTA : le front de Pareto… | Python 3 | READY | BETA | — | — | 30min |  |
-| 9 | [Compression-05-MLCompression-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb) | Compression-05 — Compression des modèles :… | Python 3 (ipykernel) | READY | BETA | — | — | 45min |  |
-| 10 | [Compression-06-MDL-Kolmogorov-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb) | Compression-06 — MDL : décrire le modèle autant… | Python 3 | READY | BETA | — | — | 15min |  |
+| 7 | [Compression-04-ANS-CSharp.ipynb](MyIA.AI.Notebooks/Compression/Compression-04-ANS-CSharp.ipynb) | Compression 04 — Codage entropique ANS en C# | .NET (C#) | READY | BETA | — | — | 45min |  |
+| 8 | [Compression-04-ANS-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb) | Compression 04 — Codage entropique ANS (rANS et… | Python 3 (ipykernel) | READY | BETA | — | — | 45min |  |
+| 9 | [Compression-04b-CodecsSOTA-Pareto-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb) | Compression 04b — Codecs SOTA : le front de Pareto… | Python 3 | READY | BETA | — | — | 30min |  |
+| 10 | [Compression-05-MLCompression-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb) | Compression-05 — Compression des modèles :… | Python 3 (ipykernel) | READY | BETA | — | — | 45min |  |
+| 11 | [Compression-05b-NeuroSymbolic-Recipe-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-05b-NeuroSymbolic-Recipe-Python.ipynb) | Compression-05b — Recettes neuro-symboliques : le… | Python 3 | READY | BETA | — | — | 30min |  |
+| 12 | [Compression-06-MDL-Kolmogorov-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb) | Compression-06 — MDL : décrire le modèle autant… | Python 3 | READY | BETA | — | — | 15min |  |
+| 13 | [Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-07-Triage-LLM-Operations-Reelles-Python.ipynb) | Compression-07 — Le triage par le LLM : recettes… | Python 3 | DEMO | BETA | — | — | 30min |  |
+| 14 | [Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-07b-Triage-LLM-Semantic-Kernel-Python.ipynb) | Triage par LLM sous Semantic Kernel — codecs… | Python 3 | READY | ALPHA | — | — | 45min |  |
+| 15 | [Compression-08-Assemblage-Vectoriel-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-08-Assemblage-Vectoriel-Python.ipynb) | Reconstruire un document assemblé — l'élimination… | Python3 | READY | BETA | — | — | 30min |  |
+| 16 | [Compression-09-Assemblage-LLM-Python.ipynb](MyIA.AI.Notebooks/Compression/Compression-09-Assemblage-LLM-Python.ipynb) | L'assemblage proposé par le modèle — isolation des… | Python 3 | DEMO | BETA | — | — | 30min |  |
 
 #### Compression_lean (1)
 
@@ -2966,27 +3094,40 @@ Total notebooks: 1657
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [Compression-01b-Kraft-McMillan-Lean.ipynb](MyIA.AI.Notebooks/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb) | Compression-01b — Kraft et McMillan en Lean 4 : le… | Lean 4 (WSL) | READY | BETA | — | — | 45min |  |
 
-### NLP (13 notebooks) — READY:13 | BETA:13
+### NLP (20 notebooks) — READY:20 | BETA:20
 
-#### Racine (13)
+#### Racine (20)
 
 | # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
 |---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
 | 1 | [01_TAL_Du_Mot_Aux_Dependances.ipynb](MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb) | TAL — du mot aux dépendances : le pipeline… | Python 3 (coursia-ml-training) | READY | BETA | D2 | R1 | 30min |  |
-| 2 | [02_NGrammes_Modeles_De_Langue.ipynb](MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb) | Modèles de langue n-grammes -- la probabilite… | coursia-ml-training | READY | BETA | D2 | R1 | 30min |  |
-| 3 | [03_CRF_Etiquetage_Sequentiel.ipynb](MyIA.AI.Notebooks/NLP/03_CRF_Etiquetage_Sequentiel.ipynb) | Champs aléatoires conditionnels linéaires :… | Python 3 (ipykernel) | READY | BETA | D3 | R2 | 45min |  |
-| 4 | [04_PCFG_CYK_Parsing.ipynb](MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb) | Grammaires probabilistes et parsing CYK — de la… | Python 3 (coursia-ml-training) | READY | BETA | D3 | R1 | 45min |  |
-| 5 | [05-HMM-Viterbi-CSharp.ipynb](MyIA.AI.Notebooks/NLP/05-HMM-Viterbi-CSharp.ipynb) | HMM et décodage de Viterbi — l'étiquetage… | .NET (C#) | READY | BETA | D3 | R2 | 45min |  |
-| 6 | [05-HMM-Viterbi.ipynb](MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb) | HMM et décodage de Viterbi — l'étiquetage… | Python 3 (ipykernel) | READY | BETA | D3 | R2 | 45min |  |
-| 7 | [06-Recherche-Information-TFIDF-BM25-CSharp.ipynb](MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25-CSharp.ipynb) | NLP — Carnet 06 : recherche d'information depuis… | .NET (C#) | READY | BETA | D2 | R1 | 45min |  |
-| 8 | [06-Recherche-Information-TFIDF-BM25.ipynb](MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25.ipynb) | NLP — Carnet 06 : la recherche d'information… | Python 3 | READY | BETA | D2 | R1 | 30min |  |
-| 9 | [07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb](MyIA.AI.Notebooks/NLP/07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb) | NLP — Carnet 07 : un mot comme un vecteur… | Python 3 | READY | BETA | D2 | R1 | 30min |  |
-| 10 | [08-Word2Vec-CBOW-SkipGram.ipynb](MyIA.AI.Notebooks/NLP/08-Word2Vec-CBOW-SkipGram.ipynb) | 08 — word2vec from scratch : CBOW, skip-gram et… | Python 3 | READY | BETA | D3 | R2 | 30min |  |
-| 11 | [09-FastText-Subword-Vectors.ipynb](MyIA.AI.Notebooks/NLP/09-FastText-Subword-Vectors.ipynb) | 09 — fastText from scratch : subwords et… | Python 3 | READY | BETA | D3 | R2 | 30min |  |
-| 12 | [10-Classement-Texte-NaiveBayes-FromScratch.ipynb](MyIA.AI.Notebooks/NLP/10-Classement-Texte-NaiveBayes-FromScratch.ipynb) | Classification de texte : un classifieur Naive… | Python 3 | READY | BETA | D2 | R1 | 30min |  |
-| 13 | [11-Classement-Texte-RegressionLogistique-FromScratch.ipynb](MyIA.AI.Notebooks/NLP/11-Classement-Texte-RegressionLogistique-FromScratch.ipynb) | Classification de texte : régression logistique… | Python3 | READY | BETA | D4 | R2 | 30min |  |
+| 2 | [02_NGrammes_Modeles_De_Langue-CSharp.ipynb](MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue-CSharp.ipynb) | Modèles de langue n-grammes — la probabilité d'une… | .NET (C#) | READY | BETA | D2 | R1 | 45min |  |
+| 3 | [02_NGrammes_Modeles_De_Langue.ipynb](MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb) | Modèles de langue n-grammes — la probabilité d'une… | coursia-ml-training | READY | BETA | D2 | R1 | 30min |  |
+| 4 | [03_CRF_Etiquetage_Sequentiel.ipynb](MyIA.AI.Notebooks/NLP/03_CRF_Etiquetage_Sequentiel.ipynb) | Champs aléatoires conditionnels linéaires :… | Python 3 (ipykernel) | READY | BETA | D3 | R2 | 45min |  |
+| 5 | [04_PCFG_CYK_Parsing-CSharp.ipynb](MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing-CSharp.ipynb) | Grammaires probabilistes et parsing CYK — de la… | .NET (C#) | READY | BETA | D3 | R1 | 45min |  |
+| 6 | [04_PCFG_CYK_Parsing.ipynb](MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb) | Grammaires probabilistes et parsing CYK — de la… | Python 3 (coursia-ml-training) | READY | BETA | D3 | R1 | 45min |  |
+| 7 | [05-HMM-Viterbi-CSharp.ipynb](MyIA.AI.Notebooks/NLP/05-HMM-Viterbi-CSharp.ipynb) | HMM et décodage de Viterbi — l'étiquetage… | .NET (C#) | READY | BETA | D3 | R2 | 45min |  |
+| 8 | [05-HMM-Viterbi.ipynb](MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb) | HMM et décodage de Viterbi — l'étiquetage… | Python 3 (ipykernel) | READY | BETA | D3 | R2 | 45min |  |
+| 9 | [06-Recherche-Information-TFIDF-BM25-CSharp.ipynb](MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25-CSharp.ipynb) | NLP — Carnet 06 : recherche d'information depuis… | .NET (C#) | READY | BETA | D2 | R1 | 45min |  |
+| 10 | [06-Recherche-Information-TFIDF-BM25.ipynb](MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25.ipynb) | NLP — Carnet 06 : la recherche d'information… | Python 3 | READY | BETA | D2 | R1 | 30min |  |
+| 11 | [07-Vecteurs-de-Mots-Coocc-PPMI-SVD-CSharp.ipynb](MyIA.AI.Notebooks/NLP/07-Vecteurs-de-Mots-Coocc-PPMI-SVD-CSharp.ipynb) | NLP — Carnet 07 : un mot comme un vecteur… | .NET (C#) | READY | BETA | D2 | R1 | 45min |  |
+| 12 | [07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb](MyIA.AI.Notebooks/NLP/07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb) | NLP — Carnet 07 : un mot comme un vecteur… | Python 3 | READY | BETA | D2 | R1 | 30min |  |
+| 13 | [08-Word2Vec-CBOW-SkipGram-CSharp.ipynb](MyIA.AI.Notebooks/NLP/08-Word2Vec-CBOW-SkipGram-CSharp.ipynb) | 08 — word2vec from scratch : CBOW, skip-gram et… | .NET (C#) | READY | BETA | D3 | R2 | 45min |  |
+| 14 | [08-Word2Vec-CBOW-SkipGram.ipynb](MyIA.AI.Notebooks/NLP/08-Word2Vec-CBOW-SkipGram.ipynb) | 08 — word2vec from scratch : CBOW, skip-gram et… | Python 3 | READY | BETA | D3 | R2 | 30min |  |
+| 15 | [09-FastText-Subword-Vectors-CSharp.ipynb](MyIA.AI.Notebooks/NLP/09-FastText-Subword-Vectors-CSharp.ipynb) | 09 — fastText from scratch : subwords et… | .NET (C#) | READY | BETA | D3 | R2 | 45min |  |
+| 16 | [09-FastText-Subword-Vectors.ipynb](MyIA.AI.Notebooks/NLP/09-FastText-Subword-Vectors.ipynb) | 09 — fastText from scratch : subwords et… | Python 3 | READY | BETA | D3 | R2 | 30min |  |
+| 17 | [10-Classement-Texte-NaiveBayes-FromScratch-CSharp.ipynb](MyIA.AI.Notebooks/NLP/10-Classement-Texte-NaiveBayes-FromScratch-CSharp.ipynb) | Classification de texte : un classifieur Naive… | .NET (C#) | READY | BETA | D2 | R1 | 30min |  |
+| 18 | [10-Classement-Texte-NaiveBayes-FromScratch.ipynb](MyIA.AI.Notebooks/NLP/10-Classement-Texte-NaiveBayes-FromScratch.ipynb) | Classification de texte : un classifieur Naive… | Python 3 | READY | BETA | D2 | R1 | 30min |  |
+| 19 | [11-Classement-Texte-RegressionLogistique-FromScratch-CSharp.ipynb](MyIA.AI.Notebooks/NLP/11-Classement-Texte-RegressionLogistique-FromScratch-CSharp.ipynb) | Classification de texte : régression logistique… | .NET (C#) | READY | BETA | D4 | R2 | 45min |  |
+| 20 | [11-Classement-Texte-RegressionLogistique-FromScratch.ipynb](MyIA.AI.Notebooks/NLP/11-Classement-Texte-RegressionLogistique-FromScratch.ipynb) | Classification de texte : régression logistique… | Python3 | READY | BETA | D4 | R2 | 30min |  |
 
-### cross-series (2 notebooks) — DEMO:1, READY:1 | BETA:2
+### cross-series (3 notebooks) — DEMO:1, READY:2 | BETA:3
+
+#### AgentSystems (1)
+
+| # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |
+|---|----------|-------|--------|--------|----------|------------|----------|----------|-------|
+| 1 | [AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb](MyIA.AI.Notebooks/cross-series/AgentSystems/AgentSystems-02-Perception-Active-Valeur-Information-Python.ipynb) | AgentSystems-02 — Perception active : la valeur… | Python 3 | READY | BETA | — | — | 15min |  |
 
 #### socle-metadata-driven (2)
 
@@ -2998,8 +3139,8 @@ Total notebooks: 1657
 
 ## Requirements
 
-- **API**: 229 notebooks
-- **GPU**: 218 notebooks
-- **Cloud**: 128 notebooks
-- **WSL**: 205 notebooks
-- **Local**: 975 notebooks
+- **API**: 238 notebooks
+- **GPU**: 223 notebooks
+- **Cloud**: 129 notebooks
+- **WSL**: 209 notebooks
+- **Local**: 1086 notebooks

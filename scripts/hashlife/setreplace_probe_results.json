@@ -1,0 +1,99 @@
+{
+  "package": "setreplace",
+  "version": "0.2.0",
+  "probe": "pli5-grainA-outil",
+  "date": "2026-11-16",
+  "seat": "myia-po-2024 (Windows, python 3.13, wheel abi3)",
+  "evolve": {
+    "rule": "{{x, y}, {x, z}} -> {{x, z}, {x, w}, {y, w}, {z, w}}",
+    "rule_origin": "regle de l'annonce du Wolfram Physics Project (exemple canonique de la doc setreplace-py)",
+    "initial_edges": 4,
+    "initial_state": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        2,
+        3
+      ],
+      [
+        3,
+        4
+      ]
+    ],
+    "events": 1500,
+    "generations": 12,
+    "final_edges": 3004,
+    "final_atoms": 1504,
+    "termination_reason": "MaxEvents",
+    "wall_s": 0.08,
+    "final_state_sha256_16": "052f968ed543994d"
+  },
+  "causal_graph": {
+    "edges": 2996,
+    "sample": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        2,
+        5
+      ]
+    ]
+  },
+  "determinism_same_seed": true,
+  "rule_str_canonicalizes": {
+    "str_of_parse": "{{x1, x2}, {x1, x3}} -> {{x1, x3}, {x1, x4}, {x2, x4}, {x3, x4}}",
+    "reparse_roundtrip": true,
+    "note": "str() renomme les variables en x1..xn (forme canonique), pas une casse"
+  },
+  "api_surface": [
+    "Event",
+    "HypergraphSystem",
+    "Plot",
+    "Rule",
+    "SetReplaceError",
+    "Token",
+    "enumerate_rules",
+    "evolve",
+    "layout",
+    "plot",
+    "set_replace",
+    "set_replace_all",
+    "set_replace_fixed_point",
+    "set_replace_list",
+    "setreplace"
+  ],
+  "multiway_support": {
+    "exposed": false,
+    "evidence": [
+      "README.md l.154 : 'Not yet: multiway systems and branchial'",
+      "docs/python-api.md l.238 : 'Later, when multiway lands in the engine, evolve() gains kwargs'",
+      "surface API : replace_once() deterministe par event_ordering, aucune enumeration des matchs exposee"
+    ]
+  },
+  "branches": {
+    "wolfram_kernel_windows": "absent (which wolframscript -> rc 2)",
+    "wolfram_kernel_wsl_ubuntu": "absent (wolframscript introuvable dans le WSL Ubuntu)",
+    "hypernetx_2_4_3": "hypergraphes statiques (incidence, dessin), aucune reecriture -- mesure sur la description PyPI",
+    "setreplace_py": "installe et invoque (ce JSON est sa vraie sortie, reformatee en JSON par le script de sonde)"
+  }
+}

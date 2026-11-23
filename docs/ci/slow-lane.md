@@ -1,5 +1,7 @@
 # Slow lane (voie asynchrone) — tranches 1-2 #12856
 
+> REFERENCE — vivante — dernière révision 2026-11-22
+
 ## Strategie
 
 Sortir les controles **lourds et idempotents** du `pull_request` et les payer
@@ -11,6 +13,8 @@ declanches sur des batchs controles ».
 Le pilote tranche 1 (#11835 volet 1) demontre la **voie rapide** (1 checkout
 pour 9 gardes, gain 5,1x) en ombre. Le present document decrit la **voie
 lente** (slow-lane), complement asynchrone de la voie rapide.
+
+L'inventaire mesuré des workflows qui fonde ce partage (phase P0 du plan : déclencheurs lus dans le bloc `on:`, médiane et p90 par workflow, jobs exigés par le `PR gate`) est figé dans [`docs/transients/2026-11-10-ci-two-tier.md`](../transients/2026-11-10-ci-two-tier.md), reproductible par `scripts/ci/measure_ci_two_tier.py`.
 
 ## Tranche 1 — pilote ICT-Series
 
@@ -48,7 +52,7 @@ cas**, et le défaut n'était pas visible depuis le tableau des runs.
 
 **1. La suite n'exécutait rien.** La commande du job était
 `python -m pytest tests ict/tests -q --no-header`, qui collecte **deux arbres
-de tests dans une seule session**. Les deux arbres partagent **16 basenames
+de tests dans une seule session**. Les deux arbres partageaient **16 basenames
 de modules** (`test_time_arrow.py`, `test_workspace.py`,
 `test_catastrophe.py`, `test_sensitivity.py`, …) et **aucun des deux ne porte
 de `__init__.py`** : pytest les importe alors par nom de fichier et refuse

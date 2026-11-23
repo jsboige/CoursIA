@@ -6,6 +6,14 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
 
 **Dans le cadre du fil rouge contenu visuel éducatif** : avant de produire des visuels, il faut savoir générer une image à partir d'un texte. [01-1](01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-2-Generation-Image-API.ipynb) couvrent les API cloud (simples et immédiates). [01-4](01-4-Forge-SD-XL-Turbo.ipynb) passe en local via Forge (SD XL Turbo) et [01-5](01-5-Edition-Image-Prompt.ipynb) via ComfyUI, pour le contrôle fin. [01-3](01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation (PIL, OpenCV) utiles pour comprendre ce que font les modèles.
 
+## Comment lire ce README
+
+- Vous voulez **produire une image tout de suite** : commencez par [01-1](01-1-OpenAI-DALL-E-3.ipynb) (API cloud) ou par [01-4](01-4-Forge-SD-XL-Turbo.ipynb) (local, SDXL Turbo en 4 steps au lieu des dizaines habituelles).
+- Vous voulez **comprendre ce que manipulent les modèles** : [01-3](01-3-Basic-Image-Operations.ipynb) pose les bases PIL/OpenCV avant d'éditer quoi que ce soit — c'est le préalable pour lire les sorties des carnets suivants.
+- Vous voulez **éditer une image existante** : [01-5](01-5-Edition-Image-Prompt.ipynb) et ses approfondissements [5b](01-5b-Edition-Image-Prompt-Iterations.ipynb) et [5c](01-5c-Edition-Image-Prompt-Workflows.ipynb) (édition par prompt via ComfyUI, compte ~29 GB de VRAM et un service joignable).
+
+Cette navigation par niveaux suit le principe des séries à plusieurs vitesses décrit dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
 ## Convention de titre
 
 Le **nom d'un carnet nomme la technique, jamais le modèle** : le modèle est un paramètre d'exécution, pas une notion. Le modèle réellement utilisé reste traçable dans la prose du carnet et ses sorties commises, et son état de référence (OBS/CUR/PED) vit dans [docs/genai/model-mapping.md](../../../../docs/genai/model-mapping.md). Suivre le SOTA = mettre à jour la ligne du modèle et ré-exécuter, sans toucher au titre. Une présentation ciblée d'un nouveau modèle se range dans l'étage de gradation correspondant (fondations, approfondissements d'un palier, workflows). Un carnet peut nommer des modèles dans son titre quand son sujet **est** la comparaison (bake-off, onboarding d'un modèle précis).
@@ -24,13 +32,13 @@ Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décom
 
 ## Notebooks
 
-| # | Notebook | Contenu | Service | VRAM | Approfondir |
-|---|----------|---------|---------|------ |--------------|
-| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 | — |
-| 2 | [01-2-Generation-Image-API](01-2-Generation-Image-API.ipynb) | Génération et analyse d'images via API (GPT-5) | OpenAI API | 0 | — |
-| 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 | — |
-| 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable | — |
-| 5 | [01-5-Edition-Image-Prompt](01-5-Edition-Image-Prompt.ipynb) | Édition d'images par prompt (Qwen Image Edit) | ComfyUI | ~29GB | [Approfondissements du palier 5](#approfondissements-du-palier-5) |
+| # | Notebook | Contenu | Service | VRAM | Approfondir | Ce qu'on y apprend |
+|---|----------|---------|---------|------ |--------------|--------------------|
+| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 | — | Obtenir un visuel depuis un prompt en un appel d'API cloud, et mesurer sa latence |
+| 2 | [01-2-Generation-Image-API](01-2-Generation-Image-API.ipynb) | Génération et analyse d'images via API (GPT-5) | OpenAI API | 0 | — | Générer puis analyser une image avec la même API multimodale |
+| 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 | — | Manipuler une image en local (formats, redimensionnement) avant et après génération |
+| 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable | — | Faire tourner un modèle open source en local, en 4 steps, et fixer la seed pour reproduire |
+| 5 | [01-5-Edition-Image-Prompt](01-5-Edition-Image-Prompt.ipynb) | Édition d'images par prompt (Qwen Image Edit) | ComfyUI | ~29GB | [Approfondissements du palier 5](#approfondissements-du-palier-5) | Éditer une image existante par prompt (image-to-image) dans un workflow ComfyUI |
 
 ### Approfondissements du palier 5
 

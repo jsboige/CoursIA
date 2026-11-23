@@ -34,6 +34,7 @@ import unicodedata
 from collections import Counter
 from functools import lru_cache
 from pathlib import Path
+from typing import NamedTuple
 from urllib.parse import quote
 
 if __package__:
@@ -465,7 +466,122 @@ def _load_rename_ledger(repo_root: Path) -> dict[str, str]:
     return {old: new for old, new, _ in _load_rename_ledger_rows(repo_root)}
 
 
-def _resolve_current_path(path: str, aliases: dict[str, str], alive: set[str]) -> str | None:
+class _AliasEdge(NamedTuple):
+    """Une arete de renommage, datee et ordonnee.
+
+    `order` situe l'arete parmi celles de MEME date : une ligne du registre
+    prend sa position dans le fichier (>= 0), un renommage vu par git prend
+    `-1 - index` -- le commit le plus recent est a l'index 0, donc au plus
+    grand rang. Sans cet ordre, deux aretes du meme jour resteraient
+    indiscernables : l'echange de noms `App-17` du 2026-11-10 en porte deux,
+    et c'est leur ordre qui dit laquelle a vide quel nom (#26198).
+    """
+
+    name: str
+    date: str
+    order: int
+
+
+# Rang d'un evenement sans ordre connu : plus petit que tout ce que produisent
+# les deux sources. `-1` ne suffirait pas -- un renommage git porte
+# `-1 - index`, donc un rang d'autant plus petit que le commit est ancien, et
+# une arete du meme jour qu'une entree se lirait comme ANTERIEURE a elle.
+_ORDRE_MIN = -(10 ** 9)
+
+
+def _alias_edges(commits: list[dict]) -> dict[str, _AliasEdge]:
+    """La table d'alias, chaque arete portant sa date et son rang.
+
+    Memes sources et meme priorite que `_alias_table` -- registre d'abord,
+    puis renommages EXACTS vus par git (`R100`) -- pour que les deux tables
+    portent exactement les memes cles.
+
+    Une seule arete par nom, la plus recente, comme la table plate. En garder
+    plusieurs ferait boucler les renommages aller-retour : un carnet sorti
+    puis revenu au meme nom (`fort-boyard-chsarp.ipynb`, 2026-01-19 puis
+    2026-01-22) rendrait une chaine qui repasse par un nom deja visite, donc
+    `None`, donc l'historique perdu. Une arete unique rend la chaine
+    fonctionnelle : elle ne peut pas se mordre la queue.
+    """
+    edges: dict[str, _AliasEdge] = {}
+    for order, (old, new, date) in enumerate(_load_rename_ledger_rows(REPO_ROOT)):
+        edges[old] = _AliasEdge(new, date, order)
+    for index, commit in enumerate(commits):
+        for old, new in commit["renames"]:
+            if old.endswith(".ipynb") and new.endswith(".ipynb"):
+                edges.setdefault(old, _AliasEdge(new, commit["date"], -1 - index))
+    return edges
+
+
+def _ledger_exits() -> dict[str, list[str]]:
+    """Les dates ou le registre fait SORTIR un chemin.
+
+    Une ligne `B -> C` datee dit que `B` a ete vide a cette date : elle ferme
+    l'incarnation de `B` a compter de la, meme quand git n'y voit qu'un `M`
+    -- c'est le cas d'un nom reste en place et pourtant vide, puis repris par
+    un autre contenu (#26198). Toutes les lignes comptent, y compris celles
+    qu'une ligne plus recente du meme chemin a supplantees dans la table
+    d'alias : c'est la sortie qui ferme l'incarnation, pas la destination.
+    """
+    exits: dict[str, list[str]] = {}
+    for old, _new, date in _load_rename_ledger_rows(REPO_ROOT):
+        if date:
+            exits.setdefault(old, []).append(date)
+    return exits
+
+
+def _is_posterior(mark: tuple[str, int], since: tuple[str, int]) -> bool:
+    """L'arete datee `mark` est-elle posterieure a l'entree datee `since` ?
+
+    Une date manquante d'un cote ou de l'autre ne permet pas d'ordonner les
+    deux evenements : l'arete s'applique alors, comme avant #26198. C'est le
+    seul choix qui ne perde pas d'historique quand la source ne date pas ce
+    qu'elle declare.
+    """
+    date, order = mark
+    since_date, since_order = since
+    if not date or not since_date:
+        return True
+    if date != since_date:
+        return date > since_date
+    return order > since_order
+
+
+def _next_edge(
+    path: str,
+    aliases: dict[str, str],
+    edges: dict[str, _AliasEdge] | None,
+    since: tuple[str, int],
+) -> _AliasEdge | None:
+    """L'arete qui s'applique a une chaine entree dans `path` au moment `since`.
+
+    Sans `edges` (audit, appel d'avant #26198), la table plate fait foi : le
+    successeur declare, sans borne temporelle.
+
+    Avec `edges`, une arete ANTERIEURE a l'entree ne s'applique pas : elle
+    appartient a une incarnation precedente du meme nom -- un autre contenu a
+    emprunte ce chemin, l'a vide en partant, et l'historique de ce contenu ne
+    doit pas suivre celui qui l'a remplace (#26198).
+
+    Le veto est le SEUL role de la date. Choisir parmi plusieurs aretes serait
+    une erreur : sur un renommage aller-retour, la plus ancienne des aretes
+    posterieures ramene a un nom deja parcouru, et la chaine se declare
+    cyclique alors qu'elle est simplement revenue sur ses pas.
+    """
+    edge = edges.get(path) if edges is not None else None
+    if edge is not None:
+        return edge if _is_posterior((edge.date, edge.order), since) else None
+    suivant = aliases.get(path)
+    return None if suivant is None else _AliasEdge(suivant, "", _ORDRE_MIN)
+
+
+def _resolve_current_path(
+    path: str,
+    aliases: dict[str, str],
+    alive: set[str],
+    edges: dict[str, _AliasEdge] | None = None,
+    entry: tuple[str, int] | None = None,
+) -> str | None:
     """Chemin courant d'un chemin historique, a travers les renommages.
 
     `aliases` relie un chemin a son successeur ; `alive` porte les chemins qui
@@ -474,19 +590,28 @@ def _resolve_current_path(path: str, aliases: dict[str, str], alive: set[str]) -
     maillon qui compte. Le resultat est le DERNIER maillon vivant : c'est le
     nom que porte aujourd'hui le carnet.
 
+    `edges` et `entry` rendent la resolution TEMPORELLE : une arete ne
+    s'applique qu'a une chaine entree AVANT elle. Sans eux, la table plate
+    reste celle d'avant #26198 -- l'audit et les appelants existants gardent
+    leur comportement.
+
     La resolution s'arrete sur un CYCLE -- le registre est un graphe, pas une
     liste -- et rend alors None plutot qu'un chemin invente.
     """
     seen = {path}
     chain = [path]
     current = path
-    while current in aliases:
-        suivant = aliases[current]
-        if suivant in seen:
+    since = entry or ("", _ORDRE_MIN)
+    while True:
+        edge = _next_edge(current, aliases, edges, since)
+        if edge is None:
+            break
+        if edge.name in seen:
             return None                  # chaine ambigue : on ne devine pas
-        seen.add(suivant)
-        chain.append(suivant)
-        current = suivant
+        seen.add(edge.name)
+        chain.append(edge.name)
+        current = edge.name
+        since = (edge.date, edge.order)
     for node in reversed(chain):
         if node in alive:
             return node
@@ -767,8 +892,16 @@ def build_git_metadata() -> dict[str, dict]:
 
     # Table d'alias : le registre des renommages, complete par les
     # renommages EXACTS que git a vus (`R100`, contenu identique). Les deux
-    # sources sont des tables de chemins, jamais des lectures de blob.
+    # sources sont des tables de chemins, jamais des lectures de blob. La
+    # version datee sert a la resolution, qui doit distinguer deux
+    # incarnations successives du meme nom (#26198).
     aliases = _alias_table(commits)
+    edges = _alias_edges(commits)
+
+    # Sorties DECLAREES par le registre : les dates ou une ligne fait sortir
+    # un chemin. Elles ferment l'incarnation a cette date, ce que git ne dit
+    # pas quand le chemin ne bouge pas (#26198).
+    sorties = _ledger_exits()
 
     metadata: dict[str, dict] = {}
     raccordes = 0
@@ -788,14 +921,48 @@ def build_git_metadata() -> dict[str, dict]:
             frontieres.setdefault(old, []).append((index, "R"))
             frontieres.setdefault(new, []).append((index, "A"))
 
+    def _entry_mark(path: str, index: int) -> tuple[str, int]:
+        """Le moment ou l'incarnation PORTANT le commit `index` entre dans `path`.
+
+        C'est le plus proche `A` au sens du temps, c'est-a-dire -- `git log`
+        rendant du plus recent au plus ancien -- le plus PETIT index parmi les
+        `A` d'index >= `index`. Prendre le plus ancien `A` de tous melangerait
+        les incarnations : un nom renomme puis repris verrait ses aretes de la
+        premiere incarnation s'appliquer aux commits de la seconde, et la
+        chaine repartirait en arriere (#26198).
+
+        Le rang vaut `_ORDRE_MIN`, donc une arete du registre datee du MEME jour
+        reste posterieure et s'applique : un carnet cree puis renomme le meme
+        jour garde son historique. Sans `A` connu -- chemin vu pour la premiere
+        fois sur un `M` -- aucune date, et toute arete s'applique comme avant
+        #26198.
+        """
+        meilleur: int | None = None
+        for idx, code in frontieres.get(path, ()):
+            if code == "A" and idx >= index and (meilleur is None or idx < meilleur):
+                meilleur = idx
+        if meilleur is None:
+            return ("", _ORDRE_MIN)
+        return (commits[meilleur]["date"], _ORDRE_MIN)
+
     def _incarnation_ended(path: str, index: int) -> bool:
-        """L'incarnation du chemin au commit `index` a-t-elle ete renommee ou
-        supprimee ENSUITE ?
+        """L'incarnation du chemin au commit `index` s'est-elle terminee
+        ENSUITE ?
 
         C'est ce qui distingue un renommage d'une RENUMEROTATION de nom : un
         nom supprime puis recree garde sa propre incarnation, et son
         historique ne doit pas partir vers le successeur du premier.
+
+        Deux signaux, et le second est celui que git ne donne pas : une ligne
+        du registre qui fait sortir `path` ferme son incarnation a cette date,
+        meme quand git n'y voit qu'un `M` (#26198). Sans lui, un nom reste en
+        place et repris par un autre carnet portait l'historique des deux.
         """
+        date_commit = commits[index]["date"]
+        if date_commit:
+            for date_sortie in sorties.get(path, ()):
+                if date_commit < date_sortie:
+                    return True
         evenements = frontieres.get(path)
         if not evenements:
             return False
@@ -822,7 +989,9 @@ def build_git_metadata() -> dict[str, dict]:
         vus: dict[str, bool] = {}
         for path in directes:
             if _incarnation_ended(path, index):
-                resolved = _resolve_current_path(path, aliases, alive)
+                resolved = _resolve_current_path(
+                    path, aliases, alive, edges, _entry_mark(path, index),
+                )
                 if resolved is None:
                     resolved = path          # chaine ambigue : chemin brut
                 if resolved != path:
@@ -833,7 +1002,9 @@ def build_git_metadata() -> dict[str, dict]:
         for path in supprimees:
             # Une suppression EST le renommage : le chemin disparu porte
             # l'historique de son successeur.
-            resolved = _resolve_current_path(path, aliases, alive)
+            resolved = _resolve_current_path(
+                path, aliases, alive, edges, _entry_mark(path, index),
+            )
             if resolved is None:
                 resolved = path
             if resolved != path:

@@ -156,8 +156,12 @@ def test_classify(csv_text, twin_text, expected):
 
 
 def test_apply_n_aligne_que_la_cellule_concatenee(tmp_path):
-    pivot_path = tmp_path / "serie.ipynb"
-    twin_path = tmp_path / "serie_en.ipynb"
+    # Le pivot vit sous le chemin que porte la ligne CSV (repo-relative) :
+    # le filtre par chemin complet (#27148) exige cette correspondance.
+    serie = tmp_path / "MyIA.AI.Notebooks" / "Serie"
+    serie.mkdir(parents=True)
+    pivot_path = serie / "serie.ipynb"
+    twin_path = serie / "serie_en.ipynb"
     csv_path = tmp_path / "serie.csv"
 
     pivot_path.write_text(json.dumps(make_md_nb([("c1", "Pivot un"), ("c2", "Pivot deux")])),
@@ -188,8 +192,10 @@ def test_apply_n_aligne_que_la_cellule_concatenee(tmp_path):
 
 
 def test_mode_constat_n_ecrit_pas(tmp_path):
-    pivot_path = tmp_path / "s.ipynb"
-    twin_path = tmp_path / "s_en.ipynb"
+    xdir = tmp_path / "x"
+    xdir.mkdir()
+    pivot_path = xdir / "s.ipynb"
+    twin_path = xdir / "s_en.ipynb"
     csv_path = tmp_path / "s.csv"
     pivot_path.write_text(json.dumps(make_md_nb([("c1", "P")])), encoding="utf-8")
     twin_path.write_text(json.dumps(make_md_nb([("c1", "N")])), encoding="utf-8")
@@ -202,8 +208,10 @@ def test_mode_constat_n_ecrit_pas(tmp_path):
 
 
 def test_round_trip_refuse_un_csv_non_byte_identique(tmp_path):
-    pivot_path = tmp_path / "s.ipynb"
-    twin_path = tmp_path / "s_en.ipynb"
+    xdir = tmp_path / "x"
+    xdir.mkdir()
+    pivot_path = xdir / "s.ipynb"
+    twin_path = xdir / "s_en.ipynb"
     csv_path = tmp_path / "s.csv"
     pivot_path.write_text(json.dumps(make_md_nb([("c1", "P")])), encoding="utf-8")
     twin_path.write_text(json.dumps(make_md_nb([("c1", "N")])), encoding="utf-8")

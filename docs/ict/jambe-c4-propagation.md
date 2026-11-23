@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 # ICT — Jambe C4 — Grammaire de propagation & seuil de bascule (π, W, causalité) : quand une représentation locale transforme le tout
 
 > **Statut.** Document de cadrage formel, grade **C-documentaire** (cadrage, pas de dispatch expérimental). Consolide la **jambe C4** de l'arc ICT — **jambe de rencontre** centrale entre les fils thomien, grothendieckien, luhmanien et fristonien, issue du tour 755 de la conversation de référence (2026-07-20). C4 est explicitement *inter-jambes* : elle **ne démarre pas** la série ICT, elle **articule** ce que les jambes autonomes (animats C1/C2, argumentation C3, LLM) auront produit. Issue-source : [#7743](https://github.com/jsboige/CoursIA/issues/7743). See [#4588](https://github.com/jsboige/CoursIA/issues/4588) (Epic umbrella ICT). *Part of* [#7395](https://github.com/jsboige/CoursIA/issues/7395) (méta-proxy ICT).

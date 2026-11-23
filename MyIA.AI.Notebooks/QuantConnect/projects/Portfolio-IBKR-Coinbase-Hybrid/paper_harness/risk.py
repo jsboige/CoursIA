@@ -14,30 +14,35 @@ Breakers (mirrors ``.env`` RISK_* and the parent README "Circuit-breaker
   comes back to 100 % once the drawdown has recovered to half the threshold
   (hysteresis: re-arming at the threshold itself would flip on every wiggle).
 - daily loss: halt when session loss >= ``daily_var_pct``. New buys stop; the
-  book is not liquidated (a single bad session is an operational signal).
+  book is not liquidated (a single bad session is an operational signal). The
+  session loss is measured from the last mark of the previous session: pass the
+  session date to :meth:`RiskGate.update_equity` and the window rolls on its own
+  when the date changes. Without a date the window stays where it is.
 - single position: block an order whose notional > ``max_position_pct`` of
   the sleeve capital.
 - gross exposure: block an order that would push gross exposure above
   ``max_gross_exposure`` of the sleeve capital.
 
 Persistence: :meth:`RiskGate.save` / :meth:`RiskGate.load` keep the peak
-equity, the day-start equity, a halt, a liquidation and a halved exposure
-across restarts. Without them a restart would reset the drawdown reference
-and clear a tripped breaker.
+equity, the day-start equity, the date and equity of the last dated mark, a
+halt, a liquidation and a halved exposure across restarts. Without them a
+restart would reset the drawdown reference and clear a tripped breaker.
 """
 from __future__ import annotations
 
 import json
+import math
 import os
 from dataclasses import dataclass
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Optional
 
 from .config import RiskConfig
 
 _STATE_KEYS = ("starting_capital", "peak_equity", "day_start_equity", "halted", "halt_reason")
-# Added after the first state files were written: default to False when absent.
-_OPTIONAL_STATE_KEYS = ("liquidate", "reduced")
+# Added after the first state files were written: default to False / None when absent.
+_OPTIONAL_STATE_KEYS = ("liquidate", "reduced", "last_mark_date", "last_mark_equity")
 
 
 @dataclass(frozen=True)
@@ -58,6 +63,7 @@ class RiskGate:
     """
 
     def __init__(self, risk: RiskConfig, starting_capital: float):
+        self._require_finite(starting_capital, "starting_capital")
         self.risk = risk
         self.starting_capital = starting_capital
         self.peak_equity = starting_capital
@@ -66,6 +72,8 @@ class RiskGate:
         self.halt_reason: Optional[str] = None
         self.liquidate = False   # second threshold tripped: target exposure 0
         self.reduced = False     # first threshold, halving mode: target exposure 0.5
+        self.last_mark_date: Optional[str] = None      # ISO date of the last dated mark
+        self.last_mark_equity: Optional[float] = None  # equity of that mark
         self.alert: Optional[str] = None   # set by the latest update_equity, not persisted
 
     @property
@@ -75,14 +83,41 @@ class RiskGate:
             return 0.0
         return 0.5 if self.reduced else 1.0
 
+    @staticmethod
+    def _require_finite(value: float, name: str) -> None:
+        """Refuse une référence non finie avant toute mutation comptable."""
+        if not math.isfinite(value):
+            raise ValueError(f"{name} must be finite")
+
     # -- accounting state -------------------------------------------------
 
-    def update_equity(self, equity: float) -> RiskDecision:
+    def update_equity(self, equity: float, day: date | None = None) -> RiskDecision:
         """Record an equity mark and refresh the drawdown / daily breakers.
 
+        ``day`` is the session date of the mark. When it differs from the date of
+        the previous dated mark, the daily window first rolls to that mark's
+        equity, so ``daily`` is the loss since the last mark of the previous
+        session. The first dated mark (fresh gate, or a state file written before
+        the dates were kept) opens the window on itself: no halt for a loss that
+        happened before the window was known. Without ``day`` the window does not
+        move; :meth:`reset_day` rolls it by hand.
+
         Flips to ``halted`` (rejecting all future orders) if either breaker
-        trips, until :meth:`reset_day` / :meth:`clear_halt` is called.
+        trips, until :meth:`clear_halt` is called: a new session rolls the
+        window, it does not clear a halt.
         """
+        self._require_finite(equity, "equity")
+        if day is not None:
+            if isinstance(day, datetime):
+                day = day.date()
+            stamp = day.isoformat()
+            if self.last_mark_date is None or self.last_mark_equity is None:
+                self.day_start_equity = equity
+            elif stamp != self.last_mark_date:
+                self.day_start_equity = self.last_mark_equity
+            self.last_mark_date = stamp
+            self.last_mark_equity = equity
+
         if equity > self.peak_equity:
             self.peak_equity = equity
 
@@ -114,7 +149,14 @@ class RiskGate:
         return RiskDecision(True, f"equity {equity:.2f} dd {dd:.2%} daily {daily:.2%}")
 
     def reset_day(self, equity: float) -> None:
-        """Roll the daily accounting window (call at session/day start)."""
+        """Roll the daily accounting window by hand.
+
+        Dated marks roll it on their own (see :meth:`update_equity`); this stays
+        for callers that mark without a date. Do not mix both modes: this call
+        leaves the last dated mark unchanged, so a subsequent dated mark can
+        roll the window back to that mark's equity.
+        """
+        self._require_finite(equity, "equity")
         self.day_start_equity = equity
 
     def _halt(self, reason: str) -> None:
@@ -148,14 +190,23 @@ class RiskGate:
         if missing:
             raise ValueError(f"risk state is missing {missing}")
         gate = cls(risk, float(state["starting_capital"]))
-        gate.peak_equity = float(state["peak_equity"])
-        gate.day_start_equity = float(state["day_start_equity"])
+        peak_equity = float(state["peak_equity"])
+        day_start_equity = float(state["day_start_equity"])
+        cls._require_finite(peak_equity, "peak_equity")
+        cls._require_finite(day_start_equity, "day_start_equity")
+        gate.peak_equity = peak_equity
+        gate.day_start_equity = day_start_equity
         gate.halted = bool(state["halted"])
         gate.halt_reason = state["halt_reason"]
         # A file from before the liquidation flag: a drawdown halt meant liquidation.
         default_liq = gate.halted and str(gate.halt_reason or "").startswith("max drawdown")
         gate.liquidate = bool(state.get("liquidate", default_liq))
         gate.reduced = bool(state.get("reduced", False))
+        if state.get("last_mark_date") is not None and state.get("last_mark_equity") is not None:
+            last_mark_equity = float(state["last_mark_equity"])
+            cls._require_finite(last_mark_equity, "last_mark_equity")
+            gate.last_mark_date = str(state["last_mark_date"])
+            gate.last_mark_equity = last_mark_equity
         return gate
 
     def save(self, path: Path) -> None:
@@ -199,6 +250,13 @@ class RiskGate:
         gate is halted or the order is large: a breaker exists to cut risk, so
         it must never prevent going back to cash.
         """
+        for name, value in (
+            ("sleeve_capital", sleeve_capital),
+            ("order_notional", order_notional),
+            ("gross_exposure_after", gross_exposure_after),
+        ):
+            if not math.isfinite(value):
+                return RiskDecision(False, f"{name} must be finite")
         if sleeve_capital <= 0:
             return RiskDecision(False, "sleeve capital <= 0")
         if order_notional < 0:

@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 ## Note de conception — banc unique de la strate 7 ICT (capstone) — phase 1 (note avant tout carnet)
 
 Lane `myia-po-2027:CoursIA-2` · dispatch ai-01 31/10 (`c2743-dispatch-23778`) · **exception nommée** au gel de création de carnets du 30/10 (accord du mainteneur 2026-10-31, couvrant ce banc + le capstone strate 6 #23777).

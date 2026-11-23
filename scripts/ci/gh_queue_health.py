@@ -51,8 +51,44 @@ L'instrument le dit desormais :
 - `--apply` n'est PAS recommande pour eux : la classe ne propose plus de
   les annuler, elle mesure une file morte.
 
+## La profondeur VIVANTE de la file (le nombre que les lanes citent)
+
+`total_count` compte le **padding** avec le travail : au 2026-11-15 la file
+mesurait 358 runs `queued`, dont 234 fantomes mesures (142 `pr-closed`,
+88 `no-job`, 4 `scheduled-orphan`) -- la profondeur VIVANTE etait ~115. Le
+balayeur de portes stale comparait le nombre BRUT a son seuil de saturation :
+il comptait le padding comme de la file.
+
+`--live-depth` rend la profondeur VIVANTE, c'est-a-dire la population MOINS
+chaque classe de fantome mesuree. C'est la commande unique que les lanes
+citent et que le balayeur consomme :
+
+  python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA --live-depth
+  # -> 115
+
+Le rapport complet (population, `total_count`, fantomes par classe, ecart de
+churn) est disponible avec `--json` ou `--output`.
+
+### Le cout de la mesure, et la porte qui l'evite (#26739)
+
+La mesure complete coute **114 appels API** par invocation (un par branche de
+PR en file, un par candidat `no-job`). Le quota horaire est partage par tous
+les workflows du depot : la mesure n'est donc pas un detail de cout, c'est
+une part du budget des autres.
+
+Avec `--saturation-threshold N`, l'organe lit d'abord le **brut** (UN appel)
+et ne mesure la profondeur VIVANTE que si le brut **atteint** N. Le brut
+MAJORE la profondeur vivante (la vivante = population MOINS ses fantomes) :
+un brut sous N PROUVE que la file n'est pas saturee, donc que la mesure ne
+peut pas changer le verdict -- elle n'est pas payee. Dans ce cas le rapport
+publie le brut comme **MAJORANT** de la profondeur vivante
+(`depth_kind: raw-upper-bound`), jamais comme la profondeur ; le verdict de
+saturation reste exact, parce que la seule reponse possible de cette borne
+est « non sature ». Un brut ILLISIBLE ne prouve rien : la mesure a lieu.
+
 Examples:
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA
+  python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA --live-depth
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA \
       --cutoff 2026-08-25 --output queue-health.json
   python scripts/ci/gh_queue_health.py --input queue-health.json
@@ -73,7 +109,15 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
+try:
+    import yaml
+except ImportError:  # pragma: no cover -- PyYAML absent on a slim runner
+    # The organ must run on a bare CI runner (the sweep measures the live
+    # depth from a sparse checkout, where PyYAML is not guaranteed). Only
+    # the `stale-runs-on` fingerprint needs YAML; every other mode runs
+    # without it, and the fingerprint returns "unknown" when it is missing
+    # (fail-CLOSED: the caller skips the run, it never guesses).
+    yaml = None  # type: ignore[assignment]
 
 EXIT_OK = 0
 EXIT_GHOST = 1
@@ -170,6 +214,31 @@ def parse_date(value: str) -> datetime:
     return parsed.replace(tzinfo=timezone.utc)
 
 
+# Compteur d'appels API -- le COUT de la mesure, rendu lisible (#26739).
+# Chaque TENTATIVE compte : un rety est un appel de plus sur le quota
+# horaire partage par tous les workflows du depot. Un organe qui consomme
+# 114 appels par passage doit pouvoir le dire dans sa sortie.
+_API_CALLS = 0
+
+
+def api_call_count() -> int:
+    """How many API calls this process made (attempts included)."""
+    return _API_CALLS
+
+
+def count_api_call() -> None:
+    """Account ONE API call (a transport attempt)."""
+    global _API_CALLS
+    _API_CALLS += 1
+
+
+def reset_api_calls() -> None:
+    """Zero the counter: a measurement reports its OWN cost, not the
+    process's cumulative spend."""
+    global _API_CALLS
+    _API_CALLS = 0
+
+
 def _gh_api_json(endpoint: str, *, attempts: int = 2, backoff: float = 5.0):
     """Call `gh api <endpoint>` and return the parsed JSON payload.
 
@@ -188,6 +257,7 @@ def _gh_api_json(endpoint: str, *, attempts: int = 2, backoff: float = 5.0):
     for attempt in range(max(1, attempts)):
         if attempt:
             time.sleep(backoff)
+        count_api_call()
         try:
             proc = subprocess.run(
                 ["gh", "api", endpoint],
@@ -211,16 +281,30 @@ def _gh_api_json(endpoint: str, *, attempts: int = 2, backoff: float = 5.0):
     raise InstrumentError(last_error)
 
 
-def fetch_queued_runs(repo: str) -> list[dict]:
+def fetch_queued_population(repo: str) -> dict:
     """Page through `GET /repos/{repo}/actions/runs?status=queued` until empty.
 
-    Returns the raw `workflow_runs` array. We cannot use the gh CLI `--created`
-    filter here because the gh run list interface does not expose it on
-    `status=queued` directly (and even if it did, server-side filtering would
-    be preferable but is not required for a small N like the 18 ghosts).
+    The stop condition is an EMPTY page, never a SHORT one. The queue is
+    mutated while it is read -- a run is admitted (or queued) between the
+    server's `total_count` and the page slice -- so a page can come back
+    with fewer items than `PER_PAGE` while hundreds of runs are still
+    queued. Measured 2026-11-15 on jsboige/CoursIA: pages of 99, 100, 100
+    and 59 items for a `total_count` of 358. The former stop condition (a
+    page shorter than `PER_PAGE`) truncated the collection at 99 of 358 --
+    three quarters of the population invisible to EVERY class, which is how
+    a "queue of 358" was classified as "a queue of 99".
+
+    Returns {"runs": [...], "total_count": int|None, "pages": int,
+             "duplicate_ids": int}. `total_count` is the server's own
+    count at the FIRST page: it is the authority on the population size,
+    and the gap between it and `len(runs)` is the churn of a live queue
+    (reported, never hidden).
     """
     runs: list[dict] = []
+    seen: set[int] = set()
+    duplicates = 0
     page = 1
+    total_count: int | None = None
     while True:
         endpoint = f"repos/{repo}/actions/runs?status=queued&per_page={PER_PAGE}&page={page}"
         payload = _gh_api_json(endpoint)
@@ -229,13 +313,78 @@ def fetch_queued_runs(repo: str) -> list[dict]:
         batch = payload["workflow_runs"]
         if not isinstance(batch, list):
             raise InstrumentError(f"workflow_runs is not a list: {type(batch).__name__}")
-        runs.extend(batch)
-        if len(batch) < PER_PAGE:
+        if total_count is None:
+            tc = payload.get("total_count")
+            total_count = tc if isinstance(tc, int) else None
+        if not batch:
+            # Empty page = end of the population. A SHORT page is not an
+            # end: the queue churns while it is read (see the docstring).
             break
+        for run in batch:
+            rid = run.get("id")
+            if isinstance(rid, int):
+                if rid in seen:
+                    duplicates += 1
+                    continue
+                seen.add(rid)
+            runs.append(run)
         page += 1
-        if page > 50:  # safety cap: 5000 ghost runs is implausible
+        if page > 50:  # safety cap: 5000 queued runs is implausible
             raise InstrumentError(f"pagination exceeded 50 pages for {repo}")
-    return runs
+    return {"runs": runs, "total_count": total_count, "pages": page - 1,
+            "duplicate_ids": duplicates}
+
+
+def fetch_queued_runs(repo: str) -> list[dict]:
+    """The queued population, raw. See `fetch_queued_population` for the paging.
+
+    Returns the raw `workflow_runs` array. We cannot use the gh CLI `--created`
+    filter here because the gh run list interface does not expose it on
+    `status=queued` directly (and even if it did, server-side filtering would
+    be preferable but is not required for a small N like the 18 ghosts).
+    """
+    return fetch_queued_population(repo)["runs"]
+
+
+def fetch_raw_total_count(repo: str) -> int | None:
+    """The server's own count of the queued population -- ONE call.
+
+    `GET /repos/{repo}/actions/runs?status=queued&per_page=1` returns the
+    same `total_count` the paginated population read uses; the page slice is
+    only the vehicle, the count is the server's. One call, no paging.
+
+    Why this number alone is enough to skip the expensive measurement: the
+    LIVE depth is the population MINUS its measured ghost classes, so the
+    raw count MAJORS the live depth. A raw count under a threshold proves
+    the live depth is under it too -- the measurement cannot change the
+    verdict, so it is not paid (#26739 : 114 calls per invocation, on a
+    quota the whole repository shares).
+    """
+    payload = _gh_api_json(
+        f"repos/{repo}/actions/runs?status=queued&per_page=1")
+    if not isinstance(payload, dict):
+        raise InstrumentError(
+            f"unexpected runs payload: {type(payload).__name__}")
+    tc = payload.get("total_count")
+    return tc if isinstance(tc, int) else None
+
+
+def depth_measurement_plan(raw_count: int | None, threshold: int) -> str:
+    """Which measurement the saturation decision needs -- pure, testable.
+
+    "measure" -- the live depth must be measured: the raw count is AT OR
+                 ABOVE the threshold, so it can still be under it (the raw
+                 count counts the ghost padding with the real work).
+    "bound"   -- the raw count is UNDER the threshold: the live depth is at
+                 most the raw count, so the threshold is exceeded PROVABLY
+                 NOT, and the expensive measurement cannot change the
+                 verdict. A raw count that could not be read is not a
+                 bound: the plan is then "measure", because nothing proves
+                 the saturation out.
+    """
+    if raw_count is None:
+        return "measure"
+    return "bound" if raw_count < threshold else "measure"
 
 
 def fetch_pr_states(repo: str, branches: list[str]) -> dict[str, str]:
@@ -597,6 +746,8 @@ def _workflow_runs_on_fingerprint(yaml_text: str) -> frozenset | None:
     Returns None on parse failure. Returns an empty frozenset for a
     workflow with no jobs (pathological but unobjectionable).
     """
+    if yaml is None:  # pragma: no cover -- PyYAML absent on a slim runner
+        return None
     try:
         data = yaml.safe_load(yaml_text)
     except yaml.YAMLError:
@@ -766,6 +917,138 @@ def detect_no_job_runs(repo: str, runs: list[dict], *, events: frozenset[str],
                     unknown += 1
     return {"ids": found, "checked": len(candidates), "probed": len(candidates),
             "unknown": unknown}
+
+
+def live_depth_report(*, repo: str, cutoff: datetime, cutoff_date: str,
+                      now: datetime, no_job_events: frozenset[str],
+                      no_job_min_age_hours: float,
+                      max_workers: int = 8) -> dict:
+    """Measure the LIVE depth of the queued population.
+
+    The live depth is the number of queued runs that represent REAL work in
+    progress: the whole population MINUS every measured ghost class
+    (pre-cutoff, pr-closed, scheduled-orphan, no-job). It is THE number the
+    lanes cite and the number the stale sweep compares to its saturation
+    threshold -- the raw `total_count` counts the ghost padding with it.
+
+    The raw population is reported beside it: the gap between the two IS
+    the padding, and a reader who wants the raw number still finds it (the
+    sweep keeps it as a diagnostic).
+
+    A run whose `created_at` cannot be parsed is a parse failure, not a
+    ghost and not a live run: it is counted apart, and the caller refuses
+    to publish a depth computed over an incomplete population (exit code 2).
+    """
+    population = fetch_queued_population(repo)
+    raw_runs = population["runs"]
+    # PR-state lookups are only needed for post-cutoff pull_request
+    # candidates: everything older is pre-cutoff ghost by definition.
+    # created_at is ISO-8601 and cutoff_date is YYYY-MM-DD, so the lexical
+    # comparison is a valid date-prefix filter.
+    candidates = sorted({
+        run.get("head_branch") for run in raw_runs
+        if run.get("event") == "pull_request"
+        and isinstance(run.get("created_at"), str)
+        and run["created_at"] >= cutoff_date
+    } - {None})
+    pr_states = fetch_pr_states(repo, candidates) if candidates else {}
+    detection = detect_no_job_runs(repo, raw_runs, events=no_job_events,
+                                   min_age_hours=no_job_min_age_hours,
+                                   now=now, max_workers=max_workers)
+    classification = classify_runs(raw_runs, cutoff, pr_states, now=now,
+                                   no_job=detection["ids"])
+    ghosts = classification["ghosts"]
+    by_class: dict[str, int] = {}
+    for ghost in ghosts:
+        reason = ghost.get("reason") or "unknown"
+        by_class[reason] = by_class.get(reason, 0) + 1
+    return {
+        "live_depth": len(classification["live"]),
+        "population": len(raw_runs),
+        "total_count": population["total_count"],
+        "pages": population["pages"],
+        "duplicate_ids": population["duplicate_ids"],
+        "ghosts": len(ghosts),
+        "ghosts_by_class": by_class,
+        "parse_failures": len(classification["parse_failures"]),
+        "no_job_checked": detection["checked"],
+        "no_job_unknown": detection["unknown"],
+        "cutoff": cutoff_date,
+        "measured_at": now.isoformat(),
+    }
+
+
+def measure_queue_depth(*, repo: str, cutoff: datetime, cutoff_date: str,
+                        now: datetime, no_job_events: frozenset[str],
+                        no_job_min_age_hours: float,
+                        max_workers: int = 8,
+                        saturation_threshold: int | None = None) -> dict:
+    """The depth the saturation decision needs -- measured only if it can
+    change that decision.
+
+    Without `saturation_threshold` this is `live_depth_report` itself, and
+    the report says so (`depth_kind: "live"`).
+
+    With a threshold, the raw count is read FIRST (one call). The live
+    depth is at most the raw count, so a raw count under the threshold
+    proves the saturation out: the 114-call measurement is not paid, and
+    the report publishes the RAW as an UPPER BOUND of the live depth
+    (`depth_kind: "raw-upper-bound"`), never as the depth itself.
+
+    The bound is a decision, not a measurement: the caller compares the
+    depth to the threshold, and the bound answers that comparison exactly
+    (live <= raw < threshold means "not saturated", which is the only
+    verdict the bound can produce).
+    """
+    reset_api_calls()
+    raw_count: int | None = None
+    raw_error: str | None = None
+    if saturation_threshold is not None:
+        try:
+            raw_count = fetch_raw_total_count(repo)
+        except InstrumentError as exc:
+            # Unreadable raw count: nothing proves the saturation out, so
+            # the measurement is paid (the conservative branch).
+            raw_error = str(exc)
+        if depth_measurement_plan(raw_count, saturation_threshold) == "bound":
+            return {
+                "live_depth": None,
+                "depth": raw_count,
+                "depth_kind": "raw-upper-bound",
+                "saturation_threshold": saturation_threshold,
+                "saturated": False,
+                "saturation_excluded_by": (
+                    "majoration : la profondeur VIVANTE est au plus le brut"),
+                "population": None,
+                "total_count": raw_count,
+                "pages": 0,
+                "duplicate_ids": 0,
+                "ghosts": None,
+                "ghosts_by_class": {},
+                "parse_failures": 0,
+                "no_job_checked": 0,
+                "no_job_unknown": 0,
+                "cutoff": cutoff_date,
+                "measured_at": now.isoformat(),
+                "api_calls": api_call_count(),
+                "raw_probe_error": raw_error,
+            }
+    report = live_depth_report(
+        repo=repo, cutoff=cutoff, cutoff_date=cutoff_date, now=now,
+        no_job_events=no_job_events,
+        no_job_min_age_hours=no_job_min_age_hours,
+        max_workers=max_workers,
+    )
+    report["depth"] = report["live_depth"]
+    report["depth_kind"] = "live"
+    report["saturation_threshold"] = saturation_threshold
+    report["saturated"] = bool(
+        saturation_threshold is not None
+        and report["live_depth"] >= saturation_threshold)
+    report["saturation_excluded_by"] = None
+    report["api_calls"] = api_call_count()
+    report["raw_probe_error"] = raw_error
+    return report
 
 
 def verify_no_job_before_cancel(repo: str, run_ids: list[int],
@@ -957,10 +1240,82 @@ def main(argv: list[str] | None = None) -> int:
                              "eligible by default: a pull_request or push run "
                              "can gate a head SHA, and cancelling it could "
                              "suppress a check the branch protection expects.")
+    parser.add_argument("--live-depth", action="store_true",
+                        help="measure the LIVE depth of the queued population "
+                             "-- the total minus every measured ghost class "
+                             "(pre-cutoff, pr-closed, scheduled-orphan, "
+                             "no-job) -- and print it as a single integer. "
+                             "This is the number the lanes cite and the number "
+                             "the stale sweep compares to its saturation "
+                             "threshold: the raw `total_count` counts the "
+                             "ghost padding with it. Requires --repo (live "
+                             "API): a snapshot cannot prove the job state of "
+                             "a run. Exit code 2 if the population cannot be "
+                             "parsed in full (an incomplete measurement is "
+                             "never published as a depth).")
+    parser.add_argument("--saturation-threshold", type=int, default=None,
+                        metavar="N",
+                        help="with --live-depth: the saturation threshold the "
+                             "caller compares the depth to. When it is given, "
+                             "the raw count is read FIRST (ONE call) and the "
+                             "expensive live measurement is SKIPPED when the "
+                             "raw count is under N: the live depth is at most "
+                             "the raw count, so the threshold is provably not "
+                             "exceeded and the measurement cannot change the "
+                             "verdict. The report then carries "
+                             "`depth_kind: raw-upper-bound` and the raw as an "
+                             "UPPER BOUND of the live depth -- never as the "
+                             "depth itself. An unreadable raw count measures "
+                             "anyway (nothing proves the saturation out). "
+                             "#26739 : the live measurement costs ~114 API "
+                             "calls, on a quota the whole repository shares.")
+    parser.add_argument("--json", action="store_true",
+                        help="with --live-depth: print the full report as JSON "
+                             "instead of the bare integer (the report always "
+                             "reaches --output when that flag is given).")
     args = parser.parse_args(argv)
 
     try:
         cutoff = parse_date(args.cutoff)
+        if args.live_depth:
+            if args.input:
+                raise InstrumentError(
+                    "--live-depth requires --repo (live API): a snapshot "
+                    "cannot prove the job state of a run")
+            if args.cancel:
+                raise InstrumentError(
+                    "--live-depth is exclusive of --cancel: one measurement, "
+                    "one report")
+            now = datetime.now(timezone.utc)
+            report = measure_queue_depth(
+                repo=args.repo, cutoff=cutoff, cutoff_date=args.cutoff,
+                now=now,
+                no_job_events=frozenset(
+                    e.strip() for e in args.no_job_events.split(",") if e.strip()),
+                no_job_min_age_hours=args.no_job_min_age_hours,
+                max_workers=max(1, args.cancel_workers),
+                saturation_threshold=args.saturation_threshold)
+            rendered = json.dumps(report, indent=2, ensure_ascii=False) + "\n"
+            if args.output:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(rendered, encoding="utf-8")
+            if report.get("depth_kind") == "raw-upper-bound":
+                print(f"[queue-health] profondeur VIVANTE NON MESUREE : le "
+                      f"brut ({report['depth']}) est sous le seuil de "
+                      f"saturation ({report['saturation_threshold']}) -- la "
+                      f"profondeur vivante est au plus {report['depth']}, la "
+                      f"saturation est exclue par majoration "
+                      f"(api-quota: {report['api_calls']} appel(s))",
+                      file=sys.stderr)
+            if args.json:
+                print(rendered, end="")
+            else:
+                print(report["depth"])
+            if report["parse_failures"]:
+                print(f"[queue-health] BROKEN INSTRUMENT: "
+                      f"{report['parse_failures']} parse failures", file=sys.stderr)
+                return EXIT_BROKEN
+            return EXIT_OK
         if args.input:
             raw_runs, preserved_pf = load_snapshot(args.input)
             pr_states: dict[str, str] = {}

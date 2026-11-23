@@ -3,7 +3,8 @@
 :func:`run_cycle` chains the pure pieces of the harness around a broker:
 
 1. restore the persisted :class:`~paper_harness.risk.RiskGate` and mark the
-   current equity (a breaker or the first loss alert can trip here);
+   current equity with the cycle's UTC date (a breaker or the first loss alert
+   can trip here; a new date rolls the daily-loss window to the previous mark);
 2. compute target weights from the signal closes
    (:func:`~paper_harness.rebalance.inverse_vol_weights`), scaled by the
    smaller of ``exposure_scale`` (manual) and the gate's own scale: 0 once the
@@ -151,9 +152,10 @@ def run_cycle(
     if set(signal_closes) != set(cfg.signal_to_line):
         raise ValueError("signal_closes and signal_to_line must name the same symbols")
 
+    when = now or datetime.now(timezone.utc)
     gate = RiskGate.load(risk, state_path, starting_capital)
     equity = broker.equity()
-    mark = gate.update_equity(equity)
+    mark = gate.update_equity(equity, day=when.date())
 
     scale = min(cfg.exposure_scale, gate.exposure_scale)
     signal_weights = inverse_vol_weights(
@@ -174,7 +176,7 @@ def run_cycle(
     )
 
     report = CycleReport(
-        timestamp=(now or datetime.now(timezone.utc)).isoformat(),
+        timestamp=when.isoformat(),
         dry_run=dry_run,
         equity=equity,
         gate=mark.reason,

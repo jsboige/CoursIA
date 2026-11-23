@@ -1329,8 +1329,11 @@ La part de tiering **diffère selon le runtime** (×0,52 pour .NET 11 contre ×0
    démontrée sur **une charge sur quatre** : `CenterBias_Ackley` garde le même ordre
    dans les deux régimes, `CenterBias_Suite4` ne montre aucun effet, et
    `Sphere10D_50k` est dominé par le bruit (dispersion jusqu'à 87 %, moyenne bimodale
-   du fait de la marche). Le banc 4 (`semantic-fleet`, coûts en µs) **n'a pas été
-   recontrôlé** dans ce protocole.
+   du fait de la marche). Le banc 4 (`semantic-fleet`, coûts en µs) a été recontrôlé
+   depuis, sur ses 96 jambes : [banc4-regime-25644.md](banc4-regime-25644.md) y trouve
+   le mélange **minoritaire** — 11 jambes sur 96 au seuil de 0,05, dont 4 à 0,01 — et
+   sa plus forte amplitude apparente concentrée dans la première passe du régime à une
+   invocation. Le constat du banc 1 ne se transporte donc pas à l'ensemble du banc 4.
 4. **La comparabilité avec les tableaux de ce document.** Les mesures ci-dessus sont
    du 10/11, sur un hôte partagé, en BDN 0.15.8 ; les tableaux « Banc 1 » et « Banc 4 »
    sont du 02/10, sur un portable, en BDN 0.14.0. **Les valeurs absolues ne sont pas
@@ -1346,7 +1349,12 @@ La part de tiering **diffère selon le runtime** (×0,52 pour .NET 11 contre ×0
   un artefact de régime plutôt qu'un gain de runtime.
 - Le **profil par itération** (journal BDN) est le seul artefact qui rende le mélange
   visible : le rapport final ne le montre pas. C'est le premier réflexe à prendre
-  pour un banc qui doit trancher un delta < 20 %.
+  pour un banc qui doit trancher un delta < 20 %. Il est outillé :
+  [`scripts/benchmarks/bdn_iteration_profile.py`](../../scripts/benchmarks/bdn_iteration_profile.py)
+  extrait la série, cherche le point de coupe et le **confronte à 500 permutations** —
+  sans ce contrôle, le meilleur découpage rend toujours un rapport supérieur à 1 et
+  fabrique des marches sur du bruit. Le profil du banc 4 est publié
+  ([markdown](banc4-regime-25644-profile.md), [CSV](banc4-regime-25644-profile.csv)).
 
 ### Origine et reproduction
 

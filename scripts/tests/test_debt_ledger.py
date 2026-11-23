@@ -1911,7 +1911,7 @@ def test_gpu_roster_covers_every_machine_the_keyring_knows():
     """The roster must never be NARROWER than the fleet list carried elsewhere
     in the repo: a machine that exists but is missing here would have its
     observations refused by the fail-closed entity check."""
-    from scripts.gh_identity import HOST_ACCOUNTS
+    from scripts.ci.gh_identity import HOST_ACCOUNTS
 
     missing = sorted(set(HOST_ACCOUNTS) - set(dl.FLEET_MACHINES))
     assert missing == [], f"machines absentes du roster du ledger : {missing}"

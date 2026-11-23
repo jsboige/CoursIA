@@ -55,6 +55,19 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 
 Les tranches suivantes étendront la série aux sous-séries de `Search/` (autres parties du catalogue) et aux carnets de `Part1-Foundations` non couverts ici — ajoutées au même `search.json`, une PR par tranche, sur ce même modèle.
 
+## Série Planners — tranche 1 (cœur classique : formulation → PDDL → espace d'états → Fast Downward → heuristiques → domaines)
+
+`planners.json` étend le même format à la série **Planners**, sur le **cœur classique** de la série : six carnets (`01-Foundation` : `Planners-01-Introduction`, `02-PDDL-Basics`, `03-State-Space` ; `02-Classical` : `04-Fast-Downward`, `05-Heuristics`, `06-Domains`, versions `-Python`) et 26 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; l'arbre de carnets porte ici le niveau **sous-série** (`Planners/01-Foundation` et `Planners/02-Classical`). Les **prérequis** relient les carnets entre eux (par ex. la formulation du problème avant PDDL et la recherche d'états, la recherche d'états avant Fast Downward, PDDL avant les domaines). Chaque concept cite les cellules de carnet où il est enseigné ; ceux qui s'y rattachent (formulation, PDDL, planification comme recherche d'états, heuristiques de planification) nomment en outre le chapitre **AIMA ch. 10** correspondant dans leur définition, les concepts sans équivalent AIMA (Fast Downward, graphe de planification, LM-cut, satisficing, les heuristiques h^max/h^add/FF/landmarks, les domaines de référence) n'en citant aucun.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/planners.json \
+  --skos-output /tmp/planners.ttl \
+  --owl-output /tmp/planners.owl
+```
+
+Les tranches suivantes étendront la série aux sous-séries avancées de `SymbolicAI/Planners/` (planification sous incertitude, planification temporelle, SAT-based) et aux autres carnets de `01-Foundation` / `02-Classical` non couverts ici — ajoutées au même `planners.json`, une PR par tranche, sur ce même modèle.
+
 ## Série IIT — tranches 1+2 (cœur : réseau causal → Φ → CES → complexe majeur → coarse-graining → frontière → lentilles → objection Aaronson → formalisation Lean → partitionnement MIP)
 
 `iit.json` étend le même format à la série **IIT** (Integrated Information Theory), sur le **cœur** de la série : dix carnets (`IIT-01` à `IIT-09`, dont `IIT-08b` — 6 carnets Python PyPhi/Φ et 4 carnets Lean du lake `iit_lean`) et 28 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; les **prérequis** relient les carnets entre eux (par ex. le réseau causal avant Φ et la CES, Φ avant le complexe majeur, le problème de frontière, l'objection d'Aaronson et la formalisation Lean). Chaque concept cite les cellules de carnet où il est enseigné. IIT étant une théorie de la conscience spécifique, **aucun concept ne nomme de chapitre AIMA** (hors du périmètre d'AIMA) — les citations pointent les cellules des carnets uniquement.
@@ -93,8 +106,99 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 
 ## Valider toutes les taxonomies d'un coup
 
-`--all` valide chaque `*.json` du dossier (hors `schema.json`) et nomme le fichier fautif ; il n'écrit aucun export, et `--skos-output` / `--owl-output` y sont sans effet :
+`--all` valide chaque `*.json` du dossier (hors `schema.json`), nomme le fichier fautif, puis contrôle la cohérence d'ensemble du dossier (voir « Ce que le validateur contrôle »). Seul, il n'écrit aucun export :
 
 ```bash
 python scripts/notebook_tools/curriculum_taxonomy.py --all
 ```
+
+Avec `--skos-output` et `--owl-output`, `--all` écrit **un seul graphe** qui réunit toutes les taxonomies du dossier. C'est dans ce graphe réuni qu'un prérequis ou un alignement vers une autre taxonomie retrouve le concept visé, avec ses libellés et ses citations :
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py --all \
+  --skos-output /tmp/taxonomies.ttl \
+  --owl-output /tmp/taxonomies.owl
+```
+
+## Ponts entre taxonomies
+
+Chaque fichier du dossier est une **taxonomie** : le vocabulaire d'une série ou d'une sous-série. L'unité est le fichier, pas le champ `series` : deux fichiers peuvent déclarer la même série (`semanticweb.json` et `tweety.json` déclarent toutes deux `SymbolicAI`), ils restent deux taxonomies, nommées d'après leur fichier.
+
+Les identifiants de concept sont des UUID, uniques dans tout le dossier. Trois écritures permettent à deux taxonomies de se parler ; aucune ne demande de réécrire un fichier existant.
+
+| Pont | Écriture | Quand l'employer |
+|---|---|---|
+| Concept partagé | une entrée de `citations` qui vise le carnet d'une autre taxonomie | la notion est enseignée dans deux séries et un seul identifiant suffit : on cite le second carnet plutôt que de créer un doublon |
+| Prérequis | l'UUID d'un concept d'une autre taxonomie dans `prerequisites` | la notion s'appuie sur une notion définie dans une autre série |
+| Alignement | le champ optionnel `matches` | chaque série garde son propre concept, avec son cadrage, et les deux désignent la même notion (`exact`) ou des notions voisines (`close`) |
+
+### Le champ `matches`
+
+```json
+{
+  "id": "b0000000-0000-4000-8000-000000000001",
+  "label_fr": "Fonction d'utilité",
+  "prerequisites": [],
+  "matches": [
+    {"concept": "a0000000-0000-4000-8000-000000000002", "kind": "exact"}
+  ]
+}
+```
+
+L'extrait vient de [`beta.json`](../../../scripts/tests/fixtures/curriculum_taxonomy/beta.json), l'une des taxonomies figées des tests, réduit aux champs utiles à la lecture ; un concept garde tous ses champs obligatoires. `concept` est l'UUID d'un concept d'une **autre** taxonomie du dossier. `kind` vaut `exact` quand les deux concepts sont interchangeables (`skos:exactMatch`), `close` quand ils se recouvrent sans se confondre (`skos:closeMatch`) : même objet vu sous deux formalismes, cas particulier et cas général. Dans le doute, `close`.
+
+Un alignement est symétrique : il se déclare d'un seul côté, dans la taxonomie qui l'affirme, et compte une fois. Le déclarer des deux côtés est permis à condition de donner le même `kind`.
+
+Cette forme est la moins invasive. Le champ est optionnel, donc un fichier qui ne l'emploie pas reste valide tel quel. L'alignement vit à côté du concept qu'il qualifie, dans le fichier de la série qui l'affirme : il se relit, se valide et se corrige avec lui, sans fichier central de vocabulaire à arbitrer entre séries. Les prérequis ne demandent aucun champ nouveau : les UUID étant uniques dans le dossier, la liste `prerequisites` accepte l'identifiant d'un concept d'une autre taxonomie.
+
+### Ce que le validateur contrôle
+
+Pour chaque taxonomie :
+
+- un concept ne porte aucun champ inconnu, si bien qu'une faute de frappe sur `matches` est refusée au lieu de passer pour une absence d'alignement ;
+- chaque alignement a exactement les champs `concept` et `kind`, un `kind` parmi `exact` et `close`, une cible qui existe dans une autre taxonomie du dossier ; un concept ne s'aligne ni sur lui-même, ni sur un concept de sa propre taxonomie, ni deux fois sur la même cible ;
+- chaque prérequis existe, dans la taxonomie ou dans une autre du dossier, et les cycles sont cherchés à travers les taxonomies ;
+- chaque citation vise un carnet déclaré par la taxonomie ou par une autre du dossier, et une cellule qui existe dans ce carnet ;
+- chaque carnet déclaré reste cité par au moins un concept de sa propre taxonomie.
+
+Pour le dossier entier, avec `--all` :
+
+- un identifiant de concept n'est déclaré que par un fichier ;
+- un carnet n'est déclaré que par une taxonomie (une autre taxonomie le cite, elle ne le redéclare pas) ;
+- deux alignements réciproques ne se contredisent pas (`exact` d'un côté, `close` de l'autre) ;
+- une chaîne d'alignements `exact` ne rend pas identiques deux concepts d'une même taxonomie.
+
+### Mesurer la densité et les ponts
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py --density
+python scripts/notebook_tools/curriculum_taxonomy.py --bridges
+python scripts/notebook_tools/curriculum_taxonomy.py --density --bridges --json
+```
+
+`--density` donne, par taxonomie, le nombre de carnets déclarés, de concepts et de citations, la distribution du nombre de concepts par carnet (minimum, médiane, maximum), les carnets qu'aucun concept ne cite, et les concepts cités une seule fois ou dans un seul carnet. Le nombre de concepts d'un carnet compte tous les concepts qui le citent, y compris ceux d'une autre taxonomie.
+
+`--bridges` liste les trois familles de ponts déclarés, puis les **ponts candidats** : deux identifiants de taxonomies différentes qui portent le même libellé ou la même définition, à la casse, aux accents et à la ponctuation près, et qu'aucun alignement ne relie encore. Un candidat est une question posée au rédacteur, pas une erreur : soit les deux concepts s'alignent, soit leurs libellés méritent d'être distingués. La même coïncidence à l'intérieur d'une taxonomie est listée à part, comme doublon. Le relevé se termine par un décompte par paire de taxonomies.
+
+Les deux relevés lisent tout le dossier et mesurent ce qui est écrit, sans valider : ils fonctionnent sur un fichier en cours de rédaction. Ajouter `--all` valide d'abord. Avec `--json`, la sortie standard ne porte que le relevé.
+
+### Dans l'export, et pour l'interroger
+
+L'export porte chaque pont :
+
+- `skos:exactMatch` et `skos:closeMatch` pour les alignements ;
+- `cursus:requiresConcept` pour les prérequis, y compris vers le concept d'une autre taxonomie ;
+- `cursus:concept`, du carnet vers chaque concept qui le cite, sur le même nœud de carnet que l'export du catalogue ; un concept cité par plusieurs carnets porte autant de liens et autant de `cursus:hasCellCitation` ;
+- `rdfs:isDefinedBy`, du concept et du carnet vers le nœud `cursus:Taxonomy` de leur fichier.
+
+`query_curriculum.py` lit ces liens dans l'export réuni :
+
+```bash
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/taxonomies.ttl bridges
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/taxonomies.ttl \
+  concepts --notebook MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb
+```
+
+`bridges` écrit une ligne par pont, triée par paire de taxonomies : la paire, la famille (`concept partagé`, `prérequis`, `alignement exact`, `alignement close`), les libellés et les identifiants. `concepts --notebook` écrit, pour un carnet, chaque concept qui le cite avec son identifiant, sa taxonomie et les cellules citées ; le chemin s'accepte avec ou sans `MyIA.AI.Notebooks/`. Sur l'export d'une seule taxonomie, ce qui mène à un concept ou à un carnet d'une autre est rangé sous « hors des graphes chargés ».
+
+Ces règles sont rejouées sur trois taxonomies figées par [`test_curriculum_taxonomy_bridges.py`](../../../scripts/tests/test_curriculum_taxonomy_bridges.py).

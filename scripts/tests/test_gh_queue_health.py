@@ -1410,3 +1410,358 @@ def test_26357_count_by_event_sorts_and_labels_unknown() -> None:
     assert mod._count_by_event(runs) == {
         "issue_comment": 2, "pull_request": 1, "unknown": 1,
     }
+
+
+# ---------------------------------------------------------------------------
+# #26718 -- la profondeur VIVANTE de la file (pagination + fantomes exclus)
+# ---------------------------------------------------------------------------
+
+def _queued_run(run_id: int, created: str, event: str = "pull_request",
+                branch: str = "feature/x") -> dict:
+    return {"id": run_id, "created_at": created, "event": event,
+            "head_branch": branch, "name": "PR gate",
+            "path": ".github/workflows/pr-gate.yml",
+            "html_url": f"https://github.com/jsboige/CoursIA/actions/runs/{run_id}"}
+
+
+def test_26718_paging_continues_past_a_short_page(monkeypatch) -> None:
+    """A SHORT page is not the end of the population.
+
+    The queue churns while it is read: measured 2026-11-15 on
+    jsboige/CoursIA, pages of 99, 100, 100 and 59 items for a
+    `total_count` of 358. The former stop condition (a page shorter than
+    `PER_PAGE`) truncated the collection at 99 of 358 -- three quarters of
+    the population invisible to EVERY class.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    pages = {1: 99, 2: 100, 3: 100, 4: 59}
+    next_id = 1
+
+    def fake_api(endpoint: str) -> dict:
+        nonlocal next_id
+        page = int(endpoint.rsplit("page=", 1)[1])
+        if page > len(pages):
+            return {"workflow_runs": [], "total_count": 358}
+        batch = []
+        for _ in range(pages[page]):
+            batch.append(_queued_run(next_id, "2026-11-01T00:00:00Z"))
+            next_id += 1
+        return {"workflow_runs": batch, "total_count": 358}
+
+    monkeypatch.setattr(mod, "_gh_api_json", fake_api)
+    population = mod.fetch_queued_population("jsboige/CoursIA")
+    assert len(population["runs"]) == 358
+    assert population["total_count"] == 358
+    assert population["pages"] == 4          # the empty fifth page ends it
+    assert population["duplicate_ids"] == 0
+
+
+def test_26718_paging_dedups_a_repeated_run_id(monkeypatch) -> None:
+    """A run seen twice is counted once (the queue is read while it churns).
+
+    The population is a SET of runs, not a list of pages: the same run
+    appearing on two pages must not inflate the depth.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def fake_api(endpoint: str) -> dict:
+        page = int(endpoint.rsplit("page=", 1)[1])
+        if page == 1:
+            return {"workflow_runs": [_queued_run(1, "2026-11-01T00:00:00Z"),
+                                      _queued_run(2, "2026-11-01T00:00:00Z")],
+                    "total_count": 3}
+        if page == 2:
+            return {"workflow_runs": [_queued_run(2, "2026-11-01T00:00:00Z"),
+                                      _queued_run(3, "2026-11-01T00:00:00Z")],
+                    "total_count": 3}
+        return {"workflow_runs": [], "total_count": 3}
+
+    monkeypatch.setattr(mod, "_gh_api_json", fake_api)
+    population = mod.fetch_queued_population("jsboige/CoursIA")
+    assert [r["id"] for r in population["runs"]] == [1, 2, 3]
+    assert population["duplicate_ids"] == 1
+
+
+def test_26718_fetch_queued_runs_wrapper_returns_the_population(monkeypatch) -> None:
+    """The historical entry point still returns the raw run list."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    monkeypatch.setattr(mod, "fetch_queued_population",
+                        lambda repo: {"runs": [{"id": 7}], "total_count": 1,
+                                      "pages": 1, "duplicate_ids": 0})
+    assert mod.fetch_queued_runs("jsboige/CoursIA") == [{"id": 7}]
+
+
+def _depth_runs() -> list[dict]:
+    return [
+        _queued_run(1, "2026-11-01T00:00:00Z", event="push"),      # live
+        _queued_run(2, "2026-11-01T00:00:00Z", event="push"),      # live
+        _queued_run(3, "2026-11-01T00:00:00Z", event="push"),      # live
+        _queued_run(4, "2026-08-01T00:00:00Z"),                    # pre-cutoff
+        _queued_run(5, "2026-11-01T00:00:00Z", branch="closed-br"),  # pr-closed
+        _queued_run(6, "2026-11-01T00:00:00Z", event="schedule"),  # scheduled-orphan
+        _queued_run(7, "2026-11-01T00:00:00Z", event="issue_comment"),  # no-job
+    ]
+
+
+def _depth_population() -> dict:
+    return {"runs": _depth_runs(), "total_count": 7, "pages": 1,
+            "duplicate_ids": 0}
+
+
+def test_26718_live_depth_excludes_every_measured_ghost_class(monkeypatch) -> None:
+    """The live depth is the population MINUS every measured ghost class.
+
+    Measured 2026-11-15 on jsboige/CoursIA: 326 queued runs, 234 of them
+    measured ghosts (142 pr-closed, 88 no-job, 4 scheduled-orphan) -- the
+    live depth was 92, and it is THAT number the lanes cite.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    monkeypatch.setattr(mod, "fetch_queued_population", lambda repo: _depth_population())
+    monkeypatch.setattr(mod, "fetch_pr_states",
+                        lambda repo, branches: {"closed-br": "closed"})
+    monkeypatch.setattr(
+        mod, "detect_no_job_runs",
+        lambda repo, runs, **kw: {"ids": {7}, "checked": 1, "probed": 1,
+                                  "unknown": 0})
+    report = mod.live_depth_report(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 12, 0, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0)
+    assert report["live_depth"] == 3
+    assert report["population"] == 7
+    assert report["ghosts"] == 4
+    assert report["ghosts_by_class"] == {
+        "pre-cutoff": 1, "pr-closed": 1, "scheduled-orphan": 1, "no-job": 1}
+    assert report["parse_failures"] == 0
+
+
+def test_26718_cli_live_depth_prints_a_bare_integer(monkeypatch, capsys) -> None:
+    """The command the lanes cite prints ONE integer on stdout.
+
+    `$(python3 scripts/ci/gh_queue_health.py --repo X --live-depth)` must
+    yield the depth and nothing else -- the sweep captures it verbatim.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    monkeypatch.setattr(mod, "fetch_queued_population", lambda repo: _depth_population())
+    monkeypatch.setattr(mod, "fetch_pr_states",
+                        lambda repo, branches: {"closed-br": "closed"})
+    monkeypatch.setattr(
+        mod, "detect_no_job_runs",
+        lambda repo, runs, **kw: {"ids": {7}, "checked": 1, "probed": 1,
+                                  "unknown": 0})
+    rc = mod.main(["--repo", "jsboige/CoursIA", "--live-depth"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert captured.out.strip() == "3"
+
+
+def test_26718_cli_live_depth_json_carries_the_whole_report(monkeypatch, capsys) -> None:
+    """`--json` renders the report: population, ghosts per class, churn."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    monkeypatch.setattr(mod, "fetch_queued_population", lambda repo: _depth_population())
+    monkeypatch.setattr(mod, "fetch_pr_states",
+                        lambda repo, branches: {"closed-br": "closed"})
+    monkeypatch.setattr(
+        mod, "detect_no_job_runs",
+        lambda repo, runs, **kw: {"ids": {7}, "checked": 1, "probed": 1,
+                                  "unknown": 0})
+    rc = mod.main(["--repo", "jsboige/CoursIA", "--live-depth", "--json"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["live_depth"] == 3
+    assert payload["total_count"] == 7
+    assert payload["ghosts_by_class"]["pr-closed"] == 1
+
+
+def test_26718_cli_live_depth_refuses_a_snapshot(capsys) -> None:
+    """A snapshot cannot prove the job state of a run: it is refused."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    rc = mod.main(["--input", "snapshot.json", "--live-depth"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert "--live-depth requires --repo" in captured.err
+
+
+def test_26718_cli_live_depth_exit_two_on_an_incomplete_population(monkeypatch, capsys) -> None:
+    """A run whose `created_at` cannot be parsed is not a depth: exit 2.
+
+    An incomplete measurement is never published as a depth (the caller
+    then falls back to the age-only verdict).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    broken = {"runs": [{"id": 9, "created_at": "not-a-date",
+                        "event": "push", "head_branch": "b"}],
+              "total_count": 1, "pages": 1, "duplicate_ids": 0}
+    monkeypatch.setattr(mod, "fetch_queued_population", lambda repo: broken)
+    monkeypatch.setattr(mod, "fetch_pr_states", lambda repo, branches: {})
+    monkeypatch.setattr(
+        mod, "detect_no_job_runs",
+        lambda repo, runs, **kw: {"ids": set(), "checked": 0, "probed": 0,
+                                  "unknown": 0})
+    rc = mod.main(["--repo", "jsboige/CoursIA", "--live-depth"])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert "BROKEN INSTRUMENT" in captured.err
+
+
+# ---------------------------------------------------------------- #26739 --
+# Le cout de la mesure vivante (114 appels API par invocation) et la porte
+# qui l'evite : le BRUT majore la profondeur VIVANTE, donc un brut sous le
+# seuil PROUVE que la file n'est pas saturee -- la mesure ne peut pas
+# changer le verdict et n'est pas payee.
+
+def _raw_api(total_count: int):
+    """A fake `_gh_api_json` serving ONE cheap raw-count answer."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def _fake(endpoint: str, **kwargs):
+        assert "per_page=1" in endpoint, endpoint
+        mod.count_api_call()
+        return {"total_count": total_count, "workflow_runs": []}
+    return _fake
+
+
+def test_26739_raw_under_the_threshold_skips_the_live_measurement(monkeypatch) -> None:
+    """Brut < seuil : la mesure vivante n'est PAS payee, et le brut est
+    publie comme MAJORANT de la profondeur vivante."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def _must_not_measure(**kwargs):
+        raise AssertionError("la mesure vivante ne doit pas etre payee")
+
+    monkeypatch.setattr(mod, "_gh_api_json", _raw_api(326))
+    monkeypatch.setattr(mod, "live_depth_report", _must_not_measure)
+    report = mod.measure_queue_depth(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 13, 40, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0,
+        saturation_threshold=800)
+    assert report["depth_kind"] == "raw-upper-bound"
+    assert report["depth"] == 326
+    assert report["live_depth"] is None
+    assert report["saturated"] is False
+    # UNE seule appel : la lecture du brut. Les 114 appels de la mesure
+    # vivante sont epargnes.
+    assert report["api_calls"] == 1
+
+
+def test_26739_raw_at_the_threshold_measures_the_live_depth(monkeypatch) -> None:
+    """Brut >= seuil : la saturation peut encore etre exclue par la
+    vivante -- la mesure est donc payee."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    calls = []
+
+    def _fake_report(**kwargs):
+        calls.append(kwargs)
+        return {"live_depth": 42, "population": 900, "total_count": 900,
+                "pages": 9, "duplicate_ids": 0, "ghosts": 858,
+                "ghosts_by_class": {}, "parse_failures": 0,
+                "no_job_checked": 0, "no_job_unknown": 0,
+                "cutoff": "2026-08-20", "measured_at": "2026-11-15T13:40:00+00:00"}
+
+    monkeypatch.setattr(mod, "_gh_api_json", _raw_api(900))
+    monkeypatch.setattr(mod, "live_depth_report", _fake_report)
+    report = mod.measure_queue_depth(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 13, 40, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0,
+        saturation_threshold=800)
+    assert len(calls) == 1
+    assert report["depth_kind"] == "live"
+    assert report["depth"] == 42
+    assert report["saturated"] is False
+
+
+def test_26739_unreadable_raw_count_measures_anyway(monkeypatch) -> None:
+    """Un brut ILLISIBLE ne prouve rien : la mesure a lieu (fail-CLOSED
+    cote cout, fail-safe cote verdict)."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    calls = []
+
+    def _fake_report(**kwargs):
+        calls.append(kwargs)
+        return {"live_depth": 11, "population": 12, "total_count": 12,
+                "pages": 1, "duplicate_ids": 0, "ghosts": 1,
+                "ghosts_by_class": {}, "parse_failures": 0,
+                "no_job_checked": 0, "no_job_unknown": 0,
+                "cutoff": "2026-08-20", "measured_at": "2026-11-15T13:40:00+00:00"}
+
+    def _broken(endpoint: str, **kwargs):
+        raise mod.InstrumentError("gh API muette")
+
+    monkeypatch.setattr(mod, "_gh_api_json", _broken)
+    monkeypatch.setattr(mod, "live_depth_report", _fake_report)
+    report = mod.measure_queue_depth(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 13, 40, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0,
+        saturation_threshold=800)
+    assert len(calls) == 1
+    assert report["depth_kind"] == "live"
+    assert report["raw_probe_error"]
+
+
+def test_26739_cli_live_depth_with_a_threshold_prints_the_bound(monkeypatch, capsys) -> None:
+    """En mode borne, la sortie porte le NOM de la borne : un entier lu
+    sans son stderr serait un majorant pris pour une profondeur."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def _must_not_measure(**kwargs):
+        raise AssertionError("la mesure vivante ne doit pas etre payee")
+
+    monkeypatch.setattr(mod, "_gh_api_json", _raw_api(326))
+    monkeypatch.setattr(mod, "live_depth_report", _must_not_measure)
+    rc = mod.main(["--repo", "jsboige/CoursIA", "--live-depth",
+                   "--saturation-threshold", "800"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert captured.out.strip() == "326"
+    assert "NON MESUREE" in captured.err
+    assert "majoration" in captured.err
+    assert "api-quota: 1" in captured.err
+
+
+def test_26739_depth_measurement_plan_is_pure() -> None:
+    """La decision est une fonction pure : elle se teste sans reseau."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod.depth_measurement_plan(326, 800) == "bound"
+    assert mod.depth_measurement_plan(799, 800) == "bound"
+    assert mod.depth_measurement_plan(800, 800) == "measure"
+    assert mod.depth_measurement_plan(900, 800) == "measure"
+    assert mod.depth_measurement_plan(None, 800) == "measure"

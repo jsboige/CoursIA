@@ -4,6 +4,14 @@
 
 Comment choisir un moteur, enchaîner ses sorties avec d'autres opérations et évaluer le coût du pipeline obtenu ? Cette partie part d'une comparaison de services, construit un orchestrateur, puis propose deux approfondissements : mesurer les performances et étudier un graphe où un modèle vision-langage rédige le prompt d'un générateur d'images.
 
+## Comment lire ce README
+
+- Vous voulez **comparer des moteurs avant de choisir** : lisez [03-1](03-1-Multi-Model-Comparison.ipynb) seul — il pose le protocole (prompts, conditions, temps à froid/chaud) que les trois autres carnets présupposent.
+- Vous voulez **assembler un pipeline** : [03-2](03-2-Workflow-Orchestration.ipynb) est le socle (étapes séquentielles, parallèles, conditionnelles, suivi d'erreurs) ; lisez-le avant tout autre carnet de ce niveau.
+- Vous voulez **approfondir un axe** : [03-3](03-3-Performance-Optimization.ipynb) si votre question porte sur les ressources (profiling, précision réduite, quantification), [03-4](03-4-VLM-Character-Design-Workflow.ipynb) si elle porte sur un pipeline multimodal complet (PNG, graphe API, prompt par VLM, LoRA) — les deux sont indépendants l'un de l'autre.
+
+Cette navigation par niveaux suit le principe des séries à plusieurs vitesses décrit dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
 ## Avant de commencer
 
 Il est utile de savoir manipuler des images et des dictionnaires en Python, appeler une API HTTP et lire un graphe ComfyUI. Les exemples de la [partie avancée](../02-Advanced/README.md) introduisent les modèles et les workflows. Préparez les dépendances, les adresses et les éventuels jetons avec le [guide d'environnement GenAI](../../00-GenAI-Environment/README.md) ; l'[architecture des services](../../../../docs/genai/genai-services.md) détaille la configuration de la stack.
@@ -12,12 +20,12 @@ Les carnets utilisent Python. Les appels réels nécessitent les services et mod
 
 ## Parcours conseillé
 
-| Étape | Question et activité | À retenir |
-|---|---|---|
-| **Socle : comparer** — [03-1 Comparaison multi-modèles](03-1-Multi-Model-Comparison.ipynb) | Envoyer un prompt à SDXL Lightning via Forge et à Qwen Image Edit via ComfyUI, puis examiner les sorties et les temps. | Les résolutions et le chargement initial diffèrent dans l'exemple : le temps observé ne suffit pas à classer les modèles. Construire un protocole avec plusieurs prompts et des conditions explicites. |
-| **Socle : assembler** — [03-2 Orchestration de workflows](03-2-Workflow-Orchestration.ipynb) | Construire des étapes séquentielles, parallèles et conditionnelles, avec suivi des erreurs et relances. | Une dépendance impose l'ordre ; des tâches indépendantes peuvent être soumises en parallèle, mais le GPU peut rester le goulot. Un seuil automatique n'est pas une garantie de qualité visuelle. |
-| **Approfondir : mesurer** — [03-3 Optimisation des performances](03-3-Performance-Optimization.ipynb) | Profiler temps et mémoire, explorer précision réduite, quantification, transfert CPU et traitement par lots. | Comparer à une référence dans les mêmes conditions, après échauffement, et mesurer aussi l'effet sur les images. Une partie des benchmarks est simulée ; la sortie enregistrée du benchmark ComfyUI réel indique un service indisponible. |
-| **Approfondir : lire et adapter un graphe** — [03-4 Character design avec VLM](03-4-VLM-Character-Design-Workflow.ipynb) | Extraire les métadonnées d'un PNG, suivre le graphe API, puis faire produire un prompt par un VLM avant la diffusion Krea 2. | Un workflow embarqué aide à comprendre la recette, mais sa reproduction exige aussi modèles, nœuds, versions et configuration. Le contre-test avec et sans LoRA illustre leur influence dans cet exemple. |
+| Étape | Question et activité | À retenir | Ce qu'on y apprend |
+|---|---|---|---|
+| **Socle : comparer** — [03-1 Comparaison multi-modèles](03-1-Multi-Model-Comparison.ipynb) | Envoyer un prompt à SDXL Lightning via Forge et à Qwen Image Edit via ComfyUI, puis examiner les sorties et les temps. | Les résolutions et le chargement initial diffèrent dans l'exemple : le temps observé ne suffit pas à classer les modèles. Construire un protocole avec plusieurs prompts et des conditions explicites. | Comparer deux moteurs dans des conditions explicites, et distinguer latence à froid et à chaud |
+| **Socle : assembler** — [03-2 Orchestration de workflows](03-2-Workflow-Orchestration.ipynb) | Construire des étapes séquentielles, parallèles et conditionnelles, avec suivi des erreurs et relances. | Une dépendance impose l'ordre ; des tâches indépendantes peuvent être soumises en parallèle, mais le GPU peut rester le goulot. Un seuil automatique n'est pas une garantie de qualité visuelle. | Enchaîner des générations (séquentiel, parallèle, conditionnel) en gardant les sorties intermédiaires lisibles |
+| **Approfondir : mesurer** — [03-3 Optimisation des performances](03-3-Performance-Optimization.ipynb) | Profiler temps et mémoire, explorer précision réduite, quantification, transfert CPU et traitement par lots. | Comparer à une référence dans les mêmes conditions, après échauffement, et mesurer aussi l'effet sur les images. Une partie des benchmarks est simulée ; la sortie enregistrée du benchmark ComfyUI réel indique un service indisponible. | Profiler un pipeline image (temps, mémoire) et mesurer l'effet d'un levier sur la qualité, pas seulement sur la vitesse |
+| **Approfondir : lire et adapter un graphe** — [03-4 Character design avec VLM](03-4-VLM-Character-Design-Workflow.ipynb) | Extraire les métadonnées d'un PNG, suivre le graphe API, puis faire produire un prompt par un VLM avant la diffusion Krea 2. | Un workflow embarqué aide à comprendre la recette, mais sa reproduction exige aussi modèles, nœuds, versions et configuration. Le contre-test avec et sans LoRA illustre leur influence dans cet exemple. | Lire un graphe ComfyUI à partir des métadonnées d'une image, puis le reproduire avec un prompt rédigé par un VLM |
 
 Après 03-1 et 03-2, choisissez 03-3 si votre question porte sur les ressources, ou 03-4 si vous souhaitez examiner un pipeline multimodal complet. Les deux peuvent se lire indépendamment l'un de l'autre.
 
@@ -44,6 +52,12 @@ Dans 03-4, la comparaison avec et sans LoRA conserve le prompt généré et la g
 ![Référence et rendus avec et sans LoRA dans le workflow de character design](assets/readme/img3-workflow5.webp)
 
 La provenance des figures est décrite dans leur [manifest](assets/readme/MANIFEST.md).
+
+## Approfondissements
+
+- **Les deux axes du niveau** : [03-3](03-3-Performance-Optimization.ipynb) approfondit le coût (profiling, précision réduite, quantification, lots) et [03-4](03-4-VLM-Character-Design-Workflow.ipynb) approfondit le graphe (métadonnées PNG, prompt par VLM, LoRA) — chacun se lit seul après 03-1/03-2, et les deux se lisent indépendamment.
+- **En amont, les modèles comparés** : les carnets [01-Foundation](../01-Foundation/README.md) et [02-Advanced](../02-Advanced/README.md) introduisent les moteurs (SDXL, FLUX, Qwen Image Edit) que ce niveau orchestre ; les paramètres de génération s'y lisent avec leurs chiffres.
+- **En aval, les applications** : [04-Applications](../04-Applications/README.md) met en oeuvre ces pipelines sur des cas concrets (contenu pédagogique, workflows créatifs, intégration production).
 
 ## Pour aller plus loin
 

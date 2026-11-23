@@ -116,6 +116,26 @@ Critères de retrait (cf issue #14195 acceptance) :
    et le donne a `git cherry` -- patch-id du patch de branche entiere,
    calcule par la machinerie git, sans scan `git log -p`. Elle n'est
    tentee que quand la jambe per-commit ne tranche pas deja.
+9. **Contenu deja preserve par la BRANCHE DISTANTE (#26805)** : le contenu
+   n'est pas forcement sur `main` -- il peut etre sur la **branche
+   distante**. Une branche entierement poussee, dont le tip distant est
+   exactement la tete locale, n'a plus rien a preserver dans le worktree :
+   `git worktree remove` ne supprime ni la branche locale ni la branche
+   distante. La classe `no_pr_match` confondait ce cas avec une branche
+   jamais poussee (la seule copie du travail) et le refusait a perpetuite
+   (mesure po-2024 : 33 refus `no_pr_match` sur 92 worktrees).
+   Les **cinq conditions** sont exigees toutes les cinq, sinon le refus
+   terminal est conserve : (a) la branche existe sur le distant, mesuree
+   **en direct** par la voie REST deja utilisee par l'organe (#23330) --
+   jamais sur la seule ref de tracking locale, qui peut etre perimee ;
+   (b) le tip distant est **egal** a la tete locale (ni en avance, ni en
+   retard, ni divergent) ; (c) la ref de tracking locale existe et
+   designe la tete locale (temoin d'un fetch effectif) ; (d) le worktree
+   est propre (les predicats 2a/2b ont deja rendu REFUSE en amont) ;
+   (e) aucune activite dans la fenetre « agent vivant » et le worktree
+   n'est pas le courant. Le champ jumeau `content_preserved_by` porte
+   `"origin_branch"` : le contenu n'est **pas** sur main dans ce cas, et
+   `content_on_main_by` reste donc intact.
 
 Ancre PR : REST `pulls?state=all&head=<owner>:<branche>` (seau `core`), avec
 repli `gh pr list --state all --search "head:<branch>"` (GraphQL) pour les
@@ -351,6 +371,14 @@ class WorktreeStatus:
     # la classe `no_pr_match` indiscernable d'une garde qui n'aurait rien
     # franchi.
     content_on_main_by: Optional[str] = None
+    # Champ #26805 (additif) : *ou* le contenu est preserve quand la
+    # preservation ne vient PAS de main mais de la BRANCHE DISTANTE
+    # (predicat 7). "origin_branch" = la branche distante porte exactement
+    # la tete locale. Champ jumeau de `content_on_main_by`, et non alias :
+    # le contenu n'est PAS sur main dans ce cas, et le pretendre serait
+    # faux -- un lecteur qui confond les deux lit une branche distante
+    # comme une ascendance de main.
+    content_preserved_by: Optional[str] = None
     # Champ #3895 (additif) : lane proprietaire lue dans le marqueur
     # `.lane-owner` a la racine du worktree (None si absent). Attribue les
     # refus pour le rapport -- jamais une autorite de decision.
@@ -1729,6 +1757,71 @@ def _unpushed_vs_remote(wt_path: str, branch: str, head_sha: str,
     return local_ahead
 
 
+def _local_head_sha(wt_path: str) -> Optional[str]:
+    """SHA de HEAD du worktree, ou None si la lecture echoue."""
+    proc = run_git(wt_path, "rev-parse", "HEAD", check=False)
+    if proc.returncode != 0:
+        return None
+    sha = proc.stdout.strip()
+    return sha or None
+
+
+def content_preserved_on_origin_branch(
+    wt_path: str,
+    branch: str,
+    head_sha: str,
+    gh_unavailable_reason: Optional[str] = None,
+) -> Optional[bool]:
+    """Le contenu du worktree est-il deja preserve par la BRANCHE DISTANTE ?
+
+    Trois etats, jamais deux :
+
+    - ``True``  -- la branche existe sur le distant ET le tip distant est
+      exactement la tete locale ;
+    - ``False`` -- la branche n'existe pas sur le distant, ou le tip
+      distant differe de la tete locale (en avance, en retard ou
+      divergent), ou la ref de tracking locale manque ;
+    - ``None``  -- indetermivable (mode degrade gh, API muette) :
+      fail-CLOSED, l'appelant REFUSE.
+
+    Pourquoi le DISTANT et pas la seule ref de tracking locale (#26805) :
+    une ref locale peut etre **perimee** -- elle dit ce que le distant
+    portait au dernier fetch, pas ce qu'il porte maintenant. La ref locale
+    n'est donc exigee que comme **temoin** d'un fetch effectif (une
+    branche jamais fetchee reste refusee), jamais comme preuve du
+    contenu.
+
+    La voie reseau est celle deja utilisee par l'organe (#23330) :
+    ``repos/{owner}/{repo}/branches/<b>`` en REST -- aucun second canal
+    introduit, et la degradation `gh` reste respectee (#21753).
+    """
+    if gh_unavailable_reason is not None:
+        # Mode degrade : aucun appel gh n'est tente, rien n'est mesure.
+        return None
+
+    # Temoin de fetch : la ref de tracking locale doit exister ET designer
+    # la tete locale. Une ref absente (branche jamais fetchee) ou perimee
+    # ne prouve rien sur le distant -- fail-CLOSED.
+    ref_proc = run_git(
+        wt_path, "rev-parse", "--verify",
+        f"refs/remotes/origin/{branch}", check=False,
+    )
+    if ref_proc.returncode != 0:
+        return False
+    local_ref_sha = ref_proc.stdout.strip()
+    if not local_ref_sha or local_ref_sha != head_sha:
+        return False
+
+    state, tip = _remote_branch_tip(branch)
+    if state == "unknown" or tip is None:
+        return None
+    if state == "absent":
+        # Le distant ne porte plus la branche : il ne peut rien preserver.
+        return False
+    # Egalite stricte : ni en avance, ni en retard, ni divergent.
+    return tip == head_sha
+
+
 def get_worktree_info(wt_path: str, current_path: str) -> dict:
     """Recupere branch + ahead count + dirty status d'un worktree."""
     # Branche (peut etre None si HEAD detaché)
@@ -2938,6 +3031,72 @@ def diagnose_worktree(wt_path: str, current_path: str,
                 content_on_main_by=leg,
             )
 
+    # Predicat 7 (#26805) : contenu deja preserve par la BRANCHE DISTANTE.
+    #
+    # Une branche entierement poussee, dont le tip distant est exactement la
+    # tete locale, n'a plus rien a preserver dans ce worktree :
+    # `git worktree remove` ne supprime NI la branche locale NI la branche
+    # distante. La classe `no_pr_match` confondait ce cas avec une branche
+    # jamais poussee -- la seule copie du travail -- et refusait la
+    # premiere a perpetuite (mesure po-2024 : 33 refus `no_pr_match` sur
+    # 92 worktrees, dont beaucoup dans ce cas).
+    #
+    # Fail-CLOSED : les cinq conditions de l'issue (#26805) sont exigees
+    # toutes les cinq -- branche sur le distant, tip distant EQUAL a la tete
+    # locale, worktree propre (les predicats 2a/2b ont deja rendu REFUSE
+    # au-dessus), aucune activite dans la fenetre, et jamais le worktree
+    # courant (traite en SKIP_CURRENT plus haut). Une seule condition
+    # manquante -> le refus terminal est conserve.
+    if info["branch"] and gh_unavailable_reason is None:
+        local_head = _local_head_sha(wt_path)
+        if local_head:
+            preserved = content_preserved_on_origin_branch(
+                wt_path, info["branch"], local_head, gh_unavailable_reason,
+            )
+            if preserved is True:
+                age_h = recent_activity_age_hours(wt_path)
+                if age_h < activity_window_h:
+                    # Meme fenetre « agent vivant » que les predicats 5 et 6
+                    # (#18494) : le critere est un critere de CONTENU, pas
+                    # d'ACTIVITE, et un agent vivant traverse necessairement
+                    # l'etat « worktree propre, branche sans commit propre ».
+                    return WorktreeStatus(
+                        path=wt_path,
+                        branch=info["branch"],
+                        is_current=False,
+                        pr_state=None,
+                        pr_number=None,
+                        pr_url=None,
+                        ahead_count=info["ahead_count"],
+                        has_source_dirty=info["has_source_dirty"],
+                        untracked_paths=info["untracked"],
+                        decision="REFUSE",
+                        refusal_reason=f"recent_activity:{age_h:.1f}h",
+                        has_submodules=info["has_submodules"],
+                        blocking_untracked=info.get("blocking_untracked", []),
+                        ignored_extra=info.get("ignored_extra", []),
+                        lane_owner=info.get("lane_owner"),
+                        content_preserved_by="origin_branch",
+                    )
+                return WorktreeStatus(
+                    path=wt_path,
+                    branch=info["branch"],
+                    is_current=False,
+                    pr_state=None,
+                    pr_number=None,
+                    pr_url=None,
+                    ahead_count=info["ahead_count"],
+                    has_source_dirty=info["has_source_dirty"],
+                    untracked_paths=info["untracked"],
+                    decision="REMOVE",
+                    refusal_reason=None,
+                    has_submodules=info["has_submodules"],
+                    blocking_untracked=info.get("blocking_untracked", []),
+                    ignored_extra=info.get("ignored_extra", []),
+                    lane_owner=info.get("lane_owner"),
+                    content_preserved_by="origin_branch",
+                )
+
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
     # non pushée qu'on ne peut pas relier. REFUSE conservatrice.
     # #21753 : en mode degrade, ce refus ne dit pas « pas de PR » (non
@@ -3187,6 +3346,12 @@ def render_text(
                 # confond lit un squash-merge comme une ascendance.
                 leg = s.content_on_main_by or "?"
                 pr_part = f"content_on_main({leg})"
+            if not pr_part and s.content_preserved_by:
+                # #26805 : la preservation ne vient pas de main mais de la
+                # branche distante. Le dire, c'est distinguer « retire parce
+                # que main contient deja le contenu » de « retire parce que
+                # origin contient deja le contenu ».
+                pr_part = f"preserved_on_origin({s.content_preserved_by})"
             # v1.3 : suffixe de visibilite quand le retrait passera par un
             # deverrouillage (lock d'agent a pid mort).
             lock_part = (

@@ -17,7 +17,7 @@ Ce module se lit sur un axe — produire un audiobook — que trois métiers dif
 |---|---|---|
 | [`04-Audiobook/`](04-Audiobook/) | La chaîne de production : segmenter un texte, annoter la prosodie, générer la voix, compiler le résultat. Le fil va d'un texte littéraire à un MP3 final. | 04-6, 04-8, 04-10, 04-11, 04-12, 04-13 |
 | [`04-Voix/`](04-Voix/) | La voix comme objet de mesure : comparer des modèles TTS, attribuer une voix à un personnage, noter subjectivement un rendu avec son protocole et son incertitude. | 04-7, 04-9, 04-19 |
-| [`04-Musique/`](04-Musique/) | Le signal musical : embeddings, transcription symbole, MIR classique, transcription note à note, séparation de sources mesurée. | 04-15, 04-16, 04-17, 04-18, 04-20 |
+| [`04-Musique/`](04-Musique/) | Le signal musical : embeddings, transcription symbole, MIR classique, transcription note à note, séparation de sources mesurée et l'étalonnage de sa métrique. | 04-15, 04-16, 04-17, 04-18, 04-20, 04-21 |
 
 Les workflows généraux (04-1 à 04-5) et l'hommage Munkres (04-14) restent à la racine : ils ne relèvent d'aucun des trois métiers et servent de porte d'entrée au module.
 
@@ -131,7 +131,15 @@ Là où [02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) sépare un m�
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 20 | [04-20-Separation-Avancee-Qualite](04-Musique/04-20-Separation-Avancee-Qualite.ipynb) | Trois modèles Demucs sur deux générations (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparés sur piste MUSDB18 avec stems de référence : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0, HuggingFace streaming) | ~6 GB |
+| 20 | [04-20-Separation-Avancee-Qualite](04-Musique/04-20-Separation-Avancee-Qualite.ipynb) | Trois modèles Demucs sur deux générations (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparés sur piste MUSDB18 avec stems de référence, puis BS-RoFormer (architecture 2024) mesuré face à htdemucs : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0 + audio-separator, HuggingFace streaming) | ~6 GB |
+
+### Étalonner la métrique — SI-SDR à vérité exacte
+
+[04-20](04-Musique/04-20-Separation-Avancee-Qualite.ipynb) compare des moteurs face à une référence studio ; ce carnet pose la question en aval : **que vaut le zéro de la métrique elle-même ?** Le mélange est fabriqué depuis les stems (`0,62 × voix + 0,48 × accompagnement`), donc la vérité de chaque tige est exacte par construction — ce qui donne un lot de contrôle qu'aucune piste réelle ne fournit (le mélange rendu tel quel comme estimateur) et un levier qu'aucune piste réelle ne donne : déplacer le ratio d'énergie entre tiges et regarder le point zéro bouger.
+
+| # | Notebook | Contenu | Service | VRAM |
+|---|----------|---------|---------|------|
+| 21 | [04-21-SI-SDR-Contre-Epreuve](04-Musique/04-21-SI-SDR-Contre-Epreuve.ipynb) | SI-SDR à vérité exacte : mélange fabriqué depuis les stems MUSDB18, invariance d'échelle vérifiée, lot de contrôle (le mélange comme estimateur : +1,14 dB voix / −1,13 dB accompagnement sur l'extrait), balayage du ratio d'énergie (le point zéro parcourt ~24 dB), trois moteurs (htdemucs, MDX23C, BS-RoFormer) replacés en écart au zéro avec durées mesurées, classement transposé aux leaderboards publics, 3 exercices | Local GPU (demucs 4.1.0 + audio-separator, HuggingFace streaming) | ~6 GB |
 
 ## Prérequis
 
