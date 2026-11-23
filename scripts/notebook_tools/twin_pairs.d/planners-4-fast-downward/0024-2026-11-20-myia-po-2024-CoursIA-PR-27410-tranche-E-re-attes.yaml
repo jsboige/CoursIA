@@ -1,0 +1,8 @@
+date: '2026-11-20'
+by: 'myia-po-2024:CoursIA, PR #27410 tranche E : re-attestation apres remede 2 Hermes
+  (coquille footer ).* markdown seul, cote C# seul, contenu jumeau inchange sinon).
+  --update en DERNIERE operation (cf #8957)'
+python_sha: 7ac8368e9da74a16671a8e51715598917b888005
+csharp_sha: ea0894f2de2dd0e16f388cbeffb33dffad0177d8
+content_python_sha: 0a657c7cf59e100ce299ba2fce72bc2f3c95daedaee10de14af3aaa4a2cf041b
+content_csharp_sha: b8b1343de2902270c04085b66f99115ea366ac60348cd111f3f8ce3e911e04c9

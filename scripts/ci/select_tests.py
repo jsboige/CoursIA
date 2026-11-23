@@ -332,7 +332,9 @@ def select(root: Path, changed: list[str]) -> Selection:
             # R1 -- un test touche selectionne sa suite locale, lui-meme en tete.
             for p in local_tests:
                 add(p, "R1-identite", rel, "suite locale du fichier de test touche")
-            add(abs_path, "R1-identite", rel, "fichier de test touche")
+            # Un test supprime figure dans le diff mais ne peut etre execute.
+            if abs_path in local_tests:
+                add(abs_path, "R1-identite", rel, "fichier de test touche")
             covered_sources.add(rel)
             continue
 

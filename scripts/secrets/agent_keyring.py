@@ -83,7 +83,7 @@ EXPECTED_GH = {
 # machines le 2026-10-20, msg po-2024 `msg-20261020T204450-rpjwdn`). Il vit
 # ici plutot que lu a distance : un gate CI ne depend pas du stockage
 # partage, et l'elargissement est une edition consciente -- jamais une
-# correspondance de forme. `scripts/gh_identity.py` et ce fichier le
+# correspondance de forme. `scripts/ci/gh_identity.py` et ce fichier le
 # partagent par test croise (#21687).
 FLEET_ROSTER = (
     "myia-ai-01",
@@ -1043,14 +1043,14 @@ def cmd_doctor(args) -> int:
         # machine listee ici attend son compte GitHub ; le test croise rougit
         # si quelqu'un elargit l'un sans l'autre.
         try:
-            sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
             import gh_identity
             unmapped = sorted(set(FLEET_MACHINES) - set(gh_identity.HOST_ACCOUNTS))
         except Exception:
             unmapped = []
         if unmapped:
             print("            sans compte GitHub mappable (a creer, cf "
-                  "scripts/gh_identity.py) : " + ", ".join(unmapped))
+                  "scripts/ci/gh_identity.py) : " + ", ".join(unmapped))
     if not has:
         defects += 1
 

@@ -77,7 +77,7 @@ Usage
     python scripts/lean/check_added_axioms_cliquet.py --body-file <corps.md>
 
     # Restrict to specific paths (default: own lakes):
-    python scripts/lean/check_added_axioms_cliquet.py --paths 'MyIA.AI.Notebooks/Compression/Compression_lean/*.lean'
+    python scripts/lean/check_added_axioms_cliquet.py --paths 'MyIA.AI.Notebooks/InformationCalcul/Compression/Compression_lean/*.lean'
 
     # JSON for CI consumption:
     python scripts/lean/check_added_axioms_cliquet.py --json
@@ -236,7 +236,12 @@ def _git_rev_list(base: str, head: str, repo_root: Path | None = None) -> list[P
     and head. Includes added, modified and deleted files; the consumer
     filters by content.
     """
-    cmd = ["git", "diff", "--name-only", "--diff-filter=AM", f"{base}..{head}"]
+    # Three-dot: PR-diff semantics (merge-base..head), aligned with the
+    # fast-lane host (`scripts/ci/fast_lane.py` uses ``{base}...HEAD``).
+    # Two-dot on a stale base inverts recent main commits: a ``sorry`` that
+    # main *removed* after the fork point surfaces as "re-added" by the PR
+    # (measured on PR #27066, issue #27072).
+    cmd = ["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...{head}"]
     out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", check=True, cwd=repo_root)
     paths = [Path(p) for p in out.stdout.splitlines() if p.endswith(".lean")]
     return [p for p in paths if not _is_excluded(p)]
@@ -257,7 +262,8 @@ def _git_diff_added_lines(base: str, head: str, path: Path, repo_root: Path | No
     """Return 1-based line numbers of ADDED lines (no context, no deletions)
     in ``path`` between base and head.
     """
-    cmd = ["git", "diff", "--unified=0", "--no-color", f"{base}..{head}", "--", path.as_posix()]
+    # Three-dot, same rationale as _git_rev_list (merge-base..head = PR diff).
+    cmd = ["git", "diff", "--unified=0", "--no-color", f"{base}...{head}", "--", path.as_posix()]
     res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", cwd=repo_root)
     if res.returncode != 0:
         return []
@@ -356,7 +362,8 @@ def scan_added_lines(
     paths: Iterable[Path] | None = None,
     repo_root: Path | None = None,
 ) -> CliquetReport:
-    """Diff ``base..head`` for ``*.lean`` files and return a structured report.
+    """Diff ``base...head`` (merge-base..head, PR-diff semantics) for
+    ``*.lean`` files and return a structured report.
     ``paths`` is the in-scope set; ``None`` means "all own-lake lean files
     that differ between base and head". ``repo_root`` is the directory in
     which to run ``git`` (defaults to the process cwd).

@@ -1,0 +1,26 @@
+﻿probe qwen3.6-35b-a3b: OK -> The user said "ping"
+ADK version: google-adk 2.13.0
+
+Give Feedback / Get Help: https://github.com/BerriAI/litellm/issues/new
+LiteLLM.Info: If you need to debug this error, use `litellm.turn_on_debug()'.
+
+sonde echec (modele inexistant): NotFoundError
+charge: distill_charge_vraie.md (18916 caracteres, charge reelle)
+endpoint: http://localhost:5002/v1 | modele: qwen3.6-35b-a3b | temperature 0 | jetons max: 3000
+[run 1] tours=1 verdict_critique=ACCEPTE wall=98.19s appels=3
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: ACCEPTE tour 1
+    appel[producteur]: latence=37.97s
+    appel[critique]: latence=46.15s
+    appel[arbitre]: latence=14.06s
+[run 2] tours=1 verdict_critique=ACCEPTE wall=126.34s appels=3
+    sequence: producteur -> critique -> arbitre
+    decision: DECISION: ACCEPTE tour 1
+    appel[producteur]: latence=59.38s
+    appel[critique]: latence=48.96s
+    appel[arbitre]: latence=18.0s
+DETERMINISME (tours, decision, tour d'arbitrage): OK (1, 'ACCEPTE', '1') vs (1, 'ACCEPTE', '1')
+LLM CALLS: 7/16
+LOC PILOT: 457 lignes
+MESURES: moteur=adk modele=qwen3.6-35b-a3b endpoint=http://localhost:5002/v1 charge=distill_charge_vraie.md carac=18916 appels=7 jetons_in=38766 jetons_out=6387 latence_appels_s=224.52 tours=1 decision=DECISION: ACCEPTE tour 1 determinisme=OK
+PILOT OK orchestration=ADK(designation explicite, session partagee) charge=distillation

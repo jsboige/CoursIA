@@ -1,6 +1,6 @@
 - name: App-15 SportsScheduling
   family: Search/Part3-Cas-pratiques
-  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling.ipynb
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling-Python.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK

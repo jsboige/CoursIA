@@ -1,0 +1,174 @@
+{
+  "issue": "27231",
+  "epic": "Q162 d fournée 2 — remédiation prose<->sorties QC-Py-08",
+  "lane": "myia-po-2028:CoursIA",
+  "phase_role": "Runs QC Cloud de référence du carnet QC-Py-08, relus/relancés via MCP qc-mcp-lite pour ancrer la prose sur des sorties vérifiables",
+  "execution_metadata": {
+    "qc_project_id": 33177683,
+    "qc_project_name": "CoursIA-Audit-QCPy08-GroundTruth",
+    "reads_at_utc": "2026-11-18T19:2:00Z",
+    "fresh_reruns": [
+      {
+        "algorithm": "RegimeDetectionAlgorithm",
+        "backtest_id": "2d02bbf82d9c68aa29905954513cc860",
+        "created": "2026-11-18 19:10:13",
+        "declared_variant": "SetEndDate(2024,12,31) ajouté au code de la cellule de référence 24 pour aligner la fenêtre sur le cohort (le run d'origine, sans SetEndDate, courait jusqu'à présent : 2863 dates)"
+      },
+      {
+        "algorithm": "EqualWeightPortfolioAlgorithm",
+        "backtest_id": "d08d6c75fdb9a4f0d506626a3214bc1b",
+        "created": "2026-11-18 19:12:56",
+        "declared_variant": "code verbatim de la cellule de référence 31"
+      },
+      {
+        "algorithm": "RiskParityAlgorithm",
+        "backtest_id": "2f91926a11ecc41785efd2294ce80fa2",
+        "created": "2026-11-18 19:15:13",
+        "declared_variant": "code verbatim de la cellule de référence 36"
+      }
+    ],
+    "historical_runs_source": "PR #3838 (alignement des 7 tables sur des re-runs réels, fenêtre 2015-01-01..2024-12-31)"
+  },
+  "runs": [
+    {
+      "algorithm": "MultiAssetPortfolioAlgorithm",
+      "backtest_id": "51753ddc922582dc34c04f236a846528",
+      "backtest_name": "MultiAsset-2015-2024",
+      "created": "2026-06-21 15:09:48",
+      "tradeable_dates": 3653,
+      "orders": 0,
+      "sharpe": "0",
+      "cagr": "0%",
+      "max_dd": "0%",
+      "net_profit": "0%",
+      "psr": "0%",
+      "end_equity": "$100,000.00"
+    },
+    {
+      "algorithm": "CorrelationAnalysisAlgorithm",
+      "backtest_id": "4003640ad4cf19651717bbfc472bbbb4",
+      "backtest_name": "Correlation-2015-2024",
+      "created": "2026-06-21 15:10:16",
+      "tradeable_dates": 2882,
+      "orders": 0,
+      "sharpe": "0",
+      "cagr": "0%",
+      "max_dd": "0%",
+      "net_profit": "0%",
+      "psr": "0%",
+      "end_equity": "$100,000.00"
+    },
+    {
+      "algorithm": "RegimeDetectionAlgorithm",
+      "backtest_id": "2d02bbf82d9c68aa29905954513cc860",
+      "backtest_name": "RegimeDetection 2015-2024 (QC-Py-08 cell24 fournée2 Q162d)",
+      "created": "2026-11-18 19:10:13",
+      "tradeable_dates": 2516,
+      "orders": 288,
+      "sharpe": "0.305",
+      "cagr": "6.436%",
+      "max_dd": "25.200%",
+      "net_profit": "86.673%",
+      "psr": "0.366%",
+      "end_equity": "$186,673.27"
+    },
+    {
+      "algorithm": "EqualWeightPortfolioAlgorithm",
+      "backtest_id": "d08d6c75fdb9a4f0d506626a3214bc1b",
+      "backtest_name": "EqualWeight 2015-2024 (QC-Py-08 cell31 fournée2 Q162d)",
+      "created": "2026-11-18 19:12:56",
+      "tradeable_dates": 2516,
+      "orders": 202,
+      "sharpe": "0.348",
+      "cagr": "6.982%",
+      "max_dd": "19.400%",
+      "net_profit": "96.490%",
+      "psr": "0.583%",
+      "end_equity": "$196,490.11"
+    },
+    {
+      "algorithm": "RiskParityAlgorithm",
+      "backtest_id": "2f91926a11ecc41785efd2294ce80fa2",
+      "backtest_name": "RiskParity 2015-2024 (QC-Py-08 cell36 fournée2 Q162d)",
+      "created": "2026-11-18 19:15:13",
+      "tradeable_dates": 2516,
+      "orders": 538,
+      "sharpe": "0.293",
+      "cagr": "5.549%",
+      "max_dd": "22.200%",
+      "net_profit": "71.678%",
+      "psr": "0.311%",
+      "end_equity": "$171,678.38"
+    },
+    {
+      "algorithm": "TacticalAssetAllocationAlgorithm",
+      "backtest_id": "9d5d5f326db8a8aec24594018fe0c0ee",
+      "backtest_name": "taa-groundtruth-2015-2024",
+      "created": "2026-06-21 12:00:54",
+      "tradeable_dates": 2516,
+      "orders": 388,
+      "sharpe": "0.231",
+      "cagr": "5.765%",
+      "max_dd": "22.900%",
+      "net_profit": "75.231%",
+      "psr": "1.872%",
+      "end_equity": "$175,230.85"
+    },
+    {
+      "algorithm": "ProtectivePutAlgorithm",
+      "backtest_id": "c5bbbe1d538472f6f491b462e6b458ff",
+      "backtest_name": "ProtectivePut-2015-2024",
+      "created": "2026-06-21 14:49:29",
+      "tradeable_dates": 2516,
+      "orders": 15,
+      "sharpe": "-0.657",
+      "cagr": "0.907%",
+      "max_dd": "6.400%",
+      "net_profit": "9.462%",
+      "psr": "0.315%",
+      "end_equity": "$109,461.61"
+    },
+    {
+      "algorithm": "CollarStrategyAlgorithm",
+      "backtest_id": "4d27e53f85d9f456431e8d4cebb9c712",
+      "backtest_name": "Collar-2015-2024",
+      "created": "2026-06-21 14:59:19",
+      "tradeable_dates": 2516,
+      "orders": 5,
+      "sharpe": "0.485",
+      "cagr": "10.605%",
+      "max_dd": "28.000%",
+      "net_profit": "174.221%",
+      "psr": "9.179%",
+      "end_equity": "$274,220.80"
+    },
+    {
+      "algorithm": "FuturesHedgingAlgorithm",
+      "backtest_id": "c75add1e8ae039d9f3544e249ccc185e",
+      "backtest_name": "FuturesHedging-2015-2024",
+      "created": "2026-06-21 15:08:46",
+      "tradeable_dates": 2579,
+      "orders": 4,
+      "sharpe": "0.821",
+      "cagr": "24.030%",
+      "max_dd": "39.400%",
+      "net_profit": "763.053%",
+      "psr": "29.549%",
+      "end_equity": "$4,315,263.73"
+    },
+    {
+      "algorithm": "AllWeatherPortfolioAlgorithm",
+      "backtest_id": "c5a9fb0fa4f70816fcc476420bb64457",
+      "backtest_name": "AllWeather-2015-2024",
+      "created": "2026-06-21 14:48:07",
+      "tradeable_dates": 2516,
+      "orders": 159,
+      "sharpe": "0.2",
+      "cagr": "4.889%",
+      "max_dd": "23.500%",
+      "net_profit": "61.225%",
+      "psr": "3.029%",
+      "end_equity": "$161,224.74"
+    }
+  ]
+}

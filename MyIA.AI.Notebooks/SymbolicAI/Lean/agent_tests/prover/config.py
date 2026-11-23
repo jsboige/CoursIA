@@ -571,7 +571,7 @@ DEMOS = {
         "file": str(VOTING_FILE),
         "line": 355,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "median_voter_theorem_strict (case peaks_j < median)",
+        "theorem_name": "median_voter_theorem_strict",  # cas peaks_j < median
         "theorem": "median_voter_theorem_strict",
         "imports": VOTING_IMPORTS,
         "goal": (
@@ -682,7 +682,7 @@ DEMOS = {
         "file": str(VOTING_FILE),
         "line": 385,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "median_voter_theorem_strict (case peaks_j > median)",
+        "theorem_name": "median_voter_theorem_strict",  # cas peaks_j > median
         "theorem": "median_voter_theorem_strict",
         "imports": VOTING_IMPORTS,
         "goal": (
@@ -1744,7 +1744,7 @@ DEMOS = {
         "file": str(BASIC_FILE) if BASIC_FILE else "",
         "line": 312,
         "sorry_type": "sorry_replacement",
-        "theorem_name": "bondareva_shapley_backward (hb_witness existence)",
+        "theorem_name": "bondareva_shapley_backward",  # cas hb_witness existence
         "theorem": "bondareva_shapley_backward",
         "imports": (
             "import Mathlib.Data.Finset.Basic\n"

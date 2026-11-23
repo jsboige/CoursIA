@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 164
-breakdown: Lean=164
-maturity: BETA=154, DRAFT=6, ALPHA=4
+pedagogical_count: 167
+breakdown: Lean=167
+maturity: BETA=156, DRAFT=7, ALPHA=4
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -118,6 +118,8 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 13d | [Lean-13d-CHSH-Indeterminisme-Native](Lean-13d-CHSH-Indeterminisme-Native.ipynb) | Companion **natif** du lake `conway_lean` : la route statistique vers l'indéterminisme exécutée in-kernel — modèle local déterministe du jeu CHSH en vocabulaire FWT (`AliceResponse`/`BobResponse` : fonctions de l'état caché, localité par signature, l'analogue structurel de MIN), frontière locale état par état (`|realizedScore| = 2`, délégué à `classical_abs_score`), écart de Tsirelson `2 < 2√2` et conclusion `chsh_indeterminism` (aucun modèle local déterministe ne réalise un score `> 2` en réels — la même conclusion que le théorème du libre arbitre, obtenue par l'argument statistique), tableau comparatif des deux routes (contextuelle vs statistique) et 3 exercices - Epic #13106 | 25 min |
 | 13e | [Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python](Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb) | théorème du libre arbitre (Conway-Kochen) : les trois axiomes SPIN/TWIN/MIN en profondeur, argument en deux temps (1 particule via Kochen-Specker, puis 2 particules via TWIN), ce que le théorème dit et NE dit PAS, port formel adossé à `FreeWillTheorem.lean` (chaîne de réduction `free_will_theorem -> fwt_single_particle -> kochen_specker`, 0 sorry), registre d'extensibilité - Epic #2162 / #2156 | 40 min |
 | 13f | [Lean-13f-Correlation-Bell-Vide-Lean-Python](Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb) | corrélation de Bell du vide (OQP 12, Turturean 2026) : la quantité β de Summers-Werner (bornes 1 et √2, le facteur ½ par rapport au score des carnets 13b-13d), prérequis QFT self-contained (corrélateur du vide m·K₁(mr)/(4π²r), décroissance exponentielle), organe CHSH du lake `conway_lean` inventorié par lecture des sources sans réimplémentation, jouet structurel à deux qubits (fenêtre intriqué-sans-violation entre ξ·ln(√2) et ξ·ln(3)), théorème de la coupure à séparation finie (L ≥ C\*·R ⟹ β = 1, réponse négative au problème 12), statut de la formalisation Lean 4 amont (six énoncés de `Challenge.lean`, audit d'axiomes) et lecture honnête d'un préprint issu d'agents IA - See #26488 | 45 min |
+| 13g | [Lean-13g-CGLMP-Mesures-Optimales-Lean-Python](Lean-13g-CGLMP-Mesures-Optimales-Lean-Python.ipynb) | mesures CGLMP optimales sur états maximalement intriqués (OQP 27, Turturean-Bao 2026) : le joueur numérique aux conventions de la formalisation amont (résidu B.1, `I_d = 4 − 2S_d/(d−1)`), atteinte **Mesurée** de la forme fermée pour d = 2..8 (d = 2 : 2√2, lien Tsirelson 13b/13c), borne locale 2 par énumération exhaustive des profils déterministes, théorème de classification cité (Th. 1 et 3 : mesures à phase de Fourier, cas d'égalité n = d·k vérifié sur Φ₆ par structure Π⊗I_k), seuil du témoin sous bruit uniforme v_c = 2/I_F(d), contre-résultats d = 2^m (bruit m ≥ 955, discrimination KL m ≥ 41), inventaire des 12 théorèmes de `Challenge.lean` - See #27820 | 45 min |
+| 13h | [Lean-13h-Maps-PPT-Borne-Lean-Python](Lean-13h-Maps-PPT-Borne-Lean-Python.ipynb) | digest OQP 38 (Turturean-Bao 2026) : la conjecture « PPT au carré » est fausse — deux maps PPT peuvent composer en une map non entanglement breaking (contre-exemple OpenAI 09/2026 sur M₁₀) — mais la composition de 2(d−1) maps PPT est toujours EB ; vocabulaire auto-contenu (transposition partielle, matrice de Choi, PPT opérateur vs map, entanglement breaking), famille jouet Werner–Holevo où la fenêtre PPT, la loi de composition fermée (formule vérifiée à 8,9e−16) et le carré des poids symétrique/antisymétrique se mesurent numériquement, lecture du `Challenge.lean` amont (13 théorèmes en `sorry`, 4 énoncés principaux cités par ligne), inventaire du lake `conway_lean` (aucune déclaration PPT/Choi — le vide mesuré) et 3 exercices - See #26531 | 45 min |
 | 14 | [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) | Dérivées symboliques de Brzozowski : la finitude des dérivées qui garantit le matching linéaire (langages rationnels, automates) | 25 min |
 | 14b | [Lean-14b-Finiteness-Lean-Companion](Lean-14b-Finiteness-Lean-Companion.ipynb) | Companion **natif** (kernel Lean) : les 7 déclarations du lake `finiteness_lean` (`Regex`, `nullable`, `deriv`, `derivWord`, `accepts`, `aStar`, `abWord`) re-déclarées fidèlement (kernel sans oleans), vérifiées et exécutées in-kernel, finitude observée sur une regex à union (6 préfixes → 4 dérivées distinctes) | 20 min |
 
@@ -132,7 +134,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 15e | [Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python](Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | Monodromie et groupe fondamental — le plan épointé à l'œuvre : volet preuve de la fenêtre 7-bis, transport d'un objet algébrique le long d'une boucle autour d'une singularité ; le module `Grothendieck.Monodromie` du lac `grothendieck_lean` piloté depuis le kernel `lean4-wsl`, `sorry` compté à zéro avant lecture - See #17978 / #21307 | 45 min |
 | 16 | [Lean-16-Conway-Homme-et-Oeuvre-Lean-Python](Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb) | Conway, l'homme et l'oeuvre : biographie et style singulier (le jeu comme méthode) ; panorama des grands résultats (nombres surréels, groupes de Conway & Monstrous Moonshine, réseau de Leech, polynôme de Conway, Doomsday, Look-and-Say, FRACTRAN, problème de l'Ange, Sprouts, théorème du libre arbitre) ; premières noix crackées exécutées depuis conway_lean (Doomsday, Look-and-Say, Nim, Angel, Life - 0 sorry) - Epic #1647 / #2154 | 50 min |
 | GOL-01 | [GOL/GOL-01-Regles-Vie-Lean](GOL/GOL-01-Regles-Vie-Lean.ipynb) | Hommage à John Conway : Game of Life as Computation, Doomsday, FRACTRAN, Look-and-Say, Nim, Angel - Epic #1647 | 60 min |
-| GOL-02 | [GOL/GOL-02-Golly](GOL/GOL-02-Golly.ipynb) | Game of Life : les 3 piliers en images (compagnon Golly, intégration CLI `bgolly` pour simulation certifiée) - Epic #1647 | 45 min |
+| GOL-02 | [GOL/GOL-02-Golly](GOL/GOL-02-Golly.ipynb) | Game of Life : les 3 piliers en images (compagnon Golly, simulation Python propre - la certification formelle vit dans GOL-03/GOL-05) - Epic #1647 | 45 min |
 | GOL-03 | [GOL/GOL-03-Vie-Native](GOL/GOL-03-Vie-Native.ipynb) | Game of Life sur **kernel Lean natif** (`lean4-wsl`) : grille, règle B3/S23, moteur `step`/`evolve`, motifs (bloc, clignoteur, planeur) et faits certifiés par `decide`/`native_decide`, sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
 | 16b | [Lean-16b-Conway-FRACTRAN-Lean-Native](Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | FRACTRAN sur **kernel Lean natif** (`lean4-wsl`) : type `Frac` (preuve `den > 0`), moteur `fracMulNat`/`fractranStep`/`fractranRun`, programmes (doubler, diviser) et le générateur de nombres premiers de Conway (14 fractions), faits certifiés par `decide` sans axiome `sorry` - Epic #1647 / #3294 | 40 min |
 | GOL-04 | [GOL/GOL-04-Canons](GOL/GOL-04-Canons.ipynb) | Barreau 2 de l'échelle des témoins Life (#12223, chantier #12205) : la source périodique (canon de Gosper) — reconnaître (période 30, transitoire 0, cadence d'émission 30 mesurées), générer (recherche bornée 3 000 soupes, zéro calibré par contrôle positif), certifier (prédicat `core (evolve 30 gosper_gun) = core gosper_gun` évalué `#eval` sur horizons 30/60/90 depuis le lake), barreaux 3-4 nommés hors d'atteinte | 45 min |
@@ -157,7 +159,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 |---|----------|---------|-------|
 | 19 | [Lean-19-Detection-MIMO-Index-Python](Lean-19-Detection-MIMO-Index-Python.ipynb) | Banc d'essai Hoeffding pour la détection MIMO : vérification empirique de la loi de Bernoulli composée (p_hat ≈ p) sur 20 instances BSC, rapport écart/borne Hoeffding 0.016 à 0.698 (20/20 = 100 % des instances sous la borne) — étalon de référence pour la sous-série MIMO (PR #20371) qui consumera Lean-19 comme baseline — kernel `python3`, 3 exercices | 20 min |
 | 19b | [Lean-19b-Borne-Chernoff-Python](Lean-19b-Borne-Chernoff-Python.ipynb) | Borne de Chernoff pour le BSC : dérivation depuis la fonction génératrice des moments exacte de la Bernoulli, puis comparaison des trois bornes (Hoeffding / Chernoff / Bernstein) sur les mêmes 20 instances — Chernoff domine Hoeffding sur 19/20 instances (égalité numérique à p = 0.50), le gain croissant quand `p` s'éloigne de 1/2 — kernel `python3` | 25 min |
-| 19c | [Lean-19c-Borne-Bernstein-Python](Lean-19c-Borne-Bernstein-Python.ipynb) | Borne de Bernstein pour le BSC : borne en `mu`/`sigma^2` sans fonction génératrice, tableau des ratios par instance et lecture par régime de `p` — les trois bornes y sont calculées et confrontées à la fréquence observée — kernel `python3` | 25 min |
+| 19c | [Lean-19c-Borne-Bernstein-Python](Lean-19c-Borne-Bernstein-Python.ipynb) · [jumeau Rust](Lean-19c-Borne-Bernstein-Rust.ipynb) | Borne de Bernstein pour le BSC : borne en `mu`/`sigma^2` sans fonction génératrice, tableau des ratios par instance et lecture par régime de `p` — les trois bornes y sont calculées et confrontées à la fréquence observée — kernel `python3` | 25 min |
 | 19d | [Lean-19d-Inference-Bayesian-Beta-Binomial-Python](Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) | Inférence bayésienne Beta-Binomial : posterior conjugué, intervalle de crédibilité HDI, confrontation aux bornes fréquentistes sur les mêmes 20 instances — le HDI reste plus étroit que Hoeffding à tout `N`, l'écart ne se refermant pas avec la taille d'échantillon — kernel `python3` | 25 min |
 
 ### Partie 6 : Recherche pondérée et optimalité (A*)
@@ -182,20 +184,20 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | MIMO-03 | [MIMO-03-Converse-Native-Lean](MIMO/MIMO-03-Converse-Native-Lean.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lac `mimo_lean` : le lac importé et exécuté dans un kernel Lean 4 réel — la frontière SLT exhibée par `#check` (ce qui est prouvé vs emprunté à `YuanheZ/lean-stat-learning-theory`), les six déclarations de `NormTails` (concentration de Lipschitz gaussienne), les seize briques du converse Hanson–Wright (dont `hanson_wright_noise` et la queue chi-carré `chisq_norm_concentration`), les treize du pont ML (`Bridge`), `#print axioms` sur les théorèmes clés — uniquement les axiomes standards, zéro `sorry` | 40 min |
 | MIMO-04 | [MIMO-04-Capstone-Digestion-Python](MIMO/MIMO-04-Capstone-Digestion-Python.ipynb) | **Capstone** de la sous-série [MIMO](MIMO/README.md), et sa sortie : les énoncés du lac exécutés à la main sur une instance réelle — les cinq faits de `Descent.lean` vérifiés un par un (le coût **entier** est ce qui rend `run_length_le_cost` vraie), le témoin d'échec `DescentFailure` exhibé sur un canal identité sans bruit (la règle stricte n'accepte aucun flip, la règle relâchée cycle de période 2), la borne de queue de `NormTails` vérifiée par Monte-Carlo sur douze couples `(M, t)`, le seuil `√(2·log(2N/ε))` dérivé du union bound, et la **surface du lac recomptée depuis les sources** — où l'organe canonique rend `56` là où les sources en portent `57`, son motif de nom s'arrêtant au premier caractère grec — kernel `python3`, 3 exercices | 35 min |
 | GALOIS-01 | [GALOIS-01-Probleme-Inverse-M23-Python](GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb) | Le problème inverse de Galois refermé (arXiv:2608.08538, 9 août 2026) : M₂₃ prouvé simple d'ordre 10 200 960 **à l'écran** (`card_M23`/`simple_M23` exécutés, `#print axioms` = liste blanche), design de Witt S(4,7,23) vérifié des deux côtés (253 heptades), polynôme f₁ de degré 23 manipulé pour de vrai (empreinte, irréductibilité, discriminant 383 chiffres, Frobenius mod p) — les deux énoncés distingués : prouvé vs cité | 45 min |
-| 23 | [Lean-23-ERC20-Invariant-Companion](Lean-23-ERC20-Invariant-Companion.ipynb) | L'invariant de conservation d'un jeton ERC-20 (`Σ balances = totalSupply`) : traces jouets en Python, lectures statiques des 17 déclarations du lake `erc20_lean`, propreté axiomatique par absence de `sorry`, Monte-Carlo sur la tolérance numérique (#11710) | 40 min |
-| 23b | [Lean-23b-Lean-ERC20-Native-Companion](Lean-23b-Lean-ERC20-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `erc20_lean` : les 17 déclarations **résolues par le kernel** (`#check`), l'invariant et les transitions `mint`/`burn`/`transfer` **évalués** sur un état concret (`by decide`), `#print axioms` natif sur les 5 théorèmes phares, la pyramide op → trace `Reachable` → invariant type-checkée avec ses gardes (#11721) | 30 min |
-| 24 | [Lean-24-Calibration-Native-Companion](Lean-24-Calibration-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `calibration_lean` : les cibles de calibration du prouveur multi-agents (Epic #1453, P1-P5) importées et exécutées — chaque définition/théorème interrogé par `#check`/`#eval`/`#print axioms`, sorties du compilateur Lean | 35 min |
-| 24b | [Lean-24b-Confiance-Preuves-Native](Lean-24b-Confiance-Preuves-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`, lake `mathlib_examples`) sur la fiabilité d'un certificat formel, piste Dougherty/von Hippel 2026 (*Lies, Damned Lies, and Proofs* — « ce qui rend une preuve formelle fiable ») : mis-définition rendant la preuve trivialement vraie (`DivPar` → `True` vs la vraie divisibilité avec témoin), axiomes de secours mesurés par `#print axioms` (`sorryAx` transitif, `native_decide`, `Classical.choice` whitelisté par nom), implosion depuis `False` (0 axiome), et orthogonalité certificat-vs-headline (mêmes axiomes, fidélités opposées) — cellules code exécutées sans erreur, 3 exercices | 30 min |
-| 25 | [Lean-25-Coherence-et-Temoin](Lean-25-Coherence-et-Temoin.ipynb) | Cohérence de de Finetti et témoin (Dutch book) : miroir Python **exact** (`fractions.Fraction`) du lake `decision_theory_lean` — un livret (+1,+1,−1,−1) encaisse l'écart d'inclusion-exclusion uniformément dans les 4 états, balayage borné exhaustif (390 625 combinaisons) qui certifie l'absence de livre sur le système réparé, stabilité affine vNM mesurée (0 divergence pour 3u+2 contre 124 pour u² sur les 2145 paires de 66 loteries du simplexe) | 40 min |
+| 23 | [VERIF-02-ERC20-Invariant-Companion](VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb) | L'invariant de conservation d'un jeton ERC-20 (`Σ balances = totalSupply`) : traces jouets en Python, lectures statiques des 17 déclarations du lake `erc20_lean`, propreté axiomatique par absence de `sorry`, Monte-Carlo sur la tolérance numérique (#11710) | 40 min |
+| 23b | [VERIF-03-Lean-ERC20-Native-Companion](VERIF/VERIF-03-Lean-ERC20-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `erc20_lean` : les 17 déclarations **résolues par le kernel** (`#check`), l'invariant et les transitions `mint`/`burn`/`transfer` **évalués** sur un état concret (`by decide`), `#print axioms` natif sur les 5 théorèmes phares, la pyramide op → trace `Reachable` → invariant type-checkée avec ses gardes (#11721) | 30 min |
+| 24 | [VERIF-04-Calibration-Native-Companion](VERIF/VERIF-04-Calibration-Native-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `calibration_lean` : les cibles de calibration du prouveur multi-agents (Epic #1453, P1-P5) importées et exécutées — chaque définition/théorème interrogé par `#check`/`#eval`/`#print axioms`, sorties du compilateur Lean | 35 min |
+| 24b | [VERIF-01-Confiance-Preuves-Native](VERIF/VERIF-01-Confiance-Preuves-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`, lake `mathlib_examples`) sur la fiabilité d'un certificat formel, piste Dougherty/von Hippel 2026 (*Lies, Damned Lies, and Proofs* — « ce qui rend une preuve formelle fiable ») : mis-définition rendant la preuve trivialement vraie (`DivPar` → `True` vs la vraie divisibilité avec témoin), axiomes de secours mesurés par `#print axioms` (`sorryAx` transitif, `native_decide`, `Classical.choice` whitelisté par nom), implosion depuis `False` (0 axiome), et orthogonalité certificat-vs-headline (mêmes axiomes, fidélités opposées) — cellules code exécutées sans erreur, 3 exercices | 30 min |
+| 25 | [VERIF-05-Coherence-et-Temoin](VERIF/VERIF-05-Coherence-et-Temoin.ipynb) | Cohérence de de Finetti et témoin (Dutch book) : miroir Python **exact** (`fractions.Fraction`) du lake `decision_theory_lean` — un livret (+1,+1,−1,−1) encaisse l'écart d'inclusion-exclusion uniformément dans les 4 états, balayage borné exhaustif (390 625 combinaisons) qui certifie l'absence de livre sur le système réparé, stabilité affine vNM mesurée (0 divergence pour 3u+2 contre 124 pour u² sur les 2145 paires de 66 loteries du simplexe) | 40 min |
 | 26 | [Lean-26-Munkres-Tribute](Lean-26-Munkres-Tribute.ipynb) | Hommage à James R. Munkres (1930-2026), le cours 18.901 dans Mathlib en kernel **natif** `lean4-wsl`, exécuté sur le lake `mathlib_examples` (environnement d'exécution Mathlib, cf. [`mathlib_examples/`](mathlib_examples/)) : les cinq chapitres du manuel *Topology* — axiomes (`IsOpen`), adhérence/intérieur (`nhds`, dualités §17 ex. 6), continuité (`continuous_def` = Munkres §18.1), T2/compacité, connexité — chaque notion interrogée par `#check`/`example`/`#print axioms` (0 axiome), 3 exercices `sorry` | 30 min |
 | 27 | [Lean-27-EdgeColoring-Tutte-Companion](Lean-27-EdgeColoring-Tutte-Companion.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du notebook [Frontieres-01](../../Search/Part5-Frontieres/Frontieres-01-EdgeColoring-Tutte-Python.ipynb) (théorème apex arXiv 2608.22870, #13031) : définitions `IsCubic`/`Edge3Colorable`/`IsApexRelativeTo` posées sur `SimpleGraph` (absentes de Mathlib, vérifié), Petersen = Kneser KG(5,2) via `SimpleGraph.mk'` — 10 sommets, 15 arêtes, cubique prouvés par `decide`, backtracking `#eval` qui certifie l'absence de toute 3-coloration d'arêtes (`0`) avec contrôle positif K4 (`6`), ancrage `SimpleGraph.tutte` | 35 min |
 | 28 | [Lean-28-Complex-Structure-S6](Lean-28-Complex-Structure-S6.ipynb) | Le problème de Hopf résolu : une structure complexe intégrable sur S⁶ (énoncé `Mathoverflow1973` de Formal Conjectures) — digestion du fil constructif (triangle (3,4,∞), accouplement de Shioda ⟨P,P⟩=1/6 calculé, transformations logarithmiques 3 et 4, remplissage de Mumford dP₆, reconnaissance Hurewicz→Smale→Kervaire–Milnor) avec deux invariants **calculés** (\|π₁\| = \|4m+3n\| par forme normale de Smith, χ = 2), reproduction **réelle** du dépôt piné `plby/HopfProblem` via `hopf_s6_reproduction.py` (248 818 lignes compilées en 1154 s, 0 sorry/0 axiom, comparator double kernel Lean+nanoda : *« Your solution is okay! »*, axiomes [propext, Classical.choice, Quot.sound]) et attribution différenciée (manuscrit écrit par Claude/communiqué par Alpöge, exposition Engel avec caveat, code Lean majoritairement Codex) | 45 min |
 | 29 | [06-operateurs-de-hecke-natif](Langlands/06-operateurs-de-hecke-natif.ipynb) (descendu en sous-série [Langlands](Langlands/README.md), gradation #17545) | Compagnon **natif** (kernel `lean4-wsl`) du lake [`hecke_lean`](Langlands/hecke_lean/) (port pédagogique de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`, descendu avec la sous-série) : les opérateurs de Hecke T_p et U_p sur le demi-plan supérieur — représentants γ_{p,j} et partie diagonale, action de slash et ses deux comportements opposés, formule des coefficients a(np) + p^{k−1}·a(n/p) portée par `coeffHeckeT` — chaque déclaration interrogée par `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
-| 30 | [Lean-30-FormalGroups-Native](Lean-30-FormalGroups-Native.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `formal_groups_lean` (port de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`) : les groupes formels multivariés à travers les quatre modules `Basic`/`Hom`/`Additive`/`Iterates` — structure `MvFormalGroup` (neutre, partie linéaire, associativité), commutativité et substitution sûre, morphismes `Hom` et changement d'anneau, loi additive `addMv`, itérés `nthSeries`/`linearPart`/`FiniteHeight` — `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices | 40 min |
+| GROTH-06 | [GROTH/GROTH-06-FormalGroups-Lean](GROTH/GROTH-06-FormalGroups-Lean.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `formal_groups_lean` (port de `anthropics/fermats-last-theorem`, Apache-2.0, toolchain pinée `leanprover/lean4:v4.33.0`, descendu avec la sous-série) : les groupes formels multivariés à travers les quatre modules `Basic`/`Hom`/`Additive`/`Iterates` — structure `MvFormalGroup` (neutre, partie linéaire, associativité), commutativité et substitution sûre, morphismes `Hom` et changement d'anneau, loi additive `addMv`, itérés `nthSeries`/`linearPart`/`FiniteHeight` — `#check`/`#print axioms` exécutés in-kernel (0 erreur), 3 exercices — descendu de la racine (ancien Lean-30, gradation #17545 T8-30) | 40 min |
 | 31 | [ANALYSE-14-Euler-Navier-Stokes-Python](ANALYSE/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb) (descendu en sous-série [ANALYSE](ANALYSE/README.md), gradation #17545) | Reproduction pinée de `openai/NavierStokesAndEuler` : gates Euler et Navier–Stokes séparés, acceptation par le noyau Lean standard et `nanoda_lib`, confinement `landrun` vérifié fonctionnellement, onze sondes axiomatiques et quatre signatures de placeholders contrôlées exactement ; exposition distincte des chaînes Euler/BKM et des options (C)/(D), puis re-dérivation fail-closed des huit termes du verdict. **Enrichi (#16569)** : chronologie sourcée de la lignée et de la course (Córdoba–Martínez-Zoroa → Buckmaster–Alpöge → OpenAI, les deux récits du 6 septembre, réponses EMS/Clay/AMS/Tao, lecture à la lumière de la Déclaration de Leiden) et **GIFs animés** de l'écoulement (vortex 3D « spaghetti » orange/teal, plan méridien en vecteurs colorés à norme fixée, cascade infinie de couches Córdoba–Martínez-Zoroa, annulation fine des termes reliée au critère BKM), inspirés de l'exploration Wolfram Community citée et au-delà — kernel `python3`, cellules code exécutées sans erreur (compte au catalogue `COURSE_CATALOG.generated.json`, champ `resource_cost.execution.cells_code`), 3 exercices | 60 min |
 | 33 | [Lean-33-Distribution-Spaces](Lean-33-Distribution-Spaces.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `calibration_lean` : le module `Calibration.Distribution` est importé et interrogé par `#check`/`#print axioms` — espaces de Schwartz, décroissance de toutes les dérivées mesurée par une famille de seminormes | 35 min |
-| 34 | [Lean-34-Calculabilite-et-Limites](Lean-34-Calculabilite-et-Limites.ipynb) | **Tranche E** de l'Epic #15066 : calculabilité, diagonalisation et limites — témoins exécutables (diagonale de l'arrêt bornée, point fixe diagonal sur chaînes) puis certification au noyau via le lake `formal_logic_lean` (Foundation piné `81810b9f` + ProvabilityLogic `01628c51`, `CONSUMER_PINNÉ`) : Church (`undecidability_first_order_logic`), arrêt→incomplétude (`incomplete_of_halting_problem`), Gödel I/II, Rosser, Tarski (`undefinability_of_truth`) et Löb — 4 énoncés soigneusement séparés, `#check`/`#print axioms` audités, prérequis L2/L3 de #15062 — kernel `python3`, cellules code exécutées sans erreur (compte au catalogue `COURSE_CATALOG.generated.json`, champ `resource_cost.execution.cells_code`), 3 exercices | 45 min |
-| 34b | [Lean-34b-FairBot-Loeb](Lean-34b-FairBot-Loeb.ipynb) | Approfondissement de Lean-34 : FairBot et le théorème de Löb appliqués au dilemme du prisonnier en un coup (Barasz et al. 2014), sur trois niveaux — témoin syntaxique de GameTheory-06e, interface modale L2 où Löb est postulé, module L3 `FormalLogic.FairBotLoeb` où Löb est un théorème de FFL. Cadres de Kripke montrant que Löb, et non D1-D3, fixe l'issue ; coopération avec soi et entre deux FairBots distincts, inexploitabilité, défection vraie mais non prouvable contre DefectBot, auditées par `#check`/`#print axioms` ; évaluateur modal GL des seize duels confronté aux théorèmes — kernel `python3`, cellules code exécutées sans erreur (compte au catalogue `COURSE_CATALOG.generated.json`, champ `resource_cost.execution.cells_code`), 3 exercices | 60 min |
+| 34 | [VERIF-06-Calculabilite-et-Limites](VERIF/VERIF-06-Calculabilite-et-Limites.ipynb) | **Tranche E** de l'Epic #15066 : calculabilité, diagonalisation et limites — témoins exécutables (diagonale de l'arrêt bornée, point fixe diagonal sur chaînes) puis certification au noyau via le lake `formal_logic_lean` (Foundation piné `81810b9f` + ProvabilityLogic `01628c51`, `CONSUMER_PINNÉ`) : Church (`undecidability_first_order_logic`), arrêt→incomplétude (`incomplete_of_halting_problem`), Gödel I/II, Rosser, Tarski (`undefinability_of_truth`) et Löb — 4 énoncés soigneusement séparés, `#check`/`#print axioms` audités, prérequis L2/L3 de #15062 — kernel `python3`, cellules code exécutées sans erreur (compte au catalogue `COURSE_CATALOG.generated.json`, champ `resource_cost.execution.cells_code`), 3 exercices | 45 min |
+| 34b | [VERIF-07-FairBot-Loeb](VERIF/VERIF-07-FairBot-Loeb.ipynb) | Approfondissement de Lean-34 : FairBot et le théorème de Löb appliqués au dilemme du prisonnier en un coup (Barasz et al. 2014), sur trois niveaux — témoin syntaxique de GameTheory-06e, interface modale L2 où Löb est postulé, module L3 `FormalLogic.FairBotLoeb` où Löb est un théorème de FFL. Cadres de Kripke montrant que Löb, et non D1-D3, fixe l'issue ; coopération avec soi et entre deux FairBots distincts, inexploitabilité, défection vraie mais non prouvable contre DefectBot, auditées par `#check`/`#print axioms` ; évaluateur modal GL des seize duels confronté aux théorèmes — kernel `python3`, cellules code exécutées sans erreur (compte au catalogue `COURSE_CATALOG.generated.json`, champ `resource_cost.execution.cells_code`), 3 exercices | 60 min |
 | 36 | [Lean-36-Structures-Finies-MUH-Lean](Lean-36-Structures-Finies-MUH-Lean.ipynb) | Compagnon **natif** (kernel `lean4-wsl`) du lake `tegmark_muh_lean` (Annexe A de Tegmark 2007, [arXiv:0704.0646](https://arxiv.org/abs/0704.0646), **sans dépendance Mathlib**) : la définition d'une structure finie importée et exécutée in-kernel — `Structure`/`Rel`/`RelSig` et le **produit dépendant** qui type la table de valeurs, l'encodage §c et la complexité §d évalués (`[1, 3]`, `H = 3`), les exemples du papier rendus en clair (table de C₃ complète `[[0,1,2],[1,2,0],[2,0,1]]` et sa diagonale `[0,2,1]`, C₂, NAND `[[1,1],[1,0]]`), puis `Aut(S)` fermé sous composition (`autId`/`autComp`, `#print axioms` = 0 axiome) ; **la frontière est exhibée par sa sortie** — `decideEq C₃ C₂` rend `true` alors que les structures diffèrent de cardinal, le module livrant un squelette énumératif **déclaré** et non l'algorithme halting du §1 ; 1 exemple résolu exécuté (le décideur binaire `sameBinaryTable`, `false` sur C₂ vs NAND là où le squelette déclaratif rendait `true`) + 3 exercices vérifiables au noyau (soundness du décideur, automorphisme de C₃, NAND = ¬) | 40 min |
 
 | # | Notebook | Contenu | Durée |
@@ -203,7 +205,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 37 | [Lean-37-Capstone-Serre100](Lean-37-Capstone-Serre100.ipynb) | **Capstone (escalier)** vers la sous-série [Serre 100](Serre100/README.md) — née du centenaire de Jean-Pierre Serre (EPIC #16334) : le geste de *distillation* (un énoncé de Serre rendu calculable) et son diptyque **mesure** (carnet, kernel `python3`) / **preuve** (lake [`serre100_lean/`](Serre100/serre100_lean/), kernel `lean4-wsl`) ; table de routage des huit carnets, citation du lake par ses déclarations réelles (cinq modules FR + miroirs `_en` : `trace_eg_moins_somme_caractere`, `ombreZeta_eq_zero`, `round_trip_domain`, `orthogonaliteLignesS3`, `member_iff_outer`…), et **surface de la sous-série mesurée** plutôt que déclarée — kernel `python3`, exécuté sans erreur, 3 exercices | 20 min |
 | 38 | [Lean-38-Capstone-Geometry-Lean-Python](Lean-38-Capstone-Geometry-Lean-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Geometry](Geometry/README.md) (EPIC #18601) : le fil rouge du milieu de l'hypoténuse monté par cinq marches de garantie croissante — figure numérique, identité symbolique `sympy`, témoin négatif (triangle non rectangle), lecture du lake companion [`geometry_lean/`](Geometry/geometry_lean/) comme un consommateur (fichier réel, pas une copie), audit des axiomes interdits (`sorry`, `native_decide` : 0) — la réponse incarnée à la position 05 du programme gradué ([#17544](https://github.com/jsboige/CoursIA/issues/17544)) : que garantit « prouvé par Gröbner » ? Kernel `python3`, exécuté sans erreur, 3 exercices | 15 min |
 | 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | **Capstone (escalier)** vers la sous-série [GOL](GOL/README.md) (réorg #20204, filière Conway de l'EPIC #1647) : l'échelle des témoins du Jeu de la Vie — règle, mémoire (canons), calcul (translateur, Hashlife) — survolée en une marche ; **surface de la sous-série mesurée** plutôt que déclarée : 10 carnets, 3 kernels (les quatre `lean4-wsl` sans importation Python — leurs cellules illisibles par `ast` sont du Lean —, deux `python3-lean`, quatre `python3`), lake [`conway_lean/`](GOL/conway_lean/) lu par ses fichiers réels (modules `.lean` FR et miroirs `_en` dans `Conway/Life/`, moteur `scripts/hashlife.py`, patterns RLE dont `gemini.rle`) ; 3 exercices sur le moteur du lake (périodes, canon Gosper, concordance du README) | 15 min |
-| 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Langlands](Langlands/README.md) (EPIC #17969) : la relation de Hecke sur les coefficients de Δ montée par six marches de garantie croissante — table de Ramanujan exacte par convolution entière (13 valeurs publiées, concordance 13/13), identité τ(pn) + p¹¹τ(n/p) = τ(p)τ(n) vérifiée sur 9 cas (p = 2, 3, 5), témoin négatif (la suite perturbée τ+n la viole 9 fois sur 9), lecture du lac [`hecke_lean`](Langlands/hecke_lean/) comme un consommateur (définition `coeffHeckeT`, preuve de `coeffHeckeT_of_dvd`, audit `sorry`/`native_decide` : 0), et le pont Moonshine (j = E₄³/Δ recalculé, 196884 = 1 + 196883) — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
+| 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) · [Rust](Lean-40-Capstone-Langlands-Rust.ipynb) | **Capstone (escalier)** vers la sous-série [Langlands](Langlands/README.md) (EPIC #17969) : la relation de Hecke sur les coefficients de Δ montée par six marches de garantie croissante — table de Ramanujan exacte par convolution entière (13 valeurs publiées, concordance 13/13), identité τ(pn) + p¹¹τ(n/p) = τ(p)τ(n) vérifiée sur 9 cas (p = 2, 3, 5), témoin négatif (la suite perturbée τ+n la viole 9 fois sur 9), lecture du lac [`hecke_lean`](Langlands/hecke_lean/) comme un consommateur (définition `coeffHeckeT`, preuve de `coeffHeckeT_of_dvd`, audit `sorry`/`native_decide` : 0), et le pont Moonshine (j = E₄³/Δ recalculé, 196884 = 1 + 196883) — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
 | 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | **Capstone (escalier)** vers la sous-série [MIMO](MIMO/README.md) (EPIC #17545) : la détection MIMO par flips de coordonnées, le budget de descente et sa digestion — table de routage des quatre carnets (MIMO-01 à MIMO-04), citation du lac [`mimo_lean/`](mimo_lean/README.md) par ses modules réels (`Descent`, `Objective`, `Lmmse`, `Converse`, `Bridge`, `NormTails` + miroirs `_en`, baseline 0 sorry en code-only mesurée par l'organe canonique `count_code_sorry.py` — champ `distinct_code_sorry`), prérequis d'entrée (Lean 1-6 pour le formel, NumPy seul pour la digestion), **surface de la sous-série mesurée plutôt que déclarée** — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
 
 La sous-série **[Riemann 200](Riemann200/README.md)** (bicentenaire de Bernhard Riemann, EPIC [#20403](https://github.com/jsboige/CoursIA/issues/20403)) s'ouvre par cette marche, sans escalier dédié pour l'instant : chaque texte fondateur y devient une **distillation calculée** — l'énoncé mesuré dans une sortie, démontrable en Lean quand Mathlib le permet, exerçable. Le versant preuves vit dans le lake compagnon [`riemann200_lean/`](Riemann200/riemann200_lean/) — le pôle en s = 1 et la divergence des inverses des premiers dans [`Memoire1859.lean`](Riemann200/riemann200_lean/Riemann200/Memoire1859.lean), la forme ε du liminf dans [`LiminfForme.lean`](Riemann200/riemann200_lean/Riemann200/LiminfForme.lean) — même maison que [`serre100_lean/`](Serre100/serre100_lean/). Le carnet capstone citant la sous-série depuis la racine reste à poser.
@@ -235,6 +237,9 @@ A l'issue de la série, vous saurez :
 - **Comprendre le théorème du libre arbitre** (Conway-Kochen) : les axiomes SPIN/TWIN/MIN, l'argument en deux temps qui réduit le cas à deux particules au théorème de Kochen-Specker (Notebook 13), et la lecture honnête de sa portée (ce qu'il dit et ne dit pas) — adossé à `FreeWillTheorem.lean` (0 sorry). Notebook Lean-13e.
 
 - **Lire un résultat de recherche frais** (OQP 12 : la corrélation de Bell du vide du champ scalaire massif atteint la borne classique au-delà d'une séparation finie) : la quantité β de Summers-Werner et son pont de normalisation avec le score CHSH des carnets 13b-13d, le corrélateur du vide et sa décroissance exponentielle, un jouet à deux qubits qui sépare intrication et violation, l'énoncé du théorème, sa structure de preuve et les limites honnêtes d'un préprint formalisé en Lean 4 par des agents IA. Notebook Lean-13f.
+- **Lire un résultat de recherche frais** (OQP 38 : la conjecture « PPT au carré » est fausse — des maps PPT dont la composition n'est pas entanglement breaking existent — mais 2(d−1) maps PPT composent toujours en EB) : le vocabulaire auto-contenu (transposition partielle, matrice de Choi, PPT opérateur vs map, entanglement breaking), la famille jouet de Werner–Holevo où la fenêtre PPT et la loi de composition se vérifient numériquement, le carré des poids sous auto-composition, la lecture du `Challenge.lean` amont et l'inventaire honnête du lake (aucune déclaration PPT). Notebook Lean-13h.
+
+- **Nommer les maximisateurs d'une inégalité de Bell qudit** (OQP 27 : classification des mesures projectives qui atteignent la borne CGLMP sur un état maximalement intriqué — les mesures à phase de Fourier, à une unitaire commune et une structure ⊗I_k près) : reconstruire le joueur aux conventions de la formalisation amont, vérifier l'atteinte de la forme fermée et le cas d'égalité n = d·k, mesurer le seuil de visibilité du témoin sous bruit uniforme, et lire les contre-résultats d = 2^m qui séparent « optimal pour la valeur » et « optimal en tout ». Notebook Lean-13g.
 
 - **Franchir un barreau de l'échelle vérifier→construire** : reconnaître une source périodique Life (période, transitoire, cadence d'émission mesurées sur le canon de Gosper), chercher à en générer une dans un budget borné (zéro calibré par contrôle positif), et certifier la périodicité du noyau par un prédicat `Grid` évalué sur horizon fini — l'écart structurel entre vérificateur et constructeur. Notebook GOL-04.
 
@@ -250,77 +255,104 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 
 ## Statut de maturité
 
-| # | Notebook | Cellules | Exercices | Solutions | Statut |
-|---|----------|----------|-----------|-----------|--------|
-| 1 | Setup | ~17 | - | - | **COMPLET** |
-| 2 | Dependent-Types | ~50 | 3 | 3 | **COMPLET** |
-| 3 | Propositions-Proofs | ~50 | 3 | 3 | **COMPLET** |
-| 3b | Formalized-Formal-Logic | ~22 | 3 | 0 | **NOUVEAU** (kernel python3 + lake `formal_logic_lean`, Epic #15066) |
-| 4 | Quantifiers | ~46 | 3 | 3 | **COMPLET** |
-| 5 | Tactics | ~70 | 3 | 3 | **COMPLET** |
-| 6 | Mathlib-Essentials | ~45 | 3 | 3 | **COMPLET** |
-| 7 | LLM-Intégration | ~50 | 2 | 2 | **COMPLET** |
-| 7b | Examples | ~40 | 3 | 3 | **COMPLET** |
-| 8 | Agentic-Proving | ~70 | 2 | 2 | **COMPLET** |
-| 8b | Erdos-Formal-Conjectures (natif) | ~4 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-groth16200`, Epic #13106) |
-| 9 | SK-Multi-Agents | ~50 | 2 | 2 | **COMPLET** |
-| 10 | LeanDojo | ~100 | 2 | 0 | **COMPLET** |
-| 11 | TorchLean | ~40 | 3 | Oui | **COMPLET** |
-| 11b | TorchLean Python | ~45 | 3 | Oui | **COMPLET** |
-| 12 | Sensitivity-Theorem | ~31 | 4 | Non | **NOUVEAU** |
-| 12b | Lean-Sensitivity-Theorem (natif) | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
-| 12c | Tensor-Product-Representations (natif) | ~35 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
-| 13 | Kochen-Specker | ~25 | 1 | 0 | **NOUVEAU** |
-| 13b | CHSH-Tsirelson-Native | ~8 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
-| 13c | CHSH-Landau-Saturation | ~11 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
-| 13d | CHSH-Indeterminisme-Native | ~10 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
-| 13e | Conway-Theoreme-Libre-Arbitre-Lean-Python | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
-| 13f | Correlation-Bell-Vide-Lean-Python | ~34 | 3 | 0 | **NOUVEAU** (digest OQP 12) |
-| 14 | Finiteness-Derivatives | ~12 | 1 | - | **NOUVEAU** |
-| 14b | Finiteness-Lean-Companion | ~19 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
-| GROTH-02 | GROTH-02-Tribut | ~23 | 0 | - | **NOUVEAU** (hommage) |
-| GROTH-03 | GROTH-03-Atelier | ~40 | 4 | Oui | **NOUVEAU** |
-| GROTH-04 | GROTH-04-Companion | ~25 | 2 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
-| 16 | Conway-Homme-et-Oeuvre-Lean-Python | ~39 | 3 | 0 | **NOUVEAU** (hommage) |
-| GOL-01 | Regles-Vie-Lean | ~26 | 0 | - | **NOUVEAU** (hommage) |
-| GOL-02 | Golly | ~47 | 5 | - | **NOUVEAU** (hommage) |
-| GOL-03 | Vie-Native | ~32 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
-| Lean-16b | Conway-FRACTRAN-Lean-Native | ~22 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
-| GOL-04 | Canons | ~23 | 3 | - | **NOUVEAU** |
-| GOL-05 | Pattern-Tour | ~9 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
-| GOL-06 | Translateur-Life | ~4 | 0 | - | **NOUVEAU** |
-| GOL-07 | Hashlife-Correctness | ~15 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
-| 17a | Knots-a-Conway-and-Proofs | ~13 | 0 | - | **NOUVEAU** (hommage) |
-| 17b | Knots-b-Invariants-Companion | ~19 | 3 | - | **NOUVEAU** |
-| 17c | Knots-Companion-Formel | ~33 | 3 | 0 | **NOUVEAU** (kernel python3) |
-| 18 | Sendov-Complex-Analysis | ~22 | 3 | 0 | **NOUVEAU** |
-| 19 | Analysis-I-Tao-Workflow | ~18 | 3 | 0 | **NOUVEAU** |
-| 20 | PFR-Entropy-Method | ~23 | 3 | 0 | **NOUVEAU** |
-| 20b | PFR-Primitives-Transportables | ~6 | 0 | - | **NOUVEAU** |
-| MIMO-01 | Descente-Budget | ~24 | 4 | 0 | **NOUVEAU** (#12219) |
-| MIMO-02 | MIMO-Detection-Flips | ~41 | 4 | 0 | **NOUVEAU** |
-| MIMO-03 | MIMO-Converse-Native | ~34 | 4 | - | **NOUVEAU** (kernel `lean4-wsl`) |
-| MIMO-04 | Capstone-Digestion | ~26 | 3 | 0 | **NOUVEAU** (kernel python3, capstone de la sous-série #17545) |
-| 22 | Galois-Probleme-Inverse-M23 | ~25 | 3 | 0 | **NOUVEAU** (exécution Lean + sympy) |
-| 23 | ERC20-Invariant-Companion | ~21 | 3 | 0 | **NOUVEAU** (lecture statique Python du lake) |
-| 23b | Lean-ERC20-Native-Companion | ~30 | 2 | - | **NOUVEAU** (kernel `lean4-wsl`) |
-| 24b | Confiance-Preuves-Native | ~10 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `mathlib_examples`, piste Dougherty/von Hippel #14468) |
-| 24 | Calibration-Native-Companion | ~27 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
-| 25 | Coherence-et-Temoin | ~21 | 3 | 0 | **NOUVEAU** (kernel python3, miroir exact du lake) |
-| 26 | Munkres-Tribute | ~9 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
-| 27 | EdgeColoring-Tutte-Companion | ~10 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`, compagnon App-22) |
-| 28 | Complex-Structure-S6 | ~28 | 3 | 0 | **NOUVEAU** (kernel python3, reproduction du dépôt piné) |
-| 29 | Hecke-Operators-Native | ~32 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `hecke_lean`) |
-| 30 | FormalGroups-Native | ~33 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `formal_groups_lean`) |
-| 31 | Euler-Navier-Stokes | 34 | 3 | 0 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
-| 34 | Calculabilite-et-Limites | 19 | 3 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean` ; Tranche E — Epic #15066) |
-| 36 | Structures-Finies-MUH | 23 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `tegmark_muh_lean`, Annexe A de Tegmark) |
+| # | Notebook | Cellules (code) | Exercices | Statut |
+|---|----------|-----------------|-----------|--------|
+| 1 | [Lean-01-Setup-Lean-Python](Lean-01-Setup-Lean-Python.ipynb) | 8 | 0 | **COMPLET** |
+| 2 | [Lean-02-Dependent-Types-Lean](Lean-02-Dependent-Types-Lean.ipynb) | 29 | 2 | **COMPLET** |
+| 3 | [Lean-03-Propositions-Proofs-Lean](Lean-03-Propositions-Proofs-Lean.ipynb) | 25 | 2 | **COMPLET** |
+| 3b | [Lean-03b-Formalized-Formal-Logic-Lean-Python](Lean-03b-Formalized-Formal-Logic-Lean-Python.ipynb) | 9 | 3 | **NOUVEAU** (kernel python3 + lake `formal_logic_lean`, Epic #15066) |
+| 4 | [Lean-04-Quantifiers-Lean](Lean-04-Quantifiers-Lean.ipynb) | 25 | 3 | **COMPLET** |
+| 5 | [Lean-05-Tactics-Lean](Lean-05-Tactics-Lean.ipynb) | 34 | 3 | **COMPLET** |
+| 6 | [Lean-06-Mathlib-Essentials-Lean](Lean-06-Mathlib-Essentials-Lean.ipynb) | 23 | 8 | **COMPLET** |
+| 7 | [Lean-07-LLM-Intégration](Lean-07-LLM-Integration-Lean-Python.ipynb) | 18 | 3 | **COMPLET** |
+| 7b | [Lean-07b-Examples-Python](Lean-07b-Examples-Python.ipynb) | 11 | 3 | **COMPLET** |
+| 8 | [Lean-08-Agentic-Proving-Python](Lean-08-Agentic-Proving-Python.ipynb) | 12 | 3 | **COMPLET** |
+| 8b | [Lean-08b-Erdos-Formal-Conjectures-Lean](Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb) | 11 | 0 | **NOUVEAU** (kernel `lean4-wsl-groth16200`, Epic #13106) |
+| 9 | [Lean-09-SK-Multi-Agents-Lean-Python](Lean-09-SK-Multi-Agents-Lean-Python.ipynb) | 24 | 3 | **COMPLET** |
+| 10 | [Lean-10-LeanDojo](Lean-10-LeanDojo.ipynb) | 26 | 3 | **COMPLET** |
+| 10b | [Lean-10b-LeanDojo-v2-Pantograph-Lean-Python](Lean-10b-LeanDojo-v2-Pantograph-Lean-Python.ipynb) | 14 | 0 | **NOUVEAU** (kernel `leandojo-v2`) |
+| 11 | [Lean-11-TorchLean](Lean-11-TorchLean.ipynb) | 13 | 3 | **COMPLET** |
+| 11b | [Lean-11b-TorchLean-Python](Lean-11b-TorchLean-Python.ipynb) | 19 | 3 | **COMPLET** |
+| 12 | [Lean-12-Sensitivity-Theorem](Lean-12-Sensitivity-Theorem.ipynb) | 14 | 3 | **NOUVEAU** |
+| 12b | [Lean-12b-Lean-Sensitivity-Theorem](Lean-12b-Lean-Sensitivity-Theorem.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 12c | [Lean-12c-Tensor-Product-Representations-Lean](Lean-12c-Tensor-Product-Representations-Lean.ipynb) | 10 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 13 | [Lean-13-Kochen-Specker](Lean-13-Kochen-Specker.ipynb) | 20 | 3 | **NOUVEAU** |
+| 13b | [Lean-13b-CHSH-Tsirelson-Native](Lean-13b-CHSH-Tsirelson-Native.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
+| 13c | [Lean-13c-CHSH-Landau-Saturation](Lean-13c-CHSH-Landau-Saturation.ipynb) | 11 | 3 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
+| 13d | [Lean-13d-CHSH-Indeterminisme-Native](Lean-13d-CHSH-Indeterminisme-Native.ipynb) | 10 | 3 | **NOUVEAU** (kernel `lean4-wsl-conway`) |
+| 13e | [Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python](Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb) | 21 | 4 | **NOUVEAU** (hommage) |
+| 13f | [Lean-13f-Correlation-Bell-Vide-Lean-Python](Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb) | 14 | 3 | **NOUVEAU** (digest OQP 12) |
+| 13g | [Lean-13g-CGLMP-Mesures-Optimales-Lean-Python](Lean-13g-CGLMP-Mesures-Optimales-Lean-Python.ipynb) | 10 | 3 | **NOUVEAU** (digest OQP 27) |
+| 13h | [Lean-13h-Maps-PPT-Borne-Lean-Python](Lean-13h-Maps-PPT-Borne-Lean-Python.ipynb) | 15 | 3 | **NOUVEAU** (digest OQP 38) |
+| 14 | [Lean-14-Finiteness-Derivatives](Lean-14-Finiteness-Derivatives.ipynb) | 6 | 3 | **NOUVEAU** |
+| 14b | [Lean-14b-Finiteness-Lean-Companion](Lean-14b-Finiteness-Lean-Companion.ipynb) | 10 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
+| GROTH-02 | [GROTH/GROTH-02-Tribut-Python](GROTH/GROTH-02-Tribut-Python.ipynb) | 12 | 4 | **NOUVEAU** (hommage) |
+| GROTH-03 | [GROTH/GROTH-03-Atelier-Python](GROTH/GROTH-03-Atelier-Python.ipynb) | 18 | 3 | **NOUVEAU** |
+| GROTH-04 | [GROTH/GROTH-04-Companion-Lean](GROTH/GROTH-04-Companion-Lean.ipynb) | 20 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 15d | [Lean-15d-Lean-Grothendieck-Visuel-Python](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) | 17 | 3 | **NOUVEAU** (kernel `python3`) |
+| 15e | [Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python](Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | 15 | 3 | **NOUVEAU** (kernel `python3`) |
+| 16 | [Lean-16-Conway-Homme-et-Oeuvre-Lean-Python](Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb) | 16 | 3 | **NOUVEAU** (hommage) |
+| GOL-01 | [GOL/GOL-01-Regles-Vie-Lean](GOL/GOL-01-Regles-Vie-Lean.ipynb) | 20 | 4 | **NOUVEAU** (hommage) |
+| GOL-02 | [GOL/GOL-02-Golly](GOL/GOL-02-Golly.ipynb) | 18 | 4 | **NOUVEAU** (hommage) |
+| GOL-03 | [GOL/GOL-03-Vie-Native](GOL/GOL-03-Vie-Native.ipynb) | 12 | 3 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
+| 16b | [Lean-16b-Conway-FRACTRAN-Lean-Native](Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
+| GOL-04 | [GOL/GOL-04-Canons](GOL/GOL-04-Canons.ipynb) | 9 | 3 | **NOUVEAU** |
+| GOL-05 | [GOL/GOL-05-Pattern-Tour](GOL/GOL-05-Pattern-Tour.ipynb) | 9 | 3 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
+| GOL-06 | [GOL/GOL-06-Translateur-Life](GOL/GOL-06-Translateur-Life.ipynb) | 4 | 0 | **NOUVEAU** |
+| GOL-07 | [GOL/GOL-07-Hashlife-Correctness](GOL/GOL-07-Hashlife-Correctness.ipynb) | 20 | 3 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
+| GOL-08 | [GOL/GOL-08-Loi-II-Translateur-Life](GOL/GOL-08-Loi-II-Translateur-Life.ipynb) | 10 | 3 | **NOUVEAU** (kernel `python3`) |
+| GOL-09 | [GOL/GOL-09-Perplexite-Structurelle-Hashlife](GOL/GOL-09-Perplexite-Structurelle-Hashlife.ipynb) | 6 | 0 | **NOUVEAU** (kernel `python3`) |
+| 17 | [Lean-17-Conway-Bridge-to-Knots-Python](Lean-17-Conway-Bridge-to-Knots-Python.ipynb) | 6 | 0 | **NOUVEAU** (kernel `python3`) |
+| KNOTS-01 | [KNOTS/KNOTS-01-Conway-Proofs-Lean-Python](KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb) | 14 | 5 | **NOUVEAU** (kernel `python3-lean`) |
+| KNOTS-02 | [KNOTS/KNOTS-02-Invariants-Python](KNOTS/KNOTS-02-Invariants-Python.ipynb) | 27 | 5 | **NOUVEAU** (kernel `python3`) |
+| KNOTS-03 | [KNOTS/KNOTS-03-Companion-Formel-Lean-Python](KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb) | 17 | 3 | **NOUVEAU** (kernel `python3`) |
+| 19 | [Lean-19-Detection-MIMO-Index-Python](Lean-19-Detection-MIMO-Index-Python.ipynb) | 7 | 3 | **NOUVEAU** |
+| 19b | [Lean-19b-Borne-Chernoff-Python](Lean-19b-Borne-Chernoff-Python.ipynb) | 7 | 3 | **NOUVEAU** (kernel `python3`) |
+| 19c | [Lean-19c-Borne-Bernstein-Python](Lean-19c-Borne-Bernstein-Python.ipynb) | 6 | 0 | **NOUVEAU** (kernel `python3`) |
+| 19d | [Lean-19d-Inference-Bayesian-Beta-Binomial-Python](Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) | 8 | 0 | **NOUVEAU** (kernel `python3`) |
+| 18 | [Search-03e-AStar-Optimality](../../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb) | 11 | 0 | **NOUVEAU** |
+| 20 | [Lean-20-Capstone-Digestions-Tao-Python](Lean-20-Capstone-Digestions-Tao-Python.ipynb) | 5 | 3 | **NOUVEAU** |
+| ANALYSE-01 | [ANALYSE-01-Sendov-Lean-Python](ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb) | 10 | 0 | **NOUVEAU** (kernel `python3`) |
+| ANALYSE-02 | [ANALYSE-02-Tao-Lean-Python](ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb) | 9 | 0 | **NOUVEAU** (kernel `python3`) |
+| ANALYSE-03 | [ANALYSE-03-PFR-Lean](ANALYSE/ANALYSE-03-PFR-Lean.ipynb) | 9 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
+| ANALYSE-04 | [ANALYSE-04-PFR-Primitives-Python](ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb) | 11 | 4 | **NOUVEAU** (kernel `python3`) |
+| ANALYSE-05 | [ANALYSE-05-KLS-Lean-Python](ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb) | 12 | 3 | **NOUVEAU** (kernel `python3`) |
+| ANALYSE-09 | [ANALYSE-09-Tuilage-Aperiodique](ANALYSE/ANALYSE-09-Tuilage-Aperiodique.ipynb) | 5 | 3 | **NOUVEAU** (kernel `python3`) |
+| MIMO-01 | [MIMO-01-Descente-Budget-Lean-Python](MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb) | 9 | 4 | **NOUVEAU** (#12219) |
+| MIMO-02 | [MIMO-02-Detection-Flips-Lean-Python](MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb) | 13 | 4 | **NOUVEAU** |
+| MIMO-03 | [MIMO-03-Converse-Native-Lean](MIMO/MIMO-03-Converse-Native-Lean.ipynb) | 16 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
+| MIMO-04 | [MIMO-04-Capstone-Digestion-Python](MIMO/MIMO-04-Capstone-Digestion-Python.ipynb) | 9 | 3 | **NOUVEAU** (kernel python3, capstone de la sous-série #17545) |
+| GALOIS-01 | [GALOIS-01-Probleme-Inverse-M23-Python](GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb) | 20 | 0 | **NOUVEAU** (kernel `python3`) |
+| 23 | [VERIF-02-ERC20-Invariant-Companion](VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb) | 7 | 3 | **NOUVEAU** (lecture statique Python du lake) |
+| 23b | [VERIF-03-Lean-ERC20-Native-Companion](VERIF/VERIF-03-Lean-ERC20-Native-Companion.ipynb) | 9 | 2 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 24 | [VERIF-04-Calibration-Native-Companion](VERIF/VERIF-04-Calibration-Native-Companion.ipynb) | 14 | 0 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 24b | [VERIF-01-Confiance-Preuves-Native](VERIF/VERIF-01-Confiance-Preuves-Native.ipynb) | 10 | 3 | **NOUVEAU** (kernel `lean4-wsl`, lake `mathlib_examples`, piste Dougherty/von Hippel #14468) |
+| 25 | [VERIF-05-Coherence-et-Temoin](VERIF/VERIF-05-Coherence-et-Temoin.ipynb) | 8 | 5 | **NOUVEAU** (kernel python3, miroir exact du lake) |
+| 26 | [Lean-26-Munkres-Tribute](Lean-26-Munkres-Tribute.ipynb) | 9 | 3 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
+| 27 | [Lean-27-EdgeColoring-Tutte-Companion](Lean-27-EdgeColoring-Tutte-Companion.ipynb) | 4 | 0 | **NOUVEAU** (kernel `lean4-wsl`, compagnon App-22) |
+| 28 | [Lean-28-Complex-Structure-S6](Lean-28-Complex-Structure-S6.ipynb) | 12 | 3 | **NOUVEAU** (kernel python3, reproduction du dépôt piné) |
+| 29 | [06-operateurs-de-hecke-natif](Langlands/06-operateurs-de-hecke-natif.ipynb) | 19 | 6 | **NOUVEAU** (kernel `lean4-wsl`, lake `hecke_lean`) |
+| GROTH-06 | [GROTH/GROTH-06-FormalGroups-Lean](GROTH/GROTH-06-FormalGroups-Lean.ipynb) | 11 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 31 | [ANALYSE-14-Euler-Navier-Stokes-Python](ANALYSE/ANALYSE-14-Euler-Navier-Stokes-Python.ipynb) | 17 | 3 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
+| 33 | [Lean-33-Distribution-Spaces](Lean-33-Distribution-Spaces.ipynb) | 8 | 3 | **NOUVEAU** (kernel `lean4-wsl`) |
+| 34 | [VERIF-06-Calculabilite-et-Limites](VERIF/VERIF-06-Calculabilite-et-Limites.ipynb) | 12 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean` ; Tranche E — Epic #15066) |
+| 34b | [VERIF-07-FairBot-Loeb](VERIF/VERIF-07-FairBot-Loeb.ipynb) | 14 | 3 | **NOUVEAU** (kernel `python3`) |
+| 36 | [Lean-36-Structures-Finies-MUH-Lean](Lean-36-Structures-Finies-MUH-Lean.ipynb) | 11 | 3 | **NOUVEAU** (kernel `lean4-wsl`, lake `tegmark_muh_lean`, Annexe A de Tegmark) |
+| 37 | [Lean-37-Capstone-Serre100](Lean-37-Capstone-Serre100.ipynb) | 4 | 3 | **NOUVEAU** (kernel `python3-lean`) |
+| 38 | [Lean-38-Capstone-Geometry-Lean-Python](Lean-38-Capstone-Geometry-Lean-Python.ipynb) | 8 | 3 | **NOUVEAU** (kernel `python3`) |
+| 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | 4 | 3 | **NOUVEAU** (kernel `python3-lean`) |
+| 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | 9 | 3 | **NOUVEAU** (kernels `python3`, `rust`) |
+| 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | 3 | 0 | **NOUVEAU** (kernel `python3`) |
 
-Tous les notebooks incluent :
+Conventions de la série — l'état réel de chaque carnet se lit dans la table
+ci-dessus (colonnes mesurées par `scripts/lean/lean_series_maturity.py`,
+régénérées par `--write`) :
 - Navigation header/footer avec liens vers notebooks précédent/suivant
 - Plan de ce Notebook avec liens ancres (notebooks 2-4)
 - Tableaux récapitulatifs en fin de section
-- Exercices avec solutions complètes
+- Exercices en nombre variable (colonne « Exercices ») ; les solutions, quand
+  elles existent, sont rédigées dans le carnet même — pas systématiquement
+  complètes
 
 ## Quick Start
 
@@ -497,6 +529,8 @@ Lean/
 ├── Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb      # Lean4 (WSL) kernel - FRACTRAN natif (machine universelle de Conway, générateur de premiers)
 ├── Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb # Python kernel - hommage Conway (théorème du libre arbitre, adossé à FreeWillTheorem.lean)
 ├── Lean-13f-Correlation-Bell-Vide-Lean-Python.ipynb # Python kernel - digest OQP 12 (corrélation de Bell du vide, organe CHSH inventorié, jouet intrication/violation)
+├── Lean-13g-CGLMP-Mesures-Optimales-Lean-Python.ipynb # Python kernel - digest OQP 27 (classification des mesures CGLMP optimales : phase de Fourier, égalité n = d·k, témoin sous bruit)
+├── Lean-13h-Maps-PPT-Borne-Lean-Python.ipynb # Python kernel - digest OQP 38 (maps PPT, borne 2(d-1), contre-exemple OpenAI, famille Werner-Holevo jouet)
 ├── GOL/GOL-04-Canons.ipynb                    # Python kernel - barreau 2 de l'échelle des témoins : source périodique (canon de Gosper) mesurée, cherchée, certifiée #eval (#12223)
 ├── GOL/GOL-05-Pattern-Tour.ipynb        # Lean4 (WSL) kernel - tournée des motifs : PatternTour.lean importé et exécuté in-kernel (Epic #11703)
 ├── GOL/GOL-06-Translateur-Life.ipynb                 # Python kernel - synthèse d'un translateur minuscule (SAT borné, Loi II, Chantier 2 #12205)
@@ -513,18 +547,17 @@ Lean/
 ├── KNOTS/KNOTS-02-Invariants-Python.ipynb # Python kernel - invariants de nœuds (PD-codes, Reidemeister, Fox tricolorability), compagnon knot_lean
 ├── KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb # Python kernel - companion formel knot_lean (modules non cités par 17b, murs R2/R3, miroir i18n)
 ├── Lean-20-Capstone-Digestions-Tao-Python.ipynb # Python kernel - escalier capstone vers la sous-série ANALYSE : digestion du travail formel de T. Tao, règle de chaîne, distance de Ruzsa
-├── Lean-23-ERC20-Invariant-Companion.ipynb # Python kernel - invariant ERC-20 (lecture statique du lake erc20_lean, Monte-Carlo)
-├── Lean-23b-Lean-ERC20-Native-Companion.ipynb # Lean4 (WSL) kernel - ERC-20 natif (17 déclarations résolues par le kernel)
-├── Lean-24-Calibration-Native-Companion.ipynb # Lean4 (WSL) kernel - calibration_lean natif (cibles prover P1-P5, #print axioms)
-├── Lean-25-Coherence-et-Temoin.ipynb # Python kernel - cohérence de de Finetti (Dutch book, miroir exact de decision_theory_lean)
+├── VERIF/VERIF-02-ERC20-Invariant-Companion.ipynb # Python kernel - invariant ERC-20 (lecture statique du lake erc20_lean, Monte-Carlo)
+├── VERIF/VERIF-03-Lean-ERC20-Native-Companion.ipynb # Lean4 (WSL) kernel - ERC-20 natif (17 déclarations résolues par le kernel)
+├── VERIF/VERIF-04-Calibration-Native-Companion.ipynb # Lean4 (WSL) kernel - calibration_lean natif (cibles prover P1-P5, #print axioms)
+├── VERIF/VERIF-05-Coherence-et-Temoin.ipynb # Python kernel - cohérence de de Finetti (Dutch book, miroir exact de decision_theory_lean)
 ├── Lean-26-Munkres-Tribute.ipynb # Lean4 (WSL) kernel - hommage Munkres, cours 18.901 dans Mathlib (mathlib_examples, #check/#print axioms natifs)
 ├── Lean-27-EdgeColoring-Tutte-Companion.ipynb # Lean4 (WSL) kernel - coloration d'arêtes & Tutte (définitions SimpleGraph, Petersen exécutable, decide/eval)
 ├── Lean-28-Complex-Structure-S6.ipynb # Python kernel - problème de Hopf sur S⁶ (digestion Engel + reproduction plby/HopfProblem piné, comparator double kernel)
-├── Lean-30-FormalGroups-Native.ipynb # Lean4 (WSL) kernel - groupes formels multivariés natifs (lake formal_groups_lean, modules Basic/Hom/Additive/Iterates)
 ├── Lean-33-Distribution-Spaces.ipynb # Lean4 (WSL) kernel - espaces de Schwartz natifs (lake calibration_lean, module Calibration.Distribution)
-├── Lean-34-Calculabilite-et-Limites.ipynb # Python kernel - Tranche E Epic #15066 : arrêt, point fixe, Gödel I/II, Rosser, Tarski, Löb (lake formal_logic_lean CONSUMER_PINNÉ)
-├── Lean-34b-FairBot-Loeb.ipynb # Python kernel - FairBot par Löb (Barasz et al. 2014) : Löb postulé en L2, théorème en L3 (FormalLogic.FairBotLoeb), cadres de Kripke, combat modal GL
-├── Lean-24b-Confiance-Preuves-Native.ipynb # Lean4 (WSL) kernel - fiabilité d'un certificat : mis-définition, axiomes de secours (#print axioms), certificat vs headline (lake mathlib_examples)
+├── VERIF/VERIF-06-Calculabilite-et-Limites.ipynb # Python kernel - Tranche E Epic #15066 : arrêt, point fixe, Gödel I/II, Rosser, Tarski, Löb (lake formal_logic_lean CONSUMER_PINNÉ)
+├── VERIF/VERIF-07-FairBot-Loeb.ipynb # Python kernel - FairBot par Löb (Barasz et al. 2014) : Löb postulé en L2, théorème en L3 (FormalLogic.FairBotLoeb), cadres de Kripke, combat modal GL
+├── VERIF/VERIF-01-Confiance-Preuves-Native.ipynb # Lean4 (WSL) kernel - fiabilité d'un certificat : mis-définition, axiomes de secours (#print axioms), certificat vs headline (lake mathlib_examples)
 ├── Lean-36-Structures-Finies-MUH-Lean.ipynb # Lean4 (WSL) kernel - Annexe A de Tegmark : structures finies, encodage/complexité, C₃/C₂/NAND, Aut(S), frontière du décideur exhibée (lake tegmark_muh_lean, sans Mathlib)
 ├── Lean-37-Capstone-Serre100.ipynb # Python kernel - escalier capstone vers la sous-série Serre 100 : entrée, démos, prérequis de la série distillations
 ├── Lean-38-Capstone-Geometry-Lean-Python.ipynb # Python kernel - escalier capstone vers la sous-série Geometry : le fil rouge (milieu de l'hypoténuse) monté de la figure numérique au noyau du lac geometry_lean
@@ -561,12 +594,14 @@ Lean/
 │   ├── GOL-07-Hashlife-Correctness.ipynb  # La correction de Hashlife comme théorème (lean4-wsl)
 │   ├── conway_lean/                       # Lake Conway (0 sorry, Lake build), descendu sous GOL/ (See #23164)
 │   └── README.md
-├── GROTH/                         # Sous-série hommage Grothendieck (hommages Grothendieck : tribut, atelier, companion ; catégories et séries formelles par Mathlib) — lake [grothendieck_lean](GROTH/grothendieck_lean/README.md) descendu sous GROTH/ (See #23164) : [README](GROTH/README.md)
+├── GROTH/                         # Sous-série hommage Grothendieck (hommages Grothendieck : tribut, atelier, companion ; catégories et séries formelles par Mathlib) — lakes [grothendieck_lean](GROTH/grothendieck_lean/README.md) (See #23164) et [formal_groups_lean](GROTH/formal_groups_lean/README.md) (T8-30) descendus sous GROTH/ : [README](GROTH/README.md)
 │   ├── GROTH-01-Categories-Mathlib-Lean.ipynb # Lean4 (WSL) kernel - catégories, cribles et faisceaux par les modules du lake
 │   ├── GROTH-02-Tribut-Python.ipynb # Python kernel - hommage Grothendieck (langage grothendieckien Mathlib)
 │   ├── GROTH-03-Atelier-Python.ipynb # Python kernel - atelier pratique Grothendieck (compagnon grothendieck_lean)
 │   ├── GROTH-04-Companion-Lean.ipynb # Lean4 (WSL) kernel - companion formel natif grothendieck_lean (modules visités par leurs énoncés, Epic #11703)
 │   ├── GROTH-05-MvPowerSeries-Lean.ipynb # Lean4 (WSL) kernel - séries formelles multivariées
+│   ├── GROTH-06-FormalGroups-Lean.ipynb # Lean4 (WSL) kernel - groupes formels multivariés natifs (lake formal_groups_lean, modules Basic/Hom/Additive/Iterates)
+│   ├── formal_groups_lean/         # Groupes formels multivariés (port de anthropics/fermats-last-theorem, Apache-2.0) - 0 sorry, Lake build ; companion GROTH-06
 │   ├── grothendieck_lean/         # Grothendieck tribute workspace (0 sorry, Lake build)
 │   └── README.md
 ├── Langlands/                     # Sous-série formes modulaires et ponts (EPIC #17969) : [README](Langlands/README.md)
@@ -603,7 +638,6 @@ Lean/
 ├── finiteness_lean/                # Finitude des dérivées de Brzozowski (companion Lean-14) - 0 sorry, Lake build
 ├── knot_lean/                      # Knot theory workspace (théorie des nœuds, companion Lean-17a/b, sorries résiduels documentés, Lake build)
 ├── calibration_lean/               # Cibles de calibration du prouveur multi-agents (Epic #1453, P1-P5) - 0 sorry, Lake build
-├── formal_groups_lean/             # Groupes formels multivariés (port de anthropics/fermats-last-theorem, Apache-2.0) - 0 sorry, Lake build ; companion du notebook Lean-30
 ├── formal_logic_lean/              # Logique formelle : Foundation piné + ProvabilityLogic (CONSUMER_PINNÉ) - 0 sorry, Lake build ; companion des notebooks Lean-3b/34/34b (Epic #15066)
 ├── mimo_lean/                      # Détection MIMO et borne converse Hanson-Wright (brique SLT empruntée à YuanheZ/lean-stat-learning-theory) - 0 sorry, Lake build ; compagnons MIMO (relation plusieurs-a-plusieurs avec les carnets de la sous-série, sans attribution exclusive a un seul notebook)
 ├── tegmark_muh_lean/               # Annexe A de Tegmark 2007 (arXiv:0704.0646) : structures finies, encodage, C₃/C₂/NAND, Aut(S), squelette décideur déclaré - **sans dépendance Mathlib**, 0 sorry, Lake build ; companion du notebook Lean-36

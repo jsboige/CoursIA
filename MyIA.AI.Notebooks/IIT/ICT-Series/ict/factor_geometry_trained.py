@@ -68,6 +68,7 @@ __all__ = [
     "overlap_energy",
     "overlap_principal_max",
     "factor_geometry_report",
+    "positive_control_additivity_gap",
     "untrained_null",
     "VARIANCE_CIBLE_MIN",
 ]
@@ -481,6 +482,126 @@ def probe_holdout_r2(activations: Array, targets: Array, ridge: float = 1e-3, fo
         ss_res += float(((Y[te] - pred) ** 2).sum())
         ss_tot += float(((Y[te] - y_all) ** 2).sum())
     return float(1.0 - ss_res / ss_tot) if ss_tot > 0 else float("nan")
+
+
+def _witness_orthogonal_blocks(
+    dim: int,
+    private: int,
+    overlap: int,
+    n_tokens: int,
+    rng: np.random.Generator,
+) -> tuple:
+    """Activations d'un temoin a geometrie de lecture CONNUE par construction.
+
+    Trois blocs poses sur une base orthonormee, donc orthogonaux :
+
+    - un bloc **prive** de ``private`` directions, lu par le facteur a seulement ;
+    - un bloc **partage** de ``overlap`` directions, lu par les DEUX facteurs ;
+    - un bloc **prive** de ``private`` directions, lu par le facteur b seulement ;
+    - un bruit de fond dans les directions restantes, lu par aucun probe.
+
+    La cible de chaque facteur est exactement les coordonnees de ``H`` le long de
+    ses directions (partagees + prives). Le probe ridge ne peut donc les
+    retrouver qu'a la rotation pres, et le rang lu vaut le nombre de directions
+    qui portent la cible : ``dim_a = private + overlap``, ``dim_b = private +
+    overlap``, ``dim_union = 2*private + overlap``. C'est ce que le controle
+    positif de l'instrument exige ensuite.
+    """
+    Q, _ = np.linalg.qr(rng.standard_normal((dim, dim)))
+    xa = rng.standard_normal((n_tokens, private))
+    xs = (
+        rng.standard_normal((n_tokens, overlap))
+        if overlap > 0
+        else np.zeros((n_tokens, 0))
+    )
+    xb = rng.standard_normal((n_tokens, private))
+    block = np.concatenate([xa, xs, xb], axis=1)
+    if dim > block.shape[1]:
+        # bruit de fond : aucun probe ne le lit, il ne bouge pas les rangs lus
+        block = np.concatenate(
+            [block, rng.standard_normal((n_tokens, dim - block.shape[1]))], axis=1
+        )
+    h = block @ Q[:, : block.shape[1]].T
+    belief_a = np.concatenate([xa, xs], axis=1)  # lu par a : prives a + partage
+    belief_b = np.concatenate([xb, xs], axis=1)  # lu par b : prives b + partage
+    return h, belief_a, belief_b
+
+
+def positive_control_additivity_gap(
+    *,
+    n_tokens: int = 400,
+    private: int = 1,
+    overlaps: Sequence[int] = (0, 1, 2),
+    n_noise: int = 4,
+    ridge: float = 1e-3,
+    seed: int = 0,
+) -> Dict[str, object]:
+    """Controle positif de l'instrument ``additivity_gap`` (#20071, residu de la 3e passe).
+
+    Ce que la 3e passe a laisse ouvert : sur le banc Mess3 x Mess3, le modele
+    entraine rend ``additivity_gap = +0.000`` et le temoin non entraine aussi
+    (bande [0 ; 0]). Un tel zero est **muet** : rien dans le dispositif n'a
+    etabli que la metrique PUISSE etre negative, donc un modele a 0 ne se
+    distingue pas d'une metrique a dynamique nulle.
+
+    Ce controle le tranche. On construit un temoin **oracle** dont la geometrie
+    de lecture est CONNUE par construction (cf
+    :func:`_witness_orthogonal_blocks`) : un bloc de directions partage, lu par
+    les deux facteurs, et des blocs prives. Si les deux sous-espaces de lecture
+    partagent ``overlap`` directions, le rapport doit rendre
+
+        ``additivity_gap = dim_union - (dim_a + dim_b) = -overlap``,
+
+    strictement negatif des que ``overlap > 0`` -- et exactement 0 quand les
+    blocs sont disjoints (``overlap = 0``). Le controle est donc **bilateral** :
+    il prouve que l'instrument est negatif exactement quand les facteurs sont
+    entremelés, et nul quand ils sont additifs. Un ``+0.000`` mesure sur un
+    modele entraine n'est alors plus interpretable que par la geometrie : c'est
+    une lecture additive, pas une metrique muette.
+
+    Deterministe (graine explicite), numpy-only (ni torch ni GPU), borne
+    (quelques secondes CPU). La metrique continue ``overlap_energy`` est rendue
+    a cote : elle discrimine aussi, avec la resolution que le gap entier perd au
+    rang pres.
+
+    Retour : un dict par ``overlap`` (rangs, gap, energie, gap attendu, coherence)
+    plus les verrouilles globaux ``gap_negatif`` / ``gap_nul_disjoint`` /
+    ``coherent`` et ``instrument_vivant`` (les trois a la fois).
+    """
+    cas: Dict[str, Dict[str, object]] = {}
+    for ov in overlaps:
+        ov = int(ov)
+        dim = 2 * private + ov + n_noise
+        rng = np.random.default_rng(seed)
+        h, belief_a, belief_b = _witness_orthogonal_blocks(dim, private, ov, n_tokens, rng)
+        rep = factor_geometry_report(h, belief_a, belief_b, ridge=ridge)
+        attente = -ov
+        gap = float(rep["additivity_gap"])
+        cas[str(ov)] = {
+            "dim_a": float(rep["dim_a"]),
+            "dim_b": float(rep["dim_b"]),
+            "dim_union": float(rep["dim_union"]),
+            "additivity_gap": gap,
+            "overlap_energy": float(rep["overlap_energy"]),
+            "gap_attendu": attente,
+            "coherent": abs(gap - attente) <= 1e-9,
+        }
+    positifs = [c for k, c in cas.items() if int(k) > 0]
+    disjoint = cas.get("0")
+    gap_negatif = bool(positifs) and all(c["additivity_gap"] < 0.0 for c in positifs)
+    gap_nul_disjoint = disjoint is not None and abs(disjoint["additivity_gap"]) <= 1e-9
+    coherent = all(c["coherent"] for c in cas.values())
+    return {
+        "n_tokens": int(n_tokens),
+        "private": int(private),
+        "n_noise": int(n_noise),
+        "seed": int(seed),
+        "cas": cas,
+        "gap_negatif": gap_negatif,
+        "gap_nul_disjoint": gap_nul_disjoint,
+        "coherent": coherent,
+        "instrument_vivant": gap_negatif and gap_nul_disjoint and coherent,
+    }
 
 
 def untrained_null(

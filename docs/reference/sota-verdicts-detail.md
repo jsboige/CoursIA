@@ -1,6 +1,6 @@
 # SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-12
 
 Détail durable de [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) (harness-hygiene tier 2). La règle porte les tables opératoires (5 verdicts, interdit, enforcement) et l'exigence nominative des 6 axes ; ce fichier porte la **grille des 6 questions (§2)**, les verbatims, les incidents fondateurs et les mesures qui les justifient.
 
@@ -73,7 +73,7 @@ Le pitch : « les heuristiques gloutonnes ratent le nombre chromatique sur les g
 
 La mesure : sur M_3 (C5), M_4 (Grötzsch), M_5, la coloration gloutonne **et** DSATUR **avec l'ordre networkx par défaut** trouvent **le** χ exact (3 / 4 / 5). Le folklore « greedy rattrape sur Mycielski » **ne reproduit pas** ici — il exige des ordres de sommets adversariaux qu'un notebook pédagogique ne construit pas. S'en servir comme cas Prong-B de coloration = fabriquer un enrichissement faux.
 
-Le vrai cas discriminant pour CP-SAT en coloration est le **graphe aléatoire dense Erdős-Rényi G(n, p ≥ 0.3)**, où greedy utilise strictement plus de couleurs que χ — et `App-2-GraphColoring` le démontre déjà (cellule benchmark : n = 200, greedy = 22 / DSATUR = 19 / CP-SAT = 18).
+Le vrai cas discriminant pour CP-SAT en coloration est le **graphe aléatoire dense Erdős-Rényi G(n, p ≥ 0.3)**, où greedy utilise strictement plus de couleurs que χ — et `App-02-GraphColoring-Python` le démontre déjà (cellule benchmark : n = 200, greedy = 22 / DSATUR = 19 / CP-SAT = 18).
 
 ### Faux signal technique — grep MiniZinc
 

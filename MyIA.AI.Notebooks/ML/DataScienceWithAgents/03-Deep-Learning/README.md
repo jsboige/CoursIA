@@ -57,7 +57,7 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 ## Voir aussi : la compression des modèles
 
 La famille `3.9-*` est recomposée en **vue d'ensemble** dans la série Compression :
-[Compression-05 — Compression des modèles : quantifier, élaguer, distiller](../../../Compression/Compression-05-MLCompression-Python.ipynb)
+[Compression-05 — Compression des modèles : quantifier, élaguer, distiller](../../../InformationCalcul/Compression/Compression-05-MLCompression-Python.ipynb)
 reprend ses cellules essentielles (quantification FP16/INT8, élagage par
 magnitude, distillation) sur un terrain synthétique léger, mesure chaque
 technique avant/après sur une même référence CPU, et relie la boucle au
@@ -104,7 +104,7 @@ Cette série ancre ses carnets dans la **référence canonique du deep learning*
 | ch. 14 | Autoencodeurs | (passerelle vers [3.6](3.6-Modeles-Generatifs.ipynb) / [3.6b](3.6b-Modeles-Generatifs-PyTorch.ipynb), ch. 20) |
 | ch. 20 (20.10.3, 20.10.4, 20.10.5) | Modèles génératifs profonds (VAE, GAN, débruitage) | [3.6-Modeles-Generatifs](3.6-Modeles-Generatifs.ipynb), [3.6b-Modeles-Generatifs-PyTorch](3.6b-Modeles-Generatifs-PyTorch.ipynb) |
 
-**Lecture recommandée du livre** pour cette série : ch. 6 (pour [3.1](3.1-Retropropagation.ipynb)), ch. 8 (pour [2.2](../02-ML-Cours/2.2-Descente-de-gradient.ipynb) et [3.2](3.2-Optimisateurs.ipynb)), ch. 9 (pour [4.1](../04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb)), ch. 20 (pour [3.6](3.6-Modeles-Generatifs.ipynb), [3.6b](3.6b-Modeles-Generatifs-PyTorch.ipynb), [3.6c](3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb), [3.6d](3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb), [3.6e](3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb)). Le livre est **PDF archivé** dans le gisement partagé — voir [docs/reference/bibliography-hygiene.md](../../../../docs/reference/bibliography-hygiene.md).
+**Lecture recommandée du livre** pour cette série : ch. 6 (pour [3.1](3.1-Retropropagation.ipynb)), ch. 8 (pour [2.2](../02-ML-Cours/2.2-Descente-de-gradient.ipynb) et [3.2](3.2-Optimisateurs.ipynb)), ch. 9 (pour [4.1](../04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb)), ch. 20 (pour [3.6](3.6-Modeles-Generatifs.ipynb), [3.6b](3.6b-Modeles-Generatifs-PyTorch.ipynb), [3.6c](3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb), [3.6d](3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb), [3.6e](3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb)). Le carnet [3.2 Optimisateurs Python](3.2-Optimisateurs.ipynb) et son [jumeau C#](3.2-Optimisateurs-CSharp.ipynb) comparent les règles manuelles à PyTorch ou TorchSharp, avec le jeu scikit-learn transmis via Python.NET côté C#. Le livre est **PDF archivé** dans le gisement partagé — voir [docs/reference/bibliography-hygiene.md](../../../../docs/reference/bibliography-hygiene.md).
 
 **Survey unificateur** (à lire en complément pour la série 3.6) : Luo, C. (2022), *Understanding Diffusion Models: A Unified Perspective* — démontre dans « Three Equivalent Interpretations » (p. 15-17, éq. 115-118) que prédire $\epsilon$, prédire $x_0$ et régresser le score sont trois réparamétrisations du même objectif ; c'est l'arc de fond des carnets 3.6, 3.6c, 3.6d, 3.6e. Ancré par le [3.6d](3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb) (passerelle vers le score) et le [3.10-Modeles-Generatifs-Diffusion-SOTA](3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb) (librerie `diffusers`).
 
@@ -133,3 +133,12 @@ pip install diffusers
 ```
 
 Tous les notebooks tournent sur CPU — la plupart en moins de dix minutes. Exceptions : la famille compression ([3.9](3.9-Compression-Quantization-FP.ipynb), [3.9b](3.9b-Compression-Pruning-from-scratch.ipynb), [3.9e](3.9e-Compression-SOTA.ipynb), [3.9f](_archive/3.9f-Compression-Pruning-SOTA.ipynb), [3.9g](3.9g-Compression-Comparatif-A-vs-B.ipynb)) entraîne ResNet-20 sur CIFAR-10 — la recette complète (40 époques, ~8 min sur RTX 3090 ; ~30 min pour 3.9b, bras de réentraînement compris) exige un GPU ; sur CPU ces notebooks tournent une recette réduite de 6 époques (3 pour les bras de 3.9b ; ~9-15 min), le témoin GPU de 3.9 (0,8993) servant de référence croisée. Et [3.6c](3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb) demande ~19 min CPU pour ses 16 entraînements.
+
+
+### 3.0b — Parité Python / C# et contrats de stockage
+
+[Python — Tenseurs, strides et vues](3.0b-Tenseurs-Strides-Vues-Python.ipynb) · [C# — TorchSharp et témoin NumPy](3.0b-Tenseurs-Strides-Vues-CSharp.ipynb). Le jumeau utilise TorchSharp pour le stockage et l’autograd, et le vrai NumPy via Python.NET pour les témoins et le benchmark.
+
+**Correction de la ligne historique 3.0b du tableau ci-dessus.** Les formulations « `view` sur non contigu → `RuntimeError` » et « buffer 128 Mo > cache » y sont trop générales. Les contrats vérifiés dans les deux carnets les remplacent : `view` exige des strides compatibles avec la forme demandée ; certains sous-échantillons non contigus acceptent une vue, tandis que la transposée testée la refuse. Le buffer de 128 Mo ne garantit pas un dépassement du cache L3. Les débits utiles et leur rapport sont mesurés sur cinq essais, avec sommes consommées ; les durées C# incluent Python.NET et dépendent de la machine.
+
+Les alias sont contrôlés par mutation/restauration, la diffusion stocke 32 octets contre 96 pour `repeat`, et les quatre exercices vérifient indices, vues, contiguïté et patchs 2D.

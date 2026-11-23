@@ -83,9 +83,9 @@ def test_un_demenagement_nest_pas_un_carnet_neuf():
     `Part3-Cas-pratiques/`. GitHub les rapporte `added` + `removed` (la
     similarite est sous son seuil) : un carnet deplace n'est pas un carnet
     neuf."""
-    noms = ["App-1-NQueens", "App-10-Portfolio", "App-11-Picross",
-            "App-2-GraphColoring", "App-3-NurseScheduling",
-            "App-5-Timetabling", "App-6-Minesweeper", "App-9-EdgeDetection",
+    noms = ["App-01-NQueens-Python", "App-10-Portfolio-Python", "App-11-Picross-Python",
+            "App-02-GraphColoring-Python", "App-03-NurseScheduling-Python",
+            "App-05-Timetabling-Python", "App-06-Minesweeper-Python", "App-09-EdgeDetection-Python",
             "App-9b-EdgeDetection-CSharp"]
     files = [fichier(f"MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/{n}.ipynb",
                      "added", sha=f"blob-{n}") for n in noms]
@@ -609,8 +609,8 @@ def test_un_renamed_ne_declenche_rien(monkeypatch, capsys):
     ni VETO_ACTIVE ne s'appliquent a un carnet qui change de place."""
     _pr_fichiers(monkeypatch, [
         {"filename": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/"
-                     "App-1-NQueens.ipynb", "status": "renamed",
-         "previous_filename": "MyIA.AI.Notebooks/Search/Applications/"
+                     "App-01-NQueens-Python.ipynb", "status": "renamed",
+         "previous_filename": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/"
                               "App-1-NQueens.ipynb"}])
     monkeypatch.setenv(cp.VETO_VAR, "400")
     monkeypatch.setattr(cp, "open_issue_count", lambda: 651)

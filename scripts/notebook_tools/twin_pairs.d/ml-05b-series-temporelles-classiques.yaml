@@ -1,0 +1,11 @@
+- name: ML-05b Series temporelles classiques
+  family: ML
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: Les vrais modèles et diagnostics statsmodels sont appelés directement en Python et via Python.NET en C# ; données, grilles, métriques et protocole hors échantillon sont conservés.
+  known_differences:
+    - C# prépare les données, orchestre la grille et les réajustements, calcule les métriques et dessine des SVG statiques ; les noyaux statistiques restent statsmodels.
+    - Les mêmes innovations NumPy sont transférées pour les deux séries synthétiques ; le fichier CSV est identique.
+    - Les modèles C# reçoivent des tableaux NumPy sans index pandas ; les dates et alignements sont gérés en C#.

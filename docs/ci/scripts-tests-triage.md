@@ -1,5 +1,7 @@
 # Scripts Tests (CPU) — point de triage unique
 
+> REFERENCE — vivante — dernière révision 2026-11-16
+
 **Issue d'origine** : [#17299](https://github.com/jsboige/CoursIA/issues/17299)
 **Check** : `Scripts Tests (CPU)` (workflow `.github/workflows/scripts-tests.yml`)
 **Statut du document** : règle acceptée par la lane `myia-po-2026:CoursIA-2`, voir commentaire de claim [#17299 (comment)](https://github.com/jsboige/CoursIA/issues/17299#issuecomment-5768041331). Étendue aux modes 5-6 par `myia-po-2026:CoursIA` le 2026-10-03.

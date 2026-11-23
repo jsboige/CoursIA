@@ -46,7 +46,7 @@ Enfin, 10 et 11 relient représentation et décision. Naive Bayes ([Python](10-C
 
 Les exercices prolongent chaque palier : modifier le lissage ou le vocabulaire de 02, contrôler les gradients et les transitions de 03, explorer l'ambiguïté de 04, puis comparer les décodages de 05. Dans l'arc vectoriel, 08 définit la perte et le gradient de skip-gram ; son entraînement et sa vérification sont laissés à l'exercice. Le passage à 09 demande de comprendre cette représentation et la somme des vecteurs de sous-mots. Pour 08, les versions [Python](08-Word2Vec-CBOW-SkipGram.ipynb) et [C#](08-Word2Vec-CBOW-SkipGram-CSharp.ipynb) proposent les mêmes calculs pédagogiques avec des générateurs aléatoires propres à chaque langage.
 
-Pour l'évaluation, reprendre les mêmes données et les mêmes paramètres est essentiel. Le témoin `hmmlearn` de 05 utilise les paramètres du modèle étudié ; le témoin NLTK n'utilise pas le même lissage. Leur comparaison ne répond donc pas à la même question. En 11, une même précision finale ne signifie pas que les modèles prédisent la même classe pour chaque document.
+Pour l'évaluation, reprendre les mêmes données et les mêmes paramètres est essentiel. Le témoin `hmmlearn` de 05 utilise les paramètres du modèle étudié ; le témoin NLTK n'utilise pas le même lissage. Leur comparaison ne répond donc pas à la même question. En 11 ([Python](11-Classement-Texte-RegressionLogistique-FromScratch.ipynb) · [C#](11-Classement-Texte-RegressionLogistique-FromScratch-CSharp.ipynb)), une même précision finale ne signifie pas que les modèles prédisent la même classe pour chaque document ; le témoin scikit-learn reçoit les mêmes données mais une régularisation et un budget différents, et le C# l’appelle via Python.NET.
 
 ## Installation — Découverte et pratique
 
@@ -66,7 +66,7 @@ Installer le modèle français dans l'environnement du noyau avec `python -m spa
 
 ### Lire une expérience au bon niveau
 
-Les petits corpus servent à isoler un mécanisme. En 02, le lissage évite des probabilités nulles, mais Kneser–Ney n'obtient pas une meilleure perplexité de test que Laplace sur le corpus affiché. La diminution de perplexité à l'entraînement ne suffit pas à choisir un modèle.
+Les petits corpus servent à isoler un mécanisme. En 02 ([Python](02_NGrammes_Modeles_De_Langue.ipynb) · [C#](02_NGrammes_Modeles_De_Langue-CSharp.ipynb)), Laplace rend les probabilités positives sur le test, tandis que Kneser–Ney conserve des zéros pour des inconnus ; les deux versions invoquent les modèles NLTK. Ces mesures sur un seul petit corpus ne suffisent pas à choisir un modèle général.
 
 En 03, le CRF pédagogique obtient un F1 par entité de 0,947 sur le petit test, contre 1,000 pour CRFsuite. L'accord avec `seqeval` porte sur le **calcul de la métrique appliqué aux mêmes prédictions**, pas sur l'identité des prédictions de ces modèles. C'est un exemple utile de deux validations différentes : contrôler l'évaluation et comparer les systèmes.
 
@@ -74,7 +74,7 @@ De même, le rappel `Recall@3` de 06 mesure les documents pertinents retrouvés 
 
 ### Passer aux systèmes de recherche et aux LLM
 
-La comparaison des unités textuelles de 01 se prolonge dans [RAG-04 — Tokenisation](../GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb). La recherche lexicale de 06 prépare [RAG-02 — Recherche avancée](../GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb), tandis que les vecteurs de 07–09 donnent des repères pour [RAG-03 — Embeddings](../GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb).
+Le carnet 09 ([Python](09-FastText-Subword-Vectors.ipynb) · [C#](09-FastText-Subword-Vectors-CSharp.ipynb)) illustre une somme pédagogique de sous-mots sans hachage. La comparaison des unités textuelles de 01 se prolonge dans [RAG-04 — Tokenisation](../GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb). La recherche lexicale de 06 prépare [RAG-02 — Recherche avancée](../GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb), tandis que les vecteurs de 07–09 donnent des repères pour [RAG-03 — Embeddings](../GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb).
 
 La série [GenAI/Texte](../GenAI/Texte/README.md) étudie ensuite l'usage des LLM : prompts, génération, outils et évaluation. [Texte-22 — Évaluer le texte généré](../GenAI/Texte/22_Evaluating_Generated_Text.ipynb) prolonge la question commune de ce parcours : quelle observation autorise réellement la conclusion annoncée ?
 

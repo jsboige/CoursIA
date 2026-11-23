@@ -37,6 +37,15 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import check_prose_quantitative_claims as cqc  # noqa: E402
 
+# Ancre des tests d'audit : l'exemption Gosper, selectionnee par son MOTIF.
+# ARTIFACT_EXEMPTIONS n'a pas de semantique d'ordre -- une exemption ajoutee
+# en tete de la liste ne doit pas detourner les tests d'audit.
+GOL_EXEMPTION = next(
+    e
+    for e in cqc.ARTIFACT_EXEMPTIONS
+    if e.motif.search("Gosper Glider Gun (36 cellules vivantes")
+)
+
 
 # --------------------------------------------------------------------------- #
 #  Classe artifact (COUNT_RE) : mesure d'artefact vivant = flag ; pedagogie = non
@@ -299,7 +308,7 @@ def test_artifact_exemption_uses_the_file_part_of_a_notebook_location():
 def test_exemption_audit_separates_live_from_stale(tmp_path):
     """Une entree qui ne couvre plus rien est PERIMEE, pas silencieuse : elle ne
     protege aucun compteur et se lit pourtant comme une decision vivante."""
-    first = cqc.ARTIFACT_EXEMPTIONS[0]
+    first = GOL_EXEMPTION
     target = tmp_path / first.path
     target.parent.mkdir(parents=True)
     target.write_text(
@@ -331,7 +340,7 @@ def test_exemption_audit_under_a_subtree_root_judges_the_named_file(tmp_path):
     designait un fichier existant et **les 12** se lisaient perimees, avec pour
     consigne de les retirer -- 100 % de faux positifs sur un dispositif vivant.
     """
-    first = cqc.ARTIFACT_EXEMPTIONS[0]
+    first = GOL_EXEMPTION
     target = tmp_path / first.path
     target.parent.mkdir(parents=True)
     target.write_text("  - Gosper Glider Gun (36 cellules vivantes)\n", encoding="utf-8")
@@ -355,7 +364,7 @@ def test_scan_all_under_a_subtree_root_still_applies_live_exemptions(tmp_path):
     arbitrage humain avait deja tranche (les compteurs Conway sont des cellules
     de l'automate, pas des totaux de carnets).
     """
-    first = cqc.ARTIFACT_EXEMPTIONS[0]
+    first = GOL_EXEMPTION
     target = tmp_path / first.path
     target.parent.mkdir(parents=True)
     target.write_text("  - Gosper Glider Gun (36 cellules vivantes)\n", encoding="utf-8")

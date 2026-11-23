@@ -1,0 +1,267 @@
+# Conformite differentielle du triplet Complexity-03f ReductionsTriangle-Lopsided
+# (issue #27851, lot Rust std a Complexity, parent #27844).
+#
+# Le portage Rust (kernel evcxr, std seul) rejoue le flux MT19937 de CPython
+# (init_by_array, graine 20261111, ordre des tirages calque sur la source) :
+# le triple temoin (-447, 127, 320), les ops 101/1711, le rapport 0.951, les
+# captures 267/300 et les 1449 paires a voisin commun sont egaux a la version
+# Python, tolerance 0. Le jumeau C#, lui, tourne sous System.Random et renonce
+# a la parite des tirages (annonce en prose dans son carnet ; triple
+# [-476, 79, 397], captures 264/300, 1468 paires) : toutes les grandeurs
+# pseudo-aleatoires sont declarees ABSENT cote C#, comme
+# complexity-03c-complexityzoo.yaml pour ses ecarts propres.
+#
+# Les grandeurs structurelles sans consommation d'aleatoire -- theorem
+# 1-(7/9)^5, table des exposants N=64..1024 (formules pures) -- sont egales
+# sur les cotes qui les impriment et comparees, tolerance 0. La table de
+# refutations (cellule 18) n'est comparee qu'entre Python et Rust : le jumeau
+# C# l'imprime en typographie francaise accentuee (<< refutee >> vs REFUTEE),
+# non comparable textuellement sans normalisation, cote declare ABSENT.
+- name: "Complexity-03f ReductionsTriangle-Lopsided"
+  family: InformationCalcul/Complexity
+  python: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb
+  csharp: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb
+  rust: MyIA.AI.Notebooks/InformationCalcul/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-Rust.ipynb
+  measures:
+    - id: triple_instance_avec
+      description: "Triple temoin de l'instance AVEC solution (deterministe sous le flux MT19937 partage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "triple=\\((-?\\d+), (-?\\d+), (-?\\d+)\\), ops="
+          transform: text
+        rust:
+          cell: 5
+          pattern: "triple=\\((-?\\d+), (-?\\d+), (-?\\d+)\\), ops="
+          transform: text
+        csharp:
+          absent: >-
+            System.Random cote C# : son triple (-476, 79, 397) n'est pas la
+            meme grandeur pseudo-aleatoire que la reference MT19937 (-447,
+            127, 320). Le jumeau annonce lui-meme la divergence de son
+            generateur. Cote declare ABSENT, pas mesure.
+    - id: ops_instance_avec
+      description: "Operations du double balayage sur l'instance AVEC solution (flux MT19937 partage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "trouve=True, triple=\\([^)]+\\), ops=(\\d+)"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "trouve=True, triple=\\([^)]+\\), ops=(\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Compteur dependant de l'instance tiree sous System.Random : non
+            comparable a la reference. Cote declare ABSENT.
+    - id: ops_instance_sans
+      description: "Operations de l'oracle lent sur l'instance SANS solution (flux MT19937 partage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "trouve=False, ops=(\\d+)"
+          transform: int
+        rust:
+          cell: 5
+          pattern: "trouve=False, ops=(\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            Compteur dependant de l'instance tiree sous System.Random : non
+            comparable a la reference. Cote declare ABSENT.
+    - id: rapport_cadrage
+      description: "Rapport ops_non / (n^2/2) cadrant le double balayage (flux MT19937 partage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 5
+          pattern: "Rapport ops_non / \\(n\\^2/2\\) = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 5
+          pattern: "Rapport ops_non / \\(n\\^2/2\\) = ([0-9.]+)"
+          transform: float
+        csharp:
+          absent: >-
+            Grandeur pseudo-aleatoire sous System.Random : non comparable a
+            la reference MT19937. Cote declare ABSENT.
+    - id: corpus_accords
+      description: "Accords oracle rapide/oracle lent sur le corpus de 40 instances (20 avec / 20 sans)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "\\(20 avec / 20 sans\\) : (\\d+) accords"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "\\(20 avec / 20 sans\\) : (\\d+) accords"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "Corpus : (\\d+)/40 accords"
+          transform: int
+    - id: corpus_fantomes
+      description: "Triangles fantomes detectes par l'oracle rapide sur le corpus (0 attendu)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: ": 40 accords, (\\d+) triangle fantome"
+          transform: int
+        rust:
+          cell: 8
+          pattern: ": 40 accords, (\\d+) triangle fantome"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "accords, (\\d+) fant"
+          transform: int
+    - id: corpus_captures_30
+      description: "Instances AVEC triple capturees en <=30 coloriages (sur 20)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 8
+          pattern: "captures en <=30 coloriages : (\\d+)/20"
+          transform: int
+        rust:
+          cell: 8
+          pattern: "captures en <=30 coloriages : (\\d+)/20"
+          transform: int
+        csharp:
+          cell: 6
+          pattern: "(\\d+)/20 positifs captur"
+          transform: int
+    - id: captures_5_coloriages
+      description: "Captures du triple fixe en 5 coloriages sur 300 essais (flux MT19937 partage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "Captures en 5 coloriages : (\\d+)/300"
+          transform: int
+        rust:
+          cell: 9
+          pattern: "Captures en 5 coloriages : (\\d+)/300"
+          transform: int
+        csharp:
+          absent: >-
+            System.Random cote C# : ses captures (264/300) ne sont pas la
+            meme grandeur pseudo-aleatoire que la reference MT19937 (267/300).
+            Cote declare ABSENT.
+    - id: borne_theorie_79e5
+      description: "Borne exacte du triple fixe 1-(7/9)^5 (formule structurelle, sans aleatoire)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 9
+          pattern: "1-\\(7/9\\)\\^5 = ([0-9.]+)"
+          transform: float
+        rust:
+          cell: 9
+          pattern: "1-\\(7/9\\)\\^5 = ([0-9.]+)"
+          transform: float
+        csharp:
+          cell: 10
+          pattern: "1-\\(7/9\\)\\^5 = ([0-9.]+)"
+          transform: float
+    - id: paires_voisin_commun
+      description: "Paires avec voisin commun dans le graphe lopsided N=40 (flux MT19937 partage)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 12
+          pattern: "paires avec voisin commun : (\\d+)"
+          transform: int
+        rust:
+          cell: 12
+          pattern: "paires avec voisin commun : (\\d+)"
+          transform: int
+        csharp:
+          absent: >-
+            System.Random cote C# : son graphe donne 1468 paires, pas la
+            grandeur MT19937 (1449). Cote declare ABSENT.
+    - id: table_exposants_n64
+      description: "Table des exposants, ligne N=64 (formules pures, sans aleatoire)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "(?m)^\\s*64\\s+2\\s+2896\\s+5792\\s+8192\\s+(\\d+)\\s*$"
+          transform: int
+        rust:
+          cell: 15
+          pattern: "(?m)^\\s*64\\s+2\\s+2896\\s+5792\\s+8192\\s+(\\d+)\\s*$"
+          transform: int
+        csharp:
+          cell: 17
+          pattern: "(?m)^\\s*64\\s+2\\s+2896\\s+5792\\s+8192\\s+(\\d+)\\s*$"
+          transform: int
+    - id: table_exposants_n1024
+      description: "Table des exposants, ligne N=1024 (formules pures, sans aleatoire)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 15
+          pattern: "(?m)^\\s*1024\\s+2\\s+741455\\s+1482910\\s+2097152\\s+(\\d+)\\s*$"
+          transform: int
+        rust:
+          cell: 15
+          pattern: "(?m)^\\s*1024\\s+2\\s+741455\\s+1482910\\s+2097152\\s+(\\d+)\\s*$"
+          transform: int
+        csharp:
+          cell: 17
+          pattern: "(?m)^\\s*1024\\s+2\\s+741455\\s+1482910\\s+2097152\\s+(\\d+)\\s*$"
+          transform: int
+    - id: verseth_seth_intacte
+      description: "La table des refutations maintient SETH intacte (structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "SETH\\s+—\\s+(INTACTE)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "SETH\\s+—\\s+(INTACTE)"
+          transform: text
+        csharp:
+          absent: >-
+            Le jumeau C# imprime la table en typographie francaise accentuee
+            (intacte/refutee) : meme conclusion, texte non comparable sans
+            normalisation d'accents. Cote declare ABSENT.
+    - id: verdict_3sum_refutee
+      description: "La table des refutations refute 3SUM (structurel)"
+      tolerance: 0
+      reference: python
+      sides:
+        python:
+          cell: 18
+          pattern: "3SUM\\s+n\\^1\\.9992 det / n\\^1\\.998 LV\\s+(REFUTEE)"
+          transform: text
+        rust:
+          cell: 18
+          pattern: "3SUM\\s+n\\^1\\.9992 det / n\\^1\\.998 LV\\s+(REFUTEE)"
+          transform: text
+        csharp:
+          absent: >-
+            Typographie francaise accentuee cote C# (refutee) : meme
+            conclusion, texte non comparable. Cote declare ABSENT.

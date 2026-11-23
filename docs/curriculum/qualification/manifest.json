@@ -46,8 +46,8 @@
             "exercices": 3,
             "cellules_code": 14,
             "cellules_md": 33,
-            "prose_chars": 20671,
-            "densite": 1476,
+            "prose_chars": 20735,
+            "densite": 1481,
             "densite_plancher": 1200,
             "kernel": "Python 3 (coursia-ml-training)",
             "exigences": {
@@ -67,15 +67,41 @@
             "outillage": 3,
             "autonomie": 2
           },
-          "justification": "Prérequis : notions de probabilité (MLE, perplexité, lissage) — niveau licence (P2). Outillage : NLTK (`punkt`, `punkt_tab` téléchargés par l'étudiant) (O3). Autonomie : les exercices étendent le vocabulaire, comparent add-k et add-1, complètent la courbe de perplexité — adaptation de formule et vérification, pas d'implémentation complète (A2). Niveau D2 = max(2, 2). Recherche R1 : le §7 « Courbe de perplexité vs n » est un instrument de choix reproductible ; le verdict sur le lissage est connu d'avance, ce n'est pas une exploration.",
+          "justification": "Les probabilités conditionnelles, MLE et perplexité sont des notions de licence (P2). Les exercices 'Vocabulaire et OOV', 'Lissage add-k' et 'Courbe de perplexité jusqu’à n=4' adaptent des formules et orchestrent les modèles sur un protocole fourni (A2). La courbe de perplexité et les comptes de zéros construisent un instrument de mesure réutilisable ; le test ne sélectionne pas un hyperparamètre de généralisation (R1). Les vraies API NLTK MLE/Laplace/KneserNey et la ressource française punkt_tab doivent être installées et interprétées (O3).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 12,
-            "cellules_md": 33,
-            "prose_chars": 22374,
-            "densite": 1864,
+            "cellules_md": 34,
+            "prose_chars": 11503,
+            "densite": 958,
             "densite_plancher": 1200,
             "kernel": "coursia-ml-training",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue-CSharp.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 3,
+            "autonomie": 2
+          },
+          "justification": "Les probabilités conditionnelles, MLE et perplexité sont des notions de licence (P2). Les exercices 'Vocabulaire et OOV', 'Lissage add-k' et 'Courbe de perplexité jusqu’à n=4' adaptent des formules et orchestrent les modèles sur un protocole fourni (A2). La courbe de perplexité et les comptes de zéros construisent un instrument de mesure réutilisable ; le test ne sélectionne pas un hyperparamètre de généralisation (R1). Les calculs pédagogiques sont C# et les vraies API NLTK sont invoquées via Python.NET ; CPython/NLTK et la ressource française constituent un outillage tiers (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 12,
+            "cellules_md": 34,
+            "prose_chars": 11869,
+            "densite": 989,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
             "exigences": {
               "api": false,
               "gpu": false,
@@ -98,8 +124,8 @@
             "exercices": 3,
             "cellules_code": 19,
             "cellules_md": 34,
-            "prose_chars": 41302,
-            "densite": 2173,
+            "prose_chars": 41356,
+            "densite": 2176,
             "densite_plancher": 1200,
             "kernel": "Python 3 (ipykernel)",
             "exigences": {
@@ -226,10 +252,10 @@
           "justification": "Le corpus de huit documents est auto-contenu ; TF-IDF, BM25 et Recall@k sont construits devant le lecteur (P1). Les exercices adaptent l'idf, la contribution BM25 et le calcul du rappel, avec vérification sur des cas chiffrés (A2). Les requêtes annotées et Recall@3 forment un instrument réutilisable pour comparer les classements sur ce corpus ; aucune question ouverte n'est revendiquée (R1). Les calculs utilisent Python/NumPy et Matplotlib, sans paquet du domaine à configurer (O1).",
           "mesures": {
             "exercices": 3,
-            "cellules_code": 13,
-            "cellules_md": 18,
-            "prose_chars": 17035,
-            "densite": 1310,
+            "cellules_code": 14,
+            "cellules_md": 20,
+            "prose_chars": 19802,
+            "densite": 1414,
             "densite_plancher": 1200,
             "kernel": "Python 3",
             "exigences": {
@@ -379,15 +405,41 @@
             "outillage": 1,
             "autonomie": 3
           },
-          "justification": "Prérequis : dépend du carnet 08 (word2vec), dont il reprend le modèle et le protocole ; la décomposition en sous-mots est une notion nouvelle (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : le modèle fastText (table de sous-mots, somme, gradient) est écrit de zéro (A3). Niveau D3 = max(2, 3). Recherche R2 : le §4 « La capacité distinctive : généraliser aux mots OOV » et le §5 « Confrontation 08 vs 09 » posent la question falsifiable de la généralisation OOV ; le verdict (word2vec n'a aucun vecteur, fastText replacé) est mesuré, non supposé.",
+          "justification": "Le carnet 08, les vecteurs et la descente de gradient sont requis (P2). Les exercices 'Vérifier le gradient de sortie', 'Couverture OOV' et 'Coût du vocabulaire de sous-mots' demandent une vérification numérique et des métriques calculées sur plusieurs cas (A3). La section 'généraliser aux mots OOV' mesure les voisinages et la couverture des fragments ; la comparaison 08/09 est explicitement non appariée et ne prouve pas seule un gain causal (R2). NumPy et Matplotlib suffisent à la variante pédagogique sans hachage ni vecteur atomique ajouté (O1).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 10,
-            "cellules_md": 19,
-            "prose_chars": 12176,
-            "densite": 1217,
+            "cellules_md": 20,
+            "prose_chars": 9285,
+            "densite": 928,
             "densite_plancher": 1200,
             "kernel": "Python 3",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/09-FastText-Subword-Vectors-CSharp.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 2,
+            "autonomie": 3
+          },
+          "justification": "Le carnet 08, les vecteurs et la descente de gradient sont requis (P2). Les exercices 'Vérifier le gradient de sortie', 'Couverture OOV' et 'Coût du vocabulaire de sous-mots' demandent une vérification numérique et des métriques calculées sur plusieurs cas (A3). La section 'généraliser aux mots OOV' mesure les voisinages et la couverture des fragments ; la comparaison 08/09 est explicitement non appariée et ne prouve pas seule un gain causal (R2). Le modèle de sous-mots et son gradient sont C# ; MathNet.Numerics fournit les primitives numériques sans prétendre au moteur fastText de production (O2).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 10,
+            "cellules_md": 20,
+            "prose_chars": 9381,
+            "densite": 938,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
             "exigences": {
               "api": false,
               "gpu": false,
@@ -457,15 +509,41 @@
             "outillage": 2,
             "autonomie": 4
           },
-          "justification": "Prérequis : le carnet se place explicitement après 10 et suppose optimisations convexe, entropie croisée et régularisation L2 — hors série (P3). Outillage : scikit-learn n'intervient que comme « juge extérieur » (O2). Autonomie : l'étudiant doit construire un banc dont le verdict n'est pas connu d'avance — le §1 montre que le corpus du carnet 10 est « un plafond », le §5 constate que « l'attendu n'est pas reproduit », et les trois exercices, « Chacun se juge sur une mesure, pas sur une impression » (A4). Niveau D4 = max(3, 4). Recherche R2 : la question « que fait la régularisation, et que ne fait-elle pas ? » est posée puis mesurée sur un banc construit pour l'occasion ; le carnet rapporte un résultat qui contredit l'attente théorique. Ce n'est pas du front (R3) : la question est tranchée à l'intérieur du carnet.",
+          "justification": "Le softmax, la cross-entropy et l'optimisation régularisée mobilisent un formalisme avancé (P3). Les exercices 'Mini-lots', 'Banc déséquilibré' et 'Bigrammes et régularisation' demandent de construire puis mesurer des variantes dont l'effet sur les rappels et la courbe L2 n'est pas fixé d'avance (A4). Le balayage sur le banc synthétique pose une question falsifiable ; la comparaison sklearn n'établit pas un optimum commun (R2). NumPy effectue l'optimisation manuelle ; scikit-learn est le juge extérieur à configurer (O2).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 11,
-            "cellules_md": 16,
-            "prose_chars": 27667,
-            "densite": 2515,
+            "cellules_md": 20,
+            "prose_chars": 16870,
+            "densite": 1533,
             "densite_plancher": 1200,
             "kernel": "Python3",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/11-Classement-Texte-RegressionLogistique-FromScratch-CSharp.ipynb",
+          "difficulte": "D4",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 3,
+            "outillage": 3,
+            "autonomie": 4
+          },
+          "justification": "Le softmax, la cross-entropy et l'optimisation régularisée mobilisent un formalisme avancé (P3). Les exercices 'Mini-lots', 'Banc déséquilibré' et 'Bigrammes et régularisation' demandent de construire puis mesurer des variantes dont l'effet sur les rappels et la courbe L2 n'est pas fixé d'avance (A4). Le balayage sur le banc synthétique pose une question falsifiable ; la comparaison sklearn n'établit pas un optimum commun (R2). MathNet fournit les primitives ; le modèle et les gradients sont C#. Python.NET/CPython/scikit-learn forment un outillage tiers supplémentaire pour le juge extérieur (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 11,
+            "cellules_md": 20,
+            "prose_chars": 16517,
+            "densite": 1501,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
             "exigences": {
               "api": false,
               "gpu": false,

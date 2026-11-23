@@ -4885,6 +4885,92 @@ def test_stack_unmeasured_partner_still_blocks(monkeypatch):
         assert any("stack top" in r and "#19556" in r for r in reasons), (state, reasons)
 
 
+# --- #23100 (troisieme angle) : fourche soeur reciproque ------------------
+
+
+def _mutual_sibling_index():
+    """Topologie #26321 x #26323 : fourche d'un commit commun non merge.
+
+    Les deux PRs partent de `c2a6c7d` (SC-10 a l'organe), basees sur
+    `main`, MERGEABLE ; chacune porte ensuite un travail propre absent de
+    l'autre. Le predicat tirait dans les deux sens.
+    """
+    return _stack_index(
+        _stack_entry(
+            26321, {"c2a": "SC-10 a l'organe", "1b3": "SC-10 re-execute"},
+            head_name="fix/sc10-organ-web3tx", base_name="main",
+            mergeable="MERGEABLE",
+        ),
+        _stack_entry(
+            26323, {"c2a": "SC-10 a l'organe", "b6e": "SC-11 a l'organe"},
+            head_name="fix/sc11-organ-web3tx", base_name="main",
+            mergeable="MERGEABLE",
+        ),
+    )
+
+
+def _verdict_for(pr, index):
+    snapshot = _base_snapshot()
+    snapshot["number"] = pr
+    return mod.derive_verdict(
+        snapshot, lambda p: {"blocked": False, "blocking": []}, stack=index
+    )
+
+
+def test_stack_mutual_sibling_fork_lets_the_older_land(monkeypatch):
+    """#23100 (controle positif) -- la plus ancienne de la paire passe.
+
+    Pre-fix, #26321 et #26323 se designaient l'une l'autre comme sommet de
+    pile : aucune ne pouvait jamais atterrir. La plus ancienne passe.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    verdict, reasons = _verdict_for(26321, _mutual_sibling_index())
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_mutual_sibling_fork_keeps_the_younger_waiting(monkeypatch):
+    """#23100 (controle negatif) -- la plus recente attend la premiere.
+
+    Le tie-break ne leve qu'UN des deux sens : sans quoi les deux
+    atterriraient dans le meme passage, l'ordre perdu.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    verdict, reasons = _verdict_for(26323, _mutual_sibling_index())
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#26321" in r for r in reasons), reasons
+
+
+def test_stack_mutual_sibling_fork_frees_the_younger_once_the_older_landed(monkeypatch):
+    """#23100 -- la premiere atterrie sort de l'index : la seconde passe."""
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _mutual_sibling_index()
+    del index[26321]
+    verdict, reasons = _verdict_for(26323, index)
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_one_way_top_is_not_a_mutual_fork(monkeypatch):
+    """#23100 (controle negatif) -- le sens unique reste bloquant.
+
+    La cible ne porte AUCUN travail absent de la soeur : la soeur est la
+    version corrigee de la cible, pas une fourche. Le tie-break par
+    numero ne s'applique pas, meme quand la cible a le plus petit numero.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}, mergeable="MERGEABLE"),
+        _stack_entry(
+            19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+            mergeable="MERGEABLE",
+        ),
+    )
+    verdict, reasons = _verdict_for(19548, index)
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
 # --- #20641 : rafraichissement content-free de la base d'une pile ----------
 # Un ``gh pr update-branch`` sans conflit prepende une fusion de
 # rafraichissement a la tete de la base : pre-fix, la porte comparait

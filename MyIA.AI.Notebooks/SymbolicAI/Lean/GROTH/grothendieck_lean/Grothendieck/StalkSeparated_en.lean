@@ -37,8 +37,8 @@ Two corollaries complete the tranche:
     the own site;
   - `injective_germ_family_of_isSeparated`: combinatorial restatement —
     the "family of germs" map `s ↦ (germ_x s)ₓ` is injective. This is the
-    pointwise brick of the sheaves ↔ étale spaces dictionary begun in
-    Parts 72-73: a section is determined by its germinal values.
+    pointwise brick of the sheaves ↔ étale spaces dictionary: a section is
+    determined by its germinal values.
 
 References:
   - SGA 4, II.5 (separatedness condition on a site).

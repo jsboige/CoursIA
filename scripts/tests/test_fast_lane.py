@@ -266,6 +266,9 @@ def test_registre_absent_le_module_reste_importable(tmp_path):
     ci.mkdir(parents=True)
     (tmp_path / "scripts" / "notebook_tools").mkdir()
     shutil.copyfile(CI_DIR / "fast_lane_registry.py", ci / "fast_lane_registry.py")
+    # Les corps des commentaires vivent dans un module voisin (#27572) :
+    # l'arbre copie doit le porter, sinon l'import du registre meurt.
+    shutil.copyfile(CI_DIR / "fast_lane_commenters.py", ci / "fast_lane_commenters.py")
     code = (
         "import json, sys\n"
         f"sys.path.insert(0, {str(ci)!r})\n"
@@ -621,7 +624,7 @@ def test_check_nav_chain_argv_carries_the_pr_diff_scope_issue_20303():
     de la PR, rougissait la PR. La portee passe par `{base_ref}` (comme
     split-reading, prose-counts, md-content-loss) : le checker calcule le diff.
     Un finding NEW hors diff ne bloque pas ; dans le diff, il bloque (controle
-    positif et negatif de bout en bout : test_check_notebook_nav_chain.py).
+    positif et negatif de bout en bout : test_notebook_tools_check_notebook_nav_chain.py).
     """
     by_name = {g.name: g for g in PILOT}
     guard = by_name["check-nav-chain"]
@@ -644,7 +647,7 @@ def test_check_navlinks_argv_carries_the_pr_diff_scope_issue_21016():
     split-reading, prose-counts, md-content-loss, nav-chain) : le checker
     calcule le diff lui-meme. Un finding NEW hors diff ne bloque pas ; dans
     le diff, il bloque (controle positif et negatif de bout en bout :
-    test_check_notebook_navlinks.py).
+    test_notebook_tools_check_notebook_navlinks.py).
     """
     by_name = {g.name: g for g in PILOT}
     guard = by_name["check-navlinks"]
@@ -1604,6 +1607,62 @@ def test_tranche5_guards_are_absorbed_single_testpaths_guard():
         assert needle in guard.paths, (
             f"{needle} doit figurer dans les paths du garde (declenchement "
             f"d'origine a preserver)"
+        )
+
+
+def test_le_registre_passe_l_inventaire_et_la_baseline_du_ratchet():
+    """#26773 : le ratchet de dette n'existe que si l'argv porte ses deux drapeaux.
+
+    Le garde est absorbe : son argv vient de ce registre, pas du workflow
+    source. Deux pannes y sont muettes, et aucune n'est visible depuis le
+    script :
+
+    - sans `--inventory`, le script retombe sur ses quatre sens historiques
+      (`testpaths` declares) et ne calcule plus aucun sens d'inventaire : le
+      ratchet de dette cesse de mesurer quoi que ce soit, en vert ;
+    - sans `--baseline`, l'inventaire juge contre une dette vide, donc toute
+      la dette enregistree redevient du NOUVEAU et chaque PR rougit pour des
+      findings que `main` porte deja.
+
+    La seconde panne est bruyante, la premiere ne l'est pas : c'est elle que
+    cette epingle existe pour rendre visible.
+
+    Les deux chemins de declenchement T4 (`**/tests/**`, `**/test_*.py`) sont
+    epingles ici pour la meme raison : sans eux le ratchet reste juste mais
+    ne tourne plus sur les PR qui le concernent, et rien d'autre ne le dit --
+    la liste de `paths` du test d'absorption ne les couvre pas.
+    """
+    guard = TRANCHE5[0]
+    assert "--inventory" in guard.argv, (
+        f"`{guard.name}` sans --inventory : les sens d'inventaire ne sont "
+        f"plus calcules et le ratchet de dette devient muet (argv={guard.argv})"
+    )
+    assert "--baseline" in guard.argv, (
+        f"`{guard.name}` sans --baseline : la dette connue redevient du "
+        f"NOUVEAU et chaque PR rougit sur les findings deja enregistres"
+    )
+    i = guard.argv.index("--baseline")
+    baseline_rel = guard.argv[i + 1]
+    assert baseline_rel == "scripts/tests/baseline_testpaths_inventory.json", (
+        f"le ratchet doit lire la baseline de dette enregistree, obtenu "
+        f"`{baseline_rel}`"
+    )
+    # Le chemin est relatif : le script le resout depuis la racine du depot.
+    # Un renommage de la baseline sans mise a jour du registre laisserait un
+    # argv qui pointe un fichier absent — rouge a chaque execution, jamais un
+    # vert silencieux (load_inventory_baseline est fail-closed).
+    assert (REPO_ROOT / baseline_rel).is_file(), (
+        f"la baseline citee par l'argv du registre est absente du depot : "
+        f"{REPO_ROOT / baseline_rel}"
+    )
+    # Les deux chemins de declenchement ajoutes par T4: sans eux le ratchet
+    # ne tourne plus sur les PR qui touchent un dossier de tests ou un module
+    # de test hors `scripts/**` et `tests/**`, ou vit l'essentiel de la dette.
+    for motif in ("**/tests/**", "**/test_*.py", baseline_rel):
+        assert motif in guard.paths, (
+            f"`{motif}` doit figurer dans les paths du garde, sinon une PR "
+            f"qui touche ce que le ratchet mesure ne le declenche pas "
+            f"(paths={guard.paths})"
         )
 
 

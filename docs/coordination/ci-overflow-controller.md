@@ -1,5 +1,7 @@
 # Controleur de debordement CI (phase B) — `CI_OVERFLOW_LOCAL`
 
+> REFERENCE — vivante — dernière révision 2026-11-20
+
 Volet 1 de [#22937](https://github.com/jsboige/CoursIA/issues/22937) : la **phase B** de la repartition hebergee / local.
 
 ## Ce que la variable decide
@@ -522,4 +524,4 @@ nomme, jamais masque.
 - `scripts/ci/check_scheduler_liveness.py` — le registre de cadence, ou le controleur est desormais inscrit : son extinction se mesure ;
 - `scripts/coordination/install_merge_ready_task.py` — la tache `CoursIA\merge_ready`, siege ou la bascule locale a vocation a tourner ;
 - `scripts/ci/check_runner_starvation.py` — l'organe de sante du parc, dont le controleur reutilise la mesure de file et l'inventaire des slots ;
-- [volet 5 — debit DNS vers api.github.com](https://github.com/jsboige/CoursIA/pull/22948) — l'autre moitie du cout de la CI. Renvoi vers la PR et non vers le fichier : le document `docs/coordination/dns-rate-measurement.md` est livre par cette PR encore ouverte, et un lien fichier casserait `check-links` sur toute branche ne la contenant pas.
+- [volet 5 — debit DNS vers api.github.com](https://github.com/jsboige/CoursIA/pull/22948) — l'autre moitie du cout de la CI. Renvoi vers la PR et non vers le fichier : le document `docs/transients/2026-10-31-dns-rate-measurement.md` est livre par cette PR encore ouverte, et un lien fichier casserait `check-links` sur toute branche ne la contenant pas.

@@ -327,3 +327,41 @@ def test_un_index_en_retard_ne_peut_pas_trancher_sans_erreur(monkeypatch):
     with pytest.raises(toc.GhError) as exc:
         toc.open_prs_touching_registry("jsboige/CoursIA")
     assert "tronquee" in str(exc.value)
+
+
+# --- 6. le plafond de fichiers d'une PR (#26701) -----------------------------
+
+
+def _row_with_files(number, count):
+    """Une PR qui touche `count` fichiers, tous HORS registre.
+
+    C'est le cas mesure #26701 : le fichier du registre existe bien dans la PR,
+    mais il tombe au-dela du prefixe que `gh pr list` rend. La liste telle
+    qu'elle arrive ne le contient donc pas -- exactement ce que voyait la
+    couche OPEN-PR le 2026-11-15.
+    """
+    files = [{"path": "scripts/ci/fichier-%04d.py" % i, "status": "modified"}
+             for i in range(count)]
+    return {"number": number, "files": files}
+
+
+def test_une_pr_dont_le_lot_de_fichiers_est_plein_est_inclue(monkeypatch):
+    """Le cas #26701 : 202 fichiers, un prefixe de 100, registre hors prefixe.
+
+    La liste rendue par `gh pr list` ne porte aucun chemin du registre. La
+    conclure « hors registre » est le faux negatif qui a laisse passer le
+    doublon du 2026-11-15 : un lot PLEIN ne prouve pas l'absence, donc la PR
+    doit etre incluse et relue en pagine.
+    """
+    rows = [_row_with_files(25612, toc.FILE_LIST_CAP)]
+    _stub_gh(monkeypatch, counts=[1], rows=rows)
+    assert toc.open_prs_touching_registry("jsboige/CoursIA") == [25612]
+
+
+def test_une_pr_sous_le_plafond_de_fichiers_reste_exclue(monkeypatch):
+    """Contrepartie : sous le plafond, le lot est complet, donc l'absence du
+    registre est une vraie absence. Sans ce test, inclure tout le parc
+    passerait pour un correctif."""
+    rows = [_row_with_files(12345, toc.FILE_LIST_CAP - 1)]
+    _stub_gh(monkeypatch, counts=[1], rows=rows)
+    assert toc.open_prs_touching_registry("jsboige/CoursIA") == []

@@ -211,6 +211,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "linux-self-hosted-tests.yml",
     "banner-guard.yml",
     "prose-counts-guard.yml",
+    # prose-output-numbers-sweep.yml (#27231) : balayage cron hebdomadaire
+    #   (schedule + workflow_dispatch) pur-Python stdlib, exit 0 PAR
+    #   CONSTRUCTION, GITHUB_TOKEN absent (contents: read seul). Aucun
+    #   trigger pull_request -> aucune garde same-repo requise (tranche 4
+    #   #14283, meme profil que grain-orphans-sweep). Rollback = revert de
+    #   la PR (l'entree disparait de l'allowlist).
+    "prose-output-numbers-sweep.yml",
     "notebook-interp-positioning.yml",
     "cell-order-gate.yml",
     "pip-leak-guard.yml",
@@ -479,6 +486,28 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
     "ci-overflow-controller.yml",
+    # #26939 (owner myia-po-2027:CoursIA) : sonde legere de debordement CI,
+    #   petite soeur du controleur ci-dessus -- elle REVEILLE le controleur
+    #   entre ses passages (episode du 16/11 : ~0 a 386 runs en ~40 min sans
+    #   intercalage), elle ne decide pas. Meme profil que le controleur :
+    #   `schedule` ('4-59/12', jamais :00/:30/:31) + `workflow_dispatch`
+    #   UNIQUEMENT (advisory par construction, doctrine #12817), runs-on
+    #   STATIQUE [self-hosted, coursia-ephemeral, coursia-linux],
+    #   timeout-minutes: 10, garde same-repo au niveau job
+    #   (`if: github.repository == 'jsboige/CoursIA'`) malgre l'absence de
+    #   trigger `pull_request`. Pur-Python stdlib + `gh` binaire de l'image ;
+    #   seuils importes de l'organe (HOSTED_CONCURRENCY_CAP du controleur),
+    #   jamais reinventes ; 2 appels gh au repos (file + variable), un 3e
+    #   sur candidat dispatch, un 4e si elle dispatche -- c'est la seule
+    #   ecriture (dispatch du controleur, `permissions: actions: write`),
+    #   aucune ecriture dans le depot (`contents: read`) ; un exit 1
+    #   (mesure impossible) s'affiche en ::warning sans casser le passage.
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte
+    #   par `Scripts Tests (CPU)` (run 43895504161, 16/11) : la PR routait
+    #   le job self-hosted sans toucher cette allowlist fail-closed -- meme
+    #   classe que ci-overflow-controller.yml.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "ci-overflow-probe.yml",
     # runner-starvation-advisory.yml (#14846, owner myia-po-2027:CoursIA-2) :
     #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux
     #   2 labels waiter + lean (matrice GitHub Actions, 2 entrees include).
@@ -1168,6 +1197,17 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
         "socket manque au pool conteneur (uid 1001, no-new-privileges) ; la "
         "jambe self-hosted voisine couvre les runs du depot"
     ),
+    "learning-image-ghcr.yml": (
+        "#27546 (pli 1.3) : le job `construire-temoins` BUILDE l'image "
+        "d'apprentissage (docker buildx, contexte `lean_scripts`) puis y "
+        "execute les 7 carnets temoins ; le job `publier` ne s'execute jamais "
+        "sur une PR (`if:` + `needs:`), mais le cliquet voit le workflow. Le "
+        "pool conteneur ne peut pas porter ces jobs : le socket Docker y "
+        "manque (uid 1001, no-new-privileges -- meme motif que "
+        "secret-scan.yml) et buildx n'y est pas disponible ; le runner "
+        "heberge est donc le seul porteur. Exception ajoutee sur decision de "
+        "review du coordinateur (20/11, revue #27628)"
+    ),
 }
 
 # Figee a la creation du cliquet (#23053, 2026-10-28) a 21 entrees, puis
@@ -1187,8 +1227,15 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
 # liste NE S'ELARGIT PAS -- seule une decision de review peut le faire, et la
 # PR qui nomme une nouvelle exception retire au moins autant d'entrees dans le
 # meme commit.
+# Le 2026-11-20, une exception est ajoutee : `learning-image-ghcr.yml`
+# (#27546, pli 1.3), sur decision de review explicite du coordinateur
+# (revue #27628) -- le job construit l'image avec docker buildx et execute
+# les 7 carnets temoins dans le conteneur ; le pool conteneur local n'a ni
+# socket Docker ni buildx, le runner heberge est son seul porteur. La
+# baseline est etendue dans le meme commit, comme l'exige l'invariant 2.
 HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
     "codeql.yml",
+    "learning-image-ghcr.yml",
     "ml-tests.yml",
     "perimeter-review-guard.yml",
     "quarto-pages-deploy.yml",
@@ -1406,6 +1453,13 @@ HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
 HYBRID_RUNS_ON_LABELS = WAITER_LABELS  # kept for backward compat (single set)
 HYBRID_RUNS_ON_LABEL_SETS = (WAITER_LABELS, LINUX_RUNNER_LABELS)
 HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
+# #27184 (18/11) : le repli heberge audite accepte AUSSI l'image pinniee
+# ``ubuntu-24.04``. Le rollout d'Ubuntu 26.04 sur ``ubuntu-latest`` a retire
+# Python 3.9 de l'image ; les workflows qui l'installent (ict-tests.yml,
+# slow-lane.yml) pinnent leur repli/scale heberge sur 24.04. Les DEUX
+# litteraux restent heberges GitHub (GITHUB_HOSTED_LABELS) : aucun routage
+# nouveau vers le parc local, la chaine d'audit garde son sens.
+HYBRID_RUNS_ON_FALLBACKS = ("ubuntu-latest", "ubuntu-24.04")
 # Variable de depot de la seconde garde (phase A du debordement, #22461) :
 # nom et valeur ENUMERES -- cf. bloc de commentaire ci-dessus.
 CI_OVERFLOW_LOCAL_VAR = "CI_OVERFLOW_LOCAL"
@@ -1520,7 +1574,7 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, Any] | None:
     allowed_label_sets = HYBRID_RUNS_ON_GUARD_LABEL_SETS.get(guard)
     if allowed_label_sets is None:
         return None
-    if match.group("fallback") != HYBRID_RUNS_ON_FALLBACK:
+    if match.group("fallback") not in HYBRID_RUNS_ON_FALLBACKS:
         return None
     try:
         labels = {str(item) for item in json.loads(match.group("labels"))}
@@ -1665,8 +1719,12 @@ def _chain_runs_on(runs_on: Any) -> dict[str, Any] | None:
             # Un repli au milieu de la chaine n'est pas une forme auditee.
             return None
         stripped = part.strip()
-        if stripped in (f"'{HYBRID_RUNS_ON_FALLBACK}'", f'"{HYBRID_RUNS_ON_FALLBACK}"'):
-            fallback = HYBRID_RUNS_ON_FALLBACK
+        if stripped in {
+            f"'{label}'" for label in HYBRID_RUNS_ON_FALLBACKS
+        } | {
+            f'"{label}"' for label in HYBRID_RUNS_ON_FALLBACKS
+        }:
+            fallback = stripped.strip("'\"")
             continue
         fallback_match = _CHAIN_FALLBACK_LABELS_PATTERN.match(part)
         if fallback_match is None:
@@ -1977,20 +2035,20 @@ def _guard_violation_message(condition: str) -> str:
 
 
 def _is_naked_hosted_runner(runs_on: Any) -> bool:
-    """Vrai si ``runs-on`` ne nomme QUE le label heberge par defaut.
+    """Vrai si ``runs-on`` ne nomme QU'un label heberge du ratchet.
 
-    ``ubuntu-latest`` seul (scalaire) ou une liste a un seul element
-    ``[ubuntu-latest]``. Une expression (forme hybride), un label self-hosted
-    ou une liste multi-labels ne sont PAS « nus » : ils sont deja routes, ou
-    le sont par construction.
+    ``ubuntu-latest`` ou l'image pinniee ``ubuntu-24.04`` (#27184), seuls
+    (scalaire) ou en liste a un seul element. Une expression (forme hybride),
+    un label self-hosted ou une liste multi-labels ne sont PAS « nus » : ils
+    sont deja routes, ou le sont par construction.
     """
     if isinstance(runs_on, str):
-        return runs_on.strip().lower() == HYBRID_RUNS_ON_FALLBACK
+        return runs_on.strip().lower() in HYBRID_RUNS_ON_FALLBACKS
     if isinstance(runs_on, list):
         return (
             len(runs_on) == 1
             and isinstance(runs_on[0], str)
-            and runs_on[0].strip().lower() == HYBRID_RUNS_ON_FALLBACK
+            and runs_on[0].strip().lower() in HYBRID_RUNS_ON_FALLBACKS
         )
     return False
 

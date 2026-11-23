@@ -30,9 +30,9 @@ Le paramètre `mode` choisit le portefeuille :
 Projet QC Cloud : un `main.py` sans dépendance hors de Lean. Paramètres :
 
 - `mode` : `strategy`, `spy`, `6040` ou `inverse` ;
-- `start_date`, `end_date` : format `%Y-%m-%d` (défauts 2016-01-01 et 2026-07-01).
+- `start`, `end` : format `%Y-%m-%d`, lus sans défaut (contrat #27482).
 
-Le graphique `shadow` porte la valeur du portefeuille à l'ouverture de chaque séance de SPY, répartie sur les séries `e0` à `e4` (contrat #18923). C'est la série que comparent les tests.
+Le graphique `shadow` porte la valeur du portefeuille à l'ouverture de chaque séance de SPY, répartie sur les séries `e0` à `e4` (contrat #18923), plus les séries `fees` et `turnover` à chaque séance (contrat #27482). C'est la série que comparent les tests.
 
 ## Verdict contre références détenues (#24069)
 

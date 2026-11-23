@@ -2,7 +2,7 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 
-Grothendieck hommage — Partie 82 : faisceaux flasques, du topologique au site.
+Grothendieck hommage — Partie 79 : faisceaux flasques, du topologique au site.
 
 Alexandre Grothendieck (1928-2014).
 

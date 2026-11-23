@@ -1,0 +1,11 @@
+- name: "ML-4.1 Convolution"
+  family: ML
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Corrélation et gradient manuels comparés aux véritables Conv2d et backward TorchSharp ; Pillow prépare l'image figée."
+  known_differences:
+    - "Python utilise NumPy et PyTorch ; C# utilise boucles, unfold/matmul et TorchSharp."
+    - "Les générateurs aléatoires diffèrent ; les mêmes données et poids sont utilisés dans chaque comparaison."
+    - "Pillow est appelé par Python.NET uniquement pour le prétraitement de l'image."

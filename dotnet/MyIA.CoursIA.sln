@@ -44,7 +44,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StreamingAgent.App", "..\My
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CopilotAgent.App", "..\MyIA.AI.Notebooks\GenAI\Integrations-DotNet\CopilotSDK\CopilotAgent.App\CopilotAgent.App.csproj", "{95977523-7989-4D04-AB79-F9A92D819403}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveOrderApp", "..\MyIA.AI.Notebooks\GenAI\Vibe-Coding\docs\csharprepl-demo\LiveOrderApp.csproj", "{69E49604-6C37-4B48-9739-B22CD0D9B33F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LiveOrderApp", "..\MyIA.AI.Notebooks\GenAI\Integrations-DotNet\CSharpRepl\csharprepl-demo\LiveOrderApp.csproj", "{69E49604-6C37-4B48-9739-B22CD0D9B33F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InferNetVoi", "..\MyIA.AI.Notebooks\Probas\DecisionTheory\voi\InferNetVoi\InferNetVoi.csproj", "{7021DC28-88F5-4E7D-8BF2-830B1F31CA85}"
 EndProject

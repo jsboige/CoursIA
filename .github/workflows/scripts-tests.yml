@@ -32,7 +32,7 @@ on:
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
       # #17850 : ce registre est relu par la suite de scripts.
-      - 'arxiv_attributions_registry.yaml'
+      - 'docs/reference/arxiv_attributions_registry.yaml'
       # See the push: block above for why these two are pinned here.
       - '.github/workflows/catalog-cron.yml'
       - '.github/workflows/translation-sync.yml'
@@ -81,7 +81,7 @@ on:
       # #15058 ADK contracts (mirror of the push path above).
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
       # #25201 : le refactor ADK a déplacé une suite de contrat hors Track2.
-      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/**'
       # #17580 fallacy-detection snapshot guard (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/**'
       - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/**'
@@ -270,6 +270,22 @@ jobs:
     timeout-minutes: 44
 
     steps:
+      # #26468 (tranche 2, aide au diagnostic) : le mecanisme du p90 du
+      # checkout (1,60 -> 17,23 min au passage de T-K) n'est pas etabli --
+      # fetch promisor paresseux, lecture des alternates du miroir, ou
+      # SATURATION DISQUE du slot. Mesure du 20/11 : le meme workflow qui
+      # reussissait sur deux machines rendait 5 639 ENOSPC sur
+      # myia-ai-01-linux-main-1 (job 136243985925). Une mesure par job,
+      # horodatee dans le log, tranche « machine vs code » en une lecture
+      # et rend le prochain incident diagnosticable sans mobiliser un slot
+      # pour un A/B. Sans statut d'echec propre : cette etape ne peut pas
+      # rougir le job (df et du lisent, ils n'ecrivent rien).
+      - name: "Etat disque du slot au demarrage (df/du) (#26468)"
+        shell: bash
+        run: |
+          df -h / /tmp
+          du -sh ~/.local/state/CoursIA 2>/dev/null || true
+
       # ------------------------------------------------------------------
       # HEAL (#15387) : le pool self-hosted REUTILISE le work dir entre jobs.
       # Un job a profondeur par defaut y laisse un clone SHALLOW ; le
@@ -535,14 +551,17 @@ jobs:
         # local, spawns python, psutil en importorskip ; timeline/comments
         # monkeypatches pour list_closed_unmerged_prs).
         #
-        # Nombre de workers xdist borne par le plafond memoire du conteneur
-        # (1 worker par Gio entier de `memory.max`, entre 1 et 4). Les slots a
-        # 4 Gio (ai-01-wsl-*, po-2024-linux-docker-1) gardent `-n 4` a
-        # l'identique. Les slots `po-2024-linux-persist-*`, plafonnes plus bas,
-        # tuaient leurs workers par OOM du cgroup (`dmesg` : CONSTRAINT_MEMCG,
-        # 2026-10-20 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : ils ont ete
-        # retires de `coursia-linux`, et sept slots sont restes inactifs devant
-        # une file de 800 runs. Borner `-n` leur rend les jobs.
+        # Nombre de workers xdist choisi a partir d'un BUDGET INDICATIF sur
+        # `memory.max` (3/4 de `memory.max` / Gio, borne 1..4) : 4 Gio -> 3
+        # workers, 8 Gio -> 4. Ce budget calibre le nombre de workers ; ce
+        # n'est PAS une reservation memoire : aucune cote par worker, rien de
+        # reserve au master xdist. Les slots a 4 Gio (ai-01-wsl-*,
+        # po-2024-linux-docker-1) passent de `-n 4` a `-n 3`. Les slots
+        # `po-2024-linux-persist-*`, plafonnes plus bas, tuaient leurs
+        # workers par OOM du cgroup (`dmesg` : CONSTRAINT_MEMCG, 2026-10-20
+        # 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : retires de
+        # `coursia-linux`, sept slots restaient inactifs devant une file de
+        # 800 runs. Borner `-n` leur rend les jobs.
         #
         # #22735 -- huit suites de `scripts/**/tests/` etaient vertes en local et
         # jouees par AUCUN workflow : datasets, genai-stack, hashlife, i18n,
@@ -583,7 +602,13 @@ jobs:
             || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
             || echo max)
           if [ "$mem_max" -gt 0 ] 2>/dev/null; then
-            xdist_n=$(( mem_max / 1073741824 ))
+            # #27163 : 3/4 de la memoire du cgroup calibre le nombre de workers
+            # (budget indicatif de concurrence — PAS une reservation memoire :
+            # aucune cote par worker, rien de garanti au master xdist). L'ancienne
+            # formule (1 worker/Gio) donnait 4 workers dans un cgroup 4 Gio sans
+            # marge : un worker OOMait a 99 % sur la pleine suite (3 rouges
+            # consecutifs, sentinelle main-red #27163). 4 Gio -> 3 workers.
+            xdist_n=$(( mem_max * 3 / 4 / 1073741824 ))
             [ "$xdist_n" -gt 4 ] && xdist_n=4
             [ "$xdist_n" -lt 1 ] && xdist_n=1
           else
@@ -609,6 +634,23 @@ jobs:
             SUITES=$(python -c "import json; print(' '.join(json.load(open('scripts_scope.json'))['suites']))") || SUITES=""
           fi
           echo "portee: $SCOPE_MODE${SUITES:+ -- suites: $SUITES}"
+          # #27215 : la pleine suite (28986 items) voit gw2 OOMe a 99 % du
+          # parcours (run 44264380171, memory.events oom_kill 6) malgre la
+          # borne #27163 (4 -> 3). Mesure locale : test_workdir_heal_sparse =
+          # 24 tests passants en 22.61 s. NB : tracemalloc (0,0 Mo) ne mesure
+          # que l'allocateur Python du processus parent -- ni le RSS des
+          # subprocess git, ni la pression cgroup/page cache : il ne suffit
+          # pas a innocenter le test tue. Le fait etabli est l'OOM AGGREGE du
+          # cgroup (3 workers + master) ; la repartition precise par source
+          # (caches git, __pycache__, donnees) n'est pas mesuree. Plafonner a
+          # 2 workers sur la pleine suite est une MITIGATION destinee a
+          # reduire la charge simultanee ; son efficacite reste a verifier sur
+          # un run complet. Les runs restreints (suite reduite, charge bornee)
+          # conservent la formule #27163.
+          if [ "$SCOPE_MODE" = "full" ] && [ "$xdist_n" -gt 2 ]; then
+            xdist_n=2
+            echo "xdist workers: plafonne a 2 sur la pleine suite (#27215)"
+          fi
           if [ "$SCOPE_MODE" = "restricted" ]; then
             python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest $SUITES -n "$xdist_n" --dist loadscope --tb=short -q
           else
@@ -635,6 +677,9 @@ jobs:
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_flagship_endpoint.py \
+            MyIA.AI.Notebooks/Probas/Infer/gateway/test_trueskill_core.py \
+            MyIA.AI.Notebooks/Probas/Infer/gateway/test_run_gateway.py \
+            MyIA.AI.Notebooks/Probas/Infer/gateway/test_flagship_endpoint.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
@@ -675,10 +720,13 @@ jobs:
         # migrating that module to tmp_path.
         #
         # `--import-mode importlib` (pytest.ini addopts) is equally load-bearing
-        # here: three test basenames are duplicated across these 14 paths
-        # (test_check_dataset_registry, test_check_public_anchor,
+        # here: historically three test basenames were duplicated across these
+        # 14 paths (test_check_dataset_registry, test_check_public_anchor,
         # scan_slidev_composition), and without it pytest raises
         # `import file mismatch` -- sequentially too, not just under xdist.
+        # T2 de #25366 dedouble les basenames au fil des tranches ; le mode
+        # importlib reste conserve par securite tant que la dette T2 n'est pas
+        # a zero.
         #
         # Audited for inter-module parallel safety before enabling: no shared
         # fixed-path writes outside the module above, no git mutation against
@@ -850,7 +898,7 @@ jobs:
           python scripts/ci/check_absorbed_path_parity.py --base origin/main
 
   qc-mcp-lite-tests:
-    name: qc-mcp-lite suite (58)
+    name: qc-mcp-lite suite (113)
     # #22735 : `scripts/qc-mcp-lite/tests` (58 tests, verts en local) etait
     # verte mais jouee par AUCUN workflow -- le defaut qu'elle refute
     # (rate limiting, extraction de stats, auth) redev Invisible. Premier
@@ -903,7 +951,7 @@ jobs:
 
   adk-contracts:
     name: ADK runtime contracts (18)
-    # #15058: #13572 makes 07-Agent-Orchestration/utils/test_adk_runtime_contracts.py
+    # #15058: #13572 makes 07-Orchestration-d-Agents/utils/test_adk_runtime_contracts.py
     # (C1-C7, REAL ADK 2.8 runtime with a scripted LLM -- offline, no key, no
     # network) its measuring organ, but no CI job ran it: portage was
     # established by declaration, exactly what #13572's clause wanted to
@@ -932,7 +980,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        # Exact pin chain of 07-Agent-Orchestration/requirements.txt (the verified
+        # Exact pin chain of 07-Orchestration-d-Agents/requirements.txt (the verified
         # compatibility chain, #13948): litellm 1.93.2 + openai 2.24.0 +
         # google-adk 2.8.0 + pydantic 2.12.5. Measured firsthand on a clean
         # venv with exactly these pins: 16/16 green in ~10 s, no conflicts.
@@ -942,7 +990,7 @@ jobs:
 
       - name: Run ADK runtime contracts
         run: |
-          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/test_adk_runtime_contracts.py" --tb=short -q
+          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/test_adk_runtime_contracts.py" --tb=short -q
 
       - name: Contracts collection floor (18)
         # Same two-signal semantics as the audit (455) / secrets (148) /
@@ -954,14 +1002,14 @@ jobs:
         env:
           ADK_CONTRACTS_FLOOR: 18
         run: |
-          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/test_adk_runtime_contracts.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/test_adk_runtime_contracts.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ADK_CONTRACTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ADK_CONTRACTS_FLOOR. Removing a contract test is a contract change, not housekeeping."; exit 1; fi
           echo "OK: $N tests collected (floor=$ADK_CONTRACTS_FLOOR)."
 
       - name: Run provider default contracts
         # #20002: config/test_providers.py was run by NO CI leg -- the trigger
-        # above already fired on 07-Agent-Orchestration/**, so the surface existed
+        # above already fired on 07-Orchestration-d-Agents/**, so the surface existed
         # while the collection was silently missing. Host is this job, not the
         # shared scripts-tests list: test_providers.py imports only pytest +
         # pathlib + importlib.util, and config/providers.py only pydantic +
@@ -975,7 +1023,7 @@ jobs:
         # compared the two (get_provider_config resolves `settings.<p>_model or
         # defaults["model"]`, and the fallback only shows on an empty env var).
         run: |
-          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/config/test_providers.py" --tb=short -q
+          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/config/test_providers.py" --tb=short -q
 
       - name: Providers collection floor (30)
         # Two-signal semantics, same as the contracts (18) floor above: 0
@@ -991,7 +1039,7 @@ jobs:
         env:
           ADK_PROVIDERS_FLOOR: 30
         run: |
-          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/config/test_providers.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/config/test_providers.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ADK_PROVIDERS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ADK_PROVIDERS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$ADK_PROVIDERS_FLOOR)."

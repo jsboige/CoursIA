@@ -48,6 +48,18 @@ livre le correctif durable : les marqueurs d'ouverture de claim sont exclus du
 calcul « la flotte a parle en dernier ». La resolution de ce merge a retire le
 paragraphe de limite et le test qui l'encodait.
 
+REGISTRE DES DESTINATAIRES (``--board``, demande user 2026-11-16) : releve d'un
+geste de TOUTES les issues ``recette``, sans lane. Chaque body declare a qui
+l'issue s'adresse et si son lien est parti :
+    Destinataires : Frederic (MOA externe) ; Odile (MOA externe)
+    Transmission : 2026-11-16      (toute valeur non datee = non transmis)
+Le registre est l'ensemble de ces lignes, jamais une liste parallele. Alertes :
+``A TRANSMETTRE`` (geste du mainteneur), ``REPONSE DUE PAR LA FLOTTE``,
+``DESTINATAIRE MUET`` (lien transmis, balle chez lui depuis plus de
+``--silence-days``, defaut 14 : la relance passe par le canal du mainteneur).
+rc du board : 0 = rien du cote flotte, 1 = une reponse de flotte est due,
+2 = injoignable.
+
 Sorties : rc 0 = rien a faire (tour fait, aucune issue ``recette``, ou balle chez
 le validateur sur toutes les issues) ;
 rc 1 = tour du, l'issue est nommee ; rc 2 = organe injoignable (fail-open : le
@@ -55,6 +67,7 @@ cycle continue, la ligne ``UNKNOWN`` le dit).
 
     python scripts/coordination/recette_due.py --lane myia-po-2023:CoursIA
     python scripts/coordination/recette_due.py --lane myia-po-2023:CoursIA --json
+    python scripts/coordination/recette_due.py --board
 """
 from __future__ import annotations
 
@@ -82,6 +95,19 @@ FLEET_LOGINS = frozenset({"jsboige", "myia-ai-01", "clusterManager-Myia"})
 
 _VALIDATOR_RE = re.compile(r"^\s*\**\s*Validateur\s*\**\s*:\s*\**\s*@([A-Za-z0-9-]+)", re.IGNORECASE | re.MULTILINE)
 
+# Registre des destinataires (demande user 2026-11-16) : chaque issue de recette
+# declare dans son body a qui elle s'adresse et si son lien a ete transmis. Le
+# registre EST l'ensemble de ces lignes : aucune liste parallele qui deriverait.
+#   Destinataires : Frederic (MOA externe) ; Odile (MOA externe)
+#   Transmission : 2026-11-16            (ou : a faire par le mainteneur)
+_RECIPIENTS_RE = re.compile(r"^\s*\**\s*Destinataires\s*\**\s*:\s*\**\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
+_TRANSMISSION_RE = re.compile(r"^\s*\**\s*Transmission\s*\**\s*:\s*\**\s*(.+?)\s*$", re.IGNORECASE | re.MULTILINE)
+_DATE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})\b")
+
+#: Au-dela, un destinataire qui a recu le lien et n'a rien dit est signale : la
+#: relance passe par le canal du mainteneur, pas par une notification de plus.
+DEFAULT_SILENCE_DAYS = 14.0
+
 ListFetcher = Callable[[], list]
 IssueFetcher = Callable[[int], dict]
 
@@ -94,6 +120,30 @@ def is_fleet(login: str | None) -> bool:
 
 def declared_validator(body: str) -> str | None:
     m = _VALIDATOR_RE.search(body or "")
+    return m.group(1) if m else None
+
+
+def declared_recipients(body: str) -> list[str]:
+    """Destinataires declares par la ligne ``Destinataires :`` (separateur ``;``)."""
+    m = _RECIPIENTS_RE.search(body or "")
+    if not m:
+        return []
+    return [part.strip() for part in m.group(1).split(";") if part.strip()]
+
+
+def declared_transmission(body: str) -> str | None:
+    """Valeur brute de la ligne ``Transmission :``, ou None si absente."""
+    m = _TRANSMISSION_RE.search(body or "")
+    return m.group(1) if m else None
+
+
+def transmitted_on(value: str | None) -> str | None:
+    """Date de transmission si la valeur commence par AAAA-MM-JJ, sinon None.
+
+    Tout autre texte (« a faire », « a confirmer ») compte comme NON transmis :
+    l'organe ne devine pas une transmission qui n'est pas datee.
+    """
+    m = _DATE_RE.match((value or "").strip())
     return m.group(1) if m else None
 
 
@@ -162,6 +212,9 @@ def assess_issue(payload: dict, lane: str, now: datetime) -> dict:
         # creation de l'issue si la flotte n'y a jamais parle (#21279).
         "waiting_since": last_fleet or payload.get("createdAt") or None,
         "held_by": held_by,
+        "recipients": declared_recipients(payload.get("body") or ""),
+        "transmission": declared_transmission(payload.get("body") or ""),
+        "transmitted_on": transmitted_on(declared_transmission(payload.get("body") or "")),
     }
 
 
@@ -209,6 +262,75 @@ def decide(states: list[dict], window_days: float) -> dict:
             "reason": f"aucun tour de recette depuis {window_days:g} j (dernier : {since}) ; {why}"}
 
 
+def board_alerts(state: dict, now: datetime, silence_days: float = DEFAULT_SILENCE_DAYS) -> list[str]:
+    """Ce qui demande un geste sur une issue de recette, nomme par qui le doit."""
+    alerts: list[str] = []
+    if not state.get("recipients"):
+        alerts.append("DESTINATAIRES NON DECLARES (ligne Destinataires absente du body)")
+    if not state.get("transmitted_on"):
+        alerts.append("A TRANSMETTRE (mainteneur)")
+    if state.get("ball_in_fleet_court"):
+        age = _age_days(state.get("last_validator_comment"), now)
+        alerts.append(f"REPONSE DUE PAR LA FLOTTE depuis {age:.1f} j" if age is not None
+                      else "REPONSE DUE PAR LA FLOTTE")
+    elif state.get("transmitted_on") and state.get("ball_with_validator"):
+        age = _age_days(state.get("waiting_since"), now)
+        if age is not None and age > silence_days:
+            alerts.append(f"DESTINATAIRE MUET depuis {age:.1f} j (relance par le canal du mainteneur)")
+    return alerts
+
+
+def run_board(now: datetime, silence_days: float = DEFAULT_SILENCE_DAYS,
+              list_issues: ListFetcher | None = None, fetch_issue: IssueFetcher | None = None) -> dict:
+    """Le registre des issues de recette, releve d'un geste (demande user 2026-11-16)."""
+    list_issues = list_issues or gh_list
+    fetch_issue = fetch_issue or gh_issue
+    states = sorted((assess_issue(fetch_issue(it["number"]), "", now) for it in list_issues()),
+                    key=lambda st: st["number"] or 0)
+    for st in states:
+        st["alerts"] = board_alerts(st, now, silence_days)
+    fleet_due = [st["number"] for st in states if st["ball_in_fleet_court"]]
+    return {
+        "verdict": "FLEET-REPLY-DUE" if fleet_due else "OK",
+        "fleet_reply_due": fleet_due,
+        "to_transmit": [st["number"] for st in states if not st["transmitted_on"]],
+        "silent": [st["number"] for st in states
+                   if any(a.startswith("DESTINATAIRE MUET") for a in st["alerts"])],
+        "silence_days": silence_days,
+        "issues": states,
+    }
+
+
+def _short_date(iso: str | None, now: datetime) -> str:
+    if not iso:
+        return "jamais"
+    return f"{iso[:10]} ({_age_days(iso, now):.1f} j)"
+
+
+def print_board(board: dict, now: datetime) -> None:
+    for st in board["issues"]:
+        title = (st.get("title") or "")[:100]
+        print(f"#{st['number']} {title}")
+        recipients = " ; ".join(st["recipients"]) if st["recipients"] else "NON DECLARES"
+        print(f"   destinataires : {recipients}")
+        print(f"   transmission  : {st['transmission'] or 'NON DECLAREE'}")
+        print(f"   dernier message destinataire : {_short_date(st['last_validator_comment'], now)}"
+              f" | dernier message flotte : {_short_date(st['last_fleet_comment'], now)}")
+        if st["ball_in_fleet_court"]:
+            ball = "flotte"
+        elif st["ball_with_validator"]:
+            ball = f"destinataire depuis {_short_date(st['waiting_since'], now)}"
+        else:
+            ball = "libre (personne n'a encore parle)"
+        held = f" | tenue par {', '.join(st['held_by'])}" if st["held_by"] else ""
+        print(f"   balle : {ball}{held}")
+        print(f"   alertes : {' ; '.join(st['alerts']) if st['alerts'] else 'aucune'}")
+    print(f"BOARD: {len(board['issues'])} issue(s) de recette ; "
+          f"{len(board['to_transmit'])} a transmettre ; "
+          f"{len(board['fleet_reply_due'])} reponse(s) due(s) par la flotte ; "
+          f"{len(board['silent'])} destinataire(s) muet(s) > {board['silence_days']:g} j")
+
+
 def _gh_json(args: list[str]):
     out = subprocess.run(["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True)
     return json.loads(out.stdout)
@@ -234,11 +356,27 @@ def run(lane: str, window_days: float, now: datetime,
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--lane", required=True, help="lane machine:workspace, ex. myia-po-2023:CoursIA")
+    ap.add_argument("--lane", help="lane machine:workspace, ex. myia-po-2023:CoursIA (requis hors --board)")
     ap.add_argument("--window-days", type=float, default=DEFAULT_WINDOW_DAYS)
+    ap.add_argument("--board", action="store_true",
+                    help="registre de toutes les issues de recette : destinataires, transmission, balle, alertes")
+    ap.add_argument("--silence-days", type=float, default=DEFAULT_SILENCE_DAYS)
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args(argv)
     now = datetime.now(timezone.utc)
+    if args.board:
+        try:
+            board = run_board(now, args.silence_days)
+        except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as exc:
+            print(f"UNKNOWN: registre de recette injoignable ({type(exc).__name__})")
+            return 2
+        if args.json:
+            print(json.dumps(board, ensure_ascii=False, indent=2))
+        else:
+            print_board(board, now)
+        return 1 if board["fleet_reply_due"] else 0
+    if not args.lane:
+        ap.error("--lane est requis hors --board")
     try:
         result = run(args.lane, args.window_days, now)
     except (subprocess.CalledProcessError, FileNotFoundError, json.JSONDecodeError) as exc:

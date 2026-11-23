@@ -39,10 +39,10 @@
       "note": "Lecture directe du module _SmokeTest.lean"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb",
-      "cell_id": "ea6530ce",
-      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean",
-      "note": "Code 3.1 -- extraction des signatures des declarations de Shapley.lean, source de verite de la loi de Mobius ; chemin SocialChoice/06b depuis le re-lettrage T5b (#20316)"
+      "notebook": "MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb",
+      "cell_id": "fa100002",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/RepeatedGames/Panel.lean",
+      "note": "Lecture directe du module Panel.lean (terrains du panel prover, EPIC #1453) ; declaree par la reponse Hermes (#27484) -- la cellule 18 lit le fichier en direct"
     },
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb",
@@ -123,7 +123,7 @@
       "note": "Seconde source lue par la meme cellule : ses citations L43-L167 sont celles de CHSHRandomized.lean, pas de CHSH.lean (#22129)"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/InformationCalcul/Compression/Compression-04-ANS-Python.ipynb",
       "cell_id": "0147a26c",
       "source": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/datasets/le_horla_1887.txt",
       "note": "Section 1 -- taille et nombre de lignes du corpus, empreinte SHA-256 des 128 premiers Kio et entropie de la tranche de 16 Kio"
@@ -133,6 +133,12 @@
       "cell_id": "c15",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/LegalLoophole/Toy.lean",
       "note": "Compte de lignes et inventaire des declarations de LegalLoophole/Toy.lean, module compagnon du carnet (#25686) ; trouvee par la garde live-read au push de la reponse Hermes (#26022)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb",
+      "cell_id": "ea6530ce",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/CooperativeGames/Shapley.lean",
+      "note": "Code 3.1 -- extraction des signatures des declarations de Shapley.lean, source de verite de la loi de Mobius ; chemin SocialChoice/06b depuis le re-lettrage T5b (#20316)"
     }
   ]
 }

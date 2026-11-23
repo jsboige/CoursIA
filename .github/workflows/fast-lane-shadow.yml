@@ -108,9 +108,10 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
+      # 3.12 : aligne sur le job absorbe d'always-on-guards.yml (#26737).
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       # Dependances requises par les detecteurs (pyyaml pour le scan de
       # closure markdown-rendering, Pillow pour scan_md_hierarchy). Bare
