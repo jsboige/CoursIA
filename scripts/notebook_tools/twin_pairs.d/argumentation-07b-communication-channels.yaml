@@ -1,0 +1,7 @@
+- name: "Argumentation-07b Communication Channels"
+  family: SymbolicAI/ArgumentAnalysis
+  python: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-CSharp.ipynb
+  parity_level: semantic
+  known_differences:
+    - "Port C# BCL du contrat local, sans threads ni réseau ; les UUIDv4 sont aléatoires et la FAQ du carnet Python qui prétend des identifiants identiques est erronée."
