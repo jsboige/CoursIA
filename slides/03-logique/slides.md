@@ -47,6 +47,7 @@ layout: default
 - Planification
 - Representation de connaissances
 - TP: Mise en oeuvre de l'infrence en logique propositionnelle et en logique du premier ordre
+- Apprentissage symbolique : quand la logique apprend (pont vers V)
 
 ---
 class: nb-map nb-k92
@@ -1428,62 +1429,6 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Resolvante: (Q(Jean) OU R(y))
 
 *Notebooks : [Tweety-02c-FOL-CSharp](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02c-FOL-CSharp.ipynb) (FOL avec EProver) · [Z3-Python-05-Quantifiers-Proofs](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-05-Quantifiers-Proofs-Python.ipynb) (quantificateurs et preuves).*
-
----
-layout: default
----
-
-# Resolution inverse et apprentissage inductif
-
-<style scoped>
-.slidev-layout { font-size: 0.88em; }
-h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
-</style>
-
-## De la preuve a l'hypothese
-
-- La resolution **derive** des consequences a partir de clauses donnees
-- **Resolution inverse** : remonter la regle pour proposer la clause manquante qui, ajoutee a la base, rend la consequence derivable
-- La machine propose l'hypothese, la logique la **valide** — c'est un renversement du sens de l'inference
-
-## Apprentissage inductif (ILP)
-
-- Entrees : exemples positifs, exemples negatifs, connaissance de fond
-- Sortie : un programme logique qui couvre les positifs et exclut les negatifs
-- Cadre theorique : apprentissage dans la limite, biais inductif declare
-
-## Pourquoi cela compte en 2026
-
-- Un LLM propose des regles plausibles mais **non garanties** ; l'ILP en etablit la coherence avec les exemples
-- La regle apprise reste un enonce de la base : elle est verifiable, pas seulement plausible
-
-*Notebooks : [SL-5-InverseResolution](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) (resolution remontee) · [SL-4-InductiveLogicProgramming](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) (ILP) · [SL-1-LogicalLearning](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb).*
-
----
-class: nb-map nb-k96
----
-
-# Apprendre des règles : la série SymbolicLearning
-
-<p class="nb-lead">La résolution inverse retourne la déduction pour induire des règles. La série suit ce fil, de l’espace des versions jusqu’aux moteurs ILP modernes et aux hybrides neuro-symboliques.</p>
-
-<div class="nb-grid nb-cols-3">
-
-<div class="nb-card"><p class="nb-step">Espace des versions</p><p class="nb-what">Chercher l’hypothèse cohérente avec les exemples, entre la plus générale et la plus spécifique.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb" target="_blank" rel="noopener">SL-1-LogicalLearning</a></p></div>
-
-<div class="nb-card"><p class="nb-step">Apprendre avec des connaissances</p><p class="nb-what">Apprentissage par explications et par pertinence : la théorie du domaine guide la généralisation.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb" target="_blank" rel="noopener">SL-2</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb" target="_blank" rel="noopener">SL-3</a></p></div>
-
-<div class="nb-card"><p class="nb-step">Programmation logique inductive</p><p class="nb-what">FOIL descend du général au spécifique ; la résolution inverse et Progol remontent des exemples.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb" target="_blank" rel="noopener">SL-4-ILP</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb" target="_blank" rel="noopener">SL-5-InverseResolution</a></p></div>
-
-<div class="nb-card"><p class="nb-step">ILP moderne</p><p class="nb-what">Aleph, Metagol, Popper et dILP : apprendre des programmes récursifs.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb" target="_blank" rel="noopener">SL-6-ModernILP</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb" target="_blank" rel="noopener">SL-8-KG-ILP</a></p></div>
-
-<div class="nb-card"><p class="nb-step">Automates</p><p class="nb-what">L* d’Angluin : apprendre un automate en posant des questions à un oracle.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb" target="_blank" rel="noopener">SL-10-ActiveAutomataLearning</a></p></div>
-
-<div class="nb-card"><p class="nb-step">Neuro-symbolique</p><p class="nb-what">Réseaux et règles dans un même pipeline, avec un LLM comme générateur d’hypothèses.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb" target="_blank" rel="noopener">SL-7</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb" target="_blank" rel="noopener">SL-9</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb" target="_blank" rel="noopener">SL-11-Capstone</a></p></div>
-
-</div>
-
-<p class="nb-foot"><strong>À observer.</strong> Une règle apprise par ILP se lit et se vérifie ; un réseau appris, non. Que coûte cette lisibilité en données et en temps de calcul ?</p>
 
 ---
 layout: default
@@ -3447,6 +3392,175 @@ layout: two-cols
 <p style="font-family: monospace; font-size: 0.75em; margin-top: 0.5em;">argumentum.games/fallacies_fr.html</p>
 
 </div>
+
+---
+layout: default
+---
+
+# Quand la logique apprend : l'apprentissage symbolique
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Le renversement
+
+- La déduction **part** des règles et produit des conséquences ; apprendre, c'est **remonter** ce sens
+- **Résolution inverse** : proposer la clause manquante qui, ajoutée à la base, rend la conséquence dérivable — la machine propose l'hypothèse, la logique la **valide**
+- Cadre général (apprentissage inductif à base de connaissances, KBIL) :
+  **Hypothèses ∧ Descriptions |= Classifications** — le rasoir d'Occam écarte l'énumération
+
+## Trois façons d'exploiter la connaissance
+
+| Famille | Ce qui est appris | Schéma |
+|---|---|---|
+| **EBL** — par explication | une règle **générale** depuis **un** exemple | Contexte |= Hypothèse |
+| **RBL** — par pertinence | une **détermination** | Contexte ∧ Desc. ∧ Classif. |= Hypothèse |
+| **ILP** — inductif | un programme logique | Contexte ∧ Hypothèse ∧ Desc. |= Classif. |
+
+*Cette partie se présente ici, à la fin de la logique — ou, comme précédemment, au moment du cours V (Apprentissage) : le cursus AIMA la place dans « Knowledge in Learning » (3ᵉ éd., ch. 19). Les trois familles suivent ce chapitre.*
+
+---
+layout: default
+---
+
+# Apprentissage par explication (EBL)
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Principe
+
+- **Hypothèse ∧ Descriptions |= Classifications** et **Contexte |= Hypothèse** : un seul exemple suffit quand la connaissance de fond explique pourquoi il fonctionne (la langue du pays visité, la densité constante — pas le poids de la brochette)
+
+## Méthode — généraliser la preuve d'un exemple
+
+1. **Dériver l'exemple** depuis la KB existante (backward chaining depuis le but)
+2. Construire l'**arbre parallèle généralisé** : même preuve, but **variabilisé**
+3. En tirer la **règle causale** ; **supprimer les conditions tautologiques** ou inutiles
+4. L'élagage des branches produit des règles plus générales (ex. `InconnueArithmétique` → `Primitive` → `Simplifier`)
+
+## Critère d'opérationnalité
+
+- Une règle extraite doit **rembourser** son coût : l'augmentation du biais est compensée par les gains d'efficacité
+- `Primitive(x)` est opérationnel ; `Simplifier(x+z, w)` ne l'est pas — compromis généralité (maths, difficile) ou efficacité (empirique, plus simple)
+
+## Lecture
+
+- EBL améliore l'**efficacité** d'une KB : une **mémoïsation** généralisée, pas de savoir nouveau
+- L'hypothèse de stationnarité de la distribution (cadre PAC) fait le lien avec l'apprentissage statistique
+
+---
+layout: default
+---
+
+# Apprentissage par pertinence (RBL) et déterminations
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Principe
+
+- **Contexte ∧ Descriptions ∧ Classifications |= Hypothèse** : la connaissance de fond **déduit** l'hypothèse elle-même — une généralisation déductive, pas une conjecture
+
+## Déterminations
+
+- Une **détermination** énonce qu'un attribut en détermine un autre : la **nationalité détermine la langue** ; la densité est constante pour un matériau — pas le poids d'un objet
+- Connue, elle transforme l'induction en **déduction** : plus besoin d'exemples pour généraliser, seulement pour identifier la valeur
+- C'est le pont diagnostic : apprendre une détermination, c'est apprendre **quoi observer** — le diagnostic médical procède ainsi (signes déterminants vs bruit)
+
+## Place dans le cursus
+
+- RBL prépare la question du **biais inductif** : ce que la connaissance impose avant tout exemple — on la retrouve au cours V face aux espaces d'hypothèses statistiques
+
+---
+layout: default
+---
+
+# Programmation logique inductive (ILP)
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## Principe
+
+- **Contexte ∧ Hypothèse ∧ Descriptions |= Classifications** : combiner l'induction et la **force de la FOL**
+- Les relations FOL généralisent là où les attributs échouent : `GrandPère` exige la **réification** de la chaîne `Père/Mère`
+- Clauses lisibles, critiquables — ce que les réseaux appris n'offrent pas
+
+## Exemple — apprendre `GrandPère(x, y)`
+
+- `Père(x,y) ⇒ GrandPère(x,y)` : **contre-exemples** (il manque le chaînage)
+- `Père(x,z) ∧ Père(z,y) ⇒ GrandPère(x,y)` **fonctionne** ; couverture complète : + `Père(x,z) ∧ Mère(z,y) ⇒ GrandPère(x,y)`
+- Choix des nouveaux littéraux : prédicats (une variable commune au moins), égalités/inégalités, comparaisons arithmétiques
+
+## Deux directions
+
+- **Descendante** (générale → spécifique) : **FOIL** (1990), clauses de Horn, spécialisation ≈ induction d'arbres de décision — hypothèse = clauses et non arbre
+- **Montante** (exemples → générale) : **résolution inverse**, Progol — remonter la déduction depuis les exemples
+
+## Le coût
+
+- Espace d'hypothèses **très grand** : restrictions de types + **gain informationnel** + heuristique d'Occam (longueur de la clause) bornent la recherche
+- L'**induction constructive** (créer de nouveaux prédicats, ex. `Parent`) reste la frontière
+
+---
+layout: default
+---
+
+# Pourquoi cela compte en 2026
+
+<style scoped>
+.slidev-layout { font-size: 0.88em; }
+h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
+</style>
+
+## La règle apprise reste un énoncé
+
+- Un LLM propose des règles plausibles mais **non garanties** ; l'ILP en établit la **cohérence avec les exemples** — hypothèses vérifiables, pas seulement plausibles
+- La règle apprise vit dans la base : elle se relit, se critique, se **re-vérifie** à chaque inférence
+- Espace des versions : la borne S/G (spécifique/générale) encadre l'hypothèse compatible avec les exemples — l'élimination d'hypothèses **est** l'apprentissage
+
+## Pont vers le cours V
+
+- Cette section est autoportante : présentable ici (fin de la logique) ou au moment de l'apprentissage, comme le cursus AIMA le propose
+- Les mêmes schémas `|=` se retrouveront en apprentissage statistique : hypothèse, descriptions, classifications — seul le cadre de vérification change (données vs conséquences logiques)
+
+*Notebooks : [SL-5-InverseResolution](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb) (résolution remontée) · [SL-4-InductiveLogicProgramming](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb) (ILP) · [SL-1-LogicalLearning](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb) (espace des versions).*
+
+---
+class: nb-map nb-k96
+---
+
+# Apprendre des règles : la série SymbolicLearning
+
+<p class="nb-lead">La résolution inverse retourne la déduction pour induire des règles. La série suit ce fil, de l’espace des versions jusqu’aux moteurs ILP modernes et aux hybrides neuro-symboliques.</p>
+
+<div class="nb-grid nb-cols-3">
+
+<div class="nb-card"><p class="nb-step">Espace des versions</p><p class="nb-what">Chercher l’hypothèse cohérente avec les exemples, entre la plus générale et la plus spécifique.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb" target="_blank" rel="noopener">SL-1-LogicalLearning</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Apprendre avec des connaissances</p><p class="nb-what">Apprentissage par explications et par pertinence : la théorie du domaine guide la généralisation.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb" target="_blank" rel="noopener">SL-2</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb" target="_blank" rel="noopener">SL-3</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Programmation logique inductive</p><p class="nb-what">FOIL descend du général au spécifique ; la résolution inverse et Progol remontent des exemples.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb" target="_blank" rel="noopener">SL-4-ILP</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb" target="_blank" rel="noopener">SL-5-InverseResolution</a></p></div>
+
+<div class="nb-card"><p class="nb-step">ILP moderne</p><p class="nb-what">Aleph, Metagol, Popper et dILP : apprendre des programmes récursifs.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb" target="_blank" rel="noopener">SL-6-ModernILP</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb" target="_blank" rel="noopener">SL-8-KG-ILP</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Automates</p><p class="nb-what">L* d’Angluin : apprendre un automate en posant des questions à un oracle.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning.ipynb" target="_blank" rel="noopener">SL-10-ActiveAutomataLearning</a></p></div>
+
+<div class="nb-card"><p class="nb-step">Neuro-symbolique</p><p class="nb-what">Réseaux et règles dans un même pipeline, avec un LLM comme générateur d’hypothèses.</p><p class="nb-links"><a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb" target="_blank" rel="noopener">SL-7</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-9-LLM-SymbolicLearning.ipynb" target="_blank" rel="noopener">SL-9</a> · <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb" target="_blank" rel="noopener">SL-11-Capstone</a></p></div>
+
+</div>
+
+<p class="nb-foot"><strong>À observer.</strong> Une règle apprise par ILP se lit et se vérifie ; un réseau appris, non. Que coûte cette lisibilité en données et en temps de calcul ?</p>
+
 
 ---
 layout: center
