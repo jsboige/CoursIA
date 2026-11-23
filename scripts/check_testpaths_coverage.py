@@ -168,6 +168,12 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # mais absent des testpaths de pytest.ini -- la convergence
         # local <-> CI est un invariant de ce garde (#22735).
         "scripts/ci/tests",
+        # scripts/curriculum/tests : suite neuve de #27657 (temoins des
+        # fonctions pures du generateur de carte des prerequis), pure et sans
+        # reseau. Cablee des trois cotes dans la meme PR (pytest.ini,
+        # liste pytest de scripts-tests.yml, ce dict) -- sans quoi le second
+        # sens du garde (#22735) la voyait sur le disque et non jouee.
+        "scripts/curriculum/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         # ICT-Series scripts/tests : dir entier (#23730, classe #22735) —
         # 45 tests sur 3 fichiers (protocol, records, reward_dynamics),
