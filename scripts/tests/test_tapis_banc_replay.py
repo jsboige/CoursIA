@@ -6,7 +6,7 @@ Ce que le banc mesure :
   observe lors du rejeu REEL du 18/11 (qualification de 72 candidats sur le
   pool de la lane). Le banc rejoue les memes cas -- memes corps, memes fils,
   memes citations, memes PRs, meme instant de reference -- et doit rendre les
-  memes codes. Un ecart signale que les neuf regles ont bouge ;
+  memes codes. Un ecart signale que les regles ont bouge ;
 - la **mesure des refus** : la repartition des codes sur le corpus fige, et la
   couverture : chaque code d'ecart doit etre represente par au moins un cas.
 
@@ -37,9 +37,12 @@ pytestmark = pytest.mark.usefixtures("forbid_shell_escape")
 
 FIXTURE = Path(__file__).parent / "fixtures" / "tapis_replay_cases.json"
 
-#: Les neuf ecarts de regle : chacun doit etre represente par un cas fige.
+#: Les ecarts de regle couverts par un cas fige : chacun doit etre represente.
+#: La liste suit les codes que le corpus fige porte ; l'ensemble des regles a
+#: grandi depuis la capture (EPAISSE, #26973 ; PAUSE, #27726 ; SATURE,
+#: ORIGAMI), et le cas re-atteste le 23/11 couvre EPAISSE.
 CODES_ECART = ("HORSFLOTTE", "LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE",
-               "RELACHEE", "PLAFOND", "RECLAMEE")
+               "RELACHEE", "PLAFOND", "RECLAMEE", "EPAISSE")
 
 
 def _fixture() -> dict:
@@ -107,7 +110,7 @@ def test_le_banc_rejoue_les_memes_codes(monkeypatch):
 
 
 def test_le_banc_couvre_les_neuf_ecarts(monkeypatch):
-    """Les neuf ecarts de regle ont chacun un cas fige, et le cas servi aussi."""
+    """Les ecarts de regle couverts ont chacun un cas fige, et le cas servi aussi."""
     fix = _fixture()
     codes = _rejouer(fix, monkeypatch)
     vus = set(codes.values())
