@@ -127,14 +127,25 @@ def _fetch_app_id(slug: str) -> int:
 
 
 def forge_app_token() -> str:
-    """Forge le jeton d'installation de l'App de la lane (jamais affiche)."""
-    slug = app_slug(lane_of_host())
+    """Forge le jeton d'installation de l'App de la lane (jamais affiche).
+
+    L'absence de la PEM se juge AVANT la resolution de la lane (#28272) : la
+    cle est un fait local immediat, alors que ``lane_of_host()`` leve sur un
+    hote hors convention ``myia-<lane>`` (runner CI, hostname = id de
+    conteneur). Sans cet ordre, c'etait l'erreur de hostname qui remontait et
+    le message de remediation ne nommait jamais la PEM absente.
+    """
     key = pem_path()
     if not key.is_file():
+        try:
+            app = f"de l'App {app_slug(lane_of_host())}"
+        except RuntimeError:
+            app = "de l'App de la lane"
         raise RuntimeError(
-            f"cle privee absente : {key}. La bascule exige la PEM de l'App "
-            f"{slug} (github_app_manifest.py --serve, plan #17437) -- sans "
-            "elle, le seau de quota de la lane est inaccessible depuis ce siege.")
+            f"cle privee absente : {key}. La bascule exige la PEM {app} "
+            "(github_app_manifest.py --serve, plan #17437) -- sans elle, le "
+            "seau de quota de la lane est inaccessible depuis ce siege.")
+    slug = app_slug(lane_of_host())
     app_id = _fetch_app_id(slug)
     jwt_token = github_app_token.build_jwt(
         str(app_id), github_app_token._read_private_key(key), int(time.time()))
@@ -163,6 +174,14 @@ def _switch_to_app_token() -> bool:
                                       "tentative de bascule vers le jeton App "
                                       "de la lane (#27012 point 3)"),
         file=sys.stderr)
+    # Resolu AVANT la forge et reutilise dans les deux messages (#28272) :
+    # sur un hote hors convention ``myia-<lane>``, l'ancien appel dans le
+    # print de succes levait APRES une bascule reussie, et le test de la
+    # famille devenait irreproductible hors siege.
+    try:
+        lane_app = app_slug(lane_of_host())
+    except RuntimeError:
+        lane_app = "le seau de l'App de la lane"
     try:
         token = forge_app_token()
     except (RuntimeError, github_app_token.ForgeError,
@@ -175,7 +194,7 @@ def _switch_to_app_token() -> bool:
         return False
     os.environ["GH_TOKEN"] = token  # env du process, jamais gh auth switch
     print(
-        f"[RATE-LIMIT] bascule effectuee vers {app_slug(lane_of_host())} -- "
+        f"[RATE-LIMIT] bascule effectuee vers {lane_app} -- "
         "les appels suivants de la passe utilisent le seau de quota de la lane.",
         file=sys.stderr)
     return True

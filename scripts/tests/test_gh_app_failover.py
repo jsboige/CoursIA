@@ -142,6 +142,46 @@ def test_attempt_peM_absente_remedie_et_remonte(mod, monkeypatch, capsys):
     assert mod._STATE["failover_done"] is True  # pas de boucle au suivant
 
 
+def test_bascule_reussie_sur_un_hote_hors_convention(mod, monkeypatch, capsys):
+    """#28272 : sur un runner CI (hostname = id de conteneur), une bascule
+    REUSSIE ne doit pas lever dans son message de succes.
+
+    Mesure CI : `app_slug(lane_of_host())` etait appele dans le print de
+    succes, hors du try/except, donc la resolution de lane levait APRES la
+    bascule et `test_attempt_ne_bascule_qu_une_fois` rendait RuntimeError.
+    """
+    monkeypatch.setattr(mod.gh_identity, "machine_hostname",
+                        lambda: "7b3c06ed8710")
+    monkeypatch.setattr(mod, "forge_app_token", lambda: "tok")
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+
+    def always_rl():
+        raise _rl_error()
+
+    with pytest.raises(subprocess.CalledProcessError):
+        mod._attempt(always_rl)
+    err = capsys.readouterr().err
+    assert "bascule effectuee" in err
+    assert "le seau de l'App de la lane" in err
+    assert os.environ.get("GH_TOKEN") == "tok"
+
+
+def test_pem_absente_est_nommee_sur_un_hote_hors_convention(
+        mod, monkeypatch, capsys):
+    """#28272 : la PEM absente se juge AVANT la resolution de la lane -- le
+    message de remediation doit nommer le chemin meme quand l'hote ne designe
+    pas une lane (runner CI).
+    """
+    monkeypatch.setattr(mod.gh_identity, "machine_hostname",
+                        lambda: "7b3c06ed8710")
+    monkeypatch.setattr(mod, "pem_path", lambda: Path("Z:/absente.pem"))
+    with pytest.raises(subprocess.CalledProcessError):
+        mod._attempt(lambda: (_ for _ in ()).throw(_rl_error()))
+    err = capsys.readouterr().err
+    assert "bascule IMPOSSIBLE" in err
+    assert "absente.pem" in err
+
+
 def test_attempt_laisse_traverser_un_echec_non_quota(mod, monkeypatch):
     forge = {"n": 0}
     monkeypatch.setattr(mod, "forge_app_token",
