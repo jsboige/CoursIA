@@ -101,11 +101,14 @@ def avancer(dossier: Path, lane: str, blocs: int) -> None:
 
 
 def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str,
-           depot, run=gh_bulk.run_defaut) -> tuple[dict, int]:
+           depot) -> tuple[dict, int]:
     """Le repli : (rapport, 0) -- ou l'echec de lecture, leve.
 
     Sans cache local (absent, illisible, trop vieux), le repli est IMPOSSIBLE :
     l'echec de lecture reste l'echec de lecture, comme avant ce module.
+
+    Le repli ne lit **jamais** le reseau : il n'a pas de `run`. Le cap de
+    livraisons y est donc INERTE (`fetcher_hors_reseau`), temoin `mesure: false`.
 
     Le service est **chronologique** : l'ordre de creation, la plus ancienne
     d'abord, et le curseur fait defiler le pool de bloc en bloc -- des
@@ -114,7 +117,8 @@ def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     dossier = gh_bulk.dossier_cache_defaut()
     cache = lire(dossier, jours)
     if not cache:
-        raise gh_bulk.LectureIncomplete("selection", "repli", "ni reseau ni cache local")
+        raise gh_bulk.LectureIncomplete("selection", "repli",
+                                        "ni cache local exploitable")
     metas = metas_de(cache)
     if not metas:
         raise gh_bulk.LectureIncomplete("selection", "repli", "cache local vide")
@@ -143,7 +147,8 @@ def replir(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     _, origami = tapis_origami.mesurer(lec, reseau=False)
     from coordination import tapis_cap_livraisons, tapis_leger
     file, temoins_cap, cap_mesure = tapis_cap_livraisons.passer(
-        file, grains_ + conteneurs, lane, maintenant, prs, run=run)
+        file, grains_ + conteneurs, lane, maintenant, prs,
+        run=tapis_cap_livraisons.fetcher_hors_reseau)
     rapport = tapis_leger._rapport(lane, graine, maintenant, metas, 0.0, 0.0,
                                    gh_selection.MUR_GLOBAL_S, etats_, file, prs,
                                    origami, {"repli": True}, fenetre)

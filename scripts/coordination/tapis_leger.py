@@ -29,7 +29,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import gh_bulk, gh_selection, tapis_equilibre
-from coordination import tapis_age, tapis_ancre, tapis_labels, tapis_origami, tapis_rapide, tapis_rotation
+from coordination import tapis_age, tapis_ancre, tapis_labels, tapis_origami, tapis_rapide, tapis_repli, tapis_rotation
 from coordination import tapis_service, tapis_universel
 from coordination.tapis_marqueurs import _age, _iso, lane_de_pr
 
@@ -125,22 +125,19 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
     jamais une liste a moitie. Une lecture incomplete du POOL n'est pas
     equivalente : la selection paginee est complete ou elle echoue.
 
-    I2 (#28114) : hors reseau, le REPLI CHRONOLOGIQUE (`tapis_repli`) rend la
-    main -- le cache local fait foi, et le pool est servi dans l'ordre de
+    I2 (#28114) : le REPLI CHRONOLOGIQUE (`tapis_repli`) rend la main -- hors
+    reseau, ou quand les filtres vident la file alors que le pool porte des
+    candidats. Le cache local fait foi, et le pool est servi dans l'ordre de
     creation.
     """
     debut = time.monotonic()
     try:
         classe = classer(lane, maintenant, jours, graine, depot, run, budget_s)
     except gh_bulk.LectureIncomplete:
-        from coordination import tapis_repli
-        return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot, run)
+        return tapis_repli.replir(lane, grains, maintenant, jours, graine, depot)
     ancres = tapis_ancre.lire(lane)
-    # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord.
-    # La rotation par numero servait les recentes (mesure du 22/11 : 0 issue
-    # anterieure au 01/11 dans les 60 premiers grains d'un pool de 455).
-    # Les CONTENEURS passent avec : leurs racines labellisees `consolidation`
-    # font de leurs membres des consolidations (revue ai-01 du 22/11).
+    # SELECTION PAR AGE (mandat du 22/11) : les issues ANCIENNES d'abord ; les
+    # CONTENEURS passent avec : leurs racines labellisees `consolidation`.
     ages, exclus, reinit = tapis_age.tour(classe["grains"], ancres, maintenant,
                                           classe["conteneurs"])
     file, fenetre = tapis_rotation.bloc(classe["grains"], classe["conteneurs"],
@@ -162,13 +159,15 @@ def tirage(lane: str, grains: int, maintenant: datetime, jours: int, graine: str
                         citations=classe["citations"],
                         lu_a=_iso(maintenant), secondes=round(secondes, 1),
                         appels=0), reseau=True)
-    # Cap de livraisons EPIC (#21067) : le garde arbitre (charge en vol,
-    # item K=2 / famille K=4) vivait dans le seul pick_idle_grain, retire du
-    # tirage depuis #26926 -- rebranche sur la voie reelle, fail-OPEN.
+    # Cap de livraisons EPIC (#21067) : fail-OPEN ; s'il VIDE la file, le
+    # repli chronologique rend la main (I2).
     from coordination import tapis_cap_livraisons
-    file, temoins_cap, cap_mesure = tapis_cap_livraisons.passer(
+    file, temoins_cap, cap_mesure, rendu = tapis_cap_livraisons.passer_et_replir(
         file, classe["grains"] + classe["conteneurs"], lane, maintenant,
-        classe["prs"], run=run)
+        classe["prs"], run=run, pool_ouvert=bool(classe["grains"]),
+        repli=lambda: tapis_repli.replir(lane, grains, maintenant, jours, graine, depot))
+    if rendu is not None:
+        return rendu
     rapport = _rapport(lane, graine, maintenant, classe["metas"],
                        phases["selection_s"], secondes, budget_s, classe["etats"],
                        file, classe["prs"], origami, phases, fenetre)
