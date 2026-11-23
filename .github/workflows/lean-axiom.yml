@@ -154,7 +154,7 @@ jobs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ runner.temp }}/mathlib-src
-        key: lake-mathlib-src-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path)) }}
+        key: lake-mathlib-src-${{ runner.os }}-${{ hashFiles(format('{0}/lakefile.lean', inputs.project-path), format('{0}/lakefile.toml', inputs.project-path), format('{0}/lake-manifest.json', inputs.project-path)) }}
         restore-keys: lake-mathlib-src-${{ runner.os }}-
 
     - name: Restore Lake build artifacts
