@@ -119,7 +119,11 @@ def load_series() -> tuple[list[dict], dict, dict]:
     return series_list, by_id, by_path
 
 
-def derive_edges(series_list, by_id, by_path):
+def derive_edges(
+    series_list: list[dict],
+    by_id: dict[str, tuple[dict, dict]],
+    by_path: dict[str, tuple[dict, dict]],
+) -> tuple[dict[tuple[str, str], int], list[dict], int, int]:
     """Dérive les arêtes carnet -> carnet sur toutes les séries.
 
     Retourne (edges, cross, unresolved, total_refs) où edges est un dict
@@ -200,7 +204,7 @@ def real_inventory(series: dict) -> set[str]:
 # --------------------------------------------------------------------- sortie --
 
 
-def mermaid_drawn(edges, series: dict) -> list[tuple[str, str]]:
+def mermaid_drawn(edges: dict[tuple[str, str], int], series: dict) -> list[tuple[str, str]]:
     """Arêtes effectivement dessinées : les deux carnets appartiennent à la série.
 
     Source unique du décompte affiché par la page ET par le résumé de génération :
@@ -238,7 +242,7 @@ def _chapter_label(key: str) -> str:
     return next((label for k, label, _upper in CHAPTERS if k == key), key)
 
 
-def flowchart_direction(nodes, edges) -> str:
+def flowchart_direction(nodes: list[str], edges: list[tuple[str, str]]) -> str:
     """Orientation qui garde les étiquettes lisibles, mesurée sur la forme du graphe.
 
     Un rang large est le piège : en TB ses nœuds s'alignent en largeur (onze
@@ -259,7 +263,7 @@ def flowchart_direction(nodes, edges) -> str:
     return "LR" if widest > 3 else "TB"
 
 
-def overview_source(series: dict, edges) -> tuple[str, dict]:
+def overview_source(series: dict, edges: dict[tuple[str, str], int]) -> tuple[str, dict[str, int]]:
     """Vue d'ensemble : un nœud par plage, une arête par flux entre plages.
 
     Les arêtes internes à une plage ne sont pas dessinées ici (une boucle sur un
@@ -293,7 +297,7 @@ def overview_source(series: dict, edges) -> tuple[str, dict]:
     return "\n".join(lines), internal
 
 
-def detail_source(series: dict, edges, key: str) -> tuple[str, int]:
+def detail_source(series: dict, edges: dict[tuple[str, str], int], key: str) -> tuple[str, int]:
     """Détail d'une plage : ses carnets, plus les carnets d'autres plages qui les alimentent.
 
     Les nœuds d'entrée venus d'une autre plage sont arrondis — sans eux la carte
@@ -355,7 +359,7 @@ def concepts_table(series: dict) -> str:
     return "\n".join(rows)
 
 
-def coverage_table(series_list, pilot) -> tuple[str, list[str]]:
+def coverage_table(series_list: list[dict], pilot: dict | None) -> tuple[str, list[str]]:
     rows = ["| Série | Notions citées | Carnets cités / réels | Couverture |", "|---|---|---|---|"]
     notes: list[str] = []
     # Deux séries peuvent partager un nom d'affichage (tweety et semanticweb
@@ -387,7 +391,13 @@ def coverage_table(series_list, pilot) -> tuple[str, list[str]]:
     return "\n".join(rows), notes
 
 
-def render_page(series_list, edges, cross, unresolved, total_refs) -> str:
+def render_page(
+    series_list: list[dict],
+    edges: dict[tuple[str, str], int],
+    cross: list[dict],
+    unresolved: int,
+    total_refs: int,
+) -> str:
     pilot = next((s for s in series_list if s["key"] == PILOT), None)
     if pilot is None:
         raise SystemExit(f"série pilote '{PILOT}' absente de {TAXONOMY_DIR}")
