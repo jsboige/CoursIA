@@ -39,3 +39,4 @@ cross-series
 #
 # Dossier autorise par GO ecrit, pas encore sur `main` :
 InformationCalcul          # GO du mainteneur : #27092 (17/11) -- parapluie « Information et calcul »
+BioMedecine                # GO du mainteneur : #28135 (22/11) -- serie technique a cote de Physique
